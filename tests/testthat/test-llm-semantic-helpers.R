@@ -1,3 +1,86 @@
+test_that("suggest_semantics rejects parsed data frames passed as llm_context_files", {
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+  parsed_context <- tibble::tibble(
+    field = "spawner_count",
+    description = "Natural-origin spawner abundance estimate"
+  )
+  fake_search <- function(query, role, sources) {
+    stop("search should not run when llm_context_files has the wrong type")
+  }
+
+  expect_error(
+    suggest_semantics(
+      NULL,
+      dict,
+      sources = "smn",
+      search_fn = fake_search,
+      llm_context_files = parsed_context
+    ),
+    "llm_context_files.*character vector of local file paths"
+  )
+})
+
+test_that("suggest_semantics warns when context files are supplied without llm_assess", {
+  tmp <- withr::local_tempdir()
+  context_path <- file.path(tmp, "context.csv")
+  readr::write_csv(
+    tibble::tibble(
+      field = "spawner_count",
+      description = "Natural-origin spawner abundance estimate"
+    ),
+    context_path
+  )
+  dict <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "spawner_count",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate",
+    column_role = "measurement",
+    value_type = "integer",
+    unit_label = NA_character_,
+    unit_iri = NA_character_,
+    term_iri = NA_character_,
+    property_iri = NA_character_,
+    entity_iri = NA_character_,
+    constraint_iri = NA_character_,
+    method_iri = NA_character_
+  )
+  fake_search <- function(query, role, sources) {
+    tibble::tibble()
+  }
+
+  out <- NULL
+  expect_warning(
+    out <- suggest_semantics(
+      NULL,
+      dict,
+      sources = "smn",
+      search_fn = fake_search,
+      llm_context_files = context_path
+    ),
+    "llm_context_files.*ignored.*llm_assess = TRUE"
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+})
+
 test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free", {
   tmp <- withr::local_tempdir()
   context_path <- file.path(tmp, "README-context.md")

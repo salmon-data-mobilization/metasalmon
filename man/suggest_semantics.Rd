@@ -98,8 +98,9 @@ per target for each assessment round. Default is \code{5}.}
 (for example README/markdown notes, CSV dictionaries, HTML exports,
 DOCX files, source/notebook files such as \code{.R}, \code{.Rmd}, or \code{.qmd}, Excel
 workbooks, or PDF reports) used to provide extra domain context to the
-LLM. PDF support uses the optional \code{pdftools} package; Excel support uses
-the optional \code{readxl} package.}
+LLM when \code{llm_assess = TRUE}. Pass file paths, not parsed data frames, XML
+documents, or R Markdown objects. PDF support uses the optional \code{pdftools}
+package; Excel support uses the optional \code{readxl} package.}
 
 \item{llm_context_text}{Optional character vector of extra inline context
 snippets passed alongside \code{llm_context_files}.}
