@@ -197,6 +197,101 @@ test_that("create_sdp falls back to deterministic suggestions when LLM assessmen
   expect_true(any(grepl("https://example.org/", iri_values, fixed = TRUE), na.rm = TRUE))
 })
 
+test_that("create_sdp rejects parsed data frames passed as llm_context_files", {
+  temp_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho", "Chinook"), count = c(1L, 2L)))
+  parsed_context <- tibble::tibble(
+    field = c("species", "count"),
+    description = c("Species name", "Number of fish")
+  )
+
+  expect_error(
+    create_sdp(
+      resources,
+      path = file.path(temp_dir, "package-parsed-context"),
+      dataset_id = "parsed-context-demo",
+      seed_semantics = FALSE,
+      llm_context_files = parsed_context,
+      check_updates = FALSE,
+      overwrite = TRUE
+    ),
+    "llm_context_files.*character vector of local file paths"
+  )
+})
+
+test_that("create_sdp warns when context files are supplied without llm_assess", {
+  temp_dir <- withr::local_tempdir()
+  context_path <- file.path(temp_dir, "context.csv")
+  readr::write_csv(
+    tibble::tibble(
+      field = c("species", "count"),
+      description = c("Species name", "Number of fish")
+    ),
+    context_path
+  )
+  resources <- list(main = tibble::tibble(species = c("Coho", "Chinook"), count = c(1L, 2L)))
+  fake_search <- function(query, role, sources) {
+    tibble::tibble()
+  }
+
+  pkg_path <- NULL
+  with_mocked_bindings(
+    find_terms = fake_search,
+    {
+      expect_warning(
+        pkg_path <- create_sdp(
+          resources,
+          path = file.path(temp_dir, "package-context-no-llm"),
+          dataset_id = "context-no-llm-demo",
+          seed_semantics = TRUE,
+          seed_verbose = FALSE,
+          semantic_sources = "smn",
+          llm_context_files = context_path,
+          check_updates = FALSE,
+          overwrite = TRUE
+        ),
+        "llm_context_files.*ignored.*llm_assess = TRUE"
+      )
+    },
+    .package = "metasalmon"
+  )
+
+  suggestions_path <- file.path(pkg_path, "semantic_suggestions.csv")
+  if (file.exists(suggestions_path)) {
+    suggestions <- readr::read_csv(suggestions_path, show_col_types = FALSE)
+    expect_false(any(startsWith(names(suggestions), "llm_")))
+  }
+
+  expect_true(dir.exists(pkg_path))
+})
+
+test_that("create_sdp rejects parsed data frames passed as llm_context_files with llm_assess", {
+  temp_dir <- withr::local_tempdir()
+  resources <- list(main = tibble::tibble(species = c("Coho", "Chinook"), count = c(1L, 2L)))
+  parsed_context <- tibble::tibble(
+    field = c("species", "count"),
+    description = c("Species name", "Number of fish")
+  )
+
+  expect_error(
+    create_sdp(
+      resources,
+      path = file.path(temp_dir, "package-parsed-context-llm"),
+      dataset_id = "parsed-context-llm-demo",
+      seed_semantics = TRUE,
+      seed_verbose = FALSE,
+      semantic_sources = "smn",
+      llm_assess = TRUE,
+      llm_provider = "openrouter",
+      llm_api_key = "dummy-key",
+      llm_context_files = parsed_context,
+      check_updates = FALSE,
+      overwrite = TRUE
+    ),
+    "llm_context_files.*character vector of local file paths"
+  )
+})
+
 test_that("create_sdp auto-enables EDH XML export when legacy edh_profile is supplied", {
   temp_dir <- withr::local_tempdir()
   resources <- list(main = tibble::tibble(species = c("Coho"), count = c(1L)))

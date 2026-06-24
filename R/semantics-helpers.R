@@ -213,8 +213,9 @@
 #'   (for example README/markdown notes, CSV dictionaries, HTML exports,
 #'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
 #'   workbooks, or PDF reports) used to provide extra domain context to the
-#'   LLM. PDF support uses the optional `pdftools` package; Excel support uses
-#'   the optional `readxl` package.
+#'   LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
+#'   documents, or R Markdown objects. PDF support uses the optional `pdftools`
+#'   package; Excel support uses the optional `readxl` package.
 #' @param llm_context_text Optional character vector of extra inline context
 #'   snippets passed alongside `llm_context_files`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.
@@ -328,6 +329,13 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
+  .ms_validate_llm_context_files(llm_context_files)
+  .ms_warn_if_llm_context_ignored(
+    llm_assess = llm_assess,
+    context_files = llm_context_files,
+    context_text = llm_context_text
+  )
+
   resource_lookup <- NULL
   default_df <- NULL
 

@@ -375,9 +375,11 @@ write_salmon_datapackage <- function(
 #'   `suggest_semantics()` when using the OpenAI provider.
 #' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
 #'   target.
-#' @param llm_context_files Optional local context files forwarded to
-#'   `suggest_semantics()`. See that function for supported file types,
-#'   including HTML, DOCX, `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
+#' @param llm_context_files Optional character vector of local context file
+#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
+#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
+#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
+#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
 #' @param llm_context_text Optional inline context snippets forwarded to
 #'   `suggest_semantics()`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.
@@ -455,6 +457,8 @@ infer_salmon_datapackage_artifacts <- function(
     !is.null(llm_base_url) ||
     !is.null(llm_reasoning_effort) ||
     !is.null(llm_request_fn)
+  .ms_validate_llm_context_files(llm_context_files)
+
   if (!isTRUE(seed_semantics) && llm_requested) {
     cli::cli_warn(c(
       "Ignoring LLM semantic options because {.code seed_semantics = FALSE}.",
@@ -628,9 +632,11 @@ infer_salmon_datapackage_artifacts <- function(
 #'   `suggest_semantics()` when using the OpenAI provider.
 #' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
 #'   target.
-#' @param llm_context_files Optional local context files forwarded to
-#'   `suggest_semantics()`. See that function for supported file types,
-#'   including HTML, DOCX, `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
+#' @param llm_context_files Optional character vector of local context file
+#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
+#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
+#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
+#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
 #' @param llm_context_text Optional inline context snippets forwarded to
 #'   `suggest_semantics()`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.

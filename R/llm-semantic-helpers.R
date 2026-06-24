@@ -438,6 +438,48 @@
   paste(text, collapse = "\n")
 }
 
+.ms_validate_llm_context_files <- function(context_files) {
+  if (is.null(context_files)) {
+    return(invisible(NULL))
+  }
+
+  if (!is.character(context_files)) {
+    cli::cli_abort(c(
+      "{.arg llm_context_files} must be a character vector of local file paths.",
+      "i" = "Pass paths such as {.code \"./00_data/Data_dictionary_final_dataset.csv\"}, not a parsed data frame, tibble, XML document, or R Markdown object."
+    ))
+  }
+
+  bad <- is.na(context_files) | !nzchar(trimws(context_files))
+  if (any(bad)) {
+    cli::cli_abort("{.arg llm_context_files} must not contain missing or empty paths.")
+  }
+
+  invisible(NULL)
+}
+
+.ms_warn_if_llm_context_ignored <- function(llm_assess,
+                                            context_files = NULL,
+                                            context_text = NULL) {
+  has_files <- !is.null(context_files) && length(context_files) > 0L
+  has_text <- !is.null(context_text) && nzchar(trimws(paste(context_text, collapse = " ")))
+
+  if (!isTRUE(llm_assess) && has_files) {
+    cli::cli_warn(c(
+      "{.arg llm_context_files} is ignored unless {.code llm_assess = TRUE}.",
+      "i" = "Supplying context files does not automatically enable LLM review, because that can trigger network/API use."
+    ))
+  }
+  if (!isTRUE(llm_assess) && has_text) {
+    cli::cli_warn(c(
+      "{.arg llm_context_text} is ignored unless {.code llm_assess = TRUE}.",
+      "i" = "Supplying context text does not automatically enable LLM review, because that can trigger network/API use."
+    ))
+  }
+
+  invisible(NULL)
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
@@ -554,6 +596,8 @@
 
 .ms_collect_context_chunks <- function(context_files = NULL,
                                        context_text = NULL) {
+  .ms_validate_llm_context_files(context_files)
+
   raw_context <- list()
   if (!is.null(context_files) && length(context_files) > 0) {
     raw_context <- c(raw_context, lapply(context_files, .ms_context_text_from_file))

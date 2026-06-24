@@ -98,9 +98,11 @@ assessment inside \code{suggest_semantics()}.}
 \item{llm_top_n}{Maximum number of retrieved candidates sent to the LLM per
 target.}
 
-\item{llm_context_files}{Optional local context files forwarded to
-\code{suggest_semantics()}. See that function for supported file types,
-including HTML, DOCX, \code{.R}, \code{.Rmd}, \code{.qmd}, PDF, and Excel context files.}
+\item{llm_context_files}{Optional character vector of local context file
+paths forwarded to \code{suggest_semantics()} when \code{llm_assess = TRUE}. Pass
+file paths, not parsed data frames, XML documents, or R Markdown objects.
+See \code{suggest_semantics()} for supported file types, including HTML, DOCX,
+\code{.R}, \code{.Rmd}, \code{.qmd}, PDF, and Excel context files.}
 
 \item{llm_context_text}{Optional inline context snippets forwarded to
 \code{suggest_semantics()}.}

@@ -35,9 +35,11 @@
 #'   `suggest_semantics()` when using the OpenAI provider.
 #' @param llm_top_n Maximum number of retrieved candidates sent to the LLM per
 #'   target.
-#' @param llm_context_files Optional local context files forwarded to
-#'   `suggest_semantics()`. See that function for supported file types,
-#'   including HTML, DOCX, `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
+#' @param llm_context_files Optional character vector of local context file
+#'   paths forwarded to `suggest_semantics()` when `llm_assess = TRUE`. Pass
+#'   file paths, not parsed data frames, XML documents, or R Markdown objects.
+#'   See `suggest_semantics()` for supported file types, including HTML, DOCX,
+#'   `.R`, `.Rmd`, `.qmd`, PDF, and Excel context files.
 #' @param llm_context_text Optional inline context snippets forwarded to
 #'   `suggest_semantics()`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.
@@ -95,6 +97,8 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     !is.null(llm_base_url) ||
     !is.null(llm_reasoning_effort) ||
     !is.null(llm_request_fn)
+  .ms_validate_llm_context_files(llm_context_files)
+
   semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
     semantic_max_per_role,
     llm_assess = llm_assess,
