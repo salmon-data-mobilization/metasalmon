@@ -479,6 +479,17 @@ pkgdown::build_site()
 - `vignettes/`: Long-form documentation
 - `docs/`: pkgdown site output
 
+### Internal Review Architecture
+
+- `R/semantic-suggestions.R` owns the internal semantic-suggestion row
+  interface: target keys, candidate row normalization, column-term
+  filtering, and LLM assessment merge rules.
+- `R/llm-review-adapter.R` owns shared LLM/chat review parsing,
+  validation, and assessment row construction.
+- `R/semantics-helpers.R`, `R/llm-semantic-helpers.R`, and
+  `R/chat-decomposition.R` keep the public workflows while delegating
+  shared row and review behavior to those internal modules.
+
 ### Salmon Domain Ontology
 
 This package can link your data to the [Salmon Domain

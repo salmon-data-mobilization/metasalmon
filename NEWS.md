@@ -1,3 +1,16 @@
+metasalmon 0.1.4
+----------------
+
+- Fixed `llm_context_files` handling in the `create_sdp()` semantic-review
+  path: context files must now be supplied as local file paths, parsed
+  data-frame/XML/R Markdown objects fail early with a clear error, and context
+  supplied without `llm_assess = TRUE` now warns that it will be ignored rather
+  than silently producing deterministic-only output.
+- Clarified the exported documentation for `create_sdp()`,
+  `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and
+  `suggest_semantics()` so users know context files affect only explicit LLM
+  review.
+
 metasalmon 0.1.3
 ----------------
 

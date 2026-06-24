@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -195,8 +195,9 @@ per target for each assessment round. Default is <code>5</code>.</p></dd>
 (for example README/markdown notes, CSV dictionaries, HTML exports,
 DOCX files, source/notebook files such as <code>.R</code>, <code>.Rmd</code>, or <code>.qmd</code>, Excel
 workbooks, or PDF reports) used to provide extra domain context to the
-LLM. PDF support uses the optional <code>pdftools</code> package; Excel support uses
-the optional <code>readxl</code> package.</p></dd>
+LLM when <code>llm_assess = TRUE</code>. Pass file paths, not parsed data frames, XML
+documents, or R Markdown objects. PDF support uses the optional <code>pdftools</code>
+package; Excel support uses the optional <code>readxl</code> package.</p></dd>
 
 
 <dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>

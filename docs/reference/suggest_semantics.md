@@ -146,8 +146,9 @@ suggest_semantics(
   README/markdown notes, CSV dictionaries, HTML exports, DOCX files,
   source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
   workbooks, or PDF reports) used to provide extra domain context to the
-  LLM. PDF support uses the optional `pdftools` package; Excel support
-  uses the optional `readxl` package.
+  LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames,
+  XML documents, or R Markdown objects. PDF support uses the optional
+  `pdftools` package; Excel support uses the optional `readxl` package.
 
 - llm_context_text:
 

@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -465,6 +465,18 @@ Development setup and package structure
 <code>vignettes/</code>: Long-form documentation</li>
 <li>
 <code>docs/</code>: pkgdown site output</li>
+</ul>
+</div>
+<div class="section level3">
+<h3 id="internal-review-architecture">Internal Review Architecture<a class="anchor" aria-label="anchor" href="#internal-review-architecture"></a>
+</h3>
+<ul>
+<li>
+<code>R/semantic-suggestions.R</code> owns the internal semantic-suggestion row interface: target keys, candidate row normalization, column-term filtering, and LLM assessment merge rules.</li>
+<li>
+<code>R/llm-review-adapter.R</code> owns shared LLM/chat review parsing, validation, and assessment row construction.</li>
+<li>
+<code>R/semantics-helpers.R</code>, <code>R/llm-semantic-helpers.R</code>, and <code>R/chat-decomposition.R</code> keep the public workflows while delegating shared row and review behavior to those internal modules.</li>
 </ul>
 </div>
 <div class="section level3">
