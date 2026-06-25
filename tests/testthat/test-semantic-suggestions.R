@@ -85,6 +85,92 @@ test_that("semantic target row contract preserves column order", {
   expect_equal(names(target), expected_cols)
 })
 
+test_that("semantic target discovery emits normalized rows across all SDP scopes", {
+  dict <- test_count_dictionary(
+    dataset_id = "d1",
+    table_id = "survey",
+    column_description = "Natural adult spawner count",
+    value_type = "integer"
+  )
+  codes <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "survey",
+    column_name = "count",
+    code_value = "visual",
+    code_label = "Visual",
+    code_description = "Visual survey method",
+    term_iri = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "survey",
+    table_label = "Survey observations",
+    description = "Spawner survey observations",
+    observation_unit = "spawner population",
+    observation_unit_iri = NA_character_
+  )
+  dataset_meta <- tibble::tibble(
+    dataset_id = "d1",
+    title = "Spawner survey",
+    description = "Annual spawner survey dataset",
+    keywords = NA_character_
+  )
+
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = codes,
+    table_meta = table_meta,
+    dataset_meta = dataset_meta,
+    default_df = tibble::tibble(count = c(10L, 20L))
+  )
+
+  expect_equal(names(targets), metasalmon:::.ms_semantic_target_cols())
+  expect_setequal(unique(targets$target_scope), c("column", "code", "table", "dataset"))
+  expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 6L)
+  expect_equal(nrow(targets[targets$target_scope == "code", , drop = FALSE]), 3L)
+  expect_setequal(
+    targets$dictionary_role[targets$target_scope == "code"],
+    c("constraint", "entity", "method")
+  )
+  expect_equal(
+    targets$target_query_basis[targets$target_scope == "table"],
+    "observation_unit"
+  )
+  expect_equal(
+    targets$target_sdp_file[targets$target_scope == "dataset"],
+    "dataset.csv"
+  )
+})
+
+test_that("semantic target discovery preserves paired value/unit resource context", {
+  dict <- test_dictionary(
+    dataset_id = "d1",
+    table_id = "survey",
+    column_name = "sampleSizeValue",
+    column_label = "Sample size",
+    column_description = "Sample area",
+    value_type = "number"
+  )
+  resource_lookup <- list(
+    survey = tibble::tibble(
+      sampleSizeValue = c(2046.33, 131340.85),
+      sampleSizeUnit = c("square metre", "square metre")
+    )
+  )
+
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = tibble::tibble(),
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    resource_lookup = resource_lookup
+  )
+
+  unit_target <- targets[targets$target_sdp_field == "unit_iri", , drop = FALSE]
+  expect_equal(nrow(unit_target), 1L)
+  expect_equal(unit_target$search_query, "square meter")
+})
+
 test_that("LLM assessment row contract preserves column order and empty/success symmetry", {
   expected_cols <- c(
     "dataset_id",

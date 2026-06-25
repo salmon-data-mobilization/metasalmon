@@ -62,9 +62,29 @@ Base state for this plan:
   `Rscript -e 'devtools::test(filter = "dictionary-helpers|package-helpers", reporter = "summary")'`
   passed with the expected optional-PDF skips and deterministic LLM-fallback /
   semantic-gap warnings.
-- [ ] Implement R3/R4: freeze target/assessment row contracts, extract semantic
-  target discovery, and deepen the review adapter while preserving both response
-  shapes.
+- [x] 2026-06-25: Froze the R3/R4 row contracts before moving producer or
+  consumer code. Added tests pinning `.ms_semantic_target_cols()` and the full
+  LLM assessment row column order for both empty and success rows. Validation:
+  `Rscript -e 'devtools::test(filter = "semantic-suggestions", reporter = "summary")'`
+  passed.
+- [x] 2026-06-25: Implemented R3 target discovery extraction. Moved the
+  target-building closure cluster and all column/code/table/dataset target
+  builders into `.ms_semantic_discover_targets()`, leaving retrieval,
+  role-collision annotation, LLM review, attributes, and user messages in
+  `suggest_semantics()`. Added direct target-discovery tests for the 19-column
+  target contract, all four SDP scopes, measurement-parented code expansion,
+  table query basis, dataset target file, and paired value/unit
+  `resource_lookup` context. Explicitly documented that
+  `.ms_semantic_column_term_target_from_dictionary()` remains a narrow
+  candidate-row fallback rather than the full six-role discovery path.
+  Validation:
+  `Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_file("tests/testthat/test-semantic-suggestions.R", reporter = "summary"); testthat::test_file("tests/testthat/test-dictionary-helpers.R", reporter = "summary")'`
+  and
+  `Rscript -e 'devtools::test(filter = "semantic-suggestions|dictionary-helpers|llm-semantic-helpers|package-helpers", reporter = "summary")'`
+  passed with the expected optional-PDF skips and deterministic LLM-fallback /
+  semantic-gap warnings.
+- [ ] Implement R4: deepen the review adapter while preserving both response
+  shapes and fixing the confirmed prompt / batch-normalization bugs.
 - [ ] Implement R5: make artifact inference the canonical orchestration Module
   while preserving public `infer_dictionary()` attribute contracts.
 - [ ] Run final documentation, pkgdown, package build, package check, and record
