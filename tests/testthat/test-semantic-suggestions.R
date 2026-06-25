@@ -29,6 +29,145 @@ test_that("semantic suggestion module owns target and candidate row shape", {
   expect_equal(filtered$target_sdp_field[[1]], "term_iri")
 })
 
+test_that("semantic target row contract preserves column order", {
+  expected_cols <- c(
+    "dataset_id",
+    "table_id",
+    "column_name",
+    "code_value",
+    "dictionary_role",
+    "search_role",
+    "target_scope",
+    "target_sdp_file",
+    "target_sdp_field",
+    "target_row_key",
+    "target_label",
+    "target_description",
+    "search_query",
+    "target_query_basis",
+    "target_query_context",
+    "column_label",
+    "column_description",
+    "code_label",
+    "code_description"
+  )
+
+  target <- metasalmon:::.ms_semantic_target_from_candidate_rows(
+    tibble::tibble(
+      dataset_id = "d1",
+      table_id = "t1",
+      column_name = "spawner_count",
+      code_value = NA_character_,
+      dictionary_role = "variable",
+      search_role = "variable",
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = "term_iri",
+      target_row_key = "d1/t1/spawner_count",
+      target_label = "Spawner count",
+      target_description = "Spawner abundance",
+      search_query = "spawner abundance",
+      target_query_basis = NA_character_,
+      target_query_context = NA_character_,
+      column_label = "Spawner count",
+      column_description = "Spawner abundance",
+      code_label = NA_character_,
+      code_description = NA_character_,
+      label = "Spawner abundance",
+      iri = "https://example.org/spawner-abundance",
+      source = "smn",
+      ontology = "demo",
+      definition = "Variable"
+    )
+  )
+
+  expect_equal(metasalmon:::.ms_semantic_target_cols(), expected_cols)
+  expect_equal(names(target), expected_cols)
+})
+
+test_that("LLM assessment row contract preserves column order and empty/success symmetry", {
+  expected_cols <- c(
+    "dataset_id",
+    "table_id",
+    "column_name",
+    "code_value",
+    "dictionary_role",
+    "target_scope",
+    "target_sdp_file",
+    "target_sdp_field",
+    "search_query",
+    "llm_provider",
+    "llm_model",
+    "llm_decision",
+    "llm_confidence",
+    "llm_selected_candidate_index",
+    "llm_selected_iri",
+    "llm_selected_label",
+    "llm_rationale",
+    "llm_missing_context",
+    "llm_bundle_summary",
+    "llm_retry_query",
+    "llm_new_term_label",
+    "llm_new_term_definition",
+    "llm_new_term_namespace",
+    "llm_context_sources",
+    "llm_exploration_used",
+    "llm_exploration_queries",
+    "llm_exploration_candidate_gain",
+    "llm_error"
+  )
+  target <- metasalmon:::.ms_semantic_target_from_candidate_rows(
+    tibble::tibble(
+      dataset_id = "d1",
+      table_id = "t1",
+      column_name = "spawner_count",
+      code_value = NA_character_,
+      dictionary_role = "variable",
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = "term_iri",
+      search_query = "spawner abundance",
+      label = "Spawner abundance",
+      iri = "https://example.org/spawner-abundance",
+      source = "smn",
+      ontology = "demo",
+      definition = "Variable"
+    )
+  )
+  candidates <- tibble::tibble(
+    label = "Spawner abundance",
+    iri = "https://example.org/spawner-abundance",
+    source = "smn",
+    ontology = "demo",
+    definition = "Variable"
+  )
+  config <- list(provider = "openrouter", model = "openrouter/free")
+  validated <- list(
+    decision = "accept",
+    confidence = 0.9,
+    selected_candidate_index = 1L,
+    rationale = "Good fit",
+    missing_context = NA_character_,
+    bundle_summary = NA_character_,
+    retry_query = NA_character_,
+    suggested_label = NA_character_,
+    suggested_definition = NA_character_,
+    suggested_namespace = NA_character_
+  )
+
+  empty <- metasalmon:::.ms_llm_review_empty_assessment(target, config)
+  success <- metasalmon:::.ms_llm_review_success_assessment(
+    target,
+    candidates,
+    tibble::tibble(source = "context.md"),
+    config,
+    validated
+  )
+
+  expect_equal(names(empty), expected_cols)
+  expect_equal(names(success), expected_cols)
+})
+
 test_that("LLM review adapter validates chat-style JSON responses", {
   response <- list(
     content = '{"decision":"accept","selected_candidate_index":1,"confidence":0.91,"rationale":"Fits the target.","missing_context":""}',
