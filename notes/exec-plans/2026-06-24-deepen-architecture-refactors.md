@@ -131,6 +131,97 @@ Base state for this plan:
   --no-manual`; final status was `OK`. Ran
   `Rscript -e 'pkgdown::build_site()'` and kept regenerated docs, while ignoring
   local launcher pages generated from ignored `AGENTS.md` / `CLAUDE.md`.
+- [x] 2026-06-25: Updated this ExecPlan and
+  `notes/bugs-and-improvements.md` after implementation so their status reflects
+  what landed, what was partially addressed, and what remains open/deferred.
+
+## Surprises & Discoveries
+
+- `R CMD check` initially failed before package tests because the local
+  environment does not have suggested package `pdftools`. Rerunning with
+  `_R_CHECK_FORCE_SUGGESTS_=false` was the appropriate local validation mode for
+  this workstation.
+- The `_R_CHECK_FORCE_SUGGESTS_=false` check then exposed a real package metadata
+  problem: `DESCRIPTION` declared `License: MIT + file LICENSE`, but the CRAN MIT
+  `LICENSE` stub was missing. The branch now includes that stub.
+- `pkgdown::build_site()` generated local launcher pages from ignored
+  `AGENTS.md` / `CLAUDE.md`. The branch ignores the generated launcher pages and
+  removes the generated `docs/CLAUDE.html`, but the source launcher self-reference
+  remains an open repo-hygiene item.
+- The backlog in `notes/bugs-and-improvements.md` was broader than this refactor
+  plan. The implementation fixed the plan-driving LLM/semantic bugs, but left
+  separate request-builder, EDH XML guard, context-source disambiguation,
+  encoding, and agent-guidance items for follow-up work.
+
+## Decision Log
+
+- 2026-06-25: Keep explicit LLM/network opt-in. Context files and text still warn
+  when ignored; they do not auto-enable LLM review.
+- 2026-06-25: Preserve public return attributes on `infer_dictionary()`. R5 keeps
+  the multi-table `inferred_*` and single-table `seed_*` schemes rather than
+  unifying or deprecating them.
+- 2026-06-25: Preserve the two LLM response shapes. R4 deepens the shared
+  response-validation seam, but defers request-builder convergence because making
+  response shape single-source would be a separate behavioral refactor.
+- 2026-06-25: Keep `reject_shortlist` as a decision value carried by
+  `llm_decision` and `llm_rationale`; do not add a new assessment column during
+  this plan.
+- 2026-06-25: Treat create-time EDH XML guard behavior as out of scope for this
+  branch. It needs a product decision about whether first-write EDH XML is draft
+  output or should block on unresolved placeholders/`REVIEW:` IRIs.
+- 2026-06-25: Leave `AGENTS.md` / `CLAUDE.md` source guidance repair out of this
+  branch. The branch only prevents unwanted generated pkgdown launcher pages.
+
+## Outcomes & Retrospective
+
+The implementation landed all five planned refactors plus the prerequisite bug
+and fixture work:
+
+1. Fixed `infer_dictionary(seed_semantics = FALSE, ...)` ignored LLM/context
+   warnings.
+2. Consolidated ordinary dictionary test fixtures.
+3. Centralized LLM context validation, ignored-context warnings, LLM-request
+   detection, effective shortlist sizing, and conditional LLM option forwarding.
+4. Froze semantic target-row and LLM assessment-row contracts before moving
+   producer/consumer code.
+5. Extracted semantic target discovery into `.ms_semantic_discover_targets()`.
+6. Deepened LLM review adapter behavior for malformed responses,
+   `reject_shortlist`, batch partial fallback, duplicate batch keys, and the
+   stale selected-index exploration edge case.
+7. Extracted artifact-inference context into `R/artifact-inference.R` while
+   preserving public `infer_dictionary()` attribute contracts.
+8. Refreshed roxygen/pkgdown output and added the missing MIT `LICENSE` stub.
+
+Implementation commits on `deepen-architecture` before this notes update:
+
+- `6cfeb8f` Fix infer_dictionary ignored LLM options warning
+- `c30d7ff` Consolidate semantic test fixtures
+- `32596fb` Centralize LLM context and option policy
+- `f4ea3eb` Freeze semantic review row contracts
+- `ca01b19` Extract semantic target discovery
+- `05d350e` Deepen LLM review adapter robustness
+- `136e42d` Extract artifact inference context
+- `7e28bd6` Validate refactor branch and refresh docs
+
+Final validation evidence:
+
+```sh
+Rscript -e 'devtools::test(reporter = "summary")'
+Rscript -e 'devtools::document()'
+R CMD build .
+_R_CHECK_FORCE_SUGGESTS_=false R CMD check metasalmon_0.1.4.tar.gz --no-manual
+Rscript -e 'pkgdown::build_site()'
+```
+
+Observed final package-check status: `OK` with `_R_CHECK_FORCE_SUGGESTS_=false`.
+The ordinary `R CMD check` path still requires installing suggested package
+`pdftools` in this local environment.
+
+Remaining follow-up work is tracked in `notes/bugs-and-improvements.md` with
+per-item implementation statuses. The highest-leverage remaining items are the
+shared chat request builder, create-time EDH XML guard decision, context-source
+basename disambiguation, encoding handling for non-UTF-8 context files, real
+repo-local agent guidance, and further `package-helpers.R` decomposition.
 
 ## Peer Review (2026-06-24)
 
@@ -1015,17 +1106,23 @@ Surfaced during review; not required for this plan but worth tracking.
 1. **`package-helpers.R` is a ~2975-line god-file.** It owns orchestration,
    `create_sdp`, writing, resource/metadata inference, and EDH post-processing.
    Once R5 lands, splitting writing/post-processing from inference/orchestration
-   would be a high-value Locality win. (Deliberately out of scope here.)
+   would be a high-value Locality win. (Partially addressed by
+   `R/artifact-inference.R`; further splitting remains deliberately out of
+   scope here.)
 2. **Shared chat request builder.** The two divergent HTTP body assemblers
    (`.ms_llm_chat_json_request` vs `.ms_chat_http_request`) duplicate
    provider/header logic. Converging them would let the review contract become
-   single-shape and simplify R4's normalizer.
+   single-shape and simplify R4's normalizer. (Still open/deferred.)
 3. **Test fixture consolidation.** The canonical dictionary tibble is copy-pasted
    ~30× across test files; `helper-dictionary.R` already exists as a home. R3/R5
    touch row/column shape, so a shared fixture would cut churn substantially.
+   (Done for ordinary repeated fixtures via `tests/testthat/helper-dictionary.R`;
+   intentionally specialized fixtures remain local.)
 4. **Real `AGENTS.md`.** `CLAUDE.md`/`AGENTS.md` are a circular self-reference, so
    the package ships no agent guidance. Seed it from `notes/context.md` (the LLM
-   opt-in contract, attribute/IRI-prefix contracts, build/test commands).
+   opt-in contract, attribute/IRI-prefix contracts, build/test commands). (Still
+   open; pkgdown launcher-page generation is ignored, but source guidance is not
+   repaired.)
 
 ## Recommended Order
 

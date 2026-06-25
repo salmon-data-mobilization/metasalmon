@@ -16,12 +16,31 @@ two adversarial verification passes + author spot-checks). Each item cites
 
 Severity = how much it can bite a real user.
 
+**Implementation status legend (updated 2026-06-25 on `deepen-architecture`)**
+- **fixed** — implemented on this branch and covered by focused tests.
+- **done-for-plan** — the refactor-plan objective was completed, but a broader
+  future improvement may remain.
+- **partially addressed** — risk was reduced or documented, but the underlying
+  backlog item is not exhausted.
+- **open** — still present in the codebase.
+- **deferred** — deliberately left out of the current refactor because it belongs
+  to a separate roadmap or would change behavior beyond the plan.
+
+**Current snapshot:** #1, #2, #7, #10, #11, #12, #14, #15, #16, #17, #18,
+#19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
+#30 are partially addressed. #3, #4, #5, #6, #8, #9, #13, #22, #23, #24,
+and #31 remain open/deferred as noted below.
+
 ---
 
 ## Correctness / UX bugs
 
 ### 1. `infer_dictionary()` silently drops LLM options when `seed_semantics = FALSE`
 - **Severity:** medium · **Status:** confirmed + spot-verified · **Class:** ux-bug
+- **Implementation status:** fixed. `infer_dictionary()` now routes through
+  `.ms_llm_review_plan()` and warns once before list/data-frame branching when
+  LLM semantic options are supplied with `seed_semantics = FALSE`; regression
+  coverage lives in `tests/testthat/test-dictionary-helpers.R`.
 - **Where:** `R/dictionary-helpers.R:92-100` (gate at `:167`/`:243`) vs `R/package-helpers.R:462-467`.
 - `infer_dictionary` defaults to `seed_semantics = FALSE`, computes `llm_requested`
   and validates context (100), but emits **no warning** when LLM options are
@@ -36,6 +55,10 @@ Severity = how much it can bite a real user.
 
 ### 2. Exploration with skipped reassessment pairs a stale selected-index with a re-sorted candidate set
 - **Severity:** medium · **Status:** spot-verified (NEW) · **Class:** correctness-bug
+- **Implementation status:** fixed. The exploration path now keeps the original
+  record paired with the original assessment when reassessment is skipped or
+  fails, so a positional selected-candidate index is never remapped onto a
+  reordered shortlist; covered by LLM semantic-helper tests.
 - **Where:** `R/llm-semantic-helpers.R:1166-1184` (`.ms_llm_explore_record`), with
   `.ms_merge_semantic_target_candidates` (R/semantics-helpers.R) and
   `.ms_semantic_merge_llm_assessments` (R/semantic-suggestions.R:243-268).
@@ -57,6 +80,10 @@ Severity = how much it can bite a real user.
 
 ### 3. Duplicated, divergent HTTP chat request builders
 - **Severity:** medium · **Status:** confirmed · **Class:** correctness-bug (drift)
+- **Implementation status:** open/deferred. R4 intentionally deepened the
+  response adapter while preserving the two current response shapes. Converging
+  `.ms_llm_chat_json_request()` and `.ms_chat_http_request()` is a separate
+  request-builder refactor because it would change the adapter shape decision.
 - **Where:** `.ms_llm_chat_json_request` (R/llm-semantic-helpers.R:1301-1330) vs
   `.ms_chat_http_request` (R/chat-decomposition.R:435-472).
 - Two near-identical httr2 `/chat/completions` builders with **divergent** behavior:
@@ -71,6 +98,10 @@ Severity = how much it can bite a real user.
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
 - **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
+- **Implementation status:** open. `create_sdp()` still calls
+  `edh_build_hnap_xml()` directly for first-write EDH XML. This needs a product
+  decision: either label create-time XML as draft output or reuse/enforce the
+  rebuild guard before writing.
 - **Where:** `R/package-helpers.R:951-960` vs `R/edh-xml-export.R:1176-1200, 1270`
   (`.ms_abort_unreviewed_edh_rebuild`).
 - `write_edh_xml_from_sdp` refuses to build when `REVIEW:` IRIs or `MISSING`
@@ -84,6 +115,9 @@ Severity = how much it can bite a real user.
 
 ### 5. `chunk_id` / source-label collisions for context files sharing a basename
 - **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Implementation status:** open. The current branch preserved basename-based
+  source reporting as an observable contract; basename disambiguation still needs
+  a compatibility-minded change and tests.
 - **Where:** `R/llm-semantic-helpers.R:530, 549-551, 619`; consumed at
   `R/llm-review-adapter.R:112`.
 - `source = basename(normalizePath(path))` and `chunk_id = paste0(source, "#", i)`.
@@ -94,12 +128,17 @@ Severity = how much it can bite a real user.
 
 ### 6. Encoding mismatch can corrupt non-UTF-8 context files
 - **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Implementation status:** open. Context-file parsing was centralized for
+  parse-once behavior, but encoding detection/selection was not added.
 - **Where:** `R/llm-semantic-helpers.R:376, 518, 521`. `readLines(..., encoding = "UTF-8")`
   then `enc2utf8` for non-UTF-8 inputs (e.g. Latin-1 CSVs) corrupts tokens and
   degrades scoring. **Fix:** detect/allow encoding in one place.
 
 ### 7. Provider truncation reported as a generic null-response abort
 - **Severity:** low · **Status:** confirmed · **Class:** ux-bug
+- **Implementation status:** fixed. The review adapter now includes a sanitized
+  content snippet when wrapped chat content is malformed and parsed `data` is not
+  available; tests also assert parsed `data` wins over malformed `content`.
 - **Where:** `R/llm-review-adapter.R:8-16`. When `data` is NULL and `content` is
   non-JSON (truncated/streamed), `fromJSON` fails in a `tryCatch`→NULL and the
   function aborts with a generic message, discarding the raw content. **Fix:**
@@ -107,6 +146,8 @@ Severity = how much it can bite a real user.
 
 ### 8. `semantic_code_scope = "factor"` semi-join omits `dataset_id`
 - **Severity:** low · **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
+- **Implementation status:** open. The R5 extraction preserved existing
+  `semantic_code_scope` behavior and did not alter the factor-code join key.
 - **Where:** `R/package-helpers.R:2554` (`.ms_select_semantic_seed_codes` semi-join by
   `c("table_id","column_name")`); `.ms_factor_code_keys` (2200-2219).
 - Safe today (single uniform `dataset_id` per run), but if `seed_codes` ever span
@@ -115,6 +156,9 @@ Severity = how much it can bite a real user.
 
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
 - **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
+- **Implementation status:** open. The pkgdown artifact issue was mitigated by
+  ignoring generated launcher pages, but the source `AGENTS.md` and `CLAUDE.md`
+  files still contain only `@AGENTS.md`.
 - Both files contain only `@AGENTS.md`; `AGENTS.md` references itself → no agent
   guidance ships, and the include is circular. **Fix:** seed real `AGENTS.md` from
   `notes/context.md` (LLM opt-in contract, attribute/IRI-prefix contracts, commands).
@@ -128,23 +172,34 @@ These are batch/exploration robustness gaps. Output correctness is preserved
 adversarial pass** — re-confirm before fixing.
 
 ### 10. Batch system prompt omits `reject_shortlist` from allowed decisions
+- **Implementation status:** fixed. Generic, decomposition, and batch prompts now
+  list `reject_shortlist` consistently with the validator.
 - `R/llm-semantic-helpers.R:891` lists only `accept, review, retry_search,
   request_new_term`, but the validator (`:1338`) also accepts `reject_shortlist`.
   In batched review the model is never told it may reject → behavior diverges from
   the single-target path. **Fix:** add `reject_shortlist` to the batch prompt.
 
 ### 11. One malformed batch item aborts and discards all valid assessments
+- **Implementation status:** fixed. Batch validation now catches malformed items
+  per target key, preserves valid sibling rows, and falls back only affected keys
+  to per-target review.
 - `R/llm-semantic-helpers.R:1483-1500` calls `.ms_validate_llm_assessment` per item,
   which **aborts** (not warns) on a single bad confidence/decision; the abort voids
   the whole batch and forces a full per-target re-run (1520-1530), doubling requests.
   **Fix:** `tryCatch` per item, treat a bad item as a missing key so only it falls back.
 
 ### 12. Duplicate `target_key` in a batch response silently overwrites
+- **Implementation status:** fixed. Duplicate target keys are detected and the
+  affected key is routed to fallback review instead of silently overwriting the
+  first assessment.
 - `R/llm-semantic-helpers.R:1483-1490` writes `rows[[key]] <- ...` without checking
   for an existing key; a model echoing a duplicate key silently drops the first.
   **Fix:** detect already-assigned keys; warn/fall back for the affected key.
 
 ### 13. `retry_search` can re-issue the original failing query
+- **Implementation status:** open/deferred. The branch preserved the current
+  exploration fallback behavior; recording rejected duplicate retry queries or
+  honoring near-duplicates belongs with the retrieval-gap roadmap.
 - `R/llm-semantic-helpers.R:1089-1098, 1129-1138`: if the model's `retry_query`
   equals the original, validation drops it and the code silently falls through to a
   generic exploration request — the explicit `retry_query` has no effect and an extra
@@ -162,10 +217,15 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   `R/package-helpers.R:551-564`. **Correction:** the earlier "quadruple duplication"
   framing was wrong — `create_sdp:831-855` is an *unconditional full ~21-arg
   pass-through* of the whole artifact surface, **not** a copy of the 11-arg LLM tail.
+- **Implementation status:** fixed. The conditional LLM tail now lives in
+  `.ms_llm_review_plan()`, while caller-specific base `suggest_args` remain owned
+  by each public entry point.
 
 ### 15. `llm_requested` 8-clause predicate duplicated  → R2
 - **Status:** confirmed. Byte-identical at `R/dictionary-helpers.R:92-99` and
   `R/package-helpers.R:452-459`.
+- **Implementation status:** fixed. The predicate is centralized in
+  `.ms_llm_review_requested()` and consumed through `.ms_llm_review_plan()`.
 
 ### 16. Divergent column-target builders  → R3
 - **Status:** confirmed (re-characterized). `.ms_semantic_column_term_target_from_dictionary`
@@ -176,45 +236,73 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   leaves NA. The standalone is currently only a **fallback** inside
   `.ms_semantic_target_from_candidate_rows` (197-201) when retrieval is empty.
   **Fix:** reconcile deliberately — do not blindly "collapse."
+- **Implementation status:** done-for-plan. Full semantic target discovery moved
+  into `.ms_semantic_discover_targets()` with direct tests for all SDP scopes.
+  The narrow candidate-row fallback remains intentionally separate and documented
+  rather than collapsed into the six-role discovery path.
 
 ### 17. Divergent `infer_dictionary` attribute schemes  → R5
 - **Status:** confirmed. Multi-table attaches `inferred_*` unconditionally (196-199,
   tested at test-dictionary-helpers.R:308-311); single-table attaches `seed_*` only
   when args non-NULL (272-280). Disjoint sets. Both are contract.
+- **Implementation status:** done-for-plan. R5 preserved both public attribute
+  schemes and added tests pinning the single-table `seed_*` contract and absence
+  of multi-table `inferred_*` attributes.
 
 ### 18. `include_dwc` inconsistency in `suggest_semantics` arg assembly  → R2
 - **Status:** confirmed. `R/package-helpers.R:546` sets `include_dwc = FALSE`; both
   dictionary base lists omit it (rely on default). Centralizing must **preserve
   per-caller behavior**, not unify (it would be a behavior change).
+- **Implementation status:** fixed. `.ms_llm_review_plan()` centralizes only the
+  conditional LLM tail; caller-specific base arguments, including artifact-path
+  `include_dwc = FALSE`, remain local.
 
 ### 19. Implicit/positional 19-col target-row contract  → R3
 - **Status:** confirmed. Builders hand-write column lists instead of constructing from
   `.ms_semantic_target_cols()`; retrieval copies via `intersect(...)` so an omitted
   column drops silently (R/semantics-helpers.R:106-109).
+- **Implementation status:** done-for-plan. The target row column order is now
+  frozen by tests, and `.ms_semantic_discover_targets()` returns normalized rows
+  across column/code/table/dataset scopes. This reduces silent-drift risk; it does
+  not remove every positional read in downstream consumers.
 
 ### 20. Thin pass-through wrappers add a file-hop  → R4
 - **Status:** confirmed (nuance). `.ms_empty_llm_assessment` is pass-through, but
   `.ms_llm_success_assessment` (R/llm-semantic-helpers.R:1415-1423) **unpacks the
   record struct** — inlining must move record-unpacking or keep a positional adapter
   signature.
+- **Implementation status:** fixed. The thin semantic wrappers were removed;
+  orchestration now calls adapter row builders directly while record unpacking
+  stays outside the adapter.
 
 ### 21. `table_meta`/`dataset_meta` targets emit extra columns  → R3
 - **Status:** confirmed. Table targets add `target_query_basis/context` (1063-1064);
   column/code/dataset omit them (NA-backfilled at 1109). Preserve the backfill.
+- **Implementation status:** done-for-plan. R3 preserved the backfilled canonical
+  target-column shape and added target-discovery tests covering table and dataset
+  target rows.
 
 ### 22. Merge helper drops a `.ms_bundle_key` it never created  → R3/R4
 - **Status:** confirmed. `.ms_semantic_merge_llm_assessments` (R/semantic-suggestions.R:251-267)
   drops `.ms_bundle_key` via `any_of` though it never creates it — a copy-from-the-inline-pipeline smell.
+- **Implementation status:** open. The harmless defensive drop remains; removing
+  it was not required for the R3/R4 behavioral work.
 
 ### 23. Multi-table recursion forwards the un-widened shortlist  → R2/R5
 - **Status:** confirmed (latent). `R/dictionary-helpers.R:136` passes
   `semantic_max_per_role`, not `semantic_seed_max_per_role`. Harmless today (children
   force `seed_semantics = FALSE`) but a trap if seeding ever moves into the recursion.
+- **Implementation status:** open latent. R5 moved resource-dictionary inference
+  behind `.ms_infer_resource_dictionary()` but preserved child calls with
+  `seed_semantics = FALSE`; if semantic seeding later moves into child recursion,
+  this needs to be revisited.
 
 ### 24. Decomposition mode disables batching for the whole group
 - **Status:** by-design (perf note). `any(record$decomposition_mode)` at
   `R/llm-semantic-helpers.R:1503` forces per-target review. Correct; a quiet perf
   cliff worth a debug log.
+- **Implementation status:** open/by-design. No debug log was added in this
+  branch.
 
 ---
 
@@ -231,22 +319,34 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
 ## Test / infra improvements (evidence-cited; unverified by the adversarial pass)
 
 ### 25. White-box parse-once test couples to internal helper names slated for relocation
+- **Implementation status:** fixed for current refactor. The parse-once invariant
+  now flows through an explicit `context_chunk_pool`, and tests were updated to
+  exercise that pool rather than relying on implicit reparsing.
 - `tests/testthat/test-llm-semantic-helpers.R:1100-1136` mocks
   `.ms_context_text_from_file` and `.ms_chunk_context_text` by name. Plan R1's
   wrapper-deletion step breaks this unless the symbols survive or the test is
   rewritten through the new seam first.
 
 ### 26. Network-gated tests weaken the validation ladder
+- **Implementation status:** partially addressed. The ExecPlan now calls out the
+  weak gate explicitly, and final validation included the full test suite plus
+  `R CMD check`; the network-gated tests themselves were not rewritten.
 - `tests/testthat/test-validation-helpers.R:80-96` (`fetch_salmon_ontology`, live HEAD
   to w3id.org) and GitHub helpers skip silently offline. Lean R3/R5 gating on
   `test-package-helpers.R` and `test-dictionary-helpers.R`; assert skip-count doesn't
   rise across refactors.
 
 ### 27. Massive dictionary-fixture duplication (~30 copies)
+- **Implementation status:** fixed for current refactor. Added shared fixtures in
+  `tests/testthat/helper-dictionary.R` and migrated ordinary repeated dictionary
+  fixtures before R3/R5 changes.
 - The canonical dict tibble is copy-pasted across test files. R3/R5 change row/column
   shape, so consolidate into `helper-dictionary.R` **before** those refactors.
 
 ### 28. `semantic-suggestions` module under-tested
+- **Implementation status:** fixed for current refactor. `test-semantic-suggestions.R`
+  now covers semantic target row contracts, target discovery, LLM assessment row
+  contracts, and review-adapter robustness cases.
 - `tests/testthat/test-semantic-suggestions.R` has only 2 `test_that` blocks despite
   being the destination for R3's target rows and a consumer in R4.
 
@@ -255,6 +355,10 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
 ## Larger opportunities (future refactors, not the current plan)
 
 ### 29. `package-helpers.R` is a ~2975-line god-file
+- **Implementation status:** partially addressed. R5 created
+  `R/artifact-inference.R` and moved package artifact inference context there.
+  `package-helpers.R` remains large and still owns writing, reading, validation,
+  `create_sdp()`, and EDH post-processing.
 - Mixes `write_salmon_datapackage` (53), `infer_salmon_datapackage_artifacts` (427),
   `create_sdp` (712), `read_salmon_datapackage` (1008), `validate_salmon_datapackage`
   (1292), and a composite-hint cluster (1955-2490). **Recommendation:** land plan R5's
@@ -262,11 +366,17 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   the Locality win instead of deepening inside the god-file.
 
 ### 30. `infer_*_from_resources` defined in `dictionary-helpers.R` but core to the package path
+- **Implementation status:** partially addressed/open. The package path now uses
+  the new artifact-inference helper for orchestration, but the exported/resource
+  inference helpers themselves still live in `dictionary-helpers.R`.
 - Defined at `R/dictionary-helpers.R:442-629`, consumed by
   `infer_salmon_datapackage_artifacts` (package-helpers.R:508-525). Misplaced
   ownership — part of R5's case.
 
 ### 31. Chat session-engine / request-builder convergence (i-adopt roadmap)
+- **Implementation status:** open/deferred. R4 hardened the shared response
+  validation seam only; request-builder/session-engine convergence remains a
+  separate roadmap item.
 - `chat-decomposition.R` (~1346 lines) duplicates request/provider logic with the
   semantic path (#3). The i-adopt roadmap wants decomposition to be one mode in a
   shared curation engine; converging the request builders is the request-side half of
