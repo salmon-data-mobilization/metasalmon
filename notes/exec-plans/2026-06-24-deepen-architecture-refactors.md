@@ -46,8 +46,22 @@ Base state for this plan:
   `Rscript -e 'devtools::test(filter = "dictionary-helpers", reporter = "summary")'`
   both passed with the same expected optional-PDF skips and deterministic
   LLM-fallback warnings.
-- [ ] Implement R1/R2: deepen LLM context policy and centralize the LLM option
-  forwarding tail without changing explicit LLM opt-in.
+- [x] 2026-06-25 11:22 PDT: Implemented R1/R2. Added
+  `.ms_apply_llm_context_policy()` for `suggest_semantics()` entry-policy
+  handling, `.ms_llm_review_plan()` for dictionary/artifact LLM option planning,
+  and removed the duplicated `llm_requested` predicates plus three duplicated
+  11-argument LLM tails. Preserved caller-owned base `suggest_args` lists,
+  including `include_dwc = FALSE` only on the artifact path. Enforced the
+  parse-once invariant by making `.ms_prepare_context_chunks()` require a
+  pre-collected context pool, then updated white-box tests to pass an explicit
+  empty pool. Added public-entry coverage for file + inline context with
+  `llm_assess = FALSE` and an internal test proving one pool can be scored
+  differently per target. Validation:
+  `Rscript -e 'devtools::test(filter = "llm-semantic-helpers", reporter = "summary")'`
+  and
+  `Rscript -e 'devtools::test(filter = "dictionary-helpers|package-helpers", reporter = "summary")'`
+  passed with the expected optional-PDF skips and deterministic LLM-fallback /
+  semantic-gap warnings.
 - [ ] Implement R3/R4: freeze target/assessment row contracts, extract semantic
   target discovery, and deepen the review adapter while preserving both response
   shapes.

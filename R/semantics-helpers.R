@@ -329,8 +329,7 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
-  .ms_validate_llm_context_files(llm_context_files)
-  .ms_warn_if_llm_context_ignored(
+  .ms_apply_llm_context_policy(
     llm_assess = llm_assess,
     context_files = llm_context_files,
     context_text = llm_context_text

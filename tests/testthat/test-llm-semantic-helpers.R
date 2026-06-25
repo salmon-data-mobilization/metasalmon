@@ -51,6 +51,43 @@ test_that("suggest_semantics warns when context files are supplied without llm_a
   expect_false(any(startsWith(names(suggestions), "llm_")))
 })
 
+test_that("suggest_semantics warns for file and inline context without enabling LLM review", {
+  tmp <- withr::local_tempdir()
+  context_path <- file.path(tmp, "context.csv")
+  readr::write_csv(
+    tibble::tibble(
+      field = "spawner_count",
+      description = "Natural-origin spawner abundance estimate"
+    ),
+    context_path
+  )
+  failing_request <- function(messages, config) {
+    stop("LLM request should not be called")
+  }
+
+  warnings <- character()
+  out <- withCallingHandlers(
+    suggest_semantics(
+      NULL,
+      test_spawner_dictionary(),
+      sources = "smn",
+      search_fn = function(query, role, sources) tibble::tibble(),
+      llm_context_files = context_path,
+      llm_context_text = "spawner_count means natural-origin spawner abundance",
+      llm_request_fn = failing_request
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+  expect_true(any(grepl("llm_context_files", warnings, fixed = TRUE)))
+  expect_true(any(grepl("llm_context_text", warnings, fixed = TRUE)))
+})
+
 test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free", {
   tmp <- withr::local_tempdir()
   context_path <- file.path(tmp, "README-context.md")
@@ -554,8 +591,24 @@ test_that("batched LLM responses are mapped back onto target records", {
     request_fn = function(messages, config) list()
   )
   records <- list(
-    metasalmon:::.ms_llm_prepare_record("g1", suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE], config, 2L, NULL, NULL),
-    metasalmon:::.ms_llm_prepare_record("g2", suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE], config, 2L, NULL, NULL)
+    metasalmon:::.ms_llm_prepare_record(
+      "g1",
+      suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
+      config,
+      2L,
+      NULL,
+      NULL,
+      context_chunk_pool = tibble::tibble()
+    ),
+    metasalmon:::.ms_llm_prepare_record(
+      "g2",
+      suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE],
+      config,
+      2L,
+      NULL,
+      NULL,
+      context_chunk_pool = tibble::tibble()
+    )
   )
 
   fake_batch_result <- list(
@@ -612,6 +665,7 @@ test_that("measurement targets route to decomposition-aware review with bundle c
     2L,
     NULL,
     NULL,
+    context_chunk_pool = tibble::tibble(),
     bundle_group = suggestions
   )
 
@@ -941,6 +995,62 @@ test_that("LLM context files are parsed and chunked once per assessment run", {
 
   expect_equal(read_calls, 1L)
   expect_equal(chunk_calls, 1L)
+})
+
+test_that("context chunk pool is collected once but scored per target", {
+  pool <- tibble::tibble(
+    source = c("context.md", "context.md"),
+    chunk_id = c("context.md#1", "context.md#2"),
+    chunk_text = c(
+      "spawner abundance count population",
+      "water temperature degree celsius"
+    )
+  )
+  spawner_target <- tibble::tibble(
+    search_query = "spawner abundance",
+    target_label = "Spawner count",
+    target_description = "Natural-origin spawner abundance estimate",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate"
+  )
+  temperature_target <- tibble::tibble(
+    search_query = "water temperature",
+    target_label = "Water temperature",
+    target_description = "Water temperature measurement",
+    column_label = "Water temperature",
+    column_description = "Water temperature measurement"
+  )
+  candidates <- tibble::tibble(
+    label = "candidate",
+    definition = "candidate definition"
+  )
+
+  spawner_chunks <- metasalmon:::.ms_prepare_context_chunks(
+    target_row = spawner_target,
+    candidate_rows = candidates,
+    max_chunks = 1L,
+    context_chunk_pool = pool
+  )
+  temperature_chunks <- metasalmon:::.ms_prepare_context_chunks(
+    target_row = temperature_target,
+    candidate_rows = candidates,
+    max_chunks = 1L,
+    context_chunk_pool = pool
+  )
+
+  expect_equal(spawner_chunks$chunk_id[[1]], "context.md#1")
+  expect_equal(temperature_chunks$chunk_id[[1]], "context.md#2")
+})
+
+test_that("context chunk scoring requires a pre-collected pool", {
+  expect_error(
+    metasalmon:::.ms_prepare_context_chunks(
+      target_row = tibble::tibble(search_query = "spawner abundance"),
+      candidate_rows = tibble::tibble(label = "Spawner abundance"),
+      context_chunk_pool = NULL
+    ),
+    "requires a pre-collected context chunk pool"
+  )
 })
 
 test_that("PDF context files either extract text or fail clearly when pdftools is unavailable", {

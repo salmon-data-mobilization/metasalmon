@@ -89,24 +89,20 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_context_text = NULL,
                             llm_timeout_seconds = 60,
                             llm_request_fn = NULL) {
-  llm_requested <- isTRUE(llm_assess) ||
-    !is.null(llm_context_files) ||
-    !is.null(llm_context_text) ||
-    !is.null(llm_model) ||
-    !is.null(llm_api_key) ||
-    !is.null(llm_base_url) ||
-    !is.null(llm_reasoning_effort) ||
-    !is.null(llm_request_fn)
-  .ms_validate_llm_context_files(llm_context_files)
-  .ms_warn_if_llm_semantic_options_ignored(
+  llm_review <- .ms_llm_review_plan(
     seed_semantics = seed_semantics,
-    llm_requested = llm_requested
-  )
-
-  semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
-    semantic_max_per_role,
+    semantic_max_per_role = semantic_max_per_role,
     llm_assess = llm_assess,
-    llm_top_n = llm_top_n
+    llm_provider = llm_provider,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_reasoning_effort = llm_reasoning_effort,
+    llm_top_n = llm_top_n,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_timeout_seconds = llm_timeout_seconds,
+    llm_request_fn = llm_request_fn
   )
 
   if (is.list(df) && !inherits(df, "data.frame")) {
@@ -176,26 +172,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = resources,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_seed_max_per_role,
+        max_per_role = llm_review$semantic_max_per_role,
         codes = codes,
         table_meta = table_meta,
         dataset_meta = dataset_meta
       )
-      if (llm_requested) {
-        suggest_args <- c(suggest_args, list(
-          llm_assess = llm_assess,
-          llm_provider = llm_provider,
-          llm_model = llm_model,
-          llm_api_key = llm_api_key,
-          llm_base_url = llm_base_url,
-          llm_reasoning_effort = llm_reasoning_effort,
-          llm_top_n = llm_top_n,
-          llm_context_files = llm_context_files,
-          llm_context_text = llm_context_text,
-          llm_timeout_seconds = llm_timeout_seconds,
-          llm_request_fn = llm_request_fn
-        ))
-      }
+      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
       attr(dict, "inferred_table_meta") <- table_meta
       attr(dict, "inferred_codes") <- codes
@@ -252,26 +234,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = df,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_seed_max_per_role,
+        max_per_role = llm_review$semantic_max_per_role,
         codes = seed_codes,
         table_meta = seed_table_meta,
         dataset_meta = seed_dataset_meta
       )
-      if (llm_requested) {
-        suggest_args <- c(suggest_args, list(
-          llm_assess = llm_assess,
-          llm_provider = llm_provider,
-          llm_model = llm_model,
-          llm_api_key = llm_api_key,
-          llm_base_url = llm_base_url,
-          llm_reasoning_effort = llm_reasoning_effort,
-          llm_top_n = llm_top_n,
-          llm_context_files = llm_context_files,
-          llm_context_text = llm_context_text,
-          llm_timeout_seconds = llm_timeout_seconds,
-          llm_request_fn = llm_request_fn
-        ))
-      }
+      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
       if (!is.null(seed_table_meta)) {
         attr(dict, "seed_table_meta") <- seed_table_meta

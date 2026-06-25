@@ -92,6 +92,108 @@
   max(shortlist_size, llm_top_n)
 }
 
+.ms_llm_review_requested <- function(llm_assess = FALSE,
+                                     llm_context_files = NULL,
+                                     llm_context_text = NULL,
+                                     llm_model = NULL,
+                                     llm_api_key = NULL,
+                                     llm_base_url = NULL,
+                                     llm_reasoning_effort = NULL,
+                                     llm_request_fn = NULL) {
+  isTRUE(llm_assess) ||
+    !is.null(llm_context_files) ||
+    !is.null(llm_context_text) ||
+    !is.null(llm_model) ||
+    !is.null(llm_api_key) ||
+    !is.null(llm_base_url) ||
+    !is.null(llm_reasoning_effort) ||
+    !is.null(llm_request_fn)
+}
+
+.ms_llm_review_suggest_args <- function(llm_assess = FALSE,
+                                        llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
+                                        llm_model = NULL,
+                                        llm_api_key = NULL,
+                                        llm_base_url = NULL,
+                                        llm_reasoning_effort = NULL,
+                                        llm_top_n = 5L,
+                                        llm_context_files = NULL,
+                                        llm_context_text = NULL,
+                                        llm_timeout_seconds = 60,
+                                        llm_request_fn = NULL) {
+  list(
+    llm_assess = llm_assess,
+    llm_provider = llm_provider,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_reasoning_effort = llm_reasoning_effort,
+    llm_top_n = llm_top_n,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_timeout_seconds = llm_timeout_seconds,
+    llm_request_fn = llm_request_fn
+  )
+}
+
+.ms_llm_review_plan <- function(seed_semantics,
+                                semantic_max_per_role,
+                                llm_assess = FALSE,
+                                llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
+                                llm_model = NULL,
+                                llm_api_key = NULL,
+                                llm_base_url = NULL,
+                                llm_reasoning_effort = NULL,
+                                llm_top_n = 5L,
+                                llm_context_files = NULL,
+                                llm_context_text = NULL,
+                                llm_timeout_seconds = 60,
+                                llm_request_fn = NULL) {
+  llm_requested <- .ms_llm_review_requested(
+    llm_assess = llm_assess,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_reasoning_effort = llm_reasoning_effort,
+    llm_request_fn = llm_request_fn
+  )
+  .ms_validate_llm_context_files(llm_context_files)
+  .ms_warn_if_llm_semantic_options_ignored(
+    seed_semantics = seed_semantics,
+    llm_requested = llm_requested
+  )
+
+  suggest_args <- if (llm_requested) {
+    .ms_llm_review_suggest_args(
+      llm_assess = llm_assess,
+      llm_provider = llm_provider,
+      llm_model = llm_model,
+      llm_api_key = llm_api_key,
+      llm_base_url = llm_base_url,
+      llm_reasoning_effort = llm_reasoning_effort,
+      llm_top_n = llm_top_n,
+      llm_context_files = llm_context_files,
+      llm_context_text = llm_context_text,
+      llm_timeout_seconds = llm_timeout_seconds,
+      llm_request_fn = llm_request_fn
+    )
+  } else {
+    list()
+  }
+
+  list(
+    llm_requested = llm_requested,
+    semantic_max_per_role = .ms_llm_effective_shortlist_size(
+      semantic_max_per_role,
+      llm_assess = llm_assess,
+      llm_top_n = llm_top_n
+    ),
+    suggest_args = suggest_args
+  )
+}
+
 .ms_llm_batch_size <- function(config) {
   if (!identical(config$request_fn, .ms_llm_chat_json_request)) {
     return(1L)
@@ -480,6 +582,18 @@
   invisible(NULL)
 }
 
+.ms_apply_llm_context_policy <- function(llm_assess,
+                                         context_files = NULL,
+                                         context_text = NULL) {
+  .ms_validate_llm_context_files(context_files)
+  .ms_warn_if_llm_context_ignored(
+    llm_assess = llm_assess,
+    context_files = context_files,
+    context_text = context_text
+  )
+  invisible(NULL)
+}
+
 .ms_warn_if_llm_semantic_options_ignored <- function(seed_semantics, llm_requested) {
   if (isTRUE(seed_semantics) || !isTRUE(llm_requested)) {
     return(invisible(FALSE))
@@ -640,9 +754,8 @@
                                        context_chunk_pool = NULL) {
   chunks <- context_chunk_pool
   if (is.null(chunks)) {
-    chunks <- .ms_collect_context_chunks(
-      context_files = context_files,
-      context_text = context_text
+    cli::cli_abort(
+      "{.fn .ms_prepare_context_chunks} requires a pre-collected context chunk pool."
     )
   }
   if (nrow(chunks) == 0) {
