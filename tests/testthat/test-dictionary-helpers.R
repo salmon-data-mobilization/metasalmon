@@ -1324,22 +1324,7 @@ test_that("suggest_semantics skips unit guesses when measurement has no unit clu
 })
 
 test_that("apply_semantic_suggestions fills unit_label when applying unit_iri", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary()
 
   suggestions <- tibble::tibble(
     dataset_id = "d1",
@@ -1694,24 +1679,7 @@ test_that("apply_semantic_suggestions fills only missing fields unless overwrite
 })
 
 test_that("apply_semantic_suggestions can filter by score when available", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1"),
@@ -1734,24 +1702,7 @@ test_that("apply_semantic_suggestions can filter by score when available", {
 })
 
 test_that("apply_semantic_suggestions ignores non-column targets", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1"),
@@ -1769,24 +1720,7 @@ test_that("apply_semantic_suggestions ignores non-column targets", {
 })
 
 test_that("apply_semantic_suggestions errors when min_score is requested without score", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = "d1",

@@ -17,11 +17,7 @@ test_that("semantic suggestion module owns target and candidate row shape", {
     ontology = c("demo", "demo", "demo"),
     definition = c("Variable", "Property", "Attribute")
   )
-  dict_row <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count"
-  )
+  dict_row <- test_spawner_dictionary()
 
   target <- metasalmon:::.ms_semantic_target_from_candidate_rows(suggestions, dict_row = dict_row)
   filtered <- metasalmon:::.ms_semantic_filter_column_term_suggestions(suggestions, dict_row)

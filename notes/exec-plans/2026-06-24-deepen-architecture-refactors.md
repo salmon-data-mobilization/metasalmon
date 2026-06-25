@@ -35,8 +35,17 @@ Base state for this plan:
   `Rscript -e 'devtools::test(filter = "package-helpers", reporter = "summary")'`
   both passed; warnings were the existing deterministic LLM-fallback /
   semantic-gap warnings.
-- [ ] Consolidate duplicated dictionary test fixtures before the target-row and
-  artifact-orchestration refactors.
+- [x] 2026-06-25 11:05 PDT: Consolidated duplicated dictionary test fixtures
+  before target-row and artifact-orchestration refactors. Added canonical
+  `test_dictionary()`, `test_spawner_dictionary()`, `test_count_dictionary()`,
+  and `test_shortlist_search()` helpers in `tests/testthat/helper-dictionary.R`;
+  replaced repeated LLM/semantic/count fixtures where the fixture shape was
+  ordinary rather than intentionally specialized. Validation:
+  `Rscript -e 'devtools::test(filter = "llm-semantic-helpers|semantic-suggestions", reporter = "summary")'`
+  and
+  `Rscript -e 'devtools::test(filter = "dictionary-helpers", reporter = "summary")'`
+  both passed with the same expected optional-PDF skips and deterministic
+  LLM-fallback warnings.
 - [ ] Implement R1/R2: deepen LLM context policy and centralize the LLM option
   forwarding tail without changing explicit LLM opt-in.
 - [ ] Implement R3/R4: freeze target/assessment row contracts, extract semantic

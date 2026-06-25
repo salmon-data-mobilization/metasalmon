@@ -1,20 +1,5 @@
 test_that("suggest_semantics rejects parsed data frames passed as llm_context_files", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
   parsed_context <- tibble::tibble(
     field = "spawner_count",
     description = "Natural-origin spawner abundance estimate"
@@ -45,22 +30,7 @@ test_that("suggest_semantics warns when context files are supplied without llm_a
     ),
     context_path
   )
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
   fake_search <- function(query, role, sources) {
     tibble::tibble()
   }
@@ -93,38 +63,9 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
     context_path
   )
 
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openrouter")
@@ -167,38 +108,9 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
 })
 
 test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openrouter")
@@ -233,38 +145,9 @@ test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
 })
 
 test_that("suggest_semantics forwards OpenAI reasoning effort to LLM review", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openai")
@@ -321,38 +204,9 @@ test_that("chat request body includes reasoning effort only when configured", {
 })
 
 test_that("suggest_semantics falls back to deterministic suggestions when every LLM assessment fails", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   failing_request <- function(messages, config) {
     stop("HTTP 402 Payment Required.")
@@ -403,38 +257,9 @@ test_that("provider-wide LLM failure still aborts without usable deterministic s
 })
 
 test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "chapi")
@@ -952,24 +777,7 @@ test_that("LLM request_new_term stores ontology-gap metadata", {
 })
 
 test_that("apply_semantic_suggestions can use llm strategy with a confidence threshold", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Spawner abundance",
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_,
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_type = NA_character_,
-    value_type = "integer",
-    column_role = "measurement",
-    required = NA
-  )
+  dict <- test_spawner_dictionary(column_description = "Spawner abundance")
 
   suggestions <- tibble::tibble(
     column_name = c("spawner_count", "spawner_count"),
@@ -1434,21 +1242,7 @@ test_that("chapi/mistral review can use mixed context files across dataset, tabl
     semantic_code_scope = "all"
   )
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   seen_messages <- character()
   fake_request <- function(messages, config) {
@@ -1662,7 +1456,7 @@ test_that("HTML, PDF, DOCX, R Markdown, Quarto, and R context files can material
 })
 
 test_that("validate_dictionary keeps strong non-strict warnings for direct review markers and gaps", {
-  dict_with_review <- tibble::tibble(
+  dict_with_review <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",
@@ -1680,7 +1474,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
     method_iri = NA_character_
   )
 
-  dict_with_missing <- tibble::tibble(
+  dict_with_missing <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",
@@ -1709,7 +1503,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
 })
 
 test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs remain", {
-  dict <- tibble::tibble(
+  dict <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",
