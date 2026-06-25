@@ -83,8 +83,25 @@ Base state for this plan:
   `Rscript -e 'devtools::test(filter = "semantic-suggestions|dictionary-helpers|llm-semantic-helpers|package-helpers", reporter = "summary")'`
   passed with the expected optional-PDF skips and deterministic LLM-fallback /
   semantic-gap warnings.
-- [ ] Implement R4: deepen the review adapter while preserving both response
-  shapes and fixing the confirmed prompt / batch-normalization bugs.
+- [x] 2026-06-25: Implemented R4 review-adapter deepening and robustness fixes.
+  Preserved the bare semantic-review response shape and the wrapped
+  chat-decomposition response shape, and improved malformed wrapped-content
+  errors with a short sanitized content snippet. Removed the thin semantic
+  helper wrappers so orchestration calls adapter row builders directly while
+  record unpacking remains outside the adapter. Aligned generic, decomposition,
+  and batch prompts with the validator's `reject_shortlist` decision; kept the
+  frozen assessment row contract by using `llm_decision == "reject_shortlist"`
+  plus `llm_rationale` as the reject carrier rather than adding a new column.
+  Changed batch validation to preserve valid sibling rows, detect malformed and
+  duplicate `target_key` items, and fall back only affected keys to per-target
+  review. Fixed the exploration reassessment edge case where a failed
+  reassessment could remap an old selected index onto a reordered candidate
+  list. Validation:
+  `Rscript -e 'devtools::test(filter = "semantic-suggestions|llm-semantic-helpers|chat-decomposition", reporter = "summary")'`
+  and
+  `Rscript -e 'devtools::test(filter = "semantic-suggestions|dictionary-helpers|llm-semantic-helpers|package-helpers|chat-decomposition", reporter = "summary")'`
+  passed with the expected optional-PDF skips and deterministic LLM-fallback /
+  semantic-gap warnings.
 - [ ] Implement R5: make artifact inference the canonical orchestration Module
   while preserving public `infer_dictionary()` attribute contracts.
 - [ ] Run final documentation, pkgdown, package build, package check, and record

@@ -560,7 +560,7 @@ test_that("JSON cleaner extracts the first balanced object from wrapper text", {
   )
 })
 
-test_that("batched LLM responses are mapped back onto target records", {
+test_llm_batch_review_fixture <- function(config = NULL) {
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1", "d1", "d1"),
     table_id = c("t1", "t1", "t1", "t1"),
@@ -585,7 +585,7 @@ test_that("batched LLM responses are mapped back onto target records", {
     .ms_row_order = 1:4
   )
 
-  config <- metasalmon:::.ms_llm_resolve_config(
+  config <- config %||% metasalmon:::.ms_llm_resolve_config(
     provider = "openrouter",
     api_key = "dummy-key",
     request_fn = function(messages, config) list()
@@ -611,6 +611,24 @@ test_that("batched LLM responses are mapped back onto target records", {
     )
   )
 
+  list(suggestions = suggestions, config = config, records = records)
+}
+
+test_that("LLM review prompts advertise reject_shortlist consistently", {
+  fixture <- test_llm_batch_review_fixture()
+
+  expect_match(metasalmon:::.ms_llm_generic_system_prompt(), "reject_shortlist", fixed = TRUE)
+  expect_match(metasalmon:::.ms_llm_decomposition_system_prompt(), "reject_shortlist", fixed = TRUE)
+
+  batch_messages <- metasalmon:::.ms_llm_messages_for_batch(fixture$records)
+  expect_match(batch_messages[[1]]$content, "reject_shortlist", fixed = TRUE)
+})
+
+test_that("batched LLM responses are mapped back onto target records", {
+  fixture <- test_llm_batch_review_fixture()
+  config <- fixture$config
+  records <- fixture$records
+
   fake_batch_result <- list(
     assessments = list(
       list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
@@ -623,6 +641,106 @@ test_that("batched LLM responses are mapped back onto target records", {
   expect_equal(sort(out$column_name), c("a", "b"))
   expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
   expect_true(is.na(out$llm_selected_iri[out$column_name == "b"]))
+})
+
+test_that("batched reject_shortlist responses round-trip without selecting a candidate", {
+  fixture <- test_llm_batch_review_fixture()
+  fake_batch_result <- list(
+    assessments = list(
+      list(target_key = "g1", decision = "reject_shortlist", selected_candidate_index = 1, confidence = 0.81, rationale = "The shortlist is the wrong concept family.", missing_context = ""),
+      list(target_key = "g2", decision = "review", selected_candidate_index = NULL, confidence = 0.4, rationale = "Need more context", missing_context = "run timing")
+    )
+  )
+
+  out <- metasalmon:::.ms_llm_validate_batch_assessments(fake_batch_result, fixture$records, fixture$config)
+
+  expect_equal(out$llm_decision[out$column_name == "a"], "reject_shortlist")
+  expect_true(is.na(out$llm_selected_candidate_index[out$column_name == "a"]))
+  expect_true(is.na(out$llm_selected_iri[out$column_name == "a"]))
+  expect_match(out$llm_rationale[out$column_name == "a"], "wrong concept family", fixed = TRUE)
+})
+
+test_that("malformed batch items fall back per target without discarding valid siblings", {
+  calls <- character()
+  request_fn <- function(messages, config) {
+    is_batch <- grepl("single top-level key named assessments", messages[[1]]$content, fixed = TRUE)
+    if (is_batch) {
+      calls <<- c(calls, "batch")
+      return(list(
+        assessments = list(
+          list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
+          list(target_key = "g2", decision = "review", selected_candidate_index = NULL, confidence = 2, rationale = "Bad confidence", missing_context = "")
+        )
+      ))
+    }
+
+    calls <<- c(calls, "single")
+    list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.5,
+      rationale = "Per-target fallback.",
+      missing_context = ""
+    )
+  }
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = request_fn
+  )
+  fixture <- test_llm_batch_review_fixture(config)
+
+  out <- NULL
+  expect_warning(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config),
+    "falling back to per-target review for target keys"
+  )
+
+  expect_equal(calls, c("batch", "single"))
+  expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
+  expect_equal(out$llm_rationale[out$column_name == "b"], "Per-target fallback.")
+})
+
+test_that("duplicate batch target keys fall back for only the affected target", {
+  calls <- character()
+  request_fn <- function(messages, config) {
+    is_batch <- grepl("single top-level key named assessments", messages[[1]]$content, fixed = TRUE)
+    if (is_batch) {
+      calls <<- c(calls, "batch")
+      return(list(
+        assessments = list(
+          list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
+          list(target_key = "g2", decision = "accept", selected_candidate_index = 1, confidence = 0.8, rationale = "Beta best", missing_context = ""),
+          list(target_key = "g2", decision = "accept", selected_candidate_index = 2, confidence = 0.7, rationale = "Duplicate beta", missing_context = "")
+        )
+      ))
+    }
+
+    calls <<- c(calls, "single")
+    list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.5,
+      rationale = "Duplicate-key fallback.",
+      missing_context = ""
+    )
+  }
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = request_fn
+  )
+  fixture <- test_llm_batch_review_fixture(config)
+
+  out <- NULL
+  expect_warning(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config),
+    "falling back to per-target review for target keys"
+  )
+
+  expect_equal(calls, c("batch", "single"))
+  expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
+  expect_equal(out$llm_rationale[out$column_name == "b"], "Duplicate-key fallback.")
 })
 
 test_that("measurement targets route to decomposition-aware review with bundle context", {
@@ -772,6 +890,108 @@ test_that("LLM retry_search can trigger a second deterministic retrieval pass", 
   expect_equal(selected$llm_selected_iri[[1]], "https://example.org/property/catch-mass")
   expect_true(isTRUE(selected$llm_exploration_used[[1]]))
   expect_match(selected$llm_exploration_queries[[1]], "catch mass", fixed = TRUE)
+})
+
+test_that("failed exploration reassessment does not remap old selected indexes onto new ranks", {
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 3),
+    table_id = rep("t1", 3),
+    column_name = rep("alpha_metric", 3),
+    column_label = rep("Alpha metric", 3),
+    column_description = rep("Alpha metric description", 3),
+    column_role = rep("measurement", 3),
+    code_value = rep(NA_character_, 3),
+    dictionary_role = rep("property", 3),
+    search_role = rep("property", 3),
+    target_scope = rep("column", 3),
+    target_sdp_file = rep("column_dictionary.csv", 3),
+    target_sdp_field = rep("property_iri", 3),
+    search_query = rep("alpha metric", 3),
+    target_label = rep("Alpha metric", 3),
+    target_description = rep("Alpha metric description", 3),
+    target_query_basis = rep("label", 3),
+    target_query_context = rep("ctx", 3),
+    label = c("Original one", "Original two", "Original three"),
+    iri = c(
+      "https://example.org/original-1",
+      "https://example.org/original-2",
+      "https://example.org/original-3"
+    ),
+    source = rep("smn", 3),
+    ontology = rep("demo", 3),
+    definition = c("O1", "O2", "O3"),
+    match_type = rep("label_partial", 3),
+    score = c(0.8, 0.7, 0.6)
+  )
+
+  request_calls <- 0L
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    prompt <- messages[[2]]$content
+
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("better alpha metric"),
+        rationale = "The initial accepted result was weak."
+      ))
+    }
+
+    if (request_calls == 1L) {
+      return(list(
+        decision = "accept",
+        selected_candidate_index = 3,
+        confidence = 0.4,
+        rationale = "Weakly accepts the third original candidate.",
+        missing_context = ""
+      ))
+    }
+
+    stop("reassessment failed")
+  }
+  fake_search <- function(query, role, sources) {
+    if (identical(query, "better alpha metric")) {
+      return(tibble::tibble(
+        label = c("New one", "New two", "New three"),
+        iri = c(
+          "https://example.org/new-1",
+          "https://example.org/new-2",
+          "https://example.org/new-3"
+        ),
+        source = rep("smn", 3),
+        ontology = rep("demo", 3),
+        role = rep(role, 3),
+        match_type = rep("label_partial", 3),
+        definition = c("N1", "N2", "N3"),
+        score = c(0.95, 0.85, 0.65)
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  out <- NULL
+  expect_warning(
+    out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+      suggestions,
+      provider = "openrouter",
+      model = "qwen/qwen3.6-plus:free",
+      api_key = "dummy-key",
+      top_n = 3L,
+      request_fn = fake_request,
+      search_fn = fake_search,
+      sources = "smn",
+      max_per_role = 3L
+    ),
+    "reassessment failed"
+  )
+
+  selected <- out$suggestions[out$suggestions$llm_selected, , drop = FALSE]
+  expect_equal(request_calls, 3L)
+  expect_equal(nrow(selected), 1L)
+  expect_equal(selected$iri[[1]], "https://example.org/original-3")
+  expect_false(any(out$suggestions$iri == "https://example.org/new-3"))
+  expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
+  expect_equal(out$assessments$llm_exploration_queries[[1]], "better alpha metric")
 })
 
 test_that("LLM request_new_term stores ontology-gap metadata", {

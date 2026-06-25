@@ -270,3 +270,51 @@ test_that("LLM review adapter validates chat-style JSON responses", {
   expect_equal(validated$selected_candidate_index, 1L)
   expect_equal(validated$confidence, 0.91)
 })
+
+test_that("LLM review adapter reports malformed wrapped content with a snippet", {
+  response <- list(
+    content = '{"decision":',
+    data = NULL
+  )
+  candidates <- tibble::tibble(
+    label = "Spawner abundance",
+    iri = "https://example.org/spawner-abundance"
+  )
+
+  err <- tryCatch(
+    metasalmon:::.ms_llm_review_validate_assessment(
+      response,
+      candidates,
+      null_message = "Chat adapter did not return a usable JSON object for decomposition review."
+    ),
+    error = identity
+  )
+
+  expect_s3_class(err, "error")
+  expect_match(conditionMessage(err), "Chat adapter did not return", fixed = TRUE)
+  expect_match(conditionMessage(err), "Response content snippet", fixed = TRUE)
+  expect_match(conditionMessage(err), "decision", fixed = TRUE)
+})
+
+test_that("LLM review adapter prefers parsed data over malformed wrapped content", {
+  response <- list(
+    content = '{"decision":',
+    data = list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.44,
+      rationale = "Parsed data should win.",
+      missing_context = ""
+    )
+  )
+  candidates <- tibble::tibble(
+    label = "Spawner abundance",
+    iri = "https://example.org/spawner-abundance"
+  )
+
+  validated <- metasalmon:::.ms_llm_review_validate_assessment(response, candidates)
+
+  expect_equal(validated$decision, "review")
+  expect_equal(validated$confidence, 0.44)
+  expect_true(is.na(validated$selected_candidate_index))
+})

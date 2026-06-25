@@ -13,10 +13,31 @@
       return(parsed)
     }
 
-    cli::cli_abort(null_message)
+    snippet <- .ms_llm_review_content_snippet(result$content)
+    message <- null_message
+    if (nzchar(snippet)) {
+      message <- c(message, i = "Response content snippet: {.val {snippet}}")
+    }
+    cli::cli_abort(message)
   }
 
   result
+}
+
+.ms_llm_review_content_snippet <- function(content, max_chars = 160L) {
+  text <- as.character(content %||% "")
+  text[is.na(text)] <- ""
+  text <- paste(text, collapse = " ")
+  text <- gsub("[\r\n\t]+", " ", text)
+  text <- trimws(gsub("\\s+", " ", text))
+  if (!nzchar(text)) {
+    return("")
+  }
+  if (nchar(text) > max_chars) {
+    text <- paste0(substr(text, 1L, max_chars), "...")
+  }
+
+  text
 }
 
 .ms_llm_review_validate_assessment <- function(result,
