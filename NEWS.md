@@ -6,6 +6,8 @@ metasalmon 0.1.4
   data-frame/XML/R Markdown objects fail early with a clear error, and context
   supplied without `llm_assess = TRUE` now warns that it will be ignored rather
   than silently producing deterministic-only output.
+- Fixed `infer_dictionary()` so LLM semantic-review options supplied while
+  `seed_semantics = FALSE` now warn once instead of being silently ignored.
 - Clarified the exported documentation for `create_sdp()`,
   `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and
   `suggest_semantics()` so users know context files affect only explicit LLM

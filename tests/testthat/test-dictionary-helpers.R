@@ -251,6 +251,40 @@ test_that("infer_dictionary falls back to deterministic suggestions when LLM ass
   expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
 })
 
+test_that("infer_dictionary warns once when LLM options are ignored with semantic seeding disabled", {
+  resources <- list(
+    catches = data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+    sites = data.frame(site_id = c("A", "B"), temperature = c(10.1, 10.5))
+  )
+  failing_request <- function(messages, config) {
+    stop("LLM request should not be called")
+  }
+
+  warnings <- character()
+  dict <- withCallingHandlers(
+    infer_dictionary(
+      resources,
+      seed_semantics = FALSE,
+      llm_assess = TRUE,
+      llm_model = "test-model",
+      llm_request_fn = failing_request
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_s3_class(dict, "tbl_df")
+  expect_setequal(unique(dict$table_id), c("catches", "sites"))
+  expect_length(grep("seed_semantics = FALSE", warnings, fixed = TRUE), 1)
+  expect_match(
+    warnings[[1]],
+    "Enable `seed_semantics = TRUE` to generate semantic suggestions",
+    fixed = TRUE
+  )
+})
+
 test_that("infer_dictionary accepts named resource lists and can seed metadata-aware suggestions", {
   resources <- list(
     catches = data.frame(

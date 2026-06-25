@@ -20,19 +20,185 @@ Base state for this plan:
 - Immediate trigger: issue #1, where a parsed data dictionary was passed to
   `llm_context_files` without `llm_assess = TRUE`.
 
+## Progress
+
+- [x] 2026-06-25 10:45 PDT: Resumed implementation on the existing
+  `deepen-architecture` branch, with `notes/context.md` and
+  `notes/bugs-and-improvements.md` present in the worktree as review inputs.
+- [x] 2026-06-25 10:52 PDT: Fixed
+  `infer_dictionary(seed_semantics = FALSE, ...)` silently dropping LLM/context
+  options. Added a shared internal warning helper, a NEWS entry, and a
+  multi-table regression test asserting the warning is emitted once before list
+  recursion. Validation:
+  `Rscript -e 'devtools::test(filter = "dictionary-helpers", reporter = "summary")'`
+  and
+  `Rscript -e 'devtools::test(filter = "package-helpers", reporter = "summary")'`
+  both passed; warnings were the existing deterministic LLM-fallback /
+  semantic-gap warnings.
+- [ ] Consolidate duplicated dictionary test fixtures before the target-row and
+  artifact-orchestration refactors.
+- [ ] Implement R1/R2: deepen LLM context policy and centralize the LLM option
+  forwarding tail without changing explicit LLM opt-in.
+- [ ] Implement R3/R4: freeze target/assessment row contracts, extract semantic
+  target discovery, and deepen the review adapter while preserving both response
+  shapes.
+- [ ] Implement R5: make artifact inference the canonical orchestration Module
+  while preserving public `infer_dictionary()` attribute contracts.
+- [ ] Run final documentation, pkgdown, package build, package check, and record
+  outcomes.
+
+## Peer Review (2026-06-24)
+
+This plan was peer-reviewed against the current source (a multi-agent pass that
+verified every cited `file:line`, assessed each Module's depth, and hunted for
+bugs). Summary of the review and the changes folded into the sections below.
+
+**Verdicts**
+
+| Refactor | Verdict | Headline |
+|---|---|---|
+| R1 Deepen LLM context handling | **Sound, with changes** | Evidence omits the deep core (`.ms_score_context_chunks`); the "characterization tests" already exist; the parse-once invariant is emergent, not enforced. |
+| R2 Centralize LLM option forwarding | **Sound, but rescoped** | Validation/warning/shortlist are *already* centralized. The real duplication is `llm_requested` (2 sites) + the 11-arg assembly (3–4 sites). "Seed/no-seed warning" is not duplicated — it is a missing warning (a latent bug). |
+| R3 Extract semantic target discovery | **Sound — strongest-justified** | The cited helper range (391-424) is far too narrow (real closures span 391-942); the role-collision step (1134-1180) is uncited; extraction is a closure-to-parameter conversion, not a code move. |
+| R4 Clarify the LLM review adapter | **Premise inverted → DEEPEN, do not collapse** | The plan's central claim ("only one Adapter / no second Adapter yet") is **false**: `chat-decomposition.R:615` is a live second consumer of the response contract, already tested. The decision is pre-resolved. |
+| R5 Canonical orchestration module | **Sound — deepest cut** | The two `infer_dictionary` paths attach *disjoint* attribute sets; the two metadata-orchestration blocks *diverge* (bare vs normalize+prefill+scope-select); `infer_dictionary` is a public export, so attribute changes are compatibility-sensitive. |
+
+**Cross-cutting corrections**
+
+1. **Stop saying "add characterization tests."** For R1, all four named behaviors
+   already pass (test-llm-semantic-helpers.R:1-82, 1045-1136, 1138-1331); the
+   artifact half of R2's and the list-input half of R5's commit-1 tests already
+   exist (test-package-helpers.R:908-929; test-dictionary-helpers.R:254-314).
+   Reframe these commits as **"audit and strengthen existing characterization,
+   then add only the gaps."**
+2. **A real correctness bug remains and belongs in this work:**
+   `infer_dictionary(seed_semantics = FALSE, llm_assess = TRUE)` silently drops
+   LLM options with **no warning**, unlike `infer_salmon_datapackage_artifacts`
+   (package-helpers.R:462-467). Same Alice-class surprise, other public entry
+   point. Fix it as part of R1/R2 (see `notes/bugs-and-improvements.md` #1).
+3. **Public-export compatibility:** `infer_dictionary`, `suggest_semantics`,
+   `infer_salmon_datapackage_artifacts`, and `create_sdp` are exported. Their
+   return attributes and observable warnings are a compatibility surface, not
+   internal-only — treat changes deliberately.
+4. **Several "shallow" claims overstate the duplication.** The shared helpers
+   `.ms_validate_llm_context_files`, `.ms_warn_if_llm_context_ignored`, and
+   `.ms_llm_effective_shortlist_size` already exist and are reused. The remaining
+   work is narrower (and easier) than the prose implies — say so.
+
+Where this section and a refactor section disagree, this section is the later,
+verified word.
+
+## Peer Review — Round 2 (verification pass, 2026-06-24)
+
+A second pass completed the three missing refactor critiques (R2/R3/R4) + a
+meta-critique, ran two fresh correctness finders, and adversarially verified the
+candidate bugs (18 confirmed, 2 reclassified as by-design, 7 new finds; full list in
+`notes/bugs-and-improvements.md`). Net refinements folded into the sections below:
+
+1. **R2 "4th copy" was wrong.** `create_sdp:831-855` is an unconditional full ~21-arg
+   pass-through, not a copy of the 11-arg LLM tail. True duplication: `llm_requested`
+   ×2, LLM tail ×3. And only the LLM *tail* is shareable — the *base* `suggest_args`
+   list diverges per caller, so `.ms_llm_review_plan` cannot own the whole assembly.
+   `include_dwc` must stay caller-set (unifying it is a behavior change).
+2. **R3 "collapse the duplicate" was unsafe.** The two column-target builders are
+   *divergent*, not duplicates, and the standalone one is only an empty-retrieval
+   *fallback*. Reconcile deliberately. Also: the per-scope commits (3-5) **cannot**
+   be independently green (shared captured closures) — they are **one atomic move**.
+3. **R4 forward-compat overclaimed.** `retry_search`/`request_new_term` survive
+   normalization; **`reject_shortlist` is lossy** (no metadata column) — add a
+   carrier before deepening. `.ms_llm_success_assessment` is **not** pure
+   pass-through (it unpacks the record), and batch normalization is **record-aware** —
+   split commit 4. The shared-request-builder idea is **mutually exclusive** with the
+   dual-shape normalizer; it leaves R4.
+4. **Cross-refactor coupling to name explicitly:** the adapter's row builders
+   (adapter:36-118) read target columns **positionally**, so R3 (which moves the
+   producer of those columns) and R4 (which deepens the consumer) share a contract. A
+   column rename/reorder in R3 silently breaks R4. → freeze the target-row + the full
+   ~30-col **assessment-row** column contracts (incl. `llm_retry_query`,
+   `llm_new_term_*`, `llm_bundle_summary`, `llm_missing_context`, `llm_exploration_*`,
+   `llm_context_sources`) as a gate before R3/R4. The retrieval-gap roadmap's
+   post-validators read those bundle slots, so freezing only `llm_context_sources` is
+   insufficient.
+5. **Make the `infer_dictionary` silent-drop fix a standalone commit BEFORE R1/R2**,
+   with its own NEWS entry + regression test — it is a real user-facing correctness
+   bug independent of the architecture work, and bundling it risks it slipping if
+   R1/R2 stall.
+6. **Adopt the test-fixture consolidation (Missing/Future #3) as a prerequisite
+   before R3/R5**, not a future candidate — both change row/column shape and would
+   otherwise force edits across ~30 inline dict fixtures (and risk drift between the
+   very characterization tests used as gates).
+7. **Ordering:** R4-before-R3 is only weakly motivated (decomposition already routes
+   through the shared validator; no growth in *this* plan unblocks it). Keep R4 early
+   only if the target-row contract is frozen as an explicit R4 precondition;
+   otherwise prefer R1, R2, **R3, R4**, R5 so the adapter is deepened against a stable
+   row contract. Either way, name the adapter↔target-row coupling.
+8. **R5 land the orchestration in a NEW file** (e.g. `R/artifact-inference.R`) rather
+   than deepening inside the 2975-line `package-helpers.R` god-file — converts a
+   deferred Locality win into a free one. Resolve the commit-4/commit-5 tension
+   (keep `inferred_*` attached vs remove orchestration) by **deciding**: either keep
+   the attributes via the shared Module, or deprecate the dictionary-side attributes
+   with a note — not a shim that re-derives them (which re-introduces the duplication
+   R5 removes).
+
 ## Global Constraints
 
 - Preserve public function signatures unless a separate compatibility plan is
   approved.
 - Preserve explicit network/LLM opt-in. Supplying context files or text must not
   silently enable LLM review.
+- **Preserve public return-value attributes and observable warnings.**
+  `infer_dictionary` is exported and attaches `inferred_*` (multi-table) /
+  `seed_*` (single-table) attributes; `suggest_semantics` attaches
+  `semantic_suggestions` / `semantic_llm_assessments`. These are read by other
+  modules and ~20 tests — treat as contract.
+- **Preserve these observable contracts specifically:** the `llm_context_sources`
+  output column (derived from context source basenames), the `REVIEW:` IRI prefix
+  marker, and the test injection hooks (`search_fn`, `llm_request_fn`,
+  internal `request_fn`).
+- **Frozen column contracts (R3/R4 are most exposed):** (a) the 19-col semantic
+  target row (`.ms_semantic_target_cols`); (b) the full ~30-col **assessment row**
+  emitted by the adapter (R/llm-review-adapter.R:36-118) — including
+  `llm_retry_query`, `llm_new_term_label/definition/namespace`, `llm_bundle_summary`,
+  `llm_missing_context`, `llm_exploration_*`, `llm_context_sources`. These are
+  cross-module shapes consumed by the merge logic and (per the retrieval-gap roadmap)
+  by future bundle-fit post-validators. Snapshot both column sets as a gate before
+  R3/R4; the adapter's row builders read target columns **positionally**, so a
+  rename/reorder in R3 silently breaks R4.
+- `infer_dictionary`'s two paths attach **disjoint** attribute sets — multi-table
+  `inferred_*` (unconditional) and single-table `seed_*` (only when args non-NULL).
+  The contract is the disjointness, not a uniform bucket; R5 must preserve both or
+  make their change a deliberate, documented deprecation.
 - Keep R code in the existing tidyverse style and use the native pipe where it
   improves readability.
 - Keep each commit small enough that `devtools::test()` can pass after the
   commit.
 - Prefer testing through public or stable internal Interfaces. Avoid tests that
-  assert temporary local variables inside implementations.
+  assert temporary local variables inside implementations. **Exception already in
+  the tree:** the parse-once test mocks two internal helpers by name
+  (test-llm-semantic-helpers.R:1100-1136) — see R1.
 - Regenerate roxygen and pkgdown only when public documentation changes.
+- These are functional-R Modules (clusters of `.ms_`-prefixed helpers in a file),
+  not OO classes. The Ousterhout lens (deep Module, narrow Interface, Seam,
+  Deletion Test, Locality, Leverage) maps cleanly onto that — keep using it, but
+  do not import class/inheritance shapes that R does not want.
+
+## Coordination with related roadmaps
+
+Two existing planning artifacts constrain these refactors and must be read before
+touching the LLM review path:
+
+- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — routes
+  measurement / compound-variable targets through `chat_decomposition()` and
+  **explicitly forbids "inventing a second bundle-review prompt stack elsewhere."**
+  This pre-decides R4: there is already a second review mode (the chat
+  decomposition consumer at `chat-decomposition.R:615`), so the shared response
+  contract should be **deepened**, and the decomposition route should reuse it.
+- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
+  introduces richer review outcomes (`retry_search`, `request_new_term`,
+  `reject_shortlist`) and bundle-aware review. The validator already accepts these
+  decisions (`.ms_validate_llm_assessment`). **Design constraint:** R2's option
+  Module, R3's target rows, and R4's response contract should each be shaped so
+  these richer outcomes can land later without another rewrite.
 
 ## Refactor 1: Deepen LLM Context Handling
 
@@ -40,367 +206,640 @@ Base state for this plan:
 
 - `R/llm-semantic-helpers.R`
   - `.ms_validate_llm_context_files()` validates file-path shape at lines
-    441-459.
+    441-459. *(verified exact)*
   - `.ms_warn_if_llm_context_ignored()` owns ignored-context warnings at lines
-    461-481.
+    461-481. *(verified; two independent branches: files 467-472, text 473-478)*
   - `.ms_context_text_from_file()` parses individual context files at lines
-    483-533.
+    483-533. *(verified; the deep dispatch point — 8 formats, optional-dep aborts,
+    source labeling, empty/unsupported handling)*
+  - **`.ms_score_context_chunks()` is the deep ranking core at lines 566-595, with
+    `.ms_context_tokens()` at 556-564.** *(ADDED in review — the plan's original
+    evidence omitted the most behavior-dense functions.)*
   - `.ms_collect_context_chunks()` collects context text and chunks it at lines
-    597-621.
-  - `.ms_prepare_context_chunks()` selects target-specific chunks at lines
-    623-640.
+    597-621. *(verified; also re-validates at 599 and appends `inline_context` at
+    605-611)*
+  - `.ms_prepare_context_chunks()` is a **thin pool-aware wrapper** at lines
+    623-640 that *delegates* selection/scoring to `.ms_score_context_chunks`.
+    *(corrected — the plan called this the selector; it is not)*
+  - **Pool collection + threading: `.ms_collect_context_chunks` is invoked once at
+    line 1612 and threaded as `context_chunk_pool` through `.ms_llm_prepare_record`
+    (1635) and `.ms_llm_explore_record` (1662).** *(ADDED — this is where the
+    "parsed once" guarantee actually lives.)*
 - `R/semantics-helpers.R`
-  - `suggest_semantics()` validates and warns directly at lines 332-337.
-  - LLM review receives context arguments at lines 1182-1198.
+  - `suggest_semantics()` validates and warns directly at lines 332-337. *(verified)*
+  - LLM review receives context arguments at lines 1182-1198 (forwarded at
+    1191-1192). *(verified)*
 - `R/package-helpers.R`
-  - `infer_salmon_datapackage_artifacts()` validates context paths at line 460
-    and separately warns about `seed_semantics = FALSE` at lines 462-466.
+  - `infer_salmon_datapackage_artifacts()` validates context paths at line 460 and
+    separately warns about `seed_semantics = FALSE` at lines 462-467. *(verified —
+    note it does NOT call `.ms_warn_if_llm_context_ignored`; it has its own,
+    different seed-off warning)*
 - `R/dictionary-helpers.R`
-  - `infer_dictionary()` computes LLM request state and validates context paths
-    at lines 92-100.
+  - `infer_dictionary()` computes LLM request state and validates context paths at
+    lines 92-100. *(verified — and, unlike package-helpers, emits NO ignored-context
+    warning: a latent silent-drop bug, see Risks)*
 
 ### Problem
 
-The current LLM context Module is partly deep and partly shallow. The parsing
-implementation is centralized, but callers still need to know several parts of
-the Interface: path-only inputs, ignored-context warning policy, `llm_assess`
-interaction, chunk pooling, optional dependency errors, source labels, and
-target-specific scoring.
+The current LLM context Module is partly deep and partly shallow — and the review
+confirms exactly which parts.
 
-Alice's report exposed this split. The bug fix added the missing guardrails, but
-it still required changes in multiple Modules because no single context Module
-owned the complete rule: "context is accepted only as file paths/text, parsed
-once, and used only when explicit LLM review is enabled."
+- **Deep already:** parsing (`.ms_context_text_from_file`), chunking, and
+  scoring (`.ms_score_context_chunks`) are genuinely deep and already unit-tested
+  in isolation without network or LLM (test-llm-semantic-helpers.R:1138-1331).
+- **Shallow:** the **policy surface** — validate + ignored-context warning — is
+  not owned by one Module. It diverges across callers: `suggest_semantics` calls
+  validate + warn (332-337); `infer_dictionary` calls validate only (100);
+  `infer_salmon_datapackage_artifacts` calls validate (460) plus a *different*
+  seed-off warning (462-467). That fragmentation is the legitimate target.
+
+Alice's report exposed this split. The bug fix added guardrails on the
+`create_sdp` path but the policy still lives in multiple Modules — and one of them
+(`infer_dictionary`) still has no ignored-context warning at all.
 
 ### Deletion Test
 
-Deleting `.ms_validate_llm_context_files()` would not delete complexity; it
-would move context validation back into `suggest_semantics()`,
-`infer_dictionary()`, and `infer_salmon_datapackage_artifacts()`. That means the
-Module is earning its keep. But deleting the surrounding warning and preparation
-helpers would still leave callers with policy decisions, so the Module is not
-deep enough yet.
+Deleting `.ms_validate_llm_context_files()` would not delete complexity; it would
+move context validation back into `suggest_semantics()`, `infer_dictionary()`, and
+`infer_salmon_datapackage_artifacts()` (all three call it identically — verified).
+The Module earns its keep. But the surrounding warning policy is *not* centralized,
+so callers still make policy decisions — the Module is not deep enough yet.
 
 ### Solution
 
 Deepen LLM context handling as one internal Module that owns:
 
 - accepted input shapes,
-- ignored-context warning policy,
-- optional dependency failures for PDF and Excel,
+- ignored-context warning policy **parameterized by reason** — "ignored unless
+  `llm_assess = TRUE`" (suggest_semantics) vs "ignored because
+  `seed_semantics = FALSE`" (package/dictionary) are two legitimately different
+  messages and must remain distinguishable, not collapsed into one rule,
+- optional dependency failures for PDF and Excel (keep the loud abort; do not hide
+  behind a generic context result),
 - parsing and normalization,
-- chunk pooling,
+- chunk pooling **with an enforced parse-once invariant** (today it is emergent —
+  see Risks),
 - target-specific chunk scoring,
-- source accounting for LLM assessment rows.
+- source accounting for LLM assessment rows (the `llm_context_sources` column).
 
 The public entry points should continue to expose simple `llm_context_files` and
-`llm_context_text` arguments. They should not need to know how context is parsed
-or how many times it is read.
+`llm_context_text` arguments and should not need to know how context is parsed.
 
 ### Tiny Commits
 
-1. Add characterization tests around context behavior:
-   - parsed objects error before retrieval,
-   - context paths with `llm_assess = FALSE` warn and do not call the LLM,
-   - context files are parsed only once per `suggest_semantics()` call,
-   - empty and unsupported context files preserve current warning behavior.
-2. Move context validation and ignored-context warning policy behind one
-   internal context Module while keeping current helper names as temporary
-   wrappers.
+1. **Audit and strengthen existing characterization** (do NOT "add" from scratch —
+   these already pass): parsed-object error (test-llm-semantic-helpers.R:1-36),
+   context-with-`llm_assess = FALSE` warns and no LLM (38-82), parse-once (1045-1136),
+   empty/unsupported formats (1138-1331). Add only the genuine gaps:
+   - a test pinning "collected once but **scored once per target**" (only
+     parse-once is asserted today),
+   - a test for `infer_dictionary`'s `seed_semantics = FALSE` + LLM-options
+     behavior (currently uncharacterized),
+   - one sentinel where both `llm_context_files` **and** `llm_context_text` are
+     supplied with `llm_assess = FALSE` and an erroring `llm_request_fn` (the only
+     genuinely net-new combination).
+2. Move context validation and ignored-context warning policy behind one internal
+   context Module while keeping current helper names as temporary wrappers.
 3. Move context collection, chunking, scoring, and source reporting behind the
-   same Module.
+   same Module. **Make the single collect entry point own the parse-once
+   invariant** (return a pool; per-target scoring requires it — no NULL-pool
+   re-collect fallback).
 4. Replace direct caller use of validation/warning/chunk helpers with the deeper
    Module.
-5. Delete compatibility wrappers only after all callers and tests cross the new
+5. **Before deleting wrappers:** rewrite the parse-once test (1100-1136) to assert
+   through the new Module seam (count collect calls) instead of mocking
+   `.ms_context_text_from_file` / `.ms_chunk_context_text` by name. Otherwise
+   commit 6 reds this test.
+6. Delete compatibility wrappers only after all callers and tests cross the new
    Seam.
 
 ### Benefits
 
 - Better Locality: context behavior changes in one place instead of across
   semantic, package, and dictionary callers.
-- More Leverage: tests can exercise the complete context Interface without
-  fake retrieval or fake LLM calls.
-- Lower risk of another Alice-style surprise when new context formats or warning
-  rules are added.
+- More Leverage **for the policy/warning layer specifically** — the parse/score
+  layer is *already* independently testable (test-llm-semantic-helpers.R:1138-1331),
+  so do not over-claim Leverage there.
+- Lower risk of another Alice-style surprise — and a concrete one fixed now:
+  `infer_dictionary`'s missing ignored-context warning.
 
 ### Testing Decisions
 
 - Extend `tests/testthat/test-llm-semantic-helpers.R` for direct context Module
-  behavior.
-- Keep `tests/testthat/test-package-helpers.R` tests that cover the public
+  behavior, including the "scored per target, collected once" distinction.
+- Keep `tests/testthat/test-package-helpers.R` tests covering the public
   `create_sdp()` path.
-- Add one sentinel test where `llm_context_files` and `llm_context_text` are
-  supplied with `llm_assess = FALSE` and an LLM request function that errors if
-  called.
+- Add the `infer_dictionary(seed_semantics = FALSE, llm_assess = TRUE)` behavior
+  test as the regression for the silent-drop fix.
 
 ### Risks
 
-- PDF and Excel context parsing depend on optional packages. Do not hide those
-  errors behind a generic context result.
-- Context source labels appear in LLM assessment output. Preserve source
-  reporting exactly unless a migration note is written.
+- PDF and Excel context parsing depend on optional packages. Keep the loud abort
+  (`.ms_context_text_from_file:501-508`); do not hide behind a generic result.
+- Context source labels feed the `llm_context_sources` output column
+  (llm-review-adapter.R:112) and are asserted by tests (166, 1491-1494, 1657).
+  Preserve source reporting exactly. (Note the same-basename collision smell —
+  `notes/bugs-and-improvements.md` #2 — which any source-label change should fix.)
+- **The "parsed once" guarantee is currently emergent** (orchestrator threads
+  `context_chunk_pool` from 1612), NOT enforced by the Module:
+  `.ms_prepare_context_chunks` silently re-collects if passed a NULL pool. Deepen
+  to own this, or the Locality win is illusory.
+- **Renaming/absorbing `.ms_context_text_from_file` or `.ms_chunk_context_text`
+  breaks the by-name mock at test-llm-semantic-helpers.R:1100-1136** — handle in
+  commit 5 before deleting wrappers.
+- **Unifying the ignored-context warning changes `infer_dictionary`'s observable
+  behavior** (it has none today). Make that a deliberate, tested decision, not a
+  side effect.
 
 ## Refactor 2: Centralize LLM Option Forwarding
 
 ### Files and Evidence
 
 - `R/dictionary-helpers.R`
-  - `infer_dictionary()` computes `llm_requested` at lines 92-99.
-  - Multi-table semantic seeding assembles LLM arguments at lines 171-195.
+  - `infer_dictionary()` computes `llm_requested` at lines 92-99. *(verified;
+    byte-identical to package-helpers.R:452-459)*
+  - Multi-table semantic seeding assembles LLM arguments at lines 171-195. *(verified)*
   - Single-table semantic seeding repeats the same assembly at lines 247-271.
+    *(verified; the 11-arg block at 256-269 is byte-for-byte identical to 180-193)*
 - `R/package-helpers.R`
   - `infer_salmon_datapackage_artifacts()` repeats `llm_requested` at lines
-    452-459.
-  - It repeats LLM argument assembly at lines 541-566.
-  - `create_sdp()` forwards every LLM option again at lines 831-855.
+    452-459. *(verified)*
+  - It repeats LLM argument assembly at lines 541-566. *(verified; base list
+    includes `include_dwc = FALSE` at 546, which the dictionary blocks omit)*
+  - `create_sdp()` forwards options to `infer_salmon_datapackage_artifacts()` at
+    lines 831-855. *(verified — CORRECTION from round 2: this is **not** a 4th copy
+    of the 11-arg tail; it is an unconditional one-to-one pass-through of the ENTIRE
+    ~21-arg artifact surface (resources, dataset_id, guess_types, seed_*,
+    semantic_code_scope, + the 11 llm_* args). It is a separate maintenance hazard,
+    out of R2's scope — do not fold it into the LLM-option helper.)*
+- `R/llm-semantic-helpers.R`
+  - **`.ms_llm_effective_shortlist_size()` already exists at lines 79-93 and is
+    merely *called* twice** (package-helpers.R:468-472, dictionary-helpers.R:102-106).
+    *(ADDED — the "effective shortlist" concept is already a deep helper; only its
+    invocation repeats.)*
 
-### Problem
+### Problem (rescoped)
 
-The LLM semantic-review option path is shallow. Each caller knows which options
-mean "LLM requested", which options affect shortlist size, and which arguments
-must be forwarded to `suggest_semantics()`. The 0.1.4 fix had to touch multiple
-Modules because one Interface rule was duplicated across call sites.
+The plan framed the whole LLM-option path as "shallow" with each caller
+reimplementing validation/warning/shortlist. **That overstates it.** Verified:
+
+- Validation (`.ms_validate_llm_context_files`), ignored-context warning
+  (`.ms_warn_if_llm_context_ignored`), and effective shortlist
+  (`.ms_llm_effective_shortlist_size`) are **already shared helpers.**
+- What is **genuinely duplicated** is only: (a) the `llm_requested` 8-clause
+  predicate (2 sites) and (b) the conditional 11-arg `llm_*` *tail* appended to
+  `suggest_args` (3 sites: dictionary-helpers.R:180-193, :256-269,
+  package-helpers.R:551-564). `create_sdp:831-855` is a full pass-through, not a 4th
+  copy of this tail.
+
+So this is a real DRY / coordination fix with **modest** depth — a small
+constructor returning derived flags + the assembled LLM tail — not a deep Module
+hiding substantial implementation. Frame it honestly so it does not become a thin
+pass-through that just relocates an argument list. **Crucial scoping fact (round 2):**
+only the conditional LLM *tail* is shareable. The *base* `suggest_args` list
+diverges per caller — `df = resources` vs `df`; `codes = semantic_codes` vs
+`seed_codes` vs `codes`; `include_dwc = FALSE` present only on the package path — so
+the helper cannot own the whole assembly. That base-list divergence is precisely why
+this is shallow DRY rather than a deep Module.
+
+Also: "seed/no-seed warning policy" is listed as something to centralize *because
+it is duplicated*. It is **not duplicated** — it exists only in
+`infer_salmon_datapackage_artifacts` (462-467). `infer_dictionary` lacks it
+entirely, which is the silent-drop bug. So fold the **fix** (add the warning to
+`infer_dictionary` via the shared module), not a "de-dup".
 
 ### Deletion Test
 
-Deleting the repeated `llm_requested` blocks would not delete complexity. It
-would force every caller to rediscover which LLM options are meaningful. That is
-a signal for a deeper coordination Module.
+Deleting the repeated `llm_requested` blocks would force every caller to
+rediscover which LLM options count as "requested" (the predicate encodes
+non-obvious policy: `request_fn`/`base_url` count). That signals a small but real
+coordination Module.
 
 ### Solution
 
-Create one internal semantic-review option Module that owns:
+Create one internal semantic-review option helper (e.g. `.ms_llm_review_plan(...)`)
+that owns:
 
-- whether LLM-related options were supplied,
-- seed/no-seed warning policy,
-- context validation and ignored-context policy by delegating to the context
-  Module,
-- effective shortlist size,
-- conversion from public arguments into the internal argument list passed to
-  `suggest_semantics()`.
+- whether LLM-related options were supplied (`llm_requested`),
+- the seed/no-seed ignored-options **warning** (so both `infer_dictionary` and
+  `infer_salmon_datapackage_artifacts` warn identically — fixes the asymmetry),
+- delegation to the context Module for validation/ignored-context policy,
+- effective shortlist size (by **calling** the existing
+  `.ms_llm_effective_shortlist_size`, not reimplementing it),
+- conversion of the public LLM arguments into the conditional 11-arg `llm_*` tail
+  appended to `suggest_args` when `llm_requested` — the single source of that tail
+  (NOT the whole arg list; the base list stays caller-owned, see Problem).
 
-Public entry points should remain explicit, but their Implementation should ask
-the option Module for the derived behavior instead of rebuilding it locally.
+Design the tail so future LLM knobs (provider/model resolution, retry, the richer
+review outcomes from the retrieval-gap roadmap) are added in one place.
+**Invariant:** the helper must only report / validate / assemble — it must never
+flip `seed_semantics` or `llm_assess` defaults (centralization is exactly where an
+accidental auto-enable could slip in, violating the opt-in constraint).
 
 ### Tiny Commits
 
-1. Add characterization tests for `infer_dictionary()` and
-   `infer_salmon_datapackage_artifacts()` when LLM-related options are supplied
-   with `seed_semantics = FALSE`.
-2. Add a small internal helper for "LLM semantic review was requested" and
-   replace the two duplicated `llm_requested` blocks.
-3. Move effective shortlist calculation for LLM review into the same option
-   Module.
-4. Move `suggest_semantics()` argument assembly into the option Module while
-   preserving public signatures.
-5. Remove duplicate local option assembly once tests pass through all public
-   entry points.
+1. **Audit/strengthen, then fill the gap:** the artifact-path test already exists
+   (test-package-helpers.R:908-929 asserts the `seed_semantics = FALSE` warning +
+   NULL outputs). The `infer_dictionary` half is net-new — add it (and it doubles
+   as the regression for the silent-drop fix).
+2. Add the `llm_requested` helper and replace the two duplicated blocks.
+3. Move the seed/no-seed warning into the helper and **add it to `infer_dictionary`**
+   (behavior change — deliberate, tested). Emit it **once at the top** of
+   `infer_dictionary` (before the list/data.frame branch and the multi-table
+   recursion at 128-141) so a multi-table input warns once, not per table. Pre-flight:
+   grep the suite for `infer_dictionary(... llm_*)` calls lacking `expect_warning`
+   and wrap them first.
+4. Move the conditional 11-arg LLM *tail* into the helper, preserving public
+   signatures and `llm_request_fn` forwarding. Do **not** try to centralize the base
+   `suggest_args` list (it diverges per caller). Leave `include_dwc` **caller-set**:
+   unifying it is an observable behavior change, not free cleanup (verify
+   `suggest_semantics`'s `include_dwc` default and add a dictionary-path output
+   characterization test before touching it, or skip it).
+5. Remove the three duplicate LLM-tail blocks and the two `llm_requested` predicates
+   once tests pass through all public entry points. (There is no `create_sdp`
+   call-site copy to remove — it is a full pass-through.)
+
+*(Dropped the original commit 3 "move effective shortlist calculation into the
+option Module" as redundant — the calculation is already extracted; only its call
+sites move, which commit 4 handles.)*
 
 ### Benefits
 
-- Better Locality for new LLM knobs such as provider options, context behavior,
-  timeout behavior, or retry behavior.
-- Better Leverage from tests that assert one option policy and know it applies
-  to `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and
-  `create_sdp()`.
-- Less chance that one caller silently behaves differently from another.
+- Better Locality for new LLM knobs (provider options, context behavior, timeout,
+  retry, richer review outcomes).
+- Consistent behavior: `infer_dictionary` and `infer_salmon_datapackage_artifacts`
+  warn identically on ignored options — closes the silent-drop gap.
+- One place to evolve the option contract toward the bundle-aware roadmap.
 
 ### Testing Decisions
 
-- Add tests at the public entry points because option forwarding is part of
-  their Interface.
+- Add tests at the public entry points because option forwarding is part of their
+  Interface.
 - Keep request-function sentinels for hidden LLM calls.
-- Use mocked search functions; do not rely on live vocabulary services.
+- Use mocked search functions (`with_mocked_bindings(find_terms = ...)` on the
+  `create_sdp`/`infer_dictionary` paths); do not rely on live vocabulary services.
 
 ### Risks
 
-- Public function signatures are long but user-facing. Do not hide or replace
-  them without a separate compatibility decision.
-- `llm_request_fn` is an advanced test hook. Preserve it through the refactor so
-  existing tests remain deterministic.
+- Public function signatures are long but user-facing. Do not hide or replace them
+  without a separate compatibility decision.
+- `llm_request_fn` is an advanced test hook threaded through 6+ tests. Preserve it
+  or the deterministic suite breaks.
+- Adding the warning to `infer_dictionary` changes observable behavior — land it
+  with its own test and a NEWS note.
+- **Seam overlap with R5:** R5's "shared semantic seeding Module" would otherwise
+  touch this same arg-assembly. Do R2 first; R5 then relocates only metadata
+  orchestration, not the LLM arg block.
 
 ## Refactor 3: Extract Semantic Target Discovery
 
 ### Files and Evidence
 
 - `R/semantics-helpers.R`
-  - `suggest_semantics()` currently owns input normalization at lines 342-368.
-  - It defines many local query/placeholder helpers at lines 391-424.
-  - It discovers column targets at lines 943-988.
-  - It discovers code targets at lines 990-1033.
-  - It discovers table targets at lines 1035-1072.
-  - It discovers dataset targets at lines 1074-1109.
-  - It performs retrieval at lines 1111-1132.
-  - It performs LLM handoff and attribute attachment at lines 1182-1205.
+  - `suggest_semantics()` owns input normalization at lines 342-368. *(verified)*
+  - It defines local query/placeholder helpers — **but the behavior-dense closures
+    span 391-942, not just 391-424.** Lines 391-424 are only trivial string
+    utilities (`is_missing`, `clean_query`, `is_review_placeholder`, …); the real
+    heuristics are `measurement_role_query` (603-680), `non_measurement_query`
+    (765-812), `non_measurement_roles` (925-942), `paired_unit_query_from_data`
+    (523-554), etc. *(corrected — citing 391-424 badly undersells the extraction
+    surface)*
+  - Column target discovery at lines 943-988. *(verified)*
+  - Code target discovery at lines 990-1033. *(verified)*
+  - Table target discovery at lines 1035-1072. *(verified)*
+  - Dataset target discovery at lines 1074-1109 (normalize at 1109). *(verified)*
+  - Retrieval at lines 1111-1132. *(verified — single `search_fn` call)*
+  - **Role-collision annotation at lines 1134-1180** (variable-vs-property
+    `group_by`/`left_join` adding `role_collision`/`role_collision_note`). *(ADDED —
+    this enrichment sits between retrieval and LLM and the plan omitted it)*
+  - LLM handoff and attribute attachment at lines 1182-1205. *(verified)*
 - `R/semantic-suggestions.R`
-  - It already owns target/suggestion row shape helpers at lines 1-122.
-  - It owns LLM assessment merge behavior at lines 243-268.
+  - Owns target/suggestion row-shape helpers at lines 1-122. *(verified)*
+  - Owns LLM-assessment merge behavior at lines 243-268. *(verified — note this
+    merge is algorithmically non-trivial; it would not "just inline")*
+  - **Already contains a divergent target-discovery builder
+    `.ms_semantic_column_term_target_from_dictionary` at lines 147-185** that
+    duplicates the inline column-target block (semantics-helpers.R:966-984). *(ADDED
+    — this is the strongest concrete evidence for the refactor and was uncited)*
 
 ### Problem
 
 `suggest_semantics()` is a large Module with a broad Interface. It owns target
 discovery, query heuristics, deterministic retrieval, LLM review, result
-attachment, and user messages. This makes tests expensive: a test for target
-selection often needs fake retrieval or fake LLM plumbing even when the behavior
-under test is only "which semantic targets exist?"
-
-The existing `semantic-suggestions.R` Module has useful row-shape helpers, but
-the behavior-rich target discovery implementation still lives inside
-`suggest_semantics()`.
+attachment, and user messages. Verified cost: `test-semantic-suggestions.R` makes
+**zero** `suggest_semantics()` calls (it tests only row-shape helpers), and every
+`suggest_semantics()` test in `test-llm-semantic-helpers.R` must define a
+`fake_search` closure even when testing unrelated behavior — exactly the "tests
+are expensive" symptom. Verified: target discovery never calls `search_fn` or any
+LLM, so it *could* be tested in isolation — but it is locked inside
+function-local closures with no callable entry point.
 
 ### Deletion Test
 
-Deleting `semantic-suggestions.R` today would mostly inline column lists,
-normalizers, and merge helpers. The behavior-dense target discovery complexity
-would remain inside `suggest_semantics()`. That means the current Module is not
-deep enough for the semantic target concept.
+Deleting `semantic-suggestions.R` today would mostly inline column lists and
+normalizers (verified — those constants live there) plus the non-trivial merge
+helper. The behavior-dense target-discovery complexity would remain inside
+`suggest_semantics()`. The Module owns the *shape* of target rows but not the
+*rules* for producing them (except the one divergent dictionary builder). It is
+not deep enough for the semantic-target concept.
 
 ### Solution
 
-Deepen semantic target discovery as its own Module before retrieval or LLM
-review. It should own the rules for turning dictionaries, tables, codes, dataset
-metadata, and resource context into normalized semantic target rows. Retrieval
-and LLM review should consume those target rows without knowing how they were
-chosen.
+Deepen semantic target discovery as its own Module before retrieval or LLM review.
+It should own the rules for turning dictionaries, tables, codes, dataset metadata,
+and resource context into normalized semantic target rows — **and emit them
+against the `.ms_semantic_target_cols()` contract** rather than hand-written
+literal tibbles, removing the inconsistent per-builder column sets. Retrieval and
+LLM review then consume target rows without knowing how they were chosen.
+
+**The hidden cost the plan must name:** this is a **closure-to-parameter
+conversion**, not a code move. The discovery closures capture `resource_lookup` /
+`default_df` (set 339-358), the role map (381-388), and the in-scope
+`dict`/`codes`. Extracting them means threading these as explicit arguments —
+especially the raw `df` needed by `paired_unit_query_from_data`.
 
 ### Tiny Commits
 
-1. Add characterization tests for target discovery using small dictionaries,
-   table metadata, code metadata, and dataset metadata without calling
-   `find_terms()`.
-2. Move target-row column definitions and normalizers into the semantic target
-   Module if they are not already there.
-3. Move column target discovery out of `suggest_semantics()`.
-4. Move code target discovery out of `suggest_semantics()`.
-5. Move table and dataset target discovery out of `suggest_semantics()`.
-6. Make `suggest_semantics()` call target discovery, then retrieval, then LLM
-   review in clearly separated steps.
-7. Delete now-dead local helper definitions from `suggest_semantics()`.
+1. **Audit/strengthen + golden fixture:** ~15 tests (test-dictionary-helpers.R:434-1210)
+   already characterize discovery *rules* (queries/roles per scope) through
+   `suggest_semantics()` + recorded `fake_search` calls — the net-new value is
+   *leverage* (isolated tests with no `fake_search`), not first-time coverage. Add a
+   **golden-fixture snapshot of the full normalized target tibble** across all four
+   scopes (all 19 `.ms_semantic_target_cols`, including the 3-row code expansion and
+   the table-only `target_query_basis/context`) so the extraction is verified
+   value-for-value, not just rule-by-rule.
+2. Confirm target-row column definitions and normalizers are in the target Module
+   (already true at semantic-suggestions.R:1-104 — this commit is a **no-op**; only
+   the four builders and the closure cluster actually move).
+3. **(Atomic move — round 2 correction.)** Move the entire discovery closure cluster
+   (391-942) **and** the four builders (943-1106) into the target Module in **one**
+   commit, threading the captured state as explicit args: `dict` (whole, for the
+   code-target parent lookup at 1003-1006), `codes`, `table_meta`, `dataset_meta`,
+   per-table `df` access (`resource_lookup`/`default_df`, for `current_table_df` /
+   `paired_unit_query_from_data` — mishandling this regresses the NEWS 0.1.1
+   multi-table context fix), and the `roles` map. Per-scope splitting **cannot** stay
+   green: the builders share captured helper closures, so moving one scope at a time
+   breaks `load_all`. Preserve: the length-3 `role_set` recycling that yields **3
+   rows per measurement-parented code** (1008/1017-1018), and the empty-tibble-skip →
+   `bind_rows` → NA-backfill contract.
+4. **Reconcile (do NOT blindly collapse) the divergent column-target builders.** The
+   inline block (966-984) expands all six I-ADOPT roles and sets
+   `target_sdp_field = col_name`; `.ms_semantic_column_term_target_from_dictionary`
+   (semantic-suggestions.R:147-185) hardcodes a single `variable`/`term_iri` row and
+   computes `target_query_basis/context` the inline block leaves NA — and it is
+   currently only a **fallback** inside `.ms_semantic_target_from_candidate_rows`
+   (197-201) when retrieval is empty. Document the divergence, decide deliberately
+   whether to unify or keep both, and preserve the fallback role.
+5. Make `suggest_semantics()` call target discovery → retrieval →
+   **role-collision annotation (1134-1180)** → LLM review in clearly separated
+   steps. Do not drop the `role_collision`/`role_collision_note` columns (add a
+   characterization test that they survive the split).
+6. Delete now-dead local helper definitions from `suggest_semantics()`.
 
 ### Benefits
 
-- Better Locality for semantic target rules.
-- More Leverage in tests: target discovery can be verified without fake search,
-  fake LLM, or output attributes.
-- A clearer Seam between semantic target discovery and candidate retrieval.
+- Better Locality for semantic target rules; one place that owns the row contract.
+- More Leverage: target discovery verified without fake search, fake LLM, or
+  output attributes.
+- A clearer Seam between target discovery and candidate retrieval; reconciles the
+  two divergent column-target builders into one place (rather than leaving an inline
+  six-role builder and a single-role fallback that can drift).
 
 ### Testing Decisions
 
-- Add direct internal tests for target discovery row output.
+- Add direct internal tests for target-discovery row output (column/code/table/
+  dataset scopes).
 - Keep existing end-to-end `suggest_semantics()` tests as regression coverage.
-- Use fixtures that cover column, code, table, and dataset target scopes.
+- Strengthen `test-semantic-suggestions.R` (only 2 tests today) before moving
+  behavior into that file.
 
 ### Risks
 
 - Target discovery is behaviorally dense. Preserve exact row columns and values
-  until a deliberate behavior change is approved.
-- LLM review and deterministic retrieval depend on stable target keys. Changes
-  to target row keys must be treated as compatibility-sensitive.
+  (incl. the `target_query_basis`/`target_query_context` columns that only table
+  targets currently populate; the rest are NA-backfilled by
+  `.ms_semantic_normalize_target_rows`).
+- LLM review and deterministic retrieval depend on stable target keys
+  (`target_row_key`, group keys). Changes are compatibility-sensitive — they also
+  feed `chat-decomposition.R`, `llm-review-adapter.R`, and `llm-semantic-helpers.R`.
+- **Cross-refactor coupling with R4:** the adapter's empty/success row builders
+  (R/llm-review-adapter.R:36-118) read target columns **positionally**. R3 moves the
+  producer of those columns; R4 deepens the consumer. A column rename/reorder here
+  silently breaks R4 — freeze the target-row column contract (Global Constraints) and
+  do R3 before R4 (or freeze as an R4 precondition).
+- Code-target discovery recycles a length-3 `role_set` vector into **3 rows per
+  measurement-parented code** (1008/1017-1018), and its parent lookup (1003-1006)
+  reads *other* dict rows — so the extracted module must receive the whole `dict`,
+  not just the code row, and a naive single-row refactor would silently emit 1 row
+  instead of 3. Add a regression test asserting the 3-row expansion.
+- Heavy positional `[[1]]` row access throughout the closures (425-942) raises the
+  cost of "preserve exact values"; keep the single-row contract during extraction.
 
-## Refactor 4: Clarify the LLM Review Adapter
+## Refactor 4: Deepen the LLM Review Adapter (decision pre-resolved)
+
+> **The plan's original premise here was factually wrong and inverted the
+> conclusion.** It claimed "one real Adapter path… one Adapter means a hypothetical
+> Seam" and proposed deciding collapse-vs-deepen. Verified against source: there
+> are **two live consumers** of the response contract already, the second is
+> tested, and the i-adopt roadmap mandates reusing one shared route. **Decision:
+> deepen. Do not collapse.** This section is rewritten accordingly.
 
 ### Files and Evidence
 
 - `R/llm-review-adapter.R`
-  - Response parsing and assessment validation live at lines 1-34.
-  - Empty and successful assessment row construction live at lines 36-118.
+  - Response parsing + assessment validation at lines 1-34 (response_data 1-20,
+    validate 22-27, request 29-34). *(verified)*
+  - Empty and successful assessment row construction at lines 36-118 (empty 36-73,
+    success 75-118). *(verified)*
+  - **The two-shape normalizer (lines 3-17) exists by design:** it reparses
+    `content` when `data` is NULL. *(this is the tell that there are two consumers)*
 - `R/llm-semantic-helpers.R`
-  - Single-record review uses the adapter at lines 1454-1470.
-  - Batch review and fallback behavior live at lines 1473-1533.
-  - Provider-wide failure handling lives at lines 1539-1578.
-  - The overall LLM assessment orchestration lives at lines 1580-1692.
+  - Single-record review uses the adapter at lines 1454-1471. *(verified)*
+  - Batch review and fallback at lines 1473-1533 (two fallback layers). *(verified)*
+  - Provider-wide failure handling at lines 1539-1578. *(verified)*
+  - Overall LLM assessment orchestration at lines 1580-1692. *(verified)*
+  - Default request fn `.ms_llm_chat_json_request` returns a **bare** parsed-JSON
+    list (1301-1330).
+- **`R/chat-decomposition.R` — the SECOND consumer.** `.ms_chat` /
+  `.ms_chat_http_request` (435-536) return a **wrapped** `list(content, data, …)`,
+  and `chat-decomposition.R:615` calls the shared validator. *(verified — this is
+  the second Adapter the plan said "does not exist yet")*
+- **`tests/testthat/test-semantic-suggestions.R:36-51`** already tests the
+  validator with the chat-style `{content, data}` shape. *(verified — the
+  second-consumer contract is under test)*
 
 ### Problem
 
-`llm-review-adapter.R` is currently a suspicious shallow Module. It has one real
-Adapter path and several wrappers around LLM review response parsing and row
-construction. One Adapter means a hypothetical Seam; two Adapters means a real
-Seam. The current split makes maintainers bounce between files to understand one
-review request.
+The plan called `llm-review-adapter.R` a "suspicious shallow Module" with a
+hypothetical single Seam. The code says otherwise: a **narrow Interface**
+(validate / request / empty / success) hides (a) two-shape response normalization
+and (b) the dense decision-validation/downgrade policy in
+`.ms_validate_llm_assessment`. **Two real consumers share the contract.** The
+genuine reader complaint — "maintainers bounce between files" — is caused by the
+thin pass-through wrappers (`.ms_llm_success_assessment` /
+`.ms_empty_llm_assessment`, helper:1411-1423), not by the Seam itself.
+
+The complete set of review paths (the plan enumerated none): (1) generic
+single-target, (2) decomposition single-target (routed by
+`.ms_llm_should_route_to_decomposition`), (3) batch (two-layer fallback), (4)
+query-exploration re-review, (5) interactive chat decomposition. Paths 1-4 use the
+bare-JSON branch; path 5 uses the wrapped branch.
 
 ### Deletion Test
 
-If `llm-review-adapter.R` were deleted today, much of its logic would move back
-into `llm-semantic-helpers.R`, and the system might become easier to read
-because there is no second Adapter yet. That suggests either the Module should
-be collapsed or deepened enough to own the LLM review response contract.
+Deleting `llm-review-adapter.R` would force duplicating validate+downgrade and the
+dual-shape normalizer into **both** `llm-semantic-helpers.R` and
+`chat-decomposition.R`, splitting one contract across two files. It deletes no
+complexity; it scatters it. **The Module passes the deletion test — it is a real,
+deep Seam.**
 
 ### Solution
 
-Make an explicit decision:
+**Deepen** the adapter so it owns the full LLM-review response contract: request/
+response normalization (both shapes), decision validation + auto-downgrades, empty
+assessment rows, success assessment rows, and batch result normalization. Make
+both LLM orchestration and chat decomposition call the adapter at one Seam.
 
-- Collapse the adapter if there is still only one LLM review path and no near
-  term second Adapter.
-- Deepen the adapter if chat decomposition, semantic review, and future review
-  modes need a shared response contract.
+Concretely:
 
-If deepened, the Module should own request response normalization, validation,
-empty assessment rows, success assessment rows, and batch result normalization.
-If collapsed, the code should return to the review Implementation and the
-unnecessary Seam should be removed.
+- Move/inline the file-hop wrappers (helper:1411-1423). **Round-2 nuance:**
+  `.ms_empty_llm_assessment` is a pure pass-through, but `.ms_llm_success_assessment`
+  (1415-1423) **unpacks the record struct** (`record$group[1,]`, `candidate_rows`,
+  `context_chunks`). Inlining it must either move that record-unpacking into the
+  adapter (the adapter then learns the record shape) **or** keep the adapter's
+  positional `target_row/candidate_rows/context_chunks` signature with unpacking left
+  in the helper. Pick one and document it.
+- **Forward-compat (retrieval-gap roadmap) — corrected:** `retry_search`
+  (`llm_retry_query`, consumed at helper:1089) and `request_new_term`
+  (`llm_new_term_*`, adapter:109-111) **already survive** normalization. But
+  **`reject_shortlist` is LOSSY today**: the validator returns it as a decision
+  (helper:1397-1408) with **no** reject-specific column in either row builder
+  (adapter:36-118). Before/while deepening, add a reject-reason carrier column
+  (e.g. `llm_reject_reason`, or reuse `llm_rationale` + a flag) to **both** builders,
+  or the lossiness is baked into the canonical Seam.
+- **Row-shape symmetry invariant:** the empty (adapter:36-73) and success (75-118)
+  rows must declare **identical** column sets, or `dplyr::bind_rows` across mixed
+  rows (helper:1499) silently fills NA / coerces types. Any new contract field goes
+  into **both** builders in the **same** commit.
+- The **shared chat request builder** (converging `.ms_llm_chat_json_request`
+  1301-1330 and `.ms_chat_http_request` chat:435-472) is **mutually exclusive** with
+  keeping the dual-shape normalizer (single-shape responses would delete the
+  adapter:3-17 branch this section defends). It is therefore **out of R4** — track it
+  as a separate later refactor (`notes/bugs-and-improvements.md` #3, plan
+  Missing/Future #2). Do not attempt both.
 
 ### Tiny Commits
 
-1. Add characterization tests around malformed single-target and batch LLM
-   responses.
-2. Inventory all call sites that rely on `llm-review-adapter.R`.
-3. Decide collapse versus deepen based on whether there are at least two real
-   Adapters or review modes sharing the contract.
-4. If collapsing, move adapter wrappers into the review Implementation and
-   delete the file.
-5. If deepening, move batch response normalization and row construction into the
-   adapter and make LLM orchestration call the adapter at one Seam.
-6. Run the full LLM-helper tests after each movement.
+1. **Extend** existing characterization (the wrapped `{content, data}` shape is
+   already tested at test-semantic-suggestions.R:36-51) with malformed/truncated
+   fixtures for **both** shapes, the truncation-as-null-abort case (adapter:8-16),
+   and a **`reject_shortlist` round-trip** fixture that pins whatever metadata the
+   retrieval-gap roadmap needs — turning today's lossiness into a tracked decision.
+2. Inventory call sites (done — second consumer is `chat-decomposition.R:615`).
+3. **(Cheap, safe — land first.)** Move/inline the wrappers (helper:1411-1423),
+   choosing one record-unpacking convention (see Solution). Pure Locality, zero
+   behavior change.
+4. **(Deeper — separate validation.)** Split: **4a** move the response→rows mapping
+   into the adapter; **4b** keep record-keying-by-`group_name` (helper:1479) in the
+   orchestrator. `.ms_llm_validate_batch_assessments` (helper:1473-1500) is
+   **record-aware**, not pure response-contract — do not drag record-shape knowledge
+   behind the Seam.
+5. Ensure the wrapped-shape (chat) and bare-shape (semantic) paths both route through
+   the same validator and row builders; keep the chat path's own `null_message` and
+   `.ms_chat_named_candidate_rows` coercion (it differs from `.ms_semantic_candidate_rows`).
+   Keep the test-semantic-suggestions.R:36-51 contract.
+6. Run the full LLM-helper + chat-decomposition + semantic-suggestions tests after
+   each movement, asserting both shapes route through one validator **in the same
+   test run** (not separate files that can drift).
 
 ### Benefits
 
-- Better Locality for the LLM response contract.
+- Better Locality for the LLM response contract — one place for both consumers.
 - Less file-hopping for maintainers reading one review flow.
-- A real Seam only if behavior actually varies across Adapters.
+- A real Seam that already pays for itself, ready to absorb the richer review
+  outcomes from the retrieval-gap roadmap.
 
 ### Testing Decisions
 
-- Test through semantic review behavior, not raw JSON helper internals, except
-  for clearly reusable response normalization.
-- Use fake request functions and malformed response fixtures.
+- **Correction:** the existing R4-relevant tests are predominantly **white-box** on
+  internals (`.ms_validate_llm_assessment` 576-683, `.ms_llm_clean_json_text`
+  685-699, `.ms_llm_validate_batch_assessments` 701-748,
+  `.ms_llm_review_validate_assessment` test-semantic-suggestions.R:36-51). The
+  original "test through behavior, not raw JSON helper internals" stance would
+  require **rewriting**, not just adding, tests. Keep the white-box validator tests
+  (they pin the contract) and add behavior-level tests around them.
+- Use fake request functions and malformed-response fixtures for both shapes.
 - Keep provider/network tests out of scope.
 
 ### Risks
 
-- Collapsing may be premature if another review Adapter is about to land.
-- Deepening may preserve an unnecessary Seam. Decide before moving code.
+- None of the original "collapse may be premature" risk applies — collapse is off
+  the table.
+- Deepening must preserve the two-shape normalizer (both consumers depend on it).
+- **Row-shape symmetry:** empty and success rows must keep identical column sets or
+  `bind_rows` (helper:1499) coerces silently — new fields go in both builders, same
+  commit.
+- **Chat-path divergence:** chat supplies its own `null_message` and
+  `.ms_chat_named_candidate_rows` candidate coercion (chat:615-619). Preserve
+  per-caller; "route both through one validator" must not assume one candidate-row
+  coercion.
+- **`with_mocked_bindings` binds dotted symbols by exact name** (e.g.
+  `.ms_validate_llm_assessment`, `.ms_llm_clean_json_text`). Inlining must preserve
+  those names or the tests silently no-op.
+- Keep the second-consumer test (test-semantic-suggestions.R:36-51) green throughout.
+
+> Evidence of depth to cite: the validator's downgrade ladder (helper:1362-1395 —
+> accept-without-index / out-of-range-index / retry_search-without-query all
+> downgrade to `review`) is the dense decision policy the adapter hides; it is the
+> strongest concrete proof the Seam is deep.
 
 ## Refactor 5: Make Package Artifact Inference the Canonical Orchestration Module
 
 ### Files and Evidence
 
 - `R/dictionary-helpers.R`
-  - `infer_dictionary()` handles multi-table resources at lines 108-143.
-  - It also infers table metadata, codes, and dataset metadata at lines 145-165.
-  - It seeds semantics and attaches package-adjacent attributes at lines
-    167-199.
-  - The single-table path also seeds semantics at lines 243-271.
+  - `infer_dictionary()` handles multi-table resources at lines 108-143
+    (recurse with `seed_semantics = FALSE` + `bind_rows`). *(verified)*
+  - It infers table metadata, codes, and dataset metadata at lines 145-165.
+    *(verified — the three `infer_*_from_resources` functions are DEFINED in this
+    file at 442-629 yet also called directly by `infer_salmon_datapackage_artifacts`
+    — misplaced ownership)*
+  - It seeds semantics and attaches **`inferred_*` attributes (multi-table)** at
+    lines 167-200 (attrs at 196-199). *(verified)*
+  - The single-table path seeds semantics at 243-281 and attaches a **different,
+    disjoint `seed_*` attribute set** (272-280, only when args non-NULL). *(ADDED —
+    the plan treated attributes as one bucket)*
 - `R/package-helpers.R`
-  - `infer_salmon_datapackage_artifacts()` already orchestrates resources,
-    dictionary, tables, codes, dataset metadata, semantic seeding, and returned
-    artifacts at lines 427-586.
-  - `create_sdp()` then writes and post-processes those artifacts at lines
-    831-950.
+  - `infer_salmon_datapackage_artifacts()` orchestrates resources, dictionary,
+    tables, codes, dataset metadata, semantic seeding, and the returned artifacts
+    at lines 427-586. *(verified)*
+  - Its metadata orchestration (508-532) is **richer** than the dictionary path:
+    it normalizes (`.ms_normalize_table_meta`/`_codes`/`_dataset_meta`), prefills
+    legacy estimate-method code terms (519), and selects semantic seed codes by
+    scope (527-532). *(ADDED — the two blocks are NOT identical)*
+  - `create_sdp()` **inference call** is at 831-855; **writing** starts at
+    `write_salmon_datapackage` (909); post-processing (review README,
+    `semantic_suggestions.csv`, optional EDH XML, info lines) runs through ~982.
+    *(corrected — the plan said "writes and post-processes at 831-950")*
 
 ### Problem
 
 `infer_dictionary()` and `infer_salmon_datapackage_artifacts()` both know about
-multi-table resources, inferred tables, inferred codes, dataset metadata, and
-semantic seeding. That duplication increases the chance that a workflow fix has
-to touch both Modules. The 0.1.4 context validation change is one example.
+multi-table resources, inferred tables, codes, dataset metadata, and semantic
+seeding. Verified: `infer_dictionary` is two functions under one name — a real
+dictionary builder AND a second package orchestrator that re-derives table/codes/
+dataset metadata (145-165), overlapping package-helpers.R:508-525. The 0.1.4
+context fix had to touch both — concrete drift evidence.
 
 ### Deletion Test
 
 Deleting the artifact-orchestration behavior from `infer_dictionary()` would not
-delete the concept; it would concentrate that behavior in
+delete the concept; it would concentrate it in
 `infer_salmon_datapackage_artifacts()`, which already exists to orchestrate a
-Salmon Data Package artifact set. That suggests the orchestration Module should
-be deeper and `infer_dictionary()` should become more dictionary-focused.
+Salmon Data Package artifact set. On the `create_sdp` path `infer_dictionary` is
+even called with `seed_semantics = FALSE` (package-helpers.R:499), so that
+orchestration block is **dead on that path** — clear evidence the behavior belongs
+in one Module. This is the strongest deletion-test in the plan.
 
 ### Solution
 
@@ -408,59 +847,128 @@ Deepen `infer_salmon_datapackage_artifacts()` as the canonical orchestration
 Module for one-shot package artifact inference. Keep `infer_dictionary()` focused
 on dictionary rows, column roles, value types, and dictionary-specific review
 placeholders. Preserve existing `infer_dictionary()` list-input behavior through
-compatibility tests while gradually moving package-wide orchestration behind the
-artifact Module.
+compatibility tests while moving package-wide orchestration behind the artifact
+Module.
+
+**Two things the original Solution must name:**
+
+1. **Both attribute schemes are load-bearing contract** — multi-table `inferred_*`
+   (asserted at test-dictionary-helpers.R:308-311) and single-table `seed_*`
+   (currently uncharacterized). Freeze both before moving code; decide explicitly
+   whether the consolidated Module emits one unified scheme or preserves both.
+   Because `infer_dictionary` is a **public export**, this is a compatibility/
+   deprecation decision, not internal-only.
+2. **The two metadata-orchestration blocks diverge** (bare seed-override at
+   dictionary-helpers.R:149-165 vs normalize + `.ms_prefill_legacy_estimate_method_code_terms`
+   (519) + `.ms_select_semantic_seed_codes`/`semantic_code_scope` (527-532) at the
+   artifact path). A shared helper must **parameterize** this divergence — do not
+   collapse to one behavior, or `infer_dictionary(seed_semantics = TRUE)` silently
+   gains scope-based code selection and legacy prefill.
 
 ### Tiny Commits
 
-1. Add characterization tests for `infer_dictionary()` list input and attributes
-   that callers may rely on.
+1. **Audit/strengthen:** the list-input + `inferred_*` test already exists
+   (test-dictionary-helpers.R:254-314). Extend it to also pin the single-table
+   `seed_*` scheme (currently uncharacterized).
 2. Add characterization tests for `infer_salmon_datapackage_artifacts()` output
    across resources, dictionary, table metadata, codes, dataset metadata, and
-   semantic suggestions.
-3. Move shared resource normalization into one internal helper used by both
-   paths.
+   semantic suggestions in one place (genuinely net-new — today only narrow
+   assertions exist).
+3. **Insert: freeze both attribute schemes as the migration contract.** Then move
+   shared resource normalization into one internal helper used by both paths —
+   **parameterized** for the bare-vs-rich divergence so neither path's output
+   changes.
 4. Move table/code/dataset metadata orchestration out of `infer_dictionary()`
-   where it is only needed for semantic seeding compatibility.
+   where it is only needed for semantic-seeding compatibility. **Land the extracted
+   orchestration in a NEW file** (e.g. `R/artifact-inference.R`) rather than growing
+   the 2975-line `package-helpers.R` — this captures the god-file Locality win
+   (Missing/Future #1) for free instead of postponing it.
 5. Make `infer_dictionary(seed_semantics = TRUE)` delegate package-wide context
-   gathering to the artifact orchestration Module or a shared semantic seeding
-   Module instead of duplicating assembly.
-6. Keep `create_sdp()` calling `infer_salmon_datapackage_artifacts()` and avoid
-   broad changes to writing/validation in the same refactor.
+   gathering to the shared semantic-seeding Module — **but not the LLM arg tail,
+   which R2 already centralizes** (do R2 first). **Resolve the commit-4/commit-5
+   tension explicitly:** keeping `inferred_*` attached (commit 4) while removing the
+   orchestration (commit 5) must NOT become a shim that re-derives the attributes
+   just to satisfy the contract (that re-introduces the duplication R5 removes).
+   Decide one: (a) keep the attributes by having the dictionary return them *from*
+   the shared Module's output, or (b) deprecate the dictionary-side attributes with a
+   NEWS note. Decide the silent-drop warning here if not already fixed in R2.
+6. Keep `create_sdp()` calling the orchestration Module; avoid broad changes to
+   writing/validation in the same refactor.
 
 ### Benefits
 
 - Better Locality for one-shot Salmon Data Package artifact inference.
-- More Leverage for `create_sdp()` because it can rely on one orchestration
-  Module.
+- More Leverage for `create_sdp()` — one orchestration Module.
 - Lower risk that dictionary-only behavior and package-wide behavior drift.
 
 ### Testing Decisions
 
-- Protect `infer_dictionary()` compatibility before moving behavior.
-- Verify `create_sdp()` behavior through existing package-helper tests.
-- Keep metadata/schema validation tests in the loop because artifact inference
-  feeds package writing.
+- Protect `infer_dictionary()` compatibility (both attribute schemes) before
+  moving behavior.
+- Verify `create_sdp()` behavior through existing package-helper tests (the heavy
+  gate; test-validation-helpers.R is thin and partly network-gated).
+- Keep metadata/schema validation tests in the loop.
 
 ### Risks
 
-- `infer_dictionary()` may have callers relying on attributes from semantic
-  seeding. Characterize before changing.
-- This refactor can easily become a broad workflow rewrite. Keep write/export
-  behavior out of scope.
+- `infer_dictionary` is a **public exported function**; external users may read
+  `inferred_*` / `seed_*` off the returned dict. Treat attribute changes as a
+  compatibility decision with a deprecation note.
+- `semantic_code_scope` / `.ms_select_semantic_seed_codes` and
+  `.ms_prefill_legacy_estimate_method_code_terms` exist only in the artifact path;
+  routing dictionary seeding through a shared Module must not silently import them.
+- The dead-on-one-path duplication (infer_dictionary blocks are dead when called
+  from `create_sdp` but live when called directly) means consolidation must not
+  break the direct-call path while removing the dead artifact-path code.
+- Keep write/export behavior out of scope (the easy way for this to become a broad
+  workflow rewrite).
+
+## Missing / Future Refactor Candidates
+
+Surfaced during review; not required for this plan but worth tracking.
+
+1. **`package-helpers.R` is a ~2975-line god-file.** It owns orchestration,
+   `create_sdp`, writing, resource/metadata inference, and EDH post-processing.
+   Once R5 lands, splitting writing/post-processing from inference/orchestration
+   would be a high-value Locality win. (Deliberately out of scope here.)
+2. **Shared chat request builder.** The two divergent HTTP body assemblers
+   (`.ms_llm_chat_json_request` vs `.ms_chat_http_request`) duplicate
+   provider/header logic. Converging them would let the review contract become
+   single-shape and simplify R4's normalizer.
+3. **Test fixture consolidation.** The canonical dictionary tibble is copy-pasted
+   ~30× across test files; `helper-dictionary.R` already exists as a home. R3/R5
+   touch row/column shape, so a shared fixture would cut churn substantially.
+4. **Real `AGENTS.md`.** `CLAUDE.md`/`AGENTS.md` are a circular self-reference, so
+   the package ships no agent guidance. Seed it from `notes/context.md` (the LLM
+   opt-in contract, attribute/IRI-prefix contracts, build/test commands).
 
 ## Recommended Order
 
-1. Deepen LLM context handling.
-2. Centralize LLM option forwarding.
-3. Clarify the LLM review Adapter.
-4. Extract semantic target discovery.
-5. Make package artifact inference the canonical orchestration Module.
+0. **Fix the `infer_dictionary` silent-drop bug** as a standalone commit, with its
+   own NEWS entry + regression test. It is a real user-facing correctness bug
+   independent of the architecture work; land it first so it cannot slip if R1/R2
+   stall. (R2 later folds the warning into the shared option helper.)
+0b. **Consolidate the dictionary test fixture** (Missing/Future #3) into
+   `helper-dictionary.R` before R3/R5 — both change row/column shape and would
+   otherwise force ~30 inline edits and risk drift in the gate tests.
+1. **Deepen LLM context handling (R1)** — closest to issue #1.
+2. **Centralize LLM option forwarding (R2)** — do before R5 so the LLM tail is
+   touched once.
+3. **Extract semantic target discovery (R3)** — stabilizes the target-row column
+   contract that R4's adapter row builders consume positionally.
+4. **Deepen the LLM review adapter (R4)** — decision pre-resolved (deepen); deepen
+   it against the now-frozen target-row contract.
+5. **Make package artifact inference the canonical orchestration Module (R5)** —
+   broadest/riskiest; depends on R2's tail extraction and the attribute-scheme freeze.
 
-The first two are closest to issue #1 and should be done together or back to
-back. The LLM review Adapter decision should happen before moving more review
-behavior. Semantic target discovery and artifact orchestration are larger
-refactors and should wait until the context/option path is stable.
+**Round-2 ordering change:** the original enhanced order put R4 before R3. R4's
+decision is settled, which makes it *safe* anytime but not *urgent* early — and R4
+deepens a consumer (adapter row builders, adapter:36-118) of the very target-row
+columns R3 moves. Doing **R3 before R4** means the adapter is deepened against a
+stable contract. If you keep R4 earlier for scheduling reasons, freeze the
+target-row + assessment-row column contracts as an explicit R4 precondition first.
+Either way the adapter↔target-row positional coupling must be named in both
+refactors' risks.
 
 ## Validation Ladder
 
@@ -477,12 +985,35 @@ testthat::test_file("tests/testthat/test-llm-semantic-helpers.R", reporter = "su
 testthat::test_file("tests/testthat/test-package-helpers.R", reporter = "summary")
 ```
 
+For R3/R4 (target discovery + review contract), also:
+
+```r
+testthat::test_file("tests/testthat/test-semantic-suggestions.R", reporter = "summary")
+testthat::test_file("tests/testthat/test-chat-decomposition.R", reporter = "summary")
+```
+
 For any refactor touching target discovery or artifact orchestration:
 
 ```r
 testthat::test_file("tests/testthat/test-dictionary-helpers.R", reporter = "summary")
 testthat::test_file("tests/testthat/test-validation-helpers.R", reporter = "summary")
 ```
+
+> Note: `test-validation-helpers.R` has only 6 tests and one is network-gated
+> (`fetch_salmon_ontology`, w3id.org), so it is a **weak** gate — the real
+> coverage for R3/R5 is `test-package-helpers.R` and `test-dictionary-helpers.R`.
+> Network-gated tests skip silently offline; do not read a green run as full
+> coverage — **at each refactor boundary, confirm the skipped-test count has not
+> increased** (a refactor can silently convert a real test into a skip).
+
+Column-contract gate (before R3 and R4): add a characterization test that snapshots
+the **column names** of (a) the normalized target tibble and (b) the adapter
+assessment row, and assert them unchanged. The named test files above can pass while
+silently dropping/reordering columns if they assert only subsets.
+
+For R5 (changes a **public export's** attributes), run `R CMD check` at the commit
+that changes attribute attachment — not only at merge — to catch example / NAMESPACE
+/ doc drift on `infer_dictionary` mid-refactor.
 
 Before merging any implementation branch:
 
@@ -497,7 +1028,11 @@ Also run:
 ```sh
 git diff --check
 R CMD build .
+R CMD check <built tarball>   # ADDED — catches doc/example/NAMESPACE drift the test suite misses
 ```
+
+And add a `NEWS.md` entry for any observable behavior change (notably the
+`infer_dictionary` ignored-options warning).
 
 ## Out of Scope
 
@@ -509,4 +1044,8 @@ R CMD build .
 - Rebranding URLs from `dfo-pacific-science/metasalmon` to
   `salmon-data-mobilization/metasmn`; that is a separate existing `main`
   workstream.
-
+- Splitting `package-helpers.R` and converging the chat request builders (tracked
+  in Missing / Future Refactor Candidates, not this plan).
+- Implementing the bundle-aware / `retry_search` / `request_new_term` outcomes
+  (tracked in the retrieval-gap roadmap) — this plan only keeps the contracts
+  *shaped* to receive them.

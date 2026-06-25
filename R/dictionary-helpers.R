@@ -98,6 +98,10 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     !is.null(llm_reasoning_effort) ||
     !is.null(llm_request_fn)
   .ms_validate_llm_context_files(llm_context_files)
+  .ms_warn_if_llm_semantic_options_ignored(
+    seed_semantics = seed_semantics,
+    llm_requested = llm_requested
+  )
 
   semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
     semantic_max_per_role,

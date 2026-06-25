@@ -480,6 +480,18 @@
   invisible(NULL)
 }
 
+.ms_warn_if_llm_semantic_options_ignored <- function(seed_semantics, llm_requested) {
+  if (isTRUE(seed_semantics) || !isTRUE(llm_requested)) {
+    return(invisible(FALSE))
+  }
+
+  cli::cli_warn(c(
+    "Ignoring LLM semantic options because {.code seed_semantics = FALSE}.",
+    "i" = "Enable {.code seed_semantics = TRUE} to generate semantic suggestions or call {.fn suggest_semantics} later with the same LLM/context arguments."
+  ))
+  invisible(TRUE)
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
