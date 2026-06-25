@@ -125,44 +125,26 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       cli::cli_abort("{.arg df} table_id names must be unique")
     }
 
-    dict_parts <- lapply(names(resources), function(tab_id) {
-      infer_dictionary(
-        df = resources[[tab_id]],
-        guess_types = guess_types,
-        dataset_id = dataset_id,
-        table_id = tab_id,
-        seed_semantics = FALSE,
-        semantic_sources = semantic_sources,
-        semantic_max_per_role = semantic_max_per_role,
-        seed_verbose = seed_verbose,
-        seed_codes = NULL,
-        seed_table_meta = NULL,
-        seed_dataset_meta = NULL
-      )
-    })
-    dict <- dplyr::bind_rows(dict_parts)
+    dict <- .ms_infer_resource_dictionary(
+      resources = resources,
+      guess_types = guess_types,
+      dataset_id = dataset_id,
+      semantic_sources = semantic_sources,
+      semantic_max_per_role = semantic_max_per_role,
+      seed_verbose = seed_verbose
+    )
 
-    inferred_table_meta <- infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
-    inferred_codes <- infer_codes_from_resources(resources, dataset_id = dataset_id)
-    inferred_dataset_meta <- infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
-
-    if (!is.null(seed_table_meta)) {
-      table_meta <- seed_table_meta
-    } else {
-      table_meta <- inferred_table_meta
-    }
-
-    if (!is.null(seed_codes)) {
-      codes <- seed_codes
-    } else {
-      codes <- inferred_codes
-    }
-
-    if (!is.null(seed_dataset_meta)) {
-      dataset_meta <- seed_dataset_meta
-    } else {
-      dataset_meta <- inferred_dataset_meta
-    }
+    artifact_context <- .ms_infer_resource_artifact_context(
+      resources = resources,
+      dataset_id = dataset_id,
+      seed_codes = seed_codes,
+      seed_table_meta = seed_table_meta,
+      seed_dataset_meta = seed_dataset_meta,
+      mode = "dictionary"
+    )
+    table_meta <- artifact_context$table_meta
+    codes <- artifact_context$codes
+    dataset_meta <- artifact_context$dataset_meta
 
     if (isTRUE(seed_semantics)) {
       if (seed_verbose) {
@@ -179,10 +161,10 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       )
       suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
-      attr(dict, "inferred_table_meta") <- table_meta
-      attr(dict, "inferred_codes") <- codes
-      attr(dict, "inferred_dataset_meta") <- dataset_meta
-      attr(dict, "inferred_resources") <- names(resources)
+      attr(dict, "inferred_table_meta") <- artifact_context$inferred_table_meta
+      attr(dict, "inferred_codes") <- artifact_context$inferred_codes
+      attr(dict, "inferred_dataset_meta") <- artifact_context$inferred_dataset_meta
+      attr(dict, "inferred_resources") <- artifact_context$inferred_resources
     }
 
     dict <- .ms_fill_review_placeholders_dictionary(dict)

@@ -194,6 +194,66 @@ test_that("infer_dictionary can seed semantic suggestions", {
   )
 })
 
+test_that("infer_dictionary single-table semantic seeding preserves seed metadata attributes", {
+  seed_codes <- tibble::tibble(
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    column_name = "species",
+    code_value = "Coho",
+    code_label = "Coho salmon",
+    code_description = "Species code",
+    term_iri = NA_character_
+  )
+  seed_table_meta <- tibble::tibble(
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    table_label = "Survey table",
+    description = "Survey observations",
+    observation_unit = "survey observation",
+    observation_unit_iri = NA_character_
+  )
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "dataset-1",
+    title = "Survey dataset",
+    description = "Survey dataset description",
+    keywords = NA_character_
+  )
+  fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1,
+                           include_dwc = FALSE, codes = NULL, table_meta = NULL,
+                           dataset_meta = NULL, ...) {
+    expect_s3_class(df, "data.frame")
+    expect_identical(codes, seed_codes)
+    expect_identical(table_meta, seed_table_meta)
+    expect_identical(dataset_meta, seed_dataset_meta)
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+
+  dict <- with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_dictionary(
+        data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+        dataset_id = "dataset-1",
+        table_id = "table-1",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        seed_codes = seed_codes,
+        seed_table_meta = seed_table_meta,
+        seed_dataset_meta = seed_dataset_meta
+      )
+    }
+  )
+
+  expect_identical(attr(dict, "seed_codes", exact = TRUE), seed_codes)
+  expect_identical(attr(dict, "seed_table_meta", exact = TRUE), seed_table_meta)
+  expect_identical(attr(dict, "seed_dataset_meta", exact = TRUE), seed_dataset_meta)
+  expect_null(attr(dict, "inferred_codes", exact = TRUE))
+  expect_null(attr(dict, "inferred_table_meta", exact = TRUE))
+  expect_null(attr(dict, "inferred_dataset_meta", exact = TRUE))
+  expect_null(attr(dict, "inferred_resources", exact = TRUE))
+})
+
 test_that("infer_dictionary falls back to deterministic suggestions when LLM assessment fails", {
   fake_search <- function(query, role, sources) {
     tibble::tibble(

@@ -102,8 +102,23 @@ Base state for this plan:
   `Rscript -e 'devtools::test(filter = "semantic-suggestions|dictionary-helpers|llm-semantic-helpers|package-helpers|chat-decomposition", reporter = "summary")'`
   passed with the expected optional-PDF skips and deterministic LLM-fallback /
   semantic-gap warnings.
-- [ ] Implement R5: make artifact inference the canonical orchestration Module
-  while preserving public `infer_dictionary()` attribute contracts.
+- [x] 2026-06-25: Implemented R5 artifact-inference extraction while preserving
+  public `infer_dictionary()` attribute contracts. Added `R/artifact-inference.R`
+  with `.ms_infer_resource_dictionary()` and
+  `.ms_infer_resource_artifact_context()`. `infer_salmon_datapackage_artifacts()`
+  now builds combined resource dictionaries through the internal resource
+  builder instead of invoking public list-mode `infer_dictionary()`. Both
+  `infer_dictionary()` list inputs and package artifact inference share the
+  metadata/code/dataset context helper, with explicit `mode = "dictionary"` vs
+  `mode = "package"` so bare seed override behavior remains separate from
+  package-only normalization, legacy estimate-method prefill, and
+  `semantic_code_scope` filtering. Added a single-table compatibility test that
+  freezes the disjoint `seed_*` attribute scheme and asserts it does not attach
+  multi-table `inferred_*` attributes. Validation:
+  `Rscript -e 'devtools::test(filter = "dictionary-helpers|package-helpers", reporter = "summary")'`
+  and `Rscript -e 'devtools::test(reporter = "summary")'` passed with the
+  expected optional-PDF skips and pre-existing deterministic LLM-fallback,
+  semantic-gap, optional frictionless, and network-timeout warning tests.
 - [ ] Run final documentation, pkgdown, package build, package check, and record
   outcomes.
 

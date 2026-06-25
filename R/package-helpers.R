@@ -485,45 +485,29 @@ infer_salmon_datapackage_artifacts <- function(
     cli::cli_abort("All entries in {.arg resources} must be data frames. Invalid entries at: {.val {bad_rows}}")
   }
 
-  dict <- infer_dictionary(
-    df = resources,
+  dict <- .ms_infer_resource_dictionary(
+    resources = resources,
     guess_types = guess_types,
     dataset_id = dataset_id,
-    table_id = table_id,
-    seed_semantics = FALSE,
     semantic_sources = semantic_sources,
     semantic_max_per_role = semantic_max_per_role,
-    seed_verbose = seed_verbose,
-    seed_codes = NULL,
-    seed_table_meta = NULL,
-    seed_dataset_meta = NULL
+    seed_verbose = seed_verbose
   )
 
-  table_meta <- if (is.null(seed_table_meta) || isTRUE(seed_table_meta)) {
-    infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
-  } else {
-    .ms_normalize_table_meta(seed_table_meta)
-  }
-
-  codes <- if (is.null(seed_codes)) {
-    infer_codes_from_resources(resources, dataset_id = dataset_id)
-  } else {
-    .ms_normalize_codes(seed_codes)
-  }
-  codes <- .ms_prefill_legacy_estimate_method_code_terms(codes, dict = dict)
-
-  dataset_meta <- if (is.null(seed_dataset_meta) || isTRUE(seed_dataset_meta)) {
-    infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
-  } else {
-    .ms_normalize_dataset_meta(seed_dataset_meta)
-  }
-
-  semantic_code_scope <- match.arg(semantic_code_scope)
-  semantic_codes <- .ms_select_semantic_seed_codes(
-    codes = codes,
+  artifact_context <- .ms_infer_resource_artifact_context(
     resources = resources,
-    scope = semantic_code_scope
+    dataset_id = dataset_id,
+    seed_codes = seed_codes,
+    seed_table_meta = seed_table_meta,
+    seed_dataset_meta = seed_dataset_meta,
+    mode = "package",
+    dict = dict,
+    semantic_code_scope = semantic_code_scope
   )
+  table_meta <- artifact_context$table_meta
+  codes <- artifact_context$codes
+  dataset_meta <- artifact_context$dataset_meta
+  semantic_codes <- artifact_context$semantic_codes
 
   semantic_suggestions <- NULL
   semantic_llm_assessments <- NULL
