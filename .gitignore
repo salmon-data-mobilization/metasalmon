@@ -45,6 +45,8 @@ agent-guidance/
 .cursorignore
 docs/AGENTS.html
 /docs/AGENTS.html
+docs/CLAUDE.html
+/docs/CLAUDE.html
 AGENTS.md
 CLAUDE.md
 docs/plans/

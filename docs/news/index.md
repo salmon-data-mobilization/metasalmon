@@ -9,6 +9,10 @@
   clear error, and context supplied without `llm_assess = TRUE` now
   warns that it will be ignored rather than silently producing
   deterministic-only output.
+- Fixed
+  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+  so LLM semantic-review options supplied while `seed_semantics = FALSE`
+  now warn once instead of being silently ignored.
 - Clarified the exported documentation for
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
   [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),

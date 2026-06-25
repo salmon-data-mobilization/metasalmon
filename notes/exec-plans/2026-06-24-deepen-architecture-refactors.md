@@ -119,8 +119,18 @@ Base state for this plan:
   and `Rscript -e 'devtools::test(reporter = "summary")'` passed with the
   expected optional-PDF skips and pre-existing deterministic LLM-fallback,
   semantic-gap, optional frictionless, and network-timeout warning tests.
-- [ ] Run final documentation, pkgdown, package build, package check, and record
-  outcomes.
+- [x] 2026-06-25: Ran final documentation, package build/check, and pkgdown
+  validation. `Rscript -e 'devtools::document()'` completed without source
+  roxygen drift. `R CMD build .` completed and built
+  `metasalmon_0.1.4.tar.gz`. Initial `R CMD check metasalmon_0.1.4.tar.gz
+  --no-manual` failed before tests because suggested package `pdftools` is not
+  installed in this environment; rerunning with `_R_CHECK_FORCE_SUGGESTS_=false`
+  exposed a pre-existing `License: MIT + file LICENSE` warning because `LICENSE`
+  was missing. Added the standard MIT `LICENSE` stub, rebuilt, and reran
+  `_R_CHECK_FORCE_SUGGESTS_=false R CMD check metasalmon_0.1.4.tar.gz
+  --no-manual`; final status was `OK`. Ran
+  `Rscript -e 'pkgdown::build_site()'` and kept regenerated docs, while ignoring
+  local launcher pages generated from ignored `AGENTS.md` / `CLAUDE.md`.
 
 ## Peer Review (2026-06-24)
 
