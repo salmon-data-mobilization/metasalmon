@@ -687,10 +687,13 @@ test_that("malformed batch items fall back per target without discarding valid s
   fixture <- test_llm_batch_review_fixture(config)
 
   out <- NULL
-  expect_warning(
-    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config),
-    "falling back to per-target review for target keys"
+  warns <- testthat::capture_warnings(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config)
   )
+  expect_match(warns, "falling back to per-target review", all = FALSE)
+  # The specific per-key reason (a confidence-range validation error) is surfaced,
+  # not just the failing key.
+  expect_match(warns, "confidence", all = FALSE)
 
   expect_equal(calls, c("batch", "single"))
   expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
@@ -729,10 +732,12 @@ test_that("duplicate batch target keys fall back for only the affected target", 
   fixture <- test_llm_batch_review_fixture(config)
 
   out <- NULL
-  expect_warning(
-    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config),
-    "falling back to per-target review for target keys"
+  warns <- testthat::capture_warnings(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config)
   )
+  expect_match(warns, "falling back to per-target review", all = FALSE)
+  # The surfaced reason explains *why* the key fell back (a duplicate assessment).
+  expect_match(warns, "duplicate", all = FALSE)
 
   expect_equal(calls, c("batch", "single"))
   expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
@@ -1087,6 +1092,75 @@ test_that("no-gain exploration (candidate_gain <= 0) keeps the original selected
   expect_equal(nrow(selected), 1L)
   expect_equal(selected$iri[[1]], "https://example.org/original-3")
   expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
+})
+
+test_that("reject_shortlist that exploration cannot resolve escalates to request_new_term", {
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 2),
+    table_id = rep("t1", 2),
+    column_name = rep("catch_weight", 2),
+    column_label = rep("Catch weight", 2),
+    column_description = rep("Total weight of catch", 2),
+    column_role = rep("measurement", 2),
+    code_value = rep(NA_character_, 2),
+    dictionary_role = rep("property", 2),
+    search_role = rep("property", 2),
+    target_scope = rep("column", 2),
+    target_sdp_file = rep("column_dictionary.csv", 2),
+    target_sdp_field = rep("property_iri", 2),
+    search_query = rep("catch weight", 2),
+    target_label = rep("Catch weight", 2),
+    target_description = rep("Total weight of catch", 2),
+    target_query_basis = rep("label", 2),
+    target_query_context = rep("ctx", 2),
+    label = c("Fish weight", "Fish length"),
+    iri = c("https://example.org/fish-weight", "https://example.org/fish-length"),
+    source = rep("smn", 2),
+    ontology = rep("demo", 2),
+    definition = c("Weight of an individual fish", "Length of an individual fish"),
+    match_type = rep("label_partial", 2),
+    score = c(0.7, 0.6)
+  )
+
+  fake_request <- function(messages, config) {
+    prompt <- messages[[2]]$content
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("biomass of catch"),
+        rationale = "None of the individual-fish candidates fit a catch-level property."
+      ))
+    }
+    # Both the initial and any reassessment reject the whole shortlist.
+    list(
+      decision = "reject_shortlist",
+      selected_candidate_index = NULL,
+      confidence = 0.82,
+      rationale = "Candidates are individual-organism oriented, not catch-level.",
+      missing_context = ""
+    )
+  }
+  # Exploration re-search finds nothing, so the rejection is never resolved.
+  fake_search <- function(query, role, sources) tibble::tibble()
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 2L,
+    request_fn = fake_request,
+    search_fn = fake_search,
+    sources = "smn",
+    max_per_role = 2L
+  )
+
+  assessment <- out$assessments
+  expect_equal(assessment$llm_decision[[1]], "request_new_term")
+  expect_true(is.na(assessment$llm_selected_candidate_index[[1]]))
+  expect_true(is.na(assessment$llm_selected_iri[[1]]))
+  expect_match(assessment$llm_rationale[[1]], "escalated to request_new_term", fixed = TRUE)
+  # No candidate is flagged as selected in the suggestions output.
+  expect_false(any(isTRUE(out$suggestions$llm_selected)))
 })
 
 test_that("LLM request_new_term stores ontology-gap metadata", {

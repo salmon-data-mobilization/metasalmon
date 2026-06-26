@@ -110,29 +110,25 @@
     !is.null(llm_request_fn)
 }
 
-.ms_llm_review_suggest_args <- function(llm_assess = FALSE,
-                                        llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-                                        llm_model = NULL,
-                                        llm_api_key = NULL,
-                                        llm_base_url = NULL,
-                                        llm_reasoning_effort = NULL,
-                                        llm_top_n = 5L,
-                                        llm_context_files = NULL,
-                                        llm_context_text = NULL,
-                                        llm_timeout_seconds = 60,
-                                        llm_request_fn = NULL) {
-  list(
-    llm_assess = llm_assess,
-    llm_provider = llm_provider,
-    llm_model = llm_model,
-    llm_api_key = llm_api_key,
-    llm_base_url = llm_base_url,
-    llm_reasoning_effort = llm_reasoning_effort,
-    llm_top_n = llm_top_n,
-    llm_context_files = llm_context_files,
-    llm_context_text = llm_context_text,
-    llm_timeout_seconds = llm_timeout_seconds,
-    llm_request_fn = llm_request_fn
+# Single source of truth for the LLM semantic-review argument surface. The
+# argument NAMES live here exactly once; `.ms_llm_review_plan()` collects them
+# from its own formals with `mget()` to build the suggest_semantics() LLM tail.
+# Adding a new LLM knob therefore means editing the `.ms_llm_review_plan()`
+# signature and this vector only -- the two stay in lockstep instead of being
+# re-listed by hand in a separate pass-through helper.
+.ms_llm_arg_names <- function() {
+  c(
+    "llm_assess",
+    "llm_provider",
+    "llm_model",
+    "llm_api_key",
+    "llm_base_url",
+    "llm_reasoning_effort",
+    "llm_top_n",
+    "llm_context_files",
+    "llm_context_text",
+    "llm_timeout_seconds",
+    "llm_request_fn"
   )
 }
 
@@ -165,20 +161,13 @@
     llm_requested = llm_requested
   )
 
+  # Conditional LLM tail appended to suggest_args. mget() pulls exactly the
+  # canonical LLM args (.ms_llm_arg_names()) out of this function's environment,
+  # so the names are never duplicated. The caller-specific BASE suggest_args
+  # (df/codes/table_meta/dataset_meta/include_dwc) stay owned by each public
+  # entry point because they legitimately differ per caller.
   suggest_args <- if (llm_requested) {
-    .ms_llm_review_suggest_args(
-      llm_assess = llm_assess,
-      llm_provider = llm_provider,
-      llm_model = llm_model,
-      llm_api_key = llm_api_key,
-      llm_base_url = llm_base_url,
-      llm_reasoning_effort = llm_reasoning_effort,
-      llm_top_n = llm_top_n,
-      llm_context_files = llm_context_files,
-      llm_context_text = llm_context_text,
-      llm_timeout_seconds = llm_timeout_seconds,
-      llm_request_fn = llm_request_fn
-    )
+    mget(.ms_llm_arg_names(), envir = environment())
   } else {
     list()
   }
@@ -1066,6 +1055,9 @@
     return(FALSE)
   }
 
+  # reject_shortlist always explores: it gets one chance to find a better
+  # candidate before .ms_llm_escalate_unresolved_rejection() escalates a still-
+  # rejected target to request_new_term.
   decision %in% c("review", "retry_search", "reject_shortlist") ||
     (identical(decision, "request_new_term") && (is.na(confidence) || confidence < 0.8)) ||
     is.na(confidence) || confidence < .ms_llm_exploration_confidence_threshold(config)
@@ -1327,6 +1319,38 @@
   list(record = updated_record, assessment = reassessed)
 }
 
+# reject_shortlist means the model judged every candidate to be the wrong concept
+# family. Exploration gets one chance to surface a better candidate; if the target
+# still comes back rejected afterwards, escalate the outcome to request_new_term so
+# the likely ontology gap is surfaced to the new-term workflow instead of being
+# left as a dead-end rejection. A reassessment that turns into accept (or a softer
+# review/retry_search) is left untouched.
+.ms_llm_escalate_unresolved_rejection <- function(pre_assessment, explored) {
+  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
+  if (!identical(pre_decision, "reject_shortlist")) {
+    return(explored)
+  }
+
+  assessment <- explored$assessment
+  post_decision <- .ms_llm_non_empty_string(assessment$llm_decision[[1]] %||% NA_character_)
+  if (!identical(post_decision, "reject_shortlist")) {
+    return(explored)
+  }
+
+  assessment$llm_decision <- "request_new_term"
+  assessment$llm_selected_candidate_index <- NA_integer_
+  assessment$llm_selected_iri <- NA_character_
+  assessment$llm_selected_label <- NA_character_
+  note <- paste(
+    "Shortlist rejected and exploration found no acceptable candidate;",
+    "escalated to request_new_term so the likely ontology gap is surfaced."
+  )
+  existing <- .ms_llm_non_empty_string(assessment$llm_rationale[[1]] %||% NA_character_)
+  assessment$llm_rationale <- if (is.na(existing)) note else paste(existing, note)
+  explored$assessment <- assessment
+  explored
+}
+
 .ms_llm_extract_message_content <- function(body) {
   choices <- body$choices %||% list()
   if (length(choices) == 0) {
@@ -1514,6 +1538,10 @@
       collapse = " "
     )
   }
+  # These decisions never select a candidate. reject_shortlist is preserved here
+  # as a distinct decision (not downgraded to review) so the stored llm_decision
+  # carries the rejection; the orchestration later escalates an unresolved
+  # rejection to request_new_term via .ms_llm_escalate_unresolved_rejection().
   if (decision %in% c("request_new_term", "retry_search", "reject_shortlist")) {
     selected_index <- NA_integer_
   }
@@ -1616,7 +1644,14 @@
 
     if (key %in% seen_keys) {
       rows[key] <- list(NULL)
-      fallback_reasons[[key]] <- paste0("LLM batch response included duplicate assessment for target key '", key, "'.")
+      # Force the duplicated key to per-target fallback, but do not clobber a
+      # more specific reason already recorded for it (e.g. a validation error
+      # from its first occurrence).
+      if (is.na(fallback_reasons[[key]]) || !nzchar(fallback_reasons[[key]])) {
+        fallback_reasons[[key]] <- paste0(
+          "LLM batch response included duplicate assessment for target key '", key, "'."
+        )
+      }
       next
     }
     seen_keys <- c(seen_keys, key)
@@ -1697,9 +1732,20 @@
     return(validated)
   }
 
-  cli::cli_warn(
-    "LLM batch response was unusable for {length(fallback_keys)} of {length(records)} targets; falling back to per-target review for target keys: {.val {fallback_keys}}"
-  )
+  # Surface the per-key fallback reasons (not just the keys) so a batch failure is
+  # debuggable. Reason text is model-influenced, so escape glue/cli braces before
+  # it reaches cli_warn's interpolation.
+  fallback_reasons <- attr(validated, "llm_batch_fallback_reasons") %||% character()
+  escape_braces <- function(x) gsub("}", "}}", gsub("{", "{{", x, fixed = TRUE), fixed = TRUE)
+  reason_bullets <- vapply(fallback_keys, function(k) {
+    reason <- fallback_reasons[[k]] %||% "no usable assessment returned"
+    if (is.na(reason) || !nzchar(reason)) reason <- "no usable assessment returned"
+    escape_braces(paste0(k, ": ", reason))
+  }, character(1))
+  cli::cli_warn(c(
+    "LLM batch response was unusable for {length(fallback_keys)} of {length(records)} targets; falling back to per-target review.",
+    stats::setNames(reason_bullets, rep("*", length(reason_bullets)))
+  ))
 
   valid_keys <- attr(validated, "llm_batch_valid_keys") %||% character()
   rows_by_key <- list()
@@ -1836,7 +1882,7 @@
         error = "Initial LLM assessment was missing for this target."
       )
     }
-    .ms_llm_explore_record(
+    explored_record <- .ms_llm_explore_record(
       record = record,
       assessment_row = assessment_row,
       config = config,
@@ -1846,6 +1892,7 @@
       top_n = top_n,
       context_chunk_pool = context_chunk_pool
     )
+    .ms_llm_escalate_unresolved_rejection(assessment_row, explored_record)
   })
 
   final_records <- purrr::map(explored, "record")

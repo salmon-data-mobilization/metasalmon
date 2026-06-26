@@ -385,3 +385,41 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   semantic path (#3). The i-adopt roadmap wants decomposition to be one mode in a
   shared curation engine; converging the request builders is the request-side half of
   that (R4 only unifies the response-validation seam).
+
+---
+
+## Code review of the implementation (2026-06-25)
+
+A `/code-review` of Codex's implementation surfaced 10 findings (one confirmed
+correctness bug + cleanup/test/altitude items). Resolved on this branch (full
+suite green: 1281 pass / 0 fail):
+
+- **Confirmed correctness (the bug #2 fix was only half-applied):** the no-gain
+  exploration *skip* branch still returned a re-sorted shortlist paired with the
+  original positional selected index. Fixed (returns the original record) +
+  regression test. See item #2 above.
+- **Dead context params:** removed the now-unused `context_files`/`context_text`
+  from `.ms_prepare_context_chunks`, `.ms_llm_prepare_record`, and
+  `.ms_llm_explore_record` (the pre-collected chunk pool is the sole input).
+- **Silent column drop:** `.ms_semantic_discover_targets` now fails loud on any
+  column outside the target-row contract instead of quietly subsetting it away.
+- **DRY LLM arg surface:** the duplicate suggest-args identity helper was replaced
+  by one canonical `.ms_llm_arg_names()` collected via `mget()` in
+  `.ms_llm_review_plan()`, so the arg names live in exactly one place.
+- **Batch fallback observability:** the per-key fallback *reasons* are now
+  surfaced in the warning (not just the keys), and duplicate-key handling no
+  longer clobbers a more specific first-occurrence reason.
+- **`reject_shortlist` now has distinct behaviour:** a rejected shortlist that
+  exploration cannot resolve escalates to `request_new_term`
+  (`.ms_llm_escalate_unresolved_rejection`), surfacing the likely ontology gap;
+  the distinct `llm_decision` is preserved through the batch/validator layers.
+  Regression test added.
+- **Tests + docs:** added dep-free four-scope (`target_sdp_file`) discovery
+  coverage and a value-level LLM row-contract assertion; documented the
+  intentional `inferred_*` return-slot naming and the deliberately divergent local
+  `first_non_empty()` helper.
+
+Deferred (unchanged): the open/deferred items in the snapshot above —
+request-builder convergence (#31/#3), encoding detection (#6), create-time EDH XML
+guard (#4), basename source disambiguation (#5), factor-scope `dataset_id` key
+(#8), and real `AGENTS.md` content (#9).
