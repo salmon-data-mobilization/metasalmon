@@ -151,7 +151,7 @@ share one mature response/request contract rather than two.
   unchanged.
 - **E2 — Shared chat request builder (bug #3).** Mutually exclusive with the
   adapter's dual-shape normalizer — do it **as part of Theme C4**, not standalone.
-- **E3 — Real `AGENTS.md` content (bug #9).** Quick win: `CLAUDE.md`/`AGENTS.md`
+- **E3 — Real `AGENTS.md` content (bug #9). ✅ DONE.** Quick win: `CLAUDE.md`/`AGENTS.md`
   are a circular `@AGENTS.md` stub; seed real guidance from `notes/context.md`
   (LLM opt-in contract, attribute/IRI-prefix contracts, build/test commands).
 - **E4 — Latent cleanups (bugs #22, #23, #24).** Drop the unused `.ms_bundle_key`
@@ -230,7 +230,9 @@ share one mature response/request contract rather than two.
 - [x] 2026-06-26: D1 (context-file encoding fallback), D2 (source-label
   disambiguation), D3 (factor-scope `dataset_id` key) implemented with tests; full
   suite green (1291 pass / 0 fail).
-- [ ] E3 (real `AGENTS.md`).
+- [x] 2026-06-26: E3 — real `AGENTS.md` (seeded from `notes/context.md`); resolves
+  the circular `@AGENTS.md` stub. `CLAUDE.md` imports it; the pkgdown artifact is
+  git-ignored so nothing leaks to the public site.
 - [ ] P1 (`R CMD check`), P2 (PR), P3 (version decision).
 - [ ] Begin Theme A (A4 → A5 → A2 → A3 → A1).
 

@@ -28,9 +28,9 @@ Severity = how much it can bite a real user.
 
 **Current snapshot:** #1, #2, #7, #10, #11, #12, #14, #15, #16, #17, #18,
 #19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
-#30 are partially addressed. #4, #5, #6, #8 were fixed on 2026-06-26 (roadmap
-clear-the-decks). #3, #9, #13, #22, #23, #24, and #31 remain open/deferred as
-noted below.
+#30 are partially addressed. #4, #5, #6, #8, #9 were fixed on 2026-06-26 (roadmap
+clear-the-decks). #3, #13, #22, #23, #24, and #31 remain open/deferred as noted
+below.
 
 **Forward plan:** the open/deferred items are sequenced into themed workstreams in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
@@ -174,9 +174,11 @@ E4, #31 → Theme C).
 
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
 - **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
-- **Implementation status:** open. The pkgdown artifact issue was mitigated by
-  ignoring generated launcher pages, but the source `AGENTS.md` and `CLAUDE.md`
-  files still contain only `@AGENTS.md`.
+- **Implementation status:** fixed (2026-06-26, roadmap E3). `AGENTS.md` now holds
+  real agent/contributor guidance (non-negotiable contracts, build/test/doc
+  commands, gotchas, planning pointers) seeded from `notes/context.md`; `CLAUDE.md`
+  imports it via `@AGENTS.md`. The generated `docs/AGENTS.html`/`docs/CLAUDE.html`
+  are git-ignored, so nothing leaks to the public pkgdown site.
 - Both files contain only `@AGENTS.md`; `AGENTS.md` references itself → no agent
   guidance ships, and the include is circular. **Fix:** seed real `AGENTS.md` from
   `notes/context.md` (LLM opt-in contract, attribute/IRI-prefix contracts, commands).
