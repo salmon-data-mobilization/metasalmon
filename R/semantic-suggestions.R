@@ -205,6 +205,10 @@
     all(is.na(x) | as.character(x) == "")
   }
   is_present <- function(x) !is_missing(x)
+  # NOTE: intentionally distinct from module-level .ms_semantic_first_non_empty():
+  # this takes a list, returns "" (not NA) when nothing is present, and does not
+  # trim each value. Discovery query-building depends on the empty -> "" behaviour,
+  # so do not consolidate the two without reconciling those semantics.
   first_non_empty <- function(values) {
     values <- values[!vapply(values, is_missing, logical(1))]
     if (length(values) == 0) "" else values[[1]]
@@ -919,6 +923,15 @@
   }
 
   targets <- .ms_semantic_normalize_target_rows(targets, target_cols)
+  # Fail loud rather than silently dropping a column a future builder adds: a
+  # stray column here means the target-row contract and the builders disagree.
+  extra_cols <- setdiff(names(targets), target_cols)
+  if (length(extra_cols) > 0L) {
+    cli::cli_abort(c(
+      "Semantic target discovery produced columns outside the target-row contract.",
+      "i" = "Add them to {.fn .ms_semantic_target_cols} or drop them in the builder: {.val {extra_cols}}."
+    ))
+  }
   targets <- targets[, target_cols, drop = FALSE]
 
   targets

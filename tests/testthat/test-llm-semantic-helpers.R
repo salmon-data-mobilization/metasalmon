@@ -596,8 +596,6 @@ test_llm_batch_review_fixture <- function(config = NULL) {
       suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
       config,
       2L,
-      NULL,
-      NULL,
       context_chunk_pool = tibble::tibble()
     ),
     metasalmon:::.ms_llm_prepare_record(
@@ -605,8 +603,6 @@ test_llm_batch_review_fixture <- function(config = NULL) {
       suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE],
       config,
       2L,
-      NULL,
-      NULL,
       context_chunk_pool = tibble::tibble()
     )
   )
@@ -781,8 +777,6 @@ test_that("measurement targets route to decomposition-aware review with bundle c
     suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
     config,
     2L,
-    NULL,
-    NULL,
     context_chunk_pool = tibble::tibble(),
     bundle_group = suggestions
   )
@@ -992,6 +986,107 @@ test_that("failed exploration reassessment does not remap old selected indexes o
   expect_false(any(out$suggestions$iri == "https://example.org/new-3"))
   expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
   expect_equal(out$assessments$llm_exploration_queries[[1]], "better alpha metric")
+})
+
+test_that("no-gain exploration (candidate_gain <= 0) keeps the original selected index", {
+  # Regression for the skip branch of .ms_llm_explore_record: when exploration
+  # returns only candidates that already exist (candidate_gain == 0) but the
+  # re-sort reorders the shortlist, the function must return the ORIGINAL record
+  # so the original positional selected index is not remapped onto a new order.
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 3),
+    table_id = rep("t1", 3),
+    column_name = rep("alpha_metric", 3),
+    column_label = rep("Alpha metric", 3),
+    column_description = rep("Alpha metric description", 3),
+    column_role = rep("measurement", 3),
+    code_value = rep(NA_character_, 3),
+    dictionary_role = rep("property", 3),
+    search_role = rep("property", 3),
+    target_scope = rep("column", 3),
+    target_sdp_file = rep("column_dictionary.csv", 3),
+    target_sdp_field = rep("property_iri", 3),
+    search_query = rep("alpha metric", 3),
+    target_label = rep("Alpha metric", 3),
+    target_description = rep("Alpha metric description", 3),
+    target_query_basis = rep("label", 3),
+    target_query_context = rep("ctx", 3),
+    label = c("Original one", "Original two", "Original three"),
+    iri = c(
+      "https://example.org/original-1",
+      "https://example.org/original-2",
+      "https://example.org/original-3"
+    ),
+    source = rep("smn", 3),
+    ontology = rep("demo", 3),
+    definition = c("O1", "O2", "O3"),
+    match_type = rep("label_partial", 3),
+    score = c(0.8, 0.7, 0.6)
+  )
+
+  request_calls <- 0L
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    prompt <- messages[[2]]$content
+
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("rescore alpha metric"),
+        rationale = "The initial accepted result was weak."
+      ))
+    }
+
+    # Initial pass: weakly accept the third original candidate.
+    list(
+      decision = "accept",
+      selected_candidate_index = 3,
+      confidence = 0.4,
+      rationale = "Weakly accepts the third original candidate.",
+      missing_context = ""
+    )
+  }
+  # Re-search returns the SAME iris (no new keys -> candidate_gain == 0) but with
+  # scores that would reorder the shortlist (original-3 now highest).
+  fake_search <- function(query, role, sources) {
+    if (identical(query, "rescore alpha metric")) {
+      return(tibble::tibble(
+        label = c("Original one", "Original two", "Original three"),
+        iri = c(
+          "https://example.org/original-1",
+          "https://example.org/original-2",
+          "https://example.org/original-3"
+        ),
+        source = rep("smn", 3),
+        ontology = rep("demo", 3),
+        role = rep(role, 3),
+        match_type = rep("label_partial", 3),
+        definition = c("O1", "O2", "O3"),
+        score = c(0.60, 0.70, 0.95)
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 3L,
+    request_fn = fake_request,
+    search_fn = fake_search,
+    sources = "smn",
+    max_per_role = 3L
+  )
+
+  selected <- out$suggestions[out$suggestions$llm_selected, , drop = FALSE]
+  # Exploration fired (2 requests: initial accept + alternate-query ask) but no
+  # reassessment request was issued because there was no candidate gain.
+  expect_equal(request_calls, 2L)
+  expect_equal(nrow(selected), 1L)
+  expect_equal(selected$iri[[1]], "https://example.org/original-3")
+  expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
 })
 
 test_that("LLM request_new_term stores ontology-gap metadata", {

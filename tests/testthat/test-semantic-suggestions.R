@@ -126,6 +126,13 @@ test_that("semantic target discovery emits normalized rows across all SDP scopes
 
   expect_equal(names(targets), metasalmon:::.ms_semantic_target_cols())
   expect_setequal(unique(targets$target_scope), c("column", "code", "table", "dataset"))
+  # Dep-free guard that every SDP destination file gets targets (the equivalent
+  # end-to-end assertion in test-llm-semantic-helpers.R is gated behind optional
+  # pdftools/readxl/openxlsx and silently skips without them).
+  expect_setequal(
+    unique(targets$target_sdp_file),
+    c("column_dictionary.csv", "codes.csv", "tables.csv", "dataset.csv")
+  )
   expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 6L)
   expect_equal(nrow(targets[targets$target_scope == "code", , drop = FALSE]), 3L)
   expect_setequal(
@@ -220,18 +227,24 @@ test_that("LLM assessment row contract preserves column order and empty/success 
       definition = "Variable"
     )
   )
+  # Two candidates so the success builder must resolve the SELECTED one (index 2),
+  # not the first candidate or the target row — guards against an off-by-one that a
+  # names()-only check would miss.
   candidates <- tibble::tibble(
-    label = "Spawner abundance",
-    iri = "https://example.org/spawner-abundance",
-    source = "smn",
-    ontology = "demo",
-    definition = "Variable"
+    label = c("Spawner abundance", "Spawner count"),
+    iri = c(
+      "https://example.org/spawner-abundance",
+      "https://example.org/spawner-count"
+    ),
+    source = c("smn", "smn"),
+    ontology = c("demo", "demo"),
+    definition = c("Variable one", "Variable two")
   )
   config <- list(provider = "openrouter", model = "openrouter/free")
   validated <- list(
     decision = "accept",
     confidence = 0.9,
-    selected_candidate_index = 1L,
+    selected_candidate_index = 2L,
     rationale = "Good fit",
     missing_context = NA_character_,
     bundle_summary = NA_character_,
@@ -252,6 +265,14 @@ test_that("LLM assessment row contract preserves column order and empty/success 
 
   expect_equal(names(empty), expected_cols)
   expect_equal(names(success), expected_cols)
+  # Value-level contract: the success row resolves the selected candidate (#2).
+  expect_equal(success$llm_decision, "accept")
+  expect_equal(success$llm_selected_candidate_index, 2L)
+  expect_equal(success$llm_selected_iri, "https://example.org/spawner-count")
+  expect_equal(success$llm_selected_label, "Spawner count")
+  expect_equal(success$llm_context_sources, "context.md")
+  # Empty assessment carries no selection.
+  expect_true(is.na(empty$llm_selected_iri))
 })
 
 test_that("LLM review adapter validates chat-style JSON responses", {

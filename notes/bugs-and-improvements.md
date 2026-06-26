@@ -55,10 +55,14 @@ and #31 remain open/deferred as noted below.
 
 ### 2. Exploration with skipped reassessment pairs a stale selected-index with a re-sorted candidate set
 - **Severity:** medium · **Status:** spot-verified (NEW) · **Class:** correctness-bug
-- **Implementation status:** fixed. The exploration path now keeps the original
-  record paired with the original assessment when reassessment is skipped or
-  fails, so a positional selected-candidate index is never remapped onto a
-  reordered shortlist; covered by LLM semantic-helper tests.
+- **Implementation status:** fixed (completed during 2026-06-25 code review).
+  Codex's first pass only fixed the *failed-reassessment* branch
+  (`R/llm-semantic-helpers.R:1310`); the **no-gain skip branch** (`candidate_gain
+  <= 0`, ~`:1305`) still returned the re-sorted `updated_record` with the original
+  positional index — reproducing the bug on a narrower path. The code review
+  caught this; the skip branch now also returns the original `record`, and a
+  dedicated regression test ("no-gain exploration (candidate_gain <= 0) keeps the
+  original selected index") covers it alongside the failed-reassessment test.
 - **Where:** `R/llm-semantic-helpers.R:1166-1184` (`.ms_llm_explore_record`), with
   `.ms_merge_semantic_target_candidates` (R/semantics-helpers.R) and
   `.ms_semantic_merge_llm_assessments` (R/semantic-suggestions.R:243-268).

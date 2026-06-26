@@ -42,6 +42,11 @@
     codes <- if (!is.null(seed_codes)) seed_codes else inferred_codes
     dataset_meta <- if (!is.null(seed_dataset_meta)) seed_dataset_meta else inferred_dataset_meta
 
+    # NOTE: the `inferred_*` slots deliberately carry the EFFECTIVE (seed-or-inferred)
+    # values, not the pure-inferred locals above. These feed the public
+    # `attr(dict, "inferred_*")` contract that callers/tests rely on (preserved from
+    # pre-refactor behaviour). Do not "fix" them to the pure-inferred locals — that
+    # would change the observable attribute when a seed_* is supplied.
     return(list(
       table_meta = table_meta,
       codes = codes,

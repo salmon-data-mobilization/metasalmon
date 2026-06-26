@@ -746,9 +746,7 @@
   })
 }
 
-.ms_prepare_context_chunks <- function(context_files = NULL,
-                                       context_text = NULL,
-                                       target_row,
+.ms_prepare_context_chunks <- function(target_row,
                                        candidate_rows,
                                        max_chunks = 4L,
                                        context_chunk_pool = NULL) {
@@ -1203,8 +1201,6 @@
                                    sources,
                                    max_per_role,
                                    top_n,
-                                   context_files,
-                                   context_text,
                                    context_chunk_pool = NULL) {
   assessment_row <- .ms_llm_add_exploration_metadata(assessment_row)
   if (!.ms_llm_should_explore(assessment_row, config)) {
@@ -1297,13 +1293,15 @@
     group = merged_group,
     config = config,
     top_n = top_n,
-    context_files = context_files,
-    context_text = context_text,
     context_chunk_pool = context_chunk_pool
   )
 
   if (candidate_gain <= 0 || identical(.ms_llm_prompt_candidate_keys(updated_record), .ms_llm_prompt_candidate_keys(record))) {
-    return(list(record = updated_record, assessment = updated_assessment))
+    # No useful exploration gain: keep the ORIGINAL record so the original
+    # positional selected-candidate index still maps onto the original ordering.
+    # (.ms_merge_semantic_target_candidates re-sorts/caps, so returning
+    # updated_record here would remap a stale index onto a reordered shortlist.)
+    return(list(record = record, assessment = updated_assessment))
   }
 
   reassessed <- .ms_llm_assess_one_record(updated_record, config)
@@ -1548,15 +1546,11 @@
                                    group,
                                    config,
                                    top_n,
-                                   context_files,
-                                   context_text,
                                    context_chunk_pool = NULL,
                                    bundle_group = NULL) {
   group <- group[order(group$.ms_row_order), , drop = FALSE]
   candidate_rows <- utils::head(group, top_n)
   context_chunks <- .ms_prepare_context_chunks(
-    context_files = context_files,
-    context_text = context_text,
     target_row = group[1, , drop = FALSE],
     candidate_rows = candidate_rows,
     max_chunks = .ms_llm_context_chunk_limit(config),
@@ -1821,8 +1815,6 @@
         group = group,
         config = config,
         top_n = top_n,
-        context_files = context_files,
-        context_text = context_text,
         context_chunk_pool = context_chunk_pool,
         bundle_group = bundle_groups[[bundle_key]]
       )
@@ -1852,8 +1844,6 @@
       sources = sources,
       max_per_role = max_per_role,
       top_n = top_n,
-      context_files = context_files,
-      context_text = context_text,
       context_chunk_pool = context_chunk_pool
     )
   })
