@@ -258,10 +258,13 @@ Table-level observation-unit queries ignore review placeholders such as
 candidates; it does not mint new IRIs. If the first shortlist looks weak,
 the model may suggest at most one bounded alternate-query round (1–2
 plain-text queries), the package reruns deterministic retrieval, de-dupes
-the merged shortlist, and reassesses once. Local context files are read on
-disk, chunked, and lexically trimmed down before prompt assembly so large
-README/report/workbook files do not get dumped wholesale into the model
-call.</p>
+the merged shortlist, and reassesses once. If the model rejects the entire
+shortlist (<code>reject_shortlist</code>) and that bounded retry still surfaces no
+acceptable candidate, the assessment is escalated to <code>request_new_term</code> so a
+likely ontology gap shows up in <code>llm_decision</code> instead of a dead-end
+rejection. Local context files are read on disk, chunked, and lexically
+trimmed down before prompt assembly so large README/report/workbook files do
+not get dumped wholesale into the model call.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

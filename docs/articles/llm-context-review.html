@@ -222,6 +222,40 @@ semantics across <strong>all</strong> package metadata tables before you
 finalize anything.</p>
 </div>
 <div class="section level2">
+<h2 id="understanding-the-review-decisions">Understanding the Review Decisions<a class="anchor" aria-label="anchor" href="#understanding-the-review-decisions"></a>
+</h2>
+<p>Each reviewed row carries an <code>llm_decision</code> worth scanning
+before you trust a draft:</p>
+<ul>
+<li>
+<code>accept</code> — the model picked a candidate from the
+deterministic shortlist; on the <code><a href="../reference/create_sdp.html">create_sdp()</a></code> path it is
+written back as a <code>REVIEW:</code> draft.</li>
+<li>
+<code>review</code> — the model was not confident enough to pick;
+nothing is auto-selected and the row is left for your judgement.</li>
+<li>
+<code>retry_search</code> — the model asked for a better query; the
+package runs at most one bounded retry round, re-retrieves, and
+reassesses once.</li>
+<li>
+<code>reject_shortlist</code> — the model judged every candidate to
+be the wrong concept family.</li>
+<li>
+<code>request_new_term</code> — a likely ontology gap. The model can
+return this directly, and a <code>reject_shortlist</code> that the
+bounded retry cannot resolve is <strong>escalated</strong> to it
+automatically. These rows are your cue to propose a new term rather than
+force a near miss — see the term-request workflow
+(<code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code>,
+<code><a href="../reference/render_ontology_term_request.html">render_ontology_term_request()</a></code>,
+<code><a href="../reference/submit_term_request_issues.html">submit_term_request_issues()</a></code>).</li>
+</ul>
+<p>The LLM never mints IRIs: <code>accept</code> only ever selects from
+the retrieved shortlist, and a genuine gap surfaces as
+<code>request_new_term</code> instead of a fabricated term.</p>
+</div>
+<div class="section level2">
 <h2 id="review-order">Review Order<a class="anchor" aria-label="anchor" href="#review-order"></a>
 </h2>
 <p>After <code><a href="../reference/create_sdp.html">create_sdp()</a></code> or

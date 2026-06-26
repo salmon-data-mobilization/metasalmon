@@ -140,6 +140,34 @@ Look especially at:
 That is the clearest path when you want the LLM to help review semantics
 across **all** package metadata tables before you finalize anything.
 
+## Understanding the Review Decisions
+
+Each reviewed row carries an `llm_decision` worth scanning before you
+trust a draft:
+
+- `accept` — the model picked a candidate from the deterministic
+  shortlist; on the
+  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  path it is written back as a `REVIEW:` draft.
+- `review` — the model was not confident enough to pick; nothing is
+  auto-selected and the row is left for your judgement.
+- `retry_search` — the model asked for a better query; the package runs
+  at most one bounded retry round, re-retrieves, and reassesses once.
+- `reject_shortlist` — the model judged every candidate to be the wrong
+  concept family.
+- `request_new_term` — a likely ontology gap. The model can return this
+  directly, and a `reject_shortlist` that the bounded retry cannot
+  resolve is **escalated** to it automatically. These rows are your cue
+  to propose a new term rather than force a near miss — see the
+  term-request workflow
+  ([`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md),
+  [`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md),
+  [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)).
+
+The LLM never mints IRIs: `accept` only ever selects from the retrieved
+shortlist, and a genuine gap surfaces as `request_new_term` instead of a
+fabricated term.
+
 ## Review Order
 
 After

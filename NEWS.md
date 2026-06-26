@@ -8,10 +8,28 @@ metasalmon 0.1.4
   than silently producing deterministic-only output.
 - Fixed `infer_dictionary()` so LLM semantic-review options supplied while
   `seed_semantics = FALSE` now warn once instead of being silently ignored.
+- Semantic LLM review now escalates an unresolvable `reject_shortlist` to
+  `request_new_term`: when the model rejects the whole deterministic shortlist
+  and the bounded retry round still finds no acceptable candidate, the
+  assessment surfaces a likely ontology gap in `llm_decision` instead of a
+  dead-end rejection.
+- Hardened batched semantic LLM review: a single malformed item no longer voids
+  the whole batch (only the affected target keys fall back to per-target
+  review), duplicate target keys fall back instead of silently overwriting, the
+  per-target fallback warning now reports *why* each key fell back, and a
+  truncated or non-JSON provider response includes a sanitized content snippet in
+  the error.
 - Clarified the exported documentation for `create_sdp()`,
   `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and
   `suggest_semantics()` so users know context files affect only explicit LLM
-  review.
+  review, and documented the new `reject_shortlist` -> `request_new_term`
+  escalation.
+- Internal: deepened the semantic-review architecture without changing public
+  signatures -- centralized LLM context/option handling
+  (`.ms_llm_review_plan()`), extracted semantic target discovery into
+  `.ms_semantic_discover_targets()`, moved one-shot artifact inference into
+  `R/artifact-inference.R`, and froze the semantic target-row and LLM
+  assessment-row column contracts with direct tests.
 
 metasalmon 0.1.3
 ----------------

@@ -136,7 +136,9 @@ seeding semantic suggestions.</p></dd>
 
 <dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, run the optional LLM shortlist
-assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>. The LLM and context options below
+take effect only when <code>seed_semantics = TRUE</code>; supplying them with
+<code>seed_semantics = FALSE</code> emits a warning and is otherwise ignored.</p></dd>
 
 
 <dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>

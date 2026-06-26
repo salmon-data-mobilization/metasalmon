@@ -98,6 +98,9 @@ infer_dictionary(
 
   Logical; if `TRUE`, run the optional LLM shortlist assessment inside
   [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  The LLM and context options below take effect only when
+  `seed_semantics = TRUE`; supplying them with `seed_semantics = FALSE`
+  emits a warning and is otherwise ignored.
 
 - llm_provider:
 

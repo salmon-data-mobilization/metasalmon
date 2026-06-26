@@ -261,10 +261,13 @@
 #' candidates; it does not mint new IRIs. If the first shortlist looks weak,
 #' the model may suggest at most one bounded alternate-query round (1--2
 #' plain-text queries), the package reruns deterministic retrieval, de-dupes
-#' the merged shortlist, and reassesses once. Local context files are read on
-#' disk, chunked, and lexically trimmed down before prompt assembly so large
-#' README/report/workbook files do not get dumped wholesale into the model
-#' call.
+#' the merged shortlist, and reassesses once. If the model rejects the entire
+#' shortlist (`reject_shortlist`) and that bounded retry still surfaces no
+#' acceptable candidate, the assessment is escalated to `request_new_term` so a
+#' likely ontology gap shows up in `llm_decision` instead of a dead-end
+#' rejection. Local context files are read on disk, chunked, and lexically
+#' trimmed down before prompt assembly so large README/report/workbook files do
+#' not get dumped wholesale into the model call.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).

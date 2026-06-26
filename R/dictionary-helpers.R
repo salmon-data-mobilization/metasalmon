@@ -23,7 +23,9 @@
 #' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`.
+#'   assessment inside `suggest_semantics()`. The LLM and context options below
+#'   take effect only when `seed_semantics = TRUE`; supplying them with
+#'   `seed_semantics = FALSE` emits a warning and is otherwise ignored.
 #' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
 #' @param llm_model Optional LLM model identifier forwarded to
 #'   `suggest_semantics()`.
