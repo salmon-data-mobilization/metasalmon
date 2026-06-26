@@ -84,7 +84,8 @@
   semantic_codes <- .ms_select_semantic_seed_codes(
     codes = codes,
     resources = resources,
-    scope = semantic_code_scope
+    scope = semantic_code_scope,
+    dataset_id = dataset_id
   )
 
   list(

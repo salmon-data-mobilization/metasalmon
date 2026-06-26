@@ -1431,6 +1431,40 @@ test_that("context chunk pool is collected once but scored per target", {
   expect_equal(temperature_chunks$chunk_id[[1]], "context.md#2")
 })
 
+test_that("context files sharing a basename get disambiguated source labels", {
+  dir_a <- withr::local_tempdir()
+  dir_b <- withr::local_tempdir()
+  path_a <- file.path(dir_a, "notes.md")
+  path_b <- file.path(dir_b, "notes.md")
+  writeLines("Alpha spawner abundance context", path_a)
+  writeLines("Beta water temperature context", path_b)
+
+  chunks <- metasalmon:::.ms_collect_context_chunks(context_files = c(path_a, path_b))
+  sources <- unique(chunks$source)
+
+  # Two distinct files must not collapse into a single "notes.md" source, and
+  # their chunk ids must not collide.
+  expect_length(sources, 2L)
+  expect_equal(anyDuplicated(chunks$chunk_id), 0L)
+  # The basename stays visible in each disambiguated label.
+  expect_true(all(grepl("notes.md", sources, fixed = TRUE)))
+})
+
+test_that("non-UTF-8 (Latin-1/Windows-1252) context files are decoded, not corrupted", {
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "field-notes.csv")
+  # Write "...,Rio Fraser" with the i encoded as Windows-1252 byte 0xED (i-acute),
+  # which is invalid UTF-8 on its own.
+  con <- file(path, open = "wb")
+  writeBin(as.raw(c(utf8ToInt("label,note\nspawners,R"), 0xED, utf8ToInt("o Fraser\n"))), con)
+  close(con)
+
+  res <- metasalmon:::.ms_context_text_from_file(path)
+  expect_false(is.null(res))
+  expect_true(validUTF8(res$text))
+  expect_true(grepl("Río Fraser", res$text, fixed = TRUE))
+})
+
 test_that("context chunk scoring requires a pre-collected pool", {
   expect_error(
     metasalmon:::.ms_prepare_context_chunks(

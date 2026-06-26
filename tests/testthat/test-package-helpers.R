@@ -132,6 +132,64 @@ test_that("create_sdp creates valid package", {
   expect_true(file.exists(file.path(pkg_path_with_edh, "metadata", "metadata-edh-hnap.xml")))
 })
 
+test_that("create_sdp flags create-time EDH XML as a draft when review markers remain", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    site = c("A", "B", "C"),
+    count = c(1L, 2L, 3L),
+    stringsAsFactors = FALSE
+  )
+
+  pkg_path <- NULL
+  warns <- testthat::capture_warnings(
+    pkg_path <- create_sdp(
+      df,
+      path = file.path(temp_dir, "draft-edh"),
+      dataset_id = "draft-edh",
+      table_id = "obs",
+      seed_semantics = FALSE,
+      include_edh_xml = TRUE,
+      check_updates = FALSE,
+      overwrite = TRUE
+    )
+  )
+
+  # Metadata is review-ready (MISSING placeholders remain), so the create-time XML
+  # is a draft and must say so, even though write_edh_xml_from_sdp() would refuse.
+  expect_match(warns, "DRAFT EDH", all = FALSE)
+  expect_true(file.exists(file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")))
+})
+
+test_that("factor-scope code selection keys on dataset_id and does not cross-match datasets", {
+  resources <- list(
+    survey = data.frame(
+      status = c("alive", "dead", "alive", "dead", "alive", "dead"),
+      stringsAsFactors = FALSE
+    )
+  )
+  codes <- tibble::tibble(
+    dataset_id = c("d1", "d2"),
+    table_id = c("survey", "survey"),
+    column_name = c("status", "status"),
+    code_value = c("alive", "alive"),
+    code_label = c("Alive", "Alive"),
+    code_description = c("", ""),
+    term_iri = c(NA_character_, NA_character_)
+  )
+
+  selected <- metasalmon:::.ms_select_semantic_seed_codes(
+    codes,
+    resources,
+    scope = "factor",
+    dataset_id = "d1"
+  )
+
+  # Only the current dataset's code row is selected; the d2 row sharing the same
+  # table_id/column_name is not cross-matched.
+  expect_equal(nrow(selected), 1L)
+  expect_equal(selected$dataset_id, "d1")
+})
+
 test_that("create_sdp falls back to deterministic suggestions when LLM assessment fails", {
   fake_search <- function(query, role, sources) {
     tibble::tibble(

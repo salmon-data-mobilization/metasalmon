@@ -2,6 +2,22 @@
 
 ## metasalmon 0.1.4
 
+- `create_sdp(include_edh_xml = TRUE)` now flags the create-time EDH XML
+  as a draft: it still writes the file, but warns (and points to
+  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md))
+  when the package still contains `REVIEW:` IRIs or `MISSING`
+  placeholders, so a draft is not mistaken for a reviewed export.
+
+- LLM context files are now decoded more robustly: non-UTF-8 (Latin-1 /
+  Windows-1252) text/CSV context files are detected and re-decoded
+  instead of being silently corrupted, and two context files that share
+  a base name no longer collide in chunk ids or the
+  `llm_context_sources` column.
+
+- `semantic_code_scope = "factor"` code selection now keys on
+  `dataset_id` as well as `table_id`/`column_name`, so multi-dataset
+  seed codes can no longer cross-match on a shared table/column name.
+
 - Fixed `llm_context_files` handling in the
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
   semantic-review path: context files must now be supplied as local file
@@ -9,21 +25,25 @@
   clear error, and context supplied without `llm_assess = TRUE` now
   warns that it will be ignored rather than silently producing
   deterministic-only output.
+
 - Fixed
   [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
   so LLM semantic-review options supplied while `seed_semantics = FALSE`
   now warn once instead of being silently ignored.
+
 - Semantic LLM review now escalates an unresolvable `reject_shortlist`
   to `request_new_term`: when the model rejects the whole deterministic
   shortlist and the bounded retry round still finds no acceptable
   candidate, the assessment surfaces a likely ontology gap in
   `llm_decision` instead of a dead-end rejection.
+
 - Hardened batched semantic LLM review: a single malformed item no
   longer voids the whole batch (only the affected target keys fall back
   to per-target review), duplicate target keys fall back instead of
   silently overwriting, the per-target fallback warning now reports
   *why* each key fell back, and a truncated or non-JSON provider
   response includes a sanitized content snippet in the error.
+
 - Clarified the exported documentation for
   [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
   [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),
@@ -33,6 +53,7 @@
   so users know context files affect only explicit LLM review, and
   documented the new `reject_shortlist` -\> `request_new_term`
   escalation.
+
 - Internal: deepened the semantic-review architecture without changing
   public signatures – centralized LLM context/option handling
   (`.ms_llm_review_plan()`), extracted semantic target discovery into

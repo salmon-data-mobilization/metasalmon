@@ -615,7 +615,11 @@ infer_salmon_datapackage_artifacts <- function(
 #'   previously written by `metasalmon`.
 #' @param include_edh_xml Logical; when `TRUE`, writes an HNAP-aware EDH XML
 #'   metadata file to `metadata/metadata-edh-hnap.xml` using
-#'   `edh_build_hnap_xml()`. The default is `FALSE`.
+#'   `edh_build_hnap_xml()`. The default is `FALSE`. Because `create_sdp()`
+#'   produces review-ready metadata, this create-time XML is treated as a
+#'   **draft**: if `REVIEW:`/`MISSING` markers remain it is still written but a
+#'   warning recommends rebuilding a clean file with `write_edh_xml_from_sdp()`
+#'   after the metadata is finalized.
 #' @param ... Deprecated legacy EDH arguments accepted for backwards
 #'   compatibility: `edh_profile`, `EDH_Profile`, and `EDH_profile` all enable
 #'   EDH XML export and must be `"dfo_edh_hnap"` when supplied.
@@ -920,7 +924,26 @@ create_sdp <- function(
       output_path = edh_xml_path
     )
 
-    cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
+    # create_sdp() emits review-ready metadata, so this create-time XML is often
+    # built from dataset/table metadata that still holds REVIEW:/MISSING markers.
+    # write_edh_xml_from_sdp() refuses to rebuild from such packages; flag the
+    # create-time output as a DRAFT (reusing the same review-state detection) so a
+    # user does not ship it believing it cleared the rebuild guard.
+    edh_review_issues <- .ms_collect_edh_review_state_issues(list(
+      dataset = artifacts$dataset_meta,
+      tables = artifacts$table_meta,
+      dictionary = artifacts$dict,
+      codes = artifacts$codes
+    ))
+    if (nrow(edh_review_issues) > 0) {
+      cli::cli_warn(c(
+        "Wrote a DRAFT EDH metadata XML at {.path {edh_xml_path}}.",
+        "i" = "It was built from review-ready metadata that still contains {.val REVIEW:} IRIs or {.val MISSING} placeholders.",
+        "i" = "Finalize the metadata CSVs, then rebuild a clean XML with {.code write_edh_xml_from_sdp()}."
+      ))
+    } else {
+      cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
+    }
   }
 
   review_targets <- if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
@@ -2161,12 +2184,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   n_unique <= 5 && .ms_values_look_code_like(unique_vals)
 }
 
-.ms_factor_code_keys <- function(resources) {
+.ms_factor_code_keys <- function(resources, dataset_id = NULL) {
   if (is.null(resources) || length(resources) == 0) {
     return(tibble::tibble(table_id = character(), column_name = character()))
   }
 
-  purrr::map_dfr(names(resources), function(tab_id) {
+  keys <- purrr::map_dfr(names(resources), function(tab_id) {
     df <- resources[[tab_id]]
     candidate_cols <- names(df)[vapply(names(df), function(col_name) {
       .ms_column_is_semantic_code_candidate(col_name, df[[col_name]])
@@ -2181,6 +2204,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       column_name = candidate_cols
     )
   })
+
+  # Stamp the dataset_id when known so factor-scope selection can key on it and
+  # not cross-match codes from a different dataset that share a table_id/column.
+  if (!is.null(dataset_id) && nrow(keys) > 0) {
+    keys$dataset_id <- as.character(dataset_id)[[1]]
+    keys <- keys[, c("dataset_id", "table_id", "column_name"), drop = FALSE]
+  }
+
+  keys
 }
 
 .ms_non_measurement_target_tokens <- function(...) {
@@ -2496,7 +2528,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }, logical(1)), , drop = FALSE]
 }
 
-.ms_select_semantic_seed_codes <- function(codes, resources, scope = c("factor", "all", "none")) {
+.ms_select_semantic_seed_codes <- function(codes, resources, scope = c("factor", "all", "none"), dataset_id = NULL) {
   scope <- match.arg(scope)
   codes <- .ms_normalize_codes(codes)
 
@@ -2510,12 +2542,22 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(codes[0, , drop = FALSE])
   }
 
-  factor_keys <- .ms_factor_code_keys(resources)
+  factor_keys <- .ms_factor_code_keys(resources, dataset_id = dataset_id)
   if (nrow(factor_keys) == 0) {
     return(codes[0, , drop = FALSE])
   }
 
-  dplyr::semi_join(codes, factor_keys, by = c("table_id", "column_name"))
+  # Include dataset_id in the join key when it is present on both sides so
+  # multi-dataset seed_codes cannot cross-match on a shared table_id/column_name.
+  join_cols <- intersect(
+    c("dataset_id", "table_id", "column_name"),
+    intersect(names(codes), names(factor_keys))
+  )
+  if (!all(c("table_id", "column_name") %in% join_cols)) {
+    join_cols <- c("table_id", "column_name")
+  }
+
+  dplyr::semi_join(codes, factor_keys, by = join_cols)
 }
 
 .ms_create_sdp_seed_note <- function(seed_semantics = TRUE,

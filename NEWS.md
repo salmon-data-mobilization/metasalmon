@@ -1,6 +1,18 @@
 metasalmon 0.1.4
 ----------------
 
+- `create_sdp(include_edh_xml = TRUE)` now flags the create-time EDH XML as a
+  draft: it still writes the file, but warns (and points to
+  `write_edh_xml_from_sdp()`) when the package still contains `REVIEW:` IRIs or
+  `MISSING` placeholders, so a draft is not mistaken for a reviewed export.
+- LLM context files are now decoded more robustly: non-UTF-8 (Latin-1 /
+  Windows-1252) text/CSV context files are detected and re-decoded instead of
+  being silently corrupted, and two context files that share a base name no
+  longer collide in chunk ids or the `llm_context_sources` column.
+- `semantic_code_scope = "factor"` code selection now keys on `dataset_id` as
+  well as `table_id`/`column_name`, so multi-dataset seed codes can no longer
+  cross-match on a shared table/column name.
+
 - Fixed `llm_context_files` handling in the `create_sdp()` semantic-review
   path: context files must now be supplied as local file paths, parsed
   data-frame/XML/R Markdown objects fail early with a clear error, and context

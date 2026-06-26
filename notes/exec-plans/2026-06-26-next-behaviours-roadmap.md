@@ -97,7 +97,7 @@ near-misses.
 
 ## Theme B — EDH export safety  ★ needs a product decision first
 
-- **B1 — `create_sdp(include_edh_xml = TRUE)` guard (bug #4).** The inline
+- **B1 — `create_sdp(include_edh_xml = TRUE)` guard (bug #4). ✅ DONE (draft warning).** The inline
   EDH-XML write bypasses the `.ms_abort_unreviewed_edh_rebuild` guard that
   `write_edh_xml_from_sdp()` enforces, so create-time XML can contain
   `MISSING METADATA:` / `REVIEW:` placeholders. **Decide:** (a) label create-time
@@ -132,13 +132,13 @@ share one mature response/request contract rather than two.
 
 ## Theme D — Robustness hardening  (low risk, additive behaviours)
 
-- **D1 — Context-file encoding detection (bug #6).** Non-UTF-8 inputs (e.g.
+- **D1 — Context-file encoding detection (bug #6). ✅ DONE.** Non-UTF-8 inputs (e.g.
   Latin-1 CSVs) silently corrupt scoring; detect/allow encoding in the now-central
   context module.
-- **D2 — Source-label disambiguation (bug #5).** Two context files sharing a
+- **D2 — Source-label disambiguation (bug #5). ✅ DONE.** Two context files sharing a
   basename collide in `chunk_id` and the `llm_context_sources` column; disambiguate
   while preserving the observable source-reporting contract.
-- **D3 — `semantic_code_scope = "factor"` `dataset_id` key (bug #8).** Add
+- **D3 — `semantic_code_scope = "factor"` `dataset_id` key (bug #8). ✅ DONE.** Add
   `dataset_id` to the factor-code semi-join so multi-dataset `seed_codes` can't
   cross-match on a shared `table_id`/`column_name`.
 
@@ -209,13 +209,29 @@ share one mature response/request contract rather than two.
   what's already partially built.
 - 2026-06-26: Recommend Theme A before Theme C so both share one mature
   review/request contract.
+- 2026-06-26: **B1 decided — draft marker, not a hard guard.** `create_sdp()`
+  still writes create-time EDH XML (create-time output is inherently review-ready),
+  but now emits a "DRAFT EDH" warning (reusing `.ms_collect_edh_review_state_issues`)
+  when `REVIEW:`/`MISSING` markers remain, pointing to `write_edh_xml_from_sdp()`
+  for a clean rebuild. Non-breaking. *Possible follow-up:* a distinct draft
+  filename or an in-XML draft marker (deferred — the warning is sufficient now).
+- 2026-06-26: D1 decoding fallback scoped to the main plain-text/CSV reader
+  (`.ms_read_text_utf8`), where the reported Latin-1 case bites; the `.Rmd`/`.qmd`
+  and HTML readers keep `encoding = "UTF-8"` (those are normally UTF-8 authored).
+- 2026-06-26: D2 disambiguates only *colliding* basenames (parent dir, then a
+  numeric suffix) so the observable `llm_context_sources` contract is preserved for
+  the common unique-name case.
 
 ## Progress
 
 - [x] 2026-06-26: Consolidated remaining behaviours; closed + moved the Alice plan;
   cross-referenced the deepen plan, the two design drafts, and the bugs note.
-- [ ] Decide B1 (EDH draft vs guard) and P3 (version).
-- [ ] Land the "clear the decks" set (E3, B1, D1–D3) + P1/P2.
+- [x] 2026-06-26: B1 decided + implemented (draft-EDH warning) with a test.
+- [x] 2026-06-26: D1 (context-file encoding fallback), D2 (source-label
+  disambiguation), D3 (factor-scope `dataset_id` key) implemented with tests; full
+  suite green (1291 pass / 0 fail).
+- [ ] E3 (real `AGENTS.md`).
+- [ ] P1 (`R CMD check`), P2 (PR), P3 (version decision).
 - [ ] Begin Theme A (A4 → A5 → A2 → A3 → A1).
 
 ## Validation and Acceptance

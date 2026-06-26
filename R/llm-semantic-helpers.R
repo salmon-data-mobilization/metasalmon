@@ -595,6 +595,24 @@
   invisible(TRUE)
 }
 
+# Read a plain-text context file as UTF-8, with a Latin-1/Windows-1252 fallback.
+# readLines(encoding = "UTF-8") only *marks* the bytes as UTF-8 without verifying
+# them, so a Latin-1/Windows-1252 file (common for field-data CSVs) would be left
+# mis-encoded and the later enc2utf8() call would not repair it. Detect invalid
+# UTF-8 and re-decode from the most likely single-byte encoding instead.
+.ms_read_text_utf8 <- function(path) {
+  text <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  if (!nzchar(text) || all(validUTF8(text))) {
+    return(text)
+  }
+  native <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  converted <- iconv(native, from = "windows-1252", to = "UTF-8", sub = "")
+  if (is.na(converted) || !nzchar(converted)) {
+    converted <- iconv(native, from = "latin1", to = "UTF-8", sub = "")
+  }
+  if (is.na(converted)) text else converted
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
@@ -630,7 +648,7 @@
   } else if (identical(ext, "docx")) {
     text <- .ms_context_text_from_docx(normalized)
   } else {
-    text <- paste(readLines(normalized, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    text <- .ms_read_text_utf8(normalized)
   }
 
   text <- enc2utf8(text)
@@ -709,6 +727,43 @@
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
+# Make context source labels unique. basename() collisions (e.g. two files named
+# README.md in different folders) would otherwise produce colliding chunk_ids and
+# silently merge in the user-visible llm_context_sources column. Labels that are
+# already unique are left untouched so the observable source-reporting contract is
+# preserved; collisions are disambiguated with the parent directory, then a
+# numeric suffix as a final safety net.
+.ms_unique_context_sources <- function(raw_context) {
+  if (length(raw_context) < 2L) {
+    return(raw_context)
+  }
+  sources <- vapply(raw_context, function(x) as.character(x$source %||% ""), character(1))
+  dup_labels <- unique(sources[duplicated(sources)])
+  if (length(dup_labels) == 0L) {
+    return(raw_context)
+  }
+  for (i in seq_along(raw_context)) {
+    if (!sources[[i]] %in% dup_labels) {
+      next
+    }
+    path <- raw_context[[i]]$path
+    if (!is.null(path) && !is.na(path) && nzchar(path)) {
+      parent <- basename(dirname(path))
+      if (nzchar(parent) && !parent %in% c(".", "/")) {
+        raw_context[[i]]$source <- file.path(parent, sources[[i]])
+      }
+    }
+  }
+  final <- vapply(raw_context, function(x) as.character(x$source %||% ""), character(1))
+  if (anyDuplicated(final) > 0L) {
+    final <- make.unique(final, sep = " #")
+    for (i in seq_along(raw_context)) {
+      raw_context[[i]]$source <- final[[i]]
+    }
+  }
+  raw_context
+}
+
 .ms_collect_context_chunks <- function(context_files = NULL,
                                        context_text = NULL) {
   .ms_validate_llm_context_files(context_files)
@@ -729,6 +784,8 @@
   if (length(raw_context) == 0) {
     return(tibble::tibble())
   }
+
+  raw_context <- .ms_unique_context_sources(raw_context)
 
   purrr::map_dfr(raw_context, function(item) {
     .ms_chunk_context_text(item$text, item$source)

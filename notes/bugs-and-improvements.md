@@ -28,8 +28,9 @@ Severity = how much it can bite a real user.
 
 **Current snapshot:** #1, #2, #7, #10, #11, #12, #14, #15, #16, #17, #18,
 #19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
-#30 are partially addressed. #3, #4, #5, #6, #8, #9, #13, #22, #23, #24,
-and #31 remain open/deferred as noted below.
+#30 are partially addressed. #4, #5, #6, #8 were fixed on 2026-06-26 (roadmap
+clear-the-decks). #3, #9, #13, #22, #23, #24, and #31 remain open/deferred as
+noted below.
 
 **Forward plan:** the open/deferred items are sequenced into themed workstreams in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
@@ -107,10 +108,11 @@ E4, #31 → Theme C).
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
 - **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
-- **Implementation status:** open. `create_sdp()` still calls
-  `edh_build_hnap_xml()` directly for first-write EDH XML. This needs a product
-  decision: either label create-time XML as draft output or reuse/enforce the
-  rebuild guard before writing.
+- **Implementation status:** fixed (2026-06-26, roadmap B1). `create_sdp()` still
+  writes create-time EDH XML, but now reuses `.ms_collect_edh_review_state_issues()`
+  and emits a "DRAFT EDH" warning (pointing to `write_edh_xml_from_sdp()`) when
+  `REVIEW:`/`MISSING` markers remain. Decision: draft marker, not a hard guard
+  (create-time output is inherently review-ready). Test in `test-package-helpers.R`.
 - **Where:** `R/package-helpers.R:951-960` vs `R/edh-xml-export.R:1176-1200, 1270`
   (`.ms_abort_unreviewed_edh_rebuild`).
 - `write_edh_xml_from_sdp` refuses to build when `REVIEW:` IRIs or `MISSING`
@@ -124,9 +126,11 @@ E4, #31 → Theme C).
 
 ### 5. `chunk_id` / source-label collisions for context files sharing a basename
 - **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
-- **Implementation status:** open. The current branch preserved basename-based
-  source reporting as an observable contract; basename disambiguation still needs
-  a compatibility-minded change and tests.
+- **Implementation status:** fixed (2026-06-26, roadmap D2).
+  `.ms_unique_context_sources()` disambiguates colliding basenames (parent dir, then
+  a numeric suffix) inside `.ms_collect_context_chunks()`; unique labels are left
+  untouched so the observable `llm_context_sources` contract is preserved. Test in
+  `test-llm-semantic-helpers.R`.
 - **Where:** `R/llm-semantic-helpers.R:530, 549-551, 619`; consumed at
   `R/llm-review-adapter.R:112`.
 - `source = basename(normalizePath(path))` and `chunk_id = paste0(source, "#", i)`.
@@ -137,8 +141,11 @@ E4, #31 → Theme C).
 
 ### 6. Encoding mismatch can corrupt non-UTF-8 context files
 - **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
-- **Implementation status:** open. Context-file parsing was centralized for
-  parse-once behavior, but encoding detection/selection was not added.
+- **Implementation status:** fixed (2026-06-26, roadmap D1). `.ms_read_text_utf8()`
+  reads the main plain-text/CSV path as UTF-8, detects invalid UTF-8 via
+  `validUTF8()`, and falls back to Windows-1252/Latin-1 decoding. Test in
+  `test-llm-semantic-helpers.R`. (The `.Rmd`/`.qmd`/HTML readers still assume UTF-8
+  — they are normally UTF-8 authored.)
 - **Where:** `R/llm-semantic-helpers.R:376, 518, 521`. `readLines(..., encoding = "UTF-8")`
   then `enc2utf8` for non-UTF-8 inputs (e.g. Latin-1 CSVs) corrupts tokens and
   degrades scoring. **Fix:** detect/allow encoding in one place.
@@ -155,8 +162,10 @@ E4, #31 → Theme C).
 
 ### 8. `semantic_code_scope = "factor"` semi-join omits `dataset_id`
 - **Severity:** low · **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
-- **Implementation status:** open. The R5 extraction preserved existing
-  `semantic_code_scope` behavior and did not alter the factor-code join key.
+- **Implementation status:** fixed (2026-06-26, roadmap D3).
+  `.ms_factor_code_keys()` / `.ms_select_semantic_seed_codes()` now thread
+  `dataset_id` and join on `c("dataset_id","table_id","column_name")` when present
+  (no behavior change on the single-dataset path). Test in `test-package-helpers.R`.
 - **Where:** `R/package-helpers.R:2554` (`.ms_select_semantic_seed_codes` semi-join by
   `c("table_id","column_name")`); `.ms_factor_code_keys` (2200-2219).
 - Safe today (single uniform `dataset_id` per run), but if `seed_codes` ever span

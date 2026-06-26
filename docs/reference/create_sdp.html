@@ -234,7 +234,11 @@ previously written by <code>metasalmon</code>.</p></dd>
 <dt id="arg-include-edh-xml">include_edh_xml<a class="anchor" aria-label="anchor" href="#arg-include-edh-xml"></a></dt>
 <dd><p>Logical; when <code>TRUE</code>, writes an HNAP-aware EDH XML
 metadata file to <code>metadata/metadata-edh-hnap.xml</code> using
-<code><a href="edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code>. The default is <code>FALSE</code>.</p></dd>
+<code><a href="edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code>. The default is <code>FALSE</code>. Because <code>create_sdp()</code>
+produces review-ready metadata, this create-time XML is treated as a
+<strong>draft</strong>: if <code>REVIEW:</code>/<code>MISSING</code> markers remain it is still written but a
+warning recommends rebuilding a clean file with <code><a href="write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code>
+after the metadata is finalized.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
