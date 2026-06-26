@@ -1,5 +1,16 @@
 # Deepen metasalmon architecture after `llm_context_files` fix
 
+## Status (2026-06-26) — EXECUTED
+
+Refactors R1–R5 are implemented on the `deepen-architecture` branch and the full
+`testthat` suite is green (1281 pass / 0 fail). A `/code-review` pass and its
+follow-up fixes also landed. The remaining items from this plan — the
+*Missing / Future Refactor Candidates* (god-file split, shared chat request
+builder, real `AGENTS.md`) and the deferred backlog — are carried forward in
+`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (Themes A–E + Process).
+Still pending before merge: `R CMD check` and the PR (tracked there as P1/P2).
+This document is retained as the record of the executed refactor.
+
 ## Purpose
 
 This plan records five follow-up refactors suggested after fixing Alice

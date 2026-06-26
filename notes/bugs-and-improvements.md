@@ -31,6 +31,11 @@ Severity = how much it can bite a real user.
 #30 are partially addressed. #3, #4, #5, #6, #8, #9, #13, #22, #23, #24,
 and #31 remain open/deferred as noted below.
 
+**Forward plan:** the open/deferred items are sequenced into themed workstreams in
+`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
+D1, #5 → D2, #8 → D3, #13 → A5, #29/#30 → E1, #3 → E2/C4, #9 → E3, #22/#23/#24 →
+E4, #31 → Theme C).
+
 ---
 
 ## Correctness / UX bugs
