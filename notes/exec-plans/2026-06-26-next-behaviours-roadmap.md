@@ -158,6 +158,15 @@ share one mature response/request contract rather than two.
   `any_of` in the merge helper; forward the LLM-widened shortlist in the multi-table
   recursion guard; add a debug log when decomposition disables batching. Low
   priority; fold into whatever theme touches those files.
+- **E5 — Make vignettes `R CMD check`-safe. ⚠️ OPEN (discovered during P1).** The
+  display-only vignettes (`eval = FALSE`) are still *tangled and run* by
+  `R CMD check`'s "running R code from vignettes" step, which errors offline
+  (missing files / no CRAN mirror / no API key). Pre-existing + environmental; the
+  package code itself is clean. `opts_chunk$set(purl = FALSE)` does **not** fix it
+  (the tangle step ignores chunk-body options). Real options: per-chunk
+  `purl = FALSE` headers, make the vignette code offline-safe, or convert the
+  display-only chunks to plain non-knitr ```` ```r ```` blocks. Low urgency for a
+  GitHub-distributed package, but needed for a fully green `R CMD check` / CRAN.
 
 ## Process / Handoff  (carried from the Alice + deepen plans)
 
@@ -221,6 +230,18 @@ share one mature response/request contract rather than two.
 - 2026-06-26: D2 disambiguates only *colliding* basenames (parent dir, then a
   numeric suffix) so the observable `llm_context_sources` contract is preserved for
   the common unique-name case.
+- 2026-06-26: **Discovered during P1** — `R CMD check` reports 1 ERROR / 2 WARNINGs,
+  all from the "running R code from vignettes" step. It **tangles** (extracts and
+  runs) vignette code, which ignores the knit-time `eval = FALSE` these display-only
+  vignettes use, so it hits missing files / no CRAN mirror / no API key offline.
+  **Package code, Rd, examples, and tests are all OK** — the failures are entirely
+  pre-existing and environmental. Attempted `purl = FALSE` via `opts_chunk$set` but
+  it is **ineffective**: the option lives in a chunk body, and the tangle step does
+  not execute chunk bodies, so the runtime `opts_chunk$set()` never applies (the
+  three vignettes that pass do so because their tangled code is offline-safe, not
+  because of the option). Reverted. The real fix needs per-chunk `purl=FALSE`
+  headers, offline-safe vignette code, or plain non-knitr ```` ```r ```` blocks.
+  Tracked as **E5 (OPEN)**.
 
 ## Progress
 
@@ -233,7 +254,11 @@ share one mature response/request contract rather than two.
 - [x] 2026-06-26: E3 — real `AGENTS.md` (seeded from `notes/context.md`); resolves
   the circular `@AGENTS.md` stub. `CLAUDE.md` imports it; the pkgdown artifact is
   git-ignored so nothing leaks to the public site.
-- [ ] P1 (`R CMD check`), P2 (PR), P3 (version decision).
+- [x] 2026-06-26: P1 (`R CMD check`) run — **package code, Rd, examples, and tests
+  all OK**; the only ERROR/WARNINGs are the pre-existing, environmental
+  vignette-tangle step (see E5). No code defects.
+- [ ] E5 (make vignettes `R CMD check`-safe) — open.
+- [ ] P2 (PR), P3 (version decision) — need your call.
 - [ ] Begin Theme A (A4 → A5 → A2 → A3 → A1).
 
 ## Validation and Acceptance
