@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Utilities for Salmon Data Packages
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
 Author: Brett Johnson [aut, cre], Codex [aut]

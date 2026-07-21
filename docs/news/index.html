@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,20 @@
 
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.5" id="metasalmon-015">metasalmon 0.1.5<a class="anchor" aria-label="anchor" href="#metasalmon-015"></a></h2>
+<ul><li>
+<code>create_sdp(include_edh_xml = TRUE)</code> now flags the create-time EDH XML as a draft: it still writes the file, but warns (and points to <code><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code>) when the package still contains <code>REVIEW:</code> IRIs or <code>MISSING</code> placeholders, so a draft is not mistaken for a reviewed export.</li>
+<li>LLM context files are now decoded more robustly: non-UTF-8 (Latin-1 / Windows-1252) text/CSV context files are detected and re-decoded instead of being silently corrupted, and two context files that share a base name no longer collide in chunk ids or the <code>llm_context_sources</code> column.</li>
+<li>
+<code>semantic_code_scope = "factor"</code> code selection now keys on <code>dataset_id</code> as well as <code>table_id</code>/<code>column_name</code>, so multi-dataset seed codes can no longer cross-match on a shared table/column name.</li>
+<li>Fixed <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code> so LLM semantic-review options supplied while <code>seed_semantics = FALSE</code> now warn once instead of being silently ignored.</li>
+<li>Semantic LLM review now escalates an unresolvable <code>reject_shortlist</code> to <code>request_new_term</code>: when the model rejects the whole deterministic shortlist and the bounded retry round still finds no acceptable candidate, the assessment surfaces a likely ontology gap in <code>llm_decision</code> instead of a dead-end rejection.</li>
+<li>Hardened batched semantic LLM review: a single malformed item no longer voids the whole batch (only the affected target keys fall back to per-target review), duplicate target keys fall back instead of silently overwriting, the per-target fallback warning now reports <em>why</em> each key fell back, and a truncated or non-JSON provider response includes a sanitized content snippet in the error.</li>
+<li>Clarified the exported documentation for <code><a href="../reference/create_sdp.html">create_sdp()</a></code>, <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code>, <code><a href="../reference/infer_salmon_datapackage_artifacts.html">infer_salmon_datapackage_artifacts()</a></code>, and <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>, including the new <code>reject_shortlist</code> -&gt; <code>request_new_term</code> escalation.</li>
+<li>Marked display-only vignette chunks as excluded from tangling so package checks do not execute credential, network, and local-file examples that are intentionally shown but not evaluated.</li>
+<li>Internal: deepened the semantic-review architecture without changing public signatures – centralized LLM context/option handling (<code>.ms_llm_review_plan()</code>), extracted semantic target discovery into <code>.ms_semantic_discover_targets()</code>, moved one-shot artifact inference into <code>R/artifact-inference.R</code>, and froze the semantic target-row and LLM assessment-row column contracts with direct tests.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.4" id="metasalmon-014">metasalmon 0.1.4<a class="anchor" aria-label="anchor" href="#metasalmon-014"></a></h2>
 <ul><li>Fixed <code>llm_context_files</code> handling in the <code><a href="../reference/create_sdp.html">create_sdp()</a></code> semantic-review path: context files must now be supplied as local file paths, parsed data-frame/XML/R Markdown objects fail early with a clear error, and context supplied without <code>llm_assess = TRUE</code> now warns that it will be ignored rather than silently producing deterministic-only output.</li>

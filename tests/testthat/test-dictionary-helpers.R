@@ -194,6 +194,66 @@ test_that("infer_dictionary can seed semantic suggestions", {
   )
 })
 
+test_that("infer_dictionary single-table semantic seeding preserves seed metadata attributes", {
+  seed_codes <- tibble::tibble(
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    column_name = "species",
+    code_value = "Coho",
+    code_label = "Coho salmon",
+    code_description = "Species code",
+    term_iri = NA_character_
+  )
+  seed_table_meta <- tibble::tibble(
+    dataset_id = "dataset-1",
+    table_id = "table-1",
+    table_label = "Survey table",
+    description = "Survey observations",
+    observation_unit = "survey observation",
+    observation_unit_iri = NA_character_
+  )
+  seed_dataset_meta <- tibble::tibble(
+    dataset_id = "dataset-1",
+    title = "Survey dataset",
+    description = "Survey dataset description",
+    keywords = NA_character_
+  )
+  fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1,
+                           include_dwc = FALSE, codes = NULL, table_meta = NULL,
+                           dataset_meta = NULL, ...) {
+    expect_s3_class(df, "data.frame")
+    expect_identical(codes, seed_codes)
+    expect_identical(table_meta, seed_table_meta)
+    expect_identical(dataset_meta, seed_dataset_meta)
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+
+  dict <- with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_dictionary(
+        data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+        dataset_id = "dataset-1",
+        table_id = "table-1",
+        seed_semantics = TRUE,
+        seed_verbose = FALSE,
+        seed_codes = seed_codes,
+        seed_table_meta = seed_table_meta,
+        seed_dataset_meta = seed_dataset_meta
+      )
+    }
+  )
+
+  expect_identical(attr(dict, "seed_codes", exact = TRUE), seed_codes)
+  expect_identical(attr(dict, "seed_table_meta", exact = TRUE), seed_table_meta)
+  expect_identical(attr(dict, "seed_dataset_meta", exact = TRUE), seed_dataset_meta)
+  expect_null(attr(dict, "inferred_codes", exact = TRUE))
+  expect_null(attr(dict, "inferred_table_meta", exact = TRUE))
+  expect_null(attr(dict, "inferred_dataset_meta", exact = TRUE))
+  expect_null(attr(dict, "inferred_resources", exact = TRUE))
+})
+
 test_that("infer_dictionary falls back to deterministic suggestions when LLM assessment fails", {
   fake_search <- function(query, role, sources) {
     tibble::tibble(
@@ -249,6 +309,40 @@ test_that("infer_dictionary falls back to deterministic suggestions when LLM ass
   expect_false(any(startsWith(names(suggestions), "llm_")))
   expect_true(any(suggestions$iri == "https://example.org/variable/best"))
   expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
+})
+
+test_that("infer_dictionary warns once when LLM options are ignored with semantic seeding disabled", {
+  resources <- list(
+    catches = data.frame(count = c(1L, 2L), species = c("Coho", "Chinook")),
+    sites = data.frame(site_id = c("A", "B"), temperature = c(10.1, 10.5))
+  )
+  failing_request <- function(messages, config) {
+    stop("LLM request should not be called")
+  }
+
+  warnings <- character()
+  dict <- withCallingHandlers(
+    infer_dictionary(
+      resources,
+      seed_semantics = FALSE,
+      llm_assess = TRUE,
+      llm_model = "test-model",
+      llm_request_fn = failing_request
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  expect_s3_class(dict, "tbl_df")
+  expect_setequal(unique(dict$table_id), c("catches", "sites"))
+  expect_length(grep("seed_semantics = FALSE", warnings, fixed = TRUE), 1)
+  expect_match(
+    warnings[[1]],
+    "Enable `seed_semantics = TRUE` to generate semantic suggestions",
+    fixed = TRUE
+  )
 })
 
 test_that("infer_dictionary accepts named resource lists and can seed metadata-aware suggestions", {
@@ -1290,22 +1384,7 @@ test_that("suggest_semantics skips unit guesses when measurement has no unit clu
 })
 
 test_that("apply_semantic_suggestions fills unit_label when applying unit_iri", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary()
 
   suggestions <- tibble::tibble(
     dataset_id = "d1",
@@ -1660,24 +1739,7 @@ test_that("apply_semantic_suggestions fills only missing fields unless overwrite
 })
 
 test_that("apply_semantic_suggestions can filter by score when available", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1"),
@@ -1700,24 +1762,7 @@ test_that("apply_semantic_suggestions can filter by score when available", {
 })
 
 test_that("apply_semantic_suggestions ignores non-column targets", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1"),
@@ -1735,24 +1780,7 @@ test_that("apply_semantic_suggestions ignores non-column targets", {
 })
 
 test_that("apply_semantic_suggestions errors when min_score is requested without score", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "count",
-    column_label = "Count",
-    column_description = "Spawner count",
-    column_role = "measurement",
-    value_type = "number",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    term_type = NA_character_,
-    required = FALSE,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_count_dictionary(required = FALSE)
 
   suggestions <- tibble::tibble(
     dataset_id = "d1",

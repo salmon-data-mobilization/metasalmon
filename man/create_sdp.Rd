@@ -124,7 +124,11 @@ previously written by \code{metasalmon}.}
 
 \item{include_edh_xml}{Logical; when \code{TRUE}, writes an HNAP-aware EDH XML
 metadata file to \code{metadata/metadata-edh-hnap.xml} using
-\code{edh_build_hnap_xml()}. The default is \code{FALSE}.}
+\code{edh_build_hnap_xml()}. The default is \code{FALSE}. Because \code{create_sdp()}
+produces review-ready metadata, this create-time XML is treated as a
+\strong{draft}: if \verb{REVIEW:}/\code{MISSING} markers remain it is still written but a
+warning recommends rebuilding a clean file with \code{write_edh_xml_from_sdp()}
+after the metadata is finalized.}
 
 \item{...}{Deprecated legacy EDH arguments accepted for backwards
 compatibility: \code{edh_profile}, \code{EDH_Profile}, and \code{EDH_profile} all enable

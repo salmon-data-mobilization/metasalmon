@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -33,7 +33,7 @@ tables yourself and then call `write_salmon_datapackage()`.
 
 ## 1) Start with your data
 
-```{r}
+```{r, purl = FALSE}
 library(metasalmon)
 library(readr)
 
@@ -50,7 +50,7 @@ Keep a working copy of your data frame handy so you can re-run these steps whene
 
 If you already ran the quickstart and already have `dict`, skip this section.
 
-```{r}
+```{r, purl = FALSE}
 dict <- infer_dictionary(
   df,
   dataset_id = "my-dataset-2026",
@@ -62,7 +62,7 @@ The dictionary lists every column and assigns a `column_role` (identifier, attri
 
 ## 3) Describe the dataset and tables {#describe-the-dataset-and-tables}
 
-```{r}
+```{r, purl = FALSE}
 dataset_meta <- tibble::tibble(
   dataset_id = "my-dataset-2026",
   title = "My Project Data",
@@ -88,7 +88,7 @@ Include extra columns such as `spatial_extent`, `temporal_start`, or `table_labe
 
 Only create `codes.csv` when a column uses categorical values (species, run_type, gear, etc.). Each row ties a `code_value` to a short label and, ideally, the ontology term that explains what the code means.
 
-```{r}
+```{r, purl = FALSE}
 codes <- tibble::tibble(
   dataset_id = "my-dataset-2026",
   table_id = "main-table",
@@ -102,7 +102,7 @@ If the column reuses a published controlled vocabulary (like the DFO Salmon Onto
 
 ## 5) Create the package
 
-```{r}
+```{r, purl = FALSE}
 resources <- list(main = df)
 
 pkg_path <- write_salmon_datapackage(
@@ -125,7 +125,7 @@ This writes the canonical metadata CSV files under `metadata/`, the data tables 
 
 You can attach optional Darwin Core Data Package (DwC-DP) mappings when you need an export view for biodiversity tools. The default is OFF to keep SDP canonical.
 
-```{r}
+```{r, purl = FALSE}
 dict <- readr::read_csv("inst/extdata/column_dictionary.csv", show_col_types = FALSE)
 sem <- suggest_semantics(dict, include_dwc = TRUE)
 attr(sem, "dwc_mappings") |>
@@ -140,7 +140,7 @@ Keep the SDP column names intact; use the DwC mappings only when exporting a DwC
 When your publication workflow includes DFO Enterprise Data Hub / GeoNetwork,
 `edh_build_hnap_xml()` writes the HNAP-aware EDH export.
 
-```{r}
+```{r, purl = FALSE}
 edh_hnap_xml <- file.path(pkg_path, "metadata", "metadata-edh-hnap.xml")
 edh_build_hnap_xml(dataset_meta, output_path = edh_hnap_xml)
 
@@ -159,7 +159,7 @@ After manual review/editing of `metadata/dataset.csv`, regenerate the XML from
 the finalized package with the post-review helper that wraps the canonical
 `edh_build_hnap_xml()` builder:
 
-```{r eval=FALSE}
+```{r eval=FALSE, purl=FALSE}
 write_edh_xml_from_sdp(pkg_path)
 ```
 
@@ -173,7 +173,7 @@ production upload.
 
 For more control over DwC-DP mapping suggestions, use `suggest_dwc_mappings()`:
 
-```{r}
+```{r, purl = FALSE}
 dict <- tibble::tibble(
  column_name = c("event_date", "decimal_latitude", "scientific_name"),
  column_label = c("Event Date", "Decimal Latitude", "Scientific Name"),
@@ -188,7 +188,7 @@ attr(dict, "dwc_mappings")
 
 When using `suggest_semantics()`, the function automatically queries role-appropriate sources:
 
-```{r}
+```{r, purl = FALSE}
 # Default: ontology suggestions only (DwC mappings OFF)
 sem <- suggest_semantics(dict)
 

@@ -61,7 +61,9 @@ seeding semantic suggestions.}
 \code{suggest_semantics()} when \code{seed_semantics = TRUE}.}
 
 \item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
-assessment inside \code{suggest_semantics()}.}
+assessment inside \code{suggest_semantics()}. The LLM and context options below
+take effect only when \code{seed_semantics = TRUE}; supplying them with
+\code{seed_semantics = FALSE} emits a warning and is otherwise ignored.}
 
 \item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
 

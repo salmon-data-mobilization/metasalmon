@@ -1,3 +1,44 @@
+metasalmon 0.1.5
+----------------
+
+- `create_sdp(include_edh_xml = TRUE)` now flags the create-time EDH XML as a
+  draft: it still writes the file, but warns (and points to
+  `write_edh_xml_from_sdp()`) when the package still contains `REVIEW:` IRIs or
+  `MISSING` placeholders, so a draft is not mistaken for a reviewed export.
+- LLM context files are now decoded more robustly: non-UTF-8 (Latin-1 /
+  Windows-1252) text/CSV context files are detected and re-decoded instead of
+  being silently corrupted, and two context files that share a base name no
+  longer collide in chunk ids or the `llm_context_sources` column.
+- `semantic_code_scope = "factor"` code selection now keys on `dataset_id` as
+  well as `table_id`/`column_name`, so multi-dataset seed codes can no longer
+  cross-match on a shared table/column name.
+- Fixed `infer_dictionary()` so LLM semantic-review options supplied while
+  `seed_semantics = FALSE` now warn once instead of being silently ignored.
+- Semantic LLM review now escalates an unresolvable `reject_shortlist` to
+  `request_new_term`: when the model rejects the whole deterministic shortlist
+  and the bounded retry round still finds no acceptable candidate, the
+  assessment surfaces a likely ontology gap in `llm_decision` instead of a
+  dead-end rejection.
+- Hardened batched semantic LLM review: a single malformed item no longer voids
+  the whole batch (only the affected target keys fall back to per-target
+  review), duplicate target keys fall back instead of silently overwriting, the
+  per-target fallback warning now reports *why* each key fell back, and a
+  truncated or non-JSON provider response includes a sanitized content snippet in
+  the error.
+- Clarified the exported documentation for `create_sdp()`,
+  `infer_dictionary()`, `infer_salmon_datapackage_artifacts()`, and
+  `suggest_semantics()`, including the new `reject_shortlist` ->
+  `request_new_term` escalation.
+- Marked display-only vignette chunks as excluded from tangling so package
+  checks do not execute credential, network, and local-file examples that are
+  intentionally shown but not evaluated.
+- Internal: deepened the semantic-review architecture without changing public
+  signatures -- centralized LLM context/option handling
+  (`.ms_llm_review_plan()`), extracted semantic target discovery into
+  `.ms_semantic_discover_targets()`, moved one-shot artifact inference into
+  `R/artifact-inference.R`, and froze the semantic target-row and LLM
+  assessment-row column contracts with direct tests.
+
 metasalmon 0.1.4
 ----------------
 

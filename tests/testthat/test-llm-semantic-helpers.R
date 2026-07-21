@@ -1,20 +1,5 @@
 test_that("suggest_semantics rejects parsed data frames passed as llm_context_files", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
   parsed_context <- tibble::tibble(
     field = "spawner_count",
     description = "Natural-origin spawner abundance estimate"
@@ -45,22 +30,7 @@ test_that("suggest_semantics warns when context files are supplied without llm_a
     ),
     context_path
   )
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
   fake_search <- function(query, role, sources) {
     tibble::tibble()
   }
@@ -81,6 +51,43 @@ test_that("suggest_semantics warns when context files are supplied without llm_a
   expect_false(any(startsWith(names(suggestions), "llm_")))
 })
 
+test_that("suggest_semantics warns for file and inline context without enabling LLM review", {
+  tmp <- withr::local_tempdir()
+  context_path <- file.path(tmp, "context.csv")
+  readr::write_csv(
+    tibble::tibble(
+      field = "spawner_count",
+      description = "Natural-origin spawner abundance estimate"
+    ),
+    context_path
+  )
+  failing_request <- function(messages, config) {
+    stop("LLM request should not be called")
+  }
+
+  warnings <- character()
+  out <- withCallingHandlers(
+    suggest_semantics(
+      NULL,
+      test_spawner_dictionary(),
+      sources = "smn",
+      search_fn = function(query, role, sources) tibble::tibble(),
+      llm_context_files = context_path,
+      llm_context_text = "spawner_count means natural-origin spawner abundance",
+      llm_request_fn = failing_request
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  expect_false(any(startsWith(names(suggestions), "llm_")))
+  expect_true(any(grepl("llm_context_files", warnings, fixed = TRUE)))
+  expect_true(any(grepl("llm_context_text", warnings, fixed = TRUE)))
+})
+
 test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free", {
   tmp <- withr::local_tempdir()
   context_path <- file.path(tmp, "README-context.md")
@@ -93,38 +100,9 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
     context_path
   )
 
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openrouter")
@@ -167,38 +145,9 @@ test_that("suggest_semantics defaults OpenRouter LLM review to openrouter/free",
 })
 
 test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openrouter")
@@ -233,38 +182,9 @@ test_that("suggest_semantics accepts arbitrary OpenRouter model IDs", {
 })
 
 test_that("suggest_semantics forwards OpenAI reasoning effort to LLM review", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "openai")
@@ -321,38 +241,9 @@ test_that("chat request body includes reasoning effort only when configured", {
 })
 
 test_that("suggest_semantics falls back to deterministic suggestions when every LLM assessment fails", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   failing_request <- function(messages, config) {
     stop("HTTP 402 Payment Required.")
@@ -403,38 +294,9 @@ test_that("provider-wide LLM failure still aborts without usable deterministic s
 })
 
 test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Natural-origin spawner abundance estimate",
-    column_role = "measurement",
-    value_type = "integer",
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_
-  )
+  dict <- test_spawner_dictionary()
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   fake_request <- function(messages, config) {
     expect_equal(config$provider, "chapi")
@@ -698,7 +560,7 @@ test_that("JSON cleaner extracts the first balanced object from wrapper text", {
   )
 })
 
-test_that("batched LLM responses are mapped back onto target records", {
+test_llm_batch_review_fixture <- function(config = NULL) {
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1", "d1", "d1"),
     table_id = c("t1", "t1", "t1", "t1"),
@@ -723,15 +585,45 @@ test_that("batched LLM responses are mapped back onto target records", {
     .ms_row_order = 1:4
   )
 
-  config <- metasalmon:::.ms_llm_resolve_config(
+  config <- config %||% metasalmon:::.ms_llm_resolve_config(
     provider = "openrouter",
     api_key = "dummy-key",
     request_fn = function(messages, config) list()
   )
   records <- list(
-    metasalmon:::.ms_llm_prepare_record("g1", suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE], config, 2L, NULL, NULL),
-    metasalmon:::.ms_llm_prepare_record("g2", suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE], config, 2L, NULL, NULL)
+    metasalmon:::.ms_llm_prepare_record(
+      "g1",
+      suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
+      config,
+      2L,
+      context_chunk_pool = tibble::tibble()
+    ),
+    metasalmon:::.ms_llm_prepare_record(
+      "g2",
+      suggestions[suggestions$.ms_group_key == "g2", , drop = FALSE],
+      config,
+      2L,
+      context_chunk_pool = tibble::tibble()
+    )
   )
+
+  list(suggestions = suggestions, config = config, records = records)
+}
+
+test_that("LLM review prompts advertise reject_shortlist consistently", {
+  fixture <- test_llm_batch_review_fixture()
+
+  expect_match(metasalmon:::.ms_llm_generic_system_prompt(), "reject_shortlist", fixed = TRUE)
+  expect_match(metasalmon:::.ms_llm_decomposition_system_prompt(), "reject_shortlist", fixed = TRUE)
+
+  batch_messages <- metasalmon:::.ms_llm_messages_for_batch(fixture$records)
+  expect_match(batch_messages[[1]]$content, "reject_shortlist", fixed = TRUE)
+})
+
+test_that("batched LLM responses are mapped back onto target records", {
+  fixture <- test_llm_batch_review_fixture()
+  config <- fixture$config
+  records <- fixture$records
 
   fake_batch_result <- list(
     assessments = list(
@@ -745,6 +637,111 @@ test_that("batched LLM responses are mapped back onto target records", {
   expect_equal(sort(out$column_name), c("a", "b"))
   expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
   expect_true(is.na(out$llm_selected_iri[out$column_name == "b"]))
+})
+
+test_that("batched reject_shortlist responses round-trip without selecting a candidate", {
+  fixture <- test_llm_batch_review_fixture()
+  fake_batch_result <- list(
+    assessments = list(
+      list(target_key = "g1", decision = "reject_shortlist", selected_candidate_index = 1, confidence = 0.81, rationale = "The shortlist is the wrong concept family.", missing_context = ""),
+      list(target_key = "g2", decision = "review", selected_candidate_index = NULL, confidence = 0.4, rationale = "Need more context", missing_context = "run timing")
+    )
+  )
+
+  out <- metasalmon:::.ms_llm_validate_batch_assessments(fake_batch_result, fixture$records, fixture$config)
+
+  expect_equal(out$llm_decision[out$column_name == "a"], "reject_shortlist")
+  expect_true(is.na(out$llm_selected_candidate_index[out$column_name == "a"]))
+  expect_true(is.na(out$llm_selected_iri[out$column_name == "a"]))
+  expect_match(out$llm_rationale[out$column_name == "a"], "wrong concept family", fixed = TRUE)
+})
+
+test_that("malformed batch items fall back per target without discarding valid siblings", {
+  calls <- character()
+  request_fn <- function(messages, config) {
+    is_batch <- grepl("single top-level key named assessments", messages[[1]]$content, fixed = TRUE)
+    if (is_batch) {
+      calls <<- c(calls, "batch")
+      return(list(
+        assessments = list(
+          list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
+          list(target_key = "g2", decision = "review", selected_candidate_index = NULL, confidence = 2, rationale = "Bad confidence", missing_context = "")
+        )
+      ))
+    }
+
+    calls <<- c(calls, "single")
+    list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.5,
+      rationale = "Per-target fallback.",
+      missing_context = ""
+    )
+  }
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = request_fn
+  )
+  fixture <- test_llm_batch_review_fixture(config)
+
+  out <- NULL
+  warns <- testthat::capture_warnings(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config)
+  )
+  expect_match(warns, "falling back to per-target review", all = FALSE)
+  # The specific per-key reason (a confidence-range validation error) is surfaced,
+  # not just the failing key.
+  expect_match(warns, "confidence", all = FALSE)
+
+  expect_equal(calls, c("batch", "single"))
+  expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
+  expect_equal(out$llm_rationale[out$column_name == "b"], "Per-target fallback.")
+})
+
+test_that("duplicate batch target keys fall back for only the affected target", {
+  calls <- character()
+  request_fn <- function(messages, config) {
+    is_batch <- grepl("single top-level key named assessments", messages[[1]]$content, fixed = TRUE)
+    if (is_batch) {
+      calls <<- c(calls, "batch")
+      return(list(
+        assessments = list(
+          list(target_key = "g1", decision = "accept", selected_candidate_index = 1, confidence = 0.9, rationale = "Alpha best", missing_context = ""),
+          list(target_key = "g2", decision = "accept", selected_candidate_index = 1, confidence = 0.8, rationale = "Beta best", missing_context = ""),
+          list(target_key = "g2", decision = "accept", selected_candidate_index = 2, confidence = 0.7, rationale = "Duplicate beta", missing_context = "")
+        )
+      ))
+    }
+
+    calls <<- c(calls, "single")
+    list(
+      decision = "review",
+      selected_candidate_index = NULL,
+      confidence = 0.5,
+      rationale = "Duplicate-key fallback.",
+      missing_context = ""
+    )
+  }
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openrouter",
+    api_key = "dummy-key",
+    request_fn = request_fn
+  )
+  fixture <- test_llm_batch_review_fixture(config)
+
+  out <- NULL
+  warns <- testthat::capture_warnings(
+    out <- metasalmon:::.ms_llm_assess_record_batch(fixture$records, config)
+  )
+  expect_match(warns, "falling back to per-target review", all = FALSE)
+  # The surfaced reason explains *why* the key fell back (a duplicate assessment).
+  expect_match(warns, "duplicate", all = FALSE)
+
+  expect_equal(calls, c("batch", "single"))
+  expect_equal(out$llm_selected_iri[out$column_name == "a"], "https://example.org/a1")
+  expect_equal(out$llm_rationale[out$column_name == "b"], "Duplicate-key fallback.")
 })
 
 test_that("measurement targets route to decomposition-aware review with bundle context", {
@@ -785,8 +782,7 @@ test_that("measurement targets route to decomposition-aware review with bundle c
     suggestions[suggestions$.ms_group_key == "g1", , drop = FALSE],
     config,
     2L,
-    NULL,
-    NULL,
+    context_chunk_pool = tibble::tibble(),
     bundle_group = suggestions
   )
 
@@ -895,6 +891,278 @@ test_that("LLM retry_search can trigger a second deterministic retrieval pass", 
   expect_match(selected$llm_exploration_queries[[1]], "catch mass", fixed = TRUE)
 })
 
+test_that("failed exploration reassessment does not remap old selected indexes onto new ranks", {
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 3),
+    table_id = rep("t1", 3),
+    column_name = rep("alpha_metric", 3),
+    column_label = rep("Alpha metric", 3),
+    column_description = rep("Alpha metric description", 3),
+    column_role = rep("measurement", 3),
+    code_value = rep(NA_character_, 3),
+    dictionary_role = rep("property", 3),
+    search_role = rep("property", 3),
+    target_scope = rep("column", 3),
+    target_sdp_file = rep("column_dictionary.csv", 3),
+    target_sdp_field = rep("property_iri", 3),
+    search_query = rep("alpha metric", 3),
+    target_label = rep("Alpha metric", 3),
+    target_description = rep("Alpha metric description", 3),
+    target_query_basis = rep("label", 3),
+    target_query_context = rep("ctx", 3),
+    label = c("Original one", "Original two", "Original three"),
+    iri = c(
+      "https://example.org/original-1",
+      "https://example.org/original-2",
+      "https://example.org/original-3"
+    ),
+    source = rep("smn", 3),
+    ontology = rep("demo", 3),
+    definition = c("O1", "O2", "O3"),
+    match_type = rep("label_partial", 3),
+    score = c(0.8, 0.7, 0.6)
+  )
+
+  request_calls <- 0L
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    prompt <- messages[[2]]$content
+
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("better alpha metric"),
+        rationale = "The initial accepted result was weak."
+      ))
+    }
+
+    if (request_calls == 1L) {
+      return(list(
+        decision = "accept",
+        selected_candidate_index = 3,
+        confidence = 0.4,
+        rationale = "Weakly accepts the third original candidate.",
+        missing_context = ""
+      ))
+    }
+
+    stop("reassessment failed")
+  }
+  fake_search <- function(query, role, sources) {
+    if (identical(query, "better alpha metric")) {
+      return(tibble::tibble(
+        label = c("New one", "New two", "New three"),
+        iri = c(
+          "https://example.org/new-1",
+          "https://example.org/new-2",
+          "https://example.org/new-3"
+        ),
+        source = rep("smn", 3),
+        ontology = rep("demo", 3),
+        role = rep(role, 3),
+        match_type = rep("label_partial", 3),
+        definition = c("N1", "N2", "N3"),
+        score = c(0.95, 0.85, 0.65)
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  out <- NULL
+  expect_warning(
+    out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+      suggestions,
+      provider = "openrouter",
+      model = "qwen/qwen3.6-plus:free",
+      api_key = "dummy-key",
+      top_n = 3L,
+      request_fn = fake_request,
+      search_fn = fake_search,
+      sources = "smn",
+      max_per_role = 3L
+    ),
+    "reassessment failed"
+  )
+
+  selected <- out$suggestions[out$suggestions$llm_selected, , drop = FALSE]
+  expect_equal(request_calls, 3L)
+  expect_equal(nrow(selected), 1L)
+  expect_equal(selected$iri[[1]], "https://example.org/original-3")
+  expect_false(any(out$suggestions$iri == "https://example.org/new-3"))
+  expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
+  expect_equal(out$assessments$llm_exploration_queries[[1]], "better alpha metric")
+})
+
+test_that("no-gain exploration (candidate_gain <= 0) keeps the original selected index", {
+  # Regression for the skip branch of .ms_llm_explore_record: when exploration
+  # returns only candidates that already exist (candidate_gain == 0) but the
+  # re-sort reorders the shortlist, the function must return the ORIGINAL record
+  # so the original positional selected index is not remapped onto a new order.
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 3),
+    table_id = rep("t1", 3),
+    column_name = rep("alpha_metric", 3),
+    column_label = rep("Alpha metric", 3),
+    column_description = rep("Alpha metric description", 3),
+    column_role = rep("measurement", 3),
+    code_value = rep(NA_character_, 3),
+    dictionary_role = rep("property", 3),
+    search_role = rep("property", 3),
+    target_scope = rep("column", 3),
+    target_sdp_file = rep("column_dictionary.csv", 3),
+    target_sdp_field = rep("property_iri", 3),
+    search_query = rep("alpha metric", 3),
+    target_label = rep("Alpha metric", 3),
+    target_description = rep("Alpha metric description", 3),
+    target_query_basis = rep("label", 3),
+    target_query_context = rep("ctx", 3),
+    label = c("Original one", "Original two", "Original three"),
+    iri = c(
+      "https://example.org/original-1",
+      "https://example.org/original-2",
+      "https://example.org/original-3"
+    ),
+    source = rep("smn", 3),
+    ontology = rep("demo", 3),
+    definition = c("O1", "O2", "O3"),
+    match_type = rep("label_partial", 3),
+    score = c(0.8, 0.7, 0.6)
+  )
+
+  request_calls <- 0L
+  fake_request <- function(messages, config) {
+    request_calls <<- request_calls + 1L
+    prompt <- messages[[2]]$content
+
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("rescore alpha metric"),
+        rationale = "The initial accepted result was weak."
+      ))
+    }
+
+    # Initial pass: weakly accept the third original candidate.
+    list(
+      decision = "accept",
+      selected_candidate_index = 3,
+      confidence = 0.4,
+      rationale = "Weakly accepts the third original candidate.",
+      missing_context = ""
+    )
+  }
+  # Re-search returns the SAME iris (no new keys -> candidate_gain == 0) but with
+  # scores that would reorder the shortlist (original-3 now highest).
+  fake_search <- function(query, role, sources) {
+    if (identical(query, "rescore alpha metric")) {
+      return(tibble::tibble(
+        label = c("Original one", "Original two", "Original three"),
+        iri = c(
+          "https://example.org/original-1",
+          "https://example.org/original-2",
+          "https://example.org/original-3"
+        ),
+        source = rep("smn", 3),
+        ontology = rep("demo", 3),
+        role = rep(role, 3),
+        match_type = rep("label_partial", 3),
+        definition = c("O1", "O2", "O3"),
+        score = c(0.60, 0.70, 0.95)
+      ))
+    }
+
+    tibble::tibble()
+  }
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 3L,
+    request_fn = fake_request,
+    search_fn = fake_search,
+    sources = "smn",
+    max_per_role = 3L
+  )
+
+  selected <- out$suggestions[out$suggestions$llm_selected, , drop = FALSE]
+  # Exploration fired (2 requests: initial accept + alternate-query ask) but no
+  # reassessment request was issued because there was no candidate gain.
+  expect_equal(request_calls, 2L)
+  expect_equal(nrow(selected), 1L)
+  expect_equal(selected$iri[[1]], "https://example.org/original-3")
+  expect_true(isTRUE(out$assessments$llm_exploration_used[[1]]))
+})
+
+test_that("reject_shortlist that exploration cannot resolve escalates to request_new_term", {
+  suggestions <- tibble::tibble(
+    dataset_id = rep("d1", 2),
+    table_id = rep("t1", 2),
+    column_name = rep("catch_weight", 2),
+    column_label = rep("Catch weight", 2),
+    column_description = rep("Total weight of catch", 2),
+    column_role = rep("measurement", 2),
+    code_value = rep(NA_character_, 2),
+    dictionary_role = rep("property", 2),
+    search_role = rep("property", 2),
+    target_scope = rep("column", 2),
+    target_sdp_file = rep("column_dictionary.csv", 2),
+    target_sdp_field = rep("property_iri", 2),
+    search_query = rep("catch weight", 2),
+    target_label = rep("Catch weight", 2),
+    target_description = rep("Total weight of catch", 2),
+    target_query_basis = rep("label", 2),
+    target_query_context = rep("ctx", 2),
+    label = c("Fish weight", "Fish length"),
+    iri = c("https://example.org/fish-weight", "https://example.org/fish-length"),
+    source = rep("smn", 2),
+    ontology = rep("demo", 2),
+    definition = c("Weight of an individual fish", "Length of an individual fish"),
+    match_type = rep("label_partial", 2),
+    score = c(0.7, 0.6)
+  )
+
+  fake_request <- function(messages, config) {
+    prompt <- messages[[2]]$content
+    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
+      return(list(
+        alternate_queries = list("biomass of catch"),
+        rationale = "None of the individual-fish candidates fit a catch-level property."
+      ))
+    }
+    # Both the initial and any reassessment reject the whole shortlist.
+    list(
+      decision = "reject_shortlist",
+      selected_candidate_index = NULL,
+      confidence = 0.82,
+      rationale = "Candidates are individual-organism oriented, not catch-level.",
+      missing_context = ""
+    )
+  }
+  # Exploration re-search finds nothing, so the rejection is never resolved.
+  fake_search <- function(query, role, sources) tibble::tibble()
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "qwen/qwen3.6-plus:free",
+    api_key = "dummy-key",
+    top_n = 2L,
+    request_fn = fake_request,
+    search_fn = fake_search,
+    sources = "smn",
+    max_per_role = 2L
+  )
+
+  assessment <- out$assessments
+  expect_equal(assessment$llm_decision[[1]], "request_new_term")
+  expect_true(is.na(assessment$llm_selected_candidate_index[[1]]))
+  expect_true(is.na(assessment$llm_selected_iri[[1]]))
+  expect_match(assessment$llm_rationale[[1]], "escalated to request_new_term", fixed = TRUE)
+  # No candidate is flagged as selected in the suggestions output.
+  expect_false(any(isTRUE(out$suggestions$llm_selected)))
+})
+
 test_that("LLM request_new_term stores ontology-gap metadata", {
   suggestions <- tibble::tibble(
     dataset_id = c("d1", "d1"),
@@ -952,24 +1220,7 @@ test_that("LLM request_new_term stores ontology-gap metadata", {
 })
 
 test_that("apply_semantic_suggestions can use llm strategy with a confidence threshold", {
-  dict <- tibble::tibble(
-    dataset_id = "d1",
-    table_id = "t1",
-    column_name = "spawner_count",
-    column_label = "Spawner count",
-    column_description = "Spawner abundance",
-    term_iri = NA_character_,
-    property_iri = NA_character_,
-    entity_iri = NA_character_,
-    constraint_iri = NA_character_,
-    method_iri = NA_character_,
-    unit_label = NA_character_,
-    unit_iri = NA_character_,
-    term_type = NA_character_,
-    value_type = "integer",
-    column_role = "measurement",
-    required = NA
-  )
+  dict <- test_spawner_dictionary(column_description = "Spawner abundance")
 
   suggestions <- tibble::tibble(
     column_name = c("spawner_count", "spawner_count"),
@@ -1133,6 +1384,96 @@ test_that("LLM context files are parsed and chunked once per assessment run", {
 
   expect_equal(read_calls, 1L)
   expect_equal(chunk_calls, 1L)
+})
+
+test_that("context chunk pool is collected once but scored per target", {
+  pool <- tibble::tibble(
+    source = c("context.md", "context.md"),
+    chunk_id = c("context.md#1", "context.md#2"),
+    chunk_text = c(
+      "spawner abundance count population",
+      "water temperature degree celsius"
+    )
+  )
+  spawner_target <- tibble::tibble(
+    search_query = "spawner abundance",
+    target_label = "Spawner count",
+    target_description = "Natural-origin spawner abundance estimate",
+    column_label = "Spawner count",
+    column_description = "Natural-origin spawner abundance estimate"
+  )
+  temperature_target <- tibble::tibble(
+    search_query = "water temperature",
+    target_label = "Water temperature",
+    target_description = "Water temperature measurement",
+    column_label = "Water temperature",
+    column_description = "Water temperature measurement"
+  )
+  candidates <- tibble::tibble(
+    label = "candidate",
+    definition = "candidate definition"
+  )
+
+  spawner_chunks <- metasalmon:::.ms_prepare_context_chunks(
+    target_row = spawner_target,
+    candidate_rows = candidates,
+    max_chunks = 1L,
+    context_chunk_pool = pool
+  )
+  temperature_chunks <- metasalmon:::.ms_prepare_context_chunks(
+    target_row = temperature_target,
+    candidate_rows = candidates,
+    max_chunks = 1L,
+    context_chunk_pool = pool
+  )
+
+  expect_equal(spawner_chunks$chunk_id[[1]], "context.md#1")
+  expect_equal(temperature_chunks$chunk_id[[1]], "context.md#2")
+})
+
+test_that("context files sharing a basename get disambiguated source labels", {
+  dir_a <- withr::local_tempdir()
+  dir_b <- withr::local_tempdir()
+  path_a <- file.path(dir_a, "notes.md")
+  path_b <- file.path(dir_b, "notes.md")
+  writeLines("Alpha spawner abundance context", path_a)
+  writeLines("Beta water temperature context", path_b)
+
+  chunks <- metasalmon:::.ms_collect_context_chunks(context_files = c(path_a, path_b))
+  sources <- unique(chunks$source)
+
+  # Two distinct files must not collapse into a single "notes.md" source, and
+  # their chunk ids must not collide.
+  expect_length(sources, 2L)
+  expect_equal(anyDuplicated(chunks$chunk_id), 0L)
+  # The basename stays visible in each disambiguated label.
+  expect_true(all(grepl("notes.md", sources, fixed = TRUE)))
+})
+
+test_that("non-UTF-8 (Latin-1/Windows-1252) context files are decoded, not corrupted", {
+  dir <- withr::local_tempdir()
+  path <- file.path(dir, "field-notes.csv")
+  # Write "...,Rio Fraser" with the i encoded as Windows-1252 byte 0xED (i-acute),
+  # which is invalid UTF-8 on its own.
+  con <- file(path, open = "wb")
+  writeBin(as.raw(c(utf8ToInt("label,note\nspawners,R"), 0xED, utf8ToInt("o Fraser\n"))), con)
+  close(con)
+
+  res <- metasalmon:::.ms_context_text_from_file(path)
+  expect_false(is.null(res))
+  expect_true(validUTF8(res$text))
+  expect_true(grepl("Río Fraser", res$text, fixed = TRUE))
+})
+
+test_that("context chunk scoring requires a pre-collected pool", {
+  expect_error(
+    metasalmon:::.ms_prepare_context_chunks(
+      target_row = tibble::tibble(search_query = "spawner abundance"),
+      candidate_rows = tibble::tibble(label = "Spawner abundance"),
+      context_chunk_pool = NULL
+    ),
+    "requires a pre-collected context chunk pool"
+  )
 })
 
 test_that("PDF context files either extract text or fail clearly when pdftools is unavailable", {
@@ -1434,21 +1775,7 @@ test_that("chapi/mistral review can use mixed context files across dataset, tabl
     semantic_code_scope = "all"
   )
 
-  fake_search <- function(query, role, sources) {
-    tibble::tibble(
-      label = c(paste(role, "best"), paste(role, "alt")),
-      iri = c(
-        paste0("https://example.org/", role, "/best"),
-        paste0("https://example.org/", role, "/alt")
-      ),
-      source = c("smn", "smn"),
-      ontology = c("demo", "demo"),
-      role = c(role, role),
-      match_type = c("label_partial", "label_partial"),
-      definition = c("Best match from retrieved shortlist", "Alternative match from retrieved shortlist"),
-      score = c(0.9, 0.5)
-    )
-  }
+  fake_search <- test_shortlist_search
 
   seen_messages <- character()
   fake_request <- function(messages, config) {
@@ -1662,7 +1989,7 @@ test_that("HTML, PDF, DOCX, R Markdown, Quarto, and R context files can material
 })
 
 test_that("validate_dictionary keeps strong non-strict warnings for direct review markers and gaps", {
-  dict_with_review <- tibble::tibble(
+  dict_with_review <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",
@@ -1680,7 +2007,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
     method_iri = NA_character_
   )
 
-  dict_with_missing <- tibble::tibble(
+  dict_with_missing <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",
@@ -1709,7 +2036,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
 })
 
 test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs remain", {
-  dict <- tibble::tibble(
+  dict <- test_dictionary(
     dataset_id = "demo",
     table_id = "main",
     column_name = "spawner_count",

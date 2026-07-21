@@ -190,7 +190,12 @@ create_sdp(
   Logical; when `TRUE`, writes an HNAP-aware EDH XML metadata file to
   `metadata/metadata-edh-hnap.xml` using
   [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
-  The default is `FALSE`.
+  The default is `FALSE`. Because `create_sdp()` produces review-ready
+  metadata, this create-time XML is treated as a **draft**: if
+  `REVIEW:`/`MISSING` markers remain it is still written but a warning
+  recommends rebuilding a clean file with
+  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
+  after the metadata is finalized.
 
 - ...:
 

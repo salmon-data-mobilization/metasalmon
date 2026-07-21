@@ -92,6 +92,97 @@
   max(shortlist_size, llm_top_n)
 }
 
+.ms_llm_review_requested <- function(llm_assess = FALSE,
+                                     llm_context_files = NULL,
+                                     llm_context_text = NULL,
+                                     llm_model = NULL,
+                                     llm_api_key = NULL,
+                                     llm_base_url = NULL,
+                                     llm_reasoning_effort = NULL,
+                                     llm_request_fn = NULL) {
+  isTRUE(llm_assess) ||
+    !is.null(llm_context_files) ||
+    !is.null(llm_context_text) ||
+    !is.null(llm_model) ||
+    !is.null(llm_api_key) ||
+    !is.null(llm_base_url) ||
+    !is.null(llm_reasoning_effort) ||
+    !is.null(llm_request_fn)
+}
+
+# Single source of truth for the LLM semantic-review argument surface. The
+# argument NAMES live here exactly once; `.ms_llm_review_plan()` collects them
+# from its own formals with `mget()` to build the suggest_semantics() LLM tail.
+# Adding a new LLM knob therefore means editing the `.ms_llm_review_plan()`
+# signature and this vector only -- the two stay in lockstep instead of being
+# re-listed by hand in a separate pass-through helper.
+.ms_llm_arg_names <- function() {
+  c(
+    "llm_assess",
+    "llm_provider",
+    "llm_model",
+    "llm_api_key",
+    "llm_base_url",
+    "llm_reasoning_effort",
+    "llm_top_n",
+    "llm_context_files",
+    "llm_context_text",
+    "llm_timeout_seconds",
+    "llm_request_fn"
+  )
+}
+
+.ms_llm_review_plan <- function(seed_semantics,
+                                semantic_max_per_role,
+                                llm_assess = FALSE,
+                                llm_provider = c("openai", "openrouter", "openai_compatible", "chapi"),
+                                llm_model = NULL,
+                                llm_api_key = NULL,
+                                llm_base_url = NULL,
+                                llm_reasoning_effort = NULL,
+                                llm_top_n = 5L,
+                                llm_context_files = NULL,
+                                llm_context_text = NULL,
+                                llm_timeout_seconds = 60,
+                                llm_request_fn = NULL) {
+  llm_requested <- .ms_llm_review_requested(
+    llm_assess = llm_assess,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_reasoning_effort = llm_reasoning_effort,
+    llm_request_fn = llm_request_fn
+  )
+  .ms_validate_llm_context_files(llm_context_files)
+  .ms_warn_if_llm_semantic_options_ignored(
+    seed_semantics = seed_semantics,
+    llm_requested = llm_requested
+  )
+
+  # Conditional LLM tail appended to suggest_args. mget() pulls exactly the
+  # canonical LLM args (.ms_llm_arg_names()) out of this function's environment,
+  # so the names are never duplicated. The caller-specific BASE suggest_args
+  # (df/codes/table_meta/dataset_meta/include_dwc) stay owned by each public
+  # entry point because they legitimately differ per caller.
+  suggest_args <- if (llm_requested) {
+    mget(.ms_llm_arg_names(), envir = environment())
+  } else {
+    list()
+  }
+
+  list(
+    llm_requested = llm_requested,
+    semantic_max_per_role = .ms_llm_effective_shortlist_size(
+      semantic_max_per_role,
+      llm_assess = llm_assess,
+      llm_top_n = llm_top_n
+    ),
+    suggest_args = suggest_args
+  )
+}
+
 .ms_llm_batch_size <- function(config) {
   if (!identical(config$request_fn, .ms_llm_chat_json_request)) {
     return(1L)
@@ -480,6 +571,48 @@
   invisible(NULL)
 }
 
+.ms_apply_llm_context_policy <- function(llm_assess,
+                                         context_files = NULL,
+                                         context_text = NULL) {
+  .ms_validate_llm_context_files(context_files)
+  .ms_warn_if_llm_context_ignored(
+    llm_assess = llm_assess,
+    context_files = context_files,
+    context_text = context_text
+  )
+  invisible(NULL)
+}
+
+.ms_warn_if_llm_semantic_options_ignored <- function(seed_semantics, llm_requested) {
+  if (isTRUE(seed_semantics) || !isTRUE(llm_requested)) {
+    return(invisible(FALSE))
+  }
+
+  cli::cli_warn(c(
+    "Ignoring LLM semantic options because {.code seed_semantics = FALSE}.",
+    "i" = "Enable {.code seed_semantics = TRUE} to generate semantic suggestions or call {.fn suggest_semantics} later with the same LLM/context arguments."
+  ))
+  invisible(TRUE)
+}
+
+# Read a plain-text context file as UTF-8, with a Latin-1/Windows-1252 fallback.
+# readLines(encoding = "UTF-8") only *marks* the bytes as UTF-8 without verifying
+# them, so a Latin-1/Windows-1252 file (common for field-data CSVs) would be left
+# mis-encoded and the later enc2utf8() call would not repair it. Detect invalid
+# UTF-8 and re-decode from the most likely single-byte encoding instead.
+.ms_read_text_utf8 <- function(path) {
+  text <- paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  if (!nzchar(text) || all(validUTF8(text))) {
+    return(text)
+  }
+  native <- paste(readLines(path, warn = FALSE), collapse = "\n")
+  converted <- iconv(native, from = "windows-1252", to = "UTF-8", sub = "")
+  if (is.na(converted) || !nzchar(converted)) {
+    converted <- iconv(native, from = "latin1", to = "UTF-8", sub = "")
+  }
+  if (is.na(converted)) text else converted
+}
+
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
@@ -515,7 +648,7 @@
   } else if (identical(ext, "docx")) {
     text <- .ms_context_text_from_docx(normalized)
   } else {
-    text <- paste(readLines(normalized, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    text <- .ms_read_text_utf8(normalized)
   }
 
   text <- enc2utf8(text)
@@ -594,6 +727,43 @@
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
+# Make context source labels unique. basename() collisions (e.g. two files named
+# README.md in different folders) would otherwise produce colliding chunk_ids and
+# silently merge in the user-visible llm_context_sources column. Labels that are
+# already unique are left untouched so the observable source-reporting contract is
+# preserved; collisions are disambiguated with the parent directory, then a
+# numeric suffix as a final safety net.
+.ms_unique_context_sources <- function(raw_context) {
+  if (length(raw_context) < 2L) {
+    return(raw_context)
+  }
+  sources <- vapply(raw_context, function(x) as.character(x$source %||% ""), character(1))
+  dup_labels <- unique(sources[duplicated(sources)])
+  if (length(dup_labels) == 0L) {
+    return(raw_context)
+  }
+  for (i in seq_along(raw_context)) {
+    if (!sources[[i]] %in% dup_labels) {
+      next
+    }
+    path <- raw_context[[i]]$path
+    if (!is.null(path) && !is.na(path) && nzchar(path)) {
+      parent <- basename(dirname(path))
+      if (nzchar(parent) && !parent %in% c(".", "/")) {
+        raw_context[[i]]$source <- file.path(parent, sources[[i]])
+      }
+    }
+  }
+  final <- vapply(raw_context, function(x) as.character(x$source %||% ""), character(1))
+  if (anyDuplicated(final) > 0L) {
+    final <- make.unique(final, sep = " #")
+    for (i in seq_along(raw_context)) {
+      raw_context[[i]]$source <- final[[i]]
+    }
+  }
+  raw_context
+}
+
 .ms_collect_context_chunks <- function(context_files = NULL,
                                        context_text = NULL) {
   .ms_validate_llm_context_files(context_files)
@@ -615,22 +785,21 @@
     return(tibble::tibble())
   }
 
+  raw_context <- .ms_unique_context_sources(raw_context)
+
   purrr::map_dfr(raw_context, function(item) {
     .ms_chunk_context_text(item$text, item$source)
   })
 }
 
-.ms_prepare_context_chunks <- function(context_files = NULL,
-                                       context_text = NULL,
-                                       target_row,
+.ms_prepare_context_chunks <- function(target_row,
                                        candidate_rows,
                                        max_chunks = 4L,
                                        context_chunk_pool = NULL) {
   chunks <- context_chunk_pool
   if (is.null(chunks)) {
-    chunks <- .ms_collect_context_chunks(
-      context_files = context_files,
-      context_text = context_text
+    cli::cli_abort(
+      "{.fn .ms_prepare_context_chunks} requires a pre-collected context chunk pool."
     )
   }
   if (nrow(chunks) == 0) {
@@ -803,10 +972,11 @@
     "You are assessing ontology candidate matches for the metasalmon R package.",
     "Choose only from the provided candidates; never invent an IRI.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context, retry_query, suggested_label, suggested_definition, suggested_namespace.",
-    "decision must be one of accept, review, retry_search, request_new_term.",
+    "decision must be one of accept, review, retry_search, request_new_term, reject_shortlist.",
     "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
     "If no provided candidate is clearly acceptable, return review and set selected_candidate_index to null.",
     "If the shortlist family looks wrong, use retry_search and provide a short retry_query.",
+    "If every provided candidate is off-topic or the wrong semantic family, use reject_shortlist and explain why in rationale.",
     "If the ontology likely lacks the right concept, use request_new_term and provide suggested_label, suggested_definition, and suggested_namespace.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
@@ -827,10 +997,11 @@
     "If the shortlist is the wrong candidate family, prefer retry_search with a better lexical query.",
     "If no precise existing term appears available, prefer request_new_term over forcing a weak local winner.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context, bundle_summary, retry_query, suggested_label, suggested_definition, suggested_namespace.",
-    "decision must be one of accept, review, retry_search, request_new_term.",
+    "decision must be one of accept, review, retry_search, request_new_term, reject_shortlist.",
     "If decision is accept, selected_candidate_index must point to exactly one provided candidate for the current slot.",
     "If decision is retry_search, selected_candidate_index must be null and retry_query must be a short plain-language lexical query.",
     "If decision is request_new_term, selected_candidate_index must be null and suggested_label, suggested_definition, and suggested_namespace should be filled when possible.",
+    "If every candidate is off-topic or the wrong semantic family for the current slot, use reject_shortlist and explain why in rationale.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note.",
     "confidence must be a number between 0 and 1."
@@ -888,10 +1059,11 @@
     "Choose only from the provided candidates for each target; never invent an IRI.",
     "Return JSON only with a single top-level key named assessments.",
     "assessments must be an array of objects with keys target_key, decision, selected_candidate_index, confidence, rationale, missing_context, retry_query, suggested_label, suggested_definition, suggested_namespace.",
-    "decision must be one of accept, review, retry_search, request_new_term.",
+    "decision must be one of accept, review, retry_search, request_new_term, reject_shortlist.",
     "If decision is accept, selected_candidate_index must point to exactly one provided candidate.",
     "If decision is retry_search, selected_candidate_index must be null and retry_query must be a short plain-language lexical query.",
     "If decision is request_new_term, selected_candidate_index must be null and suggested_label, suggested_definition, and suggested_namespace should be filled when possible.",
+    "If every candidate for a target is off-topic or the wrong semantic family, use reject_shortlist and explain why in rationale.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "missing_context must be an empty string when nothing material is missing; otherwise return a short plain-language note, not a filename or boolean.",
     "confidence must be a number between 0 and 1."
@@ -940,6 +1112,9 @@
     return(FALSE)
   }
 
+  # reject_shortlist always explores: it gets one chance to find a better
+  # candidate before .ms_llm_escalate_unresolved_rejection() escalates a still-
+  # rejected target to request_new_term.
   decision %in% c("review", "retry_search", "reject_shortlist") ||
     (identical(decision, "request_new_term") && (is.na(confidence) || confidence < 0.8)) ||
     is.na(confidence) || confidence < .ms_llm_exploration_confidence_threshold(config)
@@ -1075,8 +1250,6 @@
                                    sources,
                                    max_per_role,
                                    top_n,
-                                   context_files,
-                                   context_text,
                                    context_chunk_pool = NULL) {
   assessment_row <- .ms_llm_add_exploration_metadata(assessment_row)
   if (!.ms_llm_should_explore(assessment_row, config)) {
@@ -1169,18 +1342,28 @@
     group = merged_group,
     config = config,
     top_n = top_n,
-    context_files = context_files,
-    context_text = context_text,
     context_chunk_pool = context_chunk_pool
   )
 
   if (candidate_gain <= 0 || identical(.ms_llm_prompt_candidate_keys(updated_record), .ms_llm_prompt_candidate_keys(record))) {
-    return(list(record = updated_record, assessment = updated_assessment))
+    # No useful exploration gain: keep the ORIGINAL record so the original
+    # positional selected-candidate index still maps onto the original ordering.
+    # (.ms_merge_semantic_target_candidates re-sorts/caps, so returning
+    # updated_record here would remap a stale index onto a reordered shortlist.)
+    return(list(record = record, assessment = updated_assessment))
   }
 
   reassessed <- .ms_llm_assess_one_record(updated_record, config)
   if (is.na(reassessed$llm_decision[[1]])) {
-    return(list(record = updated_record, assessment = updated_assessment))
+    return(list(
+      record = record,
+      assessment = .ms_llm_add_exploration_metadata(
+        assessment_row,
+        used = TRUE,
+        queries = queries,
+        candidate_gain = 0L
+      )
+    ))
   }
 
   reassessed <- .ms_llm_add_exploration_metadata(
@@ -1191,6 +1374,38 @@
   )
 
   list(record = updated_record, assessment = reassessed)
+}
+
+# reject_shortlist means the model judged every candidate to be the wrong concept
+# family. Exploration gets one chance to surface a better candidate; if the target
+# still comes back rejected afterwards, escalate the outcome to request_new_term so
+# the likely ontology gap is surfaced to the new-term workflow instead of being
+# left as a dead-end rejection. A reassessment that turns into accept (or a softer
+# review/retry_search) is left untouched.
+.ms_llm_escalate_unresolved_rejection <- function(pre_assessment, explored) {
+  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
+  if (!identical(pre_decision, "reject_shortlist")) {
+    return(explored)
+  }
+
+  assessment <- explored$assessment
+  post_decision <- .ms_llm_non_empty_string(assessment$llm_decision[[1]] %||% NA_character_)
+  if (!identical(post_decision, "reject_shortlist")) {
+    return(explored)
+  }
+
+  assessment$llm_decision <- "request_new_term"
+  assessment$llm_selected_candidate_index <- NA_integer_
+  assessment$llm_selected_iri <- NA_character_
+  assessment$llm_selected_label <- NA_character_
+  note <- paste(
+    "Shortlist rejected and exploration found no acceptable candidate;",
+    "escalated to request_new_term so the likely ontology gap is surfaced."
+  )
+  existing <- .ms_llm_non_empty_string(assessment$llm_rationale[[1]] %||% NA_character_)
+  assessment$llm_rationale <- if (is.na(existing)) note else paste(existing, note)
+  explored$assessment <- assessment
+  explored
 }
 
 .ms_llm_extract_message_content <- function(body) {
@@ -1380,6 +1595,10 @@
       collapse = " "
     )
   }
+  # These decisions never select a candidate. reject_shortlist is preserved here
+  # as a distinct decision (not downgraded to review) so the stored llm_decision
+  # carries the rejection; the orchestration later escalates an unresolved
+  # rejection to request_new_term via .ms_llm_escalate_unresolved_rejection().
   if (decision %in% c("request_new_term", "retry_search", "reject_shortlist")) {
     selected_index <- NA_integer_
   }
@@ -1408,33 +1627,15 @@
   )
 }
 
-.ms_empty_llm_assessment <- function(group, config, error = NA_character_) {
-  .ms_llm_review_empty_assessment(group[1, , drop = FALSE], config, error = error)
-}
-
-.ms_llm_success_assessment <- function(record, config, validated) {
-  .ms_llm_review_success_assessment(
-    target_row = record$group[1, , drop = FALSE],
-    candidate_rows = record$candidate_rows,
-    context_chunks = record$context_chunks,
-    config = config,
-    validated = validated
-  )
-}
-
 .ms_llm_prepare_record <- function(group_name,
                                    group,
                                    config,
                                    top_n,
-                                   context_files,
-                                   context_text,
                                    context_chunk_pool = NULL,
                                    bundle_group = NULL) {
   group <- group[order(group$.ms_row_order), , drop = FALSE]
   candidate_rows <- utils::head(group, top_n)
   context_chunks <- .ms_prepare_context_chunks(
-    context_files = context_files,
-    context_text = context_text,
     target_row = group[1, , drop = FALSE],
     candidate_rows = candidate_rows,
     max_chunks = .ms_llm_context_chunk_limit(config),
@@ -1461,11 +1662,17 @@
   tryCatch(
     {
       validated <- .ms_llm_review_request_assessment(messages, record$candidate_rows, config)
-      .ms_llm_success_assessment(record, config, validated)
+      .ms_llm_review_success_assessment(
+        target_row = record$group[1, , drop = FALSE],
+        candidate_rows = record$candidate_rows,
+        context_chunks = record$context_chunks,
+        config = config,
+        validated = validated
+      )
     },
     error = function(e) {
       cli::cli_warn("LLM assessment failed for {.field {record$group$column_name[[1]] %||% record$group$target_sdp_field[[1]]}}: {conditionMessage(e)}")
-      .ms_empty_llm_assessment(record$group, config, error = conditionMessage(e))
+      .ms_llm_review_empty_assessment(record$group[1, , drop = FALSE], config, error = conditionMessage(e))
     }
   )
 }
@@ -1479,24 +1686,66 @@
   records_by_key <- stats::setNames(records, vapply(records, `[[`, character(1), "group_name"))
   rows <- vector("list", length(records_by_key))
   names(rows) <- names(records_by_key)
+  fallback_reasons <- stats::setNames(rep(NA_character_, length(records_by_key)), names(records_by_key))
+  seen_keys <- character()
 
   for (item in assessments) {
+    if (!is.list(item)) {
+      next
+    }
+
     key <- .ms_llm_non_empty_string(item$target_key %||% NA_character_)
     if (is.na(key) || !key %in% names(records_by_key)) {
       next
     }
-    validated <- .ms_validate_llm_assessment(item, records_by_key[[key]]$candidate_rows)
-    rows[[key]] <- .ms_llm_success_assessment(records_by_key[[key]], config, validated)
-  }
 
-  missing_keys <- names(rows)[vapply(rows, is.null, logical(1))]
-  if (length(missing_keys) > 0) {
-    cli::cli_abort(
-      "LLM batch response did not include usable assessments for target keys: {.val {missing_keys}}"
+    if (key %in% seen_keys) {
+      rows[key] <- list(NULL)
+      # Force the duplicated key to per-target fallback, but do not clobber a
+      # more specific reason already recorded for it (e.g. a validation error
+      # from its first occurrence).
+      if (is.na(fallback_reasons[[key]]) || !nzchar(fallback_reasons[[key]])) {
+        fallback_reasons[[key]] <- paste0(
+          "LLM batch response included duplicate assessment for target key '", key, "'."
+        )
+      }
+      next
+    }
+    seen_keys <- c(seen_keys, key)
+
+    validated <- tryCatch(
+      .ms_validate_llm_assessment(item, records_by_key[[key]]$candidate_rows),
+      error = function(e) e
+    )
+    if (inherits(validated, "error")) {
+      fallback_reasons[[key]] <- conditionMessage(validated)
+      next
+    }
+
+    record <- records_by_key[[key]]
+    rows[[key]] <- .ms_llm_review_success_assessment(
+      target_row = record$group[1, , drop = FALSE],
+      candidate_rows = record$candidate_rows,
+      context_chunks = record$context_chunks,
+      config = config,
+      validated = validated
     )
   }
 
-  dplyr::bind_rows(rows)
+  fallback_keys <- names(rows)[vapply(rows, is.null, logical(1))]
+  if (length(fallback_keys) > 0) {
+    missing_reasons <- is.na(fallback_reasons[fallback_keys]) | !nzchar(fallback_reasons[fallback_keys])
+    fallback_reasons[fallback_keys[missing_reasons]] <-
+      "LLM batch response did not include a usable assessment for this target key."
+  }
+
+  valid_keys <- names(rows)[!vapply(rows, is.null, logical(1))]
+  out <- dplyr::bind_rows(rows[valid_keys])
+  attr(out, "llm_batch_valid_keys") <- valid_keys
+  attr(out, "llm_batch_fallback_keys") <- fallback_keys
+  attr(out, "llm_batch_fallback_reasons") <- fallback_reasons[fallback_keys]
+
+  out
 }
 
 .ms_llm_assess_record_batch <- function(records, config) {
@@ -1529,7 +1778,46 @@
     return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
   }
 
-  validated
+  fallback_keys <- attr(validated, "llm_batch_fallback_keys") %||% character()
+  if (length(fallback_keys) == 0) {
+    return(validated)
+  }
+
+  records_by_key <- stats::setNames(records, vapply(records, `[[`, character(1), "group_name"))
+  fallback_keys <- intersect(fallback_keys, names(records_by_key))
+  if (length(fallback_keys) == 0) {
+    return(validated)
+  }
+
+  # Surface the per-key fallback reasons (not just the keys) so a batch failure is
+  # debuggable. Reason text is model-influenced, so escape glue/cli braces before
+  # it reaches cli_warn's interpolation.
+  fallback_reasons <- attr(validated, "llm_batch_fallback_reasons") %||% character()
+  escape_braces <- function(x) gsub("}", "}}", gsub("{", "{{", x, fixed = TRUE), fixed = TRUE)
+  reason_bullets <- vapply(fallback_keys, function(k) {
+    reason <- fallback_reasons[[k]] %||% "no usable assessment returned"
+    if (is.na(reason) || !nzchar(reason)) reason <- "no usable assessment returned"
+    escape_braces(paste0(k, ": ", reason))
+  }, character(1))
+  cli::cli_warn(c(
+    "LLM batch response was unusable for {length(fallback_keys)} of {length(records)} targets; falling back to per-target review.",
+    stats::setNames(reason_bullets, rep("*", length(reason_bullets)))
+  ))
+
+  valid_keys <- attr(validated, "llm_batch_valid_keys") %||% character()
+  rows_by_key <- list()
+  if (nrow(validated) > 0 && length(valid_keys) > 0) {
+    for (i in seq_along(valid_keys)) {
+      rows_by_key[[valid_keys[[i]]]] <- validated[i, , drop = FALSE]
+    }
+  }
+
+  fallback_rows <- lapply(records_by_key[fallback_keys], .ms_llm_assess_one_record, config = config)
+  rows_by_key[fallback_keys] <- fallback_rows
+  rows_by_key <- rows_by_key[names(records_by_key)]
+  rows_by_key <- rows_by_key[!vapply(rows_by_key, is.null, logical(1))]
+
+  dplyr::bind_rows(rows_by_key)
 }
 
 .ms_has_usable_semantic_suggestions <- function(suggestions) {
@@ -1630,8 +1918,6 @@
         group = group,
         config = config,
         top_n = top_n,
-        context_files = context_files,
-        context_text = context_text,
         context_chunk_pool = context_chunk_pool,
         bundle_group = bundle_groups[[bundle_key]]
       )
@@ -1647,9 +1933,13 @@
   explored <- purrr::map(records, function(record) {
     assessment_row <- assessments_by_key[[record$group_name]]
     if (is.null(assessment_row)) {
-      assessment_row <- .ms_empty_llm_assessment(record$group, config, error = "Initial LLM assessment was missing for this target.")
+      assessment_row <- .ms_llm_review_empty_assessment(
+        record$group[1, , drop = FALSE],
+        config,
+        error = "Initial LLM assessment was missing for this target."
+      )
     }
-    .ms_llm_explore_record(
+    explored_record <- .ms_llm_explore_record(
       record = record,
       assessment_row = assessment_row,
       config = config,
@@ -1657,10 +1947,9 @@
       sources = sources,
       max_per_role = max_per_role,
       top_n = top_n,
-      context_files = context_files,
-      context_text = context_text,
       context_chunk_pool = context_chunk_pool
     )
+    .ms_llm_escalate_unresolved_rejection(assessment_row, explored_record)
   })
 
   final_records <- purrr::map(explored, "record")

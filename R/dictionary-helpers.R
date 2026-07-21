@@ -23,7 +23,9 @@
 #' @param seed_dataset_meta Optional `dataset.csv`-style tibble forwarded to
 #'   `suggest_semantics()` when `seed_semantics = TRUE`.
 #' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`.
+#'   assessment inside `suggest_semantics()`. The LLM and context options below
+#'   take effect only when `seed_semantics = TRUE`; supplying them with
+#'   `seed_semantics = FALSE` emits a warning and is otherwise ignored.
 #' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
 #' @param llm_model Optional LLM model identifier forwarded to
 #'   `suggest_semantics()`.
@@ -89,20 +91,20 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_context_text = NULL,
                             llm_timeout_seconds = 60,
                             llm_request_fn = NULL) {
-  llm_requested <- isTRUE(llm_assess) ||
-    !is.null(llm_context_files) ||
-    !is.null(llm_context_text) ||
-    !is.null(llm_model) ||
-    !is.null(llm_api_key) ||
-    !is.null(llm_base_url) ||
-    !is.null(llm_reasoning_effort) ||
-    !is.null(llm_request_fn)
-  .ms_validate_llm_context_files(llm_context_files)
-
-  semantic_seed_max_per_role <- .ms_llm_effective_shortlist_size(
-    semantic_max_per_role,
+  llm_review <- .ms_llm_review_plan(
+    seed_semantics = seed_semantics,
+    semantic_max_per_role = semantic_max_per_role,
     llm_assess = llm_assess,
-    llm_top_n = llm_top_n
+    llm_provider = llm_provider,
+    llm_model = llm_model,
+    llm_api_key = llm_api_key,
+    llm_base_url = llm_base_url,
+    llm_reasoning_effort = llm_reasoning_effort,
+    llm_top_n = llm_top_n,
+    llm_context_files = llm_context_files,
+    llm_context_text = llm_context_text,
+    llm_timeout_seconds = llm_timeout_seconds,
+    llm_request_fn = llm_request_fn
   )
 
   if (is.list(df) && !inherits(df, "data.frame")) {
@@ -125,44 +127,26 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       cli::cli_abort("{.arg df} table_id names must be unique")
     }
 
-    dict_parts <- lapply(names(resources), function(tab_id) {
-      infer_dictionary(
-        df = resources[[tab_id]],
-        guess_types = guess_types,
-        dataset_id = dataset_id,
-        table_id = tab_id,
-        seed_semantics = FALSE,
-        semantic_sources = semantic_sources,
-        semantic_max_per_role = semantic_max_per_role,
-        seed_verbose = seed_verbose,
-        seed_codes = NULL,
-        seed_table_meta = NULL,
-        seed_dataset_meta = NULL
-      )
-    })
-    dict <- dplyr::bind_rows(dict_parts)
+    dict <- .ms_infer_resource_dictionary(
+      resources = resources,
+      guess_types = guess_types,
+      dataset_id = dataset_id,
+      semantic_sources = semantic_sources,
+      semantic_max_per_role = semantic_max_per_role,
+      seed_verbose = seed_verbose
+    )
 
-    inferred_table_meta <- infer_table_metadata_from_resources(resources, dataset_id = dataset_id)
-    inferred_codes <- infer_codes_from_resources(resources, dataset_id = dataset_id)
-    inferred_dataset_meta <- infer_dataset_metadata_from_resources(resources, dataset_id = dataset_id)
-
-    if (!is.null(seed_table_meta)) {
-      table_meta <- seed_table_meta
-    } else {
-      table_meta <- inferred_table_meta
-    }
-
-    if (!is.null(seed_codes)) {
-      codes <- seed_codes
-    } else {
-      codes <- inferred_codes
-    }
-
-    if (!is.null(seed_dataset_meta)) {
-      dataset_meta <- seed_dataset_meta
-    } else {
-      dataset_meta <- inferred_dataset_meta
-    }
+    artifact_context <- .ms_infer_resource_artifact_context(
+      resources = resources,
+      dataset_id = dataset_id,
+      seed_codes = seed_codes,
+      seed_table_meta = seed_table_meta,
+      seed_dataset_meta = seed_dataset_meta,
+      mode = "dictionary"
+    )
+    table_meta <- artifact_context$table_meta
+    codes <- artifact_context$codes
+    dataset_meta <- artifact_context$dataset_meta
 
     if (isTRUE(seed_semantics)) {
       if (seed_verbose) {
@@ -172,31 +156,17 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = resources,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_seed_max_per_role,
+        max_per_role = llm_review$semantic_max_per_role,
         codes = codes,
         table_meta = table_meta,
         dataset_meta = dataset_meta
       )
-      if (llm_requested) {
-        suggest_args <- c(suggest_args, list(
-          llm_assess = llm_assess,
-          llm_provider = llm_provider,
-          llm_model = llm_model,
-          llm_api_key = llm_api_key,
-          llm_base_url = llm_base_url,
-          llm_reasoning_effort = llm_reasoning_effort,
-          llm_top_n = llm_top_n,
-          llm_context_files = llm_context_files,
-          llm_context_text = llm_context_text,
-          llm_timeout_seconds = llm_timeout_seconds,
-          llm_request_fn = llm_request_fn
-        ))
-      }
+      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
-      attr(dict, "inferred_table_meta") <- table_meta
-      attr(dict, "inferred_codes") <- codes
-      attr(dict, "inferred_dataset_meta") <- dataset_meta
-      attr(dict, "inferred_resources") <- names(resources)
+      attr(dict, "inferred_table_meta") <- artifact_context$inferred_table_meta
+      attr(dict, "inferred_codes") <- artifact_context$inferred_codes
+      attr(dict, "inferred_dataset_meta") <- artifact_context$inferred_dataset_meta
+      attr(dict, "inferred_resources") <- artifact_context$inferred_resources
     }
 
     dict <- .ms_fill_review_placeholders_dictionary(dict)
@@ -248,26 +218,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
         df = df,
         dict = dict,
         sources = semantic_sources,
-        max_per_role = semantic_seed_max_per_role,
+        max_per_role = llm_review$semantic_max_per_role,
         codes = seed_codes,
         table_meta = seed_table_meta,
         dataset_meta = seed_dataset_meta
       )
-      if (llm_requested) {
-        suggest_args <- c(suggest_args, list(
-          llm_assess = llm_assess,
-          llm_provider = llm_provider,
-          llm_model = llm_model,
-          llm_api_key = llm_api_key,
-          llm_base_url = llm_base_url,
-          llm_reasoning_effort = llm_reasoning_effort,
-          llm_top_n = llm_top_n,
-          llm_context_files = llm_context_files,
-          llm_context_text = llm_context_text,
-          llm_timeout_seconds = llm_timeout_seconds,
-          llm_request_fn = llm_request_fn
-        ))
-      }
+      suggest_args <- c(suggest_args, llm_review$suggest_args)
       dict <- do.call(suggest_semantics, suggest_args)
       if (!is.null(seed_table_meta)) {
         attr(dict, "seed_table_meta") <- seed_table_meta
