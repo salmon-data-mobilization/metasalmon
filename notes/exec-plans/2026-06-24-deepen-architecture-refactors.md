@@ -1,15 +1,16 @@
 # Deepen metasalmon architecture after `llm_context_files` fix
 
-## Status (2026-06-26) — EXECUTED
+## Status (2026-07-21) — EXECUTED AND RELEASE-VALIDATED
 
 Refactors R1–R5 are implemented on the `deepen-architecture` branch and the full
 `testthat` suite is green (1281 pass / 0 fail). A `/code-review` pass and its
 follow-up fixes also landed. The remaining items from this plan — the
-*Missing / Future Refactor Candidates* (god-file split, shared chat request
-builder, real `AGENTS.md`) and the deferred backlog — are carried forward in
+*Missing / Future Refactor Candidates* (god-file split and shared chat request
+builder) and the deferred backlog — are carried forward in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (Themes A–E + Process).
-Still pending before merge: `R CMD check` and the PR (tracked there as P1/P2).
-This document is retained as the record of the executed refactor.
+The package is prepared as 0.1.5, and the full standard source-package check now
+finishes with `Status: OK`; only the PR/merge handoff remains. This document is
+retained as the record of the executed refactor.
 
 ## Purpose
 
@@ -145,6 +146,10 @@ Base state for this plan:
 - [x] 2026-06-25: Updated this ExecPlan and
   `notes/bugs-and-improvements.md` after implementation so their status reflects
   what landed, what was partially addressed, and what remains open/deferred.
+- [x] 2026-07-21: Closed the remaining release gate. Marked each display-only
+  vignette chunk `purl = FALSE`, installed the missing local `pdftools` and
+  TinyTeX support needed to exercise every check stage, prepared release 0.1.5,
+  rebuilt pkgdown, and ran `R CMD check metasalmon_0.1.5.tar.gz` to `Status: OK`.
 
 ## Surprises & Discoveries
 
@@ -163,6 +168,11 @@ Base state for this plan:
   plan. The implementation fixed the plan-driving LLM/semantic bugs, but left
   separate request-builder, EDH XML guard, context-source disambiguation,
   encoding, and agent-guidance items for follow-up work.
+- A fully standard check on 2026-07-21 exposed two independent local-toolchain
+  gaps after the vignette issue was fixed: missing `pdftools`, then missing
+  TinyTeX Courier metrics and `makeindex`. Installing those dependencies made the
+  unchanged source tarball pass, confirming the PDF-manual failure was not an Rd
+  defect.
 
 ## Decision Log
 
@@ -182,6 +192,9 @@ Base state for this plan:
   output or should block on unresolved placeholders/`REVIEW:` IRIs.
 - 2026-06-25: Leave `AGENTS.md` / `CLAUDE.md` source guidance repair out of this
   branch. The branch only prevents unwanted generated pkgdown launcher pages.
+- 2026-07-21: Package the completed branch as 0.1.5 rather than extending the
+  already-shipped 0.1.4 section; the branch adds observable behavior and
+  correctness fixes beyond the Alice patch.
 
 ## Outcomes & Retrospective
 
@@ -202,6 +215,8 @@ and fixture work:
 7. Extracted artifact-inference context into `R/artifact-inference.R` while
    preserving public `infer_dictionary()` attribute contracts.
 8. Refreshed roxygen/pkgdown output and added the missing MIT `LICENSE` stub.
+9. Completed the release gate with check-safe display vignettes, a clean standard
+   package check, a 0.1.5 version/NEWS split, and regenerated pkgdown output.
 
 Implementation commits on `deepen-architecture` before this notes update:
 
@@ -1131,9 +1146,9 @@ Surfaced during review; not required for this plan but worth tracking.
    intentionally specialized fixtures remain local.)
 4. **Real `AGENTS.md`.** `CLAUDE.md`/`AGENTS.md` are a circular self-reference, so
    the package ships no agent guidance. Seed it from `notes/context.md` (the LLM
-   opt-in contract, attribute/IRI-prefix contracts, build/test commands). (Still
-   open; pkgdown launcher-page generation is ignored, but source guidance is not
-   repaired.)
+   opt-in contract, attribute/IRI-prefix contracts, build/test commands). (Done
+   during the roadmap clear-the-decks work; `CLAUDE.md` now imports the real
+   `AGENTS.md`.)
 
 ## Recommended Order
 

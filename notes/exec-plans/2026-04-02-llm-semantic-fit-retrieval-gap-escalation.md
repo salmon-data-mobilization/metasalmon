@@ -2,6 +2,22 @@
 
 This ExecPlan is a living document. Keep `Progress`, `Decision Log`, and `Validation + Acceptance` current as the work moves.
 
+## Status (reconciled 2026-07-21)
+
+The architecture foundation and the first gap-escalation slice are implemented.
+`retry_search`, `request_new_term`, and `reject_shortlist` are validated outcomes;
+assessment rows carry `llm_retry_query`, `llm_new_term_label`,
+`llm_new_term_definition`, and `llm_new_term_namespace`; and an unresolved
+`reject_shortlist` escalates to `request_new_term` after one bounded exploration
+round. Direct `request_new_term` metadata is covered by tests.
+
+The plan is not complete. The unresolved-rejection path still lacks a structured
+new-term proposal when the model supplied only a rejection rationale, and the
+term-request workflow does not yet consume `semantic_llm_assessments`. Before
+more prompt/retrieval work, preserve the evidence pack. Then execute the remaining
+work in dependency order: gap integration, duplicate-retry handling, slot-aware
+retrieval, canonical bundle review, and bundle validators.
+
 ## Purpose / Big Picture
 
 metasalmon currently does a useful first pass:
@@ -357,9 +373,12 @@ Working hypothesis:
 - [ ] Record when retry changed the result
 
 ### Phase 4 — explicit gap escalation
-- [ ] Define structured `retry_search` / `request_new_term` outputs
-- [ ] Thread those outputs through `suggest_semantics()` results
-- [ ] Add optional issue-draft helpers later if useful
+- [x] Define structured `retry_search` / `request_new_term` assessment outputs
+- [x] Thread those outputs through `suggest_semantics()` as the
+  `semantic_llm_assessments` attribute
+- [ ] Preserve richer metadata when `reject_shortlist` escalates after exploration
+- [ ] Connect `request_new_term` assessments to `detect_semantic_term_gaps()` and
+  `render_ontology_term_request()`
 
 ### Phase 5 — deterministic post-validators
 - [ ] Add bundle-fit validators for `constraint_iri` and `method_iri`
@@ -417,14 +436,28 @@ At minimum:
 - 2026-04-02 — Decided that bundle-level reasoning should precede per-slot acceptance.
 - 2026-04-02 — Decided that shortlist failure must support retry-search or new-term escalation instead of forced local winners.
 - 2026-04-02 — Noted that `CATCH_WEIGHT` may surface an ontology gap or candidate-family weakness rather than a mere model error.
+- 2026-07-21 — Reconciled the plan with the implemented assessment contract and
+  classified gap escalation as partial rather than unstarted.
+- 2026-07-21 — Added the evidence pack as an explicit gate and ordered canonical
+  bundle review before deterministic bundle validators; validators should consume
+  one bundle representation rather than create another.
 
 ## Progress
 
 - [x] Live model comparison completed across `openrouter/free`, `qwen/qwen3.6-plus:free`, and `openai/gpt-5.4-mini`
 - [x] Prompt experiments completed for qwen, showing role-fit guidance materially improves results
+- [x] Foundational `retry_search`, `request_new_term`, and unresolved
+  `reject_shortlist` escalation outputs implemented with mocked regression tests
+- [x] Direct new-term label/definition/namespace metadata threaded through the
+  semantic LLM assessment rows
+- [ ] Preserve the evidence pack and machine-readable baseline before changing
+  prompts or retrieval
+- [ ] Complete gap metadata integration with the term-request workflow
+- [ ] Record duplicate retry-query rejection instead of silently requesting a
+  generic replacement query
 - [ ] Convert prompt experiment findings into package-level prompt changes
 - [ ] Design and implement bundle-aware review data structure
-- [ ] Implement retry-search / new-term escalation outputs
+- [ ] Add deterministic bundle validators against that canonical structure
 - [ ] Rework prefill policy around semantic fit rather than confidence-only gating
 
 ## Notes for whoever implements this

@@ -1,6 +1,6 @@
 # metasalmon — next behaviours roadmap
 
-Created 2026-06-26. A consolidating roadmap for the behaviours worth doing **next**,
+Created 2026-06-26; last reconciled 2026-07-21. A consolidating roadmap for the behaviours worth doing **next**,
 after the `deepen-architecture` branch (executed) and the Alice Assmar `#1` fix
 (closed, shipped in 0.1.4). This document is a triage + sequencing layer: it does
 not re-derive the two detailed design drafts it points to, it decides what to pick
@@ -23,22 +23,24 @@ Three planning artifacts already exist:
 
 And the live backlog with implementation status:
 
-- `notes/bugs-and-improvements.md` — 31 items; this roadmap references the open
+- `notes/bugs-and-improvements.md` — 32 items; this roadmap references the open
   ones by number (e.g. *bug #4*).
 
 What changes for the user, by theme: smarter and more honest semantic review
 (Theme A), safer EDH export (Theme B), an interactive curation workflow (Theme C),
 more robust context handling (Theme D), and a more maintainable codebase (Theme E).
 
-## Status snapshot (2026-06-26)
+## Status snapshot (2026-07-21)
 
 - **Done / shipped:** the `#1` `llm_context_files` fix (0.1.4); R1–R5 refactors;
   the code-review fixes incl. the **first slice of gap escalation** —
   `reject_shortlist` that exploration cannot resolve now escalates to
   `request_new_term` (`.ms_llm_escalate_unresolved_rejection`).
-- **Open behaviours to consider next:** this document.
-- **Pending process:** `R CMD check` + a PR for `deepen-architecture` (see
-  Process / Handoff).
+- **0.1.5 release candidate complete:** E5 is fixed, `DESCRIPTION`/`NEWS.md` and
+  pkgdown are updated, and a standard `R CMD check metasalmon_0.1.5.tar.gz`
+  finishes with `Status: OK` including rebuilt vignettes and the PDF manual.
+- **Open behaviours to consider next:** Theme A, after the 0.1.5 PR is merged.
+- **Pending process:** open and merge the `deepen-architecture` PR (P2).
 
 ## Context and Orientation
 
@@ -61,6 +63,11 @@ the natural next step because the `reject_shortlist → request_new_term` escala
 just shipped is the **first concrete slice** of that roadmap's gap-escalation phase.
 Build the rest on top of it.
 
+- **A0 — Freeze the evidence pack.** Preserve the existing live-model outputs,
+  record a machine-readable baseline, and pin the minimum representative cases
+  before changing prompts or retrieval. This is Phase 0 in the detailed design
+  and is a prerequisite for judging whether Theme A improves semantic fit rather
+  than merely filling more cells.
 - **A1 — Whole-variable (bundle) review.** Judge the full decomposition together
   before finalizing any slot, instead of slot-by-slot nearest-neighbour picks.
   Routes through the existing decomposition path (`chat_decomposition()` /
@@ -75,17 +82,17 @@ Build the rest on top of it.
   bundle when a `constraint_iri` merely restates obvious context, a `method_iri`
   is chosen without method evidence, or unit/property/entity are incompatible.
   *Risk:* over-strict validators over-trigger new-term escalation — make them
-  explain *why* a slot was rejected.
-- **A4 — Richer structured gap escalation.** Today's escalation sets
-  `llm_decision = request_new_term` with a rationale note but empty
-  `llm_new_term_*`. Capture suggested label / definition / namespace
-  (`smn` vs `gcdfo`) and why existing candidates were rejected, so the term-request
-  workflow (`detect_semantic_term_gaps()` → `render_ontology_term_request()` →
-  `submit_term_request_issues()`) can consume it directly. **Forward-compat note:**
-  `reject_shortlist` currently round-trips with no reject-specific metadata column
-  (review finding) — add an `llm_reject_reason`/new-term carrier to **both** the
-  empty and success assessment-row builders in the same commit (row-shape symmetry
-  invariant from the deepen plan).
+  explain *why* a slot was rejected. Implement after A1 so these checks validate
+  the canonical bundle representation rather than inventing a parallel shape.
+- **A4 — Richer structured gap escalation. ⚠️ PARTIAL.** Direct
+  `request_new_term` responses already populate `llm_new_term_label`,
+  `llm_new_term_definition`, and `llm_new_term_namespace` in both assessment-row
+  shapes, and unresolved `reject_shortlist` already escalates the decision with a
+  rationale. What remains is a vertical integration: preserve a structured reject
+  reason/new-term proposal through the unresolved-rejection path and make
+  `detect_semantic_term_gaps()` / `render_ontology_term_request()` consume the
+  `semantic_llm_assessments` metadata. Keep empty/success row symmetry if the
+  assessment contract gains another field.
 - **A5 — `retry_search` re-issue handling (bug #13).** When the model's
   `retry_query` duplicates the original, record that on the assessment instead of
   silently spending a generic exploration round.
@@ -158,35 +165,34 @@ share one mature response/request contract rather than two.
   `any_of` in the merge helper; forward the LLM-widened shortlist in the multi-table
   recursion guard; add a debug log when decomposition disables batching. Low
   priority; fold into whatever theme touches those files.
-- **E5 — Make vignettes `R CMD check`-safe. ⚠️ OPEN (discovered during P1).** The
-  display-only vignettes (`eval = FALSE`) are still *tangled and run* by
-  `R CMD check`'s "running R code from vignettes" step, which errors offline
-  (missing files / no CRAN mirror / no API key). Pre-existing + environmental; the
-  package code itself is clean. `opts_chunk$set(purl = FALSE)` does **not** fix it
-  (the tangle step ignores chunk-body options). Real options: per-chunk
-  `purl = FALSE` headers, make the vignette code offline-safe, or convert the
-  display-only chunks to plain non-knitr ```` ```r ```` blocks. Low urgency for a
-  GitHub-distributed package, but needed for a fully green `R CMD check` / CRAN.
+- **E5 — Make vignettes `R CMD check`-safe (bug #32). ✅ DONE.** Every
+  display-only chunk now declares `purl = FALSE` in its own header. This matters
+  because the tangle phase does not execute the setup chunk and therefore cannot
+  see a runtime `opts_chunk$set(purl = FALSE)`. A focused `knitr::purl()` check
+  reports zero executable lines for the six affected vignettes, and the standard
+  package check is green.
 
 ## Process / Handoff  (carried from the Alice + deepen plans)
 
-- **P1 — `R CMD check`** on `deepen-architecture` (the deepen plan's validation
-  ladder asks for it before merge; not yet run this session).
+- **P1 — `R CMD check`. ✅ DONE.** `R CMD build .` produced
+  `metasalmon_0.1.5.tar.gz`; `R CMD check metasalmon_0.1.5.tar.gz` completed with
+  `Status: OK` after E5. All declared suggested R packages were available.
 - **P2 — Open the PR** for `deepen-architecture` (the Alice plan's checkpoint G /
   PR handoff was never completed). Summarize: the 5 refactors, the code-review
   fixes, the doc sync; reference issue `#1` lineage.
-- **P3 — Version decision.** The branch keeps `DESCRIPTION` at `0.1.4` and
-  accumulates NEWS there. Decide whether to bump (`0.1.5` or dev `0.1.4.9000`)
-  before merge.
+- **P3 — Version decision. ✅ DONE.** Use patch release 0.1.5 because the branch
+  adds observable warning, decoding, source-label, semantic-review, and
+  factor-scope correctness changes beyond the shipped 0.1.4 fix. The NEWS entries
+  are separated into their correct 0.1.4 and 0.1.5 sections.
 
 ## Recommended sequencing
 
-1. **Clear the decks (days):** E3 (AGENTS.md), B1 (decide + implement EDH draft
-   marker), D1–D3 (robustness), then P1 + P2 + P3 (validate, version, PR the
-   current branch).
-2. **Highest-value behaviour (the main thrust):** Theme A, in order
-   A4 → A5 → A2 → A3 → A1 (start by completing the escalation/metadata that's
-   already half-built, then deepen retrieval and bundle reasoning).
+1. **Finish the 0.1.5 handoff:** E3, B1, D1–D3, E5, P1, and P3 are complete;
+   open and merge the PR (P2).
+2. **Highest-value behaviour (the main thrust):** Theme A in dependency order:
+   A0 → A4 → A5 → A2 → A1 → A3. Freeze evidence first, complete the existing
+   gap-escalation vertical slice, harden retry behavior and retrieval, then make
+   the bundle representation canonical before adding bundle validators.
 3. **Larger build-outs:** Theme C (curation engine, incl. E2) and E1 (god-file
    split), once A's contract is stable.
 
@@ -204,6 +210,7 @@ share one mature response/request contract rather than two.
 | Deepen plan | test-fixture consolidation | done (`helper-dictionary.R`) |
 | bugs note | #4, #5, #6, #8, #13 | **B1, D2, D1, D3, A5** |
 | bugs note | #22, #23, #24 | **E4** |
+| package-check investigation | display-only vignette execution | **E5 / bug #32 (done)** |
 | retrieval-gap draft | bundle review / retrieval / validators / gaps | **Theme A** |
 | i-adopt draft | session engine / planner / provenance / UI | **Theme C** |
 
@@ -242,6 +249,17 @@ share one mature response/request contract rather than two.
   because of the option). Reverted. The real fix needs per-chunk `purl=FALSE`
   headers, offline-safe vignette code, or plain non-knitr ```` ```r ```` blocks.
   Tracked as **E5 (OPEN)**.
+- 2026-07-21: **E5 resolved with per-chunk `purl = FALSE`.** A focused tangle
+  check confirms zero executable lines in the six display-only vignettes while
+  pkgdown still renders their examples. The standard source-package check now
+  completes with `Status: OK`.
+- 2026-07-21: **Release as 0.1.5.** The branch contains multiple observable fixes
+  beyond the already-shipped 0.1.4 Alice fix, so a patch release is clearer than
+  continuing to append changes under 0.1.4.
+- 2026-07-21: **A4 reclassified as partial and Theme A reordered.** Structured
+  new-term fields and the first rejection-escalation slice already exist. The
+  remaining A4 work is term-request integration. A0 is now explicit, and A1
+  precedes A3 because bundle validators need the canonical bundle representation.
 
 ## Progress
 
@@ -254,12 +272,14 @@ share one mature response/request contract rather than two.
 - [x] 2026-06-26: E3 — real `AGENTS.md` (seeded from `notes/context.md`); resolves
   the circular `@AGENTS.md` stub. `CLAUDE.md` imports it; the pkgdown artifact is
   git-ignored so nothing leaks to the public site.
-- [x] 2026-06-26: P1 (`R CMD check`) run — **package code, Rd, examples, and tests
-  all OK**; the only ERROR/WARNINGs are the pre-existing, environmental
-  vignette-tangle step (see E5). No code defects.
-- [ ] E5 (make vignettes `R CMD check`-safe) — open.
-- [ ] P2 (PR), P3 (version decision) — need your call.
-- [ ] Begin Theme A (A4 → A5 → A2 → A3 → A1).
+- [x] 2026-07-21: E5 fixed with per-chunk `purl = FALSE`; focused purl validation
+  found zero executable lines in all six affected display-only vignettes.
+- [x] 2026-07-21: P1 completed cleanly. `R CMD build .` and standard
+  `R CMD check metasalmon_0.1.5.tar.gz` both succeeded; final status `OK`.
+- [x] 2026-07-21: P3 decided and prepared as patch release 0.1.5; NEWS and pkgdown
+  now separate the 0.1.4 Alice fix from the 0.1.5 refactor/robustness release.
+- [ ] P2: open and merge the `deepen-architecture` PR.
+- [ ] Begin Theme A (A0 → A4 → A5 → A2 → A1 → A3).
 
 ## Validation and Acceptance
 

@@ -2,20 +2,20 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-06-24 (architecture review of the
-`deepen-architecture` branch).
+package evolves. Last substantial update: 2026-07-21 (0.1.5 release and roadmap
+reconciliation on the `deepen-architecture` branch).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Version 0.1.4. License MIT. R >= 4.1.0.
+Package (SDP)** conventions. Version 0.1.5. License MIT. R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
 - Pkgdown site: https://dfo-pacific-science.github.io/metasalmon/
-- There is a **separate `main` workstream** renaming URLs from
-  `dfo-pacific-science/metasalmon` to `salmon-data-mobilization/metasmn`. Do not
-  fold that rename into unrelated branches.
+- The canonical package/repository name remains **metasalmon**. Brett decided
+  against the proposed `metasmn` rename; do not revive that rename without a new
+  explicit decision.
 
 ## Primary workflow & entry points
 
@@ -94,17 +94,16 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 
 `suggest_semantics()` (R/semantics-helpers.R:312-1218) runs four stages:
 
-1. **Target discovery** (inline, ~943-1109): turns dict/codes/table_meta/
+1. **Target discovery** (`.ms_semantic_discover_targets()`): turns dict/codes/table_meta/
    dataset_meta into **semantic target rows** — one row per *empty* semantic slot
    needing an IRI. Fill-the-gaps, not overwrite. Does NOT call `search_fn` or any
-   LLM. Currently locked inside `suggest_semantics()` as ~20 function-local
-   closures (the subject of Refactor 3).
-2. **Retrieval** (1111-1132): `.ms_retrieve_semantic_target_candidates()`
-   (R/semantics-helpers.R:55-113) is the single call to `search_fn`. Produces a
-   candidate shortlist per target.
-3. **Role-collision annotation** (1134-1180): adds `role_collision` /
+   LLM; the extraction from `suggest_semantics()` landed in the architecture
+   refactor.
+2. **Retrieval:** `.ms_retrieve_semantic_target_candidates()` is the single call
+   to `search_fn`. Produces a candidate shortlist per target.
+3. **Role-collision annotation:** adds `role_collision` /
    `role_collision_note` columns (easy to forget when extracting stages).
-4. **LLM review** (optional, 1182-1198): `.ms_assess_semantic_suggestions_llm()`.
+4. **LLM review** (optional): `.ms_assess_semantic_suggestions_llm()`.
    Then results attach as the `semantic_suggestions` (always) and
    `semantic_llm_assessments` (when `llm_assess`) attributes on the returned dict.
 
@@ -133,15 +132,13 @@ the same encoding.
 - **Optional deps:** `pdftools` (PDF) and `readxl` (Excel) are Suggests; missing
   ones **abort with an actionable message** (not silent skip). `xml2` is a hard
   Import (docx/html).
-- **Source labels:** `source = basename(normalizePath(path))`; inline text uses
-  `source = "inline_context"`. These propagate to the user-visible
-  `llm_context_sources` output column (R/llm-review-adapter.R:112) and are pinned
-  by tests — treat as a stable observable contract.
-- **Parse-once invariant:** files are parsed once per assess run — the chunk pool
-  is built at R/llm-semantic-helpers.R:1612 and threaded as `context_chunk_pool`.
-  NOTE: this is currently *emergent* (orchestrator-threaded), not enforced by the
-  context module; `.ms_prepare_context_chunks` silently re-collects if passed a
-  NULL pool.
+- **Source labels:** unique basenames remain unchanged; colliding basenames are
+  disambiguated with parent-directory context and then a numeric suffix if
+  needed. Inline text uses `source = "inline_context"`. Labels propagate to the
+  user-visible `llm_context_sources` column and are pinned by tests.
+- **Parse-once invariant:** files are parsed once per assess run. The orchestrator
+  builds one chunk pool and threads it as an explicit `context_chunk_pool`;
+  `.ms_prepare_context_chunks()` no longer silently re-collects from source files.
 - **Scoring:** deterministic bag-of-words token overlap (no embeddings).
   Tokens < 3 chars dropped, camelCase split. Chunk defaults 2200 chars / 200
   overlap.
@@ -159,6 +156,11 @@ the same encoding.
   `retry_search`, `request_new_term`, `reject_shortlist` (+ `propose_new_term`
   aliases to `request_new_term`). Three auto-downgrades to `review`: accept without
   index, out-of-range index, retry_search without query.
+- Assessment rows already carry `llm_retry_query`, `llm_new_term_label`,
+  `llm_new_term_definition`, and `llm_new_term_namespace`. Direct
+  `request_new_term` responses populate them, but the term-request workflow does
+  not yet consume the parallel `semantic_llm_assessments` attribute; this is the
+  remaining Theme A4 integration boundary.
 - **Five distinct LLM review paths:** (1) generic single-target, (2) decomposition
   single-target (routed by `.ms_llm_should_route_to_decomposition`), (3) batch
   (two-layer fallback to per-target), (4) query-exploration re-review, (5)

@@ -16,7 +16,7 @@ two adversarial verification passes + author spot-checks). Each item cites
 
 Severity = how much it can bite a real user.
 
-**Implementation status legend (updated 2026-06-25 on `deepen-architecture`)**
+**Implementation status legend (updated 2026-07-21 on `deepen-architecture`)**
 - **fixed** — implemented on this branch and covered by focused tests.
 - **done-for-plan** — the refactor-plan objective was completed, but a broader
   future improvement may remain.
@@ -29,13 +29,20 @@ Severity = how much it can bite a real user.
 **Current snapshot:** #1, #2, #7, #10, #11, #12, #14, #15, #16, #17, #18,
 #19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
 #30 are partially addressed. #4, #5, #6, #8, #9 were fixed on 2026-06-26 (roadmap
-clear-the-decks). #3, #13, #22, #23, #24, and #31 remain open/deferred as noted
-below.
+clear-the-decks), and #32 was fixed during the 0.1.5 release gate on 2026-07-21.
+#3, #13, #22, #23, #24, and #31 remain open/deferred as noted below.
 
 **Forward plan:** the open/deferred items are sequenced into themed workstreams in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
 D1, #5 → D2, #8 → D3, #13 → A5, #29/#30 → E1, #3 → E2/C4, #9 → E3, #22/#23/#24 →
 E4, #31 → Theme C).
+
+**Next execution checkpoint (2026-07-21):** release 0.1.5 before starting more
+semantic behavior. Theme A then runs A0 → A4 → A5 → A2 → A1 → A3. A4 is already
+partial: direct `request_new_term` assessment rows carry label, definition, and
+namespace, and unresolved shortlist rejection escalates to that decision. The
+remaining A4 work is preserving richer rejection metadata and connecting
+`semantic_llm_assessments` to the term-request workflow.
 
 ---
 
@@ -348,9 +355,11 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   rewritten through the new seam first.
 
 ### 26. Network-gated tests weaken the validation ladder
-- **Implementation status:** partially addressed. The ExecPlan now calls out the
-  weak gate explicitly, and final validation included the full test suite plus
-  `R CMD check`; the network-gated tests themselves were not rewritten.
+- **Implementation status:** partially addressed. Release validation now includes
+  the full test suite and a standard `R CMD check` with all declared suggested R
+  packages installed; the 0.1.5 check finished with `Status: OK`. The
+  network-gated tests themselves were not rewritten, so a green offline run still
+  does not prove the live services are reachable.
 - `tests/testthat/test-validation-helpers.R:80-96` (`fetch_salmon_ontology`, live HEAD
   to w3id.org) and GitHub helpers skip silently offline. Lean R3/R5 gating on
   `test-package-helpers.R` and `test-dictionary-helpers.R`; assert skip-count doesn't
@@ -369,6 +378,18 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   contracts, and review-adapter robustness cases.
 - `tests/testthat/test-semantic-suggestions.R` has only 2 `test_that` blocks despite
   being the destination for R3's target rows and a consumer in R4.
+
+### 32. Display-only vignettes are tangled and executed by `R CMD check`
+- **Severity:** low-medium · **Status:** confirmed · **Class:** test-infra bug
+- **Implementation status:** fixed (2026-07-21, roadmap E5). Every display-only
+  chunk in the six affected vignettes now declares `purl = FALSE` in its chunk
+  header. A focused `knitr::purl()` validation found zero executable lines, and
+  `R CMD check metasalmon_0.1.5.tar.gz` completed with `Status: OK` while pkgdown
+  continued to render the examples.
+- A global runtime `knitr::opts_chunk$set(eval = FALSE, purl = FALSE)` is
+  insufficient because the check's tangle phase does not execute the setup chunk.
+  Without per-chunk metadata it tried to run credential, network, and local-file
+  examples that were intended only for display.
 
 ---
 
