@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -36,13 +36,13 @@ For public package install/update, a read-only token is enough. If you also plan
 
 ### Store it in `~/.Renviron`
 
-```{r}
+```{r, purl = FALSE}
 file.edit("~/.Renviron")
 ```
 
 Add:
 
-```{r}
+```{r, purl = FALSE}
 GITHUB_PAT="paste token here"
 ```
 
@@ -50,7 +50,7 @@ Restart R after saving.
 
 ### Install `metasalmon`
 
-```{r}
+```{r, purl = FALSE}
 install.packages("remotes")
 remotes::install_github("dfo-pacific-science/metasalmon")
 ```
@@ -61,7 +61,7 @@ The install token and the package's private-repo CSV helpers are related but not
 
 When you later want to use `read_github_csv()` against a private repository, run:
 
-```{r}
+```{r, purl = FALSE}
 ms_setup_github(repo = "your-org/your-private-repo")
 ```
 
@@ -78,7 +78,7 @@ Only do this setup now if you want to run:
 
 If you also plan to pass PDF or Excel files through `llm_context_files`, install the optional readers once. HTML, DOCX, `.R`, `.Rmd`, and `.qmd` inputs work without extra reader packages:
 
-```{r}
+```{r, purl = FALSE}
 install.packages(c("pdftools", "readxl"))
 ```
 
@@ -97,21 +97,21 @@ Then:
 
 Store it in `~/.Renviron`:
 
-```{r}
+```{r, purl = FALSE}
 file.edit("~/.Renviron")
 CHAPI_API_KEY="paste key here"
 ```
 
 Optional overrides:
 
-```{r}
+```{r, purl = FALSE}
 CHAPI_MODEL="ollama2.mistral:7b"
 CHAPI_BASE_URL="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api"
 ```
 
 ### External users: OpenRouter
 
-```{r}
+```{r, purl = FALSE}
 file.edit("~/.Renviron")
 OPENROUTER_API_KEY="paste key here"
 ```
@@ -120,14 +120,14 @@ OPENROUTER_API_KEY="paste key here"
 
 ### External users: OpenAI
 
-```{r}
+```{r, purl = FALSE}
 file.edit("~/.Renviron")
 OPENAI_API_KEY="paste key here"
 ```
 
 Then choose an explicit OpenAI model when you call the LLM review path, for example:
 
-```{r}
+```{r, purl = FALSE}
 suggested <- suggest_semantics(
   df = your_data,
   dict = your_dict,

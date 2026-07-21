@@ -7,7 +7,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r, include = FALSE, purl = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -41,7 +41,7 @@ For a realistic Salmon Data Package review, pass a small bundle that mixes:
 
 For example:
 
-```{r}
+```{r, purl = FALSE}
 context_files <- c(
   "README.md",
   "methods-note.Rmd",
@@ -54,7 +54,7 @@ context_files <- c(
 
 For DFO internal users, `chapi` plus the default Mistral model is the shortest path:
 
-```{r}
+```{r, purl = FALSE}
 library(metasalmon)
 
 data_path <- system.file("extdata", "nuseds-fraser-coho-2023-2024.csv", package = "metasalmon")
@@ -91,7 +91,7 @@ What stays in `semantic_suggestions.csv` for manual review:
 
 If you want to inspect every metadata target explicitly, start from inferred package artifacts and pass `codes`, `table_meta`, and `dataset_meta` back into `suggest_semantics()`:
 
-```{r}
+```{r, purl = FALSE}
 artifacts <- infer_salmon_datapackage_artifacts(
   resources = list(escapement = fraser_coho),
   dataset_id = "fraser-coho-2023-2024",
@@ -117,7 +117,7 @@ assessments <- attr(reviewed_dict, "semantic_llm_assessments")
 
 Now you can filter by target file:
 
-```{r}
+```{r, purl = FALSE}
 suggestions[, c("target_sdp_file", "target_sdp_field", "table_id", "column_name", "code_value", "label", "iri", "llm_decision", "llm_selected")]
 ```
 
@@ -159,7 +159,7 @@ Keep or edit every `REVIEW:` draft in the metadata CSVs directly. The `semantic_
 
 Once the package metadata is finalized:
 
-```{r}
+```{r, purl = FALSE}
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 write_edh_xml_from_sdp(pkg_path)
 ```
