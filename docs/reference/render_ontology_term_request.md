@@ -24,7 +24,7 @@ render_ontology_term_request(
 - gaps:
 
   Output from
-  [`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md).
+  [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md).
 
 - scope:
 
@@ -75,9 +75,9 @@ profile-specific term, or skipped.
 
 ## See also
 
-[`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md),
-[`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md),
-[`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md),
+[`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md),
+[`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md)
 
 ## Examples
 

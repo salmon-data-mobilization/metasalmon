@@ -3,7 +3,7 @@
 Reads a CSV file directly from a GitHub repository (public or private)
 and returns it as a tibble. Authentication is handled via the GitHub PAT
 stored by
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md);
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md);
 the token is sent via HTTP headers, not embedded in the URL.
 
 ## Usage
@@ -35,7 +35,7 @@ read_github_csv(path, ref = "main", repo = NULL, token = NULL, ...)
   Optional GitHub PAT override. If `NULL` (default), uses the token from
   [`gh::gh_token()`](https://gh.r-lib.org/reference/gh_token.html),
   which is typically set by
-  [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md).
+  [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md).
 
 - ...:
 
@@ -54,7 +54,7 @@ transient network errors.
 
 Public GitHub content can be read without a PAT. For private
 repositories, run
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 to configure authentication; your PAT must have the `repo` scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather
@@ -63,9 +63,9 @@ time.
 
 ## See also
 
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 for authentication setup,
-[`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
+[`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md)
 for getting the raw URL without fetching data.
 
 ## Examples

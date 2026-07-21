@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/salmon-data-mobilization/metasalmon/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -70,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Frequently Asked Questions</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/vignettes/faq.Rmd" class="external-link"><code>vignettes/faq.Rmd</code></a></small>
       <div class="d-none name"><code>faq.Rmd</code></div>
     </div>
 
@@ -290,6 +291,9 @@ characters (accents, non-English letters):</p>
 <code>read.csv("file.csv", encoding = "UTF-8")</code>
 </li>
 </ol>
+<p>For LLM context, plain-text and CSV files with invalid UTF-8 are
+retried as Windows-1252/Latin-1. R Markdown and HTML context files are
+still expected to be UTF-8.</p>
 </div>
 <div class="section level3">
 <h3 id="can-i-use-this-with-data-in-formats-other-than-csv">Can I use this with data in formats other than CSV?<a class="anchor" aria-label="anchor" href="#can-i-use-this-with-data-in-formats-other-than-csv"></a>
@@ -441,6 +445,26 @@ multi-table package:</p>
 <h2 id="workflow-questions">Workflow Questions<a class="anchor" aria-label="anchor" href="#workflow-questions"></a>
 </h2>
 <div class="section level3">
+<h3 id="why-did-llm_context_files-not-change-my-output">Why did <code>llm_context_files</code> not change my output?<a class="anchor" aria-label="anchor" href="#why-did-llm_context_files-not-change-my-output"></a>
+</h3>
+<p>The two most common causes are input type and opt-in state:</p>
+<ul>
+<li>
+<code>llm_context_files</code> must contain local path strings such
+as <code>"./00_data/data-dictionary.csv"</code>; do not pass the tibble
+from <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code> or the XML object from
+<code><a href="http://xml2.r-lib.org/reference/read_xml.html" class="external-link">xml2::read_html()</a></code>.</li>
+<li>Context never enables LLM review by itself. Set
+<code>llm_assess = TRUE</code> and choose a configured provider. Without
+that flag, <code>metasalmon</code> warns and continues with
+deterministic semantic retrieval, so similar output is expected.</li>
+</ul>
+<p>When using <code><a href="../reference/infer_dictionary.html">infer_dictionary()</a></code> directly, also set
+<code>seed_semantics = TRUE</code>. Use <code>llm_context_text</code>
+instead when the context is already a character string rather than a
+file.</p>
+</div>
+<div class="section level3">
 <h3 id="should-i-edit-the-dictionary-before-or-after-validation">Should I edit the dictionary before or after validation?<a class="anchor" aria-label="anchor" href="#should-i-edit-the-dictionary-before-or-after-validation"></a>
 </h3>
 <p><strong>After</strong> - The validation tells you what needs
@@ -508,9 +532,9 @@ creating useful, shareable data packages.</p>
 </h3>
 <p>Use the GitHub issues page:</p>
 <ul>
-<li><a href="https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=bug" class="external-link">Report
+<li><a href="https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=bug" class="external-link">Report
 a bug</a></li>
-<li><a href="https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=enhancement" class="external-link">Request
+<li><a href="https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=enhancement" class="external-link">Request
 a feature</a></li>
 </ul>
 </div>

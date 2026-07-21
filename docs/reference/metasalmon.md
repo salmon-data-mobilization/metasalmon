@@ -8,7 +8,10 @@ DFO-specific salmon vocabularies.
 
 Useful links:
 
-- <https://dfo-pacific-science.github.io/metasalmon/>
+- <https://salmon-data-mobilization.github.io/metasalmon/>
+
+- Report bugs at
+  <https://github.com/salmon-data-mobilization/metasalmon/issues>
 
 ## Author
 

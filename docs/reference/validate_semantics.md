@@ -2,7 +2,7 @@
 
 Ensures structural requirements, adds a `required` column if missing,
 runs
-[`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md),
+[`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md),
 and reports measurement rows missing `term_iri`. Also flags
 non-canonical Salmon ontology IRIs so source boundaries stay explicit
 (`smn` under `https://w3id.org/smn/`, `gcdfo` under

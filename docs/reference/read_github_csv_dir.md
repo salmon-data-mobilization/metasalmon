@@ -43,7 +43,7 @@ read_github_csv_dir(
   Optional GitHub PAT override. If `NULL` (default), uses the token from
   [`gh::gh_token()`](https://gh.r-lib.org/reference/gh_token.html),
   which is typically set by
-  [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md).
+  [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md).
 
 - pattern:
 
@@ -66,12 +66,12 @@ A named list of tibbles, where names are the CSV file names (without the
 
 This function uses the GitHub API to list directory contents, filters
 for CSV files, then reads each file using
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md).
 For public repositories, directory listing can work without a PAT; when
 available, a token is used automatically.
 
 For private repositories, run
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 to configure authentication. Your PAT must have the `repo` scope.
 
 For reproducible analyses, pin to a specific tag or commit SHA rather
@@ -81,14 +81,14 @@ time.
 **Manual alternative**: You can achieve the same result by using
 [`gh::gh()`](https://gh.r-lib.org/reference/gh.html) to list directory
 contents, filtering for CSV files, then looping through them with
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md).
 See the vignette for an example.
 
 ## See also
 
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 for reading a single CSV file,
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 for authentication setup.
 
 ## Examples

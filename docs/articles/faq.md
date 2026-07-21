@@ -9,7 +9,7 @@ anything about ontologies, SKOS, OWL, or IRIs. metasalmon handles the
 technical details automatically.
 
 If you’re curious about what these terms mean, see the
-[Glossary](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md).
+[Glossary](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.md).
 But you don’t need to understand them to use the package effectively.
 
 ### What’s the difference between this and just sharing a CSV?
@@ -42,7 +42,7 @@ packing list, return address, and handling instructions.
 | Using AI assistance for descriptions          | 30-60 minutes |
 
 The [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md)
 walks you through the fastest path.
 
 ### Can I edit the data package after creating it?
@@ -52,10 +52,10 @@ Yes. A data package is just a folder with files. You can:
 - **Edit the metadata/*.csv and data/*.csv files** directly in Excel or
   R
 - **Use
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)**
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)**
   for the main one-shot workflow from raw tables
 - **Use
-  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)**
   when you already assembled metadata and want the advanced/manual
   writer
 - **Regenerate `datapackage.json`** by rewriting the package after
@@ -138,6 +138,10 @@ characters (accents, non-English letters):
 3.  If using base R, specify encoding:
     `read.csv("file.csv", encoding = "UTF-8")`
 
+For LLM context, plain-text and CSV files with invalid UTF-8 are retried
+as Windows-1252/Latin-1. R Markdown and HTML context files are still
+expected to be UTF-8.
+
 ### Can I use this with data in formats other than CSV?
 
 metasalmon works with data frames in R. You can read data from any
@@ -203,7 +207,7 @@ If you have columns with coded values (like `SPECIES = "CO"` for Coho),
 you can add a code list:
 
 - In the default
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   workflow, code-level semantic suggestions are seeded automatically
   only for factor and low-cardinality character source columns.
 - If you want broader code-level suggestion seeding, use
@@ -235,7 +239,7 @@ pkg_path <- write_salmon_datapackage(
 ### Can I include multiple tables in one package?
 
 Yes! Just include multiple data frames in the `resources` list.
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 can take that same named list of data frames when you want table-aware
 semantic review across a multi-table package:
 
@@ -275,6 +279,26 @@ pkg_path <- write_salmon_datapackage(
 ------------------------------------------------------------------------
 
 ## Workflow Questions
+
+### Why did `llm_context_files` not change my output?
+
+The two most common causes are input type and opt-in state:
+
+- `llm_context_files` must contain local path strings such as
+  `"./00_data/data-dictionary.csv"`; do not pass the tibble from
+  [`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
+  or the XML object from
+  [`xml2::read_html()`](http://xml2.r-lib.org/reference/read_xml.md).
+- Context never enables LLM review by itself. Set `llm_assess = TRUE`
+  and choose a configured provider. Without that flag, `metasalmon`
+  warns and continues with deterministic semantic retrieval, so similar
+  output is expected.
+
+When using
+[`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
+directly, also set `seed_semantics = TRUE`. Use `llm_context_text`
+instead when the context is already a character string rather than a
+file.
 
 ### Should I edit the dictionary before or after validation?
 
@@ -316,9 +340,9 @@ creating useful, shareable data packages.
 Use the GitHub issues page:
 
 - [Report a
-  bug](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=bug)
+  bug](https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=bug)
 - [Request a
-  feature](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=enhancement)
+  feature](https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=enhancement)
 
 ### Is there more documentation?
 
@@ -326,12 +350,12 @@ Yes! Here are the key resources:
 
 | Resource | Best for |
 |----|----|
-| [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md) | Getting started fast |
-| [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md) | Detailed control over metadata and publishing |
-| [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md) | Connecting data to scientific standards |
-| [Accessing Data from GitHub](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.md) | Reading CSVs from private repositories |
-| [Glossary of Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.md) | Understanding technical terms |
-| [Function Reference](https://dfo-pacific-science.github.io/metasalmon/reference/index.md) | Looking up specific functions |
+| [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md) | Getting started fast |
+| [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md) | Detailed control over metadata and publishing |
+| [Linking to Standard Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md) | Connecting data to scientific standards |
+| [Accessing Data from GitHub](https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.md) | Reading CSVs from private repositories |
+| [Glossary of Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.md) | Understanding technical terms |
+| [Function Reference](https://salmon-data-mobilization.github.io/metasalmon/reference/index.md) | Looking up specific functions |
 
 ### Can I contribute to metasalmon?
 

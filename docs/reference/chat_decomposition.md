@@ -46,7 +46,7 @@ chat_decomposition(
 - df:
 
   Optional data frame or named list of data frames, forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   when `suggestions` are not supplied.
 
 - table_id, dataset_id:
@@ -57,7 +57,7 @@ chat_decomposition(
 - suggestions:
 
   Optional `semantic_suggestions`-like tibble. When omitted,
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   is called and the results are filtered down to the selected
   measurement column's `term_iri` variable shortlist.
 
@@ -119,7 +119,7 @@ A list with `session_id`, `session_dir`, `approval_status`,
 
 The current first slice is intentionally narrow: it focuses on
 measurement `term_iri` review and reuses existing
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 retrieval machinery when a shortlist is not supplied directly.
 
 ## Examples

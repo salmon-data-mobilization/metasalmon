@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/salmon-data-mobilization/metasalmon/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -70,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>5-Minute Quickstart</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/vignettes/metasalmon.Rmd" class="external-link"><code>vignettes/metasalmon.Rmd</code></a></small>
       <div class="d-none name"><code>metasalmon.Rmd</code></div>
     </div>
 
@@ -79,7 +80,7 @@
 <div class="section level2">
 <h2 id="before-you-start">Before You Start<a class="anchor" aria-label="anchor" href="#before-you-start"></a>
 </h2>
-<p>Complete the one-time <a href="https://dfo-pacific-science.github.io/metasalmon/articles/setup.html">Setup
+<p>Complete the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup
 and Credentials</a> guide first if you want to make sure GitHub installs
 work cleanly and any optional LLM provider is configured before you
 begin.</p>
@@ -89,7 +90,7 @@ begin.</p>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"dfo-pacific-science/metasalmon"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="one-shot-workflow">One-shot Workflow<a class="anchor" aria-label="anchor" href="#one-shot-workflow"></a>
@@ -97,7 +98,7 @@ begin.</p>
 <p>Load the built-in Fraser Coho 2023-2024 example (173 rows) and create
 a review-ready Salmon Data Package in one call.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://salmon-data-mobilization.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">data_path</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"extdata"</span>, <span class="st">"nuseds-fraser-coho-2023-2024.csv"</span>, package <span class="op">=</span> <span class="st">"metasalmon"</span><span class="op">)</span></span>
 <span><span class="va">fraser_coho</span> <span class="op">&lt;-</span> <span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv</a></span><span class="op">(</span><span class="va">data_path</span>, show_col_types <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -142,22 +143,27 @@ the one-shot path:</p>
 <span>  overwrite <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>That writes the HNAP-aware EDH XML to
-<code>metadata/metadata-edh-hnap.xml</code>. If you are working from an
-existing <code>dataset.csv</code> row instead of a one-shot package
-build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
+<code>metadata/metadata-edh-hnap.xml</code>. Because
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> produces review-ready metadata, this first XML
+is a <strong>draft</strong> when <code>REVIEW:</code> or
+<code>MISSING</code> markers remain, and the package warns accordingly.
+Finalize the metadata CSVs and rebuild the submission-ready XML with
+<code>write_edh_xml_from_sdp(pkg_path)</code>. If you are working from
+an already finalized <code>dataset.csv</code> row instead of a one-shot
+package build, call <code><a href="../reference/edh_build_hnap_xml.html">edh_build_hnap_xml()</a></code> directly.</p>
 </div>
 <div class="section level2">
 <h2 id="optional-llm-review-later">Optional LLM Review Later<a class="anchor" aria-label="anchor" href="#optional-llm-review-later"></a>
 </h2>
 <p>The base quickstart does <strong>not</strong> require an API key. If
-you want <code>llm_assess = TRUE</code>, finish the one-time <a href="https://dfo-pacific-science.github.io/metasalmon/articles/setup.html">Setup
+you want <code>llm_assess = TRUE</code>, finish the one-time <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html">Setup
 and Credentials</a> guide first, then rerun the
 <code><a href="../reference/create_sdp.html">create_sdp()</a></code> call with your chosen provider.</p>
 <p>When you want the LLM to use supporting README notes, CSV
 dictionaries, Excel workbooks, or PDF reports as context, continue
 with:</p>
 <ul>
-<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html">LLM
+<li><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM
 Review With Context Files</a></li>
 </ul>
 </div>
@@ -176,10 +182,12 @@ order:</p>
 <code>semantic_suggestions.csv</code> (only if you want more context
 or a better match)</li>
 </ol>
-<p>That <code>metadata/column_dictionary.csv</code> file is also a
-perfectly reasonable <code>llm_context_files</code> input when you want
-the LLM review step to reason from the package itself instead of a
-separate methods note.</p>
+<p>The path to <code>metadata/column_dictionary.csv</code> is also a
+reasonable <code>llm_context_files</code> input when you want the LLM
+review step to reason from the package itself instead of a separate
+methods note. Pass the path string, not a tibble created by reading the
+CSV, and set <code>llm_assess = TRUE</code>; context alone does not
+enable an LLM call.</p>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
 auto-fills top-ranked compatible drafts directly into blank semantic
 fields in the metadata CSVs. That includes column-level IRIs in
@@ -244,14 +252,14 @@ semantic gaps, deciding shared salmon-domain vs DFO-specific routing,
 drafting term requests, rebuilding EDH XML if needed, and only then
 running strict final validation — continue with:</p>
 <ul>
-<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html">After
+<li><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html">After
 Excel Review: Finalize and Publish Your Package</a></li>
 </ul>
 <p>For a staged, fully explicit workflow where you assemble metadata
 tables manually instead of continuing from a reviewed
 <code><a href="../reference/create_sdp.html">create_sdp()</a></code> package, use:</p>
 <ul>
-<li><a href="https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing
+<li><a href="https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html">Publishing
 Data Packages</a></li>
 </ul>
 </div>

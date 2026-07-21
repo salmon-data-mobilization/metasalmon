@@ -214,8 +214,10 @@
 #'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
 #'   workbooks, or PDF reports) used to provide extra domain context to the
 #'   LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
-#'   documents, or R Markdown objects. PDF support uses the optional `pdftools`
-#'   package; Excel support uses the optional `readxl` package.
+#'   documents, or R Markdown objects. Supplying context does not enable LLM
+#'   review; without `llm_assess = TRUE`, it is ignored with a warning. PDF
+#'   support uses the optional `pdftools` package; Excel support uses the
+#'   optional `readxl` package.
 #' @param llm_context_text Optional character vector of extra inline context
 #'   snippets passed alongside `llm_context_files`.
 #' @param llm_timeout_seconds Timeout for each LLM request in seconds.
@@ -267,7 +269,11 @@
 #' likely ontology gap shows up in `llm_decision` instead of a dead-end
 #' rejection. Local context files are read on disk, chunked, and lexically
 #' trimmed down before prompt assembly so large README/report/workbook files do
-#' not get dumped wholesale into the model call.
+#' not get dumped wholesale into the model call. Plain-text/CSV context with
+#' invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
+#' names are disambiguated in `llm_context_sources`. If a batched provider
+#' response has malformed, missing, or duplicate target items, valid siblings
+#' are retained and only affected targets fall back to individual review.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).

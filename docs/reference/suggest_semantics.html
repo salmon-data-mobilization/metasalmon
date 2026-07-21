@@ -9,7 +9,7 @@ dictionary and package metadata. Measurement columns keep full I-ADOPT
 decomposition (term_iri, property_iri, entity_iri, unit_iri,
 constraint_iri), while selected non-measurement columns can receive
 lighter term_iri coverage when they are categorical or controlled
-low-cardinality attributes."><meta property="og:image" content="https://dfo-pacific-science.github.io/metasalmon/logo.png"></head><body>
+low-cardinality attributes."><meta property="og:image" content="https://salmon-data-mobilization.github.io/metasalmon/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/salmon-data-mobilization/metasalmon/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul></div>
 
 
@@ -49,7 +50,7 @@ low-cardinality attributes."><meta property="og:image" content="https://dfo-paci
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.png" class="logo" alt=""><h1>Suggest semantic annotations for a dictionary</h1>
-
+      <small class="dont-index">Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/R/semantics-helpers.R" class="external-link"><code>R/semantics-helpers.R</code></a></small>
       <div class="d-none name"><code>suggest_semantics.Rd</code></div>
     </div>
 
@@ -196,8 +197,10 @@ per target for each assessment round. Default is <code>5</code>.</p></dd>
 DOCX files, source/notebook files such as <code>.R</code>, <code>.Rmd</code>, or <code>.qmd</code>, Excel
 workbooks, or PDF reports) used to provide extra domain context to the
 LLM when <code>llm_assess = TRUE</code>. Pass file paths, not parsed data frames, XML
-documents, or R Markdown objects. PDF support uses the optional <code>pdftools</code>
-package; Excel support uses the optional <code>readxl</code> package.</p></dd>
+documents, or R Markdown objects. Supplying context does not enable LLM
+review; without <code>llm_assess = TRUE</code>, it is ignored with a warning. PDF
+support uses the optional <code>pdftools</code> package; Excel support uses the
+optional <code>readxl</code> package.</p></dd>
 
 
 <dt id="arg-llm-context-text">llm_context_text<a class="anchor" aria-label="anchor" href="#arg-llm-context-text"></a></dt>
@@ -264,7 +267,11 @@ acceptable candidate, the assessment is escalated to <code>request_new_term</cod
 likely ontology gap shows up in <code>llm_decision</code> instead of a dead-end
 rejection. Local context files are read on disk, chunked, and lexically
 trimmed down before prompt assembly so large README/report/workbook files do
-not get dumped wholesale into the model call.</p>
+not get dumped wholesale into the model call. Plain-text/CSV context with
+invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
+names are disambiguated in <code>llm_context_sources</code>. If a batched provider
+response has malformed, missing, or duplicate target items, valid siblings
+are retained and only affected targets fall back to individual review.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

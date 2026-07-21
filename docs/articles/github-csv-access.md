@@ -14,7 +14,7 @@ private repo and you want to:
 
 Before reading from private repositories, you need to authenticate with
 GitHub. The
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 function guides you through this process:
 
 ``` r
@@ -38,7 +38,7 @@ This function will:
 ### Verifying Access to a Specific Repository
 
 By default,
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 verifies access to a test repository. You can specify your own
 repository to verify:
 
@@ -68,14 +68,14 @@ ms_setup_github(repo = "your-org/your-repo")
 
 | Problem | Solution |
 |----|----|
-| “No GitHub PAT found” | Run [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md) to create and store a token |
+| “No GitHub PAT found” | Run [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md) to create and store a token |
 | “Access blocked by org SSO” | Re-authorize your PAT for the organization at <https://github.com/settings/tokens> |
 | “Unable to reach repository” | Check the repo slug is correct (`owner/name` format) |
 
 ## Reading CSV Files
 
 Once authenticated, use
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 to read CSV files directly into R:
 
 ``` r
@@ -150,7 +150,7 @@ partial_data <- read_github_csv(
 
 If you have multiple CSV files in a directory, you can read them all at
 once using
-[`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md).
+[`read_github_csv_dir()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.md).
 This is similar to using
 [`dir()`](https://rdrr.io/r/base/list.files.html) with
 [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files:
@@ -188,7 +188,7 @@ subset <- read_github_csv_dir(
 ### Pinning to Specific Versions
 
 Like
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md),
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md),
 you can pin to specific tags or commits:
 
 ``` r
@@ -224,7 +224,7 @@ returns an empty list.
 ## Getting Raw URLs
 
 Sometimes you need the raw GitHub URL rather than the data itself. Use
-[`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md):
+[`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md):
 
 ``` r
 
@@ -248,7 +248,7 @@ print(versioned_url)
 
 **Note**: The raw URL does not contain your token - authentication is
 handled separately via headers when you use
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md).
 
 ## Working with Full URLs
 
@@ -319,14 +319,14 @@ cat("Data source:", github_raw_url(
 
 | Function | Purpose |
 |----|----|
-| [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md) | One-time authentication setup |
-| [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md) | Read a CSV file from GitHub into R |
-| [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md) | Read all CSV files from a GitHub directory into a named list |
-| [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md) | Get the raw URL for a file (no data fetched) |
+| [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md) | One-time authentication setup |
+| [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md) | Read a CSV file from GitHub into R |
+| [`read_github_csv_dir()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.md) | Read all CSV files from a GitHub directory into a named list |
+| [`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md) | Get the raw URL for a file (no data fetched) |
 
 For detailed documentation, see:
 
-- [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
-- [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
-- [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md)
-- [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
+- [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
+- [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
+- [`read_github_csv_dir()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.md)
+- [`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md)

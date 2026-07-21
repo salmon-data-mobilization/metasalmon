@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/salmon-data-mobilization/metasalmon/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -70,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>Reading CSVs from Private GitHub Repositories</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/vignettes/github-csv-access.Rmd" class="external-link"><code>vignettes/github-csv-access.Rmd</code></a></small>
       <div class="d-none name"><code>github-csv-access.Rmd</code></div>
     </div>
 
@@ -95,7 +96,7 @@ a private repo and you want to:</p>
 with GitHub. The <code><a href="../reference/ms_setup_github.html">ms_setup_github()</a></code> function guides you
 through this process:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://salmon-data-mobilization.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Run once to set up authentication</span></span>
 <span><span class="fu"><a href="../reference/ms_setup_github.html">ms_setup_github</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
@@ -343,7 +344,7 @@ specified.</p>
 </h2>
 <p>Here’s a complete example workflow for a reproducible analysis:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://salmon-data-mobilization.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># First time only: set up authentication</span></span>
 <span><span class="co"># ms_setup_github(repo = "dfo-pacific-science/my-data-repo")</span></span>

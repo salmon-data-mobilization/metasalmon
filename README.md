@@ -114,7 +114,11 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 # including table-level observation-unit selections in metadata/tables.csv.
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. `llm_context_files` supports text and notes (`.md`, `.txt`, `.rst`), delimited/data files (`.csv`, `.tsv`, `.json`, `.yaml`, `.yml`), source and notebook-style files (`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`), DOCX (`.docx`), Excel workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports (`.pdf` via `pdftools`). Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`.
+
+`llm_context_files` must be a character vector of existing local **file paths**. Do not pass a tibble returned by `readr::read_csv()`, an `xml2` document returned by `read_html()`, or another parsed object; those inputs now fail early instead of being silently ineffective. Supplying context also never enables an LLM call: set `llm_assess = TRUE` explicitly, or the package warns that the context will be ignored and continues with deterministic retrieval only. Use `llm_context_text` for inline text that is not stored in a file.
+
+Supported paths include text and notes (`.md`, `.txt`, `.rst`), delimited/data files (`.csv`, `.tsv`, `.json`, `.yaml`, `.yml`), source and notebook-style files (`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`), DOCX (`.docx`), Excel workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports (`.pdf` via `pdftools`). Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` defaults to `openrouter/free`.
 
 For the full workflow across `dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild, use the [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html) guide.
 
@@ -224,7 +228,7 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 - Use AI assistance to help write descriptions
 - Suggest Darwin Core Data Package table/field mappings for biodiversity data
 - Opt in to DwC-DP export hints via `suggest_semantics(..., include_dwc = TRUE)` while keeping the Salmon Data Package as the canonical deliverable.
-- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via the canonical `edh_build_hnap_xml()` builder, the reviewed-package helper `write_edh_xml_from_sdp()`, or `create_sdp(..., include_edh_xml = TRUE)`.
+- Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub upload workflows via the canonical `edh_build_hnap_xml()` builder, the reviewed-package helper `write_edh_xml_from_sdp()`, or `create_sdp(..., include_edh_xml = TRUE)`. Create-time XML is a draft when review markers remain; finalize the metadata and rebuild it before submission.
 - Role-aware vocabulary search with `find_terms()` and `sources_for_role()`:
   - Units: QUDT preferred, then NVS P06
   - Salmon-domain roles: shared SMN terms first, then GCDFO DFO-specific terms where needed

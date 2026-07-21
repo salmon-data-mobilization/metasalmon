@@ -16,7 +16,7 @@ two adversarial verification passes + author spot-checks). Each item cites
 
 Severity = how much it can bite a real user.
 
-**Implementation status legend (updated 2026-07-21 on `deepen-architecture`)**
+**Implementation status legend (updated 2026-07-21 on `feature/canonical-url-hardening`)**
 - **fixed** — implemented on this branch and covered by focused tests.
 - **done-for-plan** — the refactor-plan objective was completed, but a broader
   future improvement may remain.
@@ -30,7 +30,8 @@ Severity = how much it can bite a real user.
 #19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
 #30 are partially addressed. #4, #5, #6, #8, #9 were fixed on 2026-06-26 (roadmap
 clear-the-decks), and #32 was fixed during the 0.1.5 release gate on 2026-07-21.
-#3, #13, #22, #23, #24, and #31 remain open/deferred as noted below.
+#3, #13, #22, #23, #24, and #31 remain open/deferred as noted below. #33 was
+fixed in the post-0.1.5 URL-hardening pass.
 
 **Forward plan:** the open/deferred items are sequenced into themed workstreams in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
@@ -231,6 +232,27 @@ adversarial pass** — re-confirm before fixing.
   equals the original, validation drops it and the code silently falls through to a
   generic exploration request — the explicit `retry_query` has no effect and an extra
   round-trip is spent. **Fix:** record the rejection; consider honoring near-duplicates.
+
+### 33. Canonical project and runtime URLs point to the former organization
+- **Severity:** medium · **Status:** spot-verified · **Class:** reliability/ux-bug
+- **Implementation status:** fixed (2026-07-21). Package metadata, install and
+  help links, update checks, OpenRouter attribution, tests, and source
+  documentation now use `salmon-data-mobilization/metasalmon`. Runtime SDP
+  schema fetches use the verified raw endpoint in
+  `salmon-data-mobilization/smn-data-pkg`; focused tests and a live remote-schema
+  smoke load passed. The full suite passed 1,356 tests, and
+  `R CMD check metasalmon_0.1.5.9000.tar.gz` completed with `Status: OK`.
+- **Where:** `DESCRIPTION`, `_pkgdown.yml`, `R/version-check.R`,
+  `R/schema-helpers.R`, the two OpenRouter request paths, README/vignettes, and
+  generated reference/site output.
+- The package had moved to `salmon-data-mobilization`, but public install/help
+  URLs and the default update check still targeted the independently existing
+  `dfo-pacific-science/metasalmon` repository. The remote schema loader likewise
+  fetched from the former `smn-data-pkg` repository.
+- **Compatibility decision:** do not rewrite the SDP 0.2 profile/resource-schema
+  identifiers. Upstream still defines the former GitHub Pages URI as the
+  contract value, even though it is not the runtime fetch endpoint. The code and
+  regression test now keep contract identifiers distinct from fetch locations.
 
 ---
 

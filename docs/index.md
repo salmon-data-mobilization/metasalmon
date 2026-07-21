@@ -21,7 +21,7 @@ Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO
 Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer),
 alongside other published controlled vocabularies, and the data is
 packaged according to the [Salmon Data Package
-Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md).
+Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md).
 The preferred review workflow now happens **inside the R package**:
 `metasalmon` can retrieve candidate terms, optionally ask an LLM to
 review them, write draft REVIEW-prefixed IRIs into the package metadata,
@@ -47,7 +47,7 @@ never gets lost.**
 ## Quick Example
 
 Before you start, do the one-time [Setup and
-Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 check so GitHub installs work cleanly and any optional LLM provider is
 ready in advance.
 
@@ -58,7 +58,7 @@ Install, run one function on the bundled Fraser Coho 2023-2024 example
 
 # Install from GitHub (recommended)
 # install.packages("remotes")
-# remotes::install_github("dfo-pacific-science/metasalmon")
+# remotes::install_github("salmon-data-mobilization/metasalmon")
 
 library(metasalmon)
 
@@ -84,7 +84,7 @@ pkg_path <- create_sdp(
 # - README-review.txt
 ```
 
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 is the main path. It writes the canonical `metadata/*.csv` files plus
 your `data/*.csv` tables, adds a short review checklist, writes
 prefilled semantic drafts directly into `metadata/column_dictionary.csv`
@@ -95,7 +95,7 @@ conservative by default for factor and low-cardinality character source
 columns. Before SPSR/EDH upload, run
 `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch
 package/data/codes mismatches in one pass. In interactive use
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 can also mention an available package update; set
 `check_updates = FALSE` to skip that check.
 
@@ -125,26 +125,26 @@ example.
 To continue:
 
 - [Setup and
-  Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+  Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
   — one-time GitHub credential setup for installs plus optional LLM
   provider setup.
 - [5-Minute
-  Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+  Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)
   — create the full package with metadata and export it.
 - [After Excel
-  Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+  Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)
   — reload the reviewed package, detect unresolved ontology gaps, route
   shared vs DFO-specific requests, and finish publication.
 - [Publishing Data
-  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
+  Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html)
   — manual package assembly path when you are not continuing from
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md).
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md).
 - [Linking to Standard
-  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
+  Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
   — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
 Need the full context-file workflow? See [LLM Review With Context
-Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html).
+Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html).
 
 ## Package-native LLM semantic review (optional)
 
@@ -178,25 +178,37 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 ```
 
 This keeps
-[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
 as the canonical candidate generator. Deterministic auto-applied
 semantic drafts are also written back as `REVIEW: <iri>` so you can
 confirm or replace them in Excel rather than treating them as final.
 When you enable the LLM pass, it judges the retrieved shortlist using
 the same review-first convention, including table-level observation-unit
-matches written into `metadata/tables.csv`. `llm_context_files` supports
-text and notes (`.md`, `.txt`, `.rst`), delimited/data files (`.csv`,
-`.tsv`, `.json`, `.yaml`, `.yml`), source and notebook-style files
-(`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`), DOCX (`.docx`), Excel
-workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports
-(`.pdf` via `pdftools`). Validation should only pass after the REVIEW
-prefix is removed. When you use `llm_provider = "openrouter"` without
-specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
+matches written into `metadata/tables.csv`.
+
+`llm_context_files` must be a character vector of existing local **file
+paths**. Do not pass a tibble returned by
+[`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html),
+an `xml2` document returned by `read_html()`, or another parsed object;
+those inputs now fail early instead of being silently ineffective.
+Supplying context also never enables an LLM call: set
+`llm_assess = TRUE` explicitly, or the package warns that the context
+will be ignored and continues with deterministic retrieval only. Use
+`llm_context_text` for inline text that is not stored in a file.
+
+Supported paths include text and notes (`.md`, `.txt`, `.rst`),
+delimited/data files (`.csv`, `.tsv`, `.json`, `.yaml`, `.yml`), source
+and notebook-style files (`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`),
+DOCX (`.docx`), Excel workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`),
+and PDF reports (`.pdf` via `pdftools`). Validation should only pass
+after the REVIEW prefix is removed. When you use
+`llm_provider = "openrouter"` without specifying `llm_model`,
+`metasalmon` defaults to `openrouter/free`.
 
 For the full workflow across `dataset.csv`, `tables.csv`,
 `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild,
 use the [LLM Review With Context
-Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 guide.
 
 The quickstart path does not require an API key. Only set up one of
@@ -262,13 +274,13 @@ For the current package-native review path, use this order:
     - DFO-specific policy/operations terms -\>
       <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
 7.  Follow the [After Excel
-    Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+    Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)
     guide to reload the package, detect unresolved semantic gaps, and
     produce a concrete shared-vs-DFO term-request plan.
 8.  If you are preparing EDH metadata, regenerate the XML from the
     reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the
     reviewed-package wrapper around the canonical
-    [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+    [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
     builder). It now refuses to rebuild while `REVIEW:` markers or
     unresolved dataset/table placeholder text remain.
 9.  Re-run validation with
@@ -285,11 +297,11 @@ publish**.
 
 | If you are… | Start here |
 |----|----|
-| A biologist who wants to share data | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) |
-| Finished Excel review and need to publish | [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) |
+| A biologist who wants to share data | [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html) |
+| Finished Excel review and need to publish | [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html) |
 | Curious how it works | [How It Fits Together](#how-it-fits-together) |
-| A data steward standardizing datasets | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
-| Reading CSVs from private GitHub repos | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html) |
+| A data steward standardizing datasets | [Data Dictionary & Publication](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html) |
+| Reading CSVs from private GitHub repos | [GitHub CSV Access](https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.html) |
 
 ## Video Walkthrough
 
@@ -302,7 +314,7 @@ Package](https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH)
 
 # Install from GitHub
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ## What’s In a Data Package?
@@ -349,14 +361,16 @@ whole folder (or a zip of the whole folder), not just
   Data Package as the canonical deliverable.
 - Generate HNAP-aware EDH metadata XML for DFO Enterprise Data Hub
   upload workflows via the canonical
-  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+  [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
   builder, the reviewed-package helper
-  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md),
-  or `create_sdp(..., include_edh_xml = TRUE)`.
+  [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md),
+  or `create_sdp(..., include_edh_xml = TRUE)`. Create-time XML is a
+  draft when review markers remain; finalize the metadata and rebuild it
+  before submission.
 - Role-aware vocabulary search with
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   and
-  [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md):
+  [`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md):
   - Units: QUDT preferred, then NVS P06
   - Salmon-domain roles: shared SMN terms first, then GCDFO DFO-specific
     terms where needed
@@ -366,14 +380,14 @@ whole folder (or a zip of the whole folder), not just
     broader ontology fallbacks
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   matches rank where they do and expose failures, so you can tune
   role-aware queries with confidence.
 - End-to-end semantic QA loop with
-  [`fetch_salmon_ontology()`](https://dfo-pacific-science.github.io/metasalmon/reference/fetch_salmon_ontology.md) +
-  [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md),
+  [`fetch_salmon_ontology()`](https://salmon-data-mobilization.github.io/metasalmon/reference/fetch_salmon_ontology.md) +
+  [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md),
   plus
-  [`deduplicate_proposed_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
+  [`deduplicate_proposed_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/deduplicate_proposed_terms.md)
   to prevent term proliferation before opening ontology issues.
 - Optional package-native LLM review for semantic suggestions:
   `suggest_semantics(..., llm_assess = TRUE)` can judge retrieved
@@ -381,24 +395,24 @@ whole folder (or a zip of the whole folder), not just
   and use OpenAI-compatible providers such as OpenRouter (including
   model ids ending in `:free`).
 - NuSEDS method crosswalk helpers:
-  [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  [`nuseds_enumeration_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
   and
-  [`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+  [`nuseds_estimate_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
   for mapping legacy values to canonical method families.
 
 ## Getting Help
 
 - [Frequently Asked
-  Questions](https://dfo-pacific-science.github.io/metasalmon/articles/faq.html)
+  Questions](https://salmon-data-mobilization.github.io/metasalmon/articles/faq.html)
 - [Glossary of
-  Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.html)
+  Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.html)
 - [Report a
-  bug](https://github.com/dfo-pacific-science/metasalmon/issues)
+  bug](https://github.com/salmon-data-mobilization/metasalmon/issues)
 - [Request a
-  feature](https://github.com/dfo-pacific-science/metasalmon/issues)
+  feature](https://github.com/salmon-data-mobilization/metasalmon/issues)
 - [Salmon Domain Ontology](https://w3id.org/smn/)
 - [Salmon Data Package
-  Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md)
+  Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md)
 
 ## How It Fits Together
 
@@ -415,14 +429,14 @@ without forcing you into a separate prompt-export side path.
 The high-level flow is:
 
 - **Start here:**
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   takes raw tables, infers the package metadata, writes a review-ready
   package, gives you a checklist, auto-fills top column/table semantic
   suggestions only where fields are blank, and keeps default code-level
   semantic seeding conservative by limiting it to factor and
   low-cardinality character source columns.
 - **Advanced/manual path:**
-  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
   is for cases where you already assembled `dataset.csv`, `tables.csv`,
   `column_dictionary.csv`, and optional `codes.csv` yourself.
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and
@@ -436,7 +450,7 @@ The high-level flow is:
 - **Post-review publication helpers** let you reopen the package, re-run
   semantic checks, detect unresolved ontology gaps, and separate shared
   SMN requests from DFO/program-specific follow-up.
-- **[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)**
+- **[`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)**
   consumes the metadata, dictionary, codes, and data to write the files
   in the Salmon Data Package format; the preferred review loop is now
   the package itself plus `README-review.txt` /
@@ -500,5 +514,5 @@ GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not
 silently rewrite legacy `salmon:` IRIs.
 
 See the [Reusing Standards for Salmon Data
-Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
+Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html)
 guide for details.

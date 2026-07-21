@@ -3,17 +3,17 @@
 ## Overview
 
 This guide starts **after** you already ran
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md),
 opened the package in Excel (or another spreadsheet editor), and saved
 your reviewed metadata back to CSV.
 
 If you have not created the package yet, start with the [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md).
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md).
 
 If you want to assemble `dataset.csv`, `tables.csv`, and
 `column_dictionary.csv` manually instead of continuing from a reviewed
 package, use [Publishing Data
-Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md).
+Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md).
 
 This is the post-review path:
 
@@ -41,7 +41,7 @@ names(pkg$resources)
 pkg$tables
 ```
 
-[`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
+[`read_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.md)
 reloads the package from the canonical `metadata/*.csv` files, so you
 are checking the same metadata you just reviewed in Excel.
 
@@ -81,9 +81,9 @@ first one.
 
 The package-root `semantic_suggestions.csv` file is the original
 evidence trail from
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md).
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md).
 After review, it is usually more useful to re-run
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 against the **current** package state so you only inspect what is still
 unresolved.
 
@@ -146,6 +146,14 @@ This is the key post-review gap table:
   found;
 - `placement_recommendation` gives a first-pass routing guess.
 
+If the original run used LLM review, also keep rows from
+`semantic_suggestions.csv` where `llm_decision == "request_new_term"`. A
+`reject_shortlist` that remains unresolved after the bounded retry is
+escalated to that decision so a likely gap is not hidden as a poor
+match. The current gap helpers do not yet ingest
+`semantic_llm_assessments` automatically, so treat those rows as
+additional evidence when building the request plan below.
+
 If you only want a narrower slice, filter by role or scope:
 
 ``` r
@@ -175,9 +183,9 @@ A good default test is:
 
 #### How that maps to the current helper outputs
 
-[`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
 and
-[`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md)
+[`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
 currently use these buckets:
 
 - `placement_recommendation == "smn"` → likely shared salmon-domain
@@ -277,7 +285,7 @@ cases in this workflow. Keep them in `term-request-plan.csv` and file
 them through the right DFO governance process after human review.
 
 At the moment,
-[`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+[`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)
 is best treated as the built-in path for **shared SMN** requests, not as
 a one-click publisher for DFO-specific rows.
 
@@ -292,7 +300,7 @@ write_edh_xml_from_sdp(pkg_path)
 ```
 
 This is the reviewed-package wrapper around
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md).
 It refuses to rebuild while obvious review-state markers still exist,
 including:
 

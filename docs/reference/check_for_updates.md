@@ -1,13 +1,13 @@
 # Check whether a newer metasalmon release is available
 
 Compares the installed package version with the latest GitHub release
-for `dfo-pacific-science/metasalmon`.
+for `salmon-data-mobilization/metasalmon`.
 
 ## Usage
 
 ``` r
 check_for_updates(
-  repo = "dfo-pacific-science/metasalmon",
+  repo = "salmon-data-mobilization/metasalmon",
   current = utils::packageVersion("metasalmon"),
   timeout = 2,
   quiet = FALSE
@@ -48,7 +48,7 @@ Elements include `status`, `current_version`, `latest_version`,
 This function performs a network request only when you call it.
 `metasalmon` does not check for updates automatically when the package
 is attached.
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 can call it optionally when `check_updates = TRUE`.
 
 ## Examples

@@ -34,7 +34,7 @@ Invisibly returns the detected PAT.
 4.  Verifies that authentication works by testing access to a repository
 
 Run this function once before using
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 to access private repositories. The stored PAT will be used
 automatically for subsequent requests.
 
@@ -49,9 +49,9 @@ https://github.com/settings/tokens after creating it.
 
 ## See also
 
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 for reading CSV files from GitHub,
-[`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
+[`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md)
 for building raw GitHub URLs.
 
 ## Examples

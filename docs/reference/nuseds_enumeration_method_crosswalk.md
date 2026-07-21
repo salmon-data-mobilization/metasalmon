@@ -23,7 +23,7 @@ implementation.
 
 ## See also
 
-[`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+[`nuseds_estimate_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
 
 ## Examples
 

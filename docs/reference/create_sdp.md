@@ -74,7 +74,7 @@ create_sdp(
 - semantic_sources:
 
   Vector of vocabulary sources passed to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - semantic_max_per_role:
 
@@ -102,7 +102,7 @@ create_sdp(
 - semantic_code_scope:
 
   Character string controlling which `codes.csv` rows are sent through
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   during one-shot seeding. `"factor"` (default) analyzes codes sourced
   from factor columns and low-cardinality character columns in the
   original data frame(s); `"all"` analyzes all inferred or supplied code
@@ -111,32 +111,32 @@ create_sdp(
 - llm_assess:
 
   Logical; if `TRUE`, run the optional LLM shortlist assessment inside
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_provider:
 
   LLM provider preset forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_model:
 
   Optional LLM model identifier forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_api_key:
 
   Optional API key override forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_base_url:
 
   Optional OpenAI-compatible base URL forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_reasoning_effort:
 
   Optional reasoning-effort hint forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   when using the OpenAI provider.
 
 - llm_top_n:
@@ -146,17 +146,17 @@ create_sdp(
 - llm_context_files:
 
   Optional character vector of local context file paths forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
   documents, or R Markdown objects. See
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   for supported file types, including HTML, DOCX, `.R`, `.Rmd`, `.qmd`,
   PDF, and Excel context files.
 
 - llm_context_text:
 
   Optional inline context snippets forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_timeout_seconds:
 
@@ -170,7 +170,7 @@ create_sdp(
 - check_updates:
 
   Logical; if `TRUE`, run a short, non-fatal
-  [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  [`check_for_updates()`](https://salmon-data-mobilization.github.io/metasalmon/reference/check_for_updates.md)
   call after writing the package and mention newer releases only when
   one is available. Defaults to
   [`interactive()`](https://rdrr.io/r/base/interactive.html).
@@ -189,12 +189,12 @@ create_sdp(
 
   Logical; when `TRUE`, writes an HNAP-aware EDH XML metadata file to
   `metadata/metadata-edh-hnap.xml` using
-  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
+  [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md).
   The default is `FALSE`. Because `create_sdp()` produces review-ready
   metadata, this create-time XML is treated as a **draft**: if
   `REVIEW:`/`MISSING` markers remain it is still written but a warning
   recommends rebuilding a clean file with
-  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
+  [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
   after the metadata is finalized.
 
 - ...:

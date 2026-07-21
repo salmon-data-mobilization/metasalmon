@@ -1,10 +1,24 @@
 # Changelog
 
+## metasalmon (development version)
+
+- Updated the canonical package site, repository, issue tracker, install
+  commands, update checks, OpenRouter attribution, and live SDP schema
+  fetches to the `salmon-data-mobilization` organization. SDP 0.2
+  profile identifiers remain unchanged because they are part of the
+  current upstream contract.
+- Refreshed the README, vignettes, generated reference pages, and
+  pkgdown site to document the 0.1.4/0.1.5 behavior explicitly: context
+  inputs are local file paths rather than parsed objects, context never
+  enables LLM review by itself, non-UTF-8 text handling and source-label
+  disambiguation are observable, and create-time EDH XML is a draft
+  until the metadata is reviewed and rebuilt.
+
 ## metasalmon 0.1.5
 
 - `create_sdp(include_edh_xml = TRUE)` now flags the create-time EDH XML
   as a draft: it still writes the file, but warns (and points to
-  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md))
+  [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md))
   when the package still contains `REVIEW:` IRIs or `MISSING`
   placeholders, so a draft is not mistaken for a reviewed export.
 - LLM context files are now decoded more robustly: non-UTF-8 (Latin-1 /
@@ -16,7 +30,7 @@
   `dataset_id` as well as `table_id`/`column_name`, so multi-dataset
   seed codes can no longer cross-match on a shared table/column name.
 - Fixed
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
   so LLM semantic-review options supplied while `seed_semantics = FALSE`
   now warn once instead of being silently ignored.
 - Semantic LLM review now escalates an unresolvable `reject_shortlist`
@@ -31,11 +45,11 @@
   *why* each key fell back, and a truncated or non-JSON provider
   response includes a sanitized content snippet in the error.
 - Clarified the exported documentation for
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),
-  [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md),
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
   and
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md),
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
   including the new `reject_shortlist` -\> `request_new_term`
   escalation.
 - Marked display-only vignette chunks as excluded from tangling so
@@ -51,24 +65,24 @@
 ## metasalmon 0.1.4
 
 - Fixed `llm_context_files` handling in the
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   semantic-review path: context files must now be supplied as local file
   paths, parsed data-frame/XML/R Markdown objects fail early with a
   clear error, and context supplied without `llm_assess = TRUE` now
   warns that it will be ignored rather than silently producing
   deterministic-only output.
 - Clarified the exported documentation for
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),
-  [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md),
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
   and
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   so users know context files affect only explicit LLM review.
 
 ## metasalmon 0.1.3
 
 - Added a first package-native
-  [`chat_decomposition()`](https://dfo-pacific-science.github.io/metasalmon/reference/chat_decomposition.md)
+  [`chat_decomposition()`](https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.md)
   workflow for measurement-variable review: resumable R-console sessions
   now keep structured curation state separate from transcript history,
   ask grouped decomposition questions, and end in an explicit
@@ -125,7 +139,7 @@
   external users get parallel OpenRouter-free and OpenAI-credit setup
   paths.
 - Promoted
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   and the Salmon Data Package workflow into a coherent release shape:
   single-table and multi-table package creation, semantic review
   artifacts, and post-review EDH rebuild are now aligned and documented
@@ -138,7 +152,7 @@
 - Hardened table-level semantic review writes and EDH rebuilds:
   LLM-selected table suggestions now write back into
   `metadata/tables.csv`, and
-  [`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
+  [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
   now refuses to rebuild from obviously unreviewed packages.
 - Improved package-native LLM review ergonomics: one-shot shortlist
   preservation now respects `llm_top_n`, shared `llm_context_files` are
@@ -215,14 +229,14 @@
   pass-through model ids (so OpenRouter models ending in `:free` work
   without special branching).
 - Extended
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md),
-  [`infer_salmon_datapackage_artifacts()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+  [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
   and
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   to thread the optional LLM semantic review arguments through the
   start-here workflow.
 - Extended
-  [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+  [`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   with `strategy = "llm"` and `min_llm_confidence` for explicit
   application of LLM-reviewed matches.
 - Updated README, GPT-collaboration vignette, entrypoint docs, tests,
@@ -232,12 +246,12 @@
 
 - Simplified EDH XML support down to the single DFO Enterprise Data Hub
   HNAP export we actually use:
-  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+  [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
   is now the canonical helper, while
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  [`edh_build_iso19139_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
   remains only as a deprecated compatibility alias.
 - Simplified
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   EDH export behavior: `include_edh_xml = TRUE` now always writes
   `metadata/metadata-edh-hnap.xml`; legacy `edh_profile` / `EDH_Profile`
   / `EDH_profile` inputs are still accepted as deprecated compatibility
@@ -251,21 +265,21 @@
   remote URLs and avoid attaching GitHub auth headers to non-GitHub
   hosts; improved public/private auth behavior and related tests.
 - Hardened package writing + export reliability:
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   now fails fast with an explicit `overwrite = TRUE` message when the
   target directory already exists, fixed DwC validator execution path,
   and improved ontology fetch robustness with explicit timeout handling
   and cache fallback behavior.
 - Surfaced clearer warning messages when online vocabulary API lookups
   time out, so empty
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   results are less opaque during semantic seeding.
 - Fixed
-  [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+  [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)
   batch routing so per-row `ontology_repo` values are honored instead of
   posting all rows to the first repo.
 - Clarified
-  [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+  [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md)
   API by explicitly deprecating ignored legacy arguments
   (`entity_defaults`, `vocab_priority`) with coverage for warning
   behavior.
@@ -276,7 +290,7 @@
 ## metasalmon 0.0.19
 
 - Hardened table observation-unit auto-apply in
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md):
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md):
   table-level observation-unit suggestions are now ignored when driven
   by placeholder review text and only auto-applied when lexical
   compatibility checks pass against non-placeholder table metadata.
@@ -305,7 +319,7 @@
 - Reworked review placeholders so missing descriptions/metadata are
   labeled explicitly (`MISSING DESCRIPTION:` / `MISSING METADATA:`)
   instead of the more ambiguous generic review wording.
-- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+- [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   and related inference paths now seed table-level observation-unit
   review content and auto-apply the top table semantic suggestion into
   `tables.csv`, including `observation_unit_iri` and a backfilled
@@ -350,7 +364,7 @@
 
 - Rewrote `README-review.txt` intro and checklist to be shorter, more
   first-time friendly, and more action-oriented.
-- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+- [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   now prints an explicit up-front note that semantic seeding may take a
   few minutes.
 - Improved column-level semantic query construction for measurement
@@ -364,7 +378,7 @@
 
 ## metasalmon 0.0.15
 
-- [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+- [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   now tells users up front when online semantic seeding may take a few
   minutes and points to `seed_semantics = FALSE` for the fastest first
   pass.
@@ -374,13 +388,13 @@
 ## metasalmon 0.0.14
 
 - Simplified the package-creation surface so
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   is the clear one-shot entrypoint,
-  [`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
   is the advanced/manual writer, and the older create-from-data helper
   was removed.
 - Reworked
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   output into a cleaner review layout with `metadata/` and `data/`
   subdirectories, package-root `README-review.txt`, package-root
   `semantic_suggestions.csv` (when present), and root
@@ -392,9 +406,9 @@
   run only for factor/categorical source columns by default, while
   keeping column-level and table-level seeding available.
 - Added optional update notifications inside
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   via `check_updates`, using the explicit
-  [`check_for_updates()`](https://dfo-pacific-science.github.io/metasalmon/reference/check_for_updates.md)
+  [`check_for_updates()`](https://salmon-data-mobilization.github.io/metasalmon/reference/check_for_updates.md)
   helper rather than package-attach network checks.
 - Refreshed README, vignettes, reference pages, generated documentation,
   tests, and pkgdown outputs to match the new workflow and layout.
@@ -412,7 +426,7 @@
 - Updated package reading to prefer nested `metadata/` files, then
   legacy root-level metadata, then `datapackage.json` fallback.
 - Made
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  [`edh_build_iso19139_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
   default to the richer North American Profile / HNAP-aware EDH export
   while keeping `profile = "iso19139"` available as an explicit
   fallback.
@@ -421,12 +435,12 @@
   reference systems, bounding boxes, and distribution metadata, with
   regression coverage against the confirmed EDH sample shape.
 - Added
-  [`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+  [`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   for explicit opt-in merges of
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   results into dictionaries.
 - Updated
-  [`read_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_salmon_datapackage.md)
+  [`read_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.md)
   to prefer canonical nested metadata, preserve legacy root-level
   reading, and read profile-aware `datapackage.json` descriptors when
   CSV metadata is absent.
@@ -439,15 +453,15 @@
 ## metasalmon 0.0.12
 
 - Added a GCDFO-backed
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   search backend that queries the DFO Salmon Ontology first via content
   negotiation against `https://w3id.org/gcdfo/salmon`.
 - For salmon-domain roles,
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   now prioritizes GCDFO results and only falls back to OLS/NVS when
   GCDFO returns no good label hit.
 - Updated
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md),
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
   `infer_dictionary(seed_semantics = TRUE)`, man pages, and vignettes to
   reflect the new GCDFO-first search behavior.
 - Rebuilt package documentation, tests, source tarball, and pkgdown site
@@ -456,7 +470,7 @@
 ## metasalmon 0.0.11
 
 - Added optional semantic seeding to
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
   via `seed_semantics = TRUE`, with optional source/max-per-role
   controls (`semantic_sources`, `semantic_max_per_role`).
   - This returns dictionary suggestions via
@@ -473,16 +487,16 @@
 ## metasalmon 0.0.10
 
 - Changed
-  [`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
+  [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
   and
-  [`validate_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_semantics.md)
+  [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md)
   non-strict semantics:
   - missing `term_iri`, `property_iri`, `entity_iri`, and `unit_iri` on
     `column_role == "measurement"` no longer block package creation by
     default;
   - missing fields now trigger a strong warning that calls out next
     steps and points to
-    [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
     plus the standards guide.
 - Preserved strict validation when `require_iris = TRUE` so
   CI/high-assurance flows can still enforce full semantic coverage.
@@ -493,7 +507,7 @@
 ## metasalmon 0.0.9
 
 - Added
-  [`edh_build_iso19139_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
+  [`edh_build_iso19139_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_iso19139_xml.md)
   to generate starter ISO 19139 metadata XML for DFO Enterprise Data Hub
   / GeoNetwork upload workflows.
 - Added tests and reference documentation for the EDH XML export helper.
@@ -511,8 +525,8 @@
 ## metasalmon 0.0.8
 
 - Added and documented NuSEDS method crosswalk helpers:
-  - [`nuseds_enumeration_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
-  - [`nuseds_estimate_method_crosswalk()`](https://dfo-pacific-science.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
+  - [`nuseds_enumeration_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  - [`nuseds_estimate_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
 - Added reference documentation pages for both crosswalk helpers.
 - Refreshed README feature list to include the new NuSEDS crosswalk
   utilities.
@@ -520,7 +534,7 @@
 ## metasalmon 0.0.6
 
 - Added
-  [`read_github_csv_dir()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv_dir.md)
+  [`read_github_csv_dir()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.md)
   to read all CSV files from a GitHub directory into a named list,
   similar to using [`dir()`](https://rdrr.io/r/base/list.files.html)
   with [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files.
@@ -532,15 +546,15 @@
 ## metasalmon 0.0.5
 
 - Renamed the GitHub CSV helpers to generic names:
-  [`github_raw_url()`](https://dfo-pacific-science.github.io/metasalmon/reference/github_raw_url.md)
+  [`github_raw_url()`](https://salmon-data-mobilization.github.io/metasalmon/reference/github_raw_url.md)
   and
-  [`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
+  [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md).
   `repo` is now required unless you provide a full URL.
 
 ## metasalmon 0.0.4
 
 - Added
-  [`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+  [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
   to guide one-time PAT setup (git check, browser token creation, git
   credential storage) and verify access to the private Qualark data
   repository.
@@ -553,14 +567,14 @@
 ## metasalmon 0.0.3
 
 - Added
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   function for searching candidate terms across external vocabularies
   (OLS, NVS, BioPortal).
-- [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+- [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   now ranks results deterministically using I-ADOPT role hints from
   `inst/extdata/iadopt-terminologies.csv` (preferred vocabularies
   boosted; ties stable).
-- [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+- [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   now returns best-effort suggestions (stored in
   `attr(,'semantic_suggestions')`) instead of a placeholder message.
 - Added I-ADOPT component fields (`property_iri`, `entity_iri`,
