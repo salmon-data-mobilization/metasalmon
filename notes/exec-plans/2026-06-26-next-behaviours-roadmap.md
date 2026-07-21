@@ -40,7 +40,9 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   pkgdown are updated, and a standard `R CMD check metasalmon_0.1.5.tar.gz`
   finishes with `Status: OK` including rebuilt vignettes and the PDF manual.
 - **Open behaviours to consider next:** Theme A, after the 0.1.5 PR is merged.
-- **Pending process:** open and merge the `deepen-architecture` PR (P2).
+- **Pending process:** PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) is open and
+  mergeable; merge it to finish P2.
 
 ## Context and Orientation
 
@@ -278,7 +280,8 @@ share one mature response/request contract rather than two.
   `R CMD check metasalmon_0.1.5.tar.gz` both succeeded; final status `OK`.
 - [x] 2026-07-21: P3 decided and prepared as patch release 0.1.5; NEWS and pkgdown
   now separate the 0.1.4 Alice fix from the 0.1.5 refactor/robustness release.
-- [ ] P2: open and merge the `deepen-architecture` PR.
+- [ ] P2: PR [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2)
+  opened 2026-07-21 and is mergeable; merge pending.
 - [ ] Begin Theme A (A0 → A4 → A5 → A2 → A1 → A3).
 
 ## Validation and Acceptance
