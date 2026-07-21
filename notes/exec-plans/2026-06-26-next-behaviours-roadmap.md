@@ -273,6 +273,12 @@ share one mature response/request contract rather than two.
   check confirms zero executable lines in the six display-only vignettes while
   pkgdown still renders their examples. The standard source-package check now
   completes with `Status: OK`.
+- 2026-07-21: **E6 completed in PR
+  [#3](https://github.com/salmon-data-mobilization/metasalmon/pull/3).** The URL
+  audit separated canonical project/fetch endpoints from the intentionally
+  retained SDP 0.2 identifiers, refreshed all released-feature documentation,
+  and added a reproducible full-site build that keeps private agent guidance out
+  of the public sitemap.
 - 2026-07-21: **Release as 0.1.5.** The branch contains multiple observable fixes
   beyond the already-shipped 0.1.4 Alice fix, so a patch release is clearer than
   continuing to append changes under 0.1.4.
