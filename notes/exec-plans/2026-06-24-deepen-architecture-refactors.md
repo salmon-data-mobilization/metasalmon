@@ -8,9 +8,11 @@ follow-up fixes also landed. The remaining items from this plan — the
 *Missing / Future Refactor Candidates* (god-file split and shared chat request
 builder) and the deferred backlog — are carried forward in
 `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (Themes A–E + Process).
-The package is prepared as 0.1.5, and the full standard source-package check now
-finishes with `Status: OK`; only the PR/merge handoff remains. This document is
-retained as the record of the executed refactor.
+The package was released as 0.1.5, and the full standard source-package check
+finished with `Status: OK`. PR
+[#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged the
+branch to `main` as `8fb4f37` on 2026-07-21. This document is retained as the
+record of the executed refactor.
 
 ## Purpose
 
@@ -150,6 +152,9 @@ Base state for this plan:
   vignette chunk `purl = FALSE`, installed the missing local `pdftools` and
   TinyTeX support needed to exercise every check stage, prepared release 0.1.5,
   rebuilt pkgdown, and ran `R CMD check metasalmon_0.1.5.tar.gz` to `Status: OK`.
+- [x] 2026-07-21: Opened PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2), merged the
+  release to `main` as `8fb4f37`, and removed the merged local/remote branch.
 
 ## Surprises & Discoveries
 

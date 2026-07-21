@@ -36,13 +36,14 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   the code-review fixes incl. the **first slice of gap escalation** —
   `reject_shortlist` that exploration cannot resolve now escalates to
   `request_new_term` (`.ms_llm_escalate_unresolved_rejection`).
-- **0.1.5 release candidate complete:** E5 is fixed, `DESCRIPTION`/`NEWS.md` and
+- **0.1.5 release complete:** E5 is fixed, `DESCRIPTION`/`NEWS.md` and
   pkgdown are updated, and a standard `R CMD check metasalmon_0.1.5.tar.gz`
-  finishes with `Status: OK` including rebuilt vignettes and the PDF manual.
-- **Open behaviours to consider next:** Theme A, after the 0.1.5 PR is merged.
-- **Pending process:** PR
-  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) is open and
-  mergeable; merge it to finish P2.
+  finishes with `Status: OK` including rebuilt vignettes and the PDF manual. PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
+  `main` as `8fb4f37`.
+- **Open behaviours to consider next:** Theme A, beginning only after Brett's
+  requested checkpoint.
+- **Pending process:** none for the 0.1.5 branch handoff.
 
 ## Context and Orientation
 
@@ -179,9 +180,11 @@ share one mature response/request contract rather than two.
 - **P1 — `R CMD check`. ✅ DONE.** `R CMD build .` produced
   `metasalmon_0.1.5.tar.gz`; `R CMD check metasalmon_0.1.5.tar.gz` completed with
   `Status: OK` after E5. All declared suggested R packages were available.
-- **P2 — Open the PR** for `deepen-architecture` (the Alice plan's checkpoint G /
-  PR handoff was never completed). Summarize: the 5 refactors, the code-review
-  fixes, the doc sync; reference issue `#1` lineage.
+- **P2 — PR and merge. ✅ DONE.** PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) summarized
+  the five refactors, code-review fixes, release validation, documentation sync,
+  and issue `#1` lineage. It merged to `main` as `8fb4f37` on 2026-07-21; the
+  merged feature branch was removed locally and remotely.
 - **P3 — Version decision. ✅ DONE.** Use patch release 0.1.5 because the branch
   adds observable warning, decoding, source-label, semantic-review, and
   factor-scope correctness changes beyond the shipped 0.1.4 fix. The NEWS entries
@@ -189,8 +192,7 @@ share one mature response/request contract rather than two.
 
 ## Recommended sequencing
 
-1. **Finish the 0.1.5 handoff:** E3, B1, D1–D3, E5, P1, and P3 are complete;
-   open and merge the PR (P2).
+1. **0.1.5 handoff complete:** E3, B1, D1–D3, E5, and P1–P3 are complete.
 2. **Highest-value behaviour (the main thrust):** Theme A in dependency order:
    A0 → A4 → A5 → A2 → A1 → A3. Freeze evidence first, complete the existing
    gap-escalation vertical slice, harden retry behavior and retrieval, then make
@@ -262,6 +264,10 @@ share one mature response/request contract rather than two.
   new-term fields and the first rejection-escalation slice already exist. The
   remaining A4 work is term-request integration. A0 is now explicit, and A1
   precedes A3 because bundle validators need the canonical bundle representation.
+- 2026-07-21: **P2 complete.** PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged the
+  release-validated 0.1.5 branch to `main` as `8fb4f37`; the merged branch was
+  removed so `main` is again the single active source of truth.
 
 ## Progress
 
@@ -280,8 +286,9 @@ share one mature response/request contract rather than two.
   `R CMD check metasalmon_0.1.5.tar.gz` both succeeded; final status `OK`.
 - [x] 2026-07-21: P3 decided and prepared as patch release 0.1.5; NEWS and pkgdown
   now separate the 0.1.4 Alice fix from the 0.1.5 refactor/robustness release.
-- [ ] P2: PR [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2)
-  opened 2026-07-21 and is mergeable; merge pending.
+- [x] 2026-07-21: P2 complete. PR
+  [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
+  `main` as `8fb4f37`; local and remote feature branches removed.
 - [ ] Begin Theme A (A0 → A4 → A5 → A2 → A1 → A3).
 
 ## Validation and Acceptance
