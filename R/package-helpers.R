@@ -2601,7 +2601,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   latest_version <- result$latest_version %||% NA_character_
-  install_command <- result$install_command %||% "remotes::install_github('dfo-pacific-science/metasalmon')"
+  install_command <- result$install_command %||% "remotes::install_github('salmon-data-mobilization/metasalmon')"
   if (is.na(latest_version) || !nzchar(latest_version)) {
     latest_version <- "newer"
   }
@@ -2787,7 +2787,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "Recommended path: create package -> review/edit in Excel -> reload and check unresolved gaps -> remove REVIEW markers -> rebuild EDH XML if needed -> validate -> publish.",
     "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R.",
     "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize.",
-    "Guide: https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html"
+    "Guide: https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html"
   )
   writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
 }

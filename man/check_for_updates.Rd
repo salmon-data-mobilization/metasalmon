@@ -5,7 +5,7 @@
 \title{Check whether a newer metasalmon release is available}
 \usage{
 check_for_updates(
-  repo = "dfo-pacific-science/metasalmon",
+  repo = "salmon-data-mobilization/metasalmon",
   current = utils::packageVersion("metasalmon"),
   timeout = 2,
   quiet = FALSE
@@ -32,7 +32,7 @@ Elements include \code{status}, \code{current_version}, \code{latest_version},
 }
 \description{
 Compares the installed package version with the latest GitHub release for
-\code{dfo-pacific-science/metasalmon}.
+\code{salmon-data-mobilization/metasalmon}.
 }
 \details{
 This function performs a network request only when you call it. \code{metasalmon}

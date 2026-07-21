@@ -9,7 +9,8 @@ Description: Tools to scaffold, standardize, validate, transform, and package
     salmon datasets using the DFO Salmon Ontology and Salmon Data Package
     conventions.
 License: MIT + file LICENSE
-URL: https://dfo-pacific-science.github.io/metasalmon/
+URL: https://salmon-data-mobilization.github.io/metasalmon/
+BugReports: https://github.com/salmon-data-mobilization/metasalmon/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

@@ -17,13 +17,13 @@ knitr::opts_chunk$set(
 
 ## Before You Start
 
-Complete the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) guide first if you want to make sure GitHub installs work cleanly and any optional LLM provider is configured before you begin.
+Complete the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) guide first if you want to make sure GitHub installs work cleanly and any optional LLM provider is configured before you begin.
 
 ## Installation
 
 ```{r, purl = FALSE}
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ## One-shot Workflow
@@ -75,11 +75,11 @@ That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`. If you a
 
 ## Optional LLM Review Later
 
-The base quickstart does **not** require an API key. If you want `llm_assess = TRUE`, finish the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) guide first, then rerun the `create_sdp()` call with your chosen provider.
+The base quickstart does **not** require an API key. If you want `llm_assess = TRUE`, finish the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) guide first, then rerun the `create_sdp()` call with your chosen provider.
 
 When you want the LLM to use supporting README notes, CSV dictionaries, Excel workbooks, or PDF reports as context, continue with:
 
-- [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+- [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
 ## Review In Excel
 
@@ -130,8 +130,8 @@ validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 
 That review-state validation is the first follow-up check. For the full post-review workflow — reloading the package, detecting unresolved semantic gaps, deciding shared salmon-domain vs DFO-specific routing, drafting term requests, rebuilding EDH XML if needed, and only then running strict final validation — continue with:
 
-- [After Excel Review: Finalize and Publish Your Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+- [After Excel Review: Finalize and Publish Your Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)
 
 For a staged, fully explicit workflow where you assemble metadata tables manually instead of continuing from a reviewed `create_sdp()` package, use:
 
-- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
+- [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html)

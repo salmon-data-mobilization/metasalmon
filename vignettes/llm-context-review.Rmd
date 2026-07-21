@@ -176,8 +176,8 @@ write_edh_xml_from_sdp(pkg_path)
 
 If you have not configured the provider yet, go back to:
 
-- [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+- [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 
 If you want the one-shot package walkthrough first, go back to:
 
-- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+- [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)

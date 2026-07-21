@@ -15,6 +15,23 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
   expect_true("dataset" %in% names(schema$metadata_tables))
 })
 
+test_that("remote schema source and SDP profile identifier remain distinct", {
+  old_options <- options(
+    metasalmon.sdp_schema_url = NULL,
+    metasalmon.sdp_schema_base_url = NULL
+  )
+  withr::defer(options(old_options))
+
+  expect_identical(
+    metasalmon:::.ms_default_sdp_schema_base_url(),
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main"
+  )
+  expect_identical(
+    metasalmon:::.ms_sdp_profile_url(),
+    "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+  )
+})
+
 test_that("Frictionless SDP schemas drive metadata column order", {
   old_options <- options(metasalmon.sdp_schema_source = "vendored")
   withr::defer(options(old_options))

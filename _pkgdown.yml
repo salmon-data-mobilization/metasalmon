@@ -1,4 +1,4 @@
-url: https://dfo-pacific-science.github.io/metasalmon/
+url: https://salmon-data-mobilization.github.io/metasalmon/
 
 template:
   bootstrap: 5
@@ -26,8 +26,8 @@ home:
       community:
         title: Community
         text: |
-          - [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
-          - [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
+          - [Report a bug](https://github.com/salmon-data-mobilization/metasalmon/issues)
+          - [Request a feature](https://github.com/salmon-data-mobilization/metasalmon/issues)
       dev:
         title: Development
         text: |

@@ -5,7 +5,7 @@ test_that("check_for_updates reports when a newer release is available", {
         ok = TRUE,
         version = "0.0.14",
         tag_name = "v0.0.14",
-        html_url = "https://github.com/dfo-pacific-science/metasalmon/releases/tag/v0.0.14",
+        html_url = "https://github.com/salmon-data-mobilization/metasalmon/releases/tag/v0.0.14",
         message = "metasalmon 0.0.14"
       )
     },
@@ -17,7 +17,8 @@ test_that("check_for_updates reports when a newer release is available", {
   expect_true(result$update_available)
   expect_identical(result$current_version, "0.0.13")
   expect_identical(result$latest_version, "0.0.14")
-  expect_identical(result$install_command, "remotes::install_github('dfo-pacific-science/metasalmon')")
+  expect_identical(result$repo, "salmon-data-mobilization/metasalmon")
+  expect_identical(result$install_command, "remotes::install_github('salmon-data-mobilization/metasalmon')")
 })
 
 test_that("check_for_updates reports when installed version is current", {
@@ -27,7 +28,7 @@ test_that("check_for_updates reports when installed version is current", {
         ok = TRUE,
         version = "0.0.13",
         tag_name = "v0.0.13",
-        html_url = "https://github.com/dfo-pacific-science/metasalmon/releases/tag/v0.0.13",
+        html_url = "https://github.com/salmon-data-mobilization/metasalmon/releases/tag/v0.0.13",
         message = "metasalmon 0.0.13"
       )
     },
@@ -45,7 +46,7 @@ test_that("check_for_updates reports when installed version is ahead of release"
         ok = TRUE,
         version = "0.0.13",
         tag_name = "v0.0.13",
-        html_url = "https://github.com/dfo-pacific-science/metasalmon/releases/tag/v0.0.13",
+        html_url = "https://github.com/salmon-data-mobilization/metasalmon/releases/tag/v0.0.13",
         message = "metasalmon 0.0.13"
       )
     },

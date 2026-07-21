@@ -15,7 +15,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-Use this page once before the homepage quick example or the [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html).
+Use this page once before the homepage quick example or the [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html).
 
 It covers two things:
 
@@ -52,7 +52,7 @@ Restart R after saving.
 
 ```{r, purl = FALSE}
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ### If you also need private GitHub CSV access later
@@ -141,10 +141,10 @@ suggested <- suggest_semantics(
 
 After this setup is done, go back to:
 
-- [Homepage quick example](https://dfo-pacific-science.github.io/metasalmon/)
-- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
-- [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+- [Homepage quick example](https://salmon-data-mobilization.github.io/metasalmon/)
+- [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)
+- [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
 If you are continuing from a reviewed package later, use:
 
-- [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+- [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)

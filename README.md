@@ -13,7 +13,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then send you back to the created package so you can confirm or edit those values directly in Excel.
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then send you back to the created package so you can confirm or edit those values directly in Excel.
 
 **Integration context:** See the Salmon Data Integration System overview page (https://br-johnson.github.io/salmon-data-integration-system/) and walkthrough video (https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH).
 
@@ -29,14 +29,14 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## Quick Example
 
-Before you start, do the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) check so GitHub installs work cleanly and any optional LLM provider is ready in advance.
+Before you start, do the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) check so GitHub installs work cleanly and any optional LLM provider is ready in advance.
 
 Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then review in Excel.
 
 ```r
 # Install from GitHub (recommended)
 # install.packages("remotes")
-# remotes::install_github("dfo-pacific-science/metasalmon")
+# remotes::install_github("salmon-data-mobilization/metasalmon")
 
 library(metasalmon)
 
@@ -78,13 +78,13 @@ See `example-data-README.md` for the record/resource URLs, row counts, licensing
 
 To continue:
 
-- [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) — one-time GitHub credential setup for installs plus optional LLM provider setup.
-- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html) — create the full package with metadata and export it.
-- [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) — reload the reviewed package, detect unresolved ontology gaps, route shared vs DFO-specific requests, and finish publication.
-- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) — manual package assembly path when you are not continuing from `create_sdp()`.
-- [Linking to Standard Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
+- [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) — one-time GitHub credential setup for installs plus optional LLM provider setup.
+- [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html) — create the full package with metadata and export it.
+- [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html) — reload the reviewed package, detect unresolved ontology gaps, route shared vs DFO-specific requests, and finish publication.
+- [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html) — manual package assembly path when you are not continuing from `create_sdp()`.
+- [Linking to Standard Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) — pick `term_iri`, `property_iri`, and `entity_iri` with confidence.
 
-Need the full context-file workflow? See [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html).
+Need the full context-file workflow? See [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html).
 
 ## Package-native LLM semantic review (optional)
 
@@ -116,7 +116,7 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 
 This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`. `llm_context_files` supports text and notes (`.md`, `.txt`, `.rst`), delimited/data files (`.csv`, `.tsv`, `.json`, `.yaml`, `.yml`), source and notebook-style files (`.R`, `.Rmd`, `.qmd`), HTML (`.htm`, `.html`), DOCX (`.docx`), Excel workbooks (`.xls`, `.xlsx`, `.xlsm` via `readxl`), and PDF reports (`.pdf` via `pdftools`). Validation should only pass after the REVIEW prefix is removed. When you use `llm_provider = "openrouter"` without specifying `llm_model`, `metasalmon` now defaults to `openrouter/free`.
 
-For the full workflow across `dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild, use the [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html) guide.
+For the full workflow across `dataset.csv`, `tables.csv`, `column_dictionary.csv`, `codes.csv`, and the post-review EDH rebuild, use the [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html) guide.
 
 The quickstart path does not require an API key. Only set up one of these providers when you want `create_sdp(..., llm_assess = TRUE)` or `suggest_semantics(..., llm_assess = TRUE)`.
 
@@ -159,7 +159,7 @@ For the current package-native review path, use this order:
 6. If no candidate fits, request a new term instead of forcing a bad match:
    - shared cross-organization/domain terms -> <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
    - DFO-specific policy/operations terms -> <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
-7. Follow the [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html) guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.
+7. Follow the [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html) guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.
 8. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder). It now refuses to rebuild while `REVIEW:` markers or unresolved dataset/table placeholder text remain.
 9. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
 10. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder (or a zip of it), not individual files.
@@ -170,11 +170,11 @@ In other words: **create -> review in Excel -> reload/check gaps -> remove `REVI
 
 | If you are...                           | Start here                                                                                                                |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| A biologist who wants to share data     | [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)                            |
-| Finished Excel review and need to publish | [After Excel Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)      |
+| A biologist who wants to share data     | [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)                            |
+| Finished Excel review and need to publish | [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)      |
 | Curious how it works                    | [How It Fits Together](#how-it-fits-together)                                                                                |
-| A data steward standardizing datasets   | [Data Dictionary & Publication](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html) |
-| Reading CSVs from private GitHub repos  | [GitHub CSV Access](https://dfo-pacific-science.github.io/metasalmon/articles/github-csv-access.html)                       |
+| A data steward standardizing datasets   | [Data Dictionary & Publication](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html) |
+| Reading CSVs from private GitHub repos  | [GitHub CSV Access](https://salmon-data-mobilization.github.io/metasalmon/articles/github-csv-access.html)                       |
 
 ## Video Walkthrough
 
@@ -185,7 +185,7 @@ In other words: **create -> review in Excel -> reload/check gaps -> remove `REVI
 ```r
 # Install from GitHub
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ## What's In a Data Package?
@@ -238,12 +238,12 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
 
 ## Getting Help
 
-- [Frequently Asked Questions](https://dfo-pacific-science.github.io/metasalmon/articles/faq.html)
-- [Glossary of Terms](https://dfo-pacific-science.github.io/metasalmon/articles/glossary.html)
-- [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues)
-- [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues)
+- [Frequently Asked Questions](https://salmon-data-mobilization.github.io/metasalmon/articles/faq.html)
+- [Glossary of Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.html)
+- [Report a bug](https://github.com/salmon-data-mobilization/metasalmon/issues)
+- [Request a feature](https://github.com/salmon-data-mobilization/metasalmon/issues)
 - [Salmon Domain Ontology](https://w3id.org/smn/)
-- [Salmon Data Package Specification](https://github.com/dfo-pacific-science/smn-data-pkg/blob/main/SPECIFICATION.md)
+- [Salmon Data Package Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md)
 
 ## How It Fits Together
 
@@ -345,6 +345,6 @@ pkgdown::build_site()
 
 This package can link your data to the [Salmon Domain Ontology](https://w3id.org/smn/) for shared terms and to the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) for DFO-specific terms. Canonical IRIs are explicit: SMN uses `https://w3id.org/smn/<Term>` and GCDFO uses `https://w3id.org/gcdfo/salmon#<Term>`. metasalmon does not silently rewrite legacy `salmon:` IRIs.
 
-See the [Reusing Standards for Salmon Data Terms](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) guide for details.
+See the [Reusing Standards for Salmon Data Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html) guide for details.
 
 </details>

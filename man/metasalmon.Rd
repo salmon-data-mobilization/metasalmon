@@ -13,7 +13,8 @@ DFO-specific salmon vocabularies.
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://dfo-pacific-science.github.io/metasalmon/}
+  \item \url{https://salmon-data-mobilization.github.io/metasalmon/}
+  \item Report bugs at \url{https://github.com/salmon-data-mobilization/metasalmon/issues}
 }
 
 }

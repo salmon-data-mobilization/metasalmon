@@ -1,7 +1,7 @@
 #' Check whether a newer metasalmon release is available
 #'
 #' Compares the installed package version with the latest GitHub release for
-#' `dfo-pacific-science/metasalmon`.
+#' `salmon-data-mobilization/metasalmon`.
 #'
 #' This function performs a network request only when you call it. `metasalmon`
 #' does not check for updates automatically when the package is attached.
@@ -28,7 +28,7 @@
 #' check_for_updates()
 #' }
 check_for_updates <- function(
-    repo = "dfo-pacific-science/metasalmon",
+    repo = "salmon-data-mobilization/metasalmon",
     current = utils::packageVersion("metasalmon"),
     timeout = 2,
     quiet = FALSE

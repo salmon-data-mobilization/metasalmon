@@ -12,7 +12,7 @@ and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
 Package (SDP)** conventions. Version 0.1.5. License MIT. R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
-- Pkgdown site: https://dfo-pacific-science.github.io/metasalmon/
+- Pkgdown site: https://salmon-data-mobilization.github.io/metasalmon/
 - The canonical package/repository name remains **metasalmon**. Brett decided
   against the proposed `metasmn` rename; do not revive that rename without a new
   explicit decision.
