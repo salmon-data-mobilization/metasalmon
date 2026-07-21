@@ -4,7 +4,7 @@
 
 This article is the deep-dive for vocabulary mapping. Start with the
 [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md)
 for the baseline infer/validate/package flow, then come back here to map
 columns to standard terms.
 
@@ -50,9 +50,9 @@ confidence.
 
 #### Available sources by role
 
-[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
 can query multiple vocabulary sources. Use
-[`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
+[`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
 to get the recommended sources for each I-ADOPT role:
 
 ``` r
@@ -179,17 +179,17 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 - If you cannot find a fitting term, use a metadata-first proposed-terms
   workflow (for example a local `proposed_terms.csv`) or the new gap
   detection tools in metasalmon:
-  - [`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+  - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
     identifies candidates where SMN is missing but fallback sources
     found useful matches.
-  - [`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md)
+  - [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
     lets you choose shared SMN vs profile-specific requests and generate
     ready-to-post issue text.
-  - [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)
+  - [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)
     creates GitHub issues (dry-run first) against the ontology request
     template.
   - The dedicated [After Excel
-    Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md)
+    Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md)
     guide shows how to use those helpers on a reviewed package and
     translate the generic `profile` bucket into the practical
     DFO-specific routing decision.
@@ -205,7 +205,7 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 
 ### Exploring suggestions with metasalmon
 
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 can look at your dictionary and offer `term_iri`, `entity_iri`, or
 I-ADOPT components based on the bundled catalog.
 
@@ -230,15 +230,15 @@ tweak anything that misses your domain nuance.
   how the dictionary, ontology, and package-native review workflow fit
   together.
 - Follow [After Excel Review: Finalize and Publish Your
-  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md)
+  Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md)
   when you are continuing from a reviewed package and need the concrete
   post-review publication path.
 - Follow the [Publishing Data
-  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.md)
+  Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.md)
   guide when you are assembling metadata tables manually before
   publishing.
 - For AI-assisted drafting and package-native review, see the [optional
   LLM semantic review
-  workflow](https://dfo-pacific-science.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
+  workflow](https://salmon-data-mobilization.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
   on the package home page when you want help reviewing shortlisted
   terms.

@@ -99,8 +99,10 @@ per target for each assessment round. Default is \code{5}.}
 DOCX files, source/notebook files such as \code{.R}, \code{.Rmd}, or \code{.qmd}, Excel
 workbooks, or PDF reports) used to provide extra domain context to the
 LLM when \code{llm_assess = TRUE}. Pass file paths, not parsed data frames, XML
-documents, or R Markdown objects. PDF support uses the optional \code{pdftools}
-package; Excel support uses the optional \code{readxl} package.}
+documents, or R Markdown objects. Supplying context does not enable LLM
+review; without \code{llm_assess = TRUE}, it is ignored with a warning. PDF
+support uses the optional \code{pdftools} package; Excel support uses the
+optional \code{readxl} package.}
 
 \item{llm_context_text}{Optional character vector of extra inline context
 snippets passed alongside \code{llm_context_files}.}
@@ -168,7 +170,11 @@ acceptable candidate, the assessment is escalated to \code{request_new_term} so 
 likely ontology gap shows up in \code{llm_decision} instead of a dead-end
 rejection. Local context files are read on disk, chunked, and lexically
 trimmed down before prompt assembly so large README/report/workbook files do
-not get dumped wholesale into the model call.
+not get dumped wholesale into the model call. Plain-text/CSV context with
+invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
+names are disambiguated in \code{llm_context_sources}. If a batched provider
+response has malformed, missing, or duplicate target items, valid siblings
+are retained and only affected targets fall back to individual review.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

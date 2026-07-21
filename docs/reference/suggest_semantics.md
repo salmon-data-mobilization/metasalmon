@@ -47,7 +47,7 @@ suggest_semantics(
 - dict:
 
   A dictionary tibble created by
-  [`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
   (may have incomplete semantic fields).
 
 - sources:
@@ -62,7 +62,7 @@ suggest_semantics(
 - include_dwc:
 
   Logical; if `TRUE`, also attach DwC-DP export mappings (via
-  [`suggest_dwc_mappings()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_dwc_mappings.md))
+  [`suggest_dwc_mappings()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_dwc_mappings.md))
   as a parallel attribute `dwc_mappings`. Default is `FALSE` to keep the
   UI simple for non-DwC users.
 
@@ -74,7 +74,7 @@ suggest_semantics(
 - search_fn:
 
   Function used to search terms. Defaults to
-  [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md).
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md).
   Can be replaced for testing or custom search strategies.
 
 - codes:
@@ -147,8 +147,10 @@ suggest_semantics(
   source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
   workbooks, or PDF reports) used to provide extra domain context to the
   LLM when `llm_assess = TRUE`. Pass file paths, not parsed data frames,
-  XML documents, or R Markdown objects. PDF support uses the optional
-  `pdftools` package; Excel support uses the optional `readxl` package.
+  XML documents, or R Markdown objects. Supplying context does not
+  enable LLM review; without `llm_assess = TRUE`, it is ignored with a
+  warning. PDF support uses the optional `pdftools` package; Excel
+  support uses the optional `readxl` package.
 
 - llm_context_text:
 
@@ -218,7 +220,11 @@ escalated to `request_new_term` so a likely ontology gap shows up in
 `llm_decision` instead of a dead-end rejection. Local context files are
 read on disk, chunked, and lexically trimmed down before prompt assembly
 so large README/report/workbook files do not get dumped wholesale into
-the model call.
+the model call. Plain-text/CSV context with invalid UTF-8 is retried as
+Windows-1252/Latin-1, and colliding file base names are disambiguated in
+`llm_context_sources`. If a batched provider response has malformed,
+missing, or duplicate target items, valid siblings are retained and only
+affected targets fall back to individual review.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a
@@ -233,19 +239,19 @@ After calling this function, access suggestions with:
     suggestions <- attr(result, "semantic_suggestions")
 
 Suggestions stay separate by default. Review them first, then use
-[`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+[`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
 for an explicit opt-in merge, or copy values manually when you need
 finer control.
 
 ## See also
 
-[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md)
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
 for direct vocabulary searches,
-[`infer_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/infer_dictionary.md)
+[`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
 for creating starter dictionaries,
-[`apply_semantic_suggestions()`](https://dfo-pacific-science.github.io/metasalmon/reference/apply_semantic_suggestions.md)
+[`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
 for explicitly filling selected IRI fields,
-[`validate_dictionary()`](https://dfo-pacific-science.github.io/metasalmon/reference/validate_dictionary.md)
+[`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
 for checking dictionary completeness.
 
 ## Examples

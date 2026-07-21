@@ -4,7 +4,7 @@ Constructs a `raw.githubusercontent.com` URL for a file in a GitHub
 repository. This URL format is suitable for programmatic access and can
 be used to document data sources. Note that the URL does not contain
 authentication credentials; tokens are passed via HTTP headers by
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md).
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md).
 
 ## Usage
 
@@ -38,9 +38,9 @@ Character scalar containing the raw GitHub URL.
 
 ## See also
 
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 for reading the CSV content directly,
-[`ms_setup_github()`](https://dfo-pacific-science.github.io/metasalmon/reference/ms_setup_github.md)
+[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
 for authentication setup.
 
 ## Examples

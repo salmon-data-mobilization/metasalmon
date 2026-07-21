@@ -1610,7 +1610,7 @@ test_that("create_sdp can broaden code-level semantic seeding and optionally che
         status = "update_available",
         update_available = TRUE,
         latest_version = "9.9.9",
-        install_command = "remotes::install_github('dfo-pacific-science/metasalmon')"
+        install_command = "remotes::install_github('salmon-data-mobilization/metasalmon')"
       ),
       class = "metasalmon_update_check"
     )

@@ -196,7 +196,7 @@ packages, which means:
 | WoRMS | World Register of Marine Species (marine taxa resolver) |
 | Query expansion | Automatic expansion of search terms based on role context |
 | Cross-source agreement | Boost for terms appearing in multiple vocabulary sources |
-| Diagnostics attribute | Per-source search status/timing attached to [`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md) results |
+| Diagnostics attribute | Per-source search status/timing attached to [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md) results |
 | `alignment_only` | Flag for Wikidata terms (useful for crosswalks, not canonical IRIs) |
 | `include_dwc` | Parameter to include optional DwC-DP mappings in suggestions |
 
@@ -213,4 +213,4 @@ excellent, shareable data packages without understanding IRIs, SKOS,
 OWL, or I-ADOPT.
 
 Ready to get started? See the [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md).
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md).

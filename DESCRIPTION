@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Utilities for Salmon Data Packages
-Version: 0.1.5
+Version: 0.1.5.9000
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
 Author: Brett Johnson [aut, cre], Codex [aut]
@@ -9,7 +9,8 @@ Description: Tools to scaffold, standardize, validate, transform, and package
     salmon datasets using the DFO Salmon Ontology and Salmon Data Package
     conventions.
 License: MIT + file LICENSE
-URL: https://dfo-pacific-science.github.io/metasalmon/
+URL: https://salmon-data-mobilization.github.io/metasalmon/
+BugReports: https://github.com/salmon-data-mobilization/metasalmon/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

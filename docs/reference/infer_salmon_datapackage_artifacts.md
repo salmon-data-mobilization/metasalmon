@@ -57,13 +57,13 @@ infer_salmon_datapackage_artifacts(
 - seed_semantics:
 
   Logical; if `TRUE`, run
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   and attach semantic suggestions to the returned dictionary.
 
 - semantic_sources:
 
   Vector of vocabulary sources passed to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - semantic_max_per_role:
 
@@ -91,7 +91,7 @@ infer_salmon_datapackage_artifacts(
 - semantic_code_scope:
 
   Character string controlling which `codes.csv` rows are sent through
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   during one-shot seeding. `"factor"` (default) analyzes codes sourced
   from factor columns and low-cardinality character columns in the
   original data frame(s); `"all"` analyzes all inferred or supplied code
@@ -100,32 +100,32 @@ infer_salmon_datapackage_artifacts(
 - llm_assess:
 
   Logical; if `TRUE`, run the optional LLM shortlist assessment inside
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_provider:
 
   LLM provider preset forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_model:
 
   Optional LLM model identifier forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_api_key:
 
   Optional API key override forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_base_url:
 
   Optional OpenAI-compatible base URL forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_reasoning_effort:
 
   Optional reasoning-effort hint forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   when using the OpenAI provider.
 
 - llm_top_n:
@@ -135,17 +135,17 @@ infer_salmon_datapackage_artifacts(
 - llm_context_files:
 
   Optional character vector of local context file paths forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   when `llm_assess = TRUE`. Pass file paths, not parsed data frames, XML
   documents, or R Markdown objects. See
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
   for supported file types, including HTML, DOCX, `.R`, `.Rmd`, `.qmd`,
   PDF, and Excel context files.
 
 - llm_context_text:
 
   Optional inline context snippets forwarded to
-  [`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md).
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
 
 - llm_timeout_seconds:
 

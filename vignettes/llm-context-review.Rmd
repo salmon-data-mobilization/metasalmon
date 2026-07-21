@@ -31,6 +31,33 @@ Use this guide when you want `create_sdp()` or `suggest_semantics()` to review s
 
 The files are read locally, chunked, and trimmed before prompting. They are used as supporting evidence only. The LLM still has to choose from the deterministic shortlist returned by `find_terms()`; it does not mint raw IRIs.
 
+## Input Contract and Explicit Opt-in
+
+`llm_context_files` accepts a character vector of existing local **file paths**.
+Keep the paths themselves instead of reading the files first:
+
+```{r, purl = FALSE}
+context_files <- c(
+  "./00_data/Data_dictionary_final_dataset.rmd",
+  "./00_data/Data_dictionary_final_dataset.html",
+  "./00_data/Data_dictionary_final_dataset.csv"
+)
+```
+
+Do not pass the result of `readr::read_csv()`, `xml2::read_html()`, an R Markdown
+reader, or another parsed object. A tibble or XML document is data in memory, not
+a path, and now fails early with a path-specific error. Use `llm_context_text`
+when the context is already available as inline character text.
+
+Context is also strictly opt-in: `llm_context_files` and `llm_context_text` never
+trigger a network or LLM call. Set `llm_assess = TRUE` explicitly. If context is
+supplied without it, `metasalmon` warns that the context is ignored and continues
+with deterministic retrieval, so similar output is expected.
+
+When calling `infer_dictionary()` directly, both `seed_semantics = TRUE` and
+`llm_assess = TRUE` are required for LLM review. Supplying LLM options while
+`seed_semantics = FALSE` warns once and does not call the provider.
+
 ## Recommended Context Bundle
 
 For a realistic Salmon Data Package review, pass a small bundle that mixes:
@@ -49,6 +76,15 @@ context_files <- c(
   "technical-report.pdf"
 )
 ```
+
+Plain-text and CSV inputs are normally read as UTF-8. If they contain invalid
+UTF-8, `metasalmon` retries Windows-1252/Latin-1 decoding before the text is
+scored. R Markdown and HTML inputs are expected to be authored as UTF-8.
+
+Each assessment records the contributing labels in `llm_context_sources`.
+Ordinary files keep their base name; when two files share a base name, the label
+adds parent-directory context (and, if necessary, a numeric suffix) so their
+chunks and source reports remain distinct.
 
 ## One-shot `create_sdp()` Workflow
 
@@ -142,6 +178,12 @@ Each reviewed row carries an `llm_decision` worth scanning before you trust a dr
 
 The LLM never mints IRIs: `accept` only ever selects from the retrieved shortlist, and a genuine gap surfaces as `request_new_term` instead of a fabricated term.
 
+Provider responses are handled conservatively. If one item in a batched response
+is malformed, missing, or repeats a `target_key`, only the affected target is
+retried individually; valid sibling assessments are preserved. If the provider
+fails for the entire review but deterministic candidates are usable, the package
+warns and retains that deterministic shortlist for manual review.
+
 ## Review Order
 
 After `create_sdp()` or `suggest_semantics()`:
@@ -176,8 +218,8 @@ write_edh_xml_from_sdp(pkg_path)
 
 If you have not configured the provider yet, go back to:
 
-- [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+- [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 
 If you want the one-shot package walkthrough first, go back to:
 
-- [5-Minute Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+- [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)

@@ -1,5 +1,7 @@
 .ms_schema_env <- new.env(parent = emptyenv())
 
+# The SDP 0.2 profile still defines these legacy identifiers. They are contract
+# values written into packages, not the endpoint used to fetch schema files.
 .ms_sdp_profile_url <- function() {
   "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
 }
@@ -37,7 +39,7 @@
 
   getOption(
     "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/dfo-pacific-science/smn-data-pkg/main"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main"
   )
 }
 

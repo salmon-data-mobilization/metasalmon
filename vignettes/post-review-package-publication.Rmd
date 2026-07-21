@@ -147,6 +147,13 @@ This is the key post-review gap table:
 - `top_non_smn_*` columns show the best non-SMN evidence the package found;
 - `placement_recommendation` gives a first-pass routing guess.
 
+If the original run used LLM review, also keep rows from
+`semantic_suggestions.csv` where `llm_decision == "request_new_term"`. A
+`reject_shortlist` that remains unresolved after the bounded retry is escalated
+to that decision so a likely gap is not hidden as a poor match. The current gap
+helpers do not yet ingest `semantic_llm_assessments` automatically, so treat
+those rows as additional evidence when building the request plan below.
+
 If you only want a narrower slice, filter by role or scope:
 
 ```{r, purl = FALSE}

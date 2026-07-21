@@ -5,22 +5,22 @@
 This guide follows the 5-Minute Quickstart and focuses on the **manual
 package assembly** path. If you have not yet generated a starter
 dictionary yet, start with the [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.md)
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.md)
 first.
 
 If you already created a package with
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md),
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md),
 reviewed it in Excel, and now need the follow-on publication workflow,
 use [After Excel Review: Finalize and Publish Your
-Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md).
+Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md).
 
 When all of the pieces are ready, `metasalmon` writes files matching the
 Salmon Data Package specification so you can upload or hand the folder
 to someone else with confidence.
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 is the main one-shot path; this article covers the more explicit
 workflow where you assemble the metadata tables yourself and then call
-[`write_salmon_datapackage()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_salmon_datapackage.md).
+[`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md).
 
 ### 1) Start with your data
 
@@ -106,7 +106,7 @@ codes <- tibble::tibble(
 If the column reuses a published controlled vocabulary (like the DFO
 Salmon Ontology), include the matching IRI in `term_iri` so automated
 tools can link to the definition. In the one-shot
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 workflow, code-level semantic suggestions are seeded automatically for
 factor and low-cardinality character source columns unless you opt into
 `semantic_code_scope = "all"`.
@@ -161,7 +161,7 @@ exporting a DwC-DP view.
 
 When your publication workflow includes DFO Enterprise Data Hub /
 GeoNetwork,
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 writes the HNAP-aware EDH export.
 
 ``` r
@@ -178,13 +178,16 @@ including `created`, `modified`, `status`, `distribution_url`,
 `description_fr`.
 
 If you are creating the package in one shot,
-`create_sdp(..., include_edh_xml = TRUE)` now writes the same XML
-automatically to `metadata/metadata-edh-hnap.xml`.
+`create_sdp(..., include_edh_xml = TRUE)` writes the same XML
+automatically to `metadata/metadata-edh-hnap.xml`. That create-time XML
+is a **draft** whenever the review-ready metadata still contains
+`REVIEW:` IRIs or `MISSING` placeholders; `metasalmon` writes it but
+warns so it is not mistaken for a finalized EDH submission.
 
 After manual review/editing of `metadata/dataset.csv`, regenerate the
 XML from the finalized package with the post-review helper that wraps
 the canonical
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 builder:
 
 ``` r
@@ -193,7 +196,8 @@ write_edh_xml_from_sdp(pkg_path)
 ```
 
 That post-review rebuild is the preferred path when the first-pass
-package gets edited in Excel before EDH submission.
+package gets edited in Excel before EDH submission. It refuses to run
+until obvious review markers are resolved.
 
 Validate and enrich the XML output against your local EDH profile before
 production upload.
@@ -201,7 +205,7 @@ production upload.
 #### Using suggest_dwc_mappings() directly
 
 For more control over DwC-DP mapping suggestions, use
-[`suggest_dwc_mappings()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_dwc_mappings.md):
+[`suggest_dwc_mappings()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_dwc_mappings.md):
 
 ``` r
 
@@ -218,7 +222,7 @@ attr(dict, "dwc_mappings")
 ### Semantic suggestions with role-aware sources
 
 When using
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md),
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
 the function automatically queries role-appropriate sources:
 
 ``` r
@@ -257,14 +261,14 @@ lower.
 - See the “How It Fits Together” section in the README for a visual map
   of how the components interact.
 - If you are continuing from a reviewed
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   package, follow [After Excel Review: Finalize and Publish Your
-  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.md).
+  Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md).
 - Read the [Linking to Standard
-  Vocabularies](https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
+  Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
   guide when you want to align your dictionary with published
   vocabularies.
 - For AI-assisted drafting and package-native review, see the [optional
   LLM semantic review
-  workflow](https://dfo-pacific-science.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
+  workflow](https://salmon-data-mobilization.github.io/metasalmon/index.html#package-native-llm-semantic-review-optional)
   on the package home page.

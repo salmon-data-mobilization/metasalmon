@@ -1,7 +1,7 @@
 # Setup and Credentials
 
 Use this page once before the homepage quick example or the [5-Minute
-Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html).
+Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html).
 
 It covers two things:
 
@@ -47,7 +47,7 @@ Restart R after saving.
 ``` r
 
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ### If you also need private GitHub CSV access later
@@ -56,7 +56,7 @@ The install token and the package’s private-repo CSV helpers are related
 but not identical workflows.
 
 When you later want to use
-[`read_github_csv()`](https://dfo-pacific-science.github.io/metasalmon/reference/read_github_csv.md)
+[`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
 against a private repository, run:
 
 ``` r
@@ -151,13 +151,13 @@ suggested <- suggest_semantics(
 After this setup is done, go back to:
 
 - [Homepage quick
-  example](https://dfo-pacific-science.github.io/metasalmon/)
+  example](https://salmon-data-mobilization.github.io/metasalmon/)
 - [5-Minute
-  Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+  Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)
 - [LLM Review With Context
-  Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+  Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
 If you are continuing from a reviewed package later, use:
 
 - [After Excel
-  Review](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+  Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)

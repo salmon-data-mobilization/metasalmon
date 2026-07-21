@@ -1,9 +1,9 @@
 # LLM Review With Context Files
 
 Use this guide when you want
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 or
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 to review semantic candidates with an LLM **and** you have supporting
 files such as README notes, data dictionaries, or technical reports.
 
@@ -24,8 +24,42 @@ the LLM review step:
 The files are read locally, chunked, and trimmed before prompting. They
 are used as supporting evidence only. The LLM still has to choose from
 the deterministic shortlist returned by
-[`find_terms()`](https://dfo-pacific-science.github.io/metasalmon/reference/find_terms.md);
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md);
 it does not mint raw IRIs.
+
+## Input Contract and Explicit Opt-in
+
+`llm_context_files` accepts a character vector of existing local **file
+paths**. Keep the paths themselves instead of reading the files first:
+
+``` r
+
+context_files <- c(
+  "./00_data/Data_dictionary_final_dataset.rmd",
+  "./00_data/Data_dictionary_final_dataset.html",
+  "./00_data/Data_dictionary_final_dataset.csv"
+)
+```
+
+Do not pass the result of
+[`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html),
+[`xml2::read_html()`](http://xml2.r-lib.org/reference/read_xml.md), an R
+Markdown reader, or another parsed object. A tibble or XML document is
+data in memory, not a path, and now fails early with a path-specific
+error. Use `llm_context_text` when the context is already available as
+inline character text.
+
+Context is also strictly opt-in: `llm_context_files` and
+`llm_context_text` never trigger a network or LLM call. Set
+`llm_assess = TRUE` explicitly. If context is supplied without it,
+`metasalmon` warns that the context is ignored and continues with
+deterministic retrieval, so similar output is expected.
+
+When calling
+[`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
+directly, both `seed_semantics = TRUE` and `llm_assess = TRUE` are
+required for LLM review. Supplying LLM options while
+`seed_semantics = FALSE` warns once and does not call the provider.
 
 ## Recommended Context Bundle
 
@@ -47,6 +81,17 @@ context_files <- c(
   "technical-report.pdf"
 )
 ```
+
+Plain-text and CSV inputs are normally read as UTF-8. If they contain
+invalid UTF-8, `metasalmon` retries Windows-1252/Latin-1 decoding before
+the text is scored. R Markdown and HTML inputs are expected to be
+authored as UTF-8.
+
+Each assessment records the contributing labels in
+`llm_context_sources`. Ordinary files keep their base name; when two
+files share a base name, the label adds parent-directory context (and,
+if necessary, a numeric suffix) so their chunks and source reports
+remain distinct.
 
 ## One-shot `create_sdp()` Workflow
 
@@ -96,7 +141,7 @@ What stays in `semantic_suggestions.csv` for manual review:
 If you want to inspect every metadata target explicitly, start from
 inferred package artifacts and pass `codes`, `table_meta`, and
 `dataset_meta` back into
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md):
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md):
 
 ``` r
 
@@ -147,7 +192,7 @@ trust a draft:
 
 - `accept` — the model picked a candidate from the deterministic
   shortlist; on the
-  [`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   path it is written back as a `REVIEW:` draft.
 - `review` — the model was not confident enough to pick; nothing is
   auto-selected and the row is left for your judgement.
@@ -160,20 +205,27 @@ trust a draft:
   resolve is **escalated** to it automatically. These rows are your cue
   to propose a new term rather than force a near miss — see the
   term-request workflow
-  ([`detect_semantic_term_gaps()`](https://dfo-pacific-science.github.io/metasalmon/reference/detect_semantic_term_gaps.md),
-  [`render_ontology_term_request()`](https://dfo-pacific-science.github.io/metasalmon/reference/render_ontology_term_request.md),
-  [`submit_term_request_issues()`](https://dfo-pacific-science.github.io/metasalmon/reference/submit_term_request_issues.md)).
+  ([`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md),
+  [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md),
+  [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)).
 
 The LLM never mints IRIs: `accept` only ever selects from the retrieved
 shortlist, and a genuine gap surfaces as `request_new_term` instead of a
 fabricated term.
 
+Provider responses are handled conservatively. If one item in a batched
+response is malformed, missing, or repeats a `target_key`, only the
+affected target is retried individually; valid sibling assessments are
+preserved. If the provider fails for the entire review but deterministic
+candidates are usable, the package warns and retains that deterministic
+shortlist for manual review.
+
 ## Review Order
 
 After
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 or
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md):
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md):
 
 1.  open `README-review.txt`,
 2.  review `metadata/column_dictionary.csv`,
@@ -196,7 +248,7 @@ validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 write_edh_xml_from_sdp(pkg_path)
 ```
 
-[`write_edh_xml_from_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
+[`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
 is intentionally strict. It refuses to rebuild from packages that still
 contain `REVIEW:` markers or unresolved dataset/table placeholders. That
 means the expected path is:
@@ -212,9 +264,9 @@ means the expected path is:
 If you have not configured the provider yet, go back to:
 
 - [Setup and
-  Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+  Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 
 If you want the one-shot package walkthrough first, go back to:
 
 - [5-Minute
-  Quickstart](https://dfo-pacific-science.github.io/metasalmon/articles/metasalmon.html)
+  Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html)

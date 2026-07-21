@@ -23,7 +23,7 @@ Three planning artifacts already exist:
 
 And the live backlog with implementation status:
 
-- `notes/bugs-and-improvements.md` — 32 items; this roadmap references the open
+- `notes/bugs-and-improvements.md` — 33 items; this roadmap references the open
   ones by number (e.g. *bug #4*).
 
 What changes for the user, by theme: smarter and more honest semantic review
@@ -44,6 +44,11 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
 - **Open behaviours to consider next:** Theme A, beginning only after Brett's
   requested checkpoint.
 - **Pending process:** none for the 0.1.5 branch handoff.
+- **Post-release hardening:** canonical metasalmon links and runtime SDP schema
+  fetches now use `salmon-data-mobilization`; the README, vignettes, generated
+  reference pages, and pkgdown source have been refreshed for the 0.1.4/0.1.5
+  behavior set. SDP 0.2 contract identifiers remain unchanged pending an
+  upstream profile revision (bug #33).
 
 ## Context and Orientation
 
@@ -175,6 +180,16 @@ share one mature response/request contract rather than two.
   reports zero executable lines for the six affected vignettes, and the standard
   package check is green.
 
+- **E6 — Canonical URL hardening and released-feature docs (bug #33). ✅ DONE.**
+  Project metadata, update/install/help links, OpenRouter attribution, and live
+  SDP schema fetching now use the canonical organization. Documentation now
+  states the path-only/explicit-opt-in context contract, context decoding and
+  source-label behavior, targeted batch fallback, unresolved-shortlist
+  escalation, and create-time EDH draft semantics. Verification: 1,356 tests
+  passed; the full pkgdown rebuild passed its sitrep; all former metasalmon
+  project URLs were absent from source/generated docs; and standard
+  `R CMD check` for 0.1.5.9000 completed with `Status: OK`.
+
 ## Process / Handoff  (carried from the Alice + deepen plans)
 
 - **P1 — `R CMD check`. ✅ DONE.** `R CMD build .` produced
@@ -192,7 +207,7 @@ share one mature response/request contract rather than two.
 
 ## Recommended sequencing
 
-1. **0.1.5 handoff complete:** E3, B1, D1–D3, E5, and P1–P3 are complete.
+1. **0.1.5 handoff complete:** E3, B1, D1–D3, E5–E6, and P1–P3 are complete.
 2. **Highest-value behaviour (the main thrust):** Theme A in dependency order:
    A0 → A4 → A5 → A2 → A1 → A3. Freeze evidence first, complete the existing
    gap-escalation vertical slice, harden retry behavior and retrieval, then make
@@ -215,6 +230,7 @@ share one mature response/request contract rather than two.
 | bugs note | #4, #5, #6, #8, #13 | **B1, D2, D1, D3, A5** |
 | bugs note | #22, #23, #24 | **E4** |
 | package-check investigation | display-only vignette execution | **E5 / bug #32 (done)** |
+| post-release URL audit | stale canonical links/schema fetch source | **E6 / bug #33 (done)** |
 | retrieval-gap draft | bundle review / retrieval / validators / gaps | **Theme A** |
 | i-adopt draft | session engine / planner / provenance / UI | **Theme C** |
 
@@ -257,6 +273,12 @@ share one mature response/request contract rather than two.
   check confirms zero executable lines in the six display-only vignettes while
   pkgdown still renders their examples. The standard source-package check now
   completes with `Status: OK`.
+- 2026-07-21: **E6 completed in PR
+  [#3](https://github.com/salmon-data-mobilization/metasalmon/pull/3).** The URL
+  audit separated canonical project/fetch endpoints from the intentionally
+  retained SDP 0.2 identifiers, refreshed all released-feature documentation,
+  and added a reproducible full-site build that keeps private agent guidance out
+  of the public sitemap.
 - 2026-07-21: **Release as 0.1.5.** The branch contains multiple observable fixes
   beyond the already-shipped 0.1.4 Alice fix, so a patch release is clearer than
   continuing to append changes under 0.1.4.

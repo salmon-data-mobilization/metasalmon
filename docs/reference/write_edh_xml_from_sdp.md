@@ -2,7 +2,7 @@
 
 Reads `metadata/dataset.csv` from an existing Salmon Data Package and
 writes a fresh `metadata-edh-hnap.xml` file using the canonical
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 builder. This is the preferred post-review rebuild path after metadata
 has been edited manually in Excel or another spreadsheet tool. The
 helper refuses to rebuild when obvious review-state markers remain, such
@@ -48,17 +48,17 @@ write_edh_xml_from_sdp(
 - file_identifier:
 
   Optional metadata file identifier forwarded to
-  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
+  [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md).
 
 - date_stamp:
 
   Metadata date stamp forwarded to
-  [`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md).
+  [`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md).
 
 ## Value
 
 Invisibly returns the same list as
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md),
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md),
 with elements `xml` and `path`.
 
 ## Examples

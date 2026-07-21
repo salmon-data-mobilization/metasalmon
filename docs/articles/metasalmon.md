@@ -3,7 +3,7 @@
 ## Before You Start
 
 Complete the one-time [Setup and
-Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 guide first if you want to make sure GitHub installs work cleanly and
 any optional LLM provider is configured before you begin.
 
@@ -12,7 +12,7 @@ any optional LLM provider is configured before you begin.
 ``` r
 
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ## One-shot Workflow
@@ -41,7 +41,7 @@ list.files(pkg_path, recursive = TRUE)
 ```
 
 If `path` is omitted,
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 writes to your working directory using a default folder name like
 `fraser-coho-2023-2024-sdp`. In interactive use it can also mention when
 a newer `metasalmon` release is available; set `check_updates = FALSE`
@@ -77,25 +77,31 @@ pkg_path <- create_sdp(
 ```
 
 That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`.
-If you are working from an existing `dataset.csv` row instead of a
-one-shot package build, call
-[`edh_build_hnap_xml()`](https://dfo-pacific-science.github.io/metasalmon/reference/edh_build_hnap_xml.md)
+Because
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+produces review-ready metadata, this first XML is a **draft** when
+`REVIEW:` or `MISSING` markers remain, and the package warns
+accordingly. Finalize the metadata CSVs and rebuild the submission-ready
+XML with `write_edh_xml_from_sdp(pkg_path)`. If you are working from an
+already finalized `dataset.csv` row instead of a one-shot package build,
+call
+[`edh_build_hnap_xml()`](https://salmon-data-mobilization.github.io/metasalmon/reference/edh_build_hnap_xml.md)
 directly.
 
 ## Optional LLM Review Later
 
 The base quickstart does **not** require an API key. If you want
 `llm_assess = TRUE`, finish the one-time [Setup and
-Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html)
+Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html)
 guide first, then rerun the
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 call with your chosen provider.
 
 When you want the LLM to use supporting README notes, CSV dictionaries,
 Excel workbooks, or PDF reports as context, continue with:
 
 - [LLM Review With Context
-  Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+  Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
 ## Review In Excel
 
@@ -108,11 +114,13 @@ Open `README-review.txt`, then review these files in this order:
 5.  `semantic_suggestions.csv` (only if you want more context or a
     better match)
 
-That `metadata/column_dictionary.csv` file is also a perfectly
-reasonable `llm_context_files` input when you want the LLM review step
-to reason from the package itself instead of a separate methods note.
+The path to `metadata/column_dictionary.csv` is also a reasonable
+`llm_context_files` input when you want the LLM review step to reason
+from the package itself instead of a separate methods note. Pass the
+path string, not a tibble created by reading the CSV, and set
+`llm_assess = TRUE`; context alone does not enable an LLM call.
 
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 seeds semantic suggestions by default and auto-fills top-ranked
 compatible drafts directly into blank semantic fields in the metadata
 CSVs. That includes column-level IRIs in
@@ -175,12 +183,12 @@ drafting term requests, rebuilding EDH XML if needed, and only then
 running strict final validation — continue with:
 
 - [After Excel Review: Finalize and Publish Your
-  Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+  Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)
 
 For a staged, fully explicit workflow where you assemble metadata tables
 manually instead of continuing from a reviewed
-[`create_sdp()`](https://dfo-pacific-science.github.io/metasalmon/reference/create_sdp.md)
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 package, use:
 
 - [Publishing Data
-  Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
+  Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html)

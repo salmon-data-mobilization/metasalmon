@@ -1,3 +1,16 @@
+metasalmon (development version)
+--------------------------------
+
+- Updated the canonical package site, repository, issue tracker, install
+  commands, update checks, OpenRouter attribution, and live SDP schema fetches
+  to the `salmon-data-mobilization` organization. SDP 0.2 profile identifiers
+  remain unchanged because they are part of the current upstream contract.
+- Refreshed the README, vignettes, generated reference pages, and pkgdown site
+  to document the 0.1.4/0.1.5 behavior explicitly: context inputs are local file
+  paths rather than parsed objects, context never enables LLM review by itself,
+  non-UTF-8 text handling and source-label disambiguation are observable, and
+  create-time EDH XML is a draft until the metadata is reviewed and rebuilt.
+
 metasalmon 0.1.5
 ----------------
 

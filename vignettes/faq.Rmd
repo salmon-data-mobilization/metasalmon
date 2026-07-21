@@ -122,6 +122,10 @@ metasalmon handles UTF-8 encoded data correctly. If you have special characters 
 2. Use `readr::read_csv()` which defaults to UTF-8
 3. If using base R, specify encoding: `read.csv("file.csv", encoding = "UTF-8")`
 
+For LLM context, plain-text and CSV files with invalid UTF-8 are retried as
+Windows-1252/Latin-1. R Markdown and HTML context files are still expected to be
+UTF-8.
+
 ### Can I use this with data in formats other than CSV?
 
 metasalmon works with data frames in R. You can read data from any format into R first:
@@ -245,6 +249,21 @@ pkg_path <- write_salmon_datapackage(
 
 ## Workflow Questions
 
+### Why did `llm_context_files` not change my output?
+
+The two most common causes are input type and opt-in state:
+
+- `llm_context_files` must contain local path strings such as
+  `"./00_data/data-dictionary.csv"`; do not pass the tibble from
+  `readr::read_csv()` or the XML object from `xml2::read_html()`.
+- Context never enables LLM review by itself. Set `llm_assess = TRUE` and choose
+  a configured provider. Without that flag, `metasalmon` warns and continues
+  with deterministic semantic retrieval, so similar output is expected.
+
+When using `infer_dictionary()` directly, also set `seed_semantics = TRUE`.
+Use `llm_context_text` instead when the context is already a character string
+rather than a file.
+
 ### Should I edit the dictionary before or after validation?
 
 **After** - The validation tells you what needs fixing:
@@ -279,8 +298,8 @@ For most users, the basic fields (`column_name`, `column_label`, `column_descrip
 
 Use the GitHub issues page:
 
-- [Report a bug](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=bug)
-- [Request a feature](https://github.com/dfo-pacific-science/metasalmon/issues/new?labels=enhancement)
+- [Report a bug](https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=bug)
+- [Request a feature](https://github.com/salmon-data-mobilization/metasalmon/issues/new?labels=enhancement)
 
 ### Is there more documentation?
 

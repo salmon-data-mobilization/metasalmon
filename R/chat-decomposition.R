@@ -450,7 +450,7 @@
   if (identical(config$provider, "openrouter")) {
     req <- httr2::req_headers(
       req,
-      `HTTP-Referer` = "https://dfo-pacific-science.github.io/metasalmon/",
+      `HTTP-Referer` = "https://salmon-data-mobilization.github.io/metasalmon/",
       `X-Title` = "metasalmon"
     )
   }

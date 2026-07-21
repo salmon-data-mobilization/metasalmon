@@ -2,17 +2,19 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-07-21 (0.1.5 release and roadmap
-reconciliation on the `deepen-architecture` branch).
+package evolves. Last substantial update: 2026-07-21 (post-0.1.5 canonical URL
+hardening and released-feature documentation refresh).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Version 0.1.5. License MIT. R >= 4.1.0.
+Package (SDP)** conventions. Development version 0.1.5.9000. License MIT.
+R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
-- Pkgdown site: https://dfo-pacific-science.github.io/metasalmon/
+- Canonical repository: https://github.com/salmon-data-mobilization/metasalmon
+- Pkgdown site: https://salmon-data-mobilization.github.io/metasalmon/
 - The canonical package/repository name remains **metasalmon**. Brett decided
   against the proposed `metasmn` rename; do not revive that rename without a new
   explicit decision.
@@ -67,6 +69,12 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `observation_unit_iri`), `column_dictionary.csv` (per-column semantics), and
   `codes.csv` (controlled-vocabulary code values). Validated against the canonical
   `smn-data-pkg` spec.
+- **SDP schema locations:** runtime schema fetches use
+  `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
+  The SDP 0.2 profile and resource-schema identifiers still contain the former
+  `dfo-pacific-science.github.io/smn-data-pkg` URI because that value is part of
+  the current upstream profile contract; do not rewrite it independently in
+  `metasalmon`.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.

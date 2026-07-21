@@ -35,7 +35,7 @@ find_terms(
   Character vector of vocabulary sources to query. Options: `"smn"`,
   `"gcdfo"`, `"ols"`, `"nvs"`, `"zooma"`, `"qudt"`, `"gbif"`, `"worms"`,
   `"bioportal"`. Default is `c("smn", "gcdfo", "ols", "nvs")`. Use
-  [`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
+  [`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
   to get role-optimized sources.
 
 - expand_query:
@@ -120,10 +120,10 @@ failure.
 
 ## See also
 
-[`suggest_semantics()`](https://dfo-pacific-science.github.io/metasalmon/reference/suggest_semantics.md)
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
 for automated suggestions based on your dictionary.
 
-[`sources_for_role()`](https://dfo-pacific-science.github.io/metasalmon/reference/sources_for_role.md)
+[`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
 for role-optimized source selection.
 
 ## Examples

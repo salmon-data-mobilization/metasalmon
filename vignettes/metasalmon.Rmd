@@ -17,13 +17,13 @@ knitr::opts_chunk$set(
 
 ## Before You Start
 
-Complete the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) guide first if you want to make sure GitHub installs work cleanly and any optional LLM provider is configured before you begin.
+Complete the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) guide first if you want to make sure GitHub installs work cleanly and any optional LLM provider is configured before you begin.
 
 ## Installation
 
 ```{r, purl = FALSE}
 install.packages("remotes")
-remotes::install_github("dfo-pacific-science/metasalmon")
+remotes::install_github("salmon-data-mobilization/metasalmon")
 ```
 
 ## One-shot Workflow
@@ -71,15 +71,21 @@ pkg_path <- create_sdp(
 )
 ```
 
-That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`. If you are working from an existing `dataset.csv` row instead of a one-shot package build, call `edh_build_hnap_xml()` directly.
+That writes the HNAP-aware EDH XML to `metadata/metadata-edh-hnap.xml`. Because
+`create_sdp()` produces review-ready metadata, this first XML is a **draft** when
+`REVIEW:` or `MISSING` markers remain, and the package warns accordingly. Finalize
+the metadata CSVs and rebuild the submission-ready XML with
+`write_edh_xml_from_sdp(pkg_path)`. If you are working from an already finalized
+`dataset.csv` row instead of a one-shot package build, call
+`edh_build_hnap_xml()` directly.
 
 ## Optional LLM Review Later
 
-The base quickstart does **not** require an API key. If you want `llm_assess = TRUE`, finish the one-time [Setup and Credentials](https://dfo-pacific-science.github.io/metasalmon/articles/setup.html) guide first, then rerun the `create_sdp()` call with your chosen provider.
+The base quickstart does **not** require an API key. If you want `llm_assess = TRUE`, finish the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) guide first, then rerun the `create_sdp()` call with your chosen provider.
 
 When you want the LLM to use supporting README notes, CSV dictionaries, Excel workbooks, or PDF reports as context, continue with:
 
-- [LLM Review With Context Files](https://dfo-pacific-science.github.io/metasalmon/articles/llm-context-review.html)
+- [LLM Review With Context Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
 ## Review In Excel
 
@@ -91,7 +97,11 @@ Open `README-review.txt`, then review these files in this order:
 4. `metadata/codes.csv` (when present)
 5. `semantic_suggestions.csv` (only if you want more context or a better match)
 
-That `metadata/column_dictionary.csv` file is also a perfectly reasonable `llm_context_files` input when you want the LLM review step to reason from the package itself instead of a separate methods note.
+The path to `metadata/column_dictionary.csv` is also a reasonable
+`llm_context_files` input when you want the LLM review step to reason from the
+package itself instead of a separate methods note. Pass the path string, not a
+tibble created by reading the CSV, and set `llm_assess = TRUE`; context alone does
+not enable an LLM call.
 
 `create_sdp()` seeds semantic suggestions by default and auto-fills top-ranked compatible drafts directly into blank semantic fields in the metadata CSVs. That includes column-level IRIs in `metadata/column_dictionary.csv` and strong table-level observation-unit drafts in `metadata/tables.csv`, using `observation_unit`/`description` when available and otherwise falling back to `table_label`/`table_id`. Any auto-applied semantic IRI draft is written back as `REVIEW: <iri>` so you still confirm it manually. It does not overwrite existing non-empty semantic values. Code-level suggestions default to factor and low-cardinality character source columns; use `semantic_code_scope = "all"` if you want broader code-level seeding.
 
@@ -130,8 +140,8 @@ validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 
 That review-state validation is the first follow-up check. For the full post-review workflow — reloading the package, detecting unresolved semantic gaps, deciding shared salmon-domain vs DFO-specific routing, drafting term requests, rebuilding EDH XML if needed, and only then running strict final validation — continue with:
 
-- [After Excel Review: Finalize and Publish Your Package](https://dfo-pacific-science.github.io/metasalmon/articles/post-review-package-publication.html)
+- [After Excel Review: Finalize and Publish Your Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html)
 
 For a staged, fully explicit workflow where you assemble metadata tables manually instead of continuing from a reviewed `create_sdp()` package, use:
 
-- [Publishing Data Packages](https://dfo-pacific-science.github.io/metasalmon/articles/data-dictionary-publication.html)
+- [Publishing Data Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html)

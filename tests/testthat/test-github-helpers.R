@@ -164,7 +164,7 @@ test_that("read_github_csv without token can read a known public GitHub raw CSV"
   skip_if_offline()
 
   df <- read_github_csv(
-    "https://raw.githubusercontent.com/dfo-pacific-science/metasalmon/main/inst/extdata/nuseds-fraser-coho-sample.csv",
+    "https://raw.githubusercontent.com/salmon-data-mobilization/metasalmon/main/inst/extdata/nuseds-fraser-coho-sample.csv",
     token = "",
     progress = FALSE
   )

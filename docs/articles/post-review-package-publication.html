@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -55,6 +55,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
 </form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/salmon-data-mobilization/metasalmon/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -70,7 +71,7 @@
       <img src="../logo.png" class="logo" alt=""><h1>After Excel Review: Finalize and Publish Your Package</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/vignettes/post-review-package-publication.Rmd" class="external-link"><code>vignettes/post-review-package-publication.Rmd</code></a></small>
       <div class="d-none name"><code>post-review-package-publication.Rmd</code></div>
     </div>
 
@@ -104,7 +105,7 @@ ontology or the DFO-specific bucket;</li>
 <h3 id="reload-the-reviewed-package">1) Reload the reviewed package<a class="anchor" aria-label="anchor" href="#reload-the-reviewed-package"></a>
 </h3>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dfo-pacific-science.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://salmon-data-mobilization.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">pkg_path</span> <span class="op">&lt;-</span> <span class="st">"fraser-coho-2023-2024-sdp"</span></span>
 <span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
@@ -207,6 +208,14 @@ the package found;</li>
 <code>placement_recommendation</code> gives a first-pass routing
 guess.</li>
 </ul>
+<p>If the original run used LLM review, also keep rows from
+<code>semantic_suggestions.csv</code> where
+<code>llm_decision == "request_new_term"</code>. A
+<code>reject_shortlist</code> that remains unresolved after the bounded
+retry is escalated to that decision so a likely gap is not hidden as a
+poor match. The current gap helpers do not yet ingest
+<code>semantic_llm_assessments</code> automatically, so treat those rows
+as additional evidence when building the request plan below.</p>
 <p>If you only want a narrower slice, filter by role or scope:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gaps</span> <span class="op">|&gt;</span></span>

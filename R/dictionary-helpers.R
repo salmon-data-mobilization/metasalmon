@@ -977,7 +977,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
           "x" = "Missing semantic fields for measurement columns:",
           " " = paste("  ", missing_summary, collapse = "\n"),
           "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
-          "i" = "See {.url https://dfo-pacific-science.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
+          "i" = "See {.url https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
         ))
       }
     }

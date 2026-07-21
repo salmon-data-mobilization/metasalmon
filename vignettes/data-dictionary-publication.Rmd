@@ -153,7 +153,10 @@ including `created`, `modified`, `status`, `distribution_url`,
 `description_fr`.
 
 If you are creating the package in one shot, `create_sdp(..., include_edh_xml = TRUE)`
-now writes the same XML automatically to `metadata/metadata-edh-hnap.xml`.
+writes the same XML automatically to `metadata/metadata-edh-hnap.xml`. That
+create-time XML is a **draft** whenever the review-ready metadata still contains
+`REVIEW:` IRIs or `MISSING` placeholders; `metasalmon` writes it but warns so it
+is not mistaken for a finalized EDH submission.
 
 After manual review/editing of `metadata/dataset.csv`, regenerate the XML from
 the finalized package with the post-review helper that wraps the canonical
@@ -164,7 +167,8 @@ write_edh_xml_from_sdp(pkg_path)
 ```
 
 That post-review rebuild is the preferred path when the first-pass package gets
-edited in Excel before EDH submission.
+edited in Excel before EDH submission. It refuses to run until obvious review
+markers are resolved.
 
 Validate and enrich the XML output against your local EDH profile before
 production upload.
