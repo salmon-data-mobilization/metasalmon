@@ -337,17 +337,58 @@ theme_a_test_capture <- function(run_id,
     provider_items <- lapply(
       observed$assessment_rows,
       function(row) {
+        selected_candidate_id <- if (identical(
+          row$llm_decision,
+          "accept"
+        )) {
+          paste0("fixture::", row$dictionary_role)
+        } else {
+          NULL
+        }
         list(
           dictionary_role = row$dictionary_role,
           decision = row$llm_decision,
+          selected_candidate_id = selected_candidate_id,
           confidence = row$llm_confidence,
           rationale = row$llm_rationale
         )
       }
     )
+    bundle_payload <- list(
+      bundle_key = paste(
+        observed$final_dictionary_rows[[1L]]$dataset_id,
+        observed$final_dictionary_rows[[1L]]$table_id,
+        observed$final_dictionary_rows[[1L]]$column_name,
+        sep = "\r"
+      ),
+      slots = lapply(
+        observed$assessment_rows,
+        function(row) {
+          list(
+            dictionary_role = row$dictionary_role,
+            candidates = list(list(
+              candidate_id = paste0(
+                "fixture::",
+                row$dictionary_role
+              ),
+              retrieval_pass = 1L
+            ))
+          )
+        }
+      )
+    )
     messages <- list(list(
       role = "user",
-      content = paste("sanitized fixture", observed$case_id)
+      content = paste(
+        "Semantic bundle payload:",
+        jsonlite::toJSON(
+          bundle_payload,
+          auto_unbox = TRUE,
+          pretty = TRUE,
+          null = "null"
+        ),
+        "\n\nReturn JSON only."
+      )
     ))
     raw_response <- list(
       id = paste0("response-", run_id, "-", i),
