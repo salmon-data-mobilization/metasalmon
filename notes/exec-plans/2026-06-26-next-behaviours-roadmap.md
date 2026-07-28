@@ -1,6 +1,6 @@
 # metasalmon — next behaviours roadmap
 
-Created 2026-06-26; last reconciled 2026-07-21. A consolidating roadmap for the behaviours worth doing **next**,
+Created 2026-06-26; last reconciled 2026-07-28. A consolidating roadmap for the behaviours worth doing **next**,
 after the `deepen-architecture` branch (executed) and the Alice Assmar `#1` fix
 (closed, shipped in 0.1.4). This document is a triage + sequencing layer: it does
 not re-derive the two detailed design drafts it points to, it decides what to pick
@@ -41,8 +41,11 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   finishes with `Status: OK` including rebuilt vignettes and the PDF manual. PR
   [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
   `main` as `8fb4f37`.
-- **Open behaviours to consider next:** Theme A, beginning only after Brett's
-  requested checkpoint.
+- **In progress:** Theme A is being implemented on
+  `feature/theme-a-semantic-review` under GitHub issue
+  [#4](https://github.com/salmon-data-mobilization/metasalmon/issues/4). The
+  living execution record is
+  `notes/exec-plans/2026-07-28-theme-a-semantic-review.md`.
 - **Pending process:** none for the 0.1.5 branch handoff.
 - **Post-release hardening:** canonical metasalmon links and runtime SDP schema
   fetches now use `salmon-data-mobilization`; the README, vignettes, generated
@@ -311,7 +314,10 @@ share one mature response/request contract rather than two.
 - [x] 2026-07-21: P2 complete. PR
   [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
   `main` as `8fb4f37`; local and remote feature branches removed.
-- [ ] Begin Theme A (A0 → A4 → A5 → A2 → A1 → A3).
+- [x] 2026-07-28: Began Theme A on the canonical single checkout; opened issue
+  #4, created `feature/theme-a-semantic-review`, and started the living ExecPlan.
+- [ ] Complete Theme A (A0 → A4/A5 → bundle data model → A2/A1 orchestration →
+  A3).
 
 ## Validation and Acceptance
 
