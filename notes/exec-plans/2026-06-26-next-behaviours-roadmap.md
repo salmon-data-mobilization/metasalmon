@@ -329,7 +329,7 @@ share one mature response/request contract rather than two.
 - Each behaviour change ships with focused `testthat` coverage and keeps the full
   suite green (`Rscript -e 'devtools::test()'`).
 - Observable behaviour changes get a `NEWS.md` entry and roxygen/vignette updates,
-  then `devtools::document()` + a lazy `pkgdown::build_site(lazy = TRUE)`.
+  then `devtools::document()` + `Rscript scripts/build-pkgdown.R`.
 - Public function signatures stay unchanged unless a separate compatibility
   decision is logged here.
 - `R CMD check` before any merge (P1).

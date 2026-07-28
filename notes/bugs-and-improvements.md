@@ -59,8 +59,11 @@ ontology/I-ADOPT checkpoints have independently passed. Pkgdown, the complete
 test suite, and `R CMD check` passed before the final review. That review found
 additional release blockers in returned-source enforcement, retry call bounds,
 chat native types, validator context locality, and evidence lineage. The fixes
-and focused regressions are implemented, but all release checks and independent
-re-review must pass again before the exact-model live cohort and merge.
+and focused regressions are implemented. Re-review additionally caught and fixed
+overlapping canonical field names leaking method evidence and explicit per-time
+mortality rates being treated as dimensionally ambiguous. All release checks and
+final independent re-review must pass again before the exact-model live cohort
+and merge.
 
 ---
 

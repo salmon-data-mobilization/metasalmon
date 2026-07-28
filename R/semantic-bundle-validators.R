@@ -305,6 +305,16 @@
     function(pattern) grepl(pattern, text, perl = TRUE),
     logical(1)
   )]
+  strong_physical <- intersect(
+    matched,
+    c("flow", "speed", "temperature", "area", "volume", "mass", "length")
+  )
+  if (length(strong_physical) == 1L) {
+    return(strong_physical[[1L]])
+  }
+  if ("rate" %in% matched) {
+    return("rate")
+  }
   if (length(matched) == 1L) matched[[1]] else NA_character_
 }
 
@@ -452,7 +462,10 @@
     if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else NULL,
     if ("column_label" %in% names(target)) target$column_label[[1]] else NULL
   )
-  candidates <- if (length(field_names) > 0L) field_names else labels
+  if (length(field_names) > 0L) {
+    return(unique(tolower(trimws(as.character(field_names)))))
+  }
+  candidates <- labels
   if (length(candidates) == 0L) {
     return(character())
   }
@@ -475,6 +488,30 @@
   anchor
 }
 
+.ms_semantic_validator_chunk_has_anchor <- function(text, anchor) {
+  text <- tolower(as.character(text %||% ""))
+  anchor <- tolower(trimws(as.character(anchor %||% "")))
+  if (!nzchar(text) || !nzchar(anchor)) {
+    return(FALSE)
+  }
+
+  if (grepl("^[a-z0-9_]+$", anchor)) {
+    tokens <- unlist(
+      strsplit(text, "[^a-z0-9_]+", perl = TRUE),
+      use.names = FALSE
+    )
+    return(anchor %in% tokens)
+  }
+
+  normalized <- trimws(gsub("[^a-z0-9]+", " ", text))
+  padded <- paste0(" ", normalized, " ")
+  grepl(
+    paste0(" ", trimws(gsub("[^a-z0-9]+", " ", anchor)), " "),
+    padded,
+    fixed = TRUE
+  )
+}
+
 .ms_semantic_bundle_validator_evidence <- function(target,
                                                    dict_row,
                                                    context_chunks) {
@@ -484,21 +521,9 @@
   context_text <- if ("chunk_text" %in% names(context_chunks)) {
     anchors <- .ms_semantic_validator_field_anchors(target, dict_row)
     relevant <- vapply(context_chunks$chunk_text, function(text) {
-      normalized <- trimws(gsub(
-        "[^a-z0-9]+",
-        " ",
-        tolower(as.character(text %||% ""))
-      ))
-      padded <- paste0(" ", normalized, " ")
       any(vapply(
         anchors,
-        function(anchor) {
-          grepl(
-            paste0(" ", anchor, " "),
-            padded,
-            fixed = TRUE
-          )
-        },
+        function(anchor) .ms_semantic_validator_chunk_has_anchor(text, anchor),
         logical(1)
       ))
     }, logical(1))

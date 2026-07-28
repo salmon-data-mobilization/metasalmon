@@ -179,6 +179,12 @@ test_that("dimensional validator recognizes ratios and rates", {
     metasalmon:::.ms_semantic_validator_dimension("generic rate")
   ))
   expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "Instantaneous mortality rate per year"
+    ),
+    "rate"
+  )
+  expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
   )
@@ -211,7 +217,10 @@ test_that("validator evidence excludes context for unrelated fields", {
         "FORK_LENGTH_MM was measured in the field with a measuring",
         "board following the fork-length protocol."
       ),
-      "SPAWNER_COUNT was enumerated using a visual survey protocol."
+      paste(
+        "SPAWNER_CATCH_COUNT was enumerated using a visual survey",
+        "protocol."
+      )
     )
   )
 
