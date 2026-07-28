@@ -102,6 +102,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   target only in the complete suite. The unnecessary reload was removed and
   update-check mocks were made test-scoped; the combined regression and full
   suite now pass deterministically.
+- `scripts/` is intentionally excluded from the built R source package, so a
+  direct prompt-parser test must skip before sourcing the benchmark harness
+  during installed-package checks. CI now fetches full Git history so the local
+  older-real-commit mutation still executes in repository tests.
 
 ## Decision Log
 

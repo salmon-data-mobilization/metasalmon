@@ -78,6 +78,15 @@ theme_a_git_value <- function(args) {
   output[[1L]]
 }
 
+theme_a_git_status <- function(args) {
+  suppressWarnings(system2(
+    "git",
+    c("-C", theme_a_repo_root(), args),
+    stdout = FALSE,
+    stderr = FALSE
+  ))
+}
+
 theme_a_clean_source_hash <- function() {
   path <- tempfile("theme-a-clean-source-")
   on.exit(unlink(path), add = TRUE)
@@ -730,6 +739,10 @@ test_that("Theme A compare enforces a three-run exact-model cohort gate", {
 })
 
 test_that("Theme A live prompt capture identifies bundle retry targets", {
+  skip_if_not(
+    file.exists(theme_a_script_path()),
+    "Theme A benchmark script is excluded from the built source package"
+  )
   harness <- new.env(parent = globalenv())
   sys.source(theme_a_script_path(), envir = harness)
   schema <- jsonlite::read_json(
@@ -933,7 +946,19 @@ test_that("Theme A captures bind every source artifact to the recorded commit", 
     replay = replay,
     evaluation = evaluation
   )
-  older_sha <- theme_a_git_value(c("rev-parse", "HEAD^"))
+  introduction_sha <- theme_a_git_value(c(
+    "log",
+    "--diff-filter=A",
+    "--format=%H",
+    "--",
+    "scripts/theme-a-benchmark.R"
+  ))
+  parent_ref <- paste0(introduction_sha, "^")
+  skip_if(
+    theme_a_git_status(c("rev-parse", "--verify", "--quiet", parent_ref)) != 0L,
+    "Full Git history is required for commit-to-artifact provenance mutation"
+  )
+  older_sha <- theme_a_git_value(c("rev-parse", parent_ref))
   capture$provenance$git_sha <- older_sha
   capture$provenance$git_tree <- theme_a_git_value(
     c("rev-parse", paste0(older_sha, "^{tree}"))
