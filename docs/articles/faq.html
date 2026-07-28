@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -463,6 +463,28 @@ deterministic semantic retrieval, so similar output is expected.</li>
 <code>seed_semantics = TRUE</code>. Use <code>llm_context_text</code>
 instead when the context is already a character string rather than a
 file.</p>
+</div>
+<div class="section level3">
+<h3 id="why-did-semantic-review-ignore-or-omit-a-vocabulary">Why did semantic review ignore or omit a vocabulary?<a class="anchor" aria-label="anchor" href="#why-did-semantic-review-ignore-or-omit-a-vocabulary"></a>
+</h3>
+<p>Source selection distinguishes an omitted argument from an explicit
+value:</p>
+<ul>
+<li>omit <code>sources</code> in <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> or
+<code>semantic_sources</code> in <code><a href="../reference/create_sdp.html">create_sdp()</a></code> to use
+role-aware defaults;</li>
+<li>supply a vector to make it a strict allowlist for initial and retry
+retrieval.</li>
+</ul>
+<p>For example, <code>sources = "smn"</code> deliberately excludes QUDT
+even for a unit slot. Use <code>sources_for_role("unit")</code> when you
+want the normal unit vocabulary set.</p>
+<p>For measurement columns, the LLM reviews variable, property, entity,
+unit, constraint, and method candidates together. Only variable,
+property, entity, and unit acceptances can become <code>REVIEW:</code>
+prefills. Constraint and method decisions always require manual
+application, and deterministic validators can downgrade unsupported
+model acceptances to <code>review</code>.</p>
 </div>
 <div class="section level3">
 <h3 id="should-i-edit-the-dictionary-before-or-after-validation">Should I edit the dictionary before or after validation?<a class="anchor" aria-label="anchor" href="#should-i-edit-the-dictionary-before-or-after-validation"></a>

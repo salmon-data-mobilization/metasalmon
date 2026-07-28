@@ -730,12 +730,6 @@ test_that("Theme A compare enforces a three-run exact-model cohort gate", {
 })
 
 test_that("Theme A live prompt capture identifies bundle retry targets", {
-  pkgload::load_all(
-    theme_a_repo_root(),
-    export_all = FALSE,
-    helpers = FALSE,
-    quiet = TRUE
-  )
   harness <- new.env(parent = globalenv())
   sys.source(theme_a_script_path(), envir = harness)
   schema <- jsonlite::read_json(
@@ -964,7 +958,7 @@ test_that("Theme A captures bind every source artifact to the recorded commit", 
   expect_true(result$status > 0L, info = result$output)
   expect_match(
     result$output,
-    "recorded Git commit",
+    "Recorded Git commit",
     fixed = TRUE
   )
 })

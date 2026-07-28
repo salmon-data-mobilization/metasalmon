@@ -1,8 +1,9 @@
-# Detect missing semantic terms that are not covered by SMN
+# Detect candidate and LLM-identified semantic term gaps
 
 Given semantic suggestions (typically attached to a dictionary as
 `semantic_suggestions`), this function summarizes candidate fields that
-appear to need ontology support but do not have a direct `smn` match.
+lack a direct SMN match and final LLM `request_new_term` decisions. An
+explicit final LLM gap remains a gap even when SMN candidates exist.
 
 ## Usage
 
@@ -20,12 +21,15 @@ detect_semantic_term_gaps(
 
 - dict:
 
-  A dictionary tibble. Used only when `suggestions` is `NULL`.
+  A dictionary tibble. When `suggestions` is `NULL`, the function reads
+  both `semantic_suggestions` and `semantic_llm_assessments` attributes.
 
 - suggestions:
 
-  Optional semantic suggestion table. If omitted, this function uses
-  `attr(dict, "semantic_suggestions")`.
+  Optional semantic suggestion table. If omitted, this function uses the
+  dictionary attributes. If supplied explicitly, only candidate and
+  embedded `llm_*` fields in this table are used; dictionary assessment
+  attributes are intentionally ignored.
 
 - include_target_scopes:
 
@@ -43,7 +47,12 @@ detect_semantic_term_gaps(
 
 ## Value
 
-A tibble with one row per target that has no SMN match. Key columns:
+A tibble with one row per unresolved semantic target. The existing
+23-column candidate-gap prefix is preserved, followed by target
+metadata, `gap_detection_basis`, LLM decision/rationale, proposed-term
+fields, and `llm_escalated_from`. Detection values are `candidate_gap`,
+`llm_request_new_term`, or `candidate_gap_and_llm_request_new_term`. Key
+columns:
 
 - `dataset_id`, `table_id`, `column_name`, `target_scope`,
   `target_sdp_file`, `target_sdp_field`, `target_row_key`,

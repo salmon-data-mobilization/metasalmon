@@ -64,6 +64,8 @@ infer_salmon_datapackage_artifacts(
 
   Vector of vocabulary sources passed to
   [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
+  When omitted, role-aware defaults are used. When supplied explicitly,
+  the vector is a strict allowlist for initial and retry retrieval.
 
 - semantic_max_per_role:
 
@@ -101,6 +103,8 @@ infer_salmon_datapackage_artifacts(
 
   Logical; if `TRUE`, run the optional LLM shortlist assessment inside
   [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
+  Measurement columns are reviewed as six-slot bundles; other targets
+  keep their existing per-target path.
 
 - llm_provider:
 

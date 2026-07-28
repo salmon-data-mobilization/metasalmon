@@ -11,7 +11,7 @@ default."><meta property="og:image" content="https://salmon-data-mobilization.gi
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,13 +58,15 @@ default.</p>
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">render_ontology_term_request</span><span class="op">(</span></span>
 <span>  <span class="va">gaps</span>,</span>
-<span>  scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"smn"</span>, <span class="st">"profile"</span><span class="op">)</span>,</span>
+<span>  scope <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"auto"</span>, <span class="st">"smn"</span>, <span class="st">"gcdfo"</span>, <span class="st">"profile"</span><span class="op">)</span>,</span>
 <span>  ask <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  profile_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  scope_overrides <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  issue_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  term_request_template <span class="op">=</span> <span class="va">.term_request_default_template</span>,</span>
-<span>  ontology_repo <span class="op">=</span> <span class="st">"salmon-data-mobilization/salmon-domain-ontology"</span></span>
+<span>  ontology_repo <span class="op">=</span> <span class="st">"salmon-data-mobilization/salmon-domain-ontology"</span>,</span>
+<span>  gcdfo_term_request_template <span class="op">=</span> <span class="va">.term_request_gcdfo_default_template</span>,</span>
+<span>  gcdfo_repo <span class="op">=</span> <span class="st">"dfo-pacific-science/dfo-salmon-ontology"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -77,8 +79,10 @@ default.</p>
 
 
 <dt id="arg-scope">scope<a class="anchor" aria-label="anchor" href="#arg-scope"></a></dt>
-<dd><p>One of <code>"auto"</code>, <code>"smn"</code>, or <code>"profile"</code>.</p><ul><li><p><code>"auto"</code>: honor <code>placement_recommendation</code> and ask for uncertainty</p></li>
+<dd><p>One of <code>"auto"</code>, <code>"smn"</code>, <code>"gcdfo"</code>, or <code>"profile"</code>.</p><ul><li><p><code>"auto"</code>: use a recognized namespace suggestion as evidence, otherwise
+use <code>placement_recommendation</code>, and ask for uncertainty</p></li>
 <li><p><code>"smn"</code>: route all requests to shared SMN</p></li>
+<li><p><code>"gcdfo"</code>: route all requests to the DFO-specific GCDFO repository</p></li>
 <li><p><code>"profile"</code>: route all requests to a profile</p></li>
 </ul></dd>
 
@@ -92,8 +96,11 @@ default.</p>
 
 
 <dt id="arg-scope-overrides">scope_overrides<a class="anchor" aria-label="anchor" href="#arg-scope-overrides"></a></dt>
-<dd><p>Optional per-row scope overrides (<code>"smn"</code>, <code>"profile"</code>,
-<code>"skip"</code>). Useful in non-interactive pipelines.</p></dd>
+<dd><p>Optional per-row scope overrides (<code>"smn"</code>, <code>"gcdfo"</code>,
+<code>"profile"</code>, <code>"uncertain"</code>, or <code>"skip"</code>). Useful in non-interactive
+pipelines. Precedence is row override, forced <code>scope</code>, recognized
+<code>llm_new_term_namespace</code>, then placement heuristic. The namespace is
+evidence, not authority.</p></dd>
 
 
 <dt id="arg-issue-labels">issue_labels<a class="anchor" aria-label="anchor" href="#arg-issue-labels"></a></dt>
@@ -107,12 +114,21 @@ default.</p>
 <dt id="arg-ontology-repo">ontology_repo<a class="anchor" aria-label="anchor" href="#arg-ontology-repo"></a></dt>
 <dd><p>Repository slug to target when submitting issues.</p></dd>
 
+
+<dt id="arg-gcdfo-term-request-template">gcdfo_term_request_template<a class="anchor" aria-label="anchor" href="#arg-gcdfo-term-request-template"></a></dt>
+<dd><p>URL for the GCDFO issue template.</p></dd>
+
+
+<dt id="arg-gcdfo-repo">gcdfo_repo<a class="anchor" aria-label="anchor" href="#arg-gcdfo-repo"></a></dt>
+<dd><p>Repository slug for DFO-specific GCDFO requests.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble with one row per rendered request payload. Rows with
 <code>request_scope == "skip"</code> are retained and can be filtered before
-submission.</p>
+submission. SMN and GCDFO rows use their repository-specific issue
+templates. Rendering never submits an issue.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

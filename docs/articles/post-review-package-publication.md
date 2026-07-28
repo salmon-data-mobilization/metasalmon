@@ -134,6 +134,10 @@ gaps |>
     search_query,
     top_non_smn_label,
     top_non_smn_source,
+    gap_detection_basis,
+    llm_decision,
+    llm_new_term_label,
+    llm_escalated_from,
     placement_recommendation,
     placement_confidence
   )
@@ -144,15 +148,21 @@ This is the key post-review gap table:
 - rows here are still unresolved;
 - `top_non_smn_*` columns show the best non-SMN evidence the package
   found;
+- `gap_detection_basis` distinguishes candidate evidence, a final LLM
+  term-gap decision, or both; and
 - `placement_recommendation` gives a first-pass routing guess.
 
-If the original run used LLM review, also keep rows from
-`semantic_suggestions.csv` where `llm_decision == "request_new_term"`. A
-`reject_shortlist` that remains unresolved after the bounded retry is
-escalated to that decision so a likely gap is not hidden as a poor
-match. The current gap helpers do not yet ingest
-`semantic_llm_assessments` automatically, so treat those rows as
-additional evidence when building the request plan below.
+When `suggestions` is omitted,
+[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+reads both the `semantic_suggestions` and `semantic_llm_assessments`
+dictionary attributes. Final `request_new_term` decisions are therefore
+included automatically, even when candidate rows contain an SMN match.
+An unresolved `reject_shortlist` escalation remains traceable through
+`llm_escalated_from`.
+
+If you pass `suggestions` explicitly, only candidate evidence and the
+embedded `llm_*` columns in that table are used. The dictionary’s
+assessment attribute is intentionally ignored in that form.
 
 If you only want a narrower slice, filter by role or scope:
 
@@ -169,10 +179,13 @@ Use this plain-English rule:
 - **Shared salmon-domain ontology (`smn`)**: use this when the term
   describes a reusable salmon science concept that another program,
   region, or organization could reasonably use too.
-- **DFO-specific term**: use this when the concept is clearly tied to
-  DFO policy, operations, internal workflow, local identifiers,
-  program-specific statuses, or other context that is not broadly
-  reusable outside that setting.
+- **DFO Salmon Ontology (`gcdfo`)**: use this when the concept is
+  clearly tied to DFO policy, operations, internal workflow, local
+  identifiers, program-specific statuses, or other context that is not
+  broadly reusable outside that setting.
+- **Profile term (`profile`)**: use this for a local, program, or
+  organization profile when neither shared SMN nor DFO-wide GCDFO
+  governance is appropriate.
 
 A good default test is:
 
@@ -181,44 +194,36 @@ A good default test is:
 - if the term only makes sense because of a DFO or local program
   process, lean **DFO-specific**.
 
-#### How that maps to the current helper outputs
+#### How routing is decided
 
-[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-and
 [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
-currently use these buckets:
+accepts `smn`, `gcdfo`, `profile`, `uncertain`, and `skip` row outcomes.
+Its precedence is:
 
-- `placement_recommendation == "smn"` → likely shared salmon-domain
-  request
-- `placement_recommendation == "profile"` → likely **not** shared; in
-  practical DFO use, treat this as the DFO/program-specific bucket
-- `placement_recommendation == "uncertain"` → make a human decision
-  before drafting requests
+1.  an explicit `scope_overrides` value for the row;
+2.  a forced `scope`;
+3.  a recognized `llm_new_term_namespace`; and
+4.  the deterministic placement heuristic.
 
-> **Current limitation:** the non-shared bucket is still named `profile`
-> in the helper API. That is the right bucket for DFO/program-specific
-> requests in this workflow, but the name is more generic than the real
-> governance choice.
+Treat `llm_new_term_namespace` as evidence, not authority. A human
+reviewer must still decide whether a DFO-specific proposal belongs in
+GCDFO, a narrower profile, or nowhere. Non-interactive uncertainty
+becomes `skip`; interactive use asks for a routing decision.
 
 ### 6) Produce a concrete term-request list
 
-First build a simple routing table you can save with the package:
+First render a dry, non-interactive plan and inspect every route:
 
 ``` r
 
-request_plan <- gaps |>
-  dplyr::mutate(
-    request_scope = dplyr::case_when(
-      placement_recommendation == "smn" ~ "smn",
-      placement_recommendation == "profile" ~ "profile",
-      TRUE ~ "skip"
-    ),
-    governance_bucket = dplyr::case_when(
-      request_scope == "smn" ~ "shared salmon-domain ontology (SMN)",
-      request_scope == "profile" ~ "DFO/program-specific ontology bucket",
-      TRUE ~ "needs manual routing decision"
-    )
-  ) |>
+requests <- render_ontology_term_request(
+  gaps,
+  scope = "auto",
+  ask = FALSE,
+  profile_name = "local-program"
+)
+
+request_plan <- requests |>
   dplyr::select(
     dataset_id,
     table_id,
@@ -229,65 +234,70 @@ request_plan <- gaps |>
     search_query,
     top_non_smn_label,
     top_non_smn_source,
+    gap_detection_basis,
+    llm_new_term_namespace,
     placement_recommendation,
     placement_confidence,
-    governance_bucket,
-    request_scope
+    request_scope,
+    ontology_repo
   )
 
 request_plan
 readr::write_csv(request_plan, file.path(pkg_path, "term-request-plan.csv"))
 ```
 
-That gives you a concrete list of:
+That gives you a concrete list of which package row still needs help,
+the best fallback evidence, and the proposed route. Review `skip` rows
+and any route inferred from `llm_new_term_namespace`.
 
-- which package row still needs help;
-- what the best fallback term looked like;
-- where the request should probably go.
-
-Next, render draft request text from that plan:
+To apply reviewed row-by-row decisions, pass an override vector. Edit
+`reviewed_scopes` so every value is one of `smn`, `gcdfo`, `profile`, or
+`skip`:
 
 ``` r
+
+reviewed_scopes <- request_plan$request_scope
+# reviewed_scopes[2] <- "gcdfo"
 
 requests <- render_ontology_term_request(
   gaps,
   scope = "auto",
   ask = FALSE,
-  profile_name = "dfo-salmon",
-  scope_overrides = request_plan$request_scope
+  profile_name = "local-program",
+  scope_overrides = reviewed_scopes
 )
 
 requests |>
-  dplyr::select(request_scope, request_title, target_row_key, search_query)
+  dplyr::select(
+    request_scope,
+    ontology_repo,
+    request_title,
+    target_row_key,
+    search_query
+  )
 ```
 
-#### Preview shared-term issue drafts
+The override vector must have length one or one value per gap row.
+Rendering uses the active SMN and GCDFO repository templates and never
+submits an issue.
 
-For shared salmon-domain requests, the package already has a dry-run
-GitHub path:
+#### Preview issue drafts
+
+Preview both SMN and GCDFO payloads before any submission:
 
 ``` r
 
-smn_preview <- requests |>
-  dplyr::filter(request_scope == "smn") |>
+issue_preview <- requests |>
+  dplyr::filter(request_scope %in% c("smn", "gcdfo")) |>
   submit_term_request_issues(dry_run = TRUE)
 
-smn_preview
+issue_preview
 ```
 
-That preview is usually enough to review the issue titles/bodies before
-posting.
-
-#### What to do with DFO-specific rows
-
-Rows with `request_scope == "profile"` are the DFO/program-specific
-cases in this workflow. Keep them in `term-request-plan.csv` and file
-them through the right DFO governance process after human review.
-
-At the moment,
-[`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)
-is best treated as the built-in path for **shared SMN** requests, not as
-a one-click publisher for DFO-specific rows.
+The helper only posts after an explicit call with `dry_run = FALSE`; it
+never submits during detection or rendering. Keep `confirm = TRUE` for
+curator review. Profile rows remain local governance artifacts unless
+you provide a repository workflow for them.
 
 ### 7) Finalize metadata and rebuild EDH XML if needed
 

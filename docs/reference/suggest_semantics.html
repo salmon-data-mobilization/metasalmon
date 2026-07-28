@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://salmon-d
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -109,7 +109,9 @@ incomplete semantic fields).</p></dd>
 <dd><p>Character vector of vocabulary sources to search. Options are
 <code>"smn"</code> (Salmon Domain Ontology via content negotiation), <code>"gcdfo"</code> (DFO-specific source), <code>"ols"</code> (Ontology Lookup Service), <code>"nvs"</code> (NERC Vocabulary Server), and
 <code>"bioportal"</code> (requires <code>BIOPORTAL_APIKEY</code> environment variable).
-Default is <code>c("smn", "gcdfo", "ols", "nvs")</code>.</p></dd>
+When omitted, role-aware defaults are used. When supplied explicitly, the
+vector is a strict allowlist for initial and retry retrieval; for example,
+<code>sources = "smn"</code> cannot introduce QUDT candidates.</p></dd>
 
 
 <dt id="arg-include-dwc">include_dwc<a class="anchor" aria-label="anchor" href="#arg-include-dwc"></a></dt>
@@ -119,8 +121,9 @@ Default is <code>FALSE</code> to keep the UI simple for non-DwC users.</p></dd>
 
 
 <dt id="arg-max-per-role">max_per_role<a class="anchor" aria-label="anchor" href="#arg-max-per-role"></a></dt>
-<dd><p>Maximum number of suggestions to keep per I-ADOPT role
-(variable, property, entity, unit, constraint) per column. Default is 3.</p></dd>
+<dd><p>Maximum number of suggestions to keep per semantic role
+(variable, property, entity, unit, constraint, method) per column. Default
+is 3.</p></dd>
 
 
 <dt id="arg-search-fn">search_fn<a class="anchor" aria-label="anchor" href="#arg-search-fn"></a></dt>
@@ -148,8 +151,9 @@ semantic keywords (IRIs intended for keyword curation).</p></dd>
 <dd><p>Logical; if <code>TRUE</code>, assess the top semantic candidates per
 target with an LLM after deterministic retrieval. When the first shortlist
 looks weak, the LLM may request at most one bounded alternate-query pass
-(1–2 plain-text search phrases) before a single reassessment. Default is
-<code>FALSE</code>.</p></dd>
+before a single reassessment. Measurement-column roles are reviewed as one
+six-slot bundle; generic, code, table, and dataset targets retain
+per-target review. Default is <code>FALSE</code>.</p></dd>
 
 
 <dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
@@ -241,7 +245,9 @@ code-level rows are inspectable without extra joins. When
 such as <code>llm_decision</code>, <code>llm_confidence</code>, <code>llm_selected</code>,
 <code>llm_candidate_rank</code>, and bounded exploration metadata, and the
 dictionary gains a parallel <code>semantic_llm_assessments</code> attribute with one
-row per assessed target.</p>
+row per assessed target. Its 30-column schema preserves the legacy
+28-column prefix and appends <code>llm_escalated_from</code> and
+<code>llm_retry_query_rejection_reason</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -258,10 +264,15 @@ generated for <code>codes.csv</code>, <code>tables.csv</code>, and <code>dataset
 Table-level observation-unit queries ignore review placeholders such as
 <code>MISSING METADATA:</code> and fall back to real table metadata context instead.</p>
 <p>When <code>llm_assess = TRUE</code>, the LLM only judges deterministically retrieved
-candidates; it does not mint new IRIs. If the first shortlist looks weak,
-the model may suggest at most one bounded alternate-query round (1–2
-plain-text queries), the package reruns deterministic retrieval, de-dupes
-the merged shortlist, and reassesses once. If the model rejects the entire
+candidates; it does not mint new IRIs. Measurement columns are reviewed as
+one bundle spanning variable, property, entity, unit, constraint, and method,
+including empty slots. The public output still contains one assessment row
+per target and positional candidate indexes. If the first shortlist looks
+weak, the package gathers valid retry requests, runs at most one retrieval
+round, de-dupes the merged shortlist, and reassesses once. An exact duplicate
+retry query is retained as <code>retry_search</code>, records
+<code>llm_retry_query_rejection_reason = "duplicate_original_query"</code>, and does not
+spend another search or reassessment for that slot. If the model rejects the entire
 shortlist (<code>reject_shortlist</code>) and that bounded retry still surfaces no
 acceptable candidate, the assessment is escalated to <code>request_new_term</code> so a
 likely ontology gap shows up in <code>llm_decision</code> instead of a dead-end
@@ -271,7 +282,12 @@ not get dumped wholesale into the model call. Plain-text/CSV context with
 invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
 names are disambiguated in <code>llm_context_sources</code>. If a batched provider
 response has malformed, missing, or duplicate target items, valid siblings
-are retained and only affected targets fall back to individual review.</p>
+are retained and only affected targets fall back to individual review.
+Deterministic validators can downgrade an unsupported <code>accept</code> to <code>review</code>
+for missing method/constraint evidence, known role/type or dimensional
+incompatibility, or a curated redundancy rule. A downgrade clears the
+selection, preserves model confidence as provenance, and never substitutes
+a term or creates an ontology gap.</p>
 <p>A term can legitimately appear more than once with different
 <code>dictionary_role</code> values (for example as both a variable and a property).
 In that case, <code>match_type</code> still describes lexical match quality, while

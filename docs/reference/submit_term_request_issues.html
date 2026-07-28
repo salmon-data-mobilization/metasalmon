@@ -9,7 +9,7 @@ render_ontology_term_request() to the ontology repository."><meta property="og:i
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,9 @@ render_ontology_term_request() to the ontology repository."><meta property="og:i
 
 
 <dt id="arg-repo">repo<a class="anchor" aria-label="anchor" href="#arg-repo"></a></dt>
-<dd><p>Repository slug, defaulting to the DFO salmon ontology.</p></dd>
+<dd><p>Fallback repository slug for request rows that do not carry an
+<code>ontology_repo</code>. Rendered SMN and GCDFO rows use their row-specific
+repository values.</p></dd>
 
 
 <dt id="arg-token">token<a class="anchor" aria-label="anchor" href="#arg-token"></a></dt>

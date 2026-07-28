@@ -33,7 +33,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: Milestone 1 implemented: pinned ontology manifest, structured
   replay/live evidence, per-rule comparison, immutable promotion, exact-cohort
   gate, and CI.
-- [ ] Checkpoint 2: evidence-pack review and finding disposition.
+- [x] 2026-07-28: Checkpoint 2 evidence-pack re-review passed after all lineage,
+  ontology, interaction, cohort, and commit-to-artifact provenance findings were
+  resolved.
 - [x] 2026-07-28: Milestone 2 implemented: structured gaps, retry safety, chat vocabulary, and GCDFO
   request routing.
 - [x] 2026-07-28: Checkpoint 3 gap/retry compatibility re-review passed after
@@ -53,6 +55,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   and `REVIEW:` isolation were added.
 - [ ] Milestone 6: documentation, 0.1.6 metadata, pkgdown, build/check, and live
   gate disposition.
+- [x] 2026-07-28: Updated source/reference/vignette documentation and NEWS,
+  regenerated pkgdown, and passed replay, focused tests, and the complete test
+  suite. Source-package build/check and the live gate remain.
 - [ ] Checkpoint 7: final adversarial code/release review.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
@@ -87,6 +92,16 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   method validation now uses source column/context evidence rather than generated
   slot labels, and ontology relation predicates cannot populate semantic value
   slots.
+- A real clean commit identifier was initially separable from artifact hashes
+  taken from the current working tree. Capture validation now reads
+  `DESCRIPTION`, the benchmark script, cases, schema, and ontology manifest
+  directly from the recorded commit's Git objects; an older-real-commit mutation
+  proves that cross-tree evidence is rejected.
+- A benchmark test called `pkgload::load_all()` inside the shared test process.
+  That replaced the package namespace and made later namespace mocks miss their
+  target only in the complete suite. The unnecessary reload was removed and
+  update-check mocks were made test-scoped; the combined regression and full
+  suite now pass deterministically.
 
 ## Decision Log
 
@@ -131,14 +146,18 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - **Checkpoint 1 - contract/fixture:** passed. The 19-column target contract,
   28-column assessment prefix, opt-in LLM behavior, public attributes,
   `REVIEW:` markers, and four-role auto-apply boundary remain explicit.
-- **Checkpoint 2 - evidence/oracles:** initial review failed because replay
+- **Checkpoint 2 - evidence/oracles:** passed on final re-review. The initial
+  review failed because replay
   events were disconnected from structured outputs, live prefills/gaps/routes
   were synthesized, optional metrics affected comparisons, promotion was
   overwriteable, and ontology provenance was unpinned. A second review found
-  incorrect fixture IRIs/types and weak cross-artifact/cohort provenance. Those
-  findings are implemented with a pinned ontology manifest, nine-key joins,
-  mutation tests, exact clean-source cohort checks, content-addressed
-  capture/cohort promotion, and per-rule comparisons; re-review is in progress.
+  incorrect fixture IRIs/types and weak cross-artifact/cohort provenance. A third
+  review found that a valid commit could still be paired with hashes from a
+  different worktree. All findings are resolved with a pinned ontology manifest,
+  nine-key joins, exact candidate/final-row checks, provider-assessment lineage,
+  raw-to-reviewed checksums, mutation tests, commit-resolved artifact hashes,
+  exact-source cohort recomputation, content-addressed capture/cohort promotion,
+  and per-rule comparisons.
 - **Checkpoint 3 - gaps/retries:** passed on re-review. Initial review found metadata loss after score
   filtering, conflated placement/LLM rationales, stale issue templates, weak
   legacy type normalization, lost pre/post rejection rationale, identifier-like

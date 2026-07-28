@@ -1,12 +1,59 @@
 # Changelog
 
-## metasalmon (development version)
+## metasalmon 0.1.6
+
+- Added bundle-aware LLM review for measurement columns. Variable,
+  property, entity, unit, constraint, and method candidates are judged
+  together, while generic column, code, table, and dataset targets
+  retain their established per-target path. Malformed bundle slots fall
+  back independently and a provider failure preserves the deterministic
+  shortlist.
+
+- Made explicitly supplied semantic sources a strict allowlist for
+  initial and retry retrieval. Omitted sources continue to use
+  role-aware defaults, so callers can choose broad role-specific
+  discovery or a deliberately bounded source set without retries
+  escaping it.
+
+- Expanded `semantic_llm_assessments` from 28 to 30 columns by appending
+  `llm_escalated_from` and `llm_retry_query_rejection_reason`. Legacy
+  rows are normalized additively, unresolved shortlist rejection
+  preserves escalation provenance, and exact duplicate retry queries are
+  recorded without another generation, search, or reassessment call.
+
+- Extended
+  [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+  to combine deterministic candidate gaps with final LLM
+  `request_new_term` decisions while preserving its 23-column prefix.
+  Gap rows retain target metadata, detection basis, model rationale,
+  proposed-term fields, and escalation origin.
+
+- Added first-class GCDFO term-request routing and repository-specific
+  SMN and GCDFO issue bodies. Explicit row overrides take precedence
+  over forced scope, recognized namespace evidence, and placement
+  heuristics; rendering remains separate from explicit,
+  curator-confirmed submission.
+
+- Added deterministic post-review validators for method and constraint
+  evidence, semantic role and ontology type, known property/unit
+  dimensions, and curated redundancy. Failed checks downgrade `accept`
+  to `review`, clear the selection, preserve model confidence, and never
+  retrieve, substitute, or invent terms. Only variable, property,
+  entity, and unit assessments remain eligible for automatic `REVIEW:`
+  prefills.
+
+- Added a versioned offline Theme A replay benchmark, pinned ontology
+  provenance, raw-to-reviewed checksums, assessment-to-provider
+  interaction lineage, recomputed immutable capture/cohort promotion, an
+  exact clean-source three-run live gate, and GitHub Actions for replay,
+  the full test suite, and `R CMD check`.
 
 - Updated the canonical package site, repository, issue tracker, install
   commands, update checks, OpenRouter attribution, and live SDP schema
   fetches to the `salmon-data-mobilization` organization. SDP 0.2
   profile identifiers remain unchanged because they are part of the
   current upstream contract.
+
 - Refreshed the README, vignettes, generated reference pages, and
   pkgdown site to document the 0.1.4/0.1.5 behavior explicitly: context
   inputs are local file paths rather than parsed objects, context never

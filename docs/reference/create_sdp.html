@@ -11,7 +11,7 @@ Data Package."><meta property="og:image" content="https://salmon-data-mobilizati
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -124,7 +124,9 @@ during inference.</p></dd>
 
 <dt id="arg-semantic-sources">semantic_sources<a class="anchor" aria-label="anchor" href="#arg-semantic-sources"></a></dt>
 <dd><p>Vector of vocabulary sources passed to
-<code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code>. When omitted, role-aware defaults are used. When
+supplied explicitly, the vector is a strict allowlist for initial and
+retry retrieval.</p></dd>
 
 
 <dt id="arg-semantic-max-per-role">semantic_max_per_role<a class="anchor" aria-label="anchor" href="#arg-semantic-max-per-role"></a></dt>
@@ -162,7 +164,8 @@ semantic suggestions.</p></dd>
 
 <dt id="arg-llm-assess">llm_assess<a class="anchor" aria-label="anchor" href="#arg-llm-assess"></a></dt>
 <dd><p>Logical; if <code>TRUE</code>, run the optional LLM shortlist
-assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>.</p></dd>
+assessment inside <code><a href="suggest_semantics.html">suggest_semantics()</a></code>. Measurement columns are reviewed
+as six-slot bundles; other targets keep their existing per-target path.</p></dd>
 
 
 <dt id="arg-llm-provider">llm_provider<a class="anchor" aria-label="anchor" href="#arg-llm-provider"></a></dt>
@@ -276,8 +279,11 @@ The package root contains <code>README-review.txt</code>,
 context or a better match. To keep that review file usable,
 <code>semantic_suggestions.csv</code> trims code-level suggestions that do not have
 enough human-readable context to review safely. When <code>llm_assess = TRUE</code>,
-the same review file also carries <code>llm_*</code> columns so the shortlisted LLM
-judgment stays explicit and reviewable. Any auto-applied column/table IRI
+the same review file also carries <code>llm_*</code> columns so the bundled LLM
+judgments, retry rejections, escalation origins, and validator downgrades
+stay explicit and reviewable. Only accepted variable, property, entity, and
+unit selections are eligible for column auto-prefill; constraint and method
+assessments always remain manual. Any auto-applied column/table IRI
 draft is written back into the metadata CSVs as a <code>REVIEW:</code>-prefixed value
 for manual confirmation there. Required-field review placeholders are also
 inserted into the inferred metadata files. In

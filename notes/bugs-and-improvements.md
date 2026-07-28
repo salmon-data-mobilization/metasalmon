@@ -40,8 +40,9 @@ E4, #31 → Theme C).
 
 **Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3 are
 implemented on `feature/theme-a-semantic-review` with focused tests green. The
-evidence pack (A0) is implemented and undergoing its final independent re-review
-after all initial findings were addressed.
+evidence pack (A0) is implemented and passed its final independent re-review
+after the harness was hardened to bind every captured source artifact directly
+to the recorded Git commit.
 Completed behavior includes:
 
 - 30-column assessment rows with retry-rejection and escalation provenance;
@@ -53,10 +54,10 @@ Completed behavior includes:
 - a cross-consistent replay/live/compare/promote benchmark and exact-model
   three-run release gate.
 
-Bundle architecture, retrieval/source-policy, gap/retry, and ontology/I-ADOPT
-checkpoints have independently passed. Release work, the evidence re-review, the
-live provider cohort, and merge remain open; absent approved credentials and the
-exact model, the draft PR must remain blocked rather than substituting a model.
+Evidence/oracle, bundle architecture, retrieval/source-policy, gap/retry, and
+ontology/I-ADOPT checkpoints have independently passed. Release work, the live
+provider cohort, and merge remain open; absent approved credentials and the exact
+model, the draft PR must remain blocked rather than substituting a model.
 
 ---
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -44,9 +44,16 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="metasalmon-development-version">metasalmon (development version)<a class="anchor" aria-label="anchor" href="#metasalmon-development-version"></a></h2>
-<ul><li>Updated the canonical package site, repository, issue tracker, install commands, update checks, OpenRouter attribution, and live SDP schema fetches to the <code>salmon-data-mobilization</code> organization. SDP 0.2 profile identifiers remain unchanged because they are part of the current upstream contract.</li>
-<li>Refreshed the README, vignettes, generated reference pages, and pkgdown site to document the 0.1.4/0.1.5 behavior explicitly: context inputs are local file paths rather than parsed objects, context never enables LLM review by itself, non-UTF-8 text handling and source-label disambiguation are observable, and create-time EDH XML is a draft until the metadata is reviewed and rebuilt.</li>
+<h2 class="pkg-version" data-toc-text="0.1.6" id="metasalmon-016">metasalmon 0.1.6<a class="anchor" aria-label="anchor" href="#metasalmon-016"></a></h2>
+<ul><li><p>Added bundle-aware LLM review for measurement columns. Variable, property, entity, unit, constraint, and method candidates are judged together, while generic column, code, table, and dataset targets retain their established per-target path. Malformed bundle slots fall back independently and a provider failure preserves the deterministic shortlist.</p></li>
+<li><p>Made explicitly supplied semantic sources a strict allowlist for initial and retry retrieval. Omitted sources continue to use role-aware defaults, so callers can choose broad role-specific discovery or a deliberately bounded source set without retries escaping it.</p></li>
+<li><p>Expanded <code>semantic_llm_assessments</code> from 28 to 30 columns by appending <code>llm_escalated_from</code> and <code>llm_retry_query_rejection_reason</code>. Legacy rows are normalized additively, unresolved shortlist rejection preserves escalation provenance, and exact duplicate retry queries are recorded without another generation, search, or reassessment call.</p></li>
+<li><p>Extended <code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> to combine deterministic candidate gaps with final LLM <code>request_new_term</code> decisions while preserving its 23-column prefix. Gap rows retain target metadata, detection basis, model rationale, proposed-term fields, and escalation origin.</p></li>
+<li><p>Added first-class GCDFO term-request routing and repository-specific SMN and GCDFO issue bodies. Explicit row overrides take precedence over forced scope, recognized namespace evidence, and placement heuristics; rendering remains separate from explicit, curator-confirmed submission.</p></li>
+<li><p>Added deterministic post-review validators for method and constraint evidence, semantic role and ontology type, known property/unit dimensions, and curated redundancy. Failed checks downgrade <code>accept</code> to <code>review</code>, clear the selection, preserve model confidence, and never retrieve, substitute, or invent terms. Only variable, property, entity, and unit assessments remain eligible for automatic <code>REVIEW:</code> prefills.</p></li>
+<li><p>Added a versioned offline Theme A replay benchmark, pinned ontology provenance, raw-to-reviewed checksums, assessment-to-provider interaction lineage, recomputed immutable capture/cohort promotion, an exact clean-source three-run live gate, and GitHub Actions for replay, the full test suite, and <code>R CMD check</code>.</p></li>
+<li><p>Updated the canonical package site, repository, issue tracker, install commands, update checks, OpenRouter attribution, and live SDP schema fetches to the <code>salmon-data-mobilization</code> organization. SDP 0.2 profile identifiers remain unchanged because they are part of the current upstream contract.</p></li>
+<li><p>Refreshed the README, vignettes, generated reference pages, and pkgdown site to document the 0.1.4/0.1.5 behavior explicitly: context inputs are local file paths rather than parsed objects, context never enables LLM review by itself, non-UTF-8 text handling and source-label disambiguation are observable, and create-time EDH XML is a draft until the metadata is reviewed and rebuilt.</p></li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.5" id="metasalmon-015">metasalmon 0.1.5<a class="anchor" aria-label="anchor" href="#metasalmon-015"></a></h2>

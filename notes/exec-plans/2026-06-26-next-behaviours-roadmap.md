@@ -30,7 +30,7 @@ What changes for the user, by theme: smarter and more honest semantic review
 (Theme A), safer EDH export (Theme B), an interactive curation workflow (Theme C),
 more robust context handling (Theme D), and a more maintainable codebase (Theme E).
 
-## Status snapshot (2026-07-21)
+## Status snapshot (2026-07-28)
 
 - **Done / shipped:** the `#1` `llm_context_files` fix (0.1.4); R1–R5 refactors;
   the code-review fixes incl. the **first slice of gap escalation** —
@@ -74,11 +74,13 @@ the natural next step because the `reject_shortlist → request_new_term` escala
 just shipped is the **first concrete slice** of that roadmap's gap-escalation phase.
 Build the rest on top of it.
 
-- **A0 — Freeze the evidence pack. ✅ IMPLEMENTED, RELEASE GATE PENDING.** Preserve the existing live-model outputs,
+- **A0 — Freeze the evidence pack. ✅ IMPLEMENTED, LIVE GATE PENDING.** Preserve the existing live-model outputs,
   record a machine-readable baseline, and pin the minimum representative cases
   before changing prompts or retrieval. This is Phase 0 in the detailed design
   and is a prerequisite for judging whether Theme A improves semantic fit rather
-  than merely filling more cells.
+  than merely filling more cells. The independent evidence review passed after
+  commit-resolved artifact hashing, provider-to-assessment lineage, immutable
+  raw/reviewed capture lineage, and cohort recomputation were verified.
 - **A1 — Whole-variable (bundle) review. ✅ IMPLEMENTED.** Judge the full decomposition together
   before finalizing any slot, instead of slot-by-slot nearest-neighbour picks.
   Routes through the existing decomposition path (`chat_decomposition()` /

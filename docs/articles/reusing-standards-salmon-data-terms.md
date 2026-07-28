@@ -80,6 +80,30 @@ legacy `salmon:`-namespace variants.
 | `variable` | SMN, GCDFO, NVS, OLS, ZOOMA | Shared salmon-domain variables first |
 | `constraint` | SMN, GCDFO, OLS | Shared/context vocabularies first |
 
+When `sources` is omitted from
+[`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md),
+these role-aware defaults are selected separately for each target. An
+explicitly supplied vector is a strict allowlist for both the first
+search and any LLM-requested retry:
+
+``` r
+
+smn_only <- suggest_semantics(
+  df,
+  dict,
+  sources = "smn",
+  llm_assess = FALSE
+)
+```
+
+That call cannot add a QUDT unit candidate. The same
+omitted-versus-explicit contract is available through `semantic_sources`
+in
+[`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md),
+[`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md),
+and
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md).
+
 #### Searching for units with QUDT
 
 For unit columns, QUDT provides authoritative unit IRIs:
@@ -180,19 +204,19 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
   workflow (for example a local `proposed_terms.csv`) or the new gap
   detection tools in metasalmon:
   - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-    identifies candidates where SMN is missing but fallback sources
-    found useful matches.
+    combines candidate gaps with final LLM `request_new_term`
+    assessments and records which evidence detected each gap.
   - [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
-    lets you choose shared SMN vs profile-specific requests and generate
-    ready-to-post issue text.
+    routes reviewed proposals to shared SMN, DFO-specific GCDFO, or a
+    local profile and renders the active repository-specific issue body
+    without submitting it.
   - [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)
-    creates GitHub issues (dry-run first) against the ontology request
-    template.
+    previews SMN and GCDFO issues with `dry_run = TRUE`; actual
+    submission remains an explicit, confirmable action.
   - The dedicated [After Excel
     Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md)
-    guide shows how to use those helpers on a reviewed package and
-    translate the generic `profile` bucket into the practical
-    DFO-specific routing decision.
+    guide shows how to review namespace evidence, apply row overrides,
+    and keep uncertain proposals out of ontology repositories.
 
 ### Building vocabulary-aware code lists
 

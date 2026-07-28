@@ -123,15 +123,23 @@ path string, not a tibble created by reading the CSV, and set
 [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
 seeds semantic suggestions by default and auto-fills top-ranked
 compatible drafts directly into blank semantic fields in the metadata
-CSVs. That includes column-level IRIs in
-`metadata/column_dictionary.csv` and strong table-level observation-unit
-drafts in `metadata/tables.csv`, using `observation_unit`/`description`
-when available and otherwise falling back to `table_label`/`table_id`.
-Any auto-applied semantic IRI draft is written back as `REVIEW: <iri>`
-so you still confirm it manually. It does not overwrite existing
-non-empty semantic values. Code-level suggestions default to factor and
-low-cardinality character source columns; use
+CSVs. That includes variable, property, entity, and unit IRIs in
+`metadata/column_dictionary.csv` plus strong table-level
+observation-unit drafts in `metadata/tables.csv`, using
+`observation_unit`/`description` when available and otherwise falling
+back to `table_label`/`table_id`. Constraint and method candidates are
+never auto-filled. Any auto-applied semantic IRI draft is written back
+as `REVIEW: <iri>` so you still confirm it manually. It does not
+overwrite existing non-empty semantic values. Code-level suggestions
+default to factor and low-cardinality character source columns; use
 `semantic_code_scope = "all"` if you want broader code-level seeding.
+
+When LLM review is enabled, the six measurement roles are judged
+together and then checked by deterministic validators. A validator can
+downgrade an unsupported acceptance to manual review, but it never
+substitutes or invents a term. Omit `semantic_sources` for role-aware
+defaults; an explicitly supplied vector is a strict allowlist through
+the single retry round.
 
 The inferred metadata includes `MISSING DESCRIPTION:` and
 `MISSING METADATA:` placeholders for required fields so the package is

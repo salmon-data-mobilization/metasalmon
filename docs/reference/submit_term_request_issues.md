@@ -25,7 +25,9 @@ submit_term_request_issues(
 
 - repo:
 
-  Repository slug, defaulting to the DFO salmon ontology.
+  Fallback repository slug for request rows that do not carry an
+  `ontology_repo`. Rendered SMN and GCDFO rows use their row-specific
+  repository values.
 
 - token:
 

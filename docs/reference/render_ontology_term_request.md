@@ -9,13 +9,15 @@ by default.
 ``` r
 render_ontology_term_request(
   gaps,
-  scope = c("auto", "smn", "profile"),
+  scope = c("auto", "smn", "gcdfo", "profile"),
   ask = interactive(),
   profile_name = NULL,
   scope_overrides = NULL,
   issue_labels = NULL,
   term_request_template = .term_request_default_template,
-  ontology_repo = "salmon-data-mobilization/salmon-domain-ontology"
+  ontology_repo = "salmon-data-mobilization/salmon-domain-ontology",
+  gcdfo_term_request_template = .term_request_gcdfo_default_template,
+  gcdfo_repo = "dfo-pacific-science/dfo-salmon-ontology"
 )
 ```
 
@@ -28,11 +30,14 @@ render_ontology_term_request(
 
 - scope:
 
-  One of `"auto"`, `"smn"`, or `"profile"`.
+  One of `"auto"`, `"smn"`, `"gcdfo"`, or `"profile"`.
 
-  - `"auto"`: honor `placement_recommendation` and ask for uncertainty
+  - `"auto"`: use a recognized namespace suggestion as evidence,
+    otherwise use `placement_recommendation`, and ask for uncertainty
 
   - `"smn"`: route all requests to shared SMN
+
+  - `"gcdfo"`: route all requests to the DFO-specific GCDFO repository
 
   - `"profile"`: route all requests to a profile
 
@@ -46,8 +51,11 @@ render_ontology_term_request(
 
 - scope_overrides:
 
-  Optional per-row scope overrides (`"smn"`, `"profile"`, `"skip"`).
-  Useful in non-interactive pipelines.
+  Optional per-row scope overrides (`"smn"`, `"gcdfo"`, `"profile"`,
+  `"uncertain"`, or `"skip"`). Useful in non-interactive pipelines.
+  Precedence is row override, forced `scope`, recognized
+  `llm_new_term_namespace`, then placement heuristic. The namespace is
+  evidence, not authority.
 
 - issue_labels:
 
@@ -61,11 +69,20 @@ render_ontology_term_request(
 
   Repository slug to target when submitting issues.
 
+- gcdfo_term_request_template:
+
+  URL for the GCDFO issue template.
+
+- gcdfo_repo:
+
+  Repository slug for DFO-specific GCDFO requests.
+
 ## Value
 
 A tibble with one row per rendered request payload. Rows with
 `request_scope == "skip"` are retained and can be filtered before
-submission.
+submission. SMN and GCDFO rows use their repository-specific issue
+templates. Rendering never submits an issue.
 
 ## Details
 
