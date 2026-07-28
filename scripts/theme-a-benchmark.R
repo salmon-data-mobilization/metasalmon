@@ -3658,7 +3658,12 @@ evaluation_from_file <- function(path,
       schema_path = schema_path,
       cases_path = cases_path,
       ontology_manifest_path = ontology_manifest_path,
-      require_oracle_pass = FALSE
+      require_reviewed = identical(
+        value$evidence_status,
+        "reviewed_sanitized"
+      ),
+      require_oracle_pass = FALSE,
+      capture_path = path
     )
     return(list(
       input_type = "capture",
