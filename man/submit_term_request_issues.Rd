@@ -15,7 +15,9 @@ submit_term_request_issues(
 \arguments{
 \item{requests}{Output from \code{render_ontology_term_request()}.}
 
-\item{repo}{Repository slug, defaulting to the DFO salmon ontology.}
+\item{repo}{Fallback repository slug for request rows that do not carry an
+\code{ontology_repo}. Rendered SMN and GCDFO rows use their row-specific
+repository values.}
 
 \item{token}{Optional GitHub PAT. If \code{NULL}, inferred from \code{gh} credentials.}
 

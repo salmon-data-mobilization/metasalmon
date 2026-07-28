@@ -46,7 +46,9 @@ dictionary column.}
 dictionary.}
 
 \item{semantic_sources}{Vector of vocabulary sources passed to
-\code{suggest_semantics()}.}
+\code{suggest_semantics()}. When omitted, role-aware defaults are used. When
+supplied explicitly, the vector is a strict allowlist for initial and
+retry retrieval.}
 
 \item{semantic_max_per_role}{Maximum number of suggestions retained per I-ADOPT
 role.}
@@ -70,7 +72,8 @@ analyzes all inferred or supplied code rows; \code{"none"} skips code-level
 semantic suggestions.}
 
 \item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
-assessment inside \code{suggest_semantics()}.}
+assessment inside \code{suggest_semantics()}. Measurement columns are reviewed
+as six-slot bundles; other targets keep their existing per-target path.}
 
 \item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
 

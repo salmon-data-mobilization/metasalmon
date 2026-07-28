@@ -74,28 +74,28 @@ the natural next step because the `reject_shortlist → request_new_term` escala
 just shipped is the **first concrete slice** of that roadmap's gap-escalation phase.
 Build the rest on top of it.
 
-- **A0 — Freeze the evidence pack.** Preserve the existing live-model outputs,
+- **A0 — Freeze the evidence pack. ✅ IMPLEMENTED, RELEASE GATE PENDING.** Preserve the existing live-model outputs,
   record a machine-readable baseline, and pin the minimum representative cases
   before changing prompts or retrieval. This is Phase 0 in the detailed design
   and is a prerequisite for judging whether Theme A improves semantic fit rather
   than merely filling more cells.
-- **A1 — Whole-variable (bundle) review.** Judge the full decomposition together
+- **A1 — Whole-variable (bundle) review. ✅ IMPLEMENTED.** Judge the full decomposition together
   before finalizing any slot, instead of slot-by-slot nearest-neighbour picks.
   Routes through the existing decomposition path (`chat_decomposition()` /
   `.ms_llm_should_route_to_decomposition`); do **not** fork a second prompt stack
   (i-adopt-draft constraint). *Risk:* prompt complexity can help one provider and
   hurt another — keep per-provider regression fixtures.
-- **A2 — Slot-aware second-pass retrieval.** Extend the existing bounded
+- **A2 — Slot-aware second-pass retrieval. ✅ IMPLEMENTED.** Extend the existing bounded
   exploration round with role-specific source/query bias (unit → QUDT first;
   property/entity/constraint/method → `smn`/`gcdfo` first; role-specific query
   rewriting). *Risk:* unbounded oscillation — keep the one-round cap.
-- **A3 — Deterministic bundle-fit validators.** Post-LLM checks that downgrade a
+- **A3 — Deterministic bundle-fit validators. ✅ IMPLEMENTED.** Post-LLM checks that downgrade a
   bundle when a `constraint_iri` merely restates obvious context, a `method_iri`
   is chosen without method evidence, or unit/property/entity are incompatible.
   *Risk:* over-strict validators over-trigger new-term escalation — make them
   explain *why* a slot was rejected. Implement after A1 so these checks validate
   the canonical bundle representation rather than inventing a parallel shape.
-- **A4 — Richer structured gap escalation. ⚠️ PARTIAL.** Direct
+- **A4 — Richer structured gap escalation. ✅ IMPLEMENTED.** Direct
   `request_new_term` responses already populate `llm_new_term_label`,
   `llm_new_term_definition`, and `llm_new_term_namespace` in both assessment-row
   shapes, and unresolved `reject_shortlist` already escalates the decision with a
@@ -104,7 +104,7 @@ Build the rest on top of it.
   `detect_semantic_term_gaps()` / `render_ontology_term_request()` consume the
   `semantic_llm_assessments` metadata. Keep empty/success row symmetry if the
   assessment contract gains another field.
-- **A5 — `retry_search` re-issue handling (bug #13).** When the model's
+- **A5 — `retry_search` re-issue handling (bug #13). ✅ IMPLEMENTED.** When the model's
   `retry_query` duplicates the original, record that on the assessment instead of
   silently spending a generic exploration round.
 

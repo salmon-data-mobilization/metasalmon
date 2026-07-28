@@ -28,19 +28,29 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   the canonical single checkout at `/Users/brettjohnson/code/metasalmon`.
 - [x] 2026-07-28: Opened issue #4 and created
   `feature/theme-a-semantic-review` from current `main`.
-- [ ] Checkpoint 1: contract and evidence-oracle review.
-- [ ] Milestone 1: evidence fixtures, replay/live benchmark, and CI.
+- [x] 2026-07-28: Checkpoint 1 contract review completed; all compatibility
+  contracts were retained in the implementation and fixtures.
+- [x] 2026-07-28: Milestone 1 implemented: pinned ontology manifest, structured
+  replay/live evidence, per-rule comparison, immutable promotion, exact-cohort
+  gate, and CI.
 - [ ] Checkpoint 2: evidence-pack review and finding disposition.
-- [ ] Milestone 2: structured gaps, retry safety, chat vocabulary, and GCDFO
+- [x] 2026-07-28: Milestone 2 implemented: structured gaps, retry safety, chat vocabulary, and GCDFO
   request routing.
-- [ ] Checkpoint 3: gap/retry compatibility review and finding disposition.
-- [ ] Milestone 3: canonical Semantic Bundle Review Module and adapters.
-- [ ] Checkpoint 4: Module architecture review and finding disposition.
-- [ ] Milestone 4: strict source policy, role-aware retrieval, and one bounded
+- [x] 2026-07-28: Checkpoint 3 gap/retry compatibility re-review passed after
+  duplicate-identifier, canonical chat-vocabulary, and missing regression-test
+  findings were resolved.
+- [x] 2026-07-28: Milestone 3 implemented: canonical Semantic Bundle Review Module and adapters.
+- [x] 2026-07-28: Checkpoint 4 module architecture review passed after resolving
+  retry-wide fallback, provider-failure fan-out, and unstable blank-IRI IDs.
+- [x] 2026-07-28: Milestone 4 implemented: strict source policy, role-aware retrieval, and one bounded
   bundle reassessment.
-- [ ] Checkpoint 5: retrieval/source-policy review and finding disposition.
-- [ ] Milestone 5: deterministic bundle validators.
-- [ ] Checkpoint 6: ontology and I-ADOPT review and finding disposition.
+- [x] 2026-07-28: Checkpoint 5 retrieval/source-policy review passed after adding
+  actual retrieval assertions at every exported entry point and on generic and
+  bundle retries.
+- [x] 2026-07-28: Milestone 5 implemented: deterministic bundle validators.
+- [x] 2026-07-28: Checkpoint 6 ontology and I-ADOPT re-review passed after
+  property/unit pair checks, method-evidence boundaries, predicate rejection,
+  and `REVIEW:` isolation were added.
 - [ ] Milestone 6: documentation, 0.1.6 metadata, pkgdown, build/check, and live
   gate disposition.
 - [ ] Checkpoint 7: final adversarial code/release review.
@@ -61,6 +71,22 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - `detect_semantic_term_gaps()` currently constructs a different composite key
   than the canonical semantic-key helper and requires a `score` column despite
   documenting it as optional.
+- The first evidence replay encoded more semantic events than its assessment and
+  final-dictionary rows could prove. Replay validation now derives and
+  cross-checks events against assessment, prefill, gap, and term-request rows.
+- The first bundle implementation retried malformed reassessments as an
+  all-or-nothing unit, expanded one provider outage into six per-target calls,
+  and occurrence-numbered blank-IRI IDs. Checkpoint review caught all three;
+  fallback is now per-slot, transport failures are non-destructive typed errors,
+  and blank-IRI IDs are content-addressed.
+- The initial benchmark named ontology resources that did not exist at its pinned
+  revision or assigned the wrong native RDF type. A checked-in primary-source
+  manifest now pins every fixture IRI, source revision, artifact hash, native
+  type, and definition provenance.
+- Role-shaped target labels can manufacture apparent evidence. Deterministic
+  method validation now uses source column/context evidence rather than generated
+  slot labels, and ontology relation predicates cannot populate semantic value
+  slots.
 
 ## Decision Log
 
@@ -82,6 +108,54 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - 2026-07-28: Keep `CATCH_WEIGHT` whole-variable ontology placement advisory
   until ontology-owner adjudication. `smn:FishWeight` may be a property candidate
   but is forbidden as the whole-variable candidate in the benchmark.
+- 2026-07-28: Count all six Theme A cases as critical while keeping only the
+  unresolved `CATCH_WEIGHT` whole-variable gap rule advisory. Rationale: property
+  correctness and forbidden outcomes remain release-critical; ontology-owner
+  adjudication of the gap itself does not.
+- 2026-07-28: Derive benchmark prefills through the package's actual four-role
+  auto-apply functions, gaps through `detect_semantic_term_gaps()`, and routes
+  through `render_ontology_term_request()`. Stored event lists are validated
+  against those structured rows instead of acting as independent oracle input.
+- 2026-07-28: Promoted captures are immutable and content-addressed. Promotion
+  has no overwrite flag, requires human review/sanitization plus
+  pre-sanitization hash lineage, checks pinned fixture and ontology provenance,
+  and permits an individually failing run because the release rule is 2-of-3.
+  The separately promoted cohort manifest records three capture hashes and the
+  exact source/provider/model gate.
+- 2026-07-28: Live review uses frozen candidate fixtures and records
+  `retrieval_mode = "frozen_fixture"`; retrieval behavior is covered separately
+  by deterministic tests.
+
+## Review Checkpoint Log
+
+- **Checkpoint 1 - contract/fixture:** passed. The 19-column target contract,
+  28-column assessment prefix, opt-in LLM behavior, public attributes,
+  `REVIEW:` markers, and four-role auto-apply boundary remain explicit.
+- **Checkpoint 2 - evidence/oracles:** initial review failed because replay
+  events were disconnected from structured outputs, live prefills/gaps/routes
+  were synthesized, optional metrics affected comparisons, promotion was
+  overwriteable, and ontology provenance was unpinned. A second review found
+  incorrect fixture IRIs/types and weak cross-artifact/cohort provenance. Those
+  findings are implemented with a pinned ontology manifest, nine-key joins,
+  mutation tests, exact clean-source cohort checks, content-addressed
+  capture/cohort promotion, and per-rule comparisons; re-review is in progress.
+- **Checkpoint 3 - gaps/retries:** passed on re-review. Initial review found metadata loss after score
+  filtering, conflated placement/LLM rationales, stale issue templates, weak
+  legacy type normalization, lost pre/post rejection rationale, identifier-like
+  duplicate handling, canonical chat vocabulary, and missing compatibility pins.
+  All findings are fixed and focused tests pass.
+- **Checkpoint 4 - bundle architecture:** passed on re-review. Material findings
+  resolved: malformed retry slots no longer discard valid slots; provider
+  failures no longer trigger six extra calls; blank-IRI IDs are stable,
+  content-addressed identities; `llm_top_n` does not truncate public output.
+- **Checkpoint 5 - retrieval/source policy:** passed on re-review. Explicit
+  sources remain strict at initial and retry retrieval; omitted sources use
+  role-aware defaults; exported wrappers and generic/bundle retries have direct
+  `search_fn` assertions.
+- **Checkpoint 6 - ontology/I-ADOPT:** passed on re-review. Property/unit pairs
+  are cross-checked, generated slot labels do not count as evidence, predicates
+  are rejected from value slots, and unconfirmed `REVIEW:` values cannot trigger
+  accepted-pair redundancy.
 
 ## Outcomes & Retrospective
 

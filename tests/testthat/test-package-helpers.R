@@ -1559,7 +1559,6 @@ test_that("create_sdp unit seeding can use role-augmented unit sources", {
         path = file.path(withr::local_tempdir(), "hydro-unit-sources"),
         dataset_id = "hydro-unit-demo",
         seed_semantics = TRUE,
-        semantic_sources = c("smn", "gcdfo", "ols", "nvs"),
         seed_verbose = FALSE,
         check_updates = FALSE,
         overwrite = TRUE
@@ -1580,8 +1579,43 @@ test_that("create_sdp unit seeding can use role-augmented unit sources", {
 
   call_df <- dplyr::bind_rows(calls)
   unit_sources <- call_df$sources[call_df$role == "unit"][[1]]
-  expect_true("qudt" %in% unit_sources)
-  expect_true(all(c("smn", "gcdfo", "ols", "nvs") %in% unit_sources))
+  expect_identical(unit_sources, sources_for_role("unit"))
+})
+
+test_that("create_sdp treats explicit semantic sources as a strict allowlist", {
+  source_calls <- list()
+  fake_find_terms <- function(query, role, sources, ...) {
+    source_calls[[length(source_calls) + 1L]] <<- sources
+    tibble::tibble()
+  }
+
+  with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      create_sdp(
+        tibble::tibble(count = c(1L, 2L)),
+        path = file.path(withr::local_tempdir(), "strict-source-allowlist"),
+        seed_semantics = TRUE,
+        semantic_sources = "smn",
+        seed_verbose = FALSE,
+        check_updates = FALSE,
+        overwrite = TRUE
+      )
+    }
+  )
+
+  expect_true(length(source_calls) > 0L)
+  expect_true(all(vapply(
+    source_calls,
+    identical,
+    logical(1),
+    y = "smn"
+  )))
+  expect_false(any(vapply(
+    source_calls,
+    function(sources) "qudt" %in% sources,
+    logical(1)
+  )))
 })
 
 test_that("create_sdp can broaden code-level semantic seeding and optionally check for updates", {

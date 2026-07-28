@@ -346,7 +346,9 @@ write_salmon_datapackage <- function(
 #'   `suggest_semantics()` and attach semantic suggestions to the returned
 #'   dictionary.
 #' @param semantic_sources Vector of vocabulary sources passed to
-#'   `suggest_semantics()`.
+#'   `suggest_semantics()`. When omitted, role-aware defaults are used. When
+#'   supplied explicitly, the vector is a strict allowlist for initial and
+#'   retry retrieval.
 #' @param semantic_max_per_role Maximum number of suggestions retained per I-ADOPT
 #'   role.
 #' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
@@ -363,7 +365,8 @@ write_salmon_datapackage <- function(
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
 #' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`.
+#'   assessment inside `suggest_semantics()`. Measurement columns are reviewed
+#'   as six-slot bundles; other targets keep their existing per-target path.
 #' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
 #' @param llm_model Optional LLM model identifier forwarded to
 #'   `suggest_semantics()`.
@@ -449,6 +452,10 @@ infer_salmon_datapackage_artifacts <- function(
     llm_timeout_seconds = 60,
     llm_request_fn = NULL
 ) {
+  semantic_sources <- .ms_forward_semantic_sources(
+    semantic_sources,
+    omitted = missing(semantic_sources)
+  )
   llm_review <- .ms_llm_review_plan(
     seed_semantics = seed_semantics,
     semantic_max_per_role = semantic_max_per_role,
@@ -567,7 +574,9 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param seed_semantics Logical; if `TRUE` (default), seed semantic suggestions
 #'   during inference.
 #' @param semantic_sources Vector of vocabulary sources passed to
-#'   `suggest_semantics()`.
+#'   `suggest_semantics()`. When omitted, role-aware defaults are used. When
+#'   supplied explicitly, the vector is a strict allowlist for initial and
+#'   retry retrieval.
 #' @param semantic_max_per_role Maximum number of suggestions retained per
 #'   I-ADOPT role.
 #' @param seed_verbose Logical; if TRUE, emit progress messages while seeding
@@ -584,7 +593,8 @@ infer_salmon_datapackage_artifacts <- function(
 #'   analyzes all inferred or supplied code rows; `"none"` skips code-level
 #'   semantic suggestions.
 #' @param llm_assess Logical; if `TRUE`, run the optional LLM shortlist
-#'   assessment inside `suggest_semantics()`.
+#'   assessment inside `suggest_semantics()`. Measurement columns are reviewed
+#'   as six-slot bundles; other targets keep their existing per-target path.
 #' @param llm_provider LLM provider preset forwarded to `suggest_semantics()`.
 #' @param llm_model Optional LLM model identifier forwarded to
 #'   `suggest_semantics()`.
@@ -648,8 +658,11 @@ infer_salmon_datapackage_artifacts <- function(
 #' context or a better match. To keep that review file usable,
 #' `semantic_suggestions.csv` trims code-level suggestions that do not have
 #' enough human-readable context to review safely. When `llm_assess = TRUE`,
-#' the same review file also carries `llm_*` columns so the shortlisted LLM
-#' judgment stays explicit and reviewable. Any auto-applied column/table IRI
+#' the same review file also carries `llm_*` columns so the bundled LLM
+#' judgments, retry rejections, escalation origins, and validator downgrades
+#' stay explicit and reviewable. Only accepted variable, property, entity, and
+#' unit selections are eligible for column auto-prefill; constraint and method
+#' assessments always remain manual. Any auto-applied column/table IRI
 #' draft is written back into the metadata CSVs as a `REVIEW:`-prefixed value
 #' for manual confirmation there. Required-field review placeholders are also
 #' inserted into the inferred metadata files. In
@@ -708,6 +721,10 @@ create_sdp <- function(
     include_edh_xml = FALSE,
     ...
 ) {
+  semantic_sources <- .ms_forward_semantic_sources(
+    semantic_sources,
+    omitted = missing(semantic_sources)
+  )
   dots <- list(...)
   dot_names <- names(dots)
   if (is.null(dot_names)) {
@@ -2479,6 +2496,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       !is.na(.data$llm_selected) & .data$llm_selected,
       .data$dictionary_role %in% allowed_roles
     )
+  if ("llm_decision" %in% names(suggestions)) {
+    suggestions <- dplyr::filter(
+      suggestions,
+      !is.na(.data$llm_decision) & .data$llm_decision == "accept"
+    )
+  }
 
   .ms_filter_auto_apply_suggestions(dict, suggestions)
 }

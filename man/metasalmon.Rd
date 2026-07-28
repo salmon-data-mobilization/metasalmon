@@ -21,4 +21,9 @@ Useful links:
 \author{
 \strong{Maintainer}: Brett Johnson \email{brettthomasjohnson@gmail.com}
 
+Authors:
+\itemize{
+  \item Brett Johnson \email{brettthomasjohnson@gmail.com}
+}
+
 }

@@ -39,14 +39,17 @@ incomplete semantic fields).}
 \item{sources}{Character vector of vocabulary sources to search. Options are
 \code{"smn"} (Salmon Domain Ontology via content negotiation), \code{"gcdfo"} (DFO-specific source), \code{"ols"} (Ontology Lookup Service), \code{"nvs"} (NERC Vocabulary Server), and
 \code{"bioportal"} (requires \code{BIOPORTAL_APIKEY} environment variable).
-Default is \code{c("smn", "gcdfo", "ols", "nvs")}.}
+When omitted, role-aware defaults are used. When supplied explicitly, the
+vector is a strict allowlist for initial and retry retrieval; for example,
+\code{sources = "smn"} cannot introduce QUDT candidates.}
 
 \item{include_dwc}{Logical; if \code{TRUE}, also attach DwC-DP export mappings
 (via \code{suggest_dwc_mappings()}) as a parallel attribute \code{dwc_mappings}.
 Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 
-\item{max_per_role}{Maximum number of suggestions to keep per I-ADOPT role
-(variable, property, entity, unit, constraint) per column. Default is 3.}
+\item{max_per_role}{Maximum number of suggestions to keep per semantic role
+(variable, property, entity, unit, constraint, method) per column. Default
+is 3.}
 
 \item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
 Can be replaced for testing or custom search strategies.}
@@ -64,8 +67,9 @@ semantic keywords (IRIs intended for keyword curation).}
 \item{llm_assess}{Logical; if \code{TRUE}, assess the top semantic candidates per
 target with an LLM after deterministic retrieval. When the first shortlist
 looks weak, the LLM may request at most one bounded alternate-query pass
-(1--2 plain-text search phrases) before a single reassessment. Default is
-\code{FALSE}.}
+before a single reassessment. Measurement-column roles are reviewed as one
+six-slot bundle; generic, code, table, and dataset targets retain
+per-target review. Default is \code{FALSE}.}
 
 \item{llm_provider}{LLM provider preset. One of \code{"openai"},
 \code{"openrouter"}, \code{"openai_compatible"}, or \code{"chapi"}.}
@@ -135,7 +139,9 @@ code-level rows are inspectable without extra joins. When
 such as \code{llm_decision}, \code{llm_confidence}, \code{llm_selected},
 \code{llm_candidate_rank}, and bounded exploration metadata, and the
 dictionary gains a parallel \code{semantic_llm_assessments} attribute with one
-row per assessed target.
+row per assessed target. Its 30-column schema preserves the legacy
+28-column prefix and appends \code{llm_escalated_from} and
+\code{llm_retry_query_rejection_reason}.
 }
 \description{
 Searches external vocabularies to suggest IRIs for semantic gaps in the
@@ -161,10 +167,15 @@ Table-level observation-unit queries ignore review placeholders such as
 \verb{MISSING METADATA:} and fall back to real table metadata context instead.
 
 When \code{llm_assess = TRUE}, the LLM only judges deterministically retrieved
-candidates; it does not mint new IRIs. If the first shortlist looks weak,
-the model may suggest at most one bounded alternate-query round (1--2
-plain-text queries), the package reruns deterministic retrieval, de-dupes
-the merged shortlist, and reassesses once. If the model rejects the entire
+candidates; it does not mint new IRIs. Measurement columns are reviewed as
+one bundle spanning variable, property, entity, unit, constraint, and method,
+including empty slots. The public output still contains one assessment row
+per target and positional candidate indexes. If the first shortlist looks
+weak, the package gathers valid retry requests, runs at most one retrieval
+round, de-dupes the merged shortlist, and reassesses once. An exact duplicate
+retry query is retained as \code{retry_search}, records
+\code{llm_retry_query_rejection_reason = "duplicate_original_query"}, and does not
+spend another search or reassessment for that slot. If the model rejects the entire
 shortlist (\code{reject_shortlist}) and that bounded retry still surfaces no
 acceptable candidate, the assessment is escalated to \code{request_new_term} so a
 likely ontology gap shows up in \code{llm_decision} instead of a dead-end
@@ -175,6 +186,11 @@ invalid UTF-8 is retried as Windows-1252/Latin-1, and colliding file base
 names are disambiguated in \code{llm_context_sources}. If a batched provider
 response has malformed, missing, or duplicate target items, valid siblings
 are retained and only affected targets fall back to individual review.
+Deterministic validators can downgrade an unsupported \code{accept} to \code{review}
+for missing method/constraint evidence, known role/type or dimensional
+incompatibility, or a curated redundancy rule. A downgrade clears the
+selection, preserves model confidence as provenance, and never substitutes
+a term or creates an ontology gap.
 
 A term can legitimately appear more than once with different
 \code{dictionary_role} values (for example as both a variable and a property).

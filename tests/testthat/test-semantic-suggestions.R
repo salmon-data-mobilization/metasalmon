@@ -207,7 +207,9 @@ test_that("LLM assessment row contract preserves column order and empty/success 
     "llm_exploration_used",
     "llm_exploration_queries",
     "llm_exploration_candidate_gain",
-    "llm_error"
+    "llm_error",
+    "llm_escalated_from",
+    "llm_retry_query_rejection_reason"
   )
   target <- metasalmon:::.ms_semantic_target_from_candidate_rows(
     tibble::tibble(
@@ -273,6 +275,87 @@ test_that("LLM assessment row contract preserves column order and empty/success 
   expect_equal(success$llm_context_sources, "context.md")
   # Empty assessment carries no selection.
   expect_true(is.na(empty$llm_selected_iri))
+})
+
+test_that("legacy LLM assessment rows normalize to the additive 30-column contract", {
+  legacy <- metasalmon:::.ms_llm_review_empty_assessment(
+    tibble::tibble(
+      dataset_id = "d1",
+      table_id = "t1",
+      column_name = "count",
+      code_value = NA_character_,
+      dictionary_role = "property",
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = "property_iri",
+      search_query = "count"
+    ),
+    list(provider = "openrouter", model = "openai/gpt-5.4-mini")
+  )[, seq_len(28), drop = FALSE]
+
+  normalized <- metasalmon:::.ms_llm_normalize_assessment_rows(legacy)
+
+  expect_equal(names(normalized), metasalmon:::.ms_llm_assessment_cols())
+  expect_equal(normalized$dataset_id, "d1")
+  expect_true(is.na(normalized$llm_escalated_from))
+  expect_true(is.na(normalized$llm_retry_query_rejection_reason))
+})
+
+test_that("legacy LLM assessment values normalize to declared column types", {
+  legacy <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    code_value = NA_character_,
+    dictionary_role = "property",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "property_iri",
+    search_query = "count",
+    llm_provider = "openrouter",
+    llm_model = "openai/gpt-5.4-mini",
+    llm_decision = "accept",
+    llm_confidence = "0.91",
+    llm_selected_candidate_index = 1,
+    llm_selected_iri = "https://example.org/count",
+    llm_selected_label = "Count",
+    llm_rationale = "Fits.",
+    llm_missing_context = NA_character_,
+    llm_bundle_summary = NA_character_,
+    llm_retry_query = NA_character_,
+    llm_new_term_label = NA_character_,
+    llm_new_term_definition = NA_character_,
+    llm_new_term_namespace = NA_character_,
+    llm_context_sources = NA_character_,
+    llm_exploration_used = "false",
+    llm_exploration_queries = NA_character_,
+    llm_exploration_candidate_gain = 0,
+    llm_error = NA_character_
+  )
+
+  normalized <- metasalmon:::.ms_llm_normalize_assessment_rows(legacy)
+
+  expect_type(normalized$llm_confidence, "double")
+  expect_type(normalized$llm_selected_candidate_index, "integer")
+  expect_type(normalized$llm_exploration_used, "logical")
+  expect_type(normalized$llm_exploration_candidate_gain, "integer")
+  expect_false(normalized$llm_exploration_used)
+
+  legacy$llm_confidence <- "not-a-number"
+  expect_error(
+    metasalmon:::.ms_llm_normalize_assessment_rows(legacy),
+    "llm_confidence"
+  )
+})
+
+test_that("empty LLM assessment tables retain typed contract columns", {
+  empty <- metasalmon:::.ms_empty_llm_assessments()
+
+  expect_equal(nrow(empty), 0L)
+  expect_equal(names(empty), metasalmon:::.ms_llm_assessment_cols())
+  expect_type(empty$llm_confidence, "double")
+  expect_type(empty$llm_selected_candidate_index, "integer")
+  expect_type(empty$llm_exploration_used, "logical")
 })
 
 test_that("LLM review adapter validates chat-style JSON responses", {

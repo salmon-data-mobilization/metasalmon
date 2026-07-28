@@ -1,3 +1,132 @@
+.ms_llm_assessment_cols <- function() {
+  c(
+    "dataset_id",
+    "table_id",
+    "column_name",
+    "code_value",
+    "dictionary_role",
+    "target_scope",
+    "target_sdp_file",
+    "target_sdp_field",
+    "search_query",
+    "llm_provider",
+    "llm_model",
+    "llm_decision",
+    "llm_confidence",
+    "llm_selected_candidate_index",
+    "llm_selected_iri",
+    "llm_selected_label",
+    "llm_rationale",
+    "llm_missing_context",
+    "llm_bundle_summary",
+    "llm_retry_query",
+    "llm_new_term_label",
+    "llm_new_term_definition",
+    "llm_new_term_namespace",
+    "llm_context_sources",
+    "llm_exploration_used",
+    "llm_exploration_queries",
+    "llm_exploration_candidate_gain",
+    "llm_error",
+    "llm_escalated_from",
+    "llm_retry_query_rejection_reason"
+  )
+}
+
+.ms_llm_assessment_prototypes <- function() {
+  cols <- .ms_llm_assessment_cols()
+  out <- stats::setNames(rep(list(character()), length(cols)), cols)
+  out$llm_confidence <- numeric()
+  out$llm_selected_candidate_index <- integer()
+  out$llm_exploration_used <- logical()
+  out$llm_exploration_candidate_gain <- integer()
+  out
+}
+
+.ms_llm_normalize_assessment_rows <- function(rows) {
+  rows <- tibble::as_tibble(rows)
+  prototypes <- .ms_llm_assessment_prototypes()
+
+  for (nm in setdiff(names(prototypes), names(rows))) {
+    prototype <- prototypes[[nm]]
+    rows[[nm]] <- if (is.logical(prototype)) {
+      rep(NA, nrow(rows))
+    } else if (is.integer(prototype)) {
+      rep(NA_integer_, nrow(rows))
+    } else if (is.numeric(prototype)) {
+      rep(NA_real_, nrow(rows))
+    } else {
+      rep(NA_character_, nrow(rows))
+    }
+  }
+
+  for (nm in names(prototypes)) {
+    rows[[nm]] <- .ms_llm_cast_assessment_column(
+      rows[[nm]],
+      prototypes[[nm]],
+      nm
+    )
+  }
+
+  rows[, .ms_llm_assessment_cols(), drop = FALSE]
+}
+
+.ms_llm_cast_assessment_column <- function(x, prototype, column) {
+  cast_error <- function() {
+    cli::cli_abort(
+      "Assessment column {.field {column}} contains values that cannot be normalized to the required type."
+    )
+  }
+  missing_input <- is.na(x)
+
+  if (is.logical(prototype)) {
+    if (is.logical(x)) {
+      return(x)
+    }
+    text <- tolower(trimws(as.character(x)))
+    out <- rep(NA, length(text))
+    out[text %in% c("true", "t", "1")] <- TRUE
+    out[text %in% c("false", "f", "0")] <- FALSE
+    if (any(!missing_input & !text %in% c("true", "t", "1", "false", "f", "0"))) {
+      cast_error()
+    }
+    return(out)
+  }
+
+  if (is.integer(prototype)) {
+    numeric_value <- tryCatch(
+      suppressWarnings(as.numeric(x)),
+      error = function(e) NULL
+    )
+    if (is.null(numeric_value) ||
+        any(!missing_input & is.na(numeric_value)) ||
+        any(!is.na(numeric_value) & numeric_value != trunc(numeric_value))) {
+      cast_error()
+    }
+    return(as.integer(numeric_value))
+  }
+
+  if (is.numeric(prototype)) {
+    out <- tryCatch(
+      suppressWarnings(as.numeric(x)),
+      error = function(e) NULL
+    )
+    if (is.null(out) || any(!missing_input & is.na(out))) {
+      cast_error()
+    }
+    return(out)
+  }
+
+  tryCatch(
+    as.character(x),
+    error = function(e) cast_error()
+  )
+}
+
+.ms_empty_llm_assessments <- function() {
+  .ms_llm_normalize_assessment_rows(tibble::tibble())
+}
+
 .ms_llm_review_response_data <- function(result,
                                          null_message = "LLM adapter did not return a usable JSON object for review.") {
   if (is.list(result) && ("data" %in% names(result) || "content" %in% names(result))) {
@@ -89,7 +218,9 @@
     llm_exploration_used = FALSE,
     llm_exploration_queries = NA_character_,
     llm_exploration_candidate_gain = 0L,
-    llm_error = .ms_llm_non_empty_string(error)
+    llm_error = .ms_llm_non_empty_string(error),
+    llm_escalated_from = NA_character_,
+    llm_retry_query_rejection_reason = NA_character_
   )
 }
 
@@ -134,6 +265,8 @@
     llm_exploration_used = FALSE,
     llm_exploration_queries = NA_character_,
     llm_exploration_candidate_gain = 0L,
-    llm_error = NA_character_
+    llm_error = NA_character_,
+    llm_escalated_from = NA_character_,
+    llm_retry_query_rejection_reason = NA_character_
   )
 }

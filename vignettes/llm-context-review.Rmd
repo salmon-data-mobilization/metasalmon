@@ -114,14 +114,60 @@ That writes a review-ready package and uses the LLM to judge deterministic candi
 
 What gets written back automatically:
 
-- accepted column-level drafts into `metadata/column_dictionary.csv` as `REVIEW: <iri>`
+- accepted variable, property, entity, and unit drafts into
+  `metadata/column_dictionary.csv` as `REVIEW: <iri>`
 - accepted table observation-unit drafts into `metadata/tables.csv` as `REVIEW: <iri>` when the suggestion is still lexically compatible with the table metadata
 
 What stays in `semantic_suggestions.csv` for manual review:
 
+- constraint and method assessments, even when the model accepts them
 - dataset-level keyword suggestions targeting `metadata/dataset.csv`
 - code-level semantic suggestions targeting `metadata/codes.csv`
 - any additional shortlist evidence and `llm_*` review columns
+
+## Bundle Review and Retrieval Sources
+
+Measurement columns are reviewed as semantic bundles. Each bundle contains the
+original dictionary row, existing semantics, column metadata and context, plus
+six ordered candidate slots:
+
+1. variable,
+2. property,
+3. entity,
+4. unit,
+5. constraint, and
+6. method.
+
+Method is reviewed as a `usedProcedure`-style companion slot; it is not a native
+I-ADOPT decomposition role.
+
+The initial LLM request judges those six roles together. A malformed or missing
+slot falls back through the existing single-target adapter without discarding
+valid sibling decisions. A malformed top-level response falls back the whole
+bundle. Generic column, code, table, and dataset targets retain their per-target
+review path.
+
+Source selection is part of the review contract. Omit `sources` in
+`suggest_semantics()` or `semantic_sources` in `create_sdp()` to use role-aware
+defaults. Pass an explicit vector when the review must stay inside a fixed set:
+
+```{r, purl = FALSE}
+reviewed_smn_only <- suggest_semantics(
+  df = fraser_coho,
+  dict = infer_dictionary(
+    fraser_coho,
+    dataset_id = "fraser-coho-2023-2024",
+    table_id = "escapement"
+  ),
+  sources = "smn",
+  llm_assess = TRUE,
+  llm_provider = "chapi",
+  llm_context_files = context_files
+)
+```
+
+An explicit source vector is a strict allowlist for both the initial search and
+the one retry round. In this example, no retry can add a QUDT candidate.
 
 ## Full Metadata Review With `suggest_semantics()`
 
@@ -178,11 +224,56 @@ Each reviewed row carries an `llm_decision` worth scanning before you trust a dr
 
 The LLM never mints IRIs: `accept` only ever selects from the retrieved shortlist, and a genuine gap surfaces as `request_new_term` instead of a fabricated term.
 
-Provider responses are handled conservatively. If one item in a batched response
-is malformed, missing, or repeats a `target_key`, only the affected target is
-retried individually; valid sibling assessments are preserved. If the provider
-fails for the entire review but deterministic candidates are usable, the package
-warns and retains that deterministic shortlist for manual review.
+The `semantic_llm_assessments` attribute uses one stable 30-column schema for
+empty and populated results. Its final fields are `llm_escalated_from`, which
+preserves `reject_shortlist` provenance, and
+`llm_retry_query_rejection_reason`. When a retry query exactly duplicates the
+original after case and whitespace normalization, the assessment keeps
+`retry_search` and the original query, records
+`duplicate_original_query`, and skips query generation, retrieval, and
+reassessment for that slot. Other valid bundle retries can still proceed.
+
+Provider responses are handled conservatively. Malformed, duplicated, unknown,
+or missing bundle slots fall back individually, while a malformed top-level
+response falls back the whole bundle. If the provider fails but deterministic
+candidates remain usable, the package warns and preserves the original
+shortlist for manual review.
+
+Pure deterministic validators run after LLM review. They check method and
+constraint evidence, role and ontology-type compatibility, known
+property/unit dimensions, and a small curated set of redundancy rules. A failed
+validator changes `accept` to `review`, clears the selected candidate, and
+appends a stable finding code and explanation while preserving model
+confidence. Validators never retrieve or substitute terms and never create an
+ontology gap.
+
+## Structured Ontology Gaps
+
+Use both package attributes when deciding whether a new term is needed:
+
+```{r, purl = FALSE}
+gaps <- detect_semantic_term_gaps(reviewed_dict)
+
+requests <- render_ontology_term_request(
+  gaps,
+  scope = "auto",
+  ask = FALSE
+)
+```
+
+`detect_semantic_term_gaps()` combines deterministic candidate gaps with final
+LLM `request_new_term` decisions. Its `gap_detection_basis` distinguishes
+`candidate_gap`, `llm_request_new_term`, and
+`candidate_gap_and_llm_request_new_term`. Explicit LLM gaps remain visible even
+when SMN candidates exist.
+
+Rendering never submits an issue. Routing precedence is an explicit row
+override, a forced scope, a recognized model namespace suggestion, and then the
+placement heuristic. A model-proposed namespace is evidence rather than
+authority. Review every draft before using `submit_term_request_issues()`;
+shared `smn` and DFO-specific `gcdfo` rows use their repository's active issue
+template, while `profile`, `uncertain`, and `skip` remain explicit governance
+outcomes.
 
 ## Review Order
 

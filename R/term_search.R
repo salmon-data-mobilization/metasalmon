@@ -321,8 +321,13 @@ find_terms <- function(query,
   results <- purrr::flatten(results)
   combined <- dplyr::bind_rows(results)
 
-  # Keep one row per source+IRI while preserving source provenance.
-  combined <- dplyr::distinct(combined, .data$source, .data$iri, .keep_all = TRUE)
+  # Keep one populated source+IRI row while retaining distinct blank-IRI
+  # evidence through the shared deterministic candidate identity.
+  combined <- combined[
+    !duplicated(.ms_semantic_candidate_identity(combined, role = role)),
+    ,
+    drop = FALSE
+  ]
   if (!"zooma_confidence" %in% names(combined)) {
     combined$zooma_confidence <- NA_character_
   }
@@ -350,7 +355,10 @@ find_terms <- function(query,
       "score",
       "alignment_only",
       "agreement_sources",
-      "role_hints",
+      "role_hints"
+    )),
+    dplyr::any_of(c("resource_kind", "type_iris", "term_type")),
+    dplyr::all_of(c(
       "zooma_confidence",
       "zooma_annotator"
     ))
@@ -378,7 +386,9 @@ find_terms <- function(query,
     score = numeric(),
     alignment_only = logical(),
     agreement_sources = integer(),
-    role_hints = character()
+    role_hints = character(),
+    resource_kind = character(),
+    type_iris = character()
   )
 }
 
@@ -1709,7 +1719,9 @@ pattern <- paste(tokens, collapse = ".*")
     match_type = index$match_type,
     definition = index$definition,
     backend_score = index$backend_score,
-    role_hints = index$role_hints
+    role_hints = index$role_hints,
+    resource_kind = index$resource_kind,
+    type_iris = index$type_iris
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }
@@ -1731,7 +1743,9 @@ pattern <- paste(tokens, collapse = ".*")
     match_type = index$match_type,
     definition = index$definition,
     backend_score = index$backend_score,
-    role_hints = index$role_hints
+    role_hints = index$role_hints,
+    resource_kind = index$resource_kind,
+    type_iris = index$type_iris
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }

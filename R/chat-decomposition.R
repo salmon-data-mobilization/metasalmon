@@ -180,7 +180,7 @@
       slot = "property",
       group = "core_observable",
       prompt = "What property or observable is this variable really about?",
-      why = "This anchors the SKOS variable concept and keeps the variable separate from the entity or unit.",
+      why = "This anchors the whole-variable concept and keeps the property separate from the entity or unit.",
       expected_answer = "short noun phrase"
     ),
     list(
@@ -577,7 +577,7 @@
     "Procedure context is optional adjacent context, not a native decomposition slot.",
     "Choose only from the provided candidates; never invent an IRI.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context.",
-    "decision must be one of accept, review, propose_new_term.",
+    "decision must be one of accept, review, request_new_term.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "confidence must be numeric between 0 and 1."
   )
@@ -708,7 +708,11 @@
 
     if (!inherits(assessed, "error")) {
       proposal_source <- "chat"
-      decision <- assessed$decision
+      decision <- if (identical(assessed$decision, "request_new_term")) {
+        "propose_new_term"
+      } else {
+        assessed$decision
+      }
       confidence <- assessed$confidence
       missing_context <- assessed$missing_context
       rationale <- assessed$rationale
@@ -1101,6 +1105,10 @@ chat_decomposition <- function(dict,
                                commands = NULL,
                                input_fn = readline,
                                output_fn = NULL) {
+  sources <- .ms_forward_semantic_sources(
+    sources,
+    omitted = missing(sources)
+  )
   dict_row <- .ms_chat_decomposition_find_row(
     dict = dict,
     column_name = column_name,
