@@ -89,7 +89,8 @@ usage <- function() {
     "",
     "Promotion requires a staging capture whose evidence_status is",
     "reviewed_sanitized and whose review object records human review and",
-    "sanitization. Live mode creates an immutable capture.raw.json plus",
+    "sanitization plus raw-capture safe-to-publish attestation. Live mode",
+    "creates an immutable capture.raw.json plus",
     "checksum sidecar and an editable capture.json review copy.",
     sep = "\n"
   )
@@ -2231,7 +2232,69 @@ make_capturing_request_fn <- function(log_env, target_index) {
   parsed
 }
 
-.capture_provider_assessment <- function(event, role) {
+.capture_bundle_assessment_is_usable <- function(event, item, role) {
+  parsed_prompt <- .capture_parse_prompt_payload(event$messages)
+  if (!identical(parsed_prompt$kind, "bundle") ||
+      !is.list(parsed_prompt$payload)) {
+    return(FALSE)
+  }
+  slots <- parsed_prompt$payload$slots %||% list()
+  slot_matches <- which(vapply(slots, function(slot) {
+    identical(
+      tolower(as.character(slot$dictionary_role %||% "")),
+      tolower(role)
+    )
+  }, logical(1)))
+  if (length(slot_matches) != 1L) {
+    return(FALSE)
+  }
+
+  decision <- tolower(as.character(item$decision %||% ""))
+  if (identical(decision, "propose_new_term")) {
+    decision <- "request_new_term"
+  }
+  allowed <- c(
+    "accept",
+    "review",
+    "retry_search",
+    "request_new_term",
+    "reject_shortlist"
+  )
+  confidence <- suppressWarnings(as.numeric(item$confidence %||% NA_real_))
+  if (length(decision) != 1L ||
+      !decision %in% allowed ||
+      length(confidence) != 1L ||
+      is.na(confidence) ||
+      confidence < 0 ||
+      confidence > 1) {
+    return(FALSE)
+  }
+
+  selected_id <- item$selected_candidate_id %||%
+    item$candidate_id %||%
+    NULL
+  selected_id <- if (is.null(selected_id) ||
+      length(selected_id) != 1L ||
+      is.na(selected_id) ||
+      !nzchar(trimws(as.character(selected_id)))) {
+    NULL
+  } else {
+    trimws(as.character(selected_id))
+  }
+  if (identical(decision, "accept")) {
+    candidates <- slots[[slot_matches[[1L]]]]$candidates %||% list()
+    candidate_ids <- vapply(candidates, function(candidate) {
+      as.character(candidate$candidate_id %||% "")
+    }, character(1))
+    return(!is.null(selected_id) && selected_id %in% candidate_ids)
+  }
+
+  is.null(selected_id)
+}
+
+.capture_provider_assessment <- function(event,
+                                         role,
+                                         require_usable = FALSE) {
   payload <- .capture_response_payload(event)
   if (event$stage %in% c("bundle_initial", "bundle_reassessment")) {
     items <- payload$assessments %||% list()
@@ -2251,7 +2314,16 @@ make_capturing_request_fn <- function(log_env, target_index) {
         role
       )
     }
-    return(items[[matches[[1L]]]])
+    item <- items[[matches[[1L]]]]
+    if (isTRUE(require_usable) &&
+        !.capture_bundle_assessment_is_usable(event, item, role)) {
+      abort(
+        "Provider interaction '%s' contains an unusable assessment for role '%s'.",
+        event$interaction_id,
+        role
+      )
+    }
+    return(item)
   }
 
   if (event$stage %in% c(
@@ -2259,6 +2331,32 @@ make_capturing_request_fn <- function(log_env, target_index) {
     "target_fallback",
     "target_reassessment"
   )) {
+    if (isTRUE(require_usable)) {
+      decision <- tolower(as.character(payload$decision %||% ""))
+      confidence <- suppressWarnings(as.numeric(
+        payload$confidence %||% NA_real_
+      ))
+      if (identical(decision, "propose_new_term")) {
+        decision <- "request_new_term"
+      }
+      if (length(decision) != 1L ||
+          !decision %in% c(
+            "accept",
+            "review",
+            "retry_search",
+            "request_new_term",
+            "reject_shortlist"
+          ) ||
+          length(confidence) != 1L ||
+          is.na(confidence) ||
+          confidence < 0 ||
+          confidence > 1) {
+        abort(
+          "Provider interaction '%s' contains an unusable target assessment.",
+          event$interaction_id
+        )
+      }
+    }
     return(payload)
   }
 
@@ -2334,19 +2432,31 @@ build_assessment_lineage <- function(capture_cases,
       .capture_interaction_succeeded,
       logical(1)
     )]
-    if (length(successful) == 0L) {
+    derivable <- successful[vapply(successful, function(index) {
+      tryCatch({
+        .capture_provider_assessment(
+          interaction_events[[index]],
+          record$role,
+          require_usable = TRUE
+        )
+        TRUE
+      }, error = function(e) FALSE)
+    }, logical(1))]
+    if (length(derivable) == 0L) {
       abort(
         paste0(
           "Assessment target '%s' has no successful provider ",
-          "interaction and no explicit deterministic fallback."
+          "interaction with a usable assessment and no explicit ",
+          "deterministic fallback."
         ),
         record$target_key
       )
     }
-    event <- interaction_events[[successful[[length(successful)]]]]
+    event <- interaction_events[[derivable[[length(derivable)]]]]
     provider_assessment <- .capture_provider_assessment(
       event,
-      record$role
+      record$role,
+      require_usable = TRUE
     )
     list(
       case_id = record$case_id,
@@ -2614,7 +2724,12 @@ validate_review_lineage <- function(capture, capture_path, contracts) {
       !identical(raw$mode, "live") ||
       !identical(raw$evidence_status, "unreviewed_staging") ||
       !identical(raw$review$status, "unreviewed") ||
-      !identical(raw$review$sanitized, FALSE)) {
+      !identical(raw$review$sanitized, FALSE) ||
+      !identical(raw$review$raw_capture_reviewed, FALSE) ||
+      !identical(
+        raw$review$raw_capture_safe_to_publish,
+        FALSE
+      )) {
     abort("Raw capture does not contain the expected unreviewed run.")
   }
   immutable_fields <- c(
@@ -2985,6 +3100,8 @@ run_live <- function(options) {
     review = list(
       status = "unreviewed",
       sanitized = FALSE,
+      raw_capture_reviewed = FALSE,
+      raw_capture_safe_to_publish = FALSE,
       reviewed_by = NULL,
       reviewed_at = NULL,
       notes = NULL,
@@ -3012,6 +3129,7 @@ run_live <- function(options) {
       ),
       benchmark_script_sha256 = file_sha256(script_path),
       retrieval_mode = "frozen_fixture",
+      data_classification = "synthetic_theme_a_fixture",
       provider = provider,
       configured_model = model,
       resolved_models = resolved_models,
@@ -3272,7 +3390,8 @@ validate_assessment_lineage <- function(capture,
       if (isTRUE(verify_provider_payload)) {
         provider_assessment <- .capture_provider_assessment(
           event,
-          lineage$dictionary_role
+          lineage$dictionary_role,
+          require_usable = TRUE
         )
         if (!identical(
           lineage$provider_assessment_sha256,
@@ -3370,14 +3489,17 @@ validate_capture <- function(capture,
     capture$review,
     c(
       "status", "sanitized", "reviewed_by", "reviewed_at", "notes",
-      "pre_sanitization_sha256"
+      "pre_sanitization_sha256", "raw_capture_reviewed",
+      "raw_capture_safe_to_publish"
     ),
     "capture.review"
   )
   if (isTRUE(require_reviewed) && (
-    !identical(capture$evidence_status, "reviewed_sanitized") ||
+      !identical(capture$evidence_status, "reviewed_sanitized") ||
       !identical(capture$review$status, "reviewed") ||
       !isTRUE(capture$review$sanitized) ||
+      !isTRUE(capture$review$raw_capture_reviewed) ||
+      !isTRUE(capture$review$raw_capture_safe_to_publish) ||
       !non_empty(capture$review$reviewed_by) ||
       !non_empty(capture$review$reviewed_at) ||
       !non_empty(capture$review$pre_sanitization_sha256) ||
@@ -3389,7 +3511,8 @@ validate_capture <- function(capture,
     abort(
       paste0(
         "Promotion requires an explicit human review record, sanitized=true, ",
-        "and the pre-sanitization capture SHA-256."
+        "raw-capture review and safe-to-publish attestations, and the ",
+        "pre-sanitization capture SHA-256."
       )
     )
   }
@@ -3403,7 +3526,8 @@ validate_capture <- function(capture,
       "cases_fixture", "cases_fixture_sha256",
       "schema_fixture", "schema_fixture_sha256",
       "ontology_manifest_fixture", "ontology_manifest_fixture_sha256",
-      "benchmark_script_sha256", "retrieval_mode", "provider",
+      "benchmark_script_sha256", "retrieval_mode", "data_classification",
+      "provider",
       "configured_model", "resolved_models", "endpoint",
       "api_key_environment", "ontology_provenance"
     ),
@@ -3415,7 +3539,8 @@ validate_capture <- function(capture,
     "package_version", "cases_fixture", "cases_fixture_sha256",
     "schema_fixture", "schema_fixture_sha256",
     "ontology_manifest_fixture", "ontology_manifest_fixture_sha256",
-    "benchmark_script_sha256", "retrieval_mode", "provider",
+    "benchmark_script_sha256", "retrieval_mode", "data_classification",
+    "provider",
     "configured_model", "endpoint", "api_key_environment"
   )) {
     require_scalar_character(
@@ -3456,6 +3581,14 @@ validate_capture <- function(capture,
   }
   if (!identical(capture$provenance$retrieval_mode, "frozen_fixture")) {
     abort("Capture retrieval_mode must be frozen_fixture.")
+  }
+  if (!identical(
+    capture$provenance$data_classification,
+    "synthetic_theme_a_fixture"
+  )) {
+    abort(
+      "Capture data_classification must be synthetic_theme_a_fixture."
+    )
   }
   if (!identical(
     capture$provenance$endpoint,
@@ -3786,6 +3919,7 @@ compute_cohort_gate <- function(captures,
     "ontology_manifest_fixture_sha256",
     "benchmark_script_sha256",
     "retrieval_mode",
+    "data_classification",
     "endpoint"
   )
   provenance_values <- stats::setNames(lapply(exact_fields, function(field) {

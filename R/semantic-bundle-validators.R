@@ -289,10 +289,12 @@
     count = "\\b(count|abundance|number|numerosity|individuals?|num)\\b",
     dimensionless = paste0(
       "\\b(dimensionless|unitless|percentage|percent|proportion|ratio|",
-      "fraction|decimal|dimensionlessratio)\\b|/vocab/unit/(percent|one)\\b"
+      "fraction|decimal|dimensionlessratio)\\b|",
+      "\\b(survival|exploitation|harvest|mortality) rate\\b|",
+      "/vocab/unit/(percent|one)\\b"
     ),
     rate = paste0(
-      "\\b(rate|frequency|occurrences? per|individuals? per|fish per|",
+      "\\b(frequency|occurrences? per|individuals? per|fish per|",
       "events? per|per capita per)\\b|\\bper (second|minute|hour|day|",
       "week|month|year|season)\\b"
     )
@@ -436,6 +438,43 @@
   )
 }
 
+.ms_semantic_validator_field_anchors <- function(target, dict_row) {
+  target <- tibble::as_tibble(target)
+  dict_row <- tibble::as_tibble(dict_row)
+  field_names <- c(
+    if ("column_name" %in% names(dict_row)) dict_row$column_name[[1]] else NULL,
+    if ("column_name" %in% names(target)) target$column_name[[1]] else NULL
+  )
+  field_names <- field_names[
+    !is.na(field_names) & nzchar(trimws(field_names))
+  ]
+  labels <- c(
+    if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else NULL,
+    if ("column_label" %in% names(target)) target$column_label[[1]] else NULL
+  )
+  candidates <- if (length(field_names) > 0L) field_names else labels
+  if (length(candidates) == 0L) {
+    return(character())
+  }
+
+  anchor <- trimws(gsub(
+    "[^a-z0-9]+",
+    " ",
+    tolower(as.character(candidates[[1L]]))
+  ))
+  tokens <- .ms_context_tokens(anchor)
+  weak_singletons <- c(
+    "age", "code", "count", "length", "method", "number", "phase",
+    "rate", "sex", "total", "unit", "value", "weight"
+  )
+  if (!nzchar(anchor) ||
+      (length(tokens) < 2L &&
+        (nchar(anchor) < 6L || anchor %in% weak_singletons))) {
+    return(character())
+  }
+  anchor
+}
+
 .ms_semantic_bundle_validator_evidence <- function(target,
                                                    dict_row,
                                                    context_chunks) {
@@ -443,19 +482,7 @@
   dict_row <- tibble::as_tibble(dict_row)
   context_chunks <- tibble::as_tibble(context_chunks)
   context_text <- if ("chunk_text" %in% names(context_chunks)) {
-    anchor_values <- c(
-      if ("column_name" %in% names(dict_row)) dict_row$column_name[[1]] else NULL,
-      if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else NULL,
-      if ("column_name" %in% names(target)) target$column_name[[1]] else NULL,
-      if ("column_label" %in% names(target)) target$column_label[[1]] else NULL,
-      if ("target_label" %in% names(target)) target$target_label[[1]] else NULL,
-      if ("search_query" %in% names(target)) target$search_query[[1]] else NULL
-    )
-    anchors <- unique(vapply(anchor_values, function(value) {
-      value <- tolower(trimws(as.character(value %||% "")))
-      trimws(gsub("[^a-z0-9]+", " ", value))
-    }, character(1)))
-    anchors <- anchors[nzchar(anchors)]
+    anchors <- .ms_semantic_validator_field_anchors(target, dict_row)
     relevant <- vapply(context_chunks$chunk_text, function(text) {
       normalized <- trimws(gsub(
         "[^a-z0-9]+",

@@ -16,8 +16,11 @@ captures.
 - Live captures start under ignored `artifacts/theme-a/<run-id>/capture.json`
   with `evidence_status = "unreviewed_staging"`.
 - Only a human-reviewed, sanitized capture with complete hash lineage can be
-  promoted here. Promotion creates content-addressed, read-only files and
-  refuses overwrite.
+  promoted here. The immutable raw companion is publishable only because live
+  mode accepts synthetic Theme A fixtures, records
+  `data_classification = "synthetic_theme_a_fixture"`, never sends package-user
+  data, and requires a separate maintainer safe-to-publish attestation.
+  Promotion creates content-addressed, read-only files and refuses overwrite.
 
 The ontology manifest pins fixture IRIs, source revisions, artifact hashes,
 native RDF types, and definition provenance. Live review uses
@@ -70,11 +73,17 @@ editable `capture.json` review copy. Review the copy manually:
    `review.pre_sanitization_sha256`. Do not edit the raw capture or sidecar.
 2. Inspect prompts, responses, events, assessments, final dictionary rows,
    ontology gaps, routes, and oracle results.
-3. Remove any sensitive material without changing the semantic evidence.
-4. Set `review.status` to `reviewed`, `review.sanitized` to `true`, and record
-   `reviewed_by`, `reviewed_at`, and review notes.
-5. Set `evidence_status` to `reviewed_sanitized`.
-6. Promote the reviewed capture. Promotion verifies the raw file, sidecar,
+3. Confirm that the immutable raw capture contains only the versioned synthetic
+   fixtures, provider protocol metadata, and model output. It must contain no
+   credentials, package-user data, or other sensitive material.
+4. Remove any sensitive material from the reviewed copy without changing the
+   semantic evidence.
+5. Set `review.status` to `reviewed`, `review.sanitized` to `true`,
+   `review.raw_capture_reviewed` to `true`, and
+   `review.raw_capture_safe_to_publish` to `true`; record `reviewed_by`,
+   `reviewed_at`, and review notes.
+6. Set `evidence_status` to `reviewed_sanitized`.
+7. Promote the reviewed capture. Promotion verifies the raw file, sidecar,
    immutable semantic evidence, provider-interaction lineage, and review hash:
 
 ```sh

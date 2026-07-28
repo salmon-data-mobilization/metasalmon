@@ -138,9 +138,9 @@ test_that("dimensional validator recognizes ratios and rates", {
     iri = "http://qudt.org/vocab/unit/PERCENT"
   )
   rate_property <- tibble::tibble(
-    label = "Mortality rate",
-    definition = "Mortality rate over an assessment period.",
-    iri = "https://example.org/MortalityRate"
+    label = "Observation frequency",
+    definition = "Frequency of observations per assessment period.",
+    iri = "https://example.org/ObservationFrequency"
   )
   rate_unit <- tibble::tibble(
     label = "Per year",
@@ -164,6 +164,20 @@ test_that("dimensional validator recognizes ratios and rates", {
     ),
     "rate"
   )
+  survival_rate <- tibble::tibble(
+    label = "Survival rate",
+    definition = "A dimensionless survival proportion.",
+    iri = "https://example.org/SurvivalRate"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_candidate_dimension(
+      survival_rate
+    ),
+    "dimensionless"
+  )
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("generic rate")
+  ))
   expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
@@ -186,13 +200,18 @@ test_that("validator evidence excludes context for unrelated fields", {
   )
   chunks <- tibble::tibble(
     source = "inline_context",
-    chunk_id = c("inline_context[1]#1", "inline_context[2]#1"),
+    chunk_id = c(
+      "inline_context[1]#1",
+      "inline_context[2]#1",
+      "inline_context[3]#1"
+    ),
     chunk_text = c(
       "CATCH_COUNT is the number of fish retained in a trawl catch.",
       paste(
         "FORK_LENGTH_MM was measured in the field with a measuring",
         "board following the fork-length protocol."
-      )
+      ),
+      "SPAWNER_COUNT was enumerated using a visual survey protocol."
     )
   )
 

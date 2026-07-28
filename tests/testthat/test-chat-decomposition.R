@@ -58,6 +58,7 @@ test_that("chat_decomposition persists state separately from transcript and resu
   tmp <- withr::local_tempdir()
   dict <- demo_decomp_dict()
   suggestions <- demo_decomp_suggestions()
+  first_output <- character()
 
   out1 <- chat_decomposition(
     dict,
@@ -70,7 +71,10 @@ test_that("chat_decomposition persists state separately from transcript and resu
       "natural-origin adults",
       "/quit"
     ),
-    output_fn = function(text) invisible(text)
+    output_fn = function(text) {
+      first_output <<- c(first_output, text)
+      invisible(text)
+    }
   )
 
   expect_equal(out1$approval_status, "draft")
@@ -85,6 +89,16 @@ test_that("chat_decomposition persists state separately from transcript and resu
   expect_equal(state1$turn_summaries[[1]]$group, "core_observable")
   expect_true(all(c("matrix", "context_object", "used_procedure") %in% state1$unresolved_items))
   expect_true(length(transcript1) > 3L)
+  expect_true(any(grepl(
+    "native ontology type",
+    first_output,
+    fixed = TRUE
+  )))
+  expect_false(any(grepl(
+    "variable as a SKOS concept",
+    first_output,
+    fixed = TRUE
+  )))
 
   out2 <- chat_decomposition(
     dict,
@@ -360,7 +374,7 @@ test_that("chat decomposition preserves the selected candidate native type", {
     dict_row = demo_decomp_dict(),
     candidate_rows = demo_decomp_suggestions()
   )
-  state$chosen_candidate_index <- 1L
+  state$manual_candidate_index <- 1L
 
   state <- metasalmon:::.ms_chat_decomposition_recompute_state(state)
 

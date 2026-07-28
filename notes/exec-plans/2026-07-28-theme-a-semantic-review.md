@@ -64,7 +64,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [ ] Checkpoint 7: final adversarial code/release review. The first pass found
   release blockers in returned-source filtering, round-two fallback call bounds,
   chat native types, validator context locality, and evidence lineage. The code
-  and focused regression tests are updated; re-review remains.
+  and focused regression tests were updated. The first re-review cleared the
+  original source-policy and call-bound findings but found stricter field-anchor,
+  retained-round lineage, raw-publication attestation, and stale build-command
+  issues. Those are now fixed; another re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -126,6 +129,14 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   now retains the content-addressed raw capture and hashes each request, response,
   provider assessment item, and final assessment row. Cohorts also require three
   distinct provider-run fingerprints.
+- The first validator-locality fix still admitted generic target labels and
+  queries such as `count`. External deterministic evidence now requires the
+  canonical column name, or a sufficiently distinctive label only when the
+  name is unavailable.
+- Provider lineage cannot simply select the last interaction naming a target:
+  malformed round-two slots deliberately retain their first-round assessment.
+  The harness now validates each response item against the request's candidate
+  IDs and selects the last usable provider assessment instead.
 
 ## Decision Log
 
@@ -212,8 +223,11 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   context satisfying method/constraint validators, unpromoted raw lineage,
   target-only provider lineage, duplicate-run cohort risk, missing
   ratio/rate dimensions, omitted direct QUDT property retrieval, and stale
-  generated-site links/pages. Each finding has an implementation or build-pipeline
-  fix and focused regression coverage; independent re-review is pending.
+  generated-site links/pages. A first re-review found four residual issues:
+  generic validator anchors, malformed reassessment lineage, raw-publication
+  attestation, and direct pkgdown commands that bypassed the hardened builder.
+  Each finding now has an implementation or build-pipeline fix and focused
+  regression coverage; independent re-review is pending.
 
 ## Outcomes & Retrospective
 
@@ -294,7 +308,7 @@ Run from `/Users/brettjohnson/code/metasalmon`:
     Rscript scripts/theme-a-benchmark.R replay
     Rscript -e 'devtools::test(reporter = "summary")'
     Rscript -e 'devtools::document()'
-    Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE, lazy = TRUE)'
+    Rscript scripts/build-pkgdown.R
     R CMD build .
     R CMD check metasalmon_0.1.6.tar.gz
     git diff --check

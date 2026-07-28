@@ -1205,7 +1205,7 @@ chat_decomposition <- function(dict,
         state$target$table_id[[1]] %||% NA_character_,
         state$target$column_name[[1]] %||% NA_character_
       ),
-      "This flow keeps structured state separate from the transcript and treats the variable as a SKOS concept.",
+      "This flow keeps structured state separate from the transcript and preserves each selected candidate's native ontology type.",
       "Procedure context is tracked as usedProcedure-style context, not as a native decomposition slot.",
       .ms_chat_decomposition_candidate_preview(state),
       "",

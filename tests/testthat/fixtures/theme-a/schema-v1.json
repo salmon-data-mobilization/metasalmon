@@ -580,6 +580,26 @@
             "reviewed_sanitized"
           ]
         },
+        "review": {
+          "type": "object",
+          "required": [
+            "status",
+            "sanitized",
+            "raw_capture_reviewed",
+            "raw_capture_safe_to_publish",
+            "reviewed_by",
+            "reviewed_at",
+            "notes",
+            "pre_sanitization_sha256"
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "required": [
+            "retrieval_mode",
+            "data_classification"
+          ]
+        },
         "interaction_events": {
           "type": "array",
           "minItems": 1,

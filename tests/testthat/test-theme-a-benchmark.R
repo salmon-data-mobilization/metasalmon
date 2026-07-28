@@ -162,6 +162,8 @@ write_theme_a_reviewed_capture <- function(capture, path) {
   raw$review <- list(
     status = "unreviewed",
     sanitized = FALSE,
+    raw_capture_reviewed = FALSE,
+    raw_capture_safe_to_publish = FALSE,
     reviewed_by = NULL,
     reviewed_at = NULL,
     notes = NULL,
@@ -280,6 +282,8 @@ theme_a_test_capture <- function(run_id,
     review = list(
       status = "reviewed",
       sanitized = TRUE,
+      raw_capture_reviewed = TRUE,
+      raw_capture_safe_to_publish = TRUE,
       reviewed_by = "Theme A test maintainer",
       reviewed_at = "2026-07-28T00:02:00Z",
       notes = "Synthetic capture used only by the replay harness tests.",
@@ -308,6 +312,7 @@ theme_a_test_capture <- function(run_id,
       ),
       benchmark_script_sha256 = theme_a_sha256(theme_a_script_path()),
       retrieval_mode = "frozen_fixture",
+      data_classification = "synthetic_theme_a_fixture",
       provider = provider,
       configured_model = model,
       resolved_models = model,
@@ -818,7 +823,10 @@ test_that("Theme A live prompt capture identifies bundle retry targets", {
   slots <- lapply(target_index$rows, function(indexed) {
     list(
       dictionary_role = indexed$role,
-      candidates = list(list(retrieval_pass = 1L))
+      candidates = list(list(
+        candidate_id = paste0("smn::", indexed$role),
+        retrieval_pass = 1L
+      ))
     )
   })
   payload <- list(
@@ -867,6 +875,44 @@ test_that("Theme A live prompt capture identifies bundle retry targets", {
   expect_equal(
     retry$assessment_target_keys,
     target_index$rows[[1L]]$target_key
+  )
+
+  role <- target_index$rows[[1L]]$role
+  response_body <- function(selected_candidate_id) {
+    item <- list(
+      dictionary_role = role,
+      decision = "accept",
+      selected_candidate_id = selected_candidate_id,
+      confidence = 0.9,
+      rationale = "Fixture assessment."
+    )
+    list(choices = list(list(message = list(
+      content = as.character(jsonlite::toJSON(
+        list(assessments = list(item)),
+        auto_unbox = TRUE,
+        null = "null"
+      ))
+    ))))
+  }
+  event <- list(
+    interaction_id = "interaction-retry",
+    stage = "bundle_reassessment",
+    messages = messages,
+    raw_response = response_body(paste0("smn::", role))
+  )
+  expect_no_error(harness$.capture_provider_assessment(
+    event,
+    role,
+    require_usable = TRUE
+  ))
+  event$raw_response <- response_body("smn::unknown")
+  expect_error(
+    harness$.capture_provider_assessment(
+      event,
+      role,
+      require_usable = TRUE
+    ),
+    "unusable assessment"
   )
 })
 
@@ -1232,7 +1278,11 @@ test_that("Theme A reviewed captures require raw checksum lineage", {
   provider <- "openrouter"
   model <- "openai/gpt-5.4-mini"
 
-  for (mutation in c("review_hash", "raw_capture")) {
+  for (mutation in c(
+    "review_hash",
+    "raw_capture",
+    "raw_attestation"
+  )) {
     paths <- vapply(
       seq_len(3L),
       function(i) theme_a_capture_path(
@@ -1265,10 +1315,17 @@ test_that("Theme A reviewed captures require raw checksum lineage", {
       capture$review$pre_sanitization_sha256 <-
         paste(rep("e", 64L), collapse = "")
       write_theme_a_json(capture, paths[[1L]])
-    } else {
+    } else if (identical(mutation, "raw_capture")) {
       raw_path <- file.path(dirname(paths[[1L]]), "capture.raw.json")
       Sys.chmod(raw_path, mode = "0644")
       cat("\n", file = raw_path, append = TRUE)
+    } else {
+      capture <- jsonlite::read_json(
+        paths[[1L]],
+        simplifyVector = FALSE
+      )
+      capture$review$raw_capture_safe_to_publish <- FALSE
+      write_theme_a_json(capture, paths[[1L]])
     }
 
     gate <- run_theme_a_script(c(
@@ -1278,11 +1335,15 @@ test_that("Theme A reviewed captures require raw checksum lineage", {
       paste0("--expected-model=", model)
     ))
     expect_true(gate$status > 0L, info = paste(mutation, gate$output))
-    expect_match(
-      gate$output,
-      "raw-capture checksum lineage|checksum sidecar",
-      perl = TRUE
-    )
+    expected_error <- if (identical(
+      mutation,
+      "raw_attestation"
+    )) {
+      "safe-to-publish"
+    } else {
+      "raw-capture checksum lineage|checksum sidecar"
+    }
+    expect_match(gate$output, expected_error, perl = TRUE)
   }
 })
 
