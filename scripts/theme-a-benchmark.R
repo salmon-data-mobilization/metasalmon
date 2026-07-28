@@ -16,9 +16,24 @@ abort <- function(...) {
 }
 
 script_path <- local({
+  sourced_path <- tryCatch(
+    sys.frame(1L)$ofile,
+    error = function(e) NULL
+  )
+  if (!is.null(sourced_path) &&
+      length(sourced_path) == 1L &&
+      nzchar(sourced_path) &&
+      file.exists(sourced_path)) {
+    return(normalizePath(
+      sourced_path,
+      winslash = "/",
+      mustWork = TRUE
+    ))
+  }
   args <- commandArgs(trailingOnly = FALSE)
   file_arg <- grep("^--file=", args, value = TRUE)
-  if (length(file_arg) > 0L) {
+  if (length(file_arg) > 0L &&
+      !identical(sub("^--file=", "", file_arg[[1L]]), "-")) {
     normalizePath(sub("^--file=", "", file_arg[[1L]]), winslash = "/", mustWork = TRUE)
   } else {
     normalizePath(".", winslash = "/", mustWork = TRUE)
