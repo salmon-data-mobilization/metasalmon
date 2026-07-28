@@ -613,8 +613,8 @@ Fetch the ontology and validate semantic coverage
 
 ## Term Request Workflow
 
-Detect missing SMN terms, route shared vs profile requests, and draft
-GitHub issues
+Detect missing terms, route SMN, GCDFO, profile, or uncertain requests,
+and draft curator-reviewed GitHub issues
 
 - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
   : Detect candidate and LLM-identified semantic term gaps

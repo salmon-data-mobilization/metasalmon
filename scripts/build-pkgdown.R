@@ -42,6 +42,20 @@ unlink(internal_pages)
 pkgdown::build_search()
 getFromNamespace("build_sitemap", "pkgdown")(".")
 
+markdown_paths <- list.files(
+  "docs",
+  pattern = "\\.md$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+for (path in markdown_paths) {
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  normalized <- sub("[ \t]+$", "", lines)
+  if (!identical(lines, normalized)) {
+    writeLines(normalized, path, useBytes = TRUE)
+  }
+}
+
 text_paths <- list.files(
   "docs",
   pattern = "\\.(html|md|json|xml|txt)$",
