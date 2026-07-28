@@ -74,7 +74,7 @@ reference:
       - suggest_facet_schemes
 
   - title: "Term Request Workflow"
-    desc: "Detect missing SMN terms, route shared vs profile requests, and draft GitHub issues"
+    desc: "Detect missing terms, route SMN, GCDFO, profile, or uncertain requests, and draft curator-reviewed GitHub issues"
     contents:
       - detect_semantic_term_gaps
       - render_ontology_term_request

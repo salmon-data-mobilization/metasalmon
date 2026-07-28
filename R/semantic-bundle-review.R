@@ -367,7 +367,8 @@
                                                      dict_row,
                                                      context_chunks,
                                                      config,
-                                                     allow_fallback = TRUE) {
+                                                     allow_fallback = TRUE,
+                                                     fallback_assessments = NULL) {
   data <- .ms_llm_review_response_data(
     result,
     null_message = "Semantic bundle review did not return a usable JSON object."
@@ -425,6 +426,23 @@
         next
       }
       reason <- conditionMessage(validated)
+    }
+
+    if (!is.null(fallback_assessments)) {
+      fallback_assessments <- .ms_llm_normalize_assessment_rows(
+        fallback_assessments
+      )
+      fallback_index <- which(
+        fallback_assessments$dictionary_role == role
+      )
+      if (length(fallback_index) == 1L) {
+        rows[[i]] <- fallback_assessments[
+          fallback_index,
+          ,
+          drop = FALSE
+        ]
+        next
+      }
     }
 
     if (!isTRUE(allow_fallback)) {
@@ -679,7 +697,8 @@
       dict_row = dict_row,
       context_chunks = retry_context,
       config = config,
-      allow_fallback = TRUE
+      allow_fallback = FALSE,
+      fallback_assessments = assessments
     ),
     error = function(e) e
   )

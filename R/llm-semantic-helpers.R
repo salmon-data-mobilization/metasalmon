@@ -772,24 +772,37 @@
   if (!is.null(context_files) && length(context_files) > 0) {
     raw_context <- c(raw_context, lapply(context_files, .ms_context_text_from_file))
   }
-  if (!is.null(context_text) && nzchar(trimws(paste(context_text, collapse = " ")))) {
-    raw_context <- c(raw_context, list(list(
-      path = NA_character_,
-      source = "inline_context",
-      text = paste(context_text, collapse = "\n\n")
-    )))
+  inline_text <- character()
+  if (!is.null(context_text)) {
+    inline_text <- trimws(as.character(context_text))
+    inline_text <- inline_text[
+      !is.na(inline_text) & nzchar(inline_text)
+    ]
   }
 
   raw_context <- Filter(Negate(is.null), raw_context)
-  if (length(raw_context) == 0) {
+  if (length(raw_context) == 0L && length(inline_text) == 0L) {
     return(tibble::tibble())
   }
 
   raw_context <- .ms_unique_context_sources(raw_context)
 
-  purrr::map_dfr(raw_context, function(item) {
+  file_chunks <- purrr::map_dfr(raw_context, function(item) {
     .ms_chunk_context_text(item$text, item$source)
   })
+  inline_chunks <- purrr::imap_dfr(inline_text, function(text, item_index) {
+    chunks <- .ms_chunk_context_text(text, "inline_context")
+    if (nrow(chunks) > 0L) {
+      chunks$chunk_id <- paste0(
+        "inline_context[",
+        item_index,
+        "]#",
+        seq_len(nrow(chunks))
+      )
+    }
+    chunks
+  })
+  dplyr::bind_rows(file_chunks, inline_chunks)
 }
 
 .ms_prepare_context_chunks <- function(target_row,

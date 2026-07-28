@@ -52,6 +52,20 @@ theme_a_sha256 <- function(path) {
   strsplit(trimws(output[[1L]]), "\\s+")[[1L]][[1L]]
 }
 
+theme_a_value_sha256 <- function(value) {
+  path <- tempfile("theme-a-value-")
+  on.exit(unlink(path), add = TRUE)
+  value_json <- as.character(jsonlite::toJSON(
+    value,
+    auto_unbox = TRUE,
+    null = "null",
+    na = "null",
+    digits = NA
+  ))
+  writeLines(enc2utf8(value_json), path, useBytes = TRUE)
+  theme_a_sha256(path)
+}
+
 theme_a_repo_root <- function() {
   normalizePath(
     file.path(dirname(theme_a_script_path()), ".."),
@@ -315,6 +329,41 @@ theme_a_test_capture <- function(run_id,
       character(1)
     )
     interaction_id <- sprintf("interaction-%04d", i)
+    provider_items <- lapply(
+      observed$assessment_rows,
+      function(row) {
+        list(
+          dictionary_role = row$dictionary_role,
+          decision = row$llm_decision,
+          confidence = row$llm_confidence,
+          rationale = row$llm_rationale
+        )
+      }
+    )
+    messages <- list(list(
+      role = "user",
+      content = paste("sanitized fixture", observed$case_id)
+    ))
+    raw_response <- list(
+      id = paste0("response-", run_id, "-", i),
+      model = model,
+      choices = list(list(
+        message = list(
+          content = as.character(jsonlite::toJSON(
+            list(
+              bundle_summary = paste(
+                "Synthetic response for",
+                observed$case_id
+              ),
+              assessments = provider_items
+            ),
+            auto_unbox = TRUE,
+            null = "null",
+            na = "null"
+          ))
+        )
+      ))
+    )
     capture$interaction_events[[i]] <- list(
       interaction_id = interaction_id,
       event_type = "llm_request",
@@ -332,12 +381,12 @@ theme_a_test_capture <- function(run_id,
       configured_model = model,
       resolved_model = model,
       endpoint = endpoint,
-      messages = list(list(
-        role = "user",
-        content = paste("sanitized fixture", observed$case_id)
-      )),
+      messages = messages,
+      request_sha256 = theme_a_value_sha256(messages),
       response_status = 200L,
-      raw_response = list(model = model, choices = list()),
+      raw_response = raw_response,
+      response_sha256 = theme_a_value_sha256(raw_response),
+      provider_response_id = raw_response$id,
       error = NULL,
       elapsed_seconds = 1
     )
@@ -350,6 +399,15 @@ theme_a_test_capture <- function(run_id,
         outcome = "provider",
         interaction_id = interaction_id,
         interaction_stage = "bundle_initial",
+        dictionary_role = observed$assessment_rows[[
+          which(target_keys == target_key)
+        ]]$dictionary_role,
+        assessment_sha256 = theme_a_value_sha256(
+          observed$assessment_rows[[which(target_keys == target_key)]]
+        ),
+        provider_assessment_sha256 = theme_a_value_sha256(
+          provider_items[[which(target_keys == target_key)]]
+        ),
         fallback_reason = NULL
       )
     }
@@ -835,6 +893,21 @@ test_that("Theme A capture requires target-specific interaction lineage", {
       capture$interaction_events[[1L]]$assessment_target_keys <-
         as.list("not-a-target")
       capture
+    },
+    assessment_hash = function(capture) {
+      capture$assessment_lineage[[1L]]$assessment_sha256 <-
+        paste(rep("e", 64L), collapse = "")
+      capture
+    },
+    provider_assessment_hash = function(capture) {
+      capture$assessment_lineage[[1L]]$provider_assessment_sha256 <-
+        paste(rep("e", 64L), collapse = "")
+      capture
+    },
+    request_hash = function(capture) {
+      capture$interaction_events[[1L]]$request_sha256 <-
+        paste(rep("e", 64L), collapse = "")
+      capture
     }
   )
 
@@ -912,6 +985,15 @@ test_that("Theme A capture requires target-specific interaction lineage", {
   ] <- list(NULL)
   fallback$assessment_lineage[[lineage_index]]$interaction_stage <-
     "deterministic_fallback"
+  fallback$assessment_lineage[[lineage_index]]$assessment_sha256 <-
+    theme_a_value_sha256(
+      fallback$cases[[
+        fallback_case
+      ]]$assessment_rows[[fallback_assessment]]
+    )
+  fallback$assessment_lineage[[lineage_index]][
+    "provider_assessment_sha256"
+  ] <- list(NULL)
   fallback$assessment_lineage[[lineage_index]]$fallback_reason <-
     "Provider response was unusable; deterministic shortlist retained."
   write_theme_a_reviewed_capture(fallback, fallback_path)
@@ -1087,6 +1169,56 @@ test_that("Theme A cohort rejects mixed provider, model, source, and endpoint", 
   }
 })
 
+test_that("Theme A cohort requires three independent provider runs", {
+  cases <- jsonlite::read_json(
+    theme_a_fixture_path("cases-v1.json"),
+    simplifyVector = FALSE
+  )
+  replay <- jsonlite::read_json(
+    theme_a_fixture_path("replay-v1.json"),
+    simplifyVector = FALSE
+  )
+  evaluation <- theme_a_replay_evaluation()
+  paths <- vapply(
+    seq_len(3L),
+    function(i) theme_a_capture_path(
+      paste0("theme-a-provider-run-", i, "-")
+    ),
+    character(1)
+  )
+  withr::defer(unlink(
+    unique(dirname(paths)),
+    recursive = TRUE,
+    force = TRUE
+  ))
+  captures <- lapply(seq_len(3L), function(i) {
+    theme_a_test_capture(
+      run_id = paste0("provider-run-", i),
+      cases = cases,
+      replay = replay,
+      evaluation = evaluation
+    )
+  })
+  captures[[3L]]$interaction_events <- captures[[1L]]$interaction_events
+  for (i in seq_along(paths)) {
+    write_theme_a_reviewed_capture(captures[[i]], paths[[i]])
+  }
+
+  gate <- run_theme_a_script(c(
+    "compare",
+    paste0("--cohort=", paste(paths, collapse = ",")),
+    "--expected-provider=openrouter",
+    "--expected-model=openai/gpt-5.4-mini"
+  ))
+
+  expect_true(gate$status > 0L, info = gate$output)
+  expect_match(
+    gate$output,
+    "independent provider runs: FALSE",
+    fixed = TRUE
+  )
+})
+
 test_that("Theme A reviewed captures require raw checksum lineage", {
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
@@ -1214,8 +1346,22 @@ test_that("Theme A cohort promotion recomputes validated promoted captures", {
       "captures",
       paste0(run_id, "-", capture_hash, ".json")
     )
+    raw_hash <- jsonlite::read_json(
+      capture_paths[[i]],
+      simplifyVector = FALSE
+    )$review$pre_sanitization_sha256
+    promoted_raw <- file.path(
+      theme_a_repo_root(),
+      "notes",
+      "evidence",
+      "theme-a",
+      "captures",
+      paste0(run_id, "-raw-", raw_hash, ".json")
+    )
     promoted_files <- c(
       promoted_files,
+      promoted_raw,
+      paste0(promoted_raw, ".sha256"),
       promoted_capture,
       paste0(promoted_capture, ".sha256")
     )

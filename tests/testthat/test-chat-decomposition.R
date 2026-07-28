@@ -43,6 +43,7 @@ demo_decomp_suggestions <- function() {
     ),
     source = c("smn", "smn", "smn"),
     ontology = c("demo", "demo", "demo"),
+    term_type = c("owl_class", "skos_concept", "owl_property"),
     definition = c(
       "Spawner abundance variable",
       "Natural-origin spawner abundance variable",
@@ -292,7 +293,12 @@ test_that("mocked chat adapter can steer candidate choice and keeps usedProcedur
   expect_equal(out$approved_patch$selected_candidate_index, 2L)
   expect_equal(out$approved_patch$proposal_source, "chat")
   expect_match(prompt_text, "usedProcedure", fixed = TRUE)
-  expect_match(prompt_text, "SKOS concept", fixed = TRUE)
+  expect_match(prompt_text, "native ontology type", fixed = TRUE)
+  expect_false(grepl(
+    "Treat the selected variable as a SKOS concept",
+    prompt_text,
+    fixed = TRUE
+  ))
   expect_false(grepl("iadoptMethod", prompt_text, fixed = TRUE))
 })
 
@@ -340,5 +346,24 @@ test_that("chat maps canonical request_new_term back to its public proposal deci
   )
 
   expect_equal(state$proposed_patch$decision, "propose_new_term")
+  expect_true(is.na(state$proposed_patch$term_type))
   expect_false(is.null(state$proposed_patch$new_term_request))
+  expect_match(
+    state$proposed_patch$new_term_request$proposed_definition,
+    "Proposed whole-variable term",
+    fixed = TRUE
+  )
+})
+
+test_that("chat decomposition preserves the selected candidate native type", {
+  state <- metasalmon:::.ms_chat_decomposition_create_state(
+    dict_row = demo_decomp_dict(),
+    candidate_rows = demo_decomp_suggestions()
+  )
+  state$chosen_candidate_index <- 1L
+
+  state <- metasalmon:::.ms_chat_decomposition_recompute_state(state)
+
+  expect_equal(state$proposed_patch$selected_candidate_index, 1L)
+  expect_equal(state$proposed_patch$term_type, "owl_class")
 })

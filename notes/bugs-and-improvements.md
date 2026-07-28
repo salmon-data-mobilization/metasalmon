@@ -55,9 +55,12 @@ Completed behavior includes:
   three-run release gate.
 
 Evidence/oracle, bundle architecture, retrieval/source-policy, gap/retry, and
-ontology/I-ADOPT checkpoints have independently passed. Release work, the live
-provider cohort, and merge remain open; absent approved credentials and the exact
-model, the draft PR must remain blocked rather than substituting a model.
+ontology/I-ADOPT checkpoints have independently passed. Pkgdown, the complete
+test suite, and `R CMD check` passed before the final review. That review found
+additional release blockers in returned-source enforcement, retry call bounds,
+chat native types, validator context locality, and evidence lineage. The fixes
+and focused regressions are implemented, but all release checks and independent
+re-review must pass again before the exact-model live cohort and merge.
 
 ---
 

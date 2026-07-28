@@ -126,6 +126,89 @@ test_that("dimensional validator is conservative when dimensions are known", {
   )
 })
 
+test_that("dimensional validator recognizes ratios and rates", {
+  ratio_property <- tibble::tibble(
+    label = "Female proportion",
+    definition = "A dimensionless ratio.",
+    iri = "https://example.org/FemaleProportion"
+  )
+  ratio_unit <- tibble::tibble(
+    label = "Percent",
+    definition = "A dimensionless percentage unit.",
+    iri = "http://qudt.org/vocab/unit/PERCENT"
+  )
+  rate_property <- tibble::tibble(
+    label = "Mortality rate",
+    definition = "Mortality rate over an assessment period.",
+    iri = "https://example.org/MortalityRate"
+  )
+  rate_unit <- tibble::tibble(
+    label = "Per year",
+    definition = "Events per year.",
+    iri = "https://example.org/unit/PER-YR"
+  )
+
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_candidate_dimension(
+      ratio_property
+    ),
+    "dimensionless"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_candidate_dimension(ratio_unit),
+    "dimensionless"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_candidate_dimension(
+      rate_property
+    ),
+    "rate"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
+    "rate"
+  )
+})
+
+test_that("validator evidence excludes context for unrelated fields", {
+  target <- tibble::tibble(
+    column_name = "CATCH_COUNT",
+    column_label = "Catch count",
+    target_label = "Catch count method",
+    search_query = "catch count procedure",
+    target_query_context = "Catch count; no procedure supplied.",
+    column_description = "Number of fish in the catch."
+  )
+  dict <- test_dictionary(
+    column_name = "CATCH_COUNT",
+    column_label = "Catch count",
+    column_description = "Number of fish in the catch."
+  )
+  chunks <- tibble::tibble(
+    source = "inline_context",
+    chunk_id = c("inline_context[1]#1", "inline_context[2]#1"),
+    chunk_text = c(
+      "CATCH_COUNT is the number of fish retained in a trawl catch.",
+      paste(
+        "FORK_LENGTH_MM was measured in the field with a measuring",
+        "board following the fork-length protocol."
+      )
+    )
+  )
+
+  evidence <- metasalmon:::.ms_semantic_bundle_validator_evidence(
+    target,
+    dict,
+    chunks
+  )
+
+  expect_match(evidence, "catch_count", fixed = TRUE)
+  expect_false(grepl("measuring board", evidence, fixed = TRUE))
+  expect_false(
+    metasalmon:::.ms_semantic_validator_has_method_evidence(evidence)
+  )
+})
+
 test_that("newly accepted property and unit candidates are cross-validated", {
   selected <- list(
     property = tibble::tibble(

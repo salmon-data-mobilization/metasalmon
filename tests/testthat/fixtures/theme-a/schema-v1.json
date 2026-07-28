@@ -6,7 +6,7 @@
   "description": "Versioned schema manifest used by the offline benchmark validator. The x-metasalmon-contracts section is executable without adding a JSON Schema validator dependency to the R package.",
   "x-metasalmon-validation": {
     "authority": "scripts/theme-a-benchmark.R",
-    "description": "JSON Schema describes artifact shape. The benchmark script additionally enforces ontology-manifest equality, the ordered 19-column target and 30-column assessment contracts, canonical nine-field joins, exact ordered candidate lineage, final-dictionary identity, candidate-index/IRI/label consistency, one selected suggestion per accept, one-to-one assessment-gap-request proposal lineage, raw-to-reviewed checksums, provider-interaction lineage, oracle evaluation, fixture hashes resolved directly from the recorded clean Git commit, endpoint normalization, and recomputed exact-source three-run cohorts.",
+    "description": "JSON Schema describes artifact shape. The benchmark script additionally enforces ontology-manifest equality, the ordered 19-column target and 30-column assessment contracts, canonical nine-field joins, exact ordered candidate lineage, final-dictionary identity, candidate-index/IRI/label consistency, one selected suggestion per accept, one-to-one assessment-gap-request proposal lineage, promoted raw-to-reviewed checksums, cryptographic provider-interaction-to-assessment lineage, oracle evaluation, fixture hashes resolved directly from the recorded clean Git commit, endpoint normalization, and recomputed independent exact-source three-run cohorts.",
     "comparison_unit": [
       "case_id",
       "oracle_bucket",
@@ -598,8 +598,11 @@
               "resolved_model",
               "endpoint",
               "messages",
+              "request_sha256",
               "response_status",
               "raw_response",
+              "response_sha256",
+              "provider_response_id",
               "error",
               "elapsed_seconds"
             ]
@@ -615,6 +618,9 @@
               "outcome",
               "interaction_id",
               "interaction_stage",
+              "dictionary_role",
+              "assessment_sha256",
+              "provider_assessment_sha256",
               "fallback_reason"
             ]
           }

@@ -58,7 +58,13 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: Updated source/reference/vignette documentation and NEWS,
   regenerated pkgdown, and passed replay, focused tests, and the complete test
   suite. Source-package build/check and the live gate remain.
-- [ ] Checkpoint 7: final adversarial code/release review.
+- [x] 2026-07-28: Built `metasalmon_0.1.6.tar.gz`; the standard
+  `R CMD check metasalmon_0.1.6.tar.gz` completed with `Status: OK`, including
+  installed-package tests, rebuilt vignettes, and the PDF manual.
+- [ ] Checkpoint 7: final adversarial code/release review. The first pass found
+  release blockers in returned-source filtering, round-two fallback call bounds,
+  chat native types, validator context locality, and evidence lineage. The code
+  and focused regression tests are updated; re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -66,9 +72,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 
 - The repository has no GitHub Actions workflow. Theme A therefore needs a new,
   minimal R workflow rather than an extension of existing CI.
-- No provider credentials are configured locally. Live evaluation cannot run
-  until an approved provider/model is available; no model substitution is
-  permitted.
+- OpenRouter credentials are configured locally and the authenticated model
+  catalogue contains the exact approved `openai/gpt-5.4-mini` identifier. Live
+  evaluation remains deferred until the final reviewed source state is committed;
+  no model substitution is permitted.
 - Historical model observations exist only as prose. They are evidence, but not
   raw replay captures, and must be labelled `prose_only`.
 - The current decomposition prompt says every variable is a SKOS concept. The
@@ -106,6 +113,19 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   direct prompt-parser test must skip before sourcing the benchmark harness
   during installed-package checks. CI now fetches full Git history so the local
   older-real-commit mutation still executes in repository tests.
+- Final review showed that passing requested source names into an Adapter is not
+  enough to enforce an explicit allowlist: the returned rows also require
+  post-filtering. It also showed that malformed round-two slots could invoke
+  per-target provider fallback and exceed the two-request bundle bound.
+- A union of context chunks is appropriate for the model prompt but too broad
+  for deterministic evidence. Validator evidence now keeps dictionary/target
+  text and only includes external chunks anchored to the current field, so an
+  unrelated method or constraint cannot validate the selected slot.
+- Reviewed captures previously left their immutable raw capture in ignored
+  staging, and assessment lineage only established target association. Promotion
+  now retains the content-addressed raw capture and hashes each request, response,
+  provider assessment item, and final assessment row. Cohorts also require three
+  distinct provider-run fingerprints.
 
 ## Decision Log
 
@@ -141,6 +161,13 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   and permits an individually failing run because the release rule is 2-of-3.
   The separately promoted cohort manifest records three capture hashes and the
   exact source/provider/model gate.
+- 2026-07-28: Promote the immutable raw capture beside its reviewed, sanitized
+  copy. Rationale: the pre-sanitization hash is independently verifiable after
+  staging cleanup, while the reviewed copy may redact messages or responses
+  without changing their recorded request/response identities.
+- 2026-07-28: Require three distinct provider-run fingerprints composed from
+  provider response IDs and raw-response hashes. Rationale: distinct run IDs or
+  reviewed-capture hashes alone do not prove three independent provider calls.
 - 2026-07-28: Live review uses frozen candidate fixtures and records
   `retrieval_mode = "frozen_fixture"`; retrieval behavior is covered separately
   by deterministic tests.
@@ -179,6 +206,14 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   are cross-checked, generated slot labels do not count as evidence, predicates
   are rejected from value slots, and unconfirmed `REVIEW:` values cannot trigger
   accepted-pair redundancy.
+- **Checkpoint 7 - final release review:** first pass failed. Material findings
+  were: explicit returned-source leakage, extra provider calls from malformed
+  reassessment slots, stale SKOS assumptions in interactive chat, unrelated
+  context satisfying method/constraint validators, unpromoted raw lineage,
+  target-only provider lineage, duplicate-run cohort risk, missing
+  ratio/rate dimensions, omitted direct QUDT property retrieval, and stale
+  generated-site links/pages. Each finding has an implementation or build-pipeline
+  fix and focused regression coverage; independent re-review is pending.
 
 ## Outcomes & Retrospective
 

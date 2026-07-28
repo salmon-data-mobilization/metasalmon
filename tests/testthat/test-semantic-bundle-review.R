@@ -370,10 +370,15 @@ test_that("one malformed retry slot does not discard another valid reassessment"
     sources = "smn",
     max_per_role = 2L,
     search_fn = function(query, role, sources) {
-      if (identical(role, "property") && identical(query, "fish abundance")) {
+      if (identical(query, "fish abundance") &&
+          role %in% c("property", "method")) {
         candidate <- theme_a_candidate(role)
-        candidate$label <- "Fish abundance"
-        candidate$iri <- "https://example.org/property-better"
+        candidate$label <- paste("Better", role)
+        candidate$iri <- paste0(
+          "https://example.org/",
+          role,
+          "-better"
+        )
         candidate$score <- 0.99
         return(candidate)
       }
@@ -385,16 +390,6 @@ test_that("one malformed retry slot does not discard another valid reassessment"
     llm_api_key = "dummy",
     llm_request_fn = function(messages, config) {
       request_calls <<- request_calls + 1L
-      if (request_calls == 3L) {
-        return(list(
-          decision = "review",
-          selected_candidate_index = NULL,
-          confidence = 0.4,
-          rationale = "Per-target fallback reviewed the malformed method slot.",
-          missing_context = ""
-        ))
-      }
-
       response <- theme_a_bundle_response()
       roles <- vapply(
         response$assessments,
@@ -405,16 +400,18 @@ test_that("one malformed retry slot does not discard another valid reassessment"
       property <- match("property", roles)
       method <- match("method", roles)
       if (request_calls == 1L) {
-        response$assessments[[property]]$decision <- "retry_search"
-        response$assessments[[property]]$selected_candidate_id <- NULL
-        response$assessments[[property]]$retry_query <- "fish abundance"
+        for (slot in c(property, method)) {
+          response$assessments[[slot]]$decision <- "retry_search"
+          response$assessments[[slot]]$selected_candidate_id <- NULL
+          response$assessments[[slot]]$retry_query <- "fish abundance"
+        }
         return(response)
       }
 
       response$assessments[[property]]$selected_candidate_id <-
         "smn::https://example.org/property-better"
       response$assessments[[method]]$selected_candidate_id <-
-        "smn::https://example.org/method"
+        "smn::https://example.org/unknown-method"
       response
     }
   )
@@ -425,10 +422,17 @@ test_that("one malformed retry slot does not discard another valid reassessment"
     ,
     drop = FALSE
   ]
+  method <- assessments[
+    assessments$dictionary_role == "method",
+    ,
+    drop = FALSE
+  ]
 
-  expect_equal(request_calls, 3L)
+  expect_equal(request_calls, 2L)
   expect_equal(property$llm_decision, "accept")
   expect_equal(property$llm_selected_iri, "https://example.org/property-better")
+  expect_equal(method$llm_decision, "retry_search")
+  expect_true(is.na(method$llm_selected_iri))
 })
 
 test_that("a duplicate bundle retry is skipped while another slot can reassess", {
@@ -639,6 +643,82 @@ test_that("retrieval preserves distinct blank-IRI evidence from one source", {
   expect_length(unique(
     metasalmon:::.ms_semantic_candidate_identity(candidates, "property")
   ), 2L)
+})
+
+test_that("explicit source allowlists filter adapter leakage during initial retrieval", {
+  out <- suggest_semantics(
+    df = tibble::tibble(spawner_count = c(10L, 12L)),
+    dict = theme_a_measurement_dictionary(),
+    sources = "smn",
+    max_per_role = 2L,
+    search_fn = function(query, role, sources) {
+      leaked <- theme_a_candidate(role)
+      leaked$label <- paste("Leaked QUDT", role)
+      leaked$iri <- paste0("https://qudt.org/vocab/", role)
+      leaked$source <- "qudt"
+      dplyr::bind_rows(theme_a_candidate(role), leaked)
+    }
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  expect_true(nrow(suggestions) > 0L)
+  expect_setequal(suggestions$source, "smn")
+})
+
+test_that("explicit source allowlists filter adapter leakage during retry retrieval", {
+  request_calls <- 0L
+  out <- suggest_semantics(
+    df = tibble::tibble(spawner_count = c(10L, 12L)),
+    dict = theme_a_measurement_dictionary(),
+    sources = "smn",
+    max_per_role = 2L,
+    search_fn = function(query, role, sources) {
+      if (identical(role, "property") &&
+          identical(query, "fish abundance")) {
+        leaked <- theme_a_candidate(role)
+        leaked$label <- "Leaked QUDT property"
+        leaked$iri <- "https://qudt.org/vocab/quantitykind/Count"
+        leaked$source <- "qudt"
+        leaked$score <- 0.99
+        return(leaked)
+      }
+      theme_a_candidate(role)
+    },
+    llm_assess = TRUE,
+    llm_provider = "openrouter",
+    llm_model = "openai/gpt-5.4-mini",
+    llm_api_key = "dummy",
+    llm_request_fn = function(messages, config) {
+      request_calls <<- request_calls + 1L
+      response <- theme_a_bundle_response()
+      property <- match(
+        "property",
+        vapply(
+          response$assessments,
+          `[[`,
+          character(1),
+          "dictionary_role"
+        )
+      )
+      response$assessments[[property]]$decision <- "retry_search"
+      response$assessments[[property]]$selected_candidate_id <- NULL
+      response$assessments[[property]]$retry_query <- "fish abundance"
+      response
+    }
+  )
+
+  suggestions <- attr(out, "semantic_suggestions")
+  assessments <- attr(out, "semantic_llm_assessments")
+  property <- assessments[
+    assessments$dictionary_role == "property",
+    ,
+    drop = FALSE
+  ]
+
+  expect_equal(request_calls, 1L)
+  expect_false(any(suggestions$source == "qudt"))
+  expect_equal(property$llm_decision, "retry_search")
+  expect_equal(property$llm_exploration_candidate_gain, 0L)
 })
 
 test_that("semantic source policy distinguishes omitted and explicit sources", {

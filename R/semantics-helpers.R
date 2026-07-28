@@ -101,7 +101,25 @@
     return(tibble::tibble())
   }
 
-  target_sources <- .ms_sources_for_target_role(sources, search_role)
+  source_policy <- if (inherits(
+    sources,
+    "metasalmon_source_policy"
+  )) {
+    sources
+  } else {
+    .ms_semantic_source_policy(
+      sources,
+      omitted = isTRUE(attr(
+        sources,
+        "metasalmon_sources_omitted",
+        exact = TRUE
+      ))
+    )
+  }
+  target_sources <- .ms_sources_for_target_role(
+    source_policy,
+    search_role
+  )
   if (length(target_sources) == 0L) {
     return(tibble::tibble())
   }
@@ -111,6 +129,23 @@
   }
 
   res <- tibble::as_tibble(res)
+  if (identical(source_policy$mode, "explicit")) {
+    if (!"source" %in% names(res)) {
+      return(tibble::tibble())
+    }
+    allowed_sources <- tolower(trimws(as.character(target_sources)))
+    candidate_sources <- tolower(trimws(as.character(res$source)))
+    res <- res[
+      !is.na(candidate_sources) &
+        nzchar(candidate_sources) &
+        candidate_sources %in% allowed_sources,
+      ,
+      drop = FALSE
+    ]
+    if (nrow(res) == 0L) {
+      return(tibble::tibble())
+    }
+  }
   res <- res[
     !duplicated(.ms_semantic_candidate_identity(res, role = search_role)),
     ,

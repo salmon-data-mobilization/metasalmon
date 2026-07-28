@@ -1589,6 +1589,23 @@ test_that("context files sharing a basename get disambiguated source labels", {
   expect_true(all(grepl("notes.md", sources, fixed = TRUE)))
 })
 
+test_that("inline context snippets retain separate chunk identities", {
+  chunks <- metasalmon:::.ms_collect_context_chunks(
+    context_text = c(
+      "CATCH_COUNT is the number of fish in a catch.",
+      "FORK_LENGTH_MM uses a measuring board protocol."
+    )
+  )
+
+  expect_equal(nrow(chunks), 2L)
+  expect_setequal(chunks$source, "inline_context")
+  expect_equal(anyDuplicated(chunks$chunk_id), 0L)
+  expect_true(all(grepl(
+    "^inline_context\\[[12]\\]#1$",
+    chunks$chunk_id
+  )))
+})
+
 test_that("non-UTF-8 (Latin-1/Windows-1252) context files are decoded, not corrupted", {
   dir <- withr::local_tempdir()
   path <- file.path(dir, "field-notes.csv")

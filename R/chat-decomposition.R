@@ -572,7 +572,7 @@
 
   system_prompt <- paste(
     "You are reviewing a metasalmon decomposition session for a measurement or compound-variable target.",
-    "Treat the selected variable as a SKOS concept, not an OWL class.",
+    "Preserve each candidate's native ontology type; do not infer SKOS or OWL type from the variable role.",
     "Use local decomposition language around property, entity, constraints, and optional usedProcedure context.",
     "Procedure context is optional adjacent context, not a native decomposition slot.",
     "Choose only from the provided candidates; never invent an IRI.",
@@ -644,7 +644,7 @@
   }
 
   definition_bits <- c(
-    sprintf("Proposed SKOS concept for %s of %s.", property, entity),
+    sprintf("Proposed whole-variable term for %s of %s.", property, entity),
     if (!is.na(constraints) && nzchar(constraints)) sprintf("Constraints: %s.", constraints),
     if (!is.na(used_procedure) && nzchar(used_procedure)) sprintf("Optional usedProcedure context: %s.", used_procedure)
   )
@@ -662,6 +662,23 @@
     affected_columns = state$target$column_name[[1]] %||% NA_character_,
     target_row_key = state$target$target_row_key[[1]] %||% NA_character_
   )
+}
+
+.ms_chat_decomposition_candidate_term_type <- function(candidate) {
+  if (is.null(candidate)) {
+    return(NA_character_)
+  }
+  candidate <- tibble::as_tibble(candidate)
+  for (field in intersect(
+    c("term_type", "native_type", "resource_kind", "type_iris"),
+    names(candidate)
+  )) {
+    value <- .ms_chat_trim_string(candidate[[field]][[1]])
+    if (!is.na(value)) {
+      return(value)
+    }
+  }
+  NA_character_
 }
 
 .ms_chat_decomposition_recompute_state <- function(state,
@@ -757,7 +774,11 @@
     decision = decision,
     selected_candidate_index = if (!is.null(selected)) selected$index else NA_integer_,
     selected_candidate = if (!is.null(selected) && !is.null(selected$candidate)) as.list(selected$candidate[1, , drop = FALSE]) else NULL,
-    term_type = "skos_concept",
+    term_type = if (!is.null(selected)) {
+      .ms_chat_decomposition_candidate_term_type(selected$candidate)
+    } else {
+      NA_character_
+    },
     rationale = rationale,
     confidence = confidence,
     missing_context = missing_context,
@@ -896,7 +917,10 @@
       "Patch preview",
       sprintf("Decision: %s", patch$decision %||% "review"),
       selected_line,
-      sprintf("term_type: %s", patch$term_type %||% "skos_concept"),
+      sprintf(
+        "term_type: %s",
+        .ms_chat_first_non_empty(patch$term_type, "unspecified")
+      ),
       sprintf("proposal_source: %s", patch$proposal_source %||% "heuristic"),
       if (!is.na(.ms_chat_trim_string(patch$rationale))) sprintf("Rationale: %s", patch$rationale),
       if (!is.na(.ms_chat_trim_string(patch$missing_context))) sprintf("Missing context: %s", patch$missing_context),

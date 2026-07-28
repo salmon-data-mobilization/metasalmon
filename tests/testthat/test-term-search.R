@@ -632,7 +632,10 @@ test_that("score_and_rank_terms tolerates role sources missing from role boost m
 test_that("sources_for_role returns appropriate sources for each role", {
   expect_equal(sources_for_role("unit"), c("qudt", "nvs", "ols"))
   expect_equal(sources_for_role("entity"), c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols"))
-  expect_equal(sources_for_role("property"), c("smn", "gcdfo", "nvs", "ols", "zooma"))
+  expect_equal(
+    sources_for_role("property"),
+    c("smn", "gcdfo", "qudt", "nvs", "ols", "zooma")
+  )
   expect_equal(sources_for_role("method"), c("smn", "gcdfo", "bioportal", "ols", "zooma"))
   expect_equal(sources_for_role("variable"), c("smn", "gcdfo", "nvs", "ols", "zooma"))
   expect_equal(sources_for_role("constraint"), c("smn", "gcdfo", "ols"))
@@ -663,6 +666,39 @@ test_that("find_terms uses QUDT SPARQL endpoint for units", {
   expect_gte(nrow(res), 1)
   expect_equal(res$source[[1]], "qudt")
   expect_match(res$iri[[1]], "qudt\\.org")
+})
+
+test_that("find_terms searches QUDT quantity kinds for property roles", {
+  url_called <- NULL
+  fake <- list(results = list(bindings = list(
+    list(
+      uri = list(
+        value = "http://qudt.org/vocab/quantitykind/Count"
+      ),
+      label = list(value = "Count"),
+      definition = list(value = "A dimensionless count quantity.")
+    )
+  )))
+
+  res <- with_mocked_bindings(
+    .safe_json = function(url, headers = NULL, timeout_secs = 30) {
+      url_called <<- utils::URLdecode(url)
+      fake
+    },
+    find_terms(
+      "count",
+      role = "property",
+      sources = "qudt",
+      expand_query = FALSE
+    )
+  )
+
+  expect_match(url_called, "qudt:QuantityKind", fixed = TRUE)
+  expect_equal(res$match_type[[1]], "quantity_kind")
+  expect_equal(
+    res$iri[[1]],
+    "http://qudt.org/vocab/quantitykind/Count"
+  )
 })
 
 test_that("find_terms uses GBIF API for entity taxa", {

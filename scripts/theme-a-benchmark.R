@@ -2068,8 +2068,11 @@ make_capturing_request_fn <- function(log_env, target_index) {
       resolved_model = NULL,
       endpoint = endpoint,
       messages = messages,
+      request_sha256 = value_sha256(messages),
       response_status = NULL,
       raw_response = NULL,
+      response_sha256 = NULL,
+      provider_response_id = NULL,
       error = NULL,
       elapsed_seconds = NULL
     )
@@ -2106,6 +2109,12 @@ make_capturing_request_fn <- function(log_env, target_index) {
       event$response_status <- httr2::resp_status(resp)
       event$resolved_model <- resolved_model
       event$raw_response <- body
+      event$response_sha256 <- value_sha256(body)
+      event$provider_response_id <- body$id %||% NULL
+      require_scalar_character(
+        event$provider_response_id,
+        "live response.id"
+      )
 
       if (!identical(resolved_model, config$model)) {
         abort(
@@ -2143,6 +2152,122 @@ make_capturing_request_fn <- function(log_env, target_index) {
     !is.null(event$raw_response)
 }
 
+.capture_response_payload <- function(event) {
+  body <- event$raw_response
+  choices <- body$choices %||% list()
+  if (length(choices) == 0L) {
+    abort(
+      "Provider interaction '%s' has no response choice.",
+      event$interaction_id
+    )
+  }
+  content <- choices[[1L]]$message$content %||% ""
+  if (is.list(content)) {
+    content <- paste(vapply(content, function(part) {
+      if (is.list(part) && identical(part$type %||% NULL, "text")) {
+        return(as.character(part$text %||% ""))
+      }
+      if (is.character(part)) {
+        return(part[[1L]])
+      }
+      ""
+    }, character(1)), collapse = "\n")
+  } else {
+    content <- paste(as.character(content), collapse = "\n")
+  }
+  content <- trimws(content)
+  content <- sub("^```json\\s*", "", content, perl = TRUE)
+  content <- sub("^```\\s*", "", content, perl = TRUE)
+  content <- sub("\\s*```$", "", content, perl = TRUE)
+  json_start <- regexpr("[\\[{]", content, perl = TRUE)[[1L]]
+  if (json_start > 1L) {
+    content <- substring(content, json_start)
+  }
+  if (json_start > 0L && nzchar(content)) {
+    chars <- strsplit(content, "", fixed = TRUE)[[1L]]
+    opening <- chars[[1L]]
+    closing <- if (identical(opening, "{")) "}" else "]"
+    depth <- 0L
+    in_string <- FALSE
+    escaping <- FALSE
+    for (i in seq_along(chars)) {
+      char <- chars[[i]]
+      if (escaping) {
+        escaping <- FALSE
+        next
+      }
+      if (identical(char, "\\") && in_string) {
+        escaping <- TRUE
+        next
+      }
+      if (identical(char, "\"")) {
+        in_string <- !in_string
+        next
+      }
+      if (in_string) {
+        next
+      }
+      if (identical(char, opening)) {
+        depth <- depth + 1L
+      } else if (identical(char, closing)) {
+        depth <- depth - 1L
+        if (depth == 0L) {
+          content <- substr(content, 1L, i)
+          break
+        }
+      }
+    }
+  }
+  parsed <- tryCatch(
+    jsonlite::fromJSON(content, simplifyVector = FALSE),
+    error = function(e) e
+  )
+  if (inherits(parsed, "error") || !is.list(parsed)) {
+    abort(
+      "Provider interaction '%s' does not contain parseable JSON evidence.",
+      event$interaction_id
+    )
+  }
+  parsed
+}
+
+.capture_provider_assessment <- function(event, role) {
+  payload <- .capture_response_payload(event)
+  if (event$stage %in% c("bundle_initial", "bundle_reassessment")) {
+    items <- payload$assessments %||% list()
+    matches <- which(vapply(items, function(item) {
+      identical(
+        tolower(as.character(item$dictionary_role %||% "")),
+        tolower(role)
+      )
+    }, logical(1)))
+    if (length(matches) != 1L) {
+      abort(
+        paste0(
+          "Provider interaction '%s' does not contain exactly one ",
+          "assessment for role '%s'."
+        ),
+        event$interaction_id,
+        role
+      )
+    }
+    return(items[[matches[[1L]]]])
+  }
+
+  if (event$stage %in% c(
+    "target_initial",
+    "target_fallback",
+    "target_reassessment"
+  )) {
+    return(payload)
+  }
+
+  abort(
+    "Provider interaction stage '%s' cannot derive an assessment row.",
+    event$stage
+  )
+}
+
 build_assessment_lineage <- function(capture_cases,
                                      interaction_events,
                                      contracts) {
@@ -2153,6 +2278,7 @@ build_assessment_lineage <- function(capture_cases,
       list(
         case_id = observed$case_id,
         row = row,
+        role = as.character(row$dictionary_role),
         target_key = semantic_key(
           row,
           key_columns,
@@ -2196,6 +2322,9 @@ build_assessment_lineage <- function(capture_cases,
         outcome = "deterministic_fallback",
         interaction_id = if (is.null(event)) NULL else event$interaction_id,
         interaction_stage = "deterministic_fallback",
+        dictionary_role = record$role,
+        assessment_sha256 = value_sha256(record$row),
+        provider_assessment_sha256 = NULL,
         fallback_reason = as.character(llm_error[[1L]])
       ))
     }
@@ -2215,12 +2344,19 @@ build_assessment_lineage <- function(capture_cases,
       )
     }
     event <- interaction_events[[successful[[length(successful)]]]]
+    provider_assessment <- .capture_provider_assessment(
+      event,
+      record$role
+    )
     list(
       case_id = record$case_id,
       target_key = record$target_key,
       outcome = "provider",
       interaction_id = event$interaction_id,
       interaction_stage = event$stage,
+      dictionary_role = record$role,
+      assessment_sha256 = value_sha256(record$row),
+      provider_assessment_sha256 = value_sha256(provider_assessment),
       fallback_reason = NULL
     )
   })
@@ -2364,6 +2500,10 @@ text_sha256 <- function(text) {
   file_sha256(path)
 }
 
+value_sha256 <- function(value) {
+  text_sha256(canonical_evidence_json(value))
+}
+
 normalise_endpoint <- function(endpoint) {
   endpoint <- trimws(endpoint %||% "")
   if (!nzchar(endpoint)) {
@@ -2416,7 +2556,7 @@ write_raw_capture_artifacts <- function(capture, staging_dir) {
   )
 }
 
-validate_review_lineage <- function(capture, capture_path) {
+validate_review_lineage <- function(capture, capture_path, contracts) {
   if (is.null(capture_path) ||
       length(capture_path) != 1L ||
       !file.exists(capture_path)) {
@@ -2429,7 +2569,21 @@ validate_review_lineage <- function(capture, capture_path) {
     winslash = "/",
     mustWork = TRUE
   )
-  raw_path <- file.path(dirname(capture_path), "capture.raw.json")
+  staging_raw_path <- file.path(dirname(capture_path), "capture.raw.json")
+  promoted_raw_path <- file.path(
+    dirname(capture_path),
+    paste0(
+      safe_run_id(capture$run_id),
+      "-raw-",
+      capture$review$pre_sanitization_sha256,
+      ".json"
+    )
+  )
+  raw_path <- if (file.exists(staging_raw_path)) {
+    staging_raw_path
+  } else {
+    promoted_raw_path
+  }
   checksum_path <- paste0(raw_path, ".sha256")
   if (!file.exists(raw_path) || !file.exists(checksum_path)) {
     abort(
@@ -2496,7 +2650,10 @@ validate_review_lineage <- function(capture, capture_path) {
     "configured_model",
     "resolved_model",
     "endpoint",
-    "response_status"
+    "response_status",
+    "request_sha256",
+    "response_sha256",
+    "provider_response_id"
   )
   for (i in seq_along(raw_events)) {
     for (name in event_identity_fields) {
@@ -2511,7 +2668,42 @@ validate_review_lineage <- function(capture, capture_path) {
         )
       }
     }
+
+    if (!identical(
+      raw_events[[i]]$request_sha256,
+      value_sha256(raw_events[[i]]$messages)
+    )) {
+      abort(
+        "Raw provider request hash is invalid for event %d.",
+        i
+      )
+    }
+    if (!is.null(raw_events[[i]]$raw_response) &&
+        !identical(
+          raw_events[[i]]$response_sha256,
+          value_sha256(raw_events[[i]]$raw_response)
+        )) {
+      abort(
+        "Raw provider response hash is invalid for event %d.",
+        i
+      )
+    }
+    if (!is.null(raw_events[[i]]$raw_response) &&
+        !identical(
+          raw_events[[i]]$provider_response_id,
+          raw_events[[i]]$raw_response$id %||% NULL
+        )) {
+      abort(
+        "Raw provider response ID is invalid for event %d.",
+        i
+      )
+    }
   }
+  validate_assessment_lineage(
+    raw,
+    contracts,
+    verify_provider_payload = TRUE
+  )
   invisible(capture)
 }
 
@@ -2938,7 +3130,9 @@ validate_capture_cases <- function(observed_cases, cases, contracts, field) {
   invisible(observed_cases)
 }
 
-validate_assessment_lineage <- function(capture, contracts) {
+validate_assessment_lineage <- function(capture,
+                                        contracts,
+                                        verify_provider_payload = FALSE) {
   require_array(
     capture$assessment_lineage,
     "capture.assessment_lineage"
@@ -2948,6 +3142,10 @@ validate_assessment_lineage <- function(capture, contracts) {
     lapply(seq_along(observed$assessment_rows), function(i) {
       list(
         case_id = observed$case_id,
+        row = observed$assessment_rows[[i]],
+        role = as.character(
+          observed$assessment_rows[[i]]$dictionary_role
+        ),
         target_key = semantic_key(
           observed$assessment_rows[[i]],
           key_columns,
@@ -2968,6 +3166,7 @@ validate_assessment_lineage <- function(capture, contracts) {
     vapply(assessments, `[[`, character(1), "case_id"),
     assessment_keys
   )
+  assessment_by_key <- stats::setNames(assessments, assessment_keys)
 
   interaction_ids <- vapply(
     capture$interaction_events,
@@ -2996,6 +3195,9 @@ validate_assessment_lineage <- function(capture, contracts) {
         "outcome",
         "interaction_id",
         "interaction_stage",
+        "dictionary_role",
+        "assessment_sha256",
+        "provider_assessment_sha256",
         "fallback_reason"
       ),
       field
@@ -3017,6 +3219,18 @@ validate_assessment_lineage <- function(capture, contracts) {
     if (!lineage$target_key %in% assessment_keys ||
         !identical(case_by_key[[lineage$target_key]], lineage$case_id)) {
       abort("%s does not identify exactly one captured assessment.", field)
+    }
+    assessment_record <- assessment_by_key[[lineage$target_key]]
+    if (!identical(lineage$dictionary_role, assessment_record$role) ||
+        !grepl("^[0-9a-f]{64}$", lineage$assessment_sha256) ||
+        !identical(
+          lineage$assessment_sha256,
+          value_sha256(assessment_record$row)
+        )) {
+      abort(
+        "%s does not cryptographically identify its assessment row.",
+        field
+      )
     }
     lineage_keys <- c(lineage_keys, lineage$target_key)
 
@@ -3044,6 +3258,32 @@ validate_assessment_lineage <- function(capture, contracts) {
       if (!is.null(lineage$fallback_reason)) {
         abort("%s provider outcome cannot have a fallback reason.", field)
       }
+      if (!is.character(lineage$provider_assessment_sha256) ||
+          length(lineage$provider_assessment_sha256) != 1L ||
+          !grepl(
+            "^[0-9a-f]{64}$",
+            lineage$provider_assessment_sha256
+          )) {
+        abort(
+          "%s provider outcome must identify its provider assessment.",
+          field
+        )
+      }
+      if (isTRUE(verify_provider_payload)) {
+        provider_assessment <- .capture_provider_assessment(
+          event,
+          lineage$dictionary_role
+        )
+        if (!identical(
+          lineage$provider_assessment_sha256,
+          value_sha256(provider_assessment)
+        )) {
+          abort(
+            "%s is not derived from the recorded provider assessment.",
+            field
+          )
+        }
+      }
     } else {
       if (!identical(
         lineage$interaction_stage,
@@ -3067,6 +3307,12 @@ validate_assessment_lineage <- function(capture, contracts) {
             field
           )
         }
+      }
+      if (!is.null(lineage$provider_assessment_sha256)) {
+        abort(
+          "%s deterministic fallback cannot identify a provider assessment.",
+          field
+        )
       }
     }
   }
@@ -3276,7 +3522,8 @@ validate_capture <- function(capture,
         "target_keys", "assessment_target_keys", "started_at",
         "provider", "configured_model",
         "resolved_model", "endpoint", "messages", "response_status",
-        "raw_response", "error", "elapsed_seconds"
+        "raw_response", "request_sha256", "response_sha256",
+        "provider_response_id", "error", "elapsed_seconds"
       ),
       event_field
     )
@@ -3285,6 +3532,11 @@ validate_capture <- function(capture,
       paste0(event_field, ".interaction_id")
     )
     interaction_ids <- c(interaction_ids, event$interaction_id)
+    if (!is.character(event$request_sha256) ||
+        length(event$request_sha256) != 1L ||
+        !grepl("^[0-9a-f]{64}$", event$request_sha256)) {
+      abort("%s.request_sha256 is invalid.", event_field)
+    }
     require_scalar_character(
       event$stage,
       paste0(event_field, ".stage")
@@ -3332,11 +3584,31 @@ validate_capture <- function(capture,
       if (!identical(
         event$resolved_model,
         capture$provenance$configured_model
-      ) || is.null(event$raw_response)) {
+      ) || is.null(event$raw_response) ||
+        !is.character(event$response_sha256) ||
+        length(event$response_sha256) != 1L ||
+        !grepl("^[0-9a-f]{64}$", event$response_sha256) ||
+        !non_empty(event$provider_response_id)) {
         abort("%s does not prove the exact resolved model and response.", event_field)
       }
     }
     require_array(event$messages, paste0(event_field, ".messages"))
+    if (identical(capture$evidence_status, "unreviewed_staging")) {
+      if (!identical(event$request_sha256, value_sha256(event$messages))) {
+        abort("%s request hash does not match its raw messages.", event_field)
+      }
+      if (!is.null(event$raw_response) &&
+          (!identical(
+            event$response_sha256,
+            value_sha256(event$raw_response)
+          ) ||
+            !identical(
+              event$provider_response_id,
+              event$raw_response$id %||% NULL
+            ))) {
+        abort("%s response identity does not match its raw response.", event_field)
+      }
+    }
   }
   if (anyDuplicated(interaction_ids) > 0L) {
     abort("Capture interaction_id values must be unique.")
@@ -3358,7 +3630,7 @@ validate_capture <- function(capture,
     abort("Capture does not pass the Theme A semantic oracles.")
   }
   if (isTRUE(verify_raw_lineage)) {
-    validate_review_lineage(capture, capture_path)
+    validate_review_lineage(capture, capture_path, contracts)
   }
   invisible(capture)
 }
@@ -3449,6 +3721,19 @@ required_prefill_identity_set <- function(cases, include_case_ids = NULL) {
   sort(unique(identities))
 }
 
+.capture_provider_run_fingerprint <- function(capture) {
+  successful <- Filter(
+    .capture_interaction_succeeded,
+    capture$interaction_events
+  )
+  value_sha256(lapply(successful, function(event) {
+    list(
+      provider_response_id = event$provider_response_id,
+      response_sha256 = event$response_sha256
+    )
+  }))
+}
+
 compute_cohort_gate <- function(captures,
                                 capture_hashes,
                                 expected_provider,
@@ -3515,6 +3800,13 @@ compute_cohort_gate <- function(captures,
     logical(1)
   ))
   exact_cohort <- approved_provider_model && exact_source_cohort
+  provider_run_fingerprints <- vapply(
+    captures,
+    .capture_provider_run_fingerprint,
+    character(1)
+  )
+  independent_provider_runs <-
+    anyDuplicated(provider_run_fingerprints) == 0L
 
   blocking_ids <- vapply(
     Filter(function(case) isTRUE(case$blocking), cases$cases),
@@ -3561,6 +3853,7 @@ compute_cohort_gate <- function(captures,
     "passed"
   ))
   passed <- exact_cohort &&
+    independent_provider_runs &&
     critical_pass &&
     zero_forbidden &&
     zero_false_prefills
@@ -3588,6 +3881,8 @@ compute_cohort_gate <- function(captures,
     approved_provider_model = approved_provider_model,
     exact_source_cohort = exact_source_cohort,
     exact_provider_model_cohort = exact_cohort,
+    provider_run_fingerprints = as.list(provider_run_fingerprints),
+    independent_provider_runs = independent_provider_runs,
     critical_cases = critical_results,
     zero_forbidden_acceptances = zero_forbidden,
     zero_false_prefills = zero_false_prefills
@@ -3638,10 +3933,12 @@ run_cohort_gate <- function(options, cases, contracts) {
   cat(sprintf(
     paste0(
       "Approved provider/model: %s; exact source cohort: %s; ",
-      "forbidden acceptances zero: %s; false prefills zero: %s\n"
+      "independent provider runs: %s; forbidden acceptances zero: %s; ",
+      "false prefills zero: %s\n"
     ),
     gate$approved_provider_model,
     gate$exact_source_cohort,
+    gate$independent_provider_runs,
     gate$zero_forbidden_acceptances,
     gate$zero_false_prefills
   ))
@@ -3901,6 +4198,7 @@ validate_cohort_manifest <- function(gate,
       "provider", "configured_model", "resolved_model", "run_ids",
       "captures", "cohort_provenance", "approved_provider_model",
       "exact_source_cohort", "exact_provider_model_cohort",
+      "provider_run_fingerprints", "independent_provider_runs",
       "critical_cases", "zero_forbidden_acceptances",
       "zero_false_prefills"
     ),
@@ -3908,11 +4206,22 @@ validate_cohort_manifest <- function(gate,
   )
   require_array(gate$run_ids, "cohort manifest.run_ids")
   require_array(gate$captures, "cohort manifest.captures")
+  require_array(
+    gate$provider_run_fingerprints,
+    "cohort manifest.provider_run_fingerprints"
+  )
   require_array(gate$critical_cases, "cohort manifest.critical_cases")
   if (length(gate$run_ids) != 3L ||
       length(gate$captures) != 3L ||
       anyDuplicated(unlist(gate$run_ids)) > 0L) {
     abort("A promoted cohort manifest must identify three distinct runs.")
+  }
+  if (length(gate$provider_run_fingerprints) != 3L ||
+      anyDuplicated(unlist(gate$provider_run_fingerprints)) > 0L ||
+      !isTRUE(gate$independent_provider_runs)) {
+    abort(
+      "A promoted cohort manifest must prove three independent provider runs."
+    )
   }
   captures <- vector("list", length(gate$captures))
   capture_hashes <- character(length(gate$captures))
@@ -3961,7 +4270,8 @@ validate_cohort_manifest <- function(gate,
       ontology_manifest_path = ontology_manifest_path,
       require_reviewed = TRUE,
       require_oracle_pass = FALSE,
-      verify_raw_lineage = FALSE
+      capture_path = promoted_capture,
+      verify_raw_lineage = TRUE
     )
     captures[[i]] <- capture
     capture_hashes[[i]] <- capture_ref$capture_sha256
@@ -4075,9 +4385,25 @@ run_promote <- function(options) {
   }
 
   run_id <- safe_run_id(capture$run_id)
+  raw_path <- file.path(dirname(source_path), "capture.raw.json")
+  raw_capture <- read_json(raw_path, "raw staging capture")
+  if (contains_secret_material(raw_capture)) {
+    abort(
+      "Raw capture appears to contain credential material and cannot be promoted."
+    )
+  }
+  promoted_raw <- promote_immutable_file(
+    raw_path,
+    paste0(run_id, "-raw")
+  )
   promoted <- promote_immutable_file(source_path, run_id)
   cat(sprintf(
-    "Promoted reviewed and sanitized capture: %s\nSHA-256: %s\n",
+    paste0(
+      "Promoted immutable raw capture: %s\nRaw SHA-256: %s\n",
+      "Promoted reviewed and sanitized capture: %s\nSHA-256: %s\n"
+    ),
+    promoted_raw$destination,
+    promoted_raw$sha256,
     promoted$destination,
     promoted$sha256
   ))

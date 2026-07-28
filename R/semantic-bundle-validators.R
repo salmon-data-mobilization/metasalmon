@@ -286,7 +286,16 @@
     volume = "\\b(volume|lit(er|re)s?|cubic met(er|re)s?|m3)\\b",
     mass = "\\b(mass|weight|kilograms?|grams?|tonnes?|pounds?|lbs?|kg|kilogm|gm)\\b",
     length = "\\b(length|width|depth|height|fork length|millimet(er|re)s?|centimet(er|re)s?|met(er|re)s?|mm|cm|millim|centim)\\b",
-    count = "\\b(count|abundance|number|numerosity|individuals?|num)\\b"
+    count = "\\b(count|abundance|number|numerosity|individuals?|num)\\b",
+    dimensionless = paste0(
+      "\\b(dimensionless|unitless|percentage|percent|proportion|ratio|",
+      "fraction|decimal|dimensionlessratio)\\b|/vocab/unit/(percent|one)\\b"
+    ),
+    rate = paste0(
+      "\\b(rate|frequency|occurrences? per|individuals? per|fish per|",
+      "events? per|per capita per)\\b|\\bper (second|minute|hour|day|",
+      "week|month|year|season)\\b"
+    )
   )
 
   matched <- names(rules)[vapply(
@@ -432,6 +441,45 @@
                                                    context_chunks) {
   target <- tibble::as_tibble(target)
   dict_row <- tibble::as_tibble(dict_row)
+  context_chunks <- tibble::as_tibble(context_chunks)
+  context_text <- if ("chunk_text" %in% names(context_chunks)) {
+    anchor_values <- c(
+      if ("column_name" %in% names(dict_row)) dict_row$column_name[[1]] else NULL,
+      if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else NULL,
+      if ("column_name" %in% names(target)) target$column_name[[1]] else NULL,
+      if ("column_label" %in% names(target)) target$column_label[[1]] else NULL,
+      if ("target_label" %in% names(target)) target$target_label[[1]] else NULL,
+      if ("search_query" %in% names(target)) target$search_query[[1]] else NULL
+    )
+    anchors <- unique(vapply(anchor_values, function(value) {
+      value <- tolower(trimws(as.character(value %||% "")))
+      trimws(gsub("[^a-z0-9]+", " ", value))
+    }, character(1)))
+    anchors <- anchors[nzchar(anchors)]
+    relevant <- vapply(context_chunks$chunk_text, function(text) {
+      normalized <- trimws(gsub(
+        "[^a-z0-9]+",
+        " ",
+        tolower(as.character(text %||% ""))
+      ))
+      padded <- paste0(" ", normalized, " ")
+      any(vapply(
+        anchors,
+        function(anchor) {
+          grepl(
+            paste0(" ", anchor, " "),
+            padded,
+            fixed = TRUE
+          )
+        },
+        logical(1)
+      ))
+    }, logical(1))
+    context_chunks$chunk_text[relevant]
+  } else {
+    NULL
+  }
+
   .ms_semantic_validator_text(
     target[intersect(
       c(
@@ -445,7 +493,7 @@
       c("column_name", "column_label", "column_description", "unit_label"),
       names(dict_row)
     )],
-    if ("chunk_text" %in% names(context_chunks)) context_chunks$chunk_text else NULL
+    context_text
   )
 }
 
