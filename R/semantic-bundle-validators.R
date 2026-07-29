@@ -544,10 +544,16 @@
   }
 
   phrase <- sub("^phrase_start:", "", anchor)
-  leading_token <- sub(
-    "^\\s*([^[:space:]:;,]+).*$",
-    "\\1",
+  unmarked_text <- sub(
+    "^\\s*(?:[[:punct:]0-9]+\\s*)+",
+    "",
     raw_text,
+    perl = TRUE
+  )
+  leading_token <- sub(
+    "^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$",
+    "\\1",
+    unmarked_text,
     perl = TRUE
   )
   if (grepl("[_-]", leading_token)) {

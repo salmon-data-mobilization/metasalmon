@@ -341,6 +341,57 @@ test_that("validator evidence accepts only distinctive local field anchors", {
       suffix_evidence
     )
   )
+
+  for (prefix in c("* ", "+ ", "| ", "- ", "1. ", "### ", "> ")) {
+    marked_suffix_evidence <-
+      metasalmon:::.ms_semantic_bundle_validator_evidence(
+        target,
+        dict,
+        tibble::tibble(
+          chunk_text = paste0(
+            prefix,
+            paste(
+              "CATCH_COUNT_ESTIMATE was enumerated using a sonar survey",
+              "protocol during the ocean phase."
+            )
+          )
+        )
+      )
+    expect_false(
+      metasalmon:::.ms_semantic_validator_has_method_evidence(
+        marked_suffix_evidence
+      ),
+      info = paste("markup prefix:", prefix)
+    )
+    expect_false(
+      metasalmon:::.ms_semantic_validator_has_constraint_evidence(
+        marked_suffix_evidence
+      ),
+      info = paste("markup prefix:", prefix)
+    )
+  }
+
+  marked_local_evidence <-
+    metasalmon:::.ms_semantic_bundle_validator_evidence(
+      target,
+      dict,
+      tibble::tibble(
+        chunk_text = paste(
+          "* Catch count was enumerated using a visual survey protocol",
+          "during the ocean phase."
+        )
+      )
+    )
+  expect_true(
+    metasalmon:::.ms_semantic_validator_has_method_evidence(
+      marked_local_evidence
+    )
+  )
+  expect_true(
+    metasalmon:::.ms_semantic_validator_has_constraint_evidence(
+      marked_local_evidence
+    )
+  )
 })
 
 test_that("newly accepted property and unit candidates are cross-validated", {

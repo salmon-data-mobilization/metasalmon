@@ -72,8 +72,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   focused regression fixes. A subsequent code pass found weak one-word anchors
   and compound physical-rate precedence gaps; those are also fixed and covered.
   A further ontology probe found suffix-overlap and overbroad compound matching;
-  both now resolve conservatively with explicit adversarial coverage. Final
-  re-review remains.
+  both now resolve conservatively with explicit adversarial coverage. A final
+  code probe found that Markdown/Rmd list and table markers could obscure a
+  suffixed identifier; markup-aware token extraction and regressions now close
+  that path. Final re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -149,7 +151,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   distinctive canonical identifiers as complete underscore-preserving tokens or
   a human-readable phrase at the start of a chunk; weak singleton names do not
   anchor external evidence, and identifier-looking suffix forms cannot use the
-  phrase fallback.
+  phrase fallback even when preceded by Markdown/Rmd list, heading, quote, or
+  table markup.
 - Named rates such as mortality are dimensionless only when no explicit temporal
   denominator is present. Strong physical dimensions retain precedence, then an
   explicit per-time pattern wins over the named dimensionless-rate heuristic.
@@ -253,9 +256,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   denominator conflicted with named dimensionless-rate rules. A following code
   pass found weak singleton anchors and compound physical-rate ambiguity; a
   further ontology probe found suffixed identifiers and malformed compound units
-  could still bypass those guards. Each finding now has an implementation or
-  build-pipeline fix and focused regression coverage; independent re-review is
-  pending.
+  could still bypass those guards. The last code pass found that leading
+  Markdown/Rmd markup obscured the suffix check. Each finding now has an
+  implementation or build-pipeline fix and focused regression coverage;
+  independent re-review is pending.
 
 ## Outcomes & Retrospective
 
