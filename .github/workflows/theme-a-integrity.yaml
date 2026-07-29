@@ -2,9 +2,28 @@ name: Theme A offline integrity
 
 on:
   workflow_dispatch:
+  release:
+    types:
+      - published
   pull_request:
     paths:
+      - ".github/workflows/R-CMD-check.yaml"
+      - ".github/workflows/theme-a-integrity.yaml"
+      - "DESCRIPTION"
       - "scripts/theme-a-benchmark.R"
+      - "tests/testthat/setup-offline-provider-credentials.R"
+      - "tests/testthat/test-theme-a-benchmark.R"
+      - "tests/testthat/fixtures/theme-a/**"
+      - "notes/evidence/theme-a/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/R-CMD-check.yaml"
+      - ".github/workflows/theme-a-integrity.yaml"
+      - "DESCRIPTION"
+      - "scripts/theme-a-benchmark.R"
+      - "tests/testthat/setup-offline-provider-credentials.R"
       - "tests/testthat/test-theme-a-benchmark.R"
       - "tests/testthat/fixtures/theme-a/**"
       - "notes/evidence/theme-a/**"

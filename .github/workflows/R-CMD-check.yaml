@@ -21,8 +21,8 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: "yes"
       _R_CHECK_CRAN_INCOMING_REMOTE_: "false"
-      # Ordinary CI is offline. Live benchmarks require an explicit CLI opt-in
-      # and credentials supplied outside this workflow.
+      # Ordinary CI is isolated from LLM providers. Live benchmarks require an
+      # explicit CLI opt-in and credentials supplied outside this workflow.
       OPENAI_API_KEY: ""
       OPENROUTER_API_KEY: ""
       METASALMON_LLM_API_KEY: ""
@@ -50,7 +50,7 @@ jobs:
       - name: Replay Theme A evidence
         run: Rscript scripts/theme-a-benchmark.R replay
 
-      - name: Run full offline test suite
+      - name: Run full provider-isolated test suite
         run: Rscript -e 'devtools::test(reporter = "summary", stop_on_failure = TRUE)'
 
       - name: R CMD check

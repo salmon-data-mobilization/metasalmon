@@ -38,8 +38,8 @@ Rscript scripts/theme-a-benchmark.R replay
 Replay validates fixture schemas and cross-artifact lineage before evaluating
 the required, allowed-not-required, and forbidden semantic oracles.
 
-The default package suite is also offline and does not require provider
-credentials:
+The default package suite is isolated from LLM providers and does not require
+provider credentials:
 
 ```sh
 Rscript -e 'devtools::test(reporter = "summary", stop_on_failure = TRUE)'
@@ -68,6 +68,9 @@ network requests and do not read provider credentials.
 The package test setup temporarily blanks supported provider credential
 variables and restores the developer's original environment after the suite.
 Configuration tests use local dummy values and injected request functions.
+Unrelated tests may still use public schema or GitHub endpoints when available;
+the guarantee here is that normal tests cannot make live LLM requests or consume
+provider credits.
 
 ## Exact live cohort
 

@@ -64,17 +64,7 @@ run_theme_a_script <- function(args = character()) {
   output <- suppressWarnings(capture.output(
     tryCatch({
       options <- harness$parse_args(args)
-      if (isTRUE(options$help)) {
-        cat(harness$usage(), "\n")
-      } else {
-        switch(
-          options$mode,
-          replay = harness$run_replay(options),
-          live = harness$run_live(options),
-          compare = harness$run_compare(options),
-          promote = harness$run_promote(options)
-        )
-      }
+      harness$run_benchmark_mode(options)
     }, error = function(e) {
       error <<- e
       cat(

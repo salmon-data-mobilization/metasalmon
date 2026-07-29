@@ -78,8 +78,9 @@ local release validation now passes: offline replay, the complete package suite
 (14 expected warning assertions), source build, and `R CMD check` (`Status: OK`).
 Remote pull-request and post-merge CI passed. The maintainer explicitly deferred
 the exact-model live cohort when merging 0.1.6; issue #6 tracks its authentication
-diagnosis and three-run completion. Default tests and CI are offline, and live
-benchmark execution now requires an explicit billable-network acknowledgement.
+diagnosis and three-run completion. Default tests and CI are isolated from LLM
+providers, and live benchmark execution now requires an explicit
+billable-network acknowledgement.
 The follow-up harness refactor reduced the complete default local suite from
 about 38 minutes to 3 minutes 47 seconds; the exhaustive offline evidence tier
 passes separately in about 2 minutes and runs only for relevant paths or manual

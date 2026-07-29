@@ -4626,8 +4626,7 @@ run_promote <- function(options) {
   invisible(promoted$destination)
 }
 
-main <- function() {
-  options <- parse_args(commandArgs(trailingOnly = TRUE))
+run_benchmark_mode <- function(options) {
   if (isTRUE(options$help)) {
     cat(usage(), "\n")
     return(invisible(TRUE))
@@ -4640,6 +4639,11 @@ main <- function() {
     compare = run_compare(options),
     promote = run_promote(options)
   )
+}
+
+main <- function() {
+  options <- parse_args(commandArgs(trailingOnly = TRUE))
+  run_benchmark_mode(options)
 }
 
 if (sys.nframe() == 0L) {
