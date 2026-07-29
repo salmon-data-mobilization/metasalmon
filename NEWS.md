@@ -39,7 +39,8 @@ metasalmon 0.1.6
   subprocesses. Exhaustive publication-integrity mutations run in a separate
   offline, path-filtered workflow. Live benchmark requests now require the
   explicit `--allow-live-api=true` acknowledgement; default local tests and CI
-  remain fully offline and require no provider key.
+  temporarily blank provider credentials, remain fully offline, and require no
+  provider key.
 
 - Updated the canonical package site, repository, issue tracker, install
   commands, update checks, OpenRouter attribution, and live SDP schema fetches

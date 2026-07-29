@@ -65,6 +65,10 @@ Those matrices cover source-artifact binding, mixed cohort provenance,
 raw-checksum lineage, and immutable capture/cohort promotion. They do not make
 network requests and do not read provider credentials.
 
+The package test setup temporarily blanks supported provider credential
+variables and restores the developer's original environment after the suite.
+Configuration tests use local dummy values and injected request functions.
+
 ## Exact live cohort
 
 The release gate requires three runs from one clean, committed source state,
