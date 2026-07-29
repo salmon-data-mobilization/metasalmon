@@ -56,8 +56,10 @@ suggest_semantics(
   (Salmon Domain Ontology via content negotiation), `"gcdfo"`
   (DFO-specific source), `"ols"` (Ontology Lookup Service), `"nvs"`
   (NERC Vocabulary Server), and `"bioportal"` (requires
-  `BIOPORTAL_APIKEY` environment variable). Default is
-  `c("smn", "gcdfo", "ols", "nvs")`.
+  `BIOPORTAL_APIKEY` environment variable). When omitted, role-aware
+  defaults are used. When supplied explicitly, the vector is a strict
+  allowlist for initial and retry retrieval; for example,
+  `sources = "smn"` cannot introduce QUDT candidates.
 
 - include_dwc:
 
@@ -68,8 +70,8 @@ suggest_semantics(
 
 - max_per_role:
 
-  Maximum number of suggestions to keep per I-ADOPT role (variable,
-  property, entity, unit, constraint) per column. Default is 3.
+  Maximum number of suggestions to keep per semantic role (variable,
+  property, entity, unit, constraint, method) per column. Default is 3.
 
 - search_fn:
 
@@ -98,8 +100,9 @@ suggest_semantics(
   Logical; if `TRUE`, assess the top semantic candidates per target with
   an LLM after deterministic retrieval. When the first shortlist looks
   weak, the LLM may request at most one bounded alternate-query pass
-  (1–2 plain-text search phrases) before a single reassessment. Default
-  is `FALSE`.
+  before a single reassessment. Measurement-column roles are reviewed as
+  one six-slot bundle; generic, code, table, and dataset targets retain
+  per-target review. Default is `FALSE`.
 
 - llm_provider:
 
@@ -189,7 +192,9 @@ joins. When `llm_assess = TRUE`, the suggestions also include `llm_*`
 review columns such as `llm_decision`, `llm_confidence`, `llm_selected`,
 `llm_candidate_rank`, and bounded exploration metadata, and the
 dictionary gains a parallel `semantic_llm_assessments` attribute with
-one row per assessed target.
+one row per assessed target. Its 30-column schema preserves the legacy
+28-column prefix and appends `llm_escalated_from` and
+`llm_retry_query_rejection_reason`.
 
 ## Details
 
@@ -210,10 +215,16 @@ review placeholders such as `MISSING METADATA:` and fall back to real
 table metadata context instead.
 
 When `llm_assess = TRUE`, the LLM only judges deterministically
-retrieved candidates; it does not mint new IRIs. If the first shortlist
-looks weak, the model may suggest at most one bounded alternate-query
-round (1–2 plain-text queries), the package reruns deterministic
-retrieval, de-dupes the merged shortlist, and reassesses once. If the
+retrieved candidates; it does not mint new IRIs. Measurement columns are
+reviewed as one bundle spanning variable, property, entity, unit,
+constraint, and method, including empty slots. The public output still
+contains one assessment row per target and positional candidate indexes.
+If the first shortlist looks weak, the package gathers valid retry
+requests, runs at most one retrieval round, de-dupes the merged
+shortlist, and reassesses once. An exact duplicate retry query is
+retained as `retry_search`, records
+`llm_retry_query_rejection_reason = "duplicate_original_query"`, and
+does not spend another search or reassessment for that slot. If the
 model rejects the entire shortlist (`reject_shortlist`) and that bounded
 retry still surfaces no acceptable candidate, the assessment is
 escalated to `request_new_term` so a likely ontology gap shows up in
@@ -224,7 +235,12 @@ the model call. Plain-text/CSV context with invalid UTF-8 is retried as
 Windows-1252/Latin-1, and colliding file base names are disambiguated in
 `llm_context_sources`. If a batched provider response has malformed,
 missing, or duplicate target items, valid siblings are retained and only
-affected targets fall back to individual review.
+affected targets fall back to individual review. Deterministic
+validators can downgrade an unsupported `accept` to `review` for missing
+method/constraint evidence, known role/type or dimensional
+incompatibility, or a curated redundancy rule. A downgrade clears the
+selection, preserves model confidence as provenance, and never
+substitutes a term or creates an ontology gap.
 
 A term can legitimately appear more than once with different
 `dictionary_role` values (for example as both a variable and a

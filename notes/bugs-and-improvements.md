@@ -16,7 +16,7 @@ two adversarial verification passes + author spot-checks). Each item cites
 
 Severity = how much it can bite a real user.
 
-**Implementation status legend (updated 2026-07-21 on `feature/canonical-url-hardening`)**
+**Implementation status legend (updated 2026-07-28 on `feature/theme-a-semantic-review`)**
 - **fixed** — implemented on this branch and covered by focused tests.
 - **done-for-plan** — the refactor-plan objective was completed, but a broader
   future improvement may remain.
@@ -38,12 +38,46 @@ fixed in the post-0.1.5 URL-hardening pass.
 D1, #5 → D2, #8 → D3, #13 → A5, #29/#30 → E1, #3 → E2/C4, #9 → E3, #22/#23/#24 →
 E4, #31 → Theme C).
 
-**Next execution checkpoint (2026-07-21):** release 0.1.5 before starting more
-semantic behavior. Theme A then runs A0 → A4 → A5 → A2 → A1 → A3. A4 is already
-partial: direct `request_new_term` assessment rows carry label, definition, and
-namespace, and unresolved shortlist rejection escalates to that decision. The
-remaining A4 work is preserving richer rejection metadata and connecting
-`semantic_llm_assessments` to the term-request workflow.
+**Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3 are
+implemented on `feature/theme-a-semantic-review` with focused tests green. The
+evidence pack (A0) is implemented and passed its final independent re-review
+after the harness was hardened to bind every captured source artifact directly
+to the recorded Git commit.
+Completed behavior includes:
+
+- 30-column assessment rows with retry-rejection and escalation provenance;
+- structured LLM and candidate gaps, conflict detection, and GCDFO routing;
+- measurement-column bundle review with per-slot fallback and one retry round;
+- strict explicit-source allowlists and omitted role-aware defaults;
+- conservative method, constraint, native-type, dimension, and redundancy
+  validators;
+- a cross-consistent replay/live/compare/promote benchmark and exact-model
+  three-run release gate.
+
+Evidence/oracle, bundle architecture, retrieval/source-policy, gap/retry, and
+ontology/I-ADOPT checkpoints have independently passed. Pkgdown, the complete
+test suite, and `R CMD check` passed before the final review. That review found
+additional release blockers in returned-source enforcement, retry call bounds,
+chat native types, validator context locality, and evidence lineage. The fixes
+and focused regressions are implemented. Re-review additionally caught and fixed
+overlapping canonical field names leaking method evidence and explicit per-time
+mortality rates being treated as dimensionally ambiguous. A subsequent code pass
+also caught weak one-word field anchors and compound flow/speed precedence; those
+now have conservative implementations and focused tests. A final adversarial
+probe additionally caught suffixed identifiers and malformed compound units;
+both are now rejected or left unknown with regression coverage. A markup-prefix
+probe then caught the same suffix leak behind Markdown/Rmd bullets and table
+markers; markup-aware token extraction now covers those forms without excluding
+legitimate numbered-list prose. The final ontology matrix also found spaced and
+inverse temporal denominators plus embedded compound-unit overmatching; exact
+supported-compound matching and per-value powered/chained guards now cover those
+forms, including inverse powers without `/` or `per`. The reviewed matrix is now
+frozen for 0.1.6; broader unit algebra is not being added to this release. Final
+independent review passed 38/38 frozen dimension cases, 55/55 locality cases,
+replay/oracles, evidence lineage/attestation, and release documentation. Fresh
+local release validation now passes: offline replay, the complete package suite
+(14 expected warning assertions), source build, and `R CMD check` (`Status: OK`).
+Remote CI and the exact-model live cohort remain before merge.
 
 ---
 
@@ -225,9 +259,11 @@ adversarial pass** — re-confirm before fixing.
   **Fix:** detect already-assigned keys; warn/fall back for the affected key.
 
 ### 13. `retry_search` can re-issue the original failing query
-- **Implementation status:** open/deferred. The branch preserved the current
-  exploration fallback behavior; recording rejected duplicate retry queries or
-  honoring near-duplicates belongs with the retrieval-gap roadmap.
+- **Implementation status:** fixed on `feature/theme-a-semantic-review`.
+  Case/whitespace-normalized exact duplicates preserve `retry_search` and the
+  original query, record `duplicate_original_query`, and skip query generation,
+  retrieval, and reassessment for that slot. Identifier-like duplicates are
+  classified before identifier fallback; near-duplicates remain eligible.
 - `R/llm-semantic-helpers.R:1089-1098, 1129-1138`: if the model's `retry_query`
   equals the original, validation drops it and the code silently falls through to a
   generic exploration request — the explicit `retry_query` has no effect and an extra

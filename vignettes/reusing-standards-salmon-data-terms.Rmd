@@ -68,6 +68,23 @@ The shared **Salmon Domain Ontology** is queried first for salmon-domain roles. 
 | `variable` | SMN, GCDFO, NVS, OLS, ZOOMA | Shared salmon-domain variables first |
 | `constraint` | SMN, GCDFO, OLS | Shared/context vocabularies first |
 
+When `sources` is omitted from `suggest_semantics()`, these role-aware defaults
+are selected separately for each target. An explicitly supplied vector is a
+strict allowlist for both the first search and any LLM-requested retry:
+
+```{r, purl=FALSE}
+smn_only <- suggest_semantics(
+  df,
+  dict,
+  sources = "smn",
+  llm_assess = FALSE
+)
+```
+
+That call cannot add a QUDT unit candidate. The same omitted-versus-explicit
+contract is available through `semantic_sources` in `infer_dictionary()`,
+`infer_salmon_datapackage_artifacts()`, and `create_sdp()`.
+
 ### Searching for units with QUDT
 
 For unit columns, QUDT provides authoritative unit IRIs:
@@ -137,10 +154,16 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 
 - If a column is purely administrative or custom to your survey, it is fine to leave `term_iri` blank and rely on your own `column_description`.
 - If you cannot find a fitting term, use a metadata-first proposed-terms workflow (for example a local `proposed_terms.csv`) or the new gap detection tools in metasalmon:
-  - `detect_semantic_term_gaps()` identifies candidates where SMN is missing but fallback sources found useful matches.
-  - `render_ontology_term_request()` lets you choose shared SMN vs profile-specific requests and generate ready-to-post issue text.
-  - `submit_term_request_issues()` creates GitHub issues (dry-run first) against the ontology request template.
-  - The dedicated [After Excel Review](post-review-package-publication.html) guide shows how to use those helpers on a reviewed package and translate the generic `profile` bucket into the practical DFO-specific routing decision.
+  - `detect_semantic_term_gaps()` combines candidate gaps with final LLM
+    `request_new_term` assessments and records which evidence detected each gap.
+  - `render_ontology_term_request()` routes reviewed proposals to shared SMN,
+    DFO-specific GCDFO, or a local profile and renders the active
+    repository-specific issue body without submitting it.
+  - `submit_term_request_issues()` previews SMN and GCDFO issues with
+    `dry_run = TRUE`; actual submission remains an explicit, confirmable action.
+  - The dedicated [After Excel Review](post-review-package-publication.html)
+    guide shows how to review namespace evidence, apply row overrides, and keep
+    uncertain proposals out of ontology repositories.
 
 ## Building vocabulary-aware code lists
 

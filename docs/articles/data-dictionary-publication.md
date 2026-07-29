@@ -148,7 +148,7 @@ keep SDP canonical.
 ``` r
 
 dict <- readr::read_csv("inst/extdata/column_dictionary.csv", show_col_types = FALSE)
-sem <- suggest_semantics(dict, include_dwc = TRUE)
+sem <- suggest_semantics(df, dict, include_dwc = TRUE)
 attr(sem, "dwc_mappings") |>
   dplyr::filter(dwc_table %in% c("event", "occurrence")) |>
   dplyr::select(column_name, dwc_table, dwc_field, term_iri)
@@ -228,10 +228,10 @@ the function automatically queries role-appropriate sources:
 ``` r
 
 # Default: ontology suggestions only (DwC mappings OFF)
-sem <- suggest_semantics(dict)
+sem <- suggest_semantics(df, dict)
 
 # Include DwC-DP mappings alongside ontology suggestions
-sem_with_dwc <- suggest_semantics(dict, include_dwc = TRUE)
+sem_with_dwc <- suggest_semantics(df, dict, include_dwc = TRUE)
 
 # View ontology suggestions
 suggestions <- attr(sem, "semantic_suggestions")
@@ -239,6 +239,10 @@ suggestions <- attr(sem, "semantic_suggestions")
 # View DwC mappings (only when include_dwc = TRUE)
 dwc_maps <- attr(sem_with_dwc, "dwc_mappings")
 ```
+
+Omitting `sources` uses those role-aware defaults. Supplying `sources`
+explicitly creates a strict allowlist for both initial and retry
+retrieval.
 
 The ontology suggestions use role-aware ranking (Phase 2) that
 prefers: - QUDT for units - GBIF/WoRMS for taxa/entities - STATO/OBA for

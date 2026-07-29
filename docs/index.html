@@ -34,7 +34,7 @@ concept schemes) while preserving your original data structure.
 
     <a class="navbar-brand me-2" href="index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -212,7 +212,10 @@ concept schemes) while preserving your original data structure.
 <span><span class="co"># In create_sdp(...), any auto-applied semantic IRI drafts are written back</span></span>
 <span><span class="co"># into the package metadata as REVIEW-prefixed values for manual cleanup,</span></span>
 <span><span class="co"># including table-level observation-unit selections in metadata/tables.csv.</span></span></code></pre></div>
-<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into <code>metadata/tables.csv</code>.</p>
+<p>This keeps <code><a href="reference/find_terms.html">find_terms()</a></code> as the canonical candidate generator. For each measurement column, the LLM reviews the variable, property, entity, unit, constraint, and method shortlists together. Generic column, code, table, and dataset targets keep their existing per-target review path. Deterministic validators can downgrade an unsupported <code>accept</code> to <code>review</code>; the original model confidence remains in the assessment as provenance.</p>
+<p>Only accepted variable, property, entity, and unit candidates can be written back automatically. Drafts are stored as <code>REVIEW: &lt;iri&gt;</code> so you can confirm or replace them in Excel rather than treating them as final. Constraint and method assessments always remain manual, as do dataset keywords and code-level suggestions. Compatible table-level observation-unit matches can still be written into <code>metadata/tables.csv</code>.</p>
+<p>Omitting <code>sources</code> (or <code>semantic_sources</code> on the package-creation helpers) uses role-aware defaults. Supplying sources explicitly creates a strict allowlist for both initial retrieval and the single retry round. For example, <code>sources = "smn"</code> cannot introduce a QUDT unit candidate.</p>
+<p>The target-level <code>semantic_llm_assessments</code> table has a stable 30-column schema. Its final two fields record whether a term request was escalated from <code>reject_shortlist</code> and why a retry query was rejected. An exact retry duplicate, after case and whitespace normalization, remains a <code>retry_search</code> decision with <code>llm_retry_query_rejection_reason = "duplicate_original_query"</code> and does not trigger another query-generation, search, or reassessment call.</p>
 <p><code>llm_context_files</code> must be a character vector of existing local <strong>file paths</strong>. Do not pass a tibble returned by <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">readr::read_csv()</a></code>, an <code>xml2</code> document returned by <code>read_html()</code>, or another parsed object; those inputs now fail early instead of being silently ineffective. Supplying context also never enables an LLM call: set <code>llm_assess = TRUE</code> explicitly, or the package warns that the context will be ignored and continues with deterministic retrieval only. Use <code>llm_context_text</code> for inline text that is not stored in a file.</p>
 <p>Supported paths include text and notes (<code>.md</code>, <code>.txt</code>, <code>.rst</code>), delimited/data files (<code>.csv</code>, <code>.tsv</code>, <code>.json</code>, <code>.yaml</code>, <code>.yml</code>), source and notebook-style files (<code>.R</code>, <code>.Rmd</code>, <code>.qmd</code>), HTML (<code>.htm</code>, <code>.html</code>), DOCX (<code>.docx</code>), Excel workbooks (<code>.xls</code>, <code>.xlsx</code>, <code>.xlsm</code> via <code>readxl</code>), and PDF reports (<code>.pdf</code> via <code>pdftools</code>). Validation should only pass after the REVIEW prefix is removed. When you use <code>llm_provider = "openrouter"</code> without specifying <code>llm_model</code>, <code>metasalmon</code> defaults to <code>openrouter/free</code>.</p>
 <p>For the full workflow across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, <code>codes.csv</code>, and the post-review EDH rebuild, use the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a> guide.</p>
@@ -353,7 +356,8 @@ concept schemes) while preserving your original data structure.
 </li>
 <li>Per-source diagnostics, scoring, and optional rerank explain why <code><a href="reference/find_terms.html">find_terms()</a></code> matches rank where they do and expose failures, so you can tune role-aware queries with confidence.</li>
 <li>End-to-end semantic QA loop with <code><a href="reference/fetch_salmon_ontology.html">fetch_salmon_ontology()</a></code> + <code><a href="reference/validate_semantics.html">validate_semantics()</a></code>, plus <code><a href="reference/deduplicate_proposed_terms.html">deduplicate_proposed_terms()</a></code> to prevent term proliferation before opening ontology issues.</li>
-<li>Optional package-native LLM review for semantic suggestions: <code>suggest_semantics(..., llm_assess = TRUE)</code> can judge retrieved candidates directly in R, include local README/report context files, and use OpenAI-compatible providers such as OpenRouter (including model ids ending in <code>:free</code>).</li>
+<li>Optional package-native LLM review for semantic suggestions: <code>suggest_semantics(..., llm_assess = TRUE)</code> reviews all six measurement roles as one bundle, keeps explicit source lists strict across retries, and uses deterministic validators to downgrade unsupported acceptances.</li>
+<li>Structured ontology-gap handling combines deterministic candidate gaps with final LLM <code>request_new_term</code> decisions, preserves escalation evidence, and renders curator-reviewable request bodies for shared SMN, DFO-specific GCDFO, or local profile governance.</li>
 <li>NuSEDS method crosswalk helpers: <code><a href="reference/nuseds_enumeration_method_crosswalk.html">nuseds_enumeration_method_crosswalk()</a></code> and <code><a href="reference/nuseds_estimate_method_crosswalk.html">nuseds_estimate_method_crosswalk()</a></code> for mapping legacy values to canonical method families.</li>
 </ul>
 </div>
@@ -386,7 +390,7 @@ concept schemes) while preserving your original data structure.
 <li>
 <strong>The Salmon Domain Ontology and published vocabularies</strong> supply <code>term_iri</code>/<code>entity_iri</code> links that describe what each column and row represents.</li>
 <li>
-<strong>Post-review publication helpers</strong> let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and separate shared SMN requests from DFO/program-specific follow-up.</li>
+<strong>Post-review publication helpers</strong> let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and route curator-reviewed drafts to shared SMN, DFO-specific GCDFO, or a local profile.</li>
 <li>
 <strong><code><a href="reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code></strong> consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus <code>README-review.txt</code> / <code>semantic_suggestions.csv</code>, not an external prompt-export workflow.</li>
 </ul>
@@ -449,10 +453,11 @@ Development setup and package structure
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">Rscript</span> scripts/build-pkgdown.R</span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>

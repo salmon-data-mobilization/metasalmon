@@ -75,6 +75,8 @@ create_sdp(
 
   Vector of vocabulary sources passed to
   [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
+  When omitted, role-aware defaults are used. When supplied explicitly,
+  the vector is a strict allowlist for initial and retry retrieval.
 
 - semantic_max_per_role:
 
@@ -112,6 +114,8 @@ create_sdp(
 
   Logical; if `TRUE`, run the optional LLM shortlist assessment inside
   [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md).
+  Measurement columns are reviewed as six-slot bundles; other targets
+  keep their existing per-target path.
 
 - llm_provider:
 
@@ -232,13 +236,16 @@ more context or a better match. To keep that review file usable,
 `semantic_suggestions.csv` trims code-level suggestions that do not have
 enough human-readable context to review safely. When
 `llm_assess = TRUE`, the same review file also carries `llm_*` columns
-so the shortlisted LLM judgment stays explicit and reviewable. Any
-auto-applied column/table IRI draft is written back into the metadata
-CSVs as a `REVIEW:`-prefixed value for manual confirmation there.
-Required-field review placeholders are also inserted into the inferred
-metadata files. In interactive use, `create_sdp()` can also mention an
-available package update; set `check_updates = FALSE` to skip that
-network check. The package bundles two Fraser coho examples:
+so the bundled LLM judgments, retry rejections, escalation origins, and
+validator downgrades stay explicit and reviewable. Only accepted
+variable, property, entity, and unit selections are eligible for column
+auto-prefill; constraint and method assessments always remain manual.
+Any auto-applied column/table IRI draft is written back into the
+metadata CSVs as a `REVIEW:`-prefixed value for manual confirmation
+there. Required-field review placeholders are also inserted into the
+inferred metadata files. In interactive use, `create_sdp()` can also
+mention an available package update; set `check_updates = FALSE` to skip
+that network check. The package bundles two Fraser coho examples:
 `nuseds-fraser-coho-sample.csv` (30 rows across 1996-2024) for the
 quickest demo, and `nuseds-fraser-coho-2023-2024.csv` (173 rows from the
 official Open Government Canada Fraser and BC Interior workbook) for a

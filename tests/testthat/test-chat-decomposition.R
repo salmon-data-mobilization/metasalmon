@@ -43,6 +43,7 @@ demo_decomp_suggestions <- function() {
     ),
     source = c("smn", "smn", "smn"),
     ontology = c("demo", "demo", "demo"),
+    term_type = c("owl_class", "skos_concept", "owl_property"),
     definition = c(
       "Spawner abundance variable",
       "Natural-origin spawner abundance variable",
@@ -57,6 +58,7 @@ test_that("chat_decomposition persists state separately from transcript and resu
   tmp <- withr::local_tempdir()
   dict <- demo_decomp_dict()
   suggestions <- demo_decomp_suggestions()
+  first_output <- character()
 
   out1 <- chat_decomposition(
     dict,
@@ -69,7 +71,10 @@ test_that("chat_decomposition persists state separately from transcript and resu
       "natural-origin adults",
       "/quit"
     ),
-    output_fn = function(text) invisible(text)
+    output_fn = function(text) {
+      first_output <<- c(first_output, text)
+      invisible(text)
+    }
   )
 
   expect_equal(out1$approval_status, "draft")
@@ -84,6 +89,16 @@ test_that("chat_decomposition persists state separately from transcript and resu
   expect_equal(state1$turn_summaries[[1]]$group, "core_observable")
   expect_true(all(c("matrix", "context_object", "used_procedure") %in% state1$unresolved_items))
   expect_true(length(transcript1) > 3L)
+  expect_true(any(grepl(
+    "native ontology type",
+    first_output,
+    fixed = TRUE
+  )))
+  expect_false(any(grepl(
+    "variable as a SKOS concept",
+    first_output,
+    fixed = TRUE
+  )))
 
   out2 <- chat_decomposition(
     dict,
@@ -152,9 +167,95 @@ test_that("chat_decomposition can reuse suggest_semantics when suggestions are n
 
   expect_true(!is.null(captured))
   expect_equal(captured$llm_assess, FALSE)
+  expect_true(isTRUE(attr(
+    captured$sources,
+    "metasalmon_sources_omitted",
+    exact = TRUE
+  )))
   expect_equal(nrow(out$state$candidate_rows), 2L)
   expect_true(all(out$state$candidate_rows$dictionary_role == "variable"))
   expect_true(all(out$state$candidate_rows$target_sdp_field == "term_iri"))
+})
+
+test_that("chat_decomposition preserves an explicit source allowlist", {
+  tmp <- withr::local_tempdir()
+  dict <- demo_decomp_dict()
+  suggestions <- demo_decomp_suggestions()
+  captured_sources <- NULL
+
+  fake_suggest <- function(df, dict, sources, ...) {
+    captured_sources <<- sources
+    attr(dict, "semantic_suggestions") <- suggestions
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      chat_decomposition(
+        dict,
+        column_name = "spawner_count",
+        sources = "smn",
+        session_root = tmp,
+        commands = c(
+          "abundance",
+          "spawner population",
+          "natural-origin adults",
+          "/quit"
+        ),
+        output_fn = function(text) invisible(text)
+      )
+    },
+    .package = "metasalmon"
+  )
+
+  expect_identical(unname(as.character(captured_sources)), "smn")
+  expect_false(isTRUE(attr(
+    captured_sources,
+    "metasalmon_sources_omitted",
+    exact = TRUE
+  )))
+})
+
+test_that("chat_decomposition passes strict sources through to retrieval", {
+  tmp <- withr::local_tempdir()
+  source_calls <- list()
+
+  chat_decomposition(
+    demo_decomp_dict(),
+    column_name = "spawner_count",
+    sources = "smn",
+    search_fn = function(query, role, sources) {
+      source_calls[[length(source_calls) + 1L]] <<- sources
+      theme_candidate <- tibble::tibble(
+        label = paste("Candidate", role),
+        iri = paste0("https://example.org/", role),
+        source = "smn",
+        ontology = "demo",
+        role = role,
+        match_type = "label",
+        definition = paste("Candidate for", role),
+        score = 0.8
+      )
+      theme_candidate
+    },
+    session_root = tmp,
+    commands = c(
+      "abundance",
+      "spawner population",
+      "natural-origin adults",
+      "/quit"
+    ),
+    output_fn = function(text) invisible(text)
+  )
+
+  expect_true(length(source_calls) > 0L)
+  expect_true(all(vapply(
+    source_calls,
+    identical,
+    logical(1),
+    y = "smn"
+  )))
 })
 
 test_that("mocked chat adapter can steer candidate choice and keeps usedProcedure wording", {
@@ -206,6 +307,77 @@ test_that("mocked chat adapter can steer candidate choice and keeps usedProcedur
   expect_equal(out$approved_patch$selected_candidate_index, 2L)
   expect_equal(out$approved_patch$proposal_source, "chat")
   expect_match(prompt_text, "usedProcedure", fixed = TRUE)
-  expect_match(prompt_text, "SKOS concept", fixed = TRUE)
+  expect_match(prompt_text, "native ontology type", fixed = TRUE)
+  expect_false(grepl(
+    "Treat the selected variable as a SKOS concept",
+    prompt_text,
+    fixed = TRUE
+  ))
   expect_false(grepl("iadoptMethod", prompt_text, fixed = TRUE))
+})
+
+test_that("chat maps canonical request_new_term back to its public proposal decision", {
+  dict_row <- demo_decomp_dict()
+  dict_row$column_name <- "novel_measure"
+  dict_row$column_label <- "Novel measure"
+  dict_row$column_description <- "A measurement without a suitable existing term"
+  state <- metasalmon:::.ms_chat_decomposition_create_state(
+    dict_row = dict_row,
+    candidate_rows = tibble::tibble(
+      dataset_id = "demo-dataset",
+      table_id = "main",
+      column_name = "novel_measure",
+      dictionary_role = "variable",
+      target_scope = "column",
+      target_sdp_file = "column_dictionary.csv",
+      target_sdp_field = "term_iri",
+      target_row_key = "demo-dataset/main/novel_measure",
+      target_label = "Novel measure",
+      target_description = "A measurement without a suitable existing term",
+      search_query = "novel measure",
+      label = "Nearby term",
+      iri = "https://example.org/nearby",
+      source = "smn",
+      ontology = "demo",
+      definition = "Not the requested concept"
+    )
+  )
+
+  state <- metasalmon:::.ms_chat_decomposition_recompute_state(
+    state,
+    chat_provider = "openrouter",
+    chat_model = "openai/gpt-5.4-mini",
+    chat_api_key = "dummy",
+    chat_request_fn = function(messages, config) {
+      list(
+        decision = "request_new_term",
+        selected_candidate_index = NULL,
+        confidence = 0.9,
+        rationale = "No candidate fits.",
+        missing_context = ""
+      )
+    }
+  )
+
+  expect_equal(state$proposed_patch$decision, "propose_new_term")
+  expect_true(is.na(state$proposed_patch$term_type))
+  expect_false(is.null(state$proposed_patch$new_term_request))
+  expect_match(
+    state$proposed_patch$new_term_request$proposed_definition,
+    "Proposed whole-variable term",
+    fixed = TRUE
+  )
+})
+
+test_that("chat decomposition preserves the selected candidate native type", {
+  state <- metasalmon:::.ms_chat_decomposition_create_state(
+    dict_row = demo_decomp_dict(),
+    candidate_rows = demo_decomp_suggestions()
+  )
+  state$manual_candidate_index <- 1L
+
+  state <- metasalmon:::.ms_chat_decomposition_recompute_state(state)
+
+  expect_equal(state$proposed_patch$selected_candidate_index, 1L)
+  expect_equal(state$proposed_patch$term_type, "owl_class")
 })

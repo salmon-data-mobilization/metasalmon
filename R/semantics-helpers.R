@@ -41,15 +41,43 @@
   )
 }
 
-.ms_sources_for_target_role <- function(base_sources, search_role) {
-  if (length(base_sources) == 0) {
-    return(base_sources)
-  }
-  if (!identical(search_role, "unit")) {
-    return(base_sources)
+.ms_forward_semantic_sources <- function(sources, omitted = FALSE) {
+  omitted <- isTRUE(omitted) ||
+    isTRUE(attr(sources, "metasalmon_sources_omitted", exact = TRUE))
+  sources <- as.character(sources)
+  attr(sources, "metasalmon_sources_omitted") <- omitted
+  sources
+}
+
+.ms_semantic_source_policy <- function(sources, omitted = FALSE) {
+  omitted <- isTRUE(omitted) ||
+    isTRUE(attr(sources, "metasalmon_sources_omitted", exact = TRUE))
+  structure(
+    list(
+      mode = if (omitted) "role_defaults" else "explicit",
+      sources = unname(as.character(sources))
+    ),
+    class = "metasalmon_source_policy"
+  )
+}
+
+.ms_sources_for_target_role <- function(source_policy, search_role) {
+  if (!inherits(source_policy, "metasalmon_source_policy")) {
+    source_policy <- .ms_semantic_source_policy(
+      source_policy,
+      omitted = isTRUE(attr(
+        source_policy,
+        "metasalmon_sources_omitted",
+        exact = TRUE
+      ))
+    )
   }
 
-  unique(c(base_sources, sources_for_role("unit")))
+  if (identical(source_policy$mode, "role_defaults")) {
+    return(sources_for_role(search_role))
+  }
+
+  source_policy$sources
 }
 
 .ms_retrieve_semantic_target_candidates <- function(target,
@@ -73,14 +101,56 @@
     return(tibble::tibble())
   }
 
-  target_sources <- .ms_sources_for_target_role(sources, search_role)
+  source_policy <- if (inherits(
+    sources,
+    "metasalmon_source_policy"
+  )) {
+    sources
+  } else {
+    .ms_semantic_source_policy(
+      sources,
+      omitted = isTRUE(attr(
+        sources,
+        "metasalmon_sources_omitted",
+        exact = TRUE
+      ))
+    )
+  }
+  target_sources <- .ms_sources_for_target_role(
+    source_policy,
+    search_role
+  )
+  if (length(target_sources) == 0L) {
+    return(tibble::tibble())
+  }
   res <- search_fn(query, role = search_role, sources = target_sources)
   if (!inherits(res, "data.frame") || nrow(res) == 0) {
     return(tibble::tibble())
   }
 
   res <- tibble::as_tibble(res)
-  res <- res[!duplicated(paste(res$source, res$iri, sep = "::")), , drop = FALSE]
+  if (identical(source_policy$mode, "explicit")) {
+    if (!"source" %in% names(res)) {
+      return(tibble::tibble())
+    }
+    allowed_sources <- tolower(trimws(as.character(target_sources)))
+    candidate_sources <- tolower(trimws(as.character(res$source)))
+    res <- res[
+      !is.na(candidate_sources) &
+        nzchar(candidate_sources) &
+        candidate_sources %in% allowed_sources,
+      ,
+      drop = FALSE
+    ]
+    if (nrow(res) == 0L) {
+      return(tibble::tibble())
+    }
+  }
+  res <- res[
+    !duplicated(.ms_semantic_candidate_identity(res, role = search_role)),
+    ,
+    drop = FALSE
+  ]
   if (!"role_hints" %in% names(res)) {
     res$role_hints <- NA_character_
   }
@@ -142,7 +212,11 @@
     ), , drop = FALSE]
   }
 
-  combined <- combined[!duplicated(paste(combined$source, combined$iri, sep = "::")), , drop = FALSE]
+  combined <- combined[
+    !duplicated(.ms_semantic_candidate_identity(combined)),
+    ,
+    drop = FALSE
+  ]
   utils::head(combined, max(1L, as.integer(max_per_role[[1]] %||% 3L)))
 }
 
@@ -168,12 +242,15 @@
 #' @param sources Character vector of vocabulary sources to search. Options are
 #'   `"smn"` (Salmon Domain Ontology via content negotiation), `"gcdfo"` (DFO-specific source), `"ols"` (Ontology Lookup Service), `"nvs"` (NERC Vocabulary Server), and
 #'   `"bioportal"` (requires `BIOPORTAL_APIKEY` environment variable).
-#'   Default is `c("smn", "gcdfo", "ols", "nvs")`.
+#'   When omitted, role-aware defaults are used. When supplied explicitly, the
+#'   vector is a strict allowlist for initial and retry retrieval; for example,
+#'   `sources = "smn"` cannot introduce QUDT candidates.
 #' @param include_dwc Logical; if `TRUE`, also attach DwC-DP export mappings
 #'   (via `suggest_dwc_mappings()`) as a parallel attribute `dwc_mappings`.
 #'   Default is `FALSE` to keep the UI simple for non-DwC users.
-#' @param max_per_role Maximum number of suggestions to keep per I-ADOPT role
-#'   (variable, property, entity, unit, constraint) per column. Default is 3.
+#' @param max_per_role Maximum number of suggestions to keep per semantic role
+#'   (variable, property, entity, unit, constraint, method) per column. Default
+#'   is 3.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
 #' @param codes Optional `codes.csv`-like tibble. When provided, suggestions are
@@ -186,8 +263,9 @@
 #' @param llm_assess Logical; if `TRUE`, assess the top semantic candidates per
 #'   target with an LLM after deterministic retrieval. When the first shortlist
 #'   looks weak, the LLM may request at most one bounded alternate-query pass
-#'   (1--2 plain-text search phrases) before a single reassessment. Default is
-#'   `FALSE`.
+#'   before a single reassessment. Measurement-column roles are reviewed as one
+#'   six-slot bundle; generic, code, table, and dataset targets retain
+#'   per-target review. Default is `FALSE`.
 #' @param llm_provider LLM provider preset. One of `"openai"`,
 #'   `"openrouter"`, `"openai_compatible"`, or `"chapi"`.
 #' @param llm_model Character model identifier. Required when
@@ -246,7 +324,9 @@
 #'   such as `llm_decision`, `llm_confidence`, `llm_selected`,
 #'   `llm_candidate_rank`, and bounded exploration metadata, and the
 #'   dictionary gains a parallel `semantic_llm_assessments` attribute with one
-#'   row per assessed target.
+#'   row per assessed target. Its 30-column schema preserves the legacy
+#'   28-column prefix and appends `llm_escalated_from` and
+#'   `llm_retry_query_rejection_reason`.
 #'
 #' @details
 #' Column targets keep full I-ADOPT behavior for
@@ -260,10 +340,15 @@
 #' `MISSING METADATA:` and fall back to real table metadata context instead.
 #'
 #' When `llm_assess = TRUE`, the LLM only judges deterministically retrieved
-#' candidates; it does not mint new IRIs. If the first shortlist looks weak,
-#' the model may suggest at most one bounded alternate-query round (1--2
-#' plain-text queries), the package reruns deterministic retrieval, de-dupes
-#' the merged shortlist, and reassesses once. If the model rejects the entire
+#' candidates; it does not mint new IRIs. Measurement columns are reviewed as
+#' one bundle spanning variable, property, entity, unit, constraint, and method,
+#' including empty slots. The public output still contains one assessment row
+#' per target and positional candidate indexes. If the first shortlist looks
+#' weak, the package gathers valid retry requests, runs at most one retrieval
+#' round, de-dupes the merged shortlist, and reassesses once. An exact duplicate
+#' retry query is retained as `retry_search`, records
+#' `llm_retry_query_rejection_reason = "duplicate_original_query"`, and does not
+#' spend another search or reassessment for that slot. If the model rejects the entire
 #' shortlist (`reject_shortlist`) and that bounded retry still surfaces no
 #' acceptable candidate, the assessment is escalated to `request_new_term` so a
 #' likely ontology gap shows up in `llm_decision` instead of a dead-end
@@ -274,6 +359,11 @@
 #' names are disambiguated in `llm_context_sources`. If a batched provider
 #' response has malformed, missing, or duplicate target items, valid siblings
 #' are retained and only affected targets fall back to individual review.
+#' Deterministic validators can downgrade an unsupported `accept` to `review`
+#' for missing method/constraint evidence, known role/type or dimensional
+#' incompatibility, or a curated redundancy rule. A downgrade clears the
+#' selection, preserves model confidence as provenance, and never substitutes
+#' a term or creates an ontology gap.
 #'
 #' A term can legitimately appear more than once with different
 #' `dictionary_role` values (for example as both a variable and a property).
@@ -338,6 +428,10 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
+  source_policy <- .ms_semantic_source_policy(
+    sources,
+    omitted = missing(sources)
+  )
   .ms_apply_llm_context_policy(
     llm_assess = llm_assess,
     context_files = llm_context_files,
@@ -378,7 +472,7 @@ suggest_semantics <- function(df,
   if (nrow(dict) == 0 && nrow(codes) == 0 && nrow(table_meta) == 0 && nrow(dataset_meta) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
     if (isTRUE(llm_assess)) {
-      attr(dict, "semantic_llm_assessments") <- tibble::tibble()
+      attr(dict, "semantic_llm_assessments") <- .ms_empty_llm_assessments()
     }
     if (isTRUE(include_dwc)) {
       attr(dict, "dwc_mappings") <- tibble::tibble()
@@ -400,7 +494,7 @@ suggest_semantics <- function(df,
     target <- targets[i, , drop = FALSE]
     res <- .ms_retrieve_semantic_target_candidates(
       target = target,
-      sources = sources,
+      sources = source_policy,
       max_per_role = max_per_role,
       search_fn = search_fn,
       retrieval_pass = 1L
@@ -467,7 +561,7 @@ suggest_semantics <- function(df,
       dplyr::select(-dplyr::any_of("candidate_label_norm"))
   }
 
-  if (isTRUE(llm_assess) && nrow(suggestions) > 0) {
+  if (isTRUE(llm_assess) && nrow(targets) > 0) {
     llm_results <- .ms_assess_semantic_suggestions_llm(
       suggestions,
       provider = llm_provider,
@@ -481,13 +575,15 @@ suggest_semantics <- function(df,
       timeout_seconds = llm_timeout_seconds,
       request_fn = llm_request_fn,
       search_fn = search_fn,
-      sources = sources,
-      max_per_role = max_per_role
+      sources = source_policy,
+      max_per_role = max_per_role,
+      targets = targets,
+      dict = dict
     )
     suggestions <- llm_results$suggestions
     attr(dict, "semantic_llm_assessments") <- llm_results$assessments
   } else if (isTRUE(llm_assess)) {
-    attr(dict, "semantic_llm_assessments") <- tibble::tibble()
+    attr(dict, "semantic_llm_assessments") <- .ms_empty_llm_assessments()
   }
 
   attr(dict, "semantic_suggestions") <- suggestions

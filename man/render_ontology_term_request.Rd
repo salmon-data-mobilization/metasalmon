@@ -6,22 +6,26 @@
 \usage{
 render_ontology_term_request(
   gaps,
-  scope = c("auto", "smn", "profile"),
+  scope = c("auto", "smn", "gcdfo", "profile"),
   ask = interactive(),
   profile_name = NULL,
   scope_overrides = NULL,
   issue_labels = NULL,
   term_request_template = .term_request_default_template,
-  ontology_repo = "salmon-data-mobilization/salmon-domain-ontology"
+  ontology_repo = "salmon-data-mobilization/salmon-domain-ontology",
+  gcdfo_term_request_template = .term_request_gcdfo_default_template,
+  gcdfo_repo = "dfo-pacific-science/dfo-salmon-ontology"
 )
 }
 \arguments{
 \item{gaps}{Output from \code{detect_semantic_term_gaps()}.}
 
-\item{scope}{One of \code{"auto"}, \code{"smn"}, or \code{"profile"}.
+\item{scope}{One of \code{"auto"}, \code{"smn"}, \code{"gcdfo"}, or \code{"profile"}.
 \itemize{
-\item \code{"auto"}: honor \code{placement_recommendation} and ask for uncertainty
+\item \code{"auto"}: use a recognized namespace suggestion as evidence, otherwise
+use \code{placement_recommendation}, and ask for uncertainty
 \item \code{"smn"}: route all requests to shared SMN
+\item \code{"gcdfo"}: route all requests to the DFO-specific GCDFO repository
 \item \code{"profile"}: route all requests to a profile
 }}
 
@@ -29,19 +33,27 @@ render_ontology_term_request(
 
 \item{profile_name}{If routing to profiles, provide a default profile name.}
 
-\item{scope_overrides}{Optional per-row scope overrides (\code{"smn"}, \code{"profile"},
-\code{"skip"}). Useful in non-interactive pipelines.}
+\item{scope_overrides}{Optional per-row scope overrides (\code{"smn"}, \code{"gcdfo"},
+\code{"profile"}, \code{"uncertain"}, or \code{"skip"}). Useful in non-interactive
+pipelines. Precedence is row override, forced \code{scope}, recognized
+\code{llm_new_term_namespace}, then placement heuristic. The namespace is
+evidence, not authority.}
 
 \item{issue_labels}{Optional labels to include on created GitHub issues.}
 
 \item{term_request_template}{URL for the target issue template.}
 
 \item{ontology_repo}{Repository slug to target when submitting issues.}
+
+\item{gcdfo_term_request_template}{URL for the GCDFO issue template.}
+
+\item{gcdfo_repo}{Repository slug for DFO-specific GCDFO requests.}
 }
 \value{
 A tibble with one row per rendered request payload. Rows with
 \code{request_scope == "skip"} are retained and can be filtered before
-submission.
+submission. SMN and GCDFO rows use their repository-specific issue
+templates. Rendering never submits an issue.
 }
 \description{
 Convert gap candidates into request payload rows (title/body) suitable for

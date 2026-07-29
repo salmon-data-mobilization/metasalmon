@@ -300,6 +300,30 @@ directly, also set `seed_semantics = TRUE`. Use `llm_context_text`
 instead when the context is already a character string rather than a
 file.
 
+### Why did semantic review ignore or omit a vocabulary?
+
+Source selection distinguishes an omitted argument from an explicit
+value:
+
+- omit `sources` in
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  or `semantic_sources` in
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  to use role-aware defaults;
+- supply a vector to make it a strict allowlist for initial and retry
+  retrieval.
+
+For example, `sources = "smn"` deliberately excludes QUDT even for a
+unit slot. Use `sources_for_role("unit")` when you want the normal unit
+vocabulary set.
+
+For measurement columns, the LLM reviews variable, property, entity,
+unit, constraint, and method candidates together. Only variable,
+property, entity, and unit acceptances can become `REVIEW:` prefills.
+Constraint and method decisions always require manual application, and
+deterministic validators can downgrade unsupported model acceptances to
+`review`.
+
 ### Should I edit the dictionary before or after validation?
 
 **After** - The validation tells you what needs fixing:

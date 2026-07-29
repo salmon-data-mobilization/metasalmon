@@ -1,6 +1,6 @@
 # metasalmon — next behaviours roadmap
 
-Created 2026-06-26; last reconciled 2026-07-21. A consolidating roadmap for the behaviours worth doing **next**,
+Created 2026-06-26; last reconciled 2026-07-28. A consolidating roadmap for the behaviours worth doing **next**,
 after the `deepen-architecture` branch (executed) and the Alice Assmar `#1` fix
 (closed, shipped in 0.1.4). This document is a triage + sequencing layer: it does
 not re-derive the two detailed design drafts it points to, it decides what to pick
@@ -30,7 +30,7 @@ What changes for the user, by theme: smarter and more honest semantic review
 (Theme A), safer EDH export (Theme B), an interactive curation workflow (Theme C),
 more robust context handling (Theme D), and a more maintainable codebase (Theme E).
 
-## Status snapshot (2026-07-21)
+## Status snapshot (2026-07-28)
 
 - **Done / shipped:** the `#1` `llm_context_files` fix (0.1.4); R1–R5 refactors;
   the code-review fixes incl. the **first slice of gap escalation** —
@@ -41,8 +41,14 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   finishes with `Status: OK` including rebuilt vignettes and the PDF manual. PR
   [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
   `main` as `8fb4f37`.
-- **Open behaviours to consider next:** Theme A, beginning only after Brett's
-  requested checkpoint.
+- **In progress:** Theme A is being implemented on
+  `feature/theme-a-semantic-review` under GitHub issue
+  [#4](https://github.com/salmon-data-mobilization/metasalmon/issues/4). The
+  living execution record is
+  `notes/exec-plans/2026-07-28-theme-a-semantic-review.md`. Offline replay,
+  pkgdown, final independent review, the complete suite, source-package build,
+  and standard `R CMD check` now pass on the hardened branch. Remote CI and the
+  exact-model live cohort remain.
 - **Pending process:** none for the 0.1.5 branch handoff.
 - **Post-release hardening:** canonical metasalmon links and runtime SDP schema
   fetches now use `salmon-data-mobilization`; the README, vignettes, generated
@@ -71,28 +77,30 @@ the natural next step because the `reject_shortlist → request_new_term` escala
 just shipped is the **first concrete slice** of that roadmap's gap-escalation phase.
 Build the rest on top of it.
 
-- **A0 — Freeze the evidence pack.** Preserve the existing live-model outputs,
+- **A0 — Freeze the evidence pack. ✅ IMPLEMENTED, LIVE GATE PENDING.** Preserve the existing live-model outputs,
   record a machine-readable baseline, and pin the minimum representative cases
   before changing prompts or retrieval. This is Phase 0 in the detailed design
   and is a prerequisite for judging whether Theme A improves semantic fit rather
-  than merely filling more cells.
-- **A1 — Whole-variable (bundle) review.** Judge the full decomposition together
+  than merely filling more cells. The independent evidence review passed after
+  commit-resolved artifact hashing, provider-to-assessment lineage, immutable
+  raw/reviewed capture lineage, and cohort recomputation were verified.
+- **A1 — Whole-variable (bundle) review. ✅ IMPLEMENTED.** Judge the full decomposition together
   before finalizing any slot, instead of slot-by-slot nearest-neighbour picks.
   Routes through the existing decomposition path (`chat_decomposition()` /
   `.ms_llm_should_route_to_decomposition`); do **not** fork a second prompt stack
   (i-adopt-draft constraint). *Risk:* prompt complexity can help one provider and
   hurt another — keep per-provider regression fixtures.
-- **A2 — Slot-aware second-pass retrieval.** Extend the existing bounded
+- **A2 — Slot-aware second-pass retrieval. ✅ IMPLEMENTED.** Extend the existing bounded
   exploration round with role-specific source/query bias (unit → QUDT first;
   property/entity/constraint/method → `smn`/`gcdfo` first; role-specific query
   rewriting). *Risk:* unbounded oscillation — keep the one-round cap.
-- **A3 — Deterministic bundle-fit validators.** Post-LLM checks that downgrade a
+- **A3 — Deterministic bundle-fit validators. ✅ IMPLEMENTED.** Post-LLM checks that downgrade a
   bundle when a `constraint_iri` merely restates obvious context, a `method_iri`
   is chosen without method evidence, or unit/property/entity are incompatible.
   *Risk:* over-strict validators over-trigger new-term escalation — make them
   explain *why* a slot was rejected. Implement after A1 so these checks validate
   the canonical bundle representation rather than inventing a parallel shape.
-- **A4 — Richer structured gap escalation. ⚠️ PARTIAL.** Direct
+- **A4 — Richer structured gap escalation. ✅ IMPLEMENTED.** Direct
   `request_new_term` responses already populate `llm_new_term_label`,
   `llm_new_term_definition`, and `llm_new_term_namespace` in both assessment-row
   shapes, and unresolved `reject_shortlist` already escalates the decision with a
@@ -101,7 +109,7 @@ Build the rest on top of it.
   `detect_semantic_term_gaps()` / `render_ontology_term_request()` consume the
   `semantic_llm_assessments` metadata. Keep empty/success row symmetry if the
   assessment contract gains another field.
-- **A5 — `retry_search` re-issue handling (bug #13).** When the model's
+- **A5 — `retry_search` re-issue handling (bug #13). ✅ IMPLEMENTED.** When the model's
   `retry_query` duplicates the original, record that on the assessment instead of
   silently spending a generic exploration round.
 
@@ -311,14 +319,17 @@ share one mature response/request contract rather than two.
 - [x] 2026-07-21: P2 complete. PR
   [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged to
   `main` as `8fb4f37`; local and remote feature branches removed.
-- [ ] Begin Theme A (A0 → A4 → A5 → A2 → A1 → A3).
+- [x] 2026-07-28: Began Theme A on the canonical single checkout; opened issue
+  #4, created `feature/theme-a-semantic-review`, and started the living ExecPlan.
+- [ ] Complete Theme A (A0 → A4/A5 → bundle data model → A2/A1 orchestration →
+  A3).
 
 ## Validation and Acceptance
 
 - Each behaviour change ships with focused `testthat` coverage and keeps the full
   suite green (`Rscript -e 'devtools::test()'`).
 - Observable behaviour changes get a `NEWS.md` entry and roxygen/vignette updates,
-  then `devtools::document()` + a lazy `pkgdown::build_site(lazy = TRUE)`.
+  then `devtools::document()` + `Rscript scripts/build-pkgdown.R`.
 - Public function signatures stay unchanged unless a separate compatibility
   decision is logged here.
 - `R CMD check` before any merge (P1).

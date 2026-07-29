@@ -180,7 +180,7 @@
       slot = "property",
       group = "core_observable",
       prompt = "What property or observable is this variable really about?",
-      why = "This anchors the SKOS variable concept and keeps the variable separate from the entity or unit.",
+      why = "This anchors the whole-variable concept and keeps the property separate from the entity or unit.",
       expected_answer = "short noun phrase"
     ),
     list(
@@ -572,12 +572,12 @@
 
   system_prompt <- paste(
     "You are reviewing a metasalmon decomposition session for a measurement or compound-variable target.",
-    "Treat the selected variable as a SKOS concept, not an OWL class.",
+    "Preserve each candidate's native ontology type; do not infer SKOS or OWL type from the variable role.",
     "Use local decomposition language around property, entity, constraints, and optional usedProcedure context.",
     "Procedure context is optional adjacent context, not a native decomposition slot.",
     "Choose only from the provided candidates; never invent an IRI.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context.",
-    "decision must be one of accept, review, propose_new_term.",
+    "decision must be one of accept, review, request_new_term.",
     "selected_candidate_index must be null when no candidate should be selected.",
     "confidence must be numeric between 0 and 1."
   )
@@ -644,7 +644,7 @@
   }
 
   definition_bits <- c(
-    sprintf("Proposed SKOS concept for %s of %s.", property, entity),
+    sprintf("Proposed whole-variable term for %s of %s.", property, entity),
     if (!is.na(constraints) && nzchar(constraints)) sprintf("Constraints: %s.", constraints),
     if (!is.na(used_procedure) && nzchar(used_procedure)) sprintf("Optional usedProcedure context: %s.", used_procedure)
   )
@@ -662,6 +662,23 @@
     affected_columns = state$target$column_name[[1]] %||% NA_character_,
     target_row_key = state$target$target_row_key[[1]] %||% NA_character_
   )
+}
+
+.ms_chat_decomposition_candidate_term_type <- function(candidate) {
+  if (is.null(candidate)) {
+    return(NA_character_)
+  }
+  candidate <- tibble::as_tibble(candidate)
+  for (field in intersect(
+    c("term_type", "native_type", "resource_kind", "type_iris"),
+    names(candidate)
+  )) {
+    value <- .ms_chat_trim_string(candidate[[field]][[1]])
+    if (!is.na(value)) {
+      return(value)
+    }
+  }
+  NA_character_
 }
 
 .ms_chat_decomposition_recompute_state <- function(state,
@@ -708,7 +725,11 @@
 
     if (!inherits(assessed, "error")) {
       proposal_source <- "chat"
-      decision <- assessed$decision
+      decision <- if (identical(assessed$decision, "request_new_term")) {
+        "propose_new_term"
+      } else {
+        assessed$decision
+      }
       confidence <- assessed$confidence
       missing_context <- assessed$missing_context
       rationale <- assessed$rationale
@@ -753,7 +774,11 @@
     decision = decision,
     selected_candidate_index = if (!is.null(selected)) selected$index else NA_integer_,
     selected_candidate = if (!is.null(selected) && !is.null(selected$candidate)) as.list(selected$candidate[1, , drop = FALSE]) else NULL,
-    term_type = "skos_concept",
+    term_type = if (!is.null(selected)) {
+      .ms_chat_decomposition_candidate_term_type(selected$candidate)
+    } else {
+      NA_character_
+    },
     rationale = rationale,
     confidence = confidence,
     missing_context = missing_context,
@@ -892,7 +917,10 @@
       "Patch preview",
       sprintf("Decision: %s", patch$decision %||% "review"),
       selected_line,
-      sprintf("term_type: %s", patch$term_type %||% "skos_concept"),
+      sprintf(
+        "term_type: %s",
+        .ms_chat_first_non_empty(patch$term_type, "unspecified")
+      ),
       sprintf("proposal_source: %s", patch$proposal_source %||% "heuristic"),
       if (!is.na(.ms_chat_trim_string(patch$rationale))) sprintf("Rationale: %s", patch$rationale),
       if (!is.na(.ms_chat_trim_string(patch$missing_context))) sprintf("Missing context: %s", patch$missing_context),
@@ -1101,6 +1129,10 @@ chat_decomposition <- function(dict,
                                commands = NULL,
                                input_fn = readline,
                                output_fn = NULL) {
+  sources <- .ms_forward_semantic_sources(
+    sources,
+    omitted = missing(sources)
+  )
   dict_row <- .ms_chat_decomposition_find_row(
     dict = dict,
     column_name = column_name,
@@ -1173,7 +1205,7 @@ chat_decomposition <- function(dict,
         state$target$table_id[[1]] %||% NA_character_,
         state$target$column_name[[1]] %||% NA_character_
       ),
-      "This flow keeps structured state separate from the transcript and treats the variable as a SKOS concept.",
+      "This flow keeps structured state separate from the transcript and preserves each selected candidate's native ontology type.",
       "Procedure context is tracked as usedProcedure-style context, not as a native decomposition slot.",
       .ms_chat_decomposition_candidate_preview(state),
       "",

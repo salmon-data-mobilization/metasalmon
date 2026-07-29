@@ -1,0 +1,127 @@
+{
+  "schema_version": "theme-a-ontology-manifest-v1",
+  "evidence_status": "pinned_primary_source_contract",
+  "description": "Primary-source contract for every external ontology IRI used by the Theme A fixtures. Fixture candidate definitions are curated benchmark paraphrases and are not represented as ontology-source definitions.",
+  "sources": [
+    {
+      "source": "smn",
+      "repository": "salmon-data-mobilization/salmon-domain-ontology",
+      "revision": "b6978b0b6cabc032e6ae2c5a2cd298958a69748e",
+      "revision_url": "https://github.com/salmon-data-mobilization/salmon-domain-ontology/commit/b6978b0b6cabc032e6ae2c5a2cd298958a69748e",
+      "artifact_path": "docs/smn.ttl",
+      "artifact_url": "https://raw.githubusercontent.com/salmon-data-mobilization/salmon-domain-ontology/b6978b0b6cabc032e6ae2c5a2cd298958a69748e/docs/smn.ttl",
+      "artifact_sha256": "ebf58afeea465232d0330a9508e88750e8926d600fbedcd3d2e96341f774b136"
+    },
+    {
+      "source": "gcdfo",
+      "repository": "dfo-pacific-science/dfo-salmon-ontology",
+      "revision": "c7a54251eb8f673052fed61f9ca2624e557249c7",
+      "revision_url": "https://github.com/dfo-pacific-science/dfo-salmon-ontology/commit/c7a54251eb8f673052fed61f9ca2624e557249c7",
+      "artifact_path": "docs/gcdfo.ttl",
+      "artifact_url": "https://raw.githubusercontent.com/dfo-pacific-science/dfo-salmon-ontology/c7a54251eb8f673052fed61f9ca2624e557249c7/docs/gcdfo.ttl",
+      "artifact_sha256": "f25f4580c7a697727f86b2f2e1cf537803f39368e6f55eae601b91f7348a6a26"
+    },
+    {
+      "source": "qudt",
+      "repository": "qudt/qudt-public-repo",
+      "revision": "e44022acfeb466eacf990bf056625aa81b81f644",
+      "revision_url": "https://github.com/qudt/qudt-public-repo/commit/e44022acfeb466eacf990bf056625aa81b81f644",
+      "artifact_path": "src/main/rdf/vocab/quantitykinds/VOCAB_QUDT-QUANTITY-KINDS-ALL.ttl",
+      "artifact_url": "https://raw.githubusercontent.com/qudt/qudt-public-repo/e44022acfeb466eacf990bf056625aa81b81f644/src/main/rdf/vocab/quantitykinds/VOCAB_QUDT-QUANTITY-KINDS-ALL.ttl",
+      "artifact_sha256": "d31638338a3100c2732a0561507025fb0ca9d5c5dfba1822af0e7bdc3807cffd"
+    }
+  ],
+  "terms": [
+    {
+      "iri": "https://w3id.org/smn/CatchAbundance",
+      "source": "smn",
+      "label": "Catch abundance",
+      "candidate_term_type": "owl_class",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#Class"
+      ],
+      "source_definition": "A measurement datum recording the number of salmon represented in fishery catch for a defined fishery, place, time, or stock context.",
+      "source_definition_status": "normalized_source_literal"
+    },
+    {
+      "iri": "http://qudt.org/vocab/quantitykind/Count",
+      "source": "qudt",
+      "label": "Count",
+      "candidate_term_type": "qudt_quantitykind",
+      "native_rdf_types": [
+        "http://qudt.org/schema/qudt/QuantityKind"
+      ],
+      "source_definition": "\"Count\" is the value of a count of items.",
+      "source_definition_status": "normalized_source_literal"
+    },
+    {
+      "iri": "https://w3id.org/smn/CatchContext",
+      "source": "smn",
+      "label": "Catch context",
+      "candidate_term_type": "skos_concept",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#NamedIndividual",
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "source_definition": "Measurement context indicating values refer to fishery catch.",
+      "source_definition_status": "normalized_source_literal"
+    },
+    {
+      "iri": "https://w3id.org/smn/FishWeight",
+      "source": "smn",
+      "label": "Fish weight",
+      "candidate_term_type": "owl_class",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#Class"
+      ],
+      "source_definition": null,
+      "source_definition_status": "not_provided"
+    },
+    {
+      "iri": "https://w3id.org/smn/forkLength",
+      "source": "smn",
+      "label": "Fork length",
+      "candidate_term_type": "owl_class",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#Class"
+      ],
+      "source_definition": null,
+      "source_definition_status": "not_provided"
+    },
+    {
+      "iri": "https://w3id.org/smn/ForkLengthMeasurementFieldMethod",
+      "source": "smn",
+      "label": "Fork-length field method",
+      "candidate_term_type": "owl_class",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#Class"
+      ],
+      "source_definition": null,
+      "source_definition_status": "not_provided"
+    },
+    {
+      "iri": "https://w3id.org/smn/OceanPhase",
+      "source": "smn",
+      "label": "Ocean phase",
+      "candidate_term_type": "skos_concept",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#NamedIndividual",
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "source_definition": "Phase of the salmon life cycle or assessment period occurring in the marine environment.",
+      "source_definition_status": "normalized_source_literal"
+    },
+    {
+      "iri": "https://w3id.org/gcdfo/salmon#FixedStationTally",
+      "source": "gcdfo",
+      "label": "Fixed-Station Tally",
+      "candidate_term_type": "skos_concept",
+      "native_rdf_types": [
+        "http://www.w3.org/2002/07/owl#NamedIndividual",
+        "http://www.w3.org/2004/02/skos/core#Concept"
+      ],
+      "source_definition": "Seasonal total = roll-up of daily/continuous counts from a fixed (non-sonar) station; simple arithmetic with documented coverage.",
+      "source_definition_status": "normalized_source_literal"
+    }
+  ]
+}

@@ -242,7 +242,7 @@ Verified copy-paste that the refactor plan targets:
 pkgload::load_all(".", quiet = TRUE)                 # fast reload during dev
 testthat::test_file("tests/testthat/test-<area>.R", reporter = "summary")
 devtools::document(); devtools::test(reporter = "summary")
-pkgdown::build_site()                                # only when public docs change
+system2("Rscript", "scripts/build-pkgdown.R")       # only when public docs change
 ```
 ```sh
 git diff --check

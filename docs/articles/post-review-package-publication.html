@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -195,6 +195,10 @@ elsewhere:</p>
 <span>    <span class="va">search_query</span>,</span>
 <span>    <span class="va">top_non_smn_label</span>,</span>
 <span>    <span class="va">top_non_smn_source</span>,</span>
+<span>    <span class="va">gap_detection_basis</span>,</span>
+<span>    <span class="va">llm_decision</span>,</span>
+<span>    <span class="va">llm_new_term_label</span>,</span>
+<span>    <span class="va">llm_escalated_from</span>,</span>
 <span>    <span class="va">placement_recommendation</span>,</span>
 <span>    <span class="va">placement_confidence</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
@@ -205,17 +209,24 @@ elsewhere:</p>
 <code>top_non_smn_*</code> columns show the best non-SMN evidence
 the package found;</li>
 <li>
+<code>gap_detection_basis</code> distinguishes candidate evidence, a
+final LLM term-gap decision, or both; and</li>
+<li>
 <code>placement_recommendation</code> gives a first-pass routing
 guess.</li>
 </ul>
-<p>If the original run used LLM review, also keep rows from
-<code>semantic_suggestions.csv</code> where
-<code>llm_decision == "request_new_term"</code>. A
-<code>reject_shortlist</code> that remains unresolved after the bounded
-retry is escalated to that decision so a likely gap is not hidden as a
-poor match. The current gap helpers do not yet ingest
-<code>semantic_llm_assessments</code> automatically, so treat those rows
-as additional evidence when building the request plan below.</p>
+<p>When <code>suggestions</code> is omitted,
+<code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> reads both the
+<code>semantic_suggestions</code> and
+<code>semantic_llm_assessments</code> dictionary attributes. Final
+<code>request_new_term</code> decisions are therefore included
+automatically, even when candidate rows contain an SMN match. An
+unresolved <code>reject_shortlist</code> escalation remains traceable
+through <code>llm_escalated_from</code>.</p>
+<p>If you pass <code>suggestions</code> explicitly, only candidate
+evidence and the embedded <code>llm_*</code> columns in that table are
+used. The dictionary’s assessment attribute is intentionally ignored in
+that form.</p>
 <p>If you only want a narrower slice, filter by role or scope:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gaps</span> <span class="op">|&gt;</span></span>
@@ -231,10 +242,14 @@ as additional evidence when building the request plan below.</p>
 use this when the term describes a reusable salmon science concept that
 another program, region, or organization could reasonably use too.</li>
 <li>
-<strong>DFO-specific term</strong>: use this when the concept is
-clearly tied to DFO policy, operations, internal workflow, local
-identifiers, program-specific statuses, or other context that is not
-broadly reusable outside that setting.</li>
+<strong>DFO Salmon Ontology (<code>gcdfo</code>)</strong>: use this
+when the concept is clearly tied to DFO policy, operations, internal
+workflow, local identifiers, program-specific statuses, or other context
+that is not broadly reusable outside that setting.</li>
+<li>
+<strong>Profile term (<code>profile</code>)</strong>: use this for a
+local, program, or organization profile when neither shared SMN nor
+DFO-wide GCDFO governance is appropriate.</li>
 </ul>
 <p>A good default test is:</p>
 <ul>
@@ -244,49 +259,37 @@ broadly reusable outside that setting.</li>
 process, lean <strong>DFO-specific</strong>.</li>
 </ul>
 <div class="section level4">
-<h4 id="how-that-maps-to-the-current-helper-outputs">How that maps to the current helper outputs<a class="anchor" aria-label="anchor" href="#how-that-maps-to-the-current-helper-outputs"></a>
+<h4 id="how-routing-is-decided">How routing is decided<a class="anchor" aria-label="anchor" href="#how-routing-is-decided"></a>
 </h4>
-<p><code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> and
-<code><a href="../reference/render_ontology_term_request.html">render_ontology_term_request()</a></code> currently use these
-buckets:</p>
-<ul>
-<li>
-<code>placement_recommendation == "smn"</code> → likely shared
-salmon-domain request</li>
-<li>
-<code>placement_recommendation == "profile"</code> → likely
-<strong>not</strong> shared; in practical DFO use, treat this as the
-DFO/program-specific bucket</li>
-<li>
-<code>placement_recommendation == "uncertain"</code> → make a human
-decision before drafting requests</li>
-</ul>
-<blockquote>
-<p><strong>Current limitation:</strong> the non-shared bucket is still
-named <code>profile</code> in the helper API. That is the right bucket
-for DFO/program-specific requests in this workflow, but the name is more
-generic than the real governance choice.</p>
-</blockquote>
+<p><code><a href="../reference/render_ontology_term_request.html">render_ontology_term_request()</a></code> accepts <code>smn</code>,
+<code>gcdfo</code>, <code>profile</code>, <code>uncertain</code>, and
+<code>skip</code> row outcomes. Its precedence is:</p>
+<ol style="list-style-type: decimal">
+<li>an explicit <code>scope_overrides</code> value for the row;</li>
+<li>a forced <code>scope</code>;</li>
+<li>a recognized <code>llm_new_term_namespace</code>; and</li>
+<li>the deterministic placement heuristic.</li>
+</ol>
+<p>Treat <code>llm_new_term_namespace</code> as evidence, not authority.
+A human reviewer must still decide whether a DFO-specific proposal
+belongs in GCDFO, a narrower profile, or nowhere. Non-interactive
+uncertainty becomes <code>skip</code>; interactive use asks for a
+routing decision.</p>
 </div>
 </div>
 <div class="section level3">
 <h3 id="produce-a-concrete-term-request-list">6) Produce a concrete term-request list<a class="anchor" aria-label="anchor" href="#produce-a-concrete-term-request-list"></a>
 </h3>
-<p>First build a simple routing table you can save with the package:</p>
+<p>First render a dry, non-interactive plan and inspect every route:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">request_plan</span> <span class="op">&lt;-</span> <span class="va">gaps</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate.html" class="external-link">mutate</a></span><span class="op">(</span></span>
-<span>    request_scope <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
-<span>      <span class="va">placement_recommendation</span> <span class="op">==</span> <span class="st">"smn"</span> <span class="op">~</span> <span class="st">"smn"</span>,</span>
-<span>      <span class="va">placement_recommendation</span> <span class="op">==</span> <span class="st">"profile"</span> <span class="op">~</span> <span class="st">"profile"</span>,</span>
-<span>      <span class="cn">TRUE</span> <span class="op">~</span> <span class="st">"skip"</span></span>
-<span>    <span class="op">)</span>,</span>
-<span>    governance_bucket <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/case-and-replace-when.html" class="external-link">case_when</a></span><span class="op">(</span></span>
-<span>      <span class="va">request_scope</span> <span class="op">==</span> <span class="st">"smn"</span> <span class="op">~</span> <span class="st">"shared salmon-domain ontology (SMN)"</span>,</span>
-<span>      <span class="va">request_scope</span> <span class="op">==</span> <span class="st">"profile"</span> <span class="op">~</span> <span class="st">"DFO/program-specific ontology bucket"</span>,</span>
-<span>      <span class="cn">TRUE</span> <span class="op">~</span> <span class="st">"needs manual routing decision"</span></span>
-<span>    <span class="op">)</span></span>
-<span>  <span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span></span>
+<span>  <span class="va">gaps</span>,</span>
+<span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  profile_name <span class="op">=</span> <span class="st">"local-program"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">request_plan</span> <span class="op">&lt;-</span> <span class="va">requests</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
 <span>    <span class="va">dataset_id</span>,</span>
 <span>    <span class="va">table_id</span>,</span>
@@ -297,56 +300,61 @@ generic than the real governance choice.</p>
 <span>    <span class="va">search_query</span>,</span>
 <span>    <span class="va">top_non_smn_label</span>,</span>
 <span>    <span class="va">top_non_smn_source</span>,</span>
+<span>    <span class="va">gap_detection_basis</span>,</span>
+<span>    <span class="va">llm_new_term_namespace</span>,</span>
 <span>    <span class="va">placement_recommendation</span>,</span>
 <span>    <span class="va">placement_confidence</span>,</span>
-<span>    <span class="va">governance_bucket</span>,</span>
-<span>    <span class="va">request_scope</span></span>
+<span>    <span class="va">request_scope</span>,</span>
+<span>    <span class="va">ontology_repo</span></span>
 <span>  <span class="op">)</span></span>
 <span></span>
 <span><span class="va">request_plan</span></span>
 <span><span class="fu">readr</span><span class="fu">::</span><span class="fu"><a href="https://readr.tidyverse.org/reference/write_delim.html" class="external-link">write_csv</a></span><span class="op">(</span><span class="va">request_plan</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"term-request-plan.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>That gives you a concrete list of:</p>
-<ul>
-<li>which package row still needs help;</li>
-<li>what the best fallback term looked like;</li>
-<li>where the request should probably go.</li>
-</ul>
-<p>Next, render draft request text from that plan:</p>
+<p>That gives you a concrete list of which package row still needs help,
+the best fallback evidence, and the proposed route. Review
+<code>skip</code> rows and any route inferred from
+<code>llm_new_term_namespace</code>.</p>
+<p>To apply reviewed row-by-row decisions, pass an override vector. Edit
+<code>reviewed_scopes</code> so every value is one of <code>smn</code>,
+<code>gcdfo</code>, <code>profile</code>, or <code>skip</code>:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">reviewed_scopes</span> <span class="op">&lt;-</span> <span class="va">request_plan</span><span class="op">$</span><span class="va">request_scope</span></span>
+<span><span class="co"># reviewed_scopes[2] &lt;- "gcdfo"</span></span>
+<span></span>
+<span><span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span></span>
 <span>  <span class="va">gaps</span>,</span>
 <span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  ask <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  profile_name <span class="op">=</span> <span class="st">"dfo-salmon"</span>,</span>
-<span>  scope_overrides <span class="op">=</span> <span class="va">request_plan</span><span class="op">$</span><span class="va">request_scope</span></span>
+<span>  profile_name <span class="op">=</span> <span class="st">"local-program"</span>,</span>
+<span>  scope_overrides <span class="op">=</span> <span class="va">reviewed_scopes</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">requests</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">request_scope</span>, <span class="va">request_title</span>, <span class="va">target_row_key</span>, <span class="va">search_query</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
+<span>    <span class="va">request_scope</span>,</span>
+<span>    <span class="va">ontology_repo</span>,</span>
+<span>    <span class="va">request_title</span>,</span>
+<span>    <span class="va">target_row_key</span>,</span>
+<span>    <span class="va">search_query</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<p>The override vector must have length one or one value per gap row.
+Rendering uses the active SMN and GCDFO repository templates and never
+submits an issue.</p>
 <div class="section level4">
-<h4 id="preview-shared-term-issue-drafts">Preview shared-term issue drafts<a class="anchor" aria-label="anchor" href="#preview-shared-term-issue-drafts"></a>
+<h4 id="preview-issue-drafts">Preview issue drafts<a class="anchor" aria-label="anchor" href="#preview-issue-drafts"></a>
 </h4>
-<p>For shared salmon-domain requests, the package already has a dry-run
-GitHub path:</p>
+<p>Preview both SMN and GCDFO payloads before any submission:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">smn_preview</span> <span class="op">&lt;-</span> <span class="va">requests</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">request_scope</span> <span class="op">==</span> <span class="st">"smn"</span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<code class="sourceCode R"><span><span class="va">issue_preview</span> <span class="op">&lt;-</span> <span class="va">requests</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">request_scope</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"smn"</span>, <span class="st">"gcdfo"</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="../reference/submit_term_request_issues.html">submit_term_request_issues</a></span><span class="op">(</span>dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">smn_preview</span></span></code></pre></div>
-<p>That preview is usually enough to review the issue titles/bodies
-before posting.</p>
-</div>
-<div class="section level4">
-<h4 id="what-to-do-with-dfo-specific-rows">What to do with DFO-specific rows<a class="anchor" aria-label="anchor" href="#what-to-do-with-dfo-specific-rows"></a>
-</h4>
-<p>Rows with <code>request_scope == "profile"</code> are the
-DFO/program-specific cases in this workflow. Keep them in
-<code>term-request-plan.csv</code> and file them through the right DFO
-governance process after human review.</p>
-<p>At the moment, <code><a href="../reference/submit_term_request_issues.html">submit_term_request_issues()</a></code> is best
-treated as the built-in path for <strong>shared SMN</strong> requests,
-not as a one-click publisher for DFO-specific rows.</p>
+<span><span class="va">issue_preview</span></span></code></pre></div>
+<p>The helper only posts after an explicit call with
+<code>dry_run = FALSE</code>; it never submits during detection or
+rendering. Keep <code>confirm = TRUE</code> for curator review. Profile
+rows remain local governance artifacts unless you provide a repository
+workflow for them.</p>
 </div>
 </div>
 <div class="section level3">

@@ -772,24 +772,37 @@
   if (!is.null(context_files) && length(context_files) > 0) {
     raw_context <- c(raw_context, lapply(context_files, .ms_context_text_from_file))
   }
-  if (!is.null(context_text) && nzchar(trimws(paste(context_text, collapse = " ")))) {
-    raw_context <- c(raw_context, list(list(
-      path = NA_character_,
-      source = "inline_context",
-      text = paste(context_text, collapse = "\n\n")
-    )))
+  inline_text <- character()
+  if (!is.null(context_text)) {
+    inline_text <- trimws(as.character(context_text))
+    inline_text <- inline_text[
+      !is.na(inline_text) & nzchar(inline_text)
+    ]
   }
 
   raw_context <- Filter(Negate(is.null), raw_context)
-  if (length(raw_context) == 0) {
+  if (length(raw_context) == 0L && length(inline_text) == 0L) {
     return(tibble::tibble())
   }
 
   raw_context <- .ms_unique_context_sources(raw_context)
 
-  purrr::map_dfr(raw_context, function(item) {
+  file_chunks <- purrr::map_dfr(raw_context, function(item) {
     .ms_chunk_context_text(item$text, item$source)
   })
+  inline_chunks <- purrr::imap_dfr(inline_text, function(text, item_index) {
+    chunks <- .ms_chunk_context_text(text, "inline_context")
+    if (nrow(chunks) > 0L) {
+      chunks$chunk_id <- paste0(
+        "inline_context[",
+        item_index,
+        "]#",
+        seq_len(nrow(chunks))
+      )
+    }
+    chunks
+  })
+  dplyr::bind_rows(file_chunks, inline_chunks)
 }
 
 .ms_prepare_context_chunks <- function(target_row,
@@ -987,7 +1000,8 @@
 .ms_llm_decomposition_system_prompt <- function() {
   paste(
     "You are assessing ontology candidate matches for the metasalmon R package by running a chat_decomposition()-style review.",
-    "Treat the variable as a SKOS variable concept and assess the current slot in the context of the whole decomposition.",
+    "Preserve each candidate's native ontology type; do not assume the whole-variable term is a SKOS concept.",
+    "Assess the current slot in the context of the whole decomposition.",
     "Choose only from the provided candidates; never invent an IRI.",
     "Role-fit beats topical relatedness: the best nearby term is still wrong if it does not fit the slot.",
     "Reason about the whole variable first, then assess the current slot.",
@@ -1151,6 +1165,61 @@
     grepl("^[A-Za-z][A-Za-z0-9._+-]*:[^\\s]+$", text)
 }
 
+.ms_llm_classify_retry_query <- function(retry_query, original_query) {
+  retry <- .ms_llm_normalize_query_text(retry_query)
+  original <- .ms_llm_normalize_query_text(original_query)
+  disposition <- if (is.na(retry)) {
+    "invalid"
+  } else if (!is.na(original) &&
+      identical(tolower(retry), tolower(original))) {
+    "duplicate_original_query"
+  } else if (.ms_llm_query_looks_like_identifier(retry)) {
+    "identifier_like"
+  } else {
+    "use_query"
+  }
+
+  list(
+    query = retry,
+    original_query = original,
+    disposition = disposition,
+    rejection_reason = if (identical(
+      disposition,
+      "duplicate_original_query"
+    )) {
+      "duplicate_original_query"
+    } else {
+      NA_character_
+    }
+  )
+}
+
+.ms_llm_apply_retry_query_classification <- function(assessment,
+                                                     classification) {
+  if (!identical(
+    classification$disposition,
+    "duplicate_original_query"
+  )) {
+    return(assessment)
+  }
+
+  assessment$llm_retry_query_rejection_reason <-
+    classification$rejection_reason
+  note <- paste(
+    "Retry query matched the original query after case and whitespace normalization;",
+    "the retry was not issued."
+  )
+  existing <- .ms_llm_non_empty_string(
+    assessment$llm_rationale[[1]] %||% NA_character_
+  )
+  assessment$llm_rationale <- if (is.na(existing)) {
+    note
+  } else {
+    paste(existing, note)
+  }
+  assessment
+}
+
 .ms_llm_messages_for_query_exploration <- function(record, assessment_row) {
   payload <- .ms_llm_target_payload(
     record$group[1, , drop = FALSE],
@@ -1260,14 +1329,24 @@
   decision <- .ms_llm_non_empty_string(assessment_row$llm_decision[[1]] %||% NA_character_)
   queries <- character()
   if (identical(decision, "retry_search") && "llm_retry_query" %in% names(assessment_row)) {
-    queries <- tryCatch(
-      .ms_llm_validate_exploration_queries(
-        list(alternate_queries = assessment_row$llm_retry_query[[1]] %||% NA_character_),
-        original_query = target$search_query[[1]],
-        max_queries = 1L
-      ),
-      error = function(e) character()
+    classification <- .ms_llm_classify_retry_query(
+      assessment_row$llm_retry_query[[1]] %||% NA_character_,
+      target$search_query[[1]]
     )
+    assessment_row <- .ms_llm_apply_retry_query_classification(
+      assessment_row,
+      classification
+    )
+    if (identical(
+      classification$disposition,
+      "duplicate_original_query"
+    )) {
+      return(list(record = record, assessment = assessment_row))
+    }
+
+    if (identical(classification$disposition, "use_query")) {
+      queries <- classification$query
+    }
   }
 
   if (length(queries) == 0) {
@@ -1398,12 +1477,32 @@
   assessment$llm_selected_candidate_index <- NA_integer_
   assessment$llm_selected_iri <- NA_character_
   assessment$llm_selected_label <- NA_character_
+  assessment$llm_escalated_from <- "reject_shortlist"
+  pre_rationale <- .ms_llm_non_empty_string(
+    pre_assessment$llm_rationale[[1]] %||% NA_character_
+  )
+  post_rationale <- .ms_llm_non_empty_string(
+    assessment$llm_rationale[[1]] %||% NA_character_
+  )
+  rationale_parts <- character()
+  if (!is.na(pre_rationale)) {
+    rationale_parts <- c(
+      rationale_parts,
+      paste0("Initial shortlist rejection: ", pre_rationale)
+    )
+  }
+  if (!is.na(post_rationale) &&
+      (is.na(pre_rationale) || !identical(post_rationale, pre_rationale))) {
+    rationale_parts <- c(
+      rationale_parts,
+      paste0("Post-retry shortlist rejection: ", post_rationale)
+    )
+  }
   note <- paste(
     "Shortlist rejected and exploration found no acceptable candidate;",
     "escalated to request_new_term so the likely ontology gap is surfaced."
   )
-  existing <- .ms_llm_non_empty_string(assessment$llm_rationale[[1]] %||% NA_character_)
-  assessment$llm_rationale <- if (is.na(existing)) note else paste(existing, note)
+  assessment$llm_rationale <- paste(c(rationale_parts, note), collapse = " ")
   explored$assessment <- assessment
   explored
 }
@@ -1599,7 +1698,7 @@
   # as a distinct decision (not downgraded to review) so the stored llm_decision
   # carries the rejection; the orchestration later escalates an unresolved
   # rejection to request_new_term via .ms_llm_escalate_unresolved_rejection().
-  if (decision %in% c("request_new_term", "retry_search", "reject_shortlist")) {
+  if (!identical(decision, "accept")) {
     selected_index <- NA_integer_
   }
   if (identical(decision, "retry_search") && is.na(retry_query)) {
@@ -1843,64 +1942,41 @@
   unique_errors <- unique(trimws(as.character(assessments$llm_error[has_error])))
   error_summary <- paste(unique_errors[nzchar(unique_errors)], collapse = " | ")
 
-  if (.ms_has_usable_semantic_suggestions(deterministic_suggestions)) {
-    warn_lines <- c(
+  has_deterministic <- .ms_has_usable_semantic_suggestions(
+    deterministic_suggestions
+  )
+  warn_lines <- if (has_deterministic) {
+    c(
       "All LLM assessments failed for {.code {model_ref}}; falling back to deterministic semantic suggestions only.",
       "i" = paste0(nrow(assessments), " target(s) returned only LLM errors, so metasalmon will keep the retrieved semantic suggestions and skip LLM review for this run.")
     )
-    if (nzchar(error_summary)) {
-      warn_lines <- c(warn_lines, "i" = error_summary)
-    }
-    cli::cli_warn(warn_lines)
-    return(TRUE)
+  } else {
+    c(
+      "All LLM assessments failed for {.code {model_ref}}; returning the unchanged empty semantic shortlist.",
+      "i" = paste0(nrow(assessments), " target(s) returned only LLM errors. Provider failure does not convert an empty retrieval result into a package error.")
+    )
   }
-
-  abort_lines <- c(
-    "All LLM assessments failed for {.code {model_ref}}.",
-    "i" = paste0(nrow(assessments), " target(s) returned only LLM errors and no usable deterministic semantic suggestions were available.")
-  )
   if (nzchar(error_summary)) {
-    abort_lines <- c(abort_lines, "i" = error_summary)
+    warn_lines <- c(warn_lines, "i" = error_summary)
   }
-  cli::cli_abort(abort_lines)
+  cli::cli_warn(warn_lines)
+  TRUE
 }
 
-.ms_assess_semantic_suggestions_llm <- function(suggestions,
-                                                provider = c("openai", "openrouter", "openai_compatible", "chapi"),
-                                                model = NULL,
-                                                api_key = NULL,
-                                                base_url = NULL,
-                                                reasoning_effort = NULL,
-                                                top_n = 5L,
-                                                context_files = NULL,
-                                                context_text = NULL,
-                                                timeout_seconds = 60,
-                                                request_fn = NULL,
-                                                search_fn,
-                                                sources,
-                                                max_per_role) {
+.ms_assess_semantic_candidate_records <- function(suggestions,
+                                                  config,
+                                                  top_n,
+                                                  context_chunk_pool,
+                                                  search_fn,
+                                                  sources,
+                                                  max_per_role) {
   suggestions <- tibble::as_tibble(suggestions)
   if (nrow(suggestions) == 0) {
     return(list(
       suggestions = suggestions,
-      assessments = tibble::tibble()
+      assessments = .ms_empty_llm_assessments()
     ))
   }
-
-  config <- .ms_llm_resolve_config(
-    provider = provider,
-    model = model,
-    api_key = api_key,
-    base_url = base_url,
-    timeout_seconds = timeout_seconds,
-    request_fn = request_fn,
-    reasoning_effort = reasoning_effort
-  )
-  top_n <- .ms_llm_effective_top_n(config, top_n)
-  context_chunk_pool <- .ms_collect_context_chunks(
-    context_files = context_files,
-    context_text = context_text
-  )
 
   suggestions$.ms_group_key <- .ms_llm_group_key_df(suggestions)
   suggestions$.ms_row_order <- seq_len(nrow(suggestions))
@@ -1954,20 +2030,6 @@
 
   final_records <- purrr::map(explored, "record")
   assessments <- dplyr::bind_rows(purrr::map(explored, "assessment"))
-  fallback_to_deterministic <- .ms_llm_abort_if_provider_wide_failure(
-    assessments,
-    config,
-    deterministic_suggestions = suggestions
-  )
-  if (isTRUE(fallback_to_deterministic)) {
-    suggestions <- suggestions |>
-      dplyr::select(-dplyr::any_of(c(".ms_group_key", ".ms_bundle_key", ".ms_row_order")))
-    return(list(
-      suggestions = suggestions,
-      assessments = assessments
-    ))
-  }
-
   suggestions <- .ms_semantic_merge_llm_assessments(
     dplyr::bind_rows(purrr::map(final_records, "group")),
     assessments = assessments,
@@ -1976,6 +2038,111 @@
 
   list(
     suggestions = suggestions,
+    assessments = .ms_llm_normalize_assessment_rows(assessments)
+  )
+}
+
+.ms_assess_semantic_suggestions_llm <- function(suggestions,
+                                                provider = c("openai", "openrouter", "openai_compatible", "chapi"),
+                                                model = NULL,
+                                                api_key = NULL,
+                                                base_url = NULL,
+                                                reasoning_effort = NULL,
+                                                top_n = 5L,
+                                                context_files = NULL,
+                                                context_text = NULL,
+                                                timeout_seconds = 60,
+                                                request_fn = NULL,
+                                                search_fn,
+                                                sources,
+                                                max_per_role,
+                                                targets = NULL,
+                                                dict = NULL) {
+  suggestions <- tibble::as_tibble(suggestions)
+  deterministic_suggestions <- suggestions
+  targets <- if (is.null(targets)) tibble::tibble() else tibble::as_tibble(targets)
+  dict <- if (is.null(dict)) tibble::tibble() else tibble::as_tibble(dict)
+
+  config <- .ms_llm_resolve_config(
+    provider = provider,
+    model = model,
+    api_key = api_key,
+    base_url = base_url,
+    timeout_seconds = timeout_seconds,
+    request_fn = request_fn,
+    reasoning_effort = reasoning_effort
+  )
+  top_n <- .ms_llm_effective_top_n(config, top_n)
+  context_chunk_pool <- .ms_collect_context_chunks(
+    context_files = context_files,
+    context_text = context_text
+  )
+
+  bundle_targets <- .ms_semantic_bundle_review_targets(targets, dict)
+  bundle_target_keys <- if (nrow(bundle_targets) > 0L) {
+    .ms_semantic_group_key_df(bundle_targets)
+  } else {
+    character()
+  }
+  suggestion_keys <- if (nrow(suggestions) > 0L) {
+    .ms_semantic_group_key_df(suggestions)
+  } else {
+    character()
+  }
+  generic_suggestions <- suggestions[
+    !suggestion_keys %in% bundle_target_keys,
+    ,
+    drop = FALSE
+  ]
+  bundle_suggestions <- suggestions[
+    suggestion_keys %in% bundle_target_keys,
+    ,
+    drop = FALSE
+  ]
+
+  generic <- .ms_assess_semantic_candidate_records(
+    suggestions = generic_suggestions,
+    config = config,
+    top_n = top_n,
+    context_chunk_pool = context_chunk_pool,
+    search_fn = search_fn,
+    sources = sources,
+    max_per_role = max_per_role
+  )
+  bundles <- .ms_assess_semantic_bundles(
+    targets = bundle_targets,
+    suggestions = bundle_suggestions,
+    dict = dict,
+    config = config,
+    top_n = top_n,
+    context_chunk_pool = context_chunk_pool,
+    search_fn = search_fn,
+    sources = sources,
+    max_per_role = max_per_role
+  )
+
+  assessments <- .ms_llm_normalize_assessment_rows(
+    dplyr::bind_rows(generic$assessments, bundles$assessments)
+  )
+  attr(assessments, "semantic_validator_findings") <- attr(
+    bundles$assessments,
+    "semantic_validator_findings",
+    exact = TRUE
+  )
+  fallback_to_deterministic <- .ms_llm_abort_if_provider_wide_failure(
+    assessments,
+    config,
+    deterministic_suggestions = deterministic_suggestions
+  )
+  if (isTRUE(fallback_to_deterministic)) {
+    return(list(
+      suggestions = deterministic_suggestions,
+      assessments = assessments
+    ))
+  }
+
+  list(
+    suggestions = dplyr::bind_rows(generic$suggestions, bundles$suggestions),
     assessments = assessments
   )
 }

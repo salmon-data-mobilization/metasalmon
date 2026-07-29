@@ -1,0 +1,50 @@
+name: R-CMD-check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r-cmd-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: "yes"
+      _R_CHECK_CRAN_INCOMING_REMOTE_: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::devtools
+            any::rcmdcheck
+          needs: check
+
+      - name: Replay Theme A evidence
+        run: Rscript scripts/theme-a-benchmark.R replay
+
+      - name: Run full test suite
+        run: Rscript -e 'devtools::test(reporter = "summary", stop_on_failure = TRUE)'
+
+      - name: R CMD check
+        run: Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning", check_dir = "check")'

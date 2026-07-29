@@ -114,7 +114,31 @@ assessments <- attr(suggested, "semantic_llm_assessments")
 # including table-level observation-unit selections in metadata/tables.csv.
 ```
 
-This keeps `find_terms()` as the canonical candidate generator. Deterministic auto-applied semantic drafts are also written back as `REVIEW: <iri>` so you can confirm or replace them in Excel rather than treating them as final. When you enable the LLM pass, it judges the retrieved shortlist using the same review-first convention, including table-level observation-unit matches written into `metadata/tables.csv`.
+This keeps `find_terms()` as the canonical candidate generator. For each
+measurement column, the LLM reviews the variable, property, entity, unit,
+constraint, and method shortlists together. Generic column, code, table, and
+dataset targets keep their existing per-target review path. Deterministic
+validators can downgrade an unsupported `accept` to `review`; the original model
+confidence remains in the assessment as provenance.
+
+Only accepted variable, property, entity, and unit candidates can be written
+back automatically. Drafts are stored as `REVIEW: <iri>` so you can confirm or
+replace them in Excel rather than treating them as final. Constraint and method
+assessments always remain manual, as do dataset keywords and code-level
+suggestions. Compatible table-level observation-unit matches can still be
+written into `metadata/tables.csv`.
+
+Omitting `sources` (or `semantic_sources` on the package-creation helpers) uses
+role-aware defaults. Supplying sources explicitly creates a strict allowlist for
+both initial retrieval and the single retry round. For example,
+`sources = "smn"` cannot introduce a QUDT unit candidate.
+
+The target-level `semantic_llm_assessments` table has a stable 30-column schema.
+Its final two fields record whether a term request was escalated from
+`reject_shortlist` and why a retry query was rejected. An exact retry duplicate,
+after case and whitespace normalization, remains a `retry_search` decision with
+`llm_retry_query_rejection_reason = "duplicate_original_query"` and does not
+trigger another query-generation, search, or reassessment call.
 
 `llm_context_files` must be a character vector of existing local **file paths**. Do not pass a tibble returned by `readr::read_csv()`, an `xml2` document returned by `read_html()`, or another parsed object; those inputs now fail early instead of being silently ineffective. Supplying context also never enables an LLM call: set `llm_assess = TRUE` explicitly, or the package warns that the context will be ignored and continues with deterministic retrieval only. Use `llm_context_text` for inline text that is not stored in a file.
 
@@ -237,7 +261,14 @@ Anyone opening this folder - whether a colleague, a reviewer, or your future sel
   - Cross-source agreement boosting for high-confidence matches
 - Per-source diagnostics, scoring, and optional rerank explain why `find_terms()` matches rank where they do and expose failures, so you can tune role-aware queries with confidence.
 - End-to-end semantic QA loop with `fetch_salmon_ontology()` + `validate_semantics()`, plus `deduplicate_proposed_terms()` to prevent term proliferation before opening ontology issues.
-- Optional package-native LLM review for semantic suggestions: `suggest_semantics(..., llm_assess = TRUE)` can judge retrieved candidates directly in R, include local README/report context files, and use OpenAI-compatible providers such as OpenRouter (including model ids ending in `:free`).
+- Optional package-native LLM review for semantic suggestions:
+  `suggest_semantics(..., llm_assess = TRUE)` reviews all six measurement roles
+  as one bundle, keeps explicit source lists strict across retries, and uses
+  deterministic validators to downgrade unsupported acceptances.
+- Structured ontology-gap handling combines deterministic candidate gaps with
+  final LLM `request_new_term` decisions, preserves escalation evidence, and
+  renders curator-reviewable request bodies for shared SMN, DFO-specific GCDFO,
+  or local profile governance.
 - NuSEDS method crosswalk helpers: `nuseds_enumeration_method_crosswalk()` and `nuseds_estimate_method_crosswalk()` for mapping legacy values to canonical method families.
 
 ## Getting Help
@@ -260,7 +291,7 @@ The high-level flow is:
 - **Raw tables** lead into `metadata/column_dictionary.csv` (and `metadata/codes.csv` when there are categorical columns).
 - **Dataset/table metadata** fill the required specification fields (title, description, creator, contact, etc.), so the package folder can be shared or uploaded.
 - **The Salmon Domain Ontology and published vocabularies** supply `term_iri`/`entity_iri` links that describe what each column and row represents.
-- **Post-review publication helpers** let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and separate shared SMN requests from DFO/program-specific follow-up.
+- **Post-review publication helpers** let you reopen the package, re-run semantic checks, detect unresolved ontology gaps, and route curator-reviewed drafts to shared SMN, DFO-specific GCDFO, or a local profile.
 - **`write_salmon_datapackage()`** consumes the metadata, dictionary, codes, and data to write the files in the Salmon Data Package format; the preferred review loop is now the package itself plus `README-review.txt` / `semantic_suggestions.csv`, not an external prompt-export workflow.
 
 <script>
@@ -323,10 +354,11 @@ devtools::document()
 devtools::test()
 devtools::check()
 devtools::build_vignettes()
-pkgdown::build_site()
 ```
 
 ```bash
+Rscript scripts/build-pkgdown.R
+
 # Canonical source-tarball build path (writes into the repo root, not ../)
 ./scripts/build-package.sh
 ```

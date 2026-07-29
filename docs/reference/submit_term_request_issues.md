@@ -25,7 +25,9 @@ submit_term_request_issues(
 
 - repo:
 
-  Repository slug, defaulting to the DFO salmon ontology.
+  Fallback repository slug for request rows that do not carry an
+  `ontology_repo`. Rendered SMN and GCDFO rows use their row-specific
+  repository values.
 
 - token:
 
@@ -89,8 +91,9 @@ reqs <- render_ontology_term_request(
   profile_name = "local-program"
 )
 submit_term_request_issues(reqs, dry_run = TRUE)
-#> # A tibble: 1 × 6
-#>   request_title         request_body request_scope issue_number issue_url status
-#>   <chr>                 <chr>        <chr>                <int> <chr>     <chr> 
-#> 1 Request new local-pr… "## Propose… profile                 NA NA        dry_r…
+#> # A tibble: 1 × 7
+#>   request_title  request_body request_scope ontology_repo issue_number issue_url
+#>   <chr>          <chr>        <chr>         <chr>                <int> <chr>
+#> 1 Request new l… "## Propose… profile       salmon-data-…           NA NA
+#> # ℹ 1 more variable: status <chr>
 ```

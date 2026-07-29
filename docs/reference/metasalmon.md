@@ -16,3 +16,7 @@ Useful links:
 ## Author
 
 **Maintainer**: Brett Johnson <brettthomasjohnson@gmail.com>
+
+Authors:
+
+- Brett Johnson <brettthomasjohnson@gmail.com>

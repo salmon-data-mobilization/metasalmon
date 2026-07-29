@@ -11,7 +11,9 @@
 #' @param seed_semantics Logical; if `TRUE`, run `suggest_semantics()` and attach
 #'   the resulting `semantic_suggestions` attribute to the returned dictionary.
 #' @param semantic_sources Character vector of vocabulary sources passed to
-#'   `suggest_semantics()` when `seed_semantics = TRUE`. Default: `c("smn", "gcdfo", "ols", "nvs")`.
+#'   `suggest_semantics()` when `seed_semantics = TRUE`. Omitted values use
+#'   role-aware defaults; explicitly supplied values are a strict allowlist for
+#'   initial and retry retrieval.
 #' @param semantic_max_per_role Maximum number of suggestions retained per I-ADOPT
 #'   role when seeding suggestions. Default: `1`.
 #' @param seed_verbose Logical; if TRUE, print a short progress message while
@@ -52,7 +54,9 @@
 #'   Package order: `dataset_id`, `table_id`, `column_name`, `column_label`,
 #'   `column_description`, `term_iri`, `property_iri`, `entity_iri`,
 #'   `constraint_iri`, `method_iri`, `unit_label`, `unit_iri`, `term_type`,
-#'   `value_type`, `column_role`, `required`.
+#'   `value_type`, `column_role`, `required`. With semantic seeding, suggestions
+#'   are attached as `semantic_suggestions`; with explicit LLM review, the
+#'   30-column target summaries are attached as `semantic_llm_assessments`.
 #'
 #' @export
 #'
@@ -91,6 +95,10 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_context_text = NULL,
                             llm_timeout_seconds = 60,
                             llm_request_fn = NULL) {
+  semantic_sources <- .ms_forward_semantic_sources(
+    semantic_sources,
+    omitted = missing(semantic_sources)
+  )
   llm_review <- .ms_llm_review_plan(
     seed_semantics = seed_semantics,
     semantic_max_per_role = semantic_max_per_role,

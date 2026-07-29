@@ -2,7 +2,7 @@
 % Please edit documentation in R/term-request-helpers.R
 \name{detect_semantic_term_gaps}
 \alias{detect_semantic_term_gaps}
-\title{Detect missing semantic terms that are not covered by SMN}
+\title{Detect candidate and LLM-identified semantic term gaps}
 \usage{
 detect_semantic_term_gaps(
   dict = NULL,
@@ -13,10 +13,13 @@ detect_semantic_term_gaps(
 )
 }
 \arguments{
-\item{dict}{A dictionary tibble. Used only when \code{suggestions} is \code{NULL}.}
+\item{dict}{A dictionary tibble. When \code{suggestions} is \code{NULL}, the function
+reads both \code{semantic_suggestions} and \code{semantic_llm_assessments} attributes.}
 
 \item{suggestions}{Optional semantic suggestion table. If omitted, this function
-uses \code{attr(dict, "semantic_suggestions")}.}
+uses the dictionary attributes. If supplied explicitly, only candidate and
+embedded \verb{llm_*} fields in this table are used; dictionary assessment
+attributes are intentionally ignored.}
 
 \item{include_target_scopes}{Target scopes to inspect. Defaults to all supported
 scopes.}
@@ -28,7 +31,12 @@ the gap scan (for example \code{c("variable", "property", "entity")}).}
 are ignored when score is available.}
 }
 \value{
-A tibble with one row per target that has no SMN match.
+A tibble with one row per unresolved semantic target. The existing
+23-column candidate-gap prefix is preserved, followed by target metadata,
+\code{gap_detection_basis}, LLM decision/rationale, proposed-term fields, and
+\code{llm_escalated_from}. Detection values are \code{candidate_gap},
+\code{llm_request_new_term}, or
+\code{candidate_gap_and_llm_request_new_term}.
 Key columns:
 \itemize{
 \item \code{dataset_id}, \code{table_id}, \code{column_name}, \code{target_scope},
@@ -42,8 +50,9 @@ Key columns:
 }
 \description{
 Given semantic suggestions (typically attached to a dictionary as
-\code{semantic_suggestions}), this function summarizes candidate fields that appear to
-need ontology support but do not have a direct \code{smn} match.
+\code{semantic_suggestions}), this function summarizes candidate fields that lack
+a direct SMN match and final LLM \code{request_new_term} decisions. An explicit
+final LLM gap remains a gap even when SMN candidates exist.
 }
 \details{
 It is designed to support a practical workflow:

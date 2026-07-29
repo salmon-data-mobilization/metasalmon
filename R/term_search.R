@@ -321,8 +321,13 @@ find_terms <- function(query,
   results <- purrr::flatten(results)
   combined <- dplyr::bind_rows(results)
 
-  # Keep one row per source+IRI while preserving source provenance.
-  combined <- dplyr::distinct(combined, .data$source, .data$iri, .keep_all = TRUE)
+  # Keep one populated source+IRI row while retaining distinct blank-IRI
+  # evidence through the shared deterministic candidate identity.
+  combined <- combined[
+    !duplicated(.ms_semantic_candidate_identity(combined, role = role)),
+    ,
+    drop = FALSE
+  ]
   if (!"zooma_confidence" %in% names(combined)) {
     combined$zooma_confidence <- NA_character_
   }
@@ -350,7 +355,10 @@ find_terms <- function(query,
       "score",
       "alignment_only",
       "agreement_sources",
-      "role_hints",
+      "role_hints"
+    )),
+    dplyr::any_of(c("resource_kind", "type_iris", "term_type")),
+    dplyr::all_of(c(
       "zooma_confidence",
       "zooma_annotator"
     ))
@@ -378,7 +386,9 @@ find_terms <- function(query,
     score = numeric(),
     alignment_only = logical(),
     agreement_sources = integer(),
-    role_hints = character()
+    role_hints = character(),
+    resource_kind = character(),
+    type_iris = character()
   )
 }
 
@@ -718,13 +728,14 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   )
 }
 
-#' Search QUDT for unit terms
+#' Search QUDT for unit and quantity-kind terms
 #'
-#' Preferred source for unit role (per dfo-salmon-ontology CONVENTIONS).
-#' Uses the QUDT SPARQL endpoint to find matching unit terms.
+#' Preferred source for unit and property roles (per dfo-salmon-ontology
+#' CONVENTIONS). Uses the QUDT SPARQL endpoint to find matching units or
+#' quantity kinds.
 #'
 #' @param query Search query string
-#' @param role I-ADOPT role (typically "unit")
+#' @param role I-ADOPT role (typically `"unit"` or `"property"`)
 #' @return Tibble of matching terms
 #' @noRd
 .search_qudt <- function(query, role) {
@@ -734,18 +745,27 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
     return(.empty_terms(role))
   }
 
-  # Build regex pattern for SPARQL FILTER
-
-pattern <- paste(tokens, collapse = ".*")
+  # Build regex pattern for SPARQL FILTER.
+  pattern <- paste(tokens, collapse = ".*")
   pattern <- gsub("\\\\", "\\\\\\\\", pattern)
   pattern <- gsub("\"", "\\\\\"", pattern)
+  resource_class <- if (identical(tolower(role %||% ""), "property")) {
+    "QuantityKind"
+  } else {
+    "Unit"
+  }
+  match_type <- if (identical(resource_class, "QuantityKind")) {
+    "quantity_kind"
+  } else {
+    "unit"
+  }
 
   sparql <- paste0(
     "PREFIX qudt: <http://qudt.org/schema/qudt/>\n",
     "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n",
     "PREFIX skos: <http://www.w3.org/2004/02/skos/core#>\n",
     "SELECT DISTINCT ?uri ?label ?definition WHERE {\n",
-    "  ?uri a qudt:Unit .\n",
+    "  ?uri a qudt:", resource_class, " .\n",
     "  ?uri rdfs:label ?label .\n",
     "  OPTIONAL { ?uri skos:definition ?definition . }\n",
     "  OPTIONAL { ?uri qudt:description ?definition . }\n",
@@ -791,7 +811,7 @@ pattern <- paste(tokens, collapse = ".*")
     source = "qudt",
     ontology = "qudt",
     role = role,
-    match_type = "unit",
+    match_type = match_type,
     definition = definition
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
@@ -1709,7 +1729,9 @@ pattern <- paste(tokens, collapse = ".*")
     match_type = index$match_type,
     definition = index$definition,
     backend_score = index$backend_score,
-    role_hints = index$role_hints
+    role_hints = index$role_hints,
+    resource_kind = index$resource_kind,
+    type_iris = index$type_iris
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }
@@ -1731,7 +1753,9 @@ pattern <- paste(tokens, collapse = ".*")
     match_type = index$match_type,
     definition = index$definition,
     backend_score = index$backend_score,
-    role_hints = index$role_hints
+    role_hints = index$role_hints,
+    resource_kind = index$resource_kind,
+    type_iris = index$type_iris
   ) %>%
     dplyr::distinct(iri, .keep_all = TRUE)
 }
@@ -1800,7 +1824,7 @@ sources_for_role <- function(role) {
   role <- tolower(role)
   switch(role,
     unit = c("qudt", "nvs", "ols"),
-    property = c("smn", "gcdfo", "nvs", "ols", "zooma"),
+    property = c("smn", "gcdfo", "qudt", "nvs", "ols", "zooma"),
     entity = c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols"),
     method = c("smn", "gcdfo", "bioportal", "ols", "zooma"),
     variable = c("smn", "gcdfo", "nvs", "ols", "zooma"),

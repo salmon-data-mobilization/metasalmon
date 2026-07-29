@@ -1,0 +1,657 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://salmon-data-mobilization.github.io/metasalmon/schemas/theme-a-v1.json",
+  "schema_version": "theme-a-schema-v1",
+  "title": "metasalmon Theme A semantic-review evidence fixtures",
+  "description": "Versioned schema manifest used by the offline benchmark validator. The x-metasalmon-contracts section is executable without adding a JSON Schema validator dependency to the R package.",
+  "x-metasalmon-validation": {
+    "authority": "scripts/theme-a-benchmark.R",
+    "description": "JSON Schema describes artifact shape. The benchmark script additionally enforces ontology-manifest equality, the ordered 19-column target and 30-column assessment contracts, canonical nine-field joins, exact ordered candidate lineage, final-dictionary identity, candidate-index/IRI/label consistency, one selected suggestion per accept, one-to-one assessment-gap-request proposal lineage, promoted raw-to-reviewed checksums, cryptographic provider-interaction-to-assessment lineage, oracle evaluation, fixture hashes resolved directly from the recorded clean Git commit, endpoint normalization, and recomputed independent exact-source three-run cohorts.",
+    "comparison_unit": [
+      "case_id",
+      "oracle_bucket",
+      "rule_id"
+    ],
+    "live_retrieval_mode": "frozen_fixture"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/casesFixture"
+    },
+    {
+      "$ref": "#/$defs/replayFixture"
+    },
+    {
+      "$ref": "#/$defs/capture"
+    },
+    {
+      "$ref": "#/$defs/ontologyManifest"
+    }
+  ],
+  "x-metasalmon-contracts": {
+    "cases_schema_version": "theme-a-cases-v1",
+    "replay_schema_version": "theme-a-replay-v1",
+    "historical_schema_version": "theme-a-historical-observations-v1",
+    "capture_schema_version": "theme-a-capture-v1",
+    "ontology_manifest_schema_version": "theme-a-ontology-manifest-v1",
+    "target_columns": [
+      "dataset_id",
+      "table_id",
+      "column_name",
+      "code_value",
+      "dictionary_role",
+      "search_role",
+      "target_scope",
+      "target_sdp_file",
+      "target_sdp_field",
+      "target_row_key",
+      "target_label",
+      "target_description",
+      "search_query",
+      "target_query_basis",
+      "target_query_context",
+      "column_label",
+      "column_description",
+      "code_label",
+      "code_description"
+    ],
+    "semantic_target_key": [
+      "dataset_id",
+      "table_id",
+      "column_name",
+      "code_value",
+      "dictionary_role",
+      "target_scope",
+      "target_sdp_file",
+      "target_sdp_field",
+      "search_query"
+    ],
+    "assessment_prefix_columns": [
+      "dataset_id",
+      "table_id",
+      "column_name",
+      "code_value",
+      "dictionary_role",
+      "target_scope",
+      "target_sdp_file",
+      "target_sdp_field",
+      "search_query",
+      "llm_provider",
+      "llm_model",
+      "llm_decision",
+      "llm_confidence",
+      "llm_selected_candidate_index",
+      "llm_selected_iri",
+      "llm_selected_label",
+      "llm_rationale",
+      "llm_missing_context",
+      "llm_bundle_summary",
+      "llm_retry_query",
+      "llm_new_term_label",
+      "llm_new_term_definition",
+      "llm_new_term_namespace",
+      "llm_context_sources",
+      "llm_exploration_used",
+      "llm_exploration_queries",
+      "llm_exploration_candidate_gain",
+      "llm_error"
+    ],
+    "assessment_columns": [
+      "dataset_id",
+      "table_id",
+      "column_name",
+      "code_value",
+      "dictionary_role",
+      "target_scope",
+      "target_sdp_file",
+      "target_sdp_field",
+      "search_query",
+      "llm_provider",
+      "llm_model",
+      "llm_decision",
+      "llm_confidence",
+      "llm_selected_candidate_index",
+      "llm_selected_iri",
+      "llm_selected_label",
+      "llm_rationale",
+      "llm_missing_context",
+      "llm_bundle_summary",
+      "llm_retry_query",
+      "llm_new_term_label",
+      "llm_new_term_definition",
+      "llm_new_term_namespace",
+      "llm_context_sources",
+      "llm_exploration_used",
+      "llm_exploration_queries",
+      "llm_exploration_candidate_gain",
+      "llm_error",
+      "llm_escalated_from",
+      "llm_retry_query_rejection_reason"
+    ],
+    "oracle_buckets": [
+      "required",
+      "allowed_not_required",
+      "forbidden"
+    ],
+    "oracle_event_types": [
+      "assessment",
+      "selection",
+      "prefill",
+      "gap",
+      "routing"
+    ],
+    "capture_interaction_stages": [
+      "bundle_initial",
+      "bundle_reassessment",
+      "target_initial",
+      "target_batch",
+      "target_fallback",
+      "target_reassessment",
+      "query_generation"
+    ],
+    "capture_lineage_outcomes": [
+      "provider",
+      "deterministic_fallback"
+    ],
+    "required_case_ids": [
+      "catch_count",
+      "catch_weight_advisory",
+      "fork_length_explicit_procedure",
+      "ocean_phase_explicit_lifecycle",
+      "synthetic_structured_gap",
+      "handcrafted_gcdfo_routing"
+    ]
+  },
+  "$defs": {
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "dictionary_role",
+        "search_role",
+        "target_scope",
+        "target_sdp_file",
+        "target_sdp_field",
+        "target_row_key",
+        "target_label",
+        "target_description",
+        "search_query",
+        "target_query_basis",
+        "target_query_context",
+        "column_label",
+        "column_description",
+        "code_label",
+        "code_description"
+      ]
+    },
+    "oracleRule": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "type"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "assessment",
+            "selection",
+            "prefill",
+            "gap",
+            "routing"
+          ]
+        },
+        "advisory": {
+          "type": "boolean"
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_role",
+        "label",
+        "iri",
+        "source",
+        "ontology",
+        "definition",
+        "score",
+        "term_type",
+        "definition_status"
+      ],
+      "properties": {
+        "target_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ontology": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition": {
+          "type": "string"
+        },
+        "score": {
+          "type": "number"
+        },
+        "term_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "definition_status": {
+          "enum": [
+            "curated_paraphrase",
+            "source_definition"
+          ]
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "title",
+        "evidence_status",
+        "blocking",
+        "context",
+        "targets",
+        "candidates",
+        "oracle"
+      ],
+      "properties": {
+        "evidence_status": {
+          "const": "synthetic_regression_exemplar"
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/target"
+          }
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/candidate"
+          }
+        },
+        "oracle": {
+          "type": "object",
+          "required": [
+            "required",
+            "allowed_not_required",
+            "forbidden"
+          ]
+        }
+      }
+    },
+    "ontologyProvenanceItem": {
+      "type": "object",
+      "required": [
+        "source",
+        "repository",
+        "revision",
+        "revision_url",
+        "observed_at"
+      ],
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "revision_url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "observed_at": {
+          "type": "string"
+        }
+      }
+    },
+    "assessmentRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "dictionary_role",
+        "target_scope",
+        "target_sdp_file",
+        "target_sdp_field",
+        "search_query",
+        "llm_provider",
+        "llm_model",
+        "llm_decision",
+        "llm_confidence",
+        "llm_selected_candidate_index",
+        "llm_selected_iri",
+        "llm_selected_label",
+        "llm_rationale",
+        "llm_missing_context",
+        "llm_bundle_summary",
+        "llm_retry_query",
+        "llm_new_term_label",
+        "llm_new_term_definition",
+        "llm_new_term_namespace",
+        "llm_context_sources",
+        "llm_exploration_used",
+        "llm_exploration_queries",
+        "llm_exploration_candidate_gain",
+        "llm_error",
+        "llm_escalated_from",
+        "llm_retry_query_rejection_reason"
+      ]
+    },
+    "suggestionRow": {
+      "type": "object",
+      "required": [
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "dictionary_role",
+        "target_scope",
+        "target_sdp_file",
+        "target_sdp_field",
+        "search_query",
+        "label",
+        "iri",
+        "llm_selected"
+      ]
+    },
+    "gapRow": {
+      "type": "object",
+      "required": [
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "dictionary_role",
+        "target_scope",
+        "target_sdp_file",
+        "target_sdp_field",
+        "search_query",
+        "gap_detection_basis",
+        "llm_decision",
+        "llm_new_term_label",
+        "llm_new_term_definition",
+        "llm_new_term_namespace"
+      ]
+    },
+    "termRequestRow": {
+      "type": "object",
+      "required": [
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "dictionary_role",
+        "target_scope",
+        "target_sdp_file",
+        "target_sdp_field",
+        "search_query",
+        "llm_new_term_label",
+        "llm_new_term_definition",
+        "llm_new_term_namespace",
+        "request_scope",
+        "ontology_repo"
+      ]
+    },
+    "observedCase": {
+      "type": "object",
+      "required": [
+        "case_id",
+        "events",
+        "assessment_rows",
+        "suggestion_rows",
+        "final_dictionary_rows",
+        "gap_rows",
+        "term_request_rows"
+      ],
+      "properties": {
+        "events": {
+          "type": "array"
+        },
+        "assessment_rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assessmentRow"
+          }
+        },
+        "suggestion_rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/suggestionRow"
+          }
+        },
+        "gap_rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/gapRow"
+          }
+        },
+        "term_request_rows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/termRequestRow"
+          }
+        }
+      }
+    },
+    "casesFixture": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "fixture_version",
+        "evidence_status",
+        "ontology_provenance",
+        "cases"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "theme-a-cases-v1"
+        },
+        "fixture_version": {
+          "const": 1
+        },
+        "evidence_status": {
+          "const": "synthetic_regression_exemplar"
+        },
+        "ontology_provenance": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ontologyProvenanceItem"
+          }
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/case"
+          }
+        }
+      }
+    },
+    "replayFixture": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "fixture_version",
+        "evidence_status",
+        "provenance",
+        "cases"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "theme-a-replay-v1"
+        },
+        "fixture_version": {
+          "const": 1
+        },
+        "evidence_status": {
+          "const": "synthetic_regression_exemplar"
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observedCase"
+          }
+        }
+      }
+    },
+    "ontologyManifest": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "evidence_status",
+        "description",
+        "sources",
+        "terms"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "theme-a-ontology-manifest-v1"
+        },
+        "evidence_status": {
+          "const": "pinned_primary_source_contract"
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1
+        },
+        "terms": {
+          "type": "array",
+          "minItems": 1
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "run_id",
+        "mode",
+        "evidence_status",
+        "review",
+        "provenance",
+        "interaction_events",
+        "assessment_lineage",
+        "cases",
+        "evaluation"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "theme-a-capture-v1"
+        },
+        "mode": {
+          "const": "live"
+        },
+        "evidence_status": {
+          "enum": [
+            "unreviewed_staging",
+            "reviewed_sanitized"
+          ]
+        },
+        "review": {
+          "type": "object",
+          "required": [
+            "status",
+            "sanitized",
+            "raw_capture_reviewed",
+            "raw_capture_safe_to_publish",
+            "reviewed_by",
+            "reviewed_at",
+            "notes",
+            "pre_sanitization_sha256"
+          ]
+        },
+        "provenance": {
+          "type": "object",
+          "required": [
+            "retrieval_mode",
+            "data_classification"
+          ]
+        },
+        "interaction_events": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "interaction_id",
+              "event_type",
+              "stage",
+              "bundle_key",
+              "target_keys",
+              "assessment_target_keys",
+              "started_at",
+              "provider",
+              "configured_model",
+              "resolved_model",
+              "endpoint",
+              "messages",
+              "request_sha256",
+              "response_status",
+              "raw_response",
+              "response_sha256",
+              "provider_response_id",
+              "error",
+              "elapsed_seconds"
+            ]
+          }
+        },
+        "assessment_lineage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "case_id",
+              "target_key",
+              "outcome",
+              "interaction_id",
+              "interaction_stage",
+              "dictionary_role",
+              "assessment_sha256",
+              "provider_assessment_sha256",
+              "fallback_reason"
+            ]
+          }
+        },
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/observedCase"
+          }
+        }
+      }
+    }
+  }
+}

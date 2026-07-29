@@ -67,11 +67,11 @@ Fetch the ontology and validate semantic coverage
 
 ## Term Request Workflow
 
-Detect missing SMN terms, route shared vs profile requests, and draft
-GitHub issues
+Detect missing terms, route SMN, GCDFO, profile, or uncertain requests,
+and draft curator-reviewed GitHub issues
 
 - [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-  : Detect missing semantic terms that are not covered by SMN
+  : Detect candidate and LLM-identified semantic term gaps
 - [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
   : Render GitHub-ready ontology term request payloads
 - [`submit_term_request_issues()`](https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.md)

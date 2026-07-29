@@ -55,7 +55,9 @@ dictionary column.}
 during inference.}
 
 \item{semantic_sources}{Vector of vocabulary sources passed to
-\code{suggest_semantics()}.}
+\code{suggest_semantics()}. When omitted, role-aware defaults are used. When
+supplied explicitly, the vector is a strict allowlist for initial and
+retry retrieval.}
 
 \item{semantic_max_per_role}{Maximum number of suggestions retained per
 I-ADOPT role.}
@@ -79,7 +81,8 @@ analyzes all inferred or supplied code rows; \code{"none"} skips code-level
 semantic suggestions.}
 
 \item{llm_assess}{Logical; if \code{TRUE}, run the optional LLM shortlist
-assessment inside \code{suggest_semantics()}.}
+assessment inside \code{suggest_semantics()}. Measurement columns are reviewed
+as six-slot bundles; other targets keep their existing per-target path.}
 
 \item{llm_provider}{LLM provider preset forwarded to \code{suggest_semantics()}.}
 
@@ -165,8 +168,11 @@ The package root contains \code{README-review.txt},
 context or a better match. To keep that review file usable,
 \code{semantic_suggestions.csv} trims code-level suggestions that do not have
 enough human-readable context to review safely. When \code{llm_assess = TRUE},
-the same review file also carries \verb{llm_*} columns so the shortlisted LLM
-judgment stays explicit and reviewable. Any auto-applied column/table IRI
+the same review file also carries \verb{llm_*} columns so the bundled LLM
+judgments, retry rejections, escalation origins, and validator downgrades
+stay explicit and reviewable. Only accepted variable, property, entity, and
+unit selections are eligible for column auto-prefill; constraint and method
+assessments always remain manual. Any auto-applied column/table IRI
 draft is written back into the metadata CSVs as a \verb{REVIEW:}-prefixed value
 for manual confirmation there. Required-field review placeholders are also
 inserted into the inferred metadata files. In

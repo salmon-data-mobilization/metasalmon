@@ -49,7 +49,7 @@ selected measurement column's \code{term_iri} variable shortlist.}
 \item{session_id}{Optional existing session id to resume.}
 
 \item{session_root}{Optional directory for persisted sessions. Defaults to
-a package state directory under \code{\link[tools:userdir]{tools::R_user_dir()}}.}
+a package state directory under \code{\link[tools:R_user_dir]{tools::R_user_dir()}}.}
 
 \item{round_size}{Maximum number of grouped questions to ask in each round.
 Default is \code{3}.}

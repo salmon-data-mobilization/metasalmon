@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -196,7 +196,7 @@ model is the shortest path:</p>
 deterministic candidates during semantic seeding.</p>
 <p>What gets written back automatically:</p>
 <ul>
-<li>accepted column-level drafts into
+<li>accepted variable, property, entity, and unit drafts into
 <code>metadata/column_dictionary.csv</code> as
 <code>REVIEW: &lt;iri&gt;</code>
 </li>
@@ -208,6 +208,8 @@ metadata</li>
 <p>What stays in <code>semantic_suggestions.csv</code> for manual
 review:</p>
 <ul>
+<li>constraint and method assessments, even when the model accepts
+them</li>
 <li>dataset-level keyword suggestions targeting
 <code>metadata/dataset.csv</code>
 </li>
@@ -219,13 +221,56 @@ columns</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="bundle-review-and-retrieval-sources">Bundle Review and Retrieval Sources<a class="anchor" aria-label="anchor" href="#bundle-review-and-retrieval-sources"></a>
+</h2>
+<p>Measurement columns are reviewed as semantic bundles. Each bundle
+contains the original dictionary row, existing semantics, column
+metadata and context, plus six ordered candidate slots:</p>
+<ol style="list-style-type: decimal">
+<li>variable,</li>
+<li>property,</li>
+<li>entity,</li>
+<li>unit,</li>
+<li>constraint, and</li>
+<li>method.</li>
+</ol>
+<p>Method is reviewed as a <code>usedProcedure</code>-style companion
+slot; it is not a native I-ADOPT decomposition role.</p>
+<p>The initial LLM request judges those six roles together. A malformed
+or missing slot falls back through the existing single-target adapter
+without discarding valid sibling decisions. A malformed top-level
+response falls back the whole bundle. Generic column, code, table, and
+dataset targets retain their per-target review path.</p>
+<p>Source selection is part of the review contract. Omit
+<code>sources</code> in <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code> or
+<code>semantic_sources</code> in <code><a href="../reference/create_sdp.html">create_sdp()</a></code> to use
+role-aware defaults. Pass an explicit vector when the review must stay
+inside a fixed set:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">reviewed_smn_only</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suggest_semantics.html">suggest_semantics</a></span><span class="op">(</span></span>
+<span>  df <span class="op">=</span> <span class="va">fraser_coho</span>,</span>
+<span>  dict <span class="op">=</span> <span class="fu"><a href="../reference/infer_dictionary.html">infer_dictionary</a></span><span class="op">(</span></span>
+<span>    <span class="va">fraser_coho</span>,</span>
+<span>    dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
+<span>    table_id <span class="op">=</span> <span class="st">"escapement"</span></span>
+<span>  <span class="op">)</span>,</span>
+<span>  sources <span class="op">=</span> <span class="st">"smn"</span>,</span>
+<span>  llm_assess <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  llm_provider <span class="op">=</span> <span class="st">"chapi"</span>,</span>
+<span>  llm_context_files <span class="op">=</span> <span class="va">context_files</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>An explicit source vector is a strict allowlist for both the initial
+search and the one retry round. In this example, no retry can add a QUDT
+candidate.</p>
+</div>
+<div class="section level2">
 <h2 id="full-metadata-review-with-suggest_semantics">Full Metadata Review With <code>suggest_semantics()</code><a class="anchor" aria-label="anchor" href="#full-metadata-review-with-suggest_semantics"></a>
 </h2>
 <p>If you want to inspect every metadata target explicitly, start from
 inferred package artifacts and pass <code>codes</code>,
 <code>table_meta</code>, and <code>dataset_meta</code> back into
 <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">artifacts</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/infer_salmon_datapackage_artifacts.html">infer_salmon_datapackage_artifacts</a></span><span class="op">(</span></span>
 <span>  resources <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>escapement <span class="op">=</span> <span class="va">fraser_coho</span><span class="op">)</span>,</span>
 <span>  dataset_id <span class="op">=</span> <span class="st">"fraser-coho-2023-2024"</span>,</span>
@@ -248,7 +293,7 @@ inferred package artifacts and pass <code>codes</code>,
 <span><span class="va">suggestions</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">reviewed_dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span></span>
 <span><span class="va">assessments</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">reviewed_dict</span>, <span class="st">"semantic_llm_assessments"</span><span class="op">)</span></span></code></pre></div>
 <p>Now you can filter by target file:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">suggestions</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"target_sdp_file"</span>, <span class="st">"target_sdp_field"</span>, <span class="st">"table_id"</span>, <span class="st">"column_name"</span>, <span class="st">"code_value"</span>, <span class="st">"label"</span>, <span class="st">"iri"</span>, <span class="st">"llm_decision"</span>, <span class="st">"llm_selected"</span><span class="op">)</span><span class="op">]</span></span></code></pre></div>
 <p>Look especially at:</p>
 <ul>
@@ -294,13 +339,56 @@ force a near miss — see the term-request workflow
 <p>The LLM never mints IRIs: <code>accept</code> only ever selects from
 the retrieved shortlist, and a genuine gap surfaces as
 <code>request_new_term</code> instead of a fabricated term.</p>
-<p>Provider responses are handled conservatively. If one item in a
-batched response is malformed, missing, or repeats a
-<code>target_key</code>, only the affected target is retried
-individually; valid sibling assessments are preserved. If the provider
-fails for the entire review but deterministic candidates are usable, the
-package warns and retains that deterministic shortlist for manual
-review.</p>
+<p>The <code>semantic_llm_assessments</code> attribute uses one stable
+30-column schema for empty and populated results. Its final fields are
+<code>llm_escalated_from</code>, which preserves
+<code>reject_shortlist</code> provenance, and
+<code>llm_retry_query_rejection_reason</code>. When a retry query
+exactly duplicates the original after case and whitespace normalization,
+the assessment keeps <code>retry_search</code> and the original query,
+records <code>duplicate_original_query</code>, and skips query
+generation, retrieval, and reassessment for that slot. Other valid
+bundle retries can still proceed.</p>
+<p>Provider responses are handled conservatively. Malformed, duplicated,
+unknown, or missing bundle slots fall back individually, while a
+malformed top-level response falls back the whole bundle. If the
+provider fails but deterministic candidates remain usable, the package
+warns and preserves the original shortlist for manual review.</p>
+<p>Pure deterministic validators run after LLM review. They check method
+and constraint evidence, role and ontology-type compatibility, known
+property/unit dimensions, and a small curated set of redundancy rules. A
+failed validator changes <code>accept</code> to <code>review</code>,
+clears the selected candidate, and appends a stable finding code and
+explanation while preserving model confidence. Validators never retrieve
+or substitute terms and never create an ontology gap.</p>
+</div>
+<div class="section level2">
+<h2 id="structured-ontology-gaps">Structured Ontology Gaps<a class="anchor" aria-label="anchor" href="#structured-ontology-gaps"></a>
+</h2>
+<p>Use both package attributes when deciding whether a new term is
+needed:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gaps</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps</a></span><span class="op">(</span><span class="va">reviewed_dict</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span></span>
+<span>  <span class="va">gaps</span>,</span>
+<span>  scope <span class="op">=</span> <span class="st">"auto"</span>,</span>
+<span>  ask <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> combines deterministic
+candidate gaps with final LLM <code>request_new_term</code> decisions.
+Its <code>gap_detection_basis</code> distinguishes
+<code>candidate_gap</code>, <code>llm_request_new_term</code>, and
+<code>candidate_gap_and_llm_request_new_term</code>. Explicit LLM gaps
+remain visible even when SMN candidates exist.</p>
+<p>Rendering never submits an issue. Routing precedence is an explicit
+row override, a forced scope, a recognized model namespace suggestion,
+and then the placement heuristic. A model-proposed namespace is evidence
+rather than authority. Review every draft before using
+<code><a href="../reference/submit_term_request_issues.html">submit_term_request_issues()</a></code>; shared <code>smn</code> and
+DFO-specific <code>gcdfo</code> rows use their repository’s active issue
+template, while <code>profile</code>, <code>uncertain</code>, and
+<code>skip</code> remain explicit governance outcomes.</p>
 </div>
 <div class="section level2">
 <h2 id="review-order">Review Order<a class="anchor" aria-label="anchor" href="#review-order"></a>
@@ -324,7 +412,7 @@ not the canonical package state.</p>
 <h2 id="rebuild-edh-xml-after-review">Rebuild EDH XML After Review<a class="anchor" aria-label="anchor" href="#rebuild-edh-xml-after-review"></a>
 </h2>
 <p>Once the package metadata is finalized:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code> is intentionally strict. It

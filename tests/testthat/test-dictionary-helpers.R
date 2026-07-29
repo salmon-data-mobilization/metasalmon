@@ -152,7 +152,12 @@ test_that("infer_dictionary recognizes wide numeric and percent metrics without 
 test_that("infer_dictionary can seed semantic suggestions", {
   fake_suggest <- function(df, dict, sources = c("ols", "nvs"), max_per_role = 1, include_dwc = FALSE,
                            codes = NULL, table_meta = NULL, dataset_meta = NULL, ...) {
-    expect_equal(sources, c("ols", "nvs", "qudt"))
+    expect_equal(unname(as.character(sources)), c("ols", "nvs", "qudt"))
+    expect_false(isTRUE(attr(
+      sources,
+      "metasalmon_sources_omitted",
+      exact = TRUE
+    )))
     expect_equal(max_per_role, 1)
     expect_null(codes)
     expect_null(table_meta)
@@ -192,6 +197,98 @@ test_that("infer_dictionary can seed semantic suggestions", {
       expect_equal(sugg$iri, "https://example.org/count")
     }
   )
+})
+
+test_that("infer_dictionary marks omitted semantic sources for role defaults", {
+  captured_sources <- NULL
+  fake_suggest <- function(df, dict, sources, ...) {
+    captured_sources <<- sources
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_dictionary(
+        data.frame(count = c(1L, 2L)),
+        seed_semantics = TRUE,
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_identical(
+    unname(as.character(captured_sources)),
+    c("smn", "gcdfo", "ols", "nvs")
+  )
+  expect_true(isTRUE(attr(
+    captured_sources,
+    "metasalmon_sources_omitted",
+    exact = TRUE
+  )))
+})
+
+test_that("artifact inference preserves an explicit semantic source allowlist", {
+  captured_sources <- NULL
+  fake_suggest <- function(df, dict, sources, ...) {
+    captured_sources <<- sources
+    attr(dict, "semantic_suggestions") <- tibble::tibble()
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_salmon_datapackage_artifacts(
+        resources = list(catches = data.frame(count = c(1L, 2L))),
+        seed_semantics = TRUE,
+        semantic_sources = "smn",
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_identical(unname(as.character(captured_sources)), "smn")
+  expect_false(isTRUE(attr(
+    captured_sources,
+    "metasalmon_sources_omitted",
+    exact = TRUE
+  )))
+})
+
+test_that("dictionary entry points pass strict sources through to retrieval", {
+  source_calls <- list()
+  fake_find_terms <- function(query, role, sources, ...) {
+    source_calls[[length(source_calls) + 1L]] <<- sources
+    tibble::tibble()
+  }
+
+  with_mocked_bindings(
+    find_terms = fake_find_terms,
+    {
+      infer_dictionary(
+        data.frame(count = c(1L, 2L)),
+        seed_semantics = TRUE,
+        semantic_sources = "smn",
+        seed_verbose = FALSE
+      )
+      infer_salmon_datapackage_artifacts(
+        resources = list(catches = data.frame(count = c(1L, 2L))),
+        seed_semantics = TRUE,
+        semantic_sources = "smn",
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_true(length(source_calls) > 0L)
+  expect_true(all(vapply(
+    source_calls,
+    identical,
+    logical(1),
+    y = "smn"
+  )))
 })
 
 test_that("infer_dictionary single-table semantic seeding preserves seed metadata attributes", {
@@ -655,7 +752,7 @@ test_that("suggest_semantics normalizes wide measurement headers and header unit
   expect_true(any(call_df$role == "unit" & call_df$query == "cubic meter per second"))
 })
 
-test_that("suggest_semantics augments unit-role sources with role defaults", {
+test_that("suggest_semantics treats explicitly supplied sources as an allowlist", {
   dict <- tibble::tibble(
     dataset_id = "d1",
     table_id = "t1",
@@ -703,8 +800,8 @@ test_that("suggest_semantics augments unit-role sources with role defaults", {
   unit_sources <- call_df$sources[call_df$role == "unit"][[1]]
   variable_sources <- call_df$sources[call_df$role == "variable"][[1]]
 
-  expect_true("qudt" %in% unit_sources)
-  expect_true(all(c("smn", "gcdfo", "ols", "nvs") %in% unit_sources))
+  expect_false("qudt" %in% unit_sources)
+  expect_equal(unit_sources, c("smn", "gcdfo", "ols", "nvs"))
   expect_false("qudt" %in% variable_sources)
   expect_equal(variable_sources, c("smn", "gcdfo", "ols", "nvs"))
 })
@@ -1962,7 +2059,15 @@ test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts",
     expect_true("dataset_id" %in% names(dataset_meta))
     expect_true("keywords" %in% names(dataset_meta))
     expect_true(!is.null(codes))
-    expect_equal(sources, c("smn", "gcdfo", "ols", "nvs"))
+    expect_equal(
+      unname(as.character(sources)),
+      c("smn", "gcdfo", "ols", "nvs")
+    )
+    expect_true(isTRUE(attr(
+      sources,
+      "metasalmon_sources_omitted",
+      exact = TRUE
+    )))
 
     attr(dict, "semantic_suggestions") <- tibble::tibble(
       column_name = c("count", "observation_date"),

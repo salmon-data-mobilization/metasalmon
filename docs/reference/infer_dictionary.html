@@ -9,7 +9,7 @@ guessing column types, roles, and basic metadata."><meta property="og:image" con
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -107,7 +107,9 @@ the resulting <code>semantic_suggestions</code> attribute to the returned dictio
 
 <dt id="arg-semantic-sources">semantic_sources<a class="anchor" aria-label="anchor" href="#arg-semantic-sources"></a></dt>
 <dd><p>Character vector of vocabulary sources passed to
-<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>. Default: <code>c("smn", "gcdfo", "ols", "nvs")</code>.</p></dd>
+<code><a href="suggest_semantics.html">suggest_semantics()</a></code> when <code>seed_semantics = TRUE</code>. Omitted values use
+role-aware defaults; explicitly supplied values are a strict allowlist for
+initial and retry retrieval.</p></dd>
 
 
 <dt id="arg-semantic-max-per-role">semantic_max_per_role<a class="anchor" aria-label="anchor" href="#arg-semantic-max-per-role"></a></dt>
@@ -199,7 +201,9 @@ OpenAI-compatible request function.</p></dd>
 Package order: <code>dataset_id</code>, <code>table_id</code>, <code>column_name</code>, <code>column_label</code>,
 <code>column_description</code>, <code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code>,
 <code>constraint_iri</code>, <code>method_iri</code>, <code>unit_label</code>, <code>unit_iri</code>, <code>term_type</code>,
-<code>value_type</code>, <code>column_role</code>, <code>required</code>.</p>
+<code>value_type</code>, <code>column_role</code>, <code>required</code>. With semantic seeding, suggestions
+are attached as <code>semantic_suggestions</code>; with explicit LLM review, the
+30-column target summaries are attached as <code>semantic_llm_assessments</code>.</p>
     </div>
 
     <div class="section level2">

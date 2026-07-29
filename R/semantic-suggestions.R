@@ -134,6 +134,83 @@
   text
 }
 
+.ms_semantic_text_hash <- function(x) {
+  ints <- utf8ToInt(enc2utf8(paste(x, collapse = "\r")))
+  if (length(ints) == 0L) {
+    return("0000000000000000")
+  }
+
+  rolling_hash <- function(multiplier, seed, modulus) {
+    value <- as.double(seed)
+    for (int in ints) {
+      value <- (value * multiplier + int) %% modulus
+    }
+    sprintf("%08x", as.integer(value))
+  }
+
+  paste0(
+    rolling_hash(131, 216613626, 2147483629),
+    rolling_hash(137, 16777619, 2147483587)
+  )
+}
+
+.ms_semantic_candidate_identity <- function(candidate_rows, role = NULL) {
+  candidate_rows <- .ms_semantic_candidate_rows(candidate_rows)
+  if (nrow(candidate_rows) == 0L) {
+    return(character())
+  }
+
+  role_values <- if (!is.null(role) && length(role) > 0L) {
+    rep(as.character(role[[1]]), nrow(candidate_rows))
+  } else if ("dictionary_role" %in% names(candidate_rows)) {
+    as.character(candidate_rows$dictionary_role)
+  } else if ("role" %in% names(candidate_rows)) {
+    as.character(candidate_rows$role)
+  } else {
+    rep("unknown", nrow(candidate_rows))
+  }
+  role_values[is.na(role_values) | !nzchar(trimws(role_values))] <- "unknown"
+
+  fingerprint_value <- function(column, index) {
+    if (!column %in% names(candidate_rows)) {
+      return("")
+    }
+    value <- candidate_rows[[column]][[index]]
+    if (is.null(value) || length(value) == 0L || all(is.na(value))) {
+      return("")
+    }
+    paste(as.character(value), collapse = "|")
+  }
+  fingerprint_columns <- c(
+    "ontology", "label", "definition", "match_type", "role_hints",
+    "resource_kind", "type_iris", "term_type"
+  )
+
+  ids <- vapply(seq_len(nrow(candidate_rows)), function(i) {
+    iri <- .ms_semantic_trim_string(candidate_rows$iri[[i]])
+    source <- .ms_semantic_trim_string(
+      candidate_rows$source[[i]],
+      default = "unknown"
+    )
+    if (!is.na(iri)) {
+      return(paste(source, iri, sep = "::"))
+    }
+
+    fingerprint <- .ms_semantic_text_hash(c(
+      role_values[[i]],
+      source,
+      vapply(
+        fingerprint_columns,
+        fingerprint_value,
+        character(1),
+        index = i
+      )
+    ))
+    paste("blank", role_values[[i]], fingerprint, sep = "::")
+  }, character(1))
+  ids
+}
+
 .ms_semantic_first_non_empty <- function(...) {
   values <- unlist(list(...), use.names = FALSE)
   values <- vapply(values, .ms_semantic_trim_string, character(1), default = NA_character_)

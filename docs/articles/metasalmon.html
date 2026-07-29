@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5.9000</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -190,18 +190,24 @@ CSV, and set <code>llm_assess = TRUE</code>; context alone does not
 enable an LLM call.</p>
 <p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> seeds semantic suggestions by default and
 auto-fills top-ranked compatible drafts directly into blank semantic
-fields in the metadata CSVs. That includes column-level IRIs in
-<code>metadata/column_dictionary.csv</code> and strong table-level
-observation-unit drafts in <code>metadata/tables.csv</code>, using
-<code>observation_unit</code>/<code>description</code> when available
-and otherwise falling back to
-<code>table_label</code>/<code>table_id</code>. Any auto-applied
-semantic IRI draft is written back as <code>REVIEW: &lt;iri&gt;</code>
-so you still confirm it manually. It does not overwrite existing
-non-empty semantic values. Code-level suggestions default to factor and
-low-cardinality character source columns; use
-<code>semantic_code_scope = "all"</code> if you want broader code-level
-seeding.</p>
+fields in the metadata CSVs. That includes variable, property, entity,
+and unit IRIs in <code>metadata/column_dictionary.csv</code> plus strong
+table-level observation-unit drafts in <code>metadata/tables.csv</code>,
+using <code>observation_unit</code>/<code>description</code> when
+available and otherwise falling back to
+<code>table_label</code>/<code>table_id</code>. Constraint and method
+candidates are never auto-filled. Any auto-applied semantic IRI draft is
+written back as <code>REVIEW: &lt;iri&gt;</code> so you still confirm it
+manually. It does not overwrite existing non-empty semantic values.
+Code-level suggestions default to factor and low-cardinality character
+source columns; use <code>semantic_code_scope = "all"</code> if you want
+broader code-level seeding.</p>
+<p>When LLM review is enabled, the six measurement roles are judged
+together and then checked by deterministic validators. A validator can
+downgrade an unsupported acceptance to manual review, but it never
+substitutes or invents a term. Omit <code>semantic_sources</code> for
+role-aware defaults; an explicitly supplied vector is a strict allowlist
+through the single retry round.</p>
 <p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
 <code>MISSING METADATA:</code> placeholders for required fields so the
 package is immediately reviewable in Excel. Replace those placeholders

@@ -277,20 +277,22 @@ test_that("suggest_semantics falls back to deterministic suggestions when every 
   expect_true(all(!is.na(assessments$llm_error) & nzchar(assessments$llm_error)))
 })
 
-test_that("provider-wide LLM failure still aborts without usable deterministic suggestions", {
+test_that("provider-wide LLM failure preserves an empty deterministic shortlist", {
   assessments <- tibble::tibble(
     llm_error = c("HTTP 429 Too Many Requests.", "HTTP 402 Payment Required."),
     llm_decision = c(NA_character_, NA_character_)
   )
 
-  expect_error(
-    .ms_llm_abort_if_provider_wide_failure(
+  fallback <- NULL
+  expect_warning(
+    fallback <- .ms_llm_abort_if_provider_wide_failure(
       assessments = assessments,
       config = list(provider = "openrouter", model = "openrouter/free"),
       deterministic_suggestions = tibble::tibble(iri = c(NA_character_, ""))
     ),
-    "no usable deterministic semantic suggestions were available"
+    "unchanged empty semantic shortlist"
   )
+  expect_true(fallback)
 })
 
 test_that("suggest_semantics defaults chapi LLM review to the internal mistral endpoint", {
@@ -847,7 +849,9 @@ test_that("LLM retry_search can trigger a second deterministic retrieval pass", 
     )
   }
 
+  retry_sources <- list()
   fake_search <- function(query, role, sources) {
+    retry_sources[[length(retry_sources) + 1L]] <<- sources
     if (identical(query, "catch mass")) {
       return(tibble::tibble(
         label = c("Catch mass", "Fish weight"),
@@ -889,6 +893,104 @@ test_that("LLM retry_search can trigger a second deterministic retrieval pass", 
   expect_equal(selected$llm_selected_iri[[1]], "https://example.org/property/catch-mass")
   expect_true(isTRUE(selected$llm_exploration_used[[1]]))
   expect_match(selected$llm_exploration_queries[[1]], "catch mass", fixed = TRUE)
+  expect_true(length(retry_sources) > 0L)
+  expect_true(all(vapply(
+    retry_sources,
+    identical,
+    logical(1),
+    y = "smn"
+  )))
+})
+
+test_that("exact duplicate retry_search is recorded without another request or search", {
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "CATCH_WEIGHT",
+    column_label = "Catch weight",
+    column_description = "Weight of catch",
+    column_role = "measurement",
+    code_value = NA_character_,
+    dictionary_role = "property",
+    search_role = "property",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "property_iri",
+    search_query = "catch weight",
+    target_label = "Weight of catch",
+    target_description = "Weight of catch",
+    target_query_basis = "label",
+    target_query_context = "ctx",
+    label = "Fish weight",
+    iri = "https://example.org/property/fish-weight",
+    source = "smn",
+    ontology = "demo",
+    definition = "Fish weight property",
+    match_type = "label_partial",
+    score = 0.8
+  )
+  request_calls <- 0L
+  search_calls <- 0L
+
+  out <- metasalmon:::.ms_assess_semantic_suggestions_llm(
+    suggestions,
+    provider = "openrouter",
+    model = "openai/gpt-5.4-mini",
+    api_key = "dummy-key",
+    top_n = 1L,
+    request_fn = function(messages, config) {
+      request_calls <<- request_calls + 1L
+      list(
+        decision = "retry_search",
+        selected_candidate_index = NULL,
+        confidence = 0.4,
+        rationale = "Try again.",
+        missing_context = "",
+        retry_query = "  CATCH   WEIGHT "
+      )
+    },
+    search_fn = function(query, role, sources) {
+      search_calls <<- search_calls + 1L
+      stop("duplicate retry must not search")
+    },
+    sources = "smn",
+    max_per_role = 1L
+  )
+
+  expect_equal(request_calls, 1L)
+  expect_equal(search_calls, 0L)
+  expect_equal(out$assessments$llm_decision, "retry_search")
+  expect_equal(out$assessments$llm_retry_query, "CATCH   WEIGHT")
+  expect_equal(
+    out$assessments$llm_retry_query_rejection_reason,
+    "duplicate_original_query"
+  )
+  expect_false(out$assessments$llm_exploration_used)
+  expect_match(out$assessments$llm_rationale, "retry was not issued", fixed = TRUE)
+})
+
+test_that("near-duplicate retry query remains eligible", {
+  classification <- metasalmon:::.ms_llm_classify_retry_query(
+    "catch weight property",
+    "catch weight"
+  )
+
+  expect_identical(classification$disposition, "use_query")
+  expect_identical(classification$query, "catch weight property")
+  expect_true(is.na(classification$rejection_reason))
+})
+
+test_that("identifier-like exact duplicate retry query is suppressed before fallback", {
+  classification <- metasalmon:::.ms_llm_classify_retry_query(
+    "SMN:CatchWeight",
+    "smn:catchweight"
+  )
+
+  expect_identical(classification$disposition, "duplicate_original_query")
+  expect_identical(
+    classification$rejection_reason,
+    "duplicate_original_query"
+  )
 })
 
 test_that("failed exploration reassessment does not remap old selected indexes onto new ranks", {
@@ -1159,8 +1261,45 @@ test_that("reject_shortlist that exploration cannot resolve escalates to request
   expect_true(is.na(assessment$llm_selected_candidate_index[[1]]))
   expect_true(is.na(assessment$llm_selected_iri[[1]]))
   expect_match(assessment$llm_rationale[[1]], "escalated to request_new_term", fixed = TRUE)
+  expect_equal(assessment$llm_escalated_from[[1]], "reject_shortlist")
   # No candidate is flagged as selected in the suggestions output.
   expect_false(any(isTRUE(out$suggestions$llm_selected)))
+})
+
+test_that("rejection escalation preserves distinct pre and post rationales", {
+  target <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "catch_weight",
+    code_value = NA_character_,
+    dictionary_role = "variable",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "term_iri",
+    search_query = "catch weight"
+  )
+  config <- list(provider = "openrouter", model = "openai/gpt-5.4-mini")
+  pre <- metasalmon:::.ms_llm_review_empty_assessment(target, config)
+  pre$llm_decision <- "reject_shortlist"
+  pre$llm_rationale <- "Initial candidates describe individual fish."
+  post <- pre
+  post$llm_rationale <- "Retry candidates still describe individual fish."
+
+  escalated <- metasalmon:::.ms_llm_escalate_unresolved_rejection(
+    pre,
+    list(assessment = post)
+  )$assessment
+
+  expect_match(
+    escalated$llm_rationale,
+    "Initial shortlist rejection: Initial candidates",
+    fixed = TRUE
+  )
+  expect_match(
+    escalated$llm_rationale,
+    "Post-retry shortlist rejection: Retry candidates",
+    fixed = TRUE
+  )
 })
 
 test_that("LLM request_new_term stores ontology-gap metadata", {
@@ -1448,6 +1587,23 @@ test_that("context files sharing a basename get disambiguated source labels", {
   expect_equal(anyDuplicated(chunks$chunk_id), 0L)
   # The basename stays visible in each disambiguated label.
   expect_true(all(grepl("notes.md", sources, fixed = TRUE)))
+})
+
+test_that("inline context snippets retain separate chunk identities", {
+  chunks <- metasalmon:::.ms_collect_context_chunks(
+    context_text = c(
+      "CATCH_COUNT is the number of fish in a catch.",
+      "FORK_LENGTH_MM uses a measuring board protocol."
+    )
+  )
+
+  expect_equal(nrow(chunks), 2L)
+  expect_setequal(chunks$source, "inline_context")
+  expect_equal(anyDuplicated(chunks$chunk_id), 0L)
+  expect_true(all(grepl(
+    "^inline_context\\[[12]\\]#1$",
+    chunks$chunk_id
+  )))
 })
 
 test_that("non-UTF-8 (Latin-1/Windows-1252) context files are decoded, not corrupted", {
@@ -2115,31 +2271,39 @@ test_that("weak LLM shortlist review triggers one bounded alternate-query pass",
 
   fake_request <- function(messages, config) {
     request_calls <<- request_calls + 1L
-    prompt <- messages[[2]]$content
-
-    if (grepl("Exploration payload:", prompt, fixed = TRUE)) {
-      return(list(
-        alternate_queries = list("fish abundance", "https://w3id.org/smn/InventedIri"),
-        rationale = "The initial query is too generic."
-      ))
-    }
 
     if (request_calls == 1L) {
       return(list(
-        decision = "review",
-        selected_candidate_index = NULL,
-        confidence = 0.31,
-        rationale = "The shortlist is too generic.",
-        missing_context = "A species-specific abundance phrase would help."
+        bundle_summary = "A fish abundance measurement.",
+        assessments = list(list(
+          dictionary_role = "variable",
+          decision = "retry_search",
+          selected_candidate_id = NULL,
+          confidence = 0.31,
+          rationale = "The shortlist is too generic.",
+          missing_context = "A species-specific abundance phrase would help.",
+          retry_query = "fish abundance",
+          suggested_label = NULL,
+          suggested_definition = NULL,
+          suggested_namespace = NULL
+        ))
       ))
     }
 
     list(
-      decision = "accept",
-      selected_candidate_index = 1,
-      confidence = 0.93,
-      rationale = "Fish abundance is the best retrieved match.",
-      missing_context = ""
+      bundle_summary = "A fish abundance measurement.",
+      assessments = list(list(
+        dictionary_role = "variable",
+        decision = "accept",
+        selected_candidate_id = "smn::https://example.org/fish-abundance",
+        confidence = 0.93,
+        rationale = "Fish abundance is the best retrieved match.",
+        missing_context = "",
+        retry_query = NULL,
+        suggested_label = NULL,
+        suggested_definition = NULL,
+        suggested_namespace = NULL
+      ))
     )
   }
 
@@ -2160,7 +2324,7 @@ test_that("weak LLM shortlist review triggers one bounded alternate-query pass",
   assessments <- attr(out, "semantic_llm_assessments")
 
   expect_equal(search_calls, c("variable::count", "variable::fish abundance"))
-  expect_equal(request_calls, 3L)
+  expect_equal(request_calls, 2L)
   expect_true(any(suggestions$retrieval_pass == 2L))
   expect_true(any(suggestions$llm_selected))
   expect_equal(
@@ -2210,11 +2374,19 @@ test_that("strong LLM shortlist acceptance skips bounded exploration", {
   fake_request <- function(messages, config) {
     request_calls <<- request_calls + 1L
     list(
-      decision = "accept",
-      selected_candidate_index = 1,
-      confidence = 0.91,
-      rationale = "The first shortlist is already good enough.",
-      missing_context = ""
+      bundle_summary = "A fish count measurement.",
+      assessments = list(list(
+        dictionary_role = "variable",
+        decision = "accept",
+        selected_candidate_id = "smn::https://example.org/count",
+        confidence = 0.91,
+        rationale = "The first shortlist is already good enough.",
+        missing_context = "",
+        retry_query = NULL,
+        suggested_label = NULL,
+        suggested_definition = NULL,
+        suggested_namespace = NULL
+      ))
     )
   }
 
