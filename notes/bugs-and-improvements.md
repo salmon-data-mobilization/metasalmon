@@ -68,8 +68,11 @@ probe additionally caught suffixed identifiers and malformed compound units;
 both are now rejected or left unknown with regression coverage. A markup-prefix
 probe then caught the same suffix leak behind Markdown/Rmd bullets and table
 markers; markup-aware token extraction now covers those forms without excluding
-legitimate numbered-list prose. All release checks and final independent
-re-review must pass again before the exact-model live cohort and merge.
+legitimate numbered-list prose. The final ontology matrix also found spaced and
+inverse temporal denominators plus embedded compound-unit overmatching; exact
+supported-compound matching and per-value powered/chained guards now cover those
+forms. All release checks and final independent re-review must pass again before
+the exact-model live cohort and merge.
 
 ---
 

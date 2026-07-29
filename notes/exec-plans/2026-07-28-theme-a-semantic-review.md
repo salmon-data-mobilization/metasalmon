@@ -77,7 +77,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   suffixed identifier; markup-aware token extraction and regressions now close
   that path. Re-review also caught numbered-list human prose as a false negative;
   phrase matching now uses the same unmarked text and the full prefix matrix is
-  covered. Final re-review remains.
+  covered. The final ontology matrix then exposed spaced/inverse temporal
+  denominators and embedded compound-unit overmatching. Compound units now match
+  only complete supported input values, denominator notation is normalized per
+  value, and powered/chained forms remain unknown. Final re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -160,7 +163,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   explicit per-time pattern wins over the named dimensionless-rate heuristic.
   Known flow/speed compounds resolve first; unsupported physical-per-time
   combinations, temporal IRI suffixes, and squared/cubed extensions remain
-  unknown rather than generating a false mismatch.
+  unknown rather than generating a false mismatch. Spaced slash and inverse-time
+  notation count as explicit denominators, while repeated equivalent evidence
+  across label, definition, and IRI does not count as a chained dimension.
 - Correct source instructions are insufficient when generated pkgdown output is
   stale. All active contributor routes now invoke `scripts/build-pkgdown.R`, and
   the release gate checks the generated index/search corpus after rebuilding.
@@ -262,7 +267,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   Markdown/Rmd markup obscured the suffix check. Each finding now has an
   implementation or build-pipeline fix and focused regression coverage,
   including positive human-prose cases for every accepted markup prefix;
-  independent re-review is pending.
+  the final dimensional matrix additionally replaced substring compound matching
+  with complete-value matching and per-value denominator guards. Independent
+  re-review is pending.
 
 ## Outcomes & Retrospective
 

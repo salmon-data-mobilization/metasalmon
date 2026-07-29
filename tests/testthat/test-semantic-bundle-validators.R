@@ -225,6 +225,57 @@ test_that("dimensional validator recognizes ratios and rates", {
     )
   ))
   expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "Mortality rate / year"
+    ),
+    "rate"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "Mortality rate yr^-1"
+    ),
+    "rate"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "Mortality rate yr\u22121"
+    ),
+    "rate"
+  )
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "square-metre per second"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "cubic-metre per second"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("m/s^2")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("m/s\u00b2")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "kilometres per hour per year"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("km/h/s")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("kg / year")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("kg yr^-1")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("kg\u00b7yr\u22121")
+  ))
+  expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
   )

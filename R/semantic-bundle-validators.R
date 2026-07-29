@@ -273,30 +273,73 @@
 }
 
 .ms_semantic_validator_dimension <- function(...) {
-  text <- .ms_semantic_validator_text(...)
-  if (!nzchar(text)) {
+  values <- unlist(list(...), recursive = TRUE, use.names = FALSE)
+  values <- as.character(values)
+  values <- values[!is.na(values) & nzchar(trimws(values))]
+  if (length(values) == 0L) {
     return(NA_character_)
   }
-  text <- gsub("\\s+", " ", text, perl = TRUE)
+  values <- vapply(values, function(value) {
+    value <- tolower(trimws(value))
+    value <- gsub("\u2212|\u207b", "-", value, perl = TRUE)
+    value <- gsub("\u00b9", "1", value, fixed = TRUE)
+    value <- gsub("\u00b2", "2", value, fixed = TRUE)
+    value <- gsub("\u00b3", "3", value, fixed = TRUE)
+    value <- gsub("\u00b7", " ", value, fixed = TRUE)
+    gsub("\\s+", " ", value, perl = TRUE)
+  }, character(1))
+  text <- paste(values, collapse = " ")
 
   compound_rules <- list(
-    flow = paste0(
-      "(?<!square )\\b(cubic met(er|re)s? per second|",
-      "m3/s|cumecs?|cms)\\b(?! squared| cubed)"
-    ),
+    flow = "^(cubic met(er|re)s? per second|m3/s|cumecs?|cms)$",
     speed = paste0(
-      "(?<!square )(?<!cubic )\\b(kilomet(er|re)s? per hour|",
-      "met(er|re)s? per second|km/h|m/s|kph)\\b",
-      "(?! squared| cubed)"
+      "^(kilomet(er|re)s? per hour|met(er|re)s? per second|",
+      "km/h|m/s|kph)$"
     )
   )
   compound_match <- names(compound_rules)[vapply(
     compound_rules,
-    function(pattern) grepl(pattern, text, perl = TRUE),
+    function(pattern) any(grepl(pattern, values, perl = TRUE)),
     logical(1)
   )]
-  if (length(compound_match) > 0L) {
+  if (length(compound_match) == 1L) {
     return(compound_match[[1L]])
+  }
+  if (length(compound_match) > 1L) {
+    return(NA_character_)
+  }
+
+  time_unit <- paste0(
+    "(s|sec|second|min|minute|h|hr|hour|d|day|wk|week|",
+    "mo|month|yr|year|season)"
+  )
+  denominator_pattern <- paste0(
+    "(\\bper\\s+", time_unit, "\\b",
+    "|/\\s*", time_unit, "\\b",
+    "|[-_]per[-_]", time_unit, "\\b",
+    "|\\b", time_unit, "\\s*\\^?\\s*-\\s*1\\b)"
+  )
+  denominator_counts <- vapply(values, function(value) {
+    matches <- gregexpr(
+      denominator_pattern,
+      value,
+      perl = TRUE
+    )[[1L]]
+    if (identical(matches[[1L]], -1L)) 0L else length(matches)
+  }, integer(1))
+  denominator_count <- max(denominator_counts)
+  powered_pattern <- paste0(
+    "(\\bper\\s+|/\\s*|[-_]per[-_])",
+    time_unit,
+    "\\s*(\\^?\\s*[2-9]|squared|cubed)\\b"
+  )
+  powered_denominator <- any(vapply(
+    values,
+    function(value) grepl(powered_pattern, value, perl = TRUE),
+    logical(1)
+  ))
+  if (denominator_count > 1L || powered_denominator) {
+    return(NA_character_)
   }
 
   rules <- list(
@@ -304,10 +347,10 @@
     speed = "\\b(speed|velocity)\\b",
     temperature = "\\b(temperature|celsius|fahrenheit|kelvin|deg c)\\b",
     area = paste0(
-      "\\b(area|square (milli|centi|kilo)?met(er|re)s?|m2|hectare)\\b"
+      "\\b(area|square[ -](milli|centi|kilo)?met(er|re)s?|m2|hectare)\\b"
     ),
     volume = paste0(
-      "\\b(volume|lit(er|re)s?|cubic ",
+      "\\b(volume|lit(er|re)s?|cubic[ -]",
       "(milli|centi|kilo)?met(er|re)s?|m3)\\b"
     ),
     mass = "\\b(mass|weight|kilograms?|grams?|tonnes?|pounds?|lbs?|kg|kilogm|gm)\\b",
@@ -321,10 +364,7 @@
     ),
     rate = paste0(
       "\\b(frequency|occurrences? per|individuals? per|fish per|",
-      "events? per|per capita per)\\b|\\bper (second|minute|hour|day|",
-      "week|month|year|season)\\b|",
-      "(/|-per-|_per_)(s|sec|second|min|minute|h|hr|hour|d|day|wk|week|",
-      "mo|month|yr|year|season)\\b"
+      "events? per|per capita per)\\b"
     )
   )
 
@@ -333,6 +373,9 @@
     function(pattern) grepl(pattern, text, perl = TRUE),
     logical(1)
   )]
+  if (denominator_count == 1L) {
+    matched <- unique(c(matched, "rate"))
+  }
   strong_physical <- intersect(
     matched,
     c("flow", "speed", "temperature", "area", "volume", "mass", "length")
