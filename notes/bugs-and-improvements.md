@@ -61,7 +61,9 @@ additional release blockers in returned-source enforcement, retry call bounds,
 chat native types, validator context locality, and evidence lineage. The fixes
 and focused regressions are implemented. Re-review additionally caught and fixed
 overlapping canonical field names leaking method evidence and explicit per-time
-mortality rates being treated as dimensionally ambiguous. All release checks and
+mortality rates being treated as dimensionally ambiguous. A subsequent code pass
+also caught weak one-word field anchors and compound flow/speed precedence; those
+now have conservative implementations and focused tests. All release checks and
 final independent re-review must pass again before the exact-model live cohort
 and merge.
 

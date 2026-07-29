@@ -69,7 +69,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   retained-round lineage, raw-publication attestation, and stale build-command
   issues. A second ontology re-review then found an overlapping-column-name
   evidence leak and ambiguous explicit per-time mortality rates; both now have
-  focused regression fixes. Final re-review remains.
+  focused regression fixes. A subsequent code pass found weak one-word anchors
+  and compound physical-rate precedence gaps; those are also fixed and covered.
+  Final re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -140,12 +142,16 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   The harness now validates each response item against the request's candidate
   IDs and selects the last usable provider assessment instead.
 - Normalizing canonical field names into words makes `CATCH_COUNT` a substring
-  of `SPAWNER_CATCH_COUNT`. External validator evidence now matches canonical
-  identifiers as complete underscore-preserving tokens; labels remain a
-  conservative fallback only when no field name exists.
+  of `SPAWNER_CATCH_COUNT`, while accepting every exact one-word identifier makes
+  `count` too weak to establish locality. External validator evidence now accepts
+  distinctive canonical identifiers as complete underscore-preserving tokens or
+  a human-readable phrase at the start of a chunk; weak singleton names do not
+  anchor external evidence.
 - Named rates such as mortality are dimensionless only when no explicit temporal
   denominator is present. Strong physical dimensions retain precedence, then an
   explicit per-time pattern wins over the named dimensionless-rate heuristic.
+  Known flow/speed compounds resolve first; unsupported physical-per-time
+  combinations remain unknown rather than generating a false mismatch.
 - Correct source instructions are insufficient when generated pkgdown output is
   stale. All active contributor routes now invoke `scripts/build-pkgdown.R`, and
   the release gate checks the generated index/search corpus after rebuilding.
@@ -240,9 +246,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   attestation, and direct pkgdown commands that bypassed the hardened builder.
   The next ontology pass found that normalized field-name substrings could still
   leak evidence across overlapping identifiers and that an explicit temporal
-  denominator conflicted with named dimensionless-rate rules. Each finding now
-  has an implementation or build-pipeline fix and focused regression coverage;
-  independent re-review is pending.
+  denominator conflicted with named dimensionless-rate rules. A following code
+  pass found weak singleton anchors and compound physical-rate ambiguity. Each
+  finding now has an implementation or build-pipeline fix and focused regression
+  coverage; independent re-review is pending.
 
 ## Outcomes & Retrospective
 

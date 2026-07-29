@@ -278,9 +278,27 @@
     return(NA_character_)
   }
 
+  compound_rules <- list(
+    flow = paste0(
+      "\\b(cubic met(er|re)s? per second|m3/s|cumecs?|cms)\\b"
+    ),
+    speed = paste0(
+      "\\b(kilomet(er|re)s? per hour|met(er|re)s? per second|",
+      "km/h|m/s|kph)\\b"
+    )
+  )
+  compound_match <- names(compound_rules)[vapply(
+    compound_rules,
+    function(pattern) grepl(pattern, text, perl = TRUE),
+    logical(1)
+  )]
+  if (length(compound_match) > 0L) {
+    return(compound_match[[1L]])
+  }
+
   rules <- list(
-    flow = "\\b(flow|discharge|cubic met(er|re)s? per second|m3/s|cumecs?|cms)\\b",
-    speed = "\\b(speed|velocity|kilomet(er|re)s? per hour|km/h|kph)\\b",
+    flow = "\\b(flow|discharge)\\b",
+    speed = "\\b(speed|velocity)\\b",
     temperature = "\\b(temperature|celsius|fahrenheit|kelvin|deg c)\\b",
     area = "\\b(area|square met(er|re)s?|m2|hectare)\\b",
     volume = "\\b(volume|lit(er|re)s?|cubic met(er|re)s?|m3)\\b",
@@ -310,7 +328,13 @@
     c("flow", "speed", "temperature", "area", "volume", "mass", "length")
   )
   if (length(strong_physical) == 1L) {
+    if ("rate" %in% matched) {
+      return(NA_character_)
+    }
     return(strong_physical[[1L]])
+  }
+  if (length(strong_physical) > 1L) {
+    return(NA_character_)
   }
   if ("rate" %in% matched) {
     return("rate")
@@ -462,30 +486,34 @@
     if ("column_label" %in% names(dict_row)) dict_row$column_label[[1]] else NULL,
     if ("column_label" %in% names(target)) target$column_label[[1]] else NULL
   )
-  if (length(field_names) > 0L) {
-    return(unique(tolower(trimws(as.character(field_names)))))
-  }
-  candidates <- labels
+  candidates <- if (length(field_names) > 0L) field_names else labels
   if (length(candidates) == 0L) {
     return(character())
   }
 
-  anchor <- trimws(gsub(
-    "[^a-z0-9]+",
-    " ",
-    tolower(as.character(candidates[[1L]]))
-  ))
-  tokens <- .ms_context_tokens(anchor)
   weak_singletons <- c(
     "age", "code", "count", "length", "method", "number", "phase",
     "rate", "sex", "total", "unit", "value", "weight"
   )
-  if (!nzchar(anchor) ||
-      (length(tokens) < 2L &&
-        (nchar(anchor) < 6L || anchor %in% weak_singletons))) {
-    return(character())
-  }
-  anchor
+  anchors <- lapply(unique(as.character(candidates)), function(candidate) {
+    identifier <- tolower(trimws(candidate))
+    phrase <- trimws(gsub("[^a-z0-9]+", " ", identifier))
+    tokens <- .ms_context_tokens(phrase)
+    if (!nzchar(phrase) ||
+        (length(tokens) < 2L &&
+          (nchar(phrase) < 6L || phrase %in% weak_singletons))) {
+      return(character())
+    }
+
+    c(
+      if (length(field_names) > 0L &&
+          grepl("^[a-z0-9_]+$", identifier)) {
+        paste0("identifier:", identifier)
+      },
+      paste0("phrase_start:", phrase)
+    )
+  })
+  unique(unlist(anchors, use.names = FALSE))
 }
 
 .ms_semantic_validator_chunk_has_anchor <- function(text, anchor) {
@@ -495,21 +523,19 @@
     return(FALSE)
   }
 
-  if (grepl("^[a-z0-9_]+$", anchor)) {
+  if (startsWith(anchor, "identifier:")) {
+    identifier <- sub("^identifier:", "", anchor)
     tokens <- unlist(
       strsplit(text, "[^a-z0-9_]+", perl = TRUE),
       use.names = FALSE
     )
-    return(anchor %in% tokens)
+    return(identifier %in% tokens)
   }
 
+  phrase <- sub("^phrase_start:", "", anchor)
   normalized <- trimws(gsub("[^a-z0-9]+", " ", text))
-  padded <- paste0(" ", normalized, " ")
-  grepl(
-    paste0(" ", trimws(gsub("[^a-z0-9]+", " ", anchor)), " "),
-    padded,
-    fixed = TRUE
-  )
+  identical(normalized, phrase) ||
+    startsWith(normalized, paste0(phrase, " "))
 }
 
 .ms_semantic_bundle_validator_evidence <- function(target,

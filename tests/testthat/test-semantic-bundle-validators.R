@@ -185,6 +185,23 @@ test_that("dimensional validator recognizes ratios and rates", {
     "rate"
   )
   expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "cubic metres per second"
+    ),
+    "flow"
+  )
+  expect_equal(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "kilometres per hour"
+    ),
+    "speed"
+  )
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "kilograms per year"
+    )
+  ))
+  expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
   )
@@ -237,6 +254,53 @@ test_that("validator evidence excludes context for unrelated fields", {
   )
 })
 
+test_that("validator evidence accepts only distinctive local field anchors", {
+  target <- tibble::tibble(
+    column_name = "CATCH_COUNT",
+    column_label = "Catch count",
+    column_description = "Number of fish in the catch."
+  )
+  dict <- test_dictionary(
+    column_name = "CATCH_COUNT",
+    column_label = "Catch count",
+    column_description = "Number of fish in the catch."
+  )
+
+  local_evidence <- metasalmon:::.ms_semantic_bundle_validator_evidence(
+    target,
+    dict,
+    tibble::tibble(
+      chunk_text = "Catch count was enumerated using a visual survey protocol."
+    )
+  )
+  expect_true(
+    metasalmon:::.ms_semantic_validator_has_method_evidence(local_evidence)
+  )
+
+  weak_target <- dplyr::mutate(
+    target,
+    column_name = "count",
+    column_label = "Count"
+  )
+  weak_dict <- dplyr::mutate(
+    dict,
+    column_name = "count",
+    column_label = "Count"
+  )
+  unrelated_evidence <- metasalmon:::.ms_semantic_bundle_validator_evidence(
+    weak_target,
+    weak_dict,
+    tibble::tibble(
+      chunk_text = "Spawner count was enumerated using a visual survey protocol."
+    )
+  )
+  expect_false(
+    metasalmon:::.ms_semantic_validator_has_method_evidence(
+      unrelated_evidence
+    )
+  )
+})
+
 test_that("newly accepted property and unit candidates are cross-validated", {
   selected <- list(
     property = tibble::tibble(
@@ -269,6 +333,33 @@ test_that("newly accepted property and unit candidates are cross-validated", {
   expect_equal(
     unit_finding$code,
     "SEM_PROPERTY_UNIT_DIMENSION_MISMATCH"
+  )
+
+  flow_selected <- list(
+    property = tibble::tibble(
+      label = "Stream discharge",
+      definition = "Volumetric flow through a channel.",
+      iri = "https://example.org/StreamDischarge"
+    ),
+    unit = tibble::tibble(
+      label = "Cubic metres per second",
+      definition = "A volumetric flow unit.",
+      iri = "https://example.org/unit/M3-PER-SEC"
+    )
+  )
+  expect_equal(
+    nrow(metasalmon:::.ms_validate_semantic_property_unit_pair(
+      "property",
+      flow_selected
+    )),
+    0L
+  )
+  expect_equal(
+    nrow(metasalmon:::.ms_validate_semantic_property_unit_pair(
+      "unit",
+      flow_selected
+    )),
+    0L
   )
 })
 
