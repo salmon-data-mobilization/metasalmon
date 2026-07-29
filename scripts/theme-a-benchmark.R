@@ -101,6 +101,7 @@ usage <- function() {
     "  --api-key-env=NAME  Environment variable containing the API key.",
     "  --run-id=ID         Safe staging directory name; generated when omitted.",
     "  --timeout-seconds=N Per-request timeout; default 120.",
+    "  --allow-live-api=true  Explicitly permit billable provider requests.",
     "",
     "Promotion requires a staging capture whose evidence_status is",
     "reviewed_sanitized and whose review object records human review and",
@@ -144,7 +145,8 @@ parse_args <- function(args) {
     capture = NULL,
     cohort_manifest = NULL,
     expected_provider = NULL,
-    expected_model = NULL
+    expected_model = NULL,
+    allow_live_api = FALSE
   )
 
   for (arg in args) {
@@ -168,6 +170,13 @@ parse_args <- function(args) {
   options$timeout_seconds <- suppressWarnings(as.numeric(options$timeout_seconds))
   if (is.na(options$timeout_seconds) || options$timeout_seconds <= 0) {
     abort("--timeout-seconds must be a positive number.")
+  }
+  if (!is.logical(options$allow_live_api)) {
+    allow_live_api <- tolower(trimws(options$allow_live_api))
+    if (!allow_live_api %in% c("true", "false")) {
+      abort("--allow-live-api must be either true or false.")
+    }
+    options$allow_live_api <- identical(allow_live_api, "true")
   }
 
   options
@@ -2515,6 +2524,23 @@ git_status <- function(args) {
   as.integer(status %||% 1L)
 }
 
+git_commit_tree_cache <- new.env(parent = emptyenv())
+
+git_commit_tree <- function(sha) {
+  if (exists(sha, envir = git_commit_tree_cache, inherits = FALSE)) {
+    return(get(sha, envir = git_commit_tree_cache, inherits = FALSE))
+  }
+  if (git_status(c("cat-file", "-e", paste0(sha, "^{commit}"))) != 0L) {
+    abort("Capture Git commit does not exist in the repository: %s.", sha)
+  }
+  tree <- git_value(
+    c("rev-parse", paste0(sha, "^{tree}")),
+    default = ""
+  )
+  assign(x = sha, value = tree, envir = git_commit_tree_cache)
+  tree
+}
+
 repo_relative_path <- function(path, label) {
   if (is.null(path) || length(path) != 1L || !is.character(path) ||
       is.na(path) || !nzchar(trimws(path))) {
@@ -2568,14 +2594,33 @@ write_git_blob <- function(sha, relative_path, output_path, label) {
   invisible(output_path)
 }
 
+git_blob_sha256_cache <- new.env(parent = emptyenv())
+
 git_blob_sha256 <- function(sha, relative_path, label) {
+  cache_key <- paste(sha, relative_path, sep = "\r")
+  if (exists(cache_key, envir = git_blob_sha256_cache, inherits = FALSE)) {
+    return(get(cache_key, envir = git_blob_sha256_cache, inherits = FALSE))
+  }
+
   output_path <- tempfile("theme-a-git-blob-")
   on.exit(unlink(output_path), add = TRUE)
   write_git_blob(sha, relative_path, output_path, label)
-  file_sha256(output_path)
+  hash <- file_sha256(output_path)
+  assign(x = cache_key, value = hash, envir = git_blob_sha256_cache)
+  hash
 }
 
+git_description_version_cache <- new.env(parent = emptyenv())
+
 git_description_version <- function(sha) {
+  if (exists(sha, envir = git_description_version_cache, inherits = FALSE)) {
+    return(get(
+      sha,
+      envir = git_description_version_cache,
+      inherits = FALSE
+    ))
+  }
+
   output_path <- tempfile("theme-a-description-")
   on.exit(unlink(output_path), add = TRUE)
   write_git_blob(sha, "DESCRIPTION", output_path, "DESCRIPTION")
@@ -2588,11 +2633,25 @@ git_description_version <- function(sha) {
       )
     }
   )
-  unname(description[1L, "Version"])
+  version <- unname(description[1L, "Version"])
+  assign(
+    x = sha,
+    value = version,
+    envir = git_description_version_cache
+  )
+  version
 }
 
 file_sha256 <- function(path) {
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  if (requireNamespace("digest", quietly = TRUE)) {
+    return(tolower(digest::digest(
+      file = path,
+      algo = "sha256",
+      serialize = FALSE
+    )))
+  }
+
   command <- Sys.which("sha256sum")
   args <- shQuote(path)
   if (!nzchar(command)) {
@@ -2840,13 +2899,7 @@ validate_review_lineage <- function(capture, capture_path, contracts) {
 validate_git_source_provenance <- function(provenance) {
   sha <- provenance$git_sha
   tree <- provenance$git_tree
-  if (git_status(c("cat-file", "-e", paste0(sha, "^{commit}"))) != 0L) {
-    abort("Capture Git commit does not exist in the repository: %s.", sha)
-  }
-  resolved_tree <- git_value(
-    c("rev-parse", paste0(sha, "^{tree}")),
-    default = ""
-  )
+  resolved_tree <- git_commit_tree(sha)
   if (!identical(resolved_tree, tree)) {
     abort("Capture Git tree does not match the recorded commit.")
   }
@@ -2963,6 +3016,15 @@ safe_run_id <- function(run_id) {
 }
 
 run_live <- function(options) {
+  if (!isTRUE(options$allow_live_api)) {
+    abort(
+      paste0(
+        "Live mode is disabled by default. Pass --allow-live-api=true only ",
+        "for an intentional, potentially billable provider run."
+      )
+    )
+  }
+
   schema <- read_json(options$schema, "fixture schema")
   contracts <- schema_contracts(schema)
   cases <- read_json(options$cases, "cases fixture")

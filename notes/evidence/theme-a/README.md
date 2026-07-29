@@ -38,6 +38,20 @@ Rscript scripts/theme-a-benchmark.R replay
 Replay validates fixture schemas and cross-artifact lineage before evaluating
 the required, allowed-not-required, and forbidden semantic oracles.
 
+The default package suite is also offline and does not require provider
+credentials:
+
+```sh
+Rscript -e 'devtools::test(reporter = "summary", stop_on_failure = TRUE)'
+```
+
+Benchmark regression tests source the harness once and exercise replay,
+comparison, lineage, cohort, and promotion behavior in-process. One subprocess
+smoke test retains coverage of the actual command-line entry point. Immutable
+Git-object and SHA-256 results are cached only within that test process, keyed by
+commit and path; this avoids repeatedly reconstructing identical evidence
+without weakening mutation checks.
+
 ## Exact live cohort
 
 The release gate requires three runs from one clean, committed source state,
@@ -60,11 +74,15 @@ from the approved provider. Do not substitute another model silently.
 Rscript scripts/theme-a-benchmark.R live \
   --provider=openrouter \
   --model=openai/gpt-5.4-mini \
+  --allow-live-api=true \
   --run-id=theme-a-run-1
 ```
 
 Repeat with distinct run IDs for runs 2 and 3. Provider credentials must already
 exist in the expected environment variable; the harness never records the key.
+Live mode refuses to proceed without `--allow-live-api=true`, even when a key is
+present. Ordinary local tests and GitHub Actions never pass this flag and
+explicitly run without provider credentials, so they cannot consume API credits.
 
 Each run writes an immutable `capture.raw.json`, its `.sha256` sidecar, and an
 editable `capture.json` review copy. Review the copy manually:
