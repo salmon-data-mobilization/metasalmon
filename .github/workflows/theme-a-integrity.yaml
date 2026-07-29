@@ -1,0 +1,48 @@
+name: Theme A offline integrity
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "scripts/theme-a-benchmark.R"
+      - "tests/testthat/test-theme-a-benchmark.R"
+      - "tests/testthat/fixtures/theme-a/**"
+      - "notes/evidence/theme-a/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: theme-a-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: "yes"
+      METASALMON_RUN_THEME_A_INTEGRITY: "true"
+      OPENAI_API_KEY: ""
+      OPENROUTER_API_KEY: ""
+      METASALMON_LLM_API_KEY: ""
+      CHAPI_API_KEY: ""
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::devtools
+          needs: check
+
+      - name: Run exhaustive offline evidence integrity tests
+        run: |
+          Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_file("tests/testthat/test-theme-a-benchmark.R", reporter = "summary", stop_on_failure = TRUE)'

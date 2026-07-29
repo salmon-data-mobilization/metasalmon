@@ -94,8 +94,13 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: PR #5 merged to `main` as `f774673`; post-merge CI and Pages
   passed, pkgdown served 0.1.6, and the feature branch was removed locally and
   remotely.
-- [ ] 2026-07-28: Optimize the resource-intensive Theme A test harness while
+- [x] 2026-07-28: Optimized the resource-intensive Theme A test harness while
   preserving its offline evidence, mutation, cohort, and promotion assertions.
+  The default complete package suite fell from about 38 minutes to 3 minutes 47
+  seconds locally. The exhaustive offline integrity tier passed separately in 2
+  minutes 3 seconds and is path-filtered in CI. Live requests now require
+  `--allow-live-api=true`; both CI workflows blank all provider credential
+  variables.
 
 ## Surprises & Discoveries
 
@@ -316,7 +321,11 @@ The Theme A implementation shipped in metasalmon 0.1.6 through PR #5. Offline
 replay, focused and complete tests, package build/check, pkgdown, independent
 review checkpoints, post-merge CI, and Pages all passed. The exact-model
 three-run live cohort was explicitly deferred and remains tracked in issue #6;
-the merge is not a passing live-provider attestation.
+the merge is not a passing live-provider attestation. A follow-up refactor
+reduced the default local suite from about 38 minutes to under 4 minutes by
+reusing the evidence harness in-process, caching immutable Git-object hashes,
+and moving four exhaustive publication-integrity matrices to a path-filtered
+offline workflow. No automated test or CI job authorizes live API spending.
 
 ## Context and Orientation
 

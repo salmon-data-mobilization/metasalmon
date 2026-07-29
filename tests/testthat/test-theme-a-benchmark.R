@@ -92,6 +92,20 @@ run_theme_a_script <- function(args = character()) {
   )
 }
 
+skip_unless_theme_a_integrity <- function() {
+  enabled <- tolower(trimws(Sys.getenv(
+    "METASALMON_RUN_THEME_A_INTEGRITY",
+    unset = "false"
+  )))
+  testthat::skip_if_not(
+    enabled %in% c("true", "1", "yes"),
+    paste(
+      "exhaustive offline Theme A integrity matrix;",
+      "set METASALMON_RUN_THEME_A_INTEGRITY=true to run"
+    )
+  )
+}
+
 theme_a_fixture_path <- function(name) {
   testthat::test_path("fixtures", "theme-a", name)
 }
@@ -561,6 +575,12 @@ test_that("Theme A benchmark defaults to a passing offline replay", {
 
 test_that("Theme A live mode requires explicit billable-network opt-in", {
   withr::local_envvar(OPENROUTER_API_KEY = "unused-test-credential")
+  opted_in <- theme_a_harness()$parse_args(c(
+    "live",
+    "--allow-live-api=true"
+  ))
+  expect_true(opted_in$allow_live_api)
+
   result <- run_theme_a_script(c(
     "live",
     "--provider=openrouter",
@@ -1183,6 +1203,8 @@ test_that("Theme A capture requires target-specific interaction lineage", {
 })
 
 test_that("Theme A captures bind every source artifact to the recorded commit", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1241,6 +1263,8 @@ test_that("Theme A captures bind every source artifact to the recorded commit", 
 })
 
 test_that("Theme A cohort rejects mixed provider, model, source, and endpoint", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1390,6 +1414,8 @@ test_that("Theme A cohort requires three independent provider runs", {
 })
 
 test_that("Theme A reviewed captures require raw checksum lineage", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1472,6 +1498,8 @@ test_that("Theme A reviewed captures require raw checksum lineage", {
 })
 
 test_that("Theme A cohort promotion recomputes validated promoted captures", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE

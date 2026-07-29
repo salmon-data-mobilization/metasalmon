@@ -52,6 +52,19 @@ Git-object and SHA-256 results are cached only within that test process, keyed b
 commit and path; this avoids repeatedly reconstructing identical evidence
 without weakening mutation checks.
 
+Four exhaustive publication-integrity matrices are excluded from the ordinary
+package suite. They remain offline and run automatically in the dedicated
+`Theme A offline integrity` workflow when the harness, benchmark tests, evidence
+fixtures, or evidence documentation changes. Run them locally with:
+
+```sh
+Rscript -e 'Sys.setenv(METASALMON_RUN_THEME_A_INTEGRITY = "true"); pkgload::load_all(".", quiet = TRUE); testthat::test_file("tests/testthat/test-theme-a-benchmark.R", reporter = "summary", stop_on_failure = TRUE)'
+```
+
+Those matrices cover source-artifact binding, mixed cohort provenance,
+raw-checksum lineage, and immutable capture/cohort promotion. They do not make
+network requests and do not read provider credentials.
+
 ## Exact live cohort
 
 The release gate requires three runs from one clean, committed source state,

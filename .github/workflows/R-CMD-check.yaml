@@ -27,6 +27,7 @@ jobs:
       OPENROUTER_API_KEY: ""
       METASALMON_LLM_API_KEY: ""
       CHAPI_API_KEY: ""
+      METASALMON_RUN_THEME_A_INTEGRITY: "false"
 
     steps:
       - uses: actions/checkout@v4
