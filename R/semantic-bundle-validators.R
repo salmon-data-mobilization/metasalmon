@@ -329,9 +329,12 @@
   }, integer(1))
   denominator_count <- max(denominator_counts)
   powered_pattern <- paste0(
-    "(\\bper\\s+|/\\s*|[-_]per[-_])",
+    "((\\bper\\s+|/\\s*|[-_]per[-_])",
     time_unit,
-    "\\s*(\\^?\\s*[2-9]|squared|cubed)\\b"
+    "\\s*(\\^?\\s*[2-9]|squared|cubed)\\b",
+    "|\\b",
+    time_unit,
+    "\\s*\\^?\\s*-\\s*[2-9]\\b)"
   )
   powered_denominator <- any(vapply(
     values,

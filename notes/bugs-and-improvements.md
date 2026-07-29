@@ -71,8 +71,10 @@ markers; markup-aware token extraction now covers those forms without excluding
 legitimate numbered-list prose. The final ontology matrix also found spaced and
 inverse temporal denominators plus embedded compound-unit overmatching; exact
 supported-compound matching and per-value powered/chained guards now cover those
-forms. All release checks and final independent re-review must pass again before
-the exact-model live cohort and merge.
+forms, including inverse powers without `/` or `per`. The reviewed matrix is now
+frozen for 0.1.6; broader unit algebra is not being added to this release. All
+release checks and final independent re-review must pass again before the
+exact-model live cohort and merge.
 
 ---
 

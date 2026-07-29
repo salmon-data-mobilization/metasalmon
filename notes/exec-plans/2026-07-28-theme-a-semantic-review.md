@@ -80,7 +80,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   covered. The final ontology matrix then exposed spaced/inverse temporal
   denominators and embedded compound-unit overmatching. Compound units now match
   only complete supported input values, denominator notation is normalized per
-  value, and powered/chained forms remain unknown. Final re-review remains.
+  value, and powered/chained forms remain unknown, including inverse powers not
+  written with `/` or `per`. The agreed matrix is now frozen for 0.1.6; a general
+  unit-expression parser remains out of scope. Final re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -214,6 +216,11 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - 2026-07-28: Live review uses frozen candidate fixtures and records
   `retrieval_mode = "frozen_fixture"`; retrieval behavior is covered separately
   by deterministic tests.
+- 2026-07-28: Freeze deterministic dimension validation to the reviewed fixture
+  matrix after the final inverse-power correction. Rationale: validators are
+  conservative release safeguards, not a general unit-algebra engine; unsupported
+  expressions remain unknown and broader parsing belongs in a proven library or
+  a separately planned change.
 
 ## Review Checkpoint Log
 
@@ -268,7 +275,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   implementation or build-pipeline fix and focused regression coverage,
   including positive human-prose cases for every accepted markup prefix;
   the final dimensional matrix additionally replaced substring compound matching
-  with complete-value matching and per-value denominator guards. Independent
+  with complete-value matching and per-value denominator guards, then added the
+  final inverse-power case. The matrix is frozen for this release; independent
   re-review is pending.
 
 ## Outcomes & Retrospective

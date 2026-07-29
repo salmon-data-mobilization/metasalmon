@@ -275,6 +275,14 @@ test_that("dimensional validator recognizes ratios and rates", {
   expect_true(is.na(
     metasalmon:::.ms_semantic_validator_dimension("kg\u00b7yr\u22121")
   ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("metres s^-2")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "metres\u00b7s\u207b\u00b2"
+    )
+  ))
   expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
