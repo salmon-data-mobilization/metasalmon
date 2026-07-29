@@ -97,8 +97,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: Optimized the resource-intensive Theme A test harness while
   preserving its offline evidence, mutation, cohort, and promotion assertions.
   The default complete package suite fell from about 38 minutes to 3 minutes 47
-  seconds locally. The exhaustive offline integrity tier passed separately in 2
-  minutes 3 seconds and is path-filtered in CI. Live requests now require
+  seconds locally. The exhaustive offline integrity tier passes separately in
+  about 1-2 minutes and is path-filtered in CI. Live requests now require
   `--allow-live-api=true`; both CI workflows blank all provider credential
   variables.
 

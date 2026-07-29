@@ -83,8 +83,8 @@ providers, and live benchmark execution now requires an explicit
 billable-network acknowledgement.
 The follow-up harness refactor reduced the complete default local suite from
 about 38 minutes to 3 minutes 47 seconds; the exhaustive offline evidence tier
-passes separately in about 2 minutes and runs only for relevant paths or manual
-dispatch.
+passes separately in about 1-2 minutes and runs only for relevant paths,
+published releases, or manual dispatch.
 
 ---
 
