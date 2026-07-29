@@ -61,7 +61,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: Built `metasalmon_0.1.6.tar.gz`; the standard
   `R CMD check metasalmon_0.1.6.tar.gz` completed with `Status: OK`, including
   installed-package tests, rebuilt vignettes, and the PDF manual.
-- [ ] Checkpoint 7: final adversarial code/release review. The first pass found
+- [x] 2026-07-28: Checkpoint 7 final adversarial code/release review passed. The
+  first pass found
   release blockers in returned-source filtering, round-two fallback call bounds,
   chat native types, validator context locality, and evidence lineage. The code
   and focused regression tests were updated. The first re-review cleared the
@@ -82,7 +83,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   only complete supported input values, denominator notation is normalized per
   value, and powered/chained forms remain unknown, including inverse powers not
   written with `/` or `per`. The agreed matrix is now frozen for 0.1.6; a general
-  unit-expression parser remains out of scope. Final re-review remains.
+  unit-expression parser remains out of scope. Final bounded dispositions passed
+  38/38 dimension cases, 55/55 locality cases, replay/oracle/lineage/attestation
+  checks, and the release/docs review at commit `b5e8740`.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -276,8 +279,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   including positive human-prose cases for every accepted markup prefix;
   the final dimensional matrix additionally replaced substring compound matching
   with complete-value matching and per-value denominator guards, then added the
-  final inverse-power case. The matrix is frozen for this release; independent
-  re-review is pending.
+  final inverse-power case. The matrix is frozen for this release. Final
+  independent dispositions passed: code behavior and call bounds, 38/38
+  dimension cases, 55/55 locality cases, evidence lineage and publication
+  attestations, semantic oracles, and release documentation.
 
 ## Outcomes & Retrospective
 
