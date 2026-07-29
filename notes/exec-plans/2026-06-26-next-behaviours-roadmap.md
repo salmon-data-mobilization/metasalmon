@@ -46,9 +46,9 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   [#4](https://github.com/salmon-data-mobilization/metasalmon/issues/4). The
   living execution record is
   `notes/exec-plans/2026-07-28-theme-a-semantic-review.md`. Offline replay,
-  pkgdown, the full suite, source-package build, and standard `R CMD check`
-  passed before final review. Final-review hardening is implemented and awaiting
-  re-review plus a fresh release validation; the exact-model live cohort remains.
+  pkgdown, final independent review, the complete suite, source-package build,
+  and standard `R CMD check` now pass on the hardened branch. Remote CI and the
+  exact-model live cohort remain.
 - **Pending process:** none for the 0.1.5 branch handoff.
 - **Post-release hardening:** canonical metasalmon links and runtime SDP schema
   fetches now use `salmon-data-mobilization`; the README, vignettes, generated

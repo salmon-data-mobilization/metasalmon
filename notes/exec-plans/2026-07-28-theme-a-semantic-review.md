@@ -54,7 +54,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   property/unit pair checks, method-evidence boundaries, predicate rejection,
   and `REVIEW:` isolation were added.
 - [ ] Milestone 6: documentation, 0.1.6 metadata, pkgdown, build/check, and live
-  gate disposition.
+  gate disposition. All local release gates are complete; remote CI and the live
+  cohort remain.
 - [x] 2026-07-28: Updated source/reference/vignette documentation and NEWS,
   regenerated pkgdown, and passed replay, focused tests, and the complete test
   suite. Source-package build/check and the live gate remain.
@@ -86,6 +87,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   unit-expression parser remains out of scope. Final bounded dispositions passed
   38/38 dimension cases, 55/55 locality cases, replay/oracle/lineage/attestation
   checks, and the release/docs review at commit `b5e8740`.
+- [x] 2026-07-28: Revalidated final local release state at `80ec8b9`. Offline
+  replay passed 6/6; the complete `devtools::test()` suite passed with 14 expected
+  warning assertions; `R CMD build .` produced `metasalmon_0.1.6.tar.gz`; and
+  `R CMD check metasalmon_0.1.6.tar.gz` finished with `Status: OK`.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -130,6 +135,10 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   target only in the complete suite. The unnecessary reload was removed and
   update-check mocks were made test-scoped; the combined regression and full
   suite now pass deterministically.
+- The complete evidence-integrity matrix dominates local test time because it
+  repeatedly launches isolated R processes and reconstructs mutated three-run
+  cohorts. This is justified for the first 0.1.6 release baseline, but not for
+  every unrelated package build.
 - `scripts/` is intentionally excluded from the built R source package, so a
   direct prompt-parser test must skip before sourcing the benchmark harness
   during installed-package checks. CI now fetches full Git history so the local
@@ -224,6 +233,11 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   conservative release safeguards, not a general unit-algebra engine; unsupported
   expressions remain unknown and broader parsing belongs in a proven library or
   a separately planned change.
+- 2026-07-28: After 0.1.6, use a tiered evidence-test policy: fast replay, schema,
+  hash, and representative-cohort checks on ordinary PRs; the full mutation and
+  provenance matrix only when benchmark, fixture, schema, or promotion code
+  changes and on nightly/release runs. Optimize separately with table-driven
+  in-process tests, cached Git/source hashes, and CI sharding.
 
 ## Review Checkpoint Log
 

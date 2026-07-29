@@ -75,7 +75,9 @@ forms, including inverse powers without `/` or `per`. The reviewed matrix is now
 frozen for 0.1.6; broader unit algebra is not being added to this release. Final
 independent review passed 38/38 frozen dimension cases, 55/55 locality cases,
 replay/oracles, evidence lineage/attestation, and release documentation. Fresh
-release checks must pass before the exact-model live cohort and merge.
+local release validation now passes: offline replay, the complete package suite
+(14 expected warning assertions), source build, and `R CMD check` (`Status: OK`).
+Remote CI and the exact-model live cohort remain before merge.
 
 ---
 
