@@ -504,10 +504,11 @@ devtools::document()
 devtools::test()
 devtools::check()
 devtools::build_vignettes()
-pkgdown::build_site()
 ```
 
 ``` bash
+Rscript scripts/build-pkgdown.R
+
 # Canonical source-tarball build path (writes into the repo root, not ../)
 ./scripts/build-package.sh
 ```
