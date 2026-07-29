@@ -201,6 +201,29 @@ test_that("dimensional validator recognizes ratios and rates", {
       "kilograms per year"
     )
   ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "square metres per second"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "cubic kilometres per hour"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "metres per second squared"
+    )
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension("kg/year")
+  ))
+  expect_true(is.na(
+    metasalmon:::.ms_semantic_validator_dimension(
+      "http://qudt.org/vocab/unit/KiloGM-PER-YR"
+    )
+  ))
   expect_equal(
     metasalmon:::.ms_semantic_validator_candidate_dimension(rate_unit),
     "rate"
@@ -297,6 +320,25 @@ test_that("validator evidence accepts only distinctive local field anchors", {
   expect_false(
     metasalmon:::.ms_semantic_validator_has_method_evidence(
       unrelated_evidence
+    )
+  )
+
+  suffix_evidence <- metasalmon:::.ms_semantic_bundle_validator_evidence(
+    target,
+    dict,
+    tibble::tibble(
+      chunk_text = paste(
+        "CATCH_COUNT_ESTIMATE was enumerated using a sonar survey",
+        "protocol during the ocean phase."
+      )
+    )
+  )
+  expect_false(
+    metasalmon:::.ms_semantic_validator_has_method_evidence(suffix_evidence)
+  )
+  expect_false(
+    metasalmon:::.ms_semantic_validator_has_constraint_evidence(
+      suffix_evidence
     )
   )
 })

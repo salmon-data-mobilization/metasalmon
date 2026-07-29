@@ -71,7 +71,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   evidence leak and ambiguous explicit per-time mortality rates; both now have
   focused regression fixes. A subsequent code pass found weak one-word anchors
   and compound physical-rate precedence gaps; those are also fixed and covered.
-  Final re-review remains.
+  A further ontology probe found suffix-overlap and overbroad compound matching;
+  both now resolve conservatively with explicit adversarial coverage. Final
+  re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -146,12 +148,14 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   `count` too weak to establish locality. External validator evidence now accepts
   distinctive canonical identifiers as complete underscore-preserving tokens or
   a human-readable phrase at the start of a chunk; weak singleton names do not
-  anchor external evidence.
+  anchor external evidence, and identifier-looking suffix forms cannot use the
+  phrase fallback.
 - Named rates such as mortality are dimensionless only when no explicit temporal
   denominator is present. Strong physical dimensions retain precedence, then an
   explicit per-time pattern wins over the named dimensionless-rate heuristic.
   Known flow/speed compounds resolve first; unsupported physical-per-time
-  combinations remain unknown rather than generating a false mismatch.
+  combinations, temporal IRI suffixes, and squared/cubed extensions remain
+  unknown rather than generating a false mismatch.
 - Correct source instructions are insufficient when generated pkgdown output is
   stale. All active contributor routes now invoke `scripts/build-pkgdown.R`, and
   the release gate checks the generated index/search corpus after rebuilding.
@@ -247,9 +251,11 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   The next ontology pass found that normalized field-name substrings could still
   leak evidence across overlapping identifiers and that an explicit temporal
   denominator conflicted with named dimensionless-rate rules. A following code
-  pass found weak singleton anchors and compound physical-rate ambiguity. Each
-  finding now has an implementation or build-pipeline fix and focused regression
-  coverage; independent re-review is pending.
+  pass found weak singleton anchors and compound physical-rate ambiguity; a
+  further ontology probe found suffixed identifiers and malformed compound units
+  could still bypass those guards. Each finding now has an implementation or
+  build-pipeline fix and focused regression coverage; independent re-review is
+  pending.
 
 ## Outcomes & Retrospective
 

@@ -277,14 +277,17 @@
   if (!nzchar(text)) {
     return(NA_character_)
   }
+  text <- gsub("\\s+", " ", text, perl = TRUE)
 
   compound_rules <- list(
     flow = paste0(
-      "\\b(cubic met(er|re)s? per second|m3/s|cumecs?|cms)\\b"
+      "(?<!square )\\b(cubic met(er|re)s? per second|",
+      "m3/s|cumecs?|cms)\\b(?! squared| cubed)"
     ),
     speed = paste0(
-      "\\b(kilomet(er|re)s? per hour|met(er|re)s? per second|",
-      "km/h|m/s|kph)\\b"
+      "(?<!square )(?<!cubic )\\b(kilomet(er|re)s? per hour|",
+      "met(er|re)s? per second|km/h|m/s|kph)\\b",
+      "(?! squared| cubed)"
     )
   )
   compound_match <- names(compound_rules)[vapply(
@@ -300,8 +303,13 @@
     flow = "\\b(flow|discharge)\\b",
     speed = "\\b(speed|velocity)\\b",
     temperature = "\\b(temperature|celsius|fahrenheit|kelvin|deg c)\\b",
-    area = "\\b(area|square met(er|re)s?|m2|hectare)\\b",
-    volume = "\\b(volume|lit(er|re)s?|cubic met(er|re)s?|m3)\\b",
+    area = paste0(
+      "\\b(area|square (milli|centi|kilo)?met(er|re)s?|m2|hectare)\\b"
+    ),
+    volume = paste0(
+      "\\b(volume|lit(er|re)s?|cubic ",
+      "(milli|centi|kilo)?met(er|re)s?|m3)\\b"
+    ),
     mass = "\\b(mass|weight|kilograms?|grams?|tonnes?|pounds?|lbs?|kg|kilogm|gm)\\b",
     length = "\\b(length|width|depth|height|fork length|millimet(er|re)s?|centimet(er|re)s?|met(er|re)s?|mm|cm|millim|centim)\\b",
     count = "\\b(count|abundance|number|numerosity|individuals?|num)\\b",
@@ -314,7 +322,9 @@
     rate = paste0(
       "\\b(frequency|occurrences? per|individuals? per|fish per|",
       "events? per|per capita per)\\b|\\bper (second|minute|hour|day|",
-      "week|month|year|season)\\b"
+      "week|month|year|season)\\b|",
+      "(/|-per-|_per_)(s|sec|second|min|minute|h|hr|hour|d|day|wk|week|",
+      "mo|month|yr|year|season)\\b"
     )
   )
 
@@ -517,7 +527,8 @@
 }
 
 .ms_semantic_validator_chunk_has_anchor <- function(text, anchor) {
-  text <- tolower(as.character(text %||% ""))
+  raw_text <- as.character(text %||% "")
+  text <- tolower(raw_text)
   anchor <- tolower(trimws(as.character(anchor %||% "")))
   if (!nzchar(text) || !nzchar(anchor)) {
     return(FALSE)
@@ -533,6 +544,15 @@
   }
 
   phrase <- sub("^phrase_start:", "", anchor)
+  leading_token <- sub(
+    "^\\s*([^[:space:]:;,]+).*$",
+    "\\1",
+    raw_text,
+    perl = TRUE
+  )
+  if (grepl("[_-]", leading_token)) {
+    return(FALSE)
+  }
   normalized <- trimws(gsub("[^a-z0-9]+", " ", text))
   identical(normalized, phrase) ||
     startsWith(normalized, paste0(phrase, " "))
