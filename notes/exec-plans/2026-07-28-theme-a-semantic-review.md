@@ -53,9 +53,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 - [x] 2026-07-28: Checkpoint 6 ontology and I-ADOPT re-review passed after
   property/unit pair checks, method-evidence boundaries, predicate rejection,
   and `REVIEW:` isolation were added.
-- [ ] Milestone 6: documentation, 0.1.6 metadata, pkgdown, build/check, and live
-  gate disposition. All local release gates are complete; remote CI and the live
-  cohort remain.
+- [x] Milestone 6: documentation, 0.1.6 metadata, pkgdown, build/check, and live
+  gate disposition. Local and remote offline gates passed; the maintainer
+  explicitly deferred the live cohort to issue #6 before merging.
 - [x] 2026-07-28: Updated source/reference/vignette documentation and NEWS,
   regenerated pkgdown, and passed replay, focused tests, and the complete test
   suite. Source-package build/check and the live gate remain.
@@ -91,8 +91,16 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   replay passed 6/6; the complete `devtools::test()` suite passed with 14 expected
   warning assertions; `R CMD build .` produced `metasalmon_0.1.6.tar.gz`; and
   `R CMD check metasalmon_0.1.6.tar.gz` finished with `Status: OK`.
-- [ ] Push final branch, make the PR ready when all release gates pass, merge to
-  `main`, verify Pages, and remove the feature branch.
+- [x] 2026-07-28: PR #5 merged to `main` as `f774673`; post-merge CI and Pages
+  passed, pkgdown served 0.1.6, and the feature branch was removed locally and
+  remotely.
+- [x] 2026-07-28: Optimized the resource-intensive Theme A test harness while
+  preserving its offline evidence, mutation, cohort, and promotion assertions.
+  The default complete package suite fell from about 38 minutes to 3 minutes 47
+  seconds locally. The exhaustive offline integrity tier passes separately in
+  about 1-2 minutes and is path-filtered in CI. Live requests now require
+  `--allow-live-api=true`; both CI workflows blank all provider credential
+  variables.
 
 ## Surprises & Discoveries
 
@@ -238,6 +246,15 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   provenance matrix only when benchmark, fixture, schema, or promotion code
   changes and on nightly/release runs. Optimize separately with table-driven
   in-process tests, cached Git/source hashes, and CI sharding.
+- 2026-07-28: Merge 0.1.6 after all offline gates passed while explicitly
+  deferring the failed OpenRouter cohort to issue #6. Rationale: the live model
+  evaluation is valuable release evidence but is not required to establish
+  deterministic package correctness.
+- 2026-07-28: Keep all Theme A mutation coverage in the default offline suite
+  when it can run efficiently in-process. Require `--allow-live-api=true` for
+  every live invocation and keep all provider credential variables empty in
+  ordinary CI. Rationale: regression coverage should not imply recurring API
+  cost, and accidental access to a configured key must not authorize spending.
 
 ## Review Checkpoint Log
 
@@ -300,7 +317,15 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 
 ## Outcomes & Retrospective
 
-Not yet complete.
+The Theme A implementation shipped in metasalmon 0.1.6 through PR #5. Offline
+replay, focused and complete tests, package build/check, pkgdown, independent
+review checkpoints, post-merge CI, and Pages all passed. The exact-model
+three-run live cohort was explicitly deferred and remains tracked in issue #6;
+the merge is not a passing live-provider attestation. A follow-up refactor
+reduced the default local suite from about 38 minutes to under 4 minutes by
+reusing the evidence harness in-process, caching immutable Git-object hashes,
+and moving four exhaustive publication-integrity matrices to a path-filtered
+offline workflow. No automated test or CI job authorizes live API spending.
 
 ## Context and Orientation
 

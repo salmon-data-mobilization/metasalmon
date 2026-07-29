@@ -34,6 +34,13 @@ metasalmon 0.1.6
   lineage, recomputed immutable capture/cohort promotion, an exact clean-source
   three-run live gate, and GitHub Actions for replay, the full test suite, and
   `R CMD check`.
+- Refactored Theme A evidence tests to reuse one in-process harness and cache
+  immutable Git-object hashes instead of launching dozens of R and shell
+  subprocesses. Exhaustive publication-integrity mutations run in a separate
+  offline, path-filtered workflow. Live benchmark requests now require the
+  explicit `--allow-live-api=true` acknowledgement; default local tests and CI
+  temporarily blank provider credentials, remain isolated from LLM providers,
+  and require no provider key.
 
 - Updated the canonical package site, repository, issue tracker, install
   commands, update checks, OpenRouter attribution, and live SDP schema fetches

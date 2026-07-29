@@ -38,11 +38,10 @@ fixed in the post-0.1.5 URL-hardening pass.
 D1, #5 → D2, #8 → D3, #13 → A5, #29/#30 → E1, #3 → E2/C4, #9 → E3, #22/#23/#24 →
 E4, #31 → Theme C).
 
-**Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3 are
-implemented on `feature/theme-a-semantic-review` with focused tests green. The
-evidence pack (A0) is implemented and passed its final independent re-review
-after the harness was hardened to bind every captured source artifact directly
-to the recorded Git commit.
+**Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3
+merged to `main` in PR #5 at `f774673`. The evidence pack (A0) passed its final
+independent re-review after the harness was hardened to bind every captured
+source artifact directly to the recorded Git commit.
 Completed behavior includes:
 
 - 30-column assessment rows with retry-rejection and escalation provenance;
@@ -77,7 +76,15 @@ independent review passed 38/38 frozen dimension cases, 55/55 locality cases,
 replay/oracles, evidence lineage/attestation, and release documentation. Fresh
 local release validation now passes: offline replay, the complete package suite
 (14 expected warning assertions), source build, and `R CMD check` (`Status: OK`).
-Remote CI and the exact-model live cohort remain before merge.
+Remote pull-request and post-merge CI passed. The maintainer explicitly deferred
+the exact-model live cohort when merging 0.1.6; issue #6 tracks its authentication
+diagnosis and three-run completion. Default tests and CI are isolated from LLM
+providers, and live benchmark execution now requires an explicit
+billable-network acknowledgement.
+The follow-up harness refactor reduced the complete default local suite from
+about 38 minutes to 3 minutes 47 seconds; the exhaustive offline evidence tier
+passes separately in about 1-2 minutes and runs only for relevant paths,
+published releases, or manual dispatch.
 
 ---
 

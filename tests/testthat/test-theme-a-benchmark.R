@@ -6,7 +6,24 @@ theme_a_script_path <- function() {
   )
 }
 
-run_theme_a_script <- function(args = character()) {
+theme_a_harness <- local({
+  harness <- NULL
+
+  function() {
+    testthat::skip_if_not(
+      file.exists(theme_a_script_path()),
+      "Theme A benchmark script is excluded from the built source package"
+    )
+    if (is.null(harness)) {
+      harness <<- new.env(parent = globalenv())
+      sys.source(theme_a_script_path(), envir = harness)
+      harness$script_path <- theme_a_script_path()
+    }
+    harness
+  }
+})
+
+run_theme_a_cli <- function(args = character()) {
   testthat::skip_if_not(
     file.exists(theme_a_script_path()),
     "Theme A benchmark script is excluded from the built source package"
@@ -21,6 +38,61 @@ run_theme_a_script <- function(args = character()) {
   list(
     status = if (is.null(status)) 0L else status,
     output = paste(output, collapse = "\n")
+  )
+}
+
+unquote_theme_a_arg <- function(arg) {
+  if (!startsWith(arg, "--") || !grepl("=", arg, fixed = TRUE)) {
+    return(arg)
+  }
+  parts <- strsplit(arg, "=", fixed = TRUE)[[1L]]
+  value <- paste(parts[-1L], collapse = "=")
+  if (nchar(value) >= 2L) {
+    first <- substr(value, 1L, 1L)
+    last <- substr(value, nchar(value), nchar(value))
+    if (first %in% c("'", "\"") && identical(first, last)) {
+      value <- substr(value, 2L, nchar(value) - 1L)
+    }
+  }
+  paste0(parts[[1L]], "=", value)
+}
+
+run_theme_a_script <- function(args = character()) {
+  harness <- theme_a_harness()
+  args <- vapply(args, unquote_theme_a_arg, character(1))
+  error <- NULL
+  output <- suppressWarnings(capture.output(
+    tryCatch({
+      options <- harness$parse_args(args)
+      harness$run_benchmark_mode(options)
+    }, error = function(e) {
+      error <<- e
+      cat(
+        "Theme A benchmark error: ",
+        conditionMessage(e),
+        "\n",
+        sep = ""
+      )
+    }),
+    type = "output"
+  ))
+  list(
+    status = if (is.null(error)) 0L else 1L,
+    output = paste(output, collapse = "\n")
+  )
+}
+
+skip_unless_theme_a_integrity <- function() {
+  enabled <- tolower(trimws(Sys.getenv(
+    "METASALMON_RUN_THEME_A_INTEGRITY",
+    unset = "false"
+  )))
+  testthat::skip_if_not(
+    enabled %in% c("true", "1", "yes"),
+    paste(
+      "exhaustive offline Theme A integrity matrix;",
+      "set METASALMON_RUN_THEME_A_INTEGRITY=true to run"
+    )
   )
 }
 
@@ -41,29 +113,11 @@ write_theme_a_json <- function(value, path) {
 }
 
 theme_a_sha256 <- function(path) {
-  command <- Sys.which("sha256sum")
-  args <- shQuote(path)
-  if (!nzchar(command)) {
-    command <- Sys.which("shasum")
-    args <- c("-a", "256", shQuote(path))
-  }
-  testthat::skip_if(!nzchar(command), "SHA-256 command is unavailable")
-  output <- system2(command, args, stdout = TRUE)
-  strsplit(trimws(output[[1L]]), "\\s+")[[1L]][[1L]]
+  theme_a_harness()$file_sha256(path)
 }
 
 theme_a_value_sha256 <- function(value) {
-  path <- tempfile("theme-a-value-")
-  on.exit(unlink(path), add = TRUE)
-  value_json <- as.character(jsonlite::toJSON(
-    value,
-    auto_unbox = TRUE,
-    null = "null",
-    na = "null",
-    digits = NA
-  ))
-  writeLines(enc2utf8(value_json), path, useBytes = TRUE)
-  theme_a_sha256(path)
+  theme_a_harness()$value_sha256(value)
 }
 
 theme_a_repo_root <- function() {
@@ -107,6 +161,21 @@ theme_a_clean_source_hash <- function() {
   writeLines("", path, useBytes = TRUE)
   theme_a_sha256(path)
 }
+
+theme_a_default_git_state <- local({
+  state <- NULL
+
+  function() {
+    if (is.null(state)) {
+      state <<- list(
+        git_sha = theme_a_git_value(c("rev-parse", "HEAD")),
+        git_tree = theme_a_git_value(c("rev-parse", "HEAD^{tree}")),
+        source_state_sha256 = theme_a_clean_source_hash()
+      )
+    }
+    state
+  }
+})
 
 theme_a_scalar_key <- function(x) {
   if (is.null(x)) {
@@ -258,16 +327,15 @@ theme_a_test_capture <- function(run_id,
                                  git_tree = NULL,
                                  source_state_sha256 = NULL,
                                  endpoint = "https://openrouter.ai/api/v1/chat/completions") {
+  default_git_state <- theme_a_default_git_state()
   if (is.null(git_sha)) {
-    git_sha <- theme_a_git_value(c("rev-parse", "HEAD"))
+    git_sha <- default_git_state$git_sha
   }
   if (is.null(git_tree)) {
-    git_tree <- theme_a_git_value(
-      c("rev-parse", paste0(git_sha, "^{tree}"))
-    )
+    git_tree <- default_git_state$git_tree
   }
   if (is.null(source_state_sha256)) {
-    source_state_sha256 <- theme_a_clean_source_hash()
+    source_state_sha256 <- default_git_state$source_state_sha256
   }
   cases_path <- theme_a_fixture_path("cases-v1.json")
   schema_path <- theme_a_fixture_path("schema-v1.json")
@@ -297,20 +365,32 @@ theme_a_test_capture <- function(run_id,
       git_dirty = FALSE,
       source_state_sha256 = source_state_sha256,
       git_branch = "feature/theme-a-semantic-review",
-      package_version = as.character(
-        read.dcf(file.path(theme_a_repo_root(), "DESCRIPTION"))[1L, "Version"]
-      ),
+      package_version = theme_a_harness()$git_description_version(git_sha),
       cases_fixture = theme_a_repo_relative_path(cases_path),
-      cases_fixture_sha256 = theme_a_sha256(cases_path),
+      cases_fixture_sha256 = theme_a_harness()$git_blob_sha256(
+        git_sha,
+        theme_a_repo_relative_path(cases_path),
+        "cases fixture"
+      ),
       schema_fixture = theme_a_repo_relative_path(schema_path),
-      schema_fixture_sha256 = theme_a_sha256(schema_path),
+      schema_fixture_sha256 = theme_a_harness()$git_blob_sha256(
+        git_sha,
+        theme_a_repo_relative_path(schema_path),
+        "schema fixture"
+      ),
       ontology_manifest_fixture = theme_a_repo_relative_path(
         ontology_manifest_path
       ),
-      ontology_manifest_fixture_sha256 = theme_a_sha256(
-        ontology_manifest_path
+      ontology_manifest_fixture_sha256 = theme_a_harness()$git_blob_sha256(
+        git_sha,
+        theme_a_repo_relative_path(ontology_manifest_path),
+        "ontology-manifest fixture"
       ),
-      benchmark_script_sha256 = theme_a_sha256(theme_a_script_path()),
+      benchmark_script_sha256 = theme_a_harness()$git_blob_sha256(
+        git_sha,
+        theme_a_repo_relative_path(theme_a_script_path()),
+        "benchmark script"
+      ),
       retrieval_mode = "frozen_fixture",
       data_classification = "synthetic_theme_a_fixture",
       provider = provider,
@@ -473,7 +553,7 @@ theme_a_replay_evaluation <- function() {
 }
 
 test_that("Theme A benchmark defaults to a passing offline replay", {
-  result <- run_theme_a_script()
+  result <- run_theme_a_cli()
 
   expect_equal(result$status, 0L, info = result$output)
   expect_match(result$output, "Theme A replay: PASS", fixed = TRUE)
@@ -481,6 +561,24 @@ test_that("Theme A benchmark defaults to a passing offline replay", {
   expect_match(result$output, "critical: 6/6", fixed = TRUE)
   expect_match(result$output, "False acceptances: 0", fixed = TRUE)
   expect_match(result$output, "false prefills: 0", fixed = TRUE)
+})
+
+test_that("Theme A live mode requires explicit billable-network opt-in", {
+  withr::local_envvar(OPENROUTER_API_KEY = "unused-test-credential")
+  opted_in <- theme_a_harness()$parse_args(c(
+    "live",
+    "--allow-live-api=true"
+  ))
+  expect_true(opted_in$allow_live_api)
+
+  result <- run_theme_a_script(c(
+    "live",
+    "--provider=openrouter",
+    "--model=openai/gpt-5.4-mini"
+  ))
+
+  expect_true(result$status > 0L, info = result$output)
+  expect_match(result$output, "--allow-live-api=true", fixed = TRUE)
 })
 
 test_that("Theme A replay rejects a fixture that violates the target schema", {
@@ -843,12 +941,7 @@ test_that("Theme A compare enforces a three-run exact-model cohort gate", {
 })
 
 test_that("Theme A live prompt capture identifies bundle retry targets", {
-  skip_if_not(
-    file.exists(theme_a_script_path()),
-    "Theme A benchmark script is excluded from the built source package"
-  )
-  harness <- new.env(parent = globalenv())
-  sys.source(theme_a_script_path(), envir = harness)
+  harness <- theme_a_harness()
   schema <- jsonlite::read_json(
     theme_a_fixture_path("schema-v1.json"),
     simplifyVector = FALSE
@@ -1100,6 +1193,8 @@ test_that("Theme A capture requires target-specific interaction lineage", {
 })
 
 test_that("Theme A captures bind every source artifact to the recorded commit", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1158,6 +1253,8 @@ test_that("Theme A captures bind every source artifact to the recorded commit", 
 })
 
 test_that("Theme A cohort rejects mixed provider, model, source, and endpoint", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1307,6 +1404,8 @@ test_that("Theme A cohort requires three independent provider runs", {
 })
 
 test_that("Theme A reviewed captures require raw checksum lineage", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
@@ -1389,6 +1488,8 @@ test_that("Theme A reviewed captures require raw checksum lineage", {
 })
 
 test_that("Theme A cohort promotion recomputes validated promoted captures", {
+  skip_unless_theme_a_integrity()
+
   cases <- jsonlite::read_json(
     theme_a_fixture_path("cases-v1.json"),
     simplifyVector = FALSE
