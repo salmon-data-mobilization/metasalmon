@@ -559,7 +559,11 @@
   if (grepl("[_-]", leading_token)) {
     return(FALSE)
   }
-  normalized <- trimws(gsub("[^a-z0-9]+", " ", text))
+  normalized <- trimws(gsub(
+    "[^a-z0-9]+",
+    " ",
+    tolower(unmarked_text)
+  ))
   identical(normalized, phrase) ||
     startsWith(normalized, paste0(phrase, " "))
 }

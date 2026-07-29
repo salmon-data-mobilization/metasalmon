@@ -75,7 +75,9 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   both now resolve conservatively with explicit adversarial coverage. A final
   code probe found that Markdown/Rmd list and table markers could obscure a
   suffixed identifier; markup-aware token extraction and regressions now close
-  that path. Final re-review remains.
+  that path. Re-review also caught numbered-list human prose as a false negative;
+  phrase matching now uses the same unmarked text and the full prefix matrix is
+  covered. Final re-review remains.
 - [ ] Push final branch, make the PR ready when all release gates pass, merge to
   `main`, verify Pages, and remove the feature branch.
 
@@ -258,7 +260,8 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
   further ontology probe found suffixed identifiers and malformed compound units
   could still bypass those guards. The last code pass found that leading
   Markdown/Rmd markup obscured the suffix check. Each finding now has an
-  implementation or build-pipeline fix and focused regression coverage;
+  implementation or build-pipeline fix and focused regression coverage,
+  including positive human-prose cases for every accepted markup prefix;
   independent re-review is pending.
 
 ## Outcomes & Retrospective

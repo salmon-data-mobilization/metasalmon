@@ -67,9 +67,9 @@ now have conservative implementations and focused tests. A final adversarial
 probe additionally caught suffixed identifiers and malformed compound units;
 both are now rejected or left unknown with regression coverage. A markup-prefix
 probe then caught the same suffix leak behind Markdown/Rmd bullets and table
-markers; markup-aware token extraction now covers those forms. All release checks
-and final independent re-review must pass again before the exact-model live
-cohort and merge.
+markers; markup-aware token extraction now covers those forms without excluding
+legitimate numbered-list prose. All release checks and final independent
+re-review must pass again before the exact-model live cohort and merge.
 
 ---
 
