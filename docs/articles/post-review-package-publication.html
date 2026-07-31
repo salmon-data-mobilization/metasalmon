@@ -391,7 +391,42 @@ yet</strong>. Keep the term-request plan with the package, resolve the
 ontology decision, then run strict validation again.</p>
 </div>
 <div class="section level3">
-<h3 id="publish-or-share-the-finished-package">9) Publish or share the finished package<a class="anchor" aria-label="anchor" href="#publish-or-share-the-finished-package"></a>
+<h3 id="build-reviewed-eml-and-preview-knb-publication-when-needed">9) Build reviewed EML and preview KNB publication when needed<a class="anchor" aria-label="anchor" href="#build-reviewed-eml-and-preview-knb-publication-when-needed"></a>
+</h3>
+<p>KNB publication requires EML-specific facts that the canonical SDP
+does not guess, including structured parties, rights, methods,
+measurement scales, missing-value meanings, and access intent. Record
+those reviewed decisions in <code>metadata/eml-mapping.yml</code>, then
+build and validate EML 2.2.0:</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<p>Preview the exact immutable DataONE objects, identifiers, checksums,
+access decision, and OAI-ORE relationships without reading credentials
+or making a network request:</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
+<span>  <span class="va">pkg_path</span>,</span>
+<span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  dry_run <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Live KNB publication is a separate explicit action. It requires a
+short-lived DataONE JWT in the process-local <code>dataone_token</code>
+option, an ORCID-authenticated subject matching the EML metadata
+provider, and an explicitly supplied <code>confirm = TRUE</code>. The
+confirmation means both that the exact pending manifest is approved and
+that the caller has authority to redistribute the package.</p>
+<p><code>public = FALSE</code> is the recommended review path, but it is
+not a server-side draft: a live call creates persistent production KNB
+objects. Completion requires authenticated byte-for-byte and
+SystemMetadata readback for every object, anonymous denial for both
+object bytes and SystemMetadata, a complete authenticated catalog graph,
+and zero planned PIDs in the anonymous catalog. Changing to
+<code>public = TRUE</code> is a separate release decision and requires
+public redistribution authority; metasalmon never infers that decision
+from a private deposit.</p>
+</div>
+<div class="section level3">
+<h3 id="publish-or-share-the-finished-package">10) Publish or share the finished package<a class="anchor" aria-label="anchor" href="#publish-or-share-the-finished-package"></a>
 </h3>
 <p>Once strict validation passes:</p>
 <ul>
@@ -403,8 +438,8 @@ support, not as part of the canonical final package unless you want that
 audit trail to travel with it.</li>
 </ul>
 <p>In short: <strong>reload -&gt; validate -&gt; detect gaps -&gt; route
-requests -&gt; rebuild EDH if needed -&gt; strict validate -&gt;
-publish</strong>.</p>
+requests -&gt; build the required export -&gt; strict validate -&gt;
+dry-run -&gt; publish</strong>.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

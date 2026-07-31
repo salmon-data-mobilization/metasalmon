@@ -2153,6 +2153,35 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
 })
 
+test_that("a license URL remains distinct from an arbitrary rights statement", {
+  license_url <- "https://example.org/data-terms/"
+
+  expect_equal(
+    .ms_license_descriptor(license_url),
+    list(path = license_url)
+  )
+  expect_error(
+    .ms_license_descriptor(
+      paste(
+        "Copyright Example Commission. Reuse is subject to prior consent.",
+        license_url
+      )
+    ),
+    "Unknown SDP publication license"
+  )
+  for (malformed_url in c(
+    "https://>",
+    "https://[bad",
+    "https://?query",
+    "https://example.org/>"
+  )) {
+    expect_error(
+      .ms_license_descriptor(malformed_url),
+      "Unknown SDP publication license"
+    )
+  }
+})
+
 test_that("validate_salmon_datapackage validates a CU/composite-style package", {
   resources <- list(
     cu_composite_escapement = tibble::tibble(

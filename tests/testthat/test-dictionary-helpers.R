@@ -36,6 +36,17 @@ test_that("infer_dictionary creates valid structure", {
   expect_equal(dict$value_type[dict$column_name == "is_active"], "boolean")
 })
 
+test_that("inferred dataset metadata uses the current SDP profile version", {
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources = list(main = tibble::tibble(id = "A")),
+    dataset_id = "test-1",
+    seed_semantics = FALSE,
+    seed_verbose = FALSE
+  )
+
+  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.2.0")
+})
+
 test_that("infer_dictionary marks factor columns as categorical", {
   df <- data.frame(
     run = factor(c("early", "late")),
@@ -57,6 +68,69 @@ test_that("infer_dictionary marks obvious identifier columns as required", {
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
   expect_true(isTRUE(dict$required[dict$column_name == "station_id"]))
   expect_true(is.na(dict$required[dict$column_name == "species"]))
+})
+
+test_that("infer_dictionary does not mistake ID quality fields for identifiers", {
+  df <- tibble::tibble(
+    stock_ID_quality = c(2, 3, NA_real_),
+    run_ID_quality = factor(c("high", "medium", "low")),
+    quality_control_id = c("A", "B", "C"),
+    score_id = c("S1", "S2", "S3"),
+    sample_confidence_id = c("C1", "C2", "C3"),
+    id_score_id = c("I1", "I2", "I3"),
+    stock_id_quality_record_id = c("R1", "R2", "R3"),
+    stock_id = c("A", "B", "C")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_equal(dict$column_role[dict$column_name == "stock_ID_quality"], "attribute")
+  expect_true(is.na(dict$required[dict$column_name == "stock_ID_quality"]))
+  expect_equal(dict$column_role[dict$column_name == "run_ID_quality"], "categorical")
+  expect_equal(dict$column_role[dict$column_name == "quality_control_id"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "score_id"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "sample_confidence_id"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "id_score_id"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "stock_id_quality_record_id"], "identifier")
+  expect_equal(dict$column_role[dict$column_name == "stock_id"], "identifier")
+})
+
+test_that("infer_dictionary does not mark nullable identifiers as required", {
+  df <- tibble::tibble(
+    complete_id = c("A", "B", "C"),
+    missing_id = c("A", NA_character_, "C"),
+    blank_id = c("A", "", "C")
+  )
+
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
+
+  expect_true(isTRUE(dict$required[dict$column_name == "complete_id"]))
+  expect_true(is.na(dict$required[dict$column_name == "missing_id"]))
+  expect_true(is.na(dict$required[dict$column_name == "blank_id"]))
+})
+
+test_that("inferred table primary keys are complete and unique", {
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources = list(
+      complete = tibble::tibble(record_id = c("A", "B", "C")),
+      nullable = tibble::tibble(record_id = c("A", NA_character_, "C")),
+      blank = tibble::tibble(record_id = c("A", "", "C")),
+      duplicated = tibble::tibble(record_id = c("A", "A", "C"))
+    ),
+    dataset_id = "test-1",
+    seed_semantics = FALSE,
+    seed_verbose = FALSE
+  )
+
+  primary_keys <- stats::setNames(
+    artifacts$table_meta$primary_key,
+    artifacts$table_meta$table_id
+  )
+
+  expect_equal(primary_keys[["complete"]], "record_id")
+  expect_true(is.na(primary_keys[["nullable"]]))
+  expect_true(is.na(primary_keys[["blank"]]))
+  expect_true(is.na(primary_keys[["duplicated"]]))
 })
 
 test_that("infer_dictionary better distinguishes temporal and measurement NuSEDS-style fields", {
@@ -707,6 +781,93 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
   expect_true(any(call_df$role == "variable" & call_df$query == "count"))
   expect_true(any(call_df$role == "property" & call_df$query == "count"))
   expect_true(any(call_df$role == "unit" & call_df$query == "count"))
+})
+
+test_that("suggest_semantics keeps biological qualifiers in count-like variable queries", {
+  dict <- tibble::tibble(
+    dataset_id = rep("d1", 8),
+    table_id = rep("t1", 8),
+    column_name = c(
+      "num_recruits",
+      "total_age1_smolt",
+      "total_fry_estimate",
+      "total_effective_female_spawners",
+      "total_female_spawners",
+      "total_effective_spawners",
+      "total_smolts",
+      "total_fry"
+    ),
+    column_label = c(
+      "Age-specific recruit abundance",
+      "Age-1 smolt abundance",
+      "Fry abundance estimate",
+      "Effective female spawners",
+      "Female spawners",
+      "Effective spawners",
+      "Total smolts",
+      "Total fry"
+    ),
+    column_description = c(
+      "Estimated number of returning mature recruits",
+      "Estimated abundance of downstream-migrating smolts",
+      "Estimated fry abundance for the brood cohort",
+      "Estimated female spawner abundance adjusted for eggs not spawned",
+      "Estimated female spawner abundance",
+      "Estimated effective abundance of spawners",
+      NA_character_,
+      NA_character_
+    ),
+    column_role = rep("measurement", 8),
+    value_type = rep("number", 8),
+    unit_label = rep(NA_character_, 8),
+    unit_iri = rep(NA_character_, 8),
+    term_iri = rep(NA_character_, 8),
+    property_iri = rep(NA_character_, 8),
+    entity_iri = rep(NA_character_, 8),
+    constraint_iri = rep(NA_character_, 8),
+    method_iri = rep(NA_character_, 8)
+  )
+
+  calls <- list()
+  fake_search <- function(query, role, sources) {
+    calls[[length(calls) + 1]] <<- list(query = query, role = role)
+    tibble::tibble(
+      label = paste("candidate", role),
+      iri = paste0("https://example.org/", role),
+      source = "smn",
+      ontology = "smn",
+      role = role,
+      match_type = "label_partial",
+      definition = ""
+    )
+  }
+
+  suggest_semantics(
+    NULL,
+    dict,
+    sources = "smn",
+    max_per_role = 1,
+    search_fn = fake_search
+  )
+
+  variable_queries <- purrr::map_dfr(calls, tibble::as_tibble) |>
+    dplyr::filter(.data$role == "variable") |>
+    dplyr::pull(.data$query)
+
+  expect_setequal(
+    variable_queries,
+    c(
+      "recruit abundance",
+      "smolt abundance",
+      "fry abundance",
+      "effective female spawner abundance",
+      "spawner abundance"
+    )
+  )
+  expect_equal(sum(variable_queries == "effective female spawner abundance"), 1L)
+  expect_equal(sum(variable_queries == "spawner abundance"), 2L)
+  expect_equal(sum(variable_queries == "smolt abundance"), 2L)
+  expect_equal(sum(variable_queries == "fry abundance"), 2L)
 })
 
 test_that("suggest_semantics normalizes wide measurement headers and header units", {
@@ -1826,13 +1987,59 @@ test_that("apply_semantic_suggestions fills only missing fields unless overwrite
 
   out_safe <- apply_semantic_suggestions(dict, suggestions = suggestions, verbose = FALSE)
   expect_equal(out_safe$term_iri, "https://example.org/existing-term")
-  expect_equal(out_safe$term_type, "skos_concept")
+  expect_true(is.na(out_safe$term_type))
   expect_equal(out_safe$property_iri, "https://example.org/property")
 
   out_overwrite <- apply_semantic_suggestions(dict, suggestions = suggestions, overwrite = TRUE, verbose = FALSE)
   expect_equal(out_overwrite$term_iri, "https://example.org/new-term")
   expect_equal(out_overwrite$term_type, "skos_concept")
   expect_equal(out_overwrite$property_iri, "https://example.org/property")
+})
+
+test_that("apply_semantic_suggestions preserves an OWL class candidate type", {
+  dict <- test_count_dictionary(required = FALSE)
+  dict$term_iri <- "https://example.org/OldConcept"
+  dict$term_type <- "skos_concept"
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    dictionary_role = "variable",
+    iri = "https://example.org/CountObservation",
+    resource_kind = "Class",
+    type_iris = "http://www.w3.org/2002/07/owl#Class"
+  )
+
+  out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    overwrite = TRUE,
+    verbose = FALSE
+  )
+
+  expect_equal(out$term_iri, "https://example.org/CountObservation")
+  expect_equal(out$term_type, "owl_class")
+})
+
+test_that("apply_semantic_suggestions tolerates missing candidate type metadata", {
+  dict <- test_count_dictionary(required = FALSE)
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "count",
+    dictionary_role = "variable",
+    iri = "https://example.org/CountObservation",
+    resource_kind = NA_character_,
+    type_iris = NA_character_
+  )
+
+  out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    verbose = FALSE
+  )
+
+  expect_equal(out$term_type, "skos_concept")
 })
 
 test_that("apply_semantic_suggestions can filter by score when available", {

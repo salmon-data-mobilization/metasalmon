@@ -732,6 +732,40 @@ apply_semantic_suggestions <- function(dict,
       }
     }
     if (identical(suggestion_row$dictionary_role[[1]], "variable")) {
+      type_iris <- if ("type_iris" %in% names(suggestion_row)) {
+        tolower(as.character(suggestion_row$type_iris[[1]] %||% ""))
+      } else {
+        ""
+      }
+      if (is.na(type_iris) || !nzchar(trimws(type_iris))) {
+        type_iris <- ""
+      }
+      resource_kind <- if ("resource_kind" %in% names(suggestion_row)) {
+        tolower(as.character(suggestion_row$resource_kind[[1]] %||% ""))
+      } else {
+        ""
+      }
+      if (is.na(resource_kind) || !nzchar(trimws(resource_kind))) {
+        resource_kind <- ""
+      }
+      if (
+        grepl("owl[#/]objectproperty", type_iris) ||
+          resource_kind %in% c("objectproperty", "owl_object_property")
+      ) {
+        return("owl_object_property")
+      }
+      if (
+        grepl("owl[#/]class", type_iris) ||
+          resource_kind %in% c("class", "owlclass", "owl_class")
+      ) {
+        return("owl_class")
+      }
+      if (
+        grepl("skos[/#]concept", type_iris) ||
+          resource_kind %in% c("concept", "skosconcept", "skos_concept")
+      ) {
+        return("skos_concept")
+      }
       return("skos_concept")
     }
     NA_character_
@@ -850,10 +884,7 @@ apply_semantic_suggestions <- function(dict,
       if (identical(field, "term_iri") && "term_type" %in% names(out)) {
         term_type_guess <- infer_term_type(suggestion)
         if (!is.na(term_type_guess) && nzchar(term_type_guess)) {
-          missing_term_type <- is.na(out$term_type[row_ids]) | out$term_type[row_ids] == ""
-          if (any(missing_term_type)) {
-            out$term_type[row_ids[missing_term_type]] <- term_type_guess
-          }
+          out$term_type[row_ids] <- term_type_guess
         }
       }
       if (identical(field, "unit_iri") && "unit_label" %in% names(out) && "label" %in% names(suggestion)) {
@@ -891,7 +922,11 @@ apply_semantic_suggestions <- function(dict,
     if (identical(field, "term_iri") && "term_type" %in% names(out)) {
       term_type_guess <- infer_term_type(suggestion)
       if (!is.na(term_type_guess) && nzchar(term_type_guess)) {
-        existing_rows <- row_ids[!missing_now]
+        existing_rows <- row_ids[
+          !missing_now &
+            !is.na(out[[field]][row_ids]) &
+            out[[field]][row_ids] == suggestion$iri[[1]]
+        ]
         if (length(existing_rows) > 0) {
           missing_term_type <- is.na(out$term_type[existing_rows]) | out$term_type[existing_rows] == ""
           if (any(missing_term_type)) {

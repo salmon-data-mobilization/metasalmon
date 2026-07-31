@@ -2,6 +2,51 @@
 
 ## metasalmon 0.1.6
 
+- Added reviewed EML 2.2.0 export with deterministic identifiers and
+  bytes, strict SDP/sidecar/vocabulary preflight, a closed hashed
+  semantic-review ledger, exact raw-CSV missing-value audits, observed
+  numeric/date domain checks, pinned source-document provenance, a
+  reviewed QUDT-to-EML unit crosswalk, EML schema validation,
+  non-dangling constraints, and conservative whole-variable topic/unit
+  semantic annotations. Draft and review sidecars remain inspectable but
+  only a final sidecar can be exported.
+
+- Added opt-in KNB/DataONE publication planning and verified upload. Dry
+  runs create an immutable exact-object manifest and deterministic
+  OAI-ORE map without reading credentials; live calls require explicit
+  redistribution confirmation, a server-verified ORCID subject matching
+  the EML metadata provider, resumable low-level object creation,
+  authenticated and anonymous readback, SystemMetadata/access checks,
+  and coordinating-node catalog verification. `public = FALSE` is an
+  explicitly named private-review path, but it still creates persistent
+  production objects and verifies anonymous denial for both bytes and
+  SystemMetadata for every uploaded member. Private completion also
+  requires a complete authenticated catalog graph and zero matching PIDs
+  through a separate credential-free catalog query. Tab-separated SSSOM
+  objects use DataONE’s registered `text/tsv` format identifier while
+  retaining the canonical `text/tab-separated-values` media type.
+
+- Added strict package-native SSSOM 1.1 read/write/validation for
+  reviewed concept alignments and version-scoped `sssom:NoTermFound`
+  records. Mapping sets are deterministic and manifest-bound; undeclared
+  files, literal assignments, decomposition columns, contradictory
+  gap/mapping rows, and checksum drift are rejected before KNB planning.
+
+- Added a catalog-neutral, manifest-bound SDP measurement-decomposition
+  artifact for ordered property, entity, constraint, method, and unit
+  components. It preserves repeated components, explicit vocabulary
+  gaps, and dimension-to-value relations, validates exact dictionary
+  closure and source provenance, and deliberately remains separate from
+  SSSOM mappings and native I-ADOPT conformance claims.
+
+- Corrected SDP inference and semantic matching defects found while
+  exercising the package on the PSC Fraser Sockeye detailed release:
+  terminal ID qualifiers no longer misclassify quality fields, nullable
+  identifiers are not made required, profile versions follow the
+  vendored rules, custom HTTP(S) rights URLs remain URL licence
+  descriptors, biology-bearing query tokens are retained, and SMN
+  term/module role and OWL-class metadata are preserved more accurately.
+
 - Added bundle-aware LLM review for measurement columns. Variable,
   property, entity, unit, constraint, and method candidates are judged
   together, while generic column, code, table, and dataset targets
@@ -47,6 +92,14 @@
   interaction lineage, recomputed immutable capture/cohort promotion, an
   exact clean-source three-run live gate, and GitHub Actions for replay,
   the full test suite, and `R CMD check`.
+
+- Refactored Theme A evidence tests to reuse one in-process harness and
+  cache immutable Git-object hashes instead of launching dozens of R and
+  shell subprocesses. Exhaustive publication-integrity mutations run in
+  a separate offline, path-filtered workflow. Live benchmark requests
+  now require the explicit `--allow-live-api=true` acknowledgement;
+  default local tests and CI temporarily blank provider credentials,
+  remain isolated from LLM providers, and require no provider key.
 
 - Updated the canonical package site, repository, issue tracker, install
   commands, update checks, OpenRouter attribution, and live SDP schema

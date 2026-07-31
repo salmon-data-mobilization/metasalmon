@@ -346,7 +346,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
 
   blank_spec_version <- is.na(dataset_meta$spec_version) | trimws(dataset_meta$spec_version) == ""
   if (any(blank_spec_version)) {
-    dataset_meta$spec_version[blank_spec_version] <- "sdp-0.1.0"
+    dataset_meta$spec_version[blank_spec_version] <- .ms_sdp_profile_version()
   }
 
   dataset_meta
@@ -408,7 +408,15 @@ infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset
     df <- resources[[tab_id]]
     col_names <- names(df)
 
-    id_col <- col_names[grepl("(^|_)id$|_id$|^id_", tolower(col_names))]
+    id_candidates <- col_names[grepl("(^|_)id$|_id$|^id_", tolower(col_names))]
+    id_col <- id_candidates[vapply(id_candidates, function(column_name) {
+      values <- df[[column_name]]
+      text_values <- as.character(values)
+      complete <- !any(is.na(values)) &&
+        !any(is.na(text_values)) &&
+        all(nzchar(trimws(text_values)))
+      complete && !anyDuplicated(text_values)
+    }, logical(1))]
     primary_key <- if (length(id_col) > 0) id_col[[1]] else NA_character_
 
     tibble::tibble(
@@ -722,6 +730,22 @@ infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
   name_tokens <- .ms_name_tokens(col_name)
 
+  # An embedded ID token can describe what a qualifier is about rather than
+  # making the qualifier itself an identifier. For example,
+  # `stock_ID_quality` records the quality of a stock-identification result.
+  # Resolve that meaning before applying the broad ID-name heuristics below.
+  identifier_qualifier_tokens <- c(
+    "quality", "confidence", "accuracy", "grade", "score"
+  )
+  identifier_positions <- which(name_tokens %in% c("id", "key"))
+  qualifier_positions <- which(name_tokens %in% identifier_qualifier_tokens)
+  identifier_is_qualified <- length(identifier_positions) > 0L &&
+    length(qualifier_positions) > 0L &&
+    max(qualifier_positions) > max(identifier_positions)
+  if (identifier_is_qualified) {
+    return(if (inherits(col, "factor")) "categorical" else "attribute")
+  }
+
   # Check for common identifier patterns
   if (grepl("^id$|_id$|^id_", name_lower)) {
     return("identifier")
@@ -778,14 +802,17 @@ infer_column_role <- function(col_name, col) {
     return(NA)
   }
   if (identical(column_role, "identifier")) {
+    text_values <- as.character(col)
+    has_missing_value <- any(is.na(col)) ||
+      any(!is.na(text_values) & !nzchar(trimws(text_values)))
+    if (has_missing_value) {
+      return(NA)
+    }
     return(TRUE)
   }
 
-  name_lower <- tolower(col_name %||% "")
-  if (grepl("(^|_)(id|key)(_|$)", name_lower)) {
-    return(TRUE)
-  }
-
+  # Respect the resolved role. An ID token can occur inside the name of a
+  # non-identifier qualifier (for example, `stock_ID_quality`).
   NA
 }
 

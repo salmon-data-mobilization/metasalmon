@@ -336,7 +336,50 @@ the workflow — it means the package is **not finalized yet**. Keep the
 term-request plan with the package, resolve the ontology decision, then
 run strict validation again.
 
-### 9) Publish or share the finished package
+### 9) Build reviewed EML and preview KNB publication when needed
+
+KNB publication requires EML-specific facts that the canonical SDP does
+not guess, including structured parties, rights, methods, measurement
+scales, missing-value meanings, and access intent. Record those reviewed
+decisions in `metadata/eml-mapping.yml`, then build and validate EML
+2.2.0:
+
+``` r
+
+write_eml_from_sdp(pkg_path)
+```
+
+Preview the exact immutable DataONE objects, identifiers, checksums,
+access decision, and OAI-ORE relationships without reading credentials
+or making a network request:
+
+``` r
+
+publish_sdp_to_knb(
+  pkg_path,
+  public = FALSE,
+  dry_run = TRUE
+)
+```
+
+Live KNB publication is a separate explicit action. It requires a
+short-lived DataONE JWT in the process-local `dataone_token` option, an
+ORCID-authenticated subject matching the EML metadata provider, and an
+explicitly supplied `confirm = TRUE`. The confirmation means both that
+the exact pending manifest is approved and that the caller has authority
+to redistribute the package.
+
+`public = FALSE` is the recommended review path, but it is not a
+server-side draft: a live call creates persistent production KNB
+objects. Completion requires authenticated byte-for-byte and
+SystemMetadata readback for every object, anonymous denial for both
+object bytes and SystemMetadata, a complete authenticated catalog graph,
+and zero planned PIDs in the anonymous catalog. Changing to
+`public = TRUE` is a separate release decision and requires public
+redistribution authority; metasalmon never infers that decision from a
+private deposit.
+
+### 10) Publish or share the finished package
 
 Once strict validation passes:
 
@@ -348,4 +391,4 @@ Once strict validation passes:
   trail to travel with it.
 
 In short: **reload -\> validate -\> detect gaps -\> route requests -\>
-rebuild EDH if needed -\> strict validate -\> publish**.
+build the required export -\> strict validate -\> dry-run -\> publish**.

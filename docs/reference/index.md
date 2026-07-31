@@ -111,6 +111,33 @@ HNAP-aware EDH XML export helpers for Enterprise Data Hub workflows
 - [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
   : Rebuild HNAP-aware EDH XML from a reviewed Salmon Data Package
 
+## Semantic Review Supplements
+
+Validated SSSOM concept alignments and ordered measurement
+decompositions
+
+- [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  : Read a reviewed SSSOM mapping set
+- [`write_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_sssom.md)
+  : Write reviewed SSSOM mapping sets into a Salmon Data Package
+- [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  : Validate SDP SSSOM artifacts
+- [`read_sdp_measurement_decompositions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_measurement_decompositions.md)
+  : Read ordered measurement decompositions from a Salmon Data Package
+- [`write_sdp_measurement_decompositions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_measurement_decompositions.md)
+  : Write ordered measurement decompositions into a Salmon Data Package
+- [`validate_sdp_measurement_decompositions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_measurement_decompositions.md)
+  : Validate ordered SDP measurement-decomposition artifacts
+
+## EML and KNB
+
+Reviewed EML 2.2.0 export and verified DataONE/KNB publication
+
+- [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  : Write reviewed EML 2.2.0 metadata from a Salmon Data Package
+- [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
+  : Publish a reviewed Salmon Data Package to production KNB
+
 ## GitHub Access
 
 Authenticate once and read CSVs from private GitHub repositories

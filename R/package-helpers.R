@@ -1898,6 +1898,23 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     ))
   }
 
+  license_text <- trimws(as.character(license[[1]]))
+  parsed_url <- tryCatch(
+    httr2::url_parse(license_text),
+    error = function(cnd) NULL
+  )
+  valid_url <- !is.null(parsed_url) &&
+    parsed_url$scheme %in% c("http", "https") &&
+    !is.null(parsed_url$hostname) &&
+    nzchar(parsed_url$hostname) &&
+    identical(
+      tryCatch(httr2::url_build(parsed_url), error = function(cnd) NA_character_),
+      license_text
+    )
+  if (valid_url) {
+    return(list(path = license_text))
+  }
+
   cli::cli_abort("Unknown SDP publication license: {.val {license}}.")
 }
 
