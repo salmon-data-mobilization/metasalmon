@@ -374,9 +374,12 @@ server-side draft: a live call creates persistent production KNB
 objects. Completion requires authenticated byte-for-byte and
 SystemMetadata readback for every object, anonymous denial for both
 object bytes and SystemMetadata, a complete authenticated catalog graph,
-and zero planned PIDs in the anonymous catalog. Changing to
-`public = TRUE` is a separate release decision and requires public
-redistribution authority; metasalmon never infers that decision from a
+and zero planned PIDs in the anonymous catalog. The reviewed private
+plan also explicitly sets DataONE replication to disabled with zero
+replicas, and live readback must match that KNB-only policy. Changing to
+`public = TRUE` is a separate release decision: it requires public
+redistribution authority and explicitly requests three DataONE
+preservation replicas; metasalmon never infers that decision from a
 private deposit.
 
 ### 10) Publish or share the finished package

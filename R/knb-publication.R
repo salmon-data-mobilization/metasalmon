@@ -13,6 +13,32 @@
 .ms_knb_resolver <- "https://cn.dataone.org/cn/v2/resolve/"
 .ms_knb_ore_profile <- "metasalmon-dataone-ore-v2"
 
+.ms_knb_replication_policy <- function(public) {
+  .ms_knb_validate_flag(public, "public")
+
+  # Private review is deliberately KNB-only. Public deposits retain DataONE's
+  # current three-replica preservation policy, but it is made explicit and is
+  # therefore part of the exact reviewed plan instead of an unreviewed client
+  # default.
+  list(
+    replication_allowed = isTRUE(public),
+    number_replicas = if (isTRUE(public)) 3L else 0L,
+    preferred_member_nodes = list(),
+    blocked_member_nodes = list()
+  )
+}
+
+.ms_knb_require_replication_policy <- function(policy, public) {
+  expected <- .ms_knb_replication_policy(public)
+  if (!identical(policy, expected)) {
+    cli::cli_abort(
+      "The publication plan has an invalid replication policy for the selected {.arg public} value."
+    )
+  }
+
+  invisible(expected)
+}
+
 .ms_knb_validate_flag <- function(value, field, allow_null = FALSE) {
   if (isTRUE(allow_null) && is.null(value)) {
     return(invisible(NULL))
@@ -674,10 +700,11 @@
 
 .ms_knb_plan_fingerprint <- function(plan) {
   fingerprint <- list(
-    schema_version = 1L,
+    schema_version = 2L,
     environment = plan$environment,
     node_id = plan$node_id,
     public = plan$public,
+    replication_policy = plan$replication_policy,
     expected_subject = plan$expected_subject,
     rights_authorization = plan$rights_authorization,
     package_id = plan$package_id,
@@ -768,11 +795,12 @@
     previous$catalog_evidence
   }
   list(
-    schema_version = 1L,
+    schema_version = 2L,
     status = durable_status,
     environment = plan$environment,
     node_id = plan$node_id,
     public = plan$public,
+    replication_policy = plan$replication_policy,
     expected_subject = plan$expected_subject,
     rights_authorization = plan$rights_authorization,
     package_id = plan$package_id,
@@ -853,16 +881,37 @@
 }
 
 .ms_knb_require_reviewed_manifest <- function(previous, plan) {
-  if (is.null(previous) ||
-      !as.character(previous$status) %in% c(
-        "dry_run",
-        "pending",
-        "published_pending_catalog",
-        "complete"
-      ) ||
-      !identical(as.character(previous$plan_sha256), plan$plan_sha256)) {
+  reviewed <- previous
+  if (!is.null(reviewed)) {
+    reviewed$objects <- .ms_knb_manifest_objects(reviewed)
+  }
+  reviewed_fingerprint <- tryCatch(
+    .ms_knb_plan_fingerprint(reviewed),
+    error = function(error) NA_character_
+  )
+  schema_version <- suppressWarnings(as.integer(previous$schema_version))
+  status <- as.character(previous$status)
+  valid <- !is.null(previous) &&
+    length(schema_version) == 1L &&
+    !is.na(schema_version) &&
+    schema_version == 2L &&
+    length(status) == 1L &&
+    status %in% c(
+      "dry_run",
+      "pending",
+      "published_pending_catalog",
+      "complete"
+    ) &&
+    identical(previous$replication_policy, plan$replication_policy) &&
+    identical(as.character(previous$plan_sha256), plan$plan_sha256) &&
+    identical(reviewed_fingerprint, plan$plan_sha256)
+
+  if (!isTRUE(valid)) {
     cli::cli_abort(
-      "Live KNB publication requires a pre-existing exact matching reviewed dry-run manifest."
+      paste(
+        "Live KNB publication requires a reviewed schema version 2 manifest",
+        "with the exact replication policy and recomputed plan fingerprint."
+      )
     )
   }
   invisible(TRUE)
@@ -1060,6 +1109,7 @@
     environment = .ms_knb_environment,
     node_id = .ms_knb_node_id,
     public = public,
+    replication_policy = .ms_knb_replication_policy(public),
     expected_subject = expected_subject,
     rights_authorization = mapping$rights_authorization %||% list(
       status = "unconfirmed",
@@ -1217,6 +1267,20 @@
   out[order(out$subject, out$permission), , drop = FALSE]
 }
 
+.ms_knb_normalize_member_nodes <- function(nodes) {
+  if (is.null(nodes) || length(nodes) == 0L) {
+    return(character())
+  }
+  values <- trimws(as.character(unlist(nodes, use.names = FALSE)))
+  if (anyNA(values) || any(!nzchar(values))) {
+    cli::cli_abort(
+      "Remote replication policy has an invalid member-node reference."
+    )
+  }
+
+  sort(unique(values))
+}
+
 .ms_knb_optional_scalar <- function(value) {
   if (is.null(value) ||
       length(value) == 0L ||
@@ -1260,12 +1324,14 @@
 .ms_knb_validate_system_metadata <- function(remote,
                                              object,
                                              subject,
-                                             public) {
+                                             public,
+                                             replication_policy) {
   if (!is.list(remote)) {
     cli::cli_abort(
       "Remote SystemMetadata for {.val {object$pid}} is missing or malformed."
     )
   }
+  .ms_knb_require_replication_policy(replication_policy, public)
   expected <- list(
     identifier = object$pid,
     format_id = object$format_id,
@@ -1277,6 +1343,14 @@
     media_type = object$media_type,
     file_name = basename(object$path),
     archived = FALSE,
+    replication_allowed = replication_policy$replication_allowed,
+    number_replicas = as.numeric(replication_policy$number_replicas),
+    preferred_member_nodes = .ms_knb_normalize_member_nodes(
+      replication_policy$preferred_member_nodes
+    ),
+    blocked_member_nodes = .ms_knb_normalize_member_nodes(
+      replication_policy$blocked_member_nodes
+    ),
     obsoletes = NA_character_,
     obsoleted_by = NA_character_,
     origin_member_node = .ms_knb_node_id,
@@ -1302,6 +1376,33 @@
     } else {
       NA
     },
+    replication_allowed = if (
+      is.logical(remote$replication_allowed) &&
+        length(remote$replication_allowed) == 1L &&
+        !is.na(remote$replication_allowed)
+    ) {
+      remote$replication_allowed
+    } else {
+      NA
+    },
+    number_replicas = {
+      value <- suppressWarnings(as.numeric(remote$number_replicas))
+      if (length(value) == 1L &&
+          !is.na(value) &&
+          is.finite(value) &&
+          value >= 0 &&
+          value == floor(value)) {
+        value
+      } else {
+        NA_real_
+      }
+    },
+    preferred_member_nodes = .ms_knb_normalize_member_nodes(
+      remote$preferred_member_nodes
+    ),
+    blocked_member_nodes = .ms_knb_normalize_member_nodes(
+      remote$blocked_member_nodes
+    ),
     obsoletes = .ms_knb_optional_scalar(remote$obsoletes),
     obsoleted_by = .ms_knb_optional_scalar(remote$obsoleted_by),
     origin_member_node = .ms_knb_optional_scalar(
@@ -1443,7 +1544,8 @@
                                   object,
                                   bytes,
                                   subject,
-                                  public) {
+                                  public,
+                                  replication_policy) {
   remote_bytes <- adapter$get_bytes(client, object$pid)
   if (!is.raw(remote_bytes) || !identical(remote_bytes, bytes)) {
     cli::cli_abort(
@@ -1455,7 +1557,8 @@
     remote_metadata,
     object,
     subject,
-    public
+    public,
+    replication_policy
   )
   remote_checksum <- adapter$get_checksum(
     client,
@@ -1486,7 +1589,8 @@
       anonymous_metadata,
       object,
       subject,
-      public
+      public,
+      replication_policy
     )
   } else {
     .ms_knb_verify_anonymous_denial(adapter, endpoint, object)
@@ -1677,7 +1781,8 @@
 .ms_knb_validate_series_binding <- function(remote,
                                             metadata_object,
                                             subject,
-                                            public) {
+                                            public,
+                                            replication_policy) {
   if (is.null(remote)) {
     return(invisible(TRUE))
   }
@@ -1691,7 +1796,8 @@
     remote,
     metadata_object,
     subject,
-    public
+    public,
+    replication_policy
   )
   invisible(TRUE)
 }
@@ -1708,7 +1814,15 @@
       # re-reads a local publication object.
       object_specs <- lapply(
         plan$objects,
-        .ms_knb_local_object_spec
+        function(object) {
+          specification <- .ms_knb_local_object_spec(object)
+          specification$replication_policy <- plan$replication_policy
+          specification
+        }
+      )
+      .ms_knb_require_replication_policy(
+        plan$replication_policy,
+        plan$public
       )
 
       .ms_knb_validate_adapter(adapter)
@@ -1760,7 +1874,8 @@
             remote,
             object,
             subject,
-            plan$public
+            plan$public,
+            plan$replication_policy
           )
           checksum <- adapter$get_checksum(
             client,
@@ -1793,7 +1908,8 @@
         series_remote,
         metadata_object,
         subject,
-        plan$public
+        plan$public,
+        plan$replication_policy
       )
       if (!is.null(remote_objects[[metadata_index]]) &&
           is.null(series_remote)) {
@@ -1832,7 +1948,8 @@
               remote,
               object,
               subject,
-              plan$public
+              plan$public,
+              plan$replication_policy
             )
           }
         }
@@ -1844,7 +1961,8 @@
           object,
           object$bytes,
           subject,
-          plan$public
+          plan$public,
+          plan$replication_policy
         )
         manifest <- .ms_knb_manifest_set_state(
           manifest,
@@ -1968,6 +2086,10 @@
     submitter = system_metadata@submitter,
     rights_holder = system_metadata@rightsHolder,
     access = system_metadata@accessPolicy,
+    replication_allowed = system_metadata@replicationAllowed,
+    number_replicas = system_metadata@numberReplicas,
+    preferred_member_nodes = system_metadata@preferredNodes,
+    blocked_member_nodes = system_metadata@blockedNodes,
     series_id = system_metadata@seriesId,
     media_type = system_metadata@mediaType,
     file_name = system_metadata@fileName,
@@ -1984,7 +2106,9 @@
 .ms_knb_new_system_metadata <- function(object,
                                         subject,
                                         public,
-                                        node_id) {
+                                        node_id,
+                                        replication_policy) {
+  .ms_knb_require_replication_policy(replication_policy, public)
   system_metadata <- methods::new("SystemMetadata")
   # `datapack::SystemMetadata()` supplies local defaults for several fields
   # that the DataONE service owns.  Do not serialize those invented values.
@@ -2005,6 +2129,14 @@
   system_metadata@checksumAlgorithm <- "SHA-256"
   system_metadata@submitter <- subject
   system_metadata@rightsHolder <- subject
+  system_metadata@replicationAllowed <-
+    replication_policy$replication_allowed
+  system_metadata@numberReplicas <-
+    as.numeric(replication_policy$number_replicas)
+  system_metadata@preferredNodes <-
+    replication_policy$preferred_member_nodes
+  system_metadata@blockedNodes <-
+    replication_policy$blocked_member_nodes
   system_metadata@mediaType <- object$media_type
   system_metadata@fileName <- basename(object$path)
   series_id <- .ms_knb_optional_scalar(object$series_id)
@@ -2490,7 +2622,8 @@
         object_spec,
         subject,
         public,
-        client@mn@identifier
+        client@mn@identifier,
+        object_spec$replication_policy
       )
       dataone::createObject(
         client@mn,
@@ -2577,10 +2710,13 @@
 #' @param eml_path Validated EML output path. Defaults to `metadata/eml.xml`
 #'   inside `path`; it is rebuilt deterministically before planning.
 #' @param public Explicit logical access decision. `TRUE` requests anonymous
-#'   read access for every DataONE object. `FALSE` creates a restricted
-#'   production deposit and requires authenticated exact-byte/SystemMetadata
-#'   verification plus anonymous denial for every object and zero anonymous
-#'   catalog matches. There is no implicit access default.
+#'   read access for every DataONE object and explicitly requests three DataONE
+#'   preservation replicas. `FALSE` creates a restricted KNB-only production
+#'   deposit, explicitly disables peer replication, and requires authenticated
+#'   exact-byte/SystemMetadata verification plus anonymous denial for every
+#'   object and zero anonymous catalog matches. The replication policy is part
+#'   of the exact reviewed manifest and is verified on remote readback. There
+#'   is no implicit access default.
 #' @param manifest_path Recovery manifest path inside `path`. Defaults to
 #'   `publication/knb-manifest.json`.
 #' @param dry_run Logical; when `TRUE` (the default), write only local plan

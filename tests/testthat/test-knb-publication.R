@@ -106,10 +106,17 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
   expect_true(file.exists(result$resource_map_path))
 
   manifest <- jsonlite::read_json(manifest_path, simplifyVector = TRUE)
-  expect_equal(manifest$schema_version, 1L)
+  expect_equal(manifest$schema_version, 2L)
   expect_equal(manifest$environment, "PROD")
   expect_equal(manifest$node_id, "urn:node:KNB")
   expect_true(manifest$public)
+  expect_identical(
+    manifest$replication_policy$replication_allowed,
+    TRUE
+  )
+  expect_equal(manifest$replication_policy$number_replicas, 3L)
+  expect_length(manifest$replication_policy$preferred_member_nodes, 0L)
+  expect_length(manifest$replication_policy$blocked_member_nodes, 0L)
   expect_equal(
     manifest$expected_subject,
     "https://orcid.org/0000-0001-9317-0364"
@@ -963,6 +970,12 @@ make_knb_memory_adapter <- function(manifest_path,
       } else {
         list()
       },
+      replication_allowed = object$replication_policy$replication_allowed,
+      number_replicas = object$replication_policy$number_replicas,
+      preferred_member_nodes =
+        object$replication_policy$preferred_member_nodes,
+      blocked_member_nodes =
+        object$replication_policy$blocked_member_nodes,
       series_id = .ms_knb_optional_scalar(object$series_id),
       media_type = object$media_type,
       file_name = basename(object$path),
@@ -1210,6 +1223,119 @@ test_that("private-review publication verifies anonymous non-disclosure for ever
   )
 })
 
+test_that("private-review plans and SystemMetadata explicitly disable replication", {
+  skip_if_not_installed("emld")
+  skip_if_not_installed("datapack")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$publication$public <- FALSE
+  yaml::write_yaml(mapping, mapping_path)
+  manifest_path <- file.path(
+    package_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  dry_run <- review_knb_plan(
+    package_path,
+    manifest_path,
+    public = FALSE
+  )
+  expected_policy <- list(
+    replication_allowed = FALSE,
+    number_replicas = 0L,
+    preferred_member_nodes = list(),
+    blocked_member_nodes = list()
+  )
+  expect_identical(
+    dry_run$manifest$replication_policy,
+    expected_policy
+  )
+  altered_plan <- dry_run$manifest
+  altered_plan$replication_policy$number_replicas <- 1L
+  expect_false(identical(
+    .ms_knb_plan_fingerprint(altered_plan),
+    dry_run$manifest$plan_sha256
+  ))
+
+  object <- dry_run$manifest$objects[[1]]
+  system_metadata <- .ms_knb_new_system_metadata(
+    object,
+    "https://orcid.org/0000-0001-9317-0364",
+    public = FALSE,
+    node_id = "urn:node:KNB",
+    replication_policy = dry_run$manifest$replication_policy
+  )
+  xml <- datapack::serializeSystemMetadata(
+    system_metadata,
+    version = "v2"
+  ) |>
+    xml2::read_xml()
+  policy <- xml2::xml_find_first(
+    xml,
+    "//*[local-name()='replicationPolicy']"
+  )
+
+  expect_identical(xml2::xml_attr(policy, "replicationAllowed"), "false")
+  expect_identical(xml2::xml_attr(policy, "numberReplicas"), "0")
+  expect_length(
+    xml2::xml_find_all(policy, "./*[local-name()='preferredMemberNode']"),
+    0L
+  )
+  expect_length(
+    xml2::xml_find_all(policy, "./*[local-name()='blockedMemberNode']"),
+    0L
+  )
+})
+
+test_that("private-review resume rejects permissive remote replication", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$publication$public <- FALSE
+  yaml::write_yaml(mapping, mapping_path)
+  manifest_path <- file.path(
+    package_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  review_knb_plan(package_path, manifest_path, public = FALSE)
+  memory <- make_knb_memory_adapter(
+    manifest_path,
+    anonymous_private_status = 403L
+  )
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() memory$adapter
+  ))
+  published <- publish_sdp_to_knb(
+    package_path,
+    public = FALSE,
+    manifest_path = manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE
+  )
+
+  first_pid <- published$manifest$objects[[1]]$pid
+  memory$state$objects[[first_pid]]$system_metadata$replication_allowed <- TRUE
+  memory$state$objects[[first_pid]]$system_metadata$number_replicas <- 3
+  memory$state$calls <- character()
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = FALSE,
+      manifest_path = manifest_path,
+      dry_run = FALSE,
+      confirm = TRUE
+    ),
+    "replication_allowed|number_replicas"
+  )
+  expect_false(any(startsWith(memory$state$calls, "create:")))
+})
+
 test_that("private-review publication refuses anonymously readable SystemMetadata", {
   skip_if_not_installed("emld")
 
@@ -1329,6 +1455,48 @@ test_that("live KNB publication requires an exact pre-existing dry run", {
       confirm = TRUE
     ),
     "matching reviewed dry-run manifest"
+  )
+  expect_false(adapter_accessed)
+})
+
+test_that("live private publication requires the reviewed schema-v2 policy", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$publication$public <- FALSE
+  yaml::write_yaml(mapping, mapping_path)
+  manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
+  review_knb_plan(package_path, manifest_path, public = FALSE)
+
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  manifest$schema_version <- 1L
+  manifest$replication_policy <- NULL
+  jsonlite::write_json(
+    manifest,
+    manifest_path,
+    auto_unbox = TRUE,
+    null = "null",
+    pretty = TRUE
+  )
+  adapter_accessed <- FALSE
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() {
+      adapter_accessed <<- TRUE
+      stop("adapter accessed")
+    }
+  ))
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = FALSE,
+      manifest_path = manifest_path,
+      dry_run = FALSE,
+      confirm = TRUE
+    ),
+    "schema version 2.*replication policy"
   )
   expect_false(adapter_accessed)
 })
@@ -2149,13 +2317,27 @@ test_that("default adapter SystemMetadata contract serializes as DataONE v2", {
     object,
     subject,
     public = TRUE,
-    node_id = "urn:node:KNB"
+    node_id = "urn:node:KNB",
+    replication_policy = .ms_knb_replication_policy(TRUE)
   )
   xml <- datapack::serializeSystemMetadata(
     system_metadata,
     version = "v2"
   )
   parsed <- xml2::read_xml(xml)
+  replication_policy <- xml2::xml_find_first(
+    parsed,
+    "//*[local-name()='replicationPolicy']"
+  )
+  expect_identical(
+    xml2::xml_attr(replication_policy, "replicationAllowed"),
+    "true"
+  )
+  expect_identical(
+    xml2::xml_attr(replication_policy, "numberReplicas"),
+    "3"
+  )
+  expect_length(xml2::xml_children(replication_policy), 0L)
 
   for (server_field in c(
     "serialVersion",
@@ -2290,6 +2472,10 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     submitter = "http://orcid.org/0000-0001-9317-0364",
     rights_holder = subject,
     access = list(list(subject = "public", permission = "read")),
+    replication_allowed = TRUE,
+    number_replicas = 3,
+    preferred_member_nodes = list(),
+    blocked_member_nodes = list(),
     series_id = NA_character_,
     media_type = object$media_type,
     file_name = basename(object$path),
@@ -2306,7 +2492,8 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     remote,
     object,
     subject,
-    public = TRUE
+    public = TRUE,
+    replication_policy = .ms_knb_replication_policy(TRUE)
   ))
 
   invalid_values <- list(
@@ -2321,7 +2508,11 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     checksum_algorithm = "MD5",
     serial_version = 0,
     date_uploaded = "not-a-timestamp",
-    date_sys_metadata_modified = "2026-02-30T00:00:00Z"
+    date_sys_metadata_modified = "2026-02-30T00:00:00Z",
+    replication_allowed = FALSE,
+    number_replicas = 0,
+    preferred_member_nodes = list("urn:node:OTHER"),
+    blocked_member_nodes = list("urn:node:OTHER")
   )
   for (field in names(invalid_values)) {
     invalid <- remote
@@ -2331,7 +2522,8 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
         invalid,
         object,
         subject,
-        public = TRUE
+        public = TRUE,
+        replication_policy = .ms_knb_replication_policy(TRUE)
       ),
       field
     )

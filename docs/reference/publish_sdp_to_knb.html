@@ -93,10 +93,13 @@ inside <code>path</code>; it is rebuilt deterministically before planning.</p></
 
 <dt id="arg-public">public<a class="anchor" aria-label="anchor" href="#arg-public"></a></dt>
 <dd><p>Explicit logical access decision. <code>TRUE</code> requests anonymous
-read access for every DataONE object. <code>FALSE</code> creates a restricted
-production deposit and requires authenticated exact-byte/SystemMetadata
-verification plus anonymous denial for every object and zero anonymous
-catalog matches. There is no implicit access default.</p></dd>
+read access for every DataONE object and explicitly requests three DataONE
+preservation replicas. <code>FALSE</code> creates a restricted KNB-only production
+deposit, explicitly disables peer replication, and requires authenticated
+exact-byte/SystemMetadata verification plus anonymous denial for every
+object and zero anonymous catalog matches. The replication policy is part
+of the exact reviewed manifest and is verified on remote readback. There
+is no implicit access default.</p></dd>
 
 
 <dt id="arg-manifest-path">manifest_path<a class="anchor" aria-label="anchor" href="#arg-manifest-path"></a></dt>

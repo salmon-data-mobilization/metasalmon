@@ -312,8 +312,10 @@ For the current package-native review path, use this order:
     and inspect the credential-free restricted-review plan with
     `publish_sdp_to_knb(pkg_path, public = FALSE, dry_run = TRUE)`. A
     live private review still creates persistent production objects; it
-    verifies authenticated exact readback and anonymous non-disclosure.
-    Public release is a separate explicit decision.
+    verifies authenticated exact readback and anonymous non-disclosure,
+    and explicitly disables DataONE peer replication so the restricted
+    bytes remain KNB-only. Public release is a separate explicit
+    decision.
 11. Publish/share only after the `REVIEW:` markers are gone and
     validation passes; send the whole package folder (or a zip of it),
     not individual files.

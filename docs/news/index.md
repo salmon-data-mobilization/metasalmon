@@ -26,6 +26,14 @@
   objects use DataONE’s registered `text/tsv` format identifier while
   retaining the canonical `text/tab-separated-values` media type.
 
+- Bound DataONE replication policy into the reviewed KNB plan and remote
+  SystemMetadata checks. Restricted private-review deposits now
+  explicitly request zero peer replicas and reject permissive
+  replication on create or resume. Live calls also require a schema-v2
+  review manifest whose policy and fingerprint recompute exactly. Public
+  deposits explicitly retain the three-replica preservation policy that
+  was previously inherited from the DataONE client default.
+
 - Added strict package-native SSSOM 1.1 read/write/validation for
   reviewed concept alignments and version-scoped `sssom:NoTermFound`
   records. Mapping sets are deterministic and manifest-bound; undeclared

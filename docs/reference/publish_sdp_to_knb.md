@@ -35,11 +35,13 @@ publish_sdp_to_knb(
 - public:
 
   Explicit logical access decision. `TRUE` requests anonymous read
-  access for every DataONE object. `FALSE` creates a restricted
-  production deposit and requires authenticated
-  exact-byte/SystemMetadata verification plus anonymous denial for every
-  object and zero anonymous catalog matches. There is no implicit access
-  default.
+  access for every DataONE object and explicitly requests three DataONE
+  preservation replicas. `FALSE` creates a restricted KNB-only
+  production deposit, explicitly disables peer replication, and requires
+  authenticated exact-byte/SystemMetadata verification plus anonymous
+  denial for every object and zero anonymous catalog matches. The
+  replication policy is part of the exact reviewed manifest and is
+  verified on remote readback. There is no implicit access default.
 
 - manifest_path:
 
