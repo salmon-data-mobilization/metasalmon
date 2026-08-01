@@ -13,7 +13,7 @@ rights cannot be inferred defensibly from the canonical SDP tables."><meta prope
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,7 +63,9 @@ rights cannot be inferred defensibly from the canonical SDP tables.</p>
 <span>  <span class="va">path</span>,</span>
 <span>  output_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  mapping_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  supplementary_objects <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  require_revision_key <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -89,12 +91,29 @@ rights cannot be inferred defensibly from the canonical SDP tables.</p>
 <dd><p>Logical; replace a different existing output only when
 <code>TRUE</code>. An identical existing file is treated as an idempotent success.</p></dd>
 
+
+<dt id="arg-supplementary-objects">supplementary_objects<a class="anchor" aria-label="anchor" href="#arg-supplementary-objects"></a></dt>
+<dd><p>Optional data frame describing canonical SDP
+archives to expose as EML <code>otherEntity</code> elements. Required columns are
+<code>path</code>, <code>pid</code>, <code>format_id</code>, <code>checksum</code>, <code>object_name</code>, <code>entity_name</code>, and
+<code>description</code>; optional <code>size</code>, when supplied, must match the file. The
+initial profile accepts <code>application/zip</code> objects with lowercase SHA-256
+checksums. <code><a href="publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code> supplies this archive plan
+automatically; ordinary standalone EML export leaves the argument <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-require-revision-key">require_revision_key<a class="anchor" aria-label="anchor" href="#arg-require-revision-key"></a></dt>
+<dd><p>Logical; when <code>TRUE</code>, require a reviewed
+<code>publication.revision_key</code> in the EML mapping sidecar. The key creates a
+new deterministic metadata package ID without changing the series ID.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly returns a list containing the XML text, normalized output
 path, EML version, metadata package ID, stable series ID, validation
-result, and deterministic data-object plan.</p>
+result, revision key, and deterministic data and supplementary-object
+plans.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>

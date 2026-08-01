@@ -314,8 +314,17 @@ For the current package-native review path, use this order:
     live private review still creates persistent production objects; it
     verifies authenticated exact readback and anonymous non-disclosure,
     and explicitly disables DataONE peer replication so the restricted
-    bytes remain KNB-only. Public release is a separate explicit
-    decision.
+    bytes remain KNB-only. The plan contains the original data files
+    plus one clearly named ZIP of the complete canonical SDP; canonical
+    semantic sidecars remain inside that ZIP, while the KNB-specific EML
+    mapping and publication receipts remain local. KNB has no separate
+    server-side draft state, and metasalmon does not mint a DOI. DOI
+    minting and public release are a later, per-metadata-version
+    decision in KNB. Referenced vocabulary rows labelled as review
+    candidates are blocked; the transformation workflow must separately
+    pin and verify the governed vocabulary release. Corrections use a
+    new sidecar `revision_key` and the preceding verified manifest,
+    preserving the KNB series instead of overwriting immutable objects.
 11. Publish/share only after the `REVIEW:` markers are gone and
     validation passes; send the whole package folder (or a zip of it),
     not individual files.
@@ -401,9 +410,11 @@ whole folder (or a zip of the whole folder), not just
 - Generate deterministic, schema-validated EML 2.2.0 from a strictly
   reviewed SDP with
   [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md),
-  then produce an offline exact-object KNB manifest or explicitly run
-  verified DataONE publication with
+  then produce an offline exact-object KNB manifest or explicitly run a
+  verified private/public DataONE deposit with
   [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md).
+  KNB plans retain the original data resources and add one deterministic
+  archive of the complete canonical SDP.
 - Role-aware vocabulary search with
   [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
   and

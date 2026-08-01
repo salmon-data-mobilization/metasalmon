@@ -10,7 +10,8 @@ publish_sdp_to_knb(
   public = NULL,
   manifest_path = NULL,
   dry_run = TRUE,
-  confirm = interactive()
+  confirm = interactive(),
+  revision_manifest = NULL
 )
 }
 \arguments{
@@ -37,16 +38,24 @@ artifacts and never construct a DataONE adapter or read credentials.}
 \item{confirm}{Explicit approval of the pre-existing exact dry-run plan and
 live mutation. Its interactive default can never authorize a live call:
 live mode requires that the argument was supplied and is exactly \code{TRUE}.}
+
+\item{revision_manifest}{Optional path to the verified manifest for the
+preceding KNB version. Supplying it plans an immutable DataONE revision:
+the reviewed sidecar must contain a new \code{publication.revision_key}, the
+metadata series stays stable, and the new EML/resource-map objects
+obsolete their predecessors. Access cannot change in the same operation.}
 }
 \value{
 Invisibly returns publication status, identifiers, normalized
-manifest/resource-map paths, and the manifest.
+manifest/resource-map/SDP-archive paths, and the manifest.
 }
 \description{
-Plans an immutable DataONE package containing exactly the data resources
-named by \code{tables.csv}, the canonical SDP reconstruction artifacts, one
-validated EML 2.2.0 metadata object, and a deterministic OAI-ORE resource
-map. The default is a credential-free, network-free dry run. Live
+Plans an immutable DataONE package containing the original data resources
+named by \code{tables.csv}, one friendly deterministic ZIP of the complete
+canonical SDP, one validated EML 2.2.0 metadata object, and a deterministic
+OAI-ORE resource map. Internal SDP sidecars stay inside the ZIP instead of
+becoming unnamed catalog objects. The default is a credential-free,
+network-free dry run. Live
 publication requires a pre-existing exact dry-run manifest and an explicitly
 supplied \code{confirm = TRUE} approving that plan. Redistribution authority is
 recorded separately in the reviewed EML sidecar.
@@ -55,12 +64,32 @@ recorded separately in the reviewed EML sidecar.
 DataONE credentials are read only inside the live adapter. Use a short-lived
 DataONE JWT through the supported \code{dataone_token} runtime option; credentials
 are never accepted as function arguments or written to the manifest.
+
+A live restricted deposit is the KNB review/staging mechanism; KNB does not
+expose a separate server-side draft state. The persistent object identifiers
+remain even while access is private. This function does not call KNB's
+separate Publish action and never mints a DOI. If a reviewed dataset should
+receive a DOI, request it for the science-metadata version through KNB when
+making that version public. The DOI identifies the metadata version, not each
+raw or supplementary object.
+
+Revisions must be built in a fresh versioned SDP directory. Keep the prior
+package and its verified manifest unchanged, write the corrected SDP to a
+new directory with a new \code{publication.revision_key}, and choose a new local
+manifest path there. If KNB's separate Publish action later creates a
+DOI-bearing metadata version, that KNB-created version is not automatically
+imported into a metasalmon manifest; do not plan another metasalmon revision
+from the older pre-DOI manifest.
+
+Publication currently materializes object bytes in memory for exact hashing
+and readback. It is intended for modest tabular SDPs; large packages should
+be tested in a dry run and may require a future streaming adapter.
 }
 \examples{
 \dontrun{
 publish_sdp_to_knb(
   "path/to/reviewed-sdp",
-  public = TRUE,
+  public = FALSE,
   dry_run = TRUE
 )
 }

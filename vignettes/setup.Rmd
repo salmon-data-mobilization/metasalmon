@@ -17,10 +17,11 @@ knitr::opts_chunk$set(
 
 Use this page once before the homepage quick example or the [5-Minute Quickstart](https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html).
 
-It covers two things:
+It covers three things:
 
 1. GitHub credentials so `remotes::install_github()` works reliably.
 2. Optional LLM provider setup if you want `llm_assess = TRUE` later.
+3. Short-lived DataONE credentials for an explicit live KNB deposit.
 
 ## 1) GitHub setup for installs and updates
 
@@ -137,7 +138,27 @@ suggested <- suggest_semantics(
 )
 ```
 
-## 3) Next step
+## 3) Optional DataONE/KNB live-deposit credential
+
+You do not need a DataONE credential to build EML or create a KNB dry-run
+manifest. For a live deposit, sign in to DataONE with the same ORCID recorded as
+the single EML metadata provider and obtain a short-lived DataONE JWT.
+
+Treat this token differently from an install PAT or optional LLM key. Do not put
+it in `.Renviron`, a script, a command argument, an EML sidecar, a publication
+manifest, or a transformation record. Enter it only into the current R process
+and clear it immediately afterward:
+
+```{r, purl = FALSE}
+options(dataone_token = rstudioapi::askForPassword("Short-lived DataONE JWT"))
+on.exit(options(dataone_token = NULL), add = TRUE)
+```
+
+The live KNB preflight verifies that DataONE reports the authenticated subject
+as the metadata-provider ORCID. A matching string supplied locally is not
+enough.
+
+## 4) Next step
 
 After this setup is done, go back to:
 

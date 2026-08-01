@@ -202,7 +202,6 @@
     "metadata/column_dictionary.csv",
     "metadata/codes.csv",
     "metadata/semantic_vocabulary.csv",
-    "metadata/eml-mapping.yml",
     "reviewed_semantic_selections.csv"
   )
   missing <- required[!file.exists(file.path(path, required))]
@@ -301,14 +300,25 @@
       file.path(dirname(manifest_path), "resource-map.rdf")
     )
   )
+  archive_candidate <- file.path(
+    path,
+    "publication",
+    .ms_knb_sdp_archive_filename(
+      .ms_knb_sdp_archive_dataset_id(path)
+    )
+  )
+  archive_path <- .ms_knb_inside_path(
+    path,
+    archive_candidate,
+    must_work = file.exists(archive_candidate)
+  )
   data_paths <- .ms_knb_declared_data_paths(path)
-  artifact_paths <- .ms_knb_sdp_artifact_paths(path)
   all_paths <- c(
     data_paths,
-    artifact_paths,
     eml = eml_path,
     manifest = manifest_path,
-    resource_map = resource_map_path
+    resource_map = resource_map_path,
+    archive = archive_path
   )
   duplicated_paths <- unique(all_paths[
     duplicated(all_paths) | duplicated(all_paths, fromLast = TRUE)
@@ -323,8 +333,8 @@
     eml_path = eml_path,
     manifest_path = manifest_path,
     resource_map_path = resource_map_path,
-    data_paths = unname(data_paths),
-    artifact_paths = unname(artifact_paths)
+    archive_path = archive_path,
+    data_paths = unname(data_paths)
   )
 }
 
@@ -444,7 +454,14 @@
     "ore:isDescribedBy",
     resource_map_url
   )
-  role_order <- c("metadata", "data", "sdp_artifact")
+  role_order <- c(
+    "metadata",
+    "data",
+    "sdp_archive",
+    # Retain the legacy expanded representation as a readable plan shape.
+    # New plans use one named archive; old manifests can still be audited.
+    "sdp_artifact"
+  )
   ordered_members <- member_objects[order(match(
     vapply(member_objects, function(x) x$role, character(1)),
     role_order
@@ -466,24 +483,24 @@
     aggregation_url
   )
 
-  data_objects <- member_objects[vapply(
+  documented_objects <- member_objects[vapply(
     member_objects,
-    function(x) identical(x$role, "data"),
+    function(x) x$role %in% c("data", "sdp_archive"),
     logical(1)
   )]
-  for (object in data_objects) {
-    data_url <- .ms_knb_resolve_url(object$pid)
-    .ms_knb_add_resource(metadata, "cito:documents", data_url)
-    data_description <- xml2::xml_add_child(root, "rdf:Description")
-    xml2::xml_set_attr(data_description, "rdf:about", data_url)
+  for (object in documented_objects) {
+    object_url <- .ms_knb_resolve_url(object$pid)
+    .ms_knb_add_resource(metadata, "cito:documents", object_url)
+    object_description <- xml2::xml_add_child(root, "rdf:Description")
+    xml2::xml_set_attr(object_description, "rdf:about", object_url)
     .ms_knb_add_resource(
-      data_description,
+      object_description,
       "cito:isDocumentedBy",
       metadata_url
     )
-    .ms_knb_add_identifier(data_description, object$pid)
+    .ms_knb_add_identifier(object_description, object$pid)
     .ms_knb_add_resource(
-      data_description,
+      object_description,
       "ore:isAggregatedBy",
       aggregation_url
     )
@@ -594,13 +611,13 @@
     )
   }
 
-  data_objects <- member_objects[vapply(
+  documented_objects <- member_objects[vapply(
     member_objects,
-    function(x) identical(x$role, "data"),
+    function(x) x$role %in% c("data", "sdp_archive"),
     logical(1)
   )]
-  data_urls <- vapply(
-    data_objects,
+  documented_urls <- vapply(
+    documented_objects,
     function(x) .ms_knb_resolve_url(x$pid),
     character(1)
   )
@@ -631,9 +648,9 @@
     ),
     "resource"
   )
-  if (!setequal(documents, data_urls) ||
-      length(documents) != length(data_urls) ||
-      length(documented_by) != length(data_urls) ||
+  if (!setequal(documents, documented_urls) ||
+      length(documents) != length(documented_urls) ||
+      length(documented_by) != length(documented_urls) ||
       !all(documented_by == metadata_url) ||
       length(aggregated_by) != length(expected) ||
       !all(aggregated_by == aggregation_url)) {
@@ -698,9 +715,41 @@
   charToRaw(paste0(json, "\n"))
 }
 
+.ms_knb_fingerprint_object <- function(object) {
+  scalar <- function(field) {
+    value <- unlist(object[[field]], use.names = FALSE)
+    if (length(value) == 0L) {
+      return(NA_character_)
+    }
+    as.character(value[[1]])
+  }
+
+  size <- unlist(object$size, use.names = FALSE)
+  if (length(size) == 0L) {
+    size <- NA_real_
+  } else {
+    size <- as.numeric(size[[1]])
+  }
+
+  # jsonlite represents a column containing only JSON null values as a
+  # zero-column data frame when a user reads and rewrites a manifest. Reduce
+  # every fingerprint field to its wire-level scalar so harmless JSON
+  # round-trips cannot invalidate an otherwise exact reviewed plan.
+  list(
+    role = scalar("role"),
+    path = scalar("path"),
+    pid = scalar("pid"),
+    format_id = scalar("format_id"),
+    media_type = scalar("media_type"),
+    size = size,
+    sha256 = scalar("sha256"),
+    obsoletes = .ms_knb_optional_scalar(object$obsoletes)
+  )
+}
+
 .ms_knb_plan_fingerprint <- function(plan) {
   fingerprint <- list(
-    schema_version = 2L,
+    schema_version = 3L,
     environment = plan$environment,
     node_id = plan$node_id,
     public = plan$public,
@@ -709,13 +758,16 @@
     rights_authorization = plan$rights_authorization,
     package_id = plan$package_id,
     series_id = plan$series_id,
+    representation = plan$representation,
+    revision_of = if (
+      is.null(plan$revision_of) || length(plan$revision_of) == 0L
+    ) {
+      NULL
+    } else {
+      plan$revision_of
+    },
     ore_profile = .ms_knb_ore_profile,
-    objects = lapply(plan$objects, function(object) {
-      object[c(
-        "role", "path", "pid", "format_id", "media_type",
-        "size", "sha256"
-      )]
-    })
+    objects = lapply(plan$objects, .ms_knb_fingerprint_object)
   )
   .ms_knb_sha256_raw(.ms_knb_json_bytes(fingerprint))
 }
@@ -766,7 +818,7 @@
     c(
       object[c(
         "role", "path", "pid", "format_id", "media_type",
-        "size", "sha256"
+        "size", "sha256", "obsoletes"
       )],
       list(state = state)
     )
@@ -795,7 +847,7 @@
     previous$catalog_evidence
   }
   list(
-    schema_version = 2L,
+    schema_version = 3L,
     status = durable_status,
     environment = plan$environment,
     node_id = plan$node_id,
@@ -805,6 +857,8 @@
     rights_authorization = plan$rights_authorization,
     package_id = plan$package_id,
     series_id = plan$series_id,
+    representation = plan$representation,
+    revision_of = plan$revision_of,
     plan_sha256 = plan$plan_sha256,
     metadata_pid = plan$metadata_pid,
     resource_map_pid = plan$resource_map_pid,
@@ -838,6 +892,150 @@
     }))
   }
   manifest$objects
+}
+
+.ms_knb_manifest_fingerprint <- function(manifest) {
+  schema_version <- suppressWarnings(as.integer(manifest$schema_version))
+  objects <- .ms_knb_manifest_objects(manifest)
+  if (identical(schema_version, 2L)) {
+    fingerprint <- list(
+      schema_version = 2L,
+      environment = manifest$environment,
+      node_id = manifest$node_id,
+      public = manifest$public,
+      replication_policy = manifest$replication_policy,
+      expected_subject = manifest$expected_subject,
+      rights_authorization = manifest$rights_authorization,
+      package_id = manifest$package_id,
+      series_id = manifest$series_id,
+      ore_profile = .ms_knb_ore_profile,
+      objects = lapply(objects, function(object) {
+        object[c(
+          "role", "path", "pid", "format_id", "media_type",
+          "size", "sha256"
+        )]
+      })
+    )
+    return(.ms_knb_sha256_raw(.ms_knb_json_bytes(fingerprint)))
+  }
+  if (identical(schema_version, 3L)) {
+    candidate <- manifest
+    candidate$objects <- objects
+    return(.ms_knb_plan_fingerprint(candidate))
+  }
+  NA_character_
+}
+
+.ms_knb_revision_manifest <- function(path) {
+  if (is.null(path)) {
+    return(NULL)
+  }
+  .ms_knb_reject_dot_segments(path, "revision_manifest")
+  if (!file.exists(path) || dir.exists(path)) {
+    cli::cli_abort(
+      "Prior KNB revision manifest {.path {path}} does not exist."
+    )
+  }
+  manifest <- .ms_knb_existing_manifest(normalizePath(path, mustWork = TRUE))
+  schema_version <- suppressWarnings(as.integer(manifest$schema_version))
+  status <- as.character(manifest$status)
+  objects <- .ms_knb_manifest_objects(manifest)
+  roles <- vapply(objects, function(object) {
+    as.character(object$role)
+  }, character(1))
+  states <- vapply(objects, function(object) {
+    as.character(object$state)
+  }, character(1))
+  valid <- length(schema_version) == 1L &&
+    !is.na(schema_version) &&
+    schema_version %in% c(2L, 3L) &&
+    length(status) == 1L &&
+    status %in% c("published_pending_catalog", "complete") &&
+    identical(as.character(manifest$environment), .ms_knb_environment) &&
+    identical(as.character(manifest$node_id), .ms_knb_node_id) &&
+    length(objects) > 0L &&
+    sum(roles == "metadata") == 1L &&
+    sum(roles == "resource_map") == 1L &&
+    all(states == "verified") &&
+    identical(
+      .ms_knb_manifest_fingerprint(manifest),
+      as.character(manifest$plan_sha256)
+    )
+  if (!isTRUE(valid)) {
+    cli::cli_abort(
+      paste(
+        "A KNB revision requires a verified schema-version 2 or 3",
+        "published manifest with an intact plan fingerprint."
+      )
+    )
+  }
+  manifest$objects <- objects
+  manifest
+}
+
+.ms_knb_revision_context <- function(prior, plan) {
+  if (is.null(prior)) {
+    return(NULL)
+  }
+  if (!identical(isTRUE(prior$public), isTRUE(plan$public))) {
+    cli::cli_abort(
+      "KNB revision planning cannot also change public/private access."
+    )
+  }
+  if (!identical(as.character(prior$series_id), plan$series_id)) {
+    cli::cli_abort(
+      "The prior KNB manifest belongs to a different metadata series."
+    )
+  }
+  prior_metadata <- prior$objects[vapply(
+    prior$objects,
+    function(object) identical(as.character(object$role), "metadata"),
+    logical(1)
+  )][[1L]]
+  prior_resource_map <- prior$objects[vapply(
+    prior$objects,
+    function(object) identical(
+      as.character(object$role),
+      "resource_map"
+    ),
+    logical(1)
+  )][[1L]]
+  list(
+    schema_version = as.integer(prior$schema_version),
+    plan_sha256 = as.character(prior$plan_sha256),
+    metadata_pid = as.character(prior_metadata$pid),
+    resource_map_pid = as.character(prior_resource_map$pid)
+  )
+}
+
+.ms_knb_require_new_revision_pids <- function(revision,
+                                              metadata_pid,
+                                              resource_map_pid) {
+  if (is.null(revision)) {
+    return(invisible(TRUE))
+  }
+
+  reused <- c(
+    metadata = identical(revision$metadata_pid, metadata_pid),
+    `resource-map` = identical(
+      revision$resource_map_pid,
+      resource_map_pid
+    )
+  )
+  reused_roles <- names(reused)[reused]
+  if (length(reused_roles) == 0L) {
+    return(invisible(TRUE))
+  }
+
+  role_text <- if (length(reused_roles) == 2L) {
+    paste(reused_roles, collapse = " and ")
+  } else {
+    reused_roles[[1]]
+  }
+  cli::cli_abort(c(
+    "KNB revision planning would reuse the prior {role_text} PID{?s}.",
+    "i" = "Choose a new {.field publication.revision_key} so the revision mints new immutable metadata and resource-map PIDs."
+  ))
 }
 
 .ms_knb_assert_resource_map_owned <- function(plan, previous) {
@@ -894,7 +1092,7 @@
   valid <- !is.null(previous) &&
     length(schema_version) == 1L &&
     !is.na(schema_version) &&
-    schema_version == 2L &&
+    schema_version == 3L &&
     length(status) == 1L &&
     status %in% c(
       "dry_run",
@@ -909,7 +1107,7 @@
   if (!isTRUE(valid)) {
     cli::cli_abort(
       paste(
-        "Live KNB publication requires a reviewed schema version 2 manifest",
+        "Live KNB publication requires a reviewed schema version 3 manifest",
         "with the exact replication policy and recomputed plan fingerprint."
       )
     )
@@ -938,6 +1136,67 @@
     cli::cli_abort(c(
       "Public KNB publication requires confirmed redistribution rights in the reviewed EML sidecar.",
       "i" = "{.arg confirm = TRUE} approves the exact plan; it is not rights evidence."
+    ))
+  }
+  invisible(TRUE)
+}
+
+.ms_knb_reject_review_candidate_annotations <- function(path) {
+  vocabulary_path <- file.path(
+    path,
+    "metadata",
+    "semantic_vocabulary.csv"
+  )
+  vocabulary <- readr::read_csv(
+    vocabulary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE,
+    progress = FALSE
+  )
+  required <- c("iri", "source", "ontology")
+  if (!all(required %in% names(vocabulary))) {
+    cli::cli_abort(
+      "KNB publication requires semantic_vocabulary.csv fields: {.field {required}}."
+    )
+  }
+
+  status_text <- tolower(paste(
+    vocabulary$source,
+    vocabulary$ontology
+  ))
+  candidate <- grepl(
+    "(^|[^a-z])(candidate|review[ _-]?candidate)([^a-z]|$)",
+    status_text,
+    perl = TRUE
+  )
+  candidate_iris <- unique(trimws(as.character(vocabulary$iri[candidate])))
+  candidate_iris <- candidate_iris[
+    !is.na(candidate_iris) & nzchar(candidate_iris)
+  ]
+  if (length(candidate_iris) == 0L) {
+    return(invisible(TRUE))
+  }
+
+  semantic_inputs <- c(
+    file.path(path, "metadata", "dataset.csv"),
+    file.path(path, "metadata", "tables.csv"),
+    file.path(path, "metadata", "column_dictionary.csv"),
+    file.path(path, "metadata", "codes.csv")
+  )
+  text <- paste(vapply(semantic_inputs, function(input) {
+    paste(readLines(input, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  }, character(1)), collapse = "\n")
+  referenced <- candidate_iris[vapply(
+    candidate_iris,
+    grepl,
+    logical(1),
+    x = text,
+    fixed = TRUE
+  )]
+  if (length(referenced) > 0L) {
+    cli::cli_abort(c(
+      "KNB publication cannot emit annotations to review-candidate vocabulary IRIs: {.url {referenced}}.",
+      "i" = "Publish those concepts in a governed provisional/stable vocabulary release, rebuild the SDP against that release, or remove the annotations."
     ))
   }
   invisible(TRUE)
@@ -990,15 +1249,71 @@
   )
 }
 
+.ms_knb_sdp_archive_object <- function(archive, path, dataset_id) {
+  relative <- .ms_knb_relative_path(path, archive$path)
+  list(
+    role = "sdp_archive",
+    path = relative,
+    local_path = archive$path,
+    pid = paste0(
+      "urn:uuid:",
+      .ms_eml_uuid5(paste(
+        "sdp-archive",
+        dataset_id,
+        archive$sha256,
+        sep = ":"
+      ))
+    ),
+    format_id = archive$format_id,
+    media_type = archive$media_type,
+    size = as.numeric(archive$size),
+    sha256 = archive$sha256,
+    series_id = NA_character_,
+    obsoletes = NA_character_,
+    obsoleted_by = NA_character_
+  )
+}
+
 .ms_knb_build_plan <- function(path,
                                eml_path,
                                manifest_path,
                                public,
+                               prior_manifest = NULL,
                                resource_map_path = file.path(
                                  dirname(manifest_path),
                                  "resource-map.rdf"
                                )) {
-  eml <- write_eml_from_sdp(path, output_path = eml_path)
+  .ms_knb_reject_review_candidate_annotations(path)
+  mapping <- yaml::read_yaml(
+    file.path(path, "metadata", "eml-mapping.yml")
+  )
+  archive <- .ms_knb_write_sdp_archive(path)
+  archive_object <- .ms_knb_sdp_archive_object(
+    archive,
+    path,
+    mapping$dataset_id
+  )
+  supplementary_objects <- data.frame(
+    path = archive_object$local_path,
+    pid = archive_object$pid,
+    format_id = archive_object$format_id,
+    checksum = archive_object$sha256,
+    object_name = basename(archive_object$path),
+    entity_name = "Canonical Salmon Data Package",
+    description = paste(
+      "A complete, validated Salmon Data Package containing the source data,",
+      "canonical SDP metadata, reviewed semantic selections, SSSOM mapping",
+      "sets, and measurement-decomposition artifacts."
+    ),
+    size = archive_object$size,
+    stringsAsFactors = FALSE
+  )
+  eml <- write_eml_from_sdp(
+    path,
+    output_path = eml_path,
+    supplementary_objects = supplementary_objects,
+    require_revision_key = !is.null(prior_manifest)
+  )
   if (!identical(eml$public, public)) {
     cli::cli_abort(
       "Reviewed sidecar {.field publication.public} must exactly equal {.arg public}."
@@ -1021,9 +1336,6 @@
     )
   }
   expected_subject <- metadata_provider_orcids[[1]]
-  mapping <- yaml::read_yaml(
-    file.path(path, "metadata", "eml-mapping.yml")
-  )
 
   data_objects <- lapply(
     order(eml$data_objects$file_name),
@@ -1041,15 +1353,16 @@
         media_type = "text/csv",
         size = as.numeric(data$size[[1]]),
         sha256 = as.character(data$checksum[[1]]),
-        series_id = NA_character_
+        series_id = NA_character_,
+        obsoletes = NA_character_,
+        obsoleted_by = NA_character_
       )
     }
   )
-  artifact_objects <- lapply(
-    .ms_knb_sdp_artifact_paths(path),
-    .ms_knb_sdp_artifact_object,
-    path = path,
-    dataset_id = mapping$dataset_id
+
+  revision_context <- .ms_knb_revision_context(
+    prior_manifest,
+    list(public = public, series_id = eml$series_id)
   )
 
   eml_bytes <- .ms_knb_object_bytes(eml$path)
@@ -1062,14 +1375,25 @@
     media_type = "application/xml",
     size = as.numeric(length(eml_bytes)),
     sha256 = .ms_knb_sha256_raw(eml_bytes),
-    series_id = eml$series_id
+    series_id = eml$series_id,
+    obsoletes = if (is.null(revision_context)) {
+      NA_character_
+    } else {
+      revision_context$metadata_pid
+    },
+    obsoleted_by = NA_character_
   )
-  members <- c(data_objects, artifact_objects, list(metadata_object))
+  members <- c(data_objects, list(archive_object, metadata_object))
 
   resource_map_pid <- .ms_knb_resource_map_pid(
     eml$package_id,
     mapping$publication_date,
     members
+  )
+  .ms_knb_require_new_revision_pids(
+    revision_context,
+    eml$package_id,
+    resource_map_pid
   )
   ore <- .ms_knb_build_ore(
     resource_map_pid,
@@ -1101,7 +1425,13 @@
     media_type = .ms_knb_ore_media_type,
     size = as.numeric(length(ore_bytes)),
     sha256 = .ms_knb_sha256_raw(ore_bytes),
-    series_id = NA_character_
+    series_id = NA_character_,
+    obsoletes = if (is.null(revision_context)) {
+      NA_character_
+    } else {
+      revision_context$resource_map_pid
+    },
+    obsoleted_by = NA_character_
   )
 
   plan <- list(
@@ -1117,16 +1447,19 @@
     ),
     package_id = eml$package_id,
     series_id = eml$series_id,
+    representation = "archive",
+    revision_of = revision_context,
+    prior_manifest = prior_manifest,
     metadata_pid = eml$package_id,
     resource_map_pid = resource_map_pid,
     objects = unname(c(
       data_objects,
-      artifact_objects,
-      list(metadata_object, resource_map_object)
+      list(archive_object, metadata_object, resource_map_object)
     )),
     resource_map_document = ore,
     resource_map_bytes = ore_bytes,
     resource_map_path = resource_map_path,
+    sdp_archive_path = archive$path,
     eml = eml
   )
   plan$plan_sha256 <- .ms_knb_plan_fingerprint(plan)
@@ -1157,6 +1490,7 @@
     "lookup_system_metadata",
     "lookup_series_id",
     "create_object",
+    "update_object",
     "get_bytes",
     "get_system_metadata",
     "get_checksum",
@@ -1351,8 +1685,8 @@
     blocked_member_nodes = .ms_knb_normalize_member_nodes(
       replication_policy$blocked_member_nodes
     ),
-    obsoletes = NA_character_,
-    obsoleted_by = NA_character_,
+    obsoletes = .ms_knb_optional_scalar(object$obsoletes),
+    obsoleted_by = .ms_knb_optional_scalar(object$obsoleted_by),
     origin_member_node = .ms_knb_node_id,
     authoritative_member_node = .ms_knb_node_id
   )
@@ -1694,17 +2028,17 @@
     metadata_record,
     "documents"
   )
-  data_pids <- unname(vapply(
+  documented_pids <- unname(vapply(
     plan$objects[vapply(
       plan$objects,
-      function(object) identical(object$role, "data"),
+      function(object) object$role %in% c("data", "sdp_archive"),
       logical(1)
     )],
     function(object) object$pid,
     character(1)
   ))
-  documented_data <- data_pids[vapply(
-    data_pids,
+  documented_objects <- documented_pids[vapply(
+    documented_pids,
     function(pid) {
       plan$metadata_pid %in%
         .ms_knb_catalog_values(record_for(pid), "isDocumentedBy")
@@ -1737,9 +2071,9 @@
     length(unique(indexed_ids)) == length(expected_pids) &&
     setequal(resource_map_members, member_pids) &&
     length(resource_map_members) == length(member_pids) &&
-    identical(sort(metadata_documents), sort(data_pids)) &&
-    setequal(documented_data, data_pids) &&
-    length(documented_data) == length(data_pids) &&
+    identical(sort(metadata_documents), sort(documented_pids)) &&
+    setequal(documented_objects, documented_pids) &&
+    length(documented_objects) == length(documented_pids) &&
     isTRUE(supplemental_relations_clean)
   list(
     verified = isTRUE(verified),
@@ -1748,7 +2082,7 @@
     resource_map_members = sort(resource_map_members),
     metadata_pid = plan$metadata_pid,
     metadata_documents = sort(metadata_documents),
-    documented_data_pids = sort(documented_data),
+    documented_data_pids = sort(documented_objects),
     supplemental_relations_clean = isTRUE(
       supplemental_relations_clean
     )
@@ -1778,19 +2112,95 @@
   )
 }
 
+.ms_knb_prior_object_spec <- function(plan, pid, obsoleted_by = NULL) {
+  prior <- plan$prior_manifest
+  if (is.null(prior)) {
+    cli::cli_abort("Internal KNB revision error: no prior manifest is bound.")
+  }
+  objects <- .ms_knb_manifest_objects(prior)
+  matches <- objects[vapply(objects, function(object) {
+    identical(as.character(object$pid), pid)
+  }, logical(1))]
+  if (length(matches) != 1L) {
+    cli::cli_abort(
+      "The prior KNB manifest does not identify revision source PID {.val {pid}} exactly once."
+    )
+  }
+  object <- matches[[1L]]
+  object$series_id <- if (identical(as.character(object$role), "metadata")) {
+    as.character(prior$series_id)
+  } else {
+    NA_character_
+  }
+  object$obsoletes <- .ms_knb_optional_scalar(object$obsoletes)
+  object$obsoleted_by <- .ms_knb_optional_scalar(obsoleted_by)
+  object
+}
+
+.ms_knb_validate_revision_source <- function(remote,
+                                             plan,
+                                             old_pid,
+                                             new_pid,
+                                             subject) {
+  if (is.null(remote)) {
+    cli::cli_abort(
+      "KNB revision source PID {.val {old_pid}} does not exist at KNB."
+    )
+  }
+  linked_to <- .ms_knb_optional_scalar(remote$obsoleted_by)
+  if (!is.na(linked_to) && !identical(linked_to, new_pid)) {
+    cli::cli_abort(
+      "KNB revision source PID {.val {old_pid}} is already obsoleted by a different PID."
+    )
+  }
+  prior_object <- .ms_knb_prior_object_spec(
+    plan,
+    old_pid,
+    obsoleted_by = linked_to
+  )
+  .ms_knb_validate_system_metadata(
+    remote,
+    prior_object,
+    subject,
+    plan$public,
+    plan$replication_policy
+  )
+  invisible(linked_to)
+}
+
 .ms_knb_validate_series_binding <- function(remote,
                                             metadata_object,
                                             subject,
                                             public,
-                                            replication_policy) {
+                                            replication_policy,
+                                            plan = NULL) {
   if (is.null(remote)) {
     return(invisible(TRUE))
   }
   remote_pid <- .ms_knb_optional_scalar(remote$identifier)
-  if (!identical(remote_pid, metadata_object$pid)) {
+  revision_source <- .ms_knb_optional_scalar(metadata_object$obsoletes)
+  allowed <- if (is.na(revision_source)) {
+    metadata_object$pid
+  } else {
+    c(revision_source, metadata_object$pid)
+  }
+  if (!remote_pid %in% allowed) {
     cli::cli_abort(
       "The metadata series identifier is already bound to a different metadata PID."
     )
+  }
+  if (!is.na(revision_source) && identical(remote_pid, revision_source)) {
+    if (is.null(plan)) {
+      cli::cli_abort("Internal KNB revision error: no plan is available.")
+    }
+    .ms_knb_validate_revision_source(
+      remote,
+      plan,
+      revision_source,
+      metadata_object$pid,
+      subject
+    )
+    return(invisible(TRUE))
   }
   .ms_knb_validate_system_metadata(
     remote,
@@ -1866,6 +2276,7 @@
       # existing objects, before the first create. A collision on the last
       # planned object therefore cannot orphan earlier creates.
       remote_objects <- vector("list", length(object_specs))
+      revision_sources <- vector("list", length(object_specs))
       for (i in seq_along(object_specs)) {
         object <- object_specs[[i]]
         remote <- adapter$lookup_system_metadata(client, object$pid)
@@ -1891,6 +2302,49 @@
             )
           }
         }
+        update_of <- .ms_knb_optional_scalar(object$obsoletes)
+        if (!is.na(update_of)) {
+          source_remote <- adapter$lookup_system_metadata(
+            client,
+            update_of
+          )
+          linked_to <- .ms_knb_validate_revision_source(
+            source_remote,
+            plan,
+            update_of,
+            object$pid,
+            subject
+          )
+          source_checksum <- adapter$get_checksum(
+            client,
+            update_of,
+            "SHA-256"
+          )
+          prior_object <- .ms_knb_prior_object_spec(
+            plan,
+            update_of,
+            obsoleted_by = linked_to
+          )
+          if (!identical(
+            tolower(.ms_knb_optional_scalar(source_checksum)),
+            tolower(prior_object$sha256)
+          )) {
+            cli::cli_abort(
+              "KNB revision source PID {.val {update_of}} collides on independent checksum."
+            )
+          }
+          if (is.null(remote) && !is.na(linked_to)) {
+            cli::cli_abort(
+              "KNB revision source PID {.val {update_of}} names the planned successor, but that successor cannot be read."
+            )
+          }
+          if (!is.null(remote) && is.na(linked_to)) {
+            cli::cli_abort(
+              "The planned revision PID exists, but its predecessor does not link to it."
+            )
+          }
+          revision_sources[i] <- list(source_remote)
+        }
         remote_objects[i] <- list(remote)
       }
 
@@ -1909,7 +2363,8 @@
         metadata_object,
         subject,
         plan$public,
-        plan$replication_policy
+        plan$replication_policy,
+        plan = plan
       )
       if (!is.null(remote_objects[[metadata_index]]) &&
           is.null(series_remote)) {
@@ -1924,12 +2379,25 @@
         if (is.null(remote)) {
           create_error <- NULL
           tryCatch(
-            adapter$create_object(
-              client,
-              object,
-              subject,
-              plan$public
-            ),
+            {
+              update_of <- .ms_knb_optional_scalar(object$obsoletes)
+              if (is.na(update_of)) {
+                adapter$create_object(
+                  client,
+                  object,
+                  subject,
+                  plan$public
+                )
+              } else {
+                adapter$update_object(
+                  client,
+                  update_of,
+                  object,
+                  subject,
+                  plan$public
+                )
+              }
+            },
             error = function(error) {
               create_error <<- error
             }
@@ -1964,6 +2432,25 @@
           plan$public,
           plan$replication_policy
         )
+        update_of <- .ms_knb_optional_scalar(object$obsoletes)
+        if (!is.na(update_of)) {
+          source_remote <- adapter$lookup_system_metadata(
+            client,
+            update_of
+          )
+          linked_to <- .ms_knb_validate_revision_source(
+            source_remote,
+            plan,
+            update_of,
+            object$pid,
+            subject
+          )
+          if (!identical(linked_to, object$pid)) {
+            cli::cli_abort(
+              "KNB did not link revision source PID {.val {update_of}} to its planned successor."
+            )
+          }
+        }
         manifest <- .ms_knb_manifest_set_state(
           manifest,
           object$pid,
@@ -2025,6 +2512,10 @@
             plan$resource_map_path,
             mustWork = TRUE
           ),
+          sdp_archive_path = normalizePath(
+            plan$sdp_archive_path,
+            mustWork = TRUE
+          ),
           manifest = manifest
         )))
       }
@@ -2050,6 +2541,10 @@
         ),
         resource_map_path = normalizePath(
           plan$resource_map_path,
+          mustWork = TRUE
+        ),
+        sdp_archive_path = normalizePath(
+          plan$sdp_archive_path,
           mustWork = TRUE
         ),
         manifest = manifest
@@ -2142,6 +2637,14 @@
   series_id <- .ms_knb_optional_scalar(object$series_id)
   if (!is.na(series_id)) {
     system_metadata@seriesId <- series_id
+  }
+  obsoletes <- .ms_knb_optional_scalar(object$obsoletes)
+  if (!is.na(obsoletes)) {
+    system_metadata@obsoletes <- obsoletes
+  }
+  obsoleted_by <- .ms_knb_optional_scalar(object$obsoleted_by)
+  if (!is.na(obsoleted_by)) {
+    system_metadata@obsoletedBy <- obsoleted_by
   }
   if (isTRUE(public)) {
     system_metadata <- datapack::addAccessRule(
@@ -2632,6 +3135,27 @@
         dataobj = object_spec$bytes
       )
     },
+    update_object = function(client,
+                             old_pid,
+                             object_spec,
+                             subject,
+                             public) {
+      client <- .ms_knb_authenticated_client(client)
+      system_metadata <- .ms_knb_new_system_metadata(
+        object_spec,
+        subject,
+        public,
+        client@mn@identifier,
+        object_spec$replication_policy
+      )
+      dataone::updateObject(
+        client@mn,
+        pid = old_pid,
+        newpid = object_spec$pid,
+        sysmeta = system_metadata,
+        dataobj = object_spec$bytes
+      )
+    },
     get_bytes = function(client, pid) {
       client <- .ms_knb_authenticated_client(client)
       dataone::getObject(client@mn, pid)
@@ -2694,10 +3218,12 @@
 
 #' Publish a reviewed Salmon Data Package to production KNB
 #'
-#' Plans an immutable DataONE package containing exactly the data resources
-#' named by `tables.csv`, the canonical SDP reconstruction artifacts, one
-#' validated EML 2.2.0 metadata object, and a deterministic OAI-ORE resource
-#' map. The default is a credential-free, network-free dry run. Live
+#' Plans an immutable DataONE package containing the original data resources
+#' named by `tables.csv`, one friendly deterministic ZIP of the complete
+#' canonical SDP, one validated EML 2.2.0 metadata object, and a deterministic
+#' OAI-ORE resource map. Internal SDP sidecars stay inside the ZIP instead of
+#' becoming unnamed catalog objects. The default is a credential-free,
+#' network-free dry run. Live
 #' publication requires a pre-existing exact dry-run manifest and an explicitly
 #' supplied `confirm = TRUE` approving that plan. Redistribution authority is
 #' recorded separately in the reviewed EML sidecar.
@@ -2705,6 +3231,26 @@
 #' DataONE credentials are read only inside the live adapter. Use a short-lived
 #' DataONE JWT through the supported `dataone_token` runtime option; credentials
 #' are never accepted as function arguments or written to the manifest.
+#'
+#' A live restricted deposit is the KNB review/staging mechanism; KNB does not
+#' expose a separate server-side draft state. The persistent object identifiers
+#' remain even while access is private. This function does not call KNB's
+#' separate Publish action and never mints a DOI. If a reviewed dataset should
+#' receive a DOI, request it for the science-metadata version through KNB when
+#' making that version public. The DOI identifies the metadata version, not each
+#' raw or supplementary object.
+#'
+#' Revisions must be built in a fresh versioned SDP directory. Keep the prior
+#' package and its verified manifest unchanged, write the corrected SDP to a
+#' new directory with a new `publication.revision_key`, and choose a new local
+#' manifest path there. If KNB's separate Publish action later creates a
+#' DOI-bearing metadata version, that KNB-created version is not automatically
+#' imported into a metasalmon manifest; do not plan another metasalmon revision
+#' from the older pre-DOI manifest.
+#'
+#' Publication currently materializes object bytes in memory for exact hashing
+#' and readback. It is intended for modest tabular SDPs; large packages should
+#' be tested in a dry run and may require a future streaming adapter.
 #'
 #' @param path Directory containing the reviewed Salmon Data Package.
 #' @param eml_path Validated EML output path. Defaults to `metadata/eml.xml`
@@ -2724,16 +3270,21 @@
 #' @param confirm Explicit approval of the pre-existing exact dry-run plan and
 #'   live mutation. Its interactive default can never authorize a live call:
 #'   live mode requires that the argument was supplied and is exactly `TRUE`.
+#' @param revision_manifest Optional path to the verified manifest for the
+#'   preceding KNB version. Supplying it plans an immutable DataONE revision:
+#'   the reviewed sidecar must contain a new `publication.revision_key`, the
+#'   metadata series stays stable, and the new EML/resource-map objects
+#'   obsolete their predecessors. Access cannot change in the same operation.
 #'
 #' @return Invisibly returns publication status, identifiers, normalized
-#'   manifest/resource-map paths, and the manifest.
+#'   manifest/resource-map/SDP-archive paths, and the manifest.
 #' @export
 #'
 #' @examples
 #' \dontrun{
 #' publish_sdp_to_knb(
 #'   "path/to/reviewed-sdp",
-#'   public = TRUE,
+#'   public = FALSE,
 #'   dry_run = TRUE
 #' )
 #' }
@@ -2742,7 +3293,8 @@ publish_sdp_to_knb <- function(path,
                                public = NULL,
                                manifest_path = NULL,
                                dry_run = TRUE,
-                               confirm = interactive()) {
+                               confirm = interactive(),
+                               revision_manifest = NULL) {
   confirm_missing <- missing(confirm)
   .ms_knb_validate_flag(public, "public")
   .ms_knb_validate_flag(dry_run, "dry_run")
@@ -2757,6 +3309,17 @@ publish_sdp_to_knb <- function(path,
     cli::cli_abort("SDP directory {.path {path}} does not exist.")
   }
   path <- normalizePath(path, mustWork = TRUE)
+  prior_manifest <- .ms_knb_revision_manifest(revision_manifest)
+  if (!is.null(prior_manifest)) {
+    prior_manifest_path <- normalizePath(revision_manifest, mustWork = TRUE)
+    package_prefix <- paste0(path, .Platform$file.sep)
+    if (startsWith(prior_manifest_path, package_prefix)) {
+      cli::cli_abort(c(
+        "A KNB revision requires a fresh versioned SDP directory.",
+        "i" = "Keep the preceding package and verified manifest unchanged; build the revised SDP and its new manifest in a different directory."
+      ))
+    }
+  }
 
   if (is.null(eml_path)) {
     eml_path <- file.path(path, "metadata", "eml.xml")
@@ -2799,13 +3362,14 @@ publish_sdp_to_knb <- function(path,
     eml_path,
     manifest_path,
     public,
+    prior_manifest = prior_manifest,
     resource_map_path = resource_map_path
   )
   if (!is.null(previous) &&
       !identical(as.character(previous$plan_sha256), plan$plan_sha256)) {
     cli::cli_abort(c(
       "The existing publication manifest describes a different plan.",
-      "i" = "DataONE PIDs are immutable; changed inputs require a separately implemented revision workflow."
+      "i" = "DataONE PIDs are immutable. Supply revision_manifest and a new manifest_path for a reviewed revision."
     ))
   }
   if (!isTRUE(dry_run)) {
@@ -2838,6 +3402,10 @@ publish_sdp_to_knb <- function(path,
       manifest_path = normalizePath(manifest_path, mustWork = TRUE),
       resource_map_path = normalizePath(
         plan$resource_map_path,
+        mustWork = TRUE
+      ),
+      sdp_archive_path = normalizePath(
+        plan$sdp_archive_path,
         mustWork = TRUE
       ),
       manifest = manifest

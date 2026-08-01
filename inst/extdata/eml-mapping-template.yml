@@ -1,0 +1,52 @@
+# Copy this file to metadata/eml-mapping.yml inside a reviewed SDP.
+# Replace every example value. Recompute the two SHA-256 values after the
+# semantic vocabulary and review ledger are final. Change status to final only
+# after review. Add publication.revision_key only for a later immutable version.
+version: 1
+status: draft
+dataset_id: replace-with-dataset-id
+series_key: replace-with-stable-series-key
+system: knb
+language: eng
+publication_date: '2026-01-01'
+semantic_vocabulary:
+  path: metadata/semantic_vocabulary.csv
+  sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+semantic_review:
+  path: reviewed_semantic_selections.csv
+  sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+publication:
+  public: false
+rights_authorization:
+  status: unconfirmed
+  evidence: Replace with the reviewed authorization basis before any live KNB deposit.
+source_provenance:
+  source_citation: Replace with the source dataset citation.
+  provenance_note: Replace with a concise account of how this SDP was produced.
+  supporting_document:
+    citation: Replace with the supporting-document citation.
+    url: https://example.org/replace-with-supporting-document
+    sha256: '0000000000000000000000000000000000000000000000000000000000000000'
+creators:
+- organization_name: Replace with the creator organization.
+metadata_providers:
+- given_name: Replace
+  surname: Replace
+  organization_name: Replace with the metadata-provider organization.
+  email: replace@example.org
+  orcid: https://orcid.org/0000-0002-1825-0097
+contacts:
+- organization_name: Replace with the contact organization.
+  email: replace@example.org
+publisher:
+  organization_name: Replace with the publisher organization.
+intellectual_rights:
+  paragraphs:
+  - Replace with the complete rights statement.
+methods:
+- description: Replace with the data-collection or compilation method.
+tables:
+  replace-with-table-id:
+    attributes:
+      replace-with-column-name:
+        measurement_scale: nominal

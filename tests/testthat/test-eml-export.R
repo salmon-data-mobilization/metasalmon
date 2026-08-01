@@ -171,6 +171,249 @@ test_that("write_eml_from_sdp creates valid deterministic annotated EML 2.2.0", 
   )))
 })
 
+test_that("the bundled EML sidecar template is a safe schema-valid draft", {
+  skip_if_not_installed("jsonvalidate")
+
+  template_path <- system.file(
+    "extdata",
+    "eml-mapping-template.yml",
+    package = "metasalmon"
+  )
+  expect_true(nzchar(template_path))
+  mapping <- yaml::read_yaml(template_path)
+
+  expect_silent(.ms_eml_validate_mapping_schema(mapping))
+  expect_identical(mapping$status, "draft")
+  expect_false(mapping$publication$public)
+  expect_identical(mapping$rights_authorization$status, "unconfirmed")
+  expect_null(mapping$publication$revision_key)
+})
+
+test_that("the default EML profile is unchanged without supplementary objects", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_eml_test_sdp(withr::local_tempdir())
+  default <- write_eml_from_sdp(package_path)
+  explicit <- write_eml_from_sdp(
+    package_path,
+    output_path = file.path(package_path, "metadata", "eml-explicit.xml"),
+    supplementary_objects = NULL
+  )
+
+  expect_identical(default$package_id, explicit$package_id)
+  expect_identical(default$series_id, explicit$series_id)
+  expect_true(is.na(default$revision_key))
+  expect_equal(nrow(default$supplementary_objects), 0L)
+  expect_identical(
+    readBin(default$path, "raw", n = file.info(default$path)$size),
+    readBin(explicit$path, "raw", n = file.info(explicit$path)$size)
+  )
+})
+
+test_that("KNB object URLs retain raw UUID URNs for MetacatUI matching", {
+  pid <- "urn:uuid:9bedbe72-e58c-52e7-a24c-599e5d4575a2"
+  object_url <- .ms_eml_knb_object_url(pid)
+
+  # MetacatUI associates an EML distribution with its DataONE object by
+  # looking for the literal PID inside the URL. Percent-encoding the colons
+  # makes this otherwise valid URL fail that substring match.
+  metacatui_matches_pid <- function(url, identifier) {
+    grepl(identifier, url, fixed = TRUE)
+  }
+
+  expect_true(metacatui_matches_pid(object_url, pid))
+  expect_false(grepl("urn%3Auuid%3A", object_url, fixed = TRUE))
+  expect_identical(
+    object_url,
+    paste0(
+      "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/",
+      pid
+    )
+  )
+})
+
+test_that("canonical SDP archives are valid deterministic EML otherEntity objects", {
+  skip_if_not_installed("emld")
+
+  root <- withr::local_tempdir()
+  first_path <- make_eml_test_sdp(file.path(root, "first"))
+  second_path <- make_eml_test_sdp(file.path(root, "second"))
+  archive_path <- file.path(root, "demo-salmon-data-package.zip")
+  writeBin(charToRaw("PK canonical SDP archive test fixture"), archive_path)
+  archive_copy <- file.path(root, "archive-copy.zip")
+  expect_true(file.copy(archive_path, archive_copy))
+  checksum <- digest::digest(
+    file = archive_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  pid <- "urn:uuid:9bedbe72-e58c-52e7-a24c-599e5d4575a2"
+  object_plan <- function(path) {
+    tibble::tibble(
+      path = path,
+      pid = pid,
+      format_id = "application/zip",
+      checksum = checksum,
+      size = unname(file.info(path)$size),
+      object_name = "demo-salmon-data-package.zip",
+      entity_name = "Canonical Salmon Data Package",
+      description = paste(
+        "A canonical Salmon Data Package archive containing the data,",
+        "metadata tables, reviewed semantics, and reproducibility records."
+      )
+    )
+  }
+
+  first <- write_eml_from_sdp(
+    first_path,
+    supplementary_objects = object_plan(archive_path)
+  )
+  second <- write_eml_from_sdp(
+    second_path,
+    supplementary_objects = object_plan(archive_copy)
+  )
+
+  expect_true(isTRUE(emld::eml_validate(first$path)))
+  expect_equal(first$supplementary_objects$pid, pid)
+  expect_equal(first$supplementary_objects$format_id, "application/zip")
+  expect_equal(first$supplementary_objects$checksum_algorithm, "SHA-256")
+  expect_equal(first$supplementary_objects$checksum, checksum)
+  expect_equal(
+    first$supplementary_objects$size,
+    unname(file.info(archive_path)$size)
+  )
+  expect_identical(first$package_id, second$package_id)
+  expect_identical(first$series_id, second$series_id)
+  expect_identical(
+    readBin(first$path, "raw", n = file.info(first$path)$size),
+    readBin(second$path, "raw", n = file.info(second$path)$size)
+  )
+
+  document <- xml2::read_xml(first$path)
+  other_entity <- xml2::xml_find_first(
+    document,
+    "//*[local-name()='otherEntity']"
+  )
+  expect_false(inherits(other_entity, "xml_missing"))
+  expect_match(xml2::xml_attr(other_entity, "id"), "^other-entity-")
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      "./*[local-name()='alternateIdentifier']"
+    )),
+    pid
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      "./*[local-name()='entityName']"
+    )),
+    "Canonical Salmon Data Package"
+  )
+  physical <- xml2::xml_find_first(
+    other_entity,
+    "./*[local-name()='physical']"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      physical,
+      "./*[local-name()='objectName']"
+    )),
+    "demo-salmon-data-package.zip"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      physical,
+      "./*[local-name()='size']"
+    )),
+    as.character(file.info(archive_path)$size)
+  )
+  authentication <- xml2::xml_find_first(
+    physical,
+    "./*[local-name()='authentication']"
+  )
+  expect_equal(xml2::xml_text(authentication), checksum)
+  expect_equal(xml2::xml_attr(authentication, "method"), "SHA-256")
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      physical,
+      ".//*[local-name()='formatName']"
+    )),
+    "application/zip"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      physical,
+      ".//*[local-name()='url']"
+    )),
+    paste0(
+      "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/",
+      pid
+    )
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      "./*[local-name()='entityType']"
+    )),
+    "Salmon Data Package archive"
+  )
+  expect_identical(
+    xml2::xml_attr(other_entity, "id"),
+    xml2::xml_attr(
+      xml2::xml_find_first(
+        xml2::read_xml(second$path),
+        "//*[local-name()='otherEntity']"
+      ),
+      "id"
+    )
+  )
+})
+
+test_that("reviewed revision keys change package IDs but preserve series IDs", {
+  skip_if_not_installed("emld")
+
+  root <- withr::local_tempdir()
+  baseline_path <- make_eml_test_sdp(file.path(root, "baseline"))
+  revision_path <- make_eml_test_sdp(file.path(root, "revision"))
+  repeated_path <- make_eml_test_sdp(file.path(root, "repeated"))
+
+  baseline <- write_eml_from_sdp(baseline_path)
+  expect_error(
+    write_eml_from_sdp(
+      baseline_path,
+      output_path = file.path(baseline_path, "metadata", "revision.xml"),
+      require_revision_key = TRUE
+    ),
+    "revision_key"
+  )
+
+  for (package_path in c(revision_path, repeated_path)) {
+    mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+    mapping <- yaml::read_yaml(mapping_path)
+    mapping$publication$revision_key <- "private-review-2"
+    yaml::write_yaml(mapping, mapping_path)
+  }
+  revision <- write_eml_from_sdp(
+    revision_path,
+    require_revision_key = TRUE
+  )
+  repeated <- write_eml_from_sdp(
+    repeated_path,
+    require_revision_key = TRUE
+  )
+
+  expect_identical(revision$revision_key, "private-review-2")
+  expect_false(identical(revision$package_id, baseline$package_id))
+  expect_identical(revision$series_id, baseline$series_id)
+  expect_identical(revision$package_id, repeated$package_id)
+  expect_identical(revision$series_id, repeated$series_id)
+  expect_identical(
+    readBin(revision$path, "raw", n = file.info(revision$path)$size),
+    readBin(repeated$path, "raw", n = file.info(repeated$path)$size)
+  )
+})
+
 test_that("SKOS compound variables use a topic predicate instead of OBOE MeasurementType", {
   skip_if_not_installed("emld")
 
@@ -248,6 +491,34 @@ test_that("EML bytes and identifiers do not depend on the absolute SDP path", {
   expect_identical(first$package_id, second$package_id)
   expect_identical(first$series_id, second$series_id)
   expect_identical(first$data_objects$pid, second$data_objects$pid)
+})
+
+test_that("raw-object identifiers bind the immutable DataONE filename", {
+  first_path <- withr::local_tempdir()
+  second_path <- withr::local_tempdir()
+  dir.create(file.path(first_path, "data"))
+  dir.create(file.path(second_path, "data"))
+  writeBin(charToRaw("same bytes\n"), file.path(first_path, "data", "counts.csv"))
+  writeBin(charToRaw("same bytes\n"), file.path(second_path, "data", "renamed.csv"))
+
+  first <- .ms_eml_data_objects(
+    first_path,
+    list(tables = tibble::tibble(
+      table_id = "counts",
+      file_name = "data/counts.csv"
+    )),
+    list(dataset_id = "demo-salmon-2026")
+  )
+  second <- .ms_eml_data_objects(
+    second_path,
+    list(tables = tibble::tibble(
+      table_id = "counts",
+      file_name = "data/renamed.csv"
+    )),
+    list(dataset_id = "demo-salmon-2026")
+  )
+
+  expect_false(identical(first$pid, second$pid))
 })
 
 test_that("EML mapping uses one canonical sidecar and exact table-qualified columns", {

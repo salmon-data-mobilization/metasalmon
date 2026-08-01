@@ -10,6 +10,19 @@
 .ms_eml_format_id <- .ms_eml_namespace
 .ms_eml_system <- "knb"
 .ms_eml_url_namespace_uuid <- "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+.ms_eml_knb_object_endpoint <-
+  "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/"
+
+.ms_eml_knb_object_url <- function(pid) {
+  # Keep the URN colons literal: MetacatUI matches an EML distribution to its
+  # DataONE object by finding the unescaped PID as a substring of this URL.
+  encoded_pid <- utils::URLencode(pid, reserved = TRUE)
+  encoded_pid <- gsub("%3A", ":", encoded_pid, fixed = TRUE)
+  paste0(
+    .ms_eml_knb_object_endpoint,
+    encoded_pid
+  )
+}
 
 .ms_eml_measurement_predicates <- c(
   variable_topic = "http://purl.org/dc/terms/subject",
@@ -86,6 +99,30 @@
     )
   }
   trimws(as.character(value[[1]]))
+}
+
+.ms_eml_revision_key <- function(mapping, required = FALSE) {
+  if (length(required) != 1L || !is.logical(required) || is.na(required)) {
+    cli::cli_abort(
+      "Internal EML export argument {.arg required} must be one logical value."
+    )
+  }
+
+  key <- .ms_eml_scalar(
+    mapping$publication,
+    "revision_key",
+    required = required
+  )
+  if (is.na(key)) {
+    return(NA_character_)
+  }
+  if (nchar(key, type = "bytes") > 128L ||
+      !grepl("^[A-Za-z0-9][A-Za-z0-9._-]*$", key)) {
+    cli::cli_abort(
+      "EML mapping {.field publication.revision_key} must be 1-128 ASCII letters, numbers, periods, underscores, or hyphens, starting with a letter or number."
+    )
+  }
+  key
 }
 
 .ms_eml_split_iris <- function(x) {
@@ -518,6 +555,7 @@
       "EML mapping {.field publication.public} must be one explicit logical value."
     )
   }
+  invisible(.ms_eml_revision_key(mapping))
 
   rights_authorization <- mapping$rights_authorization
   if (!is.list(rights_authorization) ||
@@ -1177,6 +1215,7 @@
         "data",
         mapping$dataset_id,
         table_id,
+        basename(file_name),
         checksum,
         sep = ":"
       ))
@@ -1192,6 +1231,160 @@
       size = unname(file.info(file_path)$size)
     )
   })
+}
+
+.ms_eml_empty_supplementary_objects <- function() {
+  tibble::tibble(
+    path = character(),
+    pid = character(),
+    format_id = character(),
+    checksum_algorithm = character(),
+    checksum = character(),
+    size = numeric(),
+    object_name = character(),
+    entity_name = character(),
+    description = character(),
+    online_url = character()
+  )
+}
+
+.ms_eml_supplementary_objects <- function(objects) {
+  if (is.null(objects)) {
+    return(.ms_eml_empty_supplementary_objects())
+  }
+  if (!is.data.frame(objects)) {
+    cli::cli_abort(
+      "{.arg supplementary_objects} must be a data frame with one row per supplementary object."
+    )
+  }
+  if (nrow(objects) == 0L) {
+    return(.ms_eml_empty_supplementary_objects())
+  }
+
+  required <- c(
+    "path", "pid", "format_id", "checksum", "object_name",
+    "entity_name", "description"
+  )
+  allowed <- c(required, "size")
+  missing <- setdiff(required, names(objects))
+  unexpected <- setdiff(names(objects), allowed)
+  if (length(missing) > 0L) {
+    cli::cli_abort(
+      "{.arg supplementary_objects} is missing required column{?s}: {.field {missing}}."
+    )
+  }
+  if (length(unexpected) > 0L) {
+    cli::cli_abort(
+      "{.arg supplementary_objects} has unexpected column{?s}: {.field {unexpected}}."
+    )
+  }
+
+  values <- lapply(required, function(field) {
+    column <- objects[[field]]
+    if (!is.atomic(column) || length(column) != nrow(objects)) {
+      cli::cli_abort(
+        "Supplementary-object {.field {field}} must be one atomic value per row."
+      )
+    }
+    trimws(as.character(column))
+  })
+  names(values) <- required
+  if (any(vapply(values, function(value) {
+    anyNA(value) || any(!nzchar(value)) || any(grepl("[[:cntrl:]]", value))
+  }, logical(1)))) {
+    cli::cli_abort(
+      "Every required supplementary-object field must contain a non-empty value without control characters."
+    )
+  }
+
+  if (any(!grepl("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$", values$pid))) {
+    cli::cli_abort(
+      "Every supplementary-object {.field pid} must be an absolute URI without whitespace."
+    )
+  }
+  if (any(values$format_id != "application/zip")) {
+    cli::cli_abort(
+      "Canonical SDP supplementary objects must use {.val application/zip} as {.field format_id}."
+    )
+  }
+  if (any(!grepl("^[0-9a-f]{64}$", values$checksum))) {
+    cli::cli_abort(
+      "Every supplementary-object {.field checksum} must be a lowercase SHA-256 digest."
+    )
+  }
+  unsafe_name <- grepl("[/\\\\]", values$object_name) |
+    values$object_name %in% c(".", "..") |
+    !grepl("\\.zip$", values$object_name, ignore.case = TRUE)
+  if (any(unsafe_name)) {
+    cli::cli_abort(
+      "Every supplementary-object {.field object_name} must be a basename ending in {.file .zip}."
+    )
+  }
+  if (anyDuplicated(values$pid) || anyDuplicated(values$object_name)) {
+    cli::cli_abort(
+      "Supplementary-object {.field pid} and {.field object_name} values must each be unique."
+    )
+  }
+
+  paths <- vapply(values$path, function(candidate) {
+    candidate <- path.expand(candidate)
+    if (!file.exists(candidate) || isTRUE(file.info(candidate)$isdir)) {
+      cli::cli_abort(
+        "Supplementary object {.path {candidate}} is not a readable file."
+      )
+    }
+    normalizePath(candidate, mustWork = TRUE)
+  }, character(1), USE.NAMES = FALSE)
+  actual_sizes <- unname(file.info(paths)$size)
+  if (anyNA(actual_sizes) || any(!is.finite(actual_sizes))) {
+    cli::cli_abort("Could not determine supplementary-object file size.")
+  }
+  if ("size" %in% names(objects)) {
+    if (!is.atomic(objects$size) || length(objects$size) != nrow(objects)) {
+      cli::cli_abort(
+        "Supplementary-object {.field size} must be one atomic value per row."
+      )
+    }
+    supplied_sizes <- suppressWarnings(as.numeric(objects$size))
+    invalid_size <- is.na(supplied_sizes) |
+      !is.finite(supplied_sizes) |
+      supplied_sizes < 0 |
+      supplied_sizes != floor(supplied_sizes)
+    if (any(invalid_size) || any(supplied_sizes != actual_sizes)) {
+      cli::cli_abort(
+        "Supplementary-object {.field size} must exactly match the file size in bytes."
+      )
+    }
+  }
+
+  actual_checksums <- vapply(paths, function(file_path) {
+    digest::digest(
+      file = file_path,
+      algo = "sha256",
+      serialize = FALSE
+    )
+  }, character(1), USE.NAMES = FALSE)
+  checksum_mismatch <- actual_checksums != unname(values$checksum)
+  if (any(checksum_mismatch)) {
+    mismatched <- values$object_name[checksum_mismatch]
+    cli::cli_abort(
+      "Supplementary-object SHA-256 does not match file bytes for {.file {mismatched}}."
+    )
+  }
+
+  tibble::tibble(
+    path = paths,
+    pid = values$pid,
+    format_id = values$format_id,
+    checksum_algorithm = "SHA-256",
+    checksum = values$checksum,
+    size = actual_sizes,
+    object_name = values$object_name,
+    entity_name = values$entity_name,
+    description = values$description,
+    online_url = .ms_eml_knb_object_url(values$pid)
+  ) |>
+    dplyr::arrange(.data$object_name, .data$pid)
 }
 
 .ms_eml_add_coverage <- function(dataset, dataset_meta, mapping) {
@@ -1849,12 +2042,91 @@
   invisible(constraint)
 }
 
+.ms_eml_add_supplementary_objects <- function(dataset,
+                                               objects,
+                                               mapping) {
+  if (nrow(objects) == 0L) {
+    return(invisible(NULL))
+  }
+
+  for (i in seq_len(nrow(objects))) {
+    object <- objects[i, , drop = FALSE]
+    id_key <- paste(mapping$dataset_id, object$pid[[1]], sep = ":")
+
+    other_entity <- xml2::xml_add_child(dataset, "otherEntity")
+    xml2::xml_set_attr(
+      other_entity,
+      "id",
+      .ms_eml_id("other-entity", id_key)
+    )
+    .ms_eml_add_text(
+      other_entity,
+      "alternateIdentifier",
+      object$pid[[1]],
+      attrs = c(system = "DataONE")
+    )
+    .ms_eml_add_text(other_entity, "entityName", object$entity_name[[1]])
+    .ms_eml_add_text(
+      other_entity,
+      "entityDescription",
+      object$description[[1]]
+    )
+
+    physical <- xml2::xml_add_child(other_entity, "physical")
+    xml2::xml_set_attr(
+      physical,
+      "id",
+      .ms_eml_id("physical", paste(id_key, object$checksum[[1]], sep = ":"))
+    )
+    .ms_eml_add_text(physical, "objectName", object$object_name[[1]])
+    .ms_eml_add_text(
+      physical,
+      "size",
+      as.character(object$size[[1]]),
+      attrs = c(unit = "byte")
+    )
+    .ms_eml_add_text(
+      physical,
+      "authentication",
+      object$checksum[[1]],
+      attrs = c(method = object$checksum_algorithm[[1]])
+    )
+    .ms_eml_add_text(physical, "compressionMethod", "zip")
+    data_format <- xml2::xml_add_child(physical, "dataFormat")
+    external_format <- xml2::xml_add_child(
+      data_format,
+      "externallyDefinedFormat"
+    )
+    .ms_eml_add_text(
+      external_format,
+      "formatName",
+      object$format_id[[1]]
+    )
+    distribution <- xml2::xml_add_child(physical, "distribution")
+    online <- xml2::xml_add_child(distribution, "online")
+    .ms_eml_add_text(
+      online,
+      "onlineDescription",
+      paste("Download", object$entity_name[[1]])
+    )
+    .ms_eml_add_text(online, "url", object$online_url[[1]])
+
+    .ms_eml_add_text(
+      other_entity,
+      "entityType",
+      "Salmon Data Package archive"
+    )
+  }
+  invisible(NULL)
+}
+
 .ms_eml_build_document <- function(path,
                                    pkg,
                                    mapping,
                                    configs,
                                    vocabulary,
-                                   data_objects) {
+                                   data_objects,
+                                   supplementary_objects) {
   root <- xml2::read_xml(paste0(
     '<eml:eml xmlns:eml="', .ms_eml_namespace, '" ',
     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
@@ -1862,14 +2134,22 @@
     .ms_eml_namespace, '/eml.xsd"/>'
   ))
   root <- xml2::xml_root(root)
+  revision_key <- .ms_eml_revision_key(mapping)
+  package_id_preimage <- c(
+    "metasalmon-eml-profile-1",
+    mapping$system,
+    mapping$dataset_id
+  )
+  if (!is.na(revision_key)) {
+    package_id_preimage <- c(
+      package_id_preimage,
+      "revision",
+      revision_key
+    )
+  }
   package_id <- paste0(
     "urn:uuid:",
-    .ms_eml_uuid5(paste(
-      "metasalmon-eml-profile-1",
-      mapping$system,
-      mapping$dataset_id,
-      sep = ":"
-    ))
+    .ms_eml_uuid5(paste(package_id_preimage, collapse = ":"))
   )
   series_id <- paste0(
     "urn:uuid:",
@@ -2062,10 +2342,7 @@
     .ms_eml_add_text(
       online,
       "url",
-      paste0(
-        "https://cn.dataone.org/cn/v2/resolve/",
-        utils::URLencode(data_object$pid[[1]], reserved = TRUE)
-      )
+      .ms_eml_knb_object_url(data_object$pid[[1]])
     )
 
     attribute_list <- xml2::xml_add_child(data_table, "attributeList")
@@ -2104,6 +2381,12 @@
     )
     .ms_eml_add_text(data_table, "numberOfRecords", as.character(nrow(data)))
   }
+
+  .ms_eml_add_supplementary_objects(
+    dataset,
+    supplementary_objects,
+    mapping
+  )
 
   list(
     document = root,
@@ -2255,10 +2538,21 @@
 #'   `metadata/eml-mapping.yml` inside `path`.
 #' @param overwrite Logical; replace a different existing output only when
 #'   `TRUE`. An identical existing file is treated as an idempotent success.
+#' @param supplementary_objects Optional data frame describing canonical SDP
+#'   archives to expose as EML `otherEntity` elements. Required columns are
+#'   `path`, `pid`, `format_id`, `checksum`, `object_name`, `entity_name`, and
+#'   `description`; optional `size`, when supplied, must match the file. The
+#'   initial profile accepts `application/zip` objects with lowercase SHA-256
+#'   checksums. `publish_sdp_to_knb()` supplies this archive plan
+#'   automatically; ordinary standalone EML export leaves the argument `NULL`.
+#' @param require_revision_key Logical; when `TRUE`, require a reviewed
+#'   `publication.revision_key` in the EML mapping sidecar. The key creates a
+#'   new deterministic metadata package ID without changing the series ID.
 #'
 #' @return Invisibly returns a list containing the XML text, normalized output
 #'   path, EML version, metadata package ID, stable series ID, validation
-#'   result, and deterministic data-object plan.
+#'   result, revision key, and deterministic data and supplementary-object
+#'   plans.
 #' @export
 #'
 #' @examples
@@ -2268,7 +2562,16 @@
 write_eml_from_sdp <- function(path,
                                output_path = NULL,
                                mapping_path = NULL,
-                               overwrite = FALSE) {
+                               overwrite = FALSE,
+                               supplementary_objects = NULL,
+                               require_revision_key = FALSE) {
+  if (length(require_revision_key) != 1L ||
+      !is.logical(require_revision_key) ||
+      is.na(require_revision_key)) {
+    cli::cli_abort(
+      "{.arg require_revision_key} must be one logical value."
+    )
+  }
   if (!requireNamespace("emld", quietly = TRUE)) {
     cli::cli_abort(
       "Package {.pkg emld} is required to validate EML. Install it before exporting."
@@ -2313,16 +2616,24 @@ write_eml_from_sdp <- function(path,
 
   mapping <- yaml::read_yaml(mapping_path)
   configs <- .ms_eml_validate_mapping(mapping, pkg)
+  revision_key <- .ms_eml_revision_key(
+    mapping,
+    required = require_revision_key
+  )
   invisible(.ms_eml_read_semantic_review(path, pkg, mapping))
   vocabulary <- .ms_eml_read_vocabulary(path, pkg$dictionary, mapping)
   data_objects <- .ms_eml_data_objects(path, pkg, mapping)
+  supplementary_objects <- .ms_eml_supplementary_objects(
+    supplementary_objects
+  )
   built <- .ms_eml_build_document(
     path,
     pkg,
     mapping,
     configs,
     vocabulary,
-    data_objects
+    data_objects,
+    supplementary_objects
   )
   .ms_eml_validate_document_links(
     built$document,
@@ -2389,9 +2700,11 @@ write_eml_from_sdp <- function(path,
     format_id = .ms_eml_format_id,
     package_id = built$package_id,
     series_id = built$series_id,
+    revision_key = revision_key,
     public = mapping$publication$public,
     validation = eml_validation,
-    data_objects = data_objects
+    data_objects = data_objects,
+    supplementary_objects = supplementary_objects
   )
   cli::cli_alert_success(
     "Validated EML {.val {result$eml_version}} written to {.path {result$path}}"

@@ -106,7 +106,8 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
   expect_true(file.exists(result$resource_map_path))
 
   manifest <- jsonlite::read_json(manifest_path, simplifyVector = TRUE)
-  expect_equal(manifest$schema_version, 2L)
+  expect_equal(manifest$schema_version, 3L)
+  expect_identical(manifest$representation, "archive")
   expect_equal(manifest$environment, "PROD")
   expect_equal(manifest$node_id, "urn:node:KNB")
   expect_true(manifest$public)
@@ -128,12 +129,7 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
       function(object) as.character(object$role),
       character(1)
     )),
-    c(
-      "data",
-      rep("sdp_artifact", 8L),
-      "metadata",
-      "resource_map"
-    )
+    c("data", "sdp_archive", "metadata", "resource_map")
   )
   expect_equal(
     unname(vapply(
@@ -143,14 +139,7 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
     )),
     c(
       "data/counts.csv",
-      "datapackage.json",
-      "metadata/codes.csv",
-      "metadata/column_dictionary.csv",
-      "metadata/dataset.csv",
-      "metadata/eml-mapping.yml",
-      "metadata/semantic_vocabulary.csv",
-      "metadata/tables.csv",
-      "reviewed_semantic_selections.csv",
+      "publication/demo-salmon-2026-salmon-data-package.zip",
       "metadata/eml.xml",
       "publication/resource-map.rdf"
     )
@@ -219,11 +208,11 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
   )
   expect_equal(
     length(xml2::xml_find_all(ore, "//*[local-name()='documents']")),
-    1L
+    2L
   )
   expect_equal(
     length(xml2::xml_find_all(ore, "//*[local-name()='isDocumentedBy']")),
-    1L
+    2L
   )
   identifiers <- xml2::xml_text(
     xml2::xml_find_all(ore, "//*[local-name()='identifier']")
@@ -254,6 +243,37 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
     as.character(ore),
     fixed = TRUE
   ))
+})
+
+test_that("KNB plans reject annotations to review-candidate vocabulary IRIs", {
+  skip_if_not_installed("emld")
+
+  candidate_iri <- "https://w3id.org/smn/ObservedRateOrAbundance"
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  vocabulary_path <- file.path(
+    package_path,
+    "metadata",
+    "semantic_vocabulary.csv"
+  )
+  vocabulary <- readr::read_csv(
+    vocabulary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  candidate_row <- vocabulary$iri == candidate_iri
+  vocabulary$source[candidate_row] <- "psc_candidate"
+  vocabulary$ontology[candidate_row] <-
+    "PSC controlled vocabulary review candidate"
+  readr::write_csv(vocabulary, vocabulary_path, na = "")
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = FALSE,
+      dry_run = TRUE
+    ),
+    "review-candidate.*ObservedRateOrAbundance"
+  )
 })
 
 test_that("KNB dry-run artifacts are path-independent and ignore decoy files", {
@@ -320,30 +340,19 @@ test_that("KNB includes only manifest-declared SSSOM supplements", {
   )
   objects <- .ms_knb_manifest_objects(result$manifest)
   paths <- vapply(objects, function(object) object$path, character(1))
-  formats <- stats::setNames(
-    vapply(objects, function(object) object$format_id, character(1)),
-    paths
-  )
-  media_types <- stats::setNames(
-    vapply(objects, function(object) object$media_type, character(1)),
-    paths
-  )
+  archive <- objects[vapply(objects, function(object) {
+    identical(object$role, "sdp_archive")
+  }, logical(1))][[1L]]
+  members <- zip::zip_list(result$sdp_archive_path)$filename
 
-  expect_true("metadata/semantic/mapping-sets.json" %in% paths)
-  expect_true(any(grepl("[.]sssom[.]tsv$", paths)))
-  expect_false("metadata/semantic/unlisted-secret.sssom.tsv" %in% paths)
-  expect_identical(
-    formats[["metadata/semantic/mapping-sets.json"]],
-    "application/json"
+  expect_identical(archive$format_id, "application/zip")
+  expect_identical(archive$media_type, "application/zip")
+  expect_true("metadata/semantic/mapping-sets.json" %in% members)
+  expect_true(any(grepl("[.]sssom[.]tsv$", members)))
+  expect_false(
+    "metadata/semantic/unlisted-secret.sssom.tsv" %in% members
   )
-  expect_true(all(
-    formats[grepl("[.]sssom[.]tsv$", names(formats))] ==
-      "text/tsv"
-  ))
-  expect_true(all(
-    media_types[grepl("[.]sssom[.]tsv$", names(media_types))] ==
-      "text/tab-separated-values"
-  ))
+  expect_false(any(grepl("[.]sssom[.]tsv$", paths)))
 })
 
 test_that("KNB refuses a tampered manifest-declared SSSOM supplement", {
@@ -388,20 +397,10 @@ test_that("KNB includes only manifest-declared measurement decompositions", {
     public = TRUE,
     dry_run = TRUE
   )
-  objects <- .ms_knb_manifest_objects(result$manifest)
-  paths <- vapply(objects, function(object) object$path, character(1))
-  formats <- stats::setNames(
-    vapply(objects, function(object) object$format_id, character(1)),
-    paths
-  )
-  media_types <- stats::setNames(
-    vapply(objects, function(object) object$media_type, character(1)),
-    paths
-  )
-
-  decomposition_paths <- paths[grepl(
+  members <- zip::zip_list(result$sdp_archive_path)$filename
+  decomposition_paths <- members[grepl(
     "metadata/semantic/.*decomposition",
-    paths
+    members
   )]
   expect_setequal(
     decomposition_paths,
@@ -410,22 +409,7 @@ test_that("KNB includes only manifest-declared measurement decompositions", {
       "metadata/semantic/measurement-decompositions.json"
     )
   )
-  expect_identical(
-    formats[["metadata/semantic/measurement-decompositions.csv"]],
-    "text/csv"
-  )
-  expect_identical(
-    media_types[["metadata/semantic/measurement-decompositions.csv"]],
-    "text/csv"
-  )
-  expect_identical(
-    formats[["metadata/semantic/measurement-decompositions.json"]],
-    "application/json"
-  )
-  expect_identical(
-    media_types[["metadata/semantic/measurement-decompositions.json"]],
-    "application/json"
-  )
+  expect_false(any(grepl("unlisted-secret-decomposition", members)))
 })
 
 test_that("KNB refuses hash drift in a declared measurement decomposition", {
@@ -824,6 +808,19 @@ test_that("publication paths are contained, distinct, and owned", {
     ),
     "path collision"
   )
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      manifest_path = file.path(
+        package_path,
+        "publication",
+        "demo-salmon-2026-salmon-data-package.zip"
+      ),
+      public = TRUE,
+      dry_run = TRUE
+    ),
+    "path collision"
+  )
 
   resource_map_path <- file.path(
     package_path,
@@ -911,10 +908,10 @@ make_knb_memory_adapter <- function(manifest_path,
     if (!isTRUE(setting)) {
       return(list())
     }
-    data_pids <- vapply(
+    documented_pids <- vapply(
       plan$objects[vapply(
         plan$objects,
-        function(object) identical(object$role, "data"),
+        function(object) object$role %in% c("data", "sdp_archive"),
         logical(1)
       )],
       function(object) object$pid,
@@ -925,12 +922,12 @@ make_knb_memory_adapter <- function(manifest_path,
       list(
         id = plan$metadata_pid,
         resourceMap = plan$resource_map_pid,
-        documents = data_pids
+        documents = documented_pids
       )
     )
     c(
       records,
-      lapply(data_pids, function(pid) {
+      lapply(documented_pids, function(pid) {
         list(
           id = pid,
           resourceMap = plan$resource_map_pid,
@@ -944,7 +941,7 @@ make_knb_memory_adapter <- function(manifest_path,
             function(object) object$pid,
             character(1)
           ),
-          c(plan$resource_map_pid, plan$metadata_pid, data_pids)
+          c(plan$resource_map_pid, plan$metadata_pid, documented_pids)
         ),
         function(pid) {
           list(
@@ -980,8 +977,8 @@ make_knb_memory_adapter <- function(manifest_path,
       media_type = object$media_type,
       file_name = basename(object$path),
       archived = FALSE,
-      obsoletes = NA_character_,
-      obsoleted_by = NA_character_,
+      obsoletes = .ms_knb_optional_scalar(object$obsoletes),
+      obsoleted_by = .ms_knb_optional_scalar(object$obsoleted_by),
       date_uploaded = "2026-07-31T00:00:00Z",
       date_sys_metadata_modified = "2026-07-31T00:00:00Z",
       origin_member_node = "urn:node:KNB",
@@ -1050,6 +1047,40 @@ make_knb_memory_adapter <- function(manifest_path,
           public
         )
       )
+      series_id <- .ms_knb_optional_scalar(object_spec$series_id)
+      if (!is.na(series_id)) {
+        state$series[[series_id]] <-
+          state$objects[[object_spec$pid]]$system_metadata
+      }
+      object_spec$pid
+    },
+    update_object = function(client,
+                             old_pid,
+                             object_spec,
+                             subject,
+                             public) {
+      record(paste0("update:", object_spec$role))
+      if (!is.null(fail_role) &&
+          identical(object_spec$role, fail_role) &&
+          !isTRUE(state$failed_once)) {
+        state$failed_once <- TRUE
+        stop("injected update failure")
+      }
+      old <- state$objects[[old_pid]]
+      if (is.null(old)) {
+        stop("revision source is absent")
+      }
+      object_spec$obsoletes <- old_pid
+      state$objects[[object_spec$pid]] <- list(
+        bytes = object_spec$bytes,
+        system_metadata = normalize_system_metadata(
+          object_spec,
+          subject,
+          public
+        )
+      )
+      state$objects[[old_pid]]$system_metadata$obsoleted_by <-
+        object_spec$pid
       series_id <- .ms_knb_optional_scalar(object_spec$series_id)
       if (!is.na(series_id)) {
         state$series[[series_id]] <-
@@ -1132,6 +1163,459 @@ review_knb_plan <- function(package_path,
     dry_run = TRUE
   )
 }
+
+test_that("KNB revisions preserve the series and link immutable versions", {
+  skip_if_not_installed("emld")
+
+  prior_path <- make_knb_test_sdp(withr::local_tempdir())
+  prior_manifest_path <- file.path(
+    prior_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  review_knb_plan(prior_path, prior_manifest_path, public = TRUE)
+  prior_memory <- make_knb_memory_adapter(prior_manifest_path)
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() prior_memory$adapter
+  ))
+  prior <- publish_sdp_to_knb(
+    prior_path,
+    public = TRUE,
+    manifest_path = prior_manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE
+  )
+
+  revised_path <- make_knb_test_sdp(withr::local_tempdir())
+  mapping_path <- file.path(revised_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$publication$revision_key <- "2026-08-01-corrected-sdp-archive"
+  yaml::write_yaml(mapping, mapping_path)
+  revised_manifest_path <- file.path(
+    revised_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  revised <- publish_sdp_to_knb(
+    revised_path,
+    public = TRUE,
+    manifest_path = revised_manifest_path,
+    revision_manifest = prior_manifest_path,
+    dry_run = TRUE
+  )
+
+  expect_identical(revised$series_id, prior$series_id)
+  expect_false(identical(revised$package_id, prior$package_id))
+  expect_identical(
+    revised$manifest$revision_of$metadata_pid,
+    prior$package_id
+  )
+  revised_objects <- .ms_knb_manifest_objects(revised$manifest)
+  revised_roles <- vapply(
+    revised_objects,
+    function(object) object$role,
+    character(1)
+  )
+  revised_pids <- stats::setNames(vapply(
+    revised_objects,
+    function(object) object$pid,
+    character(1)
+  ), revised_roles)
+  revised_obsoletes <- stats::setNames(vapply(
+    revised_objects,
+    function(object) .ms_knb_optional_scalar(object$obsoletes),
+    character(1)
+  ), revised_roles)
+  expect_identical(
+    revised_obsoletes[["metadata"]],
+    prior$package_id
+  )
+  expect_identical(
+    revised_obsoletes[["resource_map"]],
+    prior$resource_map_pid
+  )
+  expect_identical(
+    revised_pids[["data"]],
+    vapply(
+      .ms_knb_manifest_objects(prior$manifest)[vapply(
+        .ms_knb_manifest_objects(prior$manifest),
+        function(object) identical(object$role, "data"),
+        logical(1)
+      )],
+      function(object) object$pid,
+      character(1)
+    )[[1L]]
+  )
+
+  revision_memory <- make_knb_memory_adapter(
+    revised_manifest_path,
+    state = prior_memory$state
+  )
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() revision_memory$adapter
+  ))
+  published <- publish_sdp_to_knb(
+    revised_path,
+    public = TRUE,
+    manifest_path = revised_manifest_path,
+    revision_manifest = prior_manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE
+  )
+  expect_equal(published$status, "published")
+  expect_true(published$manifest$catalog_verified)
+  expect_true("update:metadata" %in% revision_memory$state$calls)
+  expect_true("update:resource_map" %in% revision_memory$state$calls)
+  expect_identical(
+    revision_memory$state$objects[[prior$package_id]]$
+      system_metadata$obsoleted_by,
+    revised_pids[["metadata"]]
+  )
+  expect_identical(
+    revision_memory$state$objects[[prior$resource_map_pid]]$
+      system_metadata$obsoleted_by,
+    revised_pids[["resource_map"]]
+  )
+
+  updates_before_retry <- sum(startsWith(
+    revision_memory$state$calls,
+    "update:"
+  ))
+  retry <- publish_sdp_to_knb(
+    revised_path,
+    public = TRUE,
+    manifest_path = revised_manifest_path,
+    revision_manifest = prior_manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE
+  )
+  expect_equal(retry$status, "already_published")
+  expect_equal(
+    sum(startsWith(revision_memory$state$calls, "update:")),
+    updates_before_retry
+  )
+})
+
+test_that("KNB revisions reject reused metadata and resource-map PIDs", {
+  skip_if_not_installed("emld")
+
+  root <- withr::local_tempdir()
+  prior_path <- make_knb_test_sdp(file.path(root, "review-2"))
+  revised_path <- make_knb_test_sdp(file.path(root, "review-3"))
+  revision_key <- "2026-08-01-corrected-sdp-archive"
+  for (package_path in c(prior_path, revised_path)) {
+    mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+    mapping <- yaml::read_yaml(mapping_path)
+    mapping$publication$revision_key <- revision_key
+    yaml::write_yaml(mapping, mapping_path)
+  }
+
+  prior_manifest_path <- file.path(
+    prior_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  prior <- review_knb_plan(
+    prior_path,
+    prior_manifest_path,
+    public = TRUE
+  )
+  prior_manifest <- prior$manifest
+  prior_manifest$status <- "complete"
+  prior_manifest$objects <- lapply(prior_manifest$objects, function(object) {
+    object$state <- "verified"
+    object
+  })
+  .ms_knb_atomic_write_raw(
+    .ms_knb_json_bytes(prior_manifest),
+    prior_manifest_path
+  )
+
+  expect_error(
+    publish_sdp_to_knb(
+      revised_path,
+      public = TRUE,
+      revision_manifest = prior_manifest_path,
+      dry_run = TRUE
+    ),
+    "reuse.*metadata.*resource-map.*revision_key"
+  )
+})
+
+test_that("KNB revision PID checks cover each immutable package object", {
+  prior <- list(
+    metadata_pid = "urn:uuid:11111111-1111-5111-8111-111111111111",
+    resource_map_pid = "urn:uuid:22222222-2222-5222-8222-222222222222"
+  )
+
+  expect_error(
+    .ms_knb_require_new_revision_pids(
+      prior,
+      metadata_pid = prior$metadata_pid,
+      resource_map_pid = "urn:uuid:33333333-3333-5333-8333-333333333333"
+    ),
+    "reuse.*metadata.*revision_key"
+  )
+  expect_error(
+    .ms_knb_require_new_revision_pids(
+      prior,
+      metadata_pid = "urn:uuid:33333333-3333-5333-8333-333333333333",
+      resource_map_pid = prior$resource_map_pid
+    ),
+    "reuse.*resource-map.*revision_key"
+  )
+  expect_silent(.ms_knb_require_new_revision_pids(
+    prior,
+    metadata_pid = "urn:uuid:33333333-3333-5333-8333-333333333333",
+    resource_map_pid = "urn:uuid:44444444-4444-5444-8444-444444444444"
+  ))
+})
+
+test_that("KNB migrates a verified private schema-v2 manifest to schema v3", {
+  skip_if_not_installed("emld")
+
+  root <- withr::local_tempdir()
+  prior_dir <- file.path(root, "schema-v2-private-review")
+  dir.create(file.path(prior_dir, "publication"), recursive = TRUE)
+  prior_manifest_path <- file.path(
+    prior_dir,
+    "publication",
+    "knb-manifest.json"
+  )
+  metadata_pid <- "urn:uuid:e67c6592-f2ae-504d-a4ed-328e77e405b8"
+  resource_map_pid <- "urn:uuid:88ff07d5-1b26-538f-a266-d7e547d217e6"
+  series_id <- "urn:uuid:f2269390-63b7-52f9-b16a-bb2aea244f89"
+  schema_v2_objects <- list(
+    list(
+      role = "data",
+      path = "data/stock-recruit-detailed.csv",
+      pid = "urn:uuid:29d3ab80-e2a3-51a0-b70b-63ff37ff6a79",
+      format_id = "text/csv",
+      media_type = "text/csv",
+      size = 1200,
+      sha256 = paste(rep("1", 64L), collapse = ""),
+      state = "verified"
+    ),
+    list(
+      role = "sdp_artifact",
+      path = "metadata/codes.csv",
+      pid = "urn:uuid:431691b2-ec54-5c55-a3a2-e88bf6b87a1b",
+      format_id = "text/csv",
+      media_type = "text/csv",
+      size = 240,
+      sha256 = paste(rep("2", 64L), collapse = ""),
+      state = "verified"
+    ),
+    list(
+      role = "metadata",
+      path = "metadata/eml.xml",
+      pid = metadata_pid,
+      format_id = "https://eml.ecoinformatics.org/eml-2.2.0",
+      media_type = "application/xml",
+      size = 3600,
+      sha256 = paste(rep("3", 64L), collapse = ""),
+      state = "verified"
+    ),
+    list(
+      role = "resource_map",
+      path = "publication/resource-map.rdf",
+      pid = resource_map_pid,
+      format_id = "http://www.openarchives.org/ore/terms",
+      media_type = "application/rdf+xml",
+      size = 480,
+      sha256 = paste(rep("4", 64L), collapse = ""),
+      state = "verified"
+    )
+  )
+  prior_manifest <- list(
+    schema_version = 2L,
+    status = "published_pending_catalog",
+    environment = "PROD",
+    node_id = "urn:node:KNB",
+    public = FALSE,
+    replication_policy = list(
+      replication_allowed = FALSE,
+      number_replicas = 0L,
+      preferred_member_nodes = list(),
+      blocked_member_nodes = list()
+    ),
+    expected_subject = "https://orcid.org/0000-0001-9317-0364",
+    rights_authorization = list(
+      status = "confirmed",
+      evidence = paste(
+        "A restricted private-review deposit was explicitly authorized;",
+        "this is not authorization for public access."
+      )
+    ),
+    package_id = metadata_pid,
+    series_id = series_id,
+    metadata_pid = metadata_pid,
+    resource_map_pid = resource_map_pid,
+    objects = schema_v2_objects,
+    catalog_verified = FALSE,
+    catalog_evidence = list()
+  )
+  schema_v2_fingerprint <- list(
+    schema_version = 2L,
+    environment = prior_manifest$environment,
+    node_id = prior_manifest$node_id,
+    public = prior_manifest$public,
+    replication_policy = prior_manifest$replication_policy,
+    expected_subject = prior_manifest$expected_subject,
+    rights_authorization = prior_manifest$rights_authorization,
+    package_id = prior_manifest$package_id,
+    series_id = prior_manifest$series_id,
+    ore_profile = .ms_knb_ore_profile,
+    objects = lapply(schema_v2_objects, function(object) {
+      object[c(
+        "role", "path", "pid", "format_id", "media_type",
+        "size", "sha256"
+      )]
+    })
+  )
+  prior_manifest$plan_sha256 <- .ms_knb_sha256_raw(
+    .ms_knb_json_bytes(schema_v2_fingerprint)
+  )
+  .ms_knb_atomic_write_raw(
+    .ms_knb_json_bytes(prior_manifest),
+    prior_manifest_path
+  )
+
+  revised_path <- make_knb_test_sdp(
+    file.path(root, "schema-v3-correction"),
+    dataset_id = "psc-fraser-sockeye-stock-recruit-detailed-2026-05-07"
+  )
+  mapping_path <- file.path(revised_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$series_key <- "psc-fraser-sockeye-stock-recruit-detailed"
+  mapping$publication$public <- FALSE
+  mapping$publication$revision_key <-
+    "2026-08-01-corrected-sdp-archive"
+  yaml::write_yaml(mapping, mapping_path)
+
+  revised <- publish_sdp_to_knb(
+    revised_path,
+    public = FALSE,
+    revision_manifest = prior_manifest_path,
+    dry_run = TRUE
+  )
+
+  expect_identical(revised$manifest$schema_version, 3L)
+  expect_identical(revised$manifest$representation, "archive")
+  expect_false(revised$manifest$public)
+  expect_identical(revised$series_id, series_id)
+  expect_identical(revised$manifest$revision_of$schema_version, 2L)
+  expect_identical(
+    revised$manifest$revision_of$metadata_pid,
+    metadata_pid
+  )
+  expect_identical(
+    revised$manifest$revision_of$resource_map_pid,
+    resource_map_pid
+  )
+  revised_objects <- .ms_knb_manifest_objects(revised$manifest)
+  revised_roles <- vapply(
+    revised_objects,
+    function(object) object$role,
+    character(1)
+  )
+  expect_setequal(
+    revised_roles,
+    c("data", "sdp_archive", "metadata", "resource_map")
+  )
+  expect_identical(
+    .ms_knb_optional_scalar(
+      revised_objects[[which(revised_roles == "metadata")]]$obsoletes
+    ),
+    metadata_pid
+  )
+  expect_identical(
+    .ms_knb_optional_scalar(
+      revised_objects[[which(revised_roles == "resource_map")]]$obsoletes
+    ),
+    resource_map_pid
+  )
+})
+
+test_that("KNB revisions require a fresh versioned SDP directory", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  prior_manifest_path <- file.path(
+    package_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  prior <- review_knb_plan(
+    package_path,
+    prior_manifest_path,
+    public = TRUE
+  )
+  prior_manifest <- prior$manifest
+  prior_manifest$status <- "complete"
+  prior_manifest$objects <- lapply(prior_manifest$objects, function(object) {
+    object$state <- "verified"
+    object
+  })
+  .ms_knb_atomic_write_raw(
+    .ms_knb_json_bytes(prior_manifest),
+    prior_manifest_path
+  )
+
+  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$publication$revision_key <- "same-directory-revision"
+  yaml::write_yaml(mapping, mapping_path)
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = TRUE,
+      manifest_path = file.path(
+        package_path,
+        "publication",
+        "revision-manifest.json"
+      ),
+      revision_manifest = prior_manifest_path,
+      dry_run = TRUE
+    ),
+    "fresh versioned SDP directory"
+  )
+})
+
+test_that("KNB revision planning requires a reviewed revision key", {
+  skip_if_not_installed("emld")
+
+  prior_path <- make_knb_test_sdp(withr::local_tempdir())
+  prior_manifest_path <- file.path(
+    prior_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  prior <- review_knb_plan(prior_path, prior_manifest_path, public = TRUE)
+  prior_manifest <- prior$manifest
+  prior_manifest$status <- "complete"
+  prior_manifest$catalog_verified <- TRUE
+  prior_manifest$objects <- lapply(prior_manifest$objects, function(object) {
+    object$state <- "verified"
+    object
+  })
+  .ms_knb_atomic_write_raw(
+    .ms_knb_json_bytes(prior_manifest),
+    prior_manifest_path
+  )
+
+  revised_path <- make_knb_test_sdp(withr::local_tempdir())
+  expect_error(
+    publish_sdp_to_knb(
+      revised_path,
+      public = TRUE,
+      revision_manifest = prior_manifest_path,
+      dry_run = TRUE
+    ),
+    "revision_key"
+  )
+})
 
 test_that("private-review publication refuses anonymously readable objects", {
   skip_if_not_installed("emld")
@@ -1459,7 +1943,7 @@ test_that("live KNB publication requires an exact pre-existing dry run", {
   expect_false(adapter_accessed)
 })
 
-test_that("live private publication requires the reviewed schema-v2 policy", {
+test_that("live private publication requires the reviewed schema-v3 policy", {
   skip_if_not_installed("emld")
 
   package_path <- make_knb_test_sdp(withr::local_tempdir())
@@ -1496,7 +1980,7 @@ test_that("live private publication requires the reviewed schema-v2 policy", {
       dry_run = FALSE,
       confirm = TRUE
     ),
-    "schema version 2.*replication policy"
+    "schema version 3.*replication policy"
   )
   expect_false(adapter_accessed)
 })
@@ -2107,8 +2591,7 @@ test_that("catalog completion requires every PID and package relationship", {
     "missing_pid",
     "missing_resource_map",
     "missing_documents",
-    "missing_documented_by",
-    "supplemental_documented_by"
+    "missing_documented_by"
   )
   for (case in missing_relationship_cases) {
     package_path <- make_knb_test_sdp(withr::local_tempdir())
@@ -2122,8 +2605,7 @@ test_that("catalog completion requires every PID and package relationship", {
     objects <- reviewed$manifest$objects
     roles <- vapply(objects, function(object) object$role, character(1))
     pids <- vapply(objects, function(object) object$pid, character(1))
-    data_pid <- pids[roles == "data"]
-    supplemental_pids <- pids[roles == "sdp_artifact"]
+    documented_pids <- pids[roles %in% c("data", "sdp_archive")]
     metadata_pid <- reviewed$manifest$metadata_pid
     resource_map_pid <- reviewed$manifest$resource_map_pid
     records <- c(
@@ -2132,16 +2614,15 @@ test_that("catalog completion requires every PID and package relationship", {
         list(
           id = metadata_pid,
           resourceMap = resource_map_pid,
-          documents = data_pid
-        ),
+          documents = documented_pids
+        )
+      ),
+      lapply(documented_pids, function(pid) {
         list(
-          id = data_pid,
+          id = pid,
           resourceMap = resource_map_pid,
           isDocumentedBy = metadata_pid
         )
-      ),
-      lapply(supplemental_pids, function(pid) {
-        list(id = pid, resourceMap = resource_map_pid)
       })
     )
     if (identical(case, "missing_pid")) {
@@ -2152,14 +2633,6 @@ test_that("catalog completion requires every PID and package relationship", {
       records[[2]]$documents <- NULL
     } else if (identical(case, "missing_documented_by")) {
       records[[3]]$isDocumentedBy <- NULL
-    } else {
-      record_ids <- vapply(
-        records,
-        function(record) as.character(record$id),
-        character(1)
-      )
-      supplemental_index <- match(supplemental_pids[[1]], record_ids)
-      records[[supplemental_index]]$isDocumentedBy <- metadata_pid
     }
     memory$state$catalog <- records
     withr::local_options(list(
@@ -2253,11 +2726,14 @@ test_that("uploaded allowlist reconstructs the SDP and retains measurement IRIs"
   writeLines("decoy", file.path(package_path, "do-not-upload.txt"))
   manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
   reviewed <- review_knb_plan(package_path, manifest_path)
+  archive_object <- reviewed$manifest$objects[vapply(
+    reviewed$manifest$objects,
+    function(object) identical(object$role, "sdp_archive"),
+    logical(1)
+  )][[1L]]
   expect_true(
     "reviewed_semantic_selections.csv" %in%
-      vapply(reviewed$manifest$objects, function(object) {
-        object$path
-      }, character(1))
+      zip::zip_list(reviewed$sdp_archive_path)$filename
   )
   expect_false(any(vapply(reviewed$manifest$objects, function(object) {
     identical(object$path, "do-not-upload.txt")
@@ -2277,14 +2753,12 @@ test_that("uploaded allowlist reconstructs the SDP and retains measurement IRIs"
 
   reconstructed <- file.path(withr::local_tempdir(), "reconstructed")
   dir.create(reconstructed)
-  for (object in published$manifest$objects) {
-    if (!object$role %in% c("data", "sdp_artifact")) {
-      next
-    }
-    destination <- file.path(reconstructed, object$path)
-    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
-    writeBin(memory$state$objects[[object$pid]]$bytes, destination)
-  }
+  archive_copy <- file.path(reconstructed, basename(archive_object$path))
+  writeBin(
+    memory$state$objects[[archive_object$pid]]$bytes,
+    archive_copy
+  )
+  zip::unzip(archive_copy, exdir = reconstructed)
   rebuilt <- read_salmon_datapackage(reconstructed)
   measurement <- rebuilt$dictionary[
     rebuilt$dictionary$column_role == "measurement",

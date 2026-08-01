@@ -1,5 +1,39 @@
-metasalmon 0.1.6
+metasalmon 0.1.7
 ----------------
+
+- Corrected the KNB package representation. New plans now upload each original
+  SDP data resource, one friendly deterministic ZIP containing the complete
+  canonical Salmon Data Package, one EML 2.2.0 metadata object that describes
+  both representations, and one OAI-ORE resource map. Internal SDP CSV, JSON,
+  SSSOM, and measurement-decomposition files no longer appear as unnamed KNB
+  objects.
+- Added immutable KNB revision planning through `revision_manifest`. A revised
+  sidecar supplies a new `publication.revision_key`; metasalmon preserves the
+  metadata series, reuses unchanged data objects, and verifies DataONE
+  `obsoletes`/`obsoletedBy` links for the new EML and resource-map versions.
+  Dry runs reject a reused key before any network call, and legacy verified
+  schema-v2 manifests can be migrated into the archive-based schema-v3 plan.
+- EML download URLs now use the KNB Member Node endpoint and preserve literal
+  `urn:uuid:` colons, matching MetacatUI's object-association behavior while
+  Coordinating Node synchronization is delayed.
+- KNB planning now rejects referenced vocabulary rows whose `source` or
+  `ontology` label marks them as review candidates. This offline gate does not
+  resolve IRIs or prove release governance; canonical transformation records
+  must separately pin and verify the approved vocabulary release.
+- Extended `write_eml_from_sdp()` with validated `otherEntity` supplements and
+  deterministic revision keys. Added a copyable EML sidecar template and
+  documented KNB private staging, persistent identifiers, retry states,
+  revision semantics, and DOI minting as a separate per-metadata-version KNB
+  release action. metasalmon never mints a DOI during deposit.
+- Made deterministic ZIP construction fail closed around symlinks, unsafe or
+  undeclared paths, changed existing archives, and tampered semantic manifests.
+  Archive bytes are bound to the reviewed `zip` 3.0.1 implementation, and
+  publication planning rejects any custom EML, manifest, or resource-map path
+  that would collide with the deterministic archive. Raw-object identifiers
+  also bind the immutable DataONE filename, so renaming unchanged bytes creates
+  a new object instead of a late SystemMetadata collision.
+  Publication-specific `eml-mapping.yml` authorization and party details stay
+  outside the downloadable canonical SDP archive.
 
 - Added reviewed EML 2.2.0 export with deterministic identifiers and bytes,
   strict SDP/sidecar/vocabulary preflight, a closed hashed semantic-review
@@ -18,13 +52,13 @@ metasalmon 0.1.6
   but it still creates persistent production objects and verifies anonymous
   denial for both bytes and SystemMetadata for every uploaded member. Private
   completion also requires a complete authenticated catalog graph and zero
-  matching PIDs through a separate credential-free catalog query. Tab-separated
-  SSSOM objects use DataONE's registered `text/tsv` format identifier while
-  retaining the canonical `text/tab-separated-values` media type.
+  matching PIDs through a separate credential-free catalog query. Reviewed
+  SSSOM mapping sets remain inside the named SDP ZIP and retain canonical
+  tab-separated serialization.
 - Bound DataONE replication policy into the reviewed KNB plan and remote
   SystemMetadata checks. Restricted private-review deposits now explicitly
   request zero peer replicas and reject permissive replication on create or
-  resume. Live calls also require a schema-v2 review manifest whose policy and
+  resume. Live calls also require a schema-v3 review manifest whose policy and
   fingerprint recompute exactly. Public deposits explicitly retain the
   three-replica preservation policy that was previously inherited from the
   DataONE client default.
@@ -49,6 +83,10 @@ metasalmon 0.1.6
   rights URLs remain URL licence descriptors, biology-bearing query tokens are
   retained, and SMN term/module role and OWL-class metadata are preserved more
   accurately.
+
+metasalmon 0.1.6
+----------------
+
 - Added bundle-aware LLM review for measurement columns. Variable, property,
   entity, unit, constraint, and method candidates are judged together, while
   generic column, code, table, and dataset targets retain their established

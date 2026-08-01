@@ -81,6 +81,9 @@
       "properties": {
         "public": {
           "type": "boolean"
+        },
+        "revision_key": {
+          "$ref": "#/definitions/revisionKey"
         }
       }
     },
@@ -245,6 +248,12 @@
     "sha256": {
       "type": "string",
       "pattern": "^[0-9a-f]{64}$"
+    },
+    "revisionKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
     },
     "email": {
       "oneOf": [
