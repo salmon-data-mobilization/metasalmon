@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,12 +79,14 @@
     
 <p>Use this page once before the homepage quick example or the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/metasalmon.html">5-Minute
 Quickstart</a>.</p>
-<p>It covers two things:</p>
+<p>It covers three things:</p>
 <ol style="list-style-type: decimal">
 <li>GitHub credentials so <code><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">remotes::install_github()</a></code> works
 reliably.</li>
 <li>Optional LLM provider setup if you want
 <code>llm_assess = TRUE</code> later.</li>
+<li>Short-lived DataONE credentials for an explicit live KNB
+deposit.</li>
 </ol>
 <div class="section level2">
 <h2 id="github-setup-for-installs-and-updates">1) GitHub setup for installs and updates<a class="anchor" aria-label="anchor" href="#github-setup-for-installs-and-updates"></a>
@@ -201,7 +203,26 @@ path, for example:</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="next-step">3) Next step<a class="anchor" aria-label="anchor" href="#next-step"></a>
+<h2 id="optional-dataoneknb-live-deposit-credential">3) Optional DataONE/KNB live-deposit credential<a class="anchor" aria-label="anchor" href="#optional-dataoneknb-live-deposit-credential"></a>
+</h2>
+<p>You do not need a DataONE credential to build EML or create a KNB
+dry-run manifest. For a live deposit, sign in to DataONE with the same
+ORCID recorded as the single EML metadata provider and obtain a
+short-lived DataONE JWT.</p>
+<p>Treat this token differently from an install PAT or optional LLM key.
+Do not put it in <code>.Renviron</code>, a script, a command argument,
+an EML sidecar, a publication manifest, or a transformation record.
+Enter it only into the current R process and clear it immediately
+afterward:</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/on.exit.html" class="external-link">on.exit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The live KNB preflight verifies that DataONE reports the
+authenticated subject as the metadata-provider ORCID. A matching string
+supplied locally is not enough.</p>
+</div>
+<div class="section level2">
+<h2 id="next-step">4) Next step<a class="anchor" aria-label="anchor" href="#next-step"></a>
 </h2>
 <p>After this setup is done, go back to:</p>
 <ul>

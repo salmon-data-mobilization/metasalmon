@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Utilities for Salmon Data Packages
-Version: 0.1.6
+Version: 0.1.7
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
 Author: Brett Johnson [aut, cre], Codex [aut]
@@ -25,11 +25,14 @@ Imports:
     purrr,
     httr,
     gh,
+    digest,
     httr2,
     gitcreds,
+    methods,
     usethis,
     xml2,
-    yaml
+    yaml,
+    zip (== 3.0.1)
 Suggests:
     testthat (>= 3.2.1),
     knitr,
@@ -38,7 +41,12 @@ Suggests:
     withr,
     pdftools,
     readxl,
-    openxlsx
+    openxlsx,
+    emld,
+    jsonvalidate,
+    dataone,
+    datapack,
+    XML
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/roxygen2/version: 8.0.0

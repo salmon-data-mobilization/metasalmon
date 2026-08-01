@@ -99,6 +99,22 @@ reference:
       - edh_build_iso19139_xml
       - write_edh_xml_from_sdp
 
+  - title: "Semantic Review Supplements"
+    desc: "Validated SSSOM concept alignments and ordered measurement decompositions"
+    contents:
+      - read_sssom_mapping_set
+      - write_sdp_sssom
+      - validate_sdp_sssom
+      - read_sdp_measurement_decompositions
+      - write_sdp_measurement_decompositions
+      - validate_sdp_measurement_decompositions
+
+  - title: "EML and KNB"
+    desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication"
+    contents:
+      - write_eml_from_sdp
+      - publish_sdp_to_knb
+
   - title: "GitHub Access"
     desc: "Authenticate once and read CSVs from private GitHub repositories"
     contents:

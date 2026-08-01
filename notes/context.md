@@ -2,14 +2,14 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-07-21 (post-0.1.5 canonical URL
-hardening and released-feature documentation refresh).
+package evolves. Last substantial update: 2026-07-31 (0.1.7 KNB canonical-SDP
+archive and immutable-revision hardening).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.1.5.9000. License MIT.
+Package (SDP)** conventions. Development version 0.1.7. License MIT.
 R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
@@ -54,6 +54,10 @@ return values, and attached attributes are a compatibility surface.
 - **Darwin Core (DwC-DP):** `suggest_dwc_mappings`, `dwc_dp_build_descriptor`
 - **Enterprise Data Hub (EDH):** `edh_build_hnap_xml`, `edh_build_iso19139_xml`,
   `write_edh_xml_from_sdp`
+- **Semantic supplements:** `read_sssom_mapping_set`, `write_sdp_sssom`,
+  `validate_sdp_sssom`, `read_sdp_measurement_decompositions`,
+  `write_sdp_measurement_decompositions`, `validate_sdp_measurement_decompositions`
+- **EML + KNB:** `write_eml_from_sdp`, `publish_sdp_to_knb`
 - **GitHub:** `ms_setup_github`, `github_raw_url`, `read_github_csv`, `read_github_csv_dir`
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
 - **Maintenance:** `check_for_updates`
@@ -78,6 +82,21 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.
+- **KNB representation:** declared SDP data resources remain individual EML
+  data entities; the complete canonical SDP travels as one deterministic named
+  ZIP/EML `otherEntity`; EML and OAI-ORE complete the DataONE package. Private
+  deposits are persistent staging records, not server-side drafts. Revisions
+  require a fresh versioned SDP directory, preserve the metadata series, and
+  link immutable EML/resource-map versions. Publication-specific EML sidecar
+  authorization/party details and mutable receipts are excluded from the ZIP.
+  DOI minting is a separate KNB public-release action and is never implicit in
+  `publish_sdp_to_knb()`.
+- **Semantic publication boundary:** SSSOM records whole-concept mappings or
+  explicit versioned no-match evidence. Ordered measurement components remain
+  a separate SDP artifact. KNB planning accepts and archives reviewed records
+  but rejects referenced vocabulary rows still labelled review-candidate. This
+  offline string gate does not itself resolve IRIs or prove release governance;
+  the transformation record must pin and verify the vocabulary release.
 - **I-ADOPT decomposition:** measurement columns are decomposed into semantic
   "slots". The dictionary role → search role map (R/semantics-helpers.R:381-388):
   `term_iri`→variable, `property_iri`→property, `entity_iri`→entity,
@@ -266,6 +285,11 @@ do not affect the built package or pkgdown site.
 | `semantic-suggestions.R` | ~268 | Target/candidate row-shape contract + LLM-assessment merge. |
 | `llm-review-adapter.R` | ~118 | Shared LLM review response contract (validate / response-data / row construction). |
 | `edh-xml-export.R` | ~43KB | EDH HNAP/ISO 19139 XML export. |
+| `eml-export.R` | — | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
+| `knb-sdp-archive.R` | — | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
+| `knb-publication.R` | — | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
+| `sssom.R` | — | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
+| `measurement-decompositions.R` | — | Ordered I-ADOPT-style component evidence kept separate from SSSOM mappings. |
 | `github-helpers.R` | ~22KB | GitHub CSV access + auth setup. |
 | `term-request-helpers.R` | ~28KB | Ontology new-term request rendering + issue submission. |
 | `term-deduplication.R`, `nuseds-method-crosswalk.R`, `ices-vocab.R`, `dwc-dp-*.R`, `schema-helpers.R`, `validation_helpers.R`, `version-check.R`, `ontology_fetch.R`, `term_search_smn.R` | — | Supporting subsystems. |

@@ -326,6 +326,82 @@ test_that("smn module urls use extensionless W3ID module paths", {
   expect_true("https://w3id.org/smn/modules/01-entity-systematics" %in% urls)
 })
 
+test_that("SMN module role hints classify concepts by their identity, not incidental prose", {
+  recruit <- .smn_role_flags(
+    label = "Recruit abundance",
+    definition = paste(
+      "A measurement datum recording the number of recruits contributing to",
+      "a salmon stock for a defined year basis and assessment context."
+    ),
+    resource_kind = "Class",
+    module_name = "03-assessment-benchmarks.ttl",
+    in_scheme = "",
+    parent_iris = "https://w3id.org/smn/ObservedRateOrAbundance",
+    type_iris = "http://www.w3.org/2002/07/owl#Class",
+    iri = "https://w3id.org/smn/RecruitAbundance"
+  )
+  stock <- .smn_role_flags(
+    label = "Stock",
+    definition = "An operationally defined grouping of salmon used for assessment.",
+    resource_kind = "Class",
+    module_name = "01-entity-systematics.ttl",
+    in_scheme = "",
+    parent_iris = "https://w3id.org/smn/ReportingOrManagementStratum",
+    type_iris = "http://www.w3.org/2002/07/owl#Class",
+    iri = "https://w3id.org/smn/Stock"
+  )
+  reference_point <- .smn_role_flags(
+    label = "Reference point",
+    definition = "A target or limit used to guide management actions.",
+    resource_kind = "Class",
+    module_name = "03-assessment-benchmarks.ttl",
+    in_scheme = "",
+    parent_iris = "http://purl.obolibrary.org/obo/IAO_0000030",
+    type_iris = "http://www.w3.org/2002/07/owl#Class",
+    iri = "https://w3id.org/smn/ReferencePoint"
+  )
+  in_river_phase <- .smn_role_flags(
+    label = "In-river phase",
+    definition = "Freshwater in-river phase outside the marine environment.",
+    resource_kind = "Concept",
+    module_name = "07-controlled-vocabularies",
+    in_scheme = "https://w3id.org/smn/LifeHistoryContextScheme",
+    parent_iris = "",
+    type_iris = "http://www.w3.org/2004/02/skos/core#Concept",
+    iri = "https://w3id.org/smn/InRiverPhase"
+  )
+
+  expect_true(recruit$is_variable)
+  expect_false(recruit$is_constraint)
+  expect_true(stock$is_entity)
+  expect_true(reference_point$is_constraint)
+  expect_false(reference_point$is_variable)
+  expect_true(in_river_phase$is_constraint)
+  expect_false(in_river_phase$is_entity)
+})
+
+test_that("SMN module parsing preserves module identity from named cache paths", {
+  fixture_dir <- withr::local_tempdir()
+  fixture <- file.path(fixture_dir, "salmon-ontology.ttl")
+  writeLines(c(
+    '@prefix smn: <https://w3id.org/smn/> .',
+    '@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .',
+    '@prefix owl: <http://www.w3.org/2002/07/owl#> .',
+    "",
+    "smn:OperationalAggregate a owl:Class ;",
+    '  rdfs:label "Operational aggregate" .'
+  ), fixture)
+
+  paths <- stats::setNames(
+    fixture,
+    "https://w3id.org/smn/modules/01-entity-systematics"
+  )
+  index <- .parse_smn_ttl_modules(paths)
+
+  expect_true(index$is_entity[[1]])
+  expect_match(index$search_text[[1]], "01-entity-systematics")
+})
+
 test_that("search_smn indexes negotiated SMN module ttl when available", {
   fixture <- withr::local_tempfile(fileext = ".ttl")
   writeLines(c(

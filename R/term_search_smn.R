@@ -149,39 +149,74 @@
 }
 
 .smn_role_flags <- function(label, definition, resource_kind, module_name, in_scheme, parent_iris, type_iris, iri) {
-  txt <- tolower(paste(
+  subject_text <- tolower(paste(
     label,
-    definition,
     resource_kind,
-    module_name,
     in_scheme,
     parent_iris,
     type_iris,
     .smn_subject_local_name(iri),
     collapse = " "
   ))
+  evidence_text <- tolower(paste(subject_text, definition))
 
-  is_scheme <- grepl("scheme", txt)
+  # Treat only the vocabulary container itself as a scheme. A SKOS concept's
+  # `inScheme` value is evidence about the concept, not evidence that the
+  # concept is a ConceptScheme.
+  is_scheme <- identical(tolower(resource_kind %||% ""), "conceptscheme") ||
+    grepl("\\bscheme$", tolower(trimws(label %||% ""))) ||
+    grepl("scheme$", tolower(.smn_subject_local_name(iri) %||% ""))
+
+  # Role exclusions describe the term itself, so evaluate them against its
+  # label/type/parents rather than incidental words in a prose definition. A
+  # Stock remains an entity even when its definition says it is used in an
+  # assessment; RecruitAbundance remains a variable when its definition states
+  # that the value has an assessment context.
+  entity_exclusion <- grepl(
+    "measurement|benchmark|reference point|procedure|method|characteristic|property",
+    subject_text
+  ) ||
+    grepl("\\bstock assessment\\b", subject_text) ||
+    grepl("\\b(phase|context|origin)\\b", subject_text)
   is_entity <- (
     grepl("entity-systematics", module_name) |
-      grepl("entity|population|stock|river|habitat|taxon|organism|individual|group|stratum|species", txt)
+      grepl(
+        "entity|population|stock|river|habitat|taxon|organism|individual|group|stratum|species",
+        subject_text
+      )
   ) &&
     !is_scheme &&
-    !grepl("measurement|assessment|benchmark|reference point|procedure|method|characteristic|property", txt)
-  is_property <- grepl("property|characteristic|length|weight|size|status|confidence|phase", txt)
-  if (grepl("sosa/property", txt)) {
+    !entity_exclusion
+  is_property <- grepl(
+    "property|characteristic|length|weight|size|status|confidence|phase",
+    subject_text
+  )
+  if (grepl("sosa/property", subject_text)) {
     is_property <- TRUE
   }
-  is_method <- grepl("method|procedure|protocol|enumeration", txt)
-  if (grepl("sosa/procedure", txt)) {
+  is_method <- grepl("method|procedure|protocol|enumeration", subject_text)
+  if (grepl("sosa/procedure", subject_text)) {
     is_method <- TRUE
   }
-  is_constraint <- (
-    grepl("assessment-benchmarks|controlled-vocabularies", module_name) |
-      grepl("constraint|context|phase|origin|benchmark|reference point|target|limit|status zone", txt)
-  )
-  is_variable <- grepl("measurement|abundance|count|rate|escapement|recruit|indicator|benchmark|reference point", txt) &&
-    !grepl("context|scheme", txt)
+  is_constraint <- grepl("controlled-vocabularies", module_name) ||
+    grepl(
+      "constraint|context|phase|origin|benchmark|reference point|target|limit|status zone",
+      subject_text
+    )
+  is_variable <- (
+    grepl(
+      "measurement|abundance|count|rate|escapement|recruit",
+      subject_text
+    ) ||
+      (
+        grepl("measurement datum|abundance|count|rate|escapement", evidence_text) &&
+          grepl("observedrateorabundance|measurement", subject_text)
+      )
+  ) &&
+    !grepl(
+      "context|scheme|benchmark|reference point",
+      subject_text
+    )
 
   list(
     is_variable = is_variable,
@@ -196,7 +231,8 @@
   rows <- list()
   idx <- 0L
 
-  for (path in paths) {
+  for (path_index in seq_along(paths)) {
+    path <- unname(paths[[path_index]])
     if (!file.exists(path)) {
       next
     }
@@ -208,7 +244,18 @@
     blocks <- strsplit(stripped, "\\n\\s*\\n+", perl = TRUE)[[1]]
     blocks <- trimws(blocks)
     blocks <- blocks[nzchar(blocks)]
-    module_name <- basename(path)
+    path_names <- names(paths)
+    module_reference <- if (
+      !is.null(path_names) &&
+        length(path_names) >= path_index &&
+        !is.na(path_names[[path_index]]) &&
+        nzchar(path_names[[path_index]])
+    ) {
+      path_names[[path_index]]
+    } else {
+      path
+    }
+    module_name <- basename(sub("/+$", "", module_reference))
 
     for (block in blocks) {
       collapsed <- gsub("\\s+", " ", trimws(block), perl = TRUE)

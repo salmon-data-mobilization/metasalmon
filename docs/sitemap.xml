@@ -40,9 +40,12 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_measurement_decompositions.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.html</loc></url>
@@ -51,8 +54,13 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_measurement_decompositions.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_measurement_decompositions.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_sssom.html</loc></url>
 </urlset>
 

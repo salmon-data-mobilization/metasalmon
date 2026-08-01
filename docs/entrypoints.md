@@ -6,6 +6,9 @@ Short map of the package's public starts and their canonical implementations.
 
 - Main workflow: `create_sdp()` -> infer artifacts -> seed semantics -> write SDP
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
+- KNB workflow: reviewed SDP + `metadata/eml-mapping.yml` ->
+  `write_eml_from_sdp()` -> `publish_sdp_to_knb(..., public = FALSE,
+  dry_run = TRUE)` -> review exact manifest -> explicit resumable live deposit
 - Package site: <https://salmon-data-mobilization.github.io/metasalmon/>
 - Repository: <https://github.com/salmon-data-mobilization/metasalmon>
 - Optional LLM variables: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `CHAPI_API_KEY`
@@ -30,6 +33,12 @@ Short map of the package's public starts and their canonical implementations.
 - `suggest_semantics(llm_assess = TRUE)` -> deterministic `find_terms()` shortlist
   -> shared review adapter; context inputs are parsed once from local paths
 - `write_edh_xml_from_sdp()` is the strict post-review EDH rebuild path
+- `write_sdp_sssom()` stores concept mappings; ordered measurement components
+  remain separate in `write_sdp_measurement_decompositions()`
+- `publish_sdp_to_knb()` retains raw SDP data resources and adds one
+  deterministic canonical-SDP ZIP, EML, and OAI-ORE map. Private deposits are
+  persistent staging records; DOI minting is a separate KNB public-release step.
+  Revisions use a fresh SDP directory and preserve the preceding manifest.
 
 ## Canonical Implementations (Per Feature)
 
@@ -44,3 +53,8 @@ Short map of the package's public starts and their canonical implementations.
 - Context loading, option policy, and optional LLM review ->
   `R/llm-semantic-helpers.R`
 - Interactive decomposition review -> `R/chat-decomposition.R`
+- SSSOM mapping sets -> `R/sssom.R`
+- Ordered measurement decomposition artifacts ->
+  `R/measurement-decompositions.R`
+- EML profile and KNB/DataONE deposit/revision state machine ->
+  `R/eml-export.R`, `R/knb-sdp-archive.R`, and `R/knb-publication.R`

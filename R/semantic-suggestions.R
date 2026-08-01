@@ -485,7 +485,10 @@
 
     has_explicit_count <- grepl("\\b(count|counts|number|numbers|num|abundance)\\b", text)
     has_total <- grepl("\\btotal\\b", text)
-    has_organism <- grepl("\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|population|populations|adult|adults)\\b", text)
+    has_organism <- grepl(
+      "\\b(spawner|spawners|fish|salmon|organism|organisms|recruit|recruits|smolt|smolts|fry|juvenile|juveniles|population|populations|adult|adults)\\b",
+      text
+    )
     looks_integer <- value_type %in% c("integer", "int", "number", "numeric", "double")
 
     has_explicit_count ||
@@ -552,10 +555,31 @@
       if (is_count_like_measurement(row, base_query)) {
         if (grepl("spawner", base_lower)) {
           if (identical(role_name, "variable")) {
+            if (
+              (
+                grepl("\\beffective\\b", base_lower) &&
+                  grepl("\\bfemale\\b", base_lower)
+              ) ||
+                grepl("\\beggs?\\s+not\\s+spawned\\b", base_lower)
+            ) {
+              return("effective female spawner abundance")
+            }
             if (grepl("adult", base_lower)) return("adult spawner count")
             return("spawner abundance")
           }
           return("spawner abundance")
+        }
+
+        if (identical(role_name, "variable")) {
+          if (grepl("\\brecruits?\\b", base_lower)) {
+            return("recruit abundance")
+          }
+          if (grepl("\\bsmolts?\\b", base_lower)) {
+            return("smolt abundance")
+          }
+          if (grepl("\\bfry\\b", base_lower)) {
+            return("fry abundance")
+          }
         }
 
         if (grepl("\\babundance\\b", base_lower)) {

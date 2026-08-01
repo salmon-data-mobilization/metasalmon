@@ -31,6 +31,10 @@
   "schema/sdp.rules.yaml"
 }
 
+.ms_sdp_profile_version <- function() {
+  .ms_load_sdp_schema(source = "vendored", quiet = TRUE)$version
+}
+
 .ms_default_sdp_schema_base_url <- function() {
   legacy_url <- getOption("metasalmon.sdp_schema_url", NULL)
   if (!is.null(legacy_url) && nzchar(legacy_url)) {

@@ -299,7 +299,43 @@ never submits during detection or rendering. Keep `confirm = TRUE` for
 curator review. Profile rows remain local governance artifacts unless
 you provide a repository workflow for them.
 
-### 7) Finalize metadata and rebuild EDH XML if needed
+### 7) Retain semantic mapping and decomposition evidence when available
+
+Use SSSOM for reviewed relationships between whole vocabulary concepts.
+That includes an explicit `sssom:NoTermFound` row when a released PSC
+compound measurement has no defensible match in another versioned
+vocabulary. Do not put property/entity/unit decomposition columns into
+SSSOM.
+
+``` r
+
+write_sdp_sssom(
+  pkg_path,
+  mapping_sets = reviewed_sssom_paths
+)
+validate_sdp_sssom(pkg_path)
+```
+
+Store the ordered property, entity, constraint, method, and unit
+evidence in the separate SDP measurement-decomposition artifact:
+
+``` r
+
+write_sdp_measurement_decompositions(
+  pkg_path,
+  decompositions = reviewed_components
+)
+validate_sdp_measurement_decompositions(pkg_path)
+```
+
+metasalmon does not invent either record by default: both require
+reviewed inputs. When their manifests are present, later KNB planning
+validates them and includes them automatically inside the canonical SDP
+ZIP. This preserves the evidence as part of the package without claiming
+native I-ADOPT conformance or turning the component rows into concept
+mappings.
+
+### 8) Finalize metadata and rebuild EDH XML if needed
 
 Once the metadata is final and every surviving IRI is deliberate,
 regenerate EDH XML if your publication path needs it:
@@ -319,7 +355,7 @@ including:
   and
 - blank final `observation_unit_iri` values in `metadata/tables.csv`.
 
-### 8) Run strict final validation
+### 9) Run strict final validation
 
 When the package is genuinely ready, switch to strict validation:
 
@@ -336,7 +372,154 @@ the workflow — it means the package is **not finalized yet**. Keep the
 term-request plan with the package, resolve the ontology decision, then
 run strict validation again.
 
-### 9) Publish or share the finished package
+### 10) Build reviewed EML and preview KNB publication when needed
+
+KNB publication requires EML-specific facts that the canonical SDP does
+not guess, including structured parties, rights, methods, measurement
+scales, missing-value meanings, and access intent. Record those reviewed
+decisions in `metadata/eml-mapping.yml`, then build and validate EML
+2.2.0:
+
+``` r
+
+# Copy once, then replace every example value and checksum with reviewed facts.
+file.copy(
+  system.file(
+    "extdata",
+    "eml-mapping-template.yml",
+    package = "metasalmon"
+  ),
+  file.path(pkg_path, "metadata", "eml-mapping.yml")
+)
+```
+
+``` r
+
+write_eml_from_sdp(pkg_path)
+```
+
+That standalone call creates valid reviewed EML for inspection. The
+later KNB dry run deterministically rebuilds it once more so the final
+EML also describes the generated canonical-SDP ZIP as an `otherEntity`.
+
+Preview the exact immutable DataONE objects, identifiers, checksums,
+access decision, and OAI-ORE relationships without reading credentials
+or making a network request:
+
+``` r
+
+publish_sdp_to_knb(
+  pkg_path,
+  public = FALSE,
+  dry_run = TRUE
+)
+```
+
+Live KNB publication is a separate explicit action. It requires a
+short-lived DataONE JWT in the process-local `dataone_token` option, an
+ORCID-authenticated subject matching the EML metadata provider, and an
+explicitly supplied `confirm = TRUE`. The confirmation means both that
+the exact pending manifest is approved and that the caller has authority
+to redistribute the package.
+
+Keep the JWT out of scripts, YAML, manifests, and shell history. Enter
+it into the current R process only and clear it immediately after the
+live call:
+
+``` r
+
+options(dataone_token = rstudioapi::askForPassword("Short-lived DataONE JWT"))
+on.exit(options(dataone_token = NULL), add = TRUE)
+
+publish_sdp_to_knb(
+  pkg_path,
+  public = FALSE,
+  dry_run = FALSE,
+  confirm = TRUE
+)
+```
+
+`public = FALSE` is the recommended review path, but it is not a
+server-side draft: a live call creates persistent production KNB
+objects. Completion requires authenticated byte-for-byte and
+SystemMetadata readback for every object, anonymous denial for both
+object bytes and SystemMetadata, a complete authenticated catalog graph,
+and zero planned PIDs in the anonymous catalog. The reviewed private
+plan also explicitly sets DataONE replication to disabled with zero
+replicas, and live readback must match that KNB-only policy. Changing to
+`public = TRUE` is a separate release decision: it requires public
+redistribution authority and explicitly requests three DataONE
+preservation replicas; metasalmon never infers that decision from a
+private deposit.
+
+Each plan contains four kinds of object: the original data resources
+named by `tables.csv`, one human-readable `*-salmon-data-package.zip`
+containing the complete canonical SDP, the EML science-metadata record,
+and the OAI-ORE map. The EML record describes the raw files as data
+tables and the ZIP as a supplementary entity. This keeps SSSOM, ordered
+measurement decompositions, and the other canonical SDP metadata
+available without turning every internal file into a confusing
+standalone KNB object. The KNB-specific `metadata/eml-mapping.yml`, its
+authorization evidence and party details, and all mutable `publication/`
+receipts remain outside the downloadable ZIP.
+
+KNB DOI minting is a later opt-in release action, not part of
+[`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md).
+KNB assigns the DOI to the selected science-metadata version when its
+Publish action makes that package public; it does not assign a separate
+DOI to each raw or supplementary object. Leaving a deposit private is
+therefore the practical review workflow. Editing after deposit creates
+new immutable versions rather than overwriting bytes.
+
+For a corrected or otherwise revised private version, keep the same
+`series_key`, add a new safe `publication.revision_key` to the sidecar,
+and bind the new dry run to the verified manifest for the preceding
+version. Build the revision in a fresh versioned SDP directory; never
+reuse or overwrite the prior package directory:
+
+``` yaml
+publication:
+  public: false
+  revision_key: corrected-sdp-archive-2026-07-31
+```
+
+``` r
+
+publish_sdp_to_knb(
+  revised_pkg_path,
+  public = FALSE,
+  manifest_path = file.path(
+    revised_pkg_path,
+    "publication",
+    "knb-manifest.json"
+  ),
+  revision_manifest = previous_manifest_path,
+  dry_run = TRUE
+)
+```
+
+Review that new manifest before repeating the live call with
+`dry_run = FALSE, confirm = TRUE`. An interrupted live call is
+resumable: reuse the byte-identical package, revision manifest, and
+output manifest. A completed upload whose coordinating-network catalog
+check is delayed returns `published_pending_catalog`; rerunning the same
+call performs fresh checks and does not create duplicate objects.
+
+If KNB’s separate Publish action later mints a DOI, KNB creates another
+science-metadata version. metasalmon does not yet import that
+KNB-created version into a local predecessor manifest. Do not base a
+later automated revision on the older pre-DOI manifest; use KNB’s editor
+for that next change or wait for an explicit manifest-import workflow.
+
+Before any plan is written, metasalmon rejects referenced rows whose
+`source` or `ontology` label identifies them as a `review-candidate`.
+This is a deliberately offline fail-closed check; it does not resolve
+public IRIs or by itself prove that a vocabulary release was governed.
+The canonical transformation record must separately pin the approved
+vocabulary release and verify its public term IRIs before the SDP is
+deposited.
+
+### 11) Publish or share the finished package
 
 Once strict validation passes:
 
@@ -348,4 +531,4 @@ Once strict validation passes:
   trail to travel with it.
 
 In short: **reload -\> validate -\> detect gaps -\> route requests -\>
-rebuild EDH if needed -\> strict validate -\> publish**.
+build the required export -\> strict validate -\> dry-run -\> publish**.
