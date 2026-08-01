@@ -28,6 +28,9 @@ metasalmon 0.1.6
   fingerprint recompute exactly. Public deposits explicitly retain the
   three-replica preservation policy that was previously inherited from the
   DataONE client default.
+- Accepted zero as a valid server-owned DataONE `serialVersion` during KNB
+  readback. The field is an `xs:unsignedLong`, and production KNB returns zero
+  for newly created objects before a SystemMetadata update.
 - Added strict package-native SSSOM 1.1 read/write/validation for reviewed
   concept alignments and version-scoped `sssom:NoTermFound` records. Mapping
   sets are deterministic and manifest-bound; undeclared files, literal

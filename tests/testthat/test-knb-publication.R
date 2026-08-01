@@ -2496,6 +2496,18 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     replication_policy = .ms_knb_replication_policy(TRUE)
   ))
 
+  # DataONE defines serialVersion as xs:unsignedLong, and production KNB
+  # returns zero for a newly-created object before any SystemMetadata update.
+  zero_serial_version <- remote
+  zero_serial_version$serial_version <- 0
+  expect_silent(.ms_knb_validate_system_metadata(
+    zero_serial_version,
+    object,
+    subject,
+    public = TRUE,
+    replication_policy = .ms_knb_replication_policy(TRUE)
+  ))
+
   invalid_values <- list(
     submitter = "https://orcid.org/0000-0002-1825-0097",
     origin_member_node = "urn:node:OTHER",
@@ -2506,7 +2518,7 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     obsoletes = "urn:uuid:old",
     obsoleted_by = "urn:uuid:new",
     checksum_algorithm = "MD5",
-    serial_version = 0,
+    serial_version = -1,
     date_uploaded = "not-a-timestamp",
     date_sys_metadata_modified = "2026-02-30T00:00:00Z",
     replication_allowed = FALSE,

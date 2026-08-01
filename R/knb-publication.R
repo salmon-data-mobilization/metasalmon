@@ -1436,7 +1436,7 @@
   if (length(serial_version) != 1L ||
       is.na(serial_version) ||
       !is.finite(serial_version) ||
-      serial_version <= 0 ||
+      serial_version < 0 ||
       serial_version != floor(serial_version)) {
     mismatches <- c(mismatches, "serial_version")
   }
