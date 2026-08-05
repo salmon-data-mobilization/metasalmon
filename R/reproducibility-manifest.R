@@ -164,8 +164,11 @@
     character(1)
   )
   declarations$resolved_path <- unname(resolved)
-  declarations |>
-    dplyr::arrange(.data$path)
+  declarations[
+    order(declarations$path, method = "radix"),
+    ,
+    drop = FALSE
+  ]
 }
 
 .ms_sdp_reproducibility_file_entry <- function(declaration) {
@@ -277,7 +280,10 @@
     normalizePath(files, winslash = "/", mustWork = TRUE),
     nchar(prefix) + 1L
   )
-  sort(setdiff(relative, .ms_sdp_reproducibility_path))
+  sort(
+    setdiff(relative, .ms_sdp_reproducibility_path),
+    method = "radix"
+  )
 }
 
 .ms_sdp_reproducibility_validate_manifest <- function(root, manifest) {
@@ -342,7 +348,8 @@
     }
     paths[[index]] <- entry$path
   }
-  if (anyDuplicated(paths) || !identical(paths, sort(paths))) {
+  if (anyDuplicated(paths) ||
+      !identical(paths, sort(paths, method = "radix"))) {
     .ms_sdp_reproducibility_abort(
       "Reproducibility manifest paths must be unique and sorted."
     )

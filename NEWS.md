@@ -47,6 +47,9 @@ metasalmon 0.1.8
   score instead of aborting `suggest_semantics()`.
 - Extended the reviewed QUDT-to-EML unit crosswalk so both HTTP and HTTPS forms
   of QUDT `Individual` (`INDIV`) serialize as the EML standard unit `number`.
+- Made reproducibility-manifest ordering byte-stable across process locales,
+  including artifact names that mix punctuation such as hyphens and
+  underscores.
 
 metasalmon 0.1.7
 ----------------

@@ -25,6 +25,21 @@ make_reproducibility_test_sdp <- function(path) {
     "workflow",
     "transform.R"
   ))
+  writeLines("message('semantic release')", file.path(
+    path,
+    "reproducibility",
+    "workflow",
+    "semantic-release.R"
+  ))
+  writeLines(
+    "column_name,term_iri\nrecruits,https://w3id.org/smn/Abundance",
+    file.path(
+      path,
+      "reproducibility",
+      "workflow",
+      "semantic_suggestions.csv"
+    )
+  )
   writeLines("activity_id,started_at\ntransform,2026-08-04", file.path(
     path,
     "reproducibility",
@@ -44,6 +59,10 @@ reproducibility_test_artifacts <- function() {
   tibble::tribble(
     ~path, ~role, ~media_type,
     "reproducibility/workflow/transform.R", "workflow", "text/x-r-source",
+    "reproducibility/workflow/semantic-release.R",
+    "workflow", "text/x-r-source",
+    "reproducibility/workflow/semantic_suggestions.csv",
+    "workflow", "text/csv",
     "reproducibility/reviewed_semantic_selections.csv",
     "reviewed_semantic_selections", "text/csv",
     "reproducibility/source/source-manifest.csv", "source", "text/csv",
@@ -75,9 +94,39 @@ test_that("reproducibility manifests bind a deterministic closed artifact set", 
   )
   expect_identical(
     purrr::map_chr(manifest$artifacts, "path"),
-    sort(reproducibility_test_artifacts()$path)
+    sort(reproducibility_test_artifacts()$path, method = "radix")
   )
   expect_true(isTRUE(validate_sdp_reproducibility_manifest(first)))
+})
+
+test_that("reproducibility ordering is independent of the process locale", {
+  probe <- c(
+    "reproducibility/workflow/semantic-release.R",
+    "reproducibility/workflow/semantic_suggestions.csv"
+  )
+  original_locale <- Sys.getlocale("LC_COLLATE")
+  contrasting_locale <- NULL
+  for (candidate in c("C.UTF-8", "en_US.UTF-8", "English_United States.utf8")) {
+    resolved <- suppressWarnings(Sys.setlocale("LC_COLLATE", candidate))
+    if (nzchar(resolved) &&
+        !identical(sort(probe), sort(probe, method = "radix"))) {
+      contrasting_locale <- candidate
+      break
+    }
+  }
+  suppressWarnings(Sys.setlocale("LC_COLLATE", original_locale))
+  skip_if(
+    is.null(contrasting_locale),
+    "No contrasting collation locale is available"
+  )
+  withr::local_locale(c(LC_COLLATE = contrasting_locale))
+
+  root <- make_reproducibility_test_sdp(withr::local_tempdir())
+  expect_no_error(write_sdp_reproducibility_manifest(
+    root,
+    reproducibility_test_artifacts()
+  ))
+  expect_true(isTRUE(validate_sdp_reproducibility_manifest(root)))
 })
 
 test_that("reproducibility manifests reject unbound, changed, and unsafe files", {
