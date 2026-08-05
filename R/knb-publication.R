@@ -408,14 +408,17 @@
     structure_relative <- structure_files
   }
 
-  relative <- sort(c(
-    required,
-    reproducibility_relative,
-    semantic_relative,
-    decomposition_relative,
-    methods_relative,
-    structure_relative
-  ))
+  relative <- sort(
+    c(
+      required,
+      reproducibility_relative,
+      semantic_relative,
+      decomposition_relative,
+      methods_relative,
+      structure_relative
+    ),
+    method = "radix"
+  )
   paths <- vapply(
     relative,
     function(item) .ms_knb_inside_path(
@@ -526,7 +529,7 @@
       .ms_knb_ore_profile,
       package_id,
       publication_date,
-      sort(member_lines)
+      sort(member_lines, method = "radix")
     ),
     collapse = "\n"
   )
@@ -1572,7 +1575,7 @@
   expected_subject <- metadata_provider_orcids[[1]]
 
   data_objects <- lapply(
-    order(eml$data_objects$file_name),
+    order(eml$data_objects$file_name, method = "radix"),
     function(i) {
       data <- eml$data_objects[i, , drop = FALSE]
       list(
@@ -1833,7 +1836,11 @@
     permission = tolower(as.character(out$permission)),
     stringsAsFactors = FALSE
   ))
-  out[order(out$subject, out$permission), , drop = FALSE]
+  out[
+    order(out$subject, out$permission, method = "radix"),
+    ,
+    drop = FALSE
+  ]
 }
 
 .ms_knb_normalize_member_nodes <- function(nodes) {
@@ -1847,7 +1854,7 @@
     )
   }
 
-  sort(unique(values))
+  sort(unique(values), method = "radix")
 }
 
 .ms_knb_optional_scalar <- function(value) {
@@ -2220,7 +2227,10 @@
     return(character())
   }
   values <- trimws(as.character(unlist(values, use.names = FALSE)))
-  sort(unique(values[!is.na(values) & nzchar(values)]))
+  sort(
+    unique(values[!is.na(values) & nzchar(values)]),
+    method = "radix"
+  )
 }
 
 .ms_knb_catalog_evidence <- function(plan, records) {
@@ -2287,17 +2297,20 @@
     length(unique(indexed_ids)) == length(expected_pids) &&
     setequal(resource_map_members, member_pids) &&
     length(resource_map_members) == length(member_pids) &&
-    identical(sort(metadata_documents), sort(documented_pids)) &&
+    identical(
+      sort(metadata_documents, method = "radix"),
+      sort(documented_pids, method = "radix")
+    ) &&
     setequal(documented_objects, documented_pids) &&
     length(documented_objects) == length(documented_pids)
   list(
     verified = isTRUE(verified),
-    indexed_pids = sort(unique(indexed_ids)),
+    indexed_pids = sort(unique(indexed_ids), method = "radix"),
     resource_map_pid = plan$resource_map_pid,
-    resource_map_members = sort(resource_map_members),
+    resource_map_members = sort(resource_map_members, method = "radix"),
     metadata_pid = plan$metadata_pid,
-    metadata_documents = sort(metadata_documents),
-    documented_data_pids = sort(documented_objects),
+    metadata_documents = sort(metadata_documents, method = "radix"),
+    documented_data_pids = sort(documented_objects, method = "radix"),
     supplemental_relations_clean = TRUE
   )
 }
@@ -2319,13 +2332,19 @@
     function(record) .ms_knb_optional_scalar(record$id),
     character(1)
   ))
-  indexed_ids <- sort(unique(indexed_ids[!is.na(indexed_ids)]))
+  indexed_ids <- sort(
+    unique(indexed_ids[!is.na(indexed_ids)]),
+    method = "radix"
+  )
   planned_pids <- unname(vapply(
     plan$objects,
     function(object) object$pid,
     character(1)
   ))
-  matching_pids <- sort(intersect(indexed_ids, planned_pids))
+  matching_pids <- sort(
+    intersect(indexed_ids, planned_pids),
+    method = "radix"
+  )
   list(
     verified = length(matching_pids) == 0L,
     matching_pids = matching_pids

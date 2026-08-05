@@ -98,6 +98,19 @@ make_knb_test_reproducibility <- function(path) {
     "workflow",
     "build-sdp.R"
   ))
+  writeLines("message('semantic release')", file.path(
+    reproducibility,
+    "workflow",
+    "semantic-release.R"
+  ))
+  writeLines(
+    "column_name,term_iri\ncount,https://w3id.org/smn/Abundance",
+    file.path(
+      reproducibility,
+      "workflow",
+      "semantic_suggestions.csv"
+    )
+  )
   writeLines("activity_id,agent\nbuild-sdp,metasalmon", file.path(
     reproducibility,
     "provenance",
@@ -125,6 +138,10 @@ make_knb_test_reproducibility <- function(path) {
     "reproducibility/reviewed_semantic_selections.csv",
     "reviewed_semantic_selections", "text/csv",
     "reproducibility/workflow/build-sdp.R", "workflow", "text/x-r-source",
+    "reproducibility/workflow/semantic-release.R",
+    "workflow", "text/x-r-source",
+    "reproducibility/workflow/semantic_suggestions.csv",
+    "workflow", "text/csv",
     "reproducibility/provenance/activities.csv", "provenance", "text/csv",
     "reproducibility/source/source-manifest.csv", "source", "text/csv"
   )
@@ -419,6 +436,81 @@ test_that("expanded KNB plans publish the closed reproducibility inventory", {
   expect_true(all(expected %in% paths[roles == "sdp_artifact"]))
   expect_false("reviewed_semantic_selections.csv" %in% paths)
   expect_true(isTRUE(validate_sdp_reproducibility_manifest(package_path)))
+})
+
+test_that("expanded KNB plan bytes are independent of the process locale", {
+  skip_if_not_installed("emld")
+
+  probe <- c(
+    "reproducibility/workflow/semantic-release.R",
+    "reproducibility/workflow/semantic_suggestions.csv"
+  )
+  original_locale <- Sys.getlocale("LC_COLLATE")
+  contrasting_locale <- NULL
+  for (candidate in c("C.UTF-8", "en_US.UTF-8", "English_United States.utf8")) {
+    resolved <- suppressWarnings(Sys.setlocale("LC_COLLATE", candidate))
+    if (nzchar(resolved) &&
+        !identical(sort(probe), sort(probe, method = "radix"))) {
+      contrasting_locale <- candidate
+      break
+    }
+  }
+  suppressWarnings(Sys.setlocale("LC_COLLATE", original_locale))
+  skip_if(
+    is.null(contrasting_locale),
+    "No contrasting collation locale is available"
+  )
+
+  first_path <- file.path(withr::local_tempdir(), "first")
+  second_path <- file.path(withr::local_tempdir(), "second")
+  make_knb_test_sdp(first_path)
+  make_knb_test_reproducibility(first_path)
+  make_knb_test_sdp(second_path)
+  make_knb_test_reproducibility(second_path)
+
+  first <- withr::with_locale(
+    c(LC_COLLATE = "C"),
+    publish_sdp_to_knb(
+      first_path,
+      public = TRUE,
+      dry_run = TRUE,
+      representation = "expanded"
+    )
+  )
+  second <- withr::with_locale(
+    c(LC_COLLATE = contrasting_locale),
+    publish_sdp_to_knb(
+      second_path,
+      public = TRUE,
+      dry_run = TRUE,
+      representation = "expanded"
+    )
+  )
+
+  expect_identical(first$manifest, second$manifest)
+  first_ore <- readBin(
+    first$resource_map_path,
+    "raw",
+    n = file.info(first$resource_map_path)$size
+  )
+  second_ore <- readBin(
+    second$resource_map_path,
+    "raw",
+    n = file.info(second$resource_map_path)$size
+  )
+  expect_identical(first_ore, second_ore)
+  objects <- .ms_knb_manifest_objects(first$manifest)
+  artifact_paths <- vapply(
+    objects[vapply(objects, function(object) {
+      identical(object$role, "sdp_artifact")
+    }, logical(1))],
+    function(object) object$path,
+    character(1)
+  )
+  expect_identical(
+    artifact_paths,
+    sort(artifact_paths, method = "radix")
+  )
 })
 
 test_that("KNB plans reject annotations to review-candidate vocabulary IRIs", {

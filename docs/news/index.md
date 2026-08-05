@@ -59,6 +59,10 @@
 - Made reproducibility-manifest ordering byte-stable across process
   locales, including artifact names that mix punctuation such as hyphens
   and underscores.
+- Made exact KNB plans, ORE identifiers, access-policy normalization,
+  and catalog-verification evidence locale-stable. Expanded SDP artifact
+  paths now use the same radix ordering as their reproducibility and
+  execution receipts.
 
 ## metasalmon 0.1.7
 
