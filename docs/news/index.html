@@ -55,6 +55,8 @@
 <li>EML export now documents procedures actually used by observed measurements as method steps, including method/protocol IRIs, versions, descriptions, and citations; unused registry alternatives are not asserted as performed. The reviewed semantic-selection ledger defaults to the extended <code>reproducibility/</code> layout while retaining the legacy root path for existing reviewed packages.</li>
 <li>Updated generated SDP descriptors and the vendored profile/rules/schema bundle to the byte-verified canonical <code>salmon-data-mobilization.github.io/smn-data-pkg</code> publication URLs.</li>
 <li>Corrected the bundled demo dictionaries so organism counts use QUDT <code>Individual</code> as their unit, use the released Salmon Domain Ontology <code>smn:Abundance</code> characteristic as their property, and no longer assert the nonexistent QUDT <code>NumberOfOrganisms</code> property.</li>
+<li>Fixed semantic candidate ranking for legitimate provider results whose optional <code>match_type</code> is missing; they now receive the configured unclassified score instead of aborting <code><a href="../reference/suggest_semantics.html">suggest_semantics()</a></code>.</li>
+<li>Extended the reviewed QUDT-to-EML unit crosswalk so both HTTP and HTTPS forms of QUDT <code>Individual</code> (<code>INDIV</code>) serialize as the EML standard unit <code>number</code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.7" id="metasalmon-017">metasalmon 0.1.7<a class="anchor" aria-label="anchor" href="#metasalmon-017"></a></h2>

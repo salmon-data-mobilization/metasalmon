@@ -1440,7 +1440,11 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 }
 
 .match_type_score <- function(match_type) {
-  mt <- tolower(trimws(match_type %||% ""))
+  if (is.null(match_type) || length(match_type) != 1L || is.na(match_type)) {
+    return(0)
+  }
+
+  mt <- tolower(trimws(as.character(match_type)))
   if (!nzchar(mt)) {
     return(0)
   }
@@ -1992,7 +1996,11 @@ sources_for_role <- function(role) {
 }
 
 .match_type_score_profiled <- function(match_type, weights) {
-  mt <- tolower(trimws(match_type %||% ""))
+  if (is.null(match_type) || length(match_type) != 1L || is.na(match_type)) {
+    return(weights$other %||% 0)
+  }
+
+  mt <- tolower(trimws(as.character(match_type)))
   if (!nzchar(mt)) {
     return(weights$other %||% 0)
   }

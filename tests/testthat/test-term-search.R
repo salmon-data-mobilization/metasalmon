@@ -531,6 +531,28 @@ test_that("score_and_rank_terms boosts label overlap with query tokens", {
   expect_equal(ranked$label[[1]], "Spawner count")
 })
 
+test_that("score_and_rank_terms treats missing match types as unclassified", {
+  df <- tibble::tibble(
+    label = c("Unclassified count", "Spawner count"),
+    iri = c("http://example.org/unclassified", "http://example.org/exact"),
+    source = c("ols", "ols"),
+    ontology = c("example", "example"),
+    role = c("property", "property"),
+    match_type = c(NA_character_, "label_exact"),
+    definition = c("A candidate without match metadata.", "A spawner count.")
+  )
+
+  expect_no_error({
+    ranked <- metasalmon:::`.score_and_rank_terms`(
+      df,
+      "property",
+      metasalmon:::`.iadopt_vocab`(),
+      "spawner count"
+    )
+  })
+  expect_equal(ranked$iri[[1]], "http://example.org/exact")
+})
+
 test_that("score_and_rank_terms demotes generic entity drift and boosts trusted generic entity matches", {
   vocab <- metasalmon:::`.iadopt_vocab`()
 
@@ -1300,6 +1322,7 @@ test_that("text-similarity score helpers are bounded and stable", {
   expect_equal(metasalmon:::.match_type_score("zooma_high"), 0.3)
   expect_equal(metasalmon:::.match_type_score("definition"), 0.15)
   expect_equal(metasalmon:::.match_type_score(""), 0)
+  expect_equal(metasalmon:::.match_type_score(NA_character_), 0)
 })
 
 test_that("benchmark helper returns profile-level and per-case ranking metrics", {

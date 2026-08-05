@@ -42,6 +42,11 @@ metasalmon 0.1.8
   `Individual` as their unit, use the released Salmon Domain Ontology
   `smn:Abundance` characteristic as their property, and no longer assert the
   nonexistent QUDT `NumberOfOrganisms` property.
+- Fixed semantic candidate ranking for legitimate provider results whose
+  optional `match_type` is missing; they now receive the configured unclassified
+  score instead of aborting `suggest_semantics()`.
+- Extended the reviewed QUDT-to-EML unit crosswalk so both HTTP and HTTPS forms
+  of QUDT `Individual` (`INDIV`) serialize as the EML standard unit `number`.
 
 metasalmon 0.1.7
 ----------------

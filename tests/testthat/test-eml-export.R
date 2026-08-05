@@ -870,6 +870,37 @@ test_that("EML units require an exact reviewed canonical-IRI crosswalk", {
   )
 })
 
+test_that("QUDT Individual abundance units map to the EML number unit", {
+  skip_if_not_installed("emld")
+
+  for (unit_iri in c(
+    "http://qudt.org/vocab/unit/INDIV",
+    "https://qudt.org/vocab/unit/INDIV"
+  )) {
+    package_path <- make_eml_test_sdp(
+      withr::local_tempdir(),
+      measurement_unit_iri = unit_iri,
+      measurement_unit_label = "Individual"
+    )
+
+    result <- write_eml_from_sdp(package_path)
+    expect_true(isTRUE(emld::eml_validate(result$path)))
+    document <- xml2::read_xml(result$path)
+    count_attribute <- xml2::xml_find_first(
+      document,
+      ".//*[local-name()='attribute'][*[local-name()='attributeName' and text()='count']]"
+    )
+    expect_equal(
+      xml2::xml_text(xml2::xml_find_first(
+        count_attribute,
+        ".//*[local-name()='ratio']/*[local-name()='unit']/*[local-name()='standardUnit']"
+      )),
+      "number",
+      info = unit_iri
+    )
+  }
+})
+
 test_that("EML missing-value declarations are checked against raw CSV tokens", {
   skip_if_not_installed("emld")
 
