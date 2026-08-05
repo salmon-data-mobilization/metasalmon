@@ -3,8 +3,12 @@
 Builds deterministic EML 2.2.0 XML from a strictly valid Salmon Data
 Package and an explicit EML mapping sidecar. The sidecar is required
 because EML concepts such as measurement scale, structured parties,
-methods, and rights cannot be inferred defensibly from the canonical SDP
-tables.
+dataset-level method narrative, and rights cannot be inferred defensibly
+from the canonical SDP tables. When `metadata/methods.csv` is present,
+validated procedures actually bound to observed measurements are emitted
+as method steps with their method and protocol IRIs, descriptions,
+versions, and citations; unreferenced registry alternatives are retained
+in the return value but are not asserted as performed.
 
 ## Usage
 
@@ -41,15 +45,17 @@ write_eml_from_sdp(
 
 - supplementary_objects:
 
-  Optional data frame describing canonical SDP archives to expose as EML
-  `otherEntity` elements. Required columns are `path`, `pid`,
-  `format_id`, `checksum`, `object_name`, `entity_name`, and
-  `description`; optional `size`, when supplied, must match the file.
-  The initial profile accepts `application/zip` objects with lowercase
-  SHA-256 checksums.
+  Optional data frame describing canonical SDP archives or expanded
+  artifacts to expose as EML `otherEntity` elements. Required columns
+  are `path`, `pid`, `format_id`, `checksum`, `object_name`,
+  `entity_name`, and `description`; optional `size`, when supplied, must
+  match the file. `entity_type` may distinguish an expanded artifact
+  from an archive. Objects use lowercase SHA-256 checksums and safe
+  relative `object_name` paths; only `application/zip` objects receive
+  `compressionMethod = zip`.
   [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
-  supplies this archive plan automatically; ordinary standalone EML
-  export leaves the argument `NULL`.
+  supplies this plan automatically; ordinary standalone EML export
+  leaves the argument `NULL`.
 
 - require_revision_key:
 
@@ -61,8 +67,9 @@ write_eml_from_sdp(
 
 Invisibly returns a list containing the XML text, normalized output
 path, EML version, metadata package ID, stable series ID, validation
-result, revision key, and deterministic data and supplementary-object
-plans.
+result, revision key, deterministic data and supplementary-object plans,
+the complete method registry (`methods`), and the subset asserted in EML
+(`used_methods`).
 
 ## Details
 

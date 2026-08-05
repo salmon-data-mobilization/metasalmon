@@ -370,6 +370,255 @@ test_that("canonical SDP archives are valid deterministic EML otherEntity object
   )
 })
 
+test_that("EML method steps include only registry procedures actually used", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_eml_test_sdp(withr::local_tempdir())
+  dictionary_path <- file.path(
+    package_path,
+    "metadata",
+    "column_dictionary.csv"
+  )
+  dictionary <- readr::read_csv(dictionary_path, show_col_types = FALSE)
+  dictionary$method_iri[dictionary$column_name == "count"] <-
+    "https://example.org/methods/mark-recapture"
+  readr::write_csv(dictionary, dictionary_path, na = "")
+  review_path <- file.path(
+    package_path,
+    "reviewed_semantic_selections.csv"
+  )
+  review <- readr::read_csv(review_path, show_col_types = FALSE)
+  review <- dplyr::bind_rows(
+    review,
+    tibble::tibble(
+      dataset_id = "demo-salmon-2026",
+      table_id = "counts",
+      column_name = "count",
+      target_scope = "column",
+      target_sdp_field = "method_iri",
+      dictionary_role = "method",
+      decision = "accepted",
+      confidence = "high",
+      review_rationale = "The procedure applies to each observed count.",
+      iri = "https://example.org/methods/mark-recapture"
+    )
+  )
+  readr::write_csv(review, review_path, na = "")
+  vocabulary_path <- file.path(
+    package_path,
+    "metadata",
+    "semantic_vocabulary.csv"
+  )
+  vocabulary <- readr::read_csv(
+    vocabulary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  method_vocabulary <- vocabulary[1, , drop = FALSE]
+  method_vocabulary$iri <- "https://example.org/methods/mark-recapture"
+  method_vocabulary$label <- "Mark-recapture estimate"
+  method_vocabulary$definition <-
+    "A procedure for estimating abundance from marked and recaptured fish."
+  method_vocabulary$source <- "example"
+  method_vocabulary$ontology <- "example"
+  method_vocabulary$resource_kind <- "Procedure"
+  method_vocabulary$type_iris <- "http://www.w3.org/ns/sosa/Procedure"
+  method_vocabulary$native_type <- "sosa:Procedure"
+  method_vocabulary$source_url <- "https://example.org/methods/"
+  method_vocabulary$source_artifact_sha256 <- NA_character_
+  method_vocabulary$reviewed_snapshot_sha256 <-
+    .ms_eml_vocabulary_snapshot_sha256(method_vocabulary)
+  vocabulary <- dplyr::bind_rows(vocabulary, method_vocabulary)
+  readr::write_csv(vocabulary, vocabulary_path, na = "")
+  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$semantic_review$sha256 <- digest::digest(
+    file = review_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  mapping$semantic_vocabulary$sha256 <- digest::digest(
+    file = vocabulary_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  yaml::write_yaml(mapping, mapping_path)
+  methods <- tibble::tribble(
+    ~dataset_id, ~method_iri, ~method_label, ~method_description,
+    ~method_version, ~protocol_iri, ~citation,
+    "demo-salmon-2026", "https://example.org/methods/mark-recapture",
+    "Mark-recapture estimate",
+    "Estimate abundance from marked and subsequently recaptured fish.",
+    "2026", "https://example.org/protocols/mark-recapture",
+    "Example Salmon Program. 2026. Mark-recapture protocol.",
+    "demo-salmon-2026", "https://example.org/methods/unused-alternative",
+    "Unused alternative", "A registered alternative not used by these data.",
+    NA_character_, NA_character_, NA_character_
+  )
+  write_sdp_methods(package_path, methods)
+
+  result <- write_eml_from_sdp(package_path)
+  expect_true(isTRUE(emld::eml_validate(result$path)))
+  document <- xml2::read_xml(result$path)
+  steps <- xml2::xml_find_all(
+    document,
+    "//*[local-name()='methods']/*[local-name()='methodStep']"
+  )
+  expect_length(steps, 2L)
+  registry_text <- paste(xml2::xml_text(steps[[2]]), collapse = " ")
+  expect_match(registry_text, "Mark-recapture estimate", fixed = TRUE)
+  expect_match(
+    registry_text,
+    "https://example.org/methods/mark-recapture",
+    fixed = TRUE
+  )
+  expect_match(
+    registry_text,
+    "https://example.org/protocols/mark-recapture",
+    fixed = TRUE
+  )
+  expect_match(registry_text, "Mark-recapture protocol", fixed = TRUE)
+  expect_false(grepl(
+    "Unused alternative",
+    paste(xml2::xml_text(document), collapse = " "),
+    fixed = TRUE
+  ))
+  expect_identical(result$methods, read_sdp_methods(package_path))
+  expect_identical(
+    result$used_methods$method_iri,
+    "https://example.org/methods/mark-recapture"
+  )
+})
+
+test_that("EML does not assert an unreferenced registry method was performed", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_eml_test_sdp(withr::local_tempdir())
+  write_sdp_methods(
+    package_path,
+    tibble::tibble(
+      dataset_id = "demo-salmon-2026",
+      method_iri = "https://example.org/methods/unreferenced",
+      method_label = "Unreferenced method",
+      method_description = "Registered but not used to produce this data object.",
+      method_version = NA_character_,
+      protocol_iri = NA_character_,
+      citation = NA_character_
+    )
+  )
+
+  result <- write_eml_from_sdp(package_path)
+  document <- xml2::read_xml(result$path)
+  steps <- xml2::xml_find_all(
+    document,
+    "//*[local-name()='methods']/*[local-name()='methodStep']"
+  )
+  expect_length(steps, 1L)
+  expect_false(grepl(
+    "Unreferenced method",
+    paste(xml2::xml_text(document), collapse = " "),
+    fixed = TRUE
+  ))
+  expect_equal(nrow(result$used_methods), 0L)
+})
+
+test_that("EML does not assert methods attached to non-measurement columns", {
+  package_path <- make_eml_test_sdp(withr::local_tempdir())
+  dictionary_path <- file.path(
+    package_path,
+    "metadata",
+    "column_dictionary.csv"
+  )
+  dictionary <- readr::read_csv(dictionary_path, show_col_types = FALSE)
+  dictionary$method_iri[dictionary$column_name == "literal_missing"] <-
+    "https://example.org/methods/attribute-cleanup"
+  readr::write_csv(dictionary, dictionary_path, na = "")
+
+  pkg <- validate_salmon_datapackage(
+    package_path,
+    require_iris = TRUE
+  )$package
+  registry <- tibble::tibble(
+    dataset_id = "demo-salmon-2026",
+    method_iri = "https://example.org/methods/attribute-cleanup",
+    method_label = "Attribute cleanup",
+    method_description = paste(
+      "A legacy dictionary annotation that must not be represented as a",
+      "performed measurement procedure."
+    ),
+    method_version = NA_character_,
+    protocol_iri = NA_character_,
+    citation = NA_character_
+  )
+
+  used <- .ms_eml_used_sdp_methods(package_path, pkg, registry)
+
+  expect_equal(nrow(used), 0L)
+})
+
+test_that("expanded SDP artifacts are valid path-preserving EML otherEntity objects", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_eml_test_sdp(withr::local_tempdir())
+  artifact_path <- file.path(package_path, "metadata", "dataset.csv")
+  checksum <- digest::digest(
+    file = artifact_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  pid <- "urn:uuid:25b20b2b-d7dd-55f9-b4a3-203c9db9d46c"
+
+  result <- write_eml_from_sdp(
+    package_path,
+    supplementary_objects = tibble::tibble(
+      path = artifact_path,
+      pid = pid,
+      format_id = "text/csv",
+      checksum = checksum,
+      size = unname(file.info(artifact_path)$size),
+      object_name = "metadata/dataset.csv",
+      entity_name = "Salmon Data Package artifact: metadata/dataset.csv",
+      description = "Canonical SDP dataset metadata.",
+      entity_type = "Salmon Data Package artifact"
+    )
+  )
+
+  expect_true(isTRUE(emld::eml_validate(result$path)))
+  document <- xml2::read_xml(result$path)
+  other_entity <- xml2::xml_find_first(
+    document,
+    "//*[local-name()='otherEntity']"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      ".//*[local-name()='objectName']"
+    )),
+    "metadata/dataset.csv"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      ".//*[local-name()='formatName']"
+    )),
+    "text/csv"
+  )
+  expect_equal(
+    xml2::xml_text(xml2::xml_find_first(
+      other_entity,
+      "./*[local-name()='entityType']"
+    )),
+    "Salmon Data Package artifact"
+  )
+  expect_length(
+    xml2::xml_find_all(
+      other_entity,
+      ".//*[local-name()='compressionMethod']"
+    ),
+    0L
+  )
+})
+
 test_that("reviewed revision keys change package IDs but preserve series IDs", {
   skip_if_not_installed("emld")
 

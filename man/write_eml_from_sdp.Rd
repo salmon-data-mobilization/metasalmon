@@ -26,12 +26,15 @@ write_eml_from_sdp(
 \code{TRUE}. An identical existing file is treated as an idempotent success.}
 
 \item{supplementary_objects}{Optional data frame describing canonical SDP
-archives to expose as EML \code{otherEntity} elements. Required columns are
+archives or expanded artifacts to expose as EML \code{otherEntity} elements.
+Required columns are
 \code{path}, \code{pid}, \code{format_id}, \code{checksum}, \code{object_name}, \code{entity_name}, and
-\code{description}; optional \code{size}, when supplied, must match the file. The
-initial profile accepts \code{application/zip} objects with lowercase SHA-256
-checksums. \code{publish_sdp_to_knb()} supplies this archive plan
-automatically; ordinary standalone EML export leaves the argument \code{NULL}.}
+\code{description}; optional \code{size}, when supplied, must match the file.
+\code{entity_type} may distinguish an expanded artifact from an archive.
+Objects use lowercase SHA-256 checksums and safe relative \code{object_name}
+paths; only \code{application/zip} objects receive \code{compressionMethod = zip}.
+\code{publish_sdp_to_knb()} supplies this plan automatically; ordinary
+standalone EML export leaves the argument \code{NULL}.}
 
 \item{require_revision_key}{Logical; when \code{TRUE}, require a reviewed
 \code{publication.revision_key} in the EML mapping sidecar. The key creates a
@@ -40,14 +43,20 @@ new deterministic metadata package ID without changing the series ID.}
 \value{
 Invisibly returns a list containing the XML text, normalized output
 path, EML version, metadata package ID, stable series ID, validation
-result, revision key, and deterministic data and supplementary-object
-plans.
+result, revision key, deterministic data and supplementary-object plans,
+the complete method registry (\code{methods}), and the subset asserted in EML
+(\code{used_methods}).
 }
 \description{
 Builds deterministic EML 2.2.0 XML from a strictly valid Salmon Data
 Package and an explicit EML mapping sidecar. The sidecar is required because
-EML concepts such as measurement scale, structured parties, methods, and
-rights cannot be inferred defensibly from the canonical SDP tables.
+EML concepts such as measurement scale, structured parties, dataset-level
+method narrative, and rights cannot be inferred defensibly from the
+canonical SDP tables. When \code{metadata/methods.csv} is present, validated
+procedures actually bound to observed measurements are emitted as method
+steps with their method and protocol IRIs, descriptions, versions, and
+citations; unreferenced registry alternatives are retained in the return
+value but are not asserted as performed.
 }
 \details{
 Measurement attributes receive exactly two semantic annotations in the

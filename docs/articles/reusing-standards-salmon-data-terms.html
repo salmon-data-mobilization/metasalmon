@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -301,13 +301,24 @@ column so the column is self-explanatory.</li>
 <li>
 <strong>entity_iri</strong> and <strong>property_iri</strong>:
 required links for measurement columns. Use <code>property_iri</code> to
-specify what characteristic was measured (e.g., “count”), and
-<code>entity_iri</code> to specify what was measured (e.g., “spawning
-salmon”).</li>
+specify the characteristic that was measured (for example, abundance),
+and <code>entity_iri</code> to specify what bears that characteristic
+(for example, a salmon stock). A QUDT counting unit describes how the
+result is expressed; it does not by itself supply the ecological
+property.</li>
 <li>
 <strong>constraint_iri</strong>: an optional I-ADOPT component that
-qualifies the measurement (e.g., “maximum”, “annual average”). Use it
-only when it adds clarity.</li>
+qualifies the measurement (for example, spawner stage, female sex, or
+freshwater age class). When more than one fixed qualifier is needed,
+separate its IRIs with semicolons. Use row-varying values such as the
+actual brood year as table dimensions rather than fixed column
+constraints.</li>
+<li>
+<strong>unit_iri</strong>: the unit or counting unit used to express
+the value. For an absolute abundance of fish, QUDT
+<code>Individual</code> can be the unit while the property remains
+abundance; do not duplicate a generic Count concept into both slots
+merely because the source values are integers.</li>
 </ul>
 </div>
 <div class="section level3">

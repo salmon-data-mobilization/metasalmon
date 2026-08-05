@@ -188,12 +188,20 @@ dict$term_iri[dict$column_name == "SPAWN_EST"] <- "https://w3id.org/gcdfo/salmon
 - **term_iri**: attaches the chosen web address to a column so the
   column is self-explanatory.
 - **entity_iri** and **property_iri**: required links for measurement
-  columns. Use `property_iri` to specify what characteristic was
-  measured (e.g., “count”), and `entity_iri` to specify what was
-  measured (e.g., “spawning salmon”).
+  columns. Use `property_iri` to specify the characteristic that was
+  measured (for example, abundance), and `entity_iri` to specify what
+  bears that characteristic (for example, a salmon stock). A QUDT
+  counting unit describes how the result is expressed; it does not by
+  itself supply the ecological property.
 - **constraint_iri**: an optional I-ADOPT component that qualifies the
-  measurement (e.g., “maximum”, “annual average”). Use it only when it
-  adds clarity.
+  measurement (for example, spawner stage, female sex, or freshwater age
+  class). When more than one fixed qualifier is needed, separate its
+  IRIs with semicolons. Use row-varying values such as the actual brood
+  year as table dimensions rather than fixed column constraints.
+- **unit_iri**: the unit or counting unit used to express the value. For
+  an absolute abundance of fish, QUDT `Individual` can be the unit while
+  the property remains abundance; do not duplicate a generic Count
+  concept into both slots merely because the source values are integers.
 
 ### When to skip linking
 

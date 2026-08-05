@@ -83,6 +83,84 @@
   nzchar(trimws(as.character(x[[1]])))
 }
 
+.ms_eml_present_values <- function(x) {
+  text <- as.character(x)
+  !is.na(text) & nzchar(trimws(text))
+}
+
+.ms_eml_used_sdp_methods <- function(path, pkg, registry) {
+  if (!is.data.frame(registry) || nrow(registry) == 0L) {
+    return(registry)
+  }
+
+  used <- character()
+  dictionary <- pkg$dictionary
+  static_method_rows <- rep(FALSE, nrow(dictionary))
+  if (all(c("column_role", "method_iri") %in% names(dictionary))) {
+    static_method_rows <-
+      !is.na(dictionary$column_role) &
+      as.character(dictionary$column_role) == "measurement" &
+      .ms_eml_present_values(dictionary$method_iri)
+  }
+  static <- dictionary[static_method_rows, , drop = FALSE]
+  for (index in seq_len(nrow(static))) {
+    table_id <- as.character(static$table_id[[index]])
+    column <- as.character(static$column_name[[index]])
+    data <- pkg$resources[[table_id]]
+    if (!is.null(data) && column %in% names(data) &&
+        any(.ms_eml_present_values(data[[column]]))) {
+      used <- c(used, as.character(static$method_iri[[index]]))
+    }
+  }
+
+  structure_paths <- .ms_sdp_observation_paths(path)
+  if (all(vapply(structure_paths, file.exists, logical(1)))) {
+    structure <- read_sdp_observation_structures(path, validate = TRUE)
+    components <- structure$components
+    procedures <- components[
+      .ms_eml_present_values(components$component_relation_iri) &
+        components$component_relation_iri == .ms_sosa_used_procedure,
+      ,
+      drop = FALSE
+    ]
+    codes <- pkg$codes
+    if (is.null(codes)) {
+      codes <- tibble::tibble()
+    }
+    for (index in seq_len(nrow(procedures))) {
+      procedure <- procedures[index, , drop = FALSE]
+      bound <- .ms_sdp_observation_structure_rows(
+        components,
+        procedure
+      )
+      measure <- bound$column_name[bound$component_role == "measure"][[1]]
+      table_id <- procedure$table_id[[1]]
+      column <- procedure$column_name[[1]]
+      data <- pkg$resources[[table_id]]
+      observed <- .ms_eml_present_values(data[[measure]])
+      code_values <- unique(as.character(data[[column]][observed]))
+      code_values <- code_values[.ms_eml_present_values(code_values)]
+      if (length(code_values) == 0L || nrow(codes) == 0L) {
+        next
+      }
+      matched <- codes[
+        codes$dataset_id == procedure$dataset_id[[1]] &
+          codes$table_id == table_id &
+          codes$column_name == column &
+          as.character(codes$code_value) %in% code_values,
+        ,
+        drop = FALSE
+      ]
+      used <- c(
+        used,
+        as.character(matched$term_iri[.ms_eml_present_values(matched$term_iri)])
+      )
+    }
+  }
+
+  registry[registry$method_iri %in% unique(used), , drop = FALSE]
+}
+
 .ms_eml_scalar <- function(x, field, required = TRUE) {
   value <- x[[field]]
   if (!.ms_eml_nonempty(value)) {
@@ -534,9 +612,13 @@
     )
   }
   review_path <- .ms_eml_scalar(semantic_review, "path")
-  if (!identical(review_path, "reviewed_semantic_selections.csv")) {
+  supported_review_paths <- c(
+    "reproducibility/reviewed_semantic_selections.csv",
+    "reviewed_semantic_selections.csv"
+  )
+  if (!review_path %in% supported_review_paths) {
     cli::cli_abort(
-      "EML mapping {.field semantic_review.path} must be {.file reviewed_semantic_selections.csv}."
+      "EML mapping {.field semantic_review.path} must use the canonical reproducibility ledger or its legacy root-level compatibility path."
     )
   }
   review_sha256 <- .ms_eml_scalar(semantic_review, "sha256")
@@ -1244,6 +1326,8 @@
     object_name = character(),
     entity_name = character(),
     description = character(),
+    compression_method = character(),
+    entity_type = character(),
     online_url = character()
   )
 }
@@ -1265,7 +1349,7 @@
     "path", "pid", "format_id", "checksum", "object_name",
     "entity_name", "description"
   )
-  allowed <- c(required, "size")
+  allowed <- c(required, "size", "compression_method", "entity_type")
   missing <- setdiff(required, names(objects))
   unexpected <- setdiff(names(objects), allowed)
   if (length(missing) > 0L) {
@@ -1302,22 +1386,34 @@
       "Every supplementary-object {.field pid} must be an absolute URI without whitespace."
     )
   }
-  if (any(values$format_id != "application/zip")) {
-    cli::cli_abort(
-      "Canonical SDP supplementary objects must use {.val application/zip} as {.field format_id}."
-    )
-  }
   if (any(!grepl("^[0-9a-f]{64}$", values$checksum))) {
     cli::cli_abort(
       "Every supplementary-object {.field checksum} must be a lowercase SHA-256 digest."
     )
   }
-  unsafe_name <- grepl("[/\\\\]", values$object_name) |
-    values$object_name %in% c(".", "..") |
-    !grepl("\\.zip$", values$object_name, ignore.case = TRUE)
+  slash_names <- gsub("\\\\", "/", values$object_name)
+  name_parts <- strsplit(slash_names, "/", fixed = TRUE)
+  unsafe_name <- startsWith(slash_names, "/") |
+    grepl("^[A-Za-z]:/", slash_names) |
+    grepl("//", slash_names, fixed = TRUE) |
+    vapply(
+      name_parts,
+      function(parts) any(!nzchar(parts) | parts %in% c(".", "..")),
+      logical(1)
+    )
   if (any(unsafe_name)) {
     cli::cli_abort(
-      "Every supplementary-object {.field object_name} must be a basename ending in {.file .zip}."
+      "Every supplementary-object {.field object_name} must be a safe relative object path."
+    )
+  }
+  archive <- values$format_id == "application/zip"
+  invalid_archive_name <- archive & (
+    grepl("/", slash_names, fixed = TRUE) |
+      !grepl("\\.zip$", slash_names, ignore.case = TRUE)
+  )
+  if (any(invalid_archive_name)) {
+    cli::cli_abort(
+      "An {.val application/zip} supplementary-object {.field object_name} must be a basename ending in {.file .zip}."
     )
   }
   if (anyDuplicated(values$pid) || anyDuplicated(values$object_name)) {
@@ -1372,6 +1468,37 @@
     )
   }
 
+  compression_method <- if ("compression_method" %in% names(objects)) {
+    method <- trimws(as.character(objects$compression_method))
+    method[!nzchar(method)] <- NA_character_
+    method
+  } else {
+    ifelse(archive, "zip", NA_character_)
+  }
+  if (any(archive & compression_method != "zip", na.rm = TRUE) ||
+      any(archive & is.na(compression_method)) ||
+      any(!archive & !is.na(compression_method))) {
+    cli::cli_abort(
+      "Only {.val application/zip} supplementary objects may declare {.field compression_method = zip}."
+    )
+  }
+  entity_type <- if ("entity_type" %in% names(objects)) {
+    value <- trimws(as.character(objects$entity_type))
+    if (anyNA(value) || any(!nzchar(value)) ||
+        any(grepl("[[:cntrl:]]", value))) {
+      cli::cli_abort(
+        "Every supplementary-object {.field entity_type} must be non-empty and contain no control characters."
+      )
+    }
+    value
+  } else {
+    ifelse(
+      archive,
+      "Salmon Data Package archive",
+      "Salmon Data Package artifact"
+    )
+  }
+
   tibble::tibble(
     path = paths,
     pid = values$pid,
@@ -1379,9 +1506,11 @@
     checksum_algorithm = "SHA-256",
     checksum = values$checksum,
     size = actual_sizes,
-    object_name = values$object_name,
+    object_name = slash_names,
     entity_name = values$entity_name,
     description = values$description,
+    compression_method = compression_method,
+    entity_type = entity_type,
     online_url = .ms_eml_knb_object_url(values$pid)
   ) |>
     dplyr::arrange(.data$object_name, .data$pid)
@@ -2091,7 +2220,13 @@
       object$checksum[[1]],
       attrs = c(method = object$checksum_algorithm[[1]])
     )
-    .ms_eml_add_text(physical, "compressionMethod", "zip")
+    if (!is.na(object$compression_method[[1]])) {
+      .ms_eml_add_text(
+        physical,
+        "compressionMethod",
+        object$compression_method[[1]]
+      )
+    }
     data_format <- xml2::xml_add_child(physical, "dataFormat")
     external_format <- xml2::xml_add_child(
       data_format,
@@ -2114,7 +2249,7 @@
     .ms_eml_add_text(
       other_entity,
       "entityType",
-      "Salmon Data Package archive"
+      object$entity_type[[1]]
     )
   }
   invisible(NULL)
@@ -2126,7 +2261,8 @@
                                    configs,
                                    vocabulary,
                                    data_objects,
-                                   supplementary_objects) {
+                                   supplementary_objects,
+                                   sdp_methods) {
   root <- xml2::read_xml(paste0(
     '<eml:eml xmlns:eml="', .ms_eml_namespace, '" ',
     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
@@ -2258,6 +2394,35 @@
     method_step <- xml2::xml_add_child(methods, "methodStep")
     description <- xml2::xml_add_child(method_step, "description")
     .ms_eml_add_text(description, "para", method$description)
+  }
+  if (nrow(sdp_methods) > 0L) {
+    for (method_index in seq_len(nrow(sdp_methods))) {
+      method <- sdp_methods[method_index, , drop = FALSE]
+      method_step <- xml2::xml_add_child(methods, "methodStep")
+      description <- xml2::xml_add_child(method_step, "description")
+      paragraphs <- c(
+        paste("Method:", method$method_label[[1]]),
+        method$method_description[[1]],
+        paste("Method IRI:", method$method_iri[[1]])
+      )
+      optional <- c(
+        method_version = "Method version",
+        protocol_iri = "Protocol IRI",
+        citation = "Citation"
+      )
+      for (field in names(optional)) {
+        value <- method[[field]][[1]]
+        if (.ms_eml_nonempty(value)) {
+          paragraphs <- c(
+            paragraphs,
+            paste0(unname(optional[[field]]), ": ", value)
+          )
+        }
+      }
+      for (paragraph in paragraphs) {
+        .ms_eml_add_text(description, "para", paragraph)
+      }
+    }
   }
 
   for (table_index in seq_len(nrow(pkg$tables))) {
@@ -2519,8 +2684,13 @@
 #'
 #' Builds deterministic EML 2.2.0 XML from a strictly valid Salmon Data
 #' Package and an explicit EML mapping sidecar. The sidecar is required because
-#' EML concepts such as measurement scale, structured parties, methods, and
-#' rights cannot be inferred defensibly from the canonical SDP tables.
+#' EML concepts such as measurement scale, structured parties, dataset-level
+#' method narrative, and rights cannot be inferred defensibly from the
+#' canonical SDP tables. When `metadata/methods.csv` is present, validated
+#' procedures actually bound to observed measurements are emitted as method
+#' steps with their method and protocol IRIs, descriptions, versions, and
+#' citations; unreferenced registry alternatives are retained in the return
+#' value but are not asserted as performed.
 #'
 #' Measurement attributes receive exactly two semantic annotations in the
 #' initial profile. Both reviewed OWL measurement-datum classes and SKOS
@@ -2539,20 +2709,24 @@
 #' @param overwrite Logical; replace a different existing output only when
 #'   `TRUE`. An identical existing file is treated as an idempotent success.
 #' @param supplementary_objects Optional data frame describing canonical SDP
-#'   archives to expose as EML `otherEntity` elements. Required columns are
+#'   archives or expanded artifacts to expose as EML `otherEntity` elements.
+#'   Required columns are
 #'   `path`, `pid`, `format_id`, `checksum`, `object_name`, `entity_name`, and
-#'   `description`; optional `size`, when supplied, must match the file. The
-#'   initial profile accepts `application/zip` objects with lowercase SHA-256
-#'   checksums. `publish_sdp_to_knb()` supplies this archive plan
-#'   automatically; ordinary standalone EML export leaves the argument `NULL`.
+#'   `description`; optional `size`, when supplied, must match the file.
+#'   `entity_type` may distinguish an expanded artifact from an archive.
+#'   Objects use lowercase SHA-256 checksums and safe relative `object_name`
+#'   paths; only `application/zip` objects receive `compressionMethod = zip`.
+#'   `publish_sdp_to_knb()` supplies this plan automatically; ordinary
+#'   standalone EML export leaves the argument `NULL`.
 #' @param require_revision_key Logical; when `TRUE`, require a reviewed
 #'   `publication.revision_key` in the EML mapping sidecar. The key creates a
 #'   new deterministic metadata package ID without changing the series ID.
 #'
 #' @return Invisibly returns a list containing the XML text, normalized output
 #'   path, EML version, metadata package ID, stable series ID, validation
-#'   result, revision key, and deterministic data and supplementary-object
-#'   plans.
+#'   result, revision key, deterministic data and supplementary-object plans,
+#'   the complete method registry (`methods`), and the subset asserted in EML
+#'   (`used_methods`).
 #' @export
 #'
 #' @examples
@@ -2626,6 +2800,13 @@ write_eml_from_sdp <- function(path,
   supplementary_objects <- .ms_eml_supplementary_objects(
     supplementary_objects
   )
+  methods_path <- file.path(path, "metadata", "methods.csv")
+  sdp_methods <- if (file.exists(methods_path)) {
+    read_sdp_methods(path, validate = TRUE)
+  } else {
+    tibble::tibble()
+  }
+  used_sdp_methods <- .ms_eml_used_sdp_methods(path, pkg, sdp_methods)
   built <- .ms_eml_build_document(
     path,
     pkg,
@@ -2633,7 +2814,8 @@ write_eml_from_sdp <- function(path,
     configs,
     vocabulary,
     data_objects,
-    supplementary_objects
+    supplementary_objects,
+    used_sdp_methods
   )
   .ms_eml_validate_document_links(
     built$document,
@@ -2704,7 +2886,9 @@ write_eml_from_sdp <- function(path,
     public = mapping$publication$public,
     validation = eml_validation,
     data_objects = data_objects,
-    supplementary_objects = supplementary_objects
+    supplementary_objects = supplementary_objects,
+    methods = sdp_methods,
+    used_methods = used_sdp_methods
   )
   cli::cli_alert_success(
     "Validated EML {.val {result$eml_version}} written to {.path {result$path}}"

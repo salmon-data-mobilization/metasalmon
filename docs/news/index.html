@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,19 @@
       <small>Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.8" id="metasalmon-018">metasalmon 0.1.8<a class="anchor" aria-label="anchor" href="#metasalmon-018"></a></h2>
+<ul><li>Added exact-schema, atomic, symlink-safe readers and writers for the optional SDP <code>metadata/methods.csv</code> SOSA procedure registry and paired <code>metadata/structure/observation_*.csv</code> resources. Validation now enforces complete one-structure-per-measure coverage, required dimension grain, typed repeated-value invariance, static and row-varying procedure resolution, canonical descriptor inventory, and remains unchanged when the extension is absent. Multi-file writes stage and validate the CSV/descriptor set as one rollback-capable transaction. Extension, reproducibility, and KNB APIs also reject direct or trailing-slash package-root symlinks without rejecting harmless platform aliases in ancestor paths.</li>
+<li>Added <code><a href="../reference/extract_sdp_observations.html">extract_sdp_observations()</a></code> to produce one deterministic normalized table per declared measure-specific observation structure without claiming RDF Data Cube conformance.</li>
+<li>
+<code>apply_semantic_suggestions(strategy = "reviewed")</code> now applies explicit accepted review decisions and preserves multiple constraints for one measurement as a deterministic, deduplicated, semicolon-separated <code>constraint_iri</code>. The LLM-reviewed strategy has the same multiple-constraint behavior; lexical <code>"top"</code> and all non-constraint roles remain single-winner.</li>
+<li>Added a deterministic, checksum-bound <code>reproducibility/manifest.json</code> API for the optional reviewed-selection, workflow, provenance, and source sidecars. Validation is closed over the exact directory contents and rejects symlinks, undeclared files, missing files, and checksum or byte-size drift.</li>
+<li>
+<code>publish_sdp_to_knb(representation = "expanded")</code> now deposits the closed SDP inventory as individually named objects with package-relative ORE locations, instead of a ZIP. It includes validated SSSOM, decomposition, methods, observation-structure, and reproducibility artifacts and can reconstruct the exact SDP hierarchy without publishing unrelated files. Archive mode remains available for compatibility.</li>
+<li>EML export now documents procedures actually used by observed measurements as method steps, including method/protocol IRIs, versions, descriptions, and citations; unused registry alternatives are not asserted as performed. The reviewed semantic-selection ledger defaults to the extended <code>reproducibility/</code> layout while retaining the legacy root path for existing reviewed packages.</li>
+<li>Updated generated SDP descriptors and the vendored profile/rules/schema bundle to the byte-verified canonical <code>salmon-data-mobilization.github.io/smn-data-pkg</code> publication URLs.</li>
+<li>Corrected the bundled demo dictionaries so organism counts use QUDT <code>Individual</code> as their unit, use the released Salmon Domain Ontology <code>smn:Abundance</code> characteristic as their property, and no longer assert the nonexistent QUDT <code>NumberOfOrganisms</code> property.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.7" id="metasalmon-017">metasalmon 0.1.7<a class="anchor" aria-label="anchor" href="#metasalmon-017"></a></h2>
 <ul><li><p>Corrected the KNB package representation. New plans now upload each original SDP data resource, one friendly deterministic ZIP containing the complete canonical Salmon Data Package, one EML 2.2.0 metadata object that describes both representations, and one OAI-ORE resource map. Internal SDP CSV, JSON, SSSOM, and measurement-decomposition files no longer appear as unnamed KNB objects.</p></li>

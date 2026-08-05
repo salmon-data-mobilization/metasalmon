@@ -1914,6 +1914,67 @@ test_that("suggest_semantics deduplicates by source plus IRI without rewriting",
   expect_true(all(c("https://w3id.org/smn/Stock", "http://w3id.org/salmon/Stock") %in% unique(var_rows$iri)))
 })
 
+test_that("apply_semantic_suggestions preserves reviewed multiple constraints", {
+  dict <- test_dictionary(
+    column_name = "effective_female_spawners",
+    column_label = "Effective female spawners",
+    column_description = "Spawner abundance qualified by spawner stage and female sex"
+  )
+
+  spawner_stage <- "https://w3id.org/smn/SpawnerStageContext"
+  female_sex <- "https://example.org/constraint/FemaleSex"
+  suggestions <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "effective_female_spawners",
+    dictionary_role = "constraint",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "constraint_iri",
+    search_query = c("spawner stage", "female sex", "spawner stage", "brood year"),
+    iri = c(
+      spawner_stage,
+      female_sex,
+      spawner_stage,
+      "https://example.org/constraint/BroodYear"
+    ),
+    decision = c("accepted", "accepted", "accepted", "rejected"),
+    llm_selected = c(TRUE, TRUE, TRUE, FALSE),
+    llm_confidence = c(0.98, 0.97, 0.98, 0.94)
+  )
+
+  out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    strategy = "llm",
+    verbose = FALSE
+  )
+
+  expect_identical(
+    out$constraint_iri[[1]],
+    paste(spawner_stage, female_sex, sep = "; ")
+  )
+
+  reviewed_out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    strategy = "reviewed",
+    verbose = FALSE
+  )
+  expect_identical(
+    reviewed_out$constraint_iri[[1]],
+    paste(spawner_stage, female_sex, sep = "; ")
+  )
+
+  top_out <- apply_semantic_suggestions(
+    dict,
+    suggestions = suggestions,
+    strategy = "top",
+    verbose = FALSE
+  )
+  expect_identical(top_out$constraint_iri[[1]], spawner_stage)
+})
+
 test_that("apply_semantic_suggestions matches by column_name and dictionary_role", {
   dict <- tibble::tibble(
     dataset_id = c("d1", "d1"),

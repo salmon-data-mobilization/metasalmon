@@ -400,7 +400,8 @@ write_eml_from_sdp(pkg_path)
 
 That standalone call creates valid reviewed EML for inspection. The
 later KNB dry run deterministically rebuilds it once more so the final
-EML also describes the generated canonical-SDP ZIP as an `otherEntity`.
+EML also describes each named canonical SDP artifact as an
+`otherEntity`.
 
 Preview the exact immutable DataONE objects, identifiers, checksums,
 access decision, and OAI-ORE relationships without reading credentials
@@ -411,7 +412,8 @@ or making a network request:
 publish_sdp_to_knb(
   pkg_path,
   public = FALSE,
-  dry_run = TRUE
+  dry_run = TRUE,
+  representation = "expanded"
 )
 ```
 
@@ -435,7 +437,8 @@ publish_sdp_to_knb(
   pkg_path,
   public = FALSE,
   dry_run = FALSE,
-  confirm = TRUE
+  confirm = TRUE,
+  representation = "expanded"
 )
 ```
 
@@ -452,16 +455,18 @@ redistribution authority and explicitly requests three DataONE
 preservation replicas; metasalmon never infers that decision from a
 private deposit.
 
-Each plan contains four kinds of object: the original data resources
-named by `tables.csv`, one human-readable `*-salmon-data-package.zip`
-containing the complete canonical SDP, the EML science-metadata record,
-and the OAI-ORE map. The EML record describes the raw files as data
-tables and the ZIP as a supplementary entity. This keeps SSSOM, ordered
-measurement decompositions, and the other canonical SDP metadata
-available without turning every internal file into a confusing
-standalone KNB object. The KNB-specific `metadata/eml-mapping.yml`, its
-authorization evidence and party details, and all mutable `publication/`
-receipts remain outside the downloadable ZIP.
+An expanded plan contains four kinds of object: the original data
+resources named by `tables.csv`, validated canonical SDP artifacts with
+their exact package-relative paths, the EML science-metadata record, and
+the OAI-ORE map. The EML record describes raw files as data tables and
+named SDP artifacts as supplementary entities; ORE `prov:atLocation`
+values preserve the hierarchy for exact reconstruction. A closed
+inventory includes SSSOM, ordered measurement decompositions, methods,
+observation structures, and manifest-declared reproducibility records
+without scanning arbitrary files. The KNB-specific
+`metadata/eml-mapping.yml`, its authorization evidence and party
+details, and all mutable `publication/` receipts remain local and are
+not deposited.
 
 KNB DOI minting is a later opt-in release action, not part of
 [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md).
@@ -480,7 +485,7 @@ reuse or overwrite the prior package directory:
 ``` yaml
 publication:
   public: false
-  revision_key: corrected-sdp-archive-2026-07-31
+  revision_key: corrected-expanded-sdp-2026-08-04
 ```
 
 ``` r
@@ -494,7 +499,8 @@ publish_sdp_to_knb(
     "knb-manifest.json"
   ),
   revision_manifest = previous_manifest_path,
-  dry_run = TRUE
+  dry_run = TRUE,
+  representation = "expanded"
 )
 ```
 

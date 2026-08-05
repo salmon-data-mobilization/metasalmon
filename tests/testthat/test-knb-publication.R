@@ -80,6 +80,90 @@ make_knb_test_measurement_decompositions <- function(path) {
   )
 }
 
+make_knb_test_reproducibility <- function(path) {
+  reproducibility <- file.path(path, "reproducibility")
+  dir.create(file.path(reproducibility, "workflow"), recursive = TRUE)
+  dir.create(file.path(reproducibility, "provenance"), recursive = TRUE)
+  dir.create(file.path(reproducibility, "source"), recursive = TRUE)
+  review_path <- file.path(
+    reproducibility,
+    "reviewed_semantic_selections.csv"
+  )
+  expect_true(file.rename(
+    file.path(path, "reviewed_semantic_selections.csv"),
+    review_path
+  ))
+  writeLines("message('rebuild the SDP')", file.path(
+    reproducibility,
+    "workflow",
+    "build-sdp.R"
+  ))
+  writeLines("activity_id,agent\nbuild-sdp,metasalmon", file.path(
+    reproducibility,
+    "provenance",
+    "activities.csv"
+  ))
+  writeLines("path,sha256\nsource.csv,fixture", file.path(
+    reproducibility,
+    "source",
+    "source-manifest.csv"
+  ))
+
+  mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$semantic_review$path <-
+    "reproducibility/reviewed_semantic_selections.csv"
+  mapping$semantic_review$sha256 <- digest::digest(
+    file = review_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  yaml::write_yaml(mapping, mapping_path)
+
+  declarations <- tibble::tribble(
+    ~path, ~role, ~media_type,
+    "reproducibility/reviewed_semantic_selections.csv",
+    "reviewed_semantic_selections", "text/csv",
+    "reproducibility/workflow/build-sdp.R", "workflow", "text/x-r-source",
+    "reproducibility/provenance/activities.csv", "provenance", "text/csv",
+    "reproducibility/source/source-manifest.csv", "source", "text/csv"
+  )
+  write_sdp_reproducibility_manifest(path, declarations)
+}
+
+make_knb_test_methods_and_structure <- function(path) {
+  methods <- tibble::tibble(
+    dataset_id = "demo-salmon-2026",
+    method_iri = "https://example.org/methods/count-compilation",
+    method_label = "Count compilation",
+    method_description = "Compile annual salmon abundance counts.",
+    method_version = "2026",
+    protocol_iri = "https://example.org/protocols/count-compilation",
+    citation = "Example Salmon Program. 2026. Count compilation."
+  )
+  write_sdp_methods(path, methods)
+  structures <- tibble::tibble(
+    dataset_id = "demo-salmon-2026",
+    table_id = "counts",
+    observation_structure_id = "count_by_record_and_year",
+    structure_label = "Count by record and year",
+    structure_description =
+      "One abundance count for each stable record and observation year."
+  )
+  components <- tibble::tribble(
+    ~dataset_id, ~table_id, ~observation_structure_id, ~component_order,
+    ~column_name, ~component_role, ~component_relation_iri,
+    ~required_when_observed,
+    "demo-salmon-2026", "counts", "count_by_record_and_year", 1L,
+    "record_id", "dimension", NA_character_, TRUE,
+    "demo-salmon-2026", "counts", "count_by_record_and_year", 2L,
+    "year", "dimension", NA_character_, TRUE,
+    "demo-salmon-2026", "counts", "count_by_record_and_year", 3L,
+    "count", "measure", NA_character_, TRUE
+  )
+  write_sdp_observation_structures(path, structures, components)
+}
+
 test_that("KNB dry run writes an exact offline manifest and deterministic ORE", {
   skip_if_not_installed("emld")
 
@@ -243,6 +327,98 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
     as.character(ore),
     fixed = TRUE
   ))
+})
+
+test_that("expanded KNB plans preserve the canonical SDP hierarchy without a ZIP", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  make_knb_test_sssom(package_path)
+  make_knb_test_measurement_decompositions(package_path)
+
+  result <- publish_sdp_to_knb(
+    package_path,
+    public = TRUE,
+    dry_run = TRUE,
+    representation = "expanded"
+  )
+
+  expect_identical(result$manifest$representation, "expanded")
+  expect_null(result$sdp_archive_path)
+  objects <- .ms_knb_manifest_objects(result$manifest)
+  roles <- vapply(objects, function(object) object$role, character(1))
+  paths <- vapply(objects, function(object) object$path, character(1))
+  expect_false("sdp_archive" %in% roles)
+  expect_equal(sum(roles == "data"), 1L)
+  expect_equal(sum(roles == "metadata"), 1L)
+  expect_equal(sum(roles == "resource_map"), 1L)
+  expect_true(sum(roles == "sdp_artifact") > 7L)
+  expect_true(all(c(
+    "datapackage.json",
+    "metadata/dataset.csv",
+    "metadata/tables.csv",
+    "metadata/column_dictionary.csv",
+    "metadata/codes.csv",
+    "metadata/semantic_vocabulary.csv",
+    "reviewed_semantic_selections.csv",
+    "metadata/semantic/mapping-sets.json",
+    "metadata/semantic/measurement-decompositions.csv",
+    "metadata/semantic/measurement-decompositions.json"
+  ) %in% paths))
+  expect_false(any(grepl("[.]zip$", paths)))
+
+  eml <- xml2::read_xml(file.path(package_path, "metadata", "eml.xml"))
+  other_entity_names <- xml2::xml_text(xml2::xml_find_all(
+    eml,
+    "//*[local-name()='otherEntity']/*[local-name()='physical']/*[local-name()='objectName']"
+  ))
+  expect_setequal(other_entity_names, paths[roles == "sdp_artifact"])
+  expect_length(
+    xml2::xml_find_all(
+      eml,
+      "//*[local-name()='otherEntity']//*[local-name()='compressionMethod']"
+    ),
+    0L
+  )
+
+  ore <- xml2::read_xml(result$resource_map_path)
+  locations <- xml2::xml_text(xml2::xml_find_all(
+    ore,
+    "//*[local-name()='atLocation']"
+  ))
+  expect_setequal(locations, paths[roles != "resource_map"])
+  expect_equal(length(locations), sum(roles != "resource_map"))
+  expect_equal(
+    length(xml2::xml_find_all(ore, "//*[local-name()='documents']")),
+    sum(roles %in% c("data", "sdp_artifact"))
+  )
+})
+
+test_that("expanded KNB plans publish the closed reproducibility inventory", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  make_knb_test_reproducibility(package_path)
+
+  result <- publish_sdp_to_knb(
+    package_path,
+    public = TRUE,
+    dry_run = TRUE,
+    representation = "expanded"
+  )
+  objects <- .ms_knb_manifest_objects(result$manifest)
+  roles <- vapply(objects, function(object) object$role, character(1))
+  paths <- vapply(objects, function(object) object$path, character(1))
+  expected <- c(
+    "reproducibility/manifest.json",
+    "reproducibility/provenance/activities.csv",
+    "reproducibility/reviewed_semantic_selections.csv",
+    "reproducibility/source/source-manifest.csv",
+    "reproducibility/workflow/build-sdp.R"
+  )
+  expect_true(all(expected %in% paths[roles == "sdp_artifact"]))
+  expect_false("reviewed_semantic_selections.csv" %in% paths)
+  expect_true(isTRUE(validate_sdp_reproducibility_manifest(package_path)))
 })
 
 test_that("KNB plans reject annotations to review-candidate vocabulary IRIs", {
@@ -464,6 +640,68 @@ test_that("KNB refuses measurement decompositions reached through a symlink", {
     ),
     "symlink|outside.*SDP|unsafe"
   )
+})
+
+test_that("expanded KNB plans reject in-package artifact symlinks", {
+  skip_if_not_installed("emld")
+  skip_on_os("windows")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  canonical <- file.path(package_path, "metadata", "dataset.csv")
+  target <- file.path(package_path, "metadata", "dataset-target.csv")
+  expect_true(file.copy(canonical, target))
+  unlink(canonical)
+  expect_true(file.symlink(target, canonical))
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = TRUE,
+      dry_run = TRUE,
+      representation = "expanded"
+    ),
+    "symlink"
+  )
+})
+
+test_that("KNB publication rejects only a symlinked package root", {
+  skip_if_not_installed("emld")
+  skip_on_os("windows")
+
+  target <- make_knb_test_sdp(withr::local_tempdir())
+  link_parent <- withr::local_tempdir()
+  linked_root <- file.path(link_parent, "linked-sdp")
+  if (!file.symlink(target, linked_root)) {
+    skip("Filesystem does not permit directory symlink creation")
+  }
+
+  expect_error(
+    publish_sdp_to_knb(
+      linked_root,
+      public = TRUE,
+      dry_run = TRUE,
+      representation = "expanded"
+    ),
+    "SDP directory.*symbolic link|path.*symlink|unsafe"
+  )
+  expect_error(
+    publish_sdp_to_knb(
+      paste0(linked_root, "/"),
+      public = TRUE,
+      dry_run = TRUE,
+      representation = "expanded"
+    ),
+    "SDP directory.*symbolic link|path.*symlink|unsafe"
+  )
+
+  # The target itself may be spelled through a macOS system alias such as
+  # /var; that ancestor alias remains acceptable.
+  expect_no_error(publish_sdp_to_knb(
+    target,
+    public = TRUE,
+    dry_run = TRUE,
+    representation = "expanded"
+  ))
 })
 
 test_that("KNB publication requires explicit access and live confirmation", {
@@ -911,7 +1149,9 @@ make_knb_memory_adapter <- function(manifest_path,
     documented_pids <- vapply(
       plan$objects[vapply(
         plan$objects,
-        function(object) object$role %in% c("data", "sdp_archive"),
+        function(object) {
+          object$role %in% c("data", "sdp_archive", "sdp_artifact")
+        },
         logical(1)
       )],
       function(object) object$pid,
@@ -1155,12 +1395,14 @@ make_knb_memory_adapter <- function(manifest_path,
 
 review_knb_plan <- function(package_path,
                             manifest_path,
-                            public = TRUE) {
+                            public = TRUE,
+                            representation = "archive") {
   publish_sdp_to_knb(
     package_path,
     public = public,
     manifest_path = manifest_path,
-    dry_run = TRUE
+    dry_run = TRUE,
+    representation = representation
   )
 }
 
@@ -1293,6 +1535,304 @@ test_that("KNB revisions preserve the series and link immutable versions", {
   expect_equal(
     sum(startsWith(revision_memory$state$calls, "update:")),
     updates_before_retry
+  )
+})
+
+test_that("private expanded revisions reconstruct from authenticated remote ORE", {
+  skip_if_not_installed("emld")
+
+  workspace <- withr::local_tempdir()
+  prior_path <- file.path(workspace, "private-expanded-v1")
+  revised_path <- file.path(workspace, "private-expanded-v2")
+
+  make_complete_expanded_sdp <- function(path) {
+    make_knb_test_sdp(path)
+    make_knb_test_sssom(path)
+    make_knb_test_measurement_decompositions(path)
+    make_knb_test_methods_and_structure(path)
+    make_knb_test_reproducibility(path)
+    invisible(path)
+  }
+  configure_private_review <- function(path, revision_key = NULL) {
+    mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
+    mapping <- yaml::read_yaml(mapping_path)
+    mapping$publication$public <- FALSE
+    mapping$publication$revision_key <- revision_key
+    mapping$rights_authorization$status <- "unconfirmed"
+    mapping$rights_authorization$evidence <- paste(
+      "Redistribution authority is unresolved; this fixture verifies",
+      "private expanded revision recovery only."
+    )
+    yaml::write_yaml(mapping, mapping_path)
+    invisible(path)
+  }
+
+  make_complete_expanded_sdp(prior_path)
+  configure_private_review(prior_path)
+  prior_manifest_path <- file.path(
+    prior_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  review_knb_plan(
+    prior_path,
+    prior_manifest_path,
+    public = FALSE,
+    representation = "expanded"
+  )
+  prior_memory <- make_knb_memory_adapter(
+    prior_manifest_path,
+    anonymous_private_status = 403L
+  )
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() prior_memory$adapter
+  ))
+  prior <- publish_sdp_to_knb(
+    prior_path,
+    public = FALSE,
+    manifest_path = prior_manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE,
+    representation = "expanded"
+  )
+
+  make_complete_expanded_sdp(revised_path)
+  workflow_path <- file.path(
+    revised_path,
+    "reproducibility",
+    "workflow",
+    "build-sdp.R"
+  )
+  writeLines(
+    c("message('rebuild the revised SDP')", "message('revision 2')"),
+    workflow_path
+  )
+  reproducibility <- read_sdp_reproducibility_manifest(
+    revised_path,
+    validate = FALSE
+  )
+  declarations <- purrr::map_dfr(
+    reproducibility$artifacts,
+    function(artifact) {
+      tibble::tibble(
+        path = as.character(artifact$path),
+        role = as.character(artifact$role),
+        media_type = as.character(artifact$media_type)
+      )
+    }
+  )
+  write_sdp_reproducibility_manifest(
+    revised_path,
+    declarations,
+    overwrite = TRUE
+  )
+  configure_private_review(
+    revised_path,
+    revision_key = "2026-08-04-private-expanded-revision-2"
+  )
+  revised_manifest_path <- file.path(
+    revised_path,
+    "publication",
+    "knb-manifest.json"
+  )
+  reviewed_revision <- publish_sdp_to_knb(
+    revised_path,
+    public = FALSE,
+    manifest_path = revised_manifest_path,
+    dry_run = TRUE,
+    revision_manifest = prior_manifest_path,
+    representation = "expanded"
+  )
+  expect_identical(reviewed_revision$series_id, prior$series_id)
+  expect_identical(
+    reviewed_revision$manifest$revision_of$metadata_pid,
+    prior$package_id
+  )
+  expect_identical(
+    reviewed_revision$manifest$revision_of$resource_map_pid,
+    prior$resource_map_pid
+  )
+
+  revision_memory <- make_knb_memory_adapter(
+    revised_manifest_path,
+    state = prior_memory$state,
+    anonymous_private_status = 403L
+  )
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() revision_memory$adapter
+  ))
+  published <- publish_sdp_to_knb(
+    revised_path,
+    public = FALSE,
+    manifest_path = revised_manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE,
+    revision_manifest = prior_manifest_path,
+    representation = "expanded"
+  )
+  expect_identical(published$status, "published")
+  expect_true(published$manifest$catalog_verified)
+  expect_identical(published$series_id, prior$series_id)
+
+  prior_metadata_pid <- prior$package_id
+  prior_resource_map_pid <- prior$resource_map_pid
+  revised_resource_map_pid <- published$resource_map_pid
+  series_id <- published$series_id
+
+  # Remove every local source of reconstruction metadata and bytes. From this
+  # point onward the test can recover the package only through authenticated
+  # remote resource-map and object reads exposed by the adapter.
+  unlink(prior_path, recursive = TRUE)
+  unlink(revised_path, recursive = TRUE)
+  expect_false(dir.exists(prior_path))
+  expect_false(dir.exists(revised_path))
+  expect_false(file.exists(prior_manifest_path))
+  expect_false(file.exists(revised_manifest_path))
+
+  authenticated_client <- list(endpoint = "https://example.invalid/mn/v2")
+  resource_map_bytes <- revision_memory$adapter$get_bytes(
+    authenticated_client,
+    revised_resource_map_pid
+  )
+  expect_type(resource_map_bytes, "raw")
+  resource_map <- xml2::read_xml(rawToChar(resource_map_bytes))
+  resource_map_description <- xml2::xml_find_first(
+    resource_map,
+    "//*[local-name()='Description'][./*[local-name()='describes']]"
+  )
+  remote_resource_map_pid <- xml2::xml_text(xml2::xml_find_first(
+    resource_map_description,
+    "./*[local-name()='identifier']"
+  ))
+  expect_identical(remote_resource_map_pid, revised_resource_map_pid)
+
+  member_descriptions <- xml2::xml_find_all(
+    resource_map,
+    "//*[local-name()='Description'][./*[local-name()='atLocation']]"
+  )
+  remote_members <- tibble::tibble(
+    pid = vapply(member_descriptions, function(node) {
+      xml2::xml_text(xml2::xml_find_first(
+        node,
+        "./*[local-name()='identifier']"
+      ))
+    }, character(1)),
+    path = vapply(member_descriptions, function(node) {
+      xml2::xml_text(xml2::xml_find_first(
+        node,
+        "./*[local-name()='atLocation']"
+      ))
+    }, character(1))
+  )
+  expect_gt(nrow(remote_members), 0L)
+  expect_identical(anyDuplicated(remote_members$pid), 0L)
+  expect_identical(anyDuplicated(remote_members$path), 0L)
+  expect_true(all(nzchar(remote_members$pid)))
+  expect_true(all(nzchar(remote_members$path)))
+  expect_true(all(!startsWith(remote_members$path, "/")))
+  expect_true(all(!grepl("\\\\", remote_members$path)))
+  expect_false(any(vapply(
+    strsplit(remote_members$path, "/", fixed = TRUE),
+    function(parts) any(parts %in% c("", ".", "..")),
+    logical(1)
+  )))
+  expect_true(all(c(
+    "datapackage.json",
+    "metadata/eml.xml",
+    "metadata/methods.csv",
+    "metadata/structure/observation_structures.csv",
+    "metadata/structure/observation_components.csv",
+    "metadata/semantic/mapping-sets.json",
+    "metadata/semantic/measurement-decompositions.json",
+    "reproducibility/manifest.json"
+  ) %in% remote_members$path))
+
+  reconstructed <- file.path(workspace, "remote-reconstruction")
+  dir.create(reconstructed)
+  for (member_index in seq_len(nrow(remote_members))) {
+    destination <- file.path(
+      reconstructed,
+      remote_members$path[[member_index]]
+    )
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    member_bytes <- revision_memory$adapter$get_bytes(
+      authenticated_client,
+      remote_members$pid[[member_index]]
+    )
+    expect_type(member_bytes, "raw")
+    writeBin(member_bytes, destination)
+  }
+
+  expect_no_error(validate_salmon_datapackage(
+    reconstructed,
+    require_iris = TRUE
+  ))
+  expect_no_error(validate_sdp_sssom(reconstructed))
+  expect_no_error(validate_sdp_measurement_decompositions(reconstructed))
+  expect_no_error(validate_sdp_methods(reconstructed))
+  expect_no_error(validate_sdp_observation_structures(reconstructed))
+  expect_no_error(validate_sdp_reproducibility_manifest(reconstructed))
+
+  revised_metadata_pid <- remote_members$pid[
+    remote_members$path == "metadata/eml.xml"
+  ][[1L]]
+  current_object_pids <- c(remote_resource_map_pid, remote_members$pid)
+  expect_identical(anyDuplicated(current_object_pids), 0L)
+  for (pid in current_object_pids) {
+    expect_error(
+      revision_memory$adapter$get_anonymous_bytes(
+        authenticated_client$endpoint,
+        pid
+      ),
+      class = "httr2_http_403"
+    )
+    expect_error(
+      revision_memory$adapter$get_anonymous_system_metadata(
+        authenticated_client$endpoint,
+        pid
+      ),
+      class = "httr2_http_403"
+    )
+    remote_system_metadata <- revision_memory$adapter$get_system_metadata(
+      authenticated_client,
+      pid
+    )
+    expect_length(remote_system_metadata$access, 0L)
+  }
+
+  revised_metadata <- revision_memory$adapter$get_system_metadata(
+    authenticated_client,
+    revised_metadata_pid
+  )
+  prior_metadata <- revision_memory$adapter$get_system_metadata(
+    authenticated_client,
+    prior_metadata_pid
+  )
+  revised_resource_map <- revision_memory$adapter$get_system_metadata(
+    authenticated_client,
+    remote_resource_map_pid
+  )
+  prior_resource_map <- revision_memory$adapter$get_system_metadata(
+    authenticated_client,
+    prior_resource_map_pid
+  )
+  expect_identical(revised_metadata$series_id, series_id)
+  expect_identical(revised_metadata$obsoletes, prior_metadata_pid)
+  expect_identical(prior_metadata$obsoleted_by, revised_metadata_pid)
+  expect_identical(
+    revised_resource_map$obsoletes,
+    prior_resource_map_pid
+  )
+  expect_identical(
+    prior_resource_map$obsoleted_by,
+    remote_resource_map_pid
+  )
+  expect_identical(
+    revision_memory$adapter$lookup_series_id(
+      authenticated_client,
+      series_id
+    )$identifier,
+    revised_metadata_pid
   )
 })
 
@@ -2605,7 +3145,9 @@ test_that("catalog completion requires every PID and package relationship", {
     objects <- reviewed$manifest$objects
     roles <- vapply(objects, function(object) object$role, character(1))
     pids <- vapply(objects, function(object) object$pid, character(1))
-    documented_pids <- pids[roles %in% c("data", "sdp_archive")]
+    documented_pids <- pids[
+      roles %in% c("data", "sdp_archive", "sdp_artifact")
+    ]
     metadata_pid <- reviewed$manifest$metadata_pid
     resource_map_pid <- reviewed$manifest$resource_map_pid
     records <- c(
@@ -2770,6 +3312,74 @@ test_that("uploaded allowlist reconstructs the SDP and retains measurement IRIs"
     measurement$term_iri[[1]],
     "https://w3id.org/smn/ObservedRateOrAbundance"
   )
+})
+
+test_that("uploaded expanded objects reconstruct and strictly validate the SDP", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  make_knb_test_sssom(package_path)
+  make_knb_test_measurement_decompositions(package_path)
+  make_knb_test_methods_and_structure(package_path)
+  make_knb_test_reproducibility(package_path)
+  writeLines("decoy", file.path(package_path, "do-not-upload.txt"))
+  manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
+  reviewed <- review_knb_plan(
+    package_path,
+    manifest_path,
+    representation = "expanded"
+  )
+  expect_false(any(vapply(reviewed$manifest$objects, function(object) {
+    identical(object$path, "do-not-upload.txt")
+  }, logical(1))))
+
+  memory <- make_knb_memory_adapter(manifest_path)
+  withr::local_options(list(
+    metasalmon.knb_adapter = function() memory$adapter
+  ))
+  published <- publish_sdp_to_knb(
+    package_path,
+    public = TRUE,
+    manifest_path = manifest_path,
+    dry_run = FALSE,
+    confirm = TRUE,
+    representation = "expanded"
+  )
+  expect_identical(published$status, "published")
+  expect_true(published$manifest$catalog_verified)
+
+  reconstructed <- file.path(withr::local_tempdir(), "reconstructed")
+  dir.create(reconstructed)
+  package_members <- published$manifest$objects[vapply(
+    published$manifest$objects,
+    function(object) object$role %in% c("data", "sdp_artifact"),
+    logical(1)
+  )]
+  for (object in package_members) {
+    destination <- file.path(reconstructed, object$path)
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    writeBin(memory$state$objects[[object$pid]]$bytes, destination)
+  }
+
+  rebuilt <- read_salmon_datapackage(reconstructed)
+  measurement <- rebuilt$dictionary[
+    rebuilt$dictionary$column_role == "measurement",
+    ,
+    drop = FALSE
+  ]
+  expect_identical(
+    measurement$term_iri[[1]],
+    "https://w3id.org/smn/ObservedRateOrAbundance"
+  )
+  expect_no_error(validate_salmon_datapackage(
+    reconstructed,
+    require_iris = TRUE
+  ))
+  expect_no_error(validate_sdp_sssom(reconstructed))
+  expect_no_error(validate_sdp_measurement_decompositions(reconstructed))
+  expect_no_error(validate_sdp_methods(reconstructed))
+  expect_no_error(validate_sdp_observation_structures(reconstructed))
+  expect_no_error(validate_sdp_reproducibility_manifest(reconstructed))
 })
 
 test_that("default adapter SystemMetadata contract serializes as DataONE v2", {

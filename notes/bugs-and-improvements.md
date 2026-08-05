@@ -292,10 +292,13 @@ adversarial pass** — re-confirm before fixing.
   URLs and the default update check still targeted the independently existing
   `dfo-pacific-science/metasalmon` repository. The remote schema loader likewise
   fetched from the former `smn-data-pkg` repository.
-- **Compatibility decision:** do not rewrite the SDP 0.2 profile/resource-schema
-  identifiers. Upstream still defines the former GitHub Pages URI as the
-  contract value, even though it is not the runtime fetch endpoint. The code and
-  regression test now keep contract identifiers distinct from fetch locations.
+- **Follow-up (2026-08-04):** upstream PRs
+  `salmon-data-mobilization/smn-data-pkg#2` and `#3` added the observation/method
+  extension and moved the profile, rules, and resource-schema identifiers to the
+  active `salmon-data-mobilization.github.io/smn-data-pkg` Pages site. Pages and
+  every published artifact were verified byte-for-byte. metasalmon now vendors
+  that exact bundle while still keeping contract identifiers distinct from the
+  configurable raw-GitHub retrieval source.
 
 ---
 

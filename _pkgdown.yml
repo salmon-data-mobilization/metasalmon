@@ -109,6 +109,20 @@ reference:
       - write_sdp_measurement_decompositions
       - validate_sdp_measurement_decompositions
 
+  - title: "Extended SDP Structure and Reproducibility"
+    desc: "SOSA procedures, measure-specific observation structures, and closed reproducibility sidecars"
+    contents:
+      - read_sdp_methods
+      - write_sdp_methods
+      - validate_sdp_methods
+      - read_sdp_observation_structures
+      - write_sdp_observation_structures
+      - validate_sdp_observation_structures
+      - extract_sdp_observations
+      - read_sdp_reproducibility_manifest
+      - write_sdp_reproducibility_manifest
+      - validate_sdp_reproducibility_manifest
+
   - title: "EML and KNB"
     desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication"
     contents:

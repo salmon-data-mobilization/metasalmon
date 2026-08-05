@@ -122,7 +122,7 @@ I-ADOPT defines observable properties using four components:
 | Component | Question it answers | Example |
 |-----------|---------------------|---------|
 | **Variable** | What compound concept? | "Sea surface temperature" (the full term) |
-| **Property** | What characteristic? | Temperature |
+| **Property** | What characteristic? | Temperature or abundance |
 | **Entity** | Of what thing? | Sea surface (water at ocean surface) |
 | **Constraint** | Any qualifiers or limits? | Maximum, daily average, etc. |
 
@@ -131,9 +131,9 @@ I-ADOPT defines observable properties using four components:
 ### Understanding the Components
 
 - **Variable**: The complete, compound term that describes what you measured (e.g., "Natural spawner count"). In metasalmon, this maps to `term_iri`.
-- **Property**: The measurable characteristic (e.g., "count", "temperature", "length"). Maps to `property_iri`.
+- **Property**: The measurable characteristic (e.g., "abundance", "temperature", "length"). Maps to `property_iri`. For fish totals, abundance is the characteristic while a counting unit such as QUDT `Individual` records how the value is expressed.
 - **Entity**: The thing being measured (e.g., "spawning salmon", "stream water"). Maps to `entity_iri`.
-- **Constraint**: Optional qualifiers that narrow the scope (e.g., "maximum", "annual", "wild-origin only"). Maps to `constraint_iri`.
+- **Constraint**: Optional fixed qualifiers that narrow the scope (e.g., "maximum", "wild-origin only", "female", or "spawner stage"). Maps to `constraint_iri`; multiple constraint IRIs are separated with semicolons. Row-varying values belong in table dimensions rather than being repeated as fixed column constraints.
 
 ### Units (Not Part of I-ADOPT Core)
 

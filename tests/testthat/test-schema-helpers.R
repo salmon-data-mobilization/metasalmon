@@ -12,7 +12,30 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
 
   expect_equal(schema$version, "sdp-0.2.0")
   expect_equal(schema$profile[["$id"]], metasalmon:::.ms_sdp_profile_url())
-  expect_true("dataset" %in% names(schema$metadata_tables))
+  expect_true(all(c(
+    "dataset",
+    "methods",
+    "observation_structures",
+    "observation_components"
+  ) %in% names(schema$metadata_tables)))
+})
+
+test_that("vendored extension contracts match their writers", {
+  old_options <- options(metasalmon.sdp_schema_source = "vendored")
+  withr::defer(options(old_options))
+
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("methods"),
+    metasalmon:::.ms_sdp_methods_columns
+  )
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("observation_structures"),
+    metasalmon:::.ms_sdp_observation_structures_columns
+  )
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("observation_components"),
+    metasalmon:::.ms_sdp_observation_components_columns
+  )
 })
 
 test_that("remote schema source and SDP profile identifier remain distinct", {
@@ -28,7 +51,7 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
-    "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
   )
 })
 

@@ -1,3 +1,48 @@
+metasalmon 0.1.8
+----------------
+
+- Added exact-schema, atomic, symlink-safe readers and writers for the optional
+  SDP `metadata/methods.csv` SOSA procedure registry and paired
+  `metadata/structure/observation_*.csv` resources. Validation now enforces
+  complete one-structure-per-measure coverage, required dimension grain,
+  typed repeated-value invariance, static and row-varying procedure resolution,
+  canonical descriptor inventory, and remains unchanged when the extension is
+  absent. Multi-file writes stage and validate the CSV/descriptor set as one
+  rollback-capable transaction. Extension, reproducibility, and KNB APIs also
+  reject direct or trailing-slash package-root symlinks without rejecting
+  harmless platform aliases in ancestor paths.
+- Added `extract_sdp_observations()` to produce one deterministic normalized
+  table per declared measure-specific observation structure without claiming
+  RDF Data Cube conformance.
+- `apply_semantic_suggestions(strategy = "reviewed")` now applies explicit
+  accepted review decisions and preserves multiple constraints for one
+  measurement as a deterministic, deduplicated, semicolon-separated
+  `constraint_iri`. The LLM-reviewed strategy has the same multiple-constraint
+  behavior; lexical `"top"` and all non-constraint roles remain single-winner.
+- Added a deterministic, checksum-bound `reproducibility/manifest.json` API for
+  the optional reviewed-selection, workflow, provenance, and source sidecars.
+  Validation is closed over the exact directory contents and rejects symlinks,
+  undeclared files, missing files, and checksum or byte-size drift.
+- `publish_sdp_to_knb(representation = "expanded")` now deposits the closed SDP
+  inventory as individually named objects with package-relative ORE locations,
+  instead of a ZIP. It includes validated SSSOM, decomposition, methods,
+  observation-structure, and reproducibility artifacts and can reconstruct the
+  exact SDP hierarchy without publishing unrelated files. Archive mode remains
+  available for compatibility.
+- EML export now documents procedures actually used by observed measurements as
+  method steps, including method/protocol IRIs, versions, descriptions, and
+  citations; unused registry alternatives are not asserted as performed. The
+  reviewed semantic-selection ledger defaults to the extended
+  `reproducibility/` layout while retaining the legacy root path for existing
+  reviewed packages.
+- Updated generated SDP descriptors and the vendored profile/rules/schema bundle
+  to the byte-verified canonical
+  `salmon-data-mobilization.github.io/smn-data-pkg` publication URLs.
+- Corrected the bundled demo dictionaries so organism counts use QUDT
+  `Individual` as their unit, use the released Salmon Domain Ontology
+  `smn:Abundance` characteristic as their property, and no longer assert the
+  nonexistent QUDT `NumberOfOrganisms` property.
+
 metasalmon 0.1.7
 ----------------
 

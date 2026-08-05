@@ -129,6 +129,32 @@ decompositions
 - [`validate_sdp_measurement_decompositions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_measurement_decompositions.md)
   : Validate ordered SDP measurement-decomposition artifacts
 
+## Extended SDP Structure and Reproducibility
+
+SOSA procedures, measure-specific observation structures, and closed
+reproducibility sidecars
+
+- [`read_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_methods.md)
+  : Read an SDP SOSA procedure registry
+- [`write_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_methods.md)
+  : Write an SDP SOSA procedure registry
+- [`validate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_methods.md)
+  : Validate an SDP SOSA procedure registry
+- [`read_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_observation_structures.md)
+  : Read measure-specific SDP observation structures
+- [`write_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_observation_structures.md)
+  : Write measure-specific SDP observation structures
+- [`validate_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_observation_structures.md)
+  : Validate measure-specific SDP observation structures
+- [`extract_sdp_observations()`](https://salmon-data-mobilization.github.io/metasalmon/reference/extract_sdp_observations.md)
+  : Extract normalized logical observations from an SDP
+- [`read_sdp_reproducibility_manifest()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_reproducibility_manifest.md)
+  : Read an SDP reproducibility manifest
+- [`write_sdp_reproducibility_manifest()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_reproducibility_manifest.md)
+  : Write a closed reproducibility manifest into a Salmon Data Package
+- [`validate_sdp_reproducibility_manifest()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_reproducibility_manifest.md)
+  : Validate an SDP reproducibility manifest
+
 ## EML and KNB
 
 Reviewed EML 2.2.0 export and verified DataONE/KNB publication

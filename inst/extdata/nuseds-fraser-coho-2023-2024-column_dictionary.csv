@@ -6,7 +6,7 @@ fraser-coho-2023-2024,escapement,WATERBODY,Waterbody name,"Local stream, tributa
 fraser-coho-2023-2024,escapement,ANALYSIS_YR,Analysis year,Analysis year associated with the escapement estimate.,,,,,,,,,number,temporal,TRUE
 fraser-coho-2023-2024,escapement,SPECIES,Species code,Species code from the NuSEDS source workbook (Coho in this slice).,,,,,,,,,string,attribute,TRUE
 fraser-coho-2023-2024,escapement,RUN_TYPE,Run timing,Run timing category from the NuSEDS source workbook.,,,,,,,,,string,attribute,FALSE
-fraser-coho-2023-2024,escapement,NATURAL_ADULT_SPAWNERS,Natural adult spawners,Estimated count of natural-origin adult spawners used for this official two-year Fraser coho slice.,,,,,,fish (count),https://qudt.org/vocab/unit/Each,,number,measurement,FALSE
+fraser-coho-2023-2024,escapement,NATURAL_ADULT_SPAWNERS,Natural adult spawners,Estimated count of natural-origin adult spawners used for this official two-year Fraser coho slice.,,https://w3id.org/smn/Abundance,,,,Individual,https://qudt.org/vocab/unit/INDIV,,number,measurement,FALSE
 fraser-coho-2023-2024,escapement,ESTIMATE_METHOD,Estimate method,Analytical method used to derive the estimate.,,,,,,,,,string,attribute,FALSE
 fraser-coho-2023-2024,escapement,ESTIMATE_CLASSIFICATION,Estimate classification,Classification assigned to the escapement estimate.,,,,,,,,,string,attribute,FALSE
 fraser-coho-2023-2024,escapement,ESTIMATE_STAGE,Estimate stage,Stage of estimate publication or readiness.,,,,,,,,,string,attribute,FALSE
