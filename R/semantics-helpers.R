@@ -619,8 +619,14 @@ suggest_semantics <- function(df,
 #'   `attr(dict, "semantic_suggestions")`. If omitted, the function reads that
 #'   attribute from `dict`.
 #' @param strategy Selection strategy per column-role pair. `"top"` keeps the
-#'   original lexical ranking; `"llm"` applies only candidates marked with
-#'   `llm_selected = TRUE` by `suggest_semantics(..., llm_assess = TRUE)`.
+#'   original lexical ranking. `"reviewed"` applies only rows whose `decision`
+#'   is `"accepted"` (or the equivalent `"accept"`). `"llm"` applies only
+#'   candidates marked with `llm_selected = TRUE` by
+#'   `suggest_semantics(..., llm_assess = TRUE)`. When reviewed or LLM-reviewed
+#'   selections contain multiple constraints for one measurement, their IRIs
+#'   are deduplicated in first-occurrence order and written to `constraint_iri`
+#'   as the SDP-compatible semicolon-separated value. Other roles continue to
+#'   select one value per column-role pair.
 #' @param columns Optional character vector limiting application to specific
 #'   `column_name` values.
 #' @param roles Optional character vector limiting application to specific
@@ -650,7 +656,7 @@ suggest_semantics <- function(df,
 #' }
 apply_semantic_suggestions <- function(dict,
                                        suggestions = attr(dict, "semantic_suggestions"),
-                                       strategy = c("top", "llm"),
+                                       strategy = c("top", "reviewed", "llm"),
                                        columns = NULL,
                                        roles = NULL,
                                        min_score = NULL,
@@ -822,6 +828,20 @@ apply_semantic_suggestions <- function(dict,
     }
     suggestions <- suggestions[!is.na(suggestions$llm_selected) & suggestions$llm_selected, , drop = FALSE]
   }
+  if (identical(strategy, "reviewed")) {
+    if (!"decision" %in% names(suggestions)) {
+      cli::cli_abort(c(
+        "{.arg strategy = 'reviewed'} requires explicit review decisions.",
+        "i" = "Supply a {.field decision} column whose accepted rows use {.val accepted} or {.val accept}."
+      ))
+    }
+    decisions <- tolower(trimws(as.character(suggestions$decision)))
+    suggestions <- suggestions[
+      !is.na(decisions) & decisions %in% c("accepted", "accept"),
+      ,
+      drop = FALSE
+    ]
+  }
   if (!is.null(min_llm_confidence)) {
     suggestions <- suggestions[!is.na(suggestions$llm_confidence) & suggestions$llm_confidence >= min_llm_confidence, , drop = FALSE]
   }
@@ -851,7 +871,22 @@ apply_semantic_suggestions <- function(dict,
       sep = "\r"
     )
   )
-  selected <- selected[!duplicated(group_id), , drop = FALSE]
+  first_group_rows <- !duplicated(group_id)
+
+  # The lexical "top" strategy still chooses one winner per role. Explicitly
+  # reviewed and LLM-reviewed bundles can instead accept more than one
+  # constraint for the same measurement. Preserve reviewed order, remove exact
+  # duplicates, and use the SDP column_dictionary.csv semicolon representation.
+  if (strategy %in% c("reviewed", "llm")) {
+    constraint_rows <- which(
+      first_group_rows & selected$dictionary_role == "constraint"
+    )
+    for (row_id in constraint_rows) {
+      constraint_iris <- unique(selected$iri[group_id == group_id[[row_id]]])
+      selected$iri[[row_id]] <- paste(constraint_iris, collapse = "; ")
+    }
+  }
+  selected <- selected[first_group_rows, , drop = FALSE]
 
   dict_match_keys <- intersect(c("dataset_id", "table_id"), names(out))
   applied <- 0L

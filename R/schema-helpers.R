@@ -1,17 +1,18 @@
 .ms_schema_env <- new.env(parent = emptyenv())
 
-# The SDP 0.2 profile still defines these legacy identifiers. They are contract
-# values written into packages, not the endpoint used to fetch schema files.
+# These are the canonical, publicly resolvable SDP 0.2 contract identifiers.
+# Remote schema discovery still uses the raw-GitHub source below so callers can
+# opt into a branch or immutable commit through one base URL.
 .ms_sdp_profile_url <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
 }
 
 .ms_sdp_public_schema_base <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/schema/frictionless/metadata"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata"
 }
 
 .ms_sdp_public_rules_url <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/schema/sdp.rules.yaml"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml"
 }
 
 .ms_sdp_metadata_schema_paths <- function() {
@@ -19,7 +20,12 @@
     dataset = "schema/frictionless/metadata/dataset.schema.json",
     tables = "schema/frictionless/metadata/tables.schema.json",
     column_dictionary = "schema/frictionless/metadata/column_dictionary.schema.json",
-    codes = "schema/frictionless/metadata/codes.schema.json"
+    codes = "schema/frictionless/metadata/codes.schema.json",
+    methods = "schema/frictionless/metadata/methods.schema.json",
+    observation_structures =
+      "schema/frictionless/metadata/observation_structures.schema.json",
+    observation_components =
+      "schema/frictionless/metadata/observation_components.schema.json"
   )
 }
 
@@ -238,9 +244,16 @@
 .ms_sdp_metadata_resource_entries <- function(include_codes = FALSE) {
   schema <- .ms_load_sdp_schema(quiet = TRUE)
   resources <- schema$profile[["sdp:metadataResources"]] %||% list()
+  core_names <- c(
+    "sdp_dataset",
+    "sdp_tables",
+    "sdp_column_dictionary",
+    "sdp_codes"
+  )
 
   purrr::keep(resources, function(resource) {
-    include_codes || !identical(resource$name, "sdp_codes")
+    resource$name %in% core_names &&
+      (include_codes || !identical(resource$name, "sdp_codes"))
   }) |>
     purrr::map(function(resource) {
       list(

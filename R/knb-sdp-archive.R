@@ -148,15 +148,7 @@
 }
 
 .ms_knb_sdp_archive_inventory <- function(path) {
-  lexical_root <- .ms_knb_lexical_absolute_path(path)
-  if (!dir.exists(lexical_root)) {
-    cli::cli_abort("SDP directory {.path {path}} does not exist.")
-  }
-  root_link <- Sys.readlink(lexical_root)
-  if (length(root_link) == 1L && !is.na(root_link) && nzchar(root_link)) {
-    cli::cli_abort("The SDP directory itself must not be a symbolic link.")
-  }
-  root <- normalizePath(lexical_root, mustWork = TRUE)
+  root <- .ms_knb_package_root(path)
 
   # These two helpers are the single source of truth for the KNB package
   # inventory.  In particular, the artifact helper validates any declared

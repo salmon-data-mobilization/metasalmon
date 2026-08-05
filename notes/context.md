@@ -2,14 +2,15 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-07-31 (0.1.7 KNB canonical-SDP
-archive and immutable-revision hardening).
+package evolves. Last substantial update: 2026-08-04 (0.1.8 mixed-grain
+observation structures, methods, reproducibility manifests, and expanded KNB
+publication).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.1.7. License MIT.
+Package (SDP)** conventions. Development version 0.1.8. License MIT.
 R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
@@ -57,6 +58,12 @@ return values, and attached attributes are a compatibility surface.
 - **Semantic supplements:** `read_sssom_mapping_set`, `write_sdp_sssom`,
   `validate_sdp_sssom`, `read_sdp_measurement_decompositions`,
   `write_sdp_measurement_decompositions`, `validate_sdp_measurement_decompositions`
+- **Extended structure and reproducibility:** `read_sdp_methods`,
+  `write_sdp_methods`, `validate_sdp_methods`,
+  `read_sdp_observation_structures`, `write_sdp_observation_structures`,
+  `validate_sdp_observation_structures`, `extract_sdp_observations`,
+  `read_sdp_reproducibility_manifest`, `write_sdp_reproducibility_manifest`,
+  `validate_sdp_reproducibility_manifest`
 - **EML + KNB:** `write_eml_from_sdp`, `publish_sdp_to_knb`
 - **GitHub:** `ms_setup_github`, `github_raw_url`, `read_github_csv`, `read_github_csv_dir`
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
@@ -75,20 +82,22 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `smn-data-pkg` spec.
 - **SDP schema locations:** runtime schema fetches use
   `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
-  The SDP 0.2 profile and resource-schema identifiers still contain the former
-  `dfo-pacific-science.github.io/smn-data-pkg` URI because that value is part of
-  the current upstream profile contract; do not rewrite it independently in
-  `metasalmon`.
+  Canonical SDP 0.2 profile, rules, and resource-schema identifiers resolve at
+  `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
+  published contract identifiers distinct from the configurable source used
+  for runtime schema retrieval.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.
-- **KNB representation:** declared SDP data resources remain individual EML
-  data entities; the complete canonical SDP travels as one deterministic named
-  ZIP/EML `otherEntity`; EML and OAI-ORE complete the DataONE package. Private
-  deposits are persistent staging records, not server-side drafts. Revisions
-  require a fresh versioned SDP directory, preserve the metadata series, and
-  link immutable EML/resource-map versions. Publication-specific EML sidecar
-  authorization/party details and mutable receipts are excluded from the ZIP.
+- **KNB representation:** the preferred `expanded` representation publishes the
+  closed, validated SDP inventory as named DataONE objects and records each
+  package-relative path in OAI-ORE, so the canonical hierarchy can be rebuilt
+  without a ZIP. The deterministic archive representation remains a compatibility
+  option. EML and OAI-ORE complete either DataONE package. Private deposits are
+  persistent staging records, not server-side drafts. Revisions require a fresh
+  versioned SDP directory, preserve the metadata series, and link immutable
+  EML/resource-map versions. Publication-specific EML sidecar authorization,
+  party details, and mutable receipts are excluded from the published SDP.
   DOI minting is a separate KNB public-release action and is never implicit in
   `publish_sdp_to_knb()`.
 - **Semantic publication boundary:** SSSOM records whole-concept mappings or
@@ -100,10 +109,15 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 - **I-ADOPT decomposition:** measurement columns are decomposed into semantic
   "slots". The dictionary role → search role map (R/semantics-helpers.R:381-388):
   `term_iri`→variable, `property_iri`→property, `entity_iri`→entity,
-  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. **Ontology
-  convention:** "method" is NOT a native I-ADOPT role — procedure context is
-  modeled as `gcdfo:usedProcedure`, and compound variables are SKOS concepts, not
-  OWL classes (see the i-adopt chat-decomposition plan in `notes/exec-plans/`).
+  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. Multiple
+  fixed constraints may be stored as a deterministic semicolon-delimited list;
+  row-varying year/age coordinates belong in the optional observation-structure
+  extension instead. **Ontology convention:** "method" is NOT a native I-ADOPT
+  role. SDP methods are SOSA Procedure resources in `metadata/methods.csv`;
+  `column_dictionary.method_iri` is the fixed-procedure compatibility binding,
+  while row-varying procedures use a `sosa:usedProcedure` observation component.
+  Compound variables are SKOS concepts, not OWL classes (see the i-adopt
+  chat-decomposition plan in `notes/exec-plans/`).
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
   (`R/term_search.R` is ~89KB). `suggest_semantics()` calls it (default
   `search_fn = find_terms`) to build a per-target candidate shortlist before any

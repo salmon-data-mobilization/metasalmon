@@ -13,7 +13,7 @@ semantic_vocabulary:
   path: metadata/semantic_vocabulary.csv
   sha256: '0000000000000000000000000000000000000000000000000000000000000000'
 semantic_review:
-  path: reviewed_semantic_selections.csv
+  path: reproducibility/reviewed_semantic_selections.csv
   sha256: '0000000000000000000000000000000000000000000000000000000000000000'
 publication:
   public: false

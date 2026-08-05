@@ -6,6 +6,14 @@ Short map of the package's public starts and their canonical implementations.
 
 - Main workflow: `create_sdp()` -> infer artifacts -> seed semantics -> write SDP
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
+- Reviewed suggestion merge: `apply_semantic_suggestions()`; `"reviewed"`
+  applies accepted review decisions, `"llm"` applies opt-in LLM selections,
+  and both preserve repeated constraints in SDP semicolon form; `"top"`
+  remains lexical and single-winner
+- Extended SDP metadata: `write_sdp_methods()` ->
+  `write_sdp_observation_structures()` -> `extract_sdp_observations()`;
+  reproducibility sidecars are closed with
+  `write_sdp_reproducibility_manifest()`
 - KNB workflow: reviewed SDP + `metadata/eml-mapping.yml` ->
   `write_eml_from_sdp()` -> `publish_sdp_to_knb(..., public = FALSE,
   dry_run = TRUE)` -> review exact manifest -> explicit resumable live deposit
@@ -32,13 +40,22 @@ Short map of the package's public starts and their canonical implementations.
   `suggest_semantics()` -> `write_salmon_datapackage()`
 - `suggest_semantics(llm_assess = TRUE)` -> deterministic `find_terms()` shortlist
   -> shared review adapter; context inputs are parsed once from local paths
+- `apply_semantic_suggestions(strategy = "reviewed")` -> accepted reviewed
+  selections in `R/semantics-helpers.R`; repeated constraints are deduplicated
+  in review order and serialized as `iri-1; iri-2` in `constraint_iri`
 - `write_edh_xml_from_sdp()` is the strict post-review EDH rebuild path
 - `write_sdp_sssom()` stores concept mappings; ordered measurement components
   remain separate in `write_sdp_measurement_decompositions()`
-- `publish_sdp_to_knb()` retains raw SDP data resources and adds one
-  deterministic canonical-SDP ZIP, EML, and OAI-ORE map. Private deposits are
-  persistent staging records; DOI minting is a separate KNB public-release step.
-  Revisions use a fresh SDP directory and preserve the preceding manifest.
+- `write_sdp_methods()` registers SOSA procedures; paired
+  `write_sdp_observation_structures()` metadata declares one logical grain per
+  measurement, and `extract_sdp_observations()` returns the validated normalized
+  projections.
+- `publish_sdp_to_knb(representation = "expanded")` retains each SDP data
+  resource and publishes the validated, closed package inventory as named
+  objects with package-relative OAI-ORE locations; no ZIP is created. Archive
+  mode remains a compatibility option. Private deposits are persistent staging
+  records; DOI minting is a separate KNB public-release step. Revisions use a
+  fresh SDP directory and preserve the preceding manifest.
 
 ## Canonical Implementations (Per Feature)
 
@@ -56,5 +73,10 @@ Short map of the package's public starts and their canonical implementations.
 - SSSOM mapping sets -> `R/sssom.R`
 - Ordered measurement decomposition artifacts ->
   `R/measurement-decompositions.R`
+- Methods, measure-specific observation structures, and reproducibility
+  closure -> `R/sdp-methods.R`, `R/observation-structures.R`, and
+  `R/reproducibility-manifest.R`
+- SOSA procedure registries and measure-specific logical grains ->
+  `R/sdp-methods.R` + `R/observation-structures.R`
 - EML profile and KNB/DataONE deposit/revision state machine ->
   `R/eml-export.R`, `R/knb-sdp-archive.R`, and `R/knb-publication.R`

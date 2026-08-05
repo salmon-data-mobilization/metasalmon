@@ -50,3 +50,10 @@ without shipping the full NuSEDS workbook.
 The fuller example also ships with a matching starter dictionary,
 `nuseds-fraser-coho-2023-2024-column_dictionary.csv`, so you can use it
 directly as an LLM context file or as a seed for manual review.
+
+The bundled spawner-count rows deliberately separate the ecological
+characteristic from its unit. Values are expressed in QUDT `Individual`
+(`https://qudt.org/vocab/unit/INDIV`), while `property_iri` uses the released
+Salmon Domain Ontology `smn:Abundance` characteristic. In particular, do not
+restore the former QUDT `NumberOfOrganisms` value: that IRI does not exist, and
+a counting unit is not a substitute for the ecological property being measured.

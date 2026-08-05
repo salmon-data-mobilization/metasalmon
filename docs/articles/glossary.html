@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -291,7 +291,7 @@ represents. It answers the question: “What exactly did you measure?”</p>
 <tr class="even">
 <td><strong>Property</strong></td>
 <td>What characteristic?</td>
-<td>Temperature</td>
+<td>Temperature or abundance</td>
 </tr>
 <tr class="odd">
 <td><strong>Entity</strong></td>
@@ -320,15 +320,19 @@ describes what you measured (e.g., “Natural spawner count”). In
 metasalmon, this maps to <code>term_iri</code>.</li>
 <li>
 <strong>Property</strong>: The measurable characteristic (e.g.,
-“count”, “temperature”, “length”). Maps to
-<code>property_iri</code>.</li>
+“abundance”, “temperature”, “length”). Maps to
+<code>property_iri</code>. For fish totals, abundance is the
+characteristic while a counting unit such as QUDT
+<code>Individual</code> records how the value is expressed.</li>
 <li>
 <strong>Entity</strong>: The thing being measured (e.g., “spawning
 salmon”, “stream water”). Maps to <code>entity_iri</code>.</li>
 <li>
-<strong>Constraint</strong>: Optional qualifiers that narrow the
-scope (e.g., “maximum”, “annual”, “wild-origin only”). Maps to
-<code>constraint_iri</code>.</li>
+<strong>Constraint</strong>: Optional fixed qualifiers that narrow
+the scope (e.g., “maximum”, “wild-origin only”, “female”, or “spawner
+stage”). Maps to <code>constraint_iri</code>; multiple constraint IRIs
+are separated with semicolons. Row-varying values belong in table
+dimensions rather than being repeated as fixed column constraints.</li>
 </ul>
 </div>
 <div class="section level3">

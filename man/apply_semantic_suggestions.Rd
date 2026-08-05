@@ -7,7 +7,7 @@
 apply_semantic_suggestions(
   dict,
   suggestions = attr(dict, "semantic_suggestions"),
-  strategy = c("top", "llm"),
+  strategy = c("top", "reviewed", "llm"),
   columns = NULL,
   roles = NULL,
   min_score = NULL,
@@ -25,8 +25,14 @@ apply_semantic_suggestions(
 attribute from \code{dict}.}
 
 \item{strategy}{Selection strategy per column-role pair. \code{"top"} keeps the
-original lexical ranking; \code{"llm"} applies only candidates marked with
-\code{llm_selected = TRUE} by \code{suggest_semantics(..., llm_assess = TRUE)}.}
+original lexical ranking. \code{"reviewed"} applies only rows whose \code{decision}
+is \code{"accepted"} (or the equivalent \code{"accept"}). \code{"llm"} applies only
+candidates marked with \code{llm_selected = TRUE} by
+\code{suggest_semantics(..., llm_assess = TRUE)}. When reviewed or LLM-reviewed
+selections contain multiple constraints for one measurement, their IRIs
+are deduplicated in first-occurrence order and written to \code{constraint_iri}
+as the SDP-compatible semicolon-separated value. Other roles continue to
+select one value per column-role pair.}
 
 \item{columns}{Optional character vector limiting application to specific
 \code{column_name} values.}

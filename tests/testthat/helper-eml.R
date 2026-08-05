@@ -16,7 +16,10 @@ make_eml_test_sdp <- function(path,
                               measurement_resource_kind = "Class",
                               measurement_source = "smn",
                               measurement_source_url =
-                                "https://w3id.org/smn/") {
+                                "https://w3id.org/smn/",
+                              measurement_unit_iri =
+                                "http://qudt.org/vocab/unit/COUNT",
+                              measurement_unit_label = "Count") {
   resources <- list(
     counts = tibble::tibble(
       record_id = c("A", "B"),
@@ -79,8 +82,8 @@ make_eml_test_sdp <- function(path,
     "https://w3id.org/smn/Stock",
     NA_character_,
     NA_character_,
-    "Count",
-    "http://qudt.org/vocab/unit/COUNT",
+    measurement_unit_label,
+    measurement_unit_iri,
     measurement_term_type,
     count_value_type,
     "measurement",
@@ -112,7 +115,7 @@ make_eml_test_sdp <- function(path,
     "A quantity kind for counts.", "qudt", "qudt", "QuantityKind", NA_character_,
     "qudt:QuantityKind", "https://qudt.org/3.1.1/vocab/quantitykind/",
     NA_character_,
-    "http://qudt.org/vocab/unit/COUNT", "Count",
+    measurement_unit_iri, measurement_unit_label,
     "A counting unit.", "qudt", "qudt", "Unit", NA_character_,
     "qudt:CountingUnit;qudt:Unit", "https://qudt.org/3.1.1/vocab/unit/",
     NA_character_,
@@ -165,7 +168,7 @@ make_eml_test_sdp <- function(path,
     dataset_id, "counts", "count", "column", "unit_iri",
     "unit", "accepted", "high",
     "The values use the reviewed counting unit.",
-    "http://qudt.org/vocab/unit/COUNT"
+    measurement_unit_iri
   )
   semantic_review_path <- file.path(
     path,
