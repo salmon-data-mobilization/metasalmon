@@ -1838,6 +1838,27 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     data_df <- pkg$resources[[table_id]]
     data_cols <- names(data_df)
 
+    # Values that do not satisfy their declared `value_type`. The reader keeps
+    # the raw token rather than NA-ing it, so the code-value check below still
+    # sees the offending value; this reports the declaration mismatch itself.
+    for (mismatch in attr(data_df, "ms_value_type_mismatches") %||% list()) {
+      add_issue(
+        "columns",
+        sprintf(
+          "Table '%s' column '%s' declares value_type '%s' but %d value%s do not parse as that type: %s.",
+          table_id,
+          mismatch$column,
+          mismatch$declared,
+          mismatch$count,
+          if (mismatch$count == 1) "" else "s",
+          paste(mismatch$examples, collapse = ", ")
+        ),
+        table_id = table_id,
+        column_name = mismatch$column,
+        value = paste(mismatch$examples, collapse = ", ")
+      )
+    }
+
     missing_in_data <- setdiff(dict_cols, data_cols)
     if (length(missing_in_data) > 0) {
       add_issue(
@@ -2039,6 +2060,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   ))
 
   spec <- list()
+  declared_types <- list()
   if (is.data.frame(table_dict) && nrow(table_dict) > 0 &&
       all(c("column_name", "value_type") %in% names(table_dict))) {
     dict_names <- trimws(as.character(table_dict$column_name))
@@ -2047,15 +2069,51 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     # missing columns validation is meant to report as a structured issue.
     declared <- intersect(header, dict_names)
     for (nm in declared) {
-      spec[[nm]] <- .ms_value_type_col_spec(table_dict$value_type[match(nm, dict_names)])
+      declared_type <- table_dict$value_type[match(nm, dict_names)]
+      spec[[nm]] <- .ms_value_type_col_spec(declared_type)
+      declared_types[[nm]] <- as.character(declared_type)
     }
   }
 
-  readr::read_csv(
+  parsed <- readr::read_csv(
     file_path,
     col_types = do.call(readr::cols, c(spec, list(.default = readr::col_character()))),
     show_col_types = FALSE
   )
+
+  # A declared type the data does not satisfy is not a parsing detail to shrug
+  # at: readr turns the offending token into NA with only a warning, validation
+  # then drops the NA as blank, and a data value absent from codes.csv reaches
+  # "validation passed". So re-read the affected columns as character to keep
+  # the raw token, and carry the mismatch so the validator can report it.
+  issues <- tryCatch(readr::problems(parsed), error = function(e) NULL)
+  if (is.data.frame(issues) && nrow(issues) > 0 && length(spec) > 0) {
+    indices <- suppressWarnings(as.integer(issues$col))
+    indices <- indices[!is.na(indices) & indices >= 1L & indices <= length(header)]
+    affected <- intersect(unique(header[indices]), names(spec))
+    if (length(affected) > 0) {
+      for (nm in affected) {
+        spec[[nm]] <- readr::col_character()
+      }
+      parsed <- readr::read_csv(
+        file_path,
+        col_types = do.call(readr::cols, c(spec, list(.default = readr::col_character()))),
+        show_col_types = FALSE
+      )
+      mismatches <- lapply(affected, function(nm) {
+        rows <- issues[header[suppressWarnings(as.integer(issues$col))] %in% nm, , drop = FALSE]
+        list(
+          column = nm,
+          declared = declared_types[[nm]],
+          count = nrow(rows),
+          examples = utils::head(unique(as.character(rows$actual)), 3L)
+        )
+      })
+      attr(parsed, "ms_value_type_mismatches") <- mismatches
+    }
+  }
+
+  parsed
 }
 
 .ms_datapackage_name <- function(dataset_id) {

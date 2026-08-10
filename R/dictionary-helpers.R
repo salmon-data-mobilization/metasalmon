@@ -699,7 +699,10 @@ infer_value_type <- function(col) {
     number   = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
     boolean  = ifelse(is.na(parsed), NA_character_, ifelse(parsed, "TRUE", "FALSE")),
     date     = format(parsed, "%Y-%m-%d"),
-    datetime = format(parsed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    # %OS6, not %S: whole-second formatting collapses distinct sub-second
+    # timestamps onto one token, which would let an unlisted code value match.
+    # Both sides run through this function, so the padded form stays symmetric.
+    datetime = format(parsed, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
     original
   )
 
@@ -715,7 +718,25 @@ infer_value_type <- function(col) {
   if (is.na(value)) {
     return(NA_character_)
   }
-  format(value, scientific = FALSE, trim = TRUE, digits = 15)
+  if (!is.finite(value)) {
+    return(as.character(value))
+  }
+  # Shortest representation that round-trips. A fixed 15 significant digits
+  # collapses doubles that differ beyond it (0.1 and 0.1 + 1e-17 both render as
+  # "0.1"), which would let an unlisted value match a listed one; a fixed 17
+  # never collides but renders 0.1 as "0.10000000000000001" in every error
+  # message. Widening only when needed keeps ordinary values readable and
+  # distinct values distinct.
+  #
+  # `scientific = FALSE` throughout: `as.character(100000)` is "1e+05", which is
+  # the exact defect this canonicalizer exists to prevent.
+  for (digits in 15:17) {
+    token <- format(value, scientific = FALSE, trim = TRUE, digits = digits)
+    if (identical(suppressWarnings(as.numeric(token)), value)) {
+      return(token)
+    }
+  }
+  token
 }
 
 # Helper: tokenize column names for lightweight role inference heuristics.

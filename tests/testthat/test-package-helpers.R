@@ -3006,3 +3006,48 @@ test_that("a dictionary column missing from the data file reads without a parser
     "missing dictionary columns"
   )
 })
+
+test_that("a value that fails its declared type is preserved and reported", {
+  # Regression: reading with the declared collector turned the offending token
+  # into NA with only a readr warning, validation dropped the NA as blank, and a
+  # data value absent from codes.csv reached "validation passed".
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(depth_code = c("0.10", "0.20", "unknown"), stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "mismatch-1", table_id = "obs")
+  )
+  dict$value_type <- "number"
+  dict$column_role <- "categorical"
+
+  codes <- tibble::tibble(
+    dataset_id = "mismatch-1", table_id = "obs", column_name = "depth_code",
+    code_value = c("0.10", "0.20"), code_label = c("Shallow", "Deep"),
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "mismatch-1", title = "Mismatch",
+      description = "Declared type not satisfied", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "mismatch-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  # The raw token survives, so the code-value check can still see it.
+  expect_true("unknown" %in% as.character(back$resources$obs$depth_code))
+
+  # Both the declaration mismatch and the unlisted value are reported.
+  expect_error(validate_salmon_datapackage(temp_dir), "do not parse as that type")
+  expect_error(validate_salmon_datapackage(temp_dir), "not listed in codes.csv")
+})

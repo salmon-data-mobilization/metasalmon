@@ -2461,3 +2461,24 @@ test_that("infer_value_type distinguishes date from datetime", {
     "datetime"
   )
 })
+
+test_that("canonical tokens keep distinct values distinct", {
+  canon <- metasalmon:::.ms_canonical_value_tokens
+
+  # A fixed 15 significant digits collapsed these onto "0.1".
+  expect_false(identical(canon(0.1, "number"), canon(0.1 + 1e-17, "number")))
+  # ...while ordinary values stay readable, and 100000 never becomes 1e+05.
+  expect_identical(canon(0.1, "number"), "0.1")
+  expect_identical(canon(100000, "number"), "100000")
+
+  # Whole-second formatting collapsed distinct sub-second timestamps.
+  early <- as.POSIXct("2026-01-01 00:00:00.100", tz = "UTC")
+  late <- as.POSIXct("2026-01-01 00:00:00.900", tz = "UTC")
+  expect_false(identical(canon(early, "datetime"), canon(late, "datetime")))
+
+  # Both sides of the comparison must still agree for the same instant.
+  expect_identical(
+    canon("2026-01-01T08:30:00Z", "datetime"),
+    canon(as.POSIXct("2026-01-01 08:30:00", tz = "UTC"), "datetime")
+  )
+})
