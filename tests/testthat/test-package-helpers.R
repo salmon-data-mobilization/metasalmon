@@ -2148,6 +2148,21 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
     overwrite = TRUE
   )
 
+  # Rewriting is now an in-place update: unmanaged files survive by default.
+  expect_true(file.exists(file.path(temp_dir, "stale.txt")))
+  expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
+  expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
+
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE,
+    prune = TRUE
+  )
+
   expect_false(file.exists(file.path(temp_dir, "stale.txt")))
   expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
@@ -2699,4 +2714,160 @@ test_that("a package declaring the legacy SDP profile URI still validates", {
 
   result <- validate_salmon_datapackage(temp_dir)
   expect_equal(nrow(result$issues), 0L)
+})
+
+# Shared fixture for the rewrite-preservation tests below.
+.ms_test_write_minimal_package <- function(path, tables = c("obs"), codes = NULL) {
+  resources <- stats::setNames(
+    lapply(tables, function(x) data.frame(count = 1:2)),
+    tables
+  )
+  dict <- dplyr::bind_rows(lapply(tables, function(tbl) {
+    fill_measurement_components(
+      infer_dictionary(data.frame(count = 1:2), dataset_id = "keep-1", table_id = tbl)
+    )
+  }))
+  table_meta <- tibble::tibble(
+    dataset_id = "keep-1",
+    table_id = tables,
+    table_label = tables,
+    table_description = "Rows",
+    file_name = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+  write_salmon_datapackage(
+    resources = resources,
+    dataset_meta = tibble::tibble(
+      dataset_id = "keep-1", title = "Preservation",
+      description = "Sidecar preservation", spec_version = NA_character_
+    ),
+    table_meta = table_meta,
+    dict = dict,
+    codes = codes,
+    path = path,
+    overwrite = TRUE
+  )
+}
+
+test_that("rewriting a package preserves reviewed sidecars", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+
+  sidecars <- c(
+    "metadata/semantic/example.sssom.tsv",
+    "metadata/semantic/mapping-sets.json",
+    "metadata/semantic/measurement-decompositions.csv",
+    "metadata/semantic/measurement-decompositions.json",
+    "metadata/semantic_vocabulary.csv",
+    "metadata/eml-mapping.yml",
+    "metadata/eml.xml",
+    "metadata/metadata-edh-hnap.xml",
+    "reviewed_semantic_selections.csv",
+    "README-review.txt",
+    "publication/knb-manifest.json"
+  )
+  for (relative in sidecars) {
+    full <- file.path(temp_dir, relative)
+    dir.create(dirname(full), recursive = TRUE, showWarnings = FALSE)
+    writeLines(paste("reviewed content for", relative), full)
+  }
+  before <- vapply(sidecars, function(r) {
+    digest::digest(file.path(temp_dir, r), file = TRUE)
+  }, character(1))
+
+  .ms_test_write_minimal_package(temp_dir)
+
+  after <- vapply(sidecars, function(r) {
+    if (!file.exists(file.path(temp_dir, r))) return(NA_character_)
+    digest::digest(file.path(temp_dir, r), file = TRUE)
+  }, character(1))
+
+  expect_identical(after, before)
+})
+
+test_that("prune = TRUE restores the full wipe and requires overwrite", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+  dir.create(file.path(temp_dir, "metadata", "semantic"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("reviewed", file.path(temp_dir, "metadata", "semantic", "example.sssom.tsv"))
+
+  expect_error(
+    .ms_prepare_package_write_dir(temp_dir, overwrite = FALSE, prune = TRUE),
+    "requires"
+  )
+
+  resources <- list(obs = data.frame(count = 1:2))
+  dict <- fill_measurement_components(
+    infer_dictionary(data.frame(count = 1:2), dataset_id = "keep-1", table_id = "obs")
+  )
+  write_salmon_datapackage(
+    resources = resources,
+    dataset_meta = tibble::tibble(
+      dataset_id = "keep-1", title = "Preservation",
+      description = "Sidecar preservation", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "keep-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE,
+    prune = TRUE
+  )
+
+  expect_false(file.exists(file.path(temp_dir, "metadata", "semantic", "example.sssom.tsv")))
+})
+
+test_that("rewriting drops a data resource no longer declared in tables.csv", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir, tables = c("obs", "extra"))
+  expect_true(file.exists(file.path(temp_dir, "data", "extra.csv")))
+
+  expect_message(
+    .ms_test_write_minimal_package(temp_dir, tables = "obs"),
+    "no longer declared"
+  )
+
+  expect_false(file.exists(file.path(temp_dir, "data", "extra.csv")))
+  expect_true(file.exists(file.path(temp_dir, "data", "obs.csv")))
+})
+
+test_that("dropping codes removes a stale codes.csv and leaves validation clean", {
+  temp_dir <- withr::local_tempdir()
+  codes <- tibble::tibble(
+    dataset_id = "keep-1",
+    table_id = "obs",
+    column_name = "count",
+    code_value = c("1", "2"),
+    code_label = c("One", "Two"),
+    code_description = NA_character_
+  )
+  .ms_test_write_minimal_package(temp_dir, codes = codes)
+  expect_true(file.exists(file.path(temp_dir, "metadata", "codes.csv")))
+
+  .ms_test_write_minimal_package(temp_dir, codes = NULL)
+
+  expect_false(file.exists(file.path(temp_dir, "metadata", "codes.csv")))
+  expect_equal(nrow(validate_salmon_datapackage(temp_dir)$issues), 0L)
+})
+
+test_that("create_sdp accepts prune without tripping the dots validator", {
+  temp_dir <- file.path(withr::local_tempdir(), "pkg")
+  expect_no_error(
+    suppressMessages(suppressWarnings(create_sdp(
+      data.frame(count = 1:2),
+      path = temp_dir,
+      dataset_id = "prune-1",
+      table_id = "obs",
+      seed_semantics = FALSE,
+      check_updates = FALSE,
+      overwrite = TRUE,
+      prune = FALSE
+    )))
+  )
 })

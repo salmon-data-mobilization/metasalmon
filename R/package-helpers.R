@@ -19,11 +19,20 @@
 #' @param path Character; directory path where package will be written
 #' @param format Character; resource format: `"csv"` (default, only format supported)
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
-#'   `TRUE`, replacement is only allowed for empty directories or directories
-#'   previously written by `metasalmon`.
+#'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
+#'   allowed for empty directories or directories previously written by
+#'   `metasalmon`.
 #' @param write_datapackage Logical; if `TRUE` (default), write a root
 #'   `datapackage.json` descriptor declaring the SDP Frictionless profile after
 #'   package validation passes. Use `FALSE` for draft authoring output.
+#' @param prune Logical; if `FALSE` (default), only files this writer owns are
+#'   replaced: the `metadata/` SDP CSVs, the `data/` resources declared in
+#'   `tables.csv` (including any a previous write declared and this one does
+#'   not), `datapackage.json`, and the ownership sentinel. Everything else is
+#'   preserved — reviewed SSSOM mappings and measurement decompositions under
+#'   `metadata/semantic/`, EML and EDH XML, `eml-mapping.yml`, review notes, and
+#'   `publication/` artifacts. If `TRUE`, every entry in the directory is
+#'   deleted first (the pre-0.2.0 behaviour). Requires `overwrite = TRUE`.
 #'
 #' @return Invisibly returns the path to the created package
 #'
@@ -59,7 +68,8 @@ write_salmon_datapackage <- function(
     path,
     format = "csv",
     overwrite = FALSE,
-    write_datapackage = TRUE
+    write_datapackage = TRUE,
+    prune = FALSE
 ) {
   if (!identical(format, "csv")) {
     cli::cli_abort("Only CSV format is supported. Use {.code format = 'csv'}")
@@ -96,32 +106,56 @@ write_salmon_datapackage <- function(
   # scoping filter below into a no-op and leak other datasets' columns.
   target_dataset_id <- dataset_id
 
-  .ms_prepare_package_write_dir(path, overwrite = overwrite)
+  # Resolve every resource file name BEFORE preparing the directory, so the set
+  # of paths this call will write is exactly the set it is allowed to delete.
+  # Resolving inside the write loop instead would let the two drift apart.
+  writable_resources <- intersect(names(resources), table_meta$table_id)
+  skipped_resources <- setdiff(names(resources), writable_resources)
+  for (resource_name in skipped_resources) {
+    cli::cli_warn(
+      "No table metadata found for resource {.val {resource_name}}, skipping"
+    )
+  }
+
+  resolved_file_names <- character()
+  for (resource_name in writable_resources) {
+    file_name <- table_meta$file_name[table_meta$table_id == resource_name][1]
+    if (is.na(file_name) || file_name == "") {
+      file_name <- file.path("data", paste0(resource_name, ".", format))
+    }
+    file_name <- .ms_force_data_subdir(.ms_normalize_resource_file_name(file_name))
+    table_meta$file_name[table_meta$table_id == resource_name] <- file_name
+    resolved_file_names[[resource_name]] <- file_name
+  }
+
+  managed_paths <- .ms_package_managed_paths(path, data_file_names = resolved_file_names)
+  orphaned <- setdiff(.ms_previous_declared_data_paths(path), resolved_file_names)
+  orphaned <- orphaned[file.exists(file.path(path, orphaned))]
+
+  .ms_prepare_package_write_dir(
+    path,
+    overwrite = overwrite,
+    managed_paths = managed_paths,
+    prune = prune
+  )
+
+  if (!isTRUE(prune) && length(orphaned) > 0) {
+    cli::cli_alert_info(
+      "Removed data resource{?s} no longer declared in {.file tables.csv}: {.file {orphaned}}"
+    )
+  }
 
   dir.create(.ms_metadata_dir(path), recursive = TRUE, showWarnings = FALSE)
 
   # Write resources and build derived datapackage descriptor.
   resource_list <- list()
-  for (resource_name in names(resources)) {
+  for (resource_name in writable_resources) {
     resource_df <- resources[[resource_name]]
 
     table_info <- table_meta %>%
       dplyr::filter(.data$table_id == resource_name)
 
-    if (nrow(table_info) == 0) {
-      cli::cli_warn(
-        "No table metadata found for resource {.val {resource_name}}, skipping"
-      )
-      next
-    }
-
-    file_name <- table_info$file_name[1]
-    if (is.na(file_name) || file_name == "") {
-      file_name <- file.path("data", paste0(resource_name, ".", format))
-    }
-    file_name <- .ms_normalize_resource_file_name(file_name)
-    file_name <- .ms_force_data_subdir(file_name)
-    table_meta$file_name[table_meta$table_id == resource_name] <- file_name
+    file_name <- resolved_file_names[[resource_name]]
 
     file_path <- file.path(path, file_name)
     dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
@@ -292,6 +326,68 @@ write_salmon_datapackage <- function(
   list.files(path, all.files = TRUE, no.. = TRUE, full.names = TRUE)
 }
 
+# Every path `write_salmon_datapackage()` is authoritative for on this call,
+# whether or not this call will actually write it. Anything absent from this
+# list survives a rewrite: reviewed SSSOM mappings, ordered measurement
+# decompositions, EML/EDH XML, `eml-mapping.yml`, review notes, `publication/`.
+#
+# Deliberately NOT `.ms_knb_sdp_artifact_paths()`: that helper answers "what
+# gets published", aborts when a reviewed sidecar is absent, and is documented
+# as the single source of truth for the KNB inventory. This one answers "what
+# this call owns", and must degrade rather than abort.
+.ms_package_managed_paths <- function(path, data_file_names = character()) {
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+
+  managed <- c(
+    file.path(path, "datapackage.json"),
+    .ms_metadata_path(path, metadata_names),
+    # Legacy root-level shadows, which `.ms_locate_metadata_file()` still accepts.
+    file.path(path, metadata_names),
+    .ms_package_sentinel_file(path)
+  )
+
+  data_file_names <- data_file_names[!is.na(data_file_names) & nzchar(data_file_names)]
+  previous <- .ms_previous_declared_data_paths(path)
+  all_data <- unique(c(data_file_names, previous))
+  if (length(all_data) > 0) {
+    managed <- c(managed, file.path(path, all_data))
+  }
+
+  unique(managed)
+}
+
+# Data resources declared by a previous write. Retaining an orphan would leave
+# undeclared data in `data/` that validation never looks at but a hand-made ZIP
+# would carry. Degrades to nothing if the previous tables.csv is absent or
+# unreadable — a corrupt file must never widen the deletion set.
+.ms_previous_declared_data_paths <- function(path) {
+  tables_path <- tryCatch(.ms_locate_metadata_file(path, "tables.csv"), error = function(e) NA_character_)
+  if (length(tables_path) != 1L || is.na(tables_path) || !file.exists(tables_path)) {
+    return(character())
+  }
+
+  tryCatch(
+    {
+      previous <- .ms_read_metadata_csv(tables_path)
+      if (!"file_name" %in% names(previous)) {
+        return(character())
+      }
+      names <- trimws(as.character(previous$file_name))
+      names <- names[!is.na(names) & nzchar(names)]
+      if (length(names) == 0L) {
+        return(character())
+      }
+      vapply(
+        names,
+        function(n) .ms_force_data_subdir(.ms_normalize_resource_file_name(n)),
+        character(1),
+        USE.NAMES = FALSE
+      )
+    },
+    error = function(e) character()
+  )
+}
+
 .ms_is_metasalmon_package_dir <- function(path) {
   if (!dir.exists(path)) {
     return(FALSE)
@@ -315,7 +411,14 @@ write_salmon_datapackage <- function(
     dir.exists(.ms_metadata_dir(path))
 }
 
-.ms_prepare_package_write_dir <- function(path, overwrite = FALSE) {
+.ms_prepare_package_write_dir <- function(path,
+                                          overwrite = FALSE,
+                                          managed_paths = character(),
+                                          prune = FALSE) {
+  if (isTRUE(prune) && !isTRUE(overwrite)) {
+    cli::cli_abort("{.arg prune} requires {.arg overwrite = TRUE}.")
+  }
+
   if (!dir.exists(path)) {
     dir.create(path, recursive = TRUE, showWarnings = FALSE)
     return(invisible(path))
@@ -339,7 +442,14 @@ write_salmon_datapackage <- function(
     ))
   }
 
-  unlink(existing_files, recursive = TRUE, force = TRUE)
+  if (isTRUE(prune)) {
+    unlink(existing_files, recursive = TRUE, force = TRUE)
+    return(invisible(path))
+  }
+
+  # No `recursive =`: if a managed path ever resolves to a directory, unlink()
+  # is a no-op rather than a recursive wipe.
+  unlink(managed_paths[file.exists(managed_paths)], force = TRUE)
   invisible(path)
 }
 
@@ -636,8 +746,13 @@ infer_salmon_datapackage_artifacts <- function(
 #'   releases only when one is available. Defaults to `interactive()`.
 #' @param format Character; resource format: `"csv"` (default, only format supported)
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
-#'   `TRUE`, replacement is only allowed for empty directories or directories
-#'   previously written by `metasalmon`.
+#'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
+#'   allowed for empty directories or directories previously written by
+#'   `metasalmon`.
+#' @param prune Logical; if `FALSE` (default), reviewed sidecars in an existing
+#'   package directory are preserved and only files this writer owns are
+#'   replaced. If `TRUE`, the directory is emptied first. Requires
+#'   `overwrite = TRUE`. See [write_salmon_datapackage()].
 #' @param include_edh_xml Logical; when `TRUE`, writes an HNAP-aware EDH XML
 #'   metadata file to `metadata/metadata-edh-hnap.xml` using
 #'   `edh_build_hnap_xml()`. The default is `FALSE`. Because `create_sdp()`
@@ -734,6 +849,7 @@ create_sdp <- function(
     format = "csv",
     overwrite = FALSE,
     include_edh_xml = FALSE,
+    prune = FALSE,
     ...
 ) {
   semantic_sources <- .ms_forward_semantic_sources(
@@ -914,7 +1030,8 @@ create_sdp <- function(
       codes = artifacts$codes,
       path = path,
       format = format,
-      overwrite = overwrite
+      overwrite = overwrite,
+      prune = prune
     )
   })
 
@@ -944,8 +1061,13 @@ create_sdp <- function(
     ))
   )
 
+  # `create_sdp()` owns this file, so it clears its own stale copy. The generic
+  # writer's managed-path inventory deliberately does not know about it.
+  suggestions_path <- file.path(pkg_path, "semantic_suggestions.csv")
   if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
-    readr::write_csv(review_suggestions, file.path(pkg_path, "semantic_suggestions.csv"), na = "")
+    readr::write_csv(review_suggestions, suggestions_path, na = "")
+  } else if (file.exists(suggestions_path)) {
+    unlink(suggestions_path, force = TRUE)
   }
 
   if (isTRUE(include_edh_xml)) {
