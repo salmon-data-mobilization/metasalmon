@@ -157,9 +157,17 @@ collect_unsafe <- function(node, fn_name, assignments = NULL, acc = list()) {
     if (head_name %in% cli_message_fns && length(node) >= 2L) {
       args <- as.list(node)[-1]
       named <- names(args)
-      positional <- if (is.null(named)) args else args[!nzchar(named)]
-      if (length(positional) >= 1L &&
-          !is_literal_message(positional[[1]], assignments)) {
+      # `cli_abort(message = x)` is a valid spelling and cli still treats `x` as
+      # the template, so checking only positional arguments would let it past.
+      message_arg <- if (!is.null(named) && "message" %in% named) {
+        args[named == "message"]
+      } else if (is.null(named)) {
+        args
+      } else {
+        args[!nzchar(named)]
+      }
+      if (length(message_arg) >= 1L &&
+          !is_literal_message(message_arg[[1]], assignments)) {
         acc[[length(acc) + 1L]] <- list(
           fn = fn_name,
           call = paste(deparse(node), collapse = " ")
@@ -232,7 +240,15 @@ test_that("the guard detects an unsafe cli message", {
     cli::cli_abort(lines)
   }
 
+  named_unsafe <- function(external) {
+    cli::cli_abort(message = c("Header", "x" = external))
+  }
+
   expect_length(collect_unsafe(body(unsafe), "unsafe", collect_assignments(body(unsafe))), 1L)
+  expect_length(
+    collect_unsafe(body(named_unsafe), "named_unsafe", collect_assignments(body(named_unsafe))),
+    1L
+  )
   expect_length(collect_unsafe(body(safe), "safe", collect_assignments(body(safe))), 0L)
   expect_length(
     collect_unsafe(body(safe_local), "safe_local", collect_assignments(body(safe_local))),

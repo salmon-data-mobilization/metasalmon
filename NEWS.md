@@ -95,6 +95,11 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
 
 ### Internal
 
+- `write_salmon_datapackage()` refuses to update a package whose managed
+  directories are reached through a symbolic link. `file.exists()` follows
+  links, so a `data/` or `metadata/` replaced by one would have made every
+  managed child resolve outside the package and be deleted there. This matches
+  the symlink discipline the KNB archive already enforces.
 - New `R/cli-safety.R` (`.ms_cli_escape()`, `.ms_cli_bullets()`,
   `.ms_redact_secrets()`, `.ms_abort_external()`).
 - Two static guard tests enforce the new contracts: `test-cli-safety-guard.R`

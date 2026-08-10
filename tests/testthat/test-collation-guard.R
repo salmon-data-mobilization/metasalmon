@@ -61,11 +61,20 @@ find_unqualified_ordering <- function(node, acc = list()) {
       ""
     }
 
-    arg_names <- names(as.list(node)[-1])
-    if (head_name %in% c("sort", "order") && !("method" %in% arg_names)) {
+    args <- as.list(node)[-1]
+    arg_names <- names(args)
+    # Presence is not enough: `method = "shell"` and `.locale = "en"` are
+    # locale-dependent, so the value has to be the C-collation one.
+    argument_is <- function(name, expected) {
+      if (is.null(arg_names) || !(name %in% arg_names)) {
+        return(FALSE)
+      }
+      identical(args[[which(arg_names == name)[1]]], expected)
+    }
+    if (head_name %in% c("sort", "order") && !argument_is("method", "radix")) {
       acc[[length(acc) + 1L]] <- paste(deparse(node), collapse = " ")
     }
-    if (head_name == "arrange" && !(".locale" %in% arg_names)) {
+    if (head_name == "arrange" && !argument_is(".locale", "C")) {
       acc[[length(acc) + 1L]] <- paste(deparse(node), collapse = " ")
     }
   }
@@ -133,8 +142,16 @@ test_that("the collation guard detects an unqualified ordering", {
   unqualified_arrange <- function(df) dplyr::arrange(df, .data$a)
   qualified_arrange <- function(df) dplyr::arrange(df, .data$a, .locale = "C")
 
+  # Presence of the argument is not enough; the value must be the C one.
+  wrong_method <- function(x) sort(x, method = "shell")
+  auto_method <- function(x) order(x, method = "auto")
+  wrong_locale <- function(df) dplyr::arrange(df, .data$a, .locale = "en")
+
   expect_length(find_unqualified_ordering(body(unqualified)), 1L)
   expect_length(find_unqualified_ordering(body(qualified)), 0L)
   expect_length(find_unqualified_ordering(body(unqualified_arrange)), 1L)
   expect_length(find_unqualified_ordering(body(qualified_arrange)), 0L)
+  expect_length(find_unqualified_ordering(body(wrong_method)), 1L)
+  expect_length(find_unqualified_ordering(body(auto_method)), 1L)
+  expect_length(find_unqualified_ordering(body(wrong_locale)), 1L)
 })

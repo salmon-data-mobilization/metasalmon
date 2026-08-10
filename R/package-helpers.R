@@ -356,6 +356,40 @@ write_salmon_datapackage <- function(
   unique(managed)
 }
 
+# Refuse to delete through a symbolic link. `file.exists()` follows links, so a
+# `data/` or `metadata/` replaced by a symlink would make every managed child
+# resolve outside the package and `unlink()` delete the target. The KNB archive
+# already fails closed on symlinked path components
+# (`.ms_knb_sdp_archive_assert_no_symlink()`); the writer must do the same
+# before it removes anything.
+.ms_assert_managed_path_contained <- function(path, managed_paths) {
+  prefix <- paste0(sub("/+$", "", path), "/")
+
+  for (candidate in managed_paths) {
+    relative <- if (startsWith(candidate, prefix)) {
+      substring(candidate, nchar(prefix) + 1L)
+    } else {
+      next
+    }
+    current <- sub("/+$", "", path)
+    for (part in strsplit(relative, "/", fixed = TRUE)[[1]]) {
+      current <- file.path(current, part)
+      link <- Sys.readlink(current)
+      if (length(link) == 1L && !is.na(link) && nzchar(link)) {
+        cli::cli_abort(c(
+          "Refusing to update {.path {path}}: {.file {relative}} contains a symbolic-link path component.",
+          "i" = "Replace the link with a real directory or file, or write to a new directory."
+        ))
+      }
+      if (!file.exists(current)) {
+        break
+      }
+    }
+  }
+
+  invisible(managed_paths)
+}
+
 # Data resources declared by a previous write. Retaining an orphan would leave
 # undeclared data in `data/` that validation never looks at but a hand-made ZIP
 # would carry. Degrades to nothing if the previous tables.csv is absent or
@@ -451,6 +485,7 @@ write_salmon_datapackage <- function(
     return(invisible(path))
   }
 
+  .ms_assert_managed_path_contained(path, managed_paths)
   # No `recursive =`: if a managed path ever resolves to a directory, unlink()
   # is a no-op rather than a recursive wipe.
   unlink(managed_paths[file.exists(managed_paths)], force = TRUE)

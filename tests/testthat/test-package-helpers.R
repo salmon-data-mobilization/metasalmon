@@ -3166,3 +3166,44 @@ test_that("a previously declared resource outside data/ is removed at its real p
 
   expect_identical(.ms_previous_declared_data_paths(temp_dir), "exports/old.csv")
 })
+
+test_that("rewriting refuses to delete through a symlinked managed directory", {
+  # file.exists() follows links, so a `metadata/` replaced by a symlink made
+  # every managed child resolve outside the package and unlink() delete the
+  # target. The KNB archive already fails closed on symlinked path components;
+  # the writer must too.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id", "d1"), file.path(outside, "dataset.csv"))
+  writeLines("precious external file", file.path(outside, "tables.csv"))
+  file.symlink(outside, file.path(pkg, "metadata"))
+
+  managed <- .ms_package_managed_paths(pkg)
+  expect_error(
+    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed),
+    "symbolic-link path component"
+  )
+  expect_true(file.exists(file.path(outside, "tables.csv")))
+})
+
+test_that("an ordinary package directory is still updated in place", {
+  # The symlink guard must not block the normal managed-update path.
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  dir.create(file.path(pkg, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id", "d1"), file.path(pkg, "metadata", "dataset.csv"))
+  writeLines("keep me", file.path(pkg, "README-review.txt"))
+
+  managed <- .ms_package_managed_paths(pkg)
+  expect_no_error(
+    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed)
+  )
+  expect_false(file.exists(file.path(pkg, "metadata", "dataset.csv")))
+  expect_true(file.exists(file.path(pkg, "README-review.txt")))
+})
