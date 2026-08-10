@@ -3615,3 +3615,31 @@ test_that("a symlinked package root is refused", {
   # (macOS `/tmp` -> `/private/tmp`) must not trip the check.
   expect_silent(.ms_assert_managed_path_contained(real, .ms_metadata_path(real, "dataset.csv")))
 })
+
+test_that("a symlinked root is refused however the path is spelled", {
+  # `Sys.readlink("link/.")` reads the `.` entry inside the resolved target and
+  # returns "", so the trailing-dot spelling walked straight past the root check.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "real")
+  dir.create(file.path(real, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  for (spelling in c(link, paste0(link, "/"), paste0(link, "/."),
+                     paste0(link, "/./"), paste0(link, "//"))) {
+    expect_error(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv")),
+      "package root is a symbolic link",
+      info = spelling
+    )
+  }
+
+  # The same spellings of a real directory must still be accepted.
+  for (spelling in c(real, paste0(real, "/"), paste0(real, "/."))) {
+    expect_silent(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv"))
+    )
+  }
+})

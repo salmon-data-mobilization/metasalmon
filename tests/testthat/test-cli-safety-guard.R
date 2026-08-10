@@ -132,7 +132,7 @@ is_literal_message <- function(node, assignments = NULL, seen = character()) {
   if (head_name %in% c(
     "nrow", "ncol", "NROW", "NCOL", "length", "sum", "seq_len", "seq_along",
     "which", "round", "signif", "abs",
-    "+", "-", "*", "/", "==", "!=", "<", ">", "<=", ">=", "(", "!"
+    "+", "-", "*", "/", "==", "!=", "<", ">", "<=", ">=", "!"
   )) {
     return(TRUE)
   }
@@ -140,8 +140,11 @@ is_literal_message <- function(node, assignments = NULL, seen = character()) {
   # pass the string straight through -- safe only if the argument is.
   # Composition is safe only if every part is safe. `if`/`ifelse` are included
   # so the common `x <- if (cond) c("a") else c("b")` shape resolves.
+  # `(` belongs here, not in the brace-free list above: it returns its argument
+  # unchanged, so `cli_abort((external))` was accepted while still evaluating
+  # the external text as a template.
   if (head_name %in% c("c", "paste", "paste0", "sprintf", "setNames", "if", "ifelse", "{",
-                       "min", "max")) {
+                       "min", "max", "(")) {
     args <- as.list(node)[-1]
     # The condition of if/ifelse never reaches the message text.
     if (head_name %in% c("if", "ifelse") && length(args) >= 1L) {
@@ -272,6 +275,15 @@ test_that("the guard detects an unsafe cli message", {
   named_text_safe <- function(external) {
     cli::cli_alert_info(text = .ms_cli_escape(external))
   }
+
+  # `(` returns its argument unchanged, so a parenthesised message is exactly as
+  # dangerous as the bare one. It was on the brace-free list and accepted.
+  paren_unsafe <- function(external) {
+    cli::cli_abort((external))
+  }
+  paren_safe <- function(external) {
+    cli::cli_abort((.ms_cli_escape(external)))
+  }
   # min()/max() return their argument's type, so character input passes through.
   character_max_unsafe <- function(external) {
     cli::cli_abort(max(external))
@@ -280,6 +292,14 @@ test_that("the guard detects an unsafe cli message", {
     cli::cli_abort(sprintf("Saw %d rows.", max(nrow(x), 1L)))
   }
 
+  expect_length(
+    collect_unsafe(body(paren_unsafe), "paren_unsafe", collect_assignments(body(paren_unsafe))),
+    1L
+  )
+  expect_length(
+    collect_unsafe(body(paren_safe), "paren_safe", collect_assignments(body(paren_safe))),
+    0L
+  )
   expect_length(collect_unsafe(body(unsafe), "unsafe", collect_assignments(body(unsafe))), 1L)
   expect_length(
     collect_unsafe(body(named_unsafe), "named_unsafe", collect_assignments(body(named_unsafe))),

@@ -388,6 +388,30 @@ write_salmon_datapackage <- function(
   unique(managed)
 }
 
+# A directory path whose final component is a real name, so `Sys.readlink()`
+# inspects the directory itself. Trailing `/` and `/.` spellings are the ones
+# that matter: `Sys.readlink("link/.")` reads the `.` entry inside the resolved
+# target and returns "", so a symlinked root spelled `pkg-link/.` was accepted.
+# `..` needs no handling -- readlink(2) resolves every component but the last,
+# so `a/../link` already reads the link itself, and doing it lexically here
+# would be wrong whenever `a` is itself a symlink.
+#
+# Deliberately not `normalizePath()`: that resolves the final component too, so
+# a symlinked root would come back as its target and pass the check it exists
+# to fail.
+.ms_lexical_dir <- function(path) {
+  root <- path
+  repeat {
+    # Keep at least one character, so "/" and "." survive as themselves.
+    stripped <- sub("(?<=.)/+$", "", root, perl = TRUE)
+    stripped <- sub("(?<=.)/+\\.$", "", stripped, perl = TRUE)
+    if (identical(stripped, root)) {
+      return(root)
+    }
+    root <- stripped
+  }
+}
+
 # Refuse to delete through a symbolic link. `file.exists()` follows links, so a
 # `data/` or `metadata/` replaced by a symlink would make every managed child
 # resolve outside the package and `unlink()` delete the target. The KNB archive
@@ -395,7 +419,7 @@ write_salmon_datapackage <- function(
 # (`.ms_knb_sdp_archive_assert_no_symlink()`); the writer must do the same
 # before it removes anything.
 .ms_assert_managed_path_contained <- function(path, managed_paths) {
-  root <- sub("/+$", "", path)
+  root <- .ms_lexical_dir(path)
 
   # The root itself, before any child: the per-component walk below starts at
   # `path` and so never inspects it, which let a symlinked package root through
@@ -420,7 +444,11 @@ write_salmon_datapackage <- function(
       next
     }
     current <- sub("/+$", "", path)
-    for (part in strsplit(relative, "/", fixed = TRUE)[[1]]) {
+    parts <- strsplit(relative, "/", fixed = TRUE)[[1]]
+    # `.` and empty parts come from the caller's spelling, not from a real
+    # directory entry; walking them would readlink the resolved target instead
+    # of the component.
+    for (part in parts[nzchar(parts) & parts != "."]) {
       current <- file.path(current, part)
       link <- Sys.readlink(current)
       if (length(link) == 1L && !is.na(link) && nzchar(link)) {
