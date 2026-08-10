@@ -52,8 +52,14 @@
   # substitution mangling the result.
   value <- gsub(
     paste0(
-      "(?i)\\b(authorization|proxy-authorization|set-cookie|cookie|dataone_token|",
-      "x-api-key|api[_-]?key|anthropic[_-]?api[_-]?key|access[_-]?token|refresh[_-]?token)",
+      # A vendor prefix and a trailing qualifier are both part of the name.
+      # Without them a leading \\b never matches the variables this package
+      # actually reads -- `_` is a word character, so `OPENAI_API_KEY` has no
+      # boundary before `API_KEY` and the secret survived untouched.
+      "(?i)\\b((?:[A-Za-z0-9]+[_-])*",
+      "(?:authorization|proxy-authorization|set-cookie|cookie|dataone[_-]?token|",
+      "api[_-]?key|access[_-]?token|refresh[_-]?token|secret[_-]?key)",
+      "[A-Za-z0-9_]*)",
       "[[:space:]]*[=:][[:space:]]*[^\r\n]*"
     ),
     "\\1=[REDACTED]",

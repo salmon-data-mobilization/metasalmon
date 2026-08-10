@@ -138,3 +138,29 @@ test_that("credential headers are redacted regardless of separator spacing", {
     "Row 3 field term_iri uses REVIEW:spawner_count"
   )
 })
+
+test_that("provider-prefixed credential variables are redacted", {
+  # The leading \b never matched these: `_` is a word character, so
+  # `OPENAI_API_KEY` has no boundary before `API_KEY` and the secret survived.
+  # These four are the variables metasalmon itself reads, so they are exactly
+  # what a captured provider error is most likely to contain.
+  expect_identical(
+    .ms_redact_secrets("OPENAI_API_KEY=opaque-secret-value"),
+    "OPENAI_API_KEY=[REDACTED]"
+  )
+  expect_identical(.ms_redact_secrets("OPENROUTER_API_KEY=abc123"), "OPENROUTER_API_KEY=[REDACTED]")
+  expect_identical(.ms_redact_secrets("CHAPI_API_KEY=xyz"), "CHAPI_API_KEY=[REDACTED]")
+  expect_identical(
+    .ms_redact_secrets("METASALMON_LLM_API_KEY=hunter2"),
+    "METASALMON_LLM_API_KEY=[REDACTED]"
+  )
+  expect_identical(.ms_redact_secrets("DATAONE_TOKEN=jwt"), "DATAONE_TOKEN=[REDACTED]")
+
+  # Header and bare forms still work, and ordinary validation text is untouched.
+  expect_identical(.ms_redact_secrets("Authorization: Basic dXNlcg=="), "Authorization=[REDACTED]")
+  expect_identical(
+    .ms_redact_secrets("Row 3 field term_iri uses REVIEW:spawner_count"),
+    "Row 3 field term_iri uses REVIEW:spawner_count"
+  )
+  expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
+})

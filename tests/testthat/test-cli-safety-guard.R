@@ -157,10 +157,12 @@ collect_unsafe <- function(node, fn_name, assignments = NULL, acc = list()) {
     if (head_name %in% cli_message_fns && length(node) >= 2L) {
       args <- as.list(node)[-1]
       named <- names(args)
-      # `cli_abort(message = x)` is a valid spelling and cli still treats `x` as
-      # the template, so checking only positional arguments would let it past.
-      message_arg <- if (!is.null(named) && "message" %in% named) {
-        args[named == "message"]
+      # `cli_abort(message = x)` and `cli_alert_info(text = x)` are both valid
+      # spellings and cli still treats the value as the template, so checking
+      # only positional arguments would let either past. The alert/text APIs name
+      # their first argument `text`, the condition APIs name it `message`.
+      message_arg <- if (!is.null(named) && any(named %in% c("message", "text"))) {
+        args[named %in% c("message", "text")]
       } else if (is.null(named)) {
         args
       } else {
@@ -243,11 +245,25 @@ test_that("the guard detects an unsafe cli message", {
   named_unsafe <- function(external) {
     cli::cli_abort(message = c("Header", "x" = external))
   }
+  named_text_unsafe <- function(external) {
+    cli::cli_alert_info(text = external)
+  }
+  named_text_safe <- function(external) {
+    cli::cli_alert_info(text = .ms_cli_escape(external))
+  }
 
   expect_length(collect_unsafe(body(unsafe), "unsafe", collect_assignments(body(unsafe))), 1L)
   expect_length(
     collect_unsafe(body(named_unsafe), "named_unsafe", collect_assignments(body(named_unsafe))),
     1L
+  )
+  expect_length(
+    collect_unsafe(body(named_text_unsafe), "n", collect_assignments(body(named_text_unsafe))),
+    1L
+  )
+  expect_length(
+    collect_unsafe(body(named_text_safe), "n", collect_assignments(body(named_text_safe))),
+    0L
   )
   expect_length(collect_unsafe(body(safe), "safe", collect_assignments(body(safe))), 0L)
   expect_length(
