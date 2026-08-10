@@ -1884,7 +1884,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       add_issue(
         "columns",
         sprintf(
-          "Table '%s' column '%s' declares value_type '%s' but %d value%s %s: %s.",
+          "Table '%s' column '%s' declares value_type '%s' but %d value%s did not satisfy it (%s): %s.",
           table_id,
           mismatch$column,
           mismatch$declared,
@@ -2156,18 +2156,28 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     problem_columns <- intersect(unique(header[idx]), names(spec))
   }
 
+  # `col_double()` backs a declared `integer` because `col_integer()` silently
+  # NAs past 2^31. That choice costs two checks readr will not make for us: a
+  # fractional token like `1.5` parses cleanly despite plainly violating the
+  # declaration, and a magnitude at or above 2^53 is rounded before anything
+  # sees it. Both keep the exact token and are reported like a parse failure.
   imprecise_columns <- character()
+  fractional_columns <- character()
   for (nm in names(spec)) {
     if (!identical(declared_types[[nm]], "integer") || !nm %in% names(parsed)) {
       next
     }
     values <- suppressWarnings(as.numeric(parsed[[nm]]))
-    if (any(is.finite(values) & abs(values) >= 2^53)) {
+    finite <- is.finite(values)
+    if (any(finite & abs(values) >= 2^53)) {
       imprecise_columns <- c(imprecise_columns, nm)
+    }
+    if (any(finite & values != trunc(values))) {
+      fractional_columns <- c(fractional_columns, nm)
     }
   }
 
-  affected <- union(problem_columns, imprecise_columns)
+  affected <- Reduce(union, list(problem_columns, imprecise_columns, fractional_columns))
   if (length(affected) == 0L) {
     return(parsed)
   }
@@ -2182,13 +2192,24 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
 
   attr(parsed, "ms_value_type_mismatches") <- lapply(affected, function(nm) {
+    if (nm %in% fractional_columns) {
+      values <- suppressWarnings(as.numeric(parsed[[nm]]))
+      fractional <- parsed[[nm]][is.finite(values) & values != trunc(values)]
+      return(list(
+        column = nm,
+        declared = declared_types[[nm]],
+        reason = "not a whole number",
+        count = length(fractional),
+        examples = utils::head(unique(as.character(fractional)), 3L)
+      ))
+    }
     if (nm %in% imprecise_columns) {
       values <- suppressWarnings(as.numeric(parsed[[nm]]))
       beyond <- parsed[[nm]][is.finite(values) & abs(values) >= 2^53]
       return(list(
         column = nm,
         declared = declared_types[[nm]],
-        reason = "exceed exact integer precision and were kept as text",
+        reason = "beyond exact integer precision",
         count = length(beyond),
         examples = utils::head(unique(as.character(beyond)), 3L)
       ))
@@ -2197,7 +2218,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     list(
       column = nm,
       declared = declared_types[[nm]],
-      reason = "do not parse as that type",
+      reason = "unparseable as that type",
       count = nrow(rows),
       examples = utils::head(unique(as.character(rows$actual)), 3L)
     )

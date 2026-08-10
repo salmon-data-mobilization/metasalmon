@@ -3048,7 +3048,7 @@ test_that("a value that fails its declared type is preserved and reported", {
   expect_true("unknown" %in% as.character(back$resources$obs$depth_code))
 
   # Both the declaration mismatch and the unlisted value are reported.
-  expect_error(validate_salmon_datapackage(temp_dir), "do not parse as that type")
+  expect_error(validate_salmon_datapackage(temp_dir), "unparseable as that type")
   expect_error(validate_salmon_datapackage(temp_dir), "not listed in codes.csv")
 })
 
@@ -3206,4 +3206,42 @@ test_that("an ordinary package directory is still updated in place", {
   )
   expect_false(file.exists(file.path(pkg, "metadata", "dataset.csv")))
   expect_true(file.exists(file.path(pkg, "README-review.txt")))
+})
+
+test_that("a fractional token in a declared integer column is reported", {
+  # `col_double()` backs a declared `integer` (because `col_integer()` NAs past
+  # 2^31), so `1.5` parses cleanly and readr raises no problem. Nothing else
+  # checked wholeness, so it reached "validation passed" even with 1.5 listed
+  # in codes.csv.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1.5", "2"), file_path)
+  table_dict <- tibble::tibble(column_name = "n", value_type = "integer")
+
+  parsed <- suppressWarnings(.ms_read_resource_csv(file_path, table_dict))
+
+  expect_type(parsed$n, "character")           # exact token preserved
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$reason, "not a whole number")
+  expect_identical(mismatches[[1]]$examples, "1.5")
+})
+
+test_that("valid integer columns are not flagged as mismatches", {
+  # The wholeness check must not fire on ordinary data, including blanks and
+  # negatives, and must not apply to a declared `number`.
+  table_dict <- tibble::tibble(column_name = "n", value_type = "integer")
+  whole <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1", "-3", "", "0"), whole)
+  parsed <- .ms_read_resource_csv(whole, table_dict)
+  expect_type(parsed$n, "double")
+  expect_null(attr(parsed, "ms_value_type_mismatches"))
+
+  decimal <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1.5"), decimal)
+  parsed_number <- .ms_read_resource_csv(
+    decimal,
+    tibble::tibble(column_name = "n", value_type = "number")
+  )
+  expect_type(parsed_number$n, "double")
+  expect_null(attr(parsed_number, "ms_value_type_mismatches"))
 })
