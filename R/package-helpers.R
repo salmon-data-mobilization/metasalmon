@@ -2072,11 +2072,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     # Intersect against the actual header: naming an absent column in a col
     # spec makes readr warn, which would add noise to exactly the packages
     # whose missing columns validation reports as a structured issue.
-    # `.default` cannot appear as a named collector: readr resolves a col_types
-    # list through `do.call(cols, ...)`, so a column literally named `.default`
-    # would match the formal twice and abort. It falls through to the default
-    # character collector instead, which is the lossless representation anyway.
-    declared <- setdiff(intersect(header, dict_names), ".default")
+    declared <- intersect(header, dict_names)
     for (nm in declared) {
       declared_type <- table_dict$value_type[match(nm, dict_names)]
       spec[[nm]] <- .ms_value_type_col_spec(declared_type)
@@ -2084,9 +2080,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
   }
 
-  # A plain named list, not `do.call(readr::cols, ...)`: a data column literally
-  # named `.default` would otherwise match the `cols()` formal twice and abort.
-  read_spec <- function(current) c(current, list(.default = readr::col_character()))
+  # Collectors are supplied POSITIONALLY, one per header column, rather than by
+  # name. A named spec -- whether a `cols()` call or a plain list, since readr
+  # resolves the latter through `do.call(cols, ...)` too -- makes a column
+  # literally named `.default` match the `cols()` formal twice and abort.
+  # Positional matching sidesteps that entirely and, unlike excluding the
+  # column, still honours its declared `value_type`.
+  read_spec <- function(current) {
+    positional <- lapply(header, function(nm) {
+      current[[nm]] %||% readr::col_character()
+    })
+    do.call(readr::cols, c(positional, list(.default = readr::col_character())))
+  }
 
   parsed <- readr::read_csv(
     file_path,

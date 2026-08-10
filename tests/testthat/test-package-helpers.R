@@ -3116,6 +3116,35 @@ test_that("a data column literally named .default does not abort the reader", {
 
   back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
   expect_true(".default" %in% names(back$resources$obs))
+  # This fixture declares `string`, so character is the declared type -- the
+  # numeric case is covered by the direct-reader test below.
+  expect_identical(dict$value_type[dict$column_name == ".default"], "string")
+  expect_type(back$resources$obs$.default, "character")
+})
+
+test_that("a .default column still reports a value that fails its declared type", {
+  # The first fix for the `cols()` name collision excluded this column from the
+  # spec, which silently exempted it from type checking too.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c(".default,n", "1.5,1", "unknown,2"), file_path)
+  table_dict <- tibble::tibble(
+    column_name = c(".default", "n"),
+    value_type = c("number", "number")
+  )
+
+  parsed <- suppressWarnings(.ms_read_resource_csv(file_path, table_dict))
+
+  expect_type(parsed$.default, "character")          # raw token preserved
+  expect_true("unknown" %in% parsed$.default)
+  # And with a clean numeric column the reserved spelling does get its declared
+  # type, rather than being dropped to the character fallback.
+  clean <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c(".default,n", "1.5,1", "2.5,2"), clean)
+  expect_type(.ms_read_resource_csv(clean, table_dict)$.default, "double")
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$column, ".default")
+  expect_identical(mismatches[[1]]$declared, "number")
 })
 
 test_that("a previously declared resource outside data/ is removed at its real path", {

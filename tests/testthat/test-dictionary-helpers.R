@@ -2476,6 +2476,18 @@ test_that("canonical tokens keep distinct values distinct", {
   late <- as.POSIXct("2026-01-01 00:00:00.900", tz = "UTC")
   expect_false(identical(canon(early, "datetime"), canon(late, "datetime")))
 
+  # ...and %OS6 alone still collapsed anything finer than a microsecond.
+  fine_a <- as.POSIXct("1970-01-01 00:00:00.1000001", tz = "UTC")
+  fine_b <- as.POSIXct("1970-01-01 00:00:00.1000004", tz = "UTC")
+  expect_false(identical(canon(fine_a, "datetime"), canon(fine_b, "datetime")))
+
+  # Every realistic timestamp keeps its readable ISO form; only the
+  # finer-than-rendered case is widened.
+  expect_identical(
+    canon(as.POSIXct("2026-01-01 08:30:45.123456", tz = "UTC"), "datetime"),
+    "2026-01-01T08:30:45.123456Z"
+  )
+
   # Both sides of the comparison must still agree for the same instant.
   expect_identical(
     canon("2026-01-01T08:30:00Z", "datetime"),

@@ -699,10 +699,13 @@ infer_value_type <- function(col) {
     number   = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
     boolean  = ifelse(is.na(parsed), NA_character_, ifelse(parsed, "TRUE", "FALSE")),
     date     = format(parsed, "%Y-%m-%d"),
-    # %OS6, not %S: whole-second formatting collapses distinct sub-second
-    # timestamps onto one token, which would let an unlisted code value match.
-    # Both sides run through this function, so the padded form stays symmetric.
-    datetime = format(parsed, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
+    # Microsecond ISO, widened only when that would lose information. %S alone
+    # collapses distinct sub-second timestamps; %OS6 alone still collapses
+    # anything finer than a microsecond. Appending the exact epoch value in that
+    # case keeps the key injective while every realistic timestamp -- whole
+    # seconds through microseconds -- keeps its readable form. Both sides run
+    # through this function, so the padded form stays symmetric.
+    datetime = vapply(parsed, .ms_format_datetime_token, character(1), USE.NAMES = FALSE),
     original
   )
 
@@ -712,6 +715,20 @@ infer_value_type <- function(col) {
   unresolved <- is.na(rendered) & !is.na(original) & nzchar(original)
   rendered[unresolved] <- original[unresolved]
   rendered
+}
+
+.ms_format_datetime_token <- function(value) {
+  if (is.na(value)) {
+    return(NA_character_)
+  }
+  token <- format(value, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
+  seconds <- as.numeric(value)
+  if (identical(seconds, round(seconds, 6))) {
+    return(token)
+  }
+  # Finer than the rendered precision: keep the readable prefix and disambiguate
+  # with the exact epoch value so two distinct instants cannot share a key.
+  paste0(token, "@", .ms_format_number_token(seconds))
 }
 
 .ms_format_number_token <- function(value) {
