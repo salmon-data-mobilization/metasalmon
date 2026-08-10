@@ -3399,10 +3399,10 @@ test_that("declared-type fidelity accounts for magnitude, not just digit count",
   # Representable magnitudes must not be flagged. In particular milliseconds at
   # year 2243 are fine while microseconds there are not — the threshold moves
   # with the magnitude rather than being fixed.
-  expect_true(is.na(check("1e308", "number")))
-  # 1e-290 is comfortably representable; 1e-300 is not verifiable on this
-  # platform and is covered by its own test.
+  # Magnitudes outside the representable band are covered by their own test;
+  # 1e-290 and 1e290 sit just inside it.
   expect_true(is.na(check("1e-290", "number")))
+  expect_true(is.na(check("1e290", "number")))
   # 16 digits but below 2^53, so exactly representable. A digit-count cutoff
   # flagged this and would have rejected valid data — the failure mode that
   # matters most here, since it breaks working packages.
@@ -3435,29 +3435,31 @@ test_that("an extreme exponent is rejected without materialising its expansion",
   )
 })
 
-test_that("a token whose round trip cannot be verified keeps its exact text", {
-  # Near the subnormal boundary R's own string-to-double parser is lossy and
-  # disagrees with readr's, so "cannot verify" means "cannot guarantee". The
-  # token is preserved rather than silently accepted.
-  expect_false(identical(readr::parse_double("1e-300"), as.numeric("1e-300")))
+test_that("magnitudes outside the representable band keep their exact text", {
+  # Deliberately a fixed band rather than "can this platform verify it?".
+  # macOS cannot round-trip 1e-300 through any of 15..17 significant digits and
+  # readr disagrees with as.numeric there, while Linux converts it cleanly — so
+  # asking the platform would make the same package validate in one place and
+  # fail in another. The band costs only tokens no salmon dataset carries.
+  read_one <- function(token) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", token), file_path)
+    .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = "number")
+    )
+  }
 
-  file_path <- withr::local_tempfile(fileext = ".csv")
-  writeLines(c("v", "1e-300"), file_path)
-  parsed <- .ms_read_resource_csv(
-    file_path,
-    tibble::tibble(column_name = "v", value_type = "number")
-  )
+  for (token in c("1e-300", "1e308")) {
+    parsed <- read_one(token)
+    expect_identical(parsed$v, token)
+    expect_length(attr(parsed, "ms_value_type_mismatches"), 1L)
+  }
 
-  expect_identical(parsed$v, "1e-300")
-  expect_length(attr(parsed, "ms_value_type_mismatches"), 1L)
-
-  # A magnitude comfortably inside the representable range is unaffected.
-  in_range <- withr::local_tempfile(fileext = ".csv")
-  writeLines(c("v", "1e-290"), in_range)
-  clean <- .ms_read_resource_csv(
-    in_range,
-    tibble::tibble(column_name = "v", value_type = "number")
-  )
-  expect_type(clean$v, "double")
-  expect_null(attr(clean, "ms_value_type_mismatches"))
+  # Just inside the band, in both directions, converts and is not flagged.
+  for (token in c("1e-290", "1e290")) {
+    parsed <- read_one(token)
+    expect_type(parsed$v, "double")
+    expect_null(attr(parsed, "ms_value_type_mismatches"))
+  }
 })

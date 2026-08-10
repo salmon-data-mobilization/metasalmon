@@ -874,34 +874,34 @@ infer_value_type <- function(col) {
   # the decimal normalizer.
   magnitude_failed <- !is.finite(parsed) |
     (parsed == 0 & !is.na(token_exponent)) |
-    (!is.na(token_exponent) & !is.na(parsed_exponent) & token_exponent != parsed_exponent) |
-    (!is.na(token_exponent) & abs(token_exponent) > 400L)
+    (!is.na(token_exponent) & !is.na(parsed_exponent) & token_exponent != parsed_exponent)
 
-  # For whatever survives that, compare the token against the shortest rendering
-  # that parses back to the same double.
+  # Beyond |exponent| 290 the token is treated as unrepresentable everywhere,
+  # rather than asking this platform whether it can verify the round trip.
   #
-  # Where no such rendering exists the token is treated as NOT surviving. Near
-  # the subnormal boundary R's own string-to-double parser is lossy -- reading
-  # back `%.30g` of 1e-300 lands 2.3e-307 away, and `readr::parse_double()` and
-  # `as.numeric()` disagree there outright -- so "cannot verify" genuinely means
-  # "cannot guarantee". Keeping the exact token is then the honest result: no
-  # data is lost, and the declaration is reported as unable to hold the value.
-  remaining <- which(!magnitude_failed)
+  # That question does not have a portable answer: near the subnormal boundary
+  # macOS cannot round-trip 1e-300 through any of 15..17 significant digits and
+  # `readr::parse_double()` disagrees with `as.numeric()`, while on Linux both
+  # agree and the value converts cleanly. Deciding per-platform would make the
+  # same package validate in one place and fail in another -- the exact class of
+  # defect this release exists to remove. A fixed band costs only that tokens
+  # like 1e308, which no salmon dataset carries, keep their exact text.
+  out_of_band <- !is.na(token_exponent) & abs(token_exponent) > 290L
+
+  # Inside the band, compare the token against the shortest rendering that
+  # parses back to the same double. printf/strtod are IEEE-correct for normal
+  # doubles, so this comparison is stable across platforms.
+  remaining <- which(!magnitude_failed & !out_of_band)
   altered <- rep(FALSE, length(token))
   if (length(remaining) > 0) {
     rendered <- vapply(parsed[remaining], .ms_shortest_round_trip, character(1), USE.NAMES = FALSE)
-    round_trips <- vapply(
-      seq_along(remaining),
-      function(i) identical(suppressWarnings(as.numeric(rendered[i])), parsed[remaining][i]),
-      logical(1)
-    )
-    altered[remaining] <- !round_trips | !.ms_decimal_tokens_equal(
+    altered[remaining] <- !.ms_decimal_tokens_equal(
       .ms_normalize_decimal_token(token[remaining]),
       .ms_normalize_decimal_token(rendered)
     )
   }
 
-  lossy[suspect] <- magnitude_failed | altered
+  lossy[suspect] <- magnitude_failed | out_of_band | altered
   lossy
 }
 
