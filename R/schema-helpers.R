@@ -207,8 +207,12 @@
   # file. Asserting equality against a constant here is what made an upstream
   # identifier change unfollowable rather than merely noticeable.
   profile_uri <- if (is.null(schema$profile)) NULL else schema$profile[["$id"]]
+  # Trimmed, matching the version and rules-URI checks: a bundle whose three
+  # identifiers are all whitespace agrees with itself, so every consistency
+  # check below passes and the blank is emitted as the profile URI in
+  # `datapackage.json` instead of falling back to the vendored bundle.
   if (!is.character(profile_uri) || length(profile_uri) != 1L || is.na(profile_uri) ||
-      !nzchar(profile_uri)) {
+      !nzchar(trimws(profile_uri))) {
     cli::cli_abort("Invalid SDP schema: profile $id is missing or not a single non-empty string.")
   }
   if (!identical(schema$profile$properties$profile$const, profile_uri)) {

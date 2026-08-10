@@ -3593,3 +3593,25 @@ test_that("the pre-read containment check covers legacy root-level metadata", {
     "symbolic-link path component"
   )
 })
+
+test_that("a symlinked package root is refused", {
+  # The per-component walk starts at `path`, so it never inspected `path`
+  # itself: a symlinked root left every child looking contained, and
+  # `prune = TRUE` would empty the link's target.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "real")
+  dir.create(file.path(real, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  writeLines("precious", file.path(real, "metadata", "dataset.csv"))
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  expect_error(
+    .ms_assert_managed_path_contained(link, .ms_metadata_path(link, "dataset.csv")),
+    "package root is a symbolic link"
+  )
+  # The real directory is still writable, and an ancestor that is itself a link
+  # (macOS `/tmp` -> `/private/tmp`) must not trip the check.
+  expect_silent(.ms_assert_managed_path_contained(real, .ms_metadata_path(real, "dataset.csv")))
+})

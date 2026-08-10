@@ -248,8 +248,17 @@ detect_semantic_term_gaps <- function(
   })
 
   gaps <- dplyr::bind_rows(rows)
+  # Confidence alone is not a total order, and `order()` is stable, so ties kept
+  # the order of `all_keys` -- which comes from `split()`, whose factor levels
+  # are a locale-collated sort of the group keys. That made the row order of an
+  # exported return value locale-dependent. The identity columns break ties
+  # explicitly in C collation, independent of how the groups were built.
   gaps <- gaps[
-    order(gaps$placement_confidence, decreasing = TRUE, na.last = TRUE),
+    order(
+      -gaps$placement_confidence,
+      gaps$dataset_id, gaps$table_id, gaps$column_name, gaps$code_value,
+      method = "radix", na.last = TRUE
+    ),
     .ms_term_gap_cols(),
     drop = FALSE
   ]
@@ -317,7 +326,12 @@ detect_semantic_term_gaps <- function(
   non_smn <- group[!group$is_smn, , drop = FALSE]
   top <- if (nrow(non_smn) > 0L) {
     score <- suppressWarnings(as.numeric(non_smn$score))
-    non_smn[order(-score, non_smn$source, non_smn$label, na.last = TRUE), , drop = FALSE][1, , drop = FALSE]
+    # Character tie-breakers on an equal score, and the chosen row becomes the
+    # `top_non_smn_*` evidence in an exported return value.
+    non_smn[
+      order(-score, non_smn$source, non_smn$label, method = "radix", na.last = TRUE), ,
+      drop = FALSE
+    ][1, , drop = FALSE]
   } else {
     tibble::tibble()
   }

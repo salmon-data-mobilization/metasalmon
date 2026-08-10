@@ -211,3 +211,15 @@ test_that("an unusable sdp:rules value is rejected", {
     metasalmon:::.ms_sdp_public_rules_url()
   )
 })
+
+test_that("whitespace-only profile identifiers are rejected", {
+  # All three identifiers agree with each other, so every consistency check
+  # passes and the blank would be emitted as the datapackage.json profile URI
+  # rather than falling back to the vendored bundle.
+  bundle <- fake_sdp_bundle()
+  bundle$profile[["$id"]] <- "   "
+  bundle$profile$properties$profile$const <- "   "
+  bundle$rules$profile <- "   "
+
+  expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "profile \\$id")
+})

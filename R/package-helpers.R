@@ -395,7 +395,23 @@ write_salmon_datapackage <- function(
 # (`.ms_knb_sdp_archive_assert_no_symlink()`); the writer must do the same
 # before it removes anything.
 .ms_assert_managed_path_contained <- function(path, managed_paths) {
-  prefix <- paste0(sub("/+$", "", path), "/")
+  root <- sub("/+$", "", path)
+
+  # The root itself, before any child: the per-component walk below starts at
+  # `path` and so never inspects it, which let a symlinked package root through
+  # with every child appearing contained. `prune = TRUE` would then empty the
+  # link's target. Only `path` is checked, never its ancestors -- on macOS
+  # `/tmp` is a link to `/private/tmp`, so walking ancestors would reject every
+  # ordinary tempdir write.
+  root_link <- Sys.readlink(root)
+  if (length(root_link) == 1L && !is.na(root_link) && nzchar(root_link)) {
+    cli::cli_abort(c(
+      "Refusing to update {.path {path}}: the package root is a symbolic link.",
+      "i" = "Write to the directory the link points at, or replace the link with a real directory."
+    ))
+  }
+
+  prefix <- paste0(root, "/")
 
   for (candidate in managed_paths) {
     relative <- if (startsWith(candidate, prefix)) {

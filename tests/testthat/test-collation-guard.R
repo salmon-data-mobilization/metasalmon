@@ -52,6 +52,11 @@ collation_sensitive_fns <- c(
   # Exported: the returned `dwc_mappings` attribute carries this row order.
   "suggest_dwc_mappings",
   ".ms_dwc_rank_mappings",
+  # Exported: `detect_semantic_term_gaps()` returns this row order, and the
+  # candidate summary picks the `top_non_smn_*` evidence with character
+  # tie-breakers. Neither name matches the heuristic below.
+  "detect_semantic_term_gaps",
+  ".ms_term_gap_candidate_summary",
   # Not a correctness risk on its own -- the sorted sources only build an
   # in-session cache key, so a locale change costs a cache miss rather than a
   # wrong answer -- but qualified anyway so the rule holds without the reader

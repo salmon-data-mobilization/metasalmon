@@ -154,3 +154,31 @@ test_that("canonical artifacts are identical under the ambient locale and LC_COL
   )
   expect_identical(nuseds_enumeration_method_crosswalk()$nuseds_value, ambient_crosswalk)
 })
+
+test_that("term-gap row order and top-candidate choice are locale-independent", {
+  # `split()` builds factor levels with a locale-collated sort, so equal-
+  # confidence rows inherited that order in an exported return value; and the
+  # top-candidate pick tie-breaks on `source`/`label`.
+  candidates <- tibble::tibble(
+    source = c("apple", "Apple", "B", "_z", "a"),
+    label = c("apple", "Apple", "B", "_z", "a"),
+    iri = paste0("http://example.org/", 1:5),
+    score = rep(0.5, 5),
+    dictionary_role = "variable",
+    search_query = "spawner count",
+    label_text = "spawner count"
+  )
+
+  top_source <- function() {
+    .ms_term_gap_candidate_summary(candidates, key = "k")$top$source
+  }
+
+  ambient <- top_source()
+  old <- Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old), add = TRUE)
+  Sys.setlocale("LC_COLLATE", "C")
+
+  expect_identical(top_source(), ambient)
+  # C collation puts "Apple" before "B" before "_z" before "a" before "apple".
+  expect_identical(ambient, "Apple")
+})
