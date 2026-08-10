@@ -7,11 +7,13 @@ review (`notes/exec-plans/2026-08-08-comprehensive-ecosystem-review.md`).
 ### Breaking changes
 
 - `read_salmon_datapackage()` now types data resources from the column
-  dictionary's `value_type` instead of letting readr guess. Declared columns get
-  their declared type; **columns the dictionary does not declare are read as
-  character rather than guessed**. The dictionary is now the sole type
-  authority, which is what makes the write/read round trip lossless. Use
-  `apply_salmon_dictionary()` for typed analysis, as before.
+  dictionary's `value_type` instead of letting readr guess, and **columns the
+  dictionary does not declare are read as character rather than guessed**. The
+  dictionary is the sole type authority, which is what makes the write/read
+  round trip lossless. Both `integer` and `number` read as double, because
+  `readr::col_integer()` silently `NA`s values past 2^31 (readr's guesser also
+  produced double here, so this is not a change); `apply_salmon_dictionary()`
+  remains the way to get exact R classes.
 - `write_salmon_datapackage(overwrite = TRUE)` no longer empties the package
   directory. It replaces only the files it owns — the `metadata/` SDP CSVs, the
   `data/` resources declared in `tables.csv`, `datapackage.json`, and the
