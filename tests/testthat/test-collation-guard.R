@@ -61,6 +61,17 @@ collation_sensitive_fns <- c(
   # in-session cache key, so a locale change costs a cache miss rather than a
   # wrong answer -- but qualified anyway so the rule holds without the reader
   # having to reconstruct that argument.
+  #
+  # NOTE, so this entry is not read as more than it is: the guard does not
+  # traverse callees, so listing `find_terms()` covers ONLY its own body. The
+  # returned shortlist order is produced by the bare `order()` calls in
+  # `.score_and_rank_terms()` (R/term_search.R) and
+  # `.ms_retrieve_semantic_target_candidates()` (R/semantics-helpers.R), which
+  # tie-break on `source`/`ontology`/`label`/`iri` and are still
+  # locale-dependent. That is backlog item #43, deferred from 0.2.0 because it
+  # moves semantic-suggestion test expectations and deserves its own diff; it is
+  # the top-ranked P1 in the post-0.2.0 roadmap. Add both functions here when it
+  # lands.
   "find_terms"
 )
 

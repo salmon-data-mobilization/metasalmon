@@ -248,3 +248,27 @@ test_that("padded schema identifiers are normalised, not emitted", {
   mismatch$rules$profile <- "https://example.org/other"
   expect_error(metasalmon:::.ms_validate_sdp_schema(mismatch), "rules profile")
 })
+
+test_that("non-URI schema identifiers are rejected", {
+  # Cardinality and blankness were not enough: these are written verbatim into
+  # datapackage.json, where Frictionless expects a dereferenceable profile URL.
+  for (bad in c("not a URI", "example.org/profile", "https://", "://x", "1https://x")) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["$id"]] <- bad
+    bundle$profile$properties$profile$const <- bad
+    bundle$rules$profile <- bad
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "profile \\$id", info = bad)
+  }
+
+  rules_bad <- fake_sdp_bundle()
+  rules_bad$profile[["sdp:rules"]] <- "not a URI"
+  expect_error(metasalmon:::.ms_validate_sdp_schema(rules_bad), "sdp:rules")
+
+  # A non-http scheme is a legitimate offline arrangement and must be accepted.
+  offline <- fake_sdp_bundle()
+  offline$profile[["sdp:rules"]] <- "file:///opt/sdp/sdp.rules.yaml"
+  expect_identical(
+    metasalmon:::.ms_validate_sdp_schema(offline)$rules_uri,
+    "file:///opt/sdp/sdp.rules.yaml"
+  )
+})

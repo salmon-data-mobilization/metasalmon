@@ -206,9 +206,9 @@
   # self-consistency: the profile must agree with itself and with the rules
   # file. Asserting equality against a constant here is what made an upstream
   # identifier change unfollowable rather than merely noticeable.
-  profile_uri <- .ms_sdp_schema_identifier(if (is.null(schema$profile)) NULL else schema$profile[["$id"]])
+  profile_uri <- .ms_sdp_schema_uri(if (is.null(schema$profile)) NULL else schema$profile[["$id"]])
   if (is.na(profile_uri)) {
-    cli::cli_abort("Invalid SDP schema: profile $id is missing or not a single non-empty string.")
+    cli::cli_abort("Invalid SDP schema: profile $id is missing or is not a single absolute URI.")
   }
   # Compare the normalised forms: two identifiers padded differently denote the
   # same URI, and one padded consistently across all three would otherwise pass
@@ -246,10 +246,10 @@
   # blank, whitespace-only, or non-scalar value has to reject the bundle rather
   # than be emitted. Absent is fine -- that falls back to the vendored constant.
   raw_rules_uri <- schema$profile[["sdp:rules"]]
-  rules_uri <- .ms_sdp_schema_identifier(raw_rules_uri)
+  rules_uri <- .ms_sdp_schema_uri(raw_rules_uri)
   if (!is.null(raw_rules_uri) && is.na(rules_uri)) {
     cli::cli_abort(
-      "Invalid SDP schema: profile sdp:rules must be a single non-empty string when present."
+      "Invalid SDP schema: profile sdp:rules must be a single absolute URI when present."
     )
   }
   schema$rules_uri <- if (is.na(rules_uri)) .ms_sdp_public_rules_url() else rules_uri
@@ -267,6 +267,24 @@
     return(NA_character_)
   }
   trimws(value)
+}
+
+# The identifiers that are URIs rather than versions. Cardinality and blankness
+# are not enough for these: they are written verbatim into `datapackage.json`,
+# where Frictionless expects a dereferenceable `profile` URL, so a non-blank
+# scalar like `"not a URI"` was accepted and emitted instead of letting `auto`
+# fall back to the vendored bundle.
+#
+# Scheme-and-authority with no internal whitespace, per RFC 3986's scheme
+# grammar. Deliberately not restricted to http/https -- a `file://` bundle is a
+# legitimate offline arrangement, and the requirement here is that the value is
+# a usable absolute URI, not that it is fetchable over the network.
+.ms_sdp_schema_uri <- function(value) {
+  uri <- .ms_sdp_schema_identifier(value)
+  if (is.na(uri) || !grepl("^[A-Za-z][A-Za-z0-9+.-]*://[^[:space:]]+$", uri)) {
+    return(NA_character_)
+  }
+  uri
 }
 
 .ms_schema_tables_from_frictionless <- function(metadata_schemas) {
