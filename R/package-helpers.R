@@ -377,9 +377,13 @@ write_salmon_datapackage <- function(
       if (length(names) == 0L) {
         return(character())
       }
+      # Normalize (which rejects `..` and absolute paths) but do NOT force into
+      # `data/`: a previous write may legitimately have declared `exports/x.csv`.
+      # Relocating it would leave the real orphan behind and delete an unrelated
+      # `data/x.csv` that this write does not own.
       vapply(
         names,
-        function(n) .ms_force_data_subdir(.ms_normalize_resource_file_name(n)),
+        function(n) .ms_normalize_resource_file_name(n),
         character(1),
         USE.NAMES = FALSE
       )
@@ -1845,12 +1849,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       add_issue(
         "columns",
         sprintf(
-          "Table '%s' column '%s' declares value_type '%s' but %d value%s do not parse as that type: %s.",
+          "Table '%s' column '%s' declares value_type '%s' but %d value%s %s: %s.",
           table_id,
           mismatch$column,
           mismatch$declared,
           mismatch$count,
           if (mismatch$count == 1) "" else "s",
+          mismatch$reason,
           paste(mismatch$examples, collapse = ", ")
         ),
         table_id = table_id,
@@ -2055,7 +2060,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   header <- names(readr::read_csv(
     file_path,
     n_max = 0,
-    col_types = readr::cols(.default = readr::col_character()),
+    col_types = list(.default = readr::col_character()),
     show_col_types = FALSE
   ))
 
@@ -2064,10 +2069,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   if (is.data.frame(table_dict) && nrow(table_dict) > 0 &&
       all(c("column_name", "value_type") %in% names(table_dict))) {
     dict_names <- trimws(as.character(table_dict$column_name))
-    # Intersect against the actual header: naming an absent column in a cols()
-    # spec makes readr warn, which would add noise to exactly the packages whose
-    # missing columns validation is meant to report as a structured issue.
-    declared <- intersect(header, dict_names)
+    # Intersect against the actual header: naming an absent column in a col
+    # spec makes readr warn, which would add noise to exactly the packages
+    # whose missing columns validation reports as a structured issue.
+    # `.default` cannot appear as a named collector: readr resolves a col_types
+    # list through `do.call(cols, ...)`, so a column literally named `.default`
+    # would match the formal twice and abort. It falls through to the default
+    # character collector instead, which is the lossless representation anyway.
+    declared <- setdiff(intersect(header, dict_names), ".default")
     for (nm in declared) {
       declared_type <- table_dict$value_type[match(nm, dict_names)]
       spec[[nm]] <- .ms_value_type_col_spec(declared_type)
@@ -2075,43 +2084,84 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
   }
 
+  # A plain named list, not `do.call(readr::cols, ...)`: a data column literally
+  # named `.default` would otherwise match the `cols()` formal twice and abort.
+  read_spec <- function(current) c(current, list(.default = readr::col_character()))
+
   parsed <- readr::read_csv(
     file_path,
-    col_types = do.call(readr::cols, c(spec, list(.default = readr::col_character()))),
+    col_types = read_spec(spec),
     show_col_types = FALSE
   )
 
-  # A declared type the data does not satisfy is not a parsing detail to shrug
-  # at: readr turns the offending token into NA with only a warning, validation
-  # then drops the NA as blank, and a data value absent from codes.csv reaches
-  # "validation passed". So re-read the affected columns as character to keep
-  # the raw token, and carry the mismatch so the validator can report it.
+  # Two ways a declared type can silently alter the data, both of which would
+  # let validation pass on a value absent from codes.csv:
+  #
+  #   1. The token does not parse. readr yields NA with only a warning, and
+  #      validation drops the NA as blank.
+  #   2. A declared `integer` exceeds 2^53. The double collector rounds it
+  #      before anything sees it, so two distinct identifiers compare equal.
+  #      (`col_integer()` is not the answer -- it silently NAs past 2^31.)
+  #
+  # In both cases keep the exact token by re-reading as character, and carry the
+  # mismatch so the validator can report the declaration as wrong.
   issues <- tryCatch(readr::problems(parsed), error = function(e) NULL)
-  if (is.data.frame(issues) && nrow(issues) > 0 && length(spec) > 0) {
-    indices <- suppressWarnings(as.integer(issues$col))
-    indices <- indices[!is.na(indices) & indices >= 1L & indices <= length(header)]
-    affected <- intersect(unique(header[indices]), names(spec))
-    if (length(affected) > 0) {
-      for (nm in affected) {
-        spec[[nm]] <- readr::col_character()
-      }
-      parsed <- readr::read_csv(
-        file_path,
-        col_types = do.call(readr::cols, c(spec, list(.default = readr::col_character()))),
-        show_col_types = FALSE
-      )
-      mismatches <- lapply(affected, function(nm) {
-        rows <- issues[header[suppressWarnings(as.integer(issues$col))] %in% nm, , drop = FALSE]
-        list(
-          column = nm,
-          declared = declared_types[[nm]],
-          count = nrow(rows),
-          examples = utils::head(unique(as.character(rows$actual)), 3L)
-        )
-      })
-      attr(parsed, "ms_value_type_mismatches") <- mismatches
+  if (!is.data.frame(issues)) {
+    issues <- NULL
+  }
+  problem_columns <- character()
+  if (!is.null(issues) && nrow(issues) > 0) {
+    idx <- suppressWarnings(as.integer(issues$col))
+    idx <- idx[!is.na(idx) & idx >= 1L & idx <= length(header)]
+    problem_columns <- intersect(unique(header[idx]), names(spec))
+  }
+
+  imprecise_columns <- character()
+  for (nm in names(spec)) {
+    if (!identical(declared_types[[nm]], "integer") || !nm %in% names(parsed)) {
+      next
+    }
+    values <- suppressWarnings(as.numeric(parsed[[nm]]))
+    if (any(is.finite(values) & abs(values) >= 2^53)) {
+      imprecise_columns <- c(imprecise_columns, nm)
     }
   }
+
+  affected <- union(problem_columns, imprecise_columns)
+  if (length(affected) == 0L) {
+    return(parsed)
+  }
+
+  for (nm in affected) {
+    spec[[nm]] <- readr::col_character()
+  }
+  parsed <- readr::read_csv(
+    file_path,
+    col_types = read_spec(spec),
+    show_col_types = FALSE
+  )
+
+  attr(parsed, "ms_value_type_mismatches") <- lapply(affected, function(nm) {
+    if (nm %in% imprecise_columns) {
+      values <- suppressWarnings(as.numeric(parsed[[nm]]))
+      beyond <- parsed[[nm]][is.finite(values) & abs(values) >= 2^53]
+      return(list(
+        column = nm,
+        declared = declared_types[[nm]],
+        reason = "exceed exact integer precision and were kept as text",
+        count = length(beyond),
+        examples = utils::head(unique(as.character(beyond)), 3L)
+      ))
+    }
+    rows <- issues[header[suppressWarnings(as.integer(issues$col))] %in% nm, , drop = FALSE]
+    list(
+      column = nm,
+      declared = declared_types[[nm]],
+      reason = "do not parse as that type",
+      count = nrow(rows),
+      examples = utils::head(unique(as.character(rows$actual)), 3L)
+    )
+  })
 
   parsed
 }

@@ -3051,3 +3051,89 @@ test_that("a value that fails its declared type is preserved and reported", {
   expect_error(validate_salmon_datapackage(temp_dir), "do not parse as that type")
   expect_error(validate_salmon_datapackage(temp_dir), "not listed in codes.csv")
 })
+
+test_that("a declared integer beyond exact double precision keeps its exact token", {
+  # 9007199254740993 and 9007199254740992 both round to 2^53 as doubles, so the
+  # first was returned as the second and the codes comparison saw one value.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    tag_id = c("9007199254740993", "9007199254740992"),
+    stringsAsFactors = FALSE
+  )
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "big-1", table_id = "obs")
+  )
+  dict$value_type <- "integer"
+  dict$column_role <- "categorical"
+  codes <- tibble::tibble(
+    dataset_id = "big-1", table_id = "obs", column_name = "tag_id",
+    code_value = "9007199254740992", code_label = "Known",
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "big-1", title = "Big ids",
+      description = "Beyond 2^53", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "big-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, codes = codes, path = temp_dir, overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  expect_identical(as.character(back$resources$obs$tag_id), df$tag_id)
+  expect_error(validate_salmon_datapackage(temp_dir), "9007199254740993")
+})
+
+test_that("a data column literally named .default does not abort the reader", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(a = c("x", "y"), n = c(1, 2), stringsAsFactors = FALSE)
+  names(df) <- c(".default", "n")
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "dflt-1", table_id = "obs")
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "dflt-1", title = "Reserved name",
+      description = "Column named .default", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "dflt-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, path = temp_dir, overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  expect_true(".default" %in% names(back$resources$obs))
+})
+
+test_that("a previously declared resource outside data/ is removed at its real path", {
+  # Forcing prior declarations through .ms_force_data_subdir() left the true
+  # orphan behind and targeted an unrelated data/ file of the same basename.
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+
+  tables_path <- file.path(temp_dir, "metadata", "tables.csv")
+  tables <- readr::read_csv(
+    tables_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  tables$file_name <- "exports/old.csv"
+  readr::write_csv(tables, tables_path, na = "")
+  dir.create(file.path(temp_dir, "exports"), showWarnings = FALSE)
+  writeLines("a\n1", file.path(temp_dir, "exports", "old.csv"))
+
+  expect_identical(.ms_previous_declared_data_paths(temp_dir), "exports/old.csv")
+})

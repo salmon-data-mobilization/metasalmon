@@ -45,7 +45,11 @@ test_that(".ms_cli_bullets keeps one escaped bullet per element", {
 })
 
 test_that(".ms_redact_secrets removes common credential shapes", {
-  expect_match(.ms_redact_secrets("Authorization: Bearer abc123XYZ_-token"), "Bearer [REDACTED]", fixed = TRUE)
+  # Inside a header the whole value goes, not just the token after the scheme.
+  expect_identical(
+    .ms_redact_secrets("Authorization: Bearer abc123XYZ_-token"),
+    "Authorization=[REDACTED]"
+  )
   expect_match(.ms_redact_secrets("key sk-abcdefghijklmnopqrstuvwxyz012345"), "[REDACTED KEY]", fixed = TRUE)
   expect_match(.ms_redact_secrets("x-api-key: supersecretvalue"), "[REDACTED]", fixed = TRUE)
   expect_match(
@@ -104,4 +108,33 @@ test_that("a column name containing an unbalanced brace does not crash validatio
 
   expect_false(grepl("Expecting '}'", msg, fixed = TRUE))
   expect_true(grepl("rate{pct", msg, fixed = TRUE))
+})
+
+test_that("credential headers are redacted regardless of separator spacing", {
+  # A space after the colon is the conventional header form; an anchored `[=:]`
+  # missed it, leaving the whole secret in captured provider errors.
+  expect_identical(
+    .ms_redact_secrets("Authorization: Basic dXNlcjpwYXNzd29yZA=="),
+    "Authorization=[REDACTED]"
+  )
+  expect_identical(
+    .ms_redact_secrets("Cookie: session=abc123secret; other=2"),
+    "Cookie=[REDACTED]"
+  )
+  expect_identical(
+    .ms_redact_secrets("x-api-key: supersecretvalue"),
+    "x-api-key=[REDACTED]"
+  )
+  # No-space form still works, and is not double-substituted into gibberish.
+  expect_identical(
+    .ms_redact_secrets("authorization:Bearer tok123"),
+    "authorization=[REDACTED]"
+  )
+  # A bare scheme outside a header is still caught.
+  expect_match(.ms_redact_secrets("got Bearer abc123XYZ_-tok"), "Bearer [REDACTED]", fixed = TRUE)
+  # Ordinary validation text is untouched.
+  expect_identical(
+    .ms_redact_secrets("Row 3 field term_iri uses REVIEW:spawner_count"),
+    "Row 3 field term_iri uses REVIEW:spawner_count"
+  )
 })

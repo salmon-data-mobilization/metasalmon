@@ -43,16 +43,27 @@
     return(value)
   }
 
-  value <- gsub("(?i)Bearer[[:space:]]+[A-Za-z0-9._~-]+", "Bearer [REDACTED]", value, perl = TRUE)
-  value <- gsub("eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+", "[REDACTED JWT]", value, perl = TRUE)
-  value <- gsub("(?i)(dataone_token|authorization|cookie)[=:][^[:space:]]+", "\\1=[REDACTED]", value, perl = TRUE)
-  value <- gsub("sk-[A-Za-z0-9_-]{20,}", "[REDACTED KEY]", value, perl = TRUE)
+  # Credential headers first, and to end of line: the value may be a scheme plus
+  # a token ("Authorization: Basic dXNlcjpwYXNz") or a cookie jar containing
+  # spaces and semicolons, so stopping at the first whitespace leaves the secret
+  # in place. Optional whitespace around the separator matters -- conventional
+  # header text puts a space after the colon, which an anchored `[=:]` misses.
+  # Running this rule before the bare-scheme rules also avoids double
+  # substitution mangling the result.
   value <- gsub(
-    "(?i)(x-api-key|api[_-]?key|anthropic[_-]?api[_-]?key)[[:space:]]*[=:][[:space:]]*[^[:space:]]+",
+    paste0(
+      "(?i)\\b(authorization|proxy-authorization|set-cookie|cookie|dataone_token|",
+      "x-api-key|api[_-]?key|anthropic[_-]?api[_-]?key|access[_-]?token|refresh[_-]?token)",
+      "[[:space:]]*[=:][[:space:]]*[^\r\n]*"
+    ),
     "\\1=[REDACTED]",
     value,
     perl = TRUE
   )
+  # Bare schemes and key shapes that appear outside a header.
+  value <- gsub("(?i)\\b(Bearer|Basic|Digest)[[:space:]]+[A-Za-z0-9._~+/=-]+", "\\1 [REDACTED]", value, perl = TRUE)
+  value <- gsub("eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+", "[REDACTED JWT]", value, perl = TRUE)
+  value <- gsub("sk-[A-Za-z0-9_-]{20,}", "[REDACTED KEY]", value, perl = TRUE)
   value <- gsub("AIza[0-9A-Za-z_-]{35}", "[REDACTED KEY]", value, perl = TRUE)
   value
 }
