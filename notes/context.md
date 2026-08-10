@@ -75,10 +75,20 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `smn-data-pkg` spec.
 - **SDP schema locations:** runtime schema fetches use
   `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
-  The SDP 0.2 profile and resource-schema identifiers still contain the former
-  `dfo-pacific-science.github.io/smn-data-pkg` URI because that value is part of
-  the current upstream profile contract; do not rewrite it independently in
-  `metasalmon`.
+  The profile **identity is derived from the loaded bundle**
+  (`schema$profile_uri` / `schema$rules_uri`, attached by
+  `.ms_validate_sdp_schema()`), never asserted against a constant — that is what
+  lets `metasalmon` follow an upstream identifier change instead of failing on
+  it. Validation checks only that the bundle agrees with itself: `$id` vs
+  `properties.profile.const` vs `rules.profile` vs `sdp:version`/`rules.version`.
+  The constants in `R/schema-helpers.R` are the vendored fallback only; keep
+  them in step with `inst/extdata` by **re-vendoring from upstream**, not by
+  hand-editing either side. Reading a package that declares an older profile URI
+  stays valid (nothing on the read path inspects `datapackage.json$profile`).
+  *Superseded 2026-08-08:* the previous note here said the legacy
+  `dfo-pacific-science.github.io` URI was the upstream contract value and must
+  not be rewritten. Upstream migrated to `salmon-data-mobilization.github.io`,
+  which broke remote schema loading outright — see `notes/bugs-and-improvements.md` #33.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.

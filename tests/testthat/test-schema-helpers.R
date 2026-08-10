@@ -11,7 +11,10 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
   )
 
   expect_equal(schema$version, "sdp-0.2.0")
-  expect_equal(schema$profile[["$id"]], metasalmon:::.ms_sdp_profile_url())
+  # The contract is that the bundle agrees with itself, not that it matches a
+  # constant compiled into metasalmon.
+  expect_equal(schema$profile_uri, schema$rules$profile)
+  expect_equal(schema$source, "vendored")
   expect_true("dataset" %in% names(schema$metadata_tables))
 })
 
@@ -28,7 +31,7 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
-    "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
   )
 })
 
@@ -55,4 +58,92 @@ test_that("SDP metadata resource descriptors come from the profile", {
     "sdp_codes"
   ))
   expect_true(all(grepl("schema/frictionless/metadata/.+[.]schema[.]json$", purrr::map_chr(resources, "schema"))))
+})
+
+# A minimal in-memory bundle. Built by hand so these tests exercise the identity
+# contract itself rather than whatever the vendored files happen to say, and so
+# they are not blinded by helper-validation.R's suite-wide "vendored" pin.
+fake_sdp_bundle <- function(profile_uri = "https://example.org/sdp/profile.json",
+                            const_uri = profile_uri,
+                            rules_profile = profile_uri,
+                            profile_version = "sdp-9.9.9",
+                            rules_version = "sdp-9.9.9") {
+  vendored <- metasalmon:::.ms_load_vendored_sdp_schema()
+  list(
+    metadata_schemas = vendored$metadata_schemas,
+    profile = list(
+      "$id" = profile_uri,
+      properties = list(profile = list(const = const_uri)),
+      "sdp:version" = profile_version,
+      "sdp:rules" = "https://example.org/sdp/rules.yaml"
+    ),
+    rules = list(profile = rules_profile, version = rules_version)
+  )
+}
+
+test_that("SDP schema validation derives the profile identity from the bundle", {
+  validated <- metasalmon:::.ms_validate_sdp_schema(fake_sdp_bundle())
+
+  expect_identical(validated$profile_uri, "https://example.org/sdp/profile.json")
+  expect_identical(validated$rules_uri, "https://example.org/sdp/rules.yaml")
+  expect_identical(validated$version, "sdp-9.9.9")
+})
+
+test_that("SDP schema validation rejects an internally inconsistent bundle", {
+  expect_error(
+    metasalmon:::.ms_validate_sdp_schema(
+      fake_sdp_bundle(const_uri = "https://example.org/other.json")
+    ),
+    "properties.profile.const"
+  )
+  expect_error(
+    metasalmon:::.ms_validate_sdp_schema(
+      fake_sdp_bundle(rules_profile = "https://example.org/other.json")
+    ),
+    "rules profile"
+  )
+  expect_error(
+    metasalmon:::.ms_validate_sdp_schema(fake_sdp_bundle(rules_version = "sdp-0.0.1")),
+    "sdp:version"
+  )
+  expect_error(
+    metasalmon:::.ms_validate_sdp_schema(fake_sdp_bundle(profile_uri = "")),
+    "profile [$]id is missing"
+  )
+})
+
+test_that("the vendored SDP bundle is internally consistent and uses the current identifier", {
+  old_options <- options(metasalmon.sdp_schema_source = "vendored")
+  withr::defer(options(old_options))
+
+  schema <- metasalmon:::.ms_load_sdp_schema(refresh = TRUE, quiet = TRUE)
+
+  expect_identical(schema$profile_uri, schema$profile$properties$profile$const)
+  expect_identical(schema$profile_uri, schema$rules$profile)
+  expect_identical(schema$profile[["sdp:version"]], schema$rules$version)
+  # Pins the value too, so a partial re-vendor is caught.
+  expect_identical(
+    schema$profile_uri,
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+  )
+})
+
+test_that("the live upstream SDP bundle loads", {
+  # The gap that let the profile-identifier drift go unnoticed: nothing ever
+  # exercised a successful remote fetch, because the whole suite pins
+  # `sdp_schema_source = "vendored"`.
+  skip_on_cran()
+  skip_if_offline("raw.githubusercontent.com")
+
+  old_options <- options(metasalmon.sdp_schema_source = "remote")
+  withr::defer({
+    options(old_options)
+    metasalmon:::.ms_load_sdp_schema(source = "vendored", refresh = TRUE, quiet = TRUE)
+  })
+
+  schema <- metasalmon:::.ms_load_sdp_schema(refresh = TRUE, quiet = TRUE)
+
+  expect_identical(schema$source, "remote")
+  expect_identical(schema$profile_uri, schema$rules$profile)
+  expect_true(nzchar(schema$version))
 })

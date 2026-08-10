@@ -1,17 +1,27 @@
 .ms_schema_env <- new.env(parent = emptyenv())
 
-# The SDP 0.2 profile still defines these legacy identifiers. They are contract
-# values written into packages, not the endpoint used to fetch schema files.
+# The SDP profile identity is DERIVED from the loaded schema bundle, never
+# asserted against a constant here: metasalmon must be able to follow an
+# upstream identifier change rather than fail on it. These two constants are
+# only the fallback for a bundle that somehow omits the values, and they must
+# agree with the vendored files under inst/extdata.
 .ms_sdp_profile_url <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
-}
-
-.ms_sdp_public_schema_base <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/schema/frictionless/metadata"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
 }
 
 .ms_sdp_public_rules_url <- function() {
-  "https://dfo-pacific-science.github.io/smn-data-pkg/schema/sdp.rules.yaml"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml"
+}
+
+# Accessors for the derived identity. Prefer `schema$profile_uri` /
+# `schema$rules_uri`, which `.ms_validate_sdp_schema()` attaches after checking
+# that the bundle agrees with itself.
+.ms_sdp_profile_uri <- function(schema = .ms_load_sdp_schema(quiet = TRUE)) {
+  schema$profile[["$id"]] %||% .ms_sdp_profile_url()
+}
+
+.ms_sdp_rules_uri <- function(schema = .ms_load_sdp_schema(quiet = TRUE)) {
+  schema$profile[["sdp:rules"]] %||% .ms_sdp_public_rules_url()
 }
 
 .ms_sdp_metadata_schema_paths <- function() {
@@ -31,8 +41,12 @@
   "schema/sdp.rules.yaml"
 }
 
+# Deliberately NOT pinned to `source = "vendored"`. Pinning made
+# `dataset.csv$spec_version` and `datapackage.json$sdp$specVersion` read
+# different bundles, so one package could carry two disagreeing versions.
+# `.ms_load_sdp_schema()` caches per session, so both now resolve identically.
 .ms_sdp_profile_version <- function() {
-  .ms_load_sdp_schema(source = "vendored", quiet = TRUE)$version
+  .ms_load_sdp_schema(quiet = TRUE)$version
 }
 
 .ms_default_sdp_schema_base_url <- function() {
@@ -63,6 +77,7 @@
       error = function(e) e
     )
     if (!inherits(remote_result, "error")) {
+      remote_result$source <- "remote"
       .ms_schema_env$schema <- remote_result
       .ms_schema_env$cache_key <- cache_key
       return(remote_result)
@@ -86,7 +101,11 @@
     }
   }
 
+  # The vendored bundle is cached under the requested source's key on purpose:
+  # once a session resolves an identity, every package it writes carries the
+  # same profile URI, even if the network recovers mid-script.
   schema <- .ms_load_vendored_sdp_schema()
+  schema$source <- "vendored"
   .ms_schema_env$schema <- schema
   .ms_schema_env$cache_key <- cache_key
   schema
@@ -171,15 +190,31 @@
     }
   }
 
-  if (is.null(schema$profile) || !identical(schema$profile[["$id"]], .ms_sdp_profile_url())) {
-    cli::cli_abort("Invalid SDP schema: profile $id does not match the SDP profile URL.")
+  # Identity is derived from the bundle, so the checks below are all internal
+  # self-consistency: the profile must agree with itself and with the rules
+  # file. Asserting equality against a constant here is what made an upstream
+  # identifier change unfollowable rather than merely noticeable.
+  profile_uri <- if (is.null(schema$profile)) NULL else schema$profile[["$id"]]
+  if (!is.character(profile_uri) || length(profile_uri) != 1L || is.na(profile_uri) ||
+      !nzchar(profile_uri)) {
+    cli::cli_abort("Invalid SDP schema: profile $id is missing or not a single non-empty string.")
   }
-  if (is.null(schema$rules) || !identical(schema$rules$profile, .ms_sdp_profile_url())) {
-    cli::cli_abort("Invalid SDP schema: rules profile does not match the SDP profile URL.")
+  if (!identical(schema$profile$properties$profile$const, profile_uri)) {
+    cli::cli_abort(
+      "Invalid SDP schema: profile properties.profile.const does not match profile $id."
+    )
+  }
+  if (is.null(schema$rules) || !identical(schema$rules$profile, profile_uri)) {
+    cli::cli_abort("Invalid SDP schema: rules profile does not match profile $id.")
+  }
+  if (!identical(schema$profile[["sdp:version"]], schema$rules$version)) {
+    cli::cli_abort("Invalid SDP schema: profile sdp:version does not match rules version.")
   }
 
   schema$metadata_tables <- .ms_schema_tables_from_frictionless(schema$metadata_schemas)
   schema$version <- schema$rules$version
+  schema$profile_uri <- profile_uri
+  schema$rules_uri <- schema$profile[["sdp:rules"]] %||% .ms_sdp_public_rules_url()
   schema
 }
 

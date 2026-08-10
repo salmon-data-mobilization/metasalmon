@@ -195,16 +195,27 @@ write_salmon_datapackage <- function(
   resource_list <- c(metadata_resource_list, resource_list)
   sdp_schema <- .ms_load_sdp_schema(quiet = TRUE)
 
+  declared_spec_version <- dataset_meta$spec_version[1]
+  if (!is.na(declared_spec_version) && nzchar(trimws(declared_spec_version)) &&
+      !identical(trimws(declared_spec_version), sdp_schema$version)) {
+    cli::cli_warn(c(
+      "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
+      "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+    ))
+  }
+
+  # Every URI written here comes from the one loaded, self-consistent bundle,
+  # so the descriptor can never declare a profile the bundle disagrees with.
   datapackage <- list(
-    profile = .ms_sdp_profile_url(),
+    profile = sdp_schema$profile_uri,
     name = .ms_datapackage_name(dataset_id),
     id = dataset_id,
     title = dataset_meta$title[1],
     description = dataset_meta$description[1],
     sdp = list(
       specVersion = sdp_schema$version,
-      profile = .ms_sdp_profile_url(),
-      rules = .ms_sdp_public_rules_url(),
+      profile = sdp_schema$profile_uri,
+      rules = sdp_schema$rules_uri,
       metadata = list(
         dataset = "metadata/dataset.csv",
         tables = "metadata/tables.csv",

@@ -2619,3 +2619,84 @@ test_that("write_salmon_datapackage scopes the descriptor schema to its own data
   expect_true("count" %in% field_names)
   expect_false("leaked_column" %in% field_names)
 })
+
+test_that("descriptor profile and rules URIs come from the loaded schema bundle", {
+  temp_dir <- withr::local_tempdir()
+  schema <- metasalmon:::.ms_load_sdp_schema(quiet = TRUE)
+
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "uri-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "uri-1", title = "URI test",
+      description = "Descriptor identity", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "uri-1", table_id = "obs", table_label = "Observations",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  descriptor <- jsonlite::read_json(file.path(temp_dir, "datapackage.json"))
+  expect_identical(descriptor$profile, schema$profile_uri)
+  expect_identical(descriptor$sdp$profile, schema$profile_uri)
+  expect_identical(descriptor$sdp$rules, schema$rules_uri)
+
+  # dataset.csv and datapackage.json must agree on the spec version; they used
+  # to read different bundles.
+  dataset_csv <- readr::read_csv(
+    file.path(temp_dir, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  expect_identical(dataset_csv$spec_version[1], descriptor$sdp$specVersion)
+})
+
+test_that("a package declaring the legacy SDP profile URI still validates", {
+  # Packages written before the upstream identifier migration must keep reading
+  # and validating cleanly.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "legacy-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "legacy-1", title = "Legacy URI",
+      description = "Legacy profile identifier", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "legacy-1", table_id = "obs", table_label = "Observations",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  legacy_uri <- paste0(
+    "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/",
+    "salmon-data-package/v0.2/profile.json"
+  )
+  descriptor_path <- file.path(temp_dir, "datapackage.json")
+  descriptor <- jsonlite::read_json(descriptor_path)
+  descriptor$profile <- legacy_uri
+  descriptor$sdp$profile <- legacy_uri
+  jsonlite::write_json(descriptor, descriptor_path, auto_unbox = TRUE, pretty = TRUE)
+
+  result <- validate_salmon_datapackage(temp_dir)
+  expect_equal(nrow(result$issues), 0L)
+})

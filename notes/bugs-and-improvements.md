@@ -292,10 +292,23 @@ adversarial pass** — re-confirm before fixing.
   URLs and the default update check still targeted the independently existing
   `dfo-pacific-science/metasalmon` repository. The remote schema loader likewise
   fetched from the former `smn-data-pkg` repository.
-- **Compatibility decision:** do not rewrite the SDP 0.2 profile/resource-schema
-  identifiers. Upstream still defines the former GitHub Pages URI as the
-  contract value, even though it is not the runtime fetch endpoint. The code and
-  regression test now keep contract identifiers distinct from fetch locations.
+- **Compatibility decision (SUPERSEDED 2026-08-08):** the original decision was
+  "do not rewrite the SDP 0.2 profile/resource-schema identifiers, because
+  upstream still defines the former GitHub Pages URI as the contract value."
+  That premise is no longer true — upstream `smn-data-pkg` migrated every `$id`,
+  `properties.profile.const`, and `rules.profile` to
+  `salmon-data-mobilization.github.io`. Because `.ms_validate_sdp_schema()`
+  asserted equality against the hardcoded legacy constant, `source = "remote"`
+  aborted outright and the default `"auto"` silently fell back to the stale
+  vendored bundle, so every `datapackage.json` metasalmon wrote declared a
+  profile URI the live upstream profile's `const` rejects. Invisible to the
+  suite because `helper-validation.R` pins `sdp_schema_source = "vendored"` and
+  nothing exercised a successful remote fetch.
+- **Replacement decision:** identity is **derived from the loaded bundle**, and
+  validation checks only internal self-consistency. The vendored files are
+  re-vendored from upstream rather than hand-edited. This is what makes an
+  upstream identifier change followable. Fixed on `fix/p0-remediation`; the
+  gap is closed by a live remote-fetch test.
 
 ---
 
