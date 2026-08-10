@@ -86,7 +86,7 @@
       cli::cli_abort(
         c(
           "Unable to load remote SDP Frictionless schema bundle.",
-          "x" = conditionMessage(remote_result)
+          "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
         )
       )
     }
@@ -94,7 +94,7 @@
       cli::cli_warn(
         c(
           "Unable to load remote SDP Frictionless schema bundle; using vendored schemas bundled with metasalmon.",
-          "x" = conditionMessage(remote_result)
+          "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
         )
       )
       .ms_schema_env$warned_remote_fallback <- TRUE

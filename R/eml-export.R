@@ -390,7 +390,7 @@
     }
     cli::cli_abort(c(
       "EML mapping sidecar failed the bundled JSON Schema.",
-      "x" = detail
+      "x" = .ms_cli_escape(detail)
     ))
   }
   invisible(TRUE)
@@ -2669,7 +2669,7 @@ write_eml_from_sdp <- function(path,
   if (!isTRUE(eml_validation)) {
     cli::cli_abort(c(
       "Generated EML 2.2.0 failed schema validation.",
-      "x" = .ms_eml_validation_errors(eml_validation)
+      "x" = .ms_cli_escape(.ms_eml_validation_errors(eml_validation))
     ))
   }
 

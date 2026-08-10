@@ -748,7 +748,7 @@ render_ontology_term_request <- function(
       }
       cli::cli_abort(c(
         "Non-interactive profile-scoped requests require `profile_name`.",
-        "i" = profile_detail,
+        "i" = .ms_cli_escape(profile_detail),
         "x" = "Re-run with `profile_name = 'your-profile'`, set `ask = TRUE`, or override those rows away from `profile`."
       ))
     }

@@ -1771,7 +1771,11 @@
     },
     error = function(e) {
       cli::cli_warn("LLM assessment failed for {.field {record$group$column_name[[1]] %||% record$group$target_sdp_field[[1]]}}: {conditionMessage(e)}")
-      .ms_llm_review_empty_assessment(record$group[1, , drop = FALSE], config, error = conditionMessage(e))
+      .ms_llm_review_empty_assessment(
+        record$group[1, , drop = FALSE],
+        config,
+        error = .ms_redact_secrets(conditionMessage(e))
+      )
     }
   )
 }
@@ -1892,15 +1896,14 @@
   # debuggable. Reason text is model-influenced, so escape glue/cli braces before
   # it reaches cli_warn's interpolation.
   fallback_reasons <- attr(validated, "llm_batch_fallback_reasons") %||% character()
-  escape_braces <- function(x) gsub("}", "}}", gsub("{", "{{", x, fixed = TRUE), fixed = TRUE)
   reason_bullets <- vapply(fallback_keys, function(k) {
     reason <- fallback_reasons[[k]] %||% "no usable assessment returned"
     if (is.na(reason) || !nzchar(reason)) reason <- "no usable assessment returned"
-    escape_braces(paste0(k, ": ", reason))
+    paste0(k, ": ", reason)
   }, character(1))
   cli::cli_warn(c(
     "LLM batch response was unusable for {length(fallback_keys)} of {length(records)} targets; falling back to per-target review.",
-    stats::setNames(reason_bullets, rep("*", length(reason_bullets)))
+    .ms_cli_bullets(reason_bullets, "*")
   ))
 
   valid_keys <- attr(validated, "llm_batch_valid_keys") %||% character()
@@ -1957,7 +1960,7 @@
     )
   }
   if (nzchar(error_summary)) {
-    warn_lines <- c(warn_lines, "i" = error_summary)
+    warn_lines <- c(warn_lines, "i" = .ms_cli_escape(error_summary))
   }
   cli::cli_warn(warn_lines)
   TRUE

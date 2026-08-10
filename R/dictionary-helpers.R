@@ -1031,13 +1031,13 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       cli::cli_abort(c(
         "Validation cannot pass while REVIEW-prefixed IRI values remain.",
         "x" = "Resolve these fields before final validation:",
-        " " = paste("  ", review_summary, collapse = "\n")
+        " " = paste("  ", .ms_cli_escape(review_summary), collapse = "\n")
       ))
     } else if (identical(validation_message_mode, "review_ready")) {
       review_lines <- c(
         "Review-ready metadata includes draft {.val REVIEW:} IRIs.",
         "i" = "That is expected at this stage; keep or edit those values in {.file metadata/column_dictionary.csv} (and {.file metadata/tables.csv} if present), then remove the prefix only once each IRI is final.",
-        " " = paste("  ", review_summary, collapse = "\n")
+        " " = paste("  ", .ms_cli_escape(review_summary), collapse = "\n")
       )
       if (isTRUE(validation_semantics_seeded)) {
         review_lines <- c(
@@ -1051,7 +1051,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       cli::cli_warn(c(
         "REVIEW-prefixed IRI values were found.",
         "i" = "These are draft semantic assignments written for human review.",
-        "x" = paste("  ", review_summary, collapse = "\n"),
+        "x" = paste("  ", .ms_cli_escape(review_summary), collapse = "\n"),
         "i" = "Before final validation or publication, replace or confirm the IRI and remove the REVIEW prefix."
       ))
     }
@@ -1082,7 +1082,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         missing_lines <- c(
           "Some measurement semantic IRI fields are still blank in this review-ready package.",
           "i" = "That does not block review-ready creation, but those gaps must be filled before final validation or publication.",
-          " " = paste("  ", missing_summary, collapse = "\n"),
+          " " = paste("  ", .ms_cli_escape(missing_summary), collapse = "\n"),
           "i" = "Review {.file metadata/column_dictionary.csv} first (and {.file metadata/tables.csv} if present), then fill the remaining gaps there."
         )
         if (isTRUE(validation_semantics_seeded)) {
@@ -1101,7 +1101,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         cli::cli_warn(c(
           "Hey, you definitely should fill those out before publishing.",
           "x" = "Missing semantic fields for measurement columns:",
-          " " = paste("  ", missing_summary, collapse = "\n"),
+          " " = paste("  ", .ms_cli_escape(missing_summary), collapse = "\n"),
           "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
           "i" = "See {.url https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
         ))

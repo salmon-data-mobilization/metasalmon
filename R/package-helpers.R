@@ -1477,7 +1477,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         nrow(final_review_issues),
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
-      stats::setNames(preview, rep("x", length(preview))),
+      .ms_cli_bullets(preview, "x"),
       "i" = "Resolve placeholder metadata, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
@@ -1501,7 +1501,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         nrow(semantic_validation$issues),
         ifelse(nrow(semantic_validation$issues) == 1, "", "s")
       ),
-      paste0("- ", preview)
+      paste0("- ", .ms_cli_escape(preview))
     )
     if (nrow(semantic_validation$issues) > length(preview)) {
       warn_lines <- c(
@@ -1996,7 +1996,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       nrow(issues),
       ifelse(nrow(issues) == 1, "", "s")
     ),
-    stats::setNames(messages, rep("x", length(messages)))
+    .ms_cli_bullets(messages, "x")
   )
 
   if (nrow(issues) > preview_n) {
@@ -2834,10 +2834,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     latest_version <- "newer"
   }
 
+  # `latest_version` derives from the GitHub release tag and `install_command`
+  # can come from the same payload, so both are remote-controlled and this
+  # sprintf() result becomes a cli template downstream.
   sprintf(
     "A newer {.pkg metasalmon} release (%s) is available. Update later with {.code %s} if you want.",
-    latest_version,
-    install_command
+    .ms_cli_escape(latest_version),
+    .ms_cli_escape(install_command)
   )
 }
 
