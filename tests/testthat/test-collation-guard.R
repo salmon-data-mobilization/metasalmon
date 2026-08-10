@@ -48,7 +48,15 @@ collation_sensitive_fns <- c(
   # below, so without these entries a future bare arrange() in either path would
   # silently restore locale-dependent bytes.
   ".ms_sdp_decomposition_normalize_rows",
-  ".ms_eml_supplementary_objects"
+  ".ms_eml_supplementary_objects",
+  # Exported: the returned `dwc_mappings` attribute carries this row order.
+  "suggest_dwc_mappings",
+  ".ms_dwc_rank_mappings",
+  # Not a correctness risk on its own -- the sorted sources only build an
+  # in-session cache key, so a locale change costs a cache miss rather than a
+  # wrong answer -- but qualified anyway so the rule holds without the reader
+  # having to reconstruct that argument.
+  "find_terms"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

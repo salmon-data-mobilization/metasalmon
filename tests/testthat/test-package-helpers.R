@@ -3485,3 +3485,59 @@ test_that("a hard-linked create-owned output is replaced, not written through", 
   expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
   expect_true(any(grepl("Review Checklist", readLines(file.path(pkg, "README-review.txt")))))
 })
+
+test_that("codes.csv values are fidelity-checked against their declared type", {
+  # Only the data resource was checked. A code token carrying more precision
+  # than its declared type can hold canonicalizes onto a different data value,
+  # so the comparison succeeded while the actual data value was absent.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(v = "0.1", stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "ct", table_id = "obs")
+  )
+  dict$value_type <- "number"
+  dict$column_role <- "categorical"
+  codes <- tibble::tibble(
+    dataset_id = "ct", table_id = "obs", column_name = "v",
+    code_value = "0.10000000000000001", code_label = "A",
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "ct", title = "Codes", description = "Lossy code token",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "ct", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, codes = codes, path = temp_dir, overwrite = TRUE
+  ))
+
+  expect_error(validate_salmon_datapackage(temp_dir), "codes.csv value")
+})
+
+test_that("a symlinked metadata path is rejected before it is read", {
+  # `.ms_package_managed_paths()` parses the previous tables.csv, so the
+  # containment check has to run first or an external target is read — a FIFO
+  # would block, a huge file would be parsed — before the guard fires.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
+             file.path(outside, "tables.csv"))
+  file.symlink(outside, file.path(pkg, "metadata"))
+
+  expect_error(
+    .ms_assert_managed_path_contained(pkg, .ms_metadata_path(pkg, "tables.csv")),
+    "symbolic-link path component"
+  )
+})

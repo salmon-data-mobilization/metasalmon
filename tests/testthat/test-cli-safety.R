@@ -205,3 +205,23 @@ test_that("bundle-review failures are redacted where they are captured", {
   expect_false(grepl("reason <- conditionMessage", body_text, fixed = TRUE))
   expect_true(grepl(".ms_redact_secrets(conditionMessage", body_text, fixed = TRUE))
 })
+
+test_that("credential keys are redacted in serialized JSON form", {
+  # A provider error body writes `"api_key":"secret"`, where the closing quote
+  # sits between the name and the colon — an unquoted pattern never matched.
+  expect_identical(
+    .ms_redact_secrets('{"api_key":"opaque-secret"}'),
+    '{"api_key=[REDACTED]'
+  )
+  expect_identical(
+    .ms_redact_secrets('{"access_token": "opaque-secret"}'),
+    '{"access_token=[REDACTED]'
+  )
+  expect_identical(
+    .ms_redact_secrets('{"OPENAI_API_KEY":"sk-x"}'),
+    '{"OPENAI_API_KEY=[REDACTED]'
+  )
+  # Unquoted and header forms still work, and validation text is untouched.
+  expect_identical(.ms_redact_secrets("api_key=plain"), "api_key=[REDACTED]")
+  expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
+})

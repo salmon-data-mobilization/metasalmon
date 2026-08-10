@@ -60,7 +60,10 @@
       "(?:authorization|proxy-authorization|set-cookie|cookie|dataone[_-]?token|",
       "api[_-]?key|access[_-]?token|refresh[_-]?token|secret[_-]?key)",
       "[A-Za-z0-9_]*)",
-      "[[:space:]]*[=:][[:space:]]*[^\r\n]*"
+      # An optional closing quote before the separator: a serialized error body
+      # writes `\"api_key\":\"secret\"`, where the quote sits between the name and
+      # the colon and an unquoted pattern never matches.
+      "[\"\']?[[:space:]]*[=:][[:space:]]*[^\r\n]*"
     ),
     "\\1=[REDACTED]",
     value,

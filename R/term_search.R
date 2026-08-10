@@ -201,7 +201,7 @@ find_terms <- function(query,
   # Apply role-aware query expansion (Phase 4)
   queries <- if (expand_query) .expand_query(query, role) else query
 
-  cache_key <- paste(paste(queries, collapse = "|"), role, paste(sort(sources), collapse = ","), sep = "::")
+  cache_key <- paste(paste(queries, collapse = "|"), role, paste(sort(sources, method = "radix"), collapse = ","), sep = "::")
   if (.metasalmon_cache_enabled && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
     return(get(cache_key, envir = .metasalmon_cache))
   }

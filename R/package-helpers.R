@@ -128,6 +128,18 @@ write_salmon_datapackage <- function(
     resolved_file_names[[resource_name]] <- file_name
   }
 
+  # Containment BEFORE reading anything. `.ms_package_managed_paths()` parses the
+  # previous `tables.csv`, so a `metadata/` or `metadata/tables.csv` symlinked to
+  # a FIFO or an enormous external file would be read before the guard ran. The
+  # metadata paths are known without reading, so they can be checked first.
+  .ms_assert_managed_path_contained(
+    path,
+    c(
+      .ms_metadata_path(path, c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")),
+      file.path(path, "datapackage.json"),
+      .ms_package_sentinel_file(path)
+    )
+  )
   managed_paths <- .ms_package_managed_paths(path, data_file_names = resolved_file_names)
   orphaned <- setdiff(.ms_previous_declared_data_paths(path), resolved_file_names)
   orphaned <- orphaned[file.exists(file.path(path, orphaned))]
@@ -2013,14 +2025,35 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         column_value_type <- table_dict$value_type[
           match(column_name, trimws(as.character(table_dict$column_name)))
         ]
+        raw_code_values <- table_codes$code_value[table_codes$column_name == column_name]
+        # The data resource is fidelity-checked when it is read, but code values
+        # are raw text that never passes through that path. Without the same
+        # check, a code token carrying more precision than its declared type can
+        # hold canonicalizes onto a different data value and the comparison
+        # silently succeeds.
+        code_outcome <- .ms_convert_declared_tokens(raw_code_values, column_value_type)
+        if (!is.null(code_outcome$reason)) {
+          add_issue(
+            "codes",
+            sprintf(
+              "Table '%s' column '%s' declares value_type '%s' but %d codes.csv value%s did not satisfy it (%s): %s.",
+              table_id,
+              column_name,
+              column_value_type,
+              length(code_outcome$offenders),
+              if (length(code_outcome$offenders) == 1) "" else "s",
+              code_outcome$reason,
+              paste(utils::head(unique(as.character(code_outcome$offenders)), 3L), collapse = ", ")
+            ),
+            table_id = table_id,
+            column_name = column_name
+          )
+        }
         data_values <- drop_blank(
           .ms_canonical_value_tokens(data_df[[column_name]], column_value_type)
         )
         code_values <- drop_blank(
-          .ms_canonical_value_tokens(
-            table_codes$code_value[table_codes$column_name == column_name],
-            column_value_type
-          )
+          .ms_canonical_value_tokens(raw_code_values, column_value_type)
         )
         missing_code_values <- setdiff(data_values, code_values)
         if (length(missing_code_values) > 0) {
