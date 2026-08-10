@@ -219,7 +219,21 @@
   if (is.null(schema$rules) || !identical(schema$rules$profile, profile_uri)) {
     cli::cli_abort("Invalid SDP schema: rules profile does not match profile $id.")
   }
-  if (!identical(schema$profile[["sdp:version"]], schema$rules$version)) {
+  # Each version must exist before comparing them: `identical(NULL, NULL)` is
+  # TRUE, so two absent versions would agree and the bundle would be accepted
+  # with no usable `version` at all -- writers then omit or emit an invalid
+  # `sdp.specVersion` instead of falling back to the vendored bundle.
+  schema_version <- schema$rules$version
+  profile_version <- schema$profile[["sdp:version"]]
+  for (candidate in list(profile_version, schema_version)) {
+    if (!is.character(candidate) || length(candidate) != 1L || is.na(candidate) ||
+        !nzchar(trimws(candidate))) {
+      cli::cli_abort(
+        "Invalid SDP schema: profile sdp:version and rules version must each be a single non-empty string."
+      )
+    }
+  }
+  if (!identical(profile_version, schema_version)) {
     cli::cli_abort("Invalid SDP schema: profile sdp:version does not match rules version.")
   }
 

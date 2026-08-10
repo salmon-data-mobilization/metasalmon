@@ -3541,3 +3541,29 @@ test_that("a symlinked metadata path is rejected before it is read", {
     "symbolic-link path component"
   )
 })
+
+test_that("a large token with few significant digits is still checked", {
+  # Stripping trailing zeros made `90071992547409900` look like 15 significant
+  # digits, so it took the fast path and was returned as 90071992547409904.
+  # The fast path is now bounded above by the exact integer range too.
+  check <- function(tokens, value_type = "integer") {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    list(values = parsed$v, reason = attr(parsed, "ms_value_type_mismatches"))
+  }
+
+  altered <- check("90071992547409900")
+  expect_identical(altered$values, "90071992547409900")
+  expect_length(altered$reason, 1L)
+
+  # Values above 1e15 that ARE exactly representable must still convert.
+  for (token in c("10000000000000000", "9007199254740992", "1234567890123456")) {
+    exact <- check(token)
+    expect_type(exact$values, "double")
+    expect_null(exact$reason)
+  }
+})

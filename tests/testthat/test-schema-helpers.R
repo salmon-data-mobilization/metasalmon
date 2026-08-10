@@ -170,3 +170,26 @@ test_that("the live upstream SDP bundle loads", {
   expect_identical(schema$profile_uri, schema$rules$profile)
   expect_true(nzchar(schema$version))
 })
+
+test_that("a bundle with no usable version is rejected", {
+  # `identical(NULL, NULL)` is TRUE, so two absent versions agreed and the
+  # bundle was accepted with no version at all — writers then emit an invalid
+  # sdp.specVersion instead of falling back to the vendored bundle.
+  bundle <- fake_sdp_bundle()
+  bundle$profile[["sdp:version"]] <- NULL
+  bundle$rules$version <- NULL
+  expect_error(
+    metasalmon:::.ms_validate_sdp_schema(bundle),
+    "single non-empty string"
+  )
+
+  blank <- fake_sdp_bundle(profile_version = "", rules_version = "")
+  expect_error(metasalmon:::.ms_validate_sdp_schema(blank), "single non-empty string")
+
+  missing_one <- fake_sdp_bundle()
+  missing_one$rules$version <- NULL
+  expect_error(metasalmon:::.ms_validate_sdp_schema(missing_one), "single non-empty string")
+
+  # A well-formed bundle is unaffected.
+  expect_identical(metasalmon:::.ms_validate_sdp_schema(fake_sdp_bundle())$version, "sdp-9.9.9")
+})

@@ -852,9 +852,12 @@ infer_value_type <- function(col) {
   digits <- .ms_numeric_token_precision(tokens)
   exponent <- .ms_numeric_token_exponent(tokens)
 
-  # Fifteen significant digits inside a comfortable magnitude always round-trip,
-  # so ordinary data never reaches the per-value work below.
-  certain <- present & digits <= 15L & (is.na(exponent) | abs(exponent) <= 290L)
+  # Fifteen significant digits always round-trip, but only below the exact
+  # integer range: `90071992547409900` has 15 significant digits once trailing
+  # zeros are dropped and still parses to 90071992547409904. So the fast path is
+  # bounded above by exponent 15 (|value| < 2^53) as well as below.
+  certain <- present & digits <= 15L &
+    (is.na(exponent) | (exponent <= 15L & exponent >= -290L))
   suspect <- which(present & !certain)
   if (length(suspect) == 0L) {
     return(lossy)
