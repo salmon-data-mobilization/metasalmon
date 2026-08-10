@@ -2325,3 +2325,70 @@ test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts",
   expect_equal(artifacts$dataset_meta$dataset_id[[1]], "dataset-1")
   expect_true(is.null(artifacts$semantic_suggestions) || is.data.frame(artifacts$semantic_suggestions))
 })
+
+test_that("apply_salmon_dictionary applies only the first table of a multi-table dictionary", {
+  # `dplyr::filter(.data$table_id == table_id)` with a local named `table_id`
+  # is shadowed by the data mask, so every table's rules were applied while the
+  # warning claimed otherwise.
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "d1", table_id = "t1",
+      column_name = "count", column_label = "Spawner count",
+      column_role = "measurement", value_type = "integer"
+    ),
+    test_dictionary(
+      dataset_id = "d1", table_id = "t2",
+      column_name = "site", column_label = "Other table site",
+      column_role = "identifier", value_type = "string"
+    )
+  )
+
+  df <- data.frame(count = c("1", "2"), site = c("a", "b"), stringsAsFactors = FALSE)
+
+  expect_warning(
+    result <- apply_salmon_dictionary(df, dict, strict = FALSE),
+    "multiple tables"
+  )
+
+  # t1's rule applied: renamed and coerced.
+  expect_true("Spawner count" %in% names(result))
+  expect_type(result[["Spawner count"]], "integer")
+  # t2's rule NOT applied: `site` keeps its original name.
+  expect_true("site" %in% names(result))
+  expect_false("Other table site" %in% names(result))
+})
+
+test_that("apply_salmon_dictionary does not apply another table's codes", {
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "d1", table_id = "t1",
+      column_name = "status", column_label = "status",
+      column_role = "categorical", value_type = "string"
+    ),
+    test_dictionary(
+      dataset_id = "d1", table_id = "t2",
+      column_name = "status", column_label = "status",
+      column_role = "categorical", value_type = "string"
+    )
+  )
+
+  codes <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t2"),
+    column_name = c("status", "status"),
+    code_value = c("live", "spawned"),
+    code_label = c("Live", "Spawned"),
+    code_description = c(NA_character_, NA_character_)
+  )
+
+  df <- data.frame(status = c("live", "live"), stringsAsFactors = FALSE)
+
+  expect_warning(
+    result <- apply_salmon_dictionary(df, dict, codes = codes, strict = FALSE),
+    "multiple tables"
+  )
+
+  # Only t1's code value is a level; t2's "spawned" must not leak in.
+  expect_s3_class(result$status, "factor")
+  expect_equal(levels(result$status), "Live")
+})

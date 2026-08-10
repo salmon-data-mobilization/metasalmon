@@ -6,6 +6,7 @@
 #'
 #' @importFrom dplyr %>%
 #' @importFrom rlang .data
+#' @importFrom rlang .env
 #' @docType package
 #' @name metasalmon
 "_PACKAGE"

@@ -91,6 +91,10 @@ write_salmon_datapackage <- function(
   codes <- .ms_normalize_codes(codes)
 
   dataset_id <- dataset_meta$dataset_id[1]
+  # `target_dataset_id` exists because `dict` has a `dataset_id` column: a local
+  # of the same name is shadowed by the dplyr data mask, which would turn the
+  # scoping filter below into a no-op and leak other datasets' columns.
+  target_dataset_id <- dataset_id
 
   .ms_prepare_package_write_dir(path, overwrite = overwrite)
 
@@ -125,7 +129,7 @@ write_salmon_datapackage <- function(
 
     table_dict <- dict %>%
       dplyr::filter(
-        .data$dataset_id == dataset_id,
+        .data$dataset_id == .env$target_dataset_id,
         .data$table_id == resource_name
       )
 

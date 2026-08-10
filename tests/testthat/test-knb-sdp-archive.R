@@ -324,3 +324,17 @@ test_that("friendly SDP ZIP filename is stable and filesystem-safe", {
   expect_error(.ms_knb_sdp_archive_filename(NA_character_), "non-empty")
   expect_error(.ms_knb_sdp_archive_filename(character()), "non-empty")
 })
+
+test_that("the reviewed zip version is installable under the DESCRIPTION requirement", {
+  # `.ms_knb_zip_version` and DESCRIPTION's `zip` requirement are independent
+  # literals. DESCRIPTION must admit the reviewed version, and must not pin an
+  # exact one (CRAN moves ahead, which would make metasalmon uninstallable).
+  desc <- read.dcf(system.file("DESCRIPTION", package = "metasalmon"))
+  imports <- desc[1, "Imports"]
+  zip_spec <- regmatches(imports, regexpr("zip\\s*\\([^)]*\\)", imports))
+
+  expect_length(zip_spec, 1L)
+  expect_false(grepl("==", zip_spec, fixed = TRUE))
+  expect_true(grepl(">=", zip_spec, fixed = TRUE))
+  expect_true(grepl(.ms_knb_zip_version, zip_spec, fixed = TRUE))
+})

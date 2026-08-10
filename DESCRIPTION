@@ -32,7 +32,7 @@ Imports:
     usethis,
     xml2,
     yaml,
-    zip (== 3.0.1)
+    zip (>= 3.0.1)
 Suggests:
     testthat (>= 3.2.1),
     knitr,

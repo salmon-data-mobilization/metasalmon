@@ -683,14 +683,18 @@ render_ontology_term_request <- function(
           gaps$target_sdp_field[[i]], gaps$dictionary_role[[i]]
         )
       )
+      # cli, not glue: `{.val {x}}` is cli inline markup. glue has no `.val`
+      # class, so it hands `.val {x}` to parse() and fails on every input.
       if (nzchar(.first_non_empty(gaps$top_non_smn_source[i], ""))) {
-        cli::cat_line(
-          glue::glue("Candidate: {.val {gaps$top_non_smn_label[i]}} ({gaps$top_non_smn_source[i]})")
-        )
+        candidate_label <- gaps$top_non_smn_label[[i]]
+        candidate_source <- gaps$top_non_smn_source[[i]]
+        cli::cli_text("Candidate: {.val {candidate_label}} ({.val {candidate_source}})")
       }
       if (nzchar(.first_non_empty(gaps$placement_rationale[i], ""))) {
-        cli::cat_line(glue::glue("Why: {.val {gaps$placement_rationale[i]}}"))
+        placement_rationale <- gaps$placement_rationale[[i]]
+        cli::cli_text("Why: {.val {placement_rationale}}")
       }
+      scope_choices <- c("smn", "gcdfo", "profile", "skip")
       pick <- utils::menu(
         c(
           "Request in shared SMN",
@@ -700,9 +704,14 @@ render_ontology_term_request <- function(
         ),
         title = "How should this term request be routed?"
       )
-      gaps$request_scope[i] <- c("smn", "gcdfo", "profile", "skip")[pick]
-      if (is.na(gaps$request_scope[i])) {
-        gaps$request_scope[i] <- "skip"
+      # menu() returns 0L when the user exits without choosing. Guard before
+      # indexing: `scope_choices[0]` is character(0), not NA, so assigning it
+      # errors with "replacement has length zero".
+      gaps$request_scope[i] <- if (length(pick) == 1L && !is.na(pick) &&
+                                   pick >= 1L && pick <= length(scope_choices)) {
+        scope_choices[[pick]]
+      } else {
+        "skip"
       }
 
       if (gaps$request_scope[i] == "profile" && is.null(profile_name)) {
@@ -1083,7 +1092,10 @@ submit_term_request_issues <- function(
       lbls <- NULL
     }
 
-    if (isTRUE(confirm) && isFALSE(askYesNo(sprintf("Submit %s request: %s?", scope, title), default = FALSE))) {
+    # `!isTRUE()`, not `isFALSE()`: askYesNo() returns NA when the user cancels,
+    # and isFALSE(NA) is FALSE — which would fall through and post the issue.
+    if (isTRUE(confirm) &&
+        !isTRUE(askYesNo(sprintf("Submit %s request: %s?", scope, title), default = FALSE))) {
       out[[i]] <- list(
         request_title = title,
         status = "skipped",

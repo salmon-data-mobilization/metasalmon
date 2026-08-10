@@ -2565,3 +2565,57 @@ test_that("validate_salmon_datapackage catches datapackage route hints without W
     "Explicit composite route intent detected"
   )
 })
+
+test_that("write_salmon_datapackage scopes the descriptor schema to its own dataset", {
+  # `dplyr::filter(.data$dataset_id == dataset_id)` with a same-named local is
+  # a data-mask no-op, so another dataset's columns leaked into
+  # datapackage.json for any table_id shared across datasets.
+  temp_dir <- withr::local_tempdir()
+
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "keep-me", table_id = "obs",
+      column_name = "count", column_label = "count",
+      column_role = "measurement", value_type = "integer"
+    ),
+    test_dictionary(
+      dataset_id = "other-dataset", table_id = "obs",
+      column_name = "leaked_column", column_label = "leaked_column",
+      column_role = "measurement", value_type = "integer"
+    )
+  )
+  dict <- fill_measurement_components(dict)
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "keep-me",
+    title = "Scoped dataset",
+    description = "Scoped dataset description",
+    spec_version = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "keep-me",
+    table_id = "obs",
+    table_label = "Observations",
+    table_description = "Observation rows",
+    file_name = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = data.frame(count = 1:2)),
+    dataset_meta = dataset_meta,
+    table_meta = table_meta,
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  descriptor <- jsonlite::read_json(file.path(temp_dir, "datapackage.json"))
+  obs <- Filter(function(r) identical(r$name, "obs"), descriptor$resources)[[1]]
+  field_names <- vapply(obs$schema$fields, function(f) f$name, character(1))
+
+  expect_true("count" %in% field_names)
+  expect_false("leaked_column" %in% field_names)
+})

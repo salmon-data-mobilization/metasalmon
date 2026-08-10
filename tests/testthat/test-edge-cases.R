@@ -219,7 +219,10 @@ test_that("apply_salmon_dictionary handles type coercion failures (non-strict)",
 test_that("apply_salmon_dictionary handles codes with mismatched values", {
   df <- data.frame(species = c("Coho", "Chinook", "Unknown"))
 
-  dict <- infer_dictionary(df)
+  # The ids must match the `codes` fixture below. This test previously relied on
+  # infer_dictionary()'s defaults ("dataset-1"/"table_1") not matching the codes
+  # at all, and only passed because the codes filter was a data-mask no-op.
+  dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
   dict <- fill_measurement_components(dict)
   validate_dictionary(dict)
 

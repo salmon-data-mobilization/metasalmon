@@ -1089,11 +1089,14 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
       "Dictionary contains multiple tables; applying to first: {.val {table_ids[1]}}"
     )
   }
-  table_id <- table_ids[1]
+  # Named `target_table`, not `table_id`: a local sharing a column's name is
+  # shadowed by the dplyr data mask, which silently turns the filter below into
+  # `table_id == table_id` and applies every table's rules.
+  target_table <- table_ids[1]
 
   # Filter dictionary for this table
   table_dict <- dict %>%
-    dplyr::filter(.data$table_id == table_id)
+    dplyr::filter(.data$table_id == .env$target_table)
 
   # Rename columns
   # Only rename columns that exist in df
@@ -1164,7 +1167,7 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
     if (!is.null(codes) && col_name %in% codes$column_name) {
       col_codes <- codes %>%
         dplyr::filter(
-          .data$table_id == table_id,
+          .data$table_id == .env$target_table,
           .data$column_name == col_name
         )
 
