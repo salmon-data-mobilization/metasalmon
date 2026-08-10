@@ -29,12 +29,15 @@ Severity = how much it can bite a real user.
 **Current snapshot (updated 2026-08-10, after the 0.2.0 P0 remediation).**
 
 - **Closed:** #1, #2, #4, #5, #6, #7, #8, #10, #11, #12, #14, #15, #16, #17, #18,
-  #19, #20, #21, #25, #27, #28, #32, and #34–#42 (the 0.2.0 P0 remediation).
+  #19, #20, #21, #25, #27, #28, #32, #34–#42 (the 0.2.0 P0 remediation), and
+  #64–#71 (defects in the 0.2.0 fixes themselves, caught in PR #11 review).
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #43–#61, and #62 (#63 fixed in the
   0.2.0 merge).
+
+**Next up:** #62 and #43 (both P1). See the roadmap for the ordering and why.
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -633,6 +636,60 @@ routing had never worked. All three fixed.
 **#42 Repo hygiene: `tmp/` and a dead `.Rbuildignore` regex.** `^\.tmp$` never
 matched anything, and the 1.5 MB `tmp/` directory was excluded by neither ignore
 file. Fixed: `^tmp(/|$)` in `.Rbuildignore`, `tmp/` in `.gitignore`.
+
+### Fixed during PR #11 review (defects in the 0.2.0 fixes themselves)
+
+Fourteen rounds of automated review on PR #11 found real defects in code written
+*for* this release — none in pre-existing code. Recorded because the failure
+modes are systematic, not incidental, and the same shapes will recur.
+
+**#64 Type conversion took four rounds of symptom patching before the
+structural fix.** Each round fixed the case in front of it (scientific notation,
+then precision, then whole-number checks, then datetime sub-second) while
+leaving the next one. The fix that held changed the *approach*: read every
+column as text, convert in memory, and verify the result against the original
+token rather than against another parse. **Lesson:** when a fix needs a third
+special case, the design is wrong, not incomplete.
+
+**#65 The cli guard's own allowlist hid a live credential leak.** Allowlisting
+`.ms_sdp_decomposition_abort()` as a "wrapper that forwards a caller template"
+meant its callers were never examined — and one built its message from
+user-supplied column names, so a column named `{Sys.getenv("OPENAI_API_KEY")}`
+had its value interpolated into an error. Treating the wrappers as cli message
+functions surfaced two further unescaped sites. **Lesson:** an allowlist entry
+is an assertion about every call site, and a guard's exemptions deserve the same
+scrutiny as the code it guards.
+
+**#66 A fix applied to `metadata/` but not to the root-level shadows.** The
+managed-path inventory covered both; the pre-read containment check added two
+commits later covered only `metadata/`, so a symlinked root `tables.csv` was
+parsed before the guard ran. **#67 The same containment check never inspected
+the package root itself** — it walked components *below* `path`, so a symlinked
+root left every child looking contained and `prune = TRUE` would have emptied
+the link's target.
+
+**#68 Blank, then padded, schema identifiers.** `sdp:version` gained a
+well-formedness check; `sdp:rules` three lines away did not. Adding it used
+`nzchar()` where the neighbours used `nzchar(trimws())`, so an all-whitespace
+bundle agreed with itself and passed. Fixing *that* still compared and stored the
+raw value, so consistent padding reached `datapackage.json`. Settled by
+normalising at the boundary. **Lesson (shared with #66/#67):** the recurring
+shape is fixing one instance and missing its neighbour. After any fix, ask what
+else is in the same list, the same file, or the same call path.
+
+**#69 A safeguard tested only against inputs its author imagined.** The
+hard-link fix was placed in the caller; a reproduction calling the writer
+directly still truncated. **#70 A platform-dependent float quirk was asserted as
+universal** — a macOS `readr::parse_double()` result that Linux disagreed with,
+caught by CI. Replaced with a fixed exponent band rather than a
+platform-conditional assertion.
+
+**#71 An exported row order was locale-dependent through a numeric sort.**
+`detect_semantic_term_gaps()` ordered by `placement_confidence` alone; `order()`
+is stable, so ties kept the order of `split()`'s factor levels — which come from
+a locale-collated sort. The reported finding was only the adjacent character
+tie-breaker. **Lesson:** a numeric sort key does not make an ordering
+locale-safe; only a *total* order does.
 
 ### Open — P1 (highest value next)
 
