@@ -8,25 +8,37 @@
 # package directory, so EML, publication receipts, editor backups, and other
 # local material cannot be swept into the archive by accident.
 
-.ms_knb_zip_version <- "3.0.1"
+# Reviewed `zip` implementations, in the sense that each was byte-compared
+# against the others for metasalmon's exact `zip::zip()` call before being added
+# here. 3.0.1 and 3.0.2 produce identical archives for a fixture covering nested
+# paths, non-ASCII filenames, an empty file, incompressible bytes, and highly
+# compressible bytes.
+#
+# This is an allowlist rather than a single version because the archive
+# checksum is bound into KNB object identifiers: an unreviewed `zip` must fail
+# loudly rather than silently change published bytes. It is checked HERE, at the
+# KNB boundary, and not in DESCRIPTION — pinning the dependency made the whole
+# package uninstallable for the majority of users who never publish to KNB.
+.ms_knb_reviewed_zip_versions <- c("3.0.1", "3.0.2")
 
 .ms_knb_require_zip_version <- function(
     version = as.character(utils::packageVersion("zip"))) {
   version <- as.character(version)
   if (length(version) != 1L ||
       is.na(version) ||
-      !identical(version, .ms_knb_zip_version)) {
+      !version %in% .ms_knb_reviewed_zip_versions) {
     observed <- if (length(version) == 1L && !is.na(version)) {
       version
     } else {
       "an invalid version"
     }
     rlang::abort(paste0(
-      "Deterministic SDP ZIP construction requires zip ",
-      .ms_knb_zip_version,
-      "; found ",
+      "Deterministic SDP ZIP construction requires a reviewed zip version (",
+      paste(.ms_knb_reviewed_zip_versions, collapse = ", "),
+      "); found ",
       observed,
-      "."
+      ". Byte-compare the new version against a reviewed one before adding it ",
+      "to `.ms_knb_reviewed_zip_versions`."
     ))
   }
   invisible(version)

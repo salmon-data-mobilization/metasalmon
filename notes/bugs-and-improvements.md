@@ -576,10 +576,21 @@ section is the live index. Priority tags refer to
 ### Fixed in 0.2.0
 
 **#34 `zip (== 3.0.1)` blocked installation.** CRAN ships 3.0.2, so the exact pin
-could not be satisfied. Fixed: `zip (>= 3.0.1)`; determinism is still enforced at
-runtime by `.ms_knb_require_zip_version()`. *Proof from a clean clone:*
-`test-knb-sdp-archive.R` asserts DESCRIPTION carries `>=`, not `==`, and that it
-admits `.ms_knb_zip_version`.
+could not be satisfied. **The first fix was incomplete and CI caught it:**
+relaxing `DESCRIPTION` to `>=` left the runtime guard
+`.ms_knb_require_zip_version()` as an equally exact check, so the package
+installed and then aborted on every KNB publication path — 10 test failures on a
+runner with zip 3.0.2, invisible locally because the dev machine had 3.0.1.
+Fixed properly: the guard is a reviewed-version allowlist
+(`.ms_knb_reviewed_zip_versions`), and 3.0.1/3.0.2 were byte-compared for
+metasalmon's exact `zip::zip()` call across nested paths, non-ASCII filenames, an
+empty file, incompressible and highly compressible content — identical archives.
+*Proof from a clean clone:* `test-knb-sdp-archive.R` asserts DESCRIPTION carries
+`>=` not `==`, that its floor is a version the guard accepts, and — the check
+that would have caught this — that **the installed zip version is one the guard
+accepts**, which runs against whatever CI installs.
+*Lesson:* a dependency relaxation must be checked against the version the
+relaxation admits, not the one the developer happens to have.
 
 **#35 Remote SDP schema loading was dead; produced packages declared a rejected
 profile URI.** `.ms_validate_sdp_schema()` asserted equality against a hardcoded

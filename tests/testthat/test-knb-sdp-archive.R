@@ -75,14 +75,6 @@ make_sdp_archive_decompositions <- function(path) {
   write_sdp_measurement_decompositions(path, decompositions = rows)
 }
 
-test_that("SDP ZIP construction is bound to the reviewed zip implementation", {
-  expect_silent(.ms_knb_require_zip_version("3.0.1"))
-  expect_error(
-    .ms_knb_require_zip_version("2.3.3"),
-    "zip 3[.]0[.]1.*found 2[.]3[.]3"
-  )
-})
-
 test_that("canonical SDP ZIP has one closed, valid, friendly inventory", {
   package_path <- make_eml_test_sdp(withr::local_tempdir())
   dir.create(
@@ -325,10 +317,11 @@ test_that("friendly SDP ZIP filename is stable and filesystem-safe", {
   expect_error(.ms_knb_sdp_archive_filename(character()), "non-empty")
 })
 
-test_that("the reviewed zip version is installable under the DESCRIPTION requirement", {
-  # `.ms_knb_zip_version` and DESCRIPTION's `zip` requirement are independent
-  # literals. DESCRIPTION must admit the reviewed version, and must not pin an
-  # exact one (CRAN moves ahead, which would make metasalmon uninstallable).
+test_that("the reviewed zip allowlist and DESCRIPTION stay compatible", {
+  # These are independent literals. DESCRIPTION must not pin an exact version
+  # (CRAN moves ahead, which made metasalmon uninstallable), and its floor must
+  # be a version the KNB archive guard actually accepts — otherwise the package
+  # installs and then every publication path aborts.
   desc <- read.dcf(system.file("DESCRIPTION", package = "metasalmon"))
   imports <- desc[1, "Imports"]
   zip_spec <- regmatches(imports, regexpr("zip\\s*\\([^)]*\\)", imports))
@@ -336,5 +329,23 @@ test_that("the reviewed zip version is installable under the DESCRIPTION require
   expect_length(zip_spec, 1L)
   expect_false(grepl("==", zip_spec, fixed = TRUE))
   expect_true(grepl(">=", zip_spec, fixed = TRUE))
-  expect_true(grepl(.ms_knb_zip_version, zip_spec, fixed = TRUE))
+
+  floor <- gsub("[^0-9.]", "", sub(".*>=", "", zip_spec))
+  expect_true(floor %in% .ms_knb_reviewed_zip_versions)
+})
+
+test_that("the zip guard accepts every reviewed version and rejects others", {
+  for (version in .ms_knb_reviewed_zip_versions) {
+    expect_silent(.ms_knb_require_zip_version(version))
+  }
+  expect_error(.ms_knb_require_zip_version("2.3.3"), "reviewed zip version")
+  expect_error(.ms_knb_require_zip_version("9.9.9"), "found 9[.]9[.]9")
+  expect_error(.ms_knb_require_zip_version(NA_character_), "an invalid version")
+})
+
+test_that("the installed zip version is one the archive guard accepts", {
+  # The failure this catches is specific: DESCRIPTION admits a version that the
+  # runtime guard then refuses, so publication breaks only for users who
+  # actually publish. CI installs the newest zip, so this runs against it there.
+  expect_silent(.ms_knb_require_zip_version())
 })

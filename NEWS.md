@@ -28,9 +28,19 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
 
 ### Fixes
 
-- **`zip` is no longer pinned to an exact version.** `zip (== 3.0.1)` against a
-  CRAN that ships 3.0.2 made metasalmon uninstallable. Deterministic archive
-  bytes are still enforced at runtime by `.ms_knb_require_zip_version()`.
+- **`zip` is no longer pinned to an exact version, at either layer.**
+  `zip (== 3.0.1)` against a CRAN that ships 3.0.2 made metasalmon
+  uninstallable. Relaxing only `DESCRIPTION` was not enough: the runtime guard
+  `.ms_knb_require_zip_version()` was an equally exact check, so the package
+  would install and then abort on every KNB publication path. That guard is now
+  a reviewed-version allowlist, `c("3.0.1", "3.0.2")`. Both versions were
+  byte-compared for metasalmon's exact `zip::zip()` call against a fixture
+  covering nested paths, non-ASCII filenames, an empty file, incompressible
+  bytes, and highly compressible bytes; the archives are identical. The
+  determinism contract therefore still holds, and it is enforced where it
+  belongs — at the KNB boundary, not in a dependency pin that blocked the
+  majority of users who never publish to KNB. An unreviewed `zip` still fails
+  loudly, with a message saying to byte-compare before widening the allowlist.
 - **Remote SDP schema loading works again.** Upstream `smn-data-pkg` migrated
   every profile `$id`; metasalmon asserted equality against the old constant, so
   `source = "remote"` aborted and the default `"auto"` silently fell back to a
