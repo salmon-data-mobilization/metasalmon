@@ -132,10 +132,16 @@ write_salmon_datapackage <- function(
   # previous `tables.csv`, so a `metadata/` or `metadata/tables.csv` symlinked to
   # a FIFO or an enormous external file would be read before the guard ran. The
   # metadata paths are known without reading, so they can be checked first.
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
   .ms_assert_managed_path_contained(
     path,
     c(
-      .ms_metadata_path(path, c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")),
+      .ms_metadata_path(path, metadata_names),
+      # The legacy root-level shadows too: `.ms_locate_metadata_file()` accepts
+      # them, so `.ms_previous_declared_data_paths()` will read a root
+      # `tables.csv` when `metadata/tables.csv` is absent. Checking only the
+      # `metadata/` copies left that path unguarded.
+      file.path(path, metadata_names),
       file.path(path, "datapackage.json"),
       .ms_package_sentinel_file(path)
     )

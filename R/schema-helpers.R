@@ -240,7 +240,18 @@
   schema$metadata_tables <- .ms_schema_tables_from_frictionless(schema$metadata_schemas)
   schema$version <- schema$rules$version
   schema$profile_uri <- profile_uri
-  schema$rules_uri <- schema$profile[["sdp:rules"]] %||% .ms_sdp_public_rules_url()
+  # `sdp:rules` is written straight into `datapackage.json$sdp$rules`, so a
+  # blank, whitespace-only, or non-scalar value has to reject the bundle rather
+  # than be emitted. Absent is fine -- that falls back to the vendored constant.
+  rules_uri <- schema$profile[["sdp:rules"]]
+  if (!is.null(rules_uri) &&
+      (!is.character(rules_uri) || length(rules_uri) != 1L || is.na(rules_uri) ||
+        !nzchar(trimws(rules_uri)))) {
+    cli::cli_abort(
+      "Invalid SDP schema: profile sdp:rules must be a single non-empty string when present."
+    )
+  }
+  schema$rules_uri <- rules_uri %||% .ms_sdp_public_rules_url()
   schema
 }
 

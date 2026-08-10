@@ -3567,3 +3567,29 @@ test_that("a large token with few significant digits is still checked", {
     expect_null(exact$reason)
   }
 })
+
+test_that("the pre-read containment check covers legacy root-level metadata", {
+  # `.ms_locate_metadata_file()` accepts a root-level shadow, so
+  # `.ms_previous_declared_data_paths()` reads a root `tables.csv` when
+  # `metadata/tables.csv` is absent. Checking only the `metadata/` copies left
+  # that path unguarded — the external target was parsed before the guard ran.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
+             file.path(outside, "tables.csv"))
+  file.symlink(file.path(outside, "tables.csv"), file.path(pkg, "tables.csv"))
+
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+  expect_error(
+    .ms_assert_managed_path_contained(
+      pkg,
+      c(.ms_metadata_path(pkg, metadata_names), file.path(pkg, metadata_names))
+    ),
+    "symbolic-link path component"
+  )
+})

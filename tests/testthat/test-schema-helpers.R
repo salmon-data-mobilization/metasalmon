@@ -193,3 +193,21 @@ test_that("a bundle with no usable version is rejected", {
   # A well-formed bundle is unaffected.
   expect_identical(metasalmon:::.ms_validate_sdp_schema(fake_sdp_bundle())$version, "sdp-9.9.9")
 })
+
+test_that("an unusable sdp:rules value is rejected", {
+  # It is written straight into datapackage.json$sdp$rules, so a blank,
+  # whitespace-only, or non-scalar value must reject the bundle rather than be
+  # emitted. Absent is fine — that falls back to the vendored constant.
+  for (bad in list("", "   ", list("a", "b"))) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["sdp:rules"]] <- bad
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "sdp:rules")
+  }
+
+  absent <- fake_sdp_bundle()
+  absent$profile[["sdp:rules"]] <- NULL
+  expect_identical(
+    metasalmon:::.ms_validate_sdp_schema(absent)$rules_uri,
+    metasalmon:::.ms_sdp_public_rules_url()
+  )
+})
