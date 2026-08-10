@@ -106,6 +106,15 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
   links, so a `data/` or `metadata/` replaced by one would have made every
   managed child resolve outside the package and be deleted there. This matches
   the symlink discipline the KNB archive already enforces.
+- `create_sdp()` replaces its own outputs rather than writing through them. A
+  hard-linked `README-review.txt`, `semantic_suggestions.csv`, or EDH XML would
+  otherwise have truncated the shared inode outside the package —
+  `Sys.readlink()` sees only symbolic links, and the pre-0.2.0 full-directory
+  wipe had unlinked these entries implicitly.
+- Provider failures on the measurement-bundle review path are redacted where
+  they are captured, matching the non-bundle path. They are stored on the
+  exported `semantic_llm_assessments` attribute, so display-time redaction
+  would have been too late.
 - Text reaching cli through the `.ms_*_abort()` forwarding helpers is escaped
   too. A decomposition column name is caller-supplied and was interpolated into
   an abort message, so a column named `{Sys.getenv("...")}` had its value

@@ -193,3 +193,15 @@ test_that("external text reaching cli through a forwarding wrapper is escaped", 
   expect_false(grepl("Expecting '}'", msg2, fixed = TRUE))
   expect_true(grepl("rate{pct", msg2, fixed = TRUE))
 })
+
+test_that("bundle-review failures are redacted where they are captured", {
+  # The non-bundle path redacted at capture; the bundle path passed
+  # conditionMessage() straight through, so a credential echoed by a provider
+  # persisted in the exported semantic_llm_assessments attribute.
+  body_text <- paste(
+    deparse(body(metasalmon:::.ms_assess_one_semantic_bundle)),
+    collapse = "\n"
+  )
+  expect_false(grepl("reason <- conditionMessage", body_text, fixed = TRUE))
+  expect_true(grepl(".ms_redact_secrets(conditionMessage", body_text, fixed = TRUE))
+})

@@ -131,14 +131,17 @@ is_literal_message <- function(node, assignments = NULL, seen = character()) {
   # what most `sprintf("%d issue%s", nrow(x), ...)` messages do.
   if (head_name %in% c(
     "nrow", "ncol", "NROW", "NCOL", "length", "sum", "seq_len", "seq_along",
-    "which", "min", "max", "round", "signif", "abs",
+    "which", "round", "signif", "abs",
     "+", "-", "*", "/", "==", "!=", "<", ">", "<=", ">=", "(", "!"
   )) {
     return(TRUE)
   }
+  # `min()` and `max()` return their argument's type, so on character input they
+  # pass the string straight through -- safe only if the argument is.
   # Composition is safe only if every part is safe. `if`/`ifelse` are included
   # so the common `x <- if (cond) c("a") else c("b")` shape resolves.
-  if (head_name %in% c("c", "paste", "paste0", "sprintf", "setNames", "if", "ifelse", "{")) {
+  if (head_name %in% c("c", "paste", "paste0", "sprintf", "setNames", "if", "ifelse", "{",
+                       "min", "max")) {
     args <- as.list(node)[-1]
     # The condition of if/ifelse never reaches the message text.
     if (head_name %in% c("if", "ifelse") && length(args) >= 1L) {
@@ -269,6 +272,13 @@ test_that("the guard detects an unsafe cli message", {
   named_text_safe <- function(external) {
     cli::cli_alert_info(text = .ms_cli_escape(external))
   }
+  # min()/max() return their argument's type, so character input passes through.
+  character_max_unsafe <- function(external) {
+    cli::cli_abort(max(external))
+  }
+  numeric_max_safe <- function(x) {
+    cli::cli_abort(sprintf("Saw %d rows.", max(nrow(x), 1L)))
+  }
 
   expect_length(collect_unsafe(body(unsafe), "unsafe", collect_assignments(body(unsafe))), 1L)
   expect_length(
@@ -281,6 +291,14 @@ test_that("the guard detects an unsafe cli message", {
   )
   expect_length(
     collect_unsafe(body(named_text_safe), "n", collect_assignments(body(named_text_safe))),
+    0L
+  )
+  expect_length(
+    collect_unsafe(body(character_max_unsafe), "n", collect_assignments(body(character_max_unsafe))),
+    1L
+  )
+  expect_length(
+    collect_unsafe(body(numeric_max_safe), "n", collect_assignments(body(numeric_max_safe))),
     0L
   )
   expect_length(collect_unsafe(body(safe), "safe", collect_assignments(body(safe))), 0L)

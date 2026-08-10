@@ -425,7 +425,7 @@
         rows[[i]] <- validated
         next
       }
-      reason <- conditionMessage(validated)
+      reason <- .ms_redact_secrets(conditionMessage(validated))
     }
 
     if (!is.null(fallback_assessments)) {
@@ -777,7 +777,7 @@
   )
 
   if (inherits(result, "error")) {
-    reason <- conditionMessage(result)
+    reason <- .ms_redact_secrets(conditionMessage(result))
     assessments <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
       target <- targets[i, , drop = FALSE]
       .ms_llm_review_empty_assessment(
@@ -798,7 +798,7 @@
         config = config
       ),
       error = function(e) {
-        reason <- conditionMessage(e)
+        reason <- .ms_redact_secrets(conditionMessage(e))
         purrr::map_dfr(seq_len(nrow(targets)), function(i) {
           target <- targets[i, , drop = FALSE]
           key <- .ms_semantic_group_key_df(target)[[1]]

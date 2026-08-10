@@ -322,6 +322,20 @@ write_salmon_datapackage <- function(
   invisible(path)
 }
 
+# Remove a create-owned output before recreating it. The containment check
+# catches symbolic links, but `Sys.readlink()` does not see HARD links, and
+# writing through one truncates the shared inode outside the package. The
+# pre-0.2.0 full-directory wipe unlinked these entries first; preserving the
+# directory removed that protection, so it has to be explicit -- and it belongs
+# next to each write, not in one caller, so it holds however the writer is
+# reached.
+.ms_replace_create_output <- function(path) {
+  if (file.exists(path)) {
+    unlink(path, force = TRUE)
+  }
+  invisible(path)
+}
+
 .ms_dir_entries <- function(path) {
   list.files(path, all.files = TRUE, no.. = TRUE, full.names = TRUE)
 }
@@ -1117,6 +1131,7 @@ create_sdp <- function(
   # writer's managed-path inventory deliberately does not know about it.
   suggestions_path <- file.path(pkg_path, "semantic_suggestions.csv")
   if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
+    .ms_replace_create_output(suggestions_path)
     readr::write_csv(review_suggestions, suggestions_path, na = "")
   } else if (file.exists(suggestions_path)) {
     unlink(suggestions_path, force = TRUE)
@@ -1124,6 +1139,7 @@ create_sdp <- function(
 
   if (isTRUE(include_edh_xml)) {
     edh_xml_path <- .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
+    .ms_replace_create_output(edh_xml_path)
 
     edh_build_hnap_xml(
       artifacts$dataset_meta,
@@ -3194,7 +3210,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize.",
     "Guide: https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html"
   )
-  writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
+  readme_path <- .ms_replace_create_output(file.path(pkg_path, "README-review.txt"))
+  writeLines(lines, con = readme_path, useBytes = TRUE)
 }
 
 .ms_is_review_placeholder <- function(x) {

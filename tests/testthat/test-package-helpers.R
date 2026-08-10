@@ -3463,3 +3463,25 @@ test_that("magnitudes outside the representable band keep their exact text", {
     expect_null(attr(parsed, "ms_value_type_mismatches"))
   }
 })
+
+test_that("a hard-linked create-owned output is replaced, not written through", {
+  # `Sys.readlink()` sees only symbolic links, so the containment check passes
+  # for a hard link and the write would truncate the shared inode outside the
+  # package. The pre-0.2.0 full-directory wipe unlinked these entries first;
+  # preserving the directory removed that protection.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(pkg, recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  target <- file.path(outside, "precious.txt")
+  writeLines("PRECIOUS EXTERNAL CONTENT", target)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  skip_if_not(file.link(target, file.path(pkg, "README-review.txt")), "hard links unsupported")
+
+  .ms_write_sdp_review_readme(pkg_path = pkg, dataset_id = "d1", has_suggestions = FALSE)
+
+  expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
+  expect_true(any(grepl("Review Checklist", readLines(file.path(pkg, "README-review.txt")))))
+})
