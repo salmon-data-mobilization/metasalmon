@@ -315,6 +315,40 @@ do not affect the built package or pkgdown site.
   bundle-aware semantic fit + `retry_search`/`request_new_term` escalation. The
   review contract should be designed to absorb these richer outcomes.
 
+## Reproducibility rules (added 2026-08-08, P0 remediation)
+
+Two cross-cutting rules, both with a guard test. The full statements live in
+`AGENTS.md`; this is the *why*.
+
+**C collation.** `sort()`/`order()`/`dplyr::arrange()` are locale-sensitive by
+default. Under `LC_COLLATE=en_CA` (a common macOS default),
+`c("apple","Apple","B","_z","a")` orders as `_z a apple Apple B`; under C it is
+`Apple B _z a apple`. Artifacts affected: the DataONE resource-map PID
+(`.ms_knb_resource_map_pid()` UUID5 preimage), the plan fingerprint
+(`plan_sha256`), SSSOM canonical bytes and the `mapping-sets.json` manifest
+order, the measurement-decomposition CSV hash, EML entity order, the
+`knb-manifest.json` receipt, and both exported NuSEDS crosswalk tables. Before
+the fix, a curator on macOS could write an SSSOM set that a `LC_COLLATE=C` CI
+container rejected, and the same package could get two different PIDs on two
+machines. `dplyr::arrange()` needs `.locale = "C"` explicitly even on dplyr
+>= 1.1.0, because its `NULL` default still consults the global
+`dplyr.legacy_locale` option — so a user's `.Rprofile` could otherwise flip
+hashed bytes. Hence `dplyr (>= 1.1.0)` in DESCRIPTION.
+Guard: `tests/testthat/test-collation-guard.R`.
+
+**cli message safety.** cli glue-interpolates every element of a condition
+message vector, including named bullet elements — the name only selects the
+glyph. Passing external text through means balanced braces are evaluated as R
+code (a provider error containing `{Sys.getenv("OPENAI_API_KEY")}` prints the
+key) and an unbalanced brace is a parse error (a column named `rate{pct` made
+validation die with `Expecting '}'`). `R/cli-safety.R` holds
+`.ms_cli_escape()`, `.ms_cli_bullets()`, `.ms_redact_secrets()`, and
+`.ms_abort_external()`. Escaping rather than value interpolation, because
+`"x" = "{preview}"` collapses an N-element preview into one comma-joined bullet.
+Redaction belongs where text is captured, not displayed: `assessments$llm_error`
+is returned to the caller and can be written to `semantic_suggestions.csv`.
+Guard: `tests/testthat/test-cli-safety-guard.R`.
+
 ## Gotchas
 
 - `CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md` — `AGENTS.md`

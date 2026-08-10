@@ -469,7 +469,8 @@
       .data$table_id,
       .data$column_name,
       .data$measurement_concept_iri,
-      .data$component_order
+      .data$component_order,
+      .locale = "C"
     )
 }
 

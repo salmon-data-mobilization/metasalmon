@@ -1,0 +1,132 @@
+# Static guard for the collation rule in AGENTS.md: any ordering whose result is
+# hashed, written to file bytes, embedded in an identifier, returned by an
+# exported function, or asserted by a validator must use explicit C collation.
+#
+# The allowlist below IS the machine-readable list of byte-producing functions.
+# When you add a function that produces canonical bytes, a hash, or a PID, add
+# it here.
+#
+# LIMITATIONS, stated plainly:
+#   1. It only inspects the listed functions. A new byte-producing function with
+#      an unqualified sort is invisible until it is listed. The name heuristic
+#      below is a partial backstop, and it works only because this repo's naming
+#      is disciplined.
+#   2. It cannot tell a character key from a numeric one, so it will ask for
+#      `method =` on integer sorts inside listed functions too. That is a
+#      harmless no-op annotation (radix is already the integer default).
+#   3. One level of indirection defeats it: a listed function that delegates
+#      sorting to an unlisted helper is a miss.
+#   4. srcrefs are dropped on install, so failures name the function, not a line.
+
+collation_sensitive_fns <- c(
+  # KNB identifiers and plan fingerprints
+  ".ms_knb_resource_map_pid",
+  ".ms_knb_sdp_artifact_paths",
+  ".ms_knb_normalize_access",
+  ".ms_knb_normalize_member_nodes",
+  ".ms_knb_catalog_values",
+  ".ms_knb_catalog_evidence",
+  ".ms_knb_anonymous_catalog_evidence",
+  # SSSOM canonical bytes and the manifest order contract
+  ".ms_sssom_parse_metadata",
+  ".ms_sssom_canonical_bytes",
+  "write_sdp_sssom",
+  ".ms_sssom_validate_manifest",
+  # Exported tables whose row order is part of the return value
+  "nuseds_enumeration_method_crosswalk",
+  "nuseds_estimate_method_crosswalk"
+)
+
+# Functions whose *name* claims they produce canonical bytes, a hash, or a PID.
+# A convention enforcer, not a proof.
+byte_producing_pattern <- "canonical_bytes|_pid$|fingerprint|_sha256|csv_bytes|json_bytes"
+
+find_unqualified_ordering <- function(node, acc = list()) {
+  if (is.call(node)) {
+    head <- node[[1]]
+    head_name <- if (is.name(head)) {
+      as.character(head)
+    } else if (is.call(head) && length(head) == 3L &&
+               identical(as.character(head[[1]]), "::")) {
+      as.character(head[[3]])
+    } else {
+      ""
+    }
+
+    arg_names <- names(as.list(node)[-1])
+    if (head_name %in% c("sort", "order") && !("method" %in% arg_names)) {
+      acc[[length(acc) + 1L]] <- paste(deparse(node), collapse = " ")
+    }
+    if (head_name == "arrange" && !(".locale" %in% arg_names)) {
+      acc[[length(acc) + 1L]] <- paste(deparse(node), collapse = " ")
+    }
+  }
+
+  if (is.call(node) || is.pairlist(node)) {
+    for (part in as.list(node)) {
+      if (!missing(part) && (is.call(part) || is.pairlist(part))) {
+        acc <- find_unqualified_ordering(part, acc)
+      }
+    }
+  }
+  acc
+}
+
+report_unqualified <- function(fn_names) {
+  ns <- asNamespace("metasalmon")
+  findings <- character()
+
+  for (nm in fn_names) {
+    obj <- tryCatch(get(nm, envir = ns), error = function(e) NULL)
+    if (!is.function(obj)) {
+      next
+    }
+    hits <- find_unqualified_ordering(body(obj))
+    for (hit in hits) {
+      findings <- c(findings, paste0(nm, ": ", substr(hit, 1, 140)))
+    }
+  }
+  findings
+}
+
+test_that("byte- and identifier-producing functions use explicit C collation", {
+  findings <- report_unqualified(collation_sensitive_fns)
+
+  if (length(findings) > 0) {
+    fail(paste0(
+      "Ordering that reaches bytes, a hash, an identifier, an exported return\n",
+      "value, or a validated order must pass method = \"radix\" (sort/order) or\n",
+      ".locale = \"C\" (dplyr::arrange). See AGENTS.md.\n",
+      paste(findings, collapse = "\n")
+    ))
+  }
+  succeed()
+})
+
+test_that("functions named as byte producers use explicit C collation", {
+  ns <- asNamespace("metasalmon")
+  named <- grep(byte_producing_pattern, ls(ns, all.names = TRUE), value = TRUE)
+  findings <- report_unqualified(setdiff(named, collation_sensitive_fns))
+
+  if (length(findings) > 0) {
+    fail(paste0(
+      "A function whose name claims it produces canonical bytes, a hash, or a\n",
+      "PID contains an unqualified sort/order/arrange:\n",
+      paste(findings, collapse = "\n")
+    ))
+  }
+  succeed()
+})
+
+test_that("the collation guard detects an unqualified ordering", {
+  # Without this, a guard that stopped matching would look like a pass.
+  unqualified <- function(x) sort(x)
+  qualified <- function(x) sort(x, method = "radix")
+  unqualified_arrange <- function(df) dplyr::arrange(df, .data$a)
+  qualified_arrange <- function(df) dplyr::arrange(df, .data$a, .locale = "C")
+
+  expect_length(find_unqualified_ordering(body(unqualified)), 1L)
+  expect_length(find_unqualified_ordering(body(qualified)), 0L)
+  expect_length(find_unqualified_ordering(body(unqualified_arrange)), 1L)
+  expect_length(find_unqualified_ordering(body(qualified_arrange)), 0L)
+})

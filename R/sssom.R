@@ -300,7 +300,7 @@
       "Every SSSOM {.field curie_map} expansion must be an absolute URI."
     )
   }
-  metadata$curie_map <- as.list(curie_map[order(names(curie_map))])
+  metadata$curie_map <- as.list(curie_map[order(names(curie_map), method = "radix")])
   metadata
 }
 
@@ -757,7 +757,7 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
 
 .ms_sssom_canonical_bytes <- function(mapping_set) {
   metadata <- mapping_set$metadata
-  metadata$curie_map <- metadata$curie_map[order(names(metadata$curie_map))]
+  metadata$curie_map <- metadata$curie_map[order(names(metadata$curie_map), method = "radix")]
 
   metadata_lines <- character()
   for (field in .ms_sssom_metadata_order) {
@@ -922,7 +922,7 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
   if (anyDuplicated(ids)) {
     .ms_sssom_abort("{.arg mapping_sets} contains duplicate mapping_set_id values.")
   }
-  sets <- sets[order(ids)]
+  sets <- sets[order(ids, method = "radix")]
 
   filenames <- vapply(sets, .ms_sssom_safe_filename, character(1))
   if (anyDuplicated(filenames)) {
@@ -1087,7 +1087,7 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
   if (anyDuplicated(paths) || anyDuplicated(ids)) {
     .ms_sssom_abort("SSSOM manifest contains duplicate paths or mapping_set_id values.")
   }
-  if (!identical(ids, sort(ids))) {
+  if (!identical(ids, sort(ids, method = "radix"))) {
     .ms_sssom_abort("SSSOM manifest mapping sets must be ordered by mapping_set_id.")
   }
   invisible(TRUE)

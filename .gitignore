@@ -43,12 +43,15 @@ agent-guidance/
 .claude
 .local-backup/
 .cursorignore
+# The generated pkgdown pages stay ignored, but AGENTS.md and CLAUDE.md are
+# tracked: they carry the non-negotiable contracts contributors and agents must
+# follow, and ignoring them meant the shipped repo had no guidance at all
+# (backlog #9 was only ever fixed in a working copy). Both are in
+# .Rbuildignore, so neither reaches the built package.
 docs/AGENTS.html
 /docs/AGENTS.html
 docs/CLAUDE.html
 /docs/CLAUDE.html
-AGENTS.md
-CLAUDE.md
 docs/plans/
 docs/adr/0001.md
 docs/tech-debt.md

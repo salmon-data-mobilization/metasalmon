@@ -1384,7 +1384,7 @@
     description = values$description,
     online_url = .ms_eml_knb_object_url(values$pid)
   ) |>
-    dplyr::arrange(.data$object_name, .data$pid)
+    dplyr::arrange(.data$object_name, .data$pid, .locale = "C")
 }
 
 .ms_eml_add_coverage <- function(dataset, dataset_meta, mapping) {
