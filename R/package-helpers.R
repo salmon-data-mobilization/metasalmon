@@ -1446,6 +1446,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     .ms_abort_package_validation_issues(issues)
   }
 
+  # SDP procedure and observation-structure resources are optional. Their
+  # absence preserves the historic validation path; when present, validate the
+  # canonical files and their data-level bindings before semantic checks.
+  .ms_validate_optional_sdp_observation_metadata(path)
+
   final_review_issues <- if (isTRUE(require_iris)) {
     dplyr::bind_rows(
       .ms_collect_review_placeholder_issues(pkg$dataset, "metadata/dataset.csv", id_fields = "dataset_id"),

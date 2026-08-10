@@ -34,7 +34,15 @@ collation_sensitive_fns <- c(
   ".ms_sssom_validate_manifest",
   # Exported tables whose row order is part of the return value
   "nuseds_enumeration_method_crosswalk",
-  "nuseds_estimate_method_crosswalk"
+  "nuseds_estimate_method_crosswalk",
+  # SDP v0.2 extension normalizers: their output IS the canonical row order
+  # written to metadata/methods.csv and metadata/structure/observation_*.csv
+  ".ms_sdp_methods_normalize",
+  ".ms_sdp_observation_normalize_structures",
+  ".ms_sdp_observation_normalize_components",
+  "extract_sdp_observations",
+  # Reproducibility manifest artifact inventory
+  ".ms_sdp_reproducibility_artifact_paths"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

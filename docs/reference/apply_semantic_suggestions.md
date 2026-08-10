@@ -11,7 +11,7 @@ candidates are good enough.
 apply_semantic_suggestions(
   dict,
   suggestions = attr(dict, "semantic_suggestions"),
-  strategy = c("top", "llm"),
+  strategy = c("top", "reviewed", "llm"),
   columns = NULL,
   roles = NULL,
   min_score = NULL,
@@ -38,8 +38,14 @@ apply_semantic_suggestions(
 - strategy:
 
   Selection strategy per column-role pair. `"top"` keeps the original
-  lexical ranking; `"llm"` applies only candidates marked with
-  `llm_selected = TRUE` by `suggest_semantics(..., llm_assess = TRUE)`.
+  lexical ranking. `"reviewed"` applies only rows whose `decision` is
+  `"accepted"` (or the equivalent `"accept"`). `"llm"` applies only
+  candidates marked with `llm_selected = TRUE` by
+  `suggest_semantics(..., llm_assess = TRUE)`. When reviewed or
+  LLM-reviewed selections contain multiple constraints for one
+  measurement, their IRIs are deduplicated in first-occurrence order and
+  written to `constraint_iri` as the SDP-compatible semicolon-separated
+  value. Other roles continue to select one value per column-role pair.
 
 - columns:
 

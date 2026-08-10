@@ -33,7 +33,8 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, and #43–#61.
+- **Open:** #3, #13, #22, #23, #24, #31, #43–#61, and #62 (#63 fixed in the
+  0.2.0 merge).
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -346,6 +347,13 @@ adversarial pass** — re-confirm before fixing.
   URLs and the default update check still targeted the independently existing
   `dfo-pacific-science/metasalmon` repository. The remote schema loader likewise
   fetched from the former `smn-data-pkg` repository.
+- **Follow-up (2026-08-04):** upstream PRs
+  `salmon-data-mobilization/smn-data-pkg#2` and `#3` added the observation/method
+  extension and moved the profile, rules, and resource-schema identifiers to the
+  active `salmon-data-mobilization.github.io/smn-data-pkg` Pages site. Pages and
+  every published artifact were verified byte-for-byte. metasalmon now vendors
+  that exact bundle while still keeping contract identifiers distinct from the
+  configurable raw-GitHub retrieval source.
 - **Compatibility decision (SUPERSEDED 2026-08-10):** the original decision was
   "do not rewrite the SDP 0.2 profile/resource-schema identifiers, because
   upstream still defines the former GitHub Pages URI as the contract value."
@@ -616,6 +624,25 @@ matched anything, and the 1.5 MB `tmp/` directory was excluded by neither ignore
 file. Fixed: `^tmp(/|$)` in `.Rbuildignore`, `tmp/` in `.gitignore`.
 
 ### Open — P1 (highest value next)
+
+**#62 `.ms_sdp_public_schema_base()` is a hardcoded contract value.** It gained a
+consumer in `R/sdp-methods.R` (0.1.8) and builds the per-resource schema URLs
+written into descriptors, but unlike the profile and rules URIs it is not derived
+from the loaded bundle. Same drift risk that broke remote schema loading before
+0.2.0 (#35). Derive it, or assert it against the bundle's
+`sdp:metadataResources[].schema` values.
+
+**#63 The 0.1.8 extension normalizers shipped with locale-dependent ordering.**
+`.ms_sdp_methods_normalize()` and the two
+`.ms_sdp_observation_normalize_*()` functions produce the canonical row order
+written to `metadata/methods.csv` and `metadata/structure/observation_*.csv`, and
+`extract_sdp_observations()` orders returned data by dimension columns — all with
+bare `dplyr::arrange()`. Fixed during the 0.2.0 merge and added to
+`collation_sensitive_fns`. **Recorded because of what it demonstrates:** the
+collation guard's limitation #1 (it only sees listed functions) bit within days
+of being written. Any new byte-producing function must be added to that list, and
+the `AGENTS.md` contract now says so.
+
 
 **#43 Semantic ranking tiebreakers make seeded IRIs non-reproducible.**
 `R/semantics-helpers.R:170-211` breaks score ties on character keys (`source`,

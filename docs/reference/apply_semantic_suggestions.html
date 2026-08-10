@@ -11,7 +11,7 @@ you an explicit merge step when you decide the top candidates are good enough.">
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -59,7 +59,7 @@ you an explicit merge step when you decide the top candidates are good enough.</
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">apply_semantic_suggestions</span><span class="op">(</span></span>
 <span>  <span class="va">dict</span>,</span>
 <span>  suggestions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/attr.html" class="external-link">attr</a></span><span class="op">(</span><span class="va">dict</span>, <span class="st">"semantic_suggestions"</span><span class="op">)</span>,</span>
-<span>  strategy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"top"</span>, <span class="st">"llm"</span><span class="op">)</span>,</span>
+<span>  strategy <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"top"</span>, <span class="st">"reviewed"</span>, <span class="st">"llm"</span><span class="op">)</span>,</span>
 <span>  columns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  roles <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_score <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -86,8 +86,14 @@ attribute from <code>dict</code>.</p></dd>
 
 <dt id="arg-strategy">strategy<a class="anchor" aria-label="anchor" href="#arg-strategy"></a></dt>
 <dd><p>Selection strategy per column-role pair. <code>"top"</code> keeps the
-original lexical ranking; <code>"llm"</code> applies only candidates marked with
-<code>llm_selected = TRUE</code> by <code>suggest_semantics(..., llm_assess = TRUE)</code>.</p></dd>
+original lexical ranking. <code>"reviewed"</code> applies only rows whose <code>decision</code>
+is <code>"accepted"</code> (or the equivalent <code>"accept"</code>). <code>"llm"</code> applies only
+candidates marked with <code>llm_selected = TRUE</code> by
+<code>suggest_semantics(..., llm_assess = TRUE)</code>. When reviewed or LLM-reviewed
+selections contain multiple constraints for one measurement, their IRIs
+are deduplicated in first-occurrence order and written to <code>constraint_iri</code>
+as the SDP-compatible semicolon-separated value. Other roles continue to
+select one value per column-role pair.</p></dd>
 
 
 <dt id="arg-columns">columns<a class="anchor" aria-label="anchor" href="#arg-columns"></a></dt>

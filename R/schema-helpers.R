@@ -2,11 +2,18 @@
 
 # The SDP profile identity is DERIVED from the loaded schema bundle, never
 # asserted against a constant here: metasalmon must be able to follow an
-# upstream identifier change rather than fail on it. These two constants are
-# only the fallback for a bundle that somehow omits the values, and they must
-# agree with the vendored files under inst/extdata.
+# upstream identifier change rather than fail on it. The constants below are
+# only the fallback for a bundle that omits the values, and they must agree
+# with the vendored files under inst/extdata.
 .ms_sdp_profile_url <- function() {
   "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+}
+
+# Consumed by `R/sdp-methods.R` to build per-resource schema URLs. Still a
+# hardcoded contract value, so it carries the same drift risk that broke remote
+# schema loading before 0.2.0 — see backlog #62.
+.ms_sdp_public_schema_base <- function() {
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata"
 }
 
 .ms_sdp_public_rules_url <- function() {
@@ -29,7 +36,12 @@
     dataset = "schema/frictionless/metadata/dataset.schema.json",
     tables = "schema/frictionless/metadata/tables.schema.json",
     column_dictionary = "schema/frictionless/metadata/column_dictionary.schema.json",
-    codes = "schema/frictionless/metadata/codes.schema.json"
+    codes = "schema/frictionless/metadata/codes.schema.json",
+    methods = "schema/frictionless/metadata/methods.schema.json",
+    observation_structures =
+      "schema/frictionless/metadata/observation_structures.schema.json",
+    observation_components =
+      "schema/frictionless/metadata/observation_components.schema.json"
   )
 }
 
@@ -273,9 +285,16 @@
 .ms_sdp_metadata_resource_entries <- function(include_codes = FALSE) {
   schema <- .ms_load_sdp_schema(quiet = TRUE)
   resources <- schema$profile[["sdp:metadataResources"]] %||% list()
+  core_names <- c(
+    "sdp_dataset",
+    "sdp_tables",
+    "sdp_column_dictionary",
+    "sdp_codes"
+  )
 
   purrr::keep(resources, function(resource) {
-    include_codes || !identical(resource$name, "sdp_codes")
+    resource$name %in% core_names &&
+      (include_codes || !identical(resource$name, "sdp_codes"))
   }) |>
     purrr::map(function(resource) {
       list(

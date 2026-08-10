@@ -1,14 +1,17 @@
 # Publish a reviewed Salmon Data Package to production KNB
 
 Plans an immutable DataONE package containing the original data
-resources named by `tables.csv`, one friendly deterministic ZIP of the
-complete canonical SDP, one validated EML 2.2.0 metadata object, and a
-deterministic OAI-ORE resource map. Internal SDP sidecars stay inside
-the ZIP instead of becoming unnamed catalog objects. The default is a
-credential-free, network-free dry run. Live publication requires a
-pre-existing exact dry-run manifest and an explicitly supplied
-`confirm = TRUE` approving that plan. Redistribution authority is
-recorded separately in the reviewed EML sidecar.
+resources named by `tables.csv`, one validated EML 2.2.0 metadata
+object, and a deterministic OAI-ORE resource map. The `expanded`
+representation publishes each allowlisted canonical SDP artifact as a
+named, EML-documented DataONE object and records its package-relative
+path with PROV-O `atLocation`; it does not create a ZIP or duplicate the
+source table. The compatibility `archive` representation publishes one
+deterministic SDP ZIP. The default operation is a credential-free,
+network-free dry run. Live publication requires a pre-existing exact
+dry-run manifest and an explicitly supplied `confirm = TRUE` approving
+that plan. Redistribution authority is recorded separately in the
+reviewed EML sidecar.
 
 ## Usage
 
@@ -20,7 +23,8 @@ publish_sdp_to_knb(
   manifest_path = NULL,
   dry_run = TRUE,
   confirm = interactive(),
-  revision_manifest = NULL
+  revision_manifest = NULL,
+  representation = c("archive", "expanded")
 )
 ```
 
@@ -71,10 +75,19 @@ publish_sdp_to_knb(
   stays stable, and the new EML/resource-map objects obsolete their
   predecessors. Access cannot change in the same operation.
 
+- representation:
+
+  Publication representation. `"expanded"` publishes the closed SDP
+  artifact inventory as individually named objects whose relative paths
+  can reconstruct the package. `"archive"` (the compatibility default)
+  publishes one deterministic ZIP in addition to each source data
+  object. Neither mode scans arbitrary package files.
+
 ## Value
 
-Invisibly returns publication status, identifiers, normalized
-manifest/resource-map/SDP-archive paths, and the manifest.
+Invisibly returns publication status, identifiers, normalized manifest
+and resource-map paths, the optional SDP-archive path, the
+representation, and the manifest.
 
 ## Details
 

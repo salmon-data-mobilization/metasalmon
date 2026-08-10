@@ -35,6 +35,8 @@ cli_template_allowlist <- c(
   #     snippet it appends is value-interpolated inside a literal template.
   ".ms_sssom_abort",
   ".ms_sdp_decomposition_abort",
+  ".ms_sdp_extension_abort",
+  ".ms_sdp_reproducibility_abort",
   ".ms_llm_review_response_data",
   # (b) locally assembled all-literal templates
   ".ms_create_sdp_seed_note",

@@ -15,7 +15,30 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
   # constant compiled into metasalmon.
   expect_equal(schema$profile_uri, schema$rules$profile)
   expect_equal(schema$source, "vendored")
-  expect_true("dataset" %in% names(schema$metadata_tables))
+  expect_true(all(c(
+    "dataset",
+    "methods",
+    "observation_structures",
+    "observation_components"
+  ) %in% names(schema$metadata_tables)))
+})
+
+test_that("vendored extension contracts match their writers", {
+  old_options <- options(metasalmon.sdp_schema_source = "vendored")
+  withr::defer(options(old_options))
+
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("methods"),
+    metasalmon:::.ms_sdp_methods_columns
+  )
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("observation_structures"),
+    metasalmon:::.ms_sdp_observation_structures_columns
+  )
+  expect_identical(
+    metasalmon:::.ms_sdp_schema_field_names("observation_components"),
+    metasalmon:::.ms_sdp_observation_components_columns
+  )
 })
 
 test_that("remote schema source and SDP profile identifier remain distinct", {

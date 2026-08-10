@@ -29,6 +29,49 @@ test_that("bundled Fraser coho examples are available and sized as documented", 
   expect_setequal(fuller_dict$column_name, names(fuller))
 })
 
+test_that("bundled demos separate abundance semantics from the counting unit", {
+  dict_path <- example_extdata_path("column_dictionary.csv")
+  dict <- readr::read_csv(dict_path, show_col_types = FALSE)
+  spawners <- dplyr::filter(
+    dict,
+    .data$column_name == "NATURAL_SPAWNERS_TOTAL"
+  )
+
+  expect_equal(nrow(spawners), 1L)
+  expect_identical(
+    spawners$unit_iri[[1]],
+    "https://qudt.org/vocab/unit/INDIV"
+  )
+  expect_identical(spawners$unit_label[[1]], "Individual")
+  expect_identical(
+    spawners$property_iri[[1]],
+    "https://w3id.org/smn/Abundance"
+  )
+  expect_false(any(grepl(
+    "NumberOfOrganisms",
+    as.character(dict$property_iri),
+    fixed = TRUE
+  )))
+
+  fuller_dict <- readr::read_csv(
+    example_extdata_path("nuseds-fraser-coho-2023-2024-column_dictionary.csv"),
+    show_col_types = FALSE
+  )
+  adult_spawners <- dplyr::filter(
+    fuller_dict,
+    .data$column_name == "NATURAL_ADULT_SPAWNERS"
+  )
+  expect_identical(
+    adult_spawners$unit_iri[[1]],
+    "https://qudt.org/vocab/unit/INDIV"
+  )
+  expect_identical(adult_spawners$unit_label[[1]], "Individual")
+  expect_identical(
+    adult_spawners$property_iri[[1]],
+    "https://w3id.org/smn/Abundance"
+  )
+})
+
 test_that("infer_dictionary treats key fuller Fraser coho fields as measurement/temporal", {
   fuller_path <- example_extdata_path("nuseds-fraser-coho-2023-2024.csv")
   fraser_coho_fuller <- readr::read_csv(fuller_path, show_col_types = FALSE)

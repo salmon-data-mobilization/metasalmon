@@ -4,7 +4,8 @@ Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
 package evolves. Last substantial update: 2026-08-10 (0.2.0 P0 remediation:
 schema identity, SDP round-trip integrity, sidecar preservation, cli message
-safety, and C collation).
+safety, and C collation). Preceded by 0.1.8 (mixed-grain observation
+structures, methods, reproducibility manifests, and expanded KNB publication).
 
 ## What the package is
 
@@ -58,6 +59,12 @@ return values, and attached attributes are a compatibility surface.
 - **Semantic supplements:** `read_sssom_mapping_set`, `write_sdp_sssom`,
   `validate_sdp_sssom`, `read_sdp_measurement_decompositions`,
   `write_sdp_measurement_decompositions`, `validate_sdp_measurement_decompositions`
+- **Extended structure and reproducibility:** `read_sdp_methods`,
+  `write_sdp_methods`, `validate_sdp_methods`,
+  `read_sdp_observation_structures`, `write_sdp_observation_structures`,
+  `validate_sdp_observation_structures`, `extract_sdp_observations`,
+  `read_sdp_reproducibility_manifest`, `write_sdp_reproducibility_manifest`,
+  `validate_sdp_reproducibility_manifest`
 - **EML + KNB:** `write_eml_from_sdp`, `publish_sdp_to_knb`
 - **GitHub:** `ms_setup_github`, `github_raw_url`, `read_github_csv`, `read_github_csv_dir`
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
@@ -76,30 +83,38 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `smn-data-pkg` spec.
 - **SDP schema locations:** runtime schema fetches use
   `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
+  Canonical SDP 0.2 profile, rules, and resource-schema identifiers resolve at
+  `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
+  published contract identifiers distinct from the configurable source used for
+  runtime schema retrieval.
   The profile **identity is derived from the loaded bundle**
   (`schema$profile_uri` / `schema$rules_uri`, attached by
   `.ms_validate_sdp_schema()`), never asserted against a constant — that is what
-  lets `metasalmon` follow an upstream identifier change instead of failing on
-  it. Validation checks only that the bundle agrees with itself: `$id` vs
-  `properties.profile.const` vs `rules.profile` vs `sdp:version`/`rules.version`.
-  The constants in `R/schema-helpers.R` are the vendored fallback only; keep
-  them in step with `inst/extdata` by **re-vendoring from upstream**, not by
-  hand-editing either side. Reading a package that declares an older profile URI
-  stays valid (nothing on the read path inspects `datapackage.json$profile`).
-  *Superseded 2026-08-10:* the previous note here said the legacy
-  `dfo-pacific-science.github.io` URI was the upstream contract value and must
-  not be rewritten. Upstream migrated to `salmon-data-mobilization.github.io`,
-  which broke remote schema loading outright — see `notes/bugs-and-improvements.md` #33.
+  lets `metasalmon` follow a future upstream identifier change instead of
+  failing on it. Validation checks only that the bundle agrees with itself:
+  `$id` vs `properties.profile.const` vs `rules.profile` vs
+  `sdp:version`/`rules.version`. The constants in `R/schema-helpers.R` are the
+  vendored fallback only; keep them in step with `inst/extdata` by
+  **re-vendoring from upstream**, not by hand-editing either side. Reading a
+  package that declares an older profile URI stays valid (nothing on the read
+  path inspects `datapackage.json$profile`).
+  *History:* an earlier note here said the legacy `dfo-pacific-science.github.io`
+  URI was the upstream contract value and must not be rewritten. Upstream
+  migrated, 0.1.8 followed the value, and 0.2.0 removed the equality assertion
+  that made such a migration fatal — see `notes/bugs-and-improvements.md` #33
+  and #35.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.
-- **KNB representation:** declared SDP data resources remain individual EML
-  data entities; the complete canonical SDP travels as one deterministic named
-  ZIP/EML `otherEntity`; EML and OAI-ORE complete the DataONE package. Private
-  deposits are persistent staging records, not server-side drafts. Revisions
-  require a fresh versioned SDP directory, preserve the metadata series, and
-  link immutable EML/resource-map versions. Publication-specific EML sidecar
-  authorization/party details and mutable receipts are excluded from the ZIP.
+- **KNB representation:** the preferred `expanded` representation publishes the
+  closed, validated SDP inventory as named DataONE objects and records each
+  package-relative path in OAI-ORE, so the canonical hierarchy can be rebuilt
+  without a ZIP. The deterministic archive representation remains a compatibility
+  option. EML and OAI-ORE complete either DataONE package. Private deposits are
+  persistent staging records, not server-side drafts. Revisions require a fresh
+  versioned SDP directory, preserve the metadata series, and link immutable
+  EML/resource-map versions. Publication-specific EML sidecar authorization,
+  party details, and mutable receipts are excluded from the published SDP.
   DOI minting is a separate KNB public-release action and is never implicit in
   `publish_sdp_to_knb()`.
 - **Semantic publication boundary:** SSSOM records whole-concept mappings or
@@ -111,10 +126,15 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 - **I-ADOPT decomposition:** measurement columns are decomposed into semantic
   "slots". The dictionary role → search role map (R/semantics-helpers.R:381-388):
   `term_iri`→variable, `property_iri`→property, `entity_iri`→entity,
-  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. **Ontology
-  convention:** "method" is NOT a native I-ADOPT role — procedure context is
-  modeled as `gcdfo:usedProcedure`, and compound variables are SKOS concepts, not
-  OWL classes (see the i-adopt chat-decomposition plan in `notes/exec-plans/`).
+  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. Multiple
+  fixed constraints may be stored as a deterministic semicolon-delimited list;
+  row-varying year/age coordinates belong in the optional observation-structure
+  extension instead. **Ontology convention:** "method" is NOT a native I-ADOPT
+  role. SDP methods are SOSA Procedure resources in `metadata/methods.csv`;
+  `column_dictionary.method_iri` is the fixed-procedure compatibility binding,
+  while row-varying procedures use a `sosa:usedProcedure` observation component.
+  Compound variables are SKOS concepts, not OWL classes (see the i-adopt
+  chat-decomposition plan in `notes/exec-plans/`).
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
   (`R/term_search.R` is ~89KB). `suggest_semantics()` calls it (default
   `search_fn = find_terms`) to build a per-target candidate shortlist before any

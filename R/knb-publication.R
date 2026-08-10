@@ -95,6 +95,17 @@
   paste0(prefix, paste(collapsed, collapse = "/"))
 }
 
+.ms_knb_package_root <- function(path) {
+  lexical <- .ms_knb_lexical_absolute_path(path)
+  if (!dir.exists(lexical)) {
+    cli::cli_abort("SDP directory {.path {path}} does not exist.")
+  }
+  if (.ms_sdp_extension_is_symlink(lexical)) {
+    cli::cli_abort("The SDP directory itself must not be a symbolic link.")
+  }
+  normalizePath(lexical, mustWork = TRUE)
+}
+
 .ms_knb_resolve_target_path <- function(path, must_work = TRUE) {
   lexical <- .ms_knb_lexical_absolute_path(path)
   if (isTRUE(must_work)) {
@@ -127,19 +138,78 @@
 
 .ms_knb_inside_path <- function(root, target, must_work = TRUE) {
   root <- normalizePath(root, mustWork = TRUE)
-  resolved <- .ms_knb_resolve_target_path(target, must_work = must_work)
+  lexical <- .ms_knb_lexical_absolute_path(target)
+  # Recover the caller's lexical spelling of the package root before deriving
+  # the package-relative name. This preserves declared names across harmless
+  # platform aliases such as macOS /var -> /private/var without normalizing an
+  # in-package artifact symlink to its target name.
+  ancestor <- lexical
+  lexical_root <- NULL
+  repeat {
+    if (file.exists(ancestor) && identical(
+      normalizePath(ancestor, mustWork = TRUE),
+      root
+    )) {
+      lexical_root <- ancestor
+      break
+    }
+    parent <- dirname(ancestor)
+    if (identical(parent, ancestor)) {
+      break
+    }
+    ancestor <- parent
+  }
+  if (is.null(lexical_root)) {
+    cli::cli_abort(
+      "Publication artifact {.path {target}} must remain inside the SDP directory."
+    )
+  }
+  lexical_prefix <- paste0(lexical_root, .Platform$file.sep)
+  if (!startsWith(lexical, lexical_prefix)) {
+    cli::cli_abort(
+      "Publication artifact {.path {target}} must remain inside the SDP directory."
+    )
+  }
+  relative <- substring(lexical, nchar(lexical_prefix) + 1L)
+  candidate <- file.path(root, relative)
+  parts <- strsplit(
+    gsub("\\", "/", relative, fixed = TRUE),
+    "/",
+    fixed = TRUE
+  )[[1]]
+  candidates <- file.path(
+    root,
+    vapply(
+      seq_along(parts),
+      function(index) paste(parts[seq_len(index)], collapse = "/"),
+      character(1)
+    )
+  )
+  links <- Sys.readlink(candidates)
+  link_present <- !is.na(links) & nzchar(links)
+  existing_candidates <- candidates[file.exists(candidates) | link_present]
+  existing_links <- Sys.readlink(existing_candidates)
+  symlinks <- existing_candidates[
+    !is.na(existing_links) & nzchar(existing_links)
+  ]
+  if (length(symlinks) > 0L) {
+    cli::cli_abort(
+      "Publication artifacts cannot be reached through a symlink: {.file {symlinks}}."
+    )
+  }
+  resolved <- .ms_knb_resolve_target_path(candidate, must_work = must_work)
   prefix <- paste0(root, .Platform$file.sep)
   if (!startsWith(resolved, prefix)) {
     cli::cli_abort(
       "Publication artifact {.path {target}} must remain inside the SDP directory."
     )
   }
-  resolved
+  candidate
 }
 
 .ms_knb_relative_path <- function(root, target, must_work = TRUE) {
   root <- normalizePath(root, mustWork = TRUE)
-  target <- .ms_knb_resolve_target_path(target, must_work = must_work)
+  target <- .ms_knb_inside_path(root, target, must_work = must_work)
   prefix <- paste0(root, .Platform$file.sep)
   if (!startsWith(target, prefix)) {
     cli::cli_abort(
@@ -201,14 +271,66 @@
     "metadata/tables.csv",
     "metadata/column_dictionary.csv",
     "metadata/codes.csv",
-    "metadata/semantic_vocabulary.csv",
-    "reviewed_semantic_selections.csv"
+    "metadata/semantic_vocabulary.csv"
   )
   missing <- required[!file.exists(file.path(path, required))]
   if (length(missing) > 0L) {
     cli::cli_abort(
       "KNB publication requires canonical SDP artifact{?s}: {.file {missing}}."
     )
+  }
+
+  # The v0.2 extended layout keeps reviewed selections with the workflow,
+  # provenance, and source records they qualify. Retain the root-level ledger
+  # only as a compatibility path for already reviewed packages. A canonical
+  # reproducibility tree is valid only when its exact contents are declared by
+  # the checksum-bound manifest; publication never discovers extra files.
+  reproducibility_manifest <- file.path(
+    path,
+    "reproducibility",
+    "manifest.json"
+  )
+  mapping <- yaml::read_yaml(file.path(path, "metadata", "eml-mapping.yml"))
+  mapped_review <- as.character(mapping$semantic_review$path %||% "")
+  reproducibility_relative <- character()
+  if (file.exists(reproducibility_manifest)) {
+    validate_sdp_reproducibility_manifest(path)
+    manifest <- read_sdp_reproducibility_manifest(path, validate = FALSE)
+    declared_paths <- vapply(
+      manifest$artifacts,
+      function(artifact) as.character(artifact$path),
+      character(1)
+    )
+    canonical_review <-
+      "reproducibility/reviewed_semantic_selections.csv"
+    if (!canonical_review %in% declared_paths) {
+      cli::cli_abort(
+        "KNB publication requires the canonical reviewed-selection ledger to be declared by {.file reproducibility/manifest.json}."
+      )
+    }
+    if (!identical(mapped_review, canonical_review)) {
+      cli::cli_abort(
+        "EML mapping {.field semantic_review.path} must bind the reviewed ledger declared by the reproducibility manifest."
+      )
+    }
+    reproducibility_relative <- c(
+      "reproducibility/manifest.json",
+      declared_paths
+    )
+  } else {
+    legacy_review <- "reviewed_semantic_selections.csv"
+    if (!file.exists(file.path(path, legacy_review))) {
+      cli::cli_abort(c(
+        "KNB publication requires a reviewed semantic-selection ledger.",
+        "i" = "Use the extended {.file reproducibility/manifest.json} layout or the legacy root-level ledger."
+      ))
+    }
+    if (!identical(mapped_review, legacy_review)) {
+      cli::cli_abort(
+        "Legacy KNB packages must bind the root-level reviewed ledger in EML mapping {.field semantic_review.path}."
+      )
+    }
+    reproducibility_relative <- legacy_review
   }
 
   # SSSOM supplements are optional, but when present they are closed by the
@@ -262,11 +384,38 @@
     )
   }
 
+  # Methods and mixed-grain observation structures are optional SDP v0.2
+  # metadata. When present they are validated as one complete contract and
+  # become named objects in the expanded representation.
+  methods_relative <- character()
+  if (file.exists(file.path(path, "metadata", "methods.csv"))) {
+    validate_sdp_methods(path)
+    methods_relative <- "metadata/methods.csv"
+  }
+  structure_files <- c(
+    "metadata/structure/observation_structures.csv",
+    "metadata/structure/observation_components.csv"
+  )
+  structure_present <- file.exists(file.path(path, structure_files))
+  structure_relative <- character()
+  if (any(structure_present)) {
+    if (!all(structure_present)) {
+      cli::cli_abort(
+        "KNB publication requires both canonical observation-structure files when either is present."
+      )
+    }
+    validate_sdp_observation_structures(path)
+    structure_relative <- structure_files
+  }
+
   relative <- sort(
     c(
       required,
+      reproducibility_relative,
       semantic_relative,
-      decomposition_relative
+      decomposition_relative,
+      methods_relative,
+      structure_relative
     ),
     method = "radix"
   )
@@ -415,6 +564,7 @@
     'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ',
     'xmlns:ore="http://www.openarchives.org/ore/terms/" ',
     'xmlns:cito="http://purl.org/spar/cito/" ',
+    'xmlns:prov="http://www.w3.org/ns/prov#" ',
     'xmlns:dcterms="http://purl.org/dc/terms/" ',
     'xmlns:xsd="http://www.w3.org/2001/XMLSchema#"/>'
   ))
@@ -485,10 +635,17 @@
     "ore:isAggregatedBy",
     aggregation_url
   )
+  .ms_eml_add_text(metadata, "prov:atLocation", member_objects[[which(
+    vapply(
+      member_objects,
+      function(object) identical(object$role, "metadata"),
+      logical(1)
+    )
+  )]]$path)
 
   documented_objects <- member_objects[vapply(
     member_objects,
-    function(x) x$role %in% c("data", "sdp_archive"),
+    function(x) x$role %in% c("data", "sdp_archive", "sdp_artifact"),
     logical(1)
   )]
   for (object in documented_objects) {
@@ -507,25 +664,10 @@
       "ore:isAggregatedBy",
       aggregation_url
     )
-  }
-
-  supplemental_objects <- member_objects[vapply(
-    member_objects,
-    function(x) identical(x$role, "sdp_artifact"),
-    logical(1)
-  )]
-  for (object in supplemental_objects) {
-    description <- xml2::xml_add_child(root, "rdf:Description")
-    xml2::xml_set_attr(
-      description,
-      "rdf:about",
-      .ms_knb_resolve_url(object$pid)
-    )
-    .ms_knb_add_identifier(description, object$pid)
-    .ms_knb_add_resource(
-      description,
-      "ore:isAggregatedBy",
-      aggregation_url
+    .ms_eml_add_text(
+      object_description,
+      "prov:atLocation",
+      object$path
     )
   }
   root
@@ -616,7 +758,7 @@
 
   documented_objects <- member_objects[vapply(
     member_objects,
-    function(x) x$role %in% c("data", "sdp_archive"),
+    function(x) x$role %in% c("data", "sdp_archive", "sdp_artifact"),
     logical(1)
   )]
   documented_urls <- vapply(
@@ -651,12 +793,24 @@
     ),
     "resource"
   )
+  locations <- xml2::xml_text(xml2::xml_find_all(
+    document,
+    "//*[local-name()='atLocation']"
+  ))
+  expected_locations <- vapply(
+    member_objects,
+    function(object) object$path,
+    character(1)
+  )
   if (!setequal(documents, documented_urls) ||
       length(documents) != length(documented_urls) ||
       length(documented_by) != length(documented_urls) ||
       !all(documented_by == metadata_url) ||
       length(aggregated_by) != length(expected) ||
-      !all(aggregated_by == aggregation_url)) {
+      !all(aggregated_by == aggregation_url) ||
+      !setequal(locations, expected_locations) ||
+      length(locations) != length(expected_locations) ||
+      anyDuplicated(locations)) {
     cli::cli_abort(
       "Generated OAI-ORE package relationships do not match the publication profile."
     )
@@ -1277,39 +1431,119 @@
   )
 }
 
+.ms_knb_sdp_artifact_objects <- function(path, dataset_id) {
+  artifact_paths <- unname(.ms_knb_sdp_artifact_paths(path))
+  lapply(
+    artifact_paths,
+    function(local_path) {
+      object <- .ms_knb_sdp_artifact_object(
+        local_path,
+        path,
+        dataset_id
+      )
+      object$obsoletes <- NA_character_
+      object$obsoleted_by <- NA_character_
+      object
+    }
+  )
+}
+
+.ms_knb_supplementary_object_plan <- function(objects) {
+  if (length(objects) == 0L) {
+    return(NULL)
+  }
+  tibble::tibble(
+    path = vapply(objects, function(object) object$local_path, character(1)),
+    pid = vapply(objects, function(object) object$pid, character(1)),
+    format_id = vapply(
+      objects,
+      function(object) object$format_id,
+      character(1)
+    ),
+    checksum = vapply(objects, function(object) object$sha256, character(1)),
+    object_name = vapply(
+      objects,
+      function(object) {
+        if (identical(object$role, "sdp_archive")) {
+          basename(object$path)
+        } else {
+          object$path
+        }
+      },
+      character(1)
+    ),
+    entity_name = vapply(
+      objects,
+      function(object) {
+        if (identical(object$role, "sdp_archive")) {
+          "Canonical Salmon Data Package"
+        } else {
+          paste("Salmon Data Package artifact:", object$path)
+        }
+      },
+      character(1)
+    ),
+    description = vapply(
+      objects,
+      function(object) {
+        if (identical(object$role, "sdp_archive")) {
+          paste(
+            "A complete, validated Salmon Data Package containing the source data,",
+            "canonical SDP metadata, reviewed semantic selections, SSSOM mapping",
+            "sets, and measurement-decomposition artifacts."
+          )
+        } else {
+          paste(
+            "Canonical file from the expanded Salmon Data Package at",
+            paste0("'", object$path, "'.")
+          )
+        }
+      },
+      character(1)
+    ),
+    size = vapply(objects, function(object) object$size, numeric(1)),
+    entity_type = vapply(
+      objects,
+      function(object) {
+        if (identical(object$role, "sdp_archive")) {
+          "Salmon Data Package archive"
+        } else {
+          "Salmon Data Package artifact"
+        }
+      },
+      character(1)
+    )
+  )
+}
+
 .ms_knb_build_plan <- function(path,
                                eml_path,
                                manifest_path,
                                public,
+                               representation = c("archive", "expanded"),
                                prior_manifest = NULL,
                                resource_map_path = file.path(
                                  dirname(manifest_path),
                                  "resource-map.rdf"
                                )) {
+  representation <- match.arg(representation)
   .ms_knb_reject_review_candidate_annotations(path)
   mapping <- yaml::read_yaml(
     file.path(path, "metadata", "eml-mapping.yml")
   )
-  archive <- .ms_knb_write_sdp_archive(path)
-  archive_object <- .ms_knb_sdp_archive_object(
-    archive,
-    path,
-    mapping$dataset_id
-  )
-  supplementary_objects <- data.frame(
-    path = archive_object$local_path,
-    pid = archive_object$pid,
-    format_id = archive_object$format_id,
-    checksum = archive_object$sha256,
-    object_name = basename(archive_object$path),
-    entity_name = "Canonical Salmon Data Package",
-    description = paste(
-      "A complete, validated Salmon Data Package containing the source data,",
-      "canonical SDP metadata, reviewed semantic selections, SSSOM mapping",
-      "sets, and measurement-decomposition artifacts."
-    ),
-    size = archive_object$size,
-    stringsAsFactors = FALSE
+  archive <- NULL
+  package_objects <- if (identical(representation, "archive")) {
+    archive <- .ms_knb_write_sdp_archive(path)
+    list(.ms_knb_sdp_archive_object(
+      archive,
+      path,
+      mapping$dataset_id
+    ))
+  } else {
+    .ms_knb_sdp_artifact_objects(path, mapping$dataset_id)
+  }
+  supplementary_objects <- .ms_knb_supplementary_object_plan(
+    package_objects
   )
   eml <- write_eml_from_sdp(
     path,
@@ -1386,7 +1620,7 @@
     },
     obsoleted_by = NA_character_
   )
-  members <- c(data_objects, list(archive_object, metadata_object))
+  members <- c(data_objects, package_objects, list(metadata_object))
 
   resource_map_pid <- .ms_knb_resource_map_pid(
     eml$package_id,
@@ -1450,19 +1684,20 @@
     ),
     package_id = eml$package_id,
     series_id = eml$series_id,
-    representation = "archive",
+    representation = representation,
     revision_of = revision_context,
     prior_manifest = prior_manifest,
     metadata_pid = eml$package_id,
     resource_map_pid = resource_map_pid,
     objects = unname(c(
       data_objects,
-      list(archive_object, metadata_object, resource_map_object)
+      package_objects,
+      list(metadata_object, resource_map_object)
     )),
     resource_map_document = ore,
     resource_map_bytes = ore_bytes,
     resource_map_path = resource_map_path,
-    sdp_archive_path = archive$path,
+    sdp_archive_path = if (is.null(archive)) NULL else archive$path,
     eml = eml
   )
   plan$plan_sha256 <- .ms_knb_plan_fingerprint(plan)
@@ -1601,7 +1836,11 @@
     permission = tolower(as.character(out$permission)),
     stringsAsFactors = FALSE
   ))
-  out[order(out$subject, out$permission, method = "radix"), , drop = FALSE]
+  out[
+    order(out$subject, out$permission, method = "radix"),
+    ,
+    drop = FALSE
+  ]
 }
 
 .ms_knb_normalize_member_nodes <- function(nodes) {
@@ -1988,7 +2227,10 @@
     return(character())
   }
   values <- trimws(as.character(unlist(values, use.names = FALSE)))
-  sort(unique(values[!is.na(values) & nzchar(values)]), method = "radix")
+  sort(
+    unique(values[!is.na(values) & nzchar(values)]),
+    method = "radix"
+  )
 }
 
 .ms_knb_catalog_evidence <- function(plan, records) {
@@ -2034,7 +2276,9 @@
   documented_pids <- unname(vapply(
     plan$objects[vapply(
       plan$objects,
-      function(object) object$role %in% c("data", "sdp_archive"),
+      function(object) {
+        object$role %in% c("data", "sdp_archive", "sdp_artifact")
+      },
       logical(1)
     )],
     function(object) object$pid,
@@ -2048,42 +2292,17 @@
     },
     logical(1)
   )]
-  supplemental_pids <- unname(vapply(
-    plan$objects[vapply(
-      plan$objects,
-      function(object) identical(object$role, "sdp_artifact"),
-      logical(1)
-    )],
-    function(object) object$pid,
-    character(1)
-  ))
-  supplemental_relations_clean <- all(vapply(
-    supplemental_pids,
-    function(pid) {
-      record <- record_for(pid)
-      length(.ms_knb_catalog_values(record, "documents")) == 0L &&
-        length(.ms_knb_catalog_values(
-          record,
-          "isDocumentedBy"
-        )) == 0L
-    },
-    logical(1)
-  ))
   verified <- setequal(indexed_ids, expected_pids) &&
     length(indexed_ids) == length(expected_pids) &&
     length(unique(indexed_ids)) == length(expected_pids) &&
     setequal(resource_map_members, member_pids) &&
     length(resource_map_members) == length(member_pids) &&
-    # A same-session set-equality check, so collation cannot change the answer.
-    # Qualified anyway so the rule holds uniformly and no reader has to
-    # reconstruct that argument.
     identical(
       sort(metadata_documents, method = "radix"),
       sort(documented_pids, method = "radix")
     ) &&
     setequal(documented_objects, documented_pids) &&
-    length(documented_objects) == length(documented_pids) &&
-    isTRUE(supplemental_relations_clean)
+    length(documented_objects) == length(documented_pids)
   list(
     verified = isTRUE(verified),
     indexed_pids = sort(unique(indexed_ids), method = "radix"),
@@ -2092,10 +2311,15 @@
     metadata_pid = plan$metadata_pid,
     metadata_documents = sort(metadata_documents, method = "radix"),
     documented_data_pids = sort(documented_objects, method = "radix"),
-    supplemental_relations_clean = isTRUE(
-      supplemental_relations_clean
-    )
+    supplemental_relations_clean = TRUE
   )
+}
+
+.ms_knb_result_archive_path <- function(plan) {
+  if (is.null(plan$sdp_archive_path)) {
+    return(NULL)
+  }
+  normalizePath(plan$sdp_archive_path, mustWork = TRUE)
 }
 
 .ms_knb_anonymous_catalog_evidence <- function(plan, records) {
@@ -2108,13 +2332,19 @@
     function(record) .ms_knb_optional_scalar(record$id),
     character(1)
   ))
-  indexed_ids <- sort(unique(indexed_ids[!is.na(indexed_ids)]), method = "radix")
+  indexed_ids <- sort(
+    unique(indexed_ids[!is.na(indexed_ids)]),
+    method = "radix"
+  )
   planned_pids <- unname(vapply(
     plan$objects,
     function(object) object$pid,
     character(1)
   ))
-  matching_pids <- sort(intersect(indexed_ids, planned_pids), method = "radix")
+  matching_pids <- sort(
+    intersect(indexed_ids, planned_pids),
+    method = "radix"
+  )
   list(
     verified = length(matching_pids) == 0L,
     matching_pids = matching_pids
@@ -2521,10 +2751,8 @@
             plan$resource_map_path,
             mustWork = TRUE
           ),
-          sdp_archive_path = normalizePath(
-            plan$sdp_archive_path,
-            mustWork = TRUE
-          ),
+          sdp_archive_path = .ms_knb_result_archive_path(plan),
+          representation = plan$representation,
           manifest = manifest
         )))
       }
@@ -2552,10 +2780,8 @@
           plan$resource_map_path,
           mustWork = TRUE
         ),
-        sdp_archive_path = normalizePath(
-          plan$sdp_archive_path,
-          mustWork = TRUE
-        ),
+        sdp_archive_path = .ms_knb_result_archive_path(plan),
+        representation = plan$representation,
         manifest = manifest
       )
       cli::cli_alert_success(
@@ -3228,11 +3454,13 @@
 #' Publish a reviewed Salmon Data Package to production KNB
 #'
 #' Plans an immutable DataONE package containing the original data resources
-#' named by `tables.csv`, one friendly deterministic ZIP of the complete
-#' canonical SDP, one validated EML 2.2.0 metadata object, and a deterministic
-#' OAI-ORE resource map. Internal SDP sidecars stay inside the ZIP instead of
-#' becoming unnamed catalog objects. The default is a credential-free,
-#' network-free dry run. Live
+#' named by `tables.csv`, one validated EML 2.2.0 metadata object, and a
+#' deterministic OAI-ORE resource map. The `expanded` representation publishes
+#' each allowlisted canonical SDP artifact as a named, EML-documented DataONE
+#' object and records its package-relative path with PROV-O `atLocation`; it
+#' does not create a ZIP or duplicate the source table. The compatibility
+#' `archive` representation publishes one deterministic SDP ZIP. The default
+#' operation is a credential-free, network-free dry run. Live
 #' publication requires a pre-existing exact dry-run manifest and an explicitly
 #' supplied `confirm = TRUE` approving that plan. Redistribution authority is
 #' recorded separately in the reviewed EML sidecar.
@@ -3284,9 +3512,15 @@
 #'   the reviewed sidecar must contain a new `publication.revision_key`, the
 #'   metadata series stays stable, and the new EML/resource-map objects
 #'   obsolete their predecessors. Access cannot change in the same operation.
+#' @param representation Publication representation. `"expanded"` publishes
+#'   the closed SDP artifact inventory as individually named objects whose
+#'   relative paths can reconstruct the package. `"archive"` (the compatibility
+#'   default) publishes one deterministic ZIP in addition to each source data
+#'   object. Neither mode scans arbitrary package files.
 #'
 #' @return Invisibly returns publication status, identifiers, normalized
-#'   manifest/resource-map/SDP-archive paths, and the manifest.
+#'   manifest and resource-map paths, the optional SDP-archive path, the
+#'   representation, and the manifest.
 #' @export
 #'
 #' @examples
@@ -3303,8 +3537,10 @@ publish_sdp_to_knb <- function(path,
                                manifest_path = NULL,
                                dry_run = TRUE,
                                confirm = interactive(),
-                               revision_manifest = NULL) {
+                               revision_manifest = NULL,
+                               representation = c("archive", "expanded")) {
   confirm_missing <- missing(confirm)
+  representation <- match.arg(representation)
   .ms_knb_validate_flag(public, "public")
   .ms_knb_validate_flag(dry_run, "dry_run")
   if (!isTRUE(dry_run) &&
@@ -3317,7 +3553,7 @@ publish_sdp_to_knb <- function(path,
   if (!dir.exists(path)) {
     cli::cli_abort("SDP directory {.path {path}} does not exist.")
   }
-  path <- normalizePath(path, mustWork = TRUE)
+  path <- .ms_knb_package_root(path)
   prior_manifest <- .ms_knb_revision_manifest(revision_manifest)
   if (!is.null(prior_manifest)) {
     prior_manifest_path <- normalizePath(revision_manifest, mustWork = TRUE)
@@ -3371,6 +3607,7 @@ publish_sdp_to_knb <- function(path,
     eml_path,
     manifest_path,
     public,
+    representation = representation,
     prior_manifest = prior_manifest,
     resource_map_path = resource_map_path
   )
@@ -3413,10 +3650,8 @@ publish_sdp_to_knb <- function(path,
         plan$resource_map_path,
         mustWork = TRUE
       ),
-      sdp_archive_path = normalizePath(
-        plan$sdp_archive_path,
-        mustWork = TRUE
-      ),
+      sdp_archive_path = .ms_knb_result_archive_path(plan),
+      representation = plan$representation,
       manifest = manifest
     )
     cli::cli_alert_success(

@@ -11,7 +11,8 @@ publish_sdp_to_knb(
   manifest_path = NULL,
   dry_run = TRUE,
   confirm = interactive(),
-  revision_manifest = NULL
+  revision_manifest = NULL,
+  representation = c("archive", "expanded")
 )
 }
 \arguments{
@@ -44,18 +45,27 @@ preceding KNB version. Supplying it plans an immutable DataONE revision:
 the reviewed sidecar must contain a new \code{publication.revision_key}, the
 metadata series stays stable, and the new EML/resource-map objects
 obsolete their predecessors. Access cannot change in the same operation.}
+
+\item{representation}{Publication representation. \code{"expanded"} publishes
+the closed SDP artifact inventory as individually named objects whose
+relative paths can reconstruct the package. \code{"archive"} (the compatibility
+default) publishes one deterministic ZIP in addition to each source data
+object. Neither mode scans arbitrary package files.}
 }
 \value{
 Invisibly returns publication status, identifiers, normalized
-manifest/resource-map/SDP-archive paths, and the manifest.
+manifest and resource-map paths, the optional SDP-archive path, the
+representation, and the manifest.
 }
 \description{
 Plans an immutable DataONE package containing the original data resources
-named by \code{tables.csv}, one friendly deterministic ZIP of the complete
-canonical SDP, one validated EML 2.2.0 metadata object, and a deterministic
-OAI-ORE resource map. Internal SDP sidecars stay inside the ZIP instead of
-becoming unnamed catalog objects. The default is a credential-free,
-network-free dry run. Live
+named by \code{tables.csv}, one validated EML 2.2.0 metadata object, and a
+deterministic OAI-ORE resource map. The \code{expanded} representation publishes
+each allowlisted canonical SDP artifact as a named, EML-documented DataONE
+object and records its package-relative path with PROV-O \code{atLocation}; it
+does not create a ZIP or duplicate the source table. The compatibility
+\code{archive} representation publishes one deterministic SDP ZIP. The default
+operation is a credential-free, network-free dry run. Live
 publication requires a pre-existing exact dry-run manifest and an explicitly
 supplied \code{confirm = TRUE} approving that plan. Redistribution authority is
 recorded separately in the reviewed EML sidecar.
