@@ -223,3 +223,28 @@ test_that("whitespace-only profile identifiers are rejected", {
 
   expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "profile \\$id")
 })
+
+test_that("padded schema identifiers are normalised, not emitted", {
+  # Consistent padding passed every consistency check -- the values were only
+  # trimmed to test emptiness, then compared and stored raw, so
+  # `" https://example.org/profile "` reached datapackage.json with its spaces.
+  bundle <- fake_sdp_bundle()
+  bundle$profile[["$id"]] <- "  https://example.org/profile  "
+  bundle$profile$properties$profile$const <- " https://example.org/profile"
+  bundle$rules$profile <- "https://example.org/profile "
+  bundle$profile[["sdp:version"]] <- " sdp-9.9.9 "
+  bundle$rules$version <- "sdp-9.9.9  "
+  bundle$profile[["sdp:rules"]] <- "  https://example.org/rules  "
+
+  validated <- metasalmon:::.ms_validate_sdp_schema(bundle)
+
+  expect_identical(validated$profile_uri, "https://example.org/profile")
+  expect_identical(validated$version, "sdp-9.9.9")
+  expect_identical(validated$rules_uri, "https://example.org/rules")
+
+  # Differently-padded identifiers still denote the same URI and must agree,
+  # while a genuinely different one must not.
+  mismatch <- fake_sdp_bundle()
+  mismatch$rules$profile <- "https://example.org/other"
+  expect_error(metasalmon:::.ms_validate_sdp_schema(mismatch), "rules profile")
+})
