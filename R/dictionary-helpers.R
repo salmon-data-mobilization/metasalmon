@@ -717,6 +717,32 @@ infer_value_type <- function(col) {
   rendered
 }
 
+# Significant fractional-second digits carried by a raw datetime token, with
+# trailing zeros ignored: "…00.100000000Z" carries 1, "…00.100000010Z" carries 8.
+.ms_datetime_token_precision <- function(tokens) {
+  tokens <- as.character(tokens)
+  fraction <- sub("^[^.]*(\\.([0-9]+))?.*$", "\\2", tokens)
+  fraction[is.na(tokens)] <- ""
+  nchar(sub("0+$", "", fraction))
+}
+
+# A datetime token is lossy when it carries more fractional precision than the
+# canonical key renders. POSIXct is a double, so the collector has already
+# discarded those digits by the time any value-level check could run -- the
+# token text is the only remaining evidence.
+.ms_datetime_tokens_lossy <- function(tokens) {
+  any(.ms_datetime_token_precision(tokens) > 6L)
+}
+
+# Non-empty tokens that will not parse. Needed because holding datetime columns
+# as text to preserve the token also bypasses readr's problem reporting.
+.ms_datetime_tokens_unparseable <- function(tokens) {
+  tokens <- as.character(tokens)
+  present <- !is.na(tokens) & nzchar(trimws(tokens))
+  parsed <- suppressWarnings(readr::parse_datetime(tokens))
+  present & is.na(parsed)
+}
+
 .ms_format_datetime_token <- function(value) {
   if (is.na(value)) {
     return(NA_character_)

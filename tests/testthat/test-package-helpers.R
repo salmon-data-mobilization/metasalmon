@@ -3245,3 +3245,66 @@ test_that("valid integer columns are not flagged as mismatches", {
   expect_type(parsed_number$n, "double")
   expect_null(attr(parsed_number, "ms_value_type_mismatches"))
 })
+
+test_that("a number column beyond exact precision keeps its exact token", {
+  # `number` shares the double collector with `integer`, so it collapses the
+  # same way past 2^53. The declaration does not make that acceptable when the
+  # value is also a code.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "9007199254740993", "9007199254740992"), file_path)
+
+  parsed <- .ms_read_resource_csv(
+    file_path,
+    tibble::tibble(column_name = "n", value_type = "number")
+  )
+
+  expect_identical(parsed$n, c("9007199254740993", "9007199254740992"))
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$reason, "beyond exact numeric precision")
+})
+
+test_that("datetime tokens finer than the representation keep their exact text", {
+  # POSIXct is a double, so `col_datetime()` discards sub-resolution digits
+  # before any value-level check could run. Declared datetime columns are
+  # therefore collected as text and converted only when that is faithful.
+  fine <- withr::local_tempfile(fileext = ".csv")
+  writeLines(
+    c("t", "2026-01-01T00:00:00.100000000Z", "2026-01-01T00:00:00.100000010Z"),
+    fine
+  )
+  table_dict <- tibble::tibble(column_name = "t", value_type = "datetime")
+
+  parsed <- .ms_read_resource_csv(fine, table_dict)
+  expect_type(parsed$t, "character")
+  expect_identical(parsed$t[[2]], "2026-01-01T00:00:00.100000010Z")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "finer than the datetime representation can hold"
+  )
+
+  # Ordinary timestamps, including microseconds and blanks, still become POSIXct.
+  ordinary <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("t", "2026-01-01T08:30:00Z", "2026-01-01T09:00:00.123456Z", ""), ordinary)
+  clean <- .ms_read_resource_csv(ordinary, table_dict)
+  expect_s3_class(clean$t, "POSIXct")
+  expect_null(attr(clean, "ms_value_type_mismatches"))
+})
+
+test_that("an unparseable datetime token is still reported", {
+  # Holding datetime columns as text also bypasses readr's problem reporting,
+  # so this needs its own detection or the value silently becomes NA.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("t", "not-a-date"), file_path)
+
+  parsed <- .ms_read_resource_csv(
+    file_path,
+    tibble::tibble(column_name = "t", value_type = "datetime")
+  )
+
+  expect_identical(parsed$t, "not-a-date")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "unparseable as that type"
+  )
+})

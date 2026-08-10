@@ -2109,9 +2109,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     # whose missing columns validation reports as a structured issue.
     declared <- intersect(header, dict_names)
     for (nm in declared) {
-      declared_type <- table_dict$value_type[match(nm, dict_names)]
-      spec[[nm]] <- .ms_value_type_col_spec(declared_type)
-      declared_types[[nm]] <- as.character(declared_type)
+      declared_type <- as.character(table_dict$value_type[match(nm, dict_names)])
+      declared_types[[nm]] <- declared_type
+      # Datetime columns are collected as TEXT and converted below. POSIXct is a
+      # double, so `col_datetime()` discards anything finer than its resolution
+      # before any check can see it -- and no formatter can recover precision
+      # the collector already threw away. Holding the token is the only way to
+      # know whether the conversion was faithful.
+      spec[[nm]] <- if (identical(declared_type, "datetime")) {
+        readr::col_character()
+      } else {
+        .ms_value_type_col_spec(declared_type)
+      }
     }
   }
 
@@ -2163,8 +2172,30 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   # sees it. Both keep the exact token and are reported like a parse failure.
   imprecise_columns <- character()
   fractional_columns <- character()
+  lossy_datetime_columns <- character()
   for (nm in names(spec)) {
-    if (!identical(declared_types[[nm]], "integer") || !nm %in% names(parsed)) {
+    if (!nm %in% names(parsed)) {
+      next
+    }
+    declared_type <- declared_types[[nm]]
+
+    if (identical(declared_type, "datetime")) {
+      tokens <- parsed[[nm]]
+      if (.ms_datetime_tokens_lossy(tokens)) {
+        lossy_datetime_columns <- c(lossy_datetime_columns, nm)
+      } else if (any(.ms_datetime_tokens_unparseable(tokens))) {
+        # Reading as text to hold the token also bypasses readr's problem
+        # reporting, so an unparseable timestamp has to be detected here or it
+        # would silently become NA.
+        problem_columns <- union(problem_columns, nm)
+      }
+      next
+    }
+
+    # `number` shares the double collector with `integer`, so it collapses the
+    # same way past 2^53 -- the declaration does not make the loss acceptable
+    # when the value is also a code.
+    if (!declared_type %in% c("integer", "number")) {
       next
     }
     values <- suppressWarnings(as.numeric(parsed[[nm]]))
@@ -2172,12 +2203,24 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     if (any(finite & abs(values) >= 2^53)) {
       imprecise_columns <- c(imprecise_columns, nm)
     }
-    if (any(finite & values != trunc(values))) {
+    if (identical(declared_type, "integer") && any(finite & values != trunc(values))) {
       fractional_columns <- c(fractional_columns, nm)
     }
   }
 
-  affected <- Reduce(union, list(problem_columns, imprecise_columns, fractional_columns))
+  affected <- Reduce(
+    union,
+    list(problem_columns, imprecise_columns, fractional_columns, lossy_datetime_columns)
+  )
+  datetime_columns <- names(spec)[vapply(
+    names(spec), function(nm) identical(declared_types[[nm]], "datetime"), logical(1)
+  )]
+  # Faithful datetime columns become POSIXct; lossy ones keep their token.
+  convertible <- setdiff(intersect(datetime_columns, names(parsed)), affected)
+  for (nm in convertible) {
+    parsed[[nm]] <- suppressWarnings(readr::parse_datetime(parsed[[nm]]))
+  }
+
   if (length(affected) == 0L) {
     return(parsed)
   }
@@ -2185,13 +2228,29 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   for (nm in affected) {
     spec[[nm]] <- readr::col_character()
   }
-  parsed <- readr::read_csv(
+  reread <- readr::read_csv(
     file_path,
     col_types = read_spec(spec),
     show_col_types = FALSE
   )
+  # Keep the datetime conversions already made; only the affected columns fall
+  # back to text.
+  for (nm in convertible) {
+    reread[[nm]] <- parsed[[nm]]
+  }
+  parsed <- reread
 
   attr(parsed, "ms_value_type_mismatches") <- lapply(affected, function(nm) {
+    if (nm %in% lossy_datetime_columns) {
+      lossy <- parsed[[nm]][.ms_datetime_token_precision(parsed[[nm]]) > 6L]
+      return(list(
+        column = nm,
+        declared = declared_types[[nm]],
+        reason = "finer than the datetime representation can hold",
+        count = length(lossy),
+        examples = utils::head(unique(as.character(lossy)), 3L)
+      ))
+    }
     if (nm %in% fractional_columns) {
       values <- suppressWarnings(as.numeric(parsed[[nm]]))
       fractional <- parsed[[nm]][is.finite(values) & values != trunc(values)]
@@ -2209,9 +2268,19 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       return(list(
         column = nm,
         declared = declared_types[[nm]],
-        reason = "beyond exact integer precision",
+        reason = "beyond exact numeric precision",
         count = length(beyond),
         examples = utils::head(unique(as.character(beyond)), 3L)
+      ))
+    }
+    if (identical(declared_types[[nm]], "datetime")) {
+      bad <- parsed[[nm]][.ms_datetime_tokens_unparseable(parsed[[nm]])]
+      return(list(
+        column = nm,
+        declared = "datetime",
+        reason = "unparseable as that type",
+        count = length(bad),
+        examples = utils::head(unique(as.character(bad)), 3L)
       ))
     }
     rows <- issues[header[suppressWarnings(as.integer(issues$col))] %in% nm, , drop = FALSE]
