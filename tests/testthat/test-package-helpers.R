@@ -3388,6 +3388,9 @@ test_that("declared-type fidelity accounts for magnitude, not just digit count",
 
   expect_identical(check(c("1e-400", "0"), "number"), "beyond exact numeric precision")
   expect_identical(check("1e400", "number"), "beyond exact numeric precision")
+  # 9e308 overflows even though its exponent is 308 — an exponent bound alone
+  # missed it.
+  expect_identical(check("9e308", "number"), "beyond exact numeric precision")
   expect_identical(
     check(c("2243-01-01T00:00:00.000001Z", "2243-01-01T00:00:00.000002Z"), "datetime"),
     "finer than the datetime representation can hold"
@@ -3398,6 +3401,11 @@ test_that("declared-type fidelity accounts for magnitude, not just digit count",
   # with the magnitude rather than being fixed.
   expect_true(is.na(check("1e308", "number")))
   expect_true(is.na(check("1e-300", "number")))
+  # 16 digits but below 2^53, so exactly representable. A digit-count cutoff
+  # flagged this and would have rejected valid data — the failure mode that
+  # matters most here, since it breaks working packages.
+  expect_true(is.na(check("1234567890123456", "integer")))
+  expect_true(is.na(check(c("-12.750", "0.001"), "number")))
   expect_true(is.na(check("2243-01-01T00:00:00.123Z", "datetime")))
   expect_true(is.na(check("2026-01-01T00:00:00.123456Z", "datetime")))
   expect_true(is.na(check("1970-01-01T00:00:00.123456Z", "datetime")))

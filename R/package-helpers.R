@@ -2137,16 +2137,10 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   if (value_type %in% c("integer", "number")) {
-    # A decimal literal survives as a double when it has at most 15 significant
-    # digits AND its magnitude is representable. Digit count alone is not
-    # enough: `1e-400` has one significant digit and still does not survive --
-    # readr clamps it to 1e-307 rather than returning 0, so the reader would
-    # hand back an altered value that a `codes.csv` entry could then match.
-    exponent <- .ms_numeric_token_exponent(tokens)
-    lossy <- present & (
-      .ms_numeric_token_precision(tokens) > 15L |
-        (!is.na(exponent) & (exponent > 308L | exponent < -308L))
-    )
+    # Decided by an actual round trip -- token versus the shortest rendering of
+    # the double it produced -- not by digit or exponent thresholds, which
+    # misclassify in both directions at the boundaries.
+    lossy <- .ms_numeric_tokens_lossy(tokens, tokens, present)
     if (any(lossy)) {
       return(list(reason = "beyond exact numeric precision", offenders = tokens[lossy]))
     }

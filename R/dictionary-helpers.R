@@ -731,6 +731,74 @@ infer_value_type <- function(col) {
   nchar(digits)
 }
 
+# Shortest decimal representation that parses back to exactly this double,
+# in whatever notation R chooses (the normalizer expands scientific form).
+#
+# Neither obvious shortcut works. `format(scientific = FALSE)` expands the exact
+# binary value, so 1e308 renders as 100000000000000006097..., which differs from
+# a token that round-trips perfectly. `as.character()` is not reliably shortest
+# either -- it renders 1e-300 as "9.99999999999999e-301". Widening until the
+# value round-trips is the only dependable way to get the canonical form.
+.ms_shortest_round_trip <- function(value) {
+  if (is.na(value) || !is.finite(value)) {
+    return(as.character(value))
+  }
+  for (digits in 15:17) {
+    token <- format(value, digits = digits, trim = TRUE)
+    if (identical(suppressWarnings(as.numeric(token)), value)) {
+      return(token)
+    }
+  }
+  token
+}
+
+# Canonical plain-decimal form of a numeric token, computed by string
+# manipulation so it is exact at any magnitude: "1e5" -> "100000",
+# "0.10" -> "0.1", "1e-400" -> "0.000...1". Used to compare a token against the
+# shortest round-trip rendering of the double it parsed to, which is the only
+# way to decide representability without proxies.
+.ms_normalize_decimal_token <- function(tokens) {
+  x <- trimws(as.character(tokens))
+  x[is.na(x)] <- ""
+  negative <- grepl("^-", x)
+  x <- sub("^[+-]", "", x)
+
+  has_exponent <- grepl("[eE]", x)
+  exponent <- rep(0, length(x))
+  exponent[has_exponent] <- suppressWarnings(as.numeric(
+    sub("^.*[eE]([+-]?[0-9]+)$", "\\1", x[has_exponent])
+  ))
+  exponent[is.na(exponent)] <- 0
+
+  mantissa <- sub("[eE].*$", "", x)
+  integer_part <- sub("[.].*$", "", mantissa)
+  fraction_part <- ifelse(grepl("[.]", mantissa), sub("^[^.]*[.]", "", mantissa), "")
+  digits <- paste0(integer_part, fraction_part)
+  point <- nchar(integer_part) + exponent
+
+  vapply(seq_along(digits), function(i) {
+    value <- digits[i]
+    at <- point[i]
+    if (!grepl("^[0-9]+$", value) || !nzchar(value)) {
+      return(NA_character_)
+    }
+    if (at <= 0) {
+      value <- paste0(strrep("0", 1L - at), value)
+      at <- 1L
+    }
+    if (at > nchar(value)) {
+      value <- paste0(value, strrep("0", at - nchar(value)))
+    }
+    whole <- sub("^0+(?=.)", "", substr(value, 1L, at), perl = TRUE)
+    fraction <- sub("0+$", "", substr(value, at + 1L, nchar(value)))
+    if (!nzchar(gsub("0", "", paste0(whole, fraction)))) {
+      return("0")
+    }
+    out <- if (nzchar(fraction)) paste0(whole, ".", fraction) else whole
+    if (negative[i]) paste0("-", out) else out
+  }, character(1))
+}
+
 # Base-10 exponent of a numeric token, i.e. the `e` in `d.ddd x 10^e`. Returns
 # NA for a zero or non-numeric token, where magnitude is not meaningful.
 .ms_numeric_token_exponent <- function(tokens) {
@@ -759,6 +827,73 @@ infer_value_type <- function(col) {
   # A token with no significant digit at all is zero; magnitude does not apply.
   exponent[!nzchar(gsub("[^1-9]", "", mantissa))] <- NA_real_
   exponent
+}
+
+# Which tokens do not survive conversion to a double, decided by comparing the
+# token against the shortest round-trip rendering of the value it parsed to.
+#
+# Digit counts and exponent bounds were proxies and misclassified in both
+# directions: `1234567890123456` has 16 digits but is below 2^53 and exactly
+# representable, while `9e308` has exponent 308 and still overflows. Only the
+# round trip settles it.
+#
+# The fast path exists because that comparison is per-value string work. Fifteen
+# significant digits inside a comfortable magnitude always round-trip, so
+# ordinary data never reaches the exact comparison.
+.ms_numeric_tokens_lossy <- function(tokens, values, present) {
+  lossy <- rep(FALSE, length(tokens))
+  digits <- .ms_numeric_token_precision(tokens)
+  exponent <- .ms_numeric_token_exponent(tokens)
+
+  # Fifteen significant digits inside a comfortable magnitude always round-trip,
+  # so ordinary data never reaches the per-value work below.
+  certain <- present & digits <= 15L & (is.na(exponent) | abs(exponent) <= 290L)
+  suspect <- which(present & !certain)
+  if (length(suspect) == 0L) {
+    return(lossy)
+  }
+
+  token <- tokens[suspect]
+  parsed <- suppressWarnings(as.numeric(token))
+  token_exponent <- exponent[suspect]
+  parsed_exponent <- ifelse(
+    is.finite(parsed) & parsed != 0,
+    floor(log10(abs(parsed))),
+    NA_real_
+  )
+
+  # Overflow, underflow to zero, and clamping are decided by magnitude, which is
+  # reliable at every scale.
+  overflowed <- !is.finite(parsed)
+  underflowed <- parsed == 0 & !is.na(token_exponent)
+  clamped <- !is.na(token_exponent) & !is.na(parsed_exponent) &
+    token_exponent != parsed_exponent
+
+  # Otherwise compare the token against the shortest rendering that parses back
+  # to the same double. Where no such rendering exists -- R cannot round-trip
+  # 1e-300 through any of 15..17 significant digits on this platform -- the test
+  # cannot judge, so it must not flag: a false positive rejects valid data,
+  # which is worse than missing an exotic edge case.
+  rendered <- vapply(parsed, .ms_shortest_round_trip, character(1), USE.NAMES = FALSE)
+  judgeable <- is.finite(parsed) &
+    vapply(
+      seq_along(parsed),
+      function(i) identical(suppressWarnings(as.numeric(rendered[i])), parsed[i]),
+      logical(1)
+    )
+  altered <- judgeable & !.ms_decimal_tokens_equal(
+    .ms_normalize_decimal_token(token),
+    .ms_normalize_decimal_token(rendered)
+  )
+
+  lossy[suspect] <- overflowed | underflowed | clamped | altered
+  lossy
+}
+
+# Element-wise decimal equality that treats NA as "not equal", so an
+# unnormalizable token is reported rather than silently accepted.
+.ms_decimal_tokens_equal <- function(left, right) {
+  !is.na(left) & !is.na(right) & left == right
 }
 
 # Significant fractional-second digits carried by a raw datetime token, with
