@@ -392,9 +392,6 @@ write_salmon_datapackage <- function(
 # inspects the directory itself. Trailing `/` and `/.` spellings are the ones
 # that matter: `Sys.readlink("link/.")` reads the `.` entry inside the resolved
 # target and returns "", so a symlinked root spelled `pkg-link/.` was accepted.
-# `..` needs no handling -- readlink(2) resolves every component but the last,
-# so `a/../link` already reads the link itself, and doing it lexically here
-# would be wrong whenever `a` is itself a symlink.
 #
 # Deliberately not `normalizePath()`: that resolves the final component too, so
 # a symlinked root would come back as its target and pass the check it exists
@@ -412,6 +409,21 @@ write_salmon_datapackage <- function(
   }
 }
 
+# A trailing `..` is the one spelling no lexical check can make safe. readlink(2)
+# resolves every component but the last, so `a/../link` correctly inspects
+# `link` -- but `link/..` resolves `link` as an intermediate component and then
+# reads `..` inside the target, which is a directory, so the check sees nothing.
+# The root then denotes the *target's parent*, which can be an unrelated
+# package. Collapsing `..` lexically instead would be wrong precisely when an
+# earlier component is a symlink, and resolving it would follow the link this
+# check exists to reject. Refusing the spelling is the only sound option, and it
+# costs the user nothing: `a/../b` and every other `..` position still works.
+.ms_root_ends_in_parent_ref <- function(root) {
+  parts <- strsplit(root, "/", fixed = TRUE)[[1]]
+  parts <- parts[nzchar(parts) & parts != "."]
+  length(parts) > 0L && identical(parts[[length(parts)]], "..")
+}
+
 # Refuse to delete through a symbolic link. `file.exists()` follows links, so a
 # `data/` or `metadata/` replaced by a symlink would make every managed child
 # resolve outside the package and `unlink()` delete the target. The KNB archive
@@ -427,6 +439,13 @@ write_salmon_datapackage <- function(
   # link's target. Only `path` is checked, never its ancestors -- on macOS
   # `/tmp` is a link to `/private/tmp`, so walking ancestors would reject every
   # ordinary tempdir write.
+  if (.ms_root_ends_in_parent_ref(root)) {
+    cli::cli_abort(c(
+      "Refusing to update {.path {path}}: the package root ends in {.code ..}.",
+      "i" = "Which directory that names depends on whether an earlier component is a symbolic link.",
+      "i" = "Write to the directory itself instead."
+    ))
+  }
   root_link <- Sys.readlink(root)
   if (length(root_link) == 1L && !is.na(root_link) && nzchar(root_link)) {
     cli::cli_abort(c(

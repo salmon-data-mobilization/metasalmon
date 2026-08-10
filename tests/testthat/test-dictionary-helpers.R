@@ -2494,3 +2494,18 @@ test_that("canonical tokens keep distinct values distinct", {
     canon(as.POSIXct("2026-01-01 08:30:00", tz = "UTC"), "datetime")
   )
 })
+
+test_that("numeric canonical tokens ignore the OutDec option", {
+  # `format()` defaults `decimal.mark` to `getOption("OutDec")`, so under a
+  # comma the canonical key became "0,10000000000000001" and the round-trip
+  # check never matched -- exact values were reported as beyond precision.
+  withr::local_options(OutDec = ",")
+
+  expect_identical(.ms_canonical_value_tokens(c("0.10", "1.5"), "number"), c("0.1", "1.5"))
+  expect_identical(.ms_canonical_value_tokens("100000", "integer"), "100000")
+  expect_identical(.ms_shortest_round_trip(1.5), "1.5")
+  expect_false(.ms_numeric_tokens_lossy("1.0000000000000002", 1.0000000000000002, TRUE))
+
+  # The datetime key appends an exact epoch through the same formatter.
+  expect_false(grepl(",", .ms_canonical_value_tokens("2020-01-01T00:00:00.5Z", "datetime"), fixed = TRUE))
+})

@@ -744,7 +744,11 @@ infer_value_type <- function(col) {
     return(as.character(value))
   }
   for (digits in 15:17) {
-    token <- format(value, digits = digits, trim = TRUE)
+    # `decimal.mark` defaults to `getOption("OutDec")`, so under
+    # `options(OutDec = ",")` this rendered "1,5" while `as.numeric()` below and
+    # the decimal normalizer both only understand a period -- no token ever
+    # matched, and exact values were reported as beyond precision.
+    token <- format(value, digits = digits, trim = TRUE, decimal.mark = ".")
     if (identical(suppressWarnings(as.numeric(token)), value)) {
       return(token)
     }
@@ -989,8 +993,12 @@ infer_value_type <- function(col) {
   #
   # `scientific = FALSE` throughout: `as.character(100000)` is "1e+05", which is
   # the exact defect this canonicalizer exists to prevent.
+  # `decimal.mark = "."` for the same reason as `scientific = FALSE`: this is a
+  # canonical comparison key and a machine-readable token, not display text, so
+  # it must not follow `getOption("OutDec")`. Under `OutDec = ","` the key for
+  # "0.10" became "0,10000000000000001" on both sides of every comparison.
   for (digits in 15:17) {
-    token <- format(value, scientific = FALSE, trim = TRUE, digits = digits)
+    token <- format(value, scientific = FALSE, trim = TRUE, digits = digits, decimal.mark = ".")
     if (identical(suppressWarnings(as.numeric(token)), value)) {
       return(token)
     }

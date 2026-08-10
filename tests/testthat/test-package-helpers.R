@@ -3643,3 +3643,29 @@ test_that("a symlinked root is refused however the path is spelled", {
     )
   }
 })
+
+test_that("a package root ending in .. is refused", {
+  # `link/..` resolves `link` as an intermediate component and then reads `..`
+  # inside the target, so the symlink check sees nothing while the root denotes
+  # the target's parent -- potentially an unrelated package.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "outer", "inner")
+  dir.create(real, recursive = TRUE)
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  for (spelling in c(paste0(link, "/.."), paste0(link, "/../"), paste0(link, "/../."))) {
+    expect_error(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv")),
+      "ends in",
+      info = spelling
+    )
+  }
+
+  # `..` anywhere but last is fine: readlink resolves all but the final
+  # component, so the check still inspects the right directory.
+  dir.create(file.path(base, "outer", "sibling"))
+  ok <- file.path(base, "outer", "inner", "..", "sibling")
+  expect_silent(.ms_assert_managed_path_contained(ok, .ms_metadata_path(ok, "dataset.csv")))
+})

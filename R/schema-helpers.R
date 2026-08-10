@@ -281,7 +281,20 @@
 # a usable absolute URI, not that it is fetchable over the network.
 .ms_sdp_schema_uri <- function(value) {
   uri <- .ms_sdp_schema_identifier(value)
-  if (is.na(uri) || !grepl("^[A-Za-z][A-Za-z0-9+.-]*://[^[:space:]]+$", uri)) {
+  if (is.na(uri) || grepl("[[:space:]]", uri)) {
+    return(NA_character_)
+  }
+  # Split scheme / authority / remainder. Matching only `://` followed by
+  # anything accepted `https:///profile.json`, `https://?query`, and
+  # `https://#fragment`, all of which have no host and would be emitted as the
+  # profile URI.
+  parts <- regmatches(uri, regexec("^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)", uri))[[1]]
+  if (length(parts) == 0L) {
+    return(NA_character_)
+  }
+  # `file://` legitimately has an empty authority (`file:///path`); every other
+  # scheme written with `://` needs a host.
+  if (!nzchar(parts[[3]]) && !identical(tolower(parts[[2]]), "file")) {
     return(NA_character_)
   }
   uri

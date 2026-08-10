@@ -272,3 +272,23 @@ test_that("non-URI schema identifiers are rejected", {
     "file:///opt/sdp/sdp.rules.yaml"
   )
 })
+
+test_that("schema URIs need an authority, not just a scheme separator", {
+  # `://` followed by anything accepted host-less values that would still be
+  # emitted as the profile URI.
+  for (bad in c("https:///profile.json", "https://?query", "https://#fragment")) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["$id"]] <- bad
+    bundle$profile$properties$profile$const <- bad
+    bundle$rules$profile <- bad
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "profile \\$id", info = bad)
+  }
+
+  # `file://` legitimately has an empty authority and must still be accepted.
+  offline <- fake_sdp_bundle()
+  offline$profile[["sdp:rules"]] <- "file:///opt/sdp/sdp.rules.yaml"
+  expect_identical(
+    metasalmon:::.ms_validate_sdp_schema(offline)$rules_uri,
+    "file:///opt/sdp/sdp.rules.yaml"
+  )
+})
