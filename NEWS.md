@@ -106,6 +106,10 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
   links, so a `data/` or `metadata/` replaced by one would have made every
   managed child resolve outside the package and be deleted there. This matches
   the symlink discipline the KNB archive already enforces.
+- Text reaching cli through the `.ms_*_abort()` forwarding helpers is escaped
+  too. A decomposition column name is caller-supplied and was interpolated into
+  an abort message, so a column named `{Sys.getenv("...")}` had its value
+  evaluated into the error.
 - New `R/cli-safety.R` (`.ms_cli_escape()`, `.ms_cli_bullets()`,
   `.ms_redact_secrets()`, `.ms_abort_external()`).
 - Two static guard tests enforce the new contracts: `test-cli-safety-guard.R`

@@ -17,10 +17,19 @@
 # parameter (hence the forwarding-wrapper allowlist), and it reports function
 # names rather than line numbers. It is a drift guard, not a proof.
 
+# The `.ms_*_abort` helpers forward their first argument straight to
+# `cli_abort()`, so it is a cli template and belongs here rather than on the
+# allowlist. Allowlisting the wrapper instead meant its callers were never
+# examined, which hid a live injection: a decomposition column named
+# `{Sys.getenv("...")}` reached cli through
+# `.ms_sdp_decomposition_normalize_rows()` and its value was evaluated into the
+# message.
 cli_message_fns <- c(
   "cli_abort", "cli_warn", "cli_inform", "cli_text", "cli_bullets",
   "cli_alert", "cli_alert_info", "cli_alert_success", "cli_alert_warning",
-  "cli_alert_danger"
+  "cli_alert_danger",
+  ".ms_sssom_abort", ".ms_sdp_decomposition_abort",
+  ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort"
 )
 
 # Functions whose message argument is legitimately computed. Two shapes only:
@@ -29,14 +38,14 @@ cli_message_fns <- c(
 # Adding an entry here is a claim that you checked it. Do not add one to
 # silence a failure you have not read.
 cli_template_allowlist <- c(
-  # (a) forwarding wrappers. Their callers must be checked by hand; all
-  #     `null_message` call sites of .ms_llm_review_response_data pass string
-  #     literals (R/chat-decomposition.R, R/semantic-bundle-review.R), and the
-  #     snippet it appends is value-interpolated inside a literal template.
-  ".ms_sssom_abort",
-  ".ms_sdp_decomposition_abort",
-  ".ms_sdp_extension_abort",
-  ".ms_sdp_reproducibility_abort",
+  # The `.ms_*_abort` wrappers are NOT listed here: they are treated as cli
+  # message functions above so that their callers are checked. Only the bodies
+  # of the wrappers themselves are exempt, because they legitimately forward a
+  # caller-supplied template.
+  ".ms_sssom_abort_body_exempt",
+  # `null_message` defaults to a literal and every call site passes one
+  # (R/chat-decomposition.R, R/semantic-bundle-review.R); the snippet it appends
+  # is value-interpolated inside a literal template.
   ".ms_llm_review_response_data",
   # (b) locally assembled all-literal templates
   ".ms_create_sdp_seed_note",
@@ -75,8 +84,13 @@ collect_assignments <- function(node, acc = new.env(parent = emptyenv())) {
 
 is_literal_message <- function(node, assignments = NULL, seen = character()) {
   # Any atomic constant is safe: a number or logical cannot carry a brace, and
-  # a string constant is an authored template.
-  if (is.atomic(node) && !is.null(node)) {
+  # a string constant is an authored template. NULL is a literal too -- it is
+  # how a conditional bullet is omitted -- and `is.atomic(NULL)` is FALSE from
+  # R 4.4, so it needs its own case.
+  if (is.null(node)) {
+    return(TRUE)
+  }
+  if (is.atomic(node)) {
     return(TRUE)
   }
   if (is.name(node)) {
@@ -192,8 +206,12 @@ test_that("cli condition messages are built from literals or the escaping helper
   ns <- asNamespace("metasalmon")
   findings <- list()
 
+  wrapper_bodies <- c(
+    ".ms_sssom_abort", ".ms_sdp_decomposition_abort",
+    ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort"
+  )
   for (nm in ls(ns, all.names = TRUE)) {
-    if (nm %in% cli_template_allowlist) {
+    if (nm %in% c(cli_template_allowlist, wrapper_bodies)) {
       next
     }
     obj <- tryCatch(get(nm, envir = ns), error = function(e) NULL)

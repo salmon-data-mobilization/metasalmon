@@ -164,3 +164,32 @@ test_that("provider-prefixed credential variables are redacted", {
   )
   expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
 })
+
+test_that("external text reaching cli through a forwarding wrapper is escaped", {
+  # A live injection that the guard's own allowlist hid: allowlisting
+  # `.ms_sdp_decomposition_abort()` meant its callers were never examined, and
+  # this one builds its message from caller-supplied column names. The wrappers
+  # are now treated as cli message functions so their callers are checked.
+  withr::local_envvar(c(MS_TEST_FAKE_SECRET = "SECRET-LEAKED-VALUE"))
+
+  hostile <- data.frame(a = 1)
+  names(hostile) <- '{Sys.getenv("MS_TEST_FAKE_SECRET")}'
+  msg <- tryCatch(
+    metasalmon:::.ms_sdp_decomposition_normalize_rows(hostile),
+    condition = conditionMessage
+  )
+
+  expect_false(grepl("SECRET-LEAKED-VALUE", msg, fixed = TRUE))
+  expect_true(grepl("Sys.getenv", msg, fixed = TRUE))
+
+  # And an unbalanced brace reports the column name rather than replacing the
+  # message with a parse error.
+  unbalanced <- data.frame(a = 1)
+  names(unbalanced) <- "rate{pct"
+  msg2 <- tryCatch(
+    metasalmon:::.ms_sdp_decomposition_normalize_rows(unbalanced),
+    condition = conditionMessage
+  )
+  expect_false(grepl("Expecting '}'", msg2, fixed = TRUE))
+  expect_true(grepl("rate{pct", msg2, fixed = TRUE))
+})

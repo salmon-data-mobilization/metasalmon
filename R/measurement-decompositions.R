@@ -300,11 +300,10 @@
       .ms_sdp_decomposition_abort(
         paste0(
           "The bound measurement ",
-          binding$dataset_id,
-          "/",
-          binding$table_id,
-          "/",
-          binding$column_name,
+          .ms_cli_escape(paste(
+            binding$dataset_id, binding$table_id, binding$column_name,
+            sep = "/"
+          )),
           " does not exist in the SDP dictionary."
         )
       )
@@ -357,11 +356,11 @@
         .ms_sdp_decomposition_abort(
           paste0(
             "Dictionary ",
-            field,
+            .ms_cli_escape(field),
             " value must appear as a matched ",
-            role,
+            .ms_cli_escape(role),
             " component: ",
-            paste(missing_values, collapse = ", "),
+            .ms_cli_escape(paste(missing_values, collapse = ", ")),
             "."
           )
         )
@@ -389,16 +388,18 @@
   )
   if (length(missing_columns) > 0L || length(unknown_columns) > 0L) {
     details <- c()
+    # Column names come from the caller's data frame, so they reach cli as
+    # external text and must be escaped.
     if (length(missing_columns) > 0L) {
       details <- c(
         details,
-        "x" = paste0("Missing columns: ", paste(missing_columns, collapse = ", "), ".")
+        "x" = paste0("Missing columns: ", .ms_cli_escape(paste(missing_columns, collapse = ", ")), ".")
       )
     }
     if (length(unknown_columns) > 0L) {
       details <- c(
         details,
-        "x" = paste0("Unknown columns: ", paste(unknown_columns, collapse = ", "), ".")
+        "x" = paste0("Unknown columns: ", .ms_cli_escape(paste(unknown_columns, collapse = ", ")), ".")
       )
     }
     .ms_sdp_decomposition_abort(c(
