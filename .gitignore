@@ -58,3 +58,6 @@ docs/tech-debt.md
 docs/todo-list.md
 /artifacts
 /local-r-lib
+
+# Local scratch (also in .Rbuildignore so it can never reach a built package)
+tmp/

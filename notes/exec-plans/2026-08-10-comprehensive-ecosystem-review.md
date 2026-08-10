@@ -1,6 +1,6 @@
 # Comprehensive review — metasalmon + Salmon data-standards ecosystem
 
-Date: 2026-08-08. Reviewed at `metasalmon` 0.1.7 / `main` @ `01eacb7`.
+Date: 2026-08-10. Reviewed at `metasalmon` 0.1.7 / `main` @ `01eacb7`.
 
 Scope: the `metasalmon` R package plus the four ecosystem artefacts it depends on —
 the **Salmon Domain Ontology** (`smn:`), the **GC DFO Salmon Ontology** (`gcdfo:`),
@@ -9,6 +9,14 @@ materials** (`salmon-data-standards-workshop`, with `salmon-ontology-hub` as the
 community docs surface).
 
 ---
+
+> **STATUS (2026-08-10, after 0.2.0).** All nine P0 items in §1 are fixed and
+> released as 0.2.0 — see `NEWS.md` and backlog items #34–#42. P0-9 (gcdfo) was
+> **verified, not fixed**; see
+> `2026-08-10-gcdfo-validation-layer-verification.md`. Milestones M1 and M2 in §8
+> are complete and parts of M3 and M5 are underway. **For what to do next, read
+> `2026-08-10-post-0.2.0-roadmap.md`** — this document is retained as the
+> evidence base, not as the work queue.
 
 ## 0. Method, and how much to trust each finding
 

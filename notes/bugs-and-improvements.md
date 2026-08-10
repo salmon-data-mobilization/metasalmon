@@ -26,17 +26,26 @@ Severity = how much it can bite a real user.
 - **deferred** — deliberately left out of the current refactor because it belongs
   to a separate roadmap or would change behavior beyond the plan.
 
-**Current snapshot:** #1, #2, #7, #10, #11, #12, #14, #15, #16, #17, #18,
-#19, #20, #21, #25, #27, and #28 are fixed or done-for-plan. #26, #29, and
-#30 are partially addressed. #4, #5, #6, #8, #9 were fixed on 2026-06-26 (roadmap
-clear-the-decks), and #32 was fixed during the 0.1.5 release gate on 2026-07-21.
-#3, #13, #22, #23, #24, and #31 remain open/deferred as noted below. #33 was
-fixed in the post-0.1.5 URL-hardening pass.
+**Current snapshot (updated 2026-08-10, after the 0.2.0 P0 remediation).**
 
-**Forward plan:** the open/deferred items are sequenced into themed workstreams in
-`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (e.g. #4 → Theme B, #6 →
-D1, #5 → D2, #8 → D3, #13 → A5, #29/#30 → E1, #3 → E2/C4, #9 → E3, #22/#23/#24 →
-E4, #31 → Theme C).
+- **Closed:** #1, #2, #4, #5, #6, #7, #8, #10, #11, #12, #14, #15, #16, #17, #18,
+  #19, #20, #21, #25, #27, #28, #32, and #34–#42 (the 0.2.0 P0 remediation).
+- **Closed with a correction to a previously wrong marker:** #9 and #33 — both
+  had been marked fixed but were not verifiable from a clean clone. See each item.
+- **Partially addressed:** #26, #29, #30.
+- **Open:** #3, #13, #22, #23, #24, #31, and #43–#61.
+
+**Forward plan.** The single prioritized list of what to do next is
+`notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
+in `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`. The older
+`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` is superseded for
+sequencing but still holds the Theme A–E design detail.
+
+**How to read this file.** Items #1–#33 came from the 2026-06-24 architecture
+review. Items #34+ came from the 2026-08-10 comprehensive review and are tagged
+with the priority they carry in the post-0.2.0 roadmap. An item marked **fixed**
+should name a check that proves it from a clean clone; #9 is the cautionary
+example of what happens otherwise.
 
 **Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3
 merged to `main` in PR #5 at `f774673`. The evidence pack (A0) passed its final
@@ -88,10 +97,10 @@ published releases, or manual dispatch.
 
 ---
 
-## 0.2.0 P0 remediation (2026-08-08)
+## 0.2.0 P0 remediation (2026-08-10)
 
-The 2026-08-08 comprehensive review
-(`notes/exec-plans/2026-08-08-comprehensive-ecosystem-review.md`) produced 96
+The 2026-08-10 comprehensive review
+(`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`) produced 96
 adversarially-verified findings. The nine ranked P0 are all fixed on
 `fix/p0-remediation` and released as 0.2.0; see `NEWS.md` for user-facing detail.
 
@@ -105,7 +114,7 @@ adversarially-verified findings. The nine ranked P0 are all fixed on
 | P0-6 | External text evaluated as a cli message template | `R/cli-safety.R` + 15 sites |
 | P0-7 | Canonical bytes and identifiers depended on `LC_COLLATE` | `R/sssom.R`, `R/knb-publication.R`, others |
 | P0-8 | Cancelling the term-request prompt submitted the issue | `R/term-request-helpers.R` |
-| P0-9 | gcdfo validation layer inert (verified, fix deferred to the ontology repo) | `notes/exec-plans/2026-08-08-gcdfo-validation-layer-verification.md` |
+| P0-9 | gcdfo validation layer inert (verified, fix deferred to the ontology repo) | `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` |
 
 **Deferred from this pass, by decision:** semantic ranking tiebreakers
 (`R/semantics-helpers.R:170-211`) break score ties on character keys, so with
@@ -264,7 +273,7 @@ is the highest-value remaining collation item; pick it up next.**
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
 - **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed 2026-06-26 in a *working copy only*; genuinely
-  fixed 2026-08-08. The 2026-06-26 pass wrote real guidance into `AGENTS.md`, but
+  fixed 2026-08-10. The 2026-06-26 pass wrote real guidance into `AGENTS.md`, but
   `.gitignore` listed `AGENTS.md` and `CLAUDE.md`, so neither file was ever
   committed and the shipped repo still carried no contributor guidance — the exact
   symptom this item describes. The ignore entries are removed as of 0.2.0 and both
@@ -337,7 +346,7 @@ adversarial pass** — re-confirm before fixing.
   URLs and the default update check still targeted the independently existing
   `dfo-pacific-science/metasalmon` repository. The remote schema loader likewise
   fetched from the former `smn-data-pkg` repository.
-- **Compatibility decision (SUPERSEDED 2026-08-08):** the original decision was
+- **Compatibility decision (SUPERSEDED 2026-08-10):** the original decision was
   "do not rewrite the SDP 0.2 profile/resource-schema identifiers, because
   upstream still defines the former GitHub Pages URI as the contract value."
   That premise is no longer true — upstream `smn-data-pkg` migrated every `$id`,
@@ -545,6 +554,185 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   semantic path (#3). The i-adopt roadmap wants decomposition to be one mode in a
   shared curation engine; converging the request builders is the request-side half of
   that (R4 only unifies the response-validation seam).
+
+---
+
+## 2026-08-10 comprehensive review (items #34+)
+
+Findings from the 2026-08-10 multi-agent review (145 raw findings, 96 surviving
+refute-by-default adversarial verification). Full evidence and failure scenarios
+are in `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`; this
+section is the live index. Priority tags refer to
+`notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`.
+
+### Fixed in 0.2.0
+
+**#34 `zip (== 3.0.1)` blocked installation.** CRAN ships 3.0.2, so the exact pin
+could not be satisfied. Fixed: `zip (>= 3.0.1)`; determinism is still enforced at
+runtime by `.ms_knb_require_zip_version()`. *Proof from a clean clone:*
+`test-knb-sdp-archive.R` asserts DESCRIPTION carries `>=`, not `==`, and that it
+admits `.ms_knb_zip_version`.
+
+**#35 Remote SDP schema loading was dead; produced packages declared a rejected
+profile URI.** `.ms_validate_sdp_schema()` asserted equality against a hardcoded
+legacy `$id` after upstream migrated. Fixed: identity is derived from the loaded
+bundle; validation checks only internal self-consistency. *Proof:* a live
+remote-fetch test, plus a bundle-identity test using a fabricated URI. Supersedes
+the compatibility decision in #33.
+
+**#36 `.data$x == x` data-mask tautologies.** Three sites; a multi-table
+dictionary was applied in full and other datasets' columns leaked into
+`datapackage.json`. Fixed with `.env$` pinning. *Proof:* multi-table and
+multi-dataset regression tests. One pre-existing test was passing *because of*
+this bug and its fixture was corrected.
+
+**#37 `create_sdp()` wrote packages its own validator rejected.** readr re-guessed
+character code values (`"0.10"` -> `0.1`, `100000` -> `"1e+05"`). Fixed:
+dictionary-driven `col_types` plus a type-aware code comparison. Also fixed
+`infer_value_type()` collapsing `POSIXt` to `date`.
+
+**#38 `read` -> edit -> `write` silently deleted reviewed sidecars.** Fixed:
+`.ms_package_managed_paths()` limits deletion to writer-owned files; opt-in
+`prune = TRUE` restores the old behaviour.
+
+**#39 External text was evaluated as a cli message template.** A provider error
+containing braces could print an API key; an unbalanced brace replaced the
+message with a parse error. Fixed: `R/cli-safety.R` + 15 sites + boundary
+redaction. *Proof:* `test-cli-safety-guard.R`, an AST walk with a self-test.
+
+**#40 Canonical bytes and identifiers depended on `LC_COLLATE`.** ~20 sites
+including the resource-map PID and SSSOM canonical bytes. Fixed with explicit C
+collation and `dplyr (>= 1.1.0)`. *Proof:* golden-value tests plus
+`test-collation-guard.R`. See #43 for the one deliberate exclusion.
+
+**#41 Cancelling a term-request prompt submitted the issue.** `askYesNo()` returns
+`NA` on cancel and the guard tested `isFALSE()`. Two sibling bugs in the same
+function: `menu()` returning `0` aborted the loop, and the candidate lines passed
+cli markup to `glue::glue()`, which fails to parse on every input — so interactive
+routing had never worked. All three fixed.
+
+**#42 Repo hygiene: `tmp/` and a dead `.Rbuildignore` regex.** `^\.tmp$` never
+matched anything, and the 1.5 MB `tmp/` directory was excluded by neither ignore
+file. Fixed: `^tmp(/|$)` in `.Rbuildignore`, `tmp/` in `.gitignore`.
+
+### Open — P1 (highest value next)
+
+**#43 Semantic ranking tiebreakers make seeded IRIs non-reproducible.**
+`R/semantics-helpers.R:170-211` breaks score ties on character keys (`source`,
+`ontology`, `label`, `iri`). With `seed_semantics = TRUE` the top-1 pick becomes a
+written IRI in `column_dictionary.csv`, so the same input seeds differently on
+macOS and a C-locale container. **Deliberately excluded from the 0.2.0 collation
+sweep** because radix-ing it moves existing semantic-suggestion test
+expectations. This is the last locale-dependence in the package.
+
+**#44 The gcdfo validation layer is inert.** Verified 2026-08-10 —
+`notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md`. SHACL shapes
+and example data bind their default prefix to `w3id.org/dfo/salmon#`, a namespace
+with zero subjects, so `pyshacl` returns a vacuous pass over real gcdfo data; the
+competency SPARQL has three queries in one `.rq` and each fails on an undeclared
+prefix; and `robot-profile.yaml` replaces the default profile rather than
+amending it, dropping 16 ERROR-level checks. Fix belongs in
+`dfo-salmon-ontology`, not here.
+
+**#45 The term-search index cache never prevents work.** `.smn_term_index()`
+re-fetches and fully re-parses all 11 SMN Turtle modules on every `find_terms()`
+call (~5.7 s each), and `.gcdfo_term_index()` fetches before consulting its cache.
+Projected ~8 CPU-hours for a 5-table x 200-column package. `R/term_search.R:1570,1610`.
+
+**#46 `METASALMON_CACHE` is read at build time**, so the `find_terms()` result
+cache can never be enabled in an installed package. `R/term_search.R:396`.
+Compounds #45.
+
+**#47 `publish_sdp_to_knb()` cannot re-plan after any edit.** Derived artifacts are
+written with `overwrite = FALSE` and no override, so every dry run after a
+corrected `eml-mapping.yml` aborts until the user works out they must manually
+`unlink()`. Neither message says so. `R/knb-publication.R:1311`.
+
+**#48 Three error-severity `sdp.rules.yaml` rules are loaded and never executed.**
+metasalmon is the workshop's designated final gate before DataONE deposit. Drive
+the checks from the parsed rule `id`s so spec and implementation cannot silently
+diverge. `R/schema-helpers.R`.
+
+**#49 `validate_salmon_datapackage()` checks far less than it claims** — no
+declared primary keys, no required-column nullability, no schema-required
+metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
+despite documenting itself as the end-to-end pre-flight.
+
+**#50 Vocabulary API HTTP failures are reported as successful zero-result
+searches**, so a degraded OLS/BioPortal looks like "no term exists" and drives
+spurious `request_new_term` escalation. `R/term_search.R:505`.
+
+**#51 No retry or rate-limit handling for the default LLM providers.**
+`Retry-After` is ignored and the retry classifier is unreachable.
+`R/llm-semantic-helpers.R:196`.
+
+**#52 BioPortal API key is in the request URL** and printed verbatim in timeout
+warnings. Move to a header; redact in messages. `R/term_search.R:713`.
+
+### Open — P2 (correctness and conformance debt)
+
+**#53 `infer_column_role()` classifies 4-digit measurement columns as
+`temporal`**, removing them from the entire semantic pipeline.
+`R/dictionary-helpers.R:765`.
+
+**#54 The canonical CSV round trip destroys literal `"NA"` code values.** Data
+resources are written with readr's default `na = "NA"`, metadata with `na = ""`,
+and everything is read with `na = c("", "NA")`. "NA" is a real fisheries code.
+Pin the missing-value contract symmetrically on both sides.
+
+**#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
+coercion failures**, and the codes step silently `NA`s unlisted values.
+`R/dictionary-helpers.R:1149`.
+
+**#56 Semantic retrieval issues one serial `search_fn()` call per target** with no
+deduplication of identical `(query, role, sources)` tuples.
+`R/semantics-helpers.R:493`. Plus a cluster of smaller per-call costs listed in
+the review (`term_search.R:341,1763,2190`, `semantic-suggestions.R:863,920`).
+
+**#57 Assorted smaller correctness items** carried verbatim from the review:
+locale-dependent DataONE plan fingerprint inputs now fixed under #40, but
+`dwc_dp_build_descriptor(validate = TRUE)` still discards its validation result
+and does not declare its Python toolchain in `SystemRequirements`; `llm_top_n`
+cannot widen the shortlist on the direct `suggest_semantics()` path;
+`find_terms()` does not check `parallel::mclapply` worker failure; ICES helpers
+error instead of degrading on a missing column; the composite-intent gate's
+`optional_hint_fields` is inert.
+
+### Open — P3 (R-package and API hygiene)
+
+**#58 No condition classes anywhere.** 415 `cli_abort` + 38 `cli_warn` + 3
+`rlang::abort`, all unclassed, so callers cannot `tryCatch` selectively — a real
+problem for a package meant to be driven from scripts and agents. Breaking-ish
+for anyone matching on message text, so it wants a major bump.
+
+**#59 Undocumented configuration and global-state mutation.** Nine
+`metasalmon.*` options and fourteen environment variables with no registry, no
+`.onLoad` defaults, and no help topic. `.search_bioportal()` permanently writes a
+flag into the user's `options()`; `.ms_chat_new_session_id()` calls `sample()` and
+advances the user's RNG stream. Both are CRAN-policy violations.
+
+**#60 Example and API-surface gaps.** 22 of 30 documented topics wrap their entire
+example in `\dontrun{}`, including examples that run offline in under a second,
+so `R CMD check` validates almost no public example code; 15 of 45 exports ship no
+examples. `NAMESPACE` blanket-imports the superseded `httr` while `httr2` is also
+a hard Import. `DESCRIPTION` has a hand-written `Author:` naming someone absent
+from `Authors@R`. No documented naming convention for the exported surface;
+`semantic_suggestions` / `semantic_llm_assessments` are attributes with no
+accessor.
+
+### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
+
+**#61 Ecosystem findings.** 37 verified findings across `smn-data-pkg`,
+`salmon-domain-ontology`, `dfo-salmon-ontology`,
+`salmon-data-standards-workshop`, and cross-repo governance, plus 27
+finder-only ontology findings that still need verification (#44 verified three of
+them). These do not live in this repo and are tracked in
+`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` §3–§7. The five
+highest-leverage, in order: vocabulary-release pinning is impossible today
+(which metasalmon's own KNB path requires); `datapackage.json` carries none of
+SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
+no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
+Pages configuration.
 
 ---
 

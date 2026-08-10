@@ -87,8 +87,16 @@ network (`w3id.org`) — don't read a green offline run as full coverage.
 ## Planning artifacts (read before related work)
 
 - `notes/context.md` — orientation.
-- `notes/bugs-and-improvements.md` — live backlog with implementation status.
-- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — what's next.
+- `notes/bugs-and-improvements.md` — live backlog and the single index of open
+  items. Items #34+ came from the 2026-08-10 comprehensive review.
+- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — **what's next, ranked.**
+- `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
+  verified findings behind that roadmap (metasalmon plus the SDP spec, both
+  ontologies, and the workshop).
+- `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
+  read-only verification of the gcdfo SHACL/SPARQL/ROBOT claims.
+- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
+  sequencing; still the authority for the Theme A–E design detail.
 - `notes/exec-plans/2026-06-24-deepen-architecture-refactors.md` — the executed
   architecture refactor.
 - `notes/exec-plans/2026-04-02-*` — the bundle-aware semantic-fit and i-adopt

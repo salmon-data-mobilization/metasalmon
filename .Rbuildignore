@@ -19,7 +19,8 @@ inst/extdata/\.gitkeep$
 ^project-specific-instructions\.md$
 ^doc$
 ^Meta$
-^\\.tmp$
+^tmp(/|$)
+^\.tmp(/|$)
 ^agent-guidance(/|$)
 ^pkgdown(/|$)
 ^scripts(/|$)

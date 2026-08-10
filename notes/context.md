@@ -2,14 +2,15 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-07-31 (0.1.7 KNB canonical-SDP
-archive and immutable-revision hardening).
+package evolves. Last substantial update: 2026-08-10 (0.2.0 P0 remediation:
+schema identity, SDP round-trip integrity, sidecar preservation, cli message
+safety, and C collation).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.1.7. License MIT.
+Package (SDP)** conventions. Development version 0.2.0. License MIT.
 R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
@@ -85,7 +86,7 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   them in step with `inst/extdata` by **re-vendoring from upstream**, not by
   hand-editing either side. Reading a package that declares an older profile URI
   stays valid (nothing on the read path inspects `datapackage.json$profile`).
-  *Superseded 2026-08-08:* the previous note here said the legacy
+  *Superseded 2026-08-10:* the previous note here said the legacy
   `dfo-pacific-science.github.io` URI was the upstream contract value and must
   not be rewritten. Upstream migrated to `salmon-data-mobilization.github.io`,
   which broke remote schema loading outright — see `notes/bugs-and-improvements.md` #33.
@@ -294,6 +295,7 @@ do not affect the built package or pkgdown site.
 | `dictionary-helpers.R` | ~1209 | `infer_dictionary` + `infer_*_from_resources` (the latter also used by package-helpers). |
 | `semantic-suggestions.R` | ~268 | Target/candidate row-shape contract + LLM-assessment merge. |
 | `llm-review-adapter.R` | ~118 | Shared LLM review response contract (validate / response-data / row construction). |
+| `cli-safety.R` | ~70 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`, `.ms_abort_external`). |
 | `edh-xml-export.R` | ~43KB | EDH HNAP/ISO 19139 XML export. |
 | `eml-export.R` | — | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
 | `knb-sdp-archive.R` | — | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
@@ -303,6 +305,20 @@ do not affect the built package or pkgdown site.
 | `github-helpers.R` | ~22KB | GitHub CSV access + auth setup. |
 | `term-request-helpers.R` | ~28KB | Ontology new-term request rendering + issue submission. |
 | `term-deduplication.R`, `nuseds-method-crosswalk.R`, `ices-vocab.R`, `dwc-dp-*.R`, `schema-helpers.R`, `validation_helpers.R`, `version-check.R`, `ontology_fetch.R`, `term_search_smn.R` | — | Supporting subsystems. |
+
+## Planning artifacts (read before related work)
+
+- `notes/bugs-and-improvements.md` — the live backlog and the single index of
+  open items. Items #34+ came from the 2026-08-10 comprehensive review.
+- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — **the prioritized list of
+  what to do next.** Start here.
+- `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
+  verified findings behind that roadmap, covering metasalmon plus the SDP spec,
+  both ontologies, and the workshop.
+- `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
+  read-only verification of the gcdfo SHACL/SPARQL/ROBOT claims.
+- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
+  sequencing, still authoritative for the Theme A–E design detail.
 
 ## Related planning artifacts (read before LLM-review work)
 
@@ -315,7 +331,7 @@ do not affect the built package or pkgdown site.
   bundle-aware semantic fit + `retry_search`/`request_new_term` escalation. The
   review contract should be designed to absorb these richer outcomes.
 
-## Reproducibility rules (added 2026-08-08, P0 remediation)
+## Reproducibility rules (added 2026-08-10, P0 remediation)
 
 Two cross-cutting rules, both with a guard test. The full statements live in
 `AGENTS.md`; this is the *why*.

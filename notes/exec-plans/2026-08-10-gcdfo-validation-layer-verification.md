@@ -1,7 +1,7 @@
 # Verification: is the GC DFO Salmon Ontology validation layer inert?
 
-Date: 2026-08-08. Read-only verification of P0-9 from
-`2026-08-08-comprehensive-ecosystem-review.md`. No files in
+Date: 2026-08-10. Read-only verification of P0-9 from
+`2026-08-10-comprehensive-ecosystem-review.md`. No files in
 `dfo-salmon-ontology` were modified.
 
 The comprehensive review flagged this as **finder-only, unverified** — the
