@@ -1074,6 +1074,19 @@ create_sdp <- function(
     )
   })
 
+  # `create_sdp()` writes these itself, after the generic writer has run, so they
+  # are deliberately absent from `managed_paths` (that is what preserves them on
+  # a rewrite). They still need the same containment check: without it a
+  # symlinked `README-review.txt` is followed and an external file is truncated.
+  .ms_assert_managed_path_contained(
+    pkg_path,
+    file.path(pkg_path, c(
+      "README-review.txt",
+      "semantic_suggestions.csv",
+      file.path("metadata", "metadata-edh-hnap.xml")
+    ))
+  )
+
   review_suggestions <- .ms_prepare_review_suggestions(suggestions)
   .ms_write_sdp_review_readme(
     pkg_path = pkg_path,
@@ -2091,208 +2104,114 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 # the sole type authority: anything it does not declare reads as character
 # rather than being guessed, which is what makes the write -> read round trip
 # lossless.
+# Convert one declared column's raw tokens, or explain why it cannot be done
+# faithfully. Returns `values` when the conversion is exact, otherwise `reason`
+# and the offending tokens.
+#
+# The token is the ground truth. Every collector in this package is lossy in
+# some direction -- `col_double()` collapses anything past 15 significant
+# digits, `col_datetime()` collapses sub-resolution instants -- and no amount of
+# careful formatting downstream can recover what the collector discarded. So the
+# column is read as text and converted here, where the original is still
+# available to check against.
+.ms_convert_declared_tokens <- function(tokens, value_type) {
+  present <- !is.na(tokens) & nzchar(trimws(tokens))
+  parser <- switch(
+    value_type,
+    integer  = readr::parse_double,
+    number   = readr::parse_double,
+    boolean  = readr::parse_logical,
+    date     = readr::parse_date,
+    datetime = readr::parse_datetime,
+    NULL
+  )
+  if (is.null(parser)) {
+    return(list(values = tokens, reason = NULL))
+  }
+
+  values <- suppressWarnings(parser(tokens))
+
+  unparseable <- present & is.na(values)
+  if (any(unparseable)) {
+    return(list(reason = "unparseable as that type", offenders = tokens[unparseable]))
+  }
+
+  if (value_type %in% c("integer", "number")) {
+    lossy <- present & .ms_numeric_token_precision(tokens) > 15L
+    if (any(lossy)) {
+      return(list(reason = "beyond exact numeric precision", offenders = tokens[lossy]))
+    }
+    if (identical(value_type, "integer")) {
+      fractional <- present & is.finite(values) & values != trunc(values)
+      if (any(fractional)) {
+        return(list(reason = "not a whole number", offenders = tokens[fractional]))
+      }
+    }
+  }
+
+  if (identical(value_type, "datetime")) {
+    too_fine <- present & .ms_datetime_token_precision(tokens) > 6L
+    if (any(too_fine)) {
+      return(list(
+        reason = "finer than the datetime representation can hold",
+        offenders = tokens[too_fine]
+      ))
+    }
+  }
+
+  list(values = values, reason = NULL)
+}
+
+# Read a data resource with the types its dictionary declares. The dictionary is
+# the sole type authority: anything it does not declare stays character rather
+# than being guessed, which is what makes the write/read round trip lossless.
+#
+# One text read, then in-memory conversion -- rather than a typed read plus a
+# re-read when something looks wrong. That keeps the original token available
+# for every fidelity check, and it is one pass over the file instead of two.
 .ms_read_resource_csv <- function(file_path, table_dict) {
-  header <- names(readr::read_csv(
+  raw <- readr::read_csv(
     file_path,
-    n_max = 0,
     col_types = list(.default = readr::col_character()),
     show_col_types = FALSE
-  ))
+  )
+  header <- names(raw)
 
-  spec <- list()
   declared_types <- list()
   if (is.data.frame(table_dict) && nrow(table_dict) > 0 &&
       all(c("column_name", "value_type") %in% names(table_dict))) {
     dict_names <- trimws(as.character(table_dict$column_name))
-    # Intersect against the actual header: naming an absent column in a col
-    # spec makes readr warn, which would add noise to exactly the packages
-    # whose missing columns validation reports as a structured issue.
-    declared <- intersect(header, dict_names)
-    for (nm in declared) {
-      declared_type <- as.character(table_dict$value_type[match(nm, dict_names)])
-      declared_types[[nm]] <- declared_type
-      # Datetime columns are collected as TEXT and converted below. POSIXct is a
-      # double, so `col_datetime()` discards anything finer than its resolution
-      # before any check can see it -- and no formatter can recover precision
-      # the collector already threw away. Holding the token is the only way to
-      # know whether the conversion was faithful.
-      spec[[nm]] <- if (identical(declared_type, "datetime")) {
-        readr::col_character()
-      } else {
-        .ms_value_type_col_spec(declared_type)
-      }
+    for (nm in intersect(header, dict_names)) {
+      declared_types[[nm]] <- as.character(table_dict$value_type[match(nm, dict_names)])
     }
   }
 
-  # Collectors are supplied POSITIONALLY, one per header column, rather than by
-  # name. A named spec -- whether a `cols()` call or a plain list, since readr
-  # resolves the latter through `do.call(cols, ...)` too -- makes a column
-  # literally named `.default` match the `cols()` formal twice and abort.
-  # Positional matching sidesteps that entirely and, unlike excluding the
-  # column, still honours its declared `value_type`.
-  read_spec <- function(current) {
-    positional <- lapply(header, function(nm) {
-      current[[nm]] %||% readr::col_character()
-    })
-    do.call(readr::cols, c(positional, list(.default = readr::col_character())))
-  }
-
-  parsed <- readr::read_csv(
-    file_path,
-    col_types = read_spec(spec),
-    show_col_types = FALSE
-  )
-
-  # Two ways a declared type can silently alter the data, both of which would
-  # let validation pass on a value absent from codes.csv:
-  #
-  #   1. The token does not parse. readr yields NA with only a warning, and
-  #      validation drops the NA as blank.
-  #   2. A declared `integer` exceeds 2^53. The double collector rounds it
-  #      before anything sees it, so two distinct identifiers compare equal.
-  #      (`col_integer()` is not the answer -- it silently NAs past 2^31.)
-  #
-  # In both cases keep the exact token by re-reading as character, and carry the
-  # mismatch so the validator can report the declaration as wrong.
-  issues <- tryCatch(readr::problems(parsed), error = function(e) NULL)
-  if (!is.data.frame(issues)) {
-    issues <- NULL
-  }
-  problem_columns <- character()
-  if (!is.null(issues) && nrow(issues) > 0) {
-    idx <- suppressWarnings(as.integer(issues$col))
-    idx <- idx[!is.na(idx) & idx >= 1L & idx <= length(header)]
-    problem_columns <- intersect(unique(header[idx]), names(spec))
-  }
-
-  # `col_double()` backs a declared `integer` because `col_integer()` silently
-  # NAs past 2^31. That choice costs two checks readr will not make for us: a
-  # fractional token like `1.5` parses cleanly despite plainly violating the
-  # declaration, and a magnitude at or above 2^53 is rounded before anything
-  # sees it. Both keep the exact token and are reported like a parse failure.
-  imprecise_columns <- character()
-  fractional_columns <- character()
-  lossy_datetime_columns <- character()
-  for (nm in names(spec)) {
-    if (!nm %in% names(parsed)) {
+  parsed <- raw
+  mismatches <- list()
+  for (nm in names(declared_types)) {
+    value_type <- declared_types[[nm]]
+    if (!isTRUE(value_type %in% .ms_value_types()) || identical(value_type, "string")) {
       next
     }
-    declared_type <- declared_types[[nm]]
-
-    if (identical(declared_type, "datetime")) {
-      tokens <- parsed[[nm]]
-      if (.ms_datetime_tokens_lossy(tokens)) {
-        lossy_datetime_columns <- c(lossy_datetime_columns, nm)
-      } else if (any(.ms_datetime_tokens_unparseable(tokens))) {
-        # Reading as text to hold the token also bypasses readr's problem
-        # reporting, so an unparseable timestamp has to be detected here or it
-        # would silently become NA.
-        problem_columns <- union(problem_columns, nm)
-      }
+    outcome <- .ms_convert_declared_tokens(raw[[nm]], value_type)
+    if (is.null(outcome$reason)) {
+      parsed[[nm]] <- outcome$values
       next
     }
-
-    # `number` shares the double collector with `integer`, so it collapses the
-    # same way past 2^53 -- the declaration does not make the loss acceptable
-    # when the value is also a code.
-    if (!declared_type %in% c("integer", "number")) {
-      next
-    }
-    values <- suppressWarnings(as.numeric(parsed[[nm]]))
-    finite <- is.finite(values)
-    if (any(finite & abs(values) >= 2^53)) {
-      imprecise_columns <- c(imprecise_columns, nm)
-    }
-    if (identical(declared_type, "integer") && any(finite & values != trunc(values))) {
-      fractional_columns <- c(fractional_columns, nm)
-    }
-  }
-
-  affected <- Reduce(
-    union,
-    list(problem_columns, imprecise_columns, fractional_columns, lossy_datetime_columns)
-  )
-  datetime_columns <- names(spec)[vapply(
-    names(spec), function(nm) identical(declared_types[[nm]], "datetime"), logical(1)
-  )]
-  # Faithful datetime columns become POSIXct; lossy ones keep their token.
-  convertible <- setdiff(intersect(datetime_columns, names(parsed)), affected)
-  for (nm in convertible) {
-    parsed[[nm]] <- suppressWarnings(readr::parse_datetime(parsed[[nm]]))
-  }
-
-  if (length(affected) == 0L) {
-    return(parsed)
-  }
-
-  for (nm in affected) {
-    spec[[nm]] <- readr::col_character()
-  }
-  reread <- readr::read_csv(
-    file_path,
-    col_types = read_spec(spec),
-    show_col_types = FALSE
-  )
-  # Keep the datetime conversions already made; only the affected columns fall
-  # back to text.
-  for (nm in convertible) {
-    reread[[nm]] <- parsed[[nm]]
-  }
-  parsed <- reread
-
-  attr(parsed, "ms_value_type_mismatches") <- lapply(affected, function(nm) {
-    if (nm %in% lossy_datetime_columns) {
-      lossy <- parsed[[nm]][.ms_datetime_token_precision(parsed[[nm]]) > 6L]
-      return(list(
-        column = nm,
-        declared = declared_types[[nm]],
-        reason = "finer than the datetime representation can hold",
-        count = length(lossy),
-        examples = utils::head(unique(as.character(lossy)), 3L)
-      ))
-    }
-    if (nm %in% fractional_columns) {
-      values <- suppressWarnings(as.numeric(parsed[[nm]]))
-      fractional <- parsed[[nm]][is.finite(values) & values != trunc(values)]
-      return(list(
-        column = nm,
-        declared = declared_types[[nm]],
-        reason = "not a whole number",
-        count = length(fractional),
-        examples = utils::head(unique(as.character(fractional)), 3L)
-      ))
-    }
-    if (nm %in% imprecise_columns) {
-      values <- suppressWarnings(as.numeric(parsed[[nm]]))
-      beyond <- parsed[[nm]][is.finite(values) & abs(values) >= 2^53]
-      return(list(
-        column = nm,
-        declared = declared_types[[nm]],
-        reason = "beyond exact numeric precision",
-        count = length(beyond),
-        examples = utils::head(unique(as.character(beyond)), 3L)
-      ))
-    }
-    if (identical(declared_types[[nm]], "datetime")) {
-      bad <- parsed[[nm]][.ms_datetime_tokens_unparseable(parsed[[nm]])]
-      return(list(
-        column = nm,
-        declared = "datetime",
-        reason = "unparseable as that type",
-        count = length(bad),
-        examples = utils::head(unique(as.character(bad)), 3L)
-      ))
-    }
-    rows <- issues[header[suppressWarnings(as.integer(issues$col))] %in% nm, , drop = FALSE]
-    list(
+    # The declared type is not satisfied: keep the exact token so the code-value
+    # check still sees it, and report the declaration as wrong.
+    mismatches[[length(mismatches) + 1L]] <- list(
       column = nm,
-      declared = declared_types[[nm]],
-      reason = "unparseable as that type",
-      count = nrow(rows),
-      examples = utils::head(unique(as.character(rows$actual)), 3L)
+      declared = value_type,
+      reason = outcome$reason,
+      count = length(outcome$offenders),
+      examples = utils::head(unique(as.character(outcome$offenders)), 3L)
     )
-  })
+  }
 
+  if (length(mismatches) > 0) {
+    attr(parsed, "ms_value_type_mismatches") <- mismatches
+  }
   parsed
 }
 

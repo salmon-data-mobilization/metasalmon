@@ -12,12 +12,12 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
   dictionary is the sole type authority, which is what makes the write/read
   round trip lossless. A value that does not satisfy its declared type is kept
   as its raw token rather than silently becoming `NA`, and the mismatch is
-  reported as a structured validation issue — a fractional `integer`, an
-  `integer` or `number` at or beyond 2^53, and a `datetime` carrying more
-  fractional precision than a `POSIXct` can hold all keep their exact token as
-  text rather than being silently accepted, rounded, or truncated. Declared
-  `datetime` columns are collected as text and converted only when that
-  conversion is faithful.
+  reported as a structured validation issue. Declared columns are collected as
+  text and converted only when the conversion is faithful, judged against the
+  original token — so an unparseable value, a fractional `integer`, an
+  `integer` or `number` carrying more than 15 significant digits, and a
+  `datetime` finer than a `POSIXct` can hold all keep their exact token rather
+  than being silently accepted, rounded, or truncated.
   Both `integer` and `number` otherwise read as double, because
   `readr::col_integer()` silently `NA`s values past 2^31 (readr's guesser also
   produced double here, so this is not a change); `apply_salmon_dictionary()`

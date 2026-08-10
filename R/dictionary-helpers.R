@@ -717,6 +717,20 @@ infer_value_type <- function(col) {
   rendered
 }
 
+# Significant decimal digits carried by a numeric token, ignoring sign, leading
+# zeros, trailing zeros, and any exponent. A double reliably round-trips 15
+# significant decimal digits, so a token carrying more may not survive the
+# conversion -- "0.10000000000000001" and "0.1" are the same double, and
+# "9007199254740993" and "9007199254740992" are too.
+.ms_numeric_token_precision <- function(tokens) {
+  digits <- sub("[eE].*$", "", trimws(as.character(tokens)))
+  digits <- gsub("[^0-9]", "", digits)
+  digits <- sub("^0+", "", digits)
+  digits <- sub("0+$", "", digits)
+  digits[is.na(tokens)] <- ""
+  nchar(digits)
+}
+
 # Significant fractional-second digits carried by a raw datetime token, with
 # trailing zeros ignored: "…00.100000000Z" carries 1, "…00.100000010Z" carries 8.
 .ms_datetime_token_precision <- function(tokens) {

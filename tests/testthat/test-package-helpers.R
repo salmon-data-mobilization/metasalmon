@@ -3308,3 +3308,65 @@ test_that("an unparseable datetime token is still reported", {
     "unparseable as that type"
   )
 })
+
+test_that("declared-type fidelity is enforced from the raw token, uniformly", {
+  # One mechanism replaces four special-case detectors: the column is read as
+  # text and converted only when the conversion is faithful, judged against the
+  # original token. This table is the contract.
+  check <- function(tokens, value_type) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    mismatches <- attr(parsed, "ms_value_type_mismatches")
+    if (is.null(mismatches)) NA_character_ else mismatches[[1]]$reason
+  }
+
+  # Precision a double cannot hold, at any magnitude — not just past 2^53.
+  expect_identical(check(c("0.10000000000000001", "0.1"), "number"), "beyond exact numeric precision")
+  expect_identical(check("9007199254740993", "number"), "beyond exact numeric precision")
+  expect_identical(check("9007199254740993", "integer"), "beyond exact numeric precision")
+  expect_identical(check(c("1.5", "2"), "integer"), "not a whole number")
+  expect_identical(check("2026-01-01T00:00:00.100000010Z", "datetime"),
+                   "finer than the datetime representation can hold")
+  # Unparseable tokens, including types the earlier detectors never covered.
+  expect_identical(check(c("1.5", "unknown"), "number"), "unparseable as that type")
+  expect_identical(check("not-a-date", "datetime"), "unparseable as that type")
+  expect_identical(check("yes-ish", "boolean"), "unparseable as that type")
+
+  # Ordinary data must not be flagged. Trailing and leading zeros, exponent
+  # form, blanks, and exactly 15 significant digits are all fine.
+  expect_true(is.na(check(c("1", "-3", "", "0"), "integer")))
+  expect_true(is.na(check(c("1.5", "0.10", "100000", "1e5"), "number")))
+  expect_true(is.na(check("123456789.123456", "number")))
+  expect_true(is.na(check(c("2026-01-01T08:30:00Z", "2026-01-01T09:00:00.123456Z", ""), "datetime")))
+  expect_true(is.na(check(c("2026-01-01", ""), "date")))
+  expect_true(is.na(check(c("TRUE", "false", ""), "boolean")))
+})
+
+test_that("create_sdp-owned outputs are containment-checked before writing", {
+  # These are deliberately absent from managed_paths so a rewrite preserves
+  # them, which also meant they escaped the symlink check: a symlinked
+  # README-review.txt was followed and an external file truncated.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(pkg, recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  target <- file.path(outside, "precious.txt")
+  writeLines("PRECIOUS EXTERNAL CONTENT", target)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  file.symlink(target, file.path(pkg, "README-review.txt"))
+
+  expect_error(
+    .ms_assert_managed_path_contained(
+      pkg,
+      file.path(pkg, c("README-review.txt", "semantic_suggestions.csv"))
+    ),
+    "symbolic-link path component"
+  )
+  expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
+})
