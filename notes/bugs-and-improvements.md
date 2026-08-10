@@ -88,6 +88,46 @@ published releases, or manual dispatch.
 
 ---
 
+## 0.2.0 P0 remediation (2026-08-08)
+
+The 2026-08-08 comprehensive review
+(`notes/exec-plans/2026-08-08-comprehensive-ecosystem-review.md`) produced 96
+adversarially-verified findings. The nine ranked P0 are all fixed on
+`fix/p0-remediation` and released as 0.2.0; see `NEWS.md` for user-facing detail.
+
+| # | Item | Where |
+|---|---|---|
+| P0-1 | `zip (== 3.0.1)` blocked installation against CRAN 3.0.2 | `DESCRIPTION` |
+| P0-2 | Remote SDP schema loading dead; produced packages declared a rejected profile URI | `R/schema-helpers.R` |
+| P0-3 | `.data$x == x` data-mask tautology applied the wrong table's rules | `R/dictionary-helpers.R`, `R/package-helpers.R` |
+| P0-4 | `create_sdp()` wrote packages its own validator rejected | `R/package-helpers.R` |
+| P0-5 | `read` -> edit -> `write` silently deleted reviewed sidecars | `R/package-helpers.R` |
+| P0-6 | External text evaluated as a cli message template | `R/cli-safety.R` + 15 sites |
+| P0-7 | Canonical bytes and identifiers depended on `LC_COLLATE` | `R/sssom.R`, `R/knb-publication.R`, others |
+| P0-8 | Cancelling the term-request prompt submitted the issue | `R/term-request-helpers.R` |
+| P0-9 | gcdfo validation layer inert (verified, fix deferred to the ontology repo) | `notes/exec-plans/2026-08-08-gcdfo-validation-layer-verification.md` |
+
+**Deferred from this pass, by decision:** semantic ranking tiebreakers
+(`R/semantics-helpers.R:170-211`) break score ties on character keys, so with
+`seed_semantics = TRUE` the top-1 pick — which becomes a written IRI in
+`column_dictionary.csv` — is not reproducible across machines. Left out of the
+P0 sweep deliberately: radix-ing them moves existing semantic-suggestion test
+expectations, which would mix a behavioural change into a hardening pass. **This
+is the highest-value remaining collation item; pick it up next.**
+
+**Two things this pass revealed about the review process itself:**
+
+1. A green test suite was not the signal it appeared to be. P0-2, P0-4, and the
+   three unexecuted `sdp.rules.yaml` rules were all invisible to 21k lines of
+   tests, because the suite pins `sdp_schema_source = "vendored"`, never
+   round-trips a package through its own validator, and skips network-gated
+   tests silently. One existing test in `test-edge-cases.R` was passing *because
+   of* P0-3 — its `codes` fixture used `table_id = "table-1"` against a
+   dictionary defaulting to `"table_1"`, and only matched because the filter was
+   a no-op.
+2. Two "fixed" markers in this document were wrong (#9 and #33). Both had been
+   fixed in a way nobody could verify from a clean clone.
+
 ## Correctness / UX bugs
 
 ### 1. `infer_dictionary()` silently drops LLM options when `seed_semantics = FALSE`
@@ -223,11 +263,16 @@ published releases, or manual dispatch.
 
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
 - **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
-- **Implementation status:** fixed (2026-06-26, roadmap E3). `AGENTS.md` now holds
-  real agent/contributor guidance (non-negotiable contracts, build/test/doc
-  commands, gotchas, planning pointers) seeded from `notes/context.md`; `CLAUDE.md`
-  imports it via `@AGENTS.md`. The generated `docs/AGENTS.html`/`docs/CLAUDE.html`
-  are git-ignored, so nothing leaks to the public pkgdown site.
+- **Implementation status:** fixed 2026-06-26 in a *working copy only*; genuinely
+  fixed 2026-08-08. The 2026-06-26 pass wrote real guidance into `AGENTS.md`, but
+  `.gitignore` listed `AGENTS.md` and `CLAUDE.md`, so neither file was ever
+  committed and the shipped repo still carried no contributor guidance — the exact
+  symptom this item describes. The ignore entries are removed as of 0.2.0 and both
+  files are tracked; both remain in `.Rbuildignore`, so the built package is
+  unaffected, and the generated `docs/AGENTS.html`/`docs/CLAUDE.html` stay ignored.
+  **Lesson for this document:** a "fixed" marker that nobody can verify from a
+  clean clone is worse than an open item. Prefer claims a CI check can assert
+  (here: `git ls-files AGENTS.md` is non-empty).
 - Both files contain only `@AGENTS.md`; `AGENTS.md` references itself → no agent
   guidance ships, and the include is circular. **Fix:** seed real `AGENTS.md` from
   `notes/context.md` (LLM opt-in contract, attribute/IRI-prefix contracts, commands).
