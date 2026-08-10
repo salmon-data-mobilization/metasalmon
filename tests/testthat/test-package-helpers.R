@@ -2871,3 +2871,138 @@ test_that("create_sdp accepts prune without tripping the dots validator", {
     )))
   )
 })
+
+test_that("read_salmon_datapackage honours the declared value_type", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    pct = c("0.10", "0.25"),
+    big = c("100000", "250000"),
+    flag = c(TRUE, FALSE),
+    day = as.Date(c("2026-01-01", "2026-02-01")),
+    stamp = as.POSIXct(c("2026-01-01 08:30:00", "2026-02-01 09:45:00"), tz = "UTC"),
+    blank = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "types-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "types-1", title = "Types", description = "Type round trip",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "types-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  back <- suppressMessages(read_salmon_datapackage(temp_dir))$resources$obs
+
+  # Character columns stay exactly as written; readr guessing turned these into
+  # 0.1 and 1e+05.
+  expect_identical(back$pct, c("0.10", "0.25"))
+  expect_identical(back$big, c("100000", "250000"))
+  expect_type(back$flag, "logical")
+  expect_s3_class(back$day, "Date")
+  expect_s3_class(back$stamp, "POSIXct")
+  # An all-NA character column is declared "string", so it must not become logical.
+  expect_type(back$blank, "character")
+})
+
+test_that("validate_salmon_datapackage compares code values through the declared type", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(depth_code = c("0.10", "0.20"), stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "codes-1", table_id = "obs")
+  )
+  dict$column_role <- "categorical"
+
+  codes <- tibble::tibble(
+    dataset_id = "codes-1", table_id = "obs", column_name = "depth_code",
+    code_value = c("0.10", "0.20"),
+    code_label = c("Shallow", "Deep"),
+    code_description = NA_character_
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "codes-1", title = "Codes", description = "Typed code compare",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "codes-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_equal(nrow(validate_salmon_datapackage(temp_dir)$issues), 0L)
+})
+
+test_that("canonical value tokens are symmetric across declared types", {
+  canon <- metasalmon:::.ms_canonical_value_tokens
+
+  expect_identical(canon(c(0.1, 100000), "number"), c("0.1", "100000"))
+  expect_identical(canon(c("0.10", "1e+05"), "number"), c("0.1", "100000"))
+  expect_identical(canon(100000L, "integer"), "100000")
+  expect_identical(canon(c(TRUE, FALSE), "boolean"), c("TRUE", "FALSE"))
+  expect_identical(canon(c("true", "F"), "boolean"), c("TRUE", "FALSE"))
+  expect_identical(canon(as.Date("2026-01-02"), "date"), "2026-01-02")
+  expect_identical(canon("2026-01-02", "date"), "2026-01-02")
+  # Strings are untouched, and unparseable values keep their original text so a
+  # real mismatch still reads as one.
+  expect_identical(canon(c(" a ", "b"), "string"), c("a", "b"))
+  expect_identical(canon("unknown", "number"), "unknown")
+
+  # Element-wise formatting: a vector-wise format() would render 0.5 differently
+  # depending on what else is in the vector.
+  expect_identical(canon(c(0.5, 1 / 3), "number")[[1]], canon(0.5, "number"))
+})
+
+test_that("a dictionary column missing from the data file reads without a parser warning", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(data.frame(count = 1:2, absent = c(1.5, 2.5)),
+                     dataset_id = "spec-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "spec-1", title = "Spec", description = "Absent column",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "spec-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_no_warning(suppressMessages(read_salmon_datapackage(temp_dir)))
+
+  # The structured issue must still fire; it is reported as an abort.
+  expect_error(
+    validate_salmon_datapackage(temp_dir),
+    "missing dictionary columns"
+  )
+})

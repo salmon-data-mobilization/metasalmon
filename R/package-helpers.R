@@ -1281,7 +1281,8 @@ read_salmon_datapackage <- function(path) {
         next
       }
 
-      resources[[resource_name]] <- readr::read_csv(file_path, show_col_types = FALSE)
+      table_dict <- dictionary[dictionary$table_id == resource_name, , drop = FALSE]
+      resources[[resource_name]] <- .ms_read_resource_csv(file_path, table_dict)
     }
   }
 
@@ -1743,6 +1744,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     x
   }
 
+  # The `trimmed_unique()` tail, for values already canonicalized by type.
+  drop_blank <- function(x) {
+    unique(x[!is.na(x) & nzchar(x)])
+  }
+
   if (nrow(pkg$dataset) != 1) {
     add_issue(
       "dataset",
@@ -1906,8 +1912,21 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
           next
         }
 
-        data_values <- trimmed_unique(data_df[[column_name]])
-        code_values <- trimmed_unique(table_codes$code_value[table_codes$column_name == column_name])
+        # Canonicalize both sides through the declared type. The data column is
+        # a parsed vector and `code_value` is always raw CSV text, so comparing
+        # `as.character()` of each made a package fail against its own codes.
+        column_value_type <- table_dict$value_type[
+          match(column_name, trimws(as.character(table_dict$column_name)))
+        ]
+        data_values <- drop_blank(
+          .ms_canonical_value_tokens(data_df[[column_name]], column_value_type)
+        )
+        code_values <- drop_blank(
+          .ms_canonical_value_tokens(
+            table_codes$code_value[table_codes$column_name == column_name],
+            column_value_type
+          )
+        )
         missing_code_values <- setdiff(data_values, code_values)
         if (length(missing_code_values) > 0) {
           add_issue(
@@ -1998,6 +2017,38 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   readr::read_csv(
     path,
     col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+}
+
+# Read a data resource with the types its dictionary declares. The dictionary is
+# the sole type authority: anything it does not declare reads as character
+# rather than being guessed, which is what makes the write -> read round trip
+# lossless.
+.ms_read_resource_csv <- function(file_path, table_dict) {
+  header <- names(readr::read_csv(
+    file_path,
+    n_max = 0,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  ))
+
+  spec <- list()
+  if (is.data.frame(table_dict) && nrow(table_dict) > 0 &&
+      all(c("column_name", "value_type") %in% names(table_dict))) {
+    dict_names <- trimws(as.character(table_dict$column_name))
+    # Intersect against the actual header: naming an absent column in a cols()
+    # spec makes readr warn, which would add noise to exactly the packages whose
+    # missing columns validation is meant to report as a structured issue.
+    declared <- intersect(header, dict_names)
+    for (nm in declared) {
+      spec[[nm]] <- .ms_value_type_col_spec(table_dict$value_type[match(nm, dict_names)])
+    }
+  }
+
+  readr::read_csv(
+    file_path,
+    col_types = do.call(readr::cols, c(spec, list(.default = readr::col_character()))),
     show_col_types = FALSE
   )
 }

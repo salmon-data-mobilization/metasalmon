@@ -606,7 +606,12 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
 #' @return Character string indicating the value type
 #' @noRd
 infer_value_type <- function(col) {
-  if (inherits(col, "Date") || inherits(col, "POSIXt")) {
+  # POSIXt first: it is the narrower test, and collapsing it to "date" meant
+  # "datetime" was never inferred and timestamps round-tripped as dates.
+  if (inherits(col, "POSIXt")) {
+    return("datetime")
+  }
+  if (inherits(col, "Date")) {
     return("date")
   }
   if (inherits(col, "logical")) {
@@ -625,6 +630,92 @@ infer_value_type <- function(col) {
     return("string")
   }
   "string"  # Default fallback
+}
+
+# The SDP `value_type` vocabulary, mirroring the enum in
+# inst/extdata/schema/frictionless/metadata/column_dictionary.schema.json.
+.ms_value_types <- function() {
+  c("string", "integer", "number", "boolean", "date", "datetime")
+}
+
+# `value_type` -> readr collector, for reading a data resource with the types
+# the dictionary declares instead of letting readr guess them.
+#
+# `col_double()` for "integer" as well as "number": `col_integer()` silently
+# NAs values past 2^31, and `.ms_canonical_value_tokens()` renders integrally
+# either way.
+.ms_value_type_col_spec <- function(value_type) {
+  value_type <- tolower(trimws(as.character(value_type %||% "")))
+  if (length(value_type) != 1L || is.na(value_type)) {
+    return(readr::col_character())
+  }
+  switch(
+    value_type,
+    integer  = readr::col_double(),
+    number   = readr::col_double(),
+    boolean  = readr::col_logical(),
+    date     = readr::col_date(),
+    datetime = readr::col_datetime(),
+    readr::col_character()
+  )
+}
+
+# One canonical text key per value, so a parsed data column and a raw
+# `codes.csv` token compare symmetrically. Without this, `"0.10"` read back as
+# a double stringifies to `"0.1"` and `100000` to `"1e+05"`, and a package
+# fails validation against its own codes list.
+#
+# Formatting is element-wise on purpose: format() picks a common significant
+# digit count across a vector, so a vector-wise call would render the same
+# value differently on the two sides.
+.ms_canonical_value_tokens <- function(x, value_type) {
+  value_type <- tolower(trimws(as.character(value_type %||% "")))
+  if (length(value_type) != 1L || is.na(value_type) || !nzchar(value_type)) {
+    value_type <- "string"
+  }
+
+  original <- trimws(as.character(x))
+  if (identical(value_type, "string") || !value_type %in% .ms_value_types()) {
+    return(original)
+  }
+
+  parsed <- if (is.character(x)) {
+    suppressWarnings(switch(
+      value_type,
+      integer  = readr::parse_double(original),
+      number   = readr::parse_double(original),
+      boolean  = readr::parse_logical(original),
+      date     = readr::parse_date(original),
+      datetime = readr::parse_datetime(original),
+      original
+    ))
+  } else {
+    x
+  }
+
+  rendered <- switch(
+    value_type,
+    integer  = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
+    number   = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
+    boolean  = ifelse(is.na(parsed), NA_character_, ifelse(parsed, "TRUE", "FALSE")),
+    date     = format(parsed, "%Y-%m-%d"),
+    datetime = format(parsed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    original
+  )
+
+  # Unparseable input keeps its original text rather than collapsing to NA, so a
+  # genuine mismatch still reads as a mismatch.
+  rendered <- as.character(rendered)
+  unresolved <- is.na(rendered) & !is.na(original) & nzchar(original)
+  rendered[unresolved] <- original[unresolved]
+  rendered
+}
+
+.ms_format_number_token <- function(value) {
+  if (is.na(value)) {
+    return(NA_character_)
+  }
+  format(value, scientific = FALSE, trim = TRUE, digits = 15)
 }
 
 # Helper: tokenize column names for lightweight role inference heuristics.
@@ -878,7 +969,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   }
 
   # Validate value types
-  valid_types <- c("string", "integer", "number", "boolean", "date", "datetime")
+  valid_types <- .ms_value_types()
   invalid_types <- !dict$value_type %in% valid_types & !is.na(dict$value_type)
   if (any(invalid_types)) {
     bad_rows <- which(invalid_types)

@@ -2392,3 +2392,11 @@ test_that("apply_salmon_dictionary does not apply another table's codes", {
   expect_s3_class(result$status, "factor")
   expect_equal(levels(result$status), "Live")
 })
+
+test_that("infer_value_type distinguishes date from datetime", {
+  expect_identical(metasalmon:::infer_value_type(as.Date("2026-01-01")), "date")
+  expect_identical(
+    metasalmon:::infer_value_type(as.POSIXct("2026-01-01 10:00:00", tz = "UTC")),
+    "datetime"
+  )
+})
