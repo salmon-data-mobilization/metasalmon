@@ -2137,7 +2137,16 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   if (value_type %in% c("integer", "number")) {
-    lossy <- present & .ms_numeric_token_precision(tokens) > 15L
+    # A decimal literal survives as a double when it has at most 15 significant
+    # digits AND its magnitude is representable. Digit count alone is not
+    # enough: `1e-400` has one significant digit and still does not survive --
+    # readr clamps it to 1e-307 rather than returning 0, so the reader would
+    # hand back an altered value that a `codes.csv` entry could then match.
+    exponent <- .ms_numeric_token_exponent(tokens)
+    lossy <- present & (
+      .ms_numeric_token_precision(tokens) > 15L |
+        (!is.na(exponent) & (exponent > 308L | exponent < -308L))
+    )
     if (any(lossy)) {
       return(list(reason = "beyond exact numeric precision", offenders = tokens[lossy]))
     }
@@ -2150,7 +2159,16 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   if (identical(value_type, "datetime")) {
-    too_fine <- present & .ms_datetime_token_precision(tokens) > 6L
+    # Six fractional digits are not uniformly safe: POSIXct is a double, so the
+    # spacing between representable instants grows with the epoch magnitude and
+    # already exceeds a microsecond around year 2243.
+    precision <- .ms_datetime_token_precision(tokens)
+    seconds <- suppressWarnings(as.numeric(values))
+    too_fine <- present & (
+      precision > 6L |
+        (precision > 0L & is.finite(seconds) &
+           10^(-precision) < .ms_double_spacing(seconds))
+    )
     if (any(too_fine)) {
       return(list(
         reason = "finer than the datetime representation can hold",

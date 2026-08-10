@@ -731,6 +731,36 @@ infer_value_type <- function(col) {
   nchar(digits)
 }
 
+# Base-10 exponent of a numeric token, i.e. the `e` in `d.ddd x 10^e`. Returns
+# NA for a zero or non-numeric token, where magnitude is not meaningful.
+.ms_numeric_token_exponent <- function(tokens) {
+  x <- trimws(as.character(tokens))
+  x[is.na(x)] <- ""
+  x <- sub("^[+-]", "", x)
+
+  explicit <- suppressWarnings(as.numeric(
+    ifelse(grepl("[eE]", x), sub("^.*[eE]([+-]?[0-9]+)$", "\\1", x), "0")
+  ))
+  explicit[is.na(explicit)] <- 0
+
+  mantissa <- sub("[eE].*$", "", x)
+  integer_part <- sub("[.].*$", "", mantissa)
+  fraction_part <- ifelse(grepl("[.]", mantissa), sub("^[^.]*[.]", "", mantissa), "")
+
+  integer_significant <- sub("^0+", "", integer_part)
+  fraction_leading_zeros <- nchar(fraction_part) - nchar(sub("^0+", "", fraction_part))
+
+  exponent <- ifelse(
+    nzchar(integer_significant),
+    nchar(integer_significant) - 1L,
+    -(fraction_leading_zeros + 1L)
+  ) + explicit
+
+  # A token with no significant digit at all is zero; magnitude does not apply.
+  exponent[!nzchar(gsub("[^1-9]", "", mantissa))] <- NA_real_
+  exponent
+}
+
 # Significant fractional-second digits carried by a raw datetime token, with
 # trailing zeros ignored: "…00.100000000Z" carries 1, "…00.100000010Z" carries 8.
 .ms_datetime_token_precision <- function(tokens) {
@@ -744,8 +774,27 @@ infer_value_type <- function(col) {
 # canonical key renders. POSIXct is a double, so the collector has already
 # discarded those digits by the time any value-level check could run -- the
 # token text is the only remaining evidence.
-.ms_datetime_tokens_lossy <- function(tokens) {
-  any(.ms_datetime_token_precision(tokens) > 6L)
+# Spacing between adjacent representable doubles at a given magnitude. Fractional
+# seconds finer than this cannot survive, which is why a fixed digit threshold is
+# not enough: at year 2243 the spacing already exceeds one microsecond.
+.ms_double_spacing <- function(value) {
+  magnitude <- pmax(abs(value), .Machine$double.xmin)
+  2^(floor(log2(magnitude)) - 52L)
+}
+
+.ms_datetime_tokens_lossy <- function(tokens, values = NULL) {
+  precision <- .ms_datetime_token_precision(tokens)
+  # The canonical key renders six fractional digits, so anything finer is lost
+  # regardless of magnitude.
+  if (any(precision > 6L)) {
+    return(TRUE)
+  }
+  if (is.null(values)) {
+    return(FALSE)
+  }
+  seconds <- suppressWarnings(as.numeric(values))
+  carried <- precision > 0L & is.finite(seconds)
+  any(carried & 10^(-precision) < .ms_double_spacing(seconds))
 }
 
 # Non-empty tokens that will not parse. Needed because holding datetime columns

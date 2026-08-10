@@ -15,9 +15,11 @@ review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
   reported as a structured validation issue. Declared columns are collected as
   text and converted only when the conversion is faithful, judged against the
   original token — so an unparseable value, a fractional `integer`, an
-  `integer` or `number` carrying more than 15 significant digits, and a
-  `datetime` finer than a `POSIXct` can hold all keep their exact token rather
-  than being silently accepted, rounded, or truncated.
+  `integer` or `number` whose precision or magnitude a double cannot hold, and a
+  `datetime` finer than a `POSIXct` can represent at that instant all keep their
+  exact token rather than being silently accepted, rounded, clamped, or
+  truncated. Both numeric and datetime checks are magnitude-aware rather than
+  fixed thresholds.
   Both `integer` and `number` otherwise read as double, because
   `readr::col_integer()` silently `NA`s values past 2^31 (readr's guesser also
   produced double here, so this is not a change); `apply_salmon_dictionary()`

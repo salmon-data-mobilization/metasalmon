@@ -3370,3 +3370,35 @@ test_that("create_sdp-owned outputs are containment-checked before writing", {
   )
   expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
 })
+
+test_that("declared-type fidelity accounts for magnitude, not just digit count", {
+  # Digit count alone is a proxy. `1e-400` has one significant digit and still
+  # does not survive (readr clamps it to 1e-307), and six fractional seconds
+  # stop being representable as the epoch magnitude grows.
+  check <- function(tokens, value_type) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    mismatches <- attr(parsed, "ms_value_type_mismatches")
+    if (is.null(mismatches)) NA_character_ else mismatches[[1]]$reason
+  }
+
+  expect_identical(check(c("1e-400", "0"), "number"), "beyond exact numeric precision")
+  expect_identical(check("1e400", "number"), "beyond exact numeric precision")
+  expect_identical(
+    check(c("2243-01-01T00:00:00.000001Z", "2243-01-01T00:00:00.000002Z"), "datetime"),
+    "finer than the datetime representation can hold"
+  )
+
+  # Representable magnitudes must not be flagged. In particular milliseconds at
+  # year 2243 are fine while microseconds there are not — the threshold moves
+  # with the magnitude rather than being fixed.
+  expect_true(is.na(check("1e308", "number")))
+  expect_true(is.na(check("1e-300", "number")))
+  expect_true(is.na(check("2243-01-01T00:00:00.123Z", "datetime")))
+  expect_true(is.na(check("2026-01-01T00:00:00.123456Z", "datetime")))
+  expect_true(is.na(check("1970-01-01T00:00:00.123456Z", "datetime")))
+})
