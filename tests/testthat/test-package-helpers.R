@@ -3400,7 +3400,9 @@ test_that("declared-type fidelity accounts for magnitude, not just digit count",
   # year 2243 are fine while microseconds there are not — the threshold moves
   # with the magnitude rather than being fixed.
   expect_true(is.na(check("1e308", "number")))
-  expect_true(is.na(check("1e-300", "number")))
+  # 1e-290 is comfortably representable; 1e-300 is not verifiable on this
+  # platform and is covered by its own test.
+  expect_true(is.na(check("1e-290", "number")))
   # 16 digits but below 2^53, so exactly representable. A digit-count cutoff
   # flagged this and would have rejected valid data — the failure mode that
   # matters most here, since it breaks working packages.
@@ -3409,4 +3411,53 @@ test_that("declared-type fidelity accounts for magnitude, not just digit count",
   expect_true(is.na(check("2243-01-01T00:00:00.123Z", "datetime")))
   expect_true(is.na(check("2026-01-01T00:00:00.123456Z", "datetime")))
   expect_true(is.na(check("1970-01-01T00:00:00.123456Z", "datetime")))
+})
+
+test_that("an extreme exponent is rejected without materialising its expansion", {
+  # `1e1000000000` would ask strrep() for a billion zeros inside the decimal
+  # normalizer and take the process down. Magnitude now decides before any
+  # string expansion happens.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("v", "1e1000000000", "1"), file_path)
+
+  elapsed <- system.time({
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = "number")
+    )
+  })[["elapsed"]]
+
+  expect_lt(elapsed, 5)
+  expect_type(parsed$v, "character")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "beyond exact numeric precision"
+  )
+})
+
+test_that("a token whose round trip cannot be verified keeps its exact text", {
+  # Near the subnormal boundary R's own string-to-double parser is lossy and
+  # disagrees with readr's, so "cannot verify" means "cannot guarantee". The
+  # token is preserved rather than silently accepted.
+  expect_false(identical(readr::parse_double("1e-300"), as.numeric("1e-300")))
+
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("v", "1e-300"), file_path)
+  parsed <- .ms_read_resource_csv(
+    file_path,
+    tibble::tibble(column_name = "v", value_type = "number")
+  )
+
+  expect_identical(parsed$v, "1e-300")
+  expect_length(attr(parsed, "ms_value_type_mismatches"), 1L)
+
+  # A magnitude comfortably inside the representable range is unaffected.
+  in_range <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("v", "1e-290"), in_range)
+  clean <- .ms_read_resource_csv(
+    in_range,
+    tibble::tibble(column_name = "v", value_type = "number")
+  )
+  expect_type(clean$v, "double")
+  expect_null(attr(clean, "ms_value_type_mismatches"))
 })

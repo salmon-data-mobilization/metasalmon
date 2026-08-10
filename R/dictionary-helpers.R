@@ -782,6 +782,13 @@ infer_value_type <- function(col) {
     if (!grepl("^[0-9]+$", value) || !nzchar(value)) {
       return(NA_character_)
     }
+    # Refuse to materialise an unbounded expansion. `1e1000000000` would ask
+    # `strrep()` for a billion zeros and take the process down; anything this
+    # far outside the double range is decided by magnitude before it gets here,
+    # and NA propagates as "not equal", so refusing is safe.
+    if (!is.finite(at) || abs(at) > 1000L || nchar(value) + abs(at) > 2000L) {
+      return(NA_character_)
+    }
     if (at <= 0) {
       value <- paste0(strrep("0", 1L - at), value)
       at <- 1L
@@ -854,7 +861,7 @@ infer_value_type <- function(col) {
   }
 
   token <- tokens[suspect]
-  parsed <- suppressWarnings(as.numeric(token))
+  parsed <- suppressWarnings(as.numeric(values[suspect]))
   token_exponent <- exponent[suspect]
   parsed_exponent <- ifelse(
     is.finite(parsed) & parsed != 0,
@@ -862,31 +869,39 @@ infer_value_type <- function(col) {
     NA_real_
   )
 
-  # Overflow, underflow to zero, and clamping are decided by magnitude, which is
-  # reliable at every scale.
-  overflowed <- !is.finite(parsed)
-  underflowed <- parsed == 0 & !is.na(token_exponent)
-  clamped <- !is.na(token_exponent) & !is.na(parsed_exponent) &
-    token_exponent != parsed_exponent
+  # Magnitude decides overflow, underflow, and clamping without touching the
+  # token text -- which matters, because an exponent like 1e9 must never reach
+  # the decimal normalizer.
+  magnitude_failed <- !is.finite(parsed) |
+    (parsed == 0 & !is.na(token_exponent)) |
+    (!is.na(token_exponent) & !is.na(parsed_exponent) & token_exponent != parsed_exponent) |
+    (!is.na(token_exponent) & abs(token_exponent) > 400L)
 
-  # Otherwise compare the token against the shortest rendering that parses back
-  # to the same double. Where no such rendering exists -- R cannot round-trip
-  # 1e-300 through any of 15..17 significant digits on this platform -- the test
-  # cannot judge, so it must not flag: a false positive rejects valid data,
-  # which is worse than missing an exotic edge case.
-  rendered <- vapply(parsed, .ms_shortest_round_trip, character(1), USE.NAMES = FALSE)
-  judgeable <- is.finite(parsed) &
-    vapply(
-      seq_along(parsed),
-      function(i) identical(suppressWarnings(as.numeric(rendered[i])), parsed[i]),
+  # For whatever survives that, compare the token against the shortest rendering
+  # that parses back to the same double.
+  #
+  # Where no such rendering exists the token is treated as NOT surviving. Near
+  # the subnormal boundary R's own string-to-double parser is lossy -- reading
+  # back `%.30g` of 1e-300 lands 2.3e-307 away, and `readr::parse_double()` and
+  # `as.numeric()` disagree there outright -- so "cannot verify" genuinely means
+  # "cannot guarantee". Keeping the exact token is then the honest result: no
+  # data is lost, and the declaration is reported as unable to hold the value.
+  remaining <- which(!magnitude_failed)
+  altered <- rep(FALSE, length(token))
+  if (length(remaining) > 0) {
+    rendered <- vapply(parsed[remaining], .ms_shortest_round_trip, character(1), USE.NAMES = FALSE)
+    round_trips <- vapply(
+      seq_along(remaining),
+      function(i) identical(suppressWarnings(as.numeric(rendered[i])), parsed[remaining][i]),
       logical(1)
     )
-  altered <- judgeable & !.ms_decimal_tokens_equal(
-    .ms_normalize_decimal_token(token),
-    .ms_normalize_decimal_token(rendered)
-  )
+    altered[remaining] <- !round_trips | !.ms_decimal_tokens_equal(
+      .ms_normalize_decimal_token(token[remaining]),
+      .ms_normalize_decimal_token(rendered)
+    )
+  }
 
-  lossy[suspect] <- overflowed | underflowed | clamped | altered
+  lossy[suspect] <- magnitude_failed | altered
   lossy
 }
 

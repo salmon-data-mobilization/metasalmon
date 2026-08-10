@@ -42,7 +42,13 @@ collation_sensitive_fns <- c(
   ".ms_sdp_observation_normalize_components",
   "extract_sdp_observations",
   # Reproducibility manifest artifact inventory
-  ".ms_sdp_reproducibility_artifact_paths"
+  ".ms_sdp_reproducibility_artifact_paths",
+  # Canonical row order for the measurement-decomposition CSV and its hash, and
+  # for the EML supplementary object list. Neither name matches the heuristic
+  # below, so without these entries a future bare arrange() in either path would
+  # silently restore locale-dependent bytes.
+  ".ms_sdp_decomposition_normalize_rows",
+  ".ms_eml_supplementary_objects"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.
