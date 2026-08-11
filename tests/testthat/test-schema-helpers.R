@@ -292,3 +292,29 @@ test_that("schema URIs need an authority, not just a scheme separator", {
     "file:///opt/sdp/sdp.rules.yaml"
   )
 })
+
+test_that("schema URI authorities must carry a host", {
+  # A non-empty authority is not the same claim as a host: `user@` and `:` are
+  # both non-empty and hostless, and would be emitted as the profile URI.
+  bad <- c("https://user@/profile.json", "https://:/profile.json",
+           "https://:8080/x", "https://%zz/x")
+  for (value in bad) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["$id"]] <- value
+    bundle$profile$properties$profile$const <- value
+    bundle$rules$profile <- value
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "profile \\$id", info = value)
+  }
+
+  # Ordinary and unusual-but-valid authorities still pass.
+  good <- c("https://example.org/x", "https://example.org:8080/x",
+            "https://user:pass@example.org/x", "https://[::1]:8080/x",
+            "https://ex%20ample.org/x", "file:///opt/sdp/rules.yaml",
+            # `@` after the authority is path, not userinfo -- host is "a".
+            "https://a/b@c/x")
+  for (value in good) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["sdp:rules"]] <- value
+    expect_identical(metasalmon:::.ms_validate_sdp_schema(bundle)$rules_uri, value, info = value)
+  }
+})

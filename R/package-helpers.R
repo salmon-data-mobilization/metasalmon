@@ -388,6 +388,27 @@ write_salmon_datapackage <- function(
   unique(managed)
 }
 
+# Windows accepts `\` as a path separator, so the trailing-`.`, trailing-`..`,
+# and containment checks below must see it as one -- otherwise `C:\pkg-link\.`
+# is a single opaque component and walks straight past them.
+#
+# Gated on the platform on purpose: a backslash is a legal character in a POSIX
+# filename, and rewriting it there would split one directory name into two
+# components.
+#
+# This does not make the symbolic-link check itself work on Windows.
+# `Sys.readlink()` is documented to return "" for every path on platforms
+# without the `readlink` system call, so that check is inert there and Windows
+# junctions are invisible to it. The `..` and containment checks are what these
+# normalizations restore.
+.ms_path_separators_to_slash <- function(x) {
+  if (identical(.Platform$OS.type, "windows")) {
+    gsub("\\", "/", x, fixed = TRUE)
+  } else {
+    x
+  }
+}
+
 # A directory path whose final component is a real name, so `Sys.readlink()`
 # inspects the directory itself. Trailing `/` and `/.` spellings are the ones
 # that matter: `Sys.readlink("link/.")` reads the `.` entry inside the resolved
@@ -397,7 +418,7 @@ write_salmon_datapackage <- function(
 # a symlinked root would come back as its target and pass the check it exists
 # to fail.
 .ms_lexical_dir <- function(path) {
-  root <- path
+  root <- .ms_path_separators_to_slash(path)
   repeat {
     # Keep at least one character, so "/" and "." survive as themselves.
     stripped <- sub("(?<=.)/+$", "", root, perl = TRUE)
@@ -419,7 +440,7 @@ write_salmon_datapackage <- function(
 # check exists to reject. Refusing the spelling is the only sound option, and it
 # costs the user nothing: `a/../b` and every other `..` position still works.
 .ms_root_ends_in_parent_ref <- function(root) {
-  parts <- strsplit(root, "/", fixed = TRUE)[[1]]
+  parts <- strsplit(.ms_path_separators_to_slash(root), "/", fixed = TRUE)[[1]]
   parts <- parts[nzchar(parts) & parts != "."]
   length(parts) > 0L && identical(parts[[length(parts)]], "..")
 }
@@ -454,15 +475,21 @@ write_salmon_datapackage <- function(
     ))
   }
 
+  # Both sides are compared with separators normalised: `path` may be spelled
+  # with `\\` while `managed_paths` are built by `file.path()`, which always
+  # joins with `/`. Comparing the raw strings made every candidate fail the
+  # prefix test and silently skip the check -- failing open, which is the worst
+  # outcome for a guard.
   prefix <- paste0(root, "/")
 
   for (candidate in managed_paths) {
-    relative <- if (startsWith(candidate, prefix)) {
-      substring(candidate, nchar(prefix) + 1L)
+    normalized <- .ms_path_separators_to_slash(candidate)
+    relative <- if (startsWith(normalized, prefix)) {
+      substring(normalized, nchar(prefix) + 1L)
     } else {
       next
     }
-    current <- sub("/+$", "", path)
+    current <- root
     parts <- strsplit(relative, "/", fixed = TRUE)[[1]]
     # `.` and empty parts come from the caller's spelling, not from a real
     # directory entry; walking them would readlink the resolved target instead

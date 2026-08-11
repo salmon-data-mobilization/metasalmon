@@ -293,11 +293,35 @@
     return(NA_character_)
   }
   # `file://` legitimately has an empty authority (`file:///path`); every other
-  # scheme written with `://` needs a host.
-  if (!nzchar(parts[[3]]) && !identical(tolower(parts[[2]]), "file")) {
+  # scheme written with `://` needs a host. A non-empty authority is not the
+  # same claim: `user@` and `:` are both non-empty and hostless.
+  if (identical(tolower(parts[[2]]), "file")) {
+    return(uri)
+  }
+  if (!.ms_uri_authority_has_host(parts[[3]])) {
     return(NA_character_)
   }
   uri
+}
+
+# Whether an RFC 3986 authority (`[userinfo@]host[:port]`) carries a host.
+.ms_uri_authority_has_host <- function(authority) {
+  host <- sub("^.*@", "", authority)
+  host <- sub(":[0-9]*$", "", host)
+  if (!nzchar(host)) {
+    return(FALSE)
+  }
+  # An IP-literal is bracketed and is the one host form that may contain `:`.
+  if (grepl("^\\[[0-9A-Fa-f:.]+\\]$", host)) {
+    return(TRUE)
+  }
+  # reg-name: unreserved / pct-encoded / sub-delims. Anything else -- a stray
+  # `:`, a bracket, a slash -- means this is not a host.
+  if (!grepl("^[A-Za-z0-9._~%!$&'()*+,;=-]+$", host)) {
+    return(FALSE)
+  }
+  # A `%` that is not the start of a well-formed escape is not pct-encoding.
+  !grepl("%(?![0-9A-Fa-f]{2})", host, perl = TRUE)
 }
 
 .ms_schema_tables_from_frictionless <- function(metadata_schemas) {
