@@ -1195,8 +1195,15 @@
   ))
 }
 
-.ms_knb_assert_resource_map_owned <- function(plan, previous) {
+.ms_knb_assert_resource_map_owned <- function(plan, previous, overwrite = FALSE) {
   if (!file.exists(plan$resource_map_path)) {
+    return(invisible(TRUE))
+  }
+  # Same principle as the plan check above: a resource map left by a dry run was
+  # never sent to DataONE, so it is a local scratch artifact rather than a
+  # published one. This was the third gate in the re-plan dead end -- clearing
+  # the artifact writers and the plan check only to stop here.
+  if (isTRUE(overwrite) && identical(as.character(previous$status), "dry_run")) {
     return(invisible(TRUE))
   }
   previous_objects <- .ms_knb_manifest_objects(previous)
@@ -1228,9 +1235,10 @@
       plan$resource_map_bytes
     )
   if (!isTRUE(owned)) {
-    cli::cli_abort(
-      "The pre-existing resource map file is not owned by the exact matching publication manifest."
-    )
+    cli::cli_abort(c(
+      "The pre-existing resource map file is not owned by the exact matching publication manifest.",
+      "i" = "If it is left over from an unpublished dry run, pass {.code overwrite = TRUE} to replace it."
+    ))
   }
   invisible(TRUE)
 }
@@ -1525,7 +1533,8 @@
                                resource_map_path = file.path(
                                  dirname(manifest_path),
                                  "resource-map.rdf"
-                               )) {
+                               ),
+                               overwrite = FALSE) {
   representation <- match.arg(representation)
   .ms_knb_reject_review_candidate_annotations(path)
   mapping <- yaml::read_yaml(
@@ -1533,7 +1542,7 @@
   )
   archive <- NULL
   package_objects <- if (identical(representation, "archive")) {
-    archive <- .ms_knb_write_sdp_archive(path)
+    archive <- .ms_knb_write_sdp_archive(path, overwrite = overwrite)
     list(.ms_knb_sdp_archive_object(
       archive,
       path,
@@ -1548,6 +1557,7 @@
   eml <- write_eml_from_sdp(
     path,
     output_path = eml_path,
+    overwrite = overwrite,
     supplementary_objects = supplementary_objects,
     require_revision_key = !is.null(prior_manifest)
   )
@@ -3500,6 +3510,11 @@
 #'   object and zero anonymous catalog matches. The replication policy is part
 #'   of the exact reviewed manifest and is verified on remote readback. There
 #'   is no implicit access default.
+#' @param overwrite Logical; rebuild derived publication artifacts (the SDP
+#'   archive and `eml.xml`) when they already exist with different bytes. The
+#'   default `FALSE` refuses, which protects an artifact you may already have
+#'   published; pass `TRUE` to re-plan after correcting an input such as
+#'   `eml-mapping.yml`. Live publication is gated separately by `confirm`.
 #' @param manifest_path Recovery manifest path inside `path`. Defaults to
 #'   `publication/knb-manifest.json`.
 #' @param dry_run Logical; when `TRUE` (the default), write only local plan
@@ -3538,9 +3553,11 @@ publish_sdp_to_knb <- function(path,
                                dry_run = TRUE,
                                confirm = interactive(),
                                revision_manifest = NULL,
-                               representation = c("archive", "expanded")) {
+                               representation = c("archive", "expanded"),
+                               overwrite = FALSE) {
   confirm_missing <- missing(confirm)
   representation <- match.arg(representation)
+  .ms_knb_validate_flag(overwrite, "overwrite")
   .ms_knb_validate_flag(public, "public")
   .ms_knb_validate_flag(dry_run, "dry_run")
   if (!isTRUE(dry_run) &&
@@ -3609,21 +3626,36 @@ publish_sdp_to_knb <- function(path,
     public,
     representation = representation,
     prior_manifest = prior_manifest,
-    resource_map_path = resource_map_path
+    resource_map_path = resource_map_path,
+    overwrite = overwrite
   )
   if (!is.null(previous) &&
       !identical(as.character(previous$plan_sha256), plan$plan_sha256)) {
-    cli::cli_abort(c(
-      "The existing publication manifest describes a different plan.",
-      "i" = "DataONE PIDs are immutable. Supply revision_manifest and a new manifest_path for a reviewed revision."
-    ))
+    # A dry-run manifest records a plan that was never sent to DataONE: no PID
+    # was minted, so immutability does not apply to it. Replacing it is exactly
+    # how a user iterates after correcting an input, and refusing was the second
+    # half of the re-plan dead end -- `overwrite = TRUE` got past the artifact
+    # writers only to stop here. Anything that reached the network still
+    # requires a reviewed revision.
+    previous_was_dry_run <- identical(as.character(previous$status), "dry_run")
+    if (!(previous_was_dry_run && isTRUE(overwrite))) {
+      remedy <- if (previous_was_dry_run) {
+        "The existing manifest is an unpublished dry run; pass {.code overwrite = TRUE} to replace it."
+      } else {
+        "DataONE PIDs are immutable. Supply revision_manifest and a new manifest_path for a reviewed revision."
+      }
+      cli::cli_abort(c(
+        "The existing publication manifest describes a different plan.",
+        "i" = remedy
+      ))
+    }
   }
   if (!isTRUE(dry_run)) {
     .ms_knb_require_reviewed_manifest(previous, plan)
     .ms_knb_require_rights_authorization(plan)
   }
 
-  .ms_knb_assert_resource_map_owned(plan, previous)
+  .ms_knb_assert_resource_map_owned(plan, previous, overwrite = overwrite)
   .ms_knb_atomic_write_raw(
     plan$resource_map_bytes,
     plan$resource_map_path

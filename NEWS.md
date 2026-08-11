@@ -1,3 +1,37 @@
+metasalmon 0.2.3
+----------------
+
+Roadmap step 4: publication ergonomics and provider robustness.
+
+### New
+
+- `publish_sdp_to_knb()` gains `overwrite`. A dry run could not be re-planned
+  after correcting an input: three separate gates — the SDP archive writer, the
+  plan-mismatch check, and the resource-map ownership check — each treated an
+  existing artifact as a published one, and none of the messages said that a
+  manual `unlink()` was the only way forward. `overwrite = TRUE` now rebuilds
+  derived artifacts and replaces a manifest and resource map left by an
+  *unpublished dry run*. Anything that reached the network is unaffected: a
+  manifest whose status is not `dry_run` still requires a reviewed revision,
+  because its DataONE PIDs are immutable, and live publication is still gated by
+  `confirm`.
+
+### Fixes
+
+- The default LLM providers now retry. `.ms_llm_retry_limit()` returned 1
+  attempt for everything except two special-cased models, so
+  `attempt >= attempts` was true on the first pass and the retryable-error
+  classifier was never consulted — a 429 or a 503 failed the whole review on the
+  first try, after the user had already paid for every preceding request.
+  `Retry-After` is now honoured in both its delta-seconds and HTTP-date forms
+  and capped at 60s, with jittered exponential backoff otherwise so a batch that
+  hits one rate limit does not retry in lockstep.
+
+- The BioPortal API key travels in an `Authorization` header instead of the
+  query string, where it was written into request logs at both ends and printed
+  verbatim by the timeout warning. URLs are additionally redacted before being
+  displayed or recorded.
+
 metasalmon 0.2.2
 ----------------
 

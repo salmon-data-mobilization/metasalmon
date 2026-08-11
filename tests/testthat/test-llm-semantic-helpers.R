@@ -2412,3 +2412,59 @@ test_that("strong LLM shortlist acceptance skips bounded exploration", {
   expect_false(isTRUE(assessments$llm_exploration_used[[1]]))
   expect_true(is.na(assessments$llm_exploration_queries[[1]]))
 })
+
+test_that("the default providers retry, and honour Retry-After", {
+  # The default limit was 1 attempt, so `attempt >= attempts` was true on the
+  # first pass and `.ms_llm_is_retryable_error()` was never consulted: a 429 or
+  # a 503 failed the whole review on the first try, after the user had already
+  # paid for every preceding request.
+  config <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openai", model = "gpt-4o", api_key = "dummy-key"
+  )
+  expect_gt(metasalmon:::.ms_llm_retry_limit(config), 1L)
+
+  attempts <- 0L
+  retrying <- metasalmon:::.ms_llm_resolve_config(
+    provider = "openai", model = "gpt-4o", api_key = "dummy-key",
+    request_fn = function(messages, config) {
+      attempts <<- attempts + 1L
+      if (attempts == 1L) stop("HTTP 429 Too Many Requests.")
+      list(decision = "accept", selected_candidate_index = 1, confidence = 0.9,
+           rationale = "Recovered.", missing_context = "")
+    }
+  )
+  result <- metasalmon:::.ms_llm_request_with_retries(
+    messages = list(list(role = "user", content = "test")), config = retrying
+  )
+  expect_equal(attempts, 2L)
+  expect_equal(result$decision, "accept")
+})
+
+test_that("Retry-After is parsed in both wire formats and capped", {
+  # A server that sends Retry-After is stating the rate-limit window; retrying
+  # on a fixed 0.5s backoff instead is how a 429 becomes a ban.
+  rate_limited <- function(header) {
+    structure(
+      class = c("httr2_http_429", "httr2_http", "rlang_error", "error", "condition"),
+      list(
+        message = "HTTP 429 Too Many Requests.",
+        resp = structure(class = "httr2_response", list(headers = header))
+      )
+    )
+  }
+
+  expect_equal(metasalmon:::.ms_llm_retry_after_seconds(rate_limited(list(`Retry-After` = "30"))), 30)
+
+  # HTTP-date form.
+  soon <- format(Sys.time() + 45, "%a, %d %b %Y %H:%M:%S GMT", tz = "GMT")
+  dated <- metasalmon:::.ms_llm_retry_after_seconds(rate_limited(list(`Retry-After` = soon)))
+  expect_true(dated > 30 && dated <= 46)
+
+  # A multi-minute demand is capped rather than silently blocking the review.
+  expect_equal(metasalmon:::.ms_llm_retry_wait_seconds(rate_limited(list(`Retry-After` = "600")), 1), 60)
+
+  # No header, and no response at all, both fall back to bounded backoff.
+  expect_true(is.na(metasalmon:::.ms_llm_retry_after_seconds(simpleError("boom"))))
+  backoff <- metasalmon:::.ms_llm_retry_wait_seconds(rate_limited(list()), 2)
+  expect_true(backoff >= 1 && backoff <= 1.5)
+})

@@ -2863,9 +2863,10 @@ write_eml_from_sdp <- function(path,
     if (identical_bytes) {
       unlink(temporary)
     } else if (!isTRUE(overwrite)) {
-      cli::cli_abort(
-        "EML output {.path {output_path}} already exists with different bytes; set {.arg overwrite = TRUE} to replace it."
-      )
+      cli::cli_abort(c(
+        "EML output {.path {output_path}} already exists with different bytes.",
+        "i" = "To rebuild it from the current inputs, pass {.code overwrite = TRUE}."
+      ))
     }
   }
 

@@ -193,14 +193,60 @@
   1L
 }
 
+# Total attempts, not retries. The default was 1, which meant `attempt >=
+# attempts` was true on the first pass and the retryable-error classifier below
+# was never consulted for the default providers -- a 429 or a 503 failed the
+# whole review on the first try, after the user had already paid for every
+# preceding request.
 .ms_llm_retry_limit <- function(config) {
   if (.ms_llm_uses_openrouter_free(config$provider, config$model)) {
-    return(2L)
+    return(4L)
   }
   if (.ms_llm_uses_chapi_gpt_oss(config$provider, config$model)) {
-    return(2L)
+    return(4L)
   }
-  1L
+  3L
+}
+
+# How long to wait before the next attempt.
+#
+# A server that says `Retry-After` is telling you the rate-limit window; ignoring
+# it and retrying on a fixed 0.5s backoff is how a 429 becomes a ban. The header
+# is either delta-seconds or an HTTP-date, and both forms appear in the wild.
+#
+# Capped: a provider asking for a multi-minute wait should fail the call so the
+# caller can decide, rather than silently blocking a review for that long.
+.ms_llm_retry_after_seconds <- function(condition) {
+  resp <- condition$resp
+  if (is.null(resp)) {
+    return(NA_real_)
+  }
+  raw <- tryCatch(httr2::resp_header(resp, "Retry-After"), error = function(e) NULL)
+  if (is.null(raw) || !nzchar(trimws(raw))) {
+    return(NA_real_)
+  }
+  seconds <- suppressWarnings(as.numeric(trimws(raw)))
+  if (!is.na(seconds)) {
+    return(max(0, seconds))
+  }
+  at <- suppressWarnings(
+    as.POSIXct(strptime(trimws(raw), "%a, %d %b %Y %H:%M:%S", tz = "GMT"))
+  )
+  if (is.na(at)) {
+    return(NA_real_)
+  }
+  max(0, as.numeric(difftime(at, Sys.time(), units = "secs")))
+}
+
+.ms_llm_retry_wait_seconds <- function(condition, attempt, max_wait = 60) {
+  requested <- .ms_llm_retry_after_seconds(condition)
+  if (!is.na(requested)) {
+    return(min(requested, max_wait))
+  }
+  # Exponential backoff with jitter. Without jitter, a batch of requests that
+  # hit the same rate limit retries in lockstep and hits it again together.
+  backoff <- min(max_wait, 0.5 * (2^(attempt - 1L)))
+  backoff + stats::runif(1, 0, backoff / 2)
 }
 
 .ms_llm_is_retryable_error <- function(message) {
@@ -241,7 +287,10 @@
       stop(result)
     }
 
-    Sys.sleep(min(2, attempt * 0.5))
+    wait <- .ms_llm_retry_wait_seconds(result, attempt)
+    if (wait > 0) {
+      Sys.sleep(wait)
+    }
   }
 
   stop(last_error)

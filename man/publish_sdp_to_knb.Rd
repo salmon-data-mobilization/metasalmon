@@ -12,7 +12,8 @@ publish_sdp_to_knb(
   dry_run = TRUE,
   confirm = interactive(),
   revision_manifest = NULL,
-  representation = c("archive", "expanded")
+  representation = c("archive", "expanded"),
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -51,6 +52,12 @@ the closed SDP artifact inventory as individually named objects whose
 relative paths can reconstruct the package. \code{"archive"} (the compatibility
 default) publishes one deterministic ZIP in addition to each source data
 object. Neither mode scans arbitrary package files.}
+
+\item{overwrite}{Logical; rebuild derived publication artifacts (the SDP
+archive and \code{eml.xml}) when they already exist with different bytes. The
+default \code{FALSE} refuses, which protects an artifact you may already have
+published; pass \code{TRUE} to re-plan after correcting an input such as
+\code{eml-mapping.yml}. Live publication is gated separately by \code{confirm}.}
 }
 \value{
 Invisibly returns publication status, identifiers, normalized

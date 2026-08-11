@@ -34,12 +34,13 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #47–#49, and #51–#61 (#63 fixed
-  in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, and #53–#61 (#63 fixed
+  in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2; #47, #51
+  and #52 in 0.2.3).
 
-**Next up:** roadmap step 3 (#48/#49, one validation authority — needs
-coordination with `smn-data-pkg`) or step 4 (#47/#51/#52, each small and
-independently shippable). Steps 1 and 2 are done (0.2.1, 0.2.2).
+**Next up:** roadmap step 3 (#48/#49, one validation authority) — the last
+remaining P1 work, and the only step needing `smn-data-pkg` coordination.
+Steps 1, 2 and 4 are done (0.2.1, 0.2.2, 0.2.3).
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -693,6 +694,34 @@ a locale-collated sort. The reported finding was only the adjacent character
 tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
 
+### Fixed in 0.2.3
+
+**#47 `publish_sdp_to_knb()` could not re-plan after any edit.** Reproduced
+end-to-end, and it was **three** gates rather than one: the SDP archive writer,
+the plan-mismatch check, and the resource-map ownership check each treated an
+existing artifact as a published artifact. Clearing the first only moved the
+failure to the second. The original finding's "no override" was accurate for the
+entry point even though the individual writers have `overwrite` — the parameter
+was simply not reachable from `publish_sdp_to_knb()`.
+
+Fixed by one principle rather than three patches: an artifact left by an
+**unpublished dry run** may be replaced when `overwrite = TRUE`, because no PID
+was ever minted for it. A manifest whose status is not `dry_run` still requires
+a reviewed revision, and live publication is still gated by `confirm`. All three
+messages now name the remedy.
+
+**#51 The default LLM providers never retried.** `.ms_llm_retry_limit()`
+returned 1 attempt for everything except two special-cased models, so
+`attempt >= attempts` was true on the first pass and the retryable-error
+classifier below it was unreachable — a 429 or 503 failed the whole review on
+the first try, after the user had paid for every preceding request.
+`Retry-After` is now honoured in both wire formats and capped, with jittered
+exponential backoff otherwise so a batch hitting one rate limit does not retry
+in lockstep.
+
+**#52 The BioPortal API key travelled in the request URL.** Now an
+`Authorization` header, with URLs redacted before display or recording.
+
 ### Fixed in 0.2.2
 
 **#45 The term-search index cache never prevented work.** Both index builders
@@ -770,11 +799,6 @@ prefix; and `robot-profile.yaml` replaces the default profile rather than
 amending it, dropping 16 ERROR-level checks. Fix belongs in
 `dfo-salmon-ontology`, not here.
 
-**#47 `publish_sdp_to_knb()` cannot re-plan after any edit.** Derived artifacts are
-written with `overwrite = FALSE` and no override, so every dry run after a
-corrected `eml-mapping.yml` aborts until the user works out they must manually
-`unlink()`. Neither message says so. `R/knb-publication.R:1311`.
-
 **#48 Three error-severity `sdp.rules.yaml` rules are loaded and never executed.**
 metasalmon is the workshop's designated final gate before DataONE deposit. Drive
 the checks from the parsed rule `id`s so spec and implementation cannot silently
@@ -784,13 +808,6 @@ diverge. `R/schema-helpers.R`.
 declared primary keys, no required-column nullability, no schema-required
 metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
-
-**#51 No retry or rate-limit handling for the default LLM providers.**
-`Retry-After` is ignored and the retry classifier is unreachable.
-`R/llm-semantic-helpers.R:196`.
-
-**#52 BioPortal API key is in the request URL** and printed verbatim in timeout
-warnings. Move to a header; redact in messages. `R/term_search.R:713`.
 
 ### Open — P2 (correctness and conformance debt)
 

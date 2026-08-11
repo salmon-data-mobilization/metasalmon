@@ -3717,3 +3717,84 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     )
   }
 })
+
+test_that("a dry run can be re-planned after correcting an input", {
+  skip_if_not_installed("emld")
+  # Three gates each assumed "existing artifact" meant "published artifact":
+  # the archive writer, the plan-mismatch check, and the resource-map ownership
+  # check. A user who corrected an input hit them in turn with no override
+  # reachable from `publish_sdp_to_knb()`, and no message said that a manual
+  # `unlink()` was the only way forward.
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
+
+  first <- publish_sdp_to_knb(
+    package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+  )
+  expect_equal(first$status, "dry_run")
+
+  dictionary_path <- file.path(package_path, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    progress = FALSE
+  )
+  dictionary$column_description[[1]] <- paste(
+    dictionary$column_description[[1]], "Clarified after review."
+  )
+  readr::write_csv(dictionary, dictionary_path, na = "")
+
+  # The default still refuses, and now says what to do about it.
+  expect_error(
+    publish_sdp_to_knb(
+      package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+    ),
+    "overwrite"
+  )
+
+  second <- publish_sdp_to_knb(
+    package_path, public = TRUE, manifest_path = manifest_path,
+    dry_run = TRUE, overwrite = TRUE
+  )
+  expect_equal(second$status, "dry_run")
+  # The re-plan must actually reflect the corrected input, not just succeed.
+  # `plan_sha256` lives on the manifest, not the top-level result -- asserting
+  # on the result field compares NULL to NULL and always passes.
+  expect_false(is.null(second$manifest$plan_sha256))
+  expect_false(identical(second$manifest$plan_sha256, first$manifest$plan_sha256))
+})
+
+test_that("overwrite does not let a published plan be replaced", {
+  skip_if_not_installed("emld")
+  # `overwrite` relaxes the gates only for a manifest that was never sent to
+  # DataONE. Anything that reached the network keeps requiring a reviewed
+  # revision, because its PIDs are immutable.
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
+  publish_sdp_to_knb(
+    package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+  )
+
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = TRUE)
+  manifest$status <- "complete"
+  jsonlite::write_json(manifest, manifest_path, auto_unbox = TRUE, digits = NA)
+
+  dictionary_path <- file.path(package_path, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    progress = FALSE
+  )
+  dictionary$column_description[[1]] <- paste(
+    dictionary$column_description[[1]], "Changed after publication."
+  )
+  readr::write_csv(dictionary, dictionary_path, na = "")
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path, public = TRUE, manifest_path = manifest_path,
+      dry_run = TRUE, overwrite = TRUE
+    ),
+    "immutable|different plan"
+  )
+})
