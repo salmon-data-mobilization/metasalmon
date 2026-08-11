@@ -16,7 +16,9 @@ Short map of the package's public starts and their canonical implementations.
   `write_sdp_reproducibility_manifest()`
 - KNB workflow: reviewed SDP + `metadata/eml-mapping.yml` ->
   `write_eml_from_sdp()` -> `publish_sdp_to_knb(..., public = FALSE,
-  dry_run = TRUE)` -> review exact manifest -> explicit resumable live deposit
+  dry_run = TRUE)` -> review exact manifest -> explicit resumable live deposit.
+  Re-plan after correcting an input with `overwrite = TRUE`; it replaces
+  artifacts from an unpublished dry run only, never from a published manifest
 - Package site: <https://salmon-data-mobilization.github.io/metasalmon/>
 - Repository: <https://github.com/salmon-data-mobilization/metasalmon>
 - Optional LLM variables: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `CHAPI_API_KEY`

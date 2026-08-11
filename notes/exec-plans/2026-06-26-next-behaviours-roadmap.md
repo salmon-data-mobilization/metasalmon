@@ -1,5 +1,10 @@
 # metasalmon — next behaviours roadmap
 
+> **Superseded for sequencing by [`notes/ROADMAP.md`](../ROADMAP.md).** Still the
+> authority for **Theme A–E design detail** — read it before picking up anything
+> it designed. Open remnants of Themes C and E were migrated to roadmap stream
+> **S7** so they are not lost.
+
 > **SUPERSEDED FOR SEQUENCING (2026-08-10).** The prioritized list of what to do
 > next is now `2026-08-10-post-0.2.0-roadmap.md`, informed by the comprehensive
 > review in `2026-08-10-comprehensive-ecosystem-review.md`. Themes A and E5 are
