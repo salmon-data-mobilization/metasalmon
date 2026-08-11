@@ -70,7 +70,7 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
 S2 correctness debt          ── independent
-S5 API hygiene / 0.3.0       ── independent, bundle when convenient
+S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
 ```
 
@@ -141,13 +141,30 @@ Once the episodes execute against a released metasalmon, the workshop becomes an
 integration test of the public API — which is where stale-call bugs get caught
 for free. That is the strategic reason to finish it, beyond teaching.
 
-### S5 — R-package and API hygiene · #58, #59, #60 · ~1 week · ships as 0.3.0
+### S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ~2–3 weeks · ships as 0.3.0
 
-**Execplan:** to be written.
+**Execplan:** [`2026-08-11-r-native-review-and-editing.md`](exec-plans/2026-08-11-r-native-review-and-editing.md)
+(#74) · #58/#59/#60 detail in `2026-08-10-comprehensive-ecosystem-review.md`.
 
-Condition classes (#58) are breaking for anyone matching on message text, so this
-cluster carries the major bump. Independent of everything else; bundle it with
-whatever else is ready when a 0.3.0 is warranted.
+**#74 is the headline.** Today the documented review workflow leaves R for a
+spreadsheet, and the only record of the most consequential decision in the
+pipeline is a mutated CSV — the single unreproducible link in a chain that is
+otherwise byte-reproducible and guarded. `review_semantics()` /
+`accept_suggestion()` / `apply_sdp_semantics()` make the decision scriptable and
+re-runnable.
+
+**Why these four ship together, rather than as a sequence:** #60 (the
+`semantic_suggestions` / `semantic_llm_assessments` attributes have no accessor)
+is not merely adjacent to #74, it is its **prerequisite** — the review queue has
+to read those attributes through a supported accessor. #58 (condition classes)
+is breaking for anyone matching on message text and already wants a major bump,
+and #74 adds roughly ten exported functions, which wants the same bump. One
+0.3.0 story is cheaper than three coordinated releases.
+
+Independent of every other stream. The feature also has a smaller sibling:
+**#75**, an auto-applied `method_iri` with no `metadata/methods.csv`, found while
+scoping #74 and reproduced — it is fixed by that execplan's slice 2, where
+`method_iri` and `methods.csv` ship together.
 
 ### S6 — Ecosystem · #44, #61 · ~6 weeks · parallel track, mostly not R code
 

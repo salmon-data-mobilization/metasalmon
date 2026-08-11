@@ -34,7 +34,8 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73.
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73,
+  #74 (feature), #75.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
 
@@ -870,7 +871,59 @@ declared primary keys, no required-column nullability, no schema-required
 metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
 
+### Open — feature
+
+**#74 R-native semantic review and editing.** The documented review workflow
+leaves R: open `metadata/column_dictionary.csv` in a spreadsheet, read
+`semantic_suggestions.csv` as a shortlist, copy an IRI across by hand. The only
+record of the decision is the mutated CSV — the one unreproducible link in a
+chain that is otherwise byte-reproducible and guarded.
+
+The write-back seam already exists and is unreachable:
+`apply_semantic_suggestions(strategy = "reviewed")` filters a `decision` column
+on `accepted`/`accept` (`R/semantics-helpers.R:844`), **nothing writes that
+column, and nothing reads `semantic_suggestions.csv` back**. This feature is the
+missing producer. Design and milestones:
+`notes/exec-plans/2026-08-11-r-native-review-and-editing.md`.
+
+*Gate:* `create_sdp()` → `review_semantics()` → `accept_suggestion()` →
+`apply_sdp_semantics()` → `validate_salmon_datapackage(require_iris = TRUE)`
+passes with no `REVIEW:` markers left **and the data CSV bytes unchanged** —
+the byte assertion is the only one that fails if the writer is not surgical.
+
 ### Open — P2 (correctness and conformance debt)
+
+**#75 `create_sdp()` auto-applies `method_iri` with no `metadata/methods.csv`.**
+Reproduced. The docs state that "constraint and method assessments always remain
+manual", which holds only on the `llm_assess = TRUE` path, where
+`.ms_create_sdp_llm_auto_apply_roles()` returns exactly
+`c("variable", "property", "entity", "unit")`. On the **default seeded** path,
+`apply_semantic_suggestions(strategy = "top", roles = NULL)` maps all six roles,
+gated only lexically by `.ms_measurement_supports_procedure_slot()`, whose regex
+includes `method|protocol|procedure|gear|estimated|enumerat|…`.
+
+A column named `enumeration_method` gets
+`method_iri = "REVIEW: https://w3id.org/smn/EnumerationMethod"`, and
+`metadata/methods.csv` is never created (`write_sdp_methods()` has **zero
+callers** in `R/`).
+
+It bites at the worst moment: `validate_sdp_methods()` — which requires a
+registered row in that file — runs on the **KNB publication path**
+(`R/knb-publication.R:392`), not in `validate_salmon_datapackage()`. So the user
+accepts the suggestion, strips the `REVIEW:` prefix exactly as the package's own
+guidance instructs, passes validation, and fails at deposit after the whole
+review is done. No test asserts a positive auto-apply for `method` or
+`constraint`; the nearest one is green only because its `water_level` fixture
+misses both regexes.
+
+*Gate:* a test asserting that a method-ish column name does **not** receive an
+auto-applied `method_iri`. **Fixed in slice 1** of
+`notes/exec-plans/2026-08-11-r-native-review-and-editing.md` by restricting the
+default seeded path's auto-apply roles to match the LLM path's — review surfaced
+that deferring it made slice 1's own acceptance criteria unsatisfiable, since the
+marker it leaves blocks strict validation.
+
+
 
 **#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
 `dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and
