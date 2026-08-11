@@ -4,10 +4,14 @@ Created 2026-08-11. Covers roadmap streams **S3** (KNB staging environment) and
 **S4** (workshop rebuild). Sequencing and dependencies live in
 [`notes/ROADMAP.md`](../ROADMAP.md); this file is the detail.
 
-Source: an authored plan, reviewed and refined below. The review found five
-things that would have bitten during implementation and one that would have
-shipped a credential leak. Those are called out inline as **REVIEW** so the
-original intent stays visible next to what changed.
+Source: an authored plan, reviewed and refined below. Six findings are called out
+inline as **REVIEW** so the original intent stays visible next to what changed —
+two blocking, one of them a credential leak.
+
+REVIEW 4 also records a correction to *this document's own first
+recommendation*, which was wrong in a way that would have deleted a user's
+staging rehearsal. Kept rather than quietly edited: the reasoning is the useful
+part.
 
 ---
 
