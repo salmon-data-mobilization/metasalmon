@@ -38,9 +38,15 @@ Severity = how much it can bite a real user.
   in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2; #47, #51
   and #52 in 0.2.3).
 
-**Next up:** roadmap step 3 (#48/#49, one validation authority) — the last
-remaining P1 work, and the only step needing `smn-data-pkg` coordination.
-Steps 1, 2 and 4 are done (0.2.1, 0.2.2, 0.2.3).
+**Next up:** a short 0.2.4 hardening pass, then roadmap step 3 (#48/#49, one
+validation authority) — the last remaining P1 work, and the only step needing
+`smn-data-pkg` coordination. Steps 1, 2 and 4 are done (0.2.1, 0.2.2, 0.2.3).
+
+The 0.2.4 pass is three small independent changes, taken ahead of step 3 because
+two of them protect everything after: the CI optional-dependency guard (done),
+**#54** (literal `"NA"` code values destroyed on round trip — silently loses user
+data), and un-`\dontrun{}`ing the offline examples (the roadmap's cheapest item
+and the largest single increase in what `R CMD check` validates).
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -693,6 +699,23 @@ is stable, so ties kept the order of `split()`'s factor levels — which come fr
 a locale-collated sort. The reported finding was only the adjacent character
 tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
+
+### Fixed in 0.2.4
+
+**Five DataONE adapter tests had never executed anywhere.** Not a numbered
+backlog item — it came out of the roadmap's own process note about silent
+skips, and it is recorded here because of what it demonstrates.
+`R-CMD-check.yaml` installed only `devtools` and `rcmdcheck`, so `{dataone}` and
+`{datapack}` were absent in CI as well as on development machines, and five
+tests covering the boundary that talks to the repository during live publication
+skipped silently on every run. They pass — but that was unknown, and a
+regression there would have been invisible.
+
+CI installs them now, and `test-ci-optional-deps.R` fails the build when an
+optional package the suite needs is absent *in CI*, while still skipping
+locally, where a missing optional package is an environment fact rather than a
+workflow regression. A check-workflow run should report exactly four skips: the
+Theme A integrity tests, which run in `theme-a-integrity.yaml`.
 
 ### Fixed in 0.2.3
 

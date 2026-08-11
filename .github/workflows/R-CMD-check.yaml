@@ -28,11 +28,34 @@ jobs:
       METASALMON_LLM_API_KEY: ""
       CHAPI_API_KEY: ""
       METASALMON_RUN_THEME_A_INTEGRITY: "false"
+      # Run the suite under a non-C ambient collation. Generating `en_US.UTF-8`
+      # was not enough on its own: R takes its collator from the startup locale
+      # (ICU on Linux), so a later `Sys.setlocale("LC_COLLATE", ...)` did not
+      # change sort order and the differential guards still found no contrast.
+      #
+      # This also makes CI the harder environment rather than the easier one.
+      # Every canonical-bytes path in the package claims to be independent of
+      # locale; running the suite under a locale that actually collates
+      # differently is what tests that claim instead of assuming it.
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # The byte-reproducibility guards compare an ordering under C collation
+      # against a contrasting locale, and skip when none is installed. A default
+      # runner has only C/POSIX, so those tests were passing vacuously: the
+      # guards protecting the package's canonical bytes gave no CI signal at all.
+      # `en_US.UTF-8` supplies the contrasting collation; `fr_FR.UTF-8` supplies
+      # the non-English `LC_TIME` the HTTP-date parser test needs.
+      - name: Generate contrasting locales
+        run: |
+          sudo locale-gen en_US.UTF-8 fr_FR.UTF-8
+          sudo update-locale
+          locale -a | grep -E 'en_US|fr_FR' || true
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -45,6 +68,9 @@ jobs:
           extra-packages: |
             any::devtools
             any::rcmdcheck
+            any::dataone
+            any::datapack
+            any::XML
           needs: check
 
       - name: Replay Theme A evidence
