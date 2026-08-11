@@ -86,18 +86,29 @@ network (`w3id.org`) — don't read a green offline run as full coverage.
 
 ## Planning artifacts (read before related work)
 
-- `notes/context.md` — orientation.
-- `notes/bugs-and-improvements.md` — live backlog and the single index of open
-  items. Items #34+ came from the 2026-08-10 comprehensive review.
-- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — **what's next, ranked.**
-- `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
-  verified findings behind that roadmap (metasalmon plus the SDP spec, both
-  ontologies, and the workshop).
-- `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
-  read-only verification of the gcdfo SHACL/SPARQL/ROBOT claims.
-- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
-  sequencing; still the authority for the Theme A–E design detail.
-- `notes/exec-plans/2026-06-24-deepen-architecture-refactors.md` — the executed
-  architecture refactor.
-- `notes/exec-plans/2026-04-02-*` — the bundle-aware semantic-fit and i-adopt
-  chat-decomposition design drafts.
+Three document types, with one job each. Respect the split when you add to them:
+
+- **`notes/ROADMAP.md` — what to do next, in what order, blocked by what.**
+  Undated, edited in place, the single sequencing authority. Start here.
+- **`notes/bugs-and-improvements.md`** — every known defect with evidence, the
+  live index of open items. Severity lives here; *ordering* lives in the roadmap,
+  and the two legitimately differ.
+- **`notes/exec-plans/*.md`** — how to do one stream, in detail. Dated, because
+  each is a record of a decision at a point in time. A roadmap stream links to
+  its execplan before implementation starts.
+
+Orientation is `notes/context.md`. Key execplans:
+
+- `2026-08-11-knb-environments-and-workshop-rebuild.md` — KNB staging target and
+  the workshop rebuild (roadmap S3/S4).
+- `2026-08-10-comprehensive-ecosystem-review.md` — the 96 verified findings
+  behind the current backlog (metasalmon plus the SDP spec, both ontologies, and
+  the workshop).
+- `2026-08-10-gcdfo-validation-layer-verification.md` — read-only verification of
+  the gcdfo SHACL/SPARQL/ROBOT claims.
+- `2026-06-26-next-behaviours-roadmap.md` — superseded for sequencing; still the
+  authority for Theme A–E design detail.
+- `2026-08-10-post-0.2.0-roadmap.md` — superseded by `notes/ROADMAP.md`; the
+  record of how 0.2.1–0.2.4 were sequenced.
+- `2026-06-24-deepen-architecture-refactors.md` — the executed architecture refactor.
+- `2026-04-02-*` — bundle-aware semantic-fit and i-adopt chat-decomposition drafts.

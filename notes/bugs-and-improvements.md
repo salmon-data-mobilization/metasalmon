@@ -26,7 +26,7 @@ Severity = how much it can bite a real user.
 - **deferred** — deliberately left out of the current refactor because it belongs
   to a separate roadmap or would change behavior beyond the plan.
 
-**Current snapshot (updated 2026-08-10, after the 0.2.0 P0 remediation).**
+**Current snapshot (updated 2026-08-11, after 0.2.4).**
 
 - **Closed:** #1, #2, #4, #5, #6, #7, #8, #10, #11, #12, #14, #15, #16, #17, #18,
   #19, #20, #21, #25, #27, #28, #32, #34–#42 (the 0.2.0 P0 remediation), and
@@ -34,28 +34,31 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, and (#63 fixed in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in
-  0.2.2; #47, #51 and #52 in 0.2.3; #54 in 0.2.4).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73.
+- **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
+  and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
 
-**Next up:** a short 0.2.4 hardening pass, then roadmap step 3 (#48/#49, one
-validation authority) — the last remaining P1 work, and the only step needing
-`smn-data-pkg` coordination. Steps 1, 2 and 4 are done (0.2.1, 0.2.2, 0.2.3).
+**Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
+and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
+start in parallel and is blocked only by #73. See `notes/ROADMAP.md` for the full
+ordering.
 
-The 0.2.4 pass is three small independent changes, taken ahead of step 3 because
-two of them protect everything after: the CI optional-dependency guard (done),
-**#54** (literal `"NA"` code values destroyed on round trip — silently loses user
-data), and un-`\dontrun{}`ing the offline examples (the roadmap's cheapest item
-and the largest single increase in what `R CMD check` validates).
+**Forward plan.** Sequencing, dependencies, and release state live in
+**`notes/ROADMAP.md`** — the single undated document that orders every stream and
+links to its execplan. This file stays the live index of *what is wrong*;
+the roadmap decides *what order to fix it in*.
 
-**Forward plan.** The single prioritized list of what to do next is
-`notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
-in `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`. The older
-`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` is superseded for
-sequencing but still holds the Theme A–E design detail.
+Evidence for items #34+ is in
+`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`. The two older
+documents that called themselves roadmaps
+(`2026-08-10-post-0.2.0-roadmap.md`, `2026-06-26-next-behaviours-roadmap.md`) are
+now historical records; the second still holds the Theme A–E design detail.
 
 **How to read this file.** Items #1–#33 came from the 2026-06-24 architecture
-review. Items #34+ came from the 2026-08-10 comprehensive review and are tagged
-with the priority they carry in the post-0.2.0 roadmap. An item marked **fixed**
+review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were found
+during the 0.2.4 work. Priorities here are severity; *ordering* is decided in
+`notes/ROADMAP.md` and the two can differ — #54 was a P2 that shipped before the
+remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
 should name a check that proves it from a clean clone; #9 is the cautionary
 example of what happens otherwise.
 
@@ -868,6 +871,15 @@ metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
 
 ### Open — P2 (correctness and conformance debt)
+
+**#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
+`dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and
+`DATAONE_TEST_TOKEN=SECRET` do not. The alternation in `R/cli-safety.R` matches
+`dataone[_-]?token` and needs the whole qualified name to match. Captured HTTP
+and provider errors are stored in returned tibbles and written to CSV, so this
+is a leak at rest, not only on screen. **Blocking for the KNB staging work**,
+which proposes exactly `dataone_test_token` as the staging credential — see
+`notes/exec-plans/2026-08-11-knb-environments-and-workshop-rebuild.md` REVIEW 1.
 
 **#53 `infer_column_role()` classifies 4-digit measurement columns as
 `temporal`**, removing them from the entire semantic pipeline.

@@ -328,10 +328,16 @@ do not affect the built package or pkgdown site.
 
 ## Planning artifacts (read before related work)
 
+- **`notes/ROADMAP.md` — what to do next, in what order, and what blocks what.
+  Start here.** Undated and edited in place; it links each stream to its
+  execplan.
 - `notes/bugs-and-improvements.md` — the live backlog and the single index of
-  open items. Items #34+ came from the 2026-08-10 comprehensive review.
-- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — **the prioritized list of
-  what to do next.** Start here.
+  open items. Items #34+ came from the 2026-08-10 comprehensive review. Severity
+  lives here; ordering lives in the roadmap.
+- `notes/exec-plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
+  KNB staging target and the workshop rebuild (roadmap S3/S4).
+- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — superseded by
+  `notes/ROADMAP.md`; kept as the record of how 0.2.1–0.2.4 were sequenced.
 - `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
   verified findings behind that roadmap, covering metasalmon plus the SDP spec,
   both ontologies, and the workshop.
