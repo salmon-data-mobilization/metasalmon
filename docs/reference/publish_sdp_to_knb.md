@@ -24,7 +24,8 @@ publish_sdp_to_knb(
   dry_run = TRUE,
   confirm = interactive(),
   revision_manifest = NULL,
-  representation = c("archive", "expanded")
+  representation = c("archive", "expanded"),
+  overwrite = FALSE
 )
 ```
 
@@ -82,6 +83,14 @@ publish_sdp_to_knb(
   can reconstruct the package. `"archive"` (the compatibility default)
   publishes one deterministic ZIP in addition to each source data
   object. Neither mode scans arbitrary package files.
+
+- overwrite:
+
+  Logical; rebuild derived publication artifacts (the SDP archive and
+  `eml.xml`) when they already exist with different bytes. The default
+  `FALSE` refuses, which protects an artifact you may already have
+  published; pass `TRUE` to re-plan after correcting an input such as
+  `eml-mapping.yml`. Live publication is gated separately by `confirm`.
 
 ## Value
 

@@ -22,7 +22,37 @@ metasalmon 0.2.4
   guard that rejects an undeclared non-empty missing token is retained as an
   invariant and is unreachable through the canonical writer.
 
+### Fixes
+
+- `ms_setup_github()` no longer defaults `repo` to a specific private dataset
+  repository. Nothing about the function is dataset-specific — it finds git,
+  creates or locates a PAT, and stores it — but the default meant a user
+  calling `ms_setup_github()` with no arguments had their setup "verified"
+  against a repository they could not read, so a perfectly good token was
+  reported as broken. `repo` is now optional: supply it to additionally verify
+  access, omit it to just set up the PAT.
+
 ### Internal
+
+- Three examples now run: `apply_salmon_dictionary()`, `validate_dictionary()`,
+  and `suggest_dwc_mappings()` were wrapped in `\dontrun{}` despite executing
+  offline in under a second. Running them immediately caught two real defects
+  that `\dontrun{}` had been hiding — one used `%>%`, which examples do not
+  have attached, and another wrote a package directory into the working
+  directory because it omitted `path`. `check_for_updates()` and
+  `validate_salmon_datapackage()` moved to `\donttest{}` (network, and ~6s
+  respectively).
+
+  The roadmap estimated ~15 such examples; measuring each one offline showed
+  only 5 actually run, because most `\dontrun{}` blocks are illustrative
+  sketches using `path/to/package` placeholders rather than runnable code held
+  back by caution. Making those real is a larger job than un-wrapping.
+
+- The GitHub read-helper tests point at metasalmon's own public repository
+  instead of a private one, so they exercise `read_github_csv()` and
+  `read_github_csv_dir()` everywhere including CI rather than skipping with a
+  404. The `METASALMON_GITHUB_TEST_*` environment variables still redirect them
+  at a private repository when testing those permissions specifically.
 
 - CI runs the suite under a non-C ambient collation (`LANG`/`LC_ALL` =
   `en_US.UTF-8`, with `fr_FR.UTF-8` also generated for `LC_TIME`). The

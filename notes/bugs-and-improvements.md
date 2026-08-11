@@ -34,9 +34,8 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, and #53–#61 (#63 fixed
-  in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2; #47, #51
-  and #52 in 0.2.3).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, and (#63 fixed in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in
+  0.2.2; #47, #51 and #52 in 0.2.3; #54 in 0.2.4).
 
 **Next up:** a short 0.2.4 hardening pass, then roadmap step 3 (#48/#49, one
 validation authority) — the last remaining P1 work, and the only step needing
@@ -701,6 +700,20 @@ tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
 
 ### Fixed in 0.2.4
+
+**#72 `ms_setup_github()` defaulted to a private dataset repo in the old org.**
+Found while explaining a CI skip, not by the sweep that should have caught it.
+`repo` is now optional: supply it to verify access, omit it to set up the PAT
+alone. The test fixtures point at metasalmon's own **public** repository, so the
+GitHub read helpers are now exercised everywhere including CI instead of
+skipping on a 404 — turning two long-standing CI skips into real coverage.
+
+Worth noting for future sweeps: this is the same class as #62 (a hardcoded
+contract value in general-purpose API) and it survived the 0.2.0 pass because
+that pass searched for hardcoded *schema* URIs specifically rather than for the
+pattern.
+
+#### More fixed in 0.2.4
 
 **#54 The canonical CSV round trip destroyed literal `"NA"` code values.**
 Reproduced, and worse than the finding stated: the **written bytes were

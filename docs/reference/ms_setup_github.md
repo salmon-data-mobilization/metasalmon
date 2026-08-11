@@ -6,17 +6,18 @@ files from private GitHub repositories. This function:
 ## Usage
 
 ``` r
-ms_setup_github(repo = "dfo-pacific-science/qualark-data")
+ms_setup_github(repo = NULL)
 ```
 
 ## Arguments
 
 - repo:
 
-  Repository slug in `"owner/name"` form to verify access. Specify the
-  private repository you intend to work with to confirm your PAT has the
-  necessary permissions. Default is a test repository, but you should
-  specify your target repository for verification.
+  Optional repository slug in `"owner/name"` form. When supplied, the
+  stored PAT is additionally checked against it, which is the quickest
+  way to confirm the token carries the permissions a private repository
+  needs. When `NULL` (the default) the PAT is set up and stored without
+  verifying any particular repository.
 
 ## Value
 
@@ -58,10 +59,10 @@ for building raw GitHub URLs.
 
 ``` r
 if (FALSE) { # \dontrun{
-# Basic setup (verifies against default test repository)
+# Set up and store a PAT.
 ms_setup_github()
 
-# Verify access to a specific private repository
+# Optionally also verify the token can read a specific repository.
 ms_setup_github(repo = "your-org/your-private-repo")
 
 # After setup, you can read CSVs from private repos

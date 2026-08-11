@@ -40,7 +40,8 @@ does not check for updates automatically when the package is attached.
 \code{create_sdp()} can call it optionally when \code{check_updates = TRUE}.
 }
 \examples{
-\dontrun{
+\donttest{
+# Queries the GitHub releases API and degrades quietly when unreachable.
 check_for_updates()
 }
 }

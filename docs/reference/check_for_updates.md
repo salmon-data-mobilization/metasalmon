@@ -54,7 +54,10 @@ can call it optionally when `check_updates = TRUE`.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
+# \donttest{
+# Queries the GitHub releases API and degrades quietly when unreachable.
 check_for_updates()
-} # }
+#> ℹ Installed metasalmon "0.2.4" is newer than the latest GitHub release "0.1.8".
+#> ℹ You're probably on an unreleased development build.
+# }
 ```

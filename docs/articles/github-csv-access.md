@@ -32,15 +32,16 @@ This function will:
     Token (PAT) with `repo` scope if you don’t have one
 3.  **Store the PAT** - Save your token securely using `gitcreds` so you
     don’t need to enter it repeatedly
-4.  **Verify access** - Confirm that authentication works by testing
-    against a repository
+
+Called with no arguments it stops there: the token is set up and stored,
+but no particular repository is checked.
 
 ### Verifying Access to a Specific Repository
 
-By default,
-[`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
-verifies access to a test repository. You can specify your own
-repository to verify:
+Pass `repo` to also confirm the stored token can read a given
+repository. This is the quickest way to find out whether your PAT
+carries the permissions a private repository needs, and whether your
+organization’s SSO has authorized it:
 
 ``` r
 

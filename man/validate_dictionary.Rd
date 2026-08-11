@@ -25,8 +25,6 @@ Checks required columns, value types, required flags, and optionally
 validates IRIs. Reports issues using \code{cli} messaging.
 }
 \examples{
-\dontrun{
 dict <- infer_dictionary(mtcars)
 validate_dictionary(dict)
-}
 }

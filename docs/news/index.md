@@ -1,5 +1,358 @@
 # Changelog
 
+## metasalmon 0.2.4
+
+### Breaking changes
+
+- **The canonical CSV missing-value contract is now a single token: an
+  empty field.** Data resources were written with readr’s default
+  `na = "NA"` while metadata used `na = ""`, and everything was read
+  with `na = c("", "NA")`. `"NA"` is a real fisheries gear code, so a
+  literal `"NA"` and a genuinely missing value produced **identical
+  bytes** — the distinction was destroyed at write time, where no reader
+  could recover it. Both sides now use `""`.
+
+  What changes for you: a literal `"NA"`, `"N/A"`, or `"null"` in a data
+  column now round-trips as the string it is. If you have a
+  **hand-authored** package whose CSVs use the two characters `NA` to
+  mean missing, those cells now read as the literal string `"NA"`;
+  rewrite them as empty fields.
+
+  Consequence worth knowing: because no non-empty token parses as
+  missing any more, EML `missing_values` codes are only meaningful for
+  tokens the reader treats as missing, and the canonical writer emits
+  none. EML now represents absence directly rather than through a code
+  that collided with real data. The guard that rejects an undeclared
+  non-empty missing token is retained as an invariant and is unreachable
+  through the canonical writer.
+
+### Fixes
+
+- [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
+  no longer defaults `repo` to a specific private dataset repository.
+  Nothing about the function is dataset-specific — it finds git, creates
+  or locates a PAT, and stores it — but the default meant a user calling
+  [`ms_setup_github()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ms_setup_github.md)
+  with no arguments had their setup “verified” against a repository they
+  could not read, so a perfectly good token was reported as broken.
+  `repo` is now optional: supply it to additionally verify access, omit
+  it to just set up the PAT.
+
+### Internal
+
+- Three examples now run:
+  [`apply_salmon_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_salmon_dictionary.md),
+  [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md),
+  and
+  [`suggest_dwc_mappings()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_dwc_mappings.md)
+  were wrapped in `\dontrun{}` despite executing offline in under a
+  second. Running them immediately caught two real defects that
+  `\dontrun{}` had been hiding — one used `%>%`, which examples do not
+  have attached, and another wrote a package directory into the working
+  directory because it omitted `path`.
+  [`check_for_updates()`](https://salmon-data-mobilization.github.io/metasalmon/reference/check_for_updates.md)
+  and
+  [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+  moved to `\donttest{}` (network, and ~6s respectively).
+
+  The roadmap estimated ~15 such examples; measuring each one offline
+  showed only 5 actually run, because most `\dontrun{}` blocks are
+  illustrative sketches using `path/to/package` placeholders rather than
+  runnable code held back by caution. Making those real is a larger job
+  than un-wrapping.
+
+- The GitHub read-helper tests point at metasalmon’s own public
+  repository instead of a private one, so they exercise
+  [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
+  and
+  [`read_github_csv_dir()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv_dir.md)
+  everywhere including CI rather than skipping with a
+
+  404. The `METASALMON_GITHUB_TEST_*` environment variables still
+       redirect them at a private repository when testing those
+       permissions specifically.
+
+- CI runs the suite under a non-C ambient collation (`LANG`/`LC_ALL` =
+  `en_US.UTF-8`, with `fr_FR.UTF-8` also generated for `LC_TIME`). The
+  differential guards on the byte-reproducibility contract compare an
+  ordering against a contrasting locale and skip when none exists, so on
+  a default C/POSIX runner they had been passing vacuously — the guards
+  protecting the package’s canonical bytes gave no CI signal. They now
+  execute, and the whole suite passes under a locale that collates
+  differently, which is the first actual evidence for the
+  locale-independence claim rather than an assumption. CI skips drop
+  from 9 to 6.
+
+- CI now installs [dataone](https://github.com/DataONEorg/rdataone),
+  [datapack](https://docs.ropensci.org/datapack/), and `{XML}`, and a
+  guard fails the build if any optional package the suite needs is
+  missing. `R-CMD-check.yaml` installed only `devtools` and `rcmdcheck`,
+  so five tests of the DataONE adapter boundary — the code that talks to
+  the repository during live publication — skipped silently on every
+  machine including CI and had never executed. They pass. The
+  distinction the guard encodes: locally a missing optional package is
+  an environment fact and skipping is correct; in CI it is a workflow
+  regression and must fail.
+
+## metasalmon 0.2.3
+
+Roadmap step 4: publication ergonomics and provider robustness.
+
+### New
+
+- [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
+  gains `overwrite`. A dry run could not be re-planned after correcting
+  an input: three separate gates — the SDP archive writer, the
+  plan-mismatch check, and the resource-map ownership check — each
+  treated an existing artifact as a published one, and none of the
+  messages said that a manual
+  [`unlink()`](https://rdrr.io/r/base/unlink.html) was the only way
+  forward. `overwrite = TRUE` now rebuilds derived artifacts and
+  replaces a manifest and resource map left by an *unpublished dry run*.
+  Anything that reached the network is unaffected: a manifest whose
+  status is not `dry_run` still requires a reviewed revision, because
+  its DataONE PIDs are immutable, and live publication is still gated by
+  `confirm`.
+
+### Fixes
+
+- The default LLM providers now retry. `.ms_llm_retry_limit()` returned
+  1 attempt for everything except two special-cased models, so
+  `attempt >= attempts` was true on the first pass and the
+  retryable-error classifier was never consulted — a 429 or a 503 failed
+  the whole review on the first try, after the user had already paid for
+  every preceding request. `Retry-After` is now honoured in both its
+  delta-seconds and HTTP-date forms and capped at 60s, with jittered
+  exponential backoff otherwise so a batch that hits one rate limit does
+  not retry in lockstep.
+
+- The BioPortal API key travels in an `Authorization` header instead of
+  the query string, where it was written into request logs at both ends
+  and printed verbatim by the timeout warning. URLs are additionally
+  redacted before being displayed or recorded.
+
+## metasalmon 0.2.2
+
+Roadmap step 2: the semantic pipeline at real scale.
+
+### Fixes
+
+- The term-search index caches now actually prevent work.
+  `.smn_term_index()` and `.gcdfo_term_index()` checked their cache
+  stamp *after* fetching and parsing, so every
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  call paid 11 conditional GETs and a full reparse of every SMN Turtle
+  module before discovering nothing had changed — projected at roughly 8
+  CPU-hours for a 5-table x 200-column package. An index is now resolved
+  once per session. The trade is deliberate: a module updated upstream
+  mid-session is not picked up until `refresh = TRUE`, matching the
+  decision already taken for the schema bundle, and it is the stronger
+  guarantee for seeding, where two columns in one package must not be
+  seeded against two different ontology versions.
+
+- `METASALMON_CACHE` is read at call time. As a top-level binding it was
+  evaluated when the namespace was built, so an installed package
+  captured the build machine’s environment and the result cache could
+  never be enabled by a user — only
+  [`pkgload::load_all()`](https://pkgload.r-lib.org/reference/load_all.html)
+  ever saw the developer’s own setting.
+
+- A failed vocabulary lookup is no longer indistinguishable from a
+  successful empty one. `.safe_json()` returned `NULL` for both, every
+  caller collapsed that into an empty result, and the diagnostic
+  recorded `status = "success", count = 0` — so a degraded OLS or
+  BioPortal looked exactly like “no such term exists”, which is the
+  input that drives `request_new_term` escalation. An outage could
+  therefore manufacture ontology gaps. Failures are now signalled,
+  recorded per source in the `diagnostics` attribute as
+  `status = "http_error"`, and surfaced as a warning; a degraded lookup
+  is never written to the result cache.
+
+## metasalmon 0.2.1
+
+Closes the last two P1 items whose fixes change written artifacts, so
+they ship ahead of the larger roadmap steps.
+
+### Fixes
+
+- Semantic ranking is now reproducible across locales. Score ties broke
+  on character keys (`source`, `ontology`, `label`, `iri`), and with
+  `seed_semantics = TRUE` the top-1 pick becomes a written IRI in
+  `column_dictionary.csv` — so the same input seeded differently on
+  macOS and in a C-locale container. All nine ordering sites in
+  `R/semantics-helpers.R` and `R/term_search.R` now use explicit C
+  collation, and seven functions are registered in the collation guard.
+  This was the last locale-dependence in the package. Note that
+  `.apply_embedding_rerank()` also selected its rerank set with
+  `order(-score)` alone, so *which* rows were reranked depended on input
+  order; it now tie-breaks on `label`.
+
+- Per-resource schema URLs in `datapackage.json` are derived from the
+  loaded SDP bundle rather than composed from a hardcoded constant.
+  Every URI in a written descriptor — profile, rules, and per-resource
+  schemas — now comes from one validated bundle. The constant remains as
+  the fallback for a bundle that predates the v0.2 extension resources.
+
+## metasalmon 0.2.0
+
+Remediates the nine highest-priority defects from the 2026-08-10
+ecosystem review
+(`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
+
+### Breaking changes
+
+- [`read_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.md)
+  now types data resources from the column dictionary’s `value_type`
+  instead of letting readr guess, and **columns the dictionary does not
+  declare are read as character rather than guessed**. The dictionary is
+  the sole type authority, which is what makes the write/read round trip
+  lossless. A value that does not satisfy its declared type is kept as
+  its raw token rather than silently becoming `NA`, and the mismatch is
+  reported as a structured validation issue. Declared columns are
+  collected as text and converted only when the conversion is faithful,
+  judged against the original token — so an unparseable value, a
+  fractional `integer`, an `integer` or `number` whose precision or
+  magnitude a double cannot hold, and a `datetime` finer than a
+  `POSIXct` can represent at that instant all keep their exact token
+  rather than being silently accepted, rounded, clamped, or truncated.
+  Both numeric and datetime checks are magnitude-aware rather than fixed
+  thresholds. Both `integer` and `number` otherwise read as double,
+  because
+  [`readr::col_integer()`](https://readr.tidyverse.org/reference/parse_atomic.html)
+  silently `NA`s values past 2^31 (readr’s guesser also produced double
+  here, so this is not a change);
+  [`apply_salmon_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_salmon_dictionary.md)
+  remains the way to get exact R classes.
+- `write_salmon_datapackage(overwrite = TRUE)` no longer empties the
+  package directory. It replaces only the files it owns — the
+  `metadata/` SDP CSVs, the `data/` resources declared in `tables.csv`,
+  `datapackage.json`, and the ownership sentinel — and preserves
+  everything else. Pass the new `prune = TRUE` to restore the previous
+  behaviour.
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  gained the same argument.
+- Newly written `datapackage.json` files declare the current SDP profile
+  URI (`salmon-data-mobilization.github.io`), which is what the live
+  upstream profile requires. Reading packages that declare the previous
+  URI is unaffected.
+- `Imports: dplyr (>= 1.1.0)`, required by `arrange(.locale = )`.
+
+### Fixes
+
+- **`zip` is no longer pinned to an exact version, at either layer.**
+  `zip (== 3.0.1)` against a CRAN that ships 3.0.2 made metasalmon
+  uninstallable. Relaxing only `DESCRIPTION` was not enough: the runtime
+  guard `.ms_knb_require_zip_version()` was an equally exact check, so
+  the package would install and then abort on every KNB publication
+  path. That guard is now a reviewed-version allowlist,
+  `c("3.0.1", "3.0.2")`. Both versions were byte-compared for
+  metasalmon’s exact
+  [`zip::zip()`](https://r-lib.github.io/zip/reference/zip.html) call
+  against a fixture covering nested paths, non-ASCII filenames, an empty
+  file, incompressible bytes, and highly compressible bytes; the
+  archives are identical. The determinism contract therefore still
+  holds, and it is enforced where it belongs — at the KNB boundary, not
+  in a dependency pin that blocked the majority of users who never
+  publish to KNB. An unreviewed `zip` still fails loudly, with a message
+  saying to byte-compare before widening the allowlist.
+- **Remote SDP schema loading works again.** Upstream `smn-data-pkg`
+  migrated every profile `$id`; metasalmon asserted equality against the
+  old constant, so `source = "remote"` aborted and the default `"auto"`
+  silently fell back to a stale vendored bundle. Identity is now derived
+  from the loaded bundle and only checked for internal consistency, so
+  an upstream identifier change is followable rather than fatal. The
+  vendored profile and rules were re-vendored.
+- **A multi-table dictionary is no longer applied in full.**
+  [`apply_salmon_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_salmon_dictionary.md)
+  compared a column against a same-named local, which the dplyr data
+  mask shadows into a tautology, so every table’s renames, coercions,
+  and factor levels were applied while the warning said otherwise.
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  had the same bug for `dataset_id`, leaking other datasets’ columns
+  into `datapackage.json`.
+- **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  no longer writes packages its own validator rejects.** Character code
+  values such as `"0.10"` and `"100000"` were re-guessed as numeric on
+  read and stringified back as `0.1` and `1e+05`, so a package failed
+  validation against its own `codes.csv`.
+  [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  inherited it.
+- **Reviewed sidecars survive a rewrite.** The read → edit → write loop
+  silently deleted reviewed SSSOM mapping sets, ordered measurement
+  decompositions, EML and EDH XML, `eml-mapping.yml`, review notes, and
+  `publication/` artifacts.
+- **External text can no longer be evaluated as a cli message
+  template.** A provider error containing
+  `{Sys.getenv("OPENAI_API_KEY")}` printed the key, and an unbalanced
+  brace — a column literally named `rate{pct` — replaced the intended
+  message with `Error: Expecting '}'`. Fifteen sites now escape, and
+  credentials are redacted where external text is captured rather than
+  where it is displayed.
+- **Canonical bytes and identifiers no longer depend on `LC_COLLATE`.**
+  The DataONE resource-map PID, the plan fingerprint, SSSOM canonical
+  bytes and manifest order, the measurement-decomposition hash, EML
+  entity order, and both exported NuSEDS crosswalk tables all used
+  locale-dependent ordering, so the same inputs produced different bytes
+  on different machines and a package written on macOS could be rejected
+  by a `LC_COLLATE=C` container.
+- **Cancelling a term-request prompt no longer submits the issue.**
+  [`askYesNo()`](https://rdrr.io/r/utils/askYesNo.html) returns `NA` on
+  cancel and the guard tested
+  [`isFALSE()`](https://rdrr.io/r/base/Logic.html). In the same
+  workflow, exiting the routing menu aborted with “replacement has
+  length zero”, and the candidate/rationale lines passed cli markup to
+  [`glue::glue()`](https://glue.tidyverse.org/reference/glue.html),
+  which fails to parse on every input — so interactive routing had never
+  worked.
+- `infer_value_type()` now distinguishes `datetime` from `date`;
+  `POSIXt` previously collapsed to `date`.
+
+### Also in this release (from the 0.1.8 merge)
+
+- The C-collation contract is applied to the SDP v0.2 extension
+  normalizers introduced in 0.1.8. `.ms_sdp_methods_normalize()` and the
+  two `.ms_sdp_observation_normalize_*()` functions produce the
+  canonical row order written to `metadata/methods.csv` and
+  `metadata/structure/observation_*.csv`, and
+  [`extract_sdp_observations()`](https://salmon-data-mobilization.github.io/metasalmon/reference/extract_sdp_observations.md)
+  orders returned data by dimension columns — all previously with bare
+  [`dplyr::arrange()`](https://dplyr.tidyverse.org/reference/arrange.html).
+
+### Internal
+
+- [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  refuses to update a package whose managed directories are reached
+  through a symbolic link.
+  [`file.exists()`](https://rdrr.io/r/base/files.html) follows links, so
+  a `data/` or `metadata/` replaced by one would have made every managed
+  child resolve outside the package and be deleted there. This matches
+  the symlink discipline the KNB archive already enforces.
+- [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  replaces its own outputs rather than writing through them. A
+  hard-linked `README-review.txt`, `semantic_suggestions.csv`, or EDH
+  XML would otherwise have truncated the shared inode outside the
+  package — [`Sys.readlink()`](https://rdrr.io/r/base/Sys.readlink.html)
+  sees only symbolic links, and the pre-0.2.0 full-directory wipe had
+  unlinked these entries implicitly.
+- Provider failures on the measurement-bundle review path are redacted
+  where they are captured, matching the non-bundle path. They are stored
+  on the exported `semantic_llm_assessments` attribute, so display-time
+  redaction would have been too late.
+- Text reaching cli through the `.ms_*_abort()` forwarding helpers is
+  escaped too. A decomposition column name is caller-supplied and was
+  interpolated into an abort message, so a column named
+  `{Sys.getenv("...")}` had its value evaluated into the error.
+- New `R/cli-safety.R` (`.ms_cli_escape()`, `.ms_cli_bullets()`,
+  `.ms_redact_secrets()`, `.ms_abort_external()`).
+- Two static guard tests enforce the new contracts:
+  `test-cli-safety-guard.R` and `test-collation-guard.R`. Both carry
+  self-tests, and both are documented in `AGENTS.md`, which is now
+  tracked in git — it had been ignored, so the shipped repo carried no
+  contributor guidance at all.
+- A live remote-schema test closes the gap that let the profile drift go
+  unnoticed: the suite pins `sdp_schema_source = "vendored"`, and
+  nothing had ever exercised a successful remote fetch.
+
 ## metasalmon 0.1.8
 
 - Added exact-schema, atomic, symlink-safe readers and writers for the

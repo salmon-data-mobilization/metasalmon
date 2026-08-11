@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,119 @@
       <small>Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.4" id="metasalmon-024">metasalmon 0.2.4<a class="anchor" aria-label="anchor" href="#metasalmon-024"></a></h2>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-4">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-4"></a></h3>
+<ul><li>
+<p><strong>The canonical CSV missing-value contract is now a single token: an empty field.</strong> Data resources were written with readr’s default <code>na = "NA"</code> while metadata used <code>na = ""</code>, and everything was read with <code>na = c("", "NA")</code>. <code>"NA"</code> is a real fisheries gear code, so a literal <code>"NA"</code> and a genuinely missing value produced <strong>identical bytes</strong> — the distinction was destroyed at write time, where no reader could recover it. Both sides now use <code>""</code>.</p>
+<p>What changes for you: a literal <code>"NA"</code>, <code>"N/A"</code>, or <code>"null"</code> in a data column now round-trips as the string it is. If you have a <strong>hand-authored</strong> package whose CSVs use the two characters <code>NA</code> to mean missing, those cells now read as the literal string <code>"NA"</code>; rewrite them as empty fields.</p>
+<p>Consequence worth knowing: because no non-empty token parses as missing any more, EML <code>missing_values</code> codes are only meaningful for tokens the reader treats as missing, and the canonical writer emits none. EML now represents absence directly rather than through a code that collided with real data. The guard that rejects an undeclared non-empty missing token is retained as an invariant and is unreachable through the canonical writer.</p>
+</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-2-4">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-4"></a></h3>
+<ul><li>
+<code><a href="../reference/ms_setup_github.html">ms_setup_github()</a></code> no longer defaults <code>repo</code> to a specific private dataset repository. Nothing about the function is dataset-specific — it finds git, creates or locates a PAT, and stores it — but the default meant a user calling <code><a href="../reference/ms_setup_github.html">ms_setup_github()</a></code> with no arguments had their setup “verified” against a repository they could not read, so a perfectly good token was reported as broken. <code>repo</code> is now optional: supply it to additionally verify access, omit it to just set up the PAT.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-0-2-4">Internal<a class="anchor" aria-label="anchor" href="#internal-0-2-4"></a></h3>
+<ul><li>
+<p>Three examples now run: <code><a href="../reference/apply_salmon_dictionary.html">apply_salmon_dictionary()</a></code>, <code><a href="../reference/validate_dictionary.html">validate_dictionary()</a></code>, and <code><a href="../reference/suggest_dwc_mappings.html">suggest_dwc_mappings()</a></code> were wrapped in <code>\dontrun{}</code> despite executing offline in under a second. Running them immediately caught two real defects that <code>\dontrun{}</code> had been hiding — one used <code>%&gt;%</code>, which examples do not have attached, and another wrote a package directory into the working directory because it omitted <code>path</code>. <code><a href="../reference/check_for_updates.html">check_for_updates()</a></code> and <code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> moved to <code>\donttest{}</code> (network, and ~6s respectively).</p>
+<p>The roadmap estimated ~15 such examples; measuring each one offline showed only 5 actually run, because most <code>\dontrun{}</code> blocks are illustrative sketches using <code>path/to/package</code> placeholders rather than runnable code held back by caution. Making those real is a larger job than un-wrapping.</p>
+</li>
+<li>
+<p>The GitHub read-helper tests point at metasalmon’s own public repository instead of a private one, so they exercise <code><a href="../reference/read_github_csv.html">read_github_csv()</a></code> and <code><a href="../reference/read_github_csv_dir.html">read_github_csv_dir()</a></code> everywhere including CI rather than skipping with a</p>
+<ol start="404" style="list-style-type: decimal"><li>The <code>METASALMON_GITHUB_TEST_*</code> environment variables still redirect them at a private repository when testing those permissions specifically.</li>
+</ol></li>
+<li><p>CI runs the suite under a non-C ambient collation (<code>LANG</code>/<code>LC_ALL</code> = <code>en_US.UTF-8</code>, with <code>fr_FR.UTF-8</code> also generated for <code>LC_TIME</code>). The differential guards on the byte-reproducibility contract compare an ordering against a contrasting locale and skip when none exists, so on a default C/POSIX runner they had been passing vacuously — the guards protecting the package’s canonical bytes gave no CI signal. They now execute, and the whole suite passes under a locale that collates differently, which is the first actual evidence for the locale-independence claim rather than an assumption. CI skips drop from 9 to 6.</p></li>
+<li><p>CI now installs <a href="https://github.com/DataONEorg/rdataone" class="external-link">dataone</a>, <a href="https://docs.ropensci.org/datapack/" class="external-link">datapack</a>, and <code>{XML}</code>, and a guard fails the build if any optional package the suite needs is missing. <code>R-CMD-check.yaml</code> installed only <code>devtools</code> and <code>rcmdcheck</code>, so five tests of the DataONE adapter boundary — the code that talks to the repository during live publication — skipped silently on every machine including CI and had never executed. They pass. The distinction the guard encodes: locally a missing optional package is an environment fact and skipping is correct; in CI it is a workflow regression and must fail.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.3" id="metasalmon-023">metasalmon 0.2.3<a class="anchor" aria-label="anchor" href="#metasalmon-023"></a></h2>
+<p>Roadmap step 4: publication ergonomics and provider robustness.</p>
+<div class="section level3">
+<h3 id="new-0-2-3">New<a class="anchor" aria-label="anchor" href="#new-0-2-3"></a></h3>
+<ul><li>
+<code><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code> gains <code>overwrite</code>. A dry run could not be re-planned after correcting an input: three separate gates — the SDP archive writer, the plan-mismatch check, and the resource-map ownership check — each treated an existing artifact as a published one, and none of the messages said that a manual <code><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink()</a></code> was the only way forward. <code>overwrite = TRUE</code> now rebuilds derived artifacts and replaces a manifest and resource map left by an <em>unpublished dry run</em>. Anything that reached the network is unaffected: a manifest whose status is not <code>dry_run</code> still requires a reviewed revision, because its DataONE PIDs are immutable, and live publication is still gated by <code>confirm</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-2-3">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-3"></a></h3>
+<ul><li><p>The default LLM providers now retry. <code>.ms_llm_retry_limit()</code> returned 1 attempt for everything except two special-cased models, so <code>attempt &gt;= attempts</code> was true on the first pass and the retryable-error classifier was never consulted — a 429 or a 503 failed the whole review on the first try, after the user had already paid for every preceding request. <code>Retry-After</code> is now honoured in both its delta-seconds and HTTP-date forms and capped at 60s, with jittered exponential backoff otherwise so a batch that hits one rate limit does not retry in lockstep.</p></li>
+<li><p>The BioPortal API key travels in an <code>Authorization</code> header instead of the query string, where it was written into request logs at both ends and printed verbatim by the timeout warning. URLs are additionally redacted before being displayed or recorded.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.2" id="metasalmon-022">metasalmon 0.2.2<a class="anchor" aria-label="anchor" href="#metasalmon-022"></a></h2>
+<p>Roadmap step 2: the semantic pipeline at real scale.</p>
+<div class="section level3">
+<h3 id="fixes-0-2-2">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-2"></a></h3>
+<ul><li><p>The term-search index caches now actually prevent work. <code>.smn_term_index()</code> and <code>.gcdfo_term_index()</code> checked their cache stamp <em>after</em> fetching and parsing, so every <code><a href="../reference/find_terms.html">find_terms()</a></code> call paid 11 conditional GETs and a full reparse of every SMN Turtle module before discovering nothing had changed — projected at roughly 8 CPU-hours for a 5-table x 200-column package. An index is now resolved once per session. The trade is deliberate: a module updated upstream mid-session is not picked up until <code>refresh = TRUE</code>, matching the decision already taken for the schema bundle, and it is the stronger guarantee for seeding, where two columns in one package must not be seeded against two different ontology versions.</p></li>
+<li><p><code>METASALMON_CACHE</code> is read at call time. As a top-level binding it was evaluated when the namespace was built, so an installed package captured the build machine’s environment and the result cache could never be enabled by a user — only <code><a href="https://pkgload.r-lib.org/reference/load_all.html" class="external-link">pkgload::load_all()</a></code> ever saw the developer’s own setting.</p></li>
+<li><p>A failed vocabulary lookup is no longer indistinguishable from a successful empty one. <code>.safe_json()</code> returned <code>NULL</code> for both, every caller collapsed that into an empty result, and the diagnostic recorded <code>status = "success", count = 0</code> — so a degraded OLS or BioPortal looked exactly like “no such term exists”, which is the input that drives <code>request_new_term</code> escalation. An outage could therefore manufacture ontology gaps. Failures are now signalled, recorded per source in the <code>diagnostics</code> attribute as <code>status = "http_error"</code>, and surfaced as a warning; a degraded lookup is never written to the result cache.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.1" id="metasalmon-021">metasalmon 0.2.1<a class="anchor" aria-label="anchor" href="#metasalmon-021"></a></h2>
+<p>Closes the last two P1 items whose fixes change written artifacts, so they ship ahead of the larger roadmap steps.</p>
+<div class="section level3">
+<h3 id="fixes-0-2-1">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-1"></a></h3>
+<ul><li><p>Semantic ranking is now reproducible across locales. Score ties broke on character keys (<code>source</code>, <code>ontology</code>, <code>label</code>, <code>iri</code>), and with <code>seed_semantics = TRUE</code> the top-1 pick becomes a written IRI in <code>column_dictionary.csv</code> — so the same input seeded differently on macOS and in a C-locale container. All nine ordering sites in <code>R/semantics-helpers.R</code> and <code>R/term_search.R</code> now use explicit C collation, and seven functions are registered in the collation guard. This was the last locale-dependence in the package. Note that <code>.apply_embedding_rerank()</code> also selected its rerank set with <code>order(-score)</code> alone, so <em>which</em> rows were reranked depended on input order; it now tie-breaks on <code>label</code>.</p></li>
+<li><p>Per-resource schema URLs in <code>datapackage.json</code> are derived from the loaded SDP bundle rather than composed from a hardcoded constant. Every URI in a written descriptor — profile, rules, and per-resource schemas — now comes from one validated bundle. The constant remains as the fallback for a bundle that predates the v0.2 extension resources.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.0" id="metasalmon-020">metasalmon 0.2.0<a class="anchor" aria-label="anchor" href="#metasalmon-020"></a></h2>
+<p>Remediates the nine highest-priority defects from the 2026-08-10 ecosystem review (<code>notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md</code>).</p>
+<div class="section level3">
+<h3 id="breaking-changes-0-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage()</a></code> now types data resources from the column dictionary’s <code>value_type</code> instead of letting readr guess, and <strong>columns the dictionary does not declare are read as character rather than guessed</strong>. The dictionary is the sole type authority, which is what makes the write/read round trip lossless. A value that does not satisfy its declared type is kept as its raw token rather than silently becoming <code>NA</code>, and the mismatch is reported as a structured validation issue. Declared columns are collected as text and converted only when the conversion is faithful, judged against the original token — so an unparseable value, a fractional <code>integer</code>, an <code>integer</code> or <code>number</code> whose precision or magnitude a double cannot hold, and a <code>datetime</code> finer than a <code>POSIXct</code> can represent at that instant all keep their exact token rather than being silently accepted, rounded, clamped, or truncated. Both numeric and datetime checks are magnitude-aware rather than fixed thresholds. Both <code>integer</code> and <code>number</code> otherwise read as double, because <code><a href="https://readr.tidyverse.org/reference/parse_atomic.html" class="external-link">readr::col_integer()</a></code> silently <code>NA</code>s values past 2^31 (readr’s guesser also produced double here, so this is not a change); <code><a href="../reference/apply_salmon_dictionary.html">apply_salmon_dictionary()</a></code> remains the way to get exact R classes.</li>
+<li>
+<code>write_salmon_datapackage(overwrite = TRUE)</code> no longer empties the package directory. It replaces only the files it owns — the <code>metadata/</code> SDP CSVs, the <code>data/</code> resources declared in <code>tables.csv</code>, <code>datapackage.json</code>, and the ownership sentinel — and preserves everything else. Pass the new <code>prune = TRUE</code> to restore the previous behaviour. <code><a href="../reference/create_sdp.html">create_sdp()</a></code> gained the same argument.</li>
+<li>Newly written <code>datapackage.json</code> files declare the current SDP profile URI (<code>salmon-data-mobilization.github.io</code>), which is what the live upstream profile requires. Reading packages that declare the previous URI is unaffected.</li>
+<li>
+<code>Imports: dplyr (&gt;= 1.1.0)</code>, required by <code>arrange(.locale = )</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixes-0-2-0">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-0"></a></h3>
+<ul><li>
+<strong><code>zip</code> is no longer pinned to an exact version, at either layer.</strong> <code>zip (== 3.0.1)</code> against a CRAN that ships 3.0.2 made metasalmon uninstallable. Relaxing only <code>DESCRIPTION</code> was not enough: the runtime guard <code>.ms_knb_require_zip_version()</code> was an equally exact check, so the package would install and then abort on every KNB publication path. That guard is now a reviewed-version allowlist, <code>c("3.0.1", "3.0.2")</code>. Both versions were byte-compared for metasalmon’s exact <code><a href="https://r-lib.github.io/zip/reference/zip.html" class="external-link">zip::zip()</a></code> call against a fixture covering nested paths, non-ASCII filenames, an empty file, incompressible bytes, and highly compressible bytes; the archives are identical. The determinism contract therefore still holds, and it is enforced where it belongs — at the KNB boundary, not in a dependency pin that blocked the majority of users who never publish to KNB. An unreviewed <code>zip</code> still fails loudly, with a message saying to byte-compare before widening the allowlist.</li>
+<li>
+<strong>Remote SDP schema loading works again.</strong> Upstream <code>smn-data-pkg</code> migrated every profile <code>$id</code>; metasalmon asserted equality against the old constant, so <code>source = "remote"</code> aborted and the default <code>"auto"</code> silently fell back to a stale vendored bundle. Identity is now derived from the loaded bundle and only checked for internal consistency, so an upstream identifier change is followable rather than fatal. The vendored profile and rules were re-vendored.</li>
+<li>
+<strong>A multi-table dictionary is no longer applied in full.</strong> <code><a href="../reference/apply_salmon_dictionary.html">apply_salmon_dictionary()</a></code> compared a column against a same-named local, which the dplyr data mask shadows into a tautology, so every table’s renames, coercions, and factor levels were applied while the warning said otherwise. <code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code> had the same bug for <code>dataset_id</code>, leaking other datasets’ columns into <code>datapackage.json</code>.</li>
+<li>
+<strong><code><a href="../reference/create_sdp.html">create_sdp()</a></code> no longer writes packages its own validator rejects.</strong> Character code values such as <code>"0.10"</code> and <code>"100000"</code> were re-guessed as numeric on read and stringified back as <code>0.1</code> and <code>1e+05</code>, so a package failed validation against its own <code>codes.csv</code>. <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> inherited it.</li>
+<li>
+<strong>Reviewed sidecars survive a rewrite.</strong> The read → edit → write loop silently deleted reviewed SSSOM mapping sets, ordered measurement decompositions, EML and EDH XML, <code>eml-mapping.yml</code>, review notes, and <code>publication/</code> artifacts.</li>
+<li>
+<strong>External text can no longer be evaluated as a cli message template.</strong> A provider error containing <code>{Sys.getenv("OPENAI_API_KEY")}</code> printed the key, and an unbalanced brace — a column literally named <code>rate{pct</code> — replaced the intended message with <code>Error: Expecting '}'</code>. Fifteen sites now escape, and credentials are redacted where external text is captured rather than where it is displayed.</li>
+<li>
+<strong>Canonical bytes and identifiers no longer depend on <code>LC_COLLATE</code>.</strong> The DataONE resource-map PID, the plan fingerprint, SSSOM canonical bytes and manifest order, the measurement-decomposition hash, EML entity order, and both exported NuSEDS crosswalk tables all used locale-dependent ordering, so the same inputs produced different bytes on different machines and a package written on macOS could be rejected by a <code>LC_COLLATE=C</code> container.</li>
+<li>
+<strong>Cancelling a term-request prompt no longer submits the issue.</strong> <code><a href="https://rdrr.io/r/utils/askYesNo.html" class="external-link">askYesNo()</a></code> returns <code>NA</code> on cancel and the guard tested <code><a href="https://rdrr.io/r/base/Logic.html" class="external-link">isFALSE()</a></code>. In the same workflow, exiting the routing menu aborted with “replacement has length zero”, and the candidate/rationale lines passed cli markup to <code><a href="https://glue.tidyverse.org/reference/glue.html" class="external-link">glue::glue()</a></code>, which fails to parse on every input — so interactive routing had never worked.</li>
+<li>
+<code>infer_value_type()</code> now distinguishes <code>datetime</code> from <code>date</code>; <code>POSIXt</code> previously collapsed to <code>date</code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="also-in-this-release-from-the-merge-0-2-0">Also in this release (from the 0.1.8 merge)<a class="anchor" aria-label="anchor" href="#also-in-this-release-from-the-merge-0-2-0"></a></h3>
+<ul><li>The C-collation contract is applied to the SDP v0.2 extension normalizers introduced in 0.1.8. <code>.ms_sdp_methods_normalize()</code> and the two <code>.ms_sdp_observation_normalize_*()</code> functions produce the canonical row order written to <code>metadata/methods.csv</code> and <code>metadata/structure/observation_*.csv</code>, and <code><a href="../reference/extract_sdp_observations.html">extract_sdp_observations()</a></code> orders returned data by dimension columns — all previously with bare <code><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">dplyr::arrange()</a></code>.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-0-2-0">Internal<a class="anchor" aria-label="anchor" href="#internal-0-2-0"></a></h3>
+<ul><li>
+<code><a href="../reference/write_salmon_datapackage.html">write_salmon_datapackage()</a></code> refuses to update a package whose managed directories are reached through a symbolic link. <code><a href="https://rdrr.io/r/base/files.html" class="external-link">file.exists()</a></code> follows links, so a <code>data/</code> or <code>metadata/</code> replaced by one would have made every managed child resolve outside the package and be deleted there. This matches the symlink discipline the KNB archive already enforces.</li>
+<li>
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> replaces its own outputs rather than writing through them. A hard-linked <code>README-review.txt</code>, <code>semantic_suggestions.csv</code>, or EDH XML would otherwise have truncated the shared inode outside the package — <code><a href="https://rdrr.io/r/base/Sys.readlink.html" class="external-link">Sys.readlink()</a></code> sees only symbolic links, and the pre-0.2.0 full-directory wipe had unlinked these entries implicitly.</li>
+<li>Provider failures on the measurement-bundle review path are redacted where they are captured, matching the non-bundle path. They are stored on the exported <code>semantic_llm_assessments</code> attribute, so display-time redaction would have been too late.</li>
+<li>Text reaching cli through the <code>.ms_*_abort()</code> forwarding helpers is escaped too. A decomposition column name is caller-supplied and was interpolated into an abort message, so a column named <code>{Sys.getenv("...")}</code> had its value evaluated into the error.</li>
+<li>New <code>R/cli-safety.R</code> (<code>.ms_cli_escape()</code>, <code>.ms_cli_bullets()</code>, <code>.ms_redact_secrets()</code>, <code>.ms_abort_external()</code>).</li>
+<li>Two static guard tests enforce the new contracts: <code>test-cli-safety-guard.R</code> and <code>test-collation-guard.R</code>. Both carry self-tests, and both are documented in <code>AGENTS.md</code>, which is now tracked in git — it had been ignored, so the shipped repo carried no contributor guidance at all.</li>
+<li>A live remote-schema test closes the gap that let the profile drift go unnoticed: the suite pins <code>sdp_schema_source = "vendored"</code>, and nothing had ever exercised a successful remote fetch.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.8" id="metasalmon-018">metasalmon 0.1.8<a class="anchor" aria-label="anchor" href="#metasalmon-018"></a></h2>
 <ul><li>Added exact-schema, atomic, symlink-safe readers and writers for the optional SDP <code>metadata/methods.csv</code> SOSA procedure registry and paired <code>metadata/structure/observation_*.csv</code> resources. Validation now enforces complete one-structure-per-measure coverage, required dimension grain, typed repeated-value invariance, static and row-varying procedure resolution, canonical descriptor inventory, and remains unchanged when the extension is absent. Multi-file writes stage and validate the CSV/descriptor set as one rollback-capable transaction. Extension, reproducibility, and KNB APIs also reject direct or trailing-slash package-root symlinks without rejecting harmless platform aliases in ancestor paths.</li>

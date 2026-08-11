@@ -11,7 +11,7 @@ Data Package."><meta property="og:image" content="https://salmon-data-mobilizati
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,6 +85,7 @@ Data Package.</p>
 <span>  format <span class="op">=</span> <span class="st">"csv"</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  include_edh_xml <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  prune <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -231,8 +232,9 @@ releases only when one is available. Defaults to <code><a href="https://rdrr.io/
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
 <dd><p>Logical; if <code>FALSE</code> (default), errors if path exists. If
-<code>TRUE</code>, replacement is only allowed for empty directories or directories
-previously written by <code>metasalmon</code>.</p></dd>
+<code>TRUE</code>, the package is updated in place — see <code>prune</code>. Replacement is only
+allowed for empty directories or directories previously written by
+<code>metasalmon</code>.</p></dd>
 
 
 <dt id="arg-include-edh-xml">include_edh_xml<a class="anchor" aria-label="anchor" href="#arg-include-edh-xml"></a></dt>
@@ -243,6 +245,13 @@ produces review-ready metadata, this create-time XML is treated as a
 <strong>draft</strong>: if <code>REVIEW:</code>/<code>MISSING</code> markers remain it is still written but a
 warning recommends rebuilding a clean file with <code><a href="write_edh_xml_from_sdp.html">write_edh_xml_from_sdp()</a></code>
 after the metadata is finalized.</p></dd>
+
+
+<dt id="arg-prune">prune<a class="anchor" aria-label="anchor" href="#arg-prune"></a></dt>
+<dd><p>Logical; if <code>FALSE</code> (default), reviewed sidecars in an existing
+package directory are preserved and only files this writer owns are
+replaced. If <code>TRUE</code>, the directory is emptied first. Requires
+<code>overwrite = TRUE</code>. See <code><a href="write_salmon_datapackage.html">write_salmon_datapackage()</a></code>.</p></dd>
 
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>

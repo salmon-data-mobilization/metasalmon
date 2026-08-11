@@ -14,11 +14,9 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' dict <- infer_dictionary(mtcars)
 #' dict <- suggest_dwc_mappings(dict)
-#' attr(dict, "dwc_mappings") %>% head()
-#' }
+#' head(attr(dict, "dwc_mappings"))
 suggest_dwc_mappings <- function(dict, max_per_column = 3) {
   if (!inherits(dict, "data.frame")) {
     cli::cli_abort("{.arg dict} must be a data frame or tibble")

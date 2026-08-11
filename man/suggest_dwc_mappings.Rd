@@ -23,9 +23,7 @@ likely table/field mappings for column dictionary entries, and returns the
 associated Darwin Core property IRIs for review.
 }
 \examples{
-\dontrun{
 dict <- infer_dictionary(mtcars)
 dict <- suggest_dwc_mappings(dict)
-attr(dict, "dwc_mappings") \%>\% head()
-}
+head(attr(dict, "dwc_mappings"))
 }

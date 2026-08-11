@@ -28,9 +28,12 @@ verifies coded values against \code{codes.csv} when present, and then runs
 pre-flight check before sharing a package-first submission.
 }
 \examples{
-\dontrun{
+\donttest{
+# `path` is explicit: without it `create_sdp()` writes `<dataset_id>-sdp/`
+# into the working directory, which an example must never do.
 pkg_path <- create_sdp(
   mtcars,
+  path = file.path(tempdir(), "demo-1-sdp"),
   dataset_id = "demo-1",
   table_id = "counts",
   overwrite = TRUE

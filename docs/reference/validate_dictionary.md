@@ -33,8 +33,7 @@ errors with clear messages
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 dict <- infer_dictionary(mtcars)
 validate_dictionary(dict)
-} # }
+#> ✔ Dictionary validation passed
 ```

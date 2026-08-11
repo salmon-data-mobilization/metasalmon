@@ -37,9 +37,9 @@ A tibble with renamed columns, coerced types, and factor levels applied
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 dict <- infer_dictionary(mtcars)
 validate_dictionary(dict)
+#> ✔ Dictionary validation passed
 applied <- apply_salmon_dictionary(mtcars, dict)
-} # }
+#> ✔ Dictionary validation passed
 ```
