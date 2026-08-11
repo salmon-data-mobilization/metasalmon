@@ -1,0 +1,12 @@
+dataset_id,table_id,column_name,column_label,column_description,column_role,value_type,required,unit_label,unit_iri,term_iri,term_type,property_iri,entity_iri,constraint_iri,method_iri
+demo-1,counts,mpg,mpg,MISSING DESCRIPTION: define what 'mpg' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,cyl,cyl,MISSING DESCRIPTION: define what 'cyl' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,disp,disp,MISSING DESCRIPTION: define what 'disp' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,hp,hp,MISSING DESCRIPTION: define what 'hp' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,drat,drat,MISSING DESCRIPTION: define what 'drat' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,wt,wt,MISSING DESCRIPTION: define what 'wt' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,qsec,qsec,MISSING DESCRIPTION: define what 'qsec' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,vs,vs,MISSING DESCRIPTION: define what 'vs' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,am,am,MISSING DESCRIPTION: define what 'am' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,gear,gear,MISSING DESCRIPTION: define what 'gear' means in table 'counts'.,attribute,number,,,,,,,,,
+demo-1,counts,carb,carb,MISSING DESCRIPTION: define what 'carb' means in table 'counts'.,attribute,number,,,,,,,,,

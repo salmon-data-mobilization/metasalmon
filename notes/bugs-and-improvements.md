@@ -34,9 +34,9 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, and #53–#61 (#63 fixed
-  in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2; #47, #51
-  and #52 in 0.2.3).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, and #72
+  (#63 fixed in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in
+  0.2.2; #47, #51 and #52 in 0.2.3; #54 in 0.2.4).
 
 **Next up:** a short 0.2.4 hardening pass, then roadmap step 3 (#48/#49, one
 validation authority) — the last remaining P1 work, and the only step needing
@@ -855,6 +855,30 @@ metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
 
 ### Open — P2 (correctness and conformance debt)
+
+**#72 `ms_setup_github()` defaults to a private dataset repo in the old org.**
+`R/github-helpers.R:87` — the exported signature is
+`ms_setup_github(repo = "dfo-pacific-science/qualark-data")`, and that default
+is published in `man/ms_setup_github.Rd`. Nothing about the function is
+Qualark-specific: it finds git, creates or locates a PAT, stores it, then
+verifies the token can read `repo`. A user calling it with no arguments has
+their setup verified against a **private** repo they cannot read, so a
+perfectly good token is reported as broken.
+
+Same defect class as #62 (the hardcoded schema base URL, fixed in 0.2.1): a
+project-specific constant baked into general-purpose API. It was missed because
+the 0.2.0 sweep looked for hardcoded *schema* URIs specifically.
+
+Related but *not* a defect: the two `test-github-helpers.R` skips in CI. The
+repo genuinely exists and is private, so CI's scoped token legitimately cannot
+read it — the tests default to the same constant and are overridable via
+`METASALMON_QUALARK_TEST_REPO`.
+
+Suggested fix: drop the default (make `repo` required, or `NULL` and skip
+verification when absent — the function's real job is PAT setup). That changes
+an exported signature, so it fits the 0.3.0 bundle alongside #58.
+
+
 
 **#53 `infer_column_role()` classifies 4-digit measurement columns as
 `temporal`**, removing them from the entire semantic pipeline.
