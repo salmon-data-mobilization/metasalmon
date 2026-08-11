@@ -1497,3 +1497,45 @@ test_that("a degraded lookup is never cached", {
   )
   expect_gt(length(ls(envir = .metasalmon_cache, all.names = TRUE)), 0L)
 })
+
+test_that("the result cache is keyed by the ranking configuration", {
+  # The cache stores the *ranked* result, so a process that searches once and
+  # then enables reranking would otherwise get the old ordering back. This was
+  # unreachable while METASALMON_CACHE could never be enabled in an installed
+  # package; fixing that made it reachable.
+  withr::local_envvar(c(METASALMON_CACHE = "1", METASALMON_EMBEDDING_RERANK = "",
+                        METASALMON_EMBEDDING_WEIGHT = "1"))
+  if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+  }
+  on.exit(
+    if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+      rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+    },
+    add = TRUE
+  )
+
+  searches <- 0L
+  run <- function() {
+    with_mocked_bindings(
+      .search_ols = function(query, role) {
+        searches <<- searches + 1L
+        metasalmon:::.empty_terms(role)
+      },
+      find_terms("water temperature", sources = "ols", expand_query = FALSE)
+    )
+  }
+
+  run()
+  run()
+  expect_identical(searches, 1L)
+
+  # Changing a ranking setting must miss the cache, not reuse the old ranking.
+  withr::local_envvar(c(METASALMON_EMBEDDING_WEIGHT = "2"))
+  run()
+  expect_identical(searches, 2L)
+
+  withr::local_envvar(c(METASALMON_EMBEDDING_RERANK = "1"))
+  run()
+  expect_identical(searches, 3L)
+})

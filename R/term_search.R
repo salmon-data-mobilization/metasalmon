@@ -201,7 +201,19 @@ find_terms <- function(query,
   # Apply role-aware query expansion (Phase 4)
   queries <- if (expand_query) .expand_query(query, role) else query
 
-  cache_key <- paste(paste(queries, collapse = "|"), role, paste(sort(sources, method = "radix"), collapse = ","), sep = "::")
+  # The ranking configuration is part of the cache identity. What is stored is
+  # the *ranked* result, so a process that searches once and then enables
+  # reranking (or changes its weight) would otherwise get the old scores and
+  # ordering back and select a different top candidate than it asked for. This
+  # was unreachable while `METASALMON_CACHE` could never be enabled in an
+  # installed package; fixing that made it reachable.
+  cache_key <- paste(
+    paste(queries, collapse = "|"),
+    role,
+    paste(sort(sources, method = "radix"), collapse = ","),
+    .ms_ranking_identity(),
+    sep = "::"
+  )
   if (.metasalmon_cache_enabled() && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
     return(get(cache_key, envir = .metasalmon_cache))
   }
@@ -428,6 +440,22 @@ find_terms <- function(query,
 # ever saw the developer's own setting, which is why it looked like it worked.
 .metasalmon_cache_enabled <- function() {
   tolower(Sys.getenv("METASALMON_CACHE", unset = "")) %in% c("1", "true", "yes")
+}
+
+# Every setting that changes the ranking of a `find_terms()` result, folded into
+# one string for the cache key. Read at call time, like the cache switch itself:
+# these are read at call time by the ranker, so a key built from anything else
+# would go stale the moment a user changed one.
+#
+# Add to this whenever a new ranking knob is introduced. A knob missing here
+# does not fail loudly -- it returns a stale ranking, which is why it is one
+# function rather than an expression at the call site.
+.ms_ranking_identity <- function() {
+  paste(
+    paste0("rerank=", .embedding_rerank_enabled()),
+    paste0("weight=", Sys.getenv("METASALMON_EMBEDDING_WEIGHT", unset = "1")),
+    sep = "&"
+  )
 }
 .metasalmon_user_agent <- httr::user_agent(
   sprintf("metasalmon/%s", utils::packageVersion("metasalmon"))
