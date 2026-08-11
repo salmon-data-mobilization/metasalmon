@@ -917,10 +917,11 @@ review is done. No test asserts a positive auto-apply for `method` or
 misses both regexes.
 
 *Gate:* a test asserting that a method-ish column name does **not** receive an
-auto-applied `method_iri` unless `metadata/methods.csv` registers it — or that
-`create_sdp()` writes that file when it applies one. Fixed together with the
-slice-2 method work in
-`notes/exec-plans/2026-08-11-r-native-review-and-editing.md`.
+auto-applied `method_iri`. **Fixed in slice 1** of
+`notes/exec-plans/2026-08-11-r-native-review-and-editing.md` by restricting the
+default seeded path's auto-apply roles to match the LLM path's — review surfaced
+that deferring it made slice 1's own acceptance criteria unsatisfiable, since the
+marker it leaves blocks strict validation.
 
 
 

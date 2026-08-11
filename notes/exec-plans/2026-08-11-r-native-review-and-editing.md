@@ -195,9 +195,15 @@ review), then new `R/metadata-write.R`:
 - `.ms_write_metadata_csv()` — reuses `.ms_read_metadata_csv()` (all-character,
   `na = ""`), `.ms_align_cols()` for column order, and
   `.ms_assert_managed_path_contained()` for the symlink and `..` guards.
-  Read → mutate cells → write preserves row order, so **no C-collation
-  obligation** — *but the moment it sorts, dedupes, or joins, it must go into
-  `collation_sensitive_fns`.*
+  Read → mutate cells → write preserves row order, so there is no *ordering* to
+  get wrong today — **but both this and `.ms_rebuild_datapackage_descriptor()`
+  are canonical-byte producers and must be registered in
+  `collation_sensitive_fns` (`tests/testthat/test-collation-guard.R`) when they
+  are written**, not when they first sort. `AGENTS.md` states the rule as
+  registration-on-creation for exactly this reason: the guard only inspects
+  listed functions, so an unregistered writer that later gains a locale-sensitive
+  ordering is invisible to it. That limitation bit within days of the guard being
+  written (#63).
 - `.ms_rebuild_datapackage_descriptor(path)` — extracted from the descriptor
   block inside `write_salmon_datapackage()`.
 - `apply_sdp_semantics(path, review, ...)`.
@@ -231,10 +237,32 @@ Vignette and README rewrite (the *"Review In Excel"* section becomes
 R-native-first, Excel as the alternative), `README-review.txt` generator updated
 to print R commands, `_pkgdown.yml` reference group, `NEWS.md` for 0.3.0.
 
+### #75 is fixed **in slice 1**, by suppression
+
+This changed during review, and the reasoning matters. The original scope showed
+method rows without letting anyone accept or reject them, while deferring
+`methods.csv` registration to slice 2. That is internally unsatisfiable: a
+`REVIEW:`-prefixed `method_iri` blocks strict validation, so for any package with
+a method-ish column name, slice 1 could not deliver **proof 5** (validation
+passes with no markers left) or **proof 6** (a user who never opens Excel can
+finish). The feature would have shipped unable to meet its own stated bar.
+
+**Resolution: stop emitting the marker at its source.** Slice 1 restricts the
+default seeded path's auto-apply roles to match the LLM path's
+(`variable`/`property`/`entity`/`unit`), so `method` and `constraint` are no
+longer auto-applied and no unacceptable marker is produced. That is a small,
+well-understood change and it closes #75.
+
+Full method *support* — accepting a `method_iri` and registering the row in
+`metadata/methods.csv` — remains slice 2, where the two ship together. A user who
+wants a method IRI in slice 1 sets it with `set_sdp_column()` and registers it
+themselves; `review_metadata()` reports it as unfilled rather than pretending it
+does not exist.
+
 ### Slice 2 — named here, out of scope
 
-`method_iri` + `metadata/methods.csv` shipped **together** (closes #75);
-`measurement-decompositions.csv` + its SHA-256 manifest.
+`method_iri` acceptance + `metadata/methods.csv` registration shipped
+**together**; `measurement-decompositions.csv` + its SHA-256 manifest.
 
 ---
 
@@ -262,7 +290,9 @@ Rscript scripts/build-pkgdown.R
 `R/metadata-write.R`, `tests/testthat/test-review-console.R`,
 `test-sdp-field-setters.R`, `test-metadata-write.R`.
 
-**Files modified:** `R/semantics-helpers.R`, `R/package-helpers.R`, `NAMESPACE`,
+**Files modified:** `R/semantics-helpers.R`, `R/package-helpers.R`,
+`tests/testthat/test-collation-guard.R` (register the two new byte writers),
+`NAMESPACE`,
 `_pkgdown.yml`, `NEWS.md`, `vignettes/metasalmon.Rmd`,
 `vignettes/post-review-package-publication.Rmd`, `README.md`.
 
@@ -307,6 +337,20 @@ only. Assert that directly (apply twice, compare hashes).
 
 If a write-back is interrupted, the metadata CSV must be either wholly old or
 wholly new; reuse the existing atomic-write pattern rather than writing in place.
+
+**Per-file atomicity is not sufficient here.** One logical edit — an
+`apply_sdp_semantics()` call, or any `set_sdp_*()` setter — changes both a
+metadata CSV **and** `datapackage.json`, which duplicates title, description,
+creator, contacts, and licence. Replacing each file atomically still leaves a
+window in which the CSV is new and the descriptor is old, and the rule that would
+catch that drift (`datapackage_consistent_with_csv_metadata`) is one of the three
+dead rules in `sdp.rules.yaml` — so nothing would detect it and the package would
+simply be quietly inconsistent.
+
+**Contract:** stage every affected file, then commit them as one set, rolling
+back the whole set on any failure. Assert it: interrupt between the CSV write and
+the descriptor rebuild, and require that the package is unchanged rather than
+half-updated.
 
 ---
 
