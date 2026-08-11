@@ -60,16 +60,25 @@ Ordered by *(does it bite a real user today) × (silent or loud) × (cost)*, the
 adjusted for hard dependencies. Streams that do not block each other can run in
 parallel.
 
-```
-S1 validation authority ─┬─► S3 KNB environments ──► S4 workshop rebuild
-                         │                              ▲
-S2 correctness debt ─────┘                              │
-                                                        │
-S6 ecosystem (vocabulary release pinning) ──────────────┘
+Solid arrows are hard blocks. Dashed are *credibility* dependencies: the work
+ships without them, but says something it cannot fully back.
 
-S5 API hygiene / 0.3.0 ── independent, bundle when convenient
-S7 architecture + curation engine ── independent, largest
 ```
+#73 redaction ──► S3 KNB environments ──► S4 workshop rebuild
+                                              ▲   ▲
+S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
+S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+
+S2 correctness debt          ── independent
+S5 API hygiene / 0.3.0       ── independent, bundle when convenient
+S7 architecture + curation   ── independent, largest
+```
+
+Read that as: **S3's only hard blocker is #73**, and S1, S2, S5, S6 and S7 can
+all run in parallel with it. S4 is hard-blocked by S3 alone. S1 and S6 are
+dashed into S4 because episode 8 teaches validation as the final gate and the
+KNB documentation names vocabulary pinning as a precondition — the workshop can
+ship first, but only with its claims scoped to what is true.
 
 ### S1 — One validation authority · #48, #49 · ~2 weeks · **next**
 

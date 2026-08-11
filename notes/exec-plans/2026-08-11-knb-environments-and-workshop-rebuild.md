@@ -54,9 +54,24 @@ DATAONE_TEST_TOKEN=SECRET  -> DATAONE_TEST_TOKEN=SECRET     # leaks
 qualified name. Captured HTTP and provider errors are stored in returned tibbles
 and written to CSV, so this is a leak at rest, not only on screen.
 
-**Do this first, in its own commit, before any staging code exists.** Extend the
-pattern to cover qualified token names and add the staging name to
-`test-cli-safety.R` alongside the four provider variables already asserted there.
+**There are two redactors, and both have the gap.** `.ms_knb_redact()`
+(`R/knb-publication.R:1767`) is a separate implementation with the same
+`dataone_token`-only pattern, and it is the one that handles KNB **adapter
+errors and warnings** — precisely the path a live staging call takes. Verified:
+
+```
+.ms_knb_redact("dataone_token=SECRET")       -> dataone_token=[REDACTED]
+.ms_knb_redact("dataone_test_token=SECRET")  -> dataone_test_token=SECRET   # leaks
+```
+
+Fixing only `.ms_redact_secrets()` would leave the new staging path exposed
+while looking addressed.
+
+**Do this first, in its own commit, before any staging code exists.** Extend
+**both** patterns to cover qualified token names, assert the staging name in
+`test-cli-safety.R` alongside the four provider variables already there **and**
+in the KNB redaction tests, and consider whether the two redactors should
+converge — two implementations of one security contract is how this gap arose.
 Backlog **#73**.
 
 ### REVIEW 2 — staging EML would overwrite production EML (blocking, correctness)
@@ -104,11 +119,23 @@ preserves everything else, with `prune = TRUE` as the opt-in wipe. A new
 writer-owned directory must be declared, or its status is ambiguous: preserved
 as a user sidecar, or pruned as writer output?
 
-**Decide and state it:** add `publication/staging/**` to
-`.ms_package_managed_paths()` so `prune = TRUE` removes it and an ordinary
-rewrite replaces only the files this call writes. Add it to the P0-5 regression
-test's list of sidecar kinds with the *opposite* expectation from the reviewed
-sidecars, so the contract is asserted in both directions.
+**Do not register it in `.ms_package_managed_paths()`** — my first
+recommendation here was wrong, and the reason is worth keeping. That helper's
+entries are *unlinked before the base writer runs*, and
+`write_salmon_datapackage()` never recreates publication artifacts. Registering
+`publication/staging/` there would delete a staging rehearsal on the next
+ordinary metadata rewrite. It would also invert an existing documented contract:
+`R/package-helpers.R:369` lists `publication/` among the sidecars the base
+writer explicitly **preserves**. (Separately, the helper builds literal paths;
+a `**` glob is not expanded.)
+
+**Instead:** staging artifacts are owned by the *publication* writer, not the
+package writer, so ownership belongs alongside `.ms_knb_sdp_artifact_paths()` —
+the inventory that already answers "what does publication own". State that
+`publication/staging/` is publication-writer-owned and preserved by the base
+writer, and assert both halves: an ordinary `write_salmon_datapackage(overwrite
+= TRUE)` leaves a staging rehearsal intact, and a staging re-plan replaces only
+its own files.
 
 ### REVIEW 5 — "never accept custom endpoints" vs the test hook
 
@@ -290,10 +317,10 @@ live site and the key R / Python / Excel and KNB / EDH routes.
 
 | Step | Depends on | Gate |
 |---|---|---|
-| 0. Fix `dataone_test_token` redaction (#73) | — | `test-cli-safety.R` covers the qualified name |
+| 0. Fix `dataone_test_token` in **both** redactors (#73) | — | cli-safety and KNB redaction tests both cover the qualified name |
 | 1. `knb_environment` API + registry | 0 | Enum, URL/token isolation |
 | 2. Staging EML output path (REVIEW 2) | 1 | Production `metadata/eml.xml` byte-identical |
 | 3. Manifest and overwrite gating (REVIEW 3) | 1 | Pre-existing production manifest validates |
-| 4. Managed-path declaration (REVIEW 4) | 1 | P0-5 contract asserted both directions |
+| 4. Publication-writer ownership of `publication/staging/` (REVIEW 4) | 1 | Base-writer rewrite leaves a rehearsal intact |
 | 5. Docs, version bump, release | 1–4 | `R CMD check` OK, pkgdown built |
 | 6. Workshop rebuild | 5, and ideally S1 | `check_lesson()`, live site routes |

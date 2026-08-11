@@ -874,8 +874,12 @@ despite documenting itself as the end-to-end pre-flight.
 
 **#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
 `dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and
-`DATAONE_TEST_TOKEN=SECRET` do not. The alternation in `R/cli-safety.R` matches
-`dataone[_-]?token` and needs the whole qualified name to match. Captured HTTP
+`DATAONE_TEST_TOKEN=SECRET` do not. The alternation matches `dataone[_-]?token`
+and needs the whole qualified name to match. **Both redactors have the gap** —
+`.ms_redact_secrets()` (`R/cli-safety.R`) and the separate `.ms_knb_redact()`
+(`R/knb-publication.R:1767`), which is the one handling KNB adapter errors and
+warnings. Two implementations of one security contract is how the gap arose;
+consider converging them. Captured HTTP
 and provider errors are stored in returned tibbles and written to CSV, so this
 is a leak at rest, not only on screen. **Blocking for the KNB staging work**,
 which proposes exactly `dataone_test_token` as the staging credential — see
