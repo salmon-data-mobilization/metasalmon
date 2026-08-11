@@ -2468,3 +2468,21 @@ test_that("Retry-After is parsed in both wire formats and capped", {
   backoff <- metasalmon:::.ms_llm_retry_wait_seconds(rate_limited(list()), 2)
   expect_true(backoff >= 1 && backoff <= 1.5)
 })
+
+test_that("HTTP dates parse independently of LC_TIME", {
+  # `strptime("%a ... %b ...")` matches localized names, but an HTTP date always
+  # carries English ones. Under a non-English LC_TIME a valid Retry-After date
+  # parsed to NA and fell through to the sub-second backoff, retrying well
+  # inside the provider's stated window.
+  old_locale <- Sys.getlocale("LC_TIME")
+  on.exit(Sys.setlocale("LC_TIME", old_locale), add = TRUE)
+  applied <- suppressWarnings(Sys.setlocale("LC_TIME", "fr_FR.UTF-8"))
+  skip_if(!nzchar(applied), "no non-English LC_TIME available on this machine")
+
+  parsed <- metasalmon:::.ms_parse_http_date("Mon, 11 Aug 2026 12:00:00 GMT")
+  expect_false(is.na(parsed))
+  expect_identical(format(parsed, "%Y-%m-%dT%H:%M:%S", tz = "GMT"), "2026-08-11T12:00:00")
+
+  # Malformed input still degrades to bounded backoff rather than erroring.
+  expect_true(is.na(metasalmon:::.ms_parse_http_date("not a date")))
+})

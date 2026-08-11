@@ -3790,11 +3790,30 @@ test_that("overwrite does not let a published plan be replaced", {
   )
   readr::write_csv(dictionary, dictionary_path, na = "")
 
+  # Asserting only that it errors is not enough: the plan builder *mutates*, so
+  # a check placed after it would already have rewritten the published archive
+  # and eml.xml, leaving the recovery manifest pointing at checksums that no
+  # longer exist on disk. Fingerprint the artifacts and require them untouched.
+  derived <- c(
+    file.path(package_path, "metadata", "eml.xml"),
+    list.files(file.path(package_path, "publication"), full.names = TRUE)
+  )
+  derived <- derived[file.exists(derived)]
+  expect_gt(length(derived), 0L)
+  before <- vapply(derived, function(f) {
+    digest::digest(file = f, algo = "sha256", serialize = FALSE)
+  }, character(1))
+
   expect_error(
     publish_sdp_to_knb(
       package_path, public = TRUE, manifest_path = manifest_path,
       dry_run = TRUE, overwrite = TRUE
     ),
-    "immutable|different plan"
+    "immutable|different plan|published manifest"
   )
+
+  after <- vapply(derived, function(f) {
+    digest::digest(file = f, algo = "sha256", serialize = FALSE)
+  }, character(1))
+  expect_identical(after, before)
 })

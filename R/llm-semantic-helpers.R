@@ -229,13 +229,45 @@
   if (!is.na(seconds)) {
     return(max(0, seconds))
   }
-  at <- suppressWarnings(
-    as.POSIXct(strptime(trimws(raw), "%a, %d %b %Y %H:%M:%S", tz = "GMT"))
-  )
+  at <- .ms_parse_http_date(trimws(raw))
   if (is.na(at)) {
     return(NA_real_)
   }
   max(0, as.numeric(difftime(at, Sys.time(), units = "secs")))
+}
+
+# An HTTP date, parsed without consulting the process locale.
+#
+# `strptime("%a ... %b ...")` matches *localized* weekday and month names, but an
+# HTTP date always carries the English ones. Under a non-English `LC_TIME` a
+# perfectly valid `Retry-After` date parsed to NA and fell through to the
+# sub-second backoff, retrying well inside the provider's stated window --
+# exactly the case the header exists to prevent.
+#
+# Only IMF-fixdate is handled, which is the form RFC 7231 requires senders to
+# use. The two obsolete formats return NA and fall back to bounded backoff.
+.ms_parse_http_date <- function(value) {
+  parts <- regmatches(
+    value,
+    regexec(
+      "^[A-Za-z]{3},[[:space:]]+([0-9]{2})[[:space:]]+([A-Za-z]{3})[[:space:]]+([0-9]{4})[[:space:]]+([0-9]{2}):([0-9]{2}):([0-9]{2})[[:space:]]+GMT$",
+      value
+    )
+  )[[1]]
+  if (length(parts) == 0L) {
+    return(as.POSIXct(NA))
+  }
+  months <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+  month <- match(parts[[3]], months)
+  if (is.na(month)) {
+    return(as.POSIXct(NA))
+  }
+  ISOdatetime(
+    as.integer(parts[[4]]), month, as.integer(parts[[2]]),
+    as.integer(parts[[5]]), as.integer(parts[[6]]), as.integer(parts[[7]]),
+    tz = "GMT"
+  )
 }
 
 .ms_llm_retry_wait_seconds <- function(condition, attempt, max_wait = 60) {

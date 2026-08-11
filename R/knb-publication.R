@@ -3619,6 +3619,22 @@ publish_sdp_to_knb <- function(path,
     )
   }
 
+  # Eligibility is decided BEFORE the plan builder runs, because the builder
+  # mutates: it rewrites the SDP archive and `eml.xml` in place. Deciding after
+  # it would let `overwrite = TRUE` against a published manifest destroy the
+  # published local bytes and only then abort on the status check, leaving the
+  # recovery manifest pointing at checksums that no longer exist on disk.
+  previous_status <- if (is.null(previous)) NA_character_ else as.character(previous$status)
+  overwrite_eligible <- isTRUE(overwrite) &&
+    (is.null(previous) || identical(previous_status, "dry_run"))
+  if (isTRUE(overwrite) && !overwrite_eligible) {
+    cli::cli_abort(c(
+      "{.arg overwrite} cannot replace artifacts described by a published manifest.",
+      "i" = "Existing manifest status: {.val {previous_status}}.",
+      "i" = "DataONE PIDs are immutable. Supply revision_manifest and a new manifest_path for a reviewed revision."
+    ))
+  }
+
   plan <- .ms_knb_build_plan(
     path,
     eml_path,
@@ -3627,7 +3643,7 @@ publish_sdp_to_knb <- function(path,
     representation = representation,
     prior_manifest = prior_manifest,
     resource_map_path = resource_map_path,
-    overwrite = overwrite
+    overwrite = overwrite_eligible
   )
   if (!is.null(previous) &&
       !identical(as.character(previous$plan_sha256), plan$plan_sha256)) {
@@ -3637,8 +3653,8 @@ publish_sdp_to_knb <- function(path,
     # half of the re-plan dead end -- `overwrite = TRUE` got past the artifact
     # writers only to stop here. Anything that reached the network still
     # requires a reviewed revision.
-    previous_was_dry_run <- identical(as.character(previous$status), "dry_run")
-    if (!(previous_was_dry_run && isTRUE(overwrite))) {
+    previous_was_dry_run <- identical(previous_status, "dry_run")
+    if (!(previous_was_dry_run && overwrite_eligible)) {
       remedy <- if (previous_was_dry_run) {
         "The existing manifest is an unpublished dry run; pass {.code overwrite = TRUE} to replace it."
       } else {
@@ -3655,7 +3671,7 @@ publish_sdp_to_knb <- function(path,
     .ms_knb_require_rights_authorization(plan)
   }
 
-  .ms_knb_assert_resource_map_owned(plan, previous, overwrite = overwrite)
+  .ms_knb_assert_resource_map_owned(plan, previous, overwrite = overwrite_eligible)
   .ms_knb_atomic_write_raw(
     plan$resource_map_bytes,
     plan$resource_map_path
