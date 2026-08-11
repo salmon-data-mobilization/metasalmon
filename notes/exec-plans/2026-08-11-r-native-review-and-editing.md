@@ -75,6 +75,9 @@ validate_salmon_datapackage(pkg, require_iris = TRUE)
 - [ ] M5 — Docs
 - [x] 2026-08-11 — Plan written; #75 reproduced; all source-plan citations
       re-checked against the working tree (several had shifted)
+- [x] 2026-08-11 — Review pass: slice-1 scope reversed for methods (see Decision
+      Log), byte writers registered in the collation guard, cross-file atomicity
+      contract added
 
 ---
 
@@ -131,12 +134,13 @@ a test that is green for an incidental reason.
 | Console prints the exact `accept_suggestion(...)` call; the user pastes it | Makes the decision reproducible and scriptable without building an interactive TUI. The paste *is* the audit trail | 2026-08-11 |
 | Definition inline (primary) + source-aware deep-dive link (secondary) | Definitions already flow through `find_terms()`; no network call needed to show them | 2026-08-11 |
 | Slice 1 = measurement `term`/`property`/`entity`/`unit`/`constraint` + free-text setters | Covers the review a user actually does today in Excel | 2026-08-11 |
-| **Methods deferred to slice 2** | `method_iri` and `metadata/methods.csv` must ship together — see #75 | 2026-08-11 |
+| ~~Methods deferred to slice 2~~ **Superseded** — see the last row | `method_iri` and `metadata/methods.csv` must ship together — see #75 | 2026-08-11 |
 | Decomposition artifact deferred to slice 2 | Dictionary I-ADOPT slots first | 2026-08-11 |
 | Free-text via a named setter family + `review_metadata()` gaps reporter | Named arguments beat a generic `field = value` API for discoverability and for `R CMD check` | 2026-08-11 |
 | Write-back is surgical, then rebuild `datapackage.json` from the metadata | `datapackage.json` duplicates title/description/creator/contacts/license, and the rule that would catch drift is one of the three dead rules in `sdp.rules.yaml`. Resync rather than warn | 2026-08-11 |
 | Bundle into 0.3.0 with #58/#59/#60 | #60 is a **prerequisite**, not an adjacency: the review queue must read those attributes through a supported accessor. #58 already wants a major bump, and this adds ~10 exported functions | 2026-08-11 |
-| Method rows are **shown but not acceptable** in slice 1 | `create_sdp()` can already leave a `REVIEW:`-prefixed `method_iri` (#75) and that marker blocks strict validation — hiding it would be worse than not handling it | 2026-08-11 |
+| ~~Method rows shown but not acceptable in slice 1~~ **Superseded** — see the last row | `create_sdp()` can already leave a `REVIEW:`-prefixed `method_iri` (#75) and that marker blocks strict validation — hiding it would be worse than not handling it | 2026-08-11 |
+| **Reversed: #75 is fixed in slice 1 by suppressing method/constraint auto-apply.** Method *acceptance* + `methods.csv` registration stay slice 2 | Review caught that the two rows above were jointly unsatisfiable: showing an unacceptable `REVIEW:` marker means slice 1 cannot deliver proof 5 (validation passes) or proof 6 (finish without Excel) for any package with a method-ish column name. Stopping the marker at its source is smaller than supporting acceptance, and it closes #75 | 2026-08-11 |
 
 ---
 
