@@ -64,14 +64,47 @@ neither implies the other.
 | Level | File | Use when |
 |---|---|---|
 | **Dataset** | `dataset.csv` — `protocol_iri`, `protocol_citation` *(proposed)* | One protocol governs the whole dataset. **Start here.** |
-| **Table** | `tables.csv` — `method_iri` *(proposed)* | One row is one observation (`observation_unit` says so), and the method is constant for the table |
-| **Observation structure** | `structure/observation_structures.csv` — `method_iri` *(proposed)* | One row carries several measures, each produced differently |
+| **Table** | `tables.csv` — `method_iri` *(proposed)* | The method is constant for the table |
 | **Row** | A data column bound with `sosa:usedProcedure` | The method changes from row to row |
 | **Registry** | `methods.csv` | Any of the above uses an IRI that needs a label, description, version, or citation |
+
+**Three placements, deliberately.** An earlier draft added a fourth on the
+observation-structure extension, for a table whose measures were made
+differently. That is dropped — see *Why not a per-measure placement*.
 
 `methods.csv` is to methods what `codes.csv` is to codes: **a registry you create
 only when you have values to register.** It is not a fifth level of metadata. The
 four levels remain dataset, tables, columns, codes.
+
+### Why not a per-measure placement
+
+A table can carry several measures made differently — a spawner count from an
+aerial survey and a water temperature from a logger, in one site-visit row. The
+SDP could express that on the observation-structure extension. **It deliberately
+does not.**
+
+Two reasons.
+
+*The rare case should not complicate the common one.* Method varying between
+measures in one table is uncommon; method constant per table, or varying per row,
+covers nearly everything. A model whose common path requires an optional
+extension is a model most contributors will get wrong.
+
+*It is usually a signal, not a requirement.* If two measures in one table were
+produced by genuinely different procedures, they are often two observational
+units that tidy data would separate anyway. The guidance is therefore: **treat a
+per-measure method difference as a prompt to check whether the table is carrying
+two observational units.** If it is, split it — each table then has one method.
+If it genuinely is not, record the method at dataset level and accept the coarser
+statement, or put it in the data as a column.
+
+**Note the two senses of "observation".** Tidy data's *observational unit* is the
+entity a row describes — a site visit, a fish. SOSA's *Observation* is a single
+act producing a single result. A site-visit row holding two measurements is
+**one** tidy observational unit and **two** SOSA observations. `tables.csv`'s
+`observation_unit` field carries the tidy sense. This model uses the tidy sense
+throughout; it does not require a row to be a single SOSA Observation, because
+requiring that would push every multi-variable table into an extension.
 
 ### Not recorded on a column
 
@@ -93,12 +126,8 @@ One question, asked in order. Stop at the first *yes*.
 ```
 Is the method the same for the whole dataset?
         └── yes → dataset.csv protocol fields.           Done.
-Does it differ between tables, but not within one,
-  and does one row represent one observation?
+Is it constant within each table?
         └── yes → tables.csv method_iri.                 Done.
-Does one row carry several measures made differently?
-        └── yes → an observation structure per measure,
-                  each with its own method_iri.          Done.
 Does the method change from row to row?
         └── yes → it is data, not metadata.
                   Add a column, bind it with sosa:usedProcedure,
@@ -122,6 +151,9 @@ Counting technique varies by year; the estimation approach is constant.
 | Analytical method constant? | Yes — AUC expansion throughout | `tables.csv.method_iri` |
 | Counting technique constant? | **No** — aerial in some years, weir in others | a data column, `sosa:usedProcedure`, codes → `methods.csv` |
 
+Every placement here is one of the three. No extension is needed for what is
+probably the most common salmon dataset shape in existence.
+
 Note what this buys: the varying thing is queryable per row, the constant things
 are stated once, and nobody is asked to repeat the protocol on 40 columns.
 
@@ -131,13 +163,15 @@ are stated once, and nobody is asked to repeat the protocol on 40 columns.
 
 **Breaking:** `column_dictionary.method_iri` is removed.
 
-**Migration.** A `method_iri` on a measurement column becomes, in order of
-preference: the table's `method_iri` if all measurement columns in the table
-agree; otherwise an observation structure per distinct method. A `REVIEW:`-marked
-value is dropped, not migrated — it was never a reviewed decision.
+**Migration.** A `method_iri` on a measurement column becomes the table's
+`method_iri` when all measurement columns in the table agree. When they disagree,
+the migration **stops and reports** rather than guessing: the contributor decides
+whether to split the table, record at dataset level, or move the method into the
+data. A `REVIEW:`-marked value is dropped, not migrated — it was never a reviewed
+decision.
 
 **Additive:** `protocol_iri` / `protocol_citation` on `dataset.csv`;
-`method_iri` on `tables.csv` and on `observation_structures.csv`.
+`method_iri` on `tables.csv`.
 
 **Requirement level:** `methods.csv` moves from *optional* to **conditional** —
 required when any `method_iri` is used, absent otherwise. This matches
