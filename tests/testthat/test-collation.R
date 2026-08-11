@@ -182,3 +182,47 @@ test_that("term-gap row order and top-candidate choice are locale-independent", 
   # C collation puts "Apple" before "B" before "_z" before "a" before "apple".
   expect_identical(ambient, "Apple")
 })
+
+test_that("semantic ranking tie-breaks are locale-independent", {
+  # The shortlist order these produce selects the top-1 IRI that
+  # `seed_semantics = TRUE` writes into `column_dictionary.csv`, so a tie broken
+  # by locale seeds the same input differently on macOS and in a C-locale
+  # container. Equal scores across mixed-case and non-ASCII tie-breakers are
+  # exactly where C and en_* collation disagree.
+  candidates <- tibble::tibble(
+    iri = paste0("http://example.org/", 1:5),
+    label = c("apple", "Apple", "B", "_z", "a"),
+    source = c("apple", "Apple", "B", "_z", "a"),
+    ontology = c("apple", "Apple", "B", "_z", "a"),
+    definition = "same definition",
+    match_type = "exact",
+    score = rep(0.5, 5),
+    retrieval_pass = "primary",
+    retrieval_query = "same query"
+  )
+
+  rank <- function() {
+    # `query = NULL` and `role = NA` keep every score equal, so the result is
+    # decided entirely by the tie-breakers.
+    .score_and_rank_terms(
+      candidates, NA_character_, metasalmon:::.iadopt_vocab(), query = NULL
+    )$iri
+  }
+  merge_order <- function() {
+    .ms_merge_semantic_target_candidates(candidates, candidates[0, ], max_per_role = 5L)$iri
+  }
+
+  ambient_rank <- rank()
+  ambient_merge <- merge_order()
+
+  old <- Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old), add = TRUE)
+  Sys.setlocale("LC_COLLATE", "C")
+
+  expect_identical(rank(), ambient_rank)
+  expect_identical(merge_order(), ambient_merge)
+  # C collation orders "Apple" < "B" < "_z" < "a" < "apple", so an equal-score
+  # tie resolves to Apple first. Asserted so the test cannot pass by both sides
+  # being equally wrong.
+  expect_identical(ambient_rank[[1]], "http://example.org/2")
+})

@@ -57,22 +57,23 @@ collation_sensitive_fns <- c(
   # tie-breakers. Neither name matches the heuristic below.
   "detect_semantic_term_gaps",
   ".ms_term_gap_candidate_summary",
-  # Not a correctness risk on its own -- the sorted sources only build an
-  # in-session cache key, so a locale change costs a cache miss rather than a
-  # wrong answer -- but qualified anyway so the rule holds without the reader
-  # having to reconstruct that argument.
-  #
-  # NOTE, so this entry is not read as more than it is: the guard does not
-  # traverse callees, so listing `find_terms()` covers ONLY its own body. The
-  # returned shortlist order is produced by the bare `order()` calls in
-  # `.score_and_rank_terms()` (R/term_search.R) and
-  # `.ms_retrieve_semantic_target_candidates()` (R/semantics-helpers.R), which
-  # tie-break on `source`/`ontology`/`label`/`iri` and are still
-  # locale-dependent. That is backlog item #43, deferred from 0.2.0 because it
-  # moves semantic-suggestion test expectations and deserves its own diff; it is
-  # the top-ranked P1 in the post-0.2.0 roadmap. Add both functions here when it
-  # lands.
-  "find_terms"
+  # Semantic ranking. The shortlist order these produce selects the top-1 IRI
+  # that `seed_semantics = TRUE` writes into `column_dictionary.csv`, so a tie
+  # broken by locale seeds the same input differently on macOS and in a
+  # C-locale container. `find_terms()` alone was never enough: the guard does
+  # not traverse callees, so its entry covered only its own cache-key sort while
+  # the ranking itself lives in the helpers below.
+  "find_terms",
+  ".score_and_rank_terms",
+  ".ms_retrieve_semantic_target_candidates",
+  ".ms_merge_semantic_target_candidates",
+  ".gcdfo_match_terms",
+  ".apply_embedding_rerank",
+  # Exported, and both carry a character ordering into their result:
+  # `collision_roles` is pasted from a sorted vector, and the suggestion row
+  # order is part of the returned tibble.
+  "suggest_semantics",
+  "apply_semantic_suggestions"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

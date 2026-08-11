@@ -167,9 +167,11 @@
   )
   if ("score" %in% names(res)) {
     res$score <- res$score + res$role_hint_bonus
-    res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+    res <- res[order(-res$score, res$source, res$ontology, res$label, res$iri,
+                     method = "radix"), , drop = FALSE]
   } else {
-    res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri), , drop = FALSE]
+    res <- res[order(-res$role_hint_bonus, res$source, res$ontology, res$label, res$iri,
+                     method = "radix"), , drop = FALSE]
   }
   res <- utils::head(res, max(1L, as.integer(max_per_role[[1]] %||% 3L)))
 
@@ -198,7 +200,8 @@
       combined$label,
       combined$iri,
       combined$retrieval_pass,
-      combined$retrieval_query
+      combined$retrieval_query,
+      method = "radix"
     ), , drop = FALSE]
   } else {
     combined <- combined[order(
@@ -208,7 +211,8 @@
       combined$label,
       combined$iri,
       combined$retrieval_pass,
-      combined$retrieval_query
+      combined$retrieval_query,
+      method = "radix"
     ), , drop = FALSE]
   }
 
@@ -526,7 +530,7 @@ suggest_semantics <- function(df,
         .data$candidate_label_norm
       ) %>%
       dplyr::summarise(
-        collision_roles = paste(sort(unique(.data$dictionary_role)), collapse = "|"),
+        collision_roles = paste(sort(unique(.data$dictionary_role), method = "radix"), collapse = "|"),
         role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
         .groups = "drop"
       )
@@ -863,7 +867,9 @@ apply_semantic_suggestions <- function(dict,
   }
 
   match_keys <- c(intersect(c("dataset_id", "table_id"), names(suggestions)), "column_name", "dictionary_role")
-  selected <- suggestions[order(suggestions$.row_id), , drop = FALSE]
+  # `.row_id` is `seq_len()`, so radix is already the default here -- annotated
+  # so the guard covers this function without an exception.
+  selected <- suggestions[order(suggestions$.row_id, method = "radix"), , drop = FALSE]
   group_id <- do.call(
     paste,
     c(

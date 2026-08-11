@@ -351,7 +351,7 @@
     path = path,
     title = title,
     description = description,
-    schema = paste0(.ms_sdp_public_schema_base(), "/", schema_file)
+    schema = .ms_sdp_metadata_resource_schema(name, schema_file)
   )
 }
 

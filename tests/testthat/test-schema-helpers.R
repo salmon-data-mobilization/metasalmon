@@ -318,3 +318,28 @@ test_that("schema URI authorities must carry a host", {
     expect_identical(metasalmon:::.ms_validate_sdp_schema(bundle)$rules_uri, value, info = value)
   }
 })
+
+test_that("per-resource schema URLs are derived from the bundle", {
+  # The last hardcoded contract value: unlike the profile and rules URIs, this
+  # one was composed from a constant, carrying the drift risk that broke remote
+  # schema loading before 0.2.0 (#35/#62).
+  vendored <- metasalmon:::.ms_load_sdp_schema(quiet = TRUE)
+  declared <- NULL
+  for (resource in vendored$profile[["sdp:metadataResources"]]) {
+    if (identical(resource$name, "sdp_methods")) {
+      declared <- resource$schema
+    }
+  }
+  skip_if(is.null(declared), "vendored bundle has no sdp_methods resource")
+
+  expect_identical(
+    metasalmon:::.ms_sdp_metadata_resource_schema("sdp_methods", "methods.schema.json"),
+    declared
+  )
+  # A name the bundle does not declare falls back to the vendored base rather
+  # than erroring — a bundle predating the v0.2 extension resources is valid.
+  expect_identical(
+    metasalmon:::.ms_sdp_metadata_resource_schema("sdp_not_a_resource", "x.schema.json"),
+    paste0(metasalmon:::.ms_sdp_public_schema_base(), "/x.schema.json")
+  )
+})

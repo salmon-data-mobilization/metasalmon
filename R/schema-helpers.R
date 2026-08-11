@@ -9,11 +9,34 @@
   "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
 }
 
-# Consumed by `R/sdp-methods.R` to build per-resource schema URLs. Still a
-# hardcoded contract value, so it carries the same drift risk that broke remote
-# schema loading before 0.2.0 — see backlog #62.
+# Fallback only, for a bundle that predates the v0.2 extension resources.
+# `.ms_sdp_metadata_resource_schema()` is what callers use.
 .ms_sdp_public_schema_base <- function() {
   "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata"
+}
+
+# The schema URL for one metadata resource, taken from the loaded bundle's
+# `sdp:metadataResources` entry of that name. Deriving it means every URI in a
+# written `datapackage.json` -- profile, rules, and now per-resource schemas --
+# comes from one validated bundle, closing the last hardcoded contract value.
+#
+# The fallback is not dead code: a bundle published before the v0.2 extension
+# resources existed has no `sdp_methods` entry, and composing the vendored base
+# with the caller's filename is the same URL that shipped before this was
+# derived.
+.ms_sdp_metadata_resource_schema <- function(name, fallback_file) {
+  schema <- .ms_load_sdp_schema(quiet = TRUE)
+  resources <- schema$profile[["sdp:metadataResources"]] %||% list()
+  for (resource in resources) {
+    if (identical(resource$name, name)) {
+      declared <- .ms_sdp_schema_uri(resource$schema)
+      if (!is.na(declared)) {
+        return(declared)
+      }
+      break
+    }
+  }
+  paste0(.ms_sdp_public_schema_base(), "/", fallback_file)
 }
 
 .ms_sdp_public_rules_url <- function() {

@@ -1,3 +1,28 @@
+metasalmon 0.2.1
+----------------
+
+Closes the last two P1 items whose fixes change written artifacts, so they ship
+ahead of the larger roadmap steps.
+
+### Fixes
+
+- Semantic ranking is now reproducible across locales. Score ties broke on
+  character keys (`source`, `ontology`, `label`, `iri`), and with
+  `seed_semantics = TRUE` the top-1 pick becomes a written IRI in
+  `column_dictionary.csv` — so the same input seeded differently on macOS and in
+  a C-locale container. All nine ordering sites in `R/semantics-helpers.R` and
+  `R/term_search.R` now use explicit C collation, and seven functions are
+  registered in the collation guard. This was the last locale-dependence in the
+  package. Note that `.apply_embedding_rerank()` also selected its rerank set
+  with `order(-score)` alone, so *which* rows were reranked depended on input
+  order; it now tie-breaks on `label`.
+
+- Per-resource schema URLs in `datapackage.json` are derived from the loaded
+  SDP bundle rather than composed from a hardcoded constant. Every URI in a
+  written descriptor — profile, rules, and per-resource schemas — now comes from
+  one validated bundle. The constant remains as the fallback for a bundle that
+  predates the v0.2 extension resources.
+
 metasalmon 0.2.0
 ----------------
 
