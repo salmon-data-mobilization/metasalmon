@@ -1539,3 +1539,28 @@ test_that("the result cache is keyed by the ranking configuration", {
   run()
   expect_identical(searches, 3L)
 })
+
+test_that("the BioPortal key travels in a header, not the query string", {
+  # In the URL it was written into request logs at both ends and printed
+  # verbatim by the timeout warning, which quotes the URL.
+  withr::local_envvar(c(BIOPORTAL_APIKEY = "SECRET-KEY-VALUE"))
+  seen <- NULL
+  with_mocked_bindings(
+    .safe_json = function(url, headers = NULL, timeout_secs = NA_real_) {
+      seen <<- list(url = url, headers = headers)
+      NULL
+    },
+    metasalmon:::.search_bioportal("water temperature", role = "variable")
+  )
+
+  expect_false(grepl("SECRET-KEY-VALUE", seen$url, fixed = TRUE))
+  expect_false(grepl("apikey=", seen$url, fixed = TRUE))
+  expect_identical(unname(seen$headers[["Authorization"]]), "apikey token=SECRET-KEY-VALUE")
+
+  # And a URL that does carry a key is redacted before it is displayed.
+  expect_match(
+    metasalmon:::.ms_redact_secrets("https://data.bioontology.org/search?q=x&apikey=SECRET"),
+    "[REDACTED]",
+    fixed = TRUE
+  )
+})

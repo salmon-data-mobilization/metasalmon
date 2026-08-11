@@ -586,26 +586,31 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
       }
       status <- httr::status_code(res)
       if (status >= 300) {
+        # Redacted even though metasalmon no longer puts a key in a URL: a
+        # user-supplied endpoint or a future source could, and this is the one
+        # place every source's URL is displayed.
+        safe_url <- .ms_redact_secrets(url)
         if (status == 408L) {
           cli::cli_warn(c(
-            "Vocabulary API request timed out while querying {.url {url}}.",
+            "Vocabulary API request timed out while querying {.url {safe_url}}.",
             "i" = "HTTP {.val 408} (Request Timeout)"
           ))
         }
-        .ms_signal_search_failure(url, paste0("HTTP ", status))
+        .ms_signal_search_failure(safe_url, paste0("HTTP ", status))
         return(NULL)
       }
       jsonlite::fromJSON(httr::content(res, as = "text", encoding = "UTF-8"))
     },
     error = function(e) {
-      err_msg <- conditionMessage(e)
+      err_msg <- .ms_redact_secrets(conditionMessage(e))
+      safe_url <- .ms_redact_secrets(url)
       if (.ms_is_timeout_error(err_msg)) {
         cli::cli_warn(c(
-          "Vocabulary API request timed out while querying {.url {url}}.",
+          "Vocabulary API request timed out while querying {.url {safe_url}}.",
           "i" = "{.text {err_msg}}"
         ))
       }
-      .ms_signal_search_failure(url, .ms_redact_secrets(err_msg))
+      .ms_signal_search_failure(safe_url, err_msg)
       NULL
     }
   )
@@ -795,8 +800,11 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   }
 
   encoded <- utils::URLencode(query, reserved = TRUE)
-  url <- paste0("https://data.bioontology.org/search?q=", encoded, "&apikey=", apikey)
-  data <- .safe_json(url)
+  # The key travels in a header, not the query string. In the URL it was written
+  # into request logs and proxy logs at both ends, and printed verbatim by the
+  # timeout warning below, which quotes the URL.
+  url <- paste0("https://data.bioontology.org/search?q=", encoded)
+  data <- .safe_json(url, headers = c(Authorization = paste0("apikey token=", apikey)))
   if (is.null(data) || is.null(data$collection)) {
     return(.empty_terms(role))
   }

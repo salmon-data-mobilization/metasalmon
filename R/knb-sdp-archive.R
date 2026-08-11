@@ -459,7 +459,12 @@
     if (!isTRUE(overwrite)) {
       cli::cli_abort(c(
         "SDP archive output already exists with different bytes and {.arg overwrite} is FALSE.",
-        "i" = "Review the existing publication artifact before replacing it."
+        "i" = "Review the existing publication artifact before replacing it.",
+        # Without this the only way forward was to work out that a manual
+        # `unlink()` was required, which made every re-plan after a corrected
+        # input a dead end.
+        "i" = "To rebuild it from the current inputs, pass {.code overwrite = TRUE}.",
+        "i" = "Existing: {.file {output_path}}."
       ))
     }
   }
