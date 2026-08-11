@@ -3,6 +3,16 @@ metasalmon 0.2.4
 
 ### Internal
 
+- CI runs the suite under a non-C ambient collation (`LANG`/`LC_ALL` =
+  `en_US.UTF-8`, with `fr_FR.UTF-8` also generated for `LC_TIME`). The
+  differential guards on the byte-reproducibility contract compare an ordering
+  against a contrasting locale and skip when none exists, so on a default
+  C/POSIX runner they had been passing vacuously — the guards protecting the
+  package's canonical bytes gave no CI signal. They now execute, and the whole
+  suite passes under a locale that collates differently, which is the first
+  actual evidence for the locale-independence claim rather than an assumption.
+  CI skips drop from 9 to 6.
+
 - CI now installs `{dataone}`, `{datapack}`, and `{XML}`, and a guard fails the
   build if any optional package the suite needs is missing. `R-CMD-check.yaml`
   installed only `devtools` and `rcmdcheck`, so five tests of the DataONE
