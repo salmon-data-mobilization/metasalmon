@@ -184,11 +184,19 @@ Ordered:
    cannot be satisfied today**, which makes it a soft dependency of S4.
 4. **Publish the `smn:`/`gcdfo:` boundary as data** — one SSSOM 1.1 mapping set
    for the ~55 name collisions, with CI checks in both repos.
-5. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
+5. **Method / protocol / procedure modelling alignment (#76, draft).** SMN types
+   methods as OWL subclasses of `sosa:Procedure`; gcdfo types the same domain as
+   `skos:Concept` with no `sosa:Procedure` anywhere; metasalmon's NuSEDS
+   crosswalks point at the gcdfo terms. The SDP rule requiring `methods.csv` to
+   hold SOSA Procedures therefore cannot be satisfied by the vocabulary the
+   package recommends. **Do not patch the typing in isolation** — the same pass
+   must settle whether method, protocol, and procedure are one class or three,
+   and at which abstraction level each belongs.
+6. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
    Highest-value single ontology change for real users: today term search finds
    nothing and falls back to `REVIEW:` placeholders.
-6. **Fix the I-ADOPT layer** so the decomposition pipeline has a conformant target.
-7. **Governance** — machine-readable licence in the TTL, real `CITATION.cff`,
+7. **Fix the I-ADOPT layer** so the decomposition pipeline has a conformant target.
+8. **Governance** — machine-readable licence in the TTL, real `CITATION.cff`,
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
 

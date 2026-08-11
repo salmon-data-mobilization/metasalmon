@@ -35,7 +35,7 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73,
-  #74 (feature), #75.
+  #74 (feature), #75, #76 (draft).
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
 
@@ -924,6 +924,41 @@ that deferring it made slice 1's own acceptance criteria unsatisfiable, since th
 marker it leaves blocks strict validation.
 
 
+
+**#76 SMN and gcdfo model methods incompatibly — DRAFT, needs a modelling
+alignment pass.** Verified, but deliberately **not** actionable as written: the
+fix requires a deeper gcdfo / SMN / PSC ontology and controlled-vocabulary
+alignment pass, not a patch. Recorded so the evidence is not lost.
+
+SMN models methods as OWL classes under SOSA —
+`smn:FishLengthMeasurementMethod rdfs:subClassOf sosa:Procedure`, with
+observation classes carrying `owl:Restriction` on `sosa:usedProcedure`. gcdfo
+models the same domain as SKOS concepts —
+`gcdfo:AerialSurveyCount a skos:Concept ; skos:inScheme :EnumerationMethodScheme` —
+and contains **zero** occurrences of `sosa:Procedure`.
+
+metasalmon's own NuSEDS crosswalks point at the gcdfo terms (23/25 enumeration
+rows, 22/27 estimate rows carry a `gcdfo:` term). So the chain breaks: the SDP
+rule `methods_are_sosa_procedures` requires `metadata/methods.csv` to hold SOSA
+Procedure resources, `sosa:usedProcedure` has range `sosa:Procedure`, and the
+vocabulary the package itself recommends supplies concepts that are never typed
+as procedures. A SOSA-aware consumer following `usedProcedure` into gcdfo gets a
+`skos:Concept`, not a procedure.
+
+Same shape as the `sosa:Property` finding in the 2026-08-10 ecosystem review:
+correct-looking assertions that no reasoner can use. Note also that SMN carries
+only **two** `sosa:Procedure` subclass assertions, so the SOSA scaffolding is
+thin while all the domain content lives in gcdfo as SKOS — the two layers do not
+meet in the middle.
+
+*Scope note:* the alignment pass must also settle the vocabulary question raised
+alongside this — whether "method", "protocol", and "procedure" are one class or
+three, and at which abstraction level each belongs. Do not fix the typing in
+isolation; it would harden a distinction that has not been made yet.
+
+*Gate:* a decision record naming the chosen model, then a SHACL or SPARQL check
+in both repos asserting every term reachable from a `methods.csv` `method_iri`
+is typed such that `sosa:usedProcedure` resolves. Belongs to roadmap **S6**.
 
 **#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
 `dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and
