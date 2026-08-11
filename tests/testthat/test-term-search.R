@@ -14,7 +14,10 @@ test_that("find_terms surfaces timeout errors for online lookup", {
     withCallingHandlers(
       find_terms("water temperature", sources = "ols", expand_query = FALSE),
       warning = function(w) {
-        timed_out <<- grepl("timed out", conditionMessage(w), ignore.case = TRUE)
+        # Accumulate: `find_terms()` also warns that the lookup was incomplete,
+        # and that warning arrives last, so an overwriting assignment would
+        # report the timeout warning as absent.
+        timed_out <<- timed_out || grepl("timed out", conditionMessage(w), ignore.case = TRUE)
       }
     )
   )
@@ -34,7 +37,10 @@ test_that("find_terms surfaces timeout errors from source-level failures", {
     withCallingHandlers(
       find_terms("water temperature", sources = "ols", expand_query = FALSE),
       warning = function(w) {
-        timed_out <<- grepl("timed out", conditionMessage(w), ignore.case = TRUE)
+        # Accumulate: `find_terms()` also warns that the lookup was incomplete,
+        # and that warning arrives last, so an overwriting assignment would
+        # report the timeout warning as absent.
+        timed_out <<- timed_out || grepl("timed out", conditionMessage(w), ignore.case = TRUE)
       }
     )
   )
@@ -1364,4 +1370,172 @@ test_that("benchmark helper can compare ranking profiles and detect sensitivity"
 
   no_smn_cases <- subset(bench$per_case, profile == "no_smn")
   expect_true(any(!no_smn_cases$top1_ok))
+})
+
+test_that("a resolved term index is reused without refetching or reparsing", {
+  # The stamp check used to sit after the fetch and the parse, so every
+  # find_terms() call paid 11 conditional GETs and a full reparse before it
+  # could discover nothing had changed. The cache was real; it never prevented
+  # any work.
+  cache <- new.env(parent = emptyenv())
+  calls <- 0L
+  resolve <- function() {
+    calls <<- calls + 1L
+    tibble::tibble(iri = "http://example.org/1", label = "x")
+  }
+
+  first <- metasalmon:::.ms_cached_term_index(cache, refresh = FALSE, resolve)
+  second <- metasalmon:::.ms_cached_term_index(cache, refresh = FALSE, resolve)
+
+  expect_identical(calls, 1L)
+  expect_identical(second, first)
+
+  # `refresh = TRUE` is the escape hatch, and it must still re-resolve.
+  metasalmon:::.ms_cached_term_index(cache, refresh = TRUE, resolve)
+  expect_identical(calls, 2L)
+})
+
+test_that(".smn_term_index does not rebuild the module bundle on a second call", {
+  if (length(ls(envir = .smn_index_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .smn_index_cache, all.names = TRUE), envir = .smn_index_cache)
+  }
+  on.exit(
+    if (length(ls(envir = .smn_index_cache, all.names = TRUE)) > 0) {
+      rm(list = ls(envir = .smn_index_cache, all.names = TRUE), envir = .smn_index_cache)
+    },
+    add = TRUE
+  )
+
+  builds <- 0L
+  fake_bundle <- function(cache_dir) {
+    builds <<- builds + 1L
+    list(index = tibble::tibble(iri = "https://w3id.org/smn/x", label = "x"))
+  }
+
+  testthat::with_mocked_bindings(
+    {
+      metasalmon:::.smn_term_index()
+      metasalmon:::.smn_term_index()
+    },
+    .smn_module_index_bundle = fake_bundle
+  )
+
+  expect_identical(builds, 1L)
+})
+
+test_that("METASALMON_CACHE is read at call time, not at build time", {
+  # As a top-level binding this captured the *build* machine's environment, so
+  # an installed package could never have the result cache enabled -- only
+  # pkgload::load_all() saw the developer's own setting.
+  withr::local_envvar(c(METASALMON_CACHE = "1"))
+  expect_true(metasalmon:::.metasalmon_cache_enabled())
+
+  withr::local_envvar(c(METASALMON_CACHE = ""))
+  expect_false(metasalmon:::.metasalmon_cache_enabled())
+})
+
+test_that("an HTTP failure is not reported as a successful empty search", {
+  # A failed lookup used to be indistinguishable from a successful empty one:
+  # `.safe_json()` returned NULL for both, callers collapsed NULL into
+  # `.empty_terms()`, and the diagnostic said `status = "success", count = 0`.
+  # That is the input that drives `request_new_term` escalation, so an outage
+  # manufactured ontology gaps.
+  res <- with_mocked_bindings(
+    .safe_json = function(url, headers = NULL, timeout_secs = NA_real_) {
+      metasalmon:::.ms_signal_search_failure(url, "HTTP 503")
+      NULL
+    },
+    suppressWarnings(find_terms("water temperature", sources = "ols", expand_query = FALSE))
+  )
+
+  diagnostics <- attr(res, "diagnostics")
+  expect_true(all(diagnostics$status == "http_error"))
+  expect_false(any(diagnostics$status == "success"))
+  expect_match(diagnostics$error[[1]], "HTTP 503")
+  expect_equal(nrow(res), 0L)
+
+  # And it warns, so a non-interactive run leaves a trace.
+  expect_warning(
+    with_mocked_bindings(
+      .safe_json = function(url, headers = NULL, timeout_secs = NA_real_) {
+        metasalmon:::.ms_signal_search_failure(url, "HTTP 503")
+        NULL
+      },
+      find_terms("water temperature", sources = "ols", expand_query = FALSE)
+    ),
+    "did not answer"
+  )
+})
+
+test_that("a degraded lookup is never cached", {
+  # Caching an outage's empty result would freeze it for the session, so every
+  # later column would inherit the same manufactured gap.
+  withr::local_envvar(c(METASALMON_CACHE = "1"))
+  if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+  }
+  on.exit(
+    if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+      rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+    },
+    add = TRUE
+  )
+
+  suppressWarnings(with_mocked_bindings(
+    .safe_json = function(url, headers = NULL, timeout_secs = NA_real_) {
+      metasalmon:::.ms_signal_search_failure(url, "HTTP 503")
+      NULL
+    },
+    find_terms("water temperature", sources = "ols", expand_query = FALSE)
+  ))
+  expect_length(ls(envir = .metasalmon_cache, all.names = TRUE), 0L)
+
+  # A clean lookup still caches.
+  with_mocked_bindings(
+    .search_ols = function(query, role) metasalmon:::.empty_terms(role),
+    find_terms("water temperature", sources = "ols", expand_query = FALSE)
+  )
+  expect_gt(length(ls(envir = .metasalmon_cache, all.names = TRUE)), 0L)
+})
+
+test_that("the result cache is keyed by the ranking configuration", {
+  # The cache stores the *ranked* result, so a process that searches once and
+  # then enables reranking would otherwise get the old ordering back. This was
+  # unreachable while METASALMON_CACHE could never be enabled in an installed
+  # package; fixing that made it reachable.
+  withr::local_envvar(c(METASALMON_CACHE = "1", METASALMON_EMBEDDING_RERANK = "",
+                        METASALMON_EMBEDDING_WEIGHT = "1"))
+  if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+    rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+  }
+  on.exit(
+    if (length(ls(envir = .metasalmon_cache, all.names = TRUE)) > 0) {
+      rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+    },
+    add = TRUE
+  )
+
+  searches <- 0L
+  run <- function() {
+    with_mocked_bindings(
+      .search_ols = function(query, role) {
+        searches <<- searches + 1L
+        metasalmon:::.empty_terms(role)
+      },
+      find_terms("water temperature", sources = "ols", expand_query = FALSE)
+    )
+  }
+
+  run()
+  run()
+  expect_identical(searches, 1L)
+
+  # Changing a ranking setting must miss the cache, not reuse the old ranking.
+  withr::local_envvar(c(METASALMON_EMBEDDING_WEIGHT = "2"))
+  run()
+  expect_identical(searches, 2L)
+
+  withr::local_envvar(c(METASALMON_EMBEDDING_RERANK = "1"))
+  run()
+  expect_identical(searches, 3L)
 })

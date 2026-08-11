@@ -1,3 +1,36 @@
+metasalmon 0.2.2
+----------------
+
+Roadmap step 2: the semantic pipeline at real scale.
+
+### Fixes
+
+- The term-search index caches now actually prevent work. `.smn_term_index()`
+  and `.gcdfo_term_index()` checked their cache stamp *after* fetching and
+  parsing, so every `find_terms()` call paid 11 conditional GETs and a full
+  reparse of every SMN Turtle module before discovering nothing had changed —
+  projected at roughly 8 CPU-hours for a 5-table x 200-column package. An index
+  is now resolved once per session. The trade is deliberate: a module updated
+  upstream mid-session is not picked up until `refresh = TRUE`, matching the
+  decision already taken for the schema bundle, and it is the stronger guarantee
+  for seeding, where two columns in one package must not be seeded against two
+  different ontology versions.
+
+- `METASALMON_CACHE` is read at call time. As a top-level binding it was
+  evaluated when the namespace was built, so an installed package captured the
+  build machine's environment and the result cache could never be enabled by a
+  user — only `pkgload::load_all()` ever saw the developer's own setting.
+
+- A failed vocabulary lookup is no longer indistinguishable from a successful
+  empty one. `.safe_json()` returned `NULL` for both, every caller collapsed
+  that into an empty result, and the diagnostic recorded
+  `status = "success", count = 0` — so a degraded OLS or BioPortal looked
+  exactly like "no such term exists", which is the input that drives
+  `request_new_term` escalation. An outage could therefore manufacture ontology
+  gaps. Failures are now signalled, recorded per source in the `diagnostics`
+  attribute as `status = "http_error"`, and surfaced as a warning; a degraded
+  lookup is never written to the result cache.
+
 metasalmon 0.2.1
 ----------------
 
