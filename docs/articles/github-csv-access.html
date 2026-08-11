@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -112,15 +112,16 @@ have one</li>
 <li>
 <strong>Store the PAT</strong> - Save your token securely using
 <code>gitcreds</code> so you don’t need to enter it repeatedly</li>
-<li>
-<strong>Verify access</strong> - Confirm that authentication works
-by testing against a repository</li>
 </ol>
+<p>Called with no arguments it stops there: the token is set up and
+stored, but no particular repository is checked.</p>
 <div class="section level3">
 <h3 id="verifying-access-to-a-specific-repository">Verifying Access to a Specific Repository<a class="anchor" aria-label="anchor" href="#verifying-access-to-a-specific-repository"></a>
 </h3>
-<p>By default, <code><a href="../reference/ms_setup_github.html">ms_setup_github()</a></code> verifies access to a test
-repository. You can specify your own repository to verify:</p>
+<p>Pass <code>repo</code> to also confirm the stored token can read a
+given repository. This is the quickest way to find out whether your PAT
+carries the permissions a private repository needs, and whether your
+organization’s SSO has authorized it:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Verify access to a specific private repository</span></span>
 <span><span class="fu"><a href="../reference/ms_setup_github.html">ms_setup_github</a></span><span class="op">(</span>repo <span class="op">=</span> <span class="st">"your-org/your-private-repo"</span><span class="op">)</span></span></code></pre></div>

@@ -20,7 +20,8 @@ write_salmon_datapackage(
   path,
   format = "csv",
   overwrite = FALSE,
-  write_datapackage = TRUE
+  write_datapackage = TRUE,
+  prune = FALSE
 )
 ```
 
@@ -56,15 +57,28 @@ write_salmon_datapackage(
 
 - overwrite:
 
-  Logical; if `FALSE` (default), errors if path exists. If `TRUE`,
-  replacement is only allowed for empty directories or directories
-  previously written by `metasalmon`.
+  Logical; if `FALSE` (default), errors if path exists. If `TRUE`, the
+  package is updated in place — see `prune`. Replacement is only allowed
+  for empty directories or directories previously written by
+  `metasalmon`.
 
 - write_datapackage:
 
   Logical; if `TRUE` (default), write a root `datapackage.json`
   descriptor declaring the SDP Frictionless profile after package
   validation passes. Use `FALSE` for draft authoring output.
+
+- prune:
+
+  Logical; if `FALSE` (default), only files this writer owns are
+  replaced: the `metadata/` SDP CSVs, the `data/` resources declared in
+  `tables.csv` (including any a previous write declared and this one
+  does not), `datapackage.json`, and the ownership sentinel. Everything
+  else is preserved — reviewed SSSOM mappings and measurement
+  decompositions under `metadata/semantic/`, EML and EDH XML,
+  `eml-mapping.yml`, review notes, and `publication/` artifacts. If
+  `TRUE`, every entry in the directory is deleted first (the pre-0.2.0
+  behaviour). Requires `overwrite = TRUE`.
 
 ## Value
 

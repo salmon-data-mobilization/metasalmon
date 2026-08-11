@@ -36,6 +36,7 @@ create_sdp(
   format = "csv",
   overwrite = FALSE,
   include_edh_xml = FALSE,
+  prune = FALSE,
   ...
 )
 ```
@@ -185,9 +186,10 @@ create_sdp(
 
 - overwrite:
 
-  Logical; if `FALSE` (default), errors if path exists. If `TRUE`,
-  replacement is only allowed for empty directories or directories
-  previously written by `metasalmon`.
+  Logical; if `FALSE` (default), errors if path exists. If `TRUE`, the
+  package is updated in place — see `prune`. Replacement is only allowed
+  for empty directories or directories previously written by
+  `metasalmon`.
 
 - include_edh_xml:
 
@@ -200,6 +202,14 @@ create_sdp(
   recommends rebuilding a clean file with
   [`write_edh_xml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_edh_xml_from_sdp.md)
   after the metadata is finalized.
+
+- prune:
+
+  Logical; if `FALSE` (default), reviewed sidecars in an existing
+  package directory are preserved and only files this writer owns are
+  replaced. If `TRUE`, the directory is emptied first. Requires
+  `overwrite = TRUE`. See
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md).
 
 - ...:
 

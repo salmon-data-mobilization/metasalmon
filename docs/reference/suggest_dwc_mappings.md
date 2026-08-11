@@ -30,9 +30,9 @@ suggestions (columns: `column_name`, `table_id`, `field_name`,
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 dict <- infer_dictionary(mtcars)
 dict <- suggest_dwc_mappings(dict)
-attr(dict, "dwc_mappings") %>% head()
-} # }
+#> No DwC-DP mapping suggestions found.
+head(attr(dict, "dwc_mappings"))
+#> # A tibble: 0 × 0
 ```
