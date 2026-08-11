@@ -34,11 +34,12 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, and #44–#61 (#63 fixed in the 0.2.0
-  merge; #43 and #62 fixed in 0.2.1).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #47–#49, and #51–#61 (#63 fixed
+  in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46 and #50 in 0.2.2).
 
-**Next up:** #45/#46/#50 (semantic pipeline at scale) — roadmap step 2.
-#43 and #62 are done (0.2.1).
+**Next up:** roadmap step 3 (#48/#49, one validation authority — needs
+coordination with `smn-data-pkg`) or step 4 (#47/#51/#52, each small and
+independently shippable). Steps 1 and 2 are done (0.2.1, 0.2.2).
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -692,6 +693,32 @@ a locale-collated sort. The reported finding was only the adjacent character
 tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
 
+### Fixed in 0.2.2
+
+**#45 The term-search index cache never prevented work.** Both index builders
+checked their cache stamp *after* fetching and parsing, so every `find_terms()`
+call paid 11 conditional GETs and a full reparse before it could discover that
+nothing had changed. An index is now resolved once per session, with
+`refresh = TRUE` as the escape hatch. The trade — no mid-session pickup of an
+upstream module update — is deliberate and matches the schema bundle's
+session-stable identity decision; it is also the stronger guarantee for seeding,
+where two columns in one package must not be seeded against two ontology
+versions.
+
+**#46 `METASALMON_CACHE` was read at build time.** A top-level binding is
+evaluated when the namespace is built, so an installed package captured the
+build machine's environment. Only `pkgload::load_all()` ever saw the developer's
+own setting, which is why it looked like it worked.
+
+**#50 Vocabulary HTTP failures were reported as successful zero-result
+searches.** `.safe_json()` returned `NULL` for both a failure and a genuine
+empty, every caller collapsed that into `.empty_terms()`, and the diagnostic
+recorded `status = "success", count = 0` — the exact input that drives
+`request_new_term` escalation, so an outage manufactured ontology gaps.
+Failures are now signalled (not thrown — some calls are optional enrichment
+inside a per-term map), recorded as `status = "http_error"` in the
+`diagnostics` attribute, and warned about; a degraded lookup is never cached.
+
 ### Fixed in 0.2.1
 
 **#43 Semantic ranking tiebreakers made seeded IRIs non-reproducible.** Score
@@ -743,15 +770,6 @@ prefix; and `robot-profile.yaml` replaces the default profile rather than
 amending it, dropping 16 ERROR-level checks. Fix belongs in
 `dfo-salmon-ontology`, not here.
 
-**#45 The term-search index cache never prevents work.** `.smn_term_index()`
-re-fetches and fully re-parses all 11 SMN Turtle modules on every `find_terms()`
-call (~5.7 s each), and `.gcdfo_term_index()` fetches before consulting its cache.
-Projected ~8 CPU-hours for a 5-table x 200-column package. `R/term_search.R:1570,1610`.
-
-**#46 `METASALMON_CACHE` is read at build time**, so the `find_terms()` result
-cache can never be enabled in an installed package. `R/term_search.R:396`.
-Compounds #45.
-
 **#47 `publish_sdp_to_knb()` cannot re-plan after any edit.** Derived artifacts are
 written with `overwrite = FALSE` and no override, so every dry run after a
 corrected `eml-mapping.yml` aborts until the user works out they must manually
@@ -766,10 +784,6 @@ diverge. `R/schema-helpers.R`.
 declared primary keys, no required-column nullability, no schema-required
 metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
-
-**#50 Vocabulary API HTTP failures are reported as successful zero-result
-searches**, so a degraded OLS/BioPortal looks like "no term exists" and drives
-spurious `request_new_term` escalation. `R/term_search.R:505`.
 
 **#51 No retry or rate-limit handling for the default LLM providers.**
 `Retry-After` is ignored and the retry classifier is unreachable.
