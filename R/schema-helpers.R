@@ -24,16 +24,17 @@
 # resources existed has no `sdp_methods` entry, and composing the vendored base
 # with the caller's filename is the same URL that shipped before this was
 # derived.
+#
+# It is reserved for a genuinely absent entry. An entry that exists but declares
+# an unusable schema is rejected by `.ms_validate_sdp_schema()` before any
+# bundle reaches here, so falling back on it -- which would emit a descriptor
+# mixing this bundle's profile identity with the vendored schema URLs -- is not
+# reachable.
 .ms_sdp_metadata_resource_schema <- function(name, fallback_file) {
   schema <- .ms_load_sdp_schema(quiet = TRUE)
-  resources <- schema$profile[["sdp:metadataResources"]] %||% list()
-  for (resource in resources) {
-    if (identical(resource$name, name)) {
-      declared <- .ms_sdp_schema_uri(resource$schema)
-      if (!is.na(declared)) {
-        return(declared)
-      }
-      break
+  for (resource in schema$profile[["sdp:metadataResources"]] %||% list()) {
+    if (identical(.ms_sdp_schema_identifier(resource$name), name)) {
+      return(.ms_sdp_schema_uri(resource$schema))
     }
   }
   paste0(.ms_sdp_public_schema_base(), "/", fallback_file)
@@ -261,6 +262,26 @@
   }
 
   schema$metadata_tables <- .ms_schema_tables_from_frictionless(schema$metadata_schemas)
+  # Every declared metadata resource must carry a usable schema URI, because
+  # `.ms_sdp_metadata_resource_schema()` writes it into `datapackage.json`.
+  # Rejecting here rather than in the accessor is what makes the failure mode
+  # right: a bad remote bundle fails to load and `auto` falls back to the
+  # vendored bundle whole, instead of emitting a descriptor that mixes one
+  # bundle's profile identity with another bundle's schema URLs.
+  for (resource in schema$profile[["sdp:metadataResources"]] %||% list()) {
+    resource_name <- .ms_sdp_schema_identifier(resource$name)
+    if (is.na(resource_name)) {
+      cli::cli_abort(
+        "Invalid SDP schema: every profile sdp:metadataResources entry needs a name."
+      )
+    }
+    if (is.na(.ms_sdp_schema_uri(resource$schema))) {
+      cli::cli_abort(
+        "Invalid SDP schema: metadata resource {.val {resource_name}} declares no usable schema URI."
+      )
+    }
+  }
+
   # The normalised forms are what consumers read and what reaches
   # `datapackage.json`; the raw bundle values are never emitted.
   schema$version <- schema_version

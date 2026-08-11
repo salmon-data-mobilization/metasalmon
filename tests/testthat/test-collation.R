@@ -226,3 +226,33 @@ test_that("semantic ranking tie-breaks are locale-independent", {
   # being equally wrong.
   expect_identical(ambient_rank[[1]], "http://example.org/2")
 })
+
+test_that("the embedding rerank set is chosen by a total order", {
+  # Equal score AND identical label is the common case for one term returned by
+  # several ontologies, so `label` alone still left the cut at `top_k`
+  # decided by upstream response order.
+  withr::local_envvar(c(METASALMON_EMBEDDING_RERANK = "1"))
+  df <- tibble::tibble(
+    label = rep("spawner count", 4),
+    definition = rep("same definition", 4),
+    score = rep(0.5, 4),
+    source = c("b", "a", "b", "a"),
+    ontology = c("y", "y", "x", "x"),
+    iri = paste0("http://example.org/", c(4, 2, 3, 1))
+  )
+
+  pick <- function() .apply_embedding_rerank(df, query = "spawner count", top_k = 2)$iri
+
+  ambient <- pick()
+  old <- Sys.getlocale("LC_COLLATE")
+  on.exit(Sys.setlocale("LC_COLLATE", old), add = TRUE)
+  Sys.setlocale("LC_COLLATE", "C")
+  expect_identical(pick(), ambient)
+
+  # Reordering the input must not change the result once the order is total.
+  shuffled <- df[c(3, 1, 4, 2), ]
+  expect_setequal(
+    .apply_embedding_rerank(shuffled, query = "spawner count", top_k = 2)$iri,
+    ambient
+  )
+})

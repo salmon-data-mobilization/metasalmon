@@ -343,3 +343,26 @@ test_that("per-resource schema URLs are derived from the bundle", {
     paste0(metasalmon:::.ms_sdp_public_schema_base(), "/x.schema.json")
   )
 })
+
+test_that("a metadata resource with an unusable schema rejects the bundle", {
+  # Falling back for this case would emit a descriptor mixing the loaded
+  # bundle's profile identity with the vendored bundle's schema URLs. Rejecting
+  # makes `auto` fall back to the vendored bundle whole.
+  for (bad in list("", "   ", "not a URI", "https:///x", NULL, list("a", "b"))) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["sdp:metadataResources"]] <- list(
+      list(name = "sdp_dataset", schema = bad)
+    )
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "sdp_dataset|schema URI")
+  }
+
+  unnamed <- fake_sdp_bundle()
+  unnamed$profile[["sdp:metadataResources"]] <- list(list(schema = "https://example.org/x.json"))
+  expect_error(metasalmon:::.ms_validate_sdp_schema(unnamed), "needs a name")
+
+  ok <- fake_sdp_bundle()
+  ok$profile[["sdp:metadataResources"]] <- list(
+    list(name = "sdp_dataset", schema = "https://example.org/dataset.schema.json")
+  )
+  expect_silent(metasalmon:::.ms_validate_sdp_schema(ok))
+})

@@ -1873,9 +1873,21 @@ sources_for_role <- function(role) {
   ranking_idx <- seq_len(nrow(df))
   if (nrow(df) > top_n) {
     # Score alone is not a total order, so which rows entered the rerank set
-    # depended on input order. `label` is the only tie-breaker guaranteed
-    # present here (the guard clause above returns early without it).
-    ranking_idx <- ranking_idx[order(-df$score, df$label, method = "radix")][seq_len(top_n)]
+    # depended on input order -- and neither is score plus label: the same term
+    # returned by several ontologies shares both. Every ranking key that is
+    # present is used, so the order is total wherever the data allows it.
+    # `label` is the only one guaranteed present (the guard clause above
+    # returns early without it); the rest are added when the caller supplied
+    # them.
+    keys <- list(-df$score, df$label)
+    for (key in c("source", "ontology", "iri")) {
+      if (key %in% names(df)) {
+        keys[[length(keys) + 1L]] <- df[[key]]
+      }
+    }
+    ranking_idx <- ranking_idx[
+      do.call(order, c(keys, list(method = "radix")))
+    ][seq_len(top_n)]
   }
 
   sim_scores <- vapply(ranking_idx, function(i) {
