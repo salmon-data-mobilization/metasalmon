@@ -1,6 +1,27 @@
 metasalmon 0.2.4
 ----------------
 
+### Breaking changes
+
+- **The canonical CSV missing-value contract is now a single token: an empty
+  field.** Data resources were written with readr's default `na = "NA"` while
+  metadata used `na = ""`, and everything was read with `na = c("", "NA")`.
+  `"NA"` is a real fisheries gear code, so a literal `"NA"` and a genuinely
+  missing value produced **identical bytes** — the distinction was destroyed at
+  write time, where no reader could recover it. Both sides now use `""`.
+
+  What changes for you: a literal `"NA"`, `"N/A"`, or `"null"` in a data column
+  now round-trips as the string it is. If you have a **hand-authored** package
+  whose CSVs use the two characters `NA` to mean missing, those cells now read
+  as the literal string `"NA"`; rewrite them as empty fields.
+
+  Consequence worth knowing: because no non-empty token parses as missing any
+  more, EML `missing_values` codes are only meaningful for tokens the reader
+  treats as missing, and the canonical writer emits none. EML now represents
+  absence directly rather than through a code that collided with real data. The
+  guard that rejects an undeclared non-empty missing token is retained as an
+  invariant and is unreachable through the canonical writer.
+
 ### Internal
 
 - CI runs the suite under a non-C ambient collation (`LANG`/`LC_ALL` =

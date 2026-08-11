@@ -702,6 +702,28 @@ locale-safe; only a *total* order does.
 
 ### Fixed in 0.2.4
 
+**#54 The canonical CSV round trip destroyed literal `"NA"` code values.**
+Reproduced, and worse than the finding stated: the **written bytes were
+identical** for a literal `"NA"` and a missing value, so the loss happened at
+write time and no reader could have recovered it. readr's own defaults disagree
+— it writes `NA` and reads `c("", "NA")`. Both sides now use a single token,
+`""`, defined in one place (`.ms_csv_na_token()`) because the contract is only
+sound if the two sides agree and they live in different files.
+
+Three EML tests changed with it, and the direction is worth recording: the
+fixture declared `missingValueCode = "NA"`, which described the old bytes. With
+one token there is no non-empty missing token left to declare, so EML now
+represents absence directly instead of through a code that collided with real
+data — and the "undeclared non-empty missing token" guard became unreachable
+through the canonical writer. It is retained and now asserted as an invariant
+rather than as a failure.
+
+Note the `""`-vs-`NA` ambiguity is **not** new: the old reader mapped an empty
+field to missing too, so an empty string never survived either. This change does
+not narrow that.
+
+#### Also fixed in 0.2.4
+
 **Five DataONE adapter tests had never executed anywhere.** Not a numbered
 backlog item — it came out of the roadmap's own process note about silent
 skips, and it is recorded here because of what it demonstrates.
@@ -837,11 +859,6 @@ despite documenting itself as the end-to-end pre-flight.
 **#53 `infer_column_role()` classifies 4-digit measurement columns as
 `temporal`**, removing them from the entire semantic pipeline.
 `R/dictionary-helpers.R:765`.
-
-**#54 The canonical CSV round trip destroys literal `"NA"` code values.** Data
-resources are written with readr's default `na = "NA"`, metadata with `na = ""`,
-and everything is read with `na = c("", "NA")`. "NA" is a real fisheries code.
-Pin the missing-value contract symmetrically on both sides.
 
 **#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
 coercion failures**, and the codes step silently `NA`s unlisted values.

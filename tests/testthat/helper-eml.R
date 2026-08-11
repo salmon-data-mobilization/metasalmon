@@ -268,15 +268,13 @@ make_eml_test_sdp <- function(path,
             minimum = 0,
             minimum_exclusive = FALSE
           ),
-          literal_missing = list(
-            measurement_scale = "nominal",
-            missing_values = list(
-              list(
-                code = "NA",
-                explanation = "No value was supplied."
-              )
-            )
-          ),
+          # No `missing_values` since 0.2.4. This declared `code = "NA"`, which
+          # described the bytes readr's default writer emitted for a missing
+          # value -- the same two characters as the literal fisheries code
+          # "NA", which is why that code could not survive a round trip. The
+          # canonical writer now emits an empty field, so there is no code to
+          # declare and EML represents the absence directly.
+          literal_missing = list(measurement_scale = "nominal"),
           blank_only = list(measurement_scale = "nominal")
         )
       )
