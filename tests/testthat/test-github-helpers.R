@@ -131,9 +131,14 @@ test_that("read_github_csv can read remote content with a token", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping Qualark fetch test.")
 
-  repo <- Sys.getenv("METASALMON_QUALARK_TEST_REPO", "dfo-pacific-science/qualark-data")
-  path <- Sys.getenv("METASALMON_QUALARK_TEST_PATH", "data/gold/dimension_tables/dim_date.csv")
-  ref <- Sys.getenv("METASALMON_QUALARK_TEST_REF", "main")
+  # metasalmon's own repository: public, so this runs everywhere including CI.
+  # It previously defaulted to a *private* repo in another org, so the test
+  # skipped with a 404 that read like a broken token, and the GitHub read
+  # helpers went unexercised in CI entirely. Override the env vars to point at
+  # a private repo when testing those permissions specifically.
+  repo <- Sys.getenv("METASALMON_GITHUB_TEST_REPO", "salmon-data-mobilization/metasalmon")
+  path <- Sys.getenv("METASALMON_GITHUB_TEST_PATH", "inst/extdata/nuseds-fraser-coho-sample.csv")
+  ref <- Sys.getenv("METASALMON_GITHUB_TEST_REF", "main")
 
   tryCatch(
     gh::gh(sprintf("/repos/%s", repo), .token = token),
@@ -214,9 +219,14 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping directory fetch test.")
 
-  repo <- Sys.getenv("METASALMON_QUALARK_TEST_REPO", "dfo-pacific-science/qualark-data")
-  dir_path <- Sys.getenv("METASALMON_QUALARK_TEST_DIR", "data/gold/dimension_tables")
-  ref <- Sys.getenv("METASALMON_QUALARK_TEST_REF", "main")
+  # metasalmon's own repository: public, so this runs everywhere including CI.
+  # It previously defaulted to a *private* repo in another org, so the test
+  # skipped with a 404 that read like a broken token, and the GitHub read
+  # helpers went unexercised in CI entirely. Override the env vars to point at
+  # a private repo when testing those permissions specifically.
+  repo <- Sys.getenv("METASALMON_GITHUB_TEST_REPO", "salmon-data-mobilization/metasalmon")
+  dir_path <- Sys.getenv("METASALMON_GITHUB_TEST_DIR", "inst/extdata")
+  ref <- Sys.getenv("METASALMON_GITHUB_TEST_REF", "main")
 
   tryCatch(
     gh::gh(sprintf("/repos/%s", repo), .token = token),
@@ -248,7 +258,12 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
     }
   )
 
-  data_list <- read_github_csv_dir(dir_path, ref = ref, repo = repo, token = token)
+  # `inst/extdata` holds CSVs with unrelated schemas, so readr reports parse
+  # issues per file. The behaviour under test is the directory fetch, not the
+  # parse fidelity of a heterogeneous fixture.
+  data_list <- suppressWarnings(
+    read_github_csv_dir(dir_path, ref = ref, repo = repo, token = token)
+  )
 
   expect_type(data_list, "list")
   expect_gt(length(data_list), 0)
@@ -262,8 +277,13 @@ test_that("read_github_csv_dir handles empty directories", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping empty directory test.")
 
-  repo <- Sys.getenv("METASALMON_QUALARK_TEST_REPO", "dfo-pacific-science/qualark-data")
-  ref <- Sys.getenv("METASALMON_QUALARK_TEST_REF", "main")
+  # metasalmon's own repository: public, so this runs everywhere including CI.
+  # It previously defaulted to a *private* repo in another org, so the test
+  # skipped with a 404 that read like a broken token, and the GitHub read
+  # helpers went unexercised in CI entirely. Override the env vars to point at
+  # a private repo when testing those permissions specifically.
+  repo <- Sys.getenv("METASALMON_GITHUB_TEST_REPO", "salmon-data-mobilization/metasalmon")
+  ref <- Sys.getenv("METASALMON_GITHUB_TEST_REF", "main")
 
   expect_error(
     read_github_csv_dir(

@@ -52,10 +52,11 @@ github_raw_url <- function(path, ref = "main", repo = NULL) {
 #' repositories. The stored PAT will be used automatically for subsequent
 #' requests.
 #'
-#' @param repo Repository slug in `"owner/name"` form to verify access. Specify
-#'   the private repository you intend to work with to confirm your PAT has
-#'   the necessary permissions. Default is a test repository, but you should
-#'   specify your target repository for verification.
+#' @param repo Optional repository slug in `"owner/name"` form. When supplied,
+#'   the stored PAT is additionally checked against it, which is the quickest
+#'   way to confirm the token carries the permissions a private repository
+#'   needs. When `NULL` (the default) the PAT is set up and stored without
+#'   verifying any particular repository.
 #'
 #' @return Invisibly returns the detected PAT.
 #'
@@ -75,17 +76,25 @@ github_raw_url <- function(path, ref = "main", repo = NULL) {
 #'
 #' @examples
 #' \dontrun{
-#' # Basic setup (verifies against default test repository)
+#' # Set up and store a PAT.
 #' ms_setup_github()
 #'
-#' # Verify access to a specific private repository
+#' # Optionally also verify the token can read a specific repository.
 #' ms_setup_github(repo = "your-org/your-private-repo")
 #'
 #' # After setup, you can read CSVs from private repos
 #' data <- read_github_csv("path/to/file.csv", repo = "your-org/your-repo")
 #' }
-ms_setup_github <- function(repo = "dfo-pacific-science/qualark-data") {
-  repo <- ms_normalize_repo(repo)
+ms_setup_github <- function(repo = NULL) {
+  # No default repository. This defaulted to a specific *private* dataset repo
+  # in an org the project has since left, so `ms_setup_github()` with no
+  # arguments reported a perfectly good token as broken for everyone except the
+  # person who had access to that repo. The function's job is PAT setup;
+  # verifying a particular repository is optional and caller-supplied.
+  verify_repo <- !is.null(repo)
+  if (verify_repo) {
+    repo <- ms_normalize_repo(repo)
+  }
 
   cli::cli_h1("Setting up GitHub access")
   git <- Sys.which("git")
@@ -107,6 +116,11 @@ ms_setup_github <- function(repo = "dfo-pacific-science/qualark-data") {
 
   if (!nzchar(token)) {
     cli::cli_abort("No GitHub PAT available. Run {.code gitcreds::gitcreds_set()} with a PAT, then rerun this setup.")
+  }
+
+  if (!verify_repo) {
+    cli::cli_alert_success("PAT stored. Pass {.arg repo} to also verify access to a repository.")
+    return(invisible(token))
   }
 
   cli::cli_alert_info("Verifying access to {.val {repo}} ...")

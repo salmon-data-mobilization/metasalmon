@@ -24,7 +24,8 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
+#' # Queries the GitHub releases API and degrades quietly when unreachable.
 #' check_for_updates()
 #' }
 check_for_updates <- function(

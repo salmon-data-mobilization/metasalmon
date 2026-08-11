@@ -1214,10 +1214,8 @@ infer_column_role <- function(col_name, col) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' dict <- infer_dictionary(mtcars)
 #' validate_dictionary(dict)
-#' }
 validate_dictionary <- function(dict, require_iris = FALSE) {
   dict <- .ms_dictionary_from_input(dict, normalize = FALSE)
 
@@ -1445,11 +1443,9 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' dict <- infer_dictionary(mtcars)
 #' validate_dictionary(dict)
 #' applied <- apply_salmon_dictionary(mtcars, dict)
-#' }
 apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   if (!inherits(df, "data.frame")) {
     cli::cli_abort("{.arg df} must be a data frame or tibble")

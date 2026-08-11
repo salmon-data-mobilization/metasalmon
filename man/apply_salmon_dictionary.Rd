@@ -27,9 +27,7 @@ reports mismatches. Returns a transformed tibble ready for analysis or
 packaging.
 }
 \examples{
-\dontrun{
 dict <- infer_dictionary(mtcars)
 validate_dictionary(dict)
 applied <- apply_salmon_dictionary(mtcars, dict)
-}
 }
