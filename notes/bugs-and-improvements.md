@@ -956,6 +956,11 @@ alongside this — whether "method", "protocol", and "procedure" are one class o
 three, and at which abstraction level each belongs. Do not fix the typing in
 isolation; it would harden a distinction that has not been made yet.
 
+*Now has a proposed answer to react to:* `notes/sdp-method-model-draft.md` drafts
+the conceptual model as an SDP spec section — three concepts, four placements,
+and a decision procedure — and lists the four questions the ontology pass must
+still settle. Its open questions 1–4 are the actual inputs to this item.
+
 *Gate:* a decision record naming the chosen model, then a SHACL or SPARQL check
 in both repos asserting every term reachable from a `methods.csv` `method_iri`
 is typed such that `sosa:usedProcedure` resolves. Belongs to roadmap **S6**.
