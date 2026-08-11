@@ -101,6 +101,8 @@ Orientation is `notes/context.md`. Key execplans:
 
 - `2026-08-11-knb-environments-and-workshop-rebuild.md` — KNB staging target and
   the workshop rebuild (roadmap S3/S4).
+- `2026-08-11-r-native-review-and-editing.md` — the R-native semantic review and
+  editing flow (roadmap S5, ships with 0.3.0).
 - `2026-08-10-comprehensive-ecosystem-review.md` — the 96 verified findings
   behind the current backlog (metasalmon plus the SDP spec, both ontologies, and
   the workshop).
