@@ -202,7 +202,7 @@ find_terms <- function(query,
   queries <- if (expand_query) .expand_query(query, role) else query
 
   cache_key <- paste(paste(queries, collapse = "|"), role, paste(sort(sources, method = "radix"), collapse = ","), sep = "::")
-  if (.metasalmon_cache_enabled && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
+  if (.metasalmon_cache_enabled() && exists(cache_key, envir = .metasalmon_cache, inherits = FALSE)) {
     return(get(cache_key, envir = .metasalmon_cache))
   }
 
@@ -212,7 +212,15 @@ find_terms <- function(query,
   results <- purrr::map(queries, function(q) {
     run_source <- function(src) {
       start_time <- Sys.time()
-      result <- tryCatch(
+      # Failures signalled by `.safe_json()` are recorded here rather than
+      # thrown, so an optional enrichment request that fails does not discard
+      # the rows that did resolve -- but the source can no longer report
+      # `status = "success"` when it never heard back. The accumulator is local
+      # to this call, which is what makes it correct under `mclapply()`: each
+      # forked worker fills its own and returns it inside the diagnostic.
+      failures <- character()
+      result <- withCallingHandlers(
+        tryCatch(
         {
           res <- if (src == "smn") {
             .search_smn(q, role)
@@ -240,15 +248,17 @@ find_terms <- function(query,
             diagnostic = list(
               source = src,
               query = q,
-              status = "success",
+              # A source that returned rows despite a failed side request is
+              # still a partial answer, not a clean success.
+              status = if (length(failures) == 0L) "success" else "http_error",
               count = nrow(res),
               elapsed_secs = round(as.numeric(difftime(Sys.time(), start_time, units = "secs")), 2),
-              error = NA_character_
+              error = if (length(failures) == 0L) NA_character_ else paste(failures, collapse = "; ")
             )
           )
         },
         error = function(e) {
-          err_msg <- conditionMessage(e)
+          err_msg <- .ms_redact_secrets(conditionMessage(e))
           if (.ms_is_timeout_error(err_msg)) {
             cli::cli_warn(c(
               "Vocabulary API lookup timed out for source {.val {src}} while searching {.val {q}}.",
@@ -266,6 +276,10 @@ find_terms <- function(query,
               error = err_msg
             )
           )
+        }
+        ),
+        metasalmon_search_failure = function(cnd) {
+          failures <<- c(failures, conditionMessage(cnd))
         }
       )
       result
@@ -368,7 +382,20 @@ find_terms <- function(query,
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
 
-  if (.metasalmon_cache_enabled) {
+  degraded <- diag_df$status %in% c("error", "http_error")
+  if (any(degraded)) {
+    failed_sources <- sort(unique(diag_df$source[degraded]), method = "radix")
+    cli::cli_warn(c(
+      "Vocabulary lookup was incomplete: {.val {failed_sources}} did not answer.",
+      "i" = "Treat an empty or short result as unknown rather than as an ontology gap.",
+      "i" = "See {.code attr(result, \"diagnostics\")} for per-source detail."
+    ))
+  }
+
+  # A degraded lookup is never cached. Caching it would freeze an outage's empty
+  # result for the rest of the session, so every later column would inherit the
+  # same manufactured gap.
+  if (.metasalmon_cache_enabled() && !any(degraded)) {
     assign(cache_key, ranked, envir = .metasalmon_cache)
   }
   ranked
@@ -393,7 +420,15 @@ find_terms <- function(query,
 }
 
 .metasalmon_cache <- new.env(parent = emptyenv())
-.metasalmon_cache_enabled <- tolower(Sys.getenv("METASALMON_CACHE", unset = "")) %in% c("1", "true", "yes")
+
+# A function, not a top-level binding. As a binding this was evaluated when the
+# namespace was built, so an installed package captured the *build* machine's
+# environment and `METASALMON_CACHE` could never be set by a user -- the result
+# cache was permanently off wherever it mattered. Only `pkgload::load_all()`
+# ever saw the developer's own setting, which is why it looked like it worked.
+.metasalmon_cache_enabled <- function() {
+  tolower(Sys.getenv("METASALMON_CACHE", unset = "")) %in% c("1", "true", "yes")
+}
 .metasalmon_user_agent <- httr::user_agent(
   sprintf("metasalmon/%s", utils::packageVersion("metasalmon"))
 )
@@ -487,6 +522,26 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   grepl("timeout|timed out|operation timed out|timeout exceeded|timedout", msg)
 }
 
+# A vocabulary lookup that did not answer. Signalled rather than thrown: some
+# `.safe_json()` calls are optional enrichment inside a per-term map, where an
+# abort would lose the rows that did resolve. `find_terms()` installs a calling
+# handler, records the failure, and continues.
+#
+# The point is that a failed lookup must never be indistinguishable from a
+# successful empty one. It was: `.safe_json()` returned NULL for both, every
+# caller collapsed NULL into `.empty_terms()`, and the diagnostic recorded
+# `status = "success", count = 0`. A degraded OLS therefore looked exactly like
+# "no such term exists", which is the input that drives `request_new_term`
+# escalation -- so an outage manufactured ontology gaps.
+.ms_signal_search_failure <- function(url, detail) {
+  rlang::signal(
+    paste0("Vocabulary API request failed: ", detail),
+    class = "metasalmon_search_failure",
+    url = url,
+    detail = detail
+  )
+}
+
 .safe_json <- function(url, headers = NULL, timeout_secs = NA_real_) {
   timeout_secs <- if (is.null(timeout_secs) || length(timeout_secs) == 0 || is.na(timeout_secs)) {
     .metasalmon_term_search_timeout(default = 30)
@@ -509,6 +564,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
             "i" = "HTTP {.val 408} (Request Timeout)"
           ))
         }
+        .ms_signal_search_failure(url, paste0("HTTP ", status))
         return(NULL)
       }
       jsonlite::fromJSON(httr::content(res, as = "text", encoding = "UTF-8"))
@@ -521,6 +577,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
           "i" = "{.text {err_msg}}"
         ))
       }
+      .ms_signal_search_failure(url, .ms_redact_secrets(err_msg))
       NULL
     }
   )
@@ -1568,71 +1625,71 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
     dplyr::select(-dplyr::ends_with("_targets"))
 }
 
-.smn_term_index <- function(refresh = FALSE) {
-  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "smn")
-
-  module_bundle <- tryCatch(
-    .smn_module_index_bundle(cache_dir),
-    error = function(e) NULL
-  )
-  if (!is.null(module_bundle) && nrow(module_bundle$index) > 0) {
-    stamp <- paste("modules", module_bundle$stamp, sep = "::")
-    if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
-        exists("index", envir = .smn_index_cache, inherits = FALSE) &&
-        identical(get("stamp", envir = .smn_index_cache), stamp)) {
-      return(get("index", envir = .smn_index_cache))
-    }
-
-    assign("stamp", stamp, envir = .smn_index_cache)
-    assign("index", module_bundle$index, envir = .smn_index_cache)
-    return(module_bundle$index)
+# An index that has already been resolved in this session is returned without
+# touching the network or the parser.
+#
+# This was the whole cost of `find_terms()`. The stamp check sat *after* the
+# fetch and the parse, so every call paid 11 conditional GETs and a full reparse
+# of every SMN module before it could discover that nothing had changed --
+# projected at roughly 8 CPU-hours for a 5-table x 200-column package. The cache
+# was real; it just never prevented any work.
+#
+# The trade is deliberate: an index is resolved once per session, so a module
+# updated upstream mid-session is not picked up until `refresh = TRUE`. That
+# matches the decision already taken for the schema bundle -- once a session
+# resolves an identity, everything it writes carries that same identity -- and
+# it is the stronger guarantee for seeding, where two columns in one package
+# must not be seeded against two different ontology versions.
+.ms_cached_term_index <- function(cache_env, refresh, resolve) {
+  if (!refresh && exists("index", envir = cache_env, inherits = FALSE)) {
+    return(get("index", envir = cache_env))
   }
-
-  path <- fetch_salmon_ontology(
-    url = "https://w3id.org/smn/",
-    accept = "application/rdf+xml",
-    cache_dir = cache_dir,
-    fallback_urls = c("https://w3id.org/smn")
-  )
-
-  stamp <- paste("root", path, file.info(path)$mtime, file.info(path)$size, sep = "::")
-  if (!refresh && exists("stamp", envir = .smn_index_cache, inherits = FALSE) &&
-      exists("index", envir = .smn_index_cache, inherits = FALSE) &&
-      identical(get("stamp", envir = .smn_index_cache), stamp)) {
-    return(get("index", envir = .smn_index_cache))
-  }
-
-  doc <- suppressWarnings(xml2::read_xml(path))
-  index <- suppressWarnings(.parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)"))
-  assign("stamp", stamp, envir = .smn_index_cache)
-  assign("index", index, envir = .smn_index_cache)
+  index <- resolve()
+  assign("index", index, envir = cache_env)
   index
 }
 
-.gcdfo_term_index <- function(refresh = FALSE) {
-  cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "gcdfo")
-  path <- fetch_salmon_ontology(
-    url = "https://w3id.org/gcdfo/salmon",
-    accept = "application/rdf+xml",
-    cache_dir = cache_dir,
-    fallback_urls = c(
-      "https://w3id.org/gcdfo/salmon/",
-      "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.owl"
+.smn_term_index <- function(refresh = FALSE) {
+  .ms_cached_term_index(.smn_index_cache, refresh, function() {
+    cache_dir <- file.path(tempdir(), "metasalmon-ontology-rdf-cache", "smn")
+
+    module_index <- tryCatch(
+      .smn_module_index_bundle(cache_dir)$index,
+      error = function(e) NULL
     )
-  )
+    if (!is.null(module_index) && nrow(module_index) > 0) {
+      return(module_index)
+    }
 
-  stamp <- paste(path, file.info(path)$mtime, file.info(path)$size)
-  if (!refresh && exists("stamp", envir = .gcdfo_index_cache, inherits = FALSE) &&
-      exists("index", envir = .gcdfo_index_cache, inherits = FALSE) &&
-      identical(get("stamp", envir = .gcdfo_index_cache), stamp)) {
-    return(get("index", envir = .gcdfo_index_cache))
-  }
+    # The modules are Turtle-first on W3ID; the root is the RDF/XML fallback for
+    # when they are unavailable or parse to nothing.
+    path <- fetch_salmon_ontology(
+      url = "https://w3id.org/smn/",
+      accept = "application/rdf+xml",
+      cache_dir = cache_dir,
+      fallback_urls = c("https://w3id.org/smn")
+    )
+    doc <- suppressWarnings(xml2::read_xml(path))
+    suppressWarnings(.parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/smn(#|/|$)"))
+  })
+}
 
-  doc <- xml2::read_xml(path)
-  index <- .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/gcdfo/salmon(#|$)")
-  assign("stamp", stamp, envir = .gcdfo_index_cache)
-  assign("index", index, envir = .gcdfo_index_cache)
-  index
+.gcdfo_term_index <- function(refresh = FALSE) {
+  # Same shape as the SMN index: the fetch preceded the cache check, so the
+  # cache could never prevent the network round trip it existed to avoid.
+  .ms_cached_term_index(.gcdfo_index_cache, refresh, function() {
+    path <- fetch_salmon_ontology(
+      url = "https://w3id.org/gcdfo/salmon",
+      accept = "application/rdf+xml",
+      cache_dir = file.path(tempdir(), "metasalmon-ontology-rdf-cache", "gcdfo"),
+      fallback_urls = c(
+        "https://w3id.org/gcdfo/salmon/",
+        "https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.owl"
+      )
+    )
+    doc <- xml2::read_xml(path)
+    .parse_salmon_rdfxml(doc, iri_pattern = "^https?://w3id\\.org/gcdfo/salmon(#|$)")
+  })
 }
 
 .gcdfo_filter_for_role <- function(index, role) {
