@@ -318,3 +318,51 @@ test_that("schema URI authorities must carry a host", {
     expect_identical(metasalmon:::.ms_validate_sdp_schema(bundle)$rules_uri, value, info = value)
   }
 })
+
+test_that("per-resource schema URLs are derived from the bundle", {
+  # The last hardcoded contract value: unlike the profile and rules URIs, this
+  # one was composed from a constant, carrying the drift risk that broke remote
+  # schema loading before 0.2.0 (#35/#62).
+  vendored <- metasalmon:::.ms_load_sdp_schema(quiet = TRUE)
+  declared <- NULL
+  for (resource in vendored$profile[["sdp:metadataResources"]]) {
+    if (identical(resource$name, "sdp_methods")) {
+      declared <- resource$schema
+    }
+  }
+  skip_if(is.null(declared), "vendored bundle has no sdp_methods resource")
+
+  expect_identical(
+    metasalmon:::.ms_sdp_metadata_resource_schema("sdp_methods", "methods.schema.json"),
+    declared
+  )
+  # A name the bundle does not declare falls back to the vendored base rather
+  # than erroring — a bundle predating the v0.2 extension resources is valid.
+  expect_identical(
+    metasalmon:::.ms_sdp_metadata_resource_schema("sdp_not_a_resource", "x.schema.json"),
+    paste0(metasalmon:::.ms_sdp_public_schema_base(), "/x.schema.json")
+  )
+})
+
+test_that("a metadata resource with an unusable schema rejects the bundle", {
+  # Falling back for this case would emit a descriptor mixing the loaded
+  # bundle's profile identity with the vendored bundle's schema URLs. Rejecting
+  # makes `auto` fall back to the vendored bundle whole.
+  for (bad in list("", "   ", "not a URI", "https:///x", NULL, list("a", "b"))) {
+    bundle <- fake_sdp_bundle()
+    bundle$profile[["sdp:metadataResources"]] <- list(
+      list(name = "sdp_dataset", schema = bad)
+    )
+    expect_error(metasalmon:::.ms_validate_sdp_schema(bundle), "sdp_dataset|schema URI")
+  }
+
+  unnamed <- fake_sdp_bundle()
+  unnamed$profile[["sdp:metadataResources"]] <- list(list(schema = "https://example.org/x.json"))
+  expect_error(metasalmon:::.ms_validate_sdp_schema(unnamed), "needs a name")
+
+  ok <- fake_sdp_bundle()
+  ok$profile[["sdp:metadataResources"]] <- list(
+    list(name = "sdp_dataset", schema = "https://example.org/dataset.schema.json")
+  )
+  expect_silent(metasalmon:::.ms_validate_sdp_schema(ok))
+})

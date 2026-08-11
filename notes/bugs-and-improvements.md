@@ -34,10 +34,11 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #43–#61, and #62 (#63 fixed in the
-  0.2.0 merge).
+- **Open:** #3, #13, #22, #23, #24, #31, and #44–#61 (#63 fixed in the 0.2.0
+  merge; #43 and #62 fixed in 0.2.1).
 
-**Next up:** #62 and #43 (both P1). See the roadmap for the ordering and why.
+**Next up:** #45/#46/#50 (semantic pipeline at scale) — roadmap step 2.
+#43 and #62 are done (0.2.1).
 
 **Forward plan.** The single prioritized list of what to do next is
 `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`. The findings it draws on are
@@ -691,14 +692,35 @@ a locale-collated sort. The reported finding was only the adjacent character
 tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
 
-### Open — P1 (highest value next)
+### Fixed in 0.2.1
 
-**#62 `.ms_sdp_public_schema_base()` is a hardcoded contract value.** It gained a
-consumer in `R/sdp-methods.R` (0.1.8) and builds the per-resource schema URLs
-written into descriptors, but unlike the profile and rules URIs it is not derived
-from the loaded bundle. Same drift risk that broke remote schema loading before
-0.2.0 (#35). Derive it, or assert it against the bundle's
-`sdp:metadataResources[].schema` values.
+**#43 Semantic ranking tiebreakers made seeded IRIs non-reproducible.** Score
+ties broke on character keys (`source`, `ontology`, `label`, `iri`), and with
+`seed_semantics = TRUE` the top-1 pick becomes a written IRI in
+`column_dictionary.csv` — so the same input seeded differently on macOS and in a
+C-locale container. Fixed across all nine ordering sites in
+`R/semantics-helpers.R` and `R/term_search.R`, with seven functions added to
+`collation_sensitive_fns`. **This was the last locale-dependence in the
+package.**
+
+Two things worth recording. The deferral rationale — that radix-ing it would
+move semantic-suggestion test expectations — turned out to be **wrong**: zero
+expectations changed, because the fixtures are lowercase ASCII where C and the
+ambient locale agree. That is also precisely why the bug was invisible.
+Separately, `.apply_embedding_rerank()` selected its rerank set with
+`order(-score)` alone, so *which* rows were reranked depended on input order;
+it now tie-breaks on `label`.
+
+**#62 `.ms_sdp_public_schema_base()` was a hardcoded contract value.** It built
+the per-resource schema URLs written into descriptors, carrying the same drift
+risk that broke remote schema loading before 0.2.0 (#35).
+`.ms_sdp_metadata_resource_schema()` now reads the bundle's
+`sdp:metadataResources` entry of that name, so every URI in a written
+`datapackage.json` — profile, rules, and per-resource schemas — comes from one
+validated bundle. The constant survives as the fallback for a bundle predating
+the v0.2 extension resources.
+
+### Open — P1 (highest value next)
 
 **#63 The 0.1.8 extension normalizers shipped with locale-dependent ordering.**
 `.ms_sdp_methods_normalize()` and the two
@@ -711,14 +733,6 @@ collation guard's limitation #1 (it only sees listed functions) bit within days
 of being written. Any new byte-producing function must be added to that list, and
 the `AGENTS.md` contract now says so.
 
-
-**#43 Semantic ranking tiebreakers make seeded IRIs non-reproducible.**
-`R/semantics-helpers.R:170-211` breaks score ties on character keys (`source`,
-`ontology`, `label`, `iri`). With `seed_semantics = TRUE` the top-1 pick becomes a
-written IRI in `column_dictionary.csv`, so the same input seeds differently on
-macOS and a C-locale container. **Deliberately excluded from the 0.2.0 collation
-sweep** because radix-ing it moves existing semantic-suggestion test
-expectations. This is the last locale-dependence in the package.
 
 **#44 The gcdfo validation layer is inert.** Verified 2026-08-10 —
 `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md`. SHACL shapes
