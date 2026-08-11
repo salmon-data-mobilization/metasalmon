@@ -45,6 +45,9 @@ jobs:
           extra-packages: |
             any::devtools
             any::rcmdcheck
+            any::dataone
+            any::datapack
+            any::XML
           needs: check
 
       - name: Replay Theme A evidence

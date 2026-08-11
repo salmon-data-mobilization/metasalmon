@@ -1,3 +1,17 @@
+metasalmon 0.2.4
+----------------
+
+### Internal
+
+- CI now installs `{dataone}`, `{datapack}`, and `{XML}`, and a guard fails the
+  build if any optional package the suite needs is missing. `R-CMD-check.yaml`
+  installed only `devtools` and `rcmdcheck`, so five tests of the DataONE
+  adapter boundary — the code that talks to the repository during live
+  publication — skipped silently on every machine including CI and had never
+  executed. They pass. The distinction the guard encodes: locally a missing
+  optional package is an environment fact and skipping is correct; in CI it is a
+  workflow regression and must fail.
+
 metasalmon 0.2.3
 ----------------
 

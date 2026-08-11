@@ -694,6 +694,23 @@ a locale-collated sort. The reported finding was only the adjacent character
 tie-breaker. **Lesson:** a numeric sort key does not make an ordering
 locale-safe; only a *total* order does.
 
+### Fixed in 0.2.4
+
+**Five DataONE adapter tests had never executed anywhere.** Not a numbered
+backlog item — it came out of the roadmap's own process note about silent
+skips, and it is recorded here because of what it demonstrates.
+`R-CMD-check.yaml` installed only `devtools` and `rcmdcheck`, so `{dataone}` and
+`{datapack}` were absent in CI as well as on development machines, and five
+tests covering the boundary that talks to the repository during live publication
+skipped silently on every run. They pass — but that was unknown, and a
+regression there would have been invisible.
+
+CI installs them now, and `test-ci-optional-deps.R` fails the build when an
+optional package the suite needs is absent *in CI*, while still skipping
+locally, where a missing optional package is an environment fact rather than a
+workflow regression. A check-workflow run should report exactly four skips: the
+Theme A integrity tests, which run in `theme-a-integrity.yaml`.
+
 ### Fixed in 0.2.3
 
 **#47 `publish_sdp_to_knb()` could not re-plan after any edit.** Reproduced
