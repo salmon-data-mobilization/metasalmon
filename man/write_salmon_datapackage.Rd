@@ -13,7 +13,8 @@ write_salmon_datapackage(
   path,
   format = "csv",
   overwrite = FALSE,
-  write_datapackage = TRUE
+  write_datapackage = TRUE,
+  prune = FALSE
 )
 }
 \arguments{
@@ -32,12 +33,22 @@ write_salmon_datapackage(
 \item{format}{Character; resource format: \code{"csv"} (default, only format supported)}
 
 \item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists. If
-\code{TRUE}, replacement is only allowed for empty directories or directories
-previously written by \code{metasalmon}.}
+\code{TRUE}, the package is updated in place — see \code{prune}. Replacement is only
+allowed for empty directories or directories previously written by
+\code{metasalmon}.}
 
 \item{write_datapackage}{Logical; if \code{TRUE} (default), write a root
 \code{datapackage.json} descriptor declaring the SDP Frictionless profile after
 package validation passes. Use \code{FALSE} for draft authoring output.}
+
+\item{prune}{Logical; if \code{FALSE} (default), only files this writer owns are
+replaced: the \verb{metadata/} SDP CSVs, the \verb{data/} resources declared in
+\code{tables.csv} (including any a previous write declared and this one does
+not), \code{datapackage.json}, and the ownership sentinel. Everything else is
+preserved — reviewed SSSOM mappings and measurement decompositions under
+\verb{metadata/semantic/}, EML and EDH XML, \code{eml-mapping.yml}, review notes, and
+\verb{publication/} artifacts. If \code{TRUE}, every entry in the directory is
+deleted first (the pre-0.2.0 behaviour). Requires \code{overwrite = TRUE}.}
 }
 \value{
 Invisibly returns the path to the created package

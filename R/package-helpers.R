@@ -19,11 +19,20 @@
 #' @param path Character; directory path where package will be written
 #' @param format Character; resource format: `"csv"` (default, only format supported)
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
-#'   `TRUE`, replacement is only allowed for empty directories or directories
-#'   previously written by `metasalmon`.
+#'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
+#'   allowed for empty directories or directories previously written by
+#'   `metasalmon`.
 #' @param write_datapackage Logical; if `TRUE` (default), write a root
 #'   `datapackage.json` descriptor declaring the SDP Frictionless profile after
 #'   package validation passes. Use `FALSE` for draft authoring output.
+#' @param prune Logical; if `FALSE` (default), only files this writer owns are
+#'   replaced: the `metadata/` SDP CSVs, the `data/` resources declared in
+#'   `tables.csv` (including any a previous write declared and this one does
+#'   not), `datapackage.json`, and the ownership sentinel. Everything else is
+#'   preserved — reviewed SSSOM mappings and measurement decompositions under
+#'   `metadata/semantic/`, EML and EDH XML, `eml-mapping.yml`, review notes, and
+#'   `publication/` artifacts. If `TRUE`, every entry in the directory is
+#'   deleted first (the pre-0.2.0 behaviour). Requires `overwrite = TRUE`.
 #'
 #' @return Invisibly returns the path to the created package
 #'
@@ -59,7 +68,8 @@ write_salmon_datapackage <- function(
     path,
     format = "csv",
     overwrite = FALSE,
-    write_datapackage = TRUE
+    write_datapackage = TRUE,
+    prune = FALSE
 ) {
   if (!identical(format, "csv")) {
     cli::cli_abort("Only CSV format is supported. Use {.code format = 'csv'}")
@@ -91,33 +101,79 @@ write_salmon_datapackage <- function(
   codes <- .ms_normalize_codes(codes)
 
   dataset_id <- dataset_meta$dataset_id[1]
+  # `target_dataset_id` exists because `dict` has a `dataset_id` column: a local
+  # of the same name is shadowed by the dplyr data mask, which would turn the
+  # scoping filter below into a no-op and leak other datasets' columns.
+  target_dataset_id <- dataset_id
 
-  .ms_prepare_package_write_dir(path, overwrite = overwrite)
+  # Resolve every resource file name BEFORE preparing the directory, so the set
+  # of paths this call will write is exactly the set it is allowed to delete.
+  # Resolving inside the write loop instead would let the two drift apart.
+  writable_resources <- intersect(names(resources), table_meta$table_id)
+  skipped_resources <- setdiff(names(resources), writable_resources)
+  for (resource_name in skipped_resources) {
+    cli::cli_warn(
+      "No table metadata found for resource {.val {resource_name}}, skipping"
+    )
+  }
+
+  resolved_file_names <- character()
+  for (resource_name in writable_resources) {
+    file_name <- table_meta$file_name[table_meta$table_id == resource_name][1]
+    if (is.na(file_name) || file_name == "") {
+      file_name <- file.path("data", paste0(resource_name, ".", format))
+    }
+    file_name <- .ms_force_data_subdir(.ms_normalize_resource_file_name(file_name))
+    table_meta$file_name[table_meta$table_id == resource_name] <- file_name
+    resolved_file_names[[resource_name]] <- file_name
+  }
+
+  # Containment BEFORE reading anything. `.ms_package_managed_paths()` parses the
+  # previous `tables.csv`, so a `metadata/` or `metadata/tables.csv` symlinked to
+  # a FIFO or an enormous external file would be read before the guard ran. The
+  # metadata paths are known without reading, so they can be checked first.
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+  .ms_assert_managed_path_contained(
+    path,
+    c(
+      .ms_metadata_path(path, metadata_names),
+      # The legacy root-level shadows too: `.ms_locate_metadata_file()` accepts
+      # them, so `.ms_previous_declared_data_paths()` will read a root
+      # `tables.csv` when `metadata/tables.csv` is absent. Checking only the
+      # `metadata/` copies left that path unguarded.
+      file.path(path, metadata_names),
+      file.path(path, "datapackage.json"),
+      .ms_package_sentinel_file(path)
+    )
+  )
+  managed_paths <- .ms_package_managed_paths(path, data_file_names = resolved_file_names)
+  orphaned <- setdiff(.ms_previous_declared_data_paths(path), resolved_file_names)
+  orphaned <- orphaned[file.exists(file.path(path, orphaned))]
+
+  .ms_prepare_package_write_dir(
+    path,
+    overwrite = overwrite,
+    managed_paths = managed_paths,
+    prune = prune
+  )
+
+  if (!isTRUE(prune) && length(orphaned) > 0) {
+    cli::cli_alert_info(
+      "Removed data resource{?s} no longer declared in {.file tables.csv}: {.file {orphaned}}"
+    )
+  }
 
   dir.create(.ms_metadata_dir(path), recursive = TRUE, showWarnings = FALSE)
 
   # Write resources and build derived datapackage descriptor.
   resource_list <- list()
-  for (resource_name in names(resources)) {
+  for (resource_name in writable_resources) {
     resource_df <- resources[[resource_name]]
 
     table_info <- table_meta %>%
       dplyr::filter(.data$table_id == resource_name)
 
-    if (nrow(table_info) == 0) {
-      cli::cli_warn(
-        "No table metadata found for resource {.val {resource_name}}, skipping"
-      )
-      next
-    }
-
-    file_name <- table_info$file_name[1]
-    if (is.na(file_name) || file_name == "") {
-      file_name <- file.path("data", paste0(resource_name, ".", format))
-    }
-    file_name <- .ms_normalize_resource_file_name(file_name)
-    file_name <- .ms_force_data_subdir(file_name)
-    table_meta$file_name[table_meta$table_id == resource_name] <- file_name
+    file_name <- resolved_file_names[[resource_name]]
 
     file_path <- file.path(path, file_name)
     dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
@@ -125,7 +181,7 @@ write_salmon_datapackage <- function(
 
     table_dict <- dict %>%
       dplyr::filter(
-        .data$dataset_id == dataset_id,
+        .data$dataset_id == .env$target_dataset_id,
         .data$table_id == resource_name
       )
 
@@ -191,16 +247,27 @@ write_salmon_datapackage <- function(
   resource_list <- c(metadata_resource_list, resource_list)
   sdp_schema <- .ms_load_sdp_schema(quiet = TRUE)
 
+  declared_spec_version <- dataset_meta$spec_version[1]
+  if (!is.na(declared_spec_version) && nzchar(trimws(declared_spec_version)) &&
+      !identical(trimws(declared_spec_version), sdp_schema$version)) {
+    cli::cli_warn(c(
+      "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
+      "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+    ))
+  }
+
+  # Every URI written here comes from the one loaded, self-consistent bundle,
+  # so the descriptor can never declare a profile the bundle disagrees with.
   datapackage <- list(
-    profile = .ms_sdp_profile_url(),
+    profile = sdp_schema$profile_uri,
     name = .ms_datapackage_name(dataset_id),
     id = dataset_id,
     title = dataset_meta$title[1],
     description = dataset_meta$description[1],
     sdp = list(
       specVersion = sdp_schema$version,
-      profile = .ms_sdp_profile_url(),
-      rules = .ms_sdp_public_rules_url(),
+      profile = sdp_schema$profile_uri,
+      rules = sdp_schema$rules_uri,
       metadata = list(
         dataset = "metadata/dataset.csv",
         tables = "metadata/tables.csv",
@@ -273,8 +340,212 @@ write_salmon_datapackage <- function(
   invisible(path)
 }
 
+# Remove a create-owned output before recreating it. The containment check
+# catches symbolic links, but `Sys.readlink()` does not see HARD links, and
+# writing through one truncates the shared inode outside the package. The
+# pre-0.2.0 full-directory wipe unlinked these entries first; preserving the
+# directory removed that protection, so it has to be explicit -- and it belongs
+# next to each write, not in one caller, so it holds however the writer is
+# reached.
+.ms_replace_create_output <- function(path) {
+  if (file.exists(path)) {
+    unlink(path, force = TRUE)
+  }
+  invisible(path)
+}
+
 .ms_dir_entries <- function(path) {
   list.files(path, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+}
+
+# Every path `write_salmon_datapackage()` is authoritative for on this call,
+# whether or not this call will actually write it. Anything absent from this
+# list survives a rewrite: reviewed SSSOM mappings, ordered measurement
+# decompositions, EML/EDH XML, `eml-mapping.yml`, review notes, `publication/`.
+#
+# Deliberately NOT `.ms_knb_sdp_artifact_paths()`: that helper answers "what
+# gets published", aborts when a reviewed sidecar is absent, and is documented
+# as the single source of truth for the KNB inventory. This one answers "what
+# this call owns", and must degrade rather than abort.
+.ms_package_managed_paths <- function(path, data_file_names = character()) {
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+
+  managed <- c(
+    file.path(path, "datapackage.json"),
+    .ms_metadata_path(path, metadata_names),
+    # Legacy root-level shadows, which `.ms_locate_metadata_file()` still accepts.
+    file.path(path, metadata_names),
+    .ms_package_sentinel_file(path)
+  )
+
+  data_file_names <- data_file_names[!is.na(data_file_names) & nzchar(data_file_names)]
+  previous <- .ms_previous_declared_data_paths(path)
+  all_data <- unique(c(data_file_names, previous))
+  if (length(all_data) > 0) {
+    managed <- c(managed, file.path(path, all_data))
+  }
+
+  unique(managed)
+}
+
+# Windows accepts `\` as a path separator, so the trailing-`.`, trailing-`..`,
+# and containment checks below must see it as one -- otherwise `C:\pkg-link\.`
+# is a single opaque component and walks straight past them.
+#
+# Gated on the platform on purpose: a backslash is a legal character in a POSIX
+# filename, and rewriting it there would split one directory name into two
+# components.
+#
+# This does not make the symbolic-link check itself work on Windows.
+# `Sys.readlink()` is documented to return "" for every path on platforms
+# without the `readlink` system call, so that check is inert there and Windows
+# junctions are invisible to it. The `..` and containment checks are what these
+# normalizations restore.
+.ms_path_separators_to_slash <- function(x) {
+  if (identical(.Platform$OS.type, "windows")) {
+    gsub("\\", "/", x, fixed = TRUE)
+  } else {
+    x
+  }
+}
+
+# A directory path whose final component is a real name, so `Sys.readlink()`
+# inspects the directory itself. Trailing `/` and `/.` spellings are the ones
+# that matter: `Sys.readlink("link/.")` reads the `.` entry inside the resolved
+# target and returns "", so a symlinked root spelled `pkg-link/.` was accepted.
+#
+# Deliberately not `normalizePath()`: that resolves the final component too, so
+# a symlinked root would come back as its target and pass the check it exists
+# to fail.
+.ms_lexical_dir <- function(path) {
+  root <- .ms_path_separators_to_slash(path)
+  repeat {
+    # Keep at least one character, so "/" and "." survive as themselves.
+    stripped <- sub("(?<=.)/+$", "", root, perl = TRUE)
+    stripped <- sub("(?<=.)/+\\.$", "", stripped, perl = TRUE)
+    if (identical(stripped, root)) {
+      return(root)
+    }
+    root <- stripped
+  }
+}
+
+# A trailing `..` is the one spelling no lexical check can make safe. readlink(2)
+# resolves every component but the last, so `a/../link` correctly inspects
+# `link` -- but `link/..` resolves `link` as an intermediate component and then
+# reads `..` inside the target, which is a directory, so the check sees nothing.
+# The root then denotes the *target's parent*, which can be an unrelated
+# package. Collapsing `..` lexically instead would be wrong precisely when an
+# earlier component is a symlink, and resolving it would follow the link this
+# check exists to reject. Refusing the spelling is the only sound option, and it
+# costs the user nothing: `a/../b` and every other `..` position still works.
+.ms_root_ends_in_parent_ref <- function(root) {
+  parts <- strsplit(.ms_path_separators_to_slash(root), "/", fixed = TRUE)[[1]]
+  parts <- parts[nzchar(parts) & parts != "."]
+  length(parts) > 0L && identical(parts[[length(parts)]], "..")
+}
+
+# Refuse to delete through a symbolic link. `file.exists()` follows links, so a
+# `data/` or `metadata/` replaced by a symlink would make every managed child
+# resolve outside the package and `unlink()` delete the target. The KNB archive
+# already fails closed on symlinked path components
+# (`.ms_knb_sdp_archive_assert_no_symlink()`); the writer must do the same
+# before it removes anything.
+.ms_assert_managed_path_contained <- function(path, managed_paths) {
+  root <- .ms_lexical_dir(path)
+
+  # The root itself, before any child: the per-component walk below starts at
+  # `path` and so never inspects it, which let a symlinked package root through
+  # with every child appearing contained. `prune = TRUE` would then empty the
+  # link's target. Only `path` is checked, never its ancestors -- on macOS
+  # `/tmp` is a link to `/private/tmp`, so walking ancestors would reject every
+  # ordinary tempdir write.
+  if (.ms_root_ends_in_parent_ref(root)) {
+    cli::cli_abort(c(
+      "Refusing to update {.path {path}}: the package root ends in {.code ..}.",
+      "i" = "Which directory that names depends on whether an earlier component is a symbolic link.",
+      "i" = "Write to the directory itself instead."
+    ))
+  }
+  root_link <- Sys.readlink(root)
+  if (length(root_link) == 1L && !is.na(root_link) && nzchar(root_link)) {
+    cli::cli_abort(c(
+      "Refusing to update {.path {path}}: the package root is a symbolic link.",
+      "i" = "Write to the directory the link points at, or replace the link with a real directory."
+    ))
+  }
+
+  # Both sides are compared with separators normalised: `path` may be spelled
+  # with `\\` while `managed_paths` are built by `file.path()`, which always
+  # joins with `/`. Comparing the raw strings made every candidate fail the
+  # prefix test and silently skip the check -- failing open, which is the worst
+  # outcome for a guard.
+  prefix <- paste0(root, "/")
+
+  for (candidate in managed_paths) {
+    normalized <- .ms_path_separators_to_slash(candidate)
+    relative <- if (startsWith(normalized, prefix)) {
+      substring(normalized, nchar(prefix) + 1L)
+    } else {
+      next
+    }
+    current <- root
+    parts <- strsplit(relative, "/", fixed = TRUE)[[1]]
+    # `.` and empty parts come from the caller's spelling, not from a real
+    # directory entry; walking them would readlink the resolved target instead
+    # of the component.
+    for (part in parts[nzchar(parts) & parts != "."]) {
+      current <- file.path(current, part)
+      link <- Sys.readlink(current)
+      if (length(link) == 1L && !is.na(link) && nzchar(link)) {
+        cli::cli_abort(c(
+          "Refusing to update {.path {path}}: {.file {relative}} contains a symbolic-link path component.",
+          "i" = "Replace the link with a real directory or file, or write to a new directory."
+        ))
+      }
+      if (!file.exists(current)) {
+        break
+      }
+    }
+  }
+
+  invisible(managed_paths)
+}
+
+# Data resources declared by a previous write. Retaining an orphan would leave
+# undeclared data in `data/` that validation never looks at but a hand-made ZIP
+# would carry. Degrades to nothing if the previous tables.csv is absent or
+# unreadable — a corrupt file must never widen the deletion set.
+.ms_previous_declared_data_paths <- function(path) {
+  tables_path <- tryCatch(.ms_locate_metadata_file(path, "tables.csv"), error = function(e) NA_character_)
+  if (length(tables_path) != 1L || is.na(tables_path) || !file.exists(tables_path)) {
+    return(character())
+  }
+
+  tryCatch(
+    {
+      previous <- .ms_read_metadata_csv(tables_path)
+      if (!"file_name" %in% names(previous)) {
+        return(character())
+      }
+      names <- trimws(as.character(previous$file_name))
+      names <- names[!is.na(names) & nzchar(names)]
+      if (length(names) == 0L) {
+        return(character())
+      }
+      # Normalize (which rejects `..` and absolute paths) but do NOT force into
+      # `data/`: a previous write may legitimately have declared `exports/x.csv`.
+      # Relocating it would leave the real orphan behind and delete an unrelated
+      # `data/x.csv` that this write does not own.
+      vapply(
+        names,
+        function(n) .ms_normalize_resource_file_name(n),
+        character(1),
+        USE.NAMES = FALSE
+      )
+    },
+    error = function(e) character()
+  )
 }
 
 .ms_is_metasalmon_package_dir <- function(path) {
@@ -300,7 +571,14 @@ write_salmon_datapackage <- function(
     dir.exists(.ms_metadata_dir(path))
 }
 
-.ms_prepare_package_write_dir <- function(path, overwrite = FALSE) {
+.ms_prepare_package_write_dir <- function(path,
+                                          overwrite = FALSE,
+                                          managed_paths = character(),
+                                          prune = FALSE) {
+  if (isTRUE(prune) && !isTRUE(overwrite)) {
+    cli::cli_abort("{.arg prune} requires {.arg overwrite = TRUE}.")
+  }
+
   if (!dir.exists(path)) {
     dir.create(path, recursive = TRUE, showWarnings = FALSE)
     return(invisible(path))
@@ -324,7 +602,15 @@ write_salmon_datapackage <- function(
     ))
   }
 
-  unlink(existing_files, recursive = TRUE, force = TRUE)
+  if (isTRUE(prune)) {
+    unlink(existing_files, recursive = TRUE, force = TRUE)
+    return(invisible(path))
+  }
+
+  .ms_assert_managed_path_contained(path, managed_paths)
+  # No `recursive =`: if a managed path ever resolves to a directory, unlink()
+  # is a no-op rather than a recursive wipe.
+  unlink(managed_paths[file.exists(managed_paths)], force = TRUE)
   invisible(path)
 }
 
@@ -621,8 +907,13 @@ infer_salmon_datapackage_artifacts <- function(
 #'   releases only when one is available. Defaults to `interactive()`.
 #' @param format Character; resource format: `"csv"` (default, only format supported)
 #' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
-#'   `TRUE`, replacement is only allowed for empty directories or directories
-#'   previously written by `metasalmon`.
+#'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
+#'   allowed for empty directories or directories previously written by
+#'   `metasalmon`.
+#' @param prune Logical; if `FALSE` (default), reviewed sidecars in an existing
+#'   package directory are preserved and only files this writer owns are
+#'   replaced. If `TRUE`, the directory is emptied first. Requires
+#'   `overwrite = TRUE`. See [write_salmon_datapackage()].
 #' @param include_edh_xml Logical; when `TRUE`, writes an HNAP-aware EDH XML
 #'   metadata file to `metadata/metadata-edh-hnap.xml` using
 #'   `edh_build_hnap_xml()`. The default is `FALSE`. Because `create_sdp()`
@@ -719,6 +1010,7 @@ create_sdp <- function(
     format = "csv",
     overwrite = FALSE,
     include_edh_xml = FALSE,
+    prune = FALSE,
     ...
 ) {
   semantic_sources <- .ms_forward_semantic_sources(
@@ -899,9 +1191,23 @@ create_sdp <- function(
       codes = artifacts$codes,
       path = path,
       format = format,
-      overwrite = overwrite
+      overwrite = overwrite,
+      prune = prune
     )
   })
+
+  # `create_sdp()` writes these itself, after the generic writer has run, so they
+  # are deliberately absent from `managed_paths` (that is what preserves them on
+  # a rewrite). They still need the same containment check: without it a
+  # symlinked `README-review.txt` is followed and an external file is truncated.
+  .ms_assert_managed_path_contained(
+    pkg_path,
+    file.path(pkg_path, c(
+      "README-review.txt",
+      "semantic_suggestions.csv",
+      file.path("metadata", "metadata-edh-hnap.xml")
+    ))
+  )
 
   review_suggestions <- .ms_prepare_review_suggestions(suggestions)
   .ms_write_sdp_review_readme(
@@ -929,12 +1235,19 @@ create_sdp <- function(
     ))
   )
 
+  # `create_sdp()` owns this file, so it clears its own stale copy. The generic
+  # writer's managed-path inventory deliberately does not know about it.
+  suggestions_path <- file.path(pkg_path, "semantic_suggestions.csv")
   if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
-    readr::write_csv(review_suggestions, file.path(pkg_path, "semantic_suggestions.csv"), na = "")
+    .ms_replace_create_output(suggestions_path)
+    readr::write_csv(review_suggestions, suggestions_path, na = "")
+  } else if (file.exists(suggestions_path)) {
+    unlink(suggestions_path, force = TRUE)
   }
 
   if (isTRUE(include_edh_xml)) {
     edh_xml_path <- .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
+    .ms_replace_create_output(edh_xml_path)
 
     edh_build_hnap_xml(
       artifacts$dataset_meta,
@@ -1144,7 +1457,8 @@ read_salmon_datapackage <- function(path) {
         next
       }
 
-      resources[[resource_name]] <- readr::read_csv(file_path, show_col_types = FALSE)
+      table_dict <- dictionary[dictionary$table_id == resource_name, , drop = FALSE]
+      resources[[resource_name]] <- .ms_read_resource_csv(file_path, table_dict)
     }
   }
 
@@ -1344,7 +1658,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         nrow(final_review_issues),
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
-      stats::setNames(preview, rep("x", length(preview))),
+      .ms_cli_bullets(preview, "x"),
       "i" = "Resolve placeholder metadata, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
@@ -1368,7 +1682,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         nrow(semantic_validation$issues),
         ifelse(nrow(semantic_validation$issues) == 1, "", "s")
       ),
-      paste0("- ", preview)
+      paste0("- ", .ms_cli_escape(preview))
     )
     if (nrow(semantic_validation$issues) > length(preview)) {
       warn_lines <- c(
@@ -1611,6 +1925,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     x
   }
 
+  # The `trimmed_unique()` tail, for values already canonicalized by type.
+  drop_blank <- function(x) {
+    unique(x[!is.na(x) & nzchar(x)])
+  }
+
   if (nrow(pkg$dataset) != 1) {
     add_issue(
       "dataset",
@@ -1695,6 +2014,28 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     data_df <- pkg$resources[[table_id]]
     data_cols <- names(data_df)
 
+    # Values that do not satisfy their declared `value_type`. The reader keeps
+    # the raw token rather than NA-ing it, so the code-value check below still
+    # sees the offending value; this reports the declaration mismatch itself.
+    for (mismatch in attr(data_df, "ms_value_type_mismatches") %||% list()) {
+      add_issue(
+        "columns",
+        sprintf(
+          "Table '%s' column '%s' declares value_type '%s' but %d value%s did not satisfy it (%s): %s.",
+          table_id,
+          mismatch$column,
+          mismatch$declared,
+          mismatch$count,
+          if (mismatch$count == 1) "" else "s",
+          mismatch$reason,
+          paste(mismatch$examples, collapse = ", ")
+        ),
+        table_id = table_id,
+        column_name = mismatch$column,
+        value = paste(mismatch$examples, collapse = ", ")
+      )
+    }
+
     missing_in_data <- setdiff(dict_cols, data_cols)
     if (length(missing_in_data) > 0) {
       add_issue(
@@ -1774,8 +2115,42 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
           next
         }
 
-        data_values <- trimmed_unique(data_df[[column_name]])
-        code_values <- trimmed_unique(table_codes$code_value[table_codes$column_name == column_name])
+        # Canonicalize both sides through the declared type. The data column is
+        # a parsed vector and `code_value` is always raw CSV text, so comparing
+        # `as.character()` of each made a package fail against its own codes.
+        column_value_type <- table_dict$value_type[
+          match(column_name, trimws(as.character(table_dict$column_name)))
+        ]
+        raw_code_values <- table_codes$code_value[table_codes$column_name == column_name]
+        # The data resource is fidelity-checked when it is read, but code values
+        # are raw text that never passes through that path. Without the same
+        # check, a code token carrying more precision than its declared type can
+        # hold canonicalizes onto a different data value and the comparison
+        # silently succeeds.
+        code_outcome <- .ms_convert_declared_tokens(raw_code_values, column_value_type)
+        if (!is.null(code_outcome$reason)) {
+          add_issue(
+            "codes",
+            sprintf(
+              "Table '%s' column '%s' declares value_type '%s' but %d codes.csv value%s did not satisfy it (%s): %s.",
+              table_id,
+              column_name,
+              column_value_type,
+              length(code_outcome$offenders),
+              if (length(code_outcome$offenders) == 1) "" else "s",
+              code_outcome$reason,
+              paste(utils::head(unique(as.character(code_outcome$offenders)), 3L), collapse = ", ")
+            ),
+            table_id = table_id,
+            column_name = column_name
+          )
+        }
+        data_values <- drop_blank(
+          .ms_canonical_value_tokens(data_df[[column_name]], column_value_type)
+        )
+        code_values <- drop_blank(
+          .ms_canonical_value_tokens(raw_code_values, column_value_type)
+        )
         missing_code_values <- setdiff(data_values, code_values)
         if (length(missing_code_values) > 0) {
           add_issue(
@@ -1845,7 +2220,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       nrow(issues),
       ifelse(nrow(issues) == 1, "", "s")
     ),
-    stats::setNames(messages, rep("x", length(messages)))
+    .ms_cli_bullets(messages, "x")
   )
 
   if (nrow(issues) > preview_n) {
@@ -1868,6 +2243,133 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     col_types = readr::cols(.default = readr::col_character()),
     show_col_types = FALSE
   )
+}
+
+# Read a data resource with the types its dictionary declares. The dictionary is
+# the sole type authority: anything it does not declare reads as character
+# rather than being guessed, which is what makes the write -> read round trip
+# lossless.
+# Convert one declared column's raw tokens, or explain why it cannot be done
+# faithfully. Returns `values` when the conversion is exact, otherwise `reason`
+# and the offending tokens.
+#
+# The token is the ground truth. Every collector in this package is lossy in
+# some direction -- `col_double()` collapses anything past 15 significant
+# digits, `col_datetime()` collapses sub-resolution instants -- and no amount of
+# careful formatting downstream can recover what the collector discarded. So the
+# column is read as text and converted here, where the original is still
+# available to check against.
+.ms_convert_declared_tokens <- function(tokens, value_type) {
+  present <- !is.na(tokens) & nzchar(trimws(tokens))
+  parser <- switch(
+    value_type,
+    integer  = readr::parse_double,
+    number   = readr::parse_double,
+    boolean  = readr::parse_logical,
+    date     = readr::parse_date,
+    datetime = readr::parse_datetime,
+    NULL
+  )
+  if (is.null(parser)) {
+    return(list(values = tokens, reason = NULL))
+  }
+
+  values <- suppressWarnings(parser(tokens))
+
+  unparseable <- present & is.na(values)
+  if (any(unparseable)) {
+    return(list(reason = "unparseable as that type", offenders = tokens[unparseable]))
+  }
+
+  if (value_type %in% c("integer", "number")) {
+    # Decided by an actual round trip -- token versus the shortest rendering of
+    # the double it produced -- not by digit or exponent thresholds, which
+    # misclassify in both directions at the boundaries.
+    lossy <- .ms_numeric_tokens_lossy(tokens, tokens, present)
+    if (any(lossy)) {
+      return(list(reason = "beyond exact numeric precision", offenders = tokens[lossy]))
+    }
+    if (identical(value_type, "integer")) {
+      fractional <- present & is.finite(values) & values != trunc(values)
+      if (any(fractional)) {
+        return(list(reason = "not a whole number", offenders = tokens[fractional]))
+      }
+    }
+  }
+
+  if (identical(value_type, "datetime")) {
+    # Six fractional digits are not uniformly safe: POSIXct is a double, so the
+    # spacing between representable instants grows with the epoch magnitude and
+    # already exceeds a microsecond around year 2243.
+    precision <- .ms_datetime_token_precision(tokens)
+    seconds <- suppressWarnings(as.numeric(values))
+    too_fine <- present & (
+      precision > 6L |
+        (precision > 0L & is.finite(seconds) &
+           10^(-precision) < .ms_double_spacing(seconds))
+    )
+    if (any(too_fine)) {
+      return(list(
+        reason = "finer than the datetime representation can hold",
+        offenders = tokens[too_fine]
+      ))
+    }
+  }
+
+  list(values = values, reason = NULL)
+}
+
+# Read a data resource with the types its dictionary declares. The dictionary is
+# the sole type authority: anything it does not declare stays character rather
+# than being guessed, which is what makes the write/read round trip lossless.
+#
+# One text read, then in-memory conversion -- rather than a typed read plus a
+# re-read when something looks wrong. That keeps the original token available
+# for every fidelity check, and it is one pass over the file instead of two.
+.ms_read_resource_csv <- function(file_path, table_dict) {
+  raw <- readr::read_csv(
+    file_path,
+    col_types = list(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  header <- names(raw)
+
+  declared_types <- list()
+  if (is.data.frame(table_dict) && nrow(table_dict) > 0 &&
+      all(c("column_name", "value_type") %in% names(table_dict))) {
+    dict_names <- trimws(as.character(table_dict$column_name))
+    for (nm in intersect(header, dict_names)) {
+      declared_types[[nm]] <- as.character(table_dict$value_type[match(nm, dict_names)])
+    }
+  }
+
+  parsed <- raw
+  mismatches <- list()
+  for (nm in names(declared_types)) {
+    value_type <- declared_types[[nm]]
+    if (!isTRUE(value_type %in% .ms_value_types()) || identical(value_type, "string")) {
+      next
+    }
+    outcome <- .ms_convert_declared_tokens(raw[[nm]], value_type)
+    if (is.null(outcome$reason)) {
+      parsed[[nm]] <- outcome$values
+      next
+    }
+    # The declared type is not satisfied: keep the exact token so the code-value
+    # check still sees it, and report the declaration as wrong.
+    mismatches[[length(mismatches) + 1L]] <- list(
+      column = nm,
+      declared = value_type,
+      reason = outcome$reason,
+      count = length(outcome$offenders),
+      examples = utils::head(unique(as.character(outcome$offenders)), 3L)
+    )
+  }
+
+  if (length(mismatches) > 0) {
+    attr(parsed, "ms_value_type_mismatches") <- mismatches
+  }
+  parsed
 }
 
 .ms_datapackage_name <- function(dataset_id) {
@@ -2651,10 +3153,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     latest_version <- "newer"
   }
 
+  # `latest_version` derives from the GitHub release tag and `install_command`
+  # can come from the same payload, so both are remote-controlled and this
+  # sprintf() result becomes a cli template downstream.
   sprintf(
     "A newer {.pkg metasalmon} release (%s) is available. Update later with {.code %s} if you want.",
-    latest_version,
-    install_command
+    .ms_cli_escape(latest_version),
+    .ms_cli_escape(install_command)
   )
 }
 
@@ -2834,7 +3339,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize.",
     "Guide: https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html"
   )
-  writeLines(lines, con = file.path(pkg_path, "README-review.txt"), useBytes = TRUE)
+  readme_path <- .ms_replace_create_output(file.path(pkg_path, "README-review.txt"))
+  writeLines(lines, con = readme_path, useBytes = TRUE)
 }
 
 .ms_is_review_placeholder <- function(x) {

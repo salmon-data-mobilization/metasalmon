@@ -1,5 +1,13 @@
 # metasalmon — next behaviours roadmap
 
+> **SUPERSEDED FOR SEQUENCING (2026-08-10).** The prioritized list of what to do
+> next is now `2026-08-10-post-0.2.0-roadmap.md`, informed by the comprehensive
+> review in `2026-08-10-comprehensive-ecosystem-review.md`. Themes A and E5 are
+> shipped; the 0.2.0 P0 remediation reordered what matters most, and several
+> items below (notably the bug #13 / A5 and bug #33 lines) are resolved or
+> restated there. **This document is still the authority for the Theme A–E
+> design detail** — read it before picking up anything it designed.
+
 Created 2026-06-26; last reconciled 2026-07-28. A consolidating roadmap for the behaviours worth doing **next**,
 after the `deepen-architecture` branch (executed) and the Alice Assmar `#1` fix
 (closed, shipped in 0.1.4). This document is a triage + sequencing layer: it does

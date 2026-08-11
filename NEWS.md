@@ -1,3 +1,134 @@
+metasalmon 0.2.0
+----------------
+
+Remediates the nine highest-priority defects from the 2026-08-10 ecosystem
+review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
+
+### Breaking changes
+
+- `read_salmon_datapackage()` now types data resources from the column
+  dictionary's `value_type` instead of letting readr guess, and **columns the
+  dictionary does not declare are read as character rather than guessed**. The
+  dictionary is the sole type authority, which is what makes the write/read
+  round trip lossless. A value that does not satisfy its declared type is kept
+  as its raw token rather than silently becoming `NA`, and the mismatch is
+  reported as a structured validation issue. Declared columns are collected as
+  text and converted only when the conversion is faithful, judged against the
+  original token — so an unparseable value, a fractional `integer`, an
+  `integer` or `number` whose precision or magnitude a double cannot hold, and a
+  `datetime` finer than a `POSIXct` can represent at that instant all keep their
+  exact token rather than being silently accepted, rounded, clamped, or
+  truncated. Both numeric and datetime checks are magnitude-aware rather than
+  fixed thresholds.
+  Both `integer` and `number` otherwise read as double, because
+  `readr::col_integer()` silently `NA`s values past 2^31 (readr's guesser also
+  produced double here, so this is not a change); `apply_salmon_dictionary()`
+  remains the way to get exact R classes.
+- `write_salmon_datapackage(overwrite = TRUE)` no longer empties the package
+  directory. It replaces only the files it owns — the `metadata/` SDP CSVs, the
+  `data/` resources declared in `tables.csv`, `datapackage.json`, and the
+  ownership sentinel — and preserves everything else. Pass the new
+  `prune = TRUE` to restore the previous behaviour. `create_sdp()` gained the
+  same argument.
+- Newly written `datapackage.json` files declare the current SDP profile URI
+  (`salmon-data-mobilization.github.io`), which is what the live upstream
+  profile requires. Reading packages that declare the previous URI is
+  unaffected.
+- `Imports: dplyr (>= 1.1.0)`, required by `arrange(.locale = )`.
+
+### Fixes
+
+- **`zip` is no longer pinned to an exact version, at either layer.**
+  `zip (== 3.0.1)` against a CRAN that ships 3.0.2 made metasalmon
+  uninstallable. Relaxing only `DESCRIPTION` was not enough: the runtime guard
+  `.ms_knb_require_zip_version()` was an equally exact check, so the package
+  would install and then abort on every KNB publication path. That guard is now
+  a reviewed-version allowlist, `c("3.0.1", "3.0.2")`. Both versions were
+  byte-compared for metasalmon's exact `zip::zip()` call against a fixture
+  covering nested paths, non-ASCII filenames, an empty file, incompressible
+  bytes, and highly compressible bytes; the archives are identical. The
+  determinism contract therefore still holds, and it is enforced where it
+  belongs — at the KNB boundary, not in a dependency pin that blocked the
+  majority of users who never publish to KNB. An unreviewed `zip` still fails
+  loudly, with a message saying to byte-compare before widening the allowlist.
+- **Remote SDP schema loading works again.** Upstream `smn-data-pkg` migrated
+  every profile `$id`; metasalmon asserted equality against the old constant, so
+  `source = "remote"` aborted and the default `"auto"` silently fell back to a
+  stale vendored bundle. Identity is now derived from the loaded bundle and only
+  checked for internal consistency, so an upstream identifier change is
+  followable rather than fatal. The vendored profile and rules were re-vendored.
+- **A multi-table dictionary is no longer applied in full.**
+  `apply_salmon_dictionary()` compared a column against a same-named local, which
+  the dplyr data mask shadows into a tautology, so every table's renames,
+  coercions, and factor levels were applied while the warning said otherwise.
+  `write_salmon_datapackage()` had the same bug for `dataset_id`, leaking other
+  datasets' columns into `datapackage.json`.
+- **`create_sdp()` no longer writes packages its own validator rejects.**
+  Character code values such as `"0.10"` and `"100000"` were re-guessed as
+  numeric on read and stringified back as `0.1` and `1e+05`, so a package failed
+  validation against its own `codes.csv`. `write_eml_from_sdp()` inherited it.
+- **Reviewed sidecars survive a rewrite.** The read → edit → write loop silently
+  deleted reviewed SSSOM mapping sets, ordered measurement decompositions, EML
+  and EDH XML, `eml-mapping.yml`, review notes, and `publication/` artifacts.
+- **External text can no longer be evaluated as a cli message template.** A
+  provider error containing `{Sys.getenv("OPENAI_API_KEY")}` printed the key, and
+  an unbalanced brace — a column literally named `rate{pct` — replaced the
+  intended message with `Error: Expecting '}'`. Fifteen sites now escape, and
+  credentials are redacted where external text is captured rather than where it
+  is displayed.
+- **Canonical bytes and identifiers no longer depend on `LC_COLLATE`.** The
+  DataONE resource-map PID, the plan fingerprint, SSSOM canonical bytes and
+  manifest order, the measurement-decomposition hash, EML entity order, and both
+  exported NuSEDS crosswalk tables all used locale-dependent ordering, so the
+  same inputs produced different bytes on different machines and a package
+  written on macOS could be rejected by a `LC_COLLATE=C` container.
+- **Cancelling a term-request prompt no longer submits the issue.**
+  `askYesNo()` returns `NA` on cancel and the guard tested `isFALSE()`. In the
+  same workflow, exiting the routing menu aborted with "replacement has length
+  zero", and the candidate/rationale lines passed cli markup to `glue::glue()`,
+  which fails to parse on every input — so interactive routing had never worked.
+- `infer_value_type()` now distinguishes `datetime` from `date`; `POSIXt`
+  previously collapsed to `date`.
+
+### Also in this release (from the 0.1.8 merge)
+
+- The C-collation contract is applied to the SDP v0.2 extension normalizers
+  introduced in 0.1.8. `.ms_sdp_methods_normalize()` and the two
+  `.ms_sdp_observation_normalize_*()` functions produce the canonical row order
+  written to `metadata/methods.csv` and `metadata/structure/observation_*.csv`,
+  and `extract_sdp_observations()` orders returned data by dimension columns —
+  all previously with bare `dplyr::arrange()`.
+
+### Internal
+
+- `write_salmon_datapackage()` refuses to update a package whose managed
+  directories are reached through a symbolic link. `file.exists()` follows
+  links, so a `data/` or `metadata/` replaced by one would have made every
+  managed child resolve outside the package and be deleted there. This matches
+  the symlink discipline the KNB archive already enforces.
+- `create_sdp()` replaces its own outputs rather than writing through them. A
+  hard-linked `README-review.txt`, `semantic_suggestions.csv`, or EDH XML would
+  otherwise have truncated the shared inode outside the package —
+  `Sys.readlink()` sees only symbolic links, and the pre-0.2.0 full-directory
+  wipe had unlinked these entries implicitly.
+- Provider failures on the measurement-bundle review path are redacted where
+  they are captured, matching the non-bundle path. They are stored on the
+  exported `semantic_llm_assessments` attribute, so display-time redaction
+  would have been too late.
+- Text reaching cli through the `.ms_*_abort()` forwarding helpers is escaped
+  too. A decomposition column name is caller-supplied and was interpolated into
+  an abort message, so a column named `{Sys.getenv("...")}` had its value
+  evaluated into the error.
+- New `R/cli-safety.R` (`.ms_cli_escape()`, `.ms_cli_bullets()`,
+  `.ms_redact_secrets()`, `.ms_abort_external()`).
+- Two static guard tests enforce the new contracts: `test-cli-safety-guard.R`
+  and `test-collation-guard.R`. Both carry self-tests, and both are documented
+  in `AGENTS.md`, which is now tracked in git — it had been ignored, so the
+  shipped repo carried no contributor guidance at all.
+- A live remote-schema test closes the gap that let the profile drift go
+  unnoticed: the suite pins `sdp_schema_source = "vendored"`, and nothing had
+  ever exercised a successful remote fetch.
+
 metasalmon 0.1.8
 ----------------
 

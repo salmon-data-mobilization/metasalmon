@@ -52,7 +52,12 @@ suggest_dwc_mappings <- function(dict, max_per_column = 3) {
     }
 
     scored <- scored %>%
-      dplyr::arrange(dplyr::desc(.data$match_score), .data$table_id, .data$field_name) %>%
+      dplyr::arrange(
+      dplyr::desc(.data$match_score),
+      .data$table_id,
+      .data$field_name,
+      .locale = "C"
+    ) %>%
       dplyr::slice_head(n = max_per_column) %>%
       dplyr::mutate(column_name = row$column_name) %>%
       dplyr::select(

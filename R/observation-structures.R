@@ -87,7 +87,8 @@
     dplyr::arrange(
       .data$dataset_id,
       .data$table_id,
-      .data$observation_structure_id
+      .data$observation_structure_id,
+      .locale = "C"
     )
 }
 
@@ -120,7 +121,8 @@
       .data$dataset_id,
       .data$table_id,
       .data$observation_structure_id,
-      .data$component_order
+      .data$component_order,
+      .locale = "C"
     )
 }
 
@@ -1003,7 +1005,12 @@ extract_sdp_observations <- function(path, table_id = NULL,
       metadata$components,
       structure
     )
-    components <- components[order(components$component_order), , drop = FALSE]
+    # `component_order` is integer, so radix is already the default here; the
+    # explicit method documents that and satisfies the collation guard.
+    components <- components[
+      order(components$component_order, method = "radix"), ,
+      drop = FALSE
+    ]
     measure <- components$column_name[components$component_role == "measure"][[1]]
     dimensions <- components$column_name[components$component_role == "dimension"]
     data <- package$resources[[structure$table_id[[1]]]]
@@ -1025,7 +1032,7 @@ extract_sdp_observations <- function(path, table_id = NULL,
     }
     data <- dplyr::distinct(data)
     if (length(dimensions) > 0L && nrow(data) > 0L) {
-      data <- dplyr::arrange(data, !!!rlang::syms(dimensions))
+      data <- dplyr::arrange(data, !!!rlang::syms(dimensions), .locale = "C")
     }
     output[[index]] <- tibble::as_tibble(data)
   }

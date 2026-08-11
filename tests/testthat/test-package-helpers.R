@@ -2148,6 +2148,21 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
     overwrite = TRUE
   )
 
+  # Rewriting is now an in-place update: unmanaged files survive by default.
+  expect_true(file.exists(file.path(temp_dir, "stale.txt")))
+  expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
+  expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
+
+  write_salmon_datapackage(
+    resources,
+    dataset_meta,
+    table_meta,
+    dict,
+    path = temp_dir,
+    overwrite = TRUE,
+    prune = TRUE
+  )
+
   expect_false(file.exists(file.path(temp_dir, "stale.txt")))
   expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
@@ -2564,4 +2579,1093 @@ test_that("validate_salmon_datapackage catches datapackage route hints without W
     suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
     "Explicit composite route intent detected"
   )
+})
+
+test_that("write_salmon_datapackage scopes the descriptor schema to its own dataset", {
+  # `dplyr::filter(.data$dataset_id == dataset_id)` with a same-named local is
+  # a data-mask no-op, so another dataset's columns leaked into
+  # datapackage.json for any table_id shared across datasets.
+  temp_dir <- withr::local_tempdir()
+
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "keep-me", table_id = "obs",
+      column_name = "count", column_label = "count",
+      column_role = "measurement", value_type = "integer"
+    ),
+    test_dictionary(
+      dataset_id = "other-dataset", table_id = "obs",
+      column_name = "leaked_column", column_label = "leaked_column",
+      column_role = "measurement", value_type = "integer"
+    )
+  )
+  dict <- fill_measurement_components(dict)
+
+  dataset_meta <- tibble::tibble(
+    dataset_id = "keep-me",
+    title = "Scoped dataset",
+    description = "Scoped dataset description",
+    spec_version = NA_character_
+  )
+  table_meta <- tibble::tibble(
+    dataset_id = "keep-me",
+    table_id = "obs",
+    table_label = "Observations",
+    table_description = "Observation rows",
+    file_name = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = data.frame(count = 1:2)),
+    dataset_meta = dataset_meta,
+    table_meta = table_meta,
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  descriptor <- jsonlite::read_json(file.path(temp_dir, "datapackage.json"))
+  obs <- Filter(function(r) identical(r$name, "obs"), descriptor$resources)[[1]]
+  field_names <- vapply(obs$schema$fields, function(f) f$name, character(1))
+
+  expect_true("count" %in% field_names)
+  expect_false("leaked_column" %in% field_names)
+})
+
+test_that("descriptor profile and rules URIs come from the loaded schema bundle", {
+  temp_dir <- withr::local_tempdir()
+  schema <- metasalmon:::.ms_load_sdp_schema(quiet = TRUE)
+
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "uri-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "uri-1", title = "URI test",
+      description = "Descriptor identity", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "uri-1", table_id = "obs", table_label = "Observations",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  descriptor <- jsonlite::read_json(file.path(temp_dir, "datapackage.json"))
+  expect_identical(descriptor$profile, schema$profile_uri)
+  expect_identical(descriptor$sdp$profile, schema$profile_uri)
+  expect_identical(descriptor$sdp$rules, schema$rules_uri)
+
+  # dataset.csv and datapackage.json must agree on the spec version; they used
+  # to read different bundles.
+  dataset_csv <- readr::read_csv(
+    file.path(temp_dir, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  expect_identical(dataset_csv$spec_version[1], descriptor$sdp$specVersion)
+})
+
+test_that("a package declaring the legacy SDP profile URI still validates", {
+  # Packages written before the upstream identifier migration must keep reading
+  # and validating cleanly.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "legacy-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "legacy-1", title = "Legacy URI",
+      description = "Legacy profile identifier", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "legacy-1", table_id = "obs", table_label = "Observations",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  legacy_uri <- paste0(
+    "https://dfo-pacific-science.github.io/smn-data-pkg/profiles/",
+    "salmon-data-package/v0.2/profile.json"
+  )
+  descriptor_path <- file.path(temp_dir, "datapackage.json")
+  descriptor <- jsonlite::read_json(descriptor_path)
+  descriptor$profile <- legacy_uri
+  descriptor$sdp$profile <- legacy_uri
+  jsonlite::write_json(descriptor, descriptor_path, auto_unbox = TRUE, pretty = TRUE)
+
+  result <- validate_salmon_datapackage(temp_dir)
+  expect_equal(nrow(result$issues), 0L)
+})
+
+# Shared fixture for the rewrite-preservation tests below.
+.ms_test_write_minimal_package <- function(path, tables = c("obs"), codes = NULL) {
+  resources <- stats::setNames(
+    lapply(tables, function(x) data.frame(count = 1:2)),
+    tables
+  )
+  dict <- dplyr::bind_rows(lapply(tables, function(tbl) {
+    fill_measurement_components(
+      infer_dictionary(data.frame(count = 1:2), dataset_id = "keep-1", table_id = tbl)
+    )
+  }))
+  table_meta <- tibble::tibble(
+    dataset_id = "keep-1",
+    table_id = tables,
+    table_label = tables,
+    table_description = "Rows",
+    file_name = NA_character_,
+    observation_unit = NA_character_,
+    observation_unit_iri = NA_character_,
+    primary_key = NA_character_
+  )
+  write_salmon_datapackage(
+    resources = resources,
+    dataset_meta = tibble::tibble(
+      dataset_id = "keep-1", title = "Preservation",
+      description = "Sidecar preservation", spec_version = NA_character_
+    ),
+    table_meta = table_meta,
+    dict = dict,
+    codes = codes,
+    path = path,
+    overwrite = TRUE
+  )
+}
+
+test_that("rewriting a package preserves reviewed sidecars", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+
+  sidecars <- c(
+    "metadata/semantic/example.sssom.tsv",
+    "metadata/semantic/mapping-sets.json",
+    "metadata/semantic/measurement-decompositions.csv",
+    "metadata/semantic/measurement-decompositions.json",
+    "metadata/semantic_vocabulary.csv",
+    "metadata/eml-mapping.yml",
+    "metadata/eml.xml",
+    "metadata/metadata-edh-hnap.xml",
+    "reviewed_semantic_selections.csv",
+    "README-review.txt",
+    "publication/knb-manifest.json"
+  )
+  for (relative in sidecars) {
+    full <- file.path(temp_dir, relative)
+    dir.create(dirname(full), recursive = TRUE, showWarnings = FALSE)
+    writeLines(paste("reviewed content for", relative), full)
+  }
+  before <- vapply(sidecars, function(r) {
+    digest::digest(file.path(temp_dir, r), file = TRUE)
+  }, character(1))
+
+  .ms_test_write_minimal_package(temp_dir)
+
+  after <- vapply(sidecars, function(r) {
+    if (!file.exists(file.path(temp_dir, r))) return(NA_character_)
+    digest::digest(file.path(temp_dir, r), file = TRUE)
+  }, character(1))
+
+  expect_identical(after, before)
+})
+
+test_that("prune = TRUE restores the full wipe and requires overwrite", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+  dir.create(file.path(temp_dir, "metadata", "semantic"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("reviewed", file.path(temp_dir, "metadata", "semantic", "example.sssom.tsv"))
+
+  expect_error(
+    .ms_prepare_package_write_dir(temp_dir, overwrite = FALSE, prune = TRUE),
+    "requires"
+  )
+
+  resources <- list(obs = data.frame(count = 1:2))
+  dict <- fill_measurement_components(
+    infer_dictionary(data.frame(count = 1:2), dataset_id = "keep-1", table_id = "obs")
+  )
+  write_salmon_datapackage(
+    resources = resources,
+    dataset_meta = tibble::tibble(
+      dataset_id = "keep-1", title = "Preservation",
+      description = "Sidecar preservation", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "keep-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE,
+    prune = TRUE
+  )
+
+  expect_false(file.exists(file.path(temp_dir, "metadata", "semantic", "example.sssom.tsv")))
+})
+
+test_that("rewriting drops a data resource no longer declared in tables.csv", {
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir, tables = c("obs", "extra"))
+  expect_true(file.exists(file.path(temp_dir, "data", "extra.csv")))
+
+  expect_message(
+    .ms_test_write_minimal_package(temp_dir, tables = "obs"),
+    "no longer declared"
+  )
+
+  expect_false(file.exists(file.path(temp_dir, "data", "extra.csv")))
+  expect_true(file.exists(file.path(temp_dir, "data", "obs.csv")))
+})
+
+test_that("dropping codes removes a stale codes.csv and leaves validation clean", {
+  temp_dir <- withr::local_tempdir()
+  codes <- tibble::tibble(
+    dataset_id = "keep-1",
+    table_id = "obs",
+    column_name = "count",
+    code_value = c("1", "2"),
+    code_label = c("One", "Two"),
+    code_description = NA_character_
+  )
+  .ms_test_write_minimal_package(temp_dir, codes = codes)
+  expect_true(file.exists(file.path(temp_dir, "metadata", "codes.csv")))
+
+  .ms_test_write_minimal_package(temp_dir, codes = NULL)
+
+  expect_false(file.exists(file.path(temp_dir, "metadata", "codes.csv")))
+  expect_equal(nrow(validate_salmon_datapackage(temp_dir)$issues), 0L)
+})
+
+test_that("create_sdp accepts prune without tripping the dots validator", {
+  temp_dir <- file.path(withr::local_tempdir(), "pkg")
+  expect_no_error(
+    suppressMessages(suppressWarnings(create_sdp(
+      data.frame(count = 1:2),
+      path = temp_dir,
+      dataset_id = "prune-1",
+      table_id = "obs",
+      seed_semantics = FALSE,
+      check_updates = FALSE,
+      overwrite = TRUE,
+      prune = FALSE
+    )))
+  )
+})
+
+test_that("read_salmon_datapackage honours the declared value_type", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    pct = c("0.10", "0.25"),
+    big = c("100000", "250000"),
+    flag = c(TRUE, FALSE),
+    day = as.Date(c("2026-01-01", "2026-02-01")),
+    stamp = as.POSIXct(c("2026-01-01 08:30:00", "2026-02-01 09:45:00"), tz = "UTC"),
+    blank = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "types-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "types-1", title = "Types", description = "Type round trip",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "types-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  back <- suppressMessages(read_salmon_datapackage(temp_dir))$resources$obs
+
+  # Character columns stay exactly as written; readr guessing turned these into
+  # 0.1 and 1e+05.
+  expect_identical(back$pct, c("0.10", "0.25"))
+  expect_identical(back$big, c("100000", "250000"))
+  expect_type(back$flag, "logical")
+  expect_s3_class(back$day, "Date")
+  expect_s3_class(back$stamp, "POSIXct")
+  # An all-NA character column is declared "string", so it must not become logical.
+  expect_type(back$blank, "character")
+})
+
+test_that("validate_salmon_datapackage compares code values through the declared type", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(depth_code = c("0.10", "0.20"), stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "codes-1", table_id = "obs")
+  )
+  dict$column_role <- "categorical"
+
+  codes <- tibble::tibble(
+    dataset_id = "codes-1", table_id = "obs", column_name = "depth_code",
+    code_value = c("0.10", "0.20"),
+    code_label = c("Shallow", "Deep"),
+    code_description = NA_character_
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "codes-1", title = "Codes", description = "Typed code compare",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "codes-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_equal(nrow(validate_salmon_datapackage(temp_dir)$issues), 0L)
+})
+
+test_that("canonical value tokens are symmetric across declared types", {
+  canon <- metasalmon:::.ms_canonical_value_tokens
+
+  expect_identical(canon(c(0.1, 100000), "number"), c("0.1", "100000"))
+  expect_identical(canon(c("0.10", "1e+05"), "number"), c("0.1", "100000"))
+  expect_identical(canon(100000L, "integer"), "100000")
+  expect_identical(canon(c(TRUE, FALSE), "boolean"), c("TRUE", "FALSE"))
+  expect_identical(canon(c("true", "F"), "boolean"), c("TRUE", "FALSE"))
+  expect_identical(canon(as.Date("2026-01-02"), "date"), "2026-01-02")
+  expect_identical(canon("2026-01-02", "date"), "2026-01-02")
+  # Strings are untouched, and unparseable values keep their original text so a
+  # real mismatch still reads as one.
+  expect_identical(canon(c(" a ", "b"), "string"), c("a", "b"))
+  expect_identical(canon("unknown", "number"), "unknown")
+
+  # Element-wise formatting: a vector-wise format() would render 0.5 differently
+  # depending on what else is in the vector.
+  expect_identical(canon(c(0.5, 1 / 3), "number")[[1]], canon(0.5, "number"))
+})
+
+test_that("a dictionary column missing from the data file reads without a parser warning", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(count = 1:2)
+  dict <- fill_measurement_components(
+    infer_dictionary(data.frame(count = 1:2, absent = c(1.5, 2.5)),
+                     dataset_id = "spec-1", table_id = "obs")
+  )
+
+  write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "spec-1", title = "Spec", description = "Absent column",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "spec-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    path = temp_dir,
+    overwrite = TRUE
+  )
+
+  expect_no_warning(suppressMessages(read_salmon_datapackage(temp_dir)))
+
+  # The structured issue must still fire; it is reported as an abort.
+  expect_error(
+    validate_salmon_datapackage(temp_dir),
+    "missing dictionary columns"
+  )
+})
+
+test_that("a value that fails its declared type is preserved and reported", {
+  # Regression: reading with the declared collector turned the offending token
+  # into NA with only a readr warning, validation dropped the NA as blank, and a
+  # data value absent from codes.csv reached "validation passed".
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(depth_code = c("0.10", "0.20", "unknown"), stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "mismatch-1", table_id = "obs")
+  )
+  dict$value_type <- "number"
+  dict$column_role <- "categorical"
+
+  codes <- tibble::tibble(
+    dataset_id = "mismatch-1", table_id = "obs", column_name = "depth_code",
+    code_value = c("0.10", "0.20"), code_label = c("Shallow", "Deep"),
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "mismatch-1", title = "Mismatch",
+      description = "Declared type not satisfied", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "mismatch-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict,
+    codes = codes,
+    path = temp_dir,
+    overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  # The raw token survives, so the code-value check can still see it.
+  expect_true("unknown" %in% as.character(back$resources$obs$depth_code))
+
+  # Both the declaration mismatch and the unlisted value are reported.
+  expect_error(validate_salmon_datapackage(temp_dir), "unparseable as that type")
+  expect_error(validate_salmon_datapackage(temp_dir), "not listed in codes.csv")
+})
+
+test_that("a declared integer beyond exact double precision keeps its exact token", {
+  # 9007199254740993 and 9007199254740992 both round to 2^53 as doubles, so the
+  # first was returned as the second and the codes comparison saw one value.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(
+    tag_id = c("9007199254740993", "9007199254740992"),
+    stringsAsFactors = FALSE
+  )
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "big-1", table_id = "obs")
+  )
+  dict$value_type <- "integer"
+  dict$column_role <- "categorical"
+  codes <- tibble::tibble(
+    dataset_id = "big-1", table_id = "obs", column_name = "tag_id",
+    code_value = "9007199254740992", code_label = "Known",
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "big-1", title = "Big ids",
+      description = "Beyond 2^53", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "big-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, codes = codes, path = temp_dir, overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  expect_identical(as.character(back$resources$obs$tag_id), df$tag_id)
+  expect_error(validate_salmon_datapackage(temp_dir), "9007199254740993")
+})
+
+test_that("a data column literally named .default does not abort the reader", {
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(a = c("x", "y"), n = c(1, 2), stringsAsFactors = FALSE)
+  names(df) <- c(".default", "n")
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "dflt-1", table_id = "obs")
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "dflt-1", title = "Reserved name",
+      description = "Column named .default", spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "dflt-1", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, path = temp_dir, overwrite = TRUE
+  ))
+
+  back <- suppressMessages(suppressWarnings(read_salmon_datapackage(temp_dir)))
+  expect_true(".default" %in% names(back$resources$obs))
+  # This fixture declares `string`, so character is the declared type -- the
+  # numeric case is covered by the direct-reader test below.
+  expect_identical(dict$value_type[dict$column_name == ".default"], "string")
+  expect_type(back$resources$obs$.default, "character")
+})
+
+test_that("a .default column still reports a value that fails its declared type", {
+  # The first fix for the `cols()` name collision excluded this column from the
+  # spec, which silently exempted it from type checking too.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c(".default,n", "1.5,1", "unknown,2"), file_path)
+  table_dict <- tibble::tibble(
+    column_name = c(".default", "n"),
+    value_type = c("number", "number")
+  )
+
+  parsed <- suppressWarnings(.ms_read_resource_csv(file_path, table_dict))
+
+  expect_type(parsed$.default, "character")          # raw token preserved
+  expect_true("unknown" %in% parsed$.default)
+  # And with a clean numeric column the reserved spelling does get its declared
+  # type, rather than being dropped to the character fallback.
+  clean <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c(".default,n", "1.5,1", "2.5,2"), clean)
+  expect_type(.ms_read_resource_csv(clean, table_dict)$.default, "double")
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$column, ".default")
+  expect_identical(mismatches[[1]]$declared, "number")
+})
+
+test_that("a previously declared resource outside data/ is removed at its real path", {
+  # Forcing prior declarations through .ms_force_data_subdir() left the true
+  # orphan behind and targeted an unrelated data/ file of the same basename.
+  temp_dir <- withr::local_tempdir()
+  .ms_test_write_minimal_package(temp_dir)
+
+  tables_path <- file.path(temp_dir, "metadata", "tables.csv")
+  tables <- readr::read_csv(
+    tables_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    show_col_types = FALSE
+  )
+  tables$file_name <- "exports/old.csv"
+  readr::write_csv(tables, tables_path, na = "")
+  dir.create(file.path(temp_dir, "exports"), showWarnings = FALSE)
+  writeLines("a\n1", file.path(temp_dir, "exports", "old.csv"))
+
+  expect_identical(.ms_previous_declared_data_paths(temp_dir), "exports/old.csv")
+})
+
+test_that("rewriting refuses to delete through a symlinked managed directory", {
+  # file.exists() follows links, so a `metadata/` replaced by a symlink made
+  # every managed child resolve outside the package and unlink() delete the
+  # target. The KNB archive already fails closed on symlinked path components;
+  # the writer must too.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id", "d1"), file.path(outside, "dataset.csv"))
+  writeLines("precious external file", file.path(outside, "tables.csv"))
+  file.symlink(outside, file.path(pkg, "metadata"))
+
+  managed <- .ms_package_managed_paths(pkg)
+  expect_error(
+    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed),
+    "symbolic-link path component"
+  )
+  expect_true(file.exists(file.path(outside, "tables.csv")))
+})
+
+test_that("an ordinary package directory is still updated in place", {
+  # The symlink guard must not block the normal managed-update path.
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  dir.create(file.path(pkg, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id", "d1"), file.path(pkg, "metadata", "dataset.csv"))
+  writeLines("keep me", file.path(pkg, "README-review.txt"))
+
+  managed <- .ms_package_managed_paths(pkg)
+  expect_no_error(
+    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed)
+  )
+  expect_false(file.exists(file.path(pkg, "metadata", "dataset.csv")))
+  expect_true(file.exists(file.path(pkg, "README-review.txt")))
+})
+
+test_that("a fractional token in a declared integer column is reported", {
+  # `col_double()` backs a declared `integer` (because `col_integer()` NAs past
+  # 2^31), so `1.5` parses cleanly and readr raises no problem. Nothing else
+  # checked wholeness, so it reached "validation passed" even with 1.5 listed
+  # in codes.csv.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1.5", "2"), file_path)
+  table_dict <- tibble::tibble(column_name = "n", value_type = "integer")
+
+  parsed <- suppressWarnings(.ms_read_resource_csv(file_path, table_dict))
+
+  expect_type(parsed$n, "character")           # exact token preserved
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$reason, "not a whole number")
+  expect_identical(mismatches[[1]]$examples, "1.5")
+})
+
+test_that("valid integer columns are not flagged as mismatches", {
+  # The wholeness check must not fire on ordinary data, including blanks and
+  # negatives, and must not apply to a declared `number`.
+  table_dict <- tibble::tibble(column_name = "n", value_type = "integer")
+  whole <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1", "-3", "", "0"), whole)
+  parsed <- .ms_read_resource_csv(whole, table_dict)
+  expect_type(parsed$n, "double")
+  expect_null(attr(parsed, "ms_value_type_mismatches"))
+
+  decimal <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "1.5"), decimal)
+  parsed_number <- .ms_read_resource_csv(
+    decimal,
+    tibble::tibble(column_name = "n", value_type = "number")
+  )
+  expect_type(parsed_number$n, "double")
+  expect_null(attr(parsed_number, "ms_value_type_mismatches"))
+})
+
+test_that("a number column beyond exact precision keeps its exact token", {
+  # `number` shares the double collector with `integer`, so it collapses the
+  # same way past 2^53. The declaration does not make that acceptable when the
+  # value is also a code.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("n", "9007199254740993", "9007199254740992"), file_path)
+
+  parsed <- .ms_read_resource_csv(
+    file_path,
+    tibble::tibble(column_name = "n", value_type = "number")
+  )
+
+  expect_identical(parsed$n, c("9007199254740993", "9007199254740992"))
+  mismatches <- attr(parsed, "ms_value_type_mismatches")
+  expect_length(mismatches, 1L)
+  expect_identical(mismatches[[1]]$reason, "beyond exact numeric precision")
+})
+
+test_that("datetime tokens finer than the representation keep their exact text", {
+  # POSIXct is a double, so `col_datetime()` discards sub-resolution digits
+  # before any value-level check could run. Declared datetime columns are
+  # therefore collected as text and converted only when that is faithful.
+  fine <- withr::local_tempfile(fileext = ".csv")
+  writeLines(
+    c("t", "2026-01-01T00:00:00.100000000Z", "2026-01-01T00:00:00.100000010Z"),
+    fine
+  )
+  table_dict <- tibble::tibble(column_name = "t", value_type = "datetime")
+
+  parsed <- .ms_read_resource_csv(fine, table_dict)
+  expect_type(parsed$t, "character")
+  expect_identical(parsed$t[[2]], "2026-01-01T00:00:00.100000010Z")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "finer than the datetime representation can hold"
+  )
+
+  # Ordinary timestamps, including microseconds and blanks, still become POSIXct.
+  ordinary <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("t", "2026-01-01T08:30:00Z", "2026-01-01T09:00:00.123456Z", ""), ordinary)
+  clean <- .ms_read_resource_csv(ordinary, table_dict)
+  expect_s3_class(clean$t, "POSIXct")
+  expect_null(attr(clean, "ms_value_type_mismatches"))
+})
+
+test_that("an unparseable datetime token is still reported", {
+  # Holding datetime columns as text also bypasses readr's problem reporting,
+  # so this needs its own detection or the value silently becomes NA.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("t", "not-a-date"), file_path)
+
+  parsed <- .ms_read_resource_csv(
+    file_path,
+    tibble::tibble(column_name = "t", value_type = "datetime")
+  )
+
+  expect_identical(parsed$t, "not-a-date")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "unparseable as that type"
+  )
+})
+
+test_that("declared-type fidelity is enforced from the raw token, uniformly", {
+  # One mechanism replaces four special-case detectors: the column is read as
+  # text and converted only when the conversion is faithful, judged against the
+  # original token. This table is the contract.
+  check <- function(tokens, value_type) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    mismatches <- attr(parsed, "ms_value_type_mismatches")
+    if (is.null(mismatches)) NA_character_ else mismatches[[1]]$reason
+  }
+
+  # Precision a double cannot hold, at any magnitude — not just past 2^53.
+  expect_identical(check(c("0.10000000000000001", "0.1"), "number"), "beyond exact numeric precision")
+  expect_identical(check("9007199254740993", "number"), "beyond exact numeric precision")
+  expect_identical(check("9007199254740993", "integer"), "beyond exact numeric precision")
+  expect_identical(check(c("1.5", "2"), "integer"), "not a whole number")
+  expect_identical(check("2026-01-01T00:00:00.100000010Z", "datetime"),
+                   "finer than the datetime representation can hold")
+  # Unparseable tokens, including types the earlier detectors never covered.
+  expect_identical(check(c("1.5", "unknown"), "number"), "unparseable as that type")
+  expect_identical(check("not-a-date", "datetime"), "unparseable as that type")
+  expect_identical(check("yes-ish", "boolean"), "unparseable as that type")
+
+  # Ordinary data must not be flagged. Trailing and leading zeros, exponent
+  # form, blanks, and exactly 15 significant digits are all fine.
+  expect_true(is.na(check(c("1", "-3", "", "0"), "integer")))
+  expect_true(is.na(check(c("1.5", "0.10", "100000", "1e5"), "number")))
+  expect_true(is.na(check("123456789.123456", "number")))
+  expect_true(is.na(check(c("2026-01-01T08:30:00Z", "2026-01-01T09:00:00.123456Z", ""), "datetime")))
+  expect_true(is.na(check(c("2026-01-01", ""), "date")))
+  expect_true(is.na(check(c("TRUE", "false", ""), "boolean")))
+})
+
+test_that("create_sdp-owned outputs are containment-checked before writing", {
+  # These are deliberately absent from managed_paths so a rewrite preserves
+  # them, which also meant they escaped the symlink check: a symlinked
+  # README-review.txt was followed and an external file truncated.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(pkg, recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  target <- file.path(outside, "precious.txt")
+  writeLines("PRECIOUS EXTERNAL CONTENT", target)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  file.symlink(target, file.path(pkg, "README-review.txt"))
+
+  expect_error(
+    .ms_assert_managed_path_contained(
+      pkg,
+      file.path(pkg, c("README-review.txt", "semantic_suggestions.csv"))
+    ),
+    "symbolic-link path component"
+  )
+  expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
+})
+
+test_that("declared-type fidelity accounts for magnitude, not just digit count", {
+  # Digit count alone is a proxy. `1e-400` has one significant digit and still
+  # does not survive (readr clamps it to 1e-307), and six fractional seconds
+  # stop being representable as the epoch magnitude grows.
+  check <- function(tokens, value_type) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    mismatches <- attr(parsed, "ms_value_type_mismatches")
+    if (is.null(mismatches)) NA_character_ else mismatches[[1]]$reason
+  }
+
+  expect_identical(check(c("1e-400", "0"), "number"), "beyond exact numeric precision")
+  expect_identical(check("1e400", "number"), "beyond exact numeric precision")
+  # 9e308 overflows even though its exponent is 308 — an exponent bound alone
+  # missed it.
+  expect_identical(check("9e308", "number"), "beyond exact numeric precision")
+  expect_identical(
+    check(c("2243-01-01T00:00:00.000001Z", "2243-01-01T00:00:00.000002Z"), "datetime"),
+    "finer than the datetime representation can hold"
+  )
+
+  # Representable magnitudes must not be flagged. In particular milliseconds at
+  # year 2243 are fine while microseconds there are not — the threshold moves
+  # with the magnitude rather than being fixed.
+  # Magnitudes outside the representable band are covered by their own test;
+  # 1e-290 and 1e290 sit just inside it.
+  expect_true(is.na(check("1e-290", "number")))
+  expect_true(is.na(check("1e290", "number")))
+  # 16 digits but below 2^53, so exactly representable. A digit-count cutoff
+  # flagged this and would have rejected valid data — the failure mode that
+  # matters most here, since it breaks working packages.
+  expect_true(is.na(check("1234567890123456", "integer")))
+  expect_true(is.na(check(c("-12.750", "0.001"), "number")))
+  expect_true(is.na(check("2243-01-01T00:00:00.123Z", "datetime")))
+  expect_true(is.na(check("2026-01-01T00:00:00.123456Z", "datetime")))
+  expect_true(is.na(check("1970-01-01T00:00:00.123456Z", "datetime")))
+})
+
+test_that("an extreme exponent is rejected without materialising its expansion", {
+  # `1e1000000000` would ask strrep() for a billion zeros inside the decimal
+  # normalizer and take the process down. Magnitude now decides before any
+  # string expansion happens.
+  file_path <- withr::local_tempfile(fileext = ".csv")
+  writeLines(c("v", "1e1000000000", "1"), file_path)
+
+  elapsed <- system.time({
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = "number")
+    )
+  })[["elapsed"]]
+
+  expect_lt(elapsed, 5)
+  expect_type(parsed$v, "character")
+  expect_identical(
+    attr(parsed, "ms_value_type_mismatches")[[1]]$reason,
+    "beyond exact numeric precision"
+  )
+})
+
+test_that("magnitudes outside the representable band keep their exact text", {
+  # Deliberately a fixed band rather than "can this platform verify it?".
+  # macOS cannot round-trip 1e-300 through any of 15..17 significant digits and
+  # readr disagrees with as.numeric there, while Linux converts it cleanly — so
+  # asking the platform would make the same package validate in one place and
+  # fail in another. The band costs only tokens no salmon dataset carries.
+  read_one <- function(token) {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", token), file_path)
+    .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = "number")
+    )
+  }
+
+  for (token in c("1e-300", "1e308")) {
+    parsed <- read_one(token)
+    expect_identical(parsed$v, token)
+    expect_length(attr(parsed, "ms_value_type_mismatches"), 1L)
+  }
+
+  # Just inside the band, in both directions, converts and is not flagged.
+  for (token in c("1e-290", "1e290")) {
+    parsed <- read_one(token)
+    expect_type(parsed$v, "double")
+    expect_null(attr(parsed, "ms_value_type_mismatches"))
+  }
+})
+
+test_that("a hard-linked create-owned output is replaced, not written through", {
+  # `Sys.readlink()` sees only symbolic links, so the containment check passes
+  # for a hard link and the write would truncate the shared inode outside the
+  # package. The pre-0.2.0 full-directory wipe unlinked these entries first;
+  # preserving the directory removed that protection.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(pkg, recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  target <- file.path(outside, "precious.txt")
+  writeLines("PRECIOUS EXTERNAL CONTENT", target)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  skip_if_not(file.link(target, file.path(pkg, "README-review.txt")), "hard links unsupported")
+
+  .ms_write_sdp_review_readme(pkg_path = pkg, dataset_id = "d1", has_suggestions = FALSE)
+
+  expect_identical(readLines(target)[[1]], "PRECIOUS EXTERNAL CONTENT")
+  expect_true(any(grepl("Review Checklist", readLines(file.path(pkg, "README-review.txt")))))
+})
+
+test_that("codes.csv values are fidelity-checked against their declared type", {
+  # Only the data resource was checked. A code token carrying more precision
+  # than its declared type can hold canonicalizes onto a different data value,
+  # so the comparison succeeded while the actual data value was absent.
+  temp_dir <- withr::local_tempdir()
+  df <- data.frame(v = "0.1", stringsAsFactors = FALSE)
+  dict <- fill_measurement_components(
+    infer_dictionary(df, dataset_id = "ct", table_id = "obs")
+  )
+  dict$value_type <- "number"
+  dict$column_role <- "categorical"
+  codes <- tibble::tibble(
+    dataset_id = "ct", table_id = "obs", column_name = "v",
+    code_value = "0.10000000000000001", code_label = "A",
+    code_description = NA_character_
+  )
+
+  suppressWarnings(write_salmon_datapackage(
+    resources = list(obs = df),
+    dataset_meta = tibble::tibble(
+      dataset_id = "ct", title = "Codes", description = "Lossy code token",
+      spec_version = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "ct", table_id = "obs", table_label = "obs",
+      table_description = "Rows", file_name = NA_character_,
+      observation_unit = NA_character_, observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = dict, codes = codes, path = temp_dir, overwrite = TRUE
+  ))
+
+  expect_error(validate_salmon_datapackage(temp_dir), "codes.csv value")
+})
+
+test_that("a symlinked metadata path is rejected before it is read", {
+  # `.ms_package_managed_paths()` parses the previous tables.csv, so the
+  # containment check has to run first or an external target is read — a FIFO
+  # would block, a huge file would be parsed — before the guard fires.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
+             file.path(outside, "tables.csv"))
+  file.symlink(outside, file.path(pkg, "metadata"))
+
+  expect_error(
+    .ms_assert_managed_path_contained(pkg, .ms_metadata_path(pkg, "tables.csv")),
+    "symbolic-link path component"
+  )
+})
+
+test_that("a large token with few significant digits is still checked", {
+  # Stripping trailing zeros made `90071992547409900` look like 15 significant
+  # digits, so it took the fast path and was returned as 90071992547409904.
+  # The fast path is now bounded above by the exact integer range too.
+  check <- function(tokens, value_type = "integer") {
+    file_path <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("v", tokens), file_path)
+    parsed <- .ms_read_resource_csv(
+      file_path,
+      tibble::tibble(column_name = "v", value_type = value_type)
+    )
+    list(values = parsed$v, reason = attr(parsed, "ms_value_type_mismatches"))
+  }
+
+  altered <- check("90071992547409900")
+  expect_identical(altered$values, "90071992547409900")
+  expect_length(altered$reason, 1L)
+
+  # Values above 1e15 that ARE exactly representable must still convert.
+  for (token in c("10000000000000000", "9007199254740992", "1234567890123456")) {
+    exact <- check(token)
+    expect_type(exact$values, "double")
+    expect_null(exact$reason)
+  }
+})
+
+test_that("the pre-read containment check covers legacy root-level metadata", {
+  # `.ms_locate_metadata_file()` accepts a root-level shadow, so
+  # `.ms_previous_declared_data_paths()` reads a root `tables.csv` when
+  # `metadata/tables.csv` is absent. Checking only the `metadata/` copies left
+  # that path unguarded — the external target was parsed before the guard ran.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  pkg <- file.path(base, "pkg")
+  outside <- file.path(base, "outside")
+  dir.create(file.path(pkg, "data"), recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
+             file.path(outside, "tables.csv"))
+  file.symlink(file.path(outside, "tables.csv"), file.path(pkg, "tables.csv"))
+
+  metadata_names <- c("dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv")
+  expect_error(
+    .ms_assert_managed_path_contained(
+      pkg,
+      c(.ms_metadata_path(pkg, metadata_names), file.path(pkg, metadata_names))
+    ),
+    "symbolic-link path component"
+  )
+})
+
+test_that("a symlinked package root is refused", {
+  # The per-component walk starts at `path`, so it never inspected `path`
+  # itself: a symlinked root left every child looking contained, and
+  # `prune = TRUE` would empty the link's target.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "real")
+  dir.create(file.path(real, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  writeLines("precious", file.path(real, "metadata", "dataset.csv"))
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  expect_error(
+    .ms_assert_managed_path_contained(link, .ms_metadata_path(link, "dataset.csv")),
+    "package root is a symbolic link"
+  )
+  # The real directory is still writable, and an ancestor that is itself a link
+  # (macOS `/tmp` -> `/private/tmp`) must not trip the check.
+  expect_silent(.ms_assert_managed_path_contained(real, .ms_metadata_path(real, "dataset.csv")))
+})
+
+test_that("a symlinked root is refused however the path is spelled", {
+  # `Sys.readlink("link/.")` reads the `.` entry inside the resolved target and
+  # returns "", so the trailing-dot spelling walked straight past the root check.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "real")
+  dir.create(file.path(real, "metadata"), recursive = TRUE)
+  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  for (spelling in c(link, paste0(link, "/"), paste0(link, "/."),
+                     paste0(link, "/./"), paste0(link, "//"))) {
+    expect_error(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv")),
+      "package root is a symbolic link",
+      info = spelling
+    )
+  }
+
+  # The same spellings of a real directory must still be accepted.
+  for (spelling in c(real, paste0(real, "/"), paste0(real, "/."))) {
+    expect_silent(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv"))
+    )
+  }
+})
+
+test_that("a package root ending in .. is refused", {
+  # `link/..` resolves `link` as an intermediate component and then reads `..`
+  # inside the target, so the symlink check sees nothing while the root denotes
+  # the target's parent -- potentially an unrelated package.
+  skip_on_os("windows")
+  base <- withr::local_tempdir()
+  real <- file.path(base, "outer", "inner")
+  dir.create(real, recursive = TRUE)
+  link <- file.path(base, "link")
+  file.symlink(real, link)
+
+  for (spelling in c(paste0(link, "/.."), paste0(link, "/../"), paste0(link, "/../."))) {
+    expect_error(
+      .ms_assert_managed_path_contained(spelling, .ms_metadata_path(spelling, "dataset.csv")),
+      "ends in",
+      info = spelling
+    )
+  }
+
+  # `..` anywhere but last is fine: readlink resolves all but the final
+  # component, so the check still inspects the right directory.
+  dir.create(file.path(base, "outer", "sibling"))
+  ok <- file.path(base, "outer", "inner", "..", "sibling")
+  expect_silent(.ms_assert_managed_path_contained(ok, .ms_metadata_path(ok, "dataset.csv")))
 })

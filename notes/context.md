@@ -2,15 +2,16 @@
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-08-04 (0.1.8 mixed-grain
-observation structures, methods, reproducibility manifests, and expanded KNB
-publication).
+package evolves. Last substantial update: 2026-08-10 (0.2.0 P0 remediation:
+schema identity, SDP round-trip integrity, sidecar preservation, cli message
+safety, and C collation). Preceded by 0.1.8 (mixed-grain observation
+structures, methods, reproducibility manifests, and expanded KNB publication).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.1.8. License MIT.
+Package (SDP)** conventions. Development version 0.2.0. License MIT.
 R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
@@ -84,8 +85,24 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
   Canonical SDP 0.2 profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
-  published contract identifiers distinct from the configurable source used
-  for runtime schema retrieval.
+  published contract identifiers distinct from the configurable source used for
+  runtime schema retrieval.
+  The profile **identity is derived from the loaded bundle**
+  (`schema$profile_uri` / `schema$rules_uri`, attached by
+  `.ms_validate_sdp_schema()`), never asserted against a constant — that is what
+  lets `metasalmon` follow a future upstream identifier change instead of
+  failing on it. Validation checks only that the bundle agrees with itself:
+  `$id` vs `properties.profile.const` vs `rules.profile` vs
+  `sdp:version`/`rules.version`. The constants in `R/schema-helpers.R` are the
+  vendored fallback only; keep them in step with `inst/extdata` by
+  **re-vendoring from upstream**, not by hand-editing either side. Reading a
+  package that declares an older profile URI stays valid (nothing on the read
+  path inspects `datapackage.json$profile`).
+  *History:* an earlier note here said the legacy `dfo-pacific-science.github.io`
+  URI was the upstream contract value and must not be rewritten. Upstream
+  migrated, 0.1.8 followed the value, and 0.2.0 removed the equality assertion
+  that made such a migration fatal — see `notes/bugs-and-improvements.md` #33
+  and #35.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
   semantics). New-term proposals route to one of these by reusability.
@@ -298,6 +315,7 @@ do not affect the built package or pkgdown site.
 | `dictionary-helpers.R` | ~1209 | `infer_dictionary` + `infer_*_from_resources` (the latter also used by package-helpers). |
 | `semantic-suggestions.R` | ~268 | Target/candidate row-shape contract + LLM-assessment merge. |
 | `llm-review-adapter.R` | ~118 | Shared LLM review response contract (validate / response-data / row construction). |
+| `cli-safety.R` | ~70 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`, `.ms_abort_external`). |
 | `edh-xml-export.R` | ~43KB | EDH HNAP/ISO 19139 XML export. |
 | `eml-export.R` | — | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
 | `knb-sdp-archive.R` | — | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
@@ -307,6 +325,20 @@ do not affect the built package or pkgdown site.
 | `github-helpers.R` | ~22KB | GitHub CSV access + auth setup. |
 | `term-request-helpers.R` | ~28KB | Ontology new-term request rendering + issue submission. |
 | `term-deduplication.R`, `nuseds-method-crosswalk.R`, `ices-vocab.R`, `dwc-dp-*.R`, `schema-helpers.R`, `validation_helpers.R`, `version-check.R`, `ontology_fetch.R`, `term_search_smn.R` | — | Supporting subsystems. |
+
+## Planning artifacts (read before related work)
+
+- `notes/bugs-and-improvements.md` — the live backlog and the single index of
+  open items. Items #34+ came from the 2026-08-10 comprehensive review.
+- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — **the prioritized list of
+  what to do next.** Start here.
+- `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
+  verified findings behind that roadmap, covering metasalmon plus the SDP spec,
+  both ontologies, and the workshop.
+- `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
+  read-only verification of the gcdfo SHACL/SPARQL/ROBOT claims.
+- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
+  sequencing, still authoritative for the Theme A–E design detail.
 
 ## Related planning artifacts (read before LLM-review work)
 
@@ -318,6 +350,40 @@ do not affect the built package or pkgdown site.
 - `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
   bundle-aware semantic fit + `retry_search`/`request_new_term` escalation. The
   review contract should be designed to absorb these richer outcomes.
+
+## Reproducibility rules (added 2026-08-10, P0 remediation)
+
+Two cross-cutting rules, both with a guard test. The full statements live in
+`AGENTS.md`; this is the *why*.
+
+**C collation.** `sort()`/`order()`/`dplyr::arrange()` are locale-sensitive by
+default. Under `LC_COLLATE=en_CA` (a common macOS default),
+`c("apple","Apple","B","_z","a")` orders as `_z a apple Apple B`; under C it is
+`Apple B _z a apple`. Artifacts affected: the DataONE resource-map PID
+(`.ms_knb_resource_map_pid()` UUID5 preimage), the plan fingerprint
+(`plan_sha256`), SSSOM canonical bytes and the `mapping-sets.json` manifest
+order, the measurement-decomposition CSV hash, EML entity order, the
+`knb-manifest.json` receipt, and both exported NuSEDS crosswalk tables. Before
+the fix, a curator on macOS could write an SSSOM set that a `LC_COLLATE=C` CI
+container rejected, and the same package could get two different PIDs on two
+machines. `dplyr::arrange()` needs `.locale = "C"` explicitly even on dplyr
+>= 1.1.0, because its `NULL` default still consults the global
+`dplyr.legacy_locale` option — so a user's `.Rprofile` could otherwise flip
+hashed bytes. Hence `dplyr (>= 1.1.0)` in DESCRIPTION.
+Guard: `tests/testthat/test-collation-guard.R`.
+
+**cli message safety.** cli glue-interpolates every element of a condition
+message vector, including named bullet elements — the name only selects the
+glyph. Passing external text through means balanced braces are evaluated as R
+code (a provider error containing `{Sys.getenv("OPENAI_API_KEY")}` prints the
+key) and an unbalanced brace is a parse error (a column named `rate{pct` made
+validation die with `Expecting '}'`). `R/cli-safety.R` holds
+`.ms_cli_escape()`, `.ms_cli_bullets()`, `.ms_redact_secrets()`, and
+`.ms_abort_external()`. Escaping rather than value interpolation, because
+`"x" = "{preview}"` collapses an N-element preview into one comma-joined bullet.
+Redaction belongs where text is captured, not displayed: `assessments$llm_error`
+is returned to the caller and can be written to `semantic_suggestions.csv`.
+Guard: `tests/testthat/test-cli-safety-guard.R`.
 
 ## Gotchas
 

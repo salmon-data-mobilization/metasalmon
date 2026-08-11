@@ -58,7 +58,7 @@ check_for_updates <- function(
     if (!quiet) {
       cli::cli_alert_info(c(
         "Couldn't check for a newer {.pkg metasalmon} release right now.",
-        "i" = result$message
+        "i" = .ms_cli_escape(result$message)
       ))
     }
 
@@ -126,7 +126,7 @@ ms_fetch_latest_release <- function(repo, timeout = 2) {
   )
 
   if (inherits(resp, "error")) {
-    return(list(ok = FALSE, message = conditionMessage(resp)))
+    return(list(ok = FALSE, message = .ms_redact_secrets(conditionMessage(resp))))
   }
 
   status <- httr2::resp_status(resp)

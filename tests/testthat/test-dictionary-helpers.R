@@ -2386,3 +2386,126 @@ test_that("infer_salmon_datapackage_artifacts infers multi-table SDP artifacts",
   expect_equal(artifacts$dataset_meta$dataset_id[[1]], "dataset-1")
   expect_true(is.null(artifacts$semantic_suggestions) || is.data.frame(artifacts$semantic_suggestions))
 })
+
+test_that("apply_salmon_dictionary applies only the first table of a multi-table dictionary", {
+  # `dplyr::filter(.data$table_id == table_id)` with a local named `table_id`
+  # is shadowed by the data mask, so every table's rules were applied while the
+  # warning claimed otherwise.
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "d1", table_id = "t1",
+      column_name = "count", column_label = "Spawner count",
+      column_role = "measurement", value_type = "integer"
+    ),
+    test_dictionary(
+      dataset_id = "d1", table_id = "t2",
+      column_name = "site", column_label = "Other table site",
+      column_role = "identifier", value_type = "string"
+    )
+  )
+
+  df <- data.frame(count = c("1", "2"), site = c("a", "b"), stringsAsFactors = FALSE)
+
+  expect_warning(
+    result <- apply_salmon_dictionary(df, dict, strict = FALSE),
+    "multiple tables"
+  )
+
+  # t1's rule applied: renamed and coerced.
+  expect_true("Spawner count" %in% names(result))
+  expect_type(result[["Spawner count"]], "integer")
+  # t2's rule NOT applied: `site` keeps its original name.
+  expect_true("site" %in% names(result))
+  expect_false("Other table site" %in% names(result))
+})
+
+test_that("apply_salmon_dictionary does not apply another table's codes", {
+  dict <- dplyr::bind_rows(
+    test_dictionary(
+      dataset_id = "d1", table_id = "t1",
+      column_name = "status", column_label = "status",
+      column_role = "categorical", value_type = "string"
+    ),
+    test_dictionary(
+      dataset_id = "d1", table_id = "t2",
+      column_name = "status", column_label = "status",
+      column_role = "categorical", value_type = "string"
+    )
+  )
+
+  codes <- tibble::tibble(
+    dataset_id = c("d1", "d1"),
+    table_id = c("t1", "t2"),
+    column_name = c("status", "status"),
+    code_value = c("live", "spawned"),
+    code_label = c("Live", "Spawned"),
+    code_description = c(NA_character_, NA_character_)
+  )
+
+  df <- data.frame(status = c("live", "live"), stringsAsFactors = FALSE)
+
+  expect_warning(
+    result <- apply_salmon_dictionary(df, dict, codes = codes, strict = FALSE),
+    "multiple tables"
+  )
+
+  # Only t1's code value is a level; t2's "spawned" must not leak in.
+  expect_s3_class(result$status, "factor")
+  expect_equal(levels(result$status), "Live")
+})
+
+test_that("infer_value_type distinguishes date from datetime", {
+  expect_identical(metasalmon:::infer_value_type(as.Date("2026-01-01")), "date")
+  expect_identical(
+    metasalmon:::infer_value_type(as.POSIXct("2026-01-01 10:00:00", tz = "UTC")),
+    "datetime"
+  )
+})
+
+test_that("canonical tokens keep distinct values distinct", {
+  canon <- metasalmon:::.ms_canonical_value_tokens
+
+  # A fixed 15 significant digits collapsed these onto "0.1".
+  expect_false(identical(canon(0.1, "number"), canon(0.1 + 1e-17, "number")))
+  # ...while ordinary values stay readable, and 100000 never becomes 1e+05.
+  expect_identical(canon(0.1, "number"), "0.1")
+  expect_identical(canon(100000, "number"), "100000")
+
+  # Whole-second formatting collapsed distinct sub-second timestamps.
+  early <- as.POSIXct("2026-01-01 00:00:00.100", tz = "UTC")
+  late <- as.POSIXct("2026-01-01 00:00:00.900", tz = "UTC")
+  expect_false(identical(canon(early, "datetime"), canon(late, "datetime")))
+
+  # ...and %OS6 alone still collapsed anything finer than a microsecond.
+  fine_a <- as.POSIXct("1970-01-01 00:00:00.1000001", tz = "UTC")
+  fine_b <- as.POSIXct("1970-01-01 00:00:00.1000004", tz = "UTC")
+  expect_false(identical(canon(fine_a, "datetime"), canon(fine_b, "datetime")))
+
+  # Every realistic timestamp keeps its readable ISO form; only the
+  # finer-than-rendered case is widened.
+  expect_identical(
+    canon(as.POSIXct("2026-01-01 08:30:45.123456", tz = "UTC"), "datetime"),
+    "2026-01-01T08:30:45.123456Z"
+  )
+
+  # Both sides of the comparison must still agree for the same instant.
+  expect_identical(
+    canon("2026-01-01T08:30:00Z", "datetime"),
+    canon(as.POSIXct("2026-01-01 08:30:00", tz = "UTC"), "datetime")
+  )
+})
+
+test_that("numeric canonical tokens ignore the OutDec option", {
+  # `format()` defaults `decimal.mark` to `getOption("OutDec")`, so under a
+  # comma the canonical key became "0,10000000000000001" and the round-trip
+  # check never matched -- exact values were reported as beyond precision.
+  withr::local_options(OutDec = ",")
+
+  expect_identical(.ms_canonical_value_tokens(c("0.10", "1.5"), "number"), c("0.1", "1.5"))
+  expect_identical(.ms_canonical_value_tokens("100000", "integer"), "100000")
+  expect_identical(.ms_shortest_round_trip(1.5), "1.5")
+  expect_false(.ms_numeric_tokens_lossy("1.0000000000000002", 1.0000000000000002, TRUE))
+
+  # The datetime key appends an exact epoch through the same formatter.
+  expect_false(grepl(",", .ms_canonical_value_tokens("2020-01-01T00:00:00.5Z", "datetime"), fixed = TRUE))
+})

@@ -426,7 +426,7 @@
     methods[[column]] <- as.character(methods[[column]])
   }
   methods |>
-    dplyr::arrange(.data$dataset_id, .data$method_iri)
+    dplyr::arrange(.data$dataset_id, .data$method_iri, .locale = "C")
 }
 
 .ms_sdp_methods_validate_rows <- function(root, methods,

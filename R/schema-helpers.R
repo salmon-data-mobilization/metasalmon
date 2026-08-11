@@ -1,18 +1,34 @@
 .ms_schema_env <- new.env(parent = emptyenv())
 
-# These are the canonical, publicly resolvable SDP 0.2 contract identifiers.
-# Remote schema discovery still uses the raw-GitHub source below so callers can
-# opt into a branch or immutable commit through one base URL.
+# The SDP profile identity is DERIVED from the loaded schema bundle, never
+# asserted against a constant here: metasalmon must be able to follow an
+# upstream identifier change rather than fail on it. The constants below are
+# only the fallback for a bundle that omits the values, and they must agree
+# with the vendored files under inst/extdata.
 .ms_sdp_profile_url <- function() {
   "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
 }
 
+# Consumed by `R/sdp-methods.R` to build per-resource schema URLs. Still a
+# hardcoded contract value, so it carries the same drift risk that broke remote
+# schema loading before 0.2.0 — see backlog #62.
 .ms_sdp_public_schema_base <- function() {
   "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata"
 }
 
 .ms_sdp_public_rules_url <- function() {
   "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml"
+}
+
+# Accessors for the derived identity. Prefer `schema$profile_uri` /
+# `schema$rules_uri`, which `.ms_validate_sdp_schema()` attaches after checking
+# that the bundle agrees with itself.
+.ms_sdp_profile_uri <- function(schema = .ms_load_sdp_schema(quiet = TRUE)) {
+  schema$profile[["$id"]] %||% .ms_sdp_profile_url()
+}
+
+.ms_sdp_rules_uri <- function(schema = .ms_load_sdp_schema(quiet = TRUE)) {
+  schema$profile[["sdp:rules"]] %||% .ms_sdp_public_rules_url()
 }
 
 .ms_sdp_metadata_schema_paths <- function() {
@@ -37,8 +53,12 @@
   "schema/sdp.rules.yaml"
 }
 
+# Deliberately NOT pinned to `source = "vendored"`. Pinning made
+# `dataset.csv$spec_version` and `datapackage.json$sdp$specVersion` read
+# different bundles, so one package could carry two disagreeing versions.
+# `.ms_load_sdp_schema()` caches per session, so both now resolve identically.
 .ms_sdp_profile_version <- function() {
-  .ms_load_sdp_schema(source = "vendored", quiet = TRUE)$version
+  .ms_load_sdp_schema(quiet = TRUE)$version
 }
 
 .ms_default_sdp_schema_base_url <- function() {
@@ -69,6 +89,7 @@
       error = function(e) e
     )
     if (!inherits(remote_result, "error")) {
+      remote_result$source <- "remote"
       .ms_schema_env$schema <- remote_result
       .ms_schema_env$cache_key <- cache_key
       return(remote_result)
@@ -77,7 +98,7 @@
       cli::cli_abort(
         c(
           "Unable to load remote SDP Frictionless schema bundle.",
-          "x" = conditionMessage(remote_result)
+          "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
         )
       )
     }
@@ -85,14 +106,18 @@
       cli::cli_warn(
         c(
           "Unable to load remote SDP Frictionless schema bundle; using vendored schemas bundled with metasalmon.",
-          "x" = conditionMessage(remote_result)
+          "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
         )
       )
       .ms_schema_env$warned_remote_fallback <- TRUE
     }
   }
 
+  # The vendored bundle is cached under the requested source's key on purpose:
+  # once a session resolves an identity, every package it writes carries the
+  # same profile URI, even if the network recovers mid-script.
   schema <- .ms_load_vendored_sdp_schema()
+  schema$source <- "vendored"
   .ms_schema_env$schema <- schema
   .ms_schema_env$cache_key <- cache_key
   schema
@@ -177,16 +202,126 @@
     }
   }
 
-  if (is.null(schema$profile) || !identical(schema$profile[["$id"]], .ms_sdp_profile_url())) {
-    cli::cli_abort("Invalid SDP schema: profile $id does not match the SDP profile URL.")
+  # Identity is derived from the bundle, so the checks below are all internal
+  # self-consistency: the profile must agree with itself and with the rules
+  # file. Asserting equality against a constant here is what made an upstream
+  # identifier change unfollowable rather than merely noticeable.
+  profile_uri <- .ms_sdp_schema_uri(if (is.null(schema$profile)) NULL else schema$profile[["$id"]])
+  if (is.na(profile_uri)) {
+    cli::cli_abort("Invalid SDP schema: profile $id is missing or is not a single absolute URI.")
   }
-  if (is.null(schema$rules) || !identical(schema$rules$profile, .ms_sdp_profile_url())) {
-    cli::cli_abort("Invalid SDP schema: rules profile does not match the SDP profile URL.")
+  # Compare the normalised forms: two identifiers padded differently denote the
+  # same URI, and one padded consistently across all three would otherwise pass
+  # every check here and be emitted with its spaces intact.
+  if (!identical(.ms_sdp_schema_identifier(schema$profile$properties$profile$const), profile_uri)) {
+    cli::cli_abort(
+      "Invalid SDP schema: profile properties.profile.const does not match profile $id."
+    )
+  }
+  if (is.null(schema$rules) ||
+      !identical(.ms_sdp_schema_identifier(schema$rules$profile), profile_uri)) {
+    cli::cli_abort("Invalid SDP schema: rules profile does not match profile $id.")
+  }
+  # Each version must exist before comparing them: `identical(NULL, NULL)` is
+  # TRUE, so two absent versions would agree and the bundle would be accepted
+  # with no usable `version` at all -- writers then omit or emit an invalid
+  # `sdp.specVersion` instead of falling back to the vendored bundle.
+  schema_version <- .ms_sdp_schema_identifier(schema$rules$version)
+  profile_version <- .ms_sdp_schema_identifier(schema$profile[["sdp:version"]])
+  if (is.na(schema_version) || is.na(profile_version)) {
+    cli::cli_abort(
+      "Invalid SDP schema: profile sdp:version and rules version must each be a single non-empty string."
+    )
+  }
+  if (!identical(profile_version, schema_version)) {
+    cli::cli_abort("Invalid SDP schema: profile sdp:version does not match rules version.")
   }
 
   schema$metadata_tables <- .ms_schema_tables_from_frictionless(schema$metadata_schemas)
-  schema$version <- schema$rules$version
+  # The normalised forms are what consumers read and what reaches
+  # `datapackage.json`; the raw bundle values are never emitted.
+  schema$version <- schema_version
+  schema$profile_uri <- profile_uri
+  # `sdp:rules` is written straight into `datapackage.json$sdp$rules`, so a
+  # blank, whitespace-only, or non-scalar value has to reject the bundle rather
+  # than be emitted. Absent is fine -- that falls back to the vendored constant.
+  raw_rules_uri <- schema$profile[["sdp:rules"]]
+  rules_uri <- .ms_sdp_schema_uri(raw_rules_uri)
+  if (!is.null(raw_rules_uri) && is.na(rules_uri)) {
+    cli::cli_abort(
+      "Invalid SDP schema: profile sdp:rules must be a single absolute URI when present."
+    )
+  }
+  schema$rules_uri <- if (is.na(rules_uri)) .ms_sdp_public_rules_url() else rules_uri
   schema
+}
+
+# A schema identifier: a single non-blank string, returned in its trimmed form,
+# or `NA_character_` when it is anything else. Normalising at the boundary is
+# what makes the checks above sound -- testing `trimws(x)` for emptiness while
+# comparing and storing the raw `x` let a consistently padded
+# `" https://example.org/profile "` pass every consistency check and reach the
+# written `datapackage.json` with its spaces intact.
+.ms_sdp_schema_identifier <- function(value) {
+  if (!is.character(value) || length(value) != 1L || is.na(value) || !nzchar(trimws(value))) {
+    return(NA_character_)
+  }
+  trimws(value)
+}
+
+# The identifiers that are URIs rather than versions. Cardinality and blankness
+# are not enough for these: they are written verbatim into `datapackage.json`,
+# where Frictionless expects a dereferenceable `profile` URL, so a non-blank
+# scalar like `"not a URI"` was accepted and emitted instead of letting `auto`
+# fall back to the vendored bundle.
+#
+# Scheme-and-authority with no internal whitespace, per RFC 3986's scheme
+# grammar. Deliberately not restricted to http/https -- a `file://` bundle is a
+# legitimate offline arrangement, and the requirement here is that the value is
+# a usable absolute URI, not that it is fetchable over the network.
+.ms_sdp_schema_uri <- function(value) {
+  uri <- .ms_sdp_schema_identifier(value)
+  if (is.na(uri) || grepl("[[:space:]]", uri)) {
+    return(NA_character_)
+  }
+  # Split scheme / authority / remainder. Matching only `://` followed by
+  # anything accepted `https:///profile.json`, `https://?query`, and
+  # `https://#fragment`, all of which have no host and would be emitted as the
+  # profile URI.
+  parts <- regmatches(uri, regexec("^([A-Za-z][A-Za-z0-9+.-]*)://([^/?#]*)", uri))[[1]]
+  if (length(parts) == 0L) {
+    return(NA_character_)
+  }
+  # `file://` legitimately has an empty authority (`file:///path`); every other
+  # scheme written with `://` needs a host. A non-empty authority is not the
+  # same claim: `user@` and `:` are both non-empty and hostless.
+  if (identical(tolower(parts[[2]]), "file")) {
+    return(uri)
+  }
+  if (!.ms_uri_authority_has_host(parts[[3]])) {
+    return(NA_character_)
+  }
+  uri
+}
+
+# Whether an RFC 3986 authority (`[userinfo@]host[:port]`) carries a host.
+.ms_uri_authority_has_host <- function(authority) {
+  host <- sub("^.*@", "", authority)
+  host <- sub(":[0-9]*$", "", host)
+  if (!nzchar(host)) {
+    return(FALSE)
+  }
+  # An IP-literal is bracketed and is the one host form that may contain `:`.
+  if (grepl("^\\[[0-9A-Fa-f:.]+\\]$", host)) {
+    return(TRUE)
+  }
+  # reg-name: unreserved / pct-encoded / sub-delims. Anything else -- a stray
+  # `:`, a bracket, a slash -- means this is not a host.
+  if (!grepl("^[A-Za-z0-9._~%!$&'()*+,;=-]+$", host)) {
+    return(FALSE)
+  }
+  # A `%` that is not the start of a well-formed escape is not pct-encoding.
+  !grepl("%(?![0-9A-Fa-f]{2})", host, perl = TRUE)
 }
 
 .ms_schema_tables_from_frictionless <- function(metadata_schemas) {

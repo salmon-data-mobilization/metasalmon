@@ -606,7 +606,12 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
 #' @return Character string indicating the value type
 #' @noRd
 infer_value_type <- function(col) {
-  if (inherits(col, "Date") || inherits(col, "POSIXt")) {
+  # POSIXt first: it is the narrower test, and collapsing it to "date" meant
+  # "datetime" was never inferred and timestamps round-tripped as dates.
+  if (inherits(col, "POSIXt")) {
+    return("datetime")
+  }
+  if (inherits(col, "Date")) {
     return("date")
   }
   if (inherits(col, "logical")) {
@@ -625,6 +630,380 @@ infer_value_type <- function(col) {
     return("string")
   }
   "string"  # Default fallback
+}
+
+# The SDP `value_type` vocabulary, mirroring the enum in
+# inst/extdata/schema/frictionless/metadata/column_dictionary.schema.json.
+.ms_value_types <- function() {
+  c("string", "integer", "number", "boolean", "date", "datetime")
+}
+
+# `value_type` -> readr collector, for reading a data resource with the types
+# the dictionary declares instead of letting readr guess them.
+#
+# `col_double()` for "integer" as well as "number": `col_integer()` silently
+# NAs values past 2^31, and `.ms_canonical_value_tokens()` renders integrally
+# either way.
+.ms_value_type_col_spec <- function(value_type) {
+  value_type <- tolower(trimws(as.character(value_type %||% "")))
+  if (length(value_type) != 1L || is.na(value_type)) {
+    return(readr::col_character())
+  }
+  switch(
+    value_type,
+    integer  = readr::col_double(),
+    number   = readr::col_double(),
+    boolean  = readr::col_logical(),
+    date     = readr::col_date(),
+    datetime = readr::col_datetime(),
+    readr::col_character()
+  )
+}
+
+# One canonical text key per value, so a parsed data column and a raw
+# `codes.csv` token compare symmetrically. Without this, `"0.10"` read back as
+# a double stringifies to `"0.1"` and `100000` to `"1e+05"`, and a package
+# fails validation against its own codes list.
+#
+# Formatting is element-wise on purpose: format() picks a common significant
+# digit count across a vector, so a vector-wise call would render the same
+# value differently on the two sides.
+.ms_canonical_value_tokens <- function(x, value_type) {
+  value_type <- tolower(trimws(as.character(value_type %||% "")))
+  if (length(value_type) != 1L || is.na(value_type) || !nzchar(value_type)) {
+    value_type <- "string"
+  }
+
+  original <- trimws(as.character(x))
+  if (identical(value_type, "string") || !value_type %in% .ms_value_types()) {
+    return(original)
+  }
+
+  parsed <- if (is.character(x)) {
+    suppressWarnings(switch(
+      value_type,
+      integer  = readr::parse_double(original),
+      number   = readr::parse_double(original),
+      boolean  = readr::parse_logical(original),
+      date     = readr::parse_date(original),
+      datetime = readr::parse_datetime(original),
+      original
+    ))
+  } else {
+    x
+  }
+
+  rendered <- switch(
+    value_type,
+    integer  = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
+    number   = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
+    boolean  = ifelse(is.na(parsed), NA_character_, ifelse(parsed, "TRUE", "FALSE")),
+    date     = format(parsed, "%Y-%m-%d"),
+    # Microsecond ISO, widened only when that would lose information. %S alone
+    # collapses distinct sub-second timestamps; %OS6 alone still collapses
+    # anything finer than a microsecond. Appending the exact epoch value in that
+    # case keeps the key injective while every realistic timestamp -- whole
+    # seconds through microseconds -- keeps its readable form. Both sides run
+    # through this function, so the padded form stays symmetric.
+    datetime = vapply(parsed, .ms_format_datetime_token, character(1), USE.NAMES = FALSE),
+    original
+  )
+
+  # Unparseable input keeps its original text rather than collapsing to NA, so a
+  # genuine mismatch still reads as a mismatch.
+  rendered <- as.character(rendered)
+  unresolved <- is.na(rendered) & !is.na(original) & nzchar(original)
+  rendered[unresolved] <- original[unresolved]
+  rendered
+}
+
+# Significant decimal digits carried by a numeric token, ignoring sign, leading
+# zeros, trailing zeros, and any exponent. A double reliably round-trips 15
+# significant decimal digits, so a token carrying more may not survive the
+# conversion -- "0.10000000000000001" and "0.1" are the same double, and
+# "9007199254740993" and "9007199254740992" are too.
+.ms_numeric_token_precision <- function(tokens) {
+  digits <- sub("[eE].*$", "", trimws(as.character(tokens)))
+  digits <- gsub("[^0-9]", "", digits)
+  digits <- sub("^0+", "", digits)
+  digits <- sub("0+$", "", digits)
+  digits[is.na(tokens)] <- ""
+  nchar(digits)
+}
+
+# Shortest decimal representation that parses back to exactly this double,
+# in whatever notation R chooses (the normalizer expands scientific form).
+#
+# Neither obvious shortcut works. `format(scientific = FALSE)` expands the exact
+# binary value, so 1e308 renders as 100000000000000006097..., which differs from
+# a token that round-trips perfectly. `as.character()` is not reliably shortest
+# either -- it renders 1e-300 as "9.99999999999999e-301". Widening until the
+# value round-trips is the only dependable way to get the canonical form.
+.ms_shortest_round_trip <- function(value) {
+  if (is.na(value) || !is.finite(value)) {
+    return(as.character(value))
+  }
+  for (digits in 15:17) {
+    # `decimal.mark` defaults to `getOption("OutDec")`, so under
+    # `options(OutDec = ",")` this rendered "1,5" while `as.numeric()` below and
+    # the decimal normalizer both only understand a period -- no token ever
+    # matched, and exact values were reported as beyond precision.
+    token <- format(value, digits = digits, trim = TRUE, decimal.mark = ".")
+    if (identical(suppressWarnings(as.numeric(token)), value)) {
+      return(token)
+    }
+  }
+  token
+}
+
+# Canonical plain-decimal form of a numeric token, computed by string
+# manipulation so it is exact at any magnitude: "1e5" -> "100000",
+# "0.10" -> "0.1", "1e-400" -> "0.000...1". Used to compare a token against the
+# shortest round-trip rendering of the double it parsed to, which is the only
+# way to decide representability without proxies.
+.ms_normalize_decimal_token <- function(tokens) {
+  x <- trimws(as.character(tokens))
+  x[is.na(x)] <- ""
+  negative <- grepl("^-", x)
+  x <- sub("^[+-]", "", x)
+
+  has_exponent <- grepl("[eE]", x)
+  exponent <- rep(0, length(x))
+  exponent[has_exponent] <- suppressWarnings(as.numeric(
+    sub("^.*[eE]([+-]?[0-9]+)$", "\\1", x[has_exponent])
+  ))
+  exponent[is.na(exponent)] <- 0
+
+  mantissa <- sub("[eE].*$", "", x)
+  integer_part <- sub("[.].*$", "", mantissa)
+  fraction_part <- ifelse(grepl("[.]", mantissa), sub("^[^.]*[.]", "", mantissa), "")
+  digits <- paste0(integer_part, fraction_part)
+  point <- nchar(integer_part) + exponent
+
+  vapply(seq_along(digits), function(i) {
+    value <- digits[i]
+    at <- point[i]
+    if (!grepl("^[0-9]+$", value) || !nzchar(value)) {
+      return(NA_character_)
+    }
+    # Refuse to materialise an unbounded expansion. `1e1000000000` would ask
+    # `strrep()` for a billion zeros and take the process down; anything this
+    # far outside the double range is decided by magnitude before it gets here,
+    # and NA propagates as "not equal", so refusing is safe.
+    if (!is.finite(at) || abs(at) > 1000L || nchar(value) + abs(at) > 2000L) {
+      return(NA_character_)
+    }
+    if (at <= 0) {
+      value <- paste0(strrep("0", 1L - at), value)
+      at <- 1L
+    }
+    if (at > nchar(value)) {
+      value <- paste0(value, strrep("0", at - nchar(value)))
+    }
+    whole <- sub("^0+(?=.)", "", substr(value, 1L, at), perl = TRUE)
+    fraction <- sub("0+$", "", substr(value, at + 1L, nchar(value)))
+    if (!nzchar(gsub("0", "", paste0(whole, fraction)))) {
+      return("0")
+    }
+    out <- if (nzchar(fraction)) paste0(whole, ".", fraction) else whole
+    if (negative[i]) paste0("-", out) else out
+  }, character(1))
+}
+
+# Base-10 exponent of a numeric token, i.e. the `e` in `d.ddd x 10^e`. Returns
+# NA for a zero or non-numeric token, where magnitude is not meaningful.
+.ms_numeric_token_exponent <- function(tokens) {
+  x <- trimws(as.character(tokens))
+  x[is.na(x)] <- ""
+  x <- sub("^[+-]", "", x)
+
+  explicit <- suppressWarnings(as.numeric(
+    ifelse(grepl("[eE]", x), sub("^.*[eE]([+-]?[0-9]+)$", "\\1", x), "0")
+  ))
+  explicit[is.na(explicit)] <- 0
+
+  mantissa <- sub("[eE].*$", "", x)
+  integer_part <- sub("[.].*$", "", mantissa)
+  fraction_part <- ifelse(grepl("[.]", mantissa), sub("^[^.]*[.]", "", mantissa), "")
+
+  integer_significant <- sub("^0+", "", integer_part)
+  fraction_leading_zeros <- nchar(fraction_part) - nchar(sub("^0+", "", fraction_part))
+
+  exponent <- ifelse(
+    nzchar(integer_significant),
+    nchar(integer_significant) - 1L,
+    -(fraction_leading_zeros + 1L)
+  ) + explicit
+
+  # A token with no significant digit at all is zero; magnitude does not apply.
+  exponent[!nzchar(gsub("[^1-9]", "", mantissa))] <- NA_real_
+  exponent
+}
+
+# Which tokens do not survive conversion to a double, decided by comparing the
+# token against the shortest round-trip rendering of the value it parsed to.
+#
+# Digit counts and exponent bounds were proxies and misclassified in both
+# directions: `1234567890123456` has 16 digits but is below 2^53 and exactly
+# representable, while `9e308` has exponent 308 and still overflows. Only the
+# round trip settles it.
+#
+# The fast path exists because that comparison is per-value string work. Fifteen
+# significant digits inside a comfortable magnitude always round-trip, so
+# ordinary data never reaches the exact comparison.
+.ms_numeric_tokens_lossy <- function(tokens, values, present) {
+  lossy <- rep(FALSE, length(tokens))
+  digits <- .ms_numeric_token_precision(tokens)
+  exponent <- .ms_numeric_token_exponent(tokens)
+
+  # Fifteen significant digits always round-trip, but only below the exact
+  # integer range: `90071992547409900` has 15 significant digits once trailing
+  # zeros are dropped and still parses to 90071992547409904. So the fast path is
+  # bounded above by exponent 15 (|value| < 2^53) as well as below.
+  certain <- present & digits <= 15L &
+    (is.na(exponent) | (exponent <= 15L & exponent >= -290L))
+  suspect <- which(present & !certain)
+  if (length(suspect) == 0L) {
+    return(lossy)
+  }
+
+  token <- tokens[suspect]
+  parsed <- suppressWarnings(as.numeric(values[suspect]))
+  token_exponent <- exponent[suspect]
+  parsed_exponent <- ifelse(
+    is.finite(parsed) & parsed != 0,
+    floor(log10(abs(parsed))),
+    NA_real_
+  )
+
+  # Magnitude decides overflow, underflow, and clamping without touching the
+  # token text -- which matters, because an exponent like 1e9 must never reach
+  # the decimal normalizer.
+  magnitude_failed <- !is.finite(parsed) |
+    (parsed == 0 & !is.na(token_exponent)) |
+    (!is.na(token_exponent) & !is.na(parsed_exponent) & token_exponent != parsed_exponent)
+
+  # Beyond |exponent| 290 the token is treated as unrepresentable everywhere,
+  # rather than asking this platform whether it can verify the round trip.
+  #
+  # That question does not have a portable answer: near the subnormal boundary
+  # macOS cannot round-trip 1e-300 through any of 15..17 significant digits and
+  # `readr::parse_double()` disagrees with `as.numeric()`, while on Linux both
+  # agree and the value converts cleanly. Deciding per-platform would make the
+  # same package validate in one place and fail in another -- the exact class of
+  # defect this release exists to remove. A fixed band costs only that tokens
+  # like 1e308, which no salmon dataset carries, keep their exact text.
+  out_of_band <- !is.na(token_exponent) & abs(token_exponent) > 290L
+
+  # Inside the band, compare the token against the shortest rendering that
+  # parses back to the same double. printf/strtod are IEEE-correct for normal
+  # doubles, so this comparison is stable across platforms.
+  remaining <- which(!magnitude_failed & !out_of_band)
+  altered <- rep(FALSE, length(token))
+  if (length(remaining) > 0) {
+    rendered <- vapply(parsed[remaining], .ms_shortest_round_trip, character(1), USE.NAMES = FALSE)
+    altered[remaining] <- !.ms_decimal_tokens_equal(
+      .ms_normalize_decimal_token(token[remaining]),
+      .ms_normalize_decimal_token(rendered)
+    )
+  }
+
+  lossy[suspect] <- magnitude_failed | out_of_band | altered
+  lossy
+}
+
+# Element-wise decimal equality that treats NA as "not equal", so an
+# unnormalizable token is reported rather than silently accepted.
+.ms_decimal_tokens_equal <- function(left, right) {
+  !is.na(left) & !is.na(right) & left == right
+}
+
+# Significant fractional-second digits carried by a raw datetime token, with
+# trailing zeros ignored: "…00.100000000Z" carries 1, "…00.100000010Z" carries 8.
+.ms_datetime_token_precision <- function(tokens) {
+  tokens <- as.character(tokens)
+  fraction <- sub("^[^.]*(\\.([0-9]+))?.*$", "\\2", tokens)
+  fraction[is.na(tokens)] <- ""
+  nchar(sub("0+$", "", fraction))
+}
+
+# A datetime token is lossy when it carries more fractional precision than the
+# canonical key renders. POSIXct is a double, so the collector has already
+# discarded those digits by the time any value-level check could run -- the
+# token text is the only remaining evidence.
+# Spacing between adjacent representable doubles at a given magnitude. Fractional
+# seconds finer than this cannot survive, which is why a fixed digit threshold is
+# not enough: at year 2243 the spacing already exceeds one microsecond.
+.ms_double_spacing <- function(value) {
+  magnitude <- pmax(abs(value), .Machine$double.xmin)
+  2^(floor(log2(magnitude)) - 52L)
+}
+
+.ms_datetime_tokens_lossy <- function(tokens, values = NULL) {
+  precision <- .ms_datetime_token_precision(tokens)
+  # The canonical key renders six fractional digits, so anything finer is lost
+  # regardless of magnitude.
+  if (any(precision > 6L)) {
+    return(TRUE)
+  }
+  if (is.null(values)) {
+    return(FALSE)
+  }
+  seconds <- suppressWarnings(as.numeric(values))
+  carried <- precision > 0L & is.finite(seconds)
+  any(carried & 10^(-precision) < .ms_double_spacing(seconds))
+}
+
+# Non-empty tokens that will not parse. Needed because holding datetime columns
+# as text to preserve the token also bypasses readr's problem reporting.
+.ms_datetime_tokens_unparseable <- function(tokens) {
+  tokens <- as.character(tokens)
+  present <- !is.na(tokens) & nzchar(trimws(tokens))
+  parsed <- suppressWarnings(readr::parse_datetime(tokens))
+  present & is.na(parsed)
+}
+
+.ms_format_datetime_token <- function(value) {
+  if (is.na(value)) {
+    return(NA_character_)
+  }
+  token <- format(value, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
+  seconds <- as.numeric(value)
+  if (identical(seconds, round(seconds, 6))) {
+    return(token)
+  }
+  # Finer than the rendered precision: keep the readable prefix and disambiguate
+  # with the exact epoch value so two distinct instants cannot share a key.
+  paste0(token, "@", .ms_format_number_token(seconds))
+}
+
+.ms_format_number_token <- function(value) {
+  if (is.na(value)) {
+    return(NA_character_)
+  }
+  if (!is.finite(value)) {
+    return(as.character(value))
+  }
+  # Shortest representation that round-trips. A fixed 15 significant digits
+  # collapses doubles that differ beyond it (0.1 and 0.1 + 1e-17 both render as
+  # "0.1"), which would let an unlisted value match a listed one; a fixed 17
+  # never collides but renders 0.1 as "0.10000000000000001" in every error
+  # message. Widening only when needed keeps ordinary values readable and
+  # distinct values distinct.
+  #
+  # `scientific = FALSE` throughout: `as.character(100000)` is "1e+05", which is
+  # the exact defect this canonicalizer exists to prevent.
+  # `decimal.mark = "."` for the same reason as `scientific = FALSE`: this is a
+  # canonical comparison key and a machine-readable token, not display text, so
+  # it must not follow `getOption("OutDec")`. Under `OutDec = ","` the key for
+  # "0.10" became "0,10000000000000001" on both sides of every comparison.
+  for (digits in 15:17) {
+    token <- format(value, scientific = FALSE, trim = TRUE, digits = digits, decimal.mark = ".")
+    if (identical(suppressWarnings(as.numeric(token)), value)) {
+      return(token)
+    }
+  }
+  token
 }
 
 # Helper: tokenize column names for lightweight role inference heuristics.
@@ -878,7 +1257,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   }
 
   # Validate value types
-  valid_types <- c("string", "integer", "number", "boolean", "date", "datetime")
+  valid_types <- .ms_value_types()
   invalid_types <- !dict$value_type %in% valid_types & !is.na(dict$value_type)
   if (any(invalid_types)) {
     bad_rows <- which(invalid_types)
@@ -940,13 +1319,13 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       cli::cli_abort(c(
         "Validation cannot pass while REVIEW-prefixed IRI values remain.",
         "x" = "Resolve these fields before final validation:",
-        " " = paste("  ", review_summary, collapse = "\n")
+        " " = paste("  ", .ms_cli_escape(review_summary), collapse = "\n")
       ))
     } else if (identical(validation_message_mode, "review_ready")) {
       review_lines <- c(
         "Review-ready metadata includes draft {.val REVIEW:} IRIs.",
         "i" = "That is expected at this stage; keep or edit those values in {.file metadata/column_dictionary.csv} (and {.file metadata/tables.csv} if present), then remove the prefix only once each IRI is final.",
-        " " = paste("  ", review_summary, collapse = "\n")
+        " " = paste("  ", .ms_cli_escape(review_summary), collapse = "\n")
       )
       if (isTRUE(validation_semantics_seeded)) {
         review_lines <- c(
@@ -960,7 +1339,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       cli::cli_warn(c(
         "REVIEW-prefixed IRI values were found.",
         "i" = "These are draft semantic assignments written for human review.",
-        "x" = paste("  ", review_summary, collapse = "\n"),
+        "x" = paste("  ", .ms_cli_escape(review_summary), collapse = "\n"),
         "i" = "Before final validation or publication, replace or confirm the IRI and remove the REVIEW prefix."
       ))
     }
@@ -991,7 +1370,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         missing_lines <- c(
           "Some measurement semantic IRI fields are still blank in this review-ready package.",
           "i" = "That does not block review-ready creation, but those gaps must be filled before final validation or publication.",
-          " " = paste("  ", missing_summary, collapse = "\n"),
+          " " = paste("  ", .ms_cli_escape(missing_summary), collapse = "\n"),
           "i" = "Review {.file metadata/column_dictionary.csv} first (and {.file metadata/tables.csv} if present), then fill the remaining gaps there."
         )
         if (isTRUE(validation_semantics_seeded)) {
@@ -1010,7 +1389,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         cli::cli_warn(c(
           "Hey, you definitely should fill those out before publishing.",
           "x" = "Missing semantic fields for measurement columns:",
-          " " = paste("  ", missing_summary, collapse = "\n"),
+          " " = paste("  ", .ms_cli_escape(missing_summary), collapse = "\n"),
           "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
           "i" = "See {.url https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
         ))
@@ -1089,11 +1468,14 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
       "Dictionary contains multiple tables; applying to first: {.val {table_ids[1]}}"
     )
   }
-  table_id <- table_ids[1]
+  # Named `target_table`, not `table_id`: a local sharing a column's name is
+  # shadowed by the dplyr data mask, which silently turns the filter below into
+  # `table_id == table_id` and applies every table's rules.
+  target_table <- table_ids[1]
 
   # Filter dictionary for this table
   table_dict <- dict %>%
-    dplyr::filter(.data$table_id == table_id)
+    dplyr::filter(.data$table_id == .env$target_table)
 
   # Rename columns
   # Only rename columns that exist in df
@@ -1164,7 +1546,7 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
     if (!is.null(codes) && col_name %in% codes$column_name) {
       col_codes <- codes %>%
         dplyr::filter(
-          .data$table_id == table_id,
+          .data$table_id == .env$target_table,
           .data$column_name == col_name
         )
 

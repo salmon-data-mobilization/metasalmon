@@ -468,7 +468,7 @@
     }
     cli::cli_abort(c(
       "EML mapping sidecar failed the bundled JSON Schema.",
-      "x" = detail
+      "x" = .ms_cli_escape(detail)
     ))
   }
   invisible(TRUE)
@@ -1513,7 +1513,7 @@
     entity_type = entity_type,
     online_url = .ms_eml_knb_object_url(values$pid)
   ) |>
-    dplyr::arrange(.data$object_name, .data$pid)
+    dplyr::arrange(.data$object_name, .data$pid, .locale = "C")
 }
 
 .ms_eml_add_coverage <- function(dataset, dataset_meta, mapping) {
@@ -2851,7 +2851,7 @@ write_eml_from_sdp <- function(path,
   if (!isTRUE(eml_validation)) {
     cli::cli_abort(c(
       "Generated EML 2.2.0 failed schema validation.",
-      "x" = .ms_eml_validation_errors(eml_validation)
+      "x" = .ms_cli_escape(.ms_eml_validation_errors(eml_validation))
     ))
   }
 

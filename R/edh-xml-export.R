@@ -1183,7 +1183,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
   abort_lines <- c(
     "Can't rebuild EDH XML from a package that still contains review-state markers.",
     "i" = "Resolve placeholder dataset/table metadata and remove REVIEW-prefixed IRIs before rebuilding.",
-    stats::setNames(preview, rep("x", length(preview)))
+    .ms_cli_bullets(preview, "x")
   )
   if (nrow(issues) > length(preview)) {
     abort_lines <- c(

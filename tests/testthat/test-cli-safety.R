@@ -1,0 +1,227 @@
+test_that(".ms_cli_escape output is inert under cli interpolation", {
+  # `format_inline()` is the same glue machinery cli uses for condition
+  # messages, without bullets, wrapping, or glyphs — so this asserts the whole
+  # contract without coupling to cli's rendering.
+  cases <- c(
+    "a{b}c",
+    "{",
+    "}",
+    "{{",
+    "}}",
+    "{R.version.string}",
+    "{.file x}",
+    "col_{n",
+    "rate{pct",
+    "100% {x}",
+    "é{1}",
+    "plain text"
+  )
+
+  for (case in cases) {
+    expect_identical(cli::format_inline(.ms_cli_escape(case)), case)
+  }
+})
+
+test_that(".ms_cli_escape normalises NA and preserves length", {
+  expect_identical(.ms_cli_escape(c("a{", NA_character_)), c("a{{", ""))
+  expect_identical(.ms_cli_escape(character()), character())
+})
+
+test_that(".ms_cli_bullets keeps one escaped bullet per element", {
+  bullets <- .ms_cli_bullets(c("a{1}", "b{2}"), "x")
+
+  expect_identical(unname(bullets), c("a{{1}}", "b{{2}}"))
+  expect_identical(names(bullets), c("x", "x"))
+  expect_identical(.ms_cli_bullets(character()), character())
+
+  # A single "{preview}" element would collapse these into one comma-joined
+  # bullet, which is why escaping is used instead of value interpolation.
+  msg <- tryCatch(
+    cli::cli_abort(c("Header", .ms_cli_bullets(c("first{1}", "second{2}"), "x"))),
+    error = conditionMessage
+  )
+  expect_true(grepl("first{1}", msg, fixed = TRUE))
+  expect_true(grepl("second{2}", msg, fixed = TRUE))
+})
+
+test_that(".ms_redact_secrets removes common credential shapes", {
+  # Inside a header the whole value goes, not just the token after the scheme.
+  expect_identical(
+    .ms_redact_secrets("Authorization: Bearer abc123XYZ_-token"),
+    "Authorization=[REDACTED]"
+  )
+  expect_match(.ms_redact_secrets("key sk-abcdefghijklmnopqrstuvwxyz012345"), "[REDACTED KEY]", fixed = TRUE)
+  expect_match(.ms_redact_secrets("x-api-key: supersecretvalue"), "[REDACTED]", fixed = TRUE)
+  expect_match(
+    .ms_redact_secrets("token eyJhbGciOi.eyJzdWIiOi.SflKxwRJSM"),
+    "[REDACTED JWT]",
+    fixed = TRUE
+  )
+  # Ordinary validation text must survive untouched: redacting a column name
+  # would hide the value a user needs in order to fix it.
+  expect_identical(
+    .ms_redact_secrets("Row 3 field term_iri uses REVIEW:spawner_count"),
+    "Row 3 field term_iri uses REVIEW:spawner_count"
+  )
+})
+
+test_that("a provider error containing braces is inert in the fallback warning", {
+  # The canary is long, distinctive, and always present in base R, so it cannot
+  # collide with real message content.
+  hostile <- "provider failed: {R.version.string}"
+
+  assessments <- tibble::tibble(
+    llm_error = c(hostile, hostile),
+    llm_decision = c(NA_character_, NA_character_)
+  )
+
+  msg <- tryCatch(
+    metasalmon:::.ms_llm_abort_if_provider_wide_failure(
+      assessments,
+      config = list(provider = "openai", model = "test-model"),
+      deterministic_suggestions = tibble::tibble()
+    ),
+    condition = conditionMessage
+  )
+
+  expect_true(grepl("{R.version.string}", msg, fixed = TRUE))
+  expect_false(grepl(R.version.string, msg, fixed = TRUE))
+})
+
+test_that("a column name containing an unbalanced brace does not crash validation", {
+  # Before escaping, cli parsed the message template and this raised
+  # "Expecting '}'" instead of the intended review message.
+  dict <- test_dictionary(
+    dataset_id = "brace-1",
+    table_id = "obs",
+    column_name = "rate{pct",
+    column_label = "rate{pct",
+    column_role = "measurement",
+    value_type = "number",
+    term_iri = "REVIEW:rate"
+  )
+
+  msg <- tryCatch(
+    validate_dictionary(dict, require_iris = TRUE),
+    condition = conditionMessage
+  )
+
+  expect_false(grepl("Expecting '}'", msg, fixed = TRUE))
+  expect_true(grepl("rate{pct", msg, fixed = TRUE))
+})
+
+test_that("credential headers are redacted regardless of separator spacing", {
+  # A space after the colon is the conventional header form; an anchored `[=:]`
+  # missed it, leaving the whole secret in captured provider errors.
+  expect_identical(
+    .ms_redact_secrets("Authorization: Basic dXNlcjpwYXNzd29yZA=="),
+    "Authorization=[REDACTED]"
+  )
+  expect_identical(
+    .ms_redact_secrets("Cookie: session=abc123secret; other=2"),
+    "Cookie=[REDACTED]"
+  )
+  expect_identical(
+    .ms_redact_secrets("x-api-key: supersecretvalue"),
+    "x-api-key=[REDACTED]"
+  )
+  # No-space form still works, and is not double-substituted into gibberish.
+  expect_identical(
+    .ms_redact_secrets("authorization:Bearer tok123"),
+    "authorization=[REDACTED]"
+  )
+  # A bare scheme outside a header is still caught.
+  expect_match(.ms_redact_secrets("got Bearer abc123XYZ_-tok"), "Bearer [REDACTED]", fixed = TRUE)
+  # Ordinary validation text is untouched.
+  expect_identical(
+    .ms_redact_secrets("Row 3 field term_iri uses REVIEW:spawner_count"),
+    "Row 3 field term_iri uses REVIEW:spawner_count"
+  )
+})
+
+test_that("provider-prefixed credential variables are redacted", {
+  # The leading \b never matched these: `_` is a word character, so
+  # `OPENAI_API_KEY` has no boundary before `API_KEY` and the secret survived.
+  # These four are the variables metasalmon itself reads, so they are exactly
+  # what a captured provider error is most likely to contain.
+  expect_identical(
+    .ms_redact_secrets("OPENAI_API_KEY=opaque-secret-value"),
+    "OPENAI_API_KEY=[REDACTED]"
+  )
+  expect_identical(.ms_redact_secrets("OPENROUTER_API_KEY=abc123"), "OPENROUTER_API_KEY=[REDACTED]")
+  expect_identical(.ms_redact_secrets("CHAPI_API_KEY=xyz"), "CHAPI_API_KEY=[REDACTED]")
+  expect_identical(
+    .ms_redact_secrets("METASALMON_LLM_API_KEY=hunter2"),
+    "METASALMON_LLM_API_KEY=[REDACTED]"
+  )
+  expect_identical(.ms_redact_secrets("DATAONE_TOKEN=jwt"), "DATAONE_TOKEN=[REDACTED]")
+
+  # Header and bare forms still work, and ordinary validation text is untouched.
+  expect_identical(.ms_redact_secrets("Authorization: Basic dXNlcg=="), "Authorization=[REDACTED]")
+  expect_identical(
+    .ms_redact_secrets("Row 3 field term_iri uses REVIEW:spawner_count"),
+    "Row 3 field term_iri uses REVIEW:spawner_count"
+  )
+  expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
+})
+
+test_that("external text reaching cli through a forwarding wrapper is escaped", {
+  # A live injection that the guard's own allowlist hid: allowlisting
+  # `.ms_sdp_decomposition_abort()` meant its callers were never examined, and
+  # this one builds its message from caller-supplied column names. The wrappers
+  # are now treated as cli message functions so their callers are checked.
+  withr::local_envvar(c(MS_TEST_FAKE_SECRET = "SECRET-LEAKED-VALUE"))
+
+  hostile <- data.frame(a = 1)
+  names(hostile) <- '{Sys.getenv("MS_TEST_FAKE_SECRET")}'
+  msg <- tryCatch(
+    metasalmon:::.ms_sdp_decomposition_normalize_rows(hostile),
+    condition = conditionMessage
+  )
+
+  expect_false(grepl("SECRET-LEAKED-VALUE", msg, fixed = TRUE))
+  expect_true(grepl("Sys.getenv", msg, fixed = TRUE))
+
+  # And an unbalanced brace reports the column name rather than replacing the
+  # message with a parse error.
+  unbalanced <- data.frame(a = 1)
+  names(unbalanced) <- "rate{pct"
+  msg2 <- tryCatch(
+    metasalmon:::.ms_sdp_decomposition_normalize_rows(unbalanced),
+    condition = conditionMessage
+  )
+  expect_false(grepl("Expecting '}'", msg2, fixed = TRUE))
+  expect_true(grepl("rate{pct", msg2, fixed = TRUE))
+})
+
+test_that("bundle-review failures are redacted where they are captured", {
+  # The non-bundle path redacted at capture; the bundle path passed
+  # conditionMessage() straight through, so a credential echoed by a provider
+  # persisted in the exported semantic_llm_assessments attribute.
+  body_text <- paste(
+    deparse(body(metasalmon:::.ms_assess_one_semantic_bundle)),
+    collapse = "\n"
+  )
+  expect_false(grepl("reason <- conditionMessage", body_text, fixed = TRUE))
+  expect_true(grepl(".ms_redact_secrets(conditionMessage", body_text, fixed = TRUE))
+})
+
+test_that("credential keys are redacted in serialized JSON form", {
+  # A provider error body writes `"api_key":"secret"`, where the closing quote
+  # sits between the name and the colon — an unquoted pattern never matched.
+  expect_identical(
+    .ms_redact_secrets('{"api_key":"opaque-secret"}'),
+    '{"api_key=[REDACTED]'
+  )
+  expect_identical(
+    .ms_redact_secrets('{"access_token": "opaque-secret"}'),
+    '{"access_token=[REDACTED]'
+  )
+  expect_identical(
+    .ms_redact_secrets('{"OPENAI_API_KEY":"sk-x"}'),
+    '{"OPENAI_API_KEY=[REDACTED]'
+  )
+  # Unquoted and header forms still work, and validation text is untouched.
+  expect_identical(.ms_redact_secrets("api_key=plain"), "api_key=[REDACTED]")
+  expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
+})

@@ -688,3 +688,135 @@ test_that("submit_term_request_issues posts each request to its row-level ontolo
 
   expect_equal(called_repos, reqs$ontology_repo)
 })
+
+test_that("cancelling the submit prompt skips the request instead of posting it", {
+  # askYesNo() returns NA when the user cancels. Treating NA as "not FALSE"
+  # previously fell through to a live issue POST.
+  reqs <- tibble::tibble(
+    request_title = "Request new shared SMN term: escape rate",
+    request_body = "body",
+    request_scope = "smn",
+    ontology_repo = "salmon-data-mobilization/salmon-domain-ontology",
+    issue_labels = list(NULL)
+  )
+
+  called <- 0L
+  with_mocked_bindings(
+    askYesNo = function(...) NA,
+    .metasalmon_post_issue = function(...) {
+      called <<- called + 1L
+      list(number = 99L, html_url = "https://example.org/issues/99")
+    },
+    {
+      result <- submit_term_request_issues(
+        reqs,
+        dry_run = FALSE,
+        confirm = TRUE,
+        token = "test-token"
+      )
+      expect_equal(result$status, "skipped")
+      expect_true(is.na(result$issue_number))
+      expect_equal(called, 0L)
+    }
+  )
+})
+
+test_that("declining the submit prompt still skips, and accepting still posts", {
+  reqs <- tibble::tibble(
+    request_title = "Request new shared SMN term: escape rate",
+    request_body = "body",
+    request_scope = "smn",
+    ontology_repo = "salmon-data-mobilization/salmon-domain-ontology",
+    issue_labels = list(NULL)
+  )
+
+  with_mocked_bindings(
+    askYesNo = function(...) FALSE,
+    .metasalmon_post_issue = function(...) stop("must not be called"),
+    expect_equal(
+      submit_term_request_issues(reqs, dry_run = FALSE, confirm = TRUE, token = "t")$status,
+      "skipped"
+    )
+  )
+
+  with_mocked_bindings(
+    askYesNo = function(...) TRUE,
+    .metasalmon_post_issue = function(...) {
+      list(number = 7L, html_url = "https://example.org/issues/7")
+    },
+    expect_equal(
+      submit_term_request_issues(reqs, dry_run = FALSE, confirm = TRUE, token = "t")$issue_number,
+      7L
+    )
+  )
+})
+
+test_that("interactive routing renders candidate lines and survives a cancelled menu", {
+  # Two regressions in one path: the candidate/rationale lines previously used
+  # glue with cli `{.val {x}}` markup (a parse error on every input), and
+  # utils::menu() returning 0L produced `character(0)` on assignment.
+  gaps <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "escape_rate",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "term_iri",
+    target_row_key = "d1/t1/escape_rate",
+    dictionary_role = "term_iri",
+    search_query = "escape rate",
+    column_label = "Escape rate",
+    column_description = "Rate of escapement",
+    top_non_smn_source = "gbif",
+    top_non_smn_label = "Escape rate",
+    top_non_smn_iri = NA_character_,
+    top_non_smn_ontology = NA_character_,
+    placement_recommendation = "uncertain",
+    placement_rationale = "shared domain concept"
+  )
+
+  with_mocked_bindings(
+    menu = function(...) 0L,
+    {
+      out <- render_ontology_term_request(gaps, scope = "auto", ask = TRUE)
+      # Skip rows are retained for the caller to filter (see the `scope_overrides`
+      # docs); the regression is that this used to abort with
+      # "replacement has length zero" before producing anything.
+      expect_equal(nrow(out), 1L)
+      expect_equal(out$request_scope, "skip")
+    },
+    .package = "utils"
+  )
+})
+
+test_that("interactive routing honours a chosen menu option", {
+  gaps <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "escape_rate",
+    target_scope = "column",
+    target_sdp_file = "column_dictionary.csv",
+    target_sdp_field = "term_iri",
+    target_row_key = "d1/t1/escape_rate",
+    dictionary_role = "term_iri",
+    search_query = "escape rate",
+    column_label = "Escape rate",
+    column_description = "Rate of escapement",
+    top_non_smn_source = "gbif",
+    top_non_smn_label = "Escape rate",
+    top_non_smn_iri = NA_character_,
+    top_non_smn_ontology = NA_character_,
+    placement_recommendation = "uncertain",
+    placement_rationale = "shared domain concept"
+  )
+
+  with_mocked_bindings(
+    menu = function(...) 1L,
+    {
+      out <- render_ontology_term_request(gaps, scope = "auto", ask = TRUE)
+      expect_equal(nrow(out), 1L)
+      expect_equal(out$request_scope, "smn")
+    },
+    .package = "utils"
+  )
+})

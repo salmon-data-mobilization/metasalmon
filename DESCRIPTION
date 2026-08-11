@@ -1,7 +1,7 @@
 Package: metasalmon
 Type: Package
 Title: Utilities for Salmon Data Packages
-Version: 0.1.8
+Version: 0.2.0
 Authors@R: c(person(given = "Brett", family = "Johnson", role = c("aut", "cre"), email = "brettthomasjohnson@gmail.com"))
 Maintainer: Brett Johnson <brettthomasjohnson@gmail.com>
 Author: Brett Johnson [aut, cre], Codex [aut]
@@ -20,7 +20,7 @@ Imports:
     jsonlite,
     cli,
     rlang,
-    dplyr,
+    dplyr (>= 1.1.0),
     glue,
     purrr,
     httr,
@@ -32,7 +32,7 @@ Imports:
     usethis,
     xml2,
     yaml,
-    zip (== 3.0.1)
+    zip (>= 3.0.1)
 Suggests:
     testthat (>= 3.2.1),
     knitr,
