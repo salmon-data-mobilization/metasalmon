@@ -117,16 +117,20 @@ test_that("write_eml_from_sdp creates valid deterministic annotated EML 2.2.0", 
     ","
   )
 
+  # Both an R `NA` and an empty string are written as an empty field since
+  # 0.2.4, so neither carries a missing-value code. This previously asserted
+  # `code = "NA"` for `literal_missing`, which described bytes that were
+  # indistinguishable from the literal fisheries code "NA".
   literal_missing_attribute <- xml2::xml_find_first(
     doc,
     ".//*[local-name()='attribute'][*[local-name()='attributeName' and text()='literal_missing']]"
   )
-  expect_equal(
-    xml2::xml_text(xml2::xml_find_all(
+  expect_length(
+    xml2::xml_find_all(
       literal_missing_attribute,
-      "./*[local-name()='missingValueCode']/*[local-name()='code']"
-    )),
-    "NA"
+      "./*[local-name()='missingValueCode']"
+    ),
+    0L
   )
   blank_only_attribute <- xml2::xml_find_first(
     doc,
@@ -904,11 +908,15 @@ test_that("QUDT Individual abundance units map to the EML number unit", {
 test_that("EML missing-value declarations are checked against raw CSV tokens", {
   skip_if_not_installed("emld")
 
+  # Declaring a code the bytes do not contain still aborts. The fixture no
+  # longer ships a `missing_values` block to patch, so this supplies a complete
+  # entry rather than editing one field of an existing one.
   package_path <- make_eml_test_sdp(withr::local_tempdir())
   mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
   mapping <- yaml::read_yaml(mapping_path)
-  mapping$tables$counts$attributes$literal_missing$missing_values[[1]]$code <-
-    "MISSING"
+  mapping$tables$counts$attributes$literal_missing$missing_values <- list(
+    list(code = "MISSING", explanation = "Declared but never written.")
+  )
   yaml::write_yaml(mapping, mapping_path)
 
   expect_error(
@@ -916,16 +924,19 @@ test_that("EML missing-value declarations are checked against raw CSV tokens", {
     "declares missing-value code.*MISSING.*does not occur"
   )
 
+  # The "undeclared non-empty missing token" guard is now unreachable through
+  # the canonical writer rather than merely unexercised, so it is asserted as an
+  # invariant instead of as a failure. It fired when the writer emitted the
+  # two characters `NA` for a missing value; the canonical writer emits an empty
+  # field, so no non-empty token parses to missing and EML represents the
+  # absence directly. Dropping the declaration must therefore now *succeed*.
   package_path <- make_eml_test_sdp(withr::local_tempdir())
   mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
   mapping <- yaml::read_yaml(mapping_path)
   mapping$tables$counts$attributes$literal_missing$missing_values <- NULL
   yaml::write_yaml(mapping, mapping_path)
 
-  expect_error(
-    write_eml_from_sdp(package_path),
-    "undeclared non-empty missing token.*NA"
-  )
+  expect_no_error(write_eml_from_sdp(package_path))
 
   package_path <- make_eml_test_sdp(withr::local_tempdir())
   mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")

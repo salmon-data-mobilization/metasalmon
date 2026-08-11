@@ -3669,3 +3669,65 @@ test_that("a package root ending in .. is refused", {
   ok <- file.path(base, "outer", "inner", "..", "sibling")
   expect_silent(.ms_assert_managed_path_contained(ok, .ms_metadata_path(ok, "dataset.csv")))
 })
+
+test_that("literal NA and other adversarial tokens survive the round trip", {
+  # #54. readr's defaults disagree with each other: it *writes* a missing value
+  # as the two characters `NA` and *reads* `c("", "NA")` as missing. "NA" is a
+  # real fisheries gear code, so a literal "NA" and a genuinely missing value
+  # produced identical bytes -- the distinction was destroyed at write time,
+  # where no reader could recover it.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(
+    site = c("s1", "s2", "s3", "s4", "s5"),
+    gear_code = c("NA", "GN", NA, "N/A", "null"),
+    note = c("has, comma", "has \"quote\"", "line\nbreak", "näägel", "ok"),
+    stringsAsFactors = FALSE
+  )
+
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "na-rt", table_id = "obs", seed_semantics = FALSE
+  ))
+  back <- suppressMessages(read_salmon_datapackage(path))$resources[[1]]
+
+  # The literal tokens are values, not missingness.
+  expect_identical(back$gear_code[[1]], "NA")
+  expect_identical(back$gear_code[[4]], "N/A")
+  expect_identical(back$gear_code[[5]], "null")
+  # And a genuinely missing value is still missing.
+  expect_true(is.na(back$gear_code[[3]]))
+
+  # Quoting, embedded newlines, and non-ASCII survive unchanged.
+  expect_identical(back$note, data$note)
+
+  # The bytes themselves must distinguish the two cases -- asserting only on the
+  # parsed result would pass even if the reader were guessing.
+  bytes <- readLines(list.files(file.path(path, "data"), full.names = TRUE), warn = FALSE)
+  expect_true(any(grepl("^s1,NA,", bytes)))
+  expect_true(any(grepl("^s3,,", bytes)))
+})
+
+test_that("a literal NA code value validates against its codes.csv entry", {
+  # The comparison reads both sides through the same missing-value contract, so
+  # a declared code of "NA" must match the data rather than reading as absent.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(
+    site = c("s1", "s2"),
+    gear_code = c("NA", "GN"),
+    stringsAsFactors = FALSE
+  )
+
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "na-codes", table_id = "obs", seed_semantics = FALSE
+  ))
+  codes <- tibble::tibble(
+    dataset_id = "na-codes",
+    table_id = "obs",
+    column_name = "gear_code",
+    code_value = c("NA", "GN"),
+    code_label = c("Not applicable gear", "Gill net")
+  )
+  readr::write_csv(codes, .ms_metadata_path(path, "codes.csv"), na = "")
+
+  issues <- validate_salmon_datapackage(path)
+  expect_false(any(grepl("not listed in codes", issues$message %||% character(), ignore.case = TRUE)))
+})

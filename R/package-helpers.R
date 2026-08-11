@@ -177,7 +177,12 @@ write_salmon_datapackage <- function(
 
     file_path <- file.path(path, file_name)
     dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
-    readr::write_csv(resource_df, file_path)
+    # `na = ""` on both sides of the round trip, matching the metadata writers
+    # above. readr's default writes a missing value as the two characters `NA`,
+    # which is a real fisheries code -- so a literal "NA" and a genuinely
+    # missing value produced *identical bytes* and the distinction was destroyed
+    # at write time, where no reader could recover it.
+    readr::write_csv(resource_df, file_path, na = .ms_csv_na_token())
 
     table_dict <- dict %>%
       dplyr::filter(
@@ -2237,10 +2242,28 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   cli::cli_abort(cli_lines)
 }
 
+# The one missing-value token, used by every canonical read and write.
+#
+# It exists as a function rather than a literal because the contract is only
+# sound if both sides agree, and the two sides live in different files. readr's
+# defaults do not agree with each other: it *writes* `NA` and *reads*
+# `c("", "NA")`, so a value that is literally the string "NA" -- a real
+# fisheries gear code -- was written indistinguishably from a missing value and
+# read back as missing.
+#
+# The residual ambiguity is deliberate and unchanged from the metadata writers:
+# an empty string and a missing value share the empty field. CSV cannot
+# distinguish them without quoting conventions readers disagree about, and the
+# dictionary already treats blank as absent.
+.ms_csv_na_token <- function() {
+  ""
+}
+
 .ms_read_metadata_csv <- function(path) {
   readr::read_csv(
     path,
     col_types = readr::cols(.default = readr::col_character()),
+    na = .ms_csv_na_token(),
     show_col_types = FALSE
   )
 }
@@ -2330,6 +2353,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   raw <- readr::read_csv(
     file_path,
     col_types = list(.default = readr::col_character()),
+    na = .ms_csv_na_token(),
     show_col_types = FALSE
   )
   header <- names(raw)
