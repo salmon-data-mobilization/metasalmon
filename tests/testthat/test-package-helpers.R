@@ -2384,6 +2384,12 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
   dict <- fill_measurement_components(dict)
   dict$term_iri[dict$column_name == "escapement"] <- dict_term_iri
   dict$column_description[dict$column_name == "escapement"] <- escapement_column_description
+  # Every column gets a description, so the only defect in a given test is the
+  # one that test injects. Leaving `id` blank meant the metadata defaults filled
+  # it with a `MISSING DESCRIPTION:` placeholder, and once unresolved
+  # placeholders became a validation issue (#77) that fired first and masked the
+  # failure each test was actually asserting.
+  dict$column_description[dict$column_name == "id"] <- "Record identifier." 
 
   temp_dir <- tempfile("semantic-validation-")
   dir.create(temp_dir, recursive = TRUE)
@@ -3730,4 +3736,95 @@ test_that("a literal NA code value validates against its codes.csv entry", {
 
   issues <- validate_salmon_datapackage(path)
   expect_false(any(grepl("not listed in codes", issues$message %||% character(), ignore.case = TRUE)))
+})
+
+test_that("a declared primary key must actually identify a row", {
+  # #77. `primary_key` was declared in tables.csv and read by nothing that
+  # tested it, so a table could claim a key and ship duplicates — the tidy
+  # principle "each observation forms a row" going unchecked.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "a"), count = c(1L, 2L), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "pk", table_id = "obs", seed_semantics = FALSE
+  ))
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(path, "tables.csv"))
+  tables$primary_key <- "site"
+  readr::write_csv(tables, .ms_metadata_path(path, "tables.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "primary key"
+  )
+
+  # A key that does identify rows passes.
+  unique_data <- data.frame(site = c("a", "b"), count = c(1L, 2L), stringsAsFactors = FALSE)
+  ok <- file.path(withr::local_tempdir(), "ok")
+  suppressMessages(create_sdp(
+    unique_data, path = ok, dataset_id = "pk", table_id = "obs", seed_semantics = FALSE
+  ))
+  ok_tables <- .ms_read_metadata_csv(.ms_metadata_path(ok, "tables.csv"))
+  ok_tables$primary_key <- "site"
+  readr::write_csv(ok_tables, .ms_metadata_path(ok, "tables.csv"), na = "")
+  expect_no_error(suppressWarnings(suppressMessages(validate_salmon_datapackage(ok))))
+})
+
+test_that("value-like column names are reported as a warning, not an error", {
+  # The SDP may accept untidy data; it must stop implying it checked. So this is
+  # a warning by design — an error would reject packages the spec allows.
+  expect_identical(
+    .ms_detect_wide_columns(c("site", "1998", "1999", "2000")),
+    c("1998", "1999", "2000")
+  )
+  expect_identical(
+    .ms_detect_wide_columns(c("site", "count_1998", "count_1999", "count_2000")),
+    c("count_1998", "count_1999", "count_2000")
+  )
+
+  # Deliberately not flagged: fewer than three, and ordinary names.
+  expect_identical(.ms_detect_wide_columns(c("site", "x2", "x3")), character())
+  expect_identical(.ms_detect_wide_columns(c("site", "depth_1", "depth_2")), character())
+  expect_identical(.ms_detect_wide_columns(c("site", "year", "count")), character())
+})
+
+test_that("placeholders warn in the default mode and error under require_iris", {
+  # The strict path already reported these; the default path returned zero
+  # issues and said nothing, so a package could look clean while advertising in
+  # its own metadata that its metadata was missing. Only the warning half is
+  # new — the error channel stays `.ms_collect_review_placeholder_issues()`.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "b"), count = c(1L, 2L), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "ph", table_id = "obs", seed_semantics = FALSE
+  ))
+
+  expect_warning(
+    suppressMessages(validate_salmon_datapackage(path)),
+    "placeholder"
+  )
+  # The strict path is covered by "fails final validation on unresolved metadata
+  # placeholders" above; asserting it here would need a fixture with complete
+  # semantics, since a missing term_iri errors first.
+})
+
+test_that("a primary key with missing values is rejected", {
+  # A row whose key is NA has no identity, but `paste()` renders NA as the
+  # string "NA", which rarely collides — so the duplicate test alone passed it.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "b"), count = c(1L, 2L), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "pk", table_id = "obs", seed_semantics = FALSE
+  ))
+  data_file <- list.files(file.path(path, "data"), full.names = TRUE)[[1]]
+  readr::write_csv(
+    data.frame(site = c("a", NA), count = c(1L, 2L), stringsAsFactors = FALSE),
+    data_file, na = ""
+  )
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(path, "tables.csv"))
+  tables$primary_key <- "site"
+  readr::write_csv(tables, .ms_metadata_path(path, "tables.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "missing values"
+  )
 })

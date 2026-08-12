@@ -143,8 +143,10 @@ is_literal_message <- function(node, assignments = NULL, seen = character()) {
   # `(` belongs here, not in the brace-free list above: it returns its argument
   # unchanged, so `cli_abort((external))` was accepted while still evaluating
   # the external text as a template.
+  # `head()` joins `min`/`max`/`(` here rather than the brace-free list above: it
+  # returns a subset of its argument, so it is safe exactly when the argument is.
   if (head_name %in% c("c", "paste", "paste0", "sprintf", "setNames", "if", "ifelse", "{",
-                       "min", "max", "(")) {
+                       "min", "max", "(", "head")) {
     args <- as.list(node)[-1]
     # The condition of if/ifelse never reaches the message text.
     if (head_name %in% c("if", "ifelse") && length(args) >= 1L) {
