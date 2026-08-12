@@ -243,6 +243,42 @@ salmon-data-workshop/
 R users create the Fraser Coho project **during the NuSEDS exercise**, not during
 setup, and the personal-data project during the second pass.
 
+### Tidy data comes first — episode 1
+
+**The SDP works on tidy tables and nothing else, and the workshop must say so
+before anyone opens a file.** Today it does not, and the omission is expensive:
+a learner arriving with a matrix, a multi-sheet pivot report, or a NetCDF spends
+the session discovering the tool does not fit rather than learning what it does.
+
+Place it in episode 1, before the four metadata CSVs are previewed, and keep it
+short — three rules and one counter-example:
+
+- Each **variable** is a column.
+- Each **observation** is a row.
+- Each **observational unit** is a table.
+
+Then the counter-example that does the real work: a wide escapement sheet with a
+column per year (`1998`, `1999`, `2000`…) beside the tidy long form of the same
+data. Learners recognise their own files in the first one.
+
+State the boundary plainly, as the plan already requires elsewhere: one flat
+file, multiple CSVs, or rectangular tables from a workbook — **not** NetCDF,
+rasters, nested arrays, or presentation-formatted sheets. Say *why* rather than
+only *what*: the four metadata levels describe columns and rows, so a shape
+without columns and rows has nothing to describe.
+
+Two things to be honest about, because a learner will hit both:
+
+1. **The package does not currently check any of this** (backlog **#77** — no
+   `primary_key` uniqueness check, no wide-format detection). Until S8 lands,
+   tidiness is the learner's responsibility and the tool will not catch it.
+   Teaching it as enforced when it is not would be the worst outcome.
+2. **Reshaping is real work.** Point at `tidyr::pivot_longer()` for R learners
+   and the pandas equivalent for Python, in this episode rather than later.
+
+*Cross-check when S8 lands:* if #77's wide-format warning ships, this episode
+should demonstrate it, and the "not currently checked" caveat comes out.
+
 ### Content
 
 - Replace the legacy 30-row sample with the bundled
@@ -265,7 +301,7 @@ setup, and the personal-data project during the second pass.
   `create_sdp(..., overwrite = TRUE)` over reviewed metadata; use a fresh
   versioned output and preserve prior manifests.
 
-### REVIEW 7 — two content dependencies to resolve before writing episode 8
+### REVIEW 7 — three content dependencies to resolve before writing the episodes
 
 - **Episode 8 teaches validation as the final gate before deposit.** Roadmap S1
   exists because that gate under-checks: three error-severity rules are never
@@ -275,6 +311,12 @@ setup, and the personal-data project during the second pass.
 - **"Copy the latest SDP template"** needs a canonical, versioned template with a
   stable URL. That is `smn-data-pkg`, which S1 also touches. Name the exact
   source and version in the episode, not "the latest".
+- **Method annotation is blocked by roadmap S8.** The episodes cannot teach
+  where a method goes until the spec settles it. Under the draft model,
+  `column_dictionary.method_iri` disappears and method moves to the dataset, the
+  table, or a data column — so any episode written against today's layout would
+  teach a placement that is about to be removed. **Write the method content
+  after S8, not before.**
 
 ### Publication narrative
 

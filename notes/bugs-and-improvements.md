@@ -35,7 +35,7 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73,
-  #74 (feature), #75.
+  #74 (feature), #75, #76 (draft), #77.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
 
@@ -924,6 +924,88 @@ that deferring it made slice 1's own acceptance criteria unsatisfiable, since th
 marker it leaves blocks strict validation.
 
 
+
+**#77 The SDP asks for tidy data and enforces none of it.** The spec's value
+proposition is that a provider reshapes into tidy form — each variable a column,
+each observation a row, each observational unit a table. The package validates
+none of those. Reproduced on a two-row package with a deliberately duplicated
+key:
+
+```
+issues reported: 0 rows
+  duplicate primary key flagged?         FALSE
+  MISSING METADATA placeholder flagged?  FALSE
+  observation_unit shipped as            : "MISSING METADATA: describe the observation unit…"
+  primary_key shipped as                 : <NA>
+```
+
+Three distinct gaps:
+
+- **`primary_key` uniqueness is never checked.** Declared in `tables.csv` and
+  read by nothing that tests it. Already inside #49's scope; noted here for the
+  tidy framing.
+- **`MISSING METADATA:` placeholders ship unflagged.**
+  `.ms_apply_table_metadata_defaults()` (`R/dictionary-helpers.R:298`) fills a
+  blank `observation_unit` with `"MISSING METADATA: describe the observation
+  unit for table 'x'."`, and `validate_salmon_datapackage()` reports **zero
+  issues** for a package containing it. The same helper does this for `creator`,
+  `contact_name`, `contact_email`, and `license` (`:329`–`:344`). Only the EDH
+  export path checks for these markers. A package can therefore pass validation
+  while advertising, in its own metadata, that its metadata is missing.
+- **No wide-format detection.** Nothing notices value-like column names
+  (`count_2020`, `count_2021`) or a matrix pasted into a table.
+
+*Why it matters beyond hygiene:* the method model in
+`notes/sdp-method-model-draft.md` asks "is the method constant within each
+table?", which is only a sound question when a table is a coherent observational
+unit. Untidy input makes the question meaningless, so tidy enforcement is a
+foundation for that model rather than a separate nicety.
+
+*Gate:* a duplicate declared `primary_key` is an error; an unresolved
+`MISSING METADATA:` marker is at minimum a warning from
+`validate_salmon_datapackage()` and an error under `require_iris = TRUE`; and a
+wide-format heuristic emits a **warning**, never an error — the SDP may accept
+untidy data, it must simply stop implying it checked.
+
+**#76 SMN and gcdfo model methods in different styles — OPEN MODELLING
+QUESTION, not a defect.** Downgraded after review. The original entry claimed the
+mismatch made the SDP rule unsatisfiable and broke SOSA consumers. **Both claims
+were wrong**, and the correction is worth keeping because the reasoning was
+seductive:
+
+- *No package is unsatisfiable.* `validate_sdp_methods()`
+  (`R/sdp-methods.R:444-483`) checks only that `method_iri` is an absolute IRI
+  and is registered in `methods.csv`. It performs **no RDF typing check** — a
+  gcdfo IRI satisfies the implemented rule.
+- *No consumer breaks.* `sosa:usedProcedure` has `rdfs:range sosa:Procedure`, so
+  RDFS entailment **infers** its object to be a `sosa:Procedure`. Being
+  simultaneously a `skos:Concept` is not inconsistent — there is no disjointness
+  axiom between them. A reasoner gets a procedure.
+
+What is actually true, and still worth a decision:
+
+- SMN models methods as an **OWL class hierarchy** —
+  `smn:FishLengthMeasurementMethod rdfs:subClassOf sosa:Procedure` — while gcdfo
+  models the same domain as a **SKOS concept scheme** —
+  `gcdfo:AerialSurveyCount a skos:Concept ; skos:broader :EnumerationMethod`.
+- Those styles are not interchangeable for querying. `skos:broader` carries no
+  subclass entailment, so "is this a kind of aerial survey?" answers differently
+  depending on which vocabulary a term came from — and metasalmon routes between
+  both.
+- SMN's procedure hierarchy is **thin** (two `sosa:Procedure` subclasses) while
+  gcdfo holds the domain content, so the class-based route finds almost nothing.
+- metasalmon's NuSEDS crosswalks point at the gcdfo terms (23/25 enumeration,
+  22/27 estimate), making gcdfo the de facto source without that having been
+  decided.
+
+Separately: the rule's prose says `methods.csv` "records SOSA Procedure
+resources", and nothing checks it — but `methods_are_sosa_procedures` has **zero
+references in `R/`** and is one of the three never-executed rules. That gap
+belongs to **#48**, not here.
+
+*Gate:* a decision record naming which style is canonical for method concepts and
+how the other maps to it, then a consistency check in both repos. No code change
+is warranted until that decision exists — there is nothing broken to fix.
 
 **#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
 `dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and

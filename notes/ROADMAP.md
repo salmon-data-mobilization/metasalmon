@@ -65,22 +65,30 @@ ships without them, but says something it cannot fully back.
 
 ```
 #73 redaction ──► S3 KNB environments ──► S4 workshop rebuild
-                                              ▲   ▲
-S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
-S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+                                              ▲   ▲   ▲
+S8 method model + tidy ──► S6 sosa typing ────┘   │   │
+     (#77 → #76)                                  │   │
+S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
+S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
 ```
 
-Read that as: **S3's only hard blocker is #73**, and S1, S2, S5, S6 and S7 can
-all run in parallel with it. S4 is hard-blocked by S3 alone. S1 and S6 are
-dashed into S4 because episode 8 teaches validation as the final gate and the
-KNB documentation names vocabulary pinning as a precondition — the workshop can
-ship first, but only with its claims scoped to what is true.
+Read that as: **S3's only hard blocker is #73**, and S2, S5 and S7 run in
+parallel with everything. S4 is hard-blocked by S3, and hard-blocked by **S8**
+for its method-annotation content specifically — it cannot teach a placement the
+spec has not settled. S1 and S6's vocabulary pinning are dashed into S4 because
+episode 8 teaches validation as the final gate and the KNB documentation names
+pinning as a precondition; the workshop can ship first with those claims scoped.
 
-### S1 — One validation authority · #48, #49 · ~2 weeks · **next**
+**S8 is new and comes first among the spec streams.** It decides what the SDP
+means; S1 then makes the validator enforce it; S6's `sosa:Procedure` typing
+implements the vocabulary half. Doing S1 or S6 before S8 means building
+machinery around a model that is about to change.
+
+### S1 — One validation authority · #48, #49 · ~2 weeks
 
 **Execplan:** to be written. Findings: `2026-08-10-comprehensive-ecosystem-review.md`.
 
@@ -93,9 +101,15 @@ additionally checks no declared primary keys, no required-column nullability, no
 schema-required metadata fields, and reports success on corrupt
 SSSOM/decomposition artifacts.
 
-**Why first:** everything downstream borrows its credibility. S4 teaches
+**Why early:** everything downstream borrows its credibility. S4 teaches
 validation as the final gate before deposit; teaching that while the gate
 under-checks is the one sequencing mistake worth avoiding.
+
+**But run S8 first or alongside.** S1 builds the machinery that executes the
+rules the spec declares; S8 changes which rules it should declare. Building the
+machinery and then changing its inputs is the avoidable version of this work.
+`#49`'s primary-key check is also #77's first gap, so the two streams overlap by
+construction.
 
 **The change that stops it recurring:** a conformance test that fails when the
 spec declares a rule the implementation does not execute. Drive the checks from
@@ -141,6 +155,51 @@ Once the episodes execute against a released metasalmon, the workshop becomes an
 integration test of the public API — which is where stale-call bugs get caught
 for free. That is the strategic reason to finish it, beyond teaching.
 
+### S8 — Method model and tidy foundations · #76, #77 · ~1–2 weeks · spec + metasalmon
+
+**Draft model:** [`notes/sdp-method-model-draft.md`](sdp-method-model-draft.md)
+(for review; ports to `smn-data-pkg` once settled).
+
+Two coupled items that decide what the SDP *means* before S1 decides what it
+*checks*.
+
+**#77 — the SDP asks for tidy data and enforces none of it.** No `primary_key`
+uniqueness check, no wide-format detection, and `MISSING METADATA:` placeholders
+ship while `validate_salmon_datapackage()` reports zero issues. Verified on a
+package with a deliberately duplicated key.
+
+**#76 — the modelling styles.** SMN uses an OWL class hierarchy under
+`sosa:Procedure`; gcdfo uses a SKOS concept scheme; metasalmon's crosswalks point
+at gcdfo. **Not a defect** — nothing is unsatisfiable and RDFS range entailment
+means SOSA consumers are fine — but the two styles are not interchangeable for
+querying, and which is canonical has never been decided. See the backlog entry
+for the corrected framing.
+
+**The method placement model.** `column_dictionary.method_iri` is a category error:
+a method describes how an observation was made, not what was observed, which is
+why I-ADOPT has no method component and the SDP's own rule already says
+`methods.csv` holds SOSA Procedures "not I-ADOPT variable components". Three
+placements replace it — dataset protocol, table method, or a data column when it
+varies per row — and `methods.csv` becomes conditional like `codes.csv`, keeping
+the four-level model intact.
+
+**Order within the stream: #77 before #76.** The method model asks "is the method
+constant within each table?", which is only sound when a table is a coherent
+observational unit. Tidy enforcement is the foundation, not a sibling.
+
+**Why before S1:** S1 makes the validator execute the rules the spec declares.
+Settling *which* rules the spec should declare first avoids building the
+machinery and then changing its inputs. The two are close enough that running
+them together is reasonable; the wrong order is S1 alone.
+
+**Blocks:** the canonical-style decision in S6 (#76 — do not converge the
+vocabularies until this names the concepts), and the method-annotation teaching
+in S4.
+
+**Breaking.** `method_iri` appears in 13 `R/` files, 14 test files, and 5 schema
+files. Spec version bump with a migration that stops and reports rather than
+guessing when a table's measurement columns disagree.
+
 ### S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ~2–3 weeks · ships as 0.3.0
 
 **Execplan:** [`2026-08-11-r-native-review-and-editing.md`](exec-plans/2026-08-11-r-native-review-and-editing.md)
@@ -184,11 +243,21 @@ Ordered:
    cannot be satisfied today**, which makes it a soft dependency of S4.
 4. **Publish the `smn:`/`gcdfo:` boundary as data** — one SSSOM 1.1 mapping set
    for the ~55 name collisions, with CI checks in both repos.
-5. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
+5. **Method / protocol / procedure canonical style (#76).** **Blocked by S8**,
+   which names the concepts before either vocabulary is changed. An open
+   modelling question, not a defect — see the backlog entry. SMN types
+   methods as OWL subclasses of `sosa:Procedure`; gcdfo types the same domain as
+   `skos:Concept` with no `sosa:Procedure` anywhere; metasalmon's NuSEDS
+   crosswalks point at the gcdfo terms. The SDP rule requiring `methods.csv` to
+   hold SOSA Procedures therefore cannot be satisfied by the vocabulary the
+   package recommends. **Do not patch the typing in isolation** — the same pass
+   must settle whether method, protocol, and procedure are one class or three,
+   and at which abstraction level each belongs.
+6. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
    Highest-value single ontology change for real users: today term search finds
    nothing and falls back to `REVIEW:` placeholders.
-6. **Fix the I-ADOPT layer** so the decomposition pipeline has a conformant target.
-7. **Governance** — machine-readable licence in the TTL, real `CITATION.cff`,
+7. **Fix the I-ADOPT layer** so the decomposition pipeline has a conformant target.
+8. **Governance** — machine-readable licence in the TTL, real `CITATION.cff`,
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
 
