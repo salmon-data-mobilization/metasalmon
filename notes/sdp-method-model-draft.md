@@ -203,6 +203,34 @@ files, and 5 schema files**. This is a spec-version-bump change, not a patch.
 the current PNAMP nesting. Both are cited from general knowledge, not from a
 fetched copy.
 
+**Tidy data (Wickham 2014)** is the structural assumption underneath all of
+these, and worth citing directly in the spec: each variable a column, each
+observation a row, each observational unit a table.
+
+---
+
+## This model assumes tidy input, which is not enforced
+
+The decision procedure asks *"is the method constant within each table?"*. That
+question is only sound when a table is a coherent observational unit — one
+variable per column, one observation per row. Against a wide sheet with a column
+per year, or a matrix pasted into a CSV, it has no meaningful answer.
+
+**The SDP asks for tidy input and currently enforces none of it** (backlog
+**#77**, verified): `primary_key` uniqueness is never checked, there is no
+wide-format detection, and `MISSING METADATA:` placeholders ship while
+`validate_salmon_datapackage()` reports zero issues.
+
+So this model has a prerequisite, and it should be stated in the spec rather than
+assumed: **tidy structure is a precondition of the method placement rules, not an
+aspiration alongside them.** Sequence the tidy checks first.
+
+Note also the two senses of "observation" this creates a trap for. Tidy's
+*observational unit* is an entity — a site visit, a fish. SOSA's *Observation* is
+a single act producing a single result. This model uses the tidy sense
+throughout. A row may legitimately hold several SOSA observations; that is not a
+tidiness failure and must not be treated as one.
+
 ---
 
 ## Open questions for the alignment pass (#76)
@@ -218,3 +246,9 @@ fetched copy.
    to survive into RDF, it needs either subclassing or a different property.
 4. **What types a `methods.csv` row?** Whatever answers (1)–(3) must make
    `sosa:usedProcedure` resolve to something a SOSA-aware consumer can use.
+5. **Does the tidy precondition become normative?** If the spec states tidy
+   structure as a requirement rather than a recommendation, the validator has to
+   enforce it (#77) and some existing packages will stop conforming. If it stays
+   a recommendation, the method placement rules keep a soft edge. **Recommend
+   normative**, with the wide-format check as a warning rather than an error —
+   the SDP can accept untidy data, it should simply stop implying it checked.
