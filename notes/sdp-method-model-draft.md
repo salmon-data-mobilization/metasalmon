@@ -5,8 +5,8 @@
 
 This proposes the conceptual model the SDP currently implements but never
 states, and one breaking change that follows from it. It is the prerequisite for
-backlog **#76** (the SMN/gcdfo typing mismatch) — that typing cannot be fixed
-until this settles what is being typed.
+backlog **#76** (which modelling style is canonical for method concepts) — that
+decision needs this one to name the concepts first.
 
 ---
 
@@ -244,8 +244,14 @@ tidiness failure and must not be treated as one.
 3. **Does an analytical method need a different SOSA relation than
    `usedProcedure`?** SOSA folds derivation into Procedure. If the distinction is
    to survive into RDF, it needs either subclassing or a different property.
-4. **What types a `methods.csv` row?** Whatever answers (1)–(3) must make
-   `sosa:usedProcedure` resolve to something a SOSA-aware consumer can use.
+4. **Which modelling style is canonical for method concepts — OWL classes under
+   `sosa:Procedure` (SMN's) or a SKOS concept scheme (gcdfo's)?** Note this is
+   *not* a correctness problem: `sosa:usedProcedure` has `rdfs:range
+   sosa:Procedure`, so entailment already types the object correctly whichever
+   style supplies it, and `skos:Concept` is not disjoint from `sosa:Procedure`.
+   The question is queryability — `skos:broader` carries no subclass entailment,
+   so the same question answers differently depending on which vocabulary a term
+   came from.
 5. **Does the tidy precondition become normative?** If the spec states tidy
    structure as a requirement rather than a recommendation, the validator has to
    enforce it (#77) and some existing packages will stop conforming. If it stays

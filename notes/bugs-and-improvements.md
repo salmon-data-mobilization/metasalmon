@@ -967,45 +967,45 @@ foundation for that model rather than a separate nicety.
 wide-format heuristic emits a **warning**, never an error — the SDP may accept
 untidy data, it must simply stop implying it checked.
 
-**#76 SMN and gcdfo model methods incompatibly — DRAFT, needs a modelling
-alignment pass.** Verified, but deliberately **not** actionable as written: the
-fix requires a deeper gcdfo / SMN / PSC ontology and controlled-vocabulary
-alignment pass, not a patch. Recorded so the evidence is not lost.
+**#76 SMN and gcdfo model methods in different styles — OPEN MODELLING
+QUESTION, not a defect.** Downgraded after review. The original entry claimed the
+mismatch made the SDP rule unsatisfiable and broke SOSA consumers. **Both claims
+were wrong**, and the correction is worth keeping because the reasoning was
+seductive:
 
-SMN models methods as OWL classes under SOSA —
-`smn:FishLengthMeasurementMethod rdfs:subClassOf sosa:Procedure`, with
-observation classes carrying `owl:Restriction` on `sosa:usedProcedure`. gcdfo
-models the same domain as SKOS concepts —
-`gcdfo:AerialSurveyCount a skos:Concept ; skos:inScheme :EnumerationMethodScheme` —
-and contains **zero** occurrences of `sosa:Procedure`.
+- *No package is unsatisfiable.* `validate_sdp_methods()`
+  (`R/sdp-methods.R:444-483`) checks only that `method_iri` is an absolute IRI
+  and is registered in `methods.csv`. It performs **no RDF typing check** — a
+  gcdfo IRI satisfies the implemented rule.
+- *No consumer breaks.* `sosa:usedProcedure` has `rdfs:range sosa:Procedure`, so
+  RDFS entailment **infers** its object to be a `sosa:Procedure`. Being
+  simultaneously a `skos:Concept` is not inconsistent — there is no disjointness
+  axiom between them. A reasoner gets a procedure.
 
-metasalmon's own NuSEDS crosswalks point at the gcdfo terms (23/25 enumeration
-rows, 22/27 estimate rows carry a `gcdfo:` term). So the chain breaks: the SDP
-rule `methods_are_sosa_procedures` requires `metadata/methods.csv` to hold SOSA
-Procedure resources, `sosa:usedProcedure` has range `sosa:Procedure`, and the
-vocabulary the package itself recommends supplies concepts that are never typed
-as procedures. A SOSA-aware consumer following `usedProcedure` into gcdfo gets a
-`skos:Concept`, not a procedure.
+What is actually true, and still worth a decision:
 
-Same shape as the `sosa:Property` finding in the 2026-08-10 ecosystem review:
-correct-looking assertions that no reasoner can use. Note also that SMN carries
-only **two** `sosa:Procedure` subclass assertions, so the SOSA scaffolding is
-thin while all the domain content lives in gcdfo as SKOS — the two layers do not
-meet in the middle.
+- SMN models methods as an **OWL class hierarchy** —
+  `smn:FishLengthMeasurementMethod rdfs:subClassOf sosa:Procedure` — while gcdfo
+  models the same domain as a **SKOS concept scheme** —
+  `gcdfo:AerialSurveyCount a skos:Concept ; skos:broader :EnumerationMethod`.
+- Those styles are not interchangeable for querying. `skos:broader` carries no
+  subclass entailment, so "is this a kind of aerial survey?" answers differently
+  depending on which vocabulary a term came from — and metasalmon routes between
+  both.
+- SMN's procedure hierarchy is **thin** (two `sosa:Procedure` subclasses) while
+  gcdfo holds the domain content, so the class-based route finds almost nothing.
+- metasalmon's NuSEDS crosswalks point at the gcdfo terms (23/25 enumeration,
+  22/27 estimate), making gcdfo the de facto source without that having been
+  decided.
 
-*Scope note:* the alignment pass must also settle the vocabulary question raised
-alongside this — whether "method", "protocol", and "procedure" are one class or
-three, and at which abstraction level each belongs. Do not fix the typing in
-isolation; it would harden a distinction that has not been made yet.
+Separately: the rule's prose says `methods.csv` "records SOSA Procedure
+resources", and nothing checks it — but `methods_are_sosa_procedures` has **zero
+references in `R/`** and is one of the three never-executed rules. That gap
+belongs to **#48**, not here.
 
-*Now has a proposed answer to react to:* `notes/sdp-method-model-draft.md` drafts
-the conceptual model as an SDP spec section — three concepts, four placements,
-and a decision procedure — and lists the four questions the ontology pass must
-still settle. Its open questions 1–4 are the actual inputs to this item.
-
-*Gate:* a decision record naming the chosen model, then a SHACL or SPARQL check
-in both repos asserting every term reachable from a `methods.csv` `method_iri`
-is typed such that `sosa:usedProcedure` resolves. Belongs to roadmap **S6**.
+*Gate:* a decision record naming which style is canonical for method concepts and
+how the other maps to it, then a consistency check in both repos. No code change
+is warranted until that decision exists — there is nothing broken to fix.
 
 **#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
 `dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and

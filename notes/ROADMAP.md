@@ -168,7 +168,14 @@ uniqueness check, no wide-format detection, and `MISSING METADATA:` placeholders
 ship while `validate_salmon_datapackage()` reports zero issues. Verified on a
 package with a deliberately duplicated key.
 
-**#76 — the method model.** `column_dictionary.method_iri` is a category error:
+**#76 — the modelling styles.** SMN uses an OWL class hierarchy under
+`sosa:Procedure`; gcdfo uses a SKOS concept scheme; metasalmon's crosswalks point
+at gcdfo. **Not a defect** — nothing is unsatisfiable and RDFS range entailment
+means SOSA consumers are fine — but the two styles are not interchangeable for
+querying, and which is canonical has never been decided. See the backlog entry
+for the corrected framing.
+
+**The method placement model.** `column_dictionary.method_iri` is a category error:
 a method describes how an observation was made, not what was observed, which is
 why I-ADOPT has no method component and the SDP's own rule already says
 `methods.csv` holds SOSA Procedures "not I-ADOPT variable components". Three
@@ -185,9 +192,9 @@ Settling *which* rules the spec should declare first avoids building the
 machinery and then changing its inputs. The two are close enough that running
 them together is reasonable; the wrong order is S1 alone.
 
-**Blocks:** the `sosa:Procedure` typing fix in S6 (which is #76's ontology half —
-do not type the concepts until this names them), and the method-annotation
-teaching in S4.
+**Blocks:** the canonical-style decision in S6 (#76 — do not converge the
+vocabularies until this names the concepts), and the method-annotation teaching
+in S4.
 
 **Breaking.** `method_iri` appears in 13 `R/` files, 14 test files, and 5 schema
 files. Spec version bump with a migration that stops and reports rather than
@@ -236,8 +243,9 @@ Ordered:
    cannot be satisfied today**, which makes it a soft dependency of S4.
 4. **Publish the `smn:`/`gcdfo:` boundary as data** — one SSSOM 1.1 mapping set
    for the ~55 name collisions, with CI checks in both repos.
-5. **Method / protocol / procedure typing (#76's ontology half).** **Blocked by
-   S8**, which names the concepts before they are typed. SMN types
+5. **Method / protocol / procedure canonical style (#76).** **Blocked by S8**,
+   which names the concepts before either vocabulary is changed. An open
+   modelling question, not a defect — see the backlog entry. SMN types
    methods as OWL subclasses of `sosa:Procedure`; gcdfo types the same domain as
    `skos:Concept` with no `sosa:Procedure` anywhere; metasalmon's NuSEDS
    crosswalks point at the gcdfo terms. The SDP rule requiring `methods.csv` to
