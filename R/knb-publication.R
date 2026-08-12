@@ -1764,31 +1764,8 @@
   invisible(adapter)
 }
 
-.ms_knb_redact <- function(value) {
-  value <- as.character(value)
-  value <- gsub(
-    "(?i)Bearer[[:space:]]+[A-Za-z0-9._~-]+",
-    "Bearer [REDACTED]",
-    value,
-    perl = TRUE
-  )
-  value <- gsub(
-    "eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+",
-    "[REDACTED JWT]",
-    value,
-    perl = TRUE
-  )
-  value <- gsub(
-    "(?i)(dataone_token|authorization|cookie)[=:][^[:space:]]+",
-    "\\1=[REDACTED]",
-    value,
-    perl = TRUE
-  )
-  value
-}
-
 .ms_knb_abort_safe <- function(error) {
-  safe <- .ms_knb_redact(conditionMessage(error))
+  safe <- .ms_redact_secrets(conditionMessage(error))
   # `conditionMessage(error)` can contain braces supplied by an untrusted
   # remote service. Passing that text to cli as a template would evaluate the
   # brace expression after redaction. Abort with an ordinary, non-interpolating
@@ -2802,7 +2779,7 @@
       rlang::abort(
         paste0(
           "Live KNB adapter warning: ",
-          .ms_knb_redact(conditionMessage(warning))
+          .ms_redact_secrets(conditionMessage(warning))
         ),
         call = NULL
       )

@@ -57,8 +57,14 @@
       # actually reads -- `_` is a word character, so `OPENAI_API_KEY` has no
       # boundary before `API_KEY` and the secret survived untouched.
       "(?i)\\b((?:[A-Za-z0-9]+[_-])*",
-      "(?:authorization|proxy-authorization|set-cookie|cookie|dataone[_-]?token|",
-      "api[_-]?key|access[_-]?token|refresh[_-]?token|secret[_-]?key)",
+      "(?:authorization|proxy-authorization|set-cookie|cookie|",
+      "api[_-]?key|access[_-]?token|refresh[_-]?token|secret[_-]?key|",
+      # Any qualified token name -- `dataone_token`, `dataone_test_token`,
+      # `knb_staging_token`. Naming only `dataone[_-]?token` meant the staging
+      # credential leaked while the production one was redacted, which is the
+      # worst possible split. A prefix segment is required, so `token = 42` in
+      # ordinary prose is left alone.
+      "[a-z0-9]+[_-]token)",
       "[A-Za-z0-9_]*)",
       # An optional closing quote before the separator: a serialized error body
       # writes `\"api_key\":\"secret\"`, where the quote sits between the name and
