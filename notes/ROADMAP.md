@@ -38,6 +38,7 @@ Rules that keep this from decaying:
 | 0.2.2 | #45/#46/#50 — term-index caches actually prevent work (~8 CPU-hours → seconds); a failed vocabulary lookup no longer looks like an ontology gap |
 | 0.2.3 | #47/#51/#52 — dry runs can be re-planned; LLM providers retry and honour `Retry-After`; BioPortal key out of the URL |
 | 0.2.4 | #54 missing-value contract · #72 `ms_setup_github()` default · CI optional deps, non-C ambient collation, runnable examples |
+| 0.2.5 | #73 credential redaction covers qualified token names; the duplicate redactor is deleted |
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
@@ -64,7 +65,7 @@ Solid arrows are hard blocks. Dashed are *credibility* dependencies: the work
 ships without them, but says something it cannot fully back.
 
 ```
-#73 redaction ──► S3 KNB environments ──► S4 workshop rebuild
+#73 redaction ✔ ──► S3 KNB environments ──► S4 workshop rebuild
                                               ▲   ▲   ▲
 S8 method model + tidy ──► S6 sosa typing ────┘   │   │
      (#77 → #76)                                  │   │
@@ -76,7 +77,7 @@ S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
 ```
 
-Read that as: **S3's only hard blocker is #73**, and S2, S5 and S7 run in
+Read that as: **S3's only hard blocker, #73, shipped in 0.2.5** — and S2, S5 and S7 run in
 parallel with everything. S4 is hard-blocked by S3, and hard-blocked by **S8**
 for its method-annotation content specifically — it cannot teach a placement the
 spec has not settled. S1 and S6's vocabulary pinning are dashed into S4 because

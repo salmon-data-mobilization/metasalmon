@@ -34,7 +34,7 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #73,
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61,
   #74 (feature), #75, #76 (draft), #77.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
@@ -1007,18 +1007,22 @@ belongs to **#48**, not here.
 how the other maps to it, then a consistency check in both repos. No code change
 is warranted until that decision exists — there is nothing broken to fix.
 
-**#73 `.ms_redact_secrets()` misses qualified token names.** Verified:
-`dataone_token=SECRET` redacts, `dataone_test_token=SECRET` and
-`DATAONE_TEST_TOKEN=SECRET` do not. The alternation matches `dataone[_-]?token`
-and needs the whole qualified name to match. **Both redactors have the gap** —
-`.ms_redact_secrets()` (`R/cli-safety.R`) and the separate `.ms_knb_redact()`
-(`R/knb-publication.R:1767`), which is the one handling KNB adapter errors and
-warnings. Two implementations of one security contract is how the gap arose;
-consider converging them. Captured HTTP
+### Fixed in 0.2.5
+
+**#73 Credential redaction missed qualified token names.** `dataone_token`
+redacted; `dataone_test_token` and `DATAONE_TEST_TOKEN` did not. Captured HTTP
 and provider errors are stored in returned tibbles and written to CSV, so this
-is a leak at rest, not only on screen. **Blocking for the KNB staging work**,
-which proposes exactly `dataone_test_token` as the staging credential — see
-`notes/exec-plans/2026-08-11-knb-environments-and-workshop-rebuild.md` REVIEW 1.
+leaked at rest. Fixed structurally — any qualified `*_token` name is covered, so
+a credential named later needs no further patch — with a required prefix segment
+so `token = 42` in prose is untouched.
+
+**Both redactors are now one.** `.ms_knb_redact()` was a second implementation of
+the same contract and is deleted; its callers use `.ms_redact_secrets()`, which
+is strictly stronger (it also caught `x-api-key`, provider keys, and JSON forms
+the KNB version missed). Two implementations of one security contract is how the
+gap arose, and a test now asserts the deleted function stays deleted.
+
+Unblocks roadmap **S3**.
 
 **#53 `infer_column_role()` classifies 4-digit measurement columns as
 `temporal`**, removing them from the entire semantic pipeline.

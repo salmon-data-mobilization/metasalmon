@@ -225,3 +225,59 @@ test_that("credential keys are redacted in serialized JSON form", {
   expect_identical(.ms_redact_secrets("api_key=plain"), "api_key=[REDACTED]")
   expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
 })
+
+test_that("qualified token names are redacted, whatever the qualifier", {
+  # #73. The pattern named `dataone[_-]?token` specifically, so the production
+  # credential was redacted and the staging one was not — the worst possible
+  # split, since staging is the credential a first-time user is most likely to
+  # paste somewhere. Captured HTTP and provider errors are stored in returned
+  # tibbles and written to CSV, so this leaked at rest, not only on screen.
+  expect_identical(.ms_redact_secrets("dataone_token=SECRET"), "dataone_token=[REDACTED]")
+  expect_identical(.ms_redact_secrets("dataone_test_token=SECRET"), "dataone_test_token=[REDACTED]")
+  expect_identical(.ms_redact_secrets("DATAONE_TEST_TOKEN=SECRET"), "DATAONE_TEST_TOKEN=[REDACTED]")
+
+  # Not enumerated anywhere — the rule is structural, so a credential named
+  # later is covered without another patch.
+  expect_identical(.ms_redact_secrets("knb_staging_token=SECRET"), "knb_staging_token=[REDACTED]")
+
+  # A prefix segment is required, so ordinary prose survives.
+  expect_identical(.ms_redact_secrets("token = 42"), "token = 42")
+  expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
+})
+
+test_that("token-count diagnostics are not mistaken for credentials", {
+  # `token` must be the final name segment. Without that boundary the generic
+  # branch matched `max_token` inside `max_token_count`, and the rule then
+  # consumed the rest of the line — destroying exactly the numbers a user needs
+  # to fix a rejected LLM request. These fields are common in provider errors,
+  # and those errors are persisted into assessment output, so the damage would
+  # have been written to disk.
+  survives <- c(
+    "max_token_count = 4096",
+    "total_tokens = 1500",
+    "prompt_token_count=812",
+    "completion_tokens: 300",
+    "token_limit exceeded: 8192"
+  )
+  for (value in survives) {
+    expect_identical(.ms_redact_secrets(value), value, info = value)
+  }
+
+  # And the credentials this branch exists for are still caught.
+  expect_identical(.ms_redact_secrets("dataone_test_token=S"), "dataone_test_token=[REDACTED]")
+})
+
+test_that("KNB messages redact through the shared implementation", {
+  # There were two redactors for one security contract, and only one was fixed
+  # when the pattern was last extended — which is how #73 arose. The KNB one is
+  # deleted; its callers use `.ms_redact_secrets()`, which is strictly stronger.
+  body_text <- paste(deparse(body(metasalmon:::.ms_knb_abort_safe)), collapse = "\n")
+  expect_false(grepl(".ms_knb_redact", body_text, fixed = TRUE))
+  expect_true(grepl(".ms_redact_secrets", body_text, fixed = TRUE))
+  expect_false(exists(".ms_knb_redact", envir = asNamespace("metasalmon"), inherits = FALSE))
+
+  # The cases the deleted implementation missed.
+  expect_match(.ms_redact_secrets("x-api-key: supersecret"), "[REDACTED]", fixed = TRUE)
+  expect_match(.ms_redact_secrets("OPENAI_API_KEY=sk-abc"), "[REDACTED]", fixed = TRUE)
+  expect_match(.ms_redact_secrets('{"access_token":"v"}'), "[REDACTED]", fixed = TRUE)
+})

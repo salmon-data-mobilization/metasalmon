@@ -1,3 +1,28 @@
+metasalmon 0.2.5
+----------------
+
+### Fixes
+
+- Credential redaction covers qualified token names. The pattern named
+  `dataone_token` specifically, so the production credential was redacted and
+  `dataone_test_token` was not — the worst possible split, since staging is the
+  credential a first-time user is most likely to paste into a script. Captured
+  HTTP and provider errors are stored in returned tibbles and written to CSV, so
+  this leaked at rest, not only on screen. The rule is now structural — any
+  qualified `*_token` name — so a credential introduced later is covered without
+  another patch. `token` must be the final name segment, so token-count fields in
+  provider diagnostics (`max_token_count`, `total_tokens`) are left intact — they
+  carry the numbers needed to correct a rejected request.
+
+### Internal
+
+- The second redaction implementation is deleted. `.ms_knb_redact()` and
+  `.ms_redact_secrets()` were two implementations of one security contract, and
+  only one was extended when the pattern last changed — which is exactly how the
+  gap above arose. KNB messages now redact through the shared function, which is
+  strictly stronger: it also catches `x-api-key`, provider API keys, and
+  serialized JSON credential forms that the deleted version missed.
+
 metasalmon 0.2.4
 ----------------
 
