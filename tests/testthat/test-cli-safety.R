@@ -245,6 +245,28 @@ test_that("qualified token names are redacted, whatever the qualifier", {
   expect_identical(.ms_redact_secrets("column count = 42"), "column count = 42")
 })
 
+test_that("token-count diagnostics are not mistaken for credentials", {
+  # `token` must be the final name segment. Without that boundary the generic
+  # branch matched `max_token` inside `max_token_count`, and the rule then
+  # consumed the rest of the line — destroying exactly the numbers a user needs
+  # to fix a rejected LLM request. These fields are common in provider errors,
+  # and those errors are persisted into assessment output, so the damage would
+  # have been written to disk.
+  survives <- c(
+    "max_token_count = 4096",
+    "total_tokens = 1500",
+    "prompt_token_count=812",
+    "completion_tokens: 300",
+    "token_limit exceeded: 8192"
+  )
+  for (value in survives) {
+    expect_identical(.ms_redact_secrets(value), value, info = value)
+  }
+
+  # And the credentials this branch exists for are still caught.
+  expect_identical(.ms_redact_secrets("dataone_test_token=S"), "dataone_test_token=[REDACTED]")
+})
+
 test_that("KNB messages redact through the shared implementation", {
   # There were two redactors for one security contract, and only one was fixed
   # when the pattern was last extended — which is how #73 arose. The KNB one is

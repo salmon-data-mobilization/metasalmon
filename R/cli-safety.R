@@ -62,9 +62,21 @@
       # Any qualified token name -- `dataone_token`, `dataone_test_token`,
       # `knb_staging_token`. Naming only `dataone[_-]?token` meant the staging
       # credential leaked while the production one was redacted, which is the
-      # worst possible split. A prefix segment is required, so `token = 42` in
-      # ordinary prose is left alone.
-      "[a-z0-9]+[_-]token)",
+      # worst possible split.
+      #
+      # Two constraints keep this from eating diagnostics. A prefix segment is
+      # required, so `token = 42` in prose is left alone. And `token` must be the
+      # final name segment -- without the lookahead, `max_token_count = 4096`
+      # and `total_tokens = 1500` matched and the rule then consumed the rest of
+      # the line, destroying exactly the numbers a user needs to fix a rejected
+      # LLM request. Those fields are common in provider errors, and the errors
+      # are persisted into assessment output.
+      #
+      # The trade is deliberate: a credential whose name continues past `token`
+      # (`dataone_token_v2`) is not matched by this branch and would need
+      # naming explicitly. Missing an exotic name is recoverable; shredding a
+      # diagnostic is not.
+      "[a-z0-9]+[_-]token(?![A-Za-z0-9_]))",
       "[A-Za-z0-9_]*)",
       # An optional closing quote before the separator: a serialized error body
       # writes `\"api_key\":\"secret\"`, where the quote sits between the name and

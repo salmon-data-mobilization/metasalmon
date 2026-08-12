@@ -10,7 +10,9 @@ metasalmon 0.2.5
   HTTP and provider errors are stored in returned tibbles and written to CSV, so
   this leaked at rest, not only on screen. The rule is now structural — any
   qualified `*_token` name — so a credential introduced later is covered without
-  another patch.
+  another patch. `token` must be the final name segment, so token-count fields in
+  provider diagnostics (`max_token_count`, `total_tokens`) are left intact — they
+  carry the numbers needed to correct a rejected request.
 
 ### Internal
 
