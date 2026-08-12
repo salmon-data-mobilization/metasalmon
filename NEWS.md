@@ -1,3 +1,26 @@
+metasalmon 0.2.6
+----------------
+
+Roadmap S8, first half: the tidy-data foundations the method placement model
+depends on.
+
+### New
+
+- `validate_salmon_datapackage()` checks that a declared `primary_key` actually
+  identifies a row. The field was declared in `tables.csv` and read by nothing
+  that tested it, so a table could claim a key and ship duplicates — the tidy
+  principle "each observation forms a row" going unverified. Now an error.
+
+- Column names that look like data values are reported. Bare year-like names, or
+  a shared stem with numeric suffixes, across three or more columns. A
+  **warning, never an error**: the SDP may accept untidy data, it should simply
+  stop implying it checked. The message points at `tidyr::pivot_longer()`.
+
+- Unresolved `MISSING METADATA:` placeholders are surfaced in the default
+  validation mode. They were already errors under `require_iris = TRUE`; an
+  ordinary call returned zero issues and said nothing, so a package could look
+  clean while stating in its own metadata that its metadata was missing.
+
 metasalmon 0.2.5
 ----------------
 

@@ -1625,7 +1625,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     pkg$codes
   )
 
-  issues <- .ms_collect_package_validation_issues(pkg, path = path)
+  issues <- .ms_collect_package_validation_issues(pkg, path = path, require_iris = require_iris)
   if (nrow(issues) > 0) {
     .ms_abort_package_validation_issues(issues)
   }
@@ -1913,7 +1913,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   invisible(NULL)
 }
 
-.ms_collect_package_validation_issues <- function(pkg, path = NULL) {
+.ms_collect_package_validation_issues <- function(pkg, path = NULL, require_iris = FALSE) {
   issues <- list()
 
   add_issue <- function(issue_type, message, table_id = NA_character_, column_name = NA_character_, value = NA_character_) {
@@ -1946,6 +1946,25 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
   if (nrow(pkg$tables) == 0) {
     add_issue("tables", "No rows found in tables.csv.")
+  }
+
+  # Tidy check 3: surface `MISSING METADATA:` markers in the *default* mode.
+  #
+  # `.ms_collect_review_placeholder_issues()` already reports these as errors
+  # under `require_iris = TRUE`, so this adds only the missing half — an
+  # ordinary `validate_salmon_datapackage()` call previously returned zero
+  # issues and said nothing, letting a package look clean while stating in its
+  # own metadata that its metadata is missing. No issue is raised here; the
+  # strict path stays the single error channel.
+  if (!isTRUE(require_iris)) {
+    placeholder_fields <- .ms_collect_unresolved_placeholders(pkg)
+    if (length(placeholder_fields) > 0L) {
+      cli::cli_warn(c(
+        "{length(placeholder_fields)} metadata field{?s} still hold{?s/} a placeholder.",
+        "x" = paste(utils::head(.ms_cli_escape(placeholder_fields), 6L), collapse = ", "),
+        "i" = "Replace them before publication; {.code require_iris = TRUE} reports these as errors."
+      ))
+    }
   }
   if (nrow(pkg$dictionary) == 0) {
     add_issue("dictionary", "No rows found in column_dictionary.csv.")
@@ -2021,6 +2040,46 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
     data_df <- pkg$resources[[table_id]]
     data_cols <- names(data_df)
+
+    # Tidy check 1: a declared primary key must actually identify a row. The
+    # field was declared in tables.csv and read by nothing that tested it, so a
+    # table could claim a key and ship duplicates.
+    table_row <- pkg$tables[pkg$tables$table_id == table_id, , drop = FALSE]
+    if (nrow(table_row) == 1L && "primary_key" %in% names(table_row)) {
+      key_cols <- trimws(strsplit(.ms_scalar_text(table_row$primary_key), "[,;|]")[[1]])
+      key_cols <- key_cols[nzchar(key_cols)]
+      present <- intersect(key_cols, data_cols)
+      if (length(key_cols) > 0L && length(present) == length(key_cols)) {
+        key_values <- do.call(paste, c(lapply(data_df[present], as.character), sep = "\r"))
+        duplicated_keys <- unique(key_values[duplicated(key_values)])
+        if (length(duplicated_keys) > 0L) {
+          add_issue(
+            "tables",
+            sprintf(
+              "Table '%s' declares primary key '%s' but %d row%s repeat%s it.",
+              table_id,
+              paste(key_cols, collapse = ", "),
+              length(duplicated_keys),
+              ifelse(length(duplicated_keys) == 1, "", "s"),
+              ifelse(length(duplicated_keys) == 1, "s", "")
+            ),
+            table_id = table_id
+          )
+        }
+      }
+    }
+
+    # Tidy check 2: column names that look like values. A warning, never an
+    # issue -- the SDP accepts untidy data, it just stops implying it checked.
+    wide_cols <- .ms_detect_wide_columns(data_cols)
+    if (length(wide_cols) > 0L) {
+      cli::cli_warn(c(
+        "Table {.val {table_id}} may not be tidy: {length(wide_cols)} column name{?s} look{?s/} like data values.",
+        "x" = paste(utils::head(.ms_cli_escape(wide_cols), 6L), collapse = ", "),
+        "i" = "Tidy data puts each variable in a column and each observation in a row.",
+        "i" = "Consider {.code tidyr::pivot_longer()} before packaging."
+      ))
+    }
 
     # Values that do not satisfy their declared `value_type`. The reader keeps
     # the raw token rather than NA-ing it, so the code-value check below still
@@ -3368,6 +3427,67 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
   readme_path <- .ms_replace_create_output(file.path(pkg_path, "README-review.txt"))
   writeLines(lines, con = readme_path, useBytes = TRUE)
+}
+
+# Metadata fields still holding a `MISSING METADATA:` / `MISSING DESCRIPTION:`
+# marker. Reported as "file.field" so a user can go straight to the cell.
+.ms_collect_unresolved_placeholders <- function(pkg) {
+  found <- character()
+  targets <- list(
+    dataset.csv = pkg$dataset,
+    tables.csv = pkg$tables,
+    column_dictionary.csv = pkg$dictionary
+  )
+  for (file_name in names(targets)) {
+    tbl <- targets[[file_name]]
+    if (is.null(tbl) || nrow(tbl) == 0L) {
+      next
+    }
+    for (column in names(tbl)) {
+      hits <- vapply(tbl[[column]], .ms_is_review_placeholder, logical(1), USE.NAMES = FALSE)
+      if (any(hits)) {
+        found <- c(found, sprintf("%s$%s", file_name, column))
+      }
+    }
+  }
+  sort(unique(found), method = "radix")
+}
+
+# Column names that look like data values rather than variable names.
+#
+# Tidy data puts each variable in a column; a spreadsheet habit puts each *year*
+# in a column. The SDP's four metadata levels describe columns and rows, so a
+# table shaped like a matrix has nothing for them to describe — but the package
+# accepted it silently, which is worse than rejecting it.
+#
+# A heuristic, and deliberately a warning rather than an error: the SDP may
+# accept untidy data, it must simply stop implying it checked. Two shapes, both
+# needing at least three columns so an ordinary `x2`/`x3` pair is not flagged:
+# bare year-like names, and a shared prefix with numeric suffixes.
+.ms_detect_wide_columns <- function(column_names) {
+  names_chr <- trimws(as.character(column_names))
+  names_chr <- names_chr[!is.na(names_chr) & nzchar(names_chr)]
+  if (length(names_chr) < 3L) {
+    return(character())
+  }
+
+  year_like <- names_chr[grepl("^[Xx]?(19|20)[0-9]{2}$", names_chr)]
+  if (length(year_like) >= 3L) {
+    return(sort(year_like, method = "radix"))
+  }
+
+  # A shared stem with numeric tails: count_1998, count_1999, count_2000.
+  stems <- sub("[_.-]?[0-9]+$", "", names_chr)
+  numeric_tail <- stems != names_chr
+  if (!any(numeric_tail)) {
+    return(character())
+  }
+  tally <- table(stems[numeric_tail])
+  repeated <- names(tally)[tally >= 3L]
+  if (length(repeated) == 0L) {
+    return(character())
+  }
+  sort(names_chr[numeric_tail & stems %in% repeated], method = "radix")
 }
 
 .ms_is_review_placeholder <- function(x) {

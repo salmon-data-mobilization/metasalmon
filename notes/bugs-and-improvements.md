@@ -35,7 +35,7 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61,
-  #74 (feature), #75, #76 (draft), #77.
+  #74 (feature), #75, #76 (draft).
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
 
@@ -925,47 +925,29 @@ marker it leaves blocks strict validation.
 
 
 
-**#77 The SDP asks for tidy data and enforces none of it.** The spec's value
-proposition is that a provider reshapes into tidy form — each variable a column,
-each observation a row, each observational unit a table. The package validates
-none of those. Reproduced on a two-row package with a deliberately duplicated
-key:
+**#77 The SDP asks for tidy data and enforced almost none of it. FIXED in
+0.2.6, with one claim corrected.** The original entry said `MISSING METADATA:`
+placeholders ship unflagged. **That was only half true**:
+`.ms_collect_review_placeholder_issues()` already reported them as errors under
+`require_iris = TRUE`. What was missing was the *default* mode, which returned
+zero issues and said nothing — so a package looked clean while stating in its own
+metadata that its metadata was missing. Only that half was added, as a warning;
+the strict path remains the single error channel rather than gaining a duplicate.
 
-```
-issues reported: 0 rows
-  duplicate primary key flagged?         FALSE
-  MISSING METADATA placeholder flagged?  FALSE
-  observation_unit shipped as            : "MISSING METADATA: describe the observation unit…"
-  primary_key shipped as                 : <NA>
-```
+The other two gaps were real as stated and are now closed:
 
-Three distinct gaps:
+- **`primary_key` uniqueness is checked.** It was declared in `tables.csv` and
+  read by nothing that tested it, so a table could claim a key and ship
+  duplicates — "each observation forms a row" going unverified. Now an error.
+- **Value-like column names are detected.** Bare year-like names, or a shared
+  stem with numeric suffixes, in three or more columns. A **warning, never an
+  error**: the SDP may accept untidy data, it must simply stop implying it
+  checked.
 
-- **`primary_key` uniqueness is never checked.** Declared in `tables.csv` and
-  read by nothing that tests it. Already inside #49's scope; noted here for the
-  tidy framing.
-- **`MISSING METADATA:` placeholders ship unflagged.**
-  `.ms_apply_table_metadata_defaults()` (`R/dictionary-helpers.R:298`) fills a
-  blank `observation_unit` with `"MISSING METADATA: describe the observation
-  unit for table 'x'."`, and `validate_salmon_datapackage()` reports **zero
-  issues** for a package containing it. The same helper does this for `creator`,
-  `contact_name`, `contact_email`, and `license` (`:329`–`:344`). Only the EDH
-  export path checks for these markers. A package can therefore pass validation
-  while advertising, in its own metadata, that its metadata is missing.
-- **No wide-format detection.** Nothing notices value-like column names
-  (`count_2020`, `count_2021`) or a matrix pasted into a table.
-
-*Why it matters beyond hygiene:* the method model in
-`notes/sdp-method-model-draft.md` asks "is the method constant within each
-table?", which is only a sound question when a table is a coherent observational
-unit. Untidy input makes the question meaningless, so tidy enforcement is a
-foundation for that model rather than a separate nicety.
-
-*Gate:* a duplicate declared `primary_key` is an error; an unresolved
-`MISSING METADATA:` marker is at minimum a warning from
-`validate_salmon_datapackage()` and an error under `require_iris = TRUE`; and a
-wide-format heuristic emits a **warning**, never an error — the SDP may accept
-untidy data, it must simply stop implying it checked.
+*Foundation for the method model.* Its placement rule asks "is the method
+constant within each table?", which is only sound when a table is a coherent
+observational unit — which is why #77 was sequenced ahead of the method work in
+roadmap S8.
 
 **#76 SMN and gcdfo model methods in different styles — OPEN MODELLING
 QUESTION, not a defect.** Downgraded after review. The original entry claimed the

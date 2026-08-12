@@ -39,6 +39,7 @@ Rules that keep this from decaying:
 | 0.2.3 | #47/#51/#52 — dry runs can be re-planned; LLM providers retry and honour `Retry-After`; BioPortal key out of the URL |
 | 0.2.4 | #54 missing-value contract · #72 `ms_setup_github()` default · CI optional deps, non-C ambient collation, runnable examples |
 | 0.2.5 | #73 credential redaction covers qualified token names; the duplicate redactor is deleted |
+| 0.2.6 | #77 tidy foundations — primary-key uniqueness, wide-format warning, placeholders surfaced in default mode |
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
@@ -164,7 +165,7 @@ for free. That is the strategic reason to finish it, beyond teaching.
 Two coupled items that decide what the SDP *means* before S1 decides what it
 *checks*.
 
-**#77 — the SDP asks for tidy data and enforces none of it.** No `primary_key`
+**#77 — the SDP asks for tidy data and enforces none of it. Shipped in 0.2.6.** No `primary_key`
 uniqueness check, no wide-format detection, and `MISSING METADATA:` placeholders
 ship while `validate_salmon_datapackage()` reports zero issues. Verified on a
 package with a deliberately duplicated key.
@@ -184,7 +185,7 @@ placements replace it — dataset protocol, table method, or a data column when 
 varies per row — and `methods.csv` becomes conditional like `codes.csv`, keeping
 the four-level model intact.
 
-**Order within the stream: #77 before #76.** The method model asks "is the method
+**Order within the stream: #77 (done) before #76.** The method model asks "is the method
 constant within each table?", which is only sound when a table is a coherent
 observational unit. Tidy enforcement is the foundation, not a sibling.
 
