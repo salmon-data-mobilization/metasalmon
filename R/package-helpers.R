@@ -2050,6 +2050,30 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       key_cols <- key_cols[nzchar(key_cols)]
       present <- intersect(key_cols, data_cols)
       if (length(key_cols) > 0L && length(present) == length(key_cols)) {
+        # A missing component is as fatal as a duplicate: the row has no
+        # identity at all. Checked separately because `paste()` turns NA into
+        # the string "NA", which is unlikely to collide and so would pass the
+        # duplicate test while identifying nothing.
+        missing_key <- vapply(
+          data_df[present],
+          function(column) any(is.na(column) | !nzchar(trimws(as.character(column)))),
+          logical(1)
+        )
+        if (any(missing_key)) {
+          add_issue(
+            "tables",
+            sprintf(
+              "Table '%s' declares primary key '%s' but column%s %s contain%s missing values.",
+              table_id,
+              paste(key_cols, collapse = ", "),
+              ifelse(sum(missing_key) == 1, "", "s"),
+              paste(present[missing_key], collapse = ", "),
+              ifelse(sum(missing_key) == 1, "s", "")
+            ),
+            table_id = table_id
+          )
+        }
+
         key_values <- do.call(paste, c(lapply(data_df[present], as.character), sep = "\r"))
         duplicated_keys <- unique(key_values[duplicated(key_values)])
         if (length(duplicated_keys) > 0L) {
@@ -3436,7 +3460,11 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   targets <- list(
     dataset.csv = pkg$dataset,
     tables.csv = pkg$tables,
-    column_dictionary.csv = pkg$dictionary
+    column_dictionary.csv = pkg$dictionary,
+    # The strict path scans codes for the same markers, so omitting it here
+    # would have left part of the default-mode behaviour silently conditional
+    # on `require_iris`.
+    codes.csv = pkg$codes
   )
   for (file_name in names(targets)) {
     tbl <- targets[[file_name]]

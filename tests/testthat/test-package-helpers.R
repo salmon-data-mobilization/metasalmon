@@ -3805,3 +3805,26 @@ test_that("placeholders warn in the default mode and error under require_iris", 
   # placeholders" above; asserting it here would need a fixture with complete
   # semantics, since a missing term_iri errors first.
 })
+
+test_that("a primary key with missing values is rejected", {
+  # A row whose key is NA has no identity, but `paste()` renders NA as the
+  # string "NA", which rarely collides — so the duplicate test alone passed it.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "b"), count = c(1L, 2L), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "pk", table_id = "obs", seed_semantics = FALSE
+  ))
+  data_file <- list.files(file.path(path, "data"), full.names = TRUE)[[1]]
+  readr::write_csv(
+    data.frame(site = c("a", NA), count = c(1L, 2L), stringsAsFactors = FALSE),
+    data_file, na = ""
+  )
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(path, "tables.csv"))
+  tables$primary_key <- "site"
+  readr::write_csv(tables, .ms_metadata_path(path, "tables.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "missing values"
+  )
+})
