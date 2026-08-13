@@ -69,17 +69,38 @@ what a deterministic checker consumes.
 - [x] Step 0 deliverables: this execplan; roadmap S9 added and S6 re-scoped;
   OKF knowledge bundle seeded in `salmon-domain-ontology` with `AGENTS.md`
   pointer (2026-08-12).
-- [~] **Step 1 — smn conventions + metamodel split**: semantics half done
+- [x] **Step 1a — smn conventions + metamodel split (semantics)**: **merged**
   (salmon-domain-ontology PR #21, 2026-08-13 — alignment-upper imports the
-  W3C SOSA–PROV alignment, module-06 equivalences demoted, axiom-light
-  views with iop: bridges, EscapementEstimate rename, CONVENTIONS §5b);
-  tooling half (ELK CI gate, check scripts, Makefile hygiene, 08/09 drift
-  gate, w3id views note) is the follow-up PR.
-- [ ] **Step 2 — methods-as-SKOS across the trio** (couples with roadmap S8).
+  W3C SOSA–PROV alignment with vendored offline closure, module-06
+  equivalences demoted, axiom-light views with iop: bridges,
+  EscapementEstimate rename + migration CSVs, CONVENTIONS §5b, catalogs).
+- [ ] **Step 1b — smn tooling and CI gates** (open; carries step 1's
+  remaining acceptance criteria): ELK CI gate, the §5b check scripts
+  (foreign-subject + tier-mix, prototyped and passing as one-offs), pyshacl
+  wiring for the new shapes file, Makefile hygiene (verify-mutates-source,
+  08/09 drift gate, phantom backfill markers in fragments), w3id views note.
+- [x] **Step 2 — methods-as-SKOS, smn side** (salmon-domain-ontology PR
+  #22, merged 2026-08-13): six method classes → `smn:MethodScheme` concepts,
+  IRIs unchanged, instance-typed `sosa:Procedure`; restrictions retargeted
+  with the enumeration constraint preserved in
+  `ontology/shapes/method-shapes.ttl` (smn's first SHACL file,
+  behaviourally tested). **The cross-repo pun is resolved** — zero
+  dual-typed IRIs in the flat closure. **Formally re-scoped 2026-08-13:**
+  step 2's original cross-repo acceptance items are reassigned — gcdfo
+  follow-through → step 3, the PSC `sdo-alignment-gap.md` update → step 4,
+  and the metasalmon crosswalk retarget + green suite → the S8/metasalmon
+  breaking-change work that consumes this vocabulary.
+- [x] **Step 5 — statistical-modifier scheme** (same PR):
+  `smn:StatisticalModifierScheme`, seven concepts instance-typed
+  `iadopt:StatisticalModifier`, advisory ODM2 links; the SDP
+  `statistical_modifier_iri` column resolves here.
 - [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
-- [ ] **Step 4 — PSC CV anchoring to smn.**
-- [ ] **Step 5 — statistical-modifier scheme** (independent:
-  runs after step 1, before or alongside S8, which consumes it).
+  Includes the gcdfo-side follow-through of step 2: retire gcdfo's local
+  re-declaration of `smn:EnumerationMethod` if redundant, coordinate the
+  `gcdfo:*CountMeasurement` family with the `EscapementEstimate` rename,
+  and settle `smn:FisheriesReferencePointLower`.
+- [ ] **Step 4 — PSC CV anchoring to smn** — unblocked: the wrong-kind
+  objection is gone as of step 2.
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
@@ -165,6 +186,13 @@ one — standing instruction from Brett, 2026-08-12).
   verdicts (4 confirmed, 4 nuanced, 0 refuted). Full agent output preserved at
   the session task file and summarized below; the durable facts are being
   copied into per-repo OKF bundles as the pass touches each repo.
+- Steps 1 (semantics), 2, and 5 (2026-08-13): merged as salmon-domain-ontology
+  PRs #21 and #22, each through a full Codex review loop (7 findings total,
+  all verified before acting; 2 fixed with a different remedy than suggested —
+  the flat-build inlining exclusion and the SHACL shape instead of owl:oneOf).
+  Lesson worth keeping: completing the offline catalog closure silently
+  changed the flat artifact's content — generated-artifact invariants need
+  their own check whenever import resolution changes.
 
 ---
 
@@ -401,14 +429,18 @@ uv run psc-okf check <repo>/knowledge --tier capture
 
 - Per-step: the touched repo's own `make ci` (smn), `make test` (gcdfo),
   `make ci` (psc-vocab) stay green; OKF bundles pass `psc-okf check`.
-- Step-1 acceptance: main build parses, flat TTL drift gate green, **robot
-  reason (ELK) reports consistent with zero unsatisfiable classes on both the
-  main build and the main+gcdfo closure**, no Tier-mixed pairs (new CI check),
-  no foreign-subject axioms outside declared alignment modules (new CI check),
-  views import by absolute IRI and load in isolation via the catalog.
-- Step-2 acceptance: no IRI in the merged closure is typed both `owl:Class`
-  and `skos:Concept`; PSC's wrong-kind objection no longer applies (their doc
-  updated); metasalmon suite green after crosswalk retarget.
+- Step-1a acceptance (met 2026-08-13): main build parses, flat TTL drift
+  gate green, no tier-mixed pairs and no foreign-subject axioms outside
+  alignment modules (verified as one-off rdflib checks), views import by
+  absolute IRI and load in isolation via the catalog.
+- Step-1b acceptance (open): **robot reason (ELK) reports consistent with
+  zero unsatisfiable classes on both the main build and the main+gcdfo
+  closure**, the §5b checks and pyshacl run in CI, verify targets are
+  read-only, and the 08/09 drift gap is closed.
+- Step-2 acceptance (smn side, met 2026-08-13): no IRI in the merged
+  closure is typed both `owl:Class` and `skos:Concept`. Reassigned:
+  PSC's doc update → step 4; metasalmon crosswalk retarget + green suite →
+  the S8/metasalmon work.
 - Step-3/4 acceptance: SSSOM files validate with the `sssom` toolchain and are
   CI-checked in their home repos.
 
