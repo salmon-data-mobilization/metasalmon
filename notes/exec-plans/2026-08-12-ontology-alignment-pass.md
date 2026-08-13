@@ -62,7 +62,8 @@ what a deterministic checker consumes.
 - [ ] **Step 2 — methods-as-SKOS across the trio** (couples with roadmap S8).
 - [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
 - [ ] **Step 4 — PSC CV anchoring to smn.**
-- [ ] **Step 5 — aggregation / statistical-modifier scheme.**
+- [ ] **Step 5 — aggregation / statistical-modifier scheme** (independent:
+  runs after step 1, before or alongside S8, which consumes it).
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
@@ -128,6 +129,7 @@ one — standing instruction from Brett, 2026-08-12).
 | PSC CV canonical source: `feature/fair-mapping-products-roadmap`; workbench out of scope | Brett's answer | 2026-08-12 |
 | OKF bundles: create/update in every repo the pass touches, `AGENTS.md` points at them | Brett's standing instruction this session; reuse the canonical PSC profile v0.4 + `psc-okf` validator from `psc-data-systems` (verified to work cross-repo) rather than inventing a parallel format | 2026-08-12 |
 | Recommend adopting gcdfo's **methods-as-SKOS** stance in smn (step 2), with a thin `sosa:Procedure` instance-typing bridge | PSC's mapping refusal + gcdfo's working mappings are field evidence; I-ADOPT excludes methods from variables; `sosa:usedProcedure` expects an individual, which a SKOS concept is | 2026-08-12 — **pending Brett's confirmation at step 2 start** |
+| Step 5 re-sequenced: independent of steps 2–4, runs after step 1 and before/alongside S8 | Original "steps 3–5 follow step 2" made S8 ⇄ S9 circular (S8 blocks step 2, yet step 5 fed S8); step 5 only needs module 07 + I-ADOPT 1.1.0 typing. Caught by Codex on PR #24 | 2026-08-13 |
 
 ## Outcomes & Retrospective
 
@@ -248,9 +250,13 @@ and gcdfo's ADR numbering drift (`docs/ADR.md` vs `docs/adr/`).
 
 ## Plan of Work
 
-Steps run in order; each ends with the bookkeeping loop (Progress, roadmap
-re-sequence, OKF bundles). Steps 3–5 have internal parallelism but publish in
-this order so each mapping set targets a settled model.
+Each step ends with the bookkeeping loop (Progress, roadmap re-sequence, OKF
+bundles). Ordering: steps 2→3→4 run in sequence (each mapping set targets a
+settled model), but **step 5 is independent of steps 2–4** — it needs only
+module 07 and I-ADOPT 1.1.0 typing, so it runs right after step 1, before or
+alongside the S8 breaking change that consumes it. (Original draft had steps
+3–5 all after step 2, which made S8 ⇄ S9 circular: S8 blocks step 2, yet
+step 5 fed S8. Caught by Codex review on PR #24.)
 
 ### Step 1 — smn conventions + metamodel split (repo: salmon-domain-ontology)
 
@@ -315,7 +321,7 @@ the hard-coded `mapping_date`. Do **not** relax PSC's promotion gate ("two
 independently governed organizations") — record smn anchoring as mappings,
 not promotion.
 
-### Step 5 — Aggregation / statistical-modifier scheme
+### Step 5 — Aggregation / statistical-modifier scheme (independent: after step 1, before/alongside S8)
 
 `smn:AggregationStatisticScheme` in module 07 seeded from the SDP draft's
 starter list (mean, median, min, max, total, count, peak), concepts
@@ -374,6 +380,8 @@ uv run psc-okf check /Users/brettjohnson/code/<repo>/knowledge --tier capture
 All steps are git-branch + PR per repo; nothing mutates shared state outside
 git. The smn repo's `make verify-flat-ttl` currently rewrites modules 08/09 in
 the working tree — until slice 1.5 lands, run it only on a clean tree and
-`git checkout -- ontology/modules/08* 09*` to recover. Re-running the recon
+`git checkout -- ontology/modules/08* ontology/modules/09*` to recover (both
+pathspecs must carry the directory — an unanchored `09*` matches nothing at
+the repo root and git then rejects the whole command). Re-running the recon
 workflow is safe (read-only). If a step is abandoned mid-way, the per-step
 PR simply closes; the roadmap entry reverts to the prior state.

@@ -73,9 +73,10 @@ S8 method model + tidy ──► S9.2 methods-as-SKOS ──┘   │   │
 S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── step 1 independent;
-   (step 0 done)                       step 2 waits on S8 naming the concepts;
-                                       steps 3–5 follow step 2
+S9 ontology conventions + alignment ── steps 1 and 5 independent (5 after 1,
+   (step 0 done)                       and 5 feeds S8's aggregation_iri);
+                                       step 2 waits on S8 naming the concepts;
+                                       steps 3–4 follow step 2
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
@@ -89,8 +90,8 @@ episode 8 teaches validation as the final gate and the KNB documentation names
 pinning as a precondition; the workshop can ship first with those claims scoped.
 
 **S8 is new and comes first among the spec streams.** It decides what the SDP
-means; S1 then makes the validator enforce it; S6's `sosa:Procedure` typing
-implements the vocabulary half. Doing S1 or S6 before S8 means building
+means; S1 then makes the validator enforce it; S9 step 2's methods-as-SKOS
+migration implements the vocabulary half. Doing S1 or S6 before S8 means building
 machinery around a model that is about to change.
 
 ### S1 — One validation authority · #48, #49 · ~2 weeks
@@ -230,7 +231,10 @@ findings and decisions live in the execplan.
    `smn:` term, the unbridged age/year duplication). Absorbed from S6 item 4.
 5. **Step 4 — PSC CV anchoring to smn** — unblocked by step 2.
 6. **Step 5 — aggregation scheme** (`smn:AggregationStatisticScheme`), the
-   vocabulary the SDP `aggregation_iri` (S8) resolves to.
+   vocabulary the SDP `aggregation_iri` (S8) resolves to. **Independent of
+   steps 2–4** — needs only module 07 and I-ADOPT 1.1.0 typing, so it runs
+   right after step 1, before or alongside S8's breaking change (otherwise
+   S8→S9.2→S9.5→S8 would be circular).
 7. **Step 6 — propagation** to workshop, hub, and guides.
 
 **Cross-repo bookkeeping rule (Brett, 2026-08-12):** every repo this stream
