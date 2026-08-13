@@ -1,5 +1,56 @@
 # Changelog
 
+## metasalmon 0.2.6
+
+Roadmap S8, first half: the tidy-data foundations the method placement
+model depends on.
+
+### New
+
+- [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+  checks that a declared `primary_key` actually identifies a row. The
+  field was declared in `tables.csv` and read by nothing that tested it,
+  so a table could claim a key and ship duplicates — the tidy principle
+  “each observation forms a row” going unverified. Now an error.
+
+- Column names that look like data values are reported. Bare year-like
+  names, or a shared stem with numeric suffixes, across three or more
+  columns. A **warning, never an error**: the SDP may accept untidy
+  data, it should simply stop implying it checked. The message points at
+  [`tidyr::pivot_longer()`](https://tidyr.tidyverse.org/reference/pivot_longer.html).
+
+- Unresolved `MISSING METADATA:` placeholders are surfaced in the
+  default validation mode. They were already errors under
+  `require_iris = TRUE`; an ordinary call returned zero issues and said
+  nothing, so a package could look clean while stating in its own
+  metadata that its metadata was missing.
+
+## metasalmon 0.2.5
+
+### Fixes
+
+- Credential redaction covers qualified token names. The pattern named
+  `dataone_token` specifically, so the production credential was
+  redacted and `dataone_test_token` was not — the worst possible split,
+  since staging is the credential a first-time user is most likely to
+  paste into a script. Captured HTTP and provider errors are stored in
+  returned tibbles and written to CSV, so this leaked at rest, not only
+  on screen. The rule is now structural — any qualified `*_token` name —
+  so a credential introduced later is covered without another patch.
+  `token` must be the final name segment, so token-count fields in
+  provider diagnostics (`max_token_count`, `total_tokens`) are left
+  intact — they carry the numbers needed to correct a rejected request.
+
+### Internal
+
+- The second redaction implementation is deleted. `.ms_knb_redact()` and
+  `.ms_redact_secrets()` were two implementations of one security
+  contract, and only one was extended when the pattern last changed —
+  which is exactly how the gap above arose. KNB messages now redact
+  through the shared function, which is strictly stronger: it also
+  catches `x-api-key`, provider API keys, and serialized JSON credential
+  forms that the deleted version missed.
+
 ## metasalmon 0.2.4
 
 ### Breaking changes
@@ -197,7 +248,7 @@ they ship ahead of the larger roadmap steps.
 
 Remediates the nine highest-priority defects from the 2026-08-10
 ecosystem review
-(`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
+(`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`).
 
 ### Breaking changes
 

@@ -36,7 +36,7 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 ## Progress
 
 - [x] 2026-07-28: Verified a clean `main` at `378d807`, GitHub admin access, and
-  the canonical single checkout at `/Users/brettjohnson/code/metasalmon`.
+  the canonical single checkout at `<metasalmon repo root>`.
 - [x] 2026-07-28: Opened issue #4 and created
   `feature/theme-a-semantic-review` from current `main`.
 - [x] 2026-07-28: Checkpoint 1 contract review completed; all compatibility
@@ -407,7 +407,7 @@ pass.
 
 ## Concrete Steps
 
-Run from `/Users/brettjohnson/code/metasalmon`:
+Run from `<metasalmon repo root>`:
 
     Rscript -e 'pkgload::load_all(".", quiet = TRUE)'
     Rscript scripts/theme-a-benchmark.R replay

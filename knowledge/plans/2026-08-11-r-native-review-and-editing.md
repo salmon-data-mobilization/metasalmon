@@ -12,7 +12,7 @@ psc:
 # R-native semantic review and editing
 
 Created 2026-08-11. Roadmap stream **S5** (ships with 0.3.0). Sequencing lives in
-[`knowledge/roadmap.md`](../ROADMAP.md); this file is the detail.
+[`knowledge/roadmap.md`](../roadmap.md); this file is the detail.
 
 Filed under `knowledge/plans/` rather than the `execplans` skill's default
 `docs/plans/`, because `AGENTS.md` git-ignores `docs/plans/` and this document

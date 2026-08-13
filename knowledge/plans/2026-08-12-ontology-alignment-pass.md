@@ -24,13 +24,13 @@ with only the working trees listed below and this document can execute it.
 Three vocabularies must interoperate through one shared layer:
 
 - **smn** — the Salmon Domain Ontology (`smn:`, `https://w3id.org/smn/`),
-  repo `/Users/brettjohnson/code/salmon-domain-ontology`, the shared
+  repo `../salmon-domain-ontology`, the shared
   cross-organization layer.
 - **gcdfo** — the GC DFO Salmon Ontology (`gcdfo:`,
   `https://w3id.org/gcdfo/salmon#`), repo
-  `/Users/brettjohnson/code/dfo-salmon-ontology`, DFO-specific semantics.
+  `../dfo-salmon-ontology`, DFO-specific semantics.
 - **PSC CV** — the PSC controlled vocabulary, repo
-  `/Users/brettjohnson/code/psc-salmon-vocabularies` (canonical source for this
+  `../psc-salmon-vocabularies` (canonical source for this
   pass: branch `feature/fair-mapping-products-roadmap`;
   `psc-vocabulary-workbench` is **out of scope**).
 
@@ -354,7 +354,7 @@ memory directory if repo-map facts changed.
 ## Concrete Steps (step 1 kickoff)
 
 ```sh
-cd /Users/brettjohnson/code/salmon-domain-ontology
+cd ../salmon-domain-ontology
 git checkout main && git pull --ff-only
 # resolve Surprise 8:
 curl -sL https://raw.githubusercontent.com/w3c/sdw/gh-pages/ssn/rdf/sosa-prov-mapping.ttl | less
@@ -367,8 +367,8 @@ make test && make ci
 Validation for OKF bundles (any repo):
 
 ```sh
-cd /Users/brettjohnson/code/psc-data-systems
-uv run psc-okf check /Users/brettjohnson/code/<repo>/knowledge --tier capture
+cd ../psc-data-systems
+uv run psc-okf check <repo>/knowledge --tier capture
 ```
 
 ## Validation and Acceptance

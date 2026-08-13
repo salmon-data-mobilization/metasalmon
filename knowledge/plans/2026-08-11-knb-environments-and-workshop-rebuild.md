@@ -13,7 +13,7 @@ psc:
 
 Created 2026-08-11. Covers roadmap streams **S3** (KNB staging environment) and
 **S4** (workshop rebuild). Sequencing and dependencies live in
-[`knowledge/roadmap.md`](../ROADMAP.md); this file is the detail.
+[`knowledge/roadmap.md`](../roadmap.md); this file is the detail.
 
 Source: an authored plan, reviewed and refined below. Six findings are called out
 inline as **REVIEW** so the original intent stays visible next to what changed —

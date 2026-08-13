@@ -5,7 +5,7 @@
   "description": "Historical observations recovered from project notes. No prompts, raw provider responses, resolved-model metadata, or immutable output captures were retained, so these statements are context only and must not be scored as replay evidence.",
   "source_references": [
     {
-      "path": "notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md",
+      "path": "knowledge/plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md",
       "section": "Findings from the current experiments"
     }
   ],

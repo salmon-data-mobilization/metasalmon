@@ -11,7 +11,7 @@ psc:
 
 # metasalmon — next behaviours roadmap
 
-> **Superseded for sequencing by [`knowledge/roadmap.md`](../ROADMAP.md).** Still the
+> **Superseded for sequencing by [`knowledge/roadmap.md`](../roadmap.md).** Still the
 > authority for **Theme A–E design detail** — read it before picking up anything
 > it designed. Open remnants of Themes C and E were migrated to roadmap stream
 > **S7** so they are not lost.
