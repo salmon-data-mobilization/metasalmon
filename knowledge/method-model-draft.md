@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "SDP method model draft"
-description: "Draft SDP spec section for methods, protocols, procedures, and statistical modifiers; ports to smn-data-pkg once settled. Prerequisite reading for backlog item 76."
+description: "Approved SDP spec section for methods, protocols, procedures, and statistical modifiers (Brett, 2026-08-13); awaiting port to smn-data-pkg as the S8 spec change. Prerequisite reading for backlog item 76."
 status: draft
 tags: [sdp, methods, draft]
 psc:
@@ -11,8 +11,9 @@ psc:
 
 # Draft SDP spec section — methods, protocols, and procedures
 
-**Status: draft for review.** Written in spec voice, ready to port to
-`smn-data-pkg`. Not yet normative anywhere.
+**Status: approved (Brett, 2026-08-13).** Written in spec voice; the S8
+spec port carries it into `smn-data-pkg` (where it also unwinds upstream
+PR #2's `methods.csv` registry). Not yet normative until that port lands.
 
 This proposes the conceptual model the SDP currently implements but never
 states, and one breaking change that follows from it. It is the prerequisite for

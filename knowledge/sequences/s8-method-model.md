@@ -11,8 +11,9 @@ psc:
 
 # S8 — Method model and tidy foundations · #76, #77 · spec + metasalmon
 
-**Draft model:** [SDP method model draft](../method-model-draft.md)
-(for review; ports to `smn-data-pkg` once settled).
+**Model:** [SDP method model](../method-model-draft.md) — **approved
+2026-08-13** (metasalmon PR #23 merged); the spec port to `smn-data-pkg` is
+this stream's next action.
 
 Two coupled items that decide what the SDP *means* before S1 decides what it
 *checks*.
@@ -33,13 +34,11 @@ Three placements replace it — table protocol, table method, or a data column
 when it varies per row — plus a dedicated `statistical_modifier_iri` (the
 fifth I-ADOPT component column; values instance-typed
 `iop:StatisticalModifier`), whose vocabulary is S9 step 5's
-`smn:StatisticalModifierScheme`. Port note: upstream smn-data-pkg PR #2 added
-an optional `methods.csv` registry. The **v1** draft currently on main still
-keeps a conditional registry, but the **v2** draft under review in metasalmon
-PR #23 removes it entirely (Brett's explicit decision: use the IRI, no
-registry — labels/definitions live in the vocabulary, version/citation on
-the protocol). The port follows v2 once PR #23 lands, so PR #2's registry is
-unwound, not adapted.
+`smn:StatisticalModifierScheme`. Port note: upstream smn-data-pkg PR #2 added an optional `methods.csv`
+registry; the approved model (v2, merged 2026-08-13) removes the registry
+entirely (Brett's explicit decision: use the IRI — labels/definitions live
+in the vocabulary, version/citation on the protocol), so the port unwinds
+PR #2's registry rather than adapting it.
 
 **Order within the stream: #77 (done) before #76.** The method model asks "is
 the method constant within each table?", which is only sound when a table is a
