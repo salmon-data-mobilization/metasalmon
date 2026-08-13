@@ -69,7 +69,12 @@ what a deterministic checker consumes.
 - [x] Step 0 deliverables: this execplan; roadmap S9 added and S6 re-scoped;
   OKF knowledge bundle seeded in `salmon-domain-ontology` with `AGENTS.md`
   pointer (2026-08-12).
-- [ ] **Step 1 — smn conventions + metamodel split** (see Plan of Work).
+- [~] **Step 1 — smn conventions + metamodel split**: semantics half done
+  (salmon-domain-ontology PR #21, 2026-08-13 — alignment-upper imports the
+  W3C SOSA–PROV alignment, module-06 equivalences demoted, axiom-light
+  views with iop: bridges, EscapementEstimate rename, CONVENTIONS §5b);
+  tooling half (ELK CI gate, check scripts, Makefile hygiene, 08/09 drift
+  gate, w3id views note) is the follow-up PR.
 - [ ] **Step 2 — methods-as-SKOS across the trio** (couples with roadmap S8).
 - [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
 - [ ] **Step 4 — PSC CV anchoring to smn.**
@@ -283,8 +288,14 @@ step 5 fed S8. Caught by Codex review on PR #24.)
 
 The current step. Work items, in commit-sized slices:
 
-1. **Resolve Surprise 8** — read `w3c/sdw` `sosa-prov-mapping.ttl` directly;
-   record the exact axiom set in the OKF bundle.
+1. **Resolve Surprise 8** — *done 2026-08-13*: the W3C file matches the
+   views' axioms exactly (`hasFeatureOfInterest ⊑ prov:used` and
+   `isSampleOf ⊑ prov:wasDerivedFrom` are both in it — the F1 verifier's
+   divergence claim was wrong, the upstream surveyor right), and
+   `http://www.w3.org/ns/sosa/prov` dereferences to the Turtle itself, so
+   alignment-upper **imports** it. One subtlety: `sosa:Sample ⊑ prov:Entity`
+   is *not* stated by W3C (entailed via FeatureOfInterest) — the old views
+   over-asserted even relative to W3C.
 2. **CONVENTIONS.md rewrite:** add one-strongest-mapping-per-pair (F2);
    explicit foreign-subject-axiom policy (allowed only inside clearly-marked,
    separately-published alignment modules, never in views or core modules —
