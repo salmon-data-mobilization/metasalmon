@@ -15,12 +15,12 @@ psc:
 
 One conventions layer across the three vocabularies so everything interoperates
 *through* smn, plus a reasoner-clean OWL backbone for the neurosymbolic
-consumption target. **Steps 0, 1 (semantics), 2, and 5 are done** (2026-08-13,
+consumption target. **Steps 0, 1a (semantics), 2 (smn side), and 5 are done** (2026-08-13,
 salmon-domain-ontology PRs #21/#22): the W3C SOSA–PROV alignment is imported
 not restated, CONVENTIONS §5b governs mapping placement, methods are SKOS
 concepts (the cross-repo pun is resolved and PSC's mapping blocker dissolved),
 and `smn:StatisticalModifierScheme` exists for the SDP
-`statistical_modifier_iri`. **Next: the step-1 tooling PR** (ELK CI gate, §5b
+`statistical_modifier_iri`. **Next: step 1b, the tooling PR** (ELK CI gate, §5b
 check scripts, pyshacl wiring, Makefile hygiene), then steps 3–4.
 
 1. *(done)* Step 0 — recon + decisions.
@@ -28,12 +28,11 @@ check scripts, pyshacl wiring, Makefile hygiene), then steps 3–4.
    the normative-alignment-core / teaching-view split, the eight verified
    metamodel fixes (F1–F8), repo-structure repairs, and a `robot reason` CI
    gate. Independent — can start now.
-3. **Step 2 — methods-as-SKOS across the trio.** The vocabulary half of #76 —
-   **ordered by Brett 2026-08-13** ("migrate SMN methods from OWL classes to
-   SKOS concepts"); the S8 gate is satisfied by the v2 draft naming the
-   concepts. Field evidence agreed: PSC refuses to map to smn's OWL-class
-   methods while 18 released mappings target gcdfo's SKOS methods, and a live
-   cross-repo pun on `smn:EnumerationMethod` poisons the merged closure.
+3. **Step 2 — methods-as-SKOS.** The vocabulary half of #76, ordered by
+   Brett 2026-08-13. **smn side done** (PR #22; pun resolved, zero
+   dual-typed IRIs). Cross-repo remainder formally reassigned: gcdfo
+   follow-through → step 3, PSC doc update → step 4, metasalmon crosswalk
+   retarget → the S8 breaking change.
 4. **Step 3 — the smn↔gcdfo boundary as data** (SSSOM set, the minted `smn:`
    term, the unbridged age/year duplication). Absorbed from S6 item 4.
 5. **Step 4 — PSC CV anchoring to smn** — unblocked by step 2.
