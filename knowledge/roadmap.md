@@ -184,6 +184,9 @@ S9 ontology conventions + alignment ── steps 0, 1a, 2(smn side), 5 done
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
+S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
+                                after S3; review vignette with S5;
+                                methods vignette after S8
 ```
 
 Read that as: S3's only hard blocker shipped in 0.2.5; S2, S5, S7, and S10 run
@@ -205,6 +208,7 @@ it, and S9 step 2's methods-as-SKOS migration implements the vocabulary half.
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · #76, #77
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md)
 - [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
+- [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79
 
 ### Continuous
 
