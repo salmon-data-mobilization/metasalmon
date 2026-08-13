@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,27 @@
       <small>Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.6" id="metasalmon-026">metasalmon 0.2.6<a class="anchor" aria-label="anchor" href="#metasalmon-026"></a></h2>
+<p>Roadmap S8, first half: the tidy-data foundations the method placement model depends on.</p>
+<div class="section level3">
+<h3 id="new-0-2-6">New<a class="anchor" aria-label="anchor" href="#new-0-2-6"></a></h3>
+<ul><li><p><code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> checks that a declared <code>primary_key</code> actually identifies a row. The field was declared in <code>tables.csv</code> and read by nothing that tested it, so a table could claim a key and ship duplicates — the tidy principle “each observation forms a row” going unverified. Now an error.</p></li>
+<li><p>Column names that look like data values are reported. Bare year-like names, or a shared stem with numeric suffixes, across three or more columns. A <strong>warning, never an error</strong>: the SDP may accept untidy data, it should simply stop implying it checked. The message points at <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>.</p></li>
+<li><p>Unresolved <code>MISSING METADATA:</code> placeholders are surfaced in the default validation mode. They were already errors under <code>require_iris = TRUE</code>; an ordinary call returned zero issues and said nothing, so a package could look clean while stating in its own metadata that its metadata was missing.</p></li>
+</ul></div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.5" id="metasalmon-025">metasalmon 0.2.5<a class="anchor" aria-label="anchor" href="#metasalmon-025"></a></h2>
+<div class="section level3">
+<h3 id="fixes-0-2-5">Fixes<a class="anchor" aria-label="anchor" href="#fixes-0-2-5"></a></h3>
+<ul><li>Credential redaction covers qualified token names. The pattern named <code>dataone_token</code> specifically, so the production credential was redacted and <code>dataone_test_token</code> was not — the worst possible split, since staging is the credential a first-time user is most likely to paste into a script. Captured HTTP and provider errors are stored in returned tibbles and written to CSV, so this leaked at rest, not only on screen. The rule is now structural — any qualified <code>*_token</code> name — so a credential introduced later is covered without another patch. <code>token</code> must be the final name segment, so token-count fields in provider diagnostics (<code>max_token_count</code>, <code>total_tokens</code>) are left intact — they carry the numbers needed to correct a rejected request.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="internal-0-2-5">Internal<a class="anchor" aria-label="anchor" href="#internal-0-2-5"></a></h3>
+<ul><li>The second redaction implementation is deleted. <code>.ms_knb_redact()</code> and <code>.ms_redact_secrets()</code> were two implementations of one security contract, and only one was extended when the pattern last changed — which is exactly how the gap above arose. KNB messages now redact through the shared function, which is strictly stronger: it also catches <code>x-api-key</code>, provider API keys, and serialized JSON credential forms that the deleted version missed.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.4" id="metasalmon-024">metasalmon 0.2.4<a class="anchor" aria-label="anchor" href="#metasalmon-024"></a></h2>
 <div class="section level3">
@@ -107,7 +128,7 @@
 </div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.0" id="metasalmon-020">metasalmon 0.2.0<a class="anchor" aria-label="anchor" href="#metasalmon-020"></a></h2>
-<p>Remediates the nine highest-priority defects from the 2026-08-10 ecosystem review (<code>notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md</code>).</p>
+<p>Remediates the nine highest-priority defects from the 2026-08-10 ecosystem review (<code>knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md</code>).</p>
 <div class="section level3">
 <h3 id="breaking-changes-0-2-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-2-0"></a></h3>
 <ul><li>

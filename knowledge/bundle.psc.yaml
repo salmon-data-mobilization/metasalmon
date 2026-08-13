@@ -1,0 +1,21 @@
+profile_version: '0.4'
+id: metasalmon:bundle:hub
+title: metasalmon ecosystem hub bundle
+default_domain: metasalmon:domain:salmon-data-ecosystem
+contexts:
+  - metasalmon:context:hub-coordination
+source_registry: sources.psc.yaml
+review_registry: reviews.psc.yaml
+imports: []
+review_policy:
+  system_and_technical:
+    qualified_reviewers: []
+    minimum_outcome: qualified
+  data_domain:
+    qualified_reviewers: []
+    minimum_outcome: qualified
+publication:
+  classification: internal
+  audience:
+    - metasalmon-maintainers
+  source_allowlist: []

@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Architecture deepening refactors R1-R5"
+description: "Executed architecture refactor record; open remnants migrated to stream S7."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-06-24-deepen-architecture-refactors
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Deepen metasalmon architecture after `llm_context_files` fix
 
 ## Status (2026-07-21) — EXECUTED AND RELEASE-VALIDATED
@@ -7,7 +18,7 @@ Refactors R1–R5 are implemented on the `deepen-architecture` branch and the fu
 follow-up fixes also landed. The remaining items from this plan — the
 *Missing / Future Refactor Candidates* (god-file split and shared chat request
 builder) and the deferred backlog — are carried forward in
-`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (Themes A–E + Process).
+`knowledge/plans/2026-06-26-next-behaviours-roadmap.md` (Themes A–E + Process).
 The package was released as 0.1.5, and the full standard source-package check
 finished with `Status: OK`. PR
 [#2](https://github.com/salmon-data-mobilization/metasalmon/pull/2) merged the
@@ -37,8 +48,8 @@ Base state for this plan:
 ## Progress
 
 - [x] 2026-06-25 10:45 PDT: Resumed implementation on the existing
-  `deepen-architecture` branch, with `notes/context.md` and
-  `notes/bugs-and-improvements.md` present in the worktree as review inputs.
+  `deepen-architecture` branch, with `knowledge/orientation.md` and
+  `knowledge/backlog.md` present in the worktree as review inputs.
 - [x] 2026-06-25 10:52 PDT: Fixed
   `infer_dictionary(seed_semantics = FALSE, ...)` silently dropping LLM/context
   options. Added a shared internal warning helper, a NEWS entry, and a
@@ -146,7 +157,7 @@ Base state for this plan:
   `Rscript -e 'pkgdown::build_site()'` and kept regenerated docs, while ignoring
   local launcher pages generated from ignored `AGENTS.md` / `CLAUDE.md`.
 - [x] 2026-06-25: Updated this ExecPlan and
-  `notes/bugs-and-improvements.md` after implementation so their status reflects
+  `knowledge/backlog.md` after implementation so their status reflects
   what landed, what was partially addressed, and what remains open/deferred.
 - [x] 2026-07-21: Closed the remaining release gate. Marked each display-only
   vignette chunk `purl = FALSE`, installed the missing local `pdftools` and
@@ -169,7 +180,7 @@ Base state for this plan:
   `AGENTS.md` / `CLAUDE.md`. The branch ignores the generated launcher pages and
   removes the generated `docs/CLAUDE.html`, but the source launcher self-reference
   remains an open repo-hygiene item.
-- The backlog in `notes/bugs-and-improvements.md` was broader than this refactor
+- The backlog in `knowledge/backlog.md` was broader than this refactor
   plan. The implementation fixed the plan-driving LLM/semantic bugs, but left
   separate request-builder, EDH XML guard, context-source disambiguation,
   encoding, and agent-guidance items for follow-up work.
@@ -248,7 +259,7 @@ Observed final package-check status: `OK` with `_R_CHECK_FORCE_SUGGESTS_=false`.
 The ordinary `R CMD check` path still requires installing suggested package
 `pdftools` in this local environment.
 
-Remaining follow-up work is tracked in `notes/bugs-and-improvements.md` with
+Remaining follow-up work is tracked in `knowledge/backlog.md` with
 per-item implementation statuses. The highest-leverage remaining items are the
 shared chat request builder, create-time EDH XML guard decision, context-source
 basename disambiguation, encoding handling for non-UTF-8 context files, real
@@ -282,7 +293,7 @@ bugs). Summary of the review and the changes folded into the sections below.
    `infer_dictionary(seed_semantics = FALSE, llm_assess = TRUE)` silently drops
    LLM options with **no warning**, unlike `infer_salmon_datapackage_artifacts`
    (package-helpers.R:462-467). Same Alice-class surprise, other public entry
-   point. Fix it as part of R1/R2 (see `notes/bugs-and-improvements.md` #1).
+   point. Fix it as part of R1/R2 (see `knowledge/backlog.md` #1).
 3. **Public-export compatibility:** `infer_dictionary`, `suggest_semantics`,
    `infer_salmon_datapackage_artifacts`, and `create_sdp` are exported. Their
    return attributes and observable warnings are a compatibility surface, not
@@ -300,7 +311,7 @@ verified word.
 A second pass completed the three missing refactor critiques (R2/R3/R4) + a
 meta-critique, ran two fresh correctness finders, and adversarially verified the
 candidate bugs (18 confirmed, 2 reclassified as by-design, 7 new finds; full list in
-`notes/bugs-and-improvements.md`). Net refinements folded into the sections below:
+`knowledge/backlog.md`). Net refinements folded into the sections below:
 
 1. **R2 "4th copy" was wrong.** `create_sdp:831-855` is an unconditional full ~21-arg
    pass-through, not a copy of the 11-arg LLM tail. True duplication: `llm_requested`
@@ -394,13 +405,13 @@ candidate bugs (18 confirmed, 2 reclassified as by-design, 7 new finds; full lis
 Two existing planning artifacts constrain these refactors and must be read before
 touching the LLM review path:
 
-- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — routes
+- `knowledge/plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — routes
   measurement / compound-variable targets through `chat_decomposition()` and
   **explicitly forbids "inventing a second bundle-review prompt stack elsewhere."**
   This pre-decides R4: there is already a second review mode (the chat
   decomposition consumer at `chat-decomposition.R:615`), so the shared response
   contract should be **deepened**, and the decomposition route should reuse it.
-- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
+- `knowledge/plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
   introduces richer review outcomes (`retry_search`, `request_new_term`,
   `reject_shortlist`) and bundle-aware review. The validator already accepts these
   decisions (`.ms_validate_llm_assessment`). **Design constraint:** R2's option
@@ -546,7 +557,7 @@ The public entry points should continue to expose simple `llm_context_files` and
 - Context source labels feed the `llm_context_sources` output column
   (llm-review-adapter.R:112) and are asserted by tests (166, 1491-1494, 1657).
   Preserve source reporting exactly. (Note the same-basename collision smell —
-  `notes/bugs-and-improvements.md` #2 — which any source-label change should fix.)
+  `knowledge/backlog.md` #2 — which any source-label change should fix.)
 - **The "parsed once" guarantee is currently emergent** (orchestrator threads
   `context_chunk_pool` from 1612), NOT enforced by the Module:
   `.ms_prepare_context_chunks` silently re-collects if passed a NULL pool. Deepen
@@ -932,7 +943,7 @@ Concretely:
   1301-1330 and `.ms_chat_http_request` chat:435-472) is **mutually exclusive** with
   keeping the dual-shape normalizer (single-shape responses would delete the
   adapter:3-17 branch this section defends). It is therefore **out of R4** — track it
-  as a separate later refactor (`notes/bugs-and-improvements.md` #3, plan
+  as a separate later refactor (`knowledge/backlog.md` #3, plan
   Missing/Future #2). Do not attempt both.
 
 ### Tiny Commits
@@ -1150,7 +1161,7 @@ Surfaced during review; not required for this plan but worth tracking.
    (Done for ordinary repeated fixtures via `tests/testthat/helper-dictionary.R`;
    intentionally specialized fixtures remain local.)
 4. **Real `AGENTS.md`.** `CLAUDE.md`/`AGENTS.md` are a circular self-reference, so
-   the package ships no agent guidance. Seed it from `notes/context.md` (the LLM
+   the package ships no agent guidance. Seed it from `knowledge/orientation.md` (the LLM
    opt-in contract, attribute/IRI-prefix contracts, build/test commands). (Done
    during the roadmap clear-the-decks work; `CLAUDE.md` now imports the real
    `AGENTS.md`.)

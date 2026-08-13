@@ -7,6 +7,7 @@
 ^\.github$
 ^\.git$
 ^notes$
+^knowledge$
 ^\.DS_Store$
 \.cursorignore$
 \.cursor($|/)

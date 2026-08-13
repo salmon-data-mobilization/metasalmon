@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Theme A semantic review implementation record"
+description: "Implementation record for the Theme A semantic-review pipeline; shipped in 0.1.6."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-07-28-theme-a-semantic-review
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # ExecPlan - Theme A semantic review implementation
 
 This is a living execution plan. Keep `Progress`, `Surprises & Discoveries`,
@@ -25,7 +36,7 @@ Umbrella issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/4
 ## Progress
 
 - [x] 2026-07-28: Verified a clean `main` at `378d807`, GitHub admin access, and
-  the canonical single checkout at `/Users/brettjohnson/code/metasalmon`.
+  the canonical single checkout at `<metasalmon repo root>`.
 - [x] 2026-07-28: Opened issue #4 and created
   `feature/theme-a-semantic-review` from current `main`.
 - [x] 2026-07-28: Checkpoint 1 contract review completed; all compatibility
@@ -396,7 +407,7 @@ pass.
 
 ## Concrete Steps
 
-Run from `/Users/brettjohnson/code/metasalmon`:
+Run from `<metasalmon repo root>`:
 
     Rscript -e 'pkgload::load_all(".", quiet = TRUE)'
     Rscript scripts/theme-a-benchmark.R replay

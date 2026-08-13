@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Alice Assmar external review report"
+description: "External review of metasalmon; findings absorbed into the backlog card."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-06-24-alice-assmar-metasalmon-report
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Alice Assmar metasalmon report triage and fix
 
 ## Closure (2026-06-26) — CLOSED, superseded
@@ -5,14 +16,14 @@
 **Status: closed.** The core objective shipped: GitHub issue #1 was filed and the
 `llm_context_files` fix landed in **metasalmon 0.1.4** (see `NEWS.md`). This plan
 is retained as a historical record and was **moved from `docs/plans/` to
-`notes/exec-plans/`** (it was untracked and sitting in the pkgdown output folder).
+`knowledge/plans/`** (it was untracked and sitting in the pkgdown output folder).
 
 Disposition of the four remaining Progress items (37–40), so no work is lost:
 
 - *Investigate/fix obvious adjacent bugs* → **carried forward and largely done.**
   The adjacent-bug hunt continued on the `deepen-architecture` branch and through a
   `/code-review` pass; every finding is tracked in
-  `notes/bugs-and-improvements.md` (31 items, with implementation status).
+  `knowledge/backlog.md` (31 items, with implementation status).
 - *Peer-review checkpoint F (schema/metadata semantics)* → **superseded.** The
   schema/metadata-touching work on `deepen-architecture` was reviewed via the
   `/code-review` process; the full `testthat` suite is green (1281 pass / 0 fail).
@@ -20,14 +31,14 @@ Disposition of the four remaining Progress items (37–40), so no work is lost:
   Docs were regenerated (`devtools::document()` + a lazy pkgdown rebuild). The
   open piece is opening the PR for `deepen-architecture` and an `R CMD check` —
   tracked as the "Process / handoff" items in
-  `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md`.
+  `knowledge/plans/2026-06-26-next-behaviours-roadmap.md`.
 - *Final validation + PR-ready summary* → **carried forward** to the same roadmap
   (`R CMD check` + PR handoff).
 
 Everything beyond the original #1 fix — the architecture deepening and the new
 review behaviours — lives in
-`notes/exec-plans/2026-06-24-deepen-architecture-refactors.md` (executed) and
-`notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` (what's next).
+`knowledge/plans/2026-06-24-deepen-architecture-refactors.md` (executed) and
+`knowledge/plans/2026-06-26-next-behaviours-roadmap.md` (what's next).
 
 ## Purpose / Big Picture
 
@@ -54,7 +65,7 @@ Two inputs affect the external issue and branch steps:
 - [x] 2026-06-24: Received plan-review findings and git-hygiene findings; incorporated them into this plan.
 - [x] 2026-06-24: Received Alice's report from Brett in-thread.
 - [x] 2026-06-24: Created GitHub issue #1: `Fix: make create_sdp llm_context_files behavior explicit and testable`.
-- [x] 2026-06-24: Created separate clean worktree `/Users/brettjohnson/code/metasalmon-issue-1-llm-context-files` on `feature/1-llm-context-files` from verified `origin/main`.
+- [x] 2026-06-24: Created separate clean worktree `../metasalmon-issue-1-llm-context-files` on `feature/1-llm-context-files` from verified `origin/main`.
 - [x] 2026-06-24: Commented the working branch on issue #1.
 - [x] 2026-06-24: Completed investigation checkpoint A/B/C before writing the failing reproduction.
 - [x] 2026-06-24: Completed plan-review checkpoint D after the issue body was concrete and before code edits.
@@ -65,11 +76,11 @@ Two inputs affect the external issue and branch steps:
 - [x] 2026-06-24: Completed peer-review checkpoint E; reviewer found no blocking or non-blocking issues and independently verified no hidden LLM call when `llm_assess = FALSE`.
 - [x] 2026-06-26: Adjacent-bug investigation carried forward to the
   `deepen-architecture` branch + `/code-review`; tracked in
-  `notes/bugs-and-improvements.md`. (See Closure.)
+  `knowledge/backlog.md`. (See Closure.)
 - [x] 2026-06-26: Checkpoint F superseded by the `/code-review` process on
   `deepen-architecture`; full suite green. (See Closure.)
 - [~] Checkpoint G partly done (docs regenerated); PR + `R CMD check` still
-  pending — carried to `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md`.
+  pending — carried to `knowledge/plans/2026-06-26-next-behaviours-roadmap.md`.
 - [~] Final validation + PR-ready summary carried to the same roadmap.
 
 ## Surprises & Discoveries
@@ -94,7 +105,7 @@ Two inputs affect the external issue and branch steps:
 ## Outcomes & Retrospective
 
 - GitHub issue: <https://github.com/salmon-data-mobilization/metasalmon/issues/1>
-- Branch/worktree: `feature/1-llm-context-files` in `/Users/brettjohnson/code/metasalmon-issue-1-llm-context-files`
+- Branch/worktree: `feature/1-llm-context-files` in `../metasalmon-issue-1-llm-context-files`
 - Reproduction summary: Alice's command passed a parsed dictionary object to `llm_context_files` and omitted `llm_assess = TRUE`; the package accepted the object too late and otherwise ignored context during deterministic-only semantic seeding.
 - Fix summary: `llm_context_files` is now validated as a character vector of local file paths, valid context paths/text warn when supplied without `llm_assess = TRUE`, and public docs clarify that context affects only explicit LLM review.
 - Files changed: `R/llm-semantic-helpers.R`, `R/semantics-helpers.R`, `R/package-helpers.R`, `R/dictionary-helpers.R`, generated `man/*.Rd`, and tests in `test-package-helpers.R` and `test-llm-semantic-helpers.R`.
@@ -107,15 +118,15 @@ Two inputs affect the external issue and branch steps:
 
 Important local paths:
 
-- `/Users/brettjohnson/code/metasalmon/R/`: package source files.
-- `/Users/brettjohnson/code/metasalmon/tests/testthat/`: unit tests.
-- `/Users/brettjohnson/code/metasalmon/inst/extdata/`: bundled schemas, example data, and templates.
-- `/Users/brettjohnson/code/metasalmon/vignettes/`: source vignettes.
-- `/Users/brettjohnson/code/metasalmon/docs/`: generated pkgdown site. (This plan
-  was moved to `/Users/brettjohnson/code/metasalmon/notes/exec-plans/` on
+- `<metasalmon repo root>/R/`: package source files.
+- `<metasalmon repo root>/tests/testthat/`: unit tests.
+- `<metasalmon repo root>/inst/extdata/`: bundled schemas, example data, and templates.
+- `<metasalmon repo root>/vignettes/`: source vignettes.
+- `<metasalmon repo root>/docs/`: generated pkgdown site. (This plan
+  was moved to `<metasalmon repo root>/knowledge/plans/` on
   2026-06-26; see the Closure section.)
-- `/Users/brettjohnson/code/metasalmon/DESCRIPTION`: package metadata and dependencies.
-- `/Users/brettjohnson/code/metasalmon/README.md`: user-facing quickstart and workflow guidance.
+- `<metasalmon repo root>/DESCRIPTION`: package metadata and dependencies.
+- `<metasalmon repo root>/README.md`: user-facing quickstart and workflow guidance.
 
 Potentially relevant source areas will be chosen from Alice's report. Common fault zones in this package include:
 
@@ -160,7 +171,7 @@ Gate: E is required for any code fix. F is required if `metadata/*.csv`, schemas
 2. Resolve branch safety.
    - Verify `origin/main`, GitHub default branch, and canonical repository name before branching.
    - Use a separate git worktree from `origin/main` and do the issue branch there.
-   - Do not change, stash, commit, or revert the dirty work in `/Users/brettjohnson/code/metasalmon`.
+   - Do not change, stash, commit, or revert the dirty work in `<metasalmon repo root>`.
 
 3. Create GitHub issue.
    - Title format: `Fix: <short observed failure>`.
@@ -204,7 +215,7 @@ Gate: E is required for any code fix. F is required if `metadata/*.csv`, schemas
 
 ## Concrete Steps
 
-Run all commands from `/Users/brettjohnson/code/metasalmon` unless a separate worktree is chosen.
+Run all commands from `<metasalmon repo root>` unless a separate worktree is chosen.
 
 Initial state checks:
 

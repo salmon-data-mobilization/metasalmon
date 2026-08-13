@@ -1,3 +1,14 @@
+---
+type: InformationObject
+title: "Bugs and improvements backlog"
+description: "Live index of every known metasalmon defect and improvement, with file:line evidence and verification status. Ordering lives in the roadmap card; severity lives here."
+status: draft
+tags: [backlog, defects]
+psc:
+  id: metasalmon:backlog
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # metasalmon — bugs & improvement backlog
 
 Findings from the 2026-06-24 architecture-plan review (multi-agent code reading +
@@ -41,16 +52,16 @@ Severity = how much it can bite a real user.
 
 **Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
 and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
-start in parallel and is blocked only by #73. See `notes/ROADMAP.md` for the full
+start in parallel and is blocked only by #73. See `knowledge/roadmap.md` for the full
 ordering.
 
 **Forward plan.** Sequencing, dependencies, and release state live in
-**`notes/ROADMAP.md`** — the single undated document that orders every stream and
+**`knowledge/roadmap.md`** — the single undated document that orders every stream and
 links to its execplan. This file stays the live index of *what is wrong*;
 the roadmap decides *what order to fix it in*.
 
 Evidence for items #34+ is in
-`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`. The two older
+`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`. The two older
 documents that called themselves roadmaps
 (`2026-08-10-post-0.2.0-roadmap.md`, `2026-06-26-next-behaviours-roadmap.md`) are
 now historical records; the second still holds the Theme A–E design detail.
@@ -58,7 +69,7 @@ now historical records; the second still holds the Theme A–E design detail.
 **How to read this file.** Items #1–#33 came from the 2026-06-24 architecture
 review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were found
 during the 0.2.4 work. Priorities here are severity; *ordering* is decided in
-`notes/ROADMAP.md` and the two can differ — #54 was a P2 that shipped before the
+`knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
 should name a check that proves it from a clean clone; #9 is the cautionary
 example of what happens otherwise.
@@ -116,7 +127,7 @@ published releases, or manual dispatch.
 ## 0.2.0 P0 remediation (2026-08-10)
 
 The 2026-08-10 comprehensive review
-(`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`) produced 96
+(`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`) produced 96
 adversarially-verified findings. The nine ranked P0 are all fixed on
 `fix/p0-remediation` and released as 0.2.0; see `NEWS.md` for user-facing detail.
 
@@ -130,7 +141,7 @@ adversarially-verified findings. The nine ranked P0 are all fixed on
 | P0-6 | External text evaluated as a cli message template | `R/cli-safety.R` + 15 sites |
 | P0-7 | Canonical bytes and identifiers depended on `LC_COLLATE` | `R/sssom.R`, `R/knb-publication.R`, others |
 | P0-8 | Cancelling the term-request prompt submitted the issue | `R/term-request-helpers.R` |
-| P0-9 | gcdfo validation layer inert (verified, fix deferred to the ontology repo) | `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` |
+| P0-9 | gcdfo validation layer inert (verified, fix deferred to the ontology repo) | `knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md` |
 
 **Deferred from this pass, by decision:** semantic ranking tiebreakers
 (`R/semantics-helpers.R:170-211`) break score ties on character keys, so with
@@ -300,7 +311,7 @@ is the highest-value remaining collation item; pick it up next.**
   (here: `git ls-files AGENTS.md` is non-empty).
 - Both files contain only `@AGENTS.md`; `AGENTS.md` references itself → no agent
   guidance ships, and the include is circular. **Fix:** seed real `AGENTS.md` from
-  `notes/context.md` (LLM opt-in contract, attribute/IRI-prefix contracts, commands).
+  `knowledge/orientation.md` (LLM opt-in contract, attribute/IRI-prefix contracts, commands).
 
 ---
 
@@ -584,9 +595,9 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
 
 Findings from the 2026-08-10 multi-agent review (145 raw findings, 96 surviving
 refute-by-default adversarial verification). Full evidence and failure scenarios
-are in `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`; this
+are in `knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`; this
 section is the live index. Priority tags refer to
-`notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md`.
+`knowledge/plans/2026-08-10-post-0.2.0-roadmap.md`.
 
 ### Fixed in 0.2.0
 
@@ -853,7 +864,7 @@ the `AGENTS.md` contract now says so.
 
 
 **#44 The gcdfo validation layer is inert.** Verified 2026-08-10 —
-`notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md`. SHACL shapes
+`knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md`. SHACL shapes
 and example data bind their default prefix to `w3id.org/dfo/salmon#`, a namespace
 with zero subjects, so `pyshacl` returns a vacuous pass over real gcdfo data; the
 competency SPARQL has three queries in one `.rq` and each fails on an undeclared
@@ -884,7 +895,7 @@ The write-back seam already exists and is unreachable:
 on `accepted`/`accept` (`R/semantics-helpers.R:844`), **nothing writes that
 column, and nothing reads `semantic_suggestions.csv` back**. This feature is the
 missing producer. Design and milestones:
-`notes/exec-plans/2026-08-11-r-native-review-and-editing.md`.
+`knowledge/plans/2026-08-11-r-native-review-and-editing.md`.
 
 *Gate:* `create_sdp()` → `review_semantics()` → `accept_suggestion()` →
 `apply_sdp_semantics()` → `validate_salmon_datapackage(require_iris = TRUE)`
@@ -918,7 +929,7 @@ misses both regexes.
 
 *Gate:* a test asserting that a method-ish column name does **not** receive an
 auto-applied `method_iri`. **Fixed in slice 1** of
-`notes/exec-plans/2026-08-11-r-native-review-and-editing.md` by restricting the
+`knowledge/plans/2026-08-11-r-native-review-and-editing.md` by restricting the
 default seeded path's auto-apply roles to match the LLM path's — review surfaced
 that deferring it made slice 1's own acceptance criteria unsatisfiable, since the
 marker it leaves blocks strict validation.
@@ -1057,7 +1068,7 @@ accessor.
 `salmon-data-standards-workshop`, and cross-repo governance, plus 27
 finder-only ontology findings that still need verification (#44 verified three of
 them). These do not live in this repo and are tracked in
-`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` §3–§7. The five
+`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md` §3–§7. The five
 highest-leverage, in order: vocabulary-release pinning is impossible today
 (which metasalmon's own KNB path requires); `datapackage.json` carries none of
 SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;

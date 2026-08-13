@@ -217,7 +217,7 @@ metasalmon 0.2.0
 ----------------
 
 Remediates the nine highest-priority defects from the 2026-08-10 ecosystem
-review (`notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md`).
+review (`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`).
 
 ### Breaking changes
 

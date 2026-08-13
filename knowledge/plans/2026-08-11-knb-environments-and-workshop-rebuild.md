@@ -1,8 +1,19 @@
+---
+type: Artifact
+title: "KNB environments and workshop rebuild"
+description: "Execplan for the KNB staging environment (stream S3) and the workshop rebuild (stream S4)."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-08-11-knb-environments-and-workshop-rebuild
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # KNB environments and workshop rebuild
 
 Created 2026-08-11. Covers roadmap streams **S3** (KNB staging environment) and
 **S4** (workshop rebuild). Sequencing and dependencies live in
-[`notes/ROADMAP.md`](../ROADMAP.md); this file is the detail.
+[`knowledge/roadmap.md`](../roadmap.md); this file is the detail.
 
 Source: an authored plan, reviewed and refined below. Six findings are called out
 inline as **REVIEW** so the original intent stays visible next to what changed —

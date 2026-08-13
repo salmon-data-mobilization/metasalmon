@@ -1,3 +1,14 @@
+---
+type: InformationObject
+title: "Package orientation"
+description: "Durable orientation for working on metasalmon: architecture, the semantic-review pipeline, domain glossary, and the file-to-responsibility map."
+status: draft
+tags: [orientation, architecture]
+psc:
+  id: metasalmon:orientation
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # metasalmon — project context
 
 Durable orientation notes for working on this package. Captures facts that are
@@ -101,7 +112,7 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   *History:* an earlier note here said the legacy `dfo-pacific-science.github.io`
   URI was the upstream contract value and must not be rewritten. Upstream
   migrated, 0.1.8 followed the value, and 0.2.0 removed the equality assertion
-  that made such a migration fatal — see `notes/bugs-and-improvements.md` #33
+  that made such a migration fatal — see `knowledge/backlog.md` #33
   and #35.
 - **DFO Salmon Ontology:** SKOS/OWL vocabularies. Namespaces: `smn` (shared,
   reusable salmon semantics) and `gcdfo` (DFO-specific operational/policy/program
@@ -134,7 +145,7 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `column_dictionary.method_iri` is the fixed-procedure compatibility binding,
   while row-varying procedures use a `sosa:usedProcedure` observation component.
   Compound variables are SKOS concepts, not OWL classes (see the i-adopt
-  chat-decomposition plan in `notes/exec-plans/`).
+  chat-decomposition plan in `knowledge/plans/`).
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
   (`R/term_search.R` is ~89KB). `suggest_semantics()` calls it (default
   `search_fn = find_terms`) to build a per-target candidate shortlist before any
@@ -300,7 +311,7 @@ R CMD build .
 R CMD check <tarball>   # not currently in the plan's ladder; recommended pre-merge
 ```
 
-`notes/` is excluded from the build (`.Rbuildignore`), so planning artifacts here
+`knowledge/` (and the residual `notes/evidence/`) is excluded from the build (`.Rbuildignore`), so planning artifacts here
 do not affect the built package or pkgdown site.
 
 ## R/ file → responsibility map
@@ -328,32 +339,32 @@ do not affect the built package or pkgdown site.
 
 ## Planning artifacts (read before related work)
 
-- **`notes/ROADMAP.md` — what to do next, in what order, and what blocks what.
+- **`knowledge/roadmap.md` — what to do next, in what order, and what blocks what.
   Start here.** Undated and edited in place; it links each stream to its
   execplan.
-- `notes/bugs-and-improvements.md` — the live backlog and the single index of
+- `knowledge/backlog.md` — the live backlog and the single index of
   open items. Items #34+ came from the 2026-08-10 comprehensive review. Severity
   lives here; ordering lives in the roadmap.
-- `notes/exec-plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
+- `knowledge/plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
   KNB staging target and the workshop rebuild (roadmap S3/S4).
-- `notes/exec-plans/2026-08-10-post-0.2.0-roadmap.md` — superseded by
-  `notes/ROADMAP.md`; kept as the record of how 0.2.1–0.2.4 were sequenced.
-- `notes/exec-plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
+- `knowledge/plans/2026-08-10-post-0.2.0-roadmap.md` — superseded by
+  `knowledge/roadmap.md`; kept as the record of how 0.2.1–0.2.4 were sequenced.
+- `knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
   verified findings behind that roadmap, covering metasalmon plus the SDP spec,
   both ontologies, and the workshop.
-- `notes/exec-plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
+- `knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md` — the
   read-only verification of the gcdfo SHACL/SPARQL/ROBOT claims.
-- `notes/exec-plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
+- `knowledge/plans/2026-06-26-next-behaviours-roadmap.md` — superseded for
   sequencing, still authoritative for the Theme A–E design detail.
 
 ## Related planning artifacts (read before LLM-review work)
 
-- `notes/exec-plans/2026-06-24-deepen-architecture-refactors.md` — the five
+- `knowledge/plans/2026-06-24-deepen-architecture-refactors.md` — the five
   deep-module refactors (peer-reviewed; see its Peer Review section).
-- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — routes
+- `knowledge/plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — routes
   measurement targets through `chat_decomposition()`; **mandates one shared review
   route, not a second prompt stack.** This pre-decides Refactor 4 toward "deepen".
-- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
+- `knowledge/plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
   bundle-aware semantic fit + `retry_search`/`request_new_term` escalation. The
   review contract should be designed to absorb these richer outcomes.
 
@@ -395,7 +406,7 @@ Guard: `tests/testthat/test-cli-safety-guard.R`.
 
 - `CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md` — `AGENTS.md`
   self-references, so the project effectively ships **no agent instructions**
-  (and the include is a circular reference). See `notes/bugs-and-improvements.md`.
+  (and the include is a circular reference). See `knowledge/backlog.md`.
 - On the `create_sdp` path, `infer_dictionary` is called with
   `seed_semantics = FALSE` (package-helpers.R:499), so `infer_dictionary`'s own
   `llm_requested`/arg-assembly/metadata blocks are **dead on that path** and only

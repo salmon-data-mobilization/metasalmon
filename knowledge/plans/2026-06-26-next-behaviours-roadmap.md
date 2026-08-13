@@ -1,6 +1,17 @@
+---
+type: Artifact
+title: "Next behaviours roadmap, Themes A-E"
+description: "Superseded for sequencing by the roadmap card; still the authority for Theme A-E design detail."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-06-26-next-behaviours-roadmap
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # metasalmon — next behaviours roadmap
 
-> **Superseded for sequencing by [`notes/ROADMAP.md`](../ROADMAP.md).** Still the
+> **Superseded for sequencing by [`knowledge/roadmap.md`](../roadmap.md).** Still the
 > authority for **Theme A–E design detail** — read it before picking up anything
 > it designed. Open remnants of Themes C and E were migrated to roadmap stream
 > **S7** so they are not lost.
@@ -24,19 +35,19 @@ supersedes so nothing is lost.
 
 Three planning artifacts already exist:
 
-- `notes/exec-plans/2026-06-24-deepen-architecture-refactors.md` — the five
+- `knowledge/plans/2026-06-24-deepen-architecture-refactors.md` — the five
   "deep module" refactors (R1–R5). **Executed** on `deepen-architecture`
   (centralized LLM context/option policy, extracted semantic target discovery,
   deepened the review adapter, extracted `R/artifact-inference.R`, froze row
   contracts). Its *Missing/Future Refactor Candidates* are folded in below.
-- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
+- `knowledge/plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md` —
   **bundle-aware semantic fit** (the design detail for Theme A below).
-- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — the
+- `knowledge/plans/2026-04-02-i-adopt-chat-decomposition-draft.md` — the
   **interactive curation engine** (the design detail for Theme C below).
 
 And the live backlog with implementation status:
 
-- `notes/bugs-and-improvements.md` — 33 items; this roadmap references the open
+- `knowledge/backlog.md` — 33 items; this roadmap references the open
   ones by number (e.g. *bug #4*).
 
 What changes for the user, by theme: smarter and more honest semantic review
@@ -58,7 +69,7 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
   `feature/theme-a-semantic-review` under GitHub issue
   [#4](https://github.com/salmon-data-mobilization/metasalmon/issues/4). The
   living execution record is
-  `notes/exec-plans/2026-07-28-theme-a-semantic-review.md`. Offline replay,
+  `knowledge/plans/2026-07-28-theme-a-semantic-review.md`. Offline replay,
   pkgdown, final independent review, the complete suite, source-package build,
   and standard `R CMD check` now pass on the hardened branch. Remote CI and the
   exact-model live cohort remain.
@@ -72,7 +83,7 @@ more robust context handling (Theme D), and a more maintainable codebase (Theme 
 ## Context and Orientation
 
 - The semantic-review pipeline and its contracts are documented in
-  `notes/context.md` (target rows, the ~30-col assessment row, the review-adapter
+  `knowledge/orientation.md` (target rows, the ~30-col assessment row, the review-adapter
   seam, LLM providers, the parse-once context pool).
 - The five LLM review decisions are `accept`, `review`, `retry_search`,
   `request_new_term`, `reject_shortlist` (validator: `.ms_validate_llm_assessment`
@@ -188,7 +199,7 @@ share one mature response/request contract rather than two.
 - **E2 — Shared chat request builder (bug #3).** Mutually exclusive with the
   adapter's dual-shape normalizer — do it **as part of Theme C4**, not standalone.
 - **E3 — Real `AGENTS.md` content (bug #9). ✅ DONE.** Quick win: `CLAUDE.md`/`AGENTS.md`
-  are a circular `@AGENTS.md` stub; seed real guidance from `notes/context.md`
+  are a circular `@AGENTS.md` stub; seed real guidance from `knowledge/orientation.md`
   (LLM opt-in contract, attribute/IRI-prefix contracts, build/test commands).
 - **E4 — Latent cleanups (bugs #22, #23, #24).** Drop the unused `.ms_bundle_key`
   `any_of` in the merge helper; forward the LLM-widened shortlist in the multi-table
@@ -258,7 +269,7 @@ share one mature response/request contract rather than two.
 ## Decision Log
 
 - 2026-06-26: Closed the Alice Assmar plan (core fix shipped in 0.1.4) and moved it
-  from `docs/plans/` to `notes/exec-plans/`; created this roadmap rather than
+  from `docs/plans/` to `knowledge/plans/`; created this roadmap rather than
   reopening it, because the remaining work is forward-looking and spans multiple
   sources.
 - 2026-06-26: Did not duplicate the two 2026-04-02 design drafts; this roadmap
@@ -320,7 +331,7 @@ share one mature response/request contract rather than two.
 - [x] 2026-06-26: D1 (context-file encoding fallback), D2 (source-label
   disambiguation), D3 (factor-scope `dataset_id` key) implemented with tests; full
   suite green (1291 pass / 0 fail).
-- [x] 2026-06-26: E3 — real `AGENTS.md` (seeded from `notes/context.md`); resolves
+- [x] 2026-06-26: E3 — real `AGENTS.md` (seeded from `knowledge/orientation.md`); resolves
   the circular `@AGENTS.md` stub. `CLAUDE.md` imports it; the pkgdown artifact is
   git-ignored so nothing leaks to the public site.
 - [x] 2026-07-21: E5 fixed with per-chunk `purl = FALSE`; focused purl validation

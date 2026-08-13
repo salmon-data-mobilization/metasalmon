@@ -1,3 +1,14 @@
+---
+type: InformationObject
+title: "SDP method model draft"
+description: "Draft SDP spec section for methods, protocols, procedures, and aggregation; ports to smn-data-pkg once settled. Prerequisite reading for backlog item 76."
+status: draft
+tags: [sdp, methods, draft]
+psc:
+  id: metasalmon:draft:sdp-method-model
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Draft SDP spec section — methods, protocols, and procedures
 
 **Status: draft for review.** Written in spec voice, ready to port to
