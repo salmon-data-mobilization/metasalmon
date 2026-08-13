@@ -34,7 +34,12 @@ when it varies per row — plus a dedicated `statistical_modifier_iri` (the
 fifth I-ADOPT component column; values instance-typed
 `iop:StatisticalModifier`), whose vocabulary is S9 step 5's
 `smn:StatisticalModifierScheme`. Port note: upstream smn-data-pkg PR #2 added
-an optional `methods.csv` registry that this stream's spec port must unwind.
+an optional `methods.csv` registry. The **v1** draft currently on main still
+keeps a conditional registry, but the **v2** draft under review in metasalmon
+PR #23 removes it entirely (Brett's explicit decision: use the IRI, no
+registry — labels/definitions live in the vocabulary, version/citation on
+the protocol). The port follows v2 once PR #23 lands, so PR #2's registry is
+unwound, not adapted.
 
 **Order within the stream: #77 (done) before #76.** The method model asks "is
 the method constant within each table?", which is only sound when a table is a

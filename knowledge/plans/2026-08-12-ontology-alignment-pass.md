@@ -41,7 +41,7 @@ cross-vocabulary boundary as reviewable data instead of prose. Brett maintains
 all three vocabularies, so no external coordination gates any change.
 
 **What changes for the user:** a metasalmon user's `method_iri` /
-`protocol_iri` / `aggregation_iri` values will resolve to concepts whose
+`protocol_iri` / `statistical_modifier_iri` values will resolve to concepts whose
 modelling style is consistent across all three vocabularies; PSC mappings to
 smn stop being blocked; and the merged graph (smn + gcdfo + profiles) becomes
 safe input for deterministic reasoning.
@@ -251,8 +251,11 @@ output; the durable copies belong in each repo's OKF bundle.
   versions** — indefensible under any DwC vintage, and in the default build.
 - **F8 (nuanced)** — the statistical-modifier slot exists upstream
   (I-ADOPT 1.1.0). Fix: subPropertyOf + range `iadopt:StatisticalModifier`;
-  mint `smn:AggregationStatisticScheme` in module 07 (step 5); SDP
-  `aggregation_iri` resolves to it; Tier-3 links to ODM2 (whose CV hosting is
+  mint a statistical-modifier scheme in module 07 (step 5) — *named
+  `smn:StatisticalModifierScheme` since Brett's 2026-08-13 decision, with the
+  SDP column `statistical_modifier_iri`; the verifier's original
+  `AggregationStatisticScheme`/`aggregation_iri` naming is superseded* — SDP
+  resolves to it; Tier-3 links to ODM2 (whose CV hosting is
   HTTP-only and flaky — link, don't depend). Also fix the stale "via
   constraint_iri" line at `knowledge/method-model-draft.md:459`.
 
