@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Theme A semantic review implementation record"
+description: "Implementation record for the Theme A semantic-review pipeline; shipped in 0.1.6."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-07-28-theme-a-semantic-review
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # ExecPlan - Theme A semantic review implementation
 
 This is a living execution plan. Keep `Progress`, `Surprises & Discoveries`,

@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "gcdfo validation layer verification"
+description: "Read-only verification of the gcdfo SHACL, SPARQL, and ROBOT quality-gate claims; the fix belongs to stream S6."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-08-10-gcdfo-validation-layer-verification
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Verification: is the GC DFO Salmon Ontology validation layer inert?
 
 Date: 2026-08-10. Read-only verification of P0-9 from

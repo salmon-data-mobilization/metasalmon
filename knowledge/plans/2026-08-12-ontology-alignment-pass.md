@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Ontology conventions and alignment pass"
+description: "Execplan for the smn, gcdfo, and PSC CV conventions and alignment pass (stream S9); step 0 recon complete."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-08-12-ontology-alignment-pass
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Ontology conventions and alignment pass — smn, gcdfo, PSC CV
 
 **Roadmap stream:** S9. **Status: step 0 complete, step 1 ready to start.**
@@ -67,7 +78,7 @@ what a deterministic checker consumes.
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
-`notes/ROADMAP.md` if the step changed any dependency, and update the OKF
+`knowledge/roadmap.md` if the step changed any dependency, and update the OKF
 bundle of every repo the step touched (create the bundle if the repo lacks
 one — standing instruction from Brett, 2026-08-12).
 
@@ -228,7 +239,7 @@ output; the durable copies belong in each repo's OKF bundle.
   mint `smn:AggregationStatisticScheme` in module 07 (step 5); SDP
   `aggregation_iri` resolves to it; Tier-3 links to ODM2 (whose CV hosting is
   HTTP-only and flaky — link, don't depend). Also fix the stale "via
-  constraint_iri" line at `notes/sdp-method-model-draft.md:459`.
+  constraint_iri" line at `knowledge/method-model-draft.md:459`.
 
 **smn structure (fix in step 1):** phantom "auto-generated" backfill blocks;
 `verify` targets that mutate source; drift-gate gap for generated modules
@@ -335,7 +346,7 @@ with the view rebuild).
 Workshop (tidy-data + method episodes already scheduled in S4/S8), salmon
 -ontology-hub docs, biologists' guides, I-ADOPT 1.1.0 features where useful
 (`VariableSet` for SDP multi-variable tables is a candidate, not a
-commitment). Update `notes/context.md` and both memory files in the metasalmon
+commitment). Update `knowledge/orientation.md` and both memory files in the metasalmon
 memory directory if repo-map facts changed.
 
 ---

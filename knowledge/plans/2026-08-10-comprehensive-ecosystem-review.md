@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Comprehensive ecosystem review"
+description: "The 96 adversarially verified findings across metasalmon, the SDP spec, both ontologies, and the workshop; evidence base for streams S1, S2, S5, S6."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-08-10-comprehensive-ecosystem-review
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # Comprehensive review — metasalmon + Salmon data-standards ecosystem
 
 Date: 2026-08-10. Reviewed at `metasalmon` 0.1.7 / `main` @ `01eacb7`.
@@ -434,7 +445,7 @@ Highest strategic value, longest lead time, least code.
 
 ## 9. Two things I'd push back on
 
-1. **The `notes/bugs-and-improvements.md` "fixed" markers are load-bearing and at
+1. **The `knowledge/backlog.md` "fixed" markers are load-bearing and at
    least two are wrong** — #9 (`AGENTS.md`) is fixed only in an ignored file, and
    #33's compatibility decision is now false because upstream moved. The document is
    excellent, and precisely because agents and reviewers trust it, a stale "fixed"

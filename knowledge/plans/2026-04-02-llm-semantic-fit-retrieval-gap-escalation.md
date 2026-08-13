@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "Bundle-aware semantic fit and retrieval-gap escalation draft"
+description: "Design draft for bundle-aware semantic-fit scoring and retrieval-gap escalation in the LLM review pipeline."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-04-02-llm-semantic-fit-retrieval-gap-escalation
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # ExecPlan — bundle-aware semantic fit, slot-aware retrieval, and ontology-gap escalation
 
 This ExecPlan is a living document. Keep `Progress`, `Decision Log`, and `Validation + Acceptance` current as the work moves.
@@ -41,7 +52,7 @@ The goal of this update is to move from **slotwise nearest-neighbour selection**
 ## Relationship to the I-ADOPT chat decomposition plan
 
 This roadmap now assumes the routing / architecture foundation described in:
-- `notes/exec-plans/2026-04-02-i-adopt-chat-decomposition-draft.md`
+- `knowledge/plans/2026-04-02-i-adopt-chat-decomposition-draft.md`
 
 That means this plan should be implemented **through** the decomposition route rather than beside it.
 
@@ -351,7 +362,7 @@ Working hypothesis:
 ## Implementation phases
 
 ### Phase 0 — capture the evidence pack
-- [ ] Preserve today’s experiment outputs in a stable notes/artifact location
+- [ ] Preserve today’s experiment outputs in a stable location outside the package build (now `knowledge/`)
 - [ ] Summarize the three real-model runs and qwen prompt experiments in a machine-readable comparison file
 - [ ] Identify the minimum representative regression cases
 

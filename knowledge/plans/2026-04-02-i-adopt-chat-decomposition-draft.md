@@ -1,3 +1,14 @@
+---
+type: Artifact
+title: "I-ADOPT chat decomposition draft"
+description: "Design draft for chat-driven I-ADOPT variable decomposition; routing slices shipped in 0.1.3, the curation engine remains stream S7."
+status: draft
+tags: [execplan]
+psc:
+  id: metasalmon:plan:2026-04-02-i-adopt-chat-decomposition-draft
+  contexts: [metasalmon:context:hub-coordination]
+---
+
 # DRAFT ExecPlan — route measurement / compound-variable targets through I-ADOPT chat decomposition
 
 This ExecPlan is a living document. Keep `Progress`, `Decision Log`, and `Validation + Acceptance` current as the work moves.
@@ -33,7 +44,7 @@ That means the document now covers two layers:
 ## Relationship to the bundle-aware semantic-fit roadmap
 
 This plan is now the **routing and prompt-architecture foundation** for the broader bundle-aware semantic-fit work captured in:
-- `notes/exec-plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md`
+- `knowledge/plans/2026-04-02-llm-semantic-fit-retrieval-gap-escalation.md`
 
 The intended division of labor is:
 - this plan defines **when** metasalmon should switch from generic shortlist review to decomposition-oriented review and what ontology conventions constrain that route
@@ -44,10 +55,10 @@ To keep the two plans from drifting into parallel designs:
 - the broader roadmap may temporarily preserve bridge outputs like `accept` / `review` / `request_new_term`, but richer actions such as `retry_search` should be treated as a forward-compatible extension of this same route, not a separate API family
 - package-level `method_iri` behavior should continue to be described as a **bridge to procedure context** (`usedProcedure`-style reasoning), not as if `method` were a native I-ADOPT slot
 
-## Why this lives in `notes/`
+## Why this lives outside the R package build (originally `notes/`, now `knowledge/`)
 
-This draft lives in `notes/exec-plans/` specifically so it does **not** affect package building or publisher docs:
-- `notes/` is excluded by `.Rbuildignore`
+This draft lives in `knowledge/plans/` specifically so it does **not** affect package building or publisher docs:
+- `knowledge/` (like `notes/` before it) is excluded by `.Rbuildignore`
 - it is outside `man/`, `vignettes/`, `doc/`, and `docs/`
 - it can be committed to `main` as a planning artifact without changing the built package surface
 
@@ -515,7 +526,7 @@ Acceptance signals:
 
 ## Decision Log
 
-- Decision: Keep the draft ExecPlan in `notes/exec-plans/` rather than `docs/plans/`.
+- Decision: Keep the draft ExecPlan in `knowledge/plans/` rather than `docs/plans/`.
   Rationale: Brett explicitly wants a location that will not affect package building or publisher docs; `notes/` is excluded from package builds and stays out of pkgdown/published documentation paths.
   Date/Author: 2026-04-02 / Alan
 
@@ -549,7 +560,7 @@ Acceptance signals:
 
 ## Progress
 
-- [x] (2026-04-02) Draft ExecPlan created in `notes/exec-plans/`.
+- [x] (2026-04-02) Draft ExecPlan created in `knowledge/plans/`.
 - [x] (2026-04-02) Draft positioned to avoid package-build and publisher-doc side effects.
 - [x] (2026-04-02) Reviewed `code/dfo-salmon-ontology/docs/CONVENTIONS.md` and tightened the plan around SKOS variable concepts, local annotation-style decomposition, and `usedProcedure` wording.
 - [x] (2026-04-02) Expanded the draft to capture the broader interactive chat architecture: session-state model, question planner, structured outputs, provenance, provider boundary, context-budget rules, and R-console-first runtime stance.

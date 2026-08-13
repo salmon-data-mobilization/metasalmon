@@ -2,12 +2,28 @@
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, and packages
 salmon datasets into **Salmon Data Packages (SDP)** using the DFO Salmon Ontology.
-Start with `notes/context.md` — it is the durable orientation (architecture, the
-semantic-review pipeline, domain glossary, file→responsibility map). This file is
-the short, must-know contract; `notes/context.md` is the detail.
+Start with `knowledge/orientation.md` — it is the durable orientation
+(architecture, the semantic-review pipeline, domain glossary,
+file→responsibility map). This file is the short, must-know contract;
+`knowledge/orientation.md` is the detail.
+
+**This repo is also the coordinating hub** for the salmon data ecosystem
+(metasalmonpy, `smn-data-pkg`, `salmon-domain-ontology`, `dfo-salmon-ontology`,
+`psc-salmon-vocabularies`): sequencing, execplans, and the cross-repo release
+index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
 
 ## Non-negotiable contracts (do not break without a logged decision)
 
+- **metasalmonpy mirrors this package — always.** (Brett, 2026-08-13.) Any
+  change requested or made in metasalmon is **presumed to require the same
+  change in metasalmonpy** (github `salmon-data-mobilization/metasalmonpy`,
+  formerly `metaSmnPy`); implement it there in the same stream or log in the
+  roadmap card why not. Functionality and **release numbers stay in lockstep**
+  — metasalmonpy's version is a parity claim, bumped to match metasalmon only
+  when the mirrored behaviour actually lands. Current state: metasalmonpy is
+  at 0.1.6 parity; the 0.1.7→0.2.6 catch-up is roadmap stream S10. The same
+  contract is stated in metasalmonpy's `AGENTS.md`; both files are
+  git-tracked and must never be git-ignored.
 - **LLM review is strictly opt-in.** Supplying `llm_context_files` /
   `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
@@ -64,8 +80,9 @@ git diff --check
 R CMD build . && R CMD check <tarball>   # before merging
 ```
 
-Add a `NEWS.md` entry for any observable behaviour change. `notes/` and `docs/`
-are excluded from `R CMD build`; `docs/` is the pkgdown output (and
+Add a `NEWS.md` entry for any observable behaviour change. `knowledge/`,
+`notes/` (now only `notes/evidence/theme-a/`, which is CI/test-wired), and
+`docs/` are excluded from `R CMD build`; `docs/` is the pkgdown output (and
 `docs/AGENTS.html`/`docs/CLAUDE.html`/`docs/plans/` are git-ignored). Some tests
 skip without optional deps (`pdftools`, `readxl`, `openxlsx`, `frictionless`) or
 network (`w3id.org`) — don't read a green offline run as full coverage.
@@ -84,33 +101,33 @@ network (`w3id.org`) — don't read a green offline run as full coverage.
   sentinel proving the LLM was not called); mock `find_terms` via
   `with_mocked_bindings` on the `create_sdp`/`infer_dictionary` paths.
 
-## Planning artifacts (read before related work)
+## Planning artifacts — the `knowledge/` OKF bundle (read before related work)
 
-Three document types, with one job each. Respect the split when you add to them:
+Planning and durable knowledge live in the `knowledge/` Open Knowledge Format
+bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
+`notes/evidence/theme-a/` stayed behind). Four document types, one job each:
 
-- **`notes/ROADMAP.md` — what to do next, in what order, blocked by what.**
-  Undated, edited in place, the single sequencing authority. Start here.
-- **`notes/bugs-and-improvements.md`** — every known defect with evidence, the
-  live index of open items. Severity lives here; *ordering* lives in the roadmap,
-  and the two legitimately differ.
-- **`notes/exec-plans/*.md`** — how to do one stream, in detail. Dated, because
-  each is a record of a decision at a point in time. A roadmap stream links to
+- **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
+  and the cross-repo release index.** Undated, edited in place, the single
+  sequencing authority for the whole ecosystem. Start here.
+- **`knowledge/sequences/`** — one card per stream (S1–S10) with the detail the
+  roadmap card deliberately omits.
+- **`knowledge/backlog.md`** — every known defect with evidence, the live index
+  of open items. Severity lives here; *ordering* lives in the roadmap, and the
+  two legitimately differ.
+- **`knowledge/plans/*.md`** — how to do one stream, in detail. Dated, because
+  each is a record of a decision at a point in time. A sequence card links to
   its execplan before implementation starts.
 
-Orientation is `notes/context.md`. Key execplans:
+Orientation is `knowledge/orientation.md`; the SDP method-model draft is
+`knowledge/method-model-draft.md`. Keep the bundle valid — from the repo root,
+with a sibling `psc-data-systems` checkout:
 
-- `2026-08-11-knb-environments-and-workshop-rebuild.md` — KNB staging target and
-  the workshop rebuild (roadmap S3/S4).
-- `2026-08-11-r-native-review-and-editing.md` — the R-native semantic review and
-  editing flow (roadmap S5, ships with 0.3.0).
-- `2026-08-10-comprehensive-ecosystem-review.md` — the 96 verified findings
-  behind the current backlog (metasalmon plus the SDP spec, both ontologies, and
-  the workshop).
-- `2026-08-10-gcdfo-validation-layer-verification.md` — read-only verification of
-  the gcdfo SHACL/SPARQL/ROBOT claims.
-- `2026-06-26-next-behaviours-roadmap.md` — superseded for sequencing; still the
-  authority for Theme A–E design detail.
-- `2026-08-10-post-0.2.0-roadmap.md` — superseded by `notes/ROADMAP.md`; the
-  record of how 0.2.1–0.2.4 were sequenced.
-- `2026-06-24-deepen-architecture-refactors.md` — the executed architecture refactor.
-- `2026-04-02-*` — bundle-aware semantic-fit and i-adopt chat-decomposition drafts.
+```sh
+uv run --project ../psc-data-systems psc-okf check knowledge --tier capture
+```
+
+Bundle cards are git-tracked and must contain **no absolute filesystem paths**.
+When ecosystem work reveals durable knowledge about a sibling repo, update
+*that repo's* `knowledge/` bundle (create it if absent) and keep its
+`AGENTS.md` pointing at it.
