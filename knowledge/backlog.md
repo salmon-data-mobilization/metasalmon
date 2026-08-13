@@ -1075,6 +1075,17 @@ SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
 no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
 
+**#78 iop-triple emission from SDPs — explainer before decision.** metasalmon
+consumes I-ADOPT terminologies but never emits `iop:` triples stating that a
+column's component IRIs form an I-ADOPT Variable, so RDF consumers must infer
+the decomposition from column names. Brett deferred this (2026-08-13) pending
+an explainer that covers: (a) when iop triples are actually useful and to
+whom; (b) the pattern for emitting triples from an SDP (where they would
+live, what generates them, how they version); and (c) whether triple emission
+is a capability SDPs should support *generally* rather than just for I-ADOPT.
+Deliverable is the explainer plus a recommendation — not an implementation.
+Parked under S9 step 6; do not schedule before Brett reviews the explainer.
+
 ---
 
 ## Code review of the implementation (2026-06-25)

@@ -73,7 +73,7 @@ what a deterministic checker consumes.
 - [ ] **Step 2 — methods-as-SKOS across the trio** (couples with roadmap S8).
 - [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
 - [ ] **Step 4 — PSC CV anchoring to smn.**
-- [ ] **Step 5 — aggregation / statistical-modifier scheme** (independent:
+- [ ] **Step 5 — statistical-modifier scheme** (independent:
   runs after step 1, before or alongside S8, which consumes it).
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
@@ -129,6 +129,12 @@ one — standing instruction from Brett, 2026-08-12).
 9. **`dfo-salmon-ontology` was 109 commits behind origin/main** at recon start
    (fast-forwarded to 0.0.8 before any reading). A reminder to check checkout
    freshness before cross-repo review.
+10. **Upstream `smn-data-pkg` added the registry the method model removes.**
+   While the v2 draft was in review, smn-data-pkg merged PR #2 ("observation
+   structures and methods profile"), adding an optional `metadata/methods.csv`
+   registry + schema. The S8 port must unwind it. Found 2026-08-13 while
+   resolving the dirty checkout (whose local edits turned out to be abandoned
+   metasmn-rename leftovers, preserved on a local attic branch).
 
 ## Decision Log
 
@@ -140,6 +146,10 @@ one — standing instruction from Brett, 2026-08-12).
 | PSC CV canonical source: `feature/fair-mapping-products-roadmap`; workbench out of scope | Brett's answer | 2026-08-12 |
 | OKF bundles: create/update in every repo the pass touches, `AGENTS.md` points at them | Brett's standing instruction this session; reuse the canonical PSC profile v0.4 + `psc-okf` validator from `psc-data-systems` (verified to work cross-repo) rather than inventing a parallel format | 2026-08-12 |
 | Recommend adopting gcdfo's **methods-as-SKOS** stance in smn (step 2), with a thin `sosa:Procedure` instance-typing bridge | PSC's mapping refusal + gcdfo's working mappings are field evidence; I-ADOPT excludes methods from variables; `sosa:usedProcedure` expects an individual, which a SKOS concept is | 2026-08-12 — **pending Brett's confirmation at step 2 start** |
+| **Methods-as-SKOS confirmed and ordered by Brett** ("migrate SMN methods from OWL classes to SKOS concepts") — the step-2 gate is satisfied; the v2 method-model draft names the concepts | Direct instruction; field evidence already pointed here | 2026-08-13 |
+| **Statistical modifiers use I-ADOPT's own language and class**: SDP column `statistical_modifier_iri` (fifth I-ADOPT component column), values instance-typed `iop:StatisticalModifier`; the smn scheme is `smn:StatisticalModifierScheme` | Brett: "rather than aggregation_iri… use I-ADOPT's statistical_modifier language and class if possible and reasonable" — it is both | 2026-08-13 |
+| **iop-triple emission deferred** — parked as backlog #78 (explainer before decision) under step 6 | Brett needs to understand when the triples are useful, the SDP→RDF emission pattern, and whether triple emission should be a general SDP capability | 2026-08-13 |
+| smn-data-pkg dirty checkout resolved: abandoned metasmn-rename leftovers preserved on local branch `attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded to origin (PRs #2, #3) | The edits referenced the never-adopted `metasmn` name and were superseded by upstream PRs; nothing was commit-worthy, nothing was destroyed | 2026-08-13 |
 | Step 5 re-sequenced: independent of steps 2–4, runs after step 1 and before/alongside S8 | Original "steps 3–5 follow step 2" made S8 ⇄ S9 circular (S8 blocks step 2, yet step 5 fed S8); step 5 only needs module 07 + I-ADOPT 1.1.0 typing. Caught by Codex on PR #24 | 2026-08-13 |
 
 ## Outcomes & Retrospective
@@ -304,7 +314,7 @@ The current step. Work items, in commit-sized slices:
 
 ### Step 2 — Methods-as-SKOS across the trio (smn + gcdfo + spec + metasalmon)
 
-Confirm the recommendation with Brett, then: migrate smn's method hierarchy
+**Ordered by Brett 2026-08-13** — no further confirmation needed: migrate smn's method hierarchy
 (`EnumerationMethod` family, `modules/02`) from `owl:Class ⊑ sosa:Procedure`
 to SKOS concepts in a module-07 scheme, each instance-typed `sosa:Procedure`;
 resolve the cross-repo pun (gcdfo drops its local re-typing once smn matches);
@@ -332,14 +342,16 @@ the hard-coded `mapping_date`. Do **not** relax PSC's promotion gate ("two
 independently governed organizations") — record smn anchoring as mappings,
 not promotion.
 
-### Step 5 — Aggregation / statistical-modifier scheme (independent: after step 1, before/alongside S8)
+### Step 5 — Statistical-modifier scheme (independent: after step 1, before/alongside S8)
 
-`smn:AggregationStatisticScheme` in module 07 seeded from the SDP draft's
+`smn:StatisticalModifierScheme` in module 07 seeded from the SDP draft's
 starter list (mean, median, min, max, total, count, peak), concepts
-instance-typed `iadopt:StatisticalModifier`, Tier-3 links to ODM2; SDP
-`aggregation_iri` documented to resolve here; metasalmon S8 breaking change
-consumes this. Fix `smnv:variableUsesStatisticalModifier` range (or retire it
-with the view rebuild).
+instance-typed `iadopt:StatisticalModifier` (I-ADOPT's own class, per Brett's
+2026-08-13 decision), Tier-3 links to ODM2; the SDP column is
+`statistical_modifier_iri` — the fifth I-ADOPT component column — documented
+to resolve here; metasalmon S8 breaking change consumes this. Fix
+`smnv:variableUsesStatisticalModifier` range (or retire it with the view
+rebuild).
 
 ### Step 6 — Propagation
 

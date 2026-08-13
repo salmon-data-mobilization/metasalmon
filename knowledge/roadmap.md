@@ -109,8 +109,11 @@ boundary alignment) awaits a version. Both are S6 item-3 work.
 
 Spec, profile, and rules all declare sdp-0.2.0, but the changelog's newest
 dated entry is 0.1.1 — 0.2.0 has no dated entry, tag, or release (S6 item 3 /
-S1 cross-repo work). **Local checkout note (2026-08-13):** behind origin by 2
-commits with 5 modified files — surfaced to Brett, not touched.
+S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
+state was abandoned metasmn-rename leftovers — preserved on local branch
+`attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded. Note PR #2
+added a `methods.csv` registry the S8 method model removes; the port unwinds
+it.
 
 ### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2**
 
@@ -176,8 +179,8 @@ S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ �
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
 S9 ontology conventions + alignment ── steps 1 and 5 independent (5 after 1,
-   (step 0 done)                       and 5 feeds S8's aggregation_iri);
-                                       step 2 waits on S8; steps 3–4 follow 2
+   (step 0 done; step 2 unblocked)     and 5 feeds S8's statistical_modifier_iri);
+                                       steps 3–4 follow step 2
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
