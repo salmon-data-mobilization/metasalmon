@@ -74,11 +74,15 @@ what a deterministic checker consumes.
   W3C SOSA–PROV alignment with vendored offline closure, module-06
   equivalences demoted, axiom-light views with iop: bridges,
   EscapementEstimate rename + migration CSVs, CONVENTIONS §5b, catalogs).
-- [ ] **Step 1b — smn tooling and CI gates** (open; carries step 1's
-  remaining acceptance criteria): ELK CI gate, the §5b check scripts
-  (foreign-subject + tier-mix, prototyped and passing as one-offs), pyshacl
-  wiring for the new shapes file, Makefile hygiene (verify-mutates-source,
-  08/09 drift gate, phantom backfill markers in fragments), w3id views note.
+- [x] **Step 1b — smn tooling and CI gates** (salmon-domain-ontology PR
+  #23, merged 2026-08-13): verification is read-only with a real 08/09
+  drift gate; CONVENTIONS §5b enforced in CI (foreign-subject statements
+  incl. instance-level assertions, tier-mixing per-file and across the
+  spine, dual typing); pyshacl behavioural check for the method shapes;
+  **ELK reasoner gate passing in CI** over the catalog-resolved closure;
+  phantom markers replaced; views documented as non-dereferenceable.
+  *One acceptance item deliberately deferred to step 3:* reasoning over
+  the combined main+gcdfo closure, which needs the cross-repo CI design.
 - [x] **Step 2 — methods-as-SKOS, smn side** (salmon-domain-ontology PR
   #22, merged 2026-08-13): six method classes → `smn:MethodScheme` concepts,
   IRIs unchanged, instance-typed `sosa:Procedure`; restrictions retargeted
@@ -433,10 +437,11 @@ uv run psc-okf check <repo>/knowledge --tier capture
   gate green, no tier-mixed pairs and no foreign-subject axioms outside
   alignment modules (verified as one-off rdflib checks), views import by
   absolute IRI and load in isolation via the catalog.
-- Step-1b acceptance (open): **robot reason (ELK) reports consistent with
-  zero unsatisfiable classes on both the main build and the main+gcdfo
-  closure**, the §5b checks and pyshacl run in CI, verify targets are
-  read-only, and the 08/09 drift gap is closed.
+- Step-1b acceptance (met 2026-08-13, except as noted): ELK reports
+  consistent with zero unsatisfiable classes on the main-build closure in
+  CI; the §5b checks and pyshacl run in CI; verify targets are read-only;
+  the 08/09 drift gap is closed. *Deferred to step 3:* the main+gcdfo
+  closure run (cross-repo CI design).
 - Step-2 acceptance (smn side, met 2026-08-13): no IRI in the merged
   closure is typed both `owl:Class` and `skos:Concept`. Reassigned:
   PSC's doc update → step 4; metasalmon crosswalk retarget + green suite →
