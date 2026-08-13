@@ -43,3 +43,11 @@ already absorbed.
 
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.
+
+**Audit additions (2026-08-13):** `github_io.py:85` still defaults
+`ms_setup_github()` to the private `dfo-pacific-science/qualark-data` repo —
+the exact defect metasalmon fixed as #72 in 0.2.4; mirror that fix. The
+`SALMONPY_CACHE`/`SALMONPY_DEBUG_FETCH` env vars survived the rename —
+decide between renaming with legacy aliases or documenting as-is.
+`github_io.py:54-55` prints an R-syntax remediation message
+(`metasalmon::ms_setup_github()`) from Python.

@@ -1081,6 +1081,19 @@ SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
 no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
 
+**#79 Vignettes lag the package by two breaking releases.** The 2026-08-13
+staleness audit (recorded on the
+[S11 sequence card](sequences/s11-vignettes-and-walkthroughs.md)) found: no
+vignette touched since 0.2.6; two shipped code defects
+(`reusing-standards-salmon-data-terms.Rmd:39` `devtools::load_all(".")` in a
+user chunk; `data-dictionary-publication.Rmd:129` repo-relative path); the
+0.2.6 placeholder warning fires unexplained on every quickstart package;
+zero vignette coverage of `primary_key`, tidy shape, or the 0.2.4
+missing-value token; 27 of 54 exports untaught; and the KNB workflow buried
+as §10 of another vignette with no articles-index entry. Fix via S11 slices;
+severity: user-facing, silent (nothing errors — readers just learn the old
+contract).
+
 **#78 iop-triple emission from SDPs — explainer before decision.** metasalmon
 consumes I-ADOPT terminologies but never emits `iop:` triples stating that a
 column's component IRIs form an I-ADOPT Variable, so RDF consumers must infer
