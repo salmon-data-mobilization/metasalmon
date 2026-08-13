@@ -178,9 +178,9 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ 
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── steps 0, 1a, 2(smn side), 5 done
-   (2026-08-13)                        (smn PRs #21/#22); next: 1b tooling
-                                       PR, then steps 3–4
+S9 ontology conventions + alignment ── steps 0, 1a, 1b, 2(smn side), 5
+   (2026-08-13)                        done (smn PRs #21/#22/#23);
+                                       next: steps 3–4
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
