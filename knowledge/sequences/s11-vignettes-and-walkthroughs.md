@@ -31,7 +31,9 @@ No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
   `data-dictionary-publication.Rmd:129` reads a repo-relative
   `inst/extdata/` path instead of `system.file()`.
 - **Zero coverage of the new contracts:** `primary_key` (0 hits in
-  vignettes/ despite being a hard error since 0.2.6 and a template column),
+  vignettes/ — since 0.2.6 a *declared* key is enforced: duplicates,
+  missing components, or absent columns are hard errors; an undeclared key
+  is still accepted — and it is a shipped template column),
   wide-format/`pivot_longer` guidance (0 hits; `tidyr` isn't even in
   DESCRIPTION), and the 0.2.4 empty-field missing-value token (nothing
   contradicts it, nothing documents it — `NEWS.md:73-77` names hand-authored

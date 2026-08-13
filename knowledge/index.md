@@ -18,7 +18,7 @@ and contains non-Markdown files a bundle cannot hold).
 
 - [ROADMAP](roadmap.md) — the single sequencing authority: what next, in what
   order, blocked by what, plus the per-repo release index.
-- Sequence cards under `sequences/` — one card per stream (S1–S10) with the
+- Sequence cards under `sequences/` — one card per stream (S1–S11) with the
   detail the roadmap deliberately omits.
 - Execplans under `plans/` — dated records of how one stream is done.
 - [Backlog](backlog.md) — every known defect and improvement, with evidence.

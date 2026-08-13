@@ -110,7 +110,7 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
   and the cross-repo release index.** Undated, edited in place, the single
   sequencing authority for the whole ecosystem. Start here.
-- **`knowledge/sequences/`** — one card per stream (S1–S10) with the detail the
+- **`knowledge/sequences/`** — one card per stream (S1–S11) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
   of open items. Severity lives here; *ordering* lives in the roadmap, and the
