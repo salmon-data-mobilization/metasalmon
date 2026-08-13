@@ -69,17 +69,33 @@ what a deterministic checker consumes.
 - [x] Step 0 deliverables: this execplan; roadmap S9 added and S6 re-scoped;
   OKF knowledge bundle seeded in `salmon-domain-ontology` with `AGENTS.md`
   pointer (2026-08-12).
-- [~] **Step 1 — smn conventions + metamodel split**: semantics half done
+- [x] **Step 1 — smn conventions + metamodel split**: semantics **merged**
   (salmon-domain-ontology PR #21, 2026-08-13 — alignment-upper imports the
-  W3C SOSA–PROV alignment, module-06 equivalences demoted, axiom-light
-  views with iop: bridges, EscapementEstimate rename, CONVENTIONS §5b);
-  tooling half (ELK CI gate, check scripts, Makefile hygiene, 08/09 drift
-  gate, w3id views note) is the follow-up PR.
-- [ ] **Step 2 — methods-as-SKOS across the trio** (couples with roadmap S8).
+  W3C SOSA–PROV alignment with vendored offline closure, module-06
+  equivalences demoted, axiom-light views with iop: bridges,
+  EscapementEstimate rename + migration CSVs, CONVENTIONS §5b, catalogs).
+  **Remaining as the tooling PR:** ELK CI gate, the §5b check scripts
+  (foreign-subject + tier-mix, prototyped and passing), pyshacl wiring for
+  the new shapes file, Makefile hygiene (verify-mutates-source, 08/09
+  drift gate, phantom backfill markers in fragments), w3id views note.
+- [x] **Step 2 — methods-as-SKOS** (salmon-domain-ontology PR #22, merged
+  2026-08-13): six method classes → `smn:MethodScheme` concepts, IRIs
+  unchanged, instance-typed `sosa:Procedure`; restrictions retargeted with
+  the enumeration constraint preserved in `ontology/shapes/method-shapes.ttl`
+  (smn's first SHACL file, behaviourally tested). **The cross-repo pun is
+  resolved** — zero dual-typed IRIs in the flat closure; PSC's wrong-kind
+  objection dissolved (their doc update is step 4).
+- [x] **Step 5 — statistical-modifier scheme** (same PR):
+  `smn:StatisticalModifierScheme`, seven concepts instance-typed
+  `iadopt:StatisticalModifier`, advisory ODM2 links; the SDP
+  `statistical_modifier_iri` column resolves here.
 - [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
-- [ ] **Step 4 — PSC CV anchoring to smn.**
-- [ ] **Step 5 — statistical-modifier scheme** (independent:
-  runs after step 1, before or alongside S8, which consumes it).
+  Includes the gcdfo-side follow-through of step 2: retire gcdfo's local
+  re-declaration of `smn:EnumerationMethod` if redundant, coordinate the
+  `gcdfo:*CountMeasurement` family with the `EscapementEstimate` rename,
+  and settle `smn:FisheriesReferencePointLower`.
+- [ ] **Step 4 — PSC CV anchoring to smn** — unblocked: the wrong-kind
+  objection is gone as of step 2.
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
@@ -165,6 +181,13 @@ one — standing instruction from Brett, 2026-08-12).
   verdicts (4 confirmed, 4 nuanced, 0 refuted). Full agent output preserved at
   the session task file and summarized below; the durable facts are being
   copied into per-repo OKF bundles as the pass touches each repo.
+- Steps 1 (semantics), 2, and 5 (2026-08-13): merged as salmon-domain-ontology
+  PRs #21 and #22, each through a full Codex review loop (7 findings total,
+  all verified before acting; 2 fixed with a different remedy than suggested —
+  the flat-build inlining exclusion and the SHACL shape instead of owl:oneOf).
+  Lesson worth keeping: completing the offline catalog closure silently
+  changed the flat artifact's content — generated-artifact invariants need
+  their own check whenever import resolution changes.
 
 ---
 

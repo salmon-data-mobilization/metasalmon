@@ -15,9 +15,13 @@ psc:
 
 One conventions layer across the three vocabularies so everything interoperates
 *through* smn, plus a reasoner-clean OWL backbone for the neurosymbolic
-consumption target. **Step 0 (14-agent recon + adversarial verification, and
-Brett's four preference decisions) is done** — findings and decisions live in
-the execplan.
+consumption target. **Steps 0, 1 (semantics), 2, and 5 are done** (2026-08-13,
+salmon-domain-ontology PRs #21/#22): the W3C SOSA–PROV alignment is imported
+not restated, CONVENTIONS §5b governs mapping placement, methods are SKOS
+concepts (the cross-repo pun is resolved and PSC's mapping blocker dissolved),
+and `smn:StatisticalModifierScheme` exists for the SDP
+`statistical_modifier_iri`. **Next: the step-1 tooling PR** (ELK CI gate, §5b
+check scripts, pyshacl wiring, Makefile hygiene), then steps 3–4.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
