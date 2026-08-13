@@ -24,19 +24,23 @@ the execplan.
    the normative-alignment-core / teaching-view split, the eight verified
    metamodel fixes (F1–F8), repo-structure repairs, and a `robot reason` CI
    gate. Independent — can start now.
-3. **Step 2 — methods-as-SKOS across the trio.** The vocabulary half of #76,
-   **after S8 names the concepts**. Field evidence already decides direction:
-   PSC refuses to map to smn's OWL-class methods while 18 released mappings
-   target gcdfo's SKOS methods, and a live cross-repo pun on
-   `smn:EnumerationMethod` poisons the merged closure.
+3. **Step 2 — methods-as-SKOS across the trio.** The vocabulary half of #76 —
+   **ordered by Brett 2026-08-13** ("migrate SMN methods from OWL classes to
+   SKOS concepts"); the S8 gate is satisfied by the v2 draft naming the
+   concepts. Field evidence agreed: PSC refuses to map to smn's OWL-class
+   methods while 18 released mappings target gcdfo's SKOS methods, and a live
+   cross-repo pun on `smn:EnumerationMethod` poisons the merged closure.
 4. **Step 3 — the smn↔gcdfo boundary as data** (SSSOM set, the minted `smn:`
    term, the unbridged age/year duplication). Absorbed from S6 item 4.
 5. **Step 4 — PSC CV anchoring to smn** — unblocked by step 2.
-6. **Step 5 — aggregation scheme** (`smn:AggregationStatisticScheme`), the
-   vocabulary SDP `aggregation_iri` (S8) resolves to. **Independent of steps
-   2–4** — runs right after step 1, before or alongside S8's breaking change
-   (otherwise S8→S9.2→S9.5→S8 would be circular).
-7. **Step 6 — propagation** to workshop, hub docs, and guides.
+6. **Step 5 — statistical-modifier scheme** (`smn:StatisticalModifierScheme`,
+   concepts instance-typed `iop:StatisticalModifier` per Brett's 2026-08-13
+   decision), the vocabulary the SDP `statistical_modifier_iri` column (S8)
+   resolves to. **Independent of steps 2–4** — runs right after step 1, before
+   or alongside S8's breaking change (otherwise S8→S9.2→S9.5→S8 would be
+   circular).
+7. **Step 6 — propagation** to workshop, hub docs, and guides; also hosts the
+   parked #78 iop-triple-emission explainer (deferred by Brett 2026-08-13).
 
 **Cross-repo bookkeeping rule (Brett, 2026-08-12/13):** every repo this stream
 touches gets an OKF knowledge bundle (created if absent, updated as learned),

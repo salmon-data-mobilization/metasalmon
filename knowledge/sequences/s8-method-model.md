@@ -30,15 +30,23 @@ resolves this in its step 2, **after this stream names the concepts**.
 **The method placement model.** `column_dictionary.method_iri` is a category
 error: a method describes how an observation was made, not what was observed.
 Three placements replace it — table protocol, table method, or a data column
-when it varies per row — plus a dedicated `aggregation_iri` for statistical
-modifiers, whose vocabulary is S9 step 5's `smn:AggregationStatisticScheme`.
+when it varies per row — plus a dedicated `statistical_modifier_iri` (the
+fifth I-ADOPT component column; values instance-typed
+`iop:StatisticalModifier`), whose vocabulary is S9 step 5's
+`smn:StatisticalModifierScheme`. Port note: upstream smn-data-pkg PR #2 added
+an optional `methods.csv` registry. The **v1** draft currently on main still
+keeps a conditional registry, but the **v2** draft under review in metasalmon
+PR #23 removes it entirely (Brett's explicit decision: use the IRI, no
+registry — labels/definitions live in the vocabulary, version/citation on
+the protocol). The port follows v2 once PR #23 lands, so PR #2's registry is
+unwound, not adapted.
 
 **Order within the stream: #77 (done) before #76.** The method model asks "is
 the method constant within each table?", which is only sound when a table is a
 coherent observational unit.
 
 **Blocks:** S9 step 2 (methods-as-SKOS) and S4's method-annotation teaching.
-**Consumes:** S9 step 5 (the aggregation scheme), which is independent of S9
+**Consumes:** S9 step 5 (the statistical-modifier scheme), which is independent of S9
 steps 2–4 precisely so this stream can consume it.
 
 **Breaking.** `method_iri` appears in 13 `R/` files, 14 test files, and 5 schema
