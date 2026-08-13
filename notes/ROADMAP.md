@@ -68,11 +68,15 @@ ships without them, but says something it cannot fully back.
 ```
 #73 redaction ✔ ──► S3 KNB environments ──► S4 workshop rebuild
                                               ▲   ▲   ▲
-S8 method model + tidy ──► S6 sosa typing ────┘   │   │
+S8 method model + tidy ──► S9.2 methods-as-SKOS ──┘   │   │
      (#77 → #76)                                  │   │
 S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
+S9 ontology conventions + alignment ── steps 1 and 5 independent (5 after 1,
+   (step 0 done)                       and 5 feeds S8's aggregation_iri);
+                                       step 2 waits on S8 naming the concepts;
+                                       steps 3–4 follow step 2
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
@@ -86,8 +90,8 @@ episode 8 teaches validation as the final gate and the KNB documentation names
 pinning as a precondition; the workshop can ship first with those claims scoped.
 
 **S8 is new and comes first among the spec streams.** It decides what the SDP
-means; S1 then makes the validator enforce it; S6's `sosa:Procedure` typing
-implements the vocabulary half. Doing S1 or S6 before S8 means building
+means; S1 then makes the validator enforce it; S9 step 2's methods-as-SKOS
+migration implements the vocabulary half. Doing S1 or S6 before S8 means building
 machinery around a model that is about to change.
 
 ### S1 — One validation authority · #48, #49 · ~2 weeks
@@ -194,13 +198,49 @@ Settling *which* rules the spec should declare first avoids building the
 machinery and then changing its inputs. The two are close enough that running
 them together is reasonable; the wrong order is S1 alone.
 
-**Blocks:** the canonical-style decision in S6 (#76 — do not converge the
+**Blocks:** the canonical-style decision in S9 step 2 (#76 — do not converge the
 vocabularies until this names the concepts), and the method-annotation teaching
 in S4.
 
 **Breaking.** `method_iri` appears in 13 `R/` files, 14 test files, and 5 schema
 files. Spec version bump with a migration that stops and reports rather than
 guessing when a table's measurement columns disagree.
+
+### S9 — Ontology conventions and alignment pass · smn + gcdfo + PSC CV · ~4–6 weeks · mostly not R code
+
+**Execplan:** [`2026-08-12-ontology-alignment-pass.md`](exec-plans/2026-08-12-ontology-alignment-pass.md)
+
+One conventions layer across the three vocabularies so everything
+interoperates *through* smn, plus a reasoner-clean OWL backbone for the
+neurosymbolic consumption target. Six steps; **step 0 (14-agent recon +
+adversarial verification, and Brett's four preference decisions) is done** —
+findings and decisions live in the execplan.
+
+1. *(done)* Recon + decisions.
+2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening
+   (one-strongest-mapping-per-pair, foreign-subject-axiom policy,
+   instance-typing rule), the normative-alignment-core / teaching-view split,
+   the eight verified metamodel fixes (F1–F8), repo-structure repairs, and a
+   `robot reason` CI gate. Independent — can start now.
+3. **Step 2 — methods-as-SKOS across the trio.** The vocabulary half of #76,
+   **after S8 names the concepts**. Field evidence already decides direction:
+   PSC refuses to map to smn's OWL-class methods while 18 released mappings
+   target gcdfo's SKOS methods, and a live cross-repo pun on
+   `smn:EnumerationMethod` poisons the merged closure.
+4. **Step 3 — the smn↔gcdfo boundary as data** (SSSOM set, the minted
+   `smn:` term, the unbridged age/year duplication). Absorbed from S6 item 4.
+5. **Step 4 — PSC CV anchoring to smn** — unblocked by step 2.
+6. **Step 5 — aggregation scheme** (`smn:AggregationStatisticScheme`), the
+   vocabulary the SDP `aggregation_iri` (S8) resolves to. **Independent of
+   steps 2–4** — needs only module 07 and I-ADOPT 1.1.0 typing, so it runs
+   right after step 1, before or alongside S8's breaking change (otherwise
+   S8→S9.2→S9.5→S8 would be circular).
+7. **Step 6 — propagation** to workshop, hub, and guides.
+
+**Cross-repo bookkeeping rule (Brett, 2026-08-12):** every repo this stream
+touches gets an OKF knowledge bundle (created if absent, updated as learned)
+with an `AGENTS.md` pointer; the execplan and this file are re-sequenced after
+every step.
 
 ### S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ~2–3 weeks · ships as 0.3.0
 
@@ -243,22 +283,14 @@ Ordered:
    metasalmon's output and the KNB transformation record.
    **metasalmon's own KNB documentation states this as a precondition and it
    cannot be satisfied today**, which makes it a soft dependency of S4.
-4. **Publish the `smn:`/`gcdfo:` boundary as data** — one SSSOM 1.1 mapping set
-   for the ~55 name collisions, with CI checks in both repos.
-5. **Method / protocol / procedure canonical style (#76).** **Blocked by S8**,
-   which names the concepts before either vocabulary is changed. An open
-   modelling question, not a defect — see the backlog entry. SMN types
-   methods as OWL subclasses of `sosa:Procedure`; gcdfo types the same domain as
-   `skos:Concept` with no `sosa:Procedure` anywhere; metasalmon's NuSEDS
-   crosswalks point at the gcdfo terms. The SDP rule requiring `methods.csv` to
-   hold SOSA Procedures therefore cannot be satisfied by the vocabulary the
-   package recommends. **Do not patch the typing in isolation** — the same pass
-   must settle whether method, protocol, and procedure are one class or three,
-   and at which abstraction level each belongs.
+4. ~~Publish the `smn:`/`gcdfo:` boundary as data~~ — **moved to S9 step 3.**
+5. ~~Method / protocol / procedure canonical style (#76)~~ — **moved to S9
+   step 2** (still blocked by S8, which names the concepts first).
 6. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
    Highest-value single ontology change for real users: today term search finds
    nothing and falls back to `REVIEW:` placeholders.
-7. **Fix the I-ADOPT layer** so the decomposition pipeline has a conformant target.
+7. ~~Fix the I-ADOPT layer~~ — **moved to S9 step 1** (the metamodel split
+   makes native `iop:` properties the conformant target).
 8. **Governance** — machine-readable licence in the TTL, real `CITATION.cff`,
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
