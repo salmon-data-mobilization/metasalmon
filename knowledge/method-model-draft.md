@@ -34,88 +34,139 @@ out of sync, and it asks a contributor to answer the same question many times.
 
 ---
 
-## Three things, currently all called "method"
+## The concept model — PNAMP nesting
 
-The SDP distinguishes these. Most standards do too, under different names; SOSA
-deliberately does not (see *Relationship to other standards*).
+**Protocol > Method**, following PNAMP/monitoringresources.org. Two levels, not
+three parallel concepts.
 
 ### Protocol
 
-A documented, citable plan that someone else could follow. Stable across
-datasets, versioned, and normally has a DOI or a stable URL.
+A documented plan someone else could follow. It specifies **which methods apply
+to which measurements**. Versioned where possible.
 
 > *"PSC sockeye escapement survey protocol, v3"*
 
-A protocol is a *document*. It is cited, not executed.
+A protocol is a *document*. It is cited, not executed. **This is the key
+simplification**: because the protocol already names the per-measurement
+methods, the dataset does not have to repeat them.
 
-### Procedure
+**A protocol does not have to be external.** Requiring a DOI or a published URL
+would exclude most real salmon datasets, where the collection plan lives in a
+program document, a field manual, or nothing at all. Three forms, in descending
+order of preference:
 
-The technique actually applied to produce an observation. A protocol may name
-several; a dataset may use one or many.
+| Form | How it is referenced |
+|---|---|
+| **Published** — DOI or stable URL | `protocol_iri` points at it |
+| **In-package** — described in the package's own `README.md` | `protocol_citation` names the section; `protocol_iri` may be omitted |
+| **Undocumented** | Say nothing. An absent protocol is honest |
 
-> *"Aerial survey count"*, *"fixed-site electronic counter"*, *"foot survey"*
+The in-package form matters more than it looks. It is the realistic path for a
+first-time contributor, it keeps the description **with the data** rather than in
+a link that will rot, and writing it down is often the first time a program's
+methods have been written down at all. The spec should name the README as a
+legitimate home rather than treating an external DOI as the only real answer.
 
-### Analytical method
+### Method
 
-How a reported number was **derived** from observations. Distinct from the
-procedure that produced the underlying observations.
+A technique named by a protocol and applied to produce a value. Two subtypes,
+not two separate concepts:
 
-> *"Area-under-the-curve expansion"*, *"Petersen mark-recapture estimator"*
+| Subtype | Answers | Example |
+|---|---|---|
+| **Observation method** | How was it observed? | Aerial survey count, fixed-site electronic counter |
+| **Analytical method** | How was the number derived from observations? | Area-under-the-curve expansion, Petersen estimator |
 
-**These last two are genuinely different and salmon data already separates
-them.** NuSEDS records an *enumeration method* (how fish were counted) and an
-*estimate method* (how the escapement figure was derived) as separate fields.
-A dataset can have an aerial survey enumeration and an AUC-expansion estimate;
-neither implies the other.
+**Subclass rather than a parallel concept**, deliberately. SOSA folds every
+sense of "procedure" into `sosa:Procedure` and offers exactly one relation,
+`sosa:usedProcedure`. A parallel top-level concept would have **no SOSA relation
+to attach to** and would need one invented. A subclass inherits `usedProcedure`,
+stays queryable through the hierarchy, and needs no new property — which also
+settles open question 3 below.
 
----
+Salmon data already separates the two: NuSEDS records an *enumeration method*
+(how fish were counted) and an *estimate method* (how the escapement figure was
+derived), and neither implies the other.
+
+### PNAMP's third level, and why it is not ours
+
+PNAMP nests Protocol > Method > **Metric**, and a Metric is close to a column.
+That looks like it contradicts "method does not go on the column", and it does
+not — the two describe **different layers**:
+
+- PNAMP describes a **protocol design**: *for metric X, use method Y.* A
+  specification of what will be done.
+- The SDP describes **data**: *this value was produced this way.* A record of
+  what was done.
+
+So per-metric methods are entirely legitimate — **in the protocol**. In the
+dataset you cite the protocol and record a method only where the data cannot be
+derived from it: when the method varies, or departs from the plan.
 
 ## Where each is recorded
 
 | Level | File | Use when |
 |---|---|---|
-| **Dataset** | `dataset.csv` — `protocol_iri`, `protocol_citation` *(proposed)* | One protocol governs the whole dataset. **Start here.** |
-| **Table** | `tables.csv` — `method_iri` *(proposed)* | The method is constant for the table |
-| **Row** | A data column bound with `sosa:usedProcedure` | The method changes from row to row |
-| **Registry** | `methods.csv` | Any of the above uses an IRI that needs a label, description, version, or citation |
+| **Table** (observation unit) | `tables.csv` — `protocol_iri`, `protocol_citation` | **Start here.** A protocol governs a kind of observation event — a site visit — which is what a tidy table is |
+| **Dataset** | `dataset.csv` — `protocol_iri`, `protocol_citation` | Convenience only: the same protocol governs every table |
+| **Table** | `tables.csv` — `method_iri` | A single method applies and there is no protocol document to cite |
+| **Row** | A data column bound with `sosa:usedProcedure` | The method varies from row to row |
 
-**Three placements, deliberately.** An earlier draft added a fourth on the
-observation-structure extension, for a table whose measures were made
-differently. That is dropped — see *Why not a per-measure placement*.
+**Protocol belongs at the table, not the dataset.** An earlier draft said
+dataset-level and "start here"; that was wrong. A protocol governs a kind of
+observation event — you have a protocol for *collecting data at a site visit* —
+and a tidy table is exactly one kind of observation unit. A protocol may span
+several tables, which the dataset-level field covers, but that is the special
+case and not the default.
 
-`methods.csv` is to methods what `codes.csv` is to codes: **a registry you create
-only when you have values to register.** It is not a fifth level of metadata. The
-four levels remain dataset, tables, columns, codes.
+This also dissolves the per-column problem the earlier drafts kept circling. A
+site-visit table with a spawner count from an aerial survey and a water
+temperature from a logger does **not** need per-column method metadata, because
+**the protocol already specifies which method each measurement uses**. Cite the
+protocol; record a method in the data only where it varies or departs from it.
+
+### No `methods.csv` registry
+
+Dropped, and the reasoning is worth stating because `codes.csv` looks like a
+precedent and is not one.
+
+`codes.csv` exists because code values are **dataset-local tokens**. `"GN"` means
+gill net *in this dataset*; nothing outside it can resolve that string. The
+registry is the only place the meaning can live.
+
+A method is the opposite: a **shared concept with a resolvable IRI**. A registry
+for it duplicates the vocabulary, and duplicated definitions drift. Two things
+the registry was carrying instead go elsewhere:
+
+- **Label, description, definition** — these belong in the vocabulary the IRI
+  resolves to. If a method has no term yet, add one; the vocabularies are
+  maintained by the same people as the spec.
+- **Version and citation** — these are properties of the **protocol**, not of
+  the method, and now sit beside `protocol_iri` where they were always meant to
+  be.
+
+Net effect: `metadata/` holds exactly the four levels again — dataset, tables,
+columns, codes — with no fifth file to explain.
 
 ### Why not a per-measure placement
 
-A table can carry several measures made differently — a spawner count from an
-aerial survey and a water temperature from a logger, in one site-visit row. The
-SDP could express that on the observation-structure extension. **It deliberately
-does not.**
+An earlier draft proposed one on the observation-structure extension, for a
+table whose measures were made differently. Dropped, because **the protocol
+answers it**: a site-visit protocol already specifies which method each
+measurement uses, so repeating that per column in the dataset is duplication
+that will drift.
 
-Two reasons.
-
-*The rare case should not complicate the common one.* Method varying between
-measures in one table is uncommon; method constant per table, or varying per row,
-covers nearly everything. A model whose common path requires an optional
-extension is a model most contributors will get wrong.
-
-*It is usually a signal, not a requirement.* If two measures in one table were
-produced by genuinely different procedures, they are often two observational
-units that tidy data would separate anyway. The guidance is therefore: **treat a
-per-measure method difference as a prompt to check whether the table is carrying
-two observational units.** If it is, split it — each table then has one method.
-If it genuinely is not, record the method at dataset level and accept the coarser
-statement, or put it in the data as a column.
+Where there is genuinely no protocol and the methods genuinely differ per
+measure, that is a signal worth heeding — the table may be carrying two
+observational units, and splitting it gives each one method. If it truly is one
+unit, say nothing rather than invent a per-column slot.
 
 **Note the two senses of "observation".** Tidy data's *observational unit* is the
 entity a row describes — a site visit, a fish. SOSA's *Observation* is a single
 act producing a single result. A site-visit row holding two measurements is
 **one** tidy observational unit and **two** SOSA observations. `tables.csv`'s
-`observation_unit` field carries the tidy sense. This model uses the tidy sense
-throughout; it does not require a row to be a single SOSA Observation, because
-requiring that would push every multi-variable table into an extension.
+`observation_unit` field carries the tidy sense, and this model uses that sense
+throughout.
 
 ### Not recorded on a column
 
@@ -135,21 +186,24 @@ Object. How you measured it is not part of what it is.
 One question, asked in order. Stop at the first *yes*.
 
 ```
-Is the method the same for the whole dataset?
-        └── yes → dataset.csv protocol fields.           Done.
-Is it constant within each table?
-        └── yes → tables.csv method_iri.                 Done.
-Does the method change from row to row?
+Is there a protocol document describing how this table's data were collected?
+        └── yes → tables.csv protocol_iri (+ protocol_citation).
+                  The protocol names the per-measurement methods.
+                  Nothing further is needed unless the data depart from it.
+Does the method vary from row to row?
         └── yes → it is data, not metadata.
-                  Add a column, bind it with sosa:usedProcedure,
-                  and resolve its codes to methods.csv.
+                  Add a column and bind it with sosa:usedProcedure.
+Is one method constant for the whole table, with no protocol to cite?
+        └── yes → tables.csv method_iri.
+Otherwise → say nothing. An absent method is honest; an invented one is not.
 ```
 
-The last case is worth stating plainly because contributors often try to force it
+The second case is worth stating plainly because contributors try to force it
 into metadata: **if a value varies per row, it belongs in the data.** A method
 column is an ordinary categorical column with coded values.
 
----
+The last line matters as much as the rest. A slot that must be filled produces
+`MISSING METADATA:` noise, and this model has no required method field anywhere.
 
 ## Worked example — NuSEDS escapement
 
@@ -158,21 +212,92 @@ Counting technique varies by year; the estimation approach is constant.
 
 | Question | Answer | Placement |
 |---|---|---|
-| Protocol for the whole dataset? | Yes — the NuSEDS standard | `dataset.csv.protocol_iri` |
-| Analytical method constant? | Yes — AUC expansion throughout | `tables.csv.method_iri` |
-| Counting technique constant? | **No** — aerial in some years, weir in others | a data column, `sosa:usedProcedure`, codes → `methods.csv` |
+| Protocol for this table? | Yes — the NuSEDS standard | `tables.csv.protocol_iri` |
+| Counting technique constant? | **No** — aerial in some years, weir in others | a data column bound `sosa:usedProcedure` |
+| Analytical method constant? | Yes — AUC expansion throughout | named by the protocol; no dataset field needed |
 
-Every placement here is one of the three. No extension is needed for what is
-probably the most common salmon dataset shape in existence.
+Three questions, no extension, no registry, and the only thing written twice is
+the thing that actually varies.
 
-Note what this buys: the varying thing is queryable per row, the constant things
-are stated once, and nobody is asked to repeat the protocol on 40 columns.
+## I-ADOPT: what to adopt, and what to leave
 
----
+The column dictionary is already I-ADOPT-shaped — `property_iri`, `entity_iri`,
+`constraint_iri`, `unit_iri`. Two questions arise about going further.
+
+### Context Object — recommend **not** adopting
+
+I-ADOPT's `ContextObject` is the most abstract part of the model and the least
+consistently used across adopting vocabularies. Adding a slot for it would cost
+a required-looking field that most contributors cannot answer, which this
+package has already learned produces `MISSING METADATA:` noise rather than
+meaning (#77).
+
+The cases it would carry — "in the Fraser River", "at the counting fence" — are
+already served by `constraint_iri` and by the table's own spatial and temporal
+metadata. Leave it out until a real dataset needs it and cannot be expressed.
+
+### Statistical modifiers — a genuine gap, and **not** a constraint
+
+metasalmon has **no statistical handling at all**: no vocabulary, no slot. Yet
+salmon variables are full of it — *mean* fork length, *peak* spawner count,
+*cumulative* escapement, *annual total* catch. Today it is smuggled into
+`column_label` as English, where nothing can query it, or lost.
+
+Concretely: daily **mean** and daily **maximum** water temperature decompose to
+**identical** I-ADOPT components today. The semantics assert two different
+variables are the same variable.
+
+**Recommendation: a dedicated `aggregation_iri` column, not `constraint_iri`.**
+An earlier draft proposed reusing the constraint slot. That was wrong, and the
+reason matters.
+
+`constraint_iri` is a real I-ADOPT component — confirmed in this package's own
+schema (*"I-ADOPT constraint IRI(s)"*) and vignette, which give its intended
+examples as *spawner stage, female sex, freshwater age class*. A constraint
+**narrows what is measured**: which fish, which life stage, which portion of the
+population. An aggregation says nothing about which fish — it says what the
+**number represents** across them. Overloading one slot with both would make
+`constraint_iri` mean two unrelated things and would make neither queryable.
+
+Two standards keep them separate, and both are precedents already cited here:
+
+- **ODM2** has `AggregationStatistic` as its **own controlled vocabulary**
+  (average, maximum, minimum, cumulative…), separate from Variable — the same
+  design that puts Method on the Action rather than the Variable.
+- **CF conventions** keep `cell_methods` separate from `standard_name`, so the
+  statistic never contaminates the variable identifier.
+
+**Why this belongs in `column_dictionary.csv` when method does not** — the line
+is worth stating, because the two changes travel together and look
+contradictory:
+
+| | Question it answers | Part of variable identity? | Home |
+|---|---|---|---|
+| **Method** | *How did you produce this?* | No — the same variable can be measured many ways | Protocol / table / data |
+| **Aggregation** | *What does this number represent?* | **Yes** — mean temperature and maximum temperature are different variables | `column_dictionary.csv` |
+
+So the same breaking change removes `method_iri` from the column dictionary and
+adds `aggregation_iri` to it, and the apparent inconsistency is the point: one
+describes the act, the other describes the variable.
+
+*Scope:* a small controlled list to start — mean, median, minimum, maximum,
+total, count, peak — sourced from an existing vocabulary rather than minted here
+if one fits. **Open:** which vocabulary. ODM2's CV is the obvious candidate but
+is not RDF-native; this needs the alignment pass.
+
+### What else I-ADOPT offers that is worth taking
+
+Beyond the four components already used, the highest-value unused piece is
+**emitting actual `iop:` triples**. metasalmon consumes I-ADOPT *terminologies*
+but never states, in RDF, that a column's four IRIs form an I-ADOPT Variable. A
+consumer therefore has to infer the decomposition from column names. That is a
+small, additive change with real interoperability payoff, and it belongs on the
+roadmap independently of methods.
 
 ## What changes
 
-**Breaking:** `column_dictionary.method_iri` is removed.
+**Breaking:** `column_dictionary.method_iri` is removed, and `metadata/methods.csv`
+is removed with it.
 
 **Migration.** A `method_iri` on a measurement column becomes the table's
 `method_iri` when all measurement columns in the table agree. When they disagree,
@@ -181,12 +306,14 @@ whether to split the table, record at dataset level, or move the method into the
 data. A `REVIEW:`-marked value is dropped, not migrated — it was never a reviewed
 decision.
 
-**Additive:** `protocol_iri` / `protocol_citation` on `dataset.csv`;
-`method_iri` on `tables.csv`.
+**Additive:** `protocol_iri` / `protocol_citation` on **`tables.csv`** (primary)
+and on `dataset.csv` (when uniform across tables); `method_iri` on `tables.csv`
+for the no-protocol case.
 
-**Requirement level:** `methods.csv` moves from *optional* to **conditional** —
-required when any `method_iri` is used, absent otherwise. This matches
-`codes.csv` and makes its presence earned rather than incidental.
+**Requirement level:** not applicable — `methods.csv` no longer exists. Labels
+and definitions come from the vocabulary the IRI resolves to; version and
+citation belong to the protocol and sit beside `protocol_iri`. `metadata/` holds
+exactly the four levels again.
 
 **Rules affected.** `methods_are_sosa_procedures` loses its
 `column_dictionary.method_iri` clause and gains the three new placements.
@@ -244,28 +371,106 @@ tidiness failure and must not be treated as one.
 
 ---
 
-## Open questions for the alignment pass (#76)
+## Answers to the open questions (#76)
 
-1. **Are protocol / procedure / analytical method three classes or one with
-   three roles?** This section treats them as three concepts. The ontologies must
-   agree before the typing is fixed.
-2. **Where do the concepts live — SMN or gcdfo?** Today the SOSA scaffolding is
-   in SMN (two `sosa:Procedure` subclasses) and all the domain content is in
-   gcdfo as SKOS with no SOSA typing. The layers do not meet.
-3. **Does an analytical method need a different SOSA relation than
-   `usedProcedure`?** SOSA folds derivation into Procedure. If the distinction is
-   to survive into RDF, it needs either subclassing or a different property.
-4. **Which modelling style is canonical for method concepts — OWL classes under
-   `sosa:Procedure` (SMN's) or a SKOS concept scheme (gcdfo's)?** Note this is
-   *not* a correctness problem: `sosa:usedProcedure` has `rdfs:range
-   sosa:Procedure`, so entailment already types the object correctly whichever
-   style supplies it, and `skos:Concept` is not disjoint from `sosa:Procedure`.
-   The question is queryability — `skos:broader` carries no subclass entailment,
-   so the same question answers differently depending on which vocabulary a term
-   came from.
-5. **Does the tidy precondition become normative?** If the spec states tidy
-   structure as a requirement rather than a recommendation, the validator has to
-   enforce it (#77) and some existing packages will stop conforming. If it stays
-   a recommendation, the method placement rules keep a soft edge. **Recommend
-   normative**, with the wide-format check as a warning rather than an error —
-   the SDP can accept untidy data, it should simply stop implying it checked.
+Settled in review; recorded here as recommendations for the alignment pass.
+
+### 1. Three concepts or one? → **Protocol > Method, with two Method subtypes**
+
+PNAMP nesting. Observation method and analytical method are **subclasses of a
+generic Method**, not parallel top-level concepts — see *The concept model*. The
+deciding argument is SOSA: one relation exists, so a parallel concept would have
+nothing to attach to.
+
+### 2. Where do the concepts live? → **SMN, in gcdfo's style**
+
+Both halves of the question have an answer, and they point in opposite
+directions from the current state.
+
+**Live in SMN.** It is the shared vocabulary; gcdfo is the DFO-specific one. A
+method concept that any salmon dataset might cite belongs in the shared layer,
+with gcdfo holding only genuinely DFO-specific terms and mapping to SMN.
+
+**But adopt gcdfo's modelling style, not SMN's.** gcdfo's stance — methods are
+pick-list items, so model them as `skos:Concept` in a scheme — is not a shortcut.
+It is **more technically correct** for this use:
+
+> `sosa:usedProcedure` has `rdfs:range sosa:Procedure`, and its object is an
+> **individual**. SMN currently models methods as `owl:Class`
+> (`smn:FishLengthMeasurementMethod rdfs:subClassOf sosa:Procedure`), so using
+> one as the object of `usedProcedure` means using a class where an individual
+> belongs — OWL 2 punning. A `skos:Concept` is an individual and slots in
+> directly.
+
+So the recommendation is to **change SMN**, not gcdfo: move method concepts from
+OWL classes to SKOS concepts in a scheme, typed additionally as
+`sosa:Procedure`, and let `skos:broader` carry the Protocol > Method > subtype
+hierarchy. That keeps them pick-list friendly, keeps them maintainable, and makes
+`usedProcedure` resolve without punning.
+
+*What is given up, concretely.* With OWL classes a reasoner answers "is this a
+kind of aerial survey?" for you — subclass relations are entailed. With SKOS you
+walk the hierarchy yourself.
+
+**A correction worth stating precisely, because the loose version is wrong:**
+`skos:broader` is **not transitive**. SKOS made it non-transitive deliberately,
+so that a vocabulary can assert a direct broader link without committing to
+inheritance up the whole chain. The transitive super-property is
+`skos:broaderTransitive`, and `skos:broader rdfs:subPropertyOf
+skos:broaderTransitive`, so an RDFS reasoner infers the transitive form from the
+direct one.
+
+Which means there are two correct ways to ask, and neither depends on
+`skos:broader` being transitive:
+
+```sparql
+# Property path — syntactic closure, no reasoner, works in any triplestore
+?m skos:broader+ smn:AerialSurvey .
+
+# Entailed — needs RDFS reasoning to populate broaderTransitive from broader
+?m skos:broaderTransitive smn:AerialSurvey .
+```
+
+The first is what to recommend: one `+`, no reasoner, universally supported. The
+earlier phrase "a transitive `skos:broader` query" was wrong — the *query* takes
+a transitive closure; the *property* is not transitive.
+
+### 3. Does an analytical method need a different SOSA relation? → **No**
+
+Subclassing removes the need. Both subtypes are `sosa:Procedure`, both attach
+via `sosa:usedProcedure`, and the distinction is carried by the concept's type
+rather than by a new property. Inventing a property outside SOSA would be the
+same class of mistake as the invented `sosa:Property` the ecosystem review found.
+
+### 4. Which modelling style is canonical? → **SKOS, with dual typing**
+
+Answered by (2): `skos:Concept` in a scheme, additionally typed
+`sosa:Procedure`. One style across both vocabularies, chosen because it is what
+`usedProcedure` actually expects.
+
+### 5. Does the tidy precondition become normative? → **Yes**
+
+Confirmed. With the checks now shipped (#77, 0.2.6), the consequence is concrete
+rather than theoretical:
+
+- **Normative (MUST):** a declared `primary_key` identifies exactly one row, and
+  each variable occupies one column. Both are now enforced as errors.
+- **Recommended (SHOULD), enforced as a warning:** no value-like column names.
+  This stays a warning because the heuristic **cannot prove** untidiness — a
+  column genuinely named `2000` is legal, just suspicious. Promoting a heuristic
+  to an error would reject conforming packages.
+
+That split is the honest one: enforce what can be checked exactly, warn about
+what can only be guessed.
+
+---
+
+## Still open after this pass
+
+1. **Statistical modifiers via a dedicated `aggregation_iri`** — recommended above, flagged as
+   the weaker argument. Needs a decision, and a small controlled list if adopted.
+2. **Migrating SMN methods from OWL classes to SKOS concepts** — the concrete
+   work item behind answer (2). Breaking for anything that consumed those class
+   IRIs; scope before scheduling.
+3. **Emitting `iop:` triples** — additive, independent of methods, worth its own
+   roadmap slot.
