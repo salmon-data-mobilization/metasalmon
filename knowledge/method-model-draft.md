@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "SDP method model draft"
-description: "Draft SDP spec section for methods, protocols, procedures, and aggregation; ports to smn-data-pkg once settled. Prerequisite reading for backlog item 76."
+description: "Draft SDP spec section for methods, protocols, procedures, and statistical modifiers; ports to smn-data-pkg once settled. Prerequisite reading for backlog item 76."
 status: draft
 tags: [sdp, methods, draft]
 psc:
@@ -247,9 +247,16 @@ Concretely: daily **mean** and daily **maximum** water temperature decompose to
 **identical** I-ADOPT components today. The semantics assert two different
 variables are the same variable.
 
-**Recommendation: a dedicated `aggregation_iri` column, not `constraint_iri`.**
-An earlier draft proposed reusing the constraint slot. That was wrong, and the
-reason matters.
+**Recommendation: a dedicated `statistical_modifier_iri` column, not
+`constraint_iri`** — using I-ADOPT's own language and class (Brett,
+2026-08-13). I-ADOPT 1.1.0 has exactly this construct: the
+`iop:StatisticalModifier` class ("describes which statistical measure has been
+applied") and the `iop:hasStatisticalModifier` property from Variable. Naming
+the column `statistical_modifier_iri` makes it the fifth I-ADOPT component
+column, exactly parallel to `property_iri`, `entity_iri`, and
+`constraint_iri`, and its values are concepts instance-typed
+`iop:StatisticalModifier`. An earlier draft proposed reusing the constraint
+slot. That was wrong, and the reason matters.
 
 `constraint_iri` is a real I-ADOPT component — confirmed in this package's own
 schema (*"I-ADOPT constraint IRI(s)"*) and vignette, which give its intended
@@ -274,30 +281,41 @@ contradictory:
 | | Question it answers | Part of variable identity? | Home |
 |---|---|---|---|
 | **Method** | *How did you produce this?* | No — the same variable can be measured many ways | Protocol / table / data |
-| **Aggregation** | *What does this number represent?* | **Yes** — mean temperature and maximum temperature are different variables | `column_dictionary.csv` |
+| **Statistical modifier** | *What does this number represent?* | **Yes** — mean temperature and maximum temperature are different variables | `column_dictionary.csv` |
 
 So the same breaking change removes `method_iri` from the column dictionary and
-adds `aggregation_iri` to it, and the apparent inconsistency is the point: one
-describes the act, the other describes the variable.
+adds `statistical_modifier_iri` to it, and the apparent inconsistency is the
+point: one describes the act, the other describes the variable.
 
 *Scope:* a small controlled list to start — mean, median, minimum, maximum,
-total, count, peak — sourced from an existing vocabulary rather than minted here
-if one fits. **Open:** which vocabulary. ODM2's CV is the obvious candidate but
-is not RDF-native; this needs the alignment pass.
+total, count, peak. **Resolved (S9 step 5):** the vocabulary is a new smn SKOS
+scheme (`smn:StatisticalModifierScheme`, module 07) whose concepts are
+instance-typed `iop:StatisticalModifier`, with advisory `skos:closeMatch`
+links to ODM2's `AggregationStatistic` CV (not the primary target — its
+hosting is HTTP-only and unreliable).
 
 ### What else I-ADOPT offers that is worth taking
 
-Beyond the four components already used, the highest-value unused piece is
-**emitting actual `iop:` triples**. metasalmon consumes I-ADOPT *terminologies*
-but never states, in RDF, that a column's four IRIs form an I-ADOPT Variable. A
-consumer therefore has to infer the decomposition from column names. That is a
-small, additive change with real interoperability payoff, and it belongs on the
-roadmap independently of methods.
+Beyond the components already used, the highest-value unused piece is
+**emitting actual `iop:` triples**: metasalmon consumes I-ADOPT
+*terminologies* but never states, in RDF, that a column's component IRIs form
+an I-ADOPT Variable, so a consumer has to infer the decomposition from column
+names. **Deferred (Brett, 2026-08-13):** before this is considered, the
+roadmap needs an explainer covering when iop triples are actually useful, the
+pattern for emitting triples from an SDP, and whether triple emission is
+something SDPs should support generally. Parked as a roadmap consideration
+under S9 step 6; not scheduled.
 
 ## What changes
 
 **Breaking:** `column_dictionary.method_iri` is removed, and `metadata/methods.csv`
 is removed with it.
+
+> **Port note (2026-08-13):** upstream `smn-data-pkg` merged PR #2 ("observation
+> structures and methods profile") which *added* an optional
+> `metadata/methods.csv` registry and a methods schema. The port of this draft
+> must unwind that addition — the registry argument above applies to it
+> unchanged.
 
 **Migration.** A `method_iri` on a measurement column becomes the table's
 `method_iri` when all measurement columns in the table agree. When they disagree,
@@ -467,7 +485,7 @@ what can only be guessed.
 
 ## Still open after this pass
 
-1. **Statistical modifiers via a dedicated `aggregation_iri`** — recommended above, flagged as
+1. **Statistical modifiers via a dedicated `statistical_modifier_iri`** — recommended above, flagged as
    the weaker argument. Needs a decision, and a small controlled list if adopted.
 2. **Migrating SMN methods from OWL classes to SKOS concepts** — the concrete
    work item behind answer (2). Breaking for anything that consumed those class
