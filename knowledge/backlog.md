@@ -960,8 +960,14 @@ constant within each table?", which is only sound when a table is a coherent
 observational unit — which is why #77 was sequenced ahead of the method work in
 roadmap S8.
 
-**#76 SMN and gcdfo model methods in different styles — OPEN MODELLING
-QUESTION, not a defect.** Downgraded after review. The original entry claimed the
+**#76 SMN and gcdfo model methods in different styles — DECIDED 2026-08-13,
+smn side implemented.** Brett ordered methods-as-SKOS ("migrate SMN methods
+from OWL classes to SKOS concepts"); smn PR #22 migrated the six method
+classes to `smn:MethodScheme` concepts (IRIs unchanged, instance-typed
+`sosa:Procedure`), resolving the cross-repo pun. Remaining code work rides
+S8: the metasalmon crosswalk retarget and the method-placement breaking
+change. The history below is kept because the reasoning was seductive and
+worth not repeating. Originally downgraded after review. The original entry claimed the
 mismatch made the SDP rule unsatisfiable and broke SOSA consumers. **Both claims
 were wrong**, and the correction is worth keeping because the reasoning was
 seductive:

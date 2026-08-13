@@ -44,7 +44,9 @@ PR #2's registry rather than adapting it.
 the method constant within each table?", which is only sound when a table is a
 coherent observational unit.
 
-**Blocks:** S9 step 2 (methods-as-SKOS) and S4's method-annotation teaching.
+**Blocks:** S4's method-annotation teaching. (S9 step 2's smn side is
+already done — its metasalmon remainder now rides *this* stream, so the old
+"S8 blocks S9.2" edge is retired.)
 **Consumes:** S9 step 5 (the statistical-modifier scheme), which is independent of S9
 steps 2–4 precisely so this stream can consume it.
 

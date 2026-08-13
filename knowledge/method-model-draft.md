@@ -484,12 +484,17 @@ what can only be guessed.
 
 ---
 
-## Still open after this pass
+## Resolution of the formerly open items (2026-08-13)
 
-1. **Statistical modifiers via a dedicated `statistical_modifier_iri`** — recommended above, flagged as
-   the weaker argument. Needs a decision, and a small controlled list if adopted.
-2. **Migrating SMN methods from OWL classes to SKOS concepts** — the concrete
-   work item behind answer (2). Breaking for anything that consumed those class
-   IRIs; scope before scheduling.
-3. **Emitting `iop:` triples** — additive, independent of methods, worth its own
-   roadmap slot.
+1. **Statistical modifiers** — decided: dedicated `statistical_modifier_iri`
+   column, values instance-typed `iadopt:StatisticalModifier`; the vocabulary
+   is `smn:StatisticalModifierScheme` (landed, smn PR #22).
+2. **Migrating SMN methods to SKOS** — done on the smn side (PR #22): six
+   method classes became `smn:MethodScheme` concepts, IRIs unchanged, each
+   instance-typed `sosa:Procedure`; nothing that consumed the IRIs broke
+   (verified: the only external reference was a SKOS mapping, which the
+   retype made more correct). The metasalmon crosswalk retarget rides the
+   S8 breaking change.
+3. **Emitting `iop:` triples** — deferred by Brett as backlog #78: an
+   explainer (when useful, the SDP→RDF emission pattern, whether triple
+   emission should be a general SDP capability) precedes any decision.
