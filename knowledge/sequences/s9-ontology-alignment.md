@@ -21,15 +21,19 @@ imported not restated, CONVENTIONS §5b governs mapping placement **and is
 machine-enforced in CI alongside a passing ELK reasoner gate**, methods are
 SKOS concepts (the cross-repo pun is resolved and PSC's mapping blocker
 dissolved), and `smn:StatisticalModifierScheme` exists for the SDP
-`statistical_modifier_iri`. **Step 3 done 2026-08-13** (smn PR #24 merged;
-gcdfo PR #78 implemented, green, and awaiting the repo ruleset's required
-human review — deliberately not admin-bypassed): the 32-row
+`statistical_modifier_iri`. **Step 3 done** (smn PR #24 merged
+2026-08-13; gcdfo PR #78 merged 2026-08-14 with Brett's explicit approval
+via admin bypass of the review ruleset): the 32-row
 `gcdfo-to-smn.sssom.tsv`, the duplicate-property removal with replacement
 rows, the `FisheriesReferencePointLower` re-namespacing, refreshed MIREOT
 mirrors, pinned smn resolution — and gcdfo's `make ci` now reasons over the
-merged gcdfo+smn closure (1b's deferred item). **Next: step 4** (PSC
-anchoring), whose first action is cutting smn 0.0.3 so PSC has a released,
-hashed artifact to pin — a publication act awaiting Brett's go.
+merged gcdfo+smn closure (1b's deferred item). **Step 4 implemented 2026-08-14:**
+smn 0.0.3 released (Brett-approved), and PSC MR !6 re-pins their smn source
+to the sha256-pinned 0.0.3 snapshot, adds ten candidate broadMatch rows to
+`smn:EnumerationMethod`, mints v0.1.0-alpha.3, and retires the
+alignment-gap objection — closing when Brett reviews the MR and decides the
+candidate promotions. Remaining in S9: step 6 (propagation) and the parked
+#78 iop-triples explainer.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,

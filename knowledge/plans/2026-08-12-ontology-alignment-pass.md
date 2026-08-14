@@ -99,9 +99,8 @@ what a deterministic checker consumes.
   `iadopt:StatisticalModifier`, advisory ODM2 links; the SDP
   `statistical_modifier_iri` column resolves here.
 - [x] **Step 3 — smn↔gcdfo boundary as data** (2026-08-13; smn PR #24
-  merged, **gcdfo PR #78 implemented and review-blocked** — the
-  dfo-pacific-science repo ruleset requires an approving human review,
-  deliberately not bypassed with admin privileges). Delivered:
+  merged; gcdfo PR #78 merged 2026-08-14 with Brett's explicit approval via
+  admin bypass of the review ruleset). Delivered:
   `mappings/gcdfo-to-smn.sssom.tsv` (32 reviewed rows, predicates graded
   by smn's migration provenance, pinned both sides, validated with
   sssom-py + metasalmon's R reader + a structural CI check in gcdfo's
@@ -117,13 +116,25 @@ what a deterministic checker consumes.
   only in gcdfo's draft file, not released main — no coordination needed.
   gcdfo's `make ci` now reasons over the merged gcdfo+smn closure,
   discharging step 1b's deferred acceptance item.
-- [ ] **Step 4 — PSC CV anchoring to smn** — unblocked (the wrong-kind
-  objection died with step 2), but it needs **an smn release to pin
-  against**: PSC's pipeline pins mapping sources to released, hashed
-  artifacts, and everything steps 1–3 changed exists only on smn main
-  (0.0.2 predates it all). Cutting smn 0.0.3 is therefore step 4's first
-  action — flagged to Brett before executing, since a release is a
-  publication act.
+- [~] **Step 4 — PSC CV anchoring to smn** — in progress. smn **0.0.3
+  released 2026-08-14** (Brett-approved; tag + GitHub pre-release +
+  immutable snapshot), giving PSC a hashed artifact to pin. The release
+  review also caught and fixed a generator defect present since 0.0.0:
+  the flat serializations declared module 01's IRI as the ontology.
+  **Implemented 2026-08-14 as PSC MR !6** (GitLab, targeting their
+  fair-mapping-products branch): smn source re-pinned to the 0.0.3 release
+  snapshot (sha256), ten **candidate** rows composing the accepted
+  psc→gcdfo enumeration exactMatches through `skos:broader` to
+  `smn:EnumerationMethod` (candidates stay out of released SSSOM per PSC
+  governance — promotion to `prototype_accepted` is Brett's review act),
+  `sdo-alignment-gap.md` rewritten as an alignment-status doc, and
+  **v0.1.0-alpha.3 minted** (their release contract forbids authoring
+  drift from an immutable release; alpha mechanics are the PSC Data
+  Systems Manager's delegated authority). Remaining gap documented: nine
+  analysis concepts have no shared smn analytical-method concept — a
+  future smn shared-term admission proposal with two-organization
+  evidence. **Step 4 closes when Brett reviews MR !6 and decides the
+  candidate promotions.**
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence

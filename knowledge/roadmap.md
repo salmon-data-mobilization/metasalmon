@@ -74,17 +74,19 @@ Recorded in `DESCRIPTION` + `NEWS.md` + tags/GitHub releases.
 Renamed from `metaSmnPy`/`salmonpy` on 2026-08-13. Versions are **parity
 claims** — catch-up to 0.2.6 is [S10](sequences/s10-metasalmonpy-parity.md).
 
-### salmon-domain-ontology (smn) — current **0.0.2**
+### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |
 |---|---|---|
+| 0.0.3 | 2026-08-14 | The alignment-pass release: imported W3C SOSA–PROV alignment, CONVENTIONS §5b + CI gates, methods as SKOS, `StatisticalModifierScheme`, `EscapementEstimate`; first release with a correct single ontology identity in the flat serializations |
 | 0.0.2 | 2026-08-04 | Year, age-basis, and abundance modelling |
 | 0.0.1 | 2026-03-29 | Abundance terms (PR 17) — snapshot only, never tagged/released |
-| 0.0.0 | 2026-03-13 | `smn:` namespace stabilization |
 
 Released via `make release VERSION=X.Y.Z` → immutable `docs/releases/` snapshots
-+ tags + GitHub pre-releases. **Discrepancy:** 0.0.1 has a snapshot but no tag
-or GitHub release.
++ tags + GitHub pre-releases. **Discrepancies:** 0.0.1 has a snapshot but no
+tag or GitHub release; the 0.0.0–0.0.2 flat serializations declare module 01's
+IRI as the ontology (generator defect, fixed from 0.0.3; immutable snapshots
+keep the historic shape).
 
 ### dfo-salmon-ontology (gcdfo) — current **0.0.8**
 
@@ -96,8 +98,10 @@ or GitHub release.
 
 Recorded **only** in `CHANGELOG.md` + `owl:versionInfo` — zero tags, zero
 GitHub releases. **Discrepancies:** the sequence is non-monotonic (0.0.999
-predates 0.0.8), and an `[Unreleased]` section (the smn `owl:imports` +
-boundary alignment) awaits a version. Both are S6 item-3 work.
+predates 0.0.8), and the `[Unreleased]` section now also carries the merged
+S9 step-3 boundary work (the 32-row SSSOM set, duplicate-property removal,
+re-namespacing, refreshed mirrors — PR #78, merged 2026-08-14). Cutting the
+next gcdfo release and fixing the version sequence are S6 item-3 work.
 
 ### smn-data-pkg (SDP spec) — current **sdp-0.2.0**
 
@@ -115,10 +119,11 @@ state was abandoned metasmn-rename leftovers — preserved on local branch
 added a `methods.csv` registry the S8 method model removes; the port unwinds
 it.
 
-### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2**
+### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2** (alpha.3 in MR !6)
 
 | Version | Date | One line |
 |---|---|---|
+| v0.1.0-alpha.3 | 2026-08-14 (MR !6, in review) | smn 0.0.3 anchoring: re-pinned source, ten candidate broadMatch rows to `smn:EnumerationMethod`, alignment-gap doc retired |
 | v0.1.0-alpha.2 | 2026-07-31 | Current prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
@@ -178,11 +183,11 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ 
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── steps 0, 1a, 1b, 2(smn side), 3, 5
-   (2026-08-13)                        done (smn PRs #21–#24; gcdfo PR #78
-                                       awaits Brett's required review);
-                                       next: step 4 — needs smn 0.0.3 cut
-                                       (release decision with Brett)
+S9 ontology conventions + alignment ── steps 0–5 done (smn PRs #21–#25 incl.
+   (2026-08-14)                        the 0.0.3 release; gcdfo PR #78 merged
+                                       via Brett-approved bypass); step 4
+                                       closes on Brett's PSC MR !6 review;
+                                       next: step 6 propagation
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
