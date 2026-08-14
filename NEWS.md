@@ -1,3 +1,16 @@
+metasalmon (development version)
+--------------------------------
+
+### Fixed
+
+* The default remote SDP schema source is now pinned to the spec release tag
+  this package implements (`sdp-0.2.0`) instead of the upstream `main`
+  branch. Tracking `main` meant an upstream spec release could break every
+  networked schema load: the sdp-0.3.0 release deleted
+  `methods.schema.json`, so `.ms_load_sdp_schema()` under the default
+  `"auto"`/`"remote"` sources failed with HTTP 404. The
+  `metasalmon.sdp_schema_base_url` option still overrides the default.
+
 metasalmon 0.2.6
 ----------------
 
