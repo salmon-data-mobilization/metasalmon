@@ -36,7 +36,6 @@ When you reuse published salmon data terms, your dictionary becomes easier for o
 
 ```{r, purl=FALSE}
 library(metasalmon)
-devtools::load_all(".")
 find_terms("spawner count",
            role = "property",
            sources = sources_for_role("property")) |>

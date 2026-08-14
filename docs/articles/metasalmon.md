@@ -144,8 +144,13 @@ the single retry round.
 The inferred metadata includes `MISSING DESCRIPTION:` and
 `MISSING METADATA:` placeholders for required fields so the package is
 immediately reviewable in Excel. Replace those placeholders before
-publishing. The `metadata/*.csv` files are the canonical package
-metadata; `datapackage.json` is a derived export for interoperability.
+publishing — and expect
+[`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+to **warn about every placeholder it finds** (since 0.2.6), including on
+a package you created seconds ago. That warning on a fresh package is
+normal: it is the to-do list, not a defect. The `metadata/*.csv` files
+are the canonical package metadata; `datapackage.json` is a derived
+export for interoperability.
 
 ## How To Decide If `term_iri` Is Correct
 

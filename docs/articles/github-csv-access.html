@@ -348,12 +348,12 @@ specified.</p>
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://salmon-data-mobilization.github.io/metasalmon/">metasalmon</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># First time only: set up authentication</span></span>
-<span><span class="co"># ms_setup_github(repo = "dfo-pacific-science/my-data-repo")</span></span>
+<span><span class="co"># ms_setup_github(repo = "your-org/your-private-repo")</span></span>
 <span></span>
 <span><span class="co"># Read the latest data from main branch</span></span>
 <span><span class="va">current_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv.html">read_github_csv</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"data/escapement-2024.csv"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/my-data-repo"</span></span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-private-repo"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># For a published analysis, pin to a specific version</span></span>
@@ -361,14 +361,14 @@ specified.</p>
 <span><span class="va">archived_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_github_csv.html">read_github_csv</a></span><span class="op">(</span></span>
 <span>  path <span class="op">=</span> <span class="st">"data/escapement-2024.csv"</span>,</span>
 <span>  ref <span class="op">=</span> <span class="st">"v2.1.0"</span>,  <span class="co"># Use a release tag</span></span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/my-data-repo"</span></span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-private-repo"</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Document the data source in your analysis</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Data source:"</span>, <span class="fu"><a href="../reference/github_raw_url.html">github_raw_url</a></span><span class="op">(</span></span>
 <span>  <span class="st">"data/escapement-2024.csv"</span>,</span>
 <span>  ref <span class="op">=</span> <span class="st">"v2.1.0"</span>,</span>
-<span>  repo <span class="op">=</span> <span class="st">"dfo-pacific-science/my-data-repo"</span></span>
+<span>  repo <span class="op">=</span> <span class="st">"your-org/your-private-repo"</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">

@@ -211,9 +211,13 @@ through the single retry round.</p>
 <p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
 <code>MISSING METADATA:</code> placeholders for required fields so the
 package is immediately reviewable in Excel. Replace those placeholders
-before publishing. The <code>metadata/*.csv</code> files are the
-canonical package metadata; <code>datapackage.json</code> is a derived
-export for interoperability.</p>
+before publishing — and expect
+<code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> to <strong>warn about every
+placeholder it finds</strong> (since 0.2.6), including on a package you
+created seconds ago. That warning on a fresh package is normal: it is
+the to-do list, not a defect. The <code>metadata/*.csv</code> files are
+the canonical package metadata; <code>datapackage.json</code> is a
+derived export for interoperability.</p>
 </div>
 <div class="section level2">
 <h2 id="how-to-decide-if-term_iri-is-correct">How To Decide If <code>term_iri</code> Is Correct<a class="anchor" aria-label="anchor" href="#how-to-decide-if-term_iri-is-correct"></a>

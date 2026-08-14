@@ -280,6 +280,19 @@ Python documentation</a> for more details.</p>
 <span><span class="fu"><a href="../reference/validate_dictionary.html">validate_dictionary</a></span><span class="op">(</span><span class="va">dict</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
+<h3 id="how-do-i-mark-a-value-as-missing">How do I mark a value as missing?<a class="anchor" aria-label="anchor" href="#how-do-i-mark-a-value-as-missing"></a>
+</h3>
+<p>Leave the cell <strong>empty</strong> — since 0.2.4 the empty field
+is the canonical missing-value token in every SDP CSV. Cells containing
+the two characters <code>NA</code> are read as the literal string
+<code>"NA"</code>, which matters when a code list legitimately uses
+<code>NA</code> as a code (for example “not assessed”). If you have a
+hand-authored package that used <code>NA</code> to mean missing, rewrite
+those cells as empty fields. Inside R, an <code>NA_character_</code>
+value is written out as an empty field automatically, so packages
+written by metasalmon already follow the contract.</p>
+</div>
+<div class="section level3">
 <h3 id="my-data-has-special-characters--will-that-cause-problems">My data has special characters. Will that cause problems?<a class="anchor" aria-label="anchor" href="#my-data-has-special-characters--will-that-cause-problems"></a>
 </h3>
 <p>metasalmon handles UTF-8 encoded data correctly. If you have special

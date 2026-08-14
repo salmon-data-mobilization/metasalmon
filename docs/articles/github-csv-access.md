@@ -281,12 +281,12 @@ Here’s a complete example workflow for a reproducible analysis:
 library(metasalmon)
 
 # First time only: set up authentication
-# ms_setup_github(repo = "dfo-pacific-science/my-data-repo")
+# ms_setup_github(repo = "your-org/your-private-repo")
 
 # Read the latest data from main branch
 current_data <- read_github_csv(
   path = "data/escapement-2024.csv",
-  repo = "dfo-pacific-science/my-data-repo"
+  repo = "your-org/your-private-repo"
 )
 
 # For a published analysis, pin to a specific version
@@ -294,14 +294,14 @@ current_data <- read_github_csv(
 archived_data <- read_github_csv(
   path = "data/escapement-2024.csv",
   ref = "v2.1.0",  # Use a release tag
-  repo = "dfo-pacific-science/my-data-repo"
+  repo = "your-org/your-private-repo"
 )
 
 # Document the data source in your analysis
 cat("Data source:", github_raw_url(
   "data/escapement-2024.csv",
   ref = "v2.1.0",
-  repo = "dfo-pacific-science/my-data-repo"
+  repo = "your-org/your-private-repo"
 ))
 ```
 
