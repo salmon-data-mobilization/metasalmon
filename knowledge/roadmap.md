@@ -124,7 +124,7 @@ it.
 | Version | Date | One line |
 |---|---|---|
 | v0.1.0-alpha.3 | 2026-08-14 (MR !6 merged) | smn 0.0.3 anchoring: **first psc-to-smn.sssom.tsv** (ten prototype_accepted broadMatch rows), re-pinned source, alignment-gap doc retired |
-| v0.1.0-alpha.2 | 2026-07-31 | Current prerelease vocabulary build (provisional, not an adopted PSC standard) |
+| v0.1.0-alpha.2 | 2026-07-31 | Prior prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
 Byte-pinned `releases/<version>/` dirs with per-artifact sha256 manifests;
