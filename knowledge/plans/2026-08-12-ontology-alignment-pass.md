@@ -98,13 +98,32 @@ what a deterministic checker consumes.
   `smn:StatisticalModifierScheme`, seven concepts instance-typed
   `iadopt:StatisticalModifier`, advisory ODM2 links; the SDP
   `statistical_modifier_iri` column resolves here.
-- [ ] **Step 3 — smn↔gcdfo boundary as data** (absorbs old S6 item 4).
-  Includes the gcdfo-side follow-through of step 2: retire gcdfo's local
-  re-declaration of `smn:EnumerationMethod` if redundant, coordinate the
-  `gcdfo:*CountMeasurement` family with the `EscapementEstimate` rename,
-  and settle `smn:FisheriesReferencePointLower`.
-- [ ] **Step 4 — PSC CV anchoring to smn** — unblocked: the wrong-kind
-  objection is gone as of step 2.
+- [x] **Step 3 — smn↔gcdfo boundary as data** (2026-08-13; smn PR #24
+  merged, **gcdfo PR #78 implemented and review-blocked** — the
+  dfo-pacific-science repo ruleset requires an approving human review,
+  deliberately not bypassed with admin privileges). Delivered:
+  `mappings/gcdfo-to-smn.sssom.tsv` (32 reviewed rows, predicates graded
+  by smn's migration provenance, pinned both sides, validated with
+  sssom-py + metasalmon's R reader + a structural CI check in gcdfo's
+  `make test`); the four zero-delta duplicate properties removed with
+  exactMatch replacement rows; `FisheriesReferencePointLower`
+  re-namespaced to gcdfo; MIREOT mirrors refreshed (EnumerationMethod
+  post-methods-as-SKOS, EscapementEstimate rename, SurveyEvent's demoted
+  superclass dropped); pinned smn resolution (`SMN_PIN`) replacing
+  silent remote-latest; ADR numbering reconciled. **Recon correction:**
+  the definitive inventory found ZERO same-name-different-semantics
+  collisions — the old "~55 collisions" figure counted MIREOT mirrors
+  and migrated-identical pairs. The `*CountMeasurement` family exists
+  only in gcdfo's draft file, not released main — no coordination needed.
+  gcdfo's `make ci` now reasons over the merged gcdfo+smn closure,
+  discharging step 1b's deferred acceptance item.
+- [ ] **Step 4 — PSC CV anchoring to smn** — unblocked (the wrong-kind
+  objection died with step 2), but it needs **an smn release to pin
+  against**: PSC's pipeline pins mapping sources to released, hashed
+  artifacts, and everything steps 1–3 changed exists only on smn main
+  (0.0.2 predates it all). Cutting smn 0.0.3 is therefore step 4's first
+  action — flagged to Brett before executing, since a release is a
+  publication act.
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
