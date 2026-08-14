@@ -36,7 +36,10 @@ token, there is no primary-key validation (0.2.6), no credential redaction
 (0.2.5), no cli-safety/collation equivalents where applicable.
 
 **Sequencing within the stream:** replay the metasalmon release order
-(0.1.7 → 0.1.8 → 0.2.0 … 0.2.6), bumping at each parity milestone, rather than
+(0.1.7 → 0.1.8 → 0.2.0 … 0.2.6, then the 0.3.0 method-model change from S8 —
+added 2026-08-14 when S8's R implementation started ahead of this stream, so
+the mirror contract's obligation is scheduled here, not merely promised),
+bumping at each parity milestone, rather than
 one big jump — each bump stays a truthful claim and the release order carries
 the same breaking-change story (e.g. 0.2.4's missing-value token) that R users
 already absorbed.

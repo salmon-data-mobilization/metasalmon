@@ -20,7 +20,7 @@ session task output; the essentials are inline here so the plan stands alone).
 | Decision | Rationale | Date |
 |---|---|---|
 | The frozen 19-col semantic target row and ~30-col LLM assessment row swap the `method` role/column for `statistical_modifier` | Forced by the spec: the dictionary field is gone; a vestigial method column would describe nothing. This is the AGENTS.md "logged decision" for touching frozen contracts | 2026-08-14 |
-| The metasalmonpy mirror of S8 rides the S10 replay (no same-day Python change) | "Same version" is literally unsatisfiable at 0.1.6 parity, and 0.1.6-era Python has no observation-structures family to mirror the row-varying half anyway; version-as-parity-claim (Brett 2026-08-13) resolves it — when S10's replay reaches this release, the Python change lands with that bump | 2026-08-14 |
+| The metasalmonpy mirror of S8 rides the S10 replay; **S10's scope is extended in this same planning commit** so the mirror is actually scheduled (replay 0.1.7→0.2.6, then the 0.3.0 method-model change) | "Same version" is literally unsatisfiable at 0.1.6 parity, and 0.1.6-era Python has no observation-structures family to mirror the row-varying half anyway; version-as-parity-claim (Brett 2026-08-13) resolves it — the mirror lands as S10's final parity milestone, and an unscheduled promise would violate the mirror contract | 2026-08-14 |
 | The codes-scope `method` search role **survives** (row-varying procedures still need shared-vocab `sosa:Procedure` terms); only the measurement-column method target dies | Spec §Methods: codes.csv term_iri resolves directly to procedure concepts | 2026-08-14 |
 | This release takes the next minor version (0.3.0); S5's "ships as 0.3.0" note becomes "next minor at ship time" | Two breaking streams cannot share a number; first to ship takes it | 2026-08-14 |
 
@@ -58,8 +58,11 @@ session task output; the essentials are inline here so the plan stands alone).
 ### 3. Dictionary/semantic retarget (the role swap)
 - Swap `method_iri`→`statistical_modifier_iri`: dictionary-helpers (:201, :56,
   :1247-1255, :1290-1293), package-helpers (:223-225 descriptor emission,
-  :1429 read-back custom key — match the v0.3 profile's custom key, :3332-3335,
-  :3045 gate), validation_helpers (:57-60).
+  :3332-3335, :3045 gate), validation_helpers (:57-60). Descriptor custom
+  keys: emit and read `iAdopt:statisticalModifierIri`; the legacy
+  `iAdopt:methodIri` key is **not** dropped blind — `migrate_sdp_methods()`
+  reads old descriptors directly, so a descriptor-only v0.2 package keeps its
+  only copy of the method binding until migration relocates it.
 - Semantic roles: semantic-suggestions roles map + measurement-column loop
   emits `statistical_modifier` targets (recommended vocabulary
   `smn:StatisticalModifierScheme`); keep codes-scope `method` role;
@@ -67,16 +70,20 @@ session task output; the essentials are inline here so the plan stands alone).
   system prompt ("part of variable identity; a method is never recorded
   here"); llm-semantic-helpers role_order/slot_fields/prompts;
   chat-decomposition used_procedure guess sourced from tables.csv (statistic
-  slot seeds from statistical_modifier_iri); measurement-decompositions slot
-  roles (method role now sources from tables.csv/codes; add
-  statistical_modifier as a native role).
+  slot seeds from statistical_modifier_iri); measurement-decompositions
+  **drops the method role entirely** and adds statistical_modifier as a
+  native role: a decomposition row binds to one measurement's variable
+  identity, while a row-varying procedure is data bound with
+  `sosa:usedProcedure` — keeping a method slot would pin an arbitrary
+  procedure to the variable (method-model-draft, usedProcedure placement).
 - EML/DwC export + KNB: eml-export methods.csv reader (:2803-2808) →
   tables/dataset protocol+method fields; knb-publication artifact inventory
   drops methods.csv; observation-structures static-method registry checks →
   absolute-IRI shared-vocab checks (mirror the spec validator's rewrite).
-- NuSEDS crosswalk: emits per-column method_iri today → retarget to the
-  row-varying codes pattern + tables.csv fields (it is exactly the NuSEDS
-  worked example in the model).
+- NuSEDS crosswalk: **already correct** — the prefill maps crosswalk terms
+  into `codes$term_iri` (the approved row-varying representation) and emits
+  no per-column method_iri. Scope: preserve and test that binding, no
+  retarget.
 
 ### 4. Tests + fixtures
 - `test-sdp-methods.R`: registry tests die; port the hardening tests to the

@@ -189,7 +189,7 @@ S9 ontology conventions + alignment ── steps 0–5 ALL done 2026-08-14 (smn
                                        remaining: step 6 propagation +
                                        the parked #78 explainer
 S2 correctness debt          ── independent
-S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
+S5 review flow (next minor)  ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
@@ -209,7 +209,7 @@ it, and S9 step 2's methods-as-SKOS migration implements the vocabulary half.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md)
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
-- [S5 — R-native review flow, ships 0.3.0](sequences/s5-review-flow.md) · #58, #59, #60, #74
+- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 is taken by S8, which ships first)
 - [S6 — Ecosystem hardening](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · #76, #77
