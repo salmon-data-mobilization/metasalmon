@@ -116,7 +116,7 @@ what a deterministic checker consumes.
   only in gcdfo's draft file, not released main — no coordination needed.
   gcdfo's `make ci` now reasons over the merged gcdfo+smn closure,
   discharging step 1b's deferred acceptance item.
-- [~] **Step 4 — PSC CV anchoring to smn** — in progress. smn **0.0.3
+- [x] **Step 4 — PSC CV anchoring to smn** — **closed 2026-08-14**. smn **0.0.3
   released 2026-08-14** (Brett-approved; tag + GitHub pre-release +
   immutable snapshot), giving PSC a hashed artifact to pin. The release
   review also caught and fixed a generator defect present since 0.0.0:
@@ -133,8 +133,14 @@ what a deterministic checker consumes.
   Systems Manager's delegated authority). Remaining gap documented: nine
   analysis concepts have no shared smn analytical-method concept — a
   future smn shared-term admission proposal with two-organization
-  evidence. **Step 4 closes when Brett reviews MR !6 and decides the
-  candidate promotions.**
+  evidence. **Closed:** Brett approved MR !6 and the promotions on
+  2026-08-14 — the ten rows are `prototype_accepted` and publish as
+  `mappings/psc-to-smn.sssom.tsv` (smn wired into the emission loop;
+  object_source_version pins smn 0.0.3); MR !6 merged into the
+  fair-mapping-products branch. First-ever PSC anchoring into the shared
+  smn layer. Known blemish inherited from their pipeline: `mapping_date`
+  is a hard-coded constant (2026-07-31) — pre-existing, on their audit
+  trail.
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence
