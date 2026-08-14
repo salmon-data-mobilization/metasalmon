@@ -121,9 +121,20 @@ what a deterministic checker consumes.
   immutable snapshot), giving PSC a hashed artifact to pin. The release
   review also caught and fixed a generator defect present since 0.0.0:
   the flat serializations declared module 01's IRI as the ontology.
-  Remaining: pin smn 0.0.3 in PSC's `external-sources.json`, draft the
-  psc→smn rows through their review pipeline, and retire
-  `sdo-alignment-gap.md`'s objection.
+  **Implemented 2026-08-14 as PSC MR !6** (GitLab, targeting their
+  fair-mapping-products branch): smn source re-pinned to the 0.0.3 release
+  snapshot (sha256), ten **candidate** rows composing the accepted
+  psc→gcdfo enumeration exactMatches through `skos:broader` to
+  `smn:EnumerationMethod` (candidates stay out of released SSSOM per PSC
+  governance — promotion to `prototype_accepted` is Brett's review act),
+  `sdo-alignment-gap.md` rewritten as an alignment-status doc, and
+  **v0.1.0-alpha.3 minted** (their release contract forbids authoring
+  drift from an immutable release; alpha mechanics are the PSC Data
+  Systems Manager's delegated authority). Remaining gap documented: nine
+  analysis concepts have no shared smn analytical-method concept — a
+  future smn shared-term admission proposal with two-organization
+  evidence. **Step 4 closes when Brett reviews MR !6 and decides the
+  candidate promotions.**
 - [ ] **Step 6 — propagation to workshop, hub, guides.**
 
 After **each** step: update this Progress section, re-sequence

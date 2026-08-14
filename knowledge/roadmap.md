@@ -119,10 +119,11 @@ state was abandoned metasmn-rename leftovers — preserved on local branch
 added a `methods.csv` registry the S8 method model removes; the port unwinds
 it.
 
-### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2**
+### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2** (alpha.3 in MR !6)
 
 | Version | Date | One line |
 |---|---|---|
+| v0.1.0-alpha.3 | 2026-08-14 (MR !6, in review) | smn 0.0.3 anchoring: re-pinned source, ten candidate broadMatch rows to `smn:EnumerationMethod`, alignment-gap doc retired |
 | v0.1.0-alpha.2 | 2026-07-31 | Current prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
