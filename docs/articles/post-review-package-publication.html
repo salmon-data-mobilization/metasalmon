@@ -124,7 +124,11 @@ mode:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">review_check</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>This catches package/data mismatches now, before you worry about
-final ontology coverage.</p>
+final ontology coverage. Since 0.2.6 the same call also enforces any
+<strong>declared <code>primary_key</code></strong> (duplicate or missing
+key values are hard issues) and warns about every unresolved
+<code>MISSING METADATA:</code> placeholder — so a package fresh from
+Excel review will usually warn until the placeholders are filled in.</p>
 <p>If you also want the semantic details separated out, inspect the
 reloaded package directly:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
@@ -132,10 +136,13 @@ reloaded package directly:</p>
 <span></span>
 <span><span class="va">review_semantics</span><span class="op">$</span><span class="va">issues</span></span>
 <span><span class="va">review_semantics</span><span class="op">$</span><span class="va">missing_terms</span></span></code></pre></div>
-<p>Use this pass to answer two questions:</p>
+<p>Use this pass to answer three questions:</p>
 <ul>
 <li><strong>Did the Excel edits break the package
 structure?</strong></li>
+<li>
+<strong>Which required metadata is still a placeholder?</strong>
+(the warnings list them)</li>
 <li><strong>Which measurement rows still lack a final semantic
 term?</strong></li>
 </ul>

@@ -34,7 +34,6 @@ discover terms without drowning in jargon.
 ``` r
 
 library(metasalmon)
-devtools::load_all(".")
 find_terms("spawner count",
            role = "property",
            sources = sources_for_role("property")) |>

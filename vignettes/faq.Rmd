@@ -114,6 +114,17 @@ dict$column_role[dict$column_name == "ANOTHER_COLUMN"] <- "attribute"
 validate_dictionary(dict)
 ```
 
+### How do I mark a value as missing?
+
+Leave the cell **empty** — since 0.2.4 the empty field is the canonical
+missing-value token in every SDP CSV. Cells containing the two characters
+`NA` are read as the literal string `"NA"`, which matters when a code list
+legitimately uses `NA` as a code (for example "not assessed"). If you have a
+hand-authored package that used `NA` to mean missing, rewrite those cells as
+empty fields. Inside R, an `NA_character_` value is written out as an empty
+field automatically, so packages written by metasalmon already follow the
+contract.
+
 ### My data has special characters. Will that cause problems?
 
 metasalmon handles UTF-8 encoded data correctly. If you have special characters (accents, non-English letters):

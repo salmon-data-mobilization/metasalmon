@@ -55,7 +55,11 @@ review_check <- validate_salmon_datapackage(pkg_path, require_iris = FALSE)
 ```
 
 This catches package/data mismatches now, before you worry about final
-ontology coverage.
+ontology coverage. Since 0.2.6 the same call also enforces any
+**declared `primary_key`** (duplicate or missing key values are hard
+issues) and warns about every unresolved `MISSING METADATA:` placeholder
+— so a package fresh from Excel review will usually warn until the
+placeholders are filled in.
 
 If you also want the semantic details separated out, inspect the
 reloaded package directly:
@@ -68,9 +72,11 @@ review_semantics$issues
 review_semantics$missing_terms
 ```
 
-Use this pass to answer two questions:
+Use this pass to answer three questions:
 
 - **Did the Excel edits break the package structure?**
+- **Which required metadata is still a placeholder?** (the warnings list
+  them)
 - **Which measurement rows still lack a final semantic term?**
 
 Do **not** switch to `require_iris = TRUE` yet unless you believe the

@@ -78,11 +78,22 @@ table_meta <- tibble::tibble(
   table_id = "main-table",
   file_name = "data/main-table.csv",
   table_label = "Main Salmon Table",
-  description = "Escapement and effort data by population"
+  description = "Escapement and effort data by population",
+  primary_key = "population_id,year"
 )
 ```
 
-Include extra columns such as `spatial_extent`, `temporal_start`, or `table_label` when they help others understand the scope.
+Declare a `primary_key` naming the column(s) that uniquely identify a row —
+here each row is one (population, year). Since 0.2.6 a declared key is
+**enforced**: duplicate or missing key values are hard validation issues, which
+is exactly the tidy-data guarantee you want a reviewer to rely on. Include
+extra columns such as `spatial_extent` or `temporal_start` when they help
+others understand the scope.
+
+One contract worth knowing when you author CSVs by hand: since 0.2.4 the
+canonical missing-value token is the **empty field**. Cells containing the two
+characters `NA` are read as the literal string `"NA"` — rewrite them as empty
+fields.
 
 ## 4) Add codes lists when needed
 
@@ -126,7 +137,10 @@ This writes the canonical metadata CSV files under `metadata/`, the data tables 
 You can attach optional Darwin Core Data Package (DwC-DP) mappings when you need an export view for biodiversity tools. The default is OFF to keep SDP canonical.
 
 ```{r, purl = FALSE}
-dict <- readr::read_csv("inst/extdata/column_dictionary.csv", show_col_types = FALSE)
+dict <- readr::read_csv(
+  system.file("extdata", "column_dictionary.csv", package = "metasalmon"),
+  show_col_types = FALSE
+)
 sem <- suggest_semantics(df, dict, include_dwc = TRUE)
 attr(sem, "dwc_mappings") |>
   dplyr::filter(dwc_table %in% c("event", "occurrence")) |>
