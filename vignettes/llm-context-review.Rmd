@@ -120,7 +120,7 @@ What gets written back automatically:
 
 What stays in `semantic_suggestions.csv` for manual review:
 
-- constraint and method assessments, even when the model accepts them
+- constraint and statistical-modifier assessments, even when the model accepts them
 - dataset-level keyword suggestions targeting `metadata/dataset.csv`
 - code-level semantic suggestions targeting `metadata/codes.csv`
 - any additional shortlist evidence and `llm_*` review columns
@@ -136,10 +136,14 @@ six ordered candidate slots:
 3. entity,
 4. unit,
 5. constraint, and
-6. method.
+6. statistical modifier.
 
-Method is reviewed as a `usedProcedure`-style companion slot; it is not a native
-I-ADOPT decomposition role.
+A statistical modifier is part of variable identity (I-ADOPT
+`StatisticalModifier`), so a slot is proposed only when the column is an
+aggregation or summary — a mean, maximum, total, or peak. Methods are never a
+dictionary slot under sdp-0.3.0: a table-constant procedure lives in
+`tables.csv`, and row-varying procedures resolve through `codes.csv`, where
+code-level method targets are still reviewed.
 
 The initial LLM request judges those six roles together. A malformed or missing
 slot falls back through the existing single-target adapter without discarding
@@ -239,8 +243,9 @@ response falls back the whole bundle. If the provider fails but deterministic
 candidates remain usable, the package warns and preserves the original
 shortlist for manual review.
 
-Pure deterministic validators run after LLM review. They check method and
-constraint evidence, role and ontology-type compatibility, known
+Pure deterministic validators run after LLM review. They check
+statistical-modifier and constraint evidence, role and ontology-type
+compatibility, known
 property/unit dimensions, and a small curated set of redundancy rules. A failed
 validator changes `accept` to `review`, clears the selected candidate, and
 appends a stable finding code and explanation while preserving model
