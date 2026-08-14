@@ -27,9 +27,10 @@ human review — deliberately not admin-bypassed): the 32-row
 `gcdfo-to-smn.sssom.tsv`, the duplicate-property removal with replacement
 rows, the `FisheriesReferencePointLower` re-namespacing, refreshed MIREOT
 mirrors, pinned smn resolution — and gcdfo's `make ci` now reasons over the
-merged gcdfo+smn closure (1b's deferred item). **Next: step 4** (PSC
-anchoring), whose first action is cutting smn 0.0.3 so PSC has a released,
-hashed artifact to pin — a publication act awaiting Brett's go.
+merged gcdfo+smn closure (1b's deferred item). **Step 4 in progress:** smn
+0.0.3 released 2026-08-14 (Brett-approved) — PSC now pins against it;
+remaining work is the psc→smn rows through PSC's own review pipeline and
+retiring `sdo-alignment-gap.md`.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
