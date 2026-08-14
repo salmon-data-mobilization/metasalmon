@@ -92,9 +92,12 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   `observation_unit_iri`), `column_dictionary.csv` (per-column semantics), and
   `codes.csv` (controlled-vocabulary code values). Validated against the canonical
   `smn-data-pkg` spec.
-- **SDP schema locations:** runtime schema fetches use
-  `https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main`.
-  Canonical SDP 0.2 profile, rules, and resource-schema identifiers resolve at
+- **SDP schema locations:** runtime schema fetches are pinned to the spec
+  release tag the package implements
+  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`,
+  currently `sdp-0.2.0`); tracking `main` let upstream spec releases break
+  networked loads. Advancing the pin is part of implementing a new spec
+  version. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
   published contract identifiers distinct from the configurable source used for
   runtime schema retrieval.
