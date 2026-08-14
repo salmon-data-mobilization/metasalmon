@@ -96,7 +96,7 @@
   # Advancing the pin is part of implementing the new spec version.
   getOption(
     "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.2.0"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
   )
 }
 
