@@ -119,12 +119,12 @@ state was abandoned metasmn-rename leftovers — preserved on local branch
 added a `methods.csv` registry the S8 method model removes; the port unwinds
 it.
 
-### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.2** (alpha.3 in MR !6)
+### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.3** (on the fair-mapping branch)
 
 | Version | Date | One line |
 |---|---|---|
-| v0.1.0-alpha.3 | 2026-08-14 (MR !6, in review) | smn 0.0.3 anchoring: re-pinned source, ten candidate broadMatch rows to `smn:EnumerationMethod`, alignment-gap doc retired |
-| v0.1.0-alpha.2 | 2026-07-31 | Current prerelease vocabulary build (provisional, not an adopted PSC standard) |
+| v0.1.0-alpha.3 | 2026-08-14 (MR !6 merged) | smn 0.0.3 anchoring: **first psc-to-smn.sssom.tsv** (ten prototype_accepted broadMatch rows), re-pinned source, alignment-gap doc retired |
+| v0.1.0-alpha.2 | 2026-07-31 | Prior prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
 Byte-pinned `releases/<version>/` dirs with per-artifact sha256 manifests;
@@ -183,11 +183,11 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ 
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── steps 0–5 done (smn PRs #21–#25 incl.
-   (2026-08-14)                        the 0.0.3 release; gcdfo PR #78 merged
-                                       via Brett-approved bypass); step 4
-                                       closes on Brett's PSC MR !6 review;
-                                       next: step 6 propagation
+S9 ontology conventions + alignment ── steps 0–5 ALL done 2026-08-14 (smn
+                                       0.0.3 released; gcdfo PR #78 and PSC
+                                       MR !6 merged, promotions approved);
+                                       remaining: step 6 propagation +
+                                       the parked #78 explainer
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest

@@ -27,13 +27,13 @@ via admin bypass of the review ruleset): the 32-row
 `gcdfo-to-smn.sssom.tsv`, the duplicate-property removal with replacement
 rows, the `FisheriesReferencePointLower` re-namespacing, refreshed MIREOT
 mirrors, pinned smn resolution — and gcdfo's `make ci` now reasons over the
-merged gcdfo+smn closure (1b's deferred item). **Step 4 implemented 2026-08-14:**
-smn 0.0.3 released (Brett-approved), and PSC MR !6 re-pins their smn source
-to the sha256-pinned 0.0.3 snapshot, adds ten candidate broadMatch rows to
-`smn:EnumerationMethod`, mints v0.1.0-alpha.3, and retires the
-alignment-gap objection — closing when Brett reviews the MR and decides the
-candidate promotions. Remaining in S9: step 6 (propagation) and the parked
-#78 iop-triples explainer.
+merged gcdfo+smn closure (1b's deferred item). **Step 4 closed 2026-08-14:**
+smn 0.0.3 released, PSC MR !6 merged with Brett's approval — the smn source
+re-pinned to the sha256-pinned 0.0.3 snapshot, ten `prototype_accepted`
+broadMatch rows publishing as `psc-to-smn.sssom.tsv` in v0.1.0-alpha.3, and
+the alignment-gap objection retired (remaining gap documented: nine analysis
+concepts need a shared smn analytical-method concept). Remaining in S9:
+step 6 (propagation) and the parked #78 iop-triples explainer.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
