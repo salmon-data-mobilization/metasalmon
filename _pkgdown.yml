@@ -112,9 +112,7 @@ reference:
   - title: "Extended SDP Structure and Reproducibility"
     desc: "SOSA procedures, measure-specific observation structures, and closed reproducibility sidecars"
     contents:
-      - read_sdp_methods
-      - write_sdp_methods
-      - validate_sdp_methods
+      - migrate_sdp_methods
       - read_sdp_observation_structures
       - write_sdp_observation_structures
       - validate_sdp_observation_structures

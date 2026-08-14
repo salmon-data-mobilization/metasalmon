@@ -6,7 +6,7 @@
 # only the fallback for a bundle that omits the values, and they must agree
 # with the vendored files under inst/extdata.
 .ms_sdp_profile_url <- function() {
-  "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+  "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json"
 }
 
 # Fallback only, for a bundle that predates the v0.2 extension resources.
@@ -21,9 +21,9 @@
 # comes from one validated bundle, closing the last hardcoded contract value.
 #
 # The fallback is not dead code: a bundle published before the v0.2 extension
-# resources existed has no `sdp_methods` entry, and composing the vendored base
-# with the caller's filename is the same URL that shipped before this was
-# derived.
+# resources existed has no `observation_structures` entry, and composing the
+# vendored base with the caller's filename is the same URL that shipped before
+# this was derived.
 #
 # It is reserved for a genuinely absent entry. An entry that exists but declares
 # an unusable schema is rejected by `.ms_validate_sdp_schema()` before any
@@ -61,7 +61,6 @@
     tables = "schema/frictionless/metadata/tables.schema.json",
     column_dictionary = "schema/frictionless/metadata/column_dictionary.schema.json",
     codes = "schema/frictionless/metadata/codes.schema.json",
-    methods = "schema/frictionless/metadata/methods.schema.json",
     observation_structures =
       "schema/frictionless/metadata/observation_structures.schema.json",
     observation_components =
@@ -70,7 +69,7 @@
 }
 
 .ms_sdp_profile_path <- function() {
-  "profiles/salmon-data-package/v0.2/profile.json"
+  "profiles/salmon-data-package/v0.3/profile.json"
 }
 
 .ms_sdp_rules_path <- function() {

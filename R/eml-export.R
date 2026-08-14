@@ -88,30 +88,65 @@
   !is.na(text) & nzchar(trimws(text))
 }
 
-.ms_eml_used_sdp_methods <- function(path, pkg, registry) {
-  if (!is.data.frame(registry) || nrow(registry) == 0L) {
-    return(registry)
-  }
-
-  used <- character()
-  dictionary <- pkg$dictionary
-  static_method_rows <- rep(FALSE, nrow(dictionary))
-  if (all(c("column_role", "method_iri") %in% names(dictionary))) {
-    static_method_rows <-
-      !is.na(dictionary$column_role) &
-      as.character(dictionary$column_role) == "measurement" &
-      .ms_eml_present_values(dictionary$method_iri)
-  }
-  static <- dictionary[static_method_rows, , drop = FALSE]
-  for (index in seq_len(nrow(static))) {
-    table_id <- as.character(static$table_id[[index]])
-    column <- as.character(static$column_name[[index]])
-    data <- pkg$resources[[table_id]]
-    if (!is.null(data) && column %in% names(data) &&
-        any(.ms_eml_present_values(data[[column]]))) {
-      used <- c(used, as.character(static$method_iri[[index]]))
+# sdp-0.3.0 method placements: a table-constant procedure and its protocol
+# live on tables.csv; a dataset-wide protocol lives on dataset.csv. This
+# tibble drives the EML methodStep emission (labels and descriptions belong
+# to the shared vocabulary, so only IRIs and citations exist locally).
+.ms_eml_sdp_method_placements <- function(pkg) {
+  placements <- list()
+  tables <- pkg$tables
+  fields <- c("method_iri", "protocol_iri", "protocol_citation")
+  for (index in seq_len(nrow(tables))) {
+    row <- tables[index, , drop = FALSE]
+    values <- vapply(
+      fields,
+      function(field) {
+        value <- if (field %in% names(row)) row[[field]][[1]] else NA_character_
+        as.character(value %||% NA_character_)
+      },
+      character(1)
+    )
+    if (any(.ms_eml_present_values(values))) {
+      placements[[length(placements) + 1]] <- tibble::tibble(
+        scope = as.character(row$table_id[[1]]),
+        method_iri = values[["method_iri"]],
+        protocol_iri = values[["protocol_iri"]],
+        protocol_citation = values[["protocol_citation"]]
+      )
     }
   }
+  dataset <- pkg$dataset
+  dataset_values <- vapply(
+    c("protocol_iri", "protocol_citation"),
+    function(field) {
+      value <- if (field %in% names(dataset)) dataset[[field]][[1]] else NA_character_
+      as.character(value %||% NA_character_)
+    },
+    character(1)
+  )
+  if (any(.ms_eml_present_values(dataset_values))) {
+    placements[[length(placements) + 1]] <- tibble::tibble(
+      scope = "dataset",
+      method_iri = NA_character_,
+      protocol_iri = dataset_values[["protocol_iri"]],
+      protocol_citation = dataset_values[["protocol_citation"]]
+    )
+  }
+  if (length(placements) == 0L) {
+    return(tibble::tibble(
+      scope = character(),
+      method_iri = character(),
+      protocol_iri = character(),
+      protocol_citation = character()
+    ))
+  }
+  dplyr::bind_rows(placements)
+}
+
+# Row-varying procedures actually used by the data: enumerated
+# `sosa:usedProcedure` code columns resolved through codes.csv term_iri.
+.ms_eml_used_procedures <- function(path, pkg) {
+  used <- character()
 
   structure_paths <- .ms_sdp_observation_paths(path)
   if (all(vapply(structure_paths, file.exists, logical(1)))) {
@@ -158,7 +193,7 @@
     }
   }
 
-  registry[registry$method_iri %in% unique(used), , drop = FALSE]
+  unique(used)
 }
 
 .ms_eml_scalar <- function(x, field, required = TRUE) {
@@ -2262,7 +2297,8 @@
                                    vocabulary,
                                    data_objects,
                                    supplementary_objects,
-                                   sdp_methods) {
+                                   sdp_methods,
+                                   used_procedures) {
   root <- xml2::read_xml(paste0(
     '<eml:eml xmlns:eml="', .ms_eml_namespace, '" ',
     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
@@ -2397,21 +2433,22 @@
   }
   if (nrow(sdp_methods) > 0L) {
     for (method_index in seq_len(nrow(sdp_methods))) {
-      method <- sdp_methods[method_index, , drop = FALSE]
+      placement <- sdp_methods[method_index, , drop = FALSE]
       method_step <- xml2::xml_add_child(methods, "methodStep")
       description <- xml2::xml_add_child(method_step, "description")
-      paragraphs <- c(
-        paste("Method:", method$method_label[[1]]),
-        method$method_description[[1]],
-        paste("Method IRI:", method$method_iri[[1]])
-      )
+      scope <- placement$scope[[1]]
+      paragraphs <- if (identical(scope, "dataset")) {
+        "Dataset-level protocol."
+      } else {
+        paste0("Method and protocol for table '", scope, "'.")
+      }
       optional <- c(
-        method_version = "Method version",
+        method_iri = "Method IRI",
         protocol_iri = "Protocol IRI",
-        citation = "Citation"
+        protocol_citation = "Protocol citation"
       )
       for (field in names(optional)) {
-        value <- method[[field]][[1]]
+        value <- placement[[field]][[1]]
         if (.ms_eml_nonempty(value)) {
           paragraphs <- c(
             paragraphs,
@@ -2422,6 +2459,18 @@
       for (paragraph in paragraphs) {
         .ms_eml_add_text(description, "para", paragraph)
       }
+    }
+  }
+  if (length(used_procedures) > 0L) {
+    method_step <- xml2::xml_add_child(methods, "methodStep")
+    description <- xml2::xml_add_child(method_step, "description")
+    .ms_eml_add_text(
+      description,
+      "para",
+      "Row-varying procedures used by the data, resolved through codes.csv:"
+    )
+    for (iri in used_procedures) {
+      .ms_eml_add_text(description, "para", paste("Procedure IRI:", iri))
     }
   }
 
@@ -2686,11 +2735,13 @@
 #' Package and an explicit EML mapping sidecar. The sidecar is required because
 #' EML concepts such as measurement scale, structured parties, dataset-level
 #' method narrative, and rights cannot be inferred defensibly from the
-#' canonical SDP tables. When `metadata/methods.csv` is present, validated
-#' procedures actually bound to observed measurements are emitted as method
-#' steps with their method and protocol IRIs, descriptions, versions, and
-#' citations; unreferenced registry alternatives are retained in the return
-#' value but are not asserted as performed.
+#' canonical SDP tables. Method and protocol placements are read from the
+#' sdp-0.3.0 fields — `tables.csv` (`method_iri`, `protocol_iri`,
+#' `protocol_citation`) and `dataset.csv` (`protocol_iri`,
+#' `protocol_citation`) — and emitted as method steps; row-varying procedures
+#' actually used by the data are resolved through `codes.csv` `term_iri` and
+#' listed in a dedicated method step. A legacy `metadata/methods.csv` registry
+#' is an error: run [migrate_sdp_methods()] first.
 #'
 #' Measurement attributes receive exactly two semantic annotations in the
 #' initial profile. Both reviewed OWL measurement-datum classes and SKOS
@@ -2801,12 +2852,14 @@ write_eml_from_sdp <- function(path,
     supplementary_objects
   )
   methods_path <- file.path(path, "metadata", "methods.csv")
-  sdp_methods <- if (file.exists(methods_path)) {
-    read_sdp_methods(path, validate = TRUE)
-  } else {
-    tibble::tibble()
+  if (file.exists(methods_path)) {
+    cli::cli_abort(c(
+      "{.file metadata/methods.csv} is an sdp-0.2.0 registry; sdp-0.3.0 packages must not carry one.",
+      "i" = "Run {.fun migrate_sdp_methods} to relocate its content and remove it."
+    ))
   }
-  used_sdp_methods <- .ms_eml_used_sdp_methods(path, pkg, sdp_methods)
+  sdp_methods <- .ms_eml_sdp_method_placements(pkg)
+  used_procedures <- .ms_eml_used_procedures(path, pkg)
   built <- .ms_eml_build_document(
     path,
     pkg,
@@ -2815,7 +2868,8 @@ write_eml_from_sdp <- function(path,
     vocabulary,
     data_objects,
     supplementary_objects,
-    used_sdp_methods
+    sdp_methods,
+    used_procedures
   )
   .ms_eml_validate_document_links(
     built$document,
@@ -2889,7 +2943,7 @@ write_eml_from_sdp <- function(path,
     data_objects = data_objects,
     supplementary_objects = supplementary_objects,
     methods = sdp_methods,
-    used_methods = used_sdp_methods
+    used_methods = used_procedures
   )
   cli::cli_alert_success(
     "Validated EML {.val {result$eml_version}} written to {.path {result$path}}"
