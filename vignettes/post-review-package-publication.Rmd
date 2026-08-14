@@ -83,7 +83,7 @@ review_semantics$missing_terms
 Use this pass to answer three questions:
 
 - **Did the Excel edits break the package structure?**
-- **Which required metadata is still a placeholder?** (the warnings list them)
+- **Which required metadata is still a placeholder?** (the warnings preview them, deduplicated by file and field — a long list is truncated, so treat it as a pointer, not an inventory)
 - **Which measurement rows still lack a final semantic term?**
 
 Do **not** switch to `require_iris = TRUE` yet unless you believe the package is
