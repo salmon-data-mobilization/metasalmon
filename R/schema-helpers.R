@@ -91,9 +91,13 @@
     return(sub("/schema/sdp[.]schema[.]yaml$", "", legacy_url))
   }
 
+  # Pinned to the spec release tag this package implements, not `main`:
+  # tracking main meant every upstream spec release broke networked loads
+  # (sdp-0.3.0 deleted methods.schema.json and the remote fetch 404ed).
+  # Advancing the pin is part of implementing the new spec version.
   getOption(
     "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.2.0"
   )
 }
 

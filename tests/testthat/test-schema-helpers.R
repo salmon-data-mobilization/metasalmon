@@ -50,7 +50,7 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
 
   expect_identical(
     metasalmon:::.ms_default_sdp_schema_base_url(),
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/main"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.2.0"
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
