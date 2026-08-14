@@ -947,7 +947,10 @@
     bundle_group$.ms_row_order <- seq_len(nrow(bundle_group))
   }
 
-  role_order <- c("variable", "property", "entity", "unit", "constraint", "method")
+  role_order <- c(
+    "variable", "property", "entity", "unit", "constraint",
+    "statistical_modifier", "method"
+  )
   roles <- unique(as.character(bundle_group$dictionary_role %||% character()))
   roles <- c(intersect(role_order, roles), setdiff(roles, role_order))
 
@@ -971,7 +974,7 @@
 
 .ms_llm_decomposition_slot_values <- function(target_row) {
   slot_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
     names(target_row)
   )
   if (length(slot_fields) == 0) {
@@ -1057,8 +1060,8 @@
     return(FALSE)
   }
 
-  dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method") ||
-    target_field %in% c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
+  dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "statistical_modifier", "method") ||
+    target_field %in% c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
 }
 
 .ms_llm_generic_system_prompt <- function() {
@@ -1086,9 +1089,10 @@
     "Choose only from the provided candidates; never invent an IRI.",
     "Role-fit beats topical relatedness: the best nearby term is still wrong if it does not fit the slot.",
     "Reason about the whole variable first, then assess the current slot.",
-    "Treat procedure context as usedProcedure-style context; do not treat package method_iri as a native I-ADOPT role.",
+    "Treat procedure context as usedProcedure-style context; a method is never a dictionary slot, and method targets appear only for code values resolving through codes.csv.",
     "For constraint_iri, choose a candidate only when it adds qualifying context that changes meaning, not when it merely restates obvious field context such as a generic catch framing.",
-    "For method_iri, choose a candidate only when the field explicitly names a method, protocol, gear, or estimation procedure.",
+    "For statistical_modifier_iri, choose a candidate only when the column is an aggregation or summary (mean, maximum, minimum, total, peak); it is part of variable identity under I-ADOPT.",
+    "For a method target on a code value, choose a candidate only when the code explicitly names a method, protocol, gear, or estimation procedure.",
     "If the shortlist is the wrong candidate family, prefer retry_search with a better lexical query.",
     "If no precise existing term appears available, prefer request_new_term over forcing a weak local winner.",
     "Return JSON only with keys decision, selected_candidate_index, confidence, rationale, missing_context, bundle_summary, retry_query, suggested_label, suggested_definition, suggested_namespace.",

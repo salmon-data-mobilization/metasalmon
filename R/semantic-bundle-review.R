@@ -1,5 +1,10 @@
 .ms_semantic_bundle_roles <- function() {
-  c("variable", "property", "entity", "unit", "constraint", "method")
+  # `method` stays: codes-scope targets still search shared-vocabulary
+  # procedures for codes.csv term_iri. Only the dictionary slot is gone.
+  c(
+    "variable", "property", "entity", "unit", "constraint",
+    "statistical_modifier", "method"
+  )
 }
 
 .ms_semantic_bundle_slot_fields <- function() {
@@ -9,7 +14,7 @@
     entity = "entity_iri",
     unit = "unit_iri",
     constraint = "constraint_iri",
-    method = "method_iri"
+    statistical_modifier = "statistical_modifier_iri"
   )
 }
 
@@ -223,8 +228,9 @@
     "Judge variable, property, entity, unit, constraint, and method together before finalizing any slot.",
     "Role-fit beats topical relatedness. A nearby term is wrong when it does not fit the requested slot.",
     "Preserve each candidate's native ontology type; do not infer that a term is a SKOS concept merely because it targets term_iri.",
-    "Treat package method_iri as a bridge to usedProcedure-style procedure context, not as a native I-ADOPT role.",
-    "Accept a method only when the field explicitly names a method, protocol, gear, procedure, or estimation process.",
+    "A method is never a dictionary slot: procedures are usedProcedure-style context recorded on tables.csv or resolved through codes.csv, so method targets appear only for code values.",
+    "Accept a method only when the code or field explicitly names a method, protocol, gear, procedure, or estimation process.",
+    "statistical_modifier is part of variable identity (I-ADOPT StatisticalModifier); accept one only when the column is an aggregation or summary such as a mean, maximum, total, or peak.",
     "Accept a constraint only when explicit contextual evidence changes the meaning; generic catch wording alone is insufficient.",
     "Choose only supplied candidate_id values. Never invent an IRI.",
     "For a wrong candidate family use retry_search with a short lexical retry_query.",

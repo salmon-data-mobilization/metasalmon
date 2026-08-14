@@ -273,7 +273,7 @@
     entity_iri = "entity",
     unit_iri = "unit",
     constraint_iri = "constraint",
-    method_iri = "method"
+    statistical_modifier_iri = "statistical_modifier"
   )
   target_cols <- .ms_semantic_target_cols()
 
@@ -537,11 +537,16 @@
       return(base_query)
     }
 
-    if (identical(role_name, "method")) {
-      if (context_has(ctx, "method")) {
-        return("estimate method")
-      }
-      return(base_query)
+    if (identical(role_name, "statistical_modifier")) {
+      # Part of variable identity, and deliberately conservative: a
+      # statistical-modifier target is emitted only when the column text
+      # names an aggregation, so plain measurements do not gain a slot.
+      if (grepl("\\b(total|cumulative|sum)\\b", base_lower)) return("total")
+      if (grepl("\\b(mean|average)\\b", base_lower)) return("mean")
+      if (grepl("\\bmax(imum)?\\b", base_lower)) return("maximum")
+      if (grepl("\\bmin(imum)?\\b", base_lower)) return("minimum")
+      if (grepl("\\bpeak\\b", base_lower)) return("peak")
+      return("")
     }
 
     if (identical(role_name, "entity")) {

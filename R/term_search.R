@@ -1924,6 +1924,7 @@ sources_for_role <- function(role) {
     property = c("smn", "gcdfo", "qudt", "nvs", "ols", "zooma"),
     entity = c("smn", "gcdfo", "gbif", "worms", "bioportal", "ols"),
     method = c("smn", "gcdfo", "bioportal", "ols", "zooma"),
+    statistical_modifier = c("smn", "ols"),
     variable = c("smn", "gcdfo", "nvs", "ols", "zooma"),
     constraint = c("smn", "gcdfo", "ols"),
     c("smn", "gcdfo", "ols", "nvs")

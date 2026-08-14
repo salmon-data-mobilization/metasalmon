@@ -253,7 +253,8 @@
 #'   (via `suggest_dwc_mappings()`) as a parallel attribute `dwc_mappings`.
 #'   Default is `FALSE` to keep the UI simple for non-DwC users.
 #' @param max_per_role Maximum number of suggestions to keep per semantic role
-#'   (variable, property, entity, unit, constraint, method) per column. Default
+#'   (variable, property, entity, unit, constraint, statistical_modifier;
+#'   plus method for code values) per column. Default
 #'   is 3.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
@@ -345,7 +346,8 @@
 #'
 #' When `llm_assess = TRUE`, the LLM only judges deterministically retrieved
 #' candidates; it does not mint new IRIs. Measurement columns are reviewed as
-#' one bundle spanning variable, property, entity, unit, constraint, and method,
+#' one bundle spanning variable, property, entity, unit, constraint, and
+#' statistical modifier (method appears only for code values),
 #' including empty slots. The public output still contains one assessment row
 #' per target and positional candidate indexes. If the first shortlist looks
 #' weak, the package gathers valid retry requests, runs at most one retrieval
@@ -364,7 +366,7 @@
 #' response has malformed, missing, or duplicate target items, valid siblings
 #' are retained and only affected targets fall back to individual review.
 #' Deterministic validators can downgrade an unsupported `accept` to `review`
-#' for missing method/constraint evidence, known role/type or dimensional
+#' for missing statistical-modifier/constraint evidence, known role/type or dimensional
 #' incompatibility, or a curated redundancy rule. A downgrade clears the
 #' selection, preserves model confidence as provenance, and never substitutes
 #' a term or creates an ontology gap.
@@ -635,7 +637,7 @@ suggest_semantics <- function(df,
 #'   `column_name` values.
 #' @param roles Optional character vector limiting application to specific
 #'   suggestion roles: `"variable"`, `"property"`, `"entity"`, `"unit"`,
-#'   `"constraint"`, `"method"`.
+#'   `"constraint"`, `"statistical_modifier"`.
 #' @param min_score Optional numeric threshold. Only available when
 #'   `suggestions` includes a `score` column; otherwise the function errors.
 #' @param min_llm_confidence Optional numeric threshold for `strategy = "llm"`.
@@ -702,7 +704,7 @@ apply_semantic_suggestions <- function(dict,
     entity = "entity_iri",
     unit = "unit_iri",
     constraint = "constraint_iri",
-    method = "method_iri"
+    statistical_modifier = "statistical_modifier_iri"
   )
 
   if (!is.null(roles)) {

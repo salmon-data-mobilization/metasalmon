@@ -220,8 +220,8 @@ write_salmon_datapackage <- function(
       if (!is.na(table_dict$constraint_iri[i]) && table_dict$constraint_iri[i] != "") {
         field$constraint_iri <- table_dict$constraint_iri[i]
       }
-      if (!is.na(table_dict$method_iri[i]) && table_dict$method_iri[i] != "") {
-        field$method_iri <- table_dict$method_iri[i]
+      if (!is.na(table_dict$statistical_modifier_iri[i]) && table_dict$statistical_modifier_iri[i] != "") {
+        field$statistical_modifier_iri <- table_dict$statistical_modifier_iri[i]
       }
 
       field[!purrr::map_lgl(field, is.null)]
@@ -1426,7 +1426,11 @@ read_salmon_datapackage <- function(path) {
             property_iri = custom[["iAdopt:propertyIri"]] %||% field$property_iri %||% NA_character_,
             entity_iri = custom[["iAdopt:entityIri"]] %||% field$entity_iri %||% NA_character_,
             constraint_iri = custom[["iAdopt:constraintIri"]] %||% field$constraint_iri %||% NA_character_,
-            method_iri = custom[["iAdopt:methodIri"]] %||% field$method_iri %||% NA_character_
+            # The legacy iAdopt:methodIri key is deliberately NOT read here:
+            # migrate_sdp_methods() reads old descriptors directly, so a
+            # descriptor-only sdp-0.2.0 package keeps its method binding
+            # until migration relocates it to tables.csv.
+            statistical_modifier_iri = custom[["iAdopt:statisticalModifierIri"]] %||% field$statistical_modifier_iri %||% NA_character_
           )
         }
       }
@@ -3001,7 +3005,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
 }
 
-.ms_measurement_supports_procedure_slot <- function(suggestion, dict_row) {
+.ms_measurement_supports_statistical_modifier_slot <- function(suggestion, dict_row) {
   text <- tolower(paste(
     if ("search_query" %in% names(suggestion)) .ms_scalar_text(suggestion$search_query) else "",
     if ("target_label" %in% names(suggestion)) .ms_scalar_text(suggestion$target_label) else "",
@@ -3012,7 +3016,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   ))
 
   grepl(
-    "\\b(method|protocol|procedure|gear|estimated|estimate|estimation|enumerat|calculated|derived|modelled|modeled|assay|technique|field method|lab method|survey method)\\b",
+    "\\b(mean|average|max(imum)?|min(imum)?|total|cumulative|sum|peak|median|aggregate|aggregated|index)\\b",
     text,
     perl = TRUE
   )
@@ -3042,7 +3046,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   if (identical(target_field, "constraint_iri") && !.ms_measurement_supports_constraint_slot(suggestion, dict_row)) {
     return(FALSE)
   }
-  if (identical(target_field, "method_iri") && !.ms_measurement_supports_procedure_slot(suggestion, dict_row)) {
+  if (identical(target_field, "statistical_modifier_iri") && !.ms_measurement_supports_statistical_modifier_slot(suggestion, dict_row)) {
     return(FALSE)
   }
 
@@ -3330,7 +3334,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   iri_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
     names(dict)
   )
   if (length(iri_fields) == 0) {

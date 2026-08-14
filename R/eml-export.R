@@ -925,7 +925,7 @@
   ]
   fields <- c(
     "term_iri", "property_iri", "entity_iri",
-    "constraint_iri", "method_iri", "unit_iri"
+    "constraint_iri", "statistical_modifier_iri", "unit_iri"
   )
   unique(unlist(
     lapply(fields, function(field) {
@@ -941,7 +941,7 @@
     property_iri = "property",
     entity_iri = "entity",
     constraint_iri = "constraint",
-    method_iri = "method",
+    statistical_modifier_iri = "statistical_modifier",
     unit_iri = "unit"
   )
   measurement <- pkg$dictionary[
