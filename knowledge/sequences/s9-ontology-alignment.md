@@ -21,9 +21,15 @@ imported not restated, CONVENTIONS §5b governs mapping placement **and is
 machine-enforced in CI alongside a passing ELK reasoner gate**, methods are
 SKOS concepts (the cross-repo pun is resolved and PSC's mapping blocker
 dissolved), and `smn:StatisticalModifierScheme` exists for the SDP
-`statistical_modifier_iri`. **Next: step 3** (smn↔gcdfo boundary as SSSOM
-data + the gcdfo follow-through + the combined-closure reasoner run), then
-step 4 (PSC anchoring — needs an smn release to pin against).
+`statistical_modifier_iri`. **Step 3 done 2026-08-13** (smn PR #24 merged;
+gcdfo PR #78 implemented, green, and awaiting the repo ruleset's required
+human review — deliberately not admin-bypassed): the 32-row
+`gcdfo-to-smn.sssom.tsv`, the duplicate-property removal with replacement
+rows, the `FisheriesReferencePointLower` re-namespacing, refreshed MIREOT
+mirrors, pinned smn resolution — and gcdfo's `make ci` now reasons over the
+merged gcdfo+smn closure (1b's deferred item). **Next: step 4** (PSC
+anchoring), whose first action is cutting smn 0.0.3 so PSC has a released,
+hashed artifact to pin — a publication act awaiting Brett's go.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
