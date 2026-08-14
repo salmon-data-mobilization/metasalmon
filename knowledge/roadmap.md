@@ -103,17 +103,17 @@ S9 step-3 boundary work (the 32-row SSSOM set, duplicate-property removal,
 re-namespacing, refreshed mirrors — PR #78, merged 2026-08-14). Cutting the
 next gcdfo release and fixing the version sequence are S6 item-3 work.
 
-### smn-data-pkg (SDP spec) — current **sdp-0.2.0**
+### smn-data-pkg (SDP spec) — current **sdp-0.3.0**
 
 | Version | Date | One line |
 |---|---|---|
-| sdp-0.2.0 | undated | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
+| sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
+| sdp-0.2.0 | 2026-08-11 (retroactively dated) | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
 | 0.1.1 | 2026-01-14 (malformed in changelog) | I-ADOPT component columns in `column_dictionary.csv` |
 | 0.1.0 | 2025-12-21 | Initial specification draft |
 
-Spec, profile, and rules all declare sdp-0.2.0, but the changelog's newest
-dated entry is 0.1.1 — 0.2.0 has no dated entry, tag, or release (S6 item 3 /
-S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
+The 0.3.0 changelog entry is dated and 0.2.0 got its retroactive dated
+entry; tags/releases remain absent (S6 item 3 / S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
 `attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded. Note PR #2
 added a `methods.csv` registry the S8 method model removes; the port unwinds

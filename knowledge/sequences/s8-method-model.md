@@ -12,8 +12,17 @@ psc:
 # S8 — Method model and tidy foundations · #76, #77 · spec + metasalmon
 
 **Model:** [SDP method model](../method-model-draft.md) — **approved
-2026-08-13** (metasalmon PR #23 merged); the spec port to `smn-data-pkg` is
-this stream's next action.
+2026-08-13** and **ported to the spec 2026-08-14** (smn-data-pkg PR #4,
+merged): **sdp-0.3.0** removes `column_dictionary.method_iri` and the
+`methods.csv` registry, adds the three placements and
+`statistical_modifier_iri`, migrates both example packages and the template,
+and freezes the published v0.2 profile at its released content (each spec
+version now gets its own canonical profile URL — the in-place-rewrite
+breakage class is structurally closed). **This stream's next action:** the
+metasalmon R implementation — re-vendor the sdp-0.3.0 profile/schemas/rules,
+remove `method_iri` handling (13 R files / 14 test files), implement the
+stop-and-report migration, add `statistical_modifier_iri` support — with the
+metasalmonpy mirror at the same version.
 
 Two coupled items that decide what the SDP *means* before S1 decides what it
 *checks*.
