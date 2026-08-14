@@ -183,11 +183,11 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ 
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── steps 0, 1a, 1b, 2(smn side), 3, 5
-   (2026-08-13)                        done (smn PRs #21–#24; gcdfo PR #78
-                                       awaits Brett's required review);
-                                       next: step 4 — needs smn 0.0.3 cut
-                                       (release decision with Brett)
+S9 ontology conventions + alignment ── steps 0–5 done (smn PRs #21–#25 incl.
+   (2026-08-14)                        the 0.0.3 release; gcdfo PR #78 merged
+                                       via Brett-approved bypass); step 4
+                                       closes on Brett's PSC MR !6 review;
+                                       next: step 6 propagation
 S2 correctness debt          ── independent
 S5 review flow + 0.3.0       ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
