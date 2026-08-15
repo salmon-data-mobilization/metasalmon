@@ -200,9 +200,19 @@
         if (file.exists(path)) {
           unlink(path)
         }
-        if (!file.rename(backup, path)) {
+        if (file.rename(backup, path)) {
+          backups[[index]] <<- NA_character_
+        } else {
+          # Leave the backup on disk and name it: the on-exit cleanup unlinks
+          # every backup it still knows about, which would destroy the only
+          # surviving copy of the original in exactly the case where the
+          # restore already failed.
           warning(
-            sprintf("Could not restore SDP metadata backup for '%s'.", path),
+            sprintf(
+              "Could not restore SDP metadata backup for '%s'; the original bytes are preserved at '%s'.",
+              path,
+              backup
+            ),
             call. = FALSE
           )
         }

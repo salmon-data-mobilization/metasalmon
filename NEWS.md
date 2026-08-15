@@ -61,6 +61,33 @@ separates them.
 
 ### Fixed
 
+- **The statistical-modifier slot can actually be filled from smn.** The
+  role-hint vocabulary never learned the new role, so every genuine modifier
+  concept — they live in smn's controlled-vocabularies module — reached
+  review carrying only a `constraint` hint, and the deterministic role-type
+  validator downgraded 100% of correct accepts to `review`. Both hint
+  builders now emit `statistical_modifier`, `sources_for_role()`'s companion
+  index filter gained the matching case (it previously fell through to "keep
+  the whole ontology"), and a new `SEM_MODIFIER_EVIDENCE_REQUIRED` validator
+  holds an accept to the same aggregation evidence the suggestion path
+  requires.
+
+- `migrate_sdp_methods()` hardening found in review: two carriers disagreeing
+  about one column's method now stop the migration instead of the dictionary
+  silently winning and the descriptor's IRI being erased; bindings that name
+  an undeclared table, or that carry no table/column, stop before any write
+  rather than reporting a placement that lands nowhere; `dry_run` rejects
+  non-logical input (`isTRUE(1)` is `FALSE`, so a truthy non-logical would
+  have taken the destructive branch).
+
+- A failed rollback inside the shared atomic writer no longer deletes the
+  backup holding the original bytes, and the warning now names that file.
+
+- The bundled `column_dictionary.csv` template had unquoted commas in two
+  descriptions, so every field after them shifted and the rows parsed into
+  schema-invalid `column_role`/`value_type` values. Pre-existing since the
+  template was added; the descriptions are now quoted.
+
 - The default remote SDP schema source is pinned to the spec release tag the
   package implements (now `sdp-0.3.0`) instead of the upstream `main` branch,
   so an upstream spec release can no longer break networked schema loads.

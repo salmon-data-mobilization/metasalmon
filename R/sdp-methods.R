@@ -130,8 +130,46 @@
 
   merged <- dplyr::bind_rows(bindings)
   merged <- merged[!.ms_sdp_extension_is_blank(merged$method_iri), , drop = FALSE]
-  # The dictionary CSV wins over the descriptor for the same column.
-  merged <- merged[!duplicated(paste(merged$table_id, merged$column_name, sep = "\r")), , drop = FALSE]
+  # A binding with no table or column to attach to cannot be placed, and an
+  # NA table_id would also poison every per-table comparison below (NA == "x"
+  # is NA, which subsetting treats as a phantom matching row).
+  unplaceable <- .ms_sdp_extension_is_blank(merged$table_id) |
+    .ms_sdp_extension_is_blank(merged$column_name)
+  if (any(unplaceable)) {
+    .ms_sdp_extension_abort(c(
+      "Method bindings without a table and column cannot be migrated.",
+      .ms_cli_bullets(
+        paste0(
+          merged$source[unplaceable], ": table ",
+          merged$table_id[unplaceable], ", column ",
+          merged$column_name[unplaceable]
+        ),
+        "x"
+      ),
+      "i" = "Fix the identifiers in the legacy metadata, then re-run."
+    ))
+  }
+  # Two carriers claiming the same column is a judgement call, not something
+  # to resolve by precedence: dropping one would erase it from the package.
+  # Identical claims collapse; disagreements stop the migration.
+  key <- paste(merged$table_id, merged$column_name, sep = "\r")
+  merged <- merged[!duplicated(paste(key, merged$method_iri, sep = "\r")), , drop = FALSE]
+  key <- paste(merged$table_id, merged$column_name, sep = "\r")
+  conflicted <- key %in% key[duplicated(key)]
+  if (any(conflicted)) {
+    rows <- merged[conflicted, , drop = FALSE]
+    .ms_sdp_extension_abort(c(
+      "Method migration stopped: two carriers disagree about one column's method.",
+      .ms_cli_bullets(
+        paste0(
+          rows$table_id, ".", rows$column_name, " = ", rows$method_iri,
+          " (", rows$source, ")"
+        ),
+        "x"
+      ),
+      "i" = "Resolve the disagreement in the legacy metadata, then re-run."
+    ))
+  }
   merged
 }
 
@@ -168,7 +206,10 @@
 #' @export
 migrate_sdp_methods <- function(path, dry_run = FALSE) {
   root <- .ms_sdp_extension_root(path)
-  if (length(dry_run) != 1L || is.na(dry_run)) {
+  # `isTRUE()` decides the write, and isTRUE(1) is FALSE — so without the
+  # type check a caller asking for a preview with `dry_run = 1` would get the
+  # destructive path instead.
+  if (!is.logical(dry_run) || length(dry_run) != 1L || is.na(dry_run)) {
     .ms_sdp_extension_abort("{.arg dry_run} must be TRUE or FALSE.")
   }
 
@@ -309,12 +350,27 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   # ---- Rewrite --------------------------------------------------------------
   writes <- list()
 
+  # A placement that lands nowhere would erase every carrier of a method IRI
+  # while writing it to no file, so the destination must exist first.
+  if (nrow(placements) > 0L && (is.null(tables) || !"table_id" %in% names(tables))) {
+    .ms_sdp_extension_abort(
+      "Cannot migrate table-level methods: {.file metadata/tables.csv} is missing or has no {.field table_id}."
+    )
+  }
   if (!is.null(tables)) {
     new_tables <- tables
     if (!"method_iri" %in% names(new_tables)) {
       new_tables$method_iri <- NA_character_
     }
     if (nrow(placements) > 0L) {
+      unmatched <- setdiff(placements$table_id, as.character(new_tables$table_id))
+      if (length(unmatched) > 0L) {
+        .ms_sdp_extension_abort(c(
+          "Method bindings name tables that {.file metadata/tables.csv} does not declare.",
+          .ms_cli_bullets(unmatched, "x"),
+          "i" = "Fix the table identifiers in the legacy metadata, then re-run."
+        ))
+      }
       for (index in seq_len(nrow(placements))) {
         hit <- new_tables$table_id == placements$table_id[[index]]
         new_tables$method_iri[hit] <- placements$method_iri[[index]]

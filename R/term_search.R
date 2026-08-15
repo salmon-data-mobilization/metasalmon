@@ -1644,15 +1644,23 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
       is_entity = .data$iri %in% entity_targets,
       is_constraint = .data$iri %in% constraint_targets,
       is_method = .data$iri %in% method_targets | grepl("method|procedure|enumeration", tolower(.data$in_scheme)),
+      is_statistical_modifier = grepl(
+        "statistical modifier|statisticalmodifier",
+        tolower(paste(.data$in_scheme, .data$type_iris, .data$label))
+      ),
       role_hints = purrr::pmap_chr(
-        list(.data$is_variable, .data$is_property, .data$is_entity, .data$is_constraint, .data$is_method),
-        function(variable, property, entity, constraint, method) {
+        list(
+          .data$is_variable, .data$is_property, .data$is_entity,
+          .data$is_constraint, .data$is_method, .data$is_statistical_modifier
+        ),
+        function(variable, property, entity, constraint, method, modifier) {
           hints <- c(
             if (isTRUE(variable)) "variable",
             if (isTRUE(property)) "property",
             if (isTRUE(entity)) "entity",
             if (isTRUE(constraint)) "constraint",
-            if (isTRUE(method)) "method"
+            if (isTRUE(method)) "method",
+            if (isTRUE(modifier)) "statistical_modifier"
           )
           paste(hints, collapse = "|")
         }
@@ -1752,6 +1760,13 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
     ),
     constraint = index$is_constraint | grepl("criteria|context|origin|phase|zone|basis|dimension|notation|framework|confidence|level", scheme_text),
     method = index$is_method | grepl("method|procedure|enumeration", scheme_text),
+    # Without a case here the new role fell through to "keep everything", so a
+    # query like "mean" matched any variable whose definition merely contains
+    # the word and only ranking kept the real modifier on top.
+    statistical_modifier = grepl(
+      "statistical modifier|statisticalmodifier|\\b(mean|median|average|maximum|minimum|total|cumulative|peak|sum)\\b",
+      scheme_text
+    ),
     rep(TRUE, nrow(index))
   )
 

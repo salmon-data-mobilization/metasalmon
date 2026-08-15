@@ -542,3 +542,89 @@ test_that("a failed metadata rewrite restores the methods registry", {
   )
   expect_identical(registry_before, registry_after)
 })
+
+test_that("dry_run rejects non-logical input instead of migrating", {
+  # isTRUE(1) is FALSE, so a truthy non-logical would have taken the
+  # destructive branch from a caller who plainly asked for a preview.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  add_legacy_registry(root)
+
+  expect_error(migrate_sdp_methods(root, dry_run = 1), "must be TRUE or FALSE")
+  expect_error(migrate_sdp_methods(root, dry_run = "TRUE"), "must be TRUE or FALSE")
+  expect_true(file.exists(file.path(root, "metadata", "methods.csv")))
+})
+
+test_that("two carriers disagreeing about one column stop the migration", {
+  # The dictionary used to win silently, which erased the descriptor's IRI
+  # from the package while the contract promises stop-and-report.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  add_legacy_descriptor_state(
+    root,
+    field_methods = c(abundance = "https://example.org/methods/aerial-survey")
+  )
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "two carriers disagree"
+  )
+  dictionary <- readr::read_csv(
+    file.path(root, "metadata", "column_dictionary.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  expect_true("method_iri" %in% names(dictionary))
+})
+
+test_that("a binding naming an undeclared table stops before any writes", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  dictionary$method_iri <- NA_character_
+  dictionary$method_iri[[1]] <- "https://example.org/methods/weir-count"
+  dictionary$table_id[[1]] <- "not_a_declared_table"
+  readr::write_csv(dictionary, dictionary_path, na = "")
+  before <- readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "does not declare"
+  )
+  expect_identical(
+    before,
+    readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+  )
+})
+
+test_that("the legacy reader refuses a symlinked methods registry", {
+  # Kept from the pre-0.3.0 hardening: the migration reads and then deletes
+  # this path, so following a symlink would delete through it.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  registry_path <- file.path(root, "metadata", "methods.csv")
+  outside <- file.path(withr::local_tempdir(), "outside-methods.csv")
+  readr::write_csv(legacy_registry_rows(), outside, na = "")
+  file.symlink(outside, registry_path)
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "symlink"
+  )
+  expect_true(file.exists(outside))
+})
