@@ -62,13 +62,13 @@ The generic consumer work starts only after all of these hold:
 1. Brett HQ activates the implementation child and the canonical strategy still
    supports the accepted PSC-semantic/CAMP-operational jurisdiction split.
 2. PSC-1 releases a stable mapping-product metadata/profile contract and
-   immutable test fixture; the current alpha.3 PSC-to-SMN set is predecessor
-   evidence, not yet a strict-reader-valid fixture. It includes source/version
-   metadata
-   but omits `sssom_version: 1.1`, so the strict R reader rejects it. Its branch
-   also deletes the pinned alpha.2 Adapter route and gives PSC-CV-000017 an
-   exact-chain rationale despite a gcdfo `closeMatch`; PSC-0A must repair or
-   split those release defects before the umbrella MR deploys.
+   immutable test fixture. [Nested PSC draft MR !8](https://gitlab.com/pacific-salmon-commission/psc-data-systems/psc-salmon-vocabularies/-/merge_requests/8)
+   repairs PSC-0A at `a2ca4ee`:
+   its nine-row alpha.3 PSC-to-SMN candidate declares strict SSSOM 1.1 and
+   passes the current R reader, the unsupported PSC-CV-000017 proposal is
+   deferred, and protected Adapter routes remain present. That is publisher-
+   consumer interoperability evidence, not a released PSC-1 profile or fixture;
+   MR !8 must be reviewed and merged before umbrella MR !5 may deploy.
 3. S10 brings metasalmonpy through the complete current released R baseline,
    including 0.3.0 if open green PR #39 at `f76ed4f` has merged and released by
    then. An isolated SSSOM port is insufficient parity. New FAIR envelope, pin,

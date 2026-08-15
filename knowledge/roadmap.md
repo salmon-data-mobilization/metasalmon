@@ -176,19 +176,20 @@ it.
 
 | Version | Date | One line |
 |---|---|---|
-| v0.1.0-alpha.3 | 2026-08-14 (nested into open draft MR !5, not merged to the default branch, tagged, or released) | smn 0.0.3 anchoring candidate: **first psc-to-smn.sssom.tsv** (ten prototype_accepted broadMatch rows), re-pinned source, alignment-gap doc retired |
+| v0.1.0-alpha.3 | 2026-08-15 (reconciled in [nested draft MR !8](https://gitlab.com/pacific-salmon-commission/psc-data-systems/psc-salmon-vocabularies/-/merge_requests/8) targeting open draft MR !5; not merged to the default branch, tagged, or released) | smn 0.0.3 anchoring candidate: strict SSSOM 1.1 with nine `prototype_accepted` broadMatch rows and one visibly deferred proposal |
 | v0.1.0-alpha.2 | 2026-07-31 | Prior prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
 Byte-pinned `releases/<version>/` dirs with per-artifact sha256 manifests;
 GitLab. Alpha.3 exists only in the open integration change and is not a current
 release.
-**Integration defects recorded in PSC-0A:** current alpha.3 generation removes
-the versioned alpha.2 CAMP Adapter route; PSC-CV-000017's SMN rationale claims
-an exact-match chain where the gcdfo predicate is `closeMatch`; and the PSC
-SSSOM header lacks the `sssom_version` required by metasalmon's strict reader.
-Treat alpha.3 as predecessor evidence, not a strict-reader-valid consumer
-fixture.
+**PSC-0A status:** nested draft MR !8 at implementation commit `a2ca4ee`
+preserves the versioned alpha.1/alpha.2/alpha.3 CAMP Adapter routes, defers the
+unsupported PSC-CV-000017 composition, declares SSSOM 1.1, records PSC CC BY
+4.0 as the mapping-set licence, and serializes per-relationship dates. The
+nine-row PSC-to-SMN set passes metasalmon's strict 0.2.6 reader. This is useful
+interoperability evidence but remains an unmerged, unreleased candidate; it is
+not the stable PSC-1 product-profile fixture required by a consumer child.
 
 ---
 

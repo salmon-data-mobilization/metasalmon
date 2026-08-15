@@ -44,10 +44,14 @@ crosswalk now.
 - [x] (2026-08-15) Re-audit the remote dependencies: S8 R implementation PR
   #39 is open and green at `f76ed4f` but not merged or released; the
   `sdp-0.3.0` tag exists; Python remains 0.1.6; SMN 0.0.3 is released; the
-  gcdfo S9 merge is unreleased; and PSC alpha.3 remains unmerged in draft MR
-  !5.
+  gcdfo S9 merge is unreleased; and PSC alpha.3 remains unmerged in nested draft
+  MR !8 targeting draft MR !5.
 - [x] (2026-08-15) Record the six-repository allowlist and typed external-edge
   rule, plus the accepted PID-1 and COMPAT-1 decisions.
+- [x] (2026-08-15) Reconcile the hub after PSC-0A implementation: nested draft
+  MR !8 at `a2ca4ee` is strict-reader-valid with nine accepted SMN rows and one
+  deferred proposal, but remains unmerged and unreleased and therefore does not
+  satisfy PSC-1 or activate a consumer child.
 - [ ] Immediately before implementation, verify the attributable activation
   gate in its owning Brett HQ plan; do not mirror HQ approval or task status
   into this plan.
@@ -81,9 +85,9 @@ crosswalk now.
   must replay the whole current released R baseline; a selective SSSOM port
   would leave the package's version claim false.
 - S9's assets have different publication states: SMN 0.0.3 is released; gcdfo
-  PR #78 is merged but its boundary work is unreleased; and the ten provisional
-  PSC-to-SMN broad mappings in alpha.3 remain unmerged in draft MR !5. Nine PSC
-  analytical-method concepts remain unmatched.
+  PR #78 is merged but its boundary work is unreleased; and reconciled alpha.3
+  has nine provisional PSC-to-SMN broad mappings plus one deferred proposal in
+  nested draft MR !8. Nine PSC analytical-method concepts remain unmatched.
 - S8's model and specification are decided. Its R 0.3.0 implementation is green
   on open PR #39 at `f76ed4f`, but it is not merged or released; Python remains
   0.1.6. Generic mapping consumption has no semantic dependency on S8. The
@@ -92,16 +96,13 @@ crosswalk now.
 - The remote `sdp-0.3.0` annotated tag exists, although no corresponding GitHub
   Release object exists. The hub must distinguish an immutable spec tag from a
   package release and from S8's still-open R implementation.
-- The PSC alpha.3 SSSOM header includes mapping-set ID/version, licence, and
-  subject/object source IDs and versions, but omits `sssom_version: 1.1`.
-  `read_sssom_mapping_set()` in metasalmon 0.2.6 at commit `5825467` therefore
-  rejects it before row validation. The immutable-shaped artifact is evidence
-  for PSC-1, not a fixture to patch in place.
-- The same integration branch removes the public alpha.2 CAMP Adapter route
-  still pinned by `campModelInput`, and PSC-CV-000017's SMN rationale claims an
-  exact-match composition although its gcdfo predicate is `closeMatch`. PSC-0A
-  must repair, supersede, or split those publisher-side defects before the
-  umbrella MR deploys; a consumer must not normalize them.
+- PSC integration commit `006763f` preserves the original strict-reader
+  failure as predecessor evidence. Nested draft MR !8 legitimately repairs the
+  unpublished candidate at `a2ca4ee`: SSSOM 1.1, PSC mapping-set licensing,
+  per-relationship dates, protected Adapter routes, and truthful deferral of
+  PSC-CV-000017. The reconciled nine-row set passes the exact metasalmon 0.2.6
+  reader. A consumer still must not normalize publisher defects or treat this
+  unmerged candidate as the released PSC-1 fixture.
 
 ## Decision Log
 
@@ -202,7 +203,8 @@ Relevant current code and contracts:
 ### Local glossary for cross-repository gates
 
 - **PSC-0A:** the pre-merge reconciliation of alpha.3 Adapter persistence,
-  mapping provenance, and strict-SSSOM defects.
+  mapping provenance, and strict-SSSOM defects. Implemented in nested draft PSC
+  MR !8 at `a2ca4ee`; review/merge remains a PLAN-0 deployment gate.
 - **PID-1:** accepted 2026-08-15: product identifiers use readable stable slugs
   below `/mappings/`; immutable product-version identifiers remain distinct.
 - **PSC-1:** the PSC publishing-kernel MR that releases the common metadata
@@ -424,10 +426,11 @@ Then capture the Python baseline from the sibling `metasalmonpy` repository:
 )
 ```
 
-The planning audit already captured the current PSC strict-profile diagnostic
+The planning audit captured the predecessor PSC strict-profile diagnostic
 from PSC integration commit `006763f1a63d762ca5895177c132c2d10969fb0d` and
-recorded the file checksum in `Surprises & Discoveries`. It is not an
-implementation dependency. To reproduce it without trusting whichever PSC
+recorded the file checksum in `Surprises & Discoveries`. It remains negative
+regression evidence and is not an implementation dependency. To reproduce it
+without trusting whichever PSC
 branch happens to be checked out, return to the `metasalmon` root, extract the
 exact Git object from the sibling repository into a temporary file, verify its
 checksum, and run the strict reader from the still-current `metasalmon` root:
@@ -440,11 +443,21 @@ printf '%s  %s\n' 2c0d80a2275a81809036ce85bc9519d76d6ec6096879e739157125558abbc7
 Rscript -e 'pkgload::load_all(".", quiet = TRUE); read_sssom_mapping_set(commandArgs(trailingOnly = TRUE)[[1]])' "$psc_diag_file"
 ```
 
-The expected pre-PSC-1 result is a failure naming the missing required
-`sssom_version` field. Once PSC-1 exists, replace the path in the implementation
-plan with the immutable fixture PID/cache path and record its checksum. Do not
-edit alpha.3 to make this command pass. If the exact Git object is unavailable,
-record that preservation failure and stop; never substitute a moving branch.
+The expected predecessor result is a failure naming the missing required
+`sssom_version` field. PSC-0A then provides a bounded positive interoperability
+check at immutable implementation commit `a2ca4ee` without making that draft
+candidate a consumer dependency:
+
+```sh
+git -C ../psc-salmon-vocabularies show a2ca4eededd1cf380f2f1ef1f7a6927ec540d7a9:releases/v0.1.0-alpha.3/mappings/psc-to-smn.sssom.tsv > "$psc_diag_file"
+printf '%s  %s\n' 976c1ac6fc059275bd8c3d27c39afb07d5670165ce87e1bb19893fffb2eb59cc "$psc_diag_file" | shasum -a 256 -c -
+Rscript -e 'pkgload::load_all(".", quiet = TRUE); x <- read_sssom_mapping_set(commandArgs(trailingOnly = TRUE)[[1]]); stopifnot(identical(x$metadata$sssom_version, "1.1"), identical(x$metadata$license, "https://creativecommons.org/licenses/by/4.0/"), nrow(x$mappings) == 9L)' "$psc_diag_file"
+```
+
+Once PSC-1 exists, replace this candidate object with the immutable released
+fixture PID/cache path and record its checksum. If either exact Git object is
+unavailable, record that preservation failure and stop; never substitute a
+moving branch.
 
 During implementation, use focused tests first, then both complete suites.
 Every behavior-changing commit includes its R and Python parity evidence or an
