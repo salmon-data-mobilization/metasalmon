@@ -209,12 +209,17 @@
   # "controlled-vocabularies" constraint hint, and the role-type validator
   # then vetoes the accept as role-incompatible.
   is_statistical_modifier <- grepl(
-    "statisticalmodifier|statistical modifier|statisticalmodifierscheme",
+    "statisticalmodifier|statistical modifier",
     subject_text
   ) ||
-    grepl(
-      "\\b(mean|median|maximum|minimum|total|cumulative|peak)\\b",
-      subject_text
+    # Token fallback only inside the controlled-vocabulary module, so a
+    # variable named TotalRunSize does not pick up a modifier hint.
+    (
+      grepl("controlled-vocabularies", module_name) &&
+        grepl(
+          "\\b(mean|median|average|maximum|minimum|total|cumulative|peak)\\b",
+          subject_text
+        )
     )
   is_variable <- (
     grepl(
