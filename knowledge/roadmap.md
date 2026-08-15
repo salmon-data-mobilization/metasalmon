@@ -51,10 +51,11 @@ Rules that keep this from decaying:
 Compact, hub-maintained. Each repo's own changelog/release page stays
 authoritative; this index coordinates. Verified 2026-08-13.
 
-### metasalmon (R) — current **0.2.6**
+### metasalmon (R) — current **0.3.0**
 
 | Version | Date | One line |
 |---|---|---|
+| 0.3.0 | 2026-08-15 | **Breaking:** sdp-0.3.0 implemented — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()` stop-and-report migration, semantic pipeline reviews the statistical-modifier slot, remote schema source pinned to spec tags |
 | 0.2.6 | 2026-08-12 | Tidy-data enforcement: primary-key uniqueness, wide-format warning, placeholders surfaced |
 | 0.2.5 | 2026-08-12 | Credential redaction covers qualified `*_token` names; duplicate redactor deleted |
 | 0.2.4 | 2026-08-11 | **Breaking:** canonical CSV missing-value token is the empty field |
@@ -113,7 +114,9 @@ next gcdfo release and fixing the version sequence are S6 item-3 work.
 | 0.1.0 | 2025-12-21 | Initial specification draft |
 
 The 0.3.0 changelog entry is dated and 0.2.0 got its retroactive dated
-entry; tags/releases remain absent (S6 item 3 / S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
+entry; `sdp-0.2.0` and `sdp-0.3.0` git tags were cut 2026-08-14 (they carry
+metasalmon's pinned remote schema source); GitHub releases remain absent
+(S6 item 3 / S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
 `attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded. Note PR #2
 added a `methods.csv` registry the S8 method model removes; the port unwinds
