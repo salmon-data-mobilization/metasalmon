@@ -8,7 +8,8 @@ psc:
   id: metasalmon:domain:salmon-data-ecosystem
 ---
 
-The domain this bundle coordinates. Six repositories, one hub:
+The domain this bundle coordinates. The table below is the complete allowlist:
+six repositories, one hub.
 
 | Repo | Role |
 |---|---|
@@ -18,3 +19,11 @@ The domain this bundle coordinates. Six repositories, one hub:
 | `salmon-domain-ontology` | The shared Salmon Domain Ontology (`smn:`) |
 | `dfo-salmon-ontology` | The GC DFO Salmon Ontology (`gcdfo:`) |
 | `psc-salmon-vocabularies` | The PSC controlled vocabulary (SKOS-only, CSV-authoritative, GitLab) |
+
+Shared tools, hyperlinks, consumed artifacts, and transitive dependencies do
+not add repositories to this domain. In particular, `psc-data-systems`,
+`psc-data-systems-site`, `campModelInput`, and `ctc-knowledge-map` are external
+to the hub. When one matters to this domain, the hub records only a typed
+dependency edge with its owner, required artifact or gate, owning plan, and
+observation date; it does not absorb that repository's tasks, status, branches,
+approvals, or releases.

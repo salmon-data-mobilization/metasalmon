@@ -27,11 +27,13 @@ Highest strategic value, least code. Run alongside S1–S5. Ordered:
    **metasalmon's own KNB documentation states this as a precondition and it
    cannot be satisfied today**, which makes it a soft dependency of S4.
    The release-index discrepancies recorded in the [roadmap card](../roadmap.md)
-   (untagged releases, gcdfo's non-monotonic 0.0.999, the spec's undated
-   sdp-0.2.0) are this sub-stream's first work items.
+   (missing release objects, gcdfo's non-monotonic 0.0.999, and incomplete
+   cross-repository release mechanics) are this sub-stream's first work items.
 4. ~~Publish the smn/gcdfo boundary as data~~ — **moved to S9 step 3.**
-5. ~~Method / protocol / procedure canonical style (#76)~~ — **moved to S9
-   step 2** (still blocked by S8, which names the concepts first).
+5. ~~Method / protocol / procedure canonical style (#76)~~ — **completed by
+   S9 step 2** after the S8 model decision; SMN 0.0.3 carries the released
+   shared semantic result. Open metasalmon PR #39 is a separate R-package
+   implementation state.
 6. **Populate the three empty policy schemes** (PA zones, COSEWIC, benchmarks).
    Highest-value single ontology change for real users: today term search finds
    nothing and falls back to `REVIEW:` placeholders.
@@ -48,6 +50,13 @@ in their semantic-asset repository. This hub coordinates consumers and release
 pins only. Brett HQ remains the program activation authority, and neither this
 card nor a passing validator confers scientific approval.
 
+The six repositories in the ecosystem domain card are an allowlist. The
+[roadmap's external dependency ledger](../roadmap.md#cross-program-authority-boundary)
+is the only hub record for `psc-data-systems`, `psc-data-systems-site`,
+`campModelInput`, and `ctc-knowledge-map`: shared tooling, documentation links,
+consumer handoffs, and descriptive evidence do not transfer their tasks,
+status, branches, approvals, or releases into S6.
+
 The generic consumer work starts only after all of these hold:
 
 1. Brett HQ activates the implementation child and the canonical strategy still
@@ -60,9 +69,11 @@ The generic consumer work starts only after all of these hold:
    also deletes the pinned alpha.2 Adapter route and gives PSC-CV-000017 an
    exact-chain rationale despite a gcdfo `closeMatch`; PSC-0A must repair or
    split those release defects before the umbrella MR deploys.
-3. S10 brings metasalmonpy through the existing SSSOM contract. New FAIR
-   envelope, pin, archival, and provenance behavior then lands in R and Python
-   in the same stream unless mirror governance records why not.
+3. S10 brings metasalmonpy through the complete current released R baseline,
+   including 0.3.0 if open green PR #39 at `f76ed4f` has merged and released by
+   then. An isolated SSSOM port is insufficient parity. New FAIR envelope, pin,
+   archival, and provenance behavior then lands in R and Python in the same
+   stream unless mirror governance records why not.
 
 The implementation reuses `R/sssom.R` for identified concept mappings and
 keeps its rejection of raw literals and ordered decompositions. New code is
@@ -70,16 +81,21 @@ limited to verifying the FAIR product envelope and immutable release pin,
 dispatching each identified-concept distribution to the existing strict
 validator, archiving reviewed bytes, and recording product IDs, versions, and
 hashes in SDP provenance. It may preserve a neutral compatibility link but does
-not interpret it. SSSOM parsing is not mapping execution: a later plan must
+not interpret it. PID-1 has selected readable stable product slugs under
+`/mappings/`. COMPAT-1 permits a publisher's qualified expected-compatibility
+assertion only when each consumer independently verifies and accepts or rejects
+it; that evaluation belongs to a later contract, not META-1. SSSOM parsing is
+not mapping execution: a later plan must
 define predicate direction, cardinality, gaps, and multiple-target behavior
 before applying rows. Candidate generation and review tooling may produce
 evidence; it never publishes an approved mapping automatically.
 
-Generic consumption does **not** wait on S8. The later NuSEDS migration remains
-inactive until NUSED-0 records source identity, licence, publication home,
-source/domain authority, correction route, and explicit HQ activation. It also
-waits for the S8 implementation to be reconciled and delivered with required
-R/Python parity and for any required shared analytical-method targets to exist
-or remain explicit gaps. The existing exported R crosswalk functions stay as
-compatibility adapters over a future governed pin; no package becomes the
-mapping authority.
+Generic consumption has no semantic dependency on S8. Its full-S10 gate is a
+package-parity rule, not a method-model prerequisite. The later NuSEDS migration
+remains inactive until NUSED-0 records source identity, licence, publication
+home, source/domain authority, correction route, and explicit HQ activation.
+It additionally waits for PR #39 to merge and ship the R method-model release,
+for S10 to replay that release in Python, and for any required shared analytical-
+method targets to exist or remain explicit gaps. The existing exported R
+crosswalk functions stay as compatibility adapters over a future governed pin;
+no package becomes the mapping authority.

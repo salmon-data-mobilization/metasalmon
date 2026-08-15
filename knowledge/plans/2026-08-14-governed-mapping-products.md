@@ -41,18 +41,30 @@ crosswalk now.
   alpha.3 artifact, and Brett HQ authority boundary.
 - [x] (2026-08-14) Record the bounded consumer substream in the hub roadmap and
   S6 card without creating a competing sequence.
-- [ ] Obtain Brett HQ implementation activation and a merged/reaffirmed
-  program strategy; planning approval alone does not satisfy this gate.
-- [ ] Consume a released PSC-1 mapping-product profile and fixture after PID-1
-  is dispositioned in the PSC umbrella plan.
-- [ ] Let S10 bring metasalmonpy through the existing SSSOM contract.
+- [x] (2026-08-15) Re-audit the remote dependencies: S8 R implementation PR
+  #39 is open and green at `f76ed4f` but not merged or released; the
+  `sdp-0.3.0` tag exists; Python remains 0.1.6; SMN 0.0.3 is released; the
+  gcdfo S9 merge is unreleased; and PSC alpha.3 remains unmerged in draft MR
+  !5.
+- [x] (2026-08-15) Record the six-repository allowlist and typed external-edge
+  rule, plus the accepted PID-1 and COMPAT-1 decisions.
+- [ ] Immediately before implementation, verify the attributable activation
+  gate in its owning Brett HQ plan; do not mirror HQ approval or task status
+  into this plan.
+- [ ] Consume a released PSC-1 mapping-product profile and fixture using the
+  accepted readable stable product slugs under `/mappings/`.
+- [ ] Let S10 bring metasalmonpy through the complete current released R
+  baseline (at least 0.3.0 if PR #39 merges and releases first), not only the
+  existing SSSOM contract.
 - [ ] Implement and release paired R/Python verification, pinning, archival,
   and provenance behavior with exact parity evidence.
-- [ ] Reassess qualified compatibility only after COMPAT-1 and PSC-4; reassess
-  mapping application only after a predicate-aware contract and use case are
-  approved. Neither follow-on is activated by this plan.
+- [ ] Reassess qualified compatibility only after PSC-4 publishes the accepted
+  COMPAT-1 shape and a separate consumer plan is activated; reassess mapping
+  application only after a predicate-aware contract and use case are approved.
+  Neither follow-on is activated by this plan.
 - [ ] Reassess a source-owned NuSEDS mapping product after its authority and
-  source gates are met; gate only the later package migration on S8 and parity.
+  source gates are met; gate only the later package migration on PR #39
+  merge/release and replay of that R baseline in Python.
 
 ## Surprises & Discoveries
 
@@ -62,15 +74,24 @@ crosswalk now.
   SSSOM would add drift rather than capability.
 - The planning authority moved from `notes/` into this `knowledge/` OKF hub on
   2026-08-13. `knowledge/roadmap.md` remains the six-repository technical
-  sequence and release index; this plan is a child of S6.
+  sequence and release index; its domain table is an allowlist, and this plan is
+  a child of S6.
 - The same-stream mirror rule makes a new R-only consumer invalid. Python is at
-  0.1.6 parity and lacks SSSOM, so S10 is a hard implementation prerequisite.
-- S9 completed the generic method-model ontology work: SMN 0.0.3, the
-  gcdfo-to-SMN SSSOM set, and ten provisional PSC-to-SMN broad mappings exist.
-  Nine PSC analytical-method concepts remain unmatched.
-- S8's model and spec are decided, but its R implementation is still being
-  reconciled and Python delivery rides S10. Generic mapping consumption does
-  not depend on S8; NuSEDS method migration does.
+  0.1.6 parity and lacks SSSOM. S10 is a hard implementation prerequisite and
+  must replay the whole current released R baseline; a selective SSSOM port
+  would leave the package's version claim false.
+- S9's assets have different publication states: SMN 0.0.3 is released; gcdfo
+  PR #78 is merged but its boundary work is unreleased; and the ten provisional
+  PSC-to-SMN broad mappings in alpha.3 remain unmerged in draft MR !5. Nine PSC
+  analytical-method concepts remain unmatched.
+- S8's model and specification are decided. Its R 0.3.0 implementation is green
+  on open PR #39 at `f76ed4f`, but it is not merged or released; Python remains
+  0.1.6. Generic mapping consumption has no semantic dependency on S8. The
+  NuSEDS migration additionally waits for that R implementation to merge and
+  release and for S10 to replay it in Python.
+- The remote `sdp-0.3.0` annotated tag exists, although no corresponding GitHub
+  Release object exists. The hub must distinguish an immutable spec tag from a
+  package release and from S8's still-open R implementation.
 - The PSC alpha.3 SSSOM header includes mapping-set ID/version, licence, and
   subject/object source IDs and versions, but omits `sssom_version: 1.1`.
   `read_sssom_mapping_set()` in metasalmon 0.2.6 at commit `5825467` therefore
@@ -91,21 +112,43 @@ crosswalk now.
   `metasalmon` may generate candidates, validate, pin, archive, and record
   provenance. It does not approve or publish production mapping decisions.
 - **2026-08-14 — Pair all new R/Python behavior.** META-1 is one product node
-  delivered by coordinated R and Python PRs after S10 reaches SSSOM parity.
-  Version equality remains a parity claim.
+  delivered by coordinated R and Python PRs after S10 reaches full parity
+  through the current released R baseline. Version equality remains a parity
+  claim; SSSOM-only catch-up is insufficient.
 - **2026-08-14 — Keep generic consumption independent of S8.** S8 is a method-
   placement concern, not a prerequisite for reading a generic governed product.
-  The NuSEDS follow-on remains gated by reconciled S8 delivery.
+  The NuSEDS follow-on remains gated by PR #39 merge/release and replay of that
+  method-model baseline in Python.
 - **2026-08-14 — Separate verification from application and compatibility.**
   SSSOM parsing does not define how `broadMatch`, direction, cardinality,
   multiple targets, or gaps should transform data. META-1R/PY therefore stops
   at verification and provenance. It preserves, but does not evaluate, neutral
   compatibility links; missing evidence never becomes an inferred
   `compatible` state or an automatic pin update.
+- **2026-08-15 — Bound the hub to an explicit allowlist.** The six repositories
+  in `knowledge/domains/salmon-data-ecosystem.md` are the complete coordinated
+  domain. Shared tools, links, consumed artifacts, and transitive dependencies
+  do not add members. External repositories appear only in the roadmap's typed
+  dependency ledger; their owning plans retain tasks, status, branches,
+  approvals, and release history.
+- **2026-08-15 — Resolve PID-1 with readable product slugs.** Stable mapping-
+  product identifiers use readable slugs below `/mappings/`; versions remain
+  immutable and separately identifiable. These identify datasets, not PSC
+  concepts.
+- **2026-08-15 — Resolve COMPAT-1 with separated assertions and acceptance.** A
+  publisher may make a qualified expected-compatibility assertion, but each
+  consumer independently verifies and accepts or rejects it. Missing or expired
+  evidence remains `unknown`. META-1 preserves the assertion link only; it does
+  not evaluate compatibility.
+- **2026-08-15 — Rebase gates on current delivery evidence.** PR #39 is green
+  but open and unreleased, the SDP 0.3.0 tag exists, and Python remains 0.1.6.
+  META-1 therefore waits for S10 full parity through the released R baseline at
+  implementation time. NuSEDS additionally waits for PR #39 merge/release and
+  Python replay; generic META-1 remains semantically independent of S8.
 
 ## Outcomes & Retrospective
 
-Planning outcome only as of 2026-08-14: the current capabilities and dependency
+Planning outcome only as of 2026-08-15: the current capabilities and dependency
 gates are reconciled, and no package behavior, mapping product, release, or
 NuSEDS authority has changed. At implementation close-out, replace this text
 with the R and Python PRs/releases, product/profile versions, fixture hashes,
@@ -124,12 +167,22 @@ The authoritative program and repository roles are deliberately separate:
   release owns the reusable product profile and first strict-reader-valid
   fixture.
 - This OKF hub owns technical sequencing, the mirror obligation, and the
-  cross-repository release index. It is not a semantic-asset registry.
+  release index for exactly the six repositories in its domain-card allowlist.
+  It is not a semantic-asset registry. Shared tools, links, consumed artifacts,
+  and transitive dependencies do not expand that jurisdiction.
 - The source or vocabulary owner publishes mapping products and their review
   decisions. A consumer package verifies, archives, and records only the pinned
   product until a separate application contract is approved.
 - Brett coordinates identification of the competent domain and application
   authorities, but that coordination is not their scientific approval.
+
+The [roadmap's external dependency ledger](../roadmap.md#cross-program-authority-boundary)
+is incorporated here by reference. It names the owner, required artifact or
+gate, owning plan, and observation date for `psc-data-systems`,
+`psc-data-systems-site`, `campModelInput`, and `ctc-knowledge-map`. Mentions of
+those repositories below describe only an artifact or gate consumed by this
+plan; their tasks, status, branches, approvals, and releases remain in their
+owning plans.
 
 Relevant current code and contracts:
 
@@ -142,21 +195,26 @@ Relevant current code and contracts:
   backed by hard-coded data that conflates source literals, roll-ups, ontology
   targets, interpretations, and notes. Preserve those signatures in any later
   migration.
-- S10 records that metasalmonpy lacks the R package's SSSOM subsystem. It must
-  reach that parity milestone before new mapping-product behavior is added.
+- S10 records that metasalmonpy remains at 0.1.6. It must replay the complete
+  current released R baseline before new mapping-product behavior is added; an
+  SSSOM-only port is not sufficient parity.
 
 ### Local glossary for cross-repository gates
 
 - **PSC-0A:** the pre-merge reconciliation of alpha.3 Adapter persistence,
   mapping provenance, and strict-SSSOM defects.
-- **PID-1:** the PSC umbrella decision on product and version identifier shape.
+- **PID-1:** accepted 2026-08-15: product identifiers use readable stable slugs
+  below `/mappings/`; immutable product-version identifiers remain distinct.
 - **PSC-1:** the PSC publishing-kernel MR that releases the common metadata
   profile, validator, immutable fixture, lifecycle, checksums, and neutral link
   extension. It does not define compatibility semantics.
-- **COMPAT-1 / PSC-4:** the later decision and publisher MR that define and
-  publish qualified consumer-compatibility assertions.
-- **S10:** the metasalmonpy parity stream, including the existing R SSSOM
-  contract before META-1R/PY starts.
+- **COMPAT-1 / PSC-4:** COMPAT-1 was accepted 2026-08-15: the publisher may
+  assert expected compatibility and each consumer independently verifies and
+  accepts or rejects it. PSC-4 later publishes the qualified records; META-1
+  does not evaluate them.
+- **S10:** the metasalmonpy parity stream. Before META-1R/PY starts it must
+  replay the complete released R baseline through at least 0.3.0 if PR #39 has
+  shipped, not only the existing R SSSOM contract.
 - **NUSED-0:** the future decision naming NuSEDS source identity, licensing,
   publication home, authority, correction route, and HQ activation.
 
@@ -210,8 +268,11 @@ Out of scope:
 - network access during normal package execution;
 - automatic upgrades or edits to a vendored pin;
 - changing CAMP operational outcomes or numerical CV policy;
-- resolving PID-1 or COMPAT-1 before the PSC owner decides them;
-- evaluating compatibility assertions before COMPAT-1 and PSC-4;
+- evaluating compatibility assertions in META-1. COMPAT-1 settled who may
+  assert and who must verify, but PSC-4 must publish the qualified-record schema
+  and a separate compatibility-consumer plan must be activated first;
+- minting, redirecting, or governing the publisher-owned readable
+  `/mappings/` product identifiers;
 - applying SSSOM predicates or other mapping rows to source data before a
   mapping-type-specific execution contract defines direction, cardinality,
   multiple targets, gaps, and admissible predicates;
@@ -225,12 +286,13 @@ Cross-repository PRs cannot literally nest. Each PR targets its repository's
 default branch and links the immutable predecessor it consumes.
 
 ```text
-HQ strategy merge/reaffirmation + explicit implementation activation
+Attributable implementation activation in the owning HQ plan
                 |
-PSC PLAN-0 merge + PID-1
+PSC PLAN-0 merge (PID-1: readable /mappings/ product slugs)
                 |
 PSC-1 released profile + strict-reader-valid immutable fixture
-                |                                      S10 SSSOM parity
+                |                  S10 full parity through the
+                |                  current released R baseline
                 +---------------------------------------------+
                                                               |
                                              META-1R + META-1PY paired PRs
@@ -244,27 +306,30 @@ NUSED-0 authority/source decision + truthful targets or explicit gaps
                 |
 future source-owned mapping product
                 |
-META-1R/PY release + reconciled S8 R/Python delivery
+META-1R/PY release + PR #39 merge/release + Python replay
                 |
 future META-2R/PY migration plan
 ```
 
-META-0 is this planning PR. It changes only the hub roadmap, S6 sequence card,
-and this ExecPlan. It does not satisfy any implementation dependency.
+META-0 is this planning PR. It changes only the hub domain card and roadmap, S6
+sequence card, and this ExecPlan. It does not satisfy any implementation
+dependency.
 
 ## Plan of Work
 
 ### 1. Freeze the upstream product contract
 
-After PSC-1 releases, record its product profile version, product/version PID
-rules, metadata schema, distribution profiles, checksum algorithm, lifecycle
-states, neutral extension rule, and one immutable fixture. Verify that the
-fixture is valid with the publisher tool and the strict SSSOM consumer. Do not
-build against an unmerged sibling branch or repair the fixture locally.
+After PSC-1 releases, record its product profile version, accepted readable
+`/mappings/` product PID and immutable version-PID rules, metadata schema,
+distribution profiles, checksum algorithm, lifecycle states, neutral extension
+rule, and one immutable fixture. Verify that the fixture is valid with the
+publisher tool and the strict SSSOM consumer. Do not build against an unmerged
+sibling branch or repair the fixture locally.
 
-Acceptance: the handoff record names an immutable product version and hash;
-PID-1 is dispositioned; both packages can use the same fixture; and a malformed
-or incomplete copy fails deterministically. Compatibility remains unevaluated.
+Acceptance: the handoff record names the readable product PID, an immutable
+product-version PID, and a distribution hash; both packages can use the same
+fixture; and a malformed or incomplete copy fails deterministically.
+Compatibility remains unevaluated.
 
 ### 2. Establish the paired consumer contract test-first
 
@@ -311,8 +376,8 @@ changed or missing mapping distribution.
 Add user documentation showing offline pinning, explicit freshness checks,
 unsupported-type refusal, unevaluated compatibility links, and provenance. Add
 NEWS/changelog entries in both repositories. Release numbers move together only
-when the parity matrix, package tests, build/checks, and cross-language fixture
-tests all pass.
+after S10 has replayed the complete current released R baseline and the parity
+matrix, package tests, build/checks, and cross-language fixture tests all pass.
 
 Acceptance: neither release claims parity before both implementations land;
 the hub release index records both versions and exact PRs; and this plan's
@@ -324,8 +389,9 @@ First check NUSED-0, source licensing and identifier model, governing authority,
 correction route, publication home, and truthful target or explicit-gap
 coverage. Those conditions govern whether the source owner may publish a
 mapping product; application-package readiness does not. Separately, gate a
-future META-2R/PY consumer migration on META-1R/PY plus the reconciled S8 R and
-Python delivery. If the appropriate gates are satisfied and Brett HQ activates
+future META-2R/PY consumer migration on META-1R/PY, PR #39 being merged and
+released as the R method-model baseline, and S10 having replayed that release in
+Python. If the appropriate gates are satisfied and the owning HQ plan activates
 the consumer work, write a new dated META-2R/PY ExecPlan. Otherwise leave the
 hard-coded functions in place and record the specific blocker; do not transform
 this plan into producer authority.
@@ -390,12 +456,19 @@ META-0 planning acceptance:
 
 - the OKF capture-tier check and `git diff --check` pass;
 - this hub, Brett HQ, and PSC MR !5 have non-competing authority statements;
-- the plan reuses existing R SSSOM behavior and does not activate NuSEDS; and
-- S8, S9, and S10 dependencies match the current repository evidence.
+- the six-repository domain is an explicit allowlist and every external
+  repository reference is governed by the typed dependency ledger;
+- the plan reuses existing R SSSOM behavior and does not activate NuSEDS;
+- PID-1 and COMPAT-1 are recorded without making META-1 a compatibility
+  evaluator; and
+- S8, S9, S10, SDP-tag, and R/Python release states match the 2026-08-15
+  repository evidence.
 
 META-1R/PY implementation acceptance:
 
 - both full suites and package build/checks pass;
+- S10 has replayed the complete released R baseline current at implementation,
+  not only the SSSOM subsystem;
 - the parity matrix covers every public state and canonical fixture;
 - canonical bytes and hashes remain C-collated and deterministic;
 - runtime remains offline and freshness checks are read-only;
@@ -422,5 +495,5 @@ immutable fixture or fall back to a moving alias. Network failure yields
 
 Use clean worktrees for paired implementation. Do not remove a worktree or
 branch until it is clean, its PR is resolved, and it has no unique work. The
-unfinished S8 branch is independent and must be reconciled by its owner rather
-than overwritten by this stream.
+open S8 PR #39 is independent and must be merged, released, or otherwise
+dispositioned by its owner rather than overwritten by this stream.

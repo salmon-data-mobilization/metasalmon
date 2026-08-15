@@ -43,6 +43,15 @@ Rules that keep this from decaying:
   version numbers, bumped only when parity actually lands. Stated firmly in
   both repos' `AGENTS.md`; the catch-up is
   [S10](sequences/s10-metasalmonpy-parity.md).
+- **Domain allowlist:** the six rows in the
+  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. Shared tools,
+  hyperlinks, consumed artifacts, and transitive dependencies do not add a
+  repository to this hub.
+- **External-edge rule:** an external repository appears here only as a typed
+  dependency edge naming its owner, required artifact or gate, owning plan, and
+  observation date. Its tasks, priorities, status, branches, approvals, and
+  releases remain in its owning plan and never enter this roadmap or release
+  index.
 
 ### Cross-program authority boundary
 
@@ -62,13 +71,25 @@ Rules that keep this from decaying:
   holders and instruments are recorded, stable/domain-approved mapping meaning
   and output-changing application policy remain blocked.
 
+External dependency edges are deliberately sparse. `Observed` records when the
+edge contract was checked, not the external repository's implementation or
+approval status.
+
+| External repository | Edge type | Owner | Required artifact or gate consumed by this hub | Owning plan | Observed |
+|---|---|---|---|---|---|
+| `brett-hq` | Program-activation gate | Brett HQ planning authority | Attributable activation for a named implementation child; HQ remains authoritative for whether the gate is satisfied | `brett-hq/roadmaps/semantic-psc-data-system-roadmap.md` | 2026-08-15 |
+| `psc-data-systems` | Validation-tool dependency | P06 and repository maintainers | The PSC OKF profile and `psc-okf` capture-tier validator used to check this bundle; neither is mapping authority | `brett-hq/projects/P06-psc-scientific-data-system-map/project.md` and the repository-local OKF plan | 2026-08-15 |
+| `psc-data-systems-site` | Documentation-link handoff | P08 and site maintainers | Optional orientation link to a released PSC vocabulary mapping catalog; no mapping-product implementation gate | `brett-hq/projects/P08-psc-data-systems-documentation-website/project.md` | 2026-08-15 |
+| `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | A released immutable Adapter/pin and qualified compatibility record; operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-15 |
+| `ctc-knowledge-map` | Descriptive-evidence handoff | CTC bundle maintainers and eligible reviewers | Evidence-backed description of the released mapping flow; never mapping rows or approval inherited from a release | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and any activated repository-local plan | 2026-08-15 |
+
 ---
 
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
-authoritative; this index coordinates. Verified 2026-08-14 against each
-repository's local version source; no version drift found.
+authoritative; this index coordinates. Refreshed 2026-08-15 against repository
+version sources, remote tags, and the open changes that affect this sequence.
 
 ### metasalmon (R) — current **0.2.6**
 
@@ -84,6 +105,11 @@ Recorded in `DESCRIPTION` + `NEWS.md` + tags/GitHub releases.
 **Unreleased main evidence:** PR #37 merged at `5825467` on 2026-08-14 and
 pins remote schema loading to the implemented SDP spec tag; it does not change
 the package version or the mapping-consumer sequence.
+**Open S8 implementation:** PR
+[#39](https://github.com/salmon-data-mobilization/metasalmon/pull/39) at
+`f76ed4f` implements the R 0.3.0 method-model baseline and has green R CMD check
+and integrity checks. It is open, not merged, tagged, or released, so 0.2.6
+remains the current R release.
 
 ### metasalmonpy (Python mirror) — current **0.1.6** (= metasalmon 0.1.6 parity)
 
@@ -94,7 +120,9 @@ the package version or the mapping-consumer sequence.
 | 0.1.2 | 2026-02-06 | Initial: GitHub CSV helpers, metasalmon 0.0.5 parity |
 
 Renamed from `metaSmnPy`/`salmonpy` on 2026-08-13. Versions are **parity
-claims** — catch-up to 0.2.6 is [S10](sequences/s10-metasalmonpy-parity.md).
+claims** — [S10](sequences/s10-metasalmonpy-parity.md) must replay the complete
+released R baseline through 0.3.0, or whatever later R baseline is current when
+META-1 starts. An isolated SSSOM port is not parity.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -120,10 +148,11 @@ keep the historic shape).
 
 Recorded **only** in `CHANGELOG.md` + `owl:versionInfo` — zero tags, zero
 GitHub releases. **Discrepancies:** the sequence is non-monotonic (0.0.999
-predates 0.0.8), and the `[Unreleased]` section now also carries the merged
-S9 step-3 boundary work (the 32-row SSSOM set, duplicate-property removal,
-re-namespacing, refreshed mirrors — PR #78, merged 2026-08-14). Cutting the
-next gcdfo release and fixing the version sequence are S6 item-3 work.
+predates 0.0.8). PR #78 merged the S9 step-3 boundary work into the default
+branch on 2026-08-14 (the 32-row SSSOM set, duplicate-property removal,
+re-namespacing, and refreshed mirrors), but that work remains unreleased.
+Cutting the next gcdfo release and fixing the version sequence are S6 item-3
+work.
 
 ### smn-data-pkg (SDP spec) — current **sdp-0.3.0**
 
@@ -134,23 +163,26 @@ next gcdfo release and fixing the version sequence are S6 item-3 work.
 | 0.1.1 | 2026-01-14 (malformed in changelog) | I-ADOPT component columns in `column_dictionary.csv` |
 | 0.1.0 | 2025-12-21 | Initial specification draft |
 
-The 0.3.0 changelog entry is dated and 0.2.0 got its retroactive dated
-entry; tags/releases remain absent (S6 item 3 / S1 cross-repo work). **Local checkout note (resolved 2026-08-13):** the dirty
+The 0.3.0 changelog entry is dated and the `sdp-0.3.0` annotated tag exists;
+there is no corresponding GitHub Release object. The 0.2.0 entry got its
+retroactive date (remaining release mechanics are S6 item 3 / S1 cross-repo
+work). **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
 `attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded. Note PR #2
 added a `methods.csv` registry the S8 method model removes; the port unwinds
 it.
 
-### psc-salmon-vocabularies (PSC CV) — current **v0.1.0-alpha.3** (on draft MR !5's integration branch)
+### psc-salmon-vocabularies (PSC CV) — default-branch build **v0.1.0-alpha.2**; alpha.3 is an unmerged candidate
 
 | Version | Date | One line |
 |---|---|---|
-| v0.1.0-alpha.3 | 2026-08-14 (MR !6 merged into draft MR !5, not default branch) | smn 0.0.3 anchoring: **first psc-to-smn.sssom.tsv** (ten prototype_accepted broadMatch rows), re-pinned source, alignment-gap doc retired |
+| v0.1.0-alpha.3 | 2026-08-14 (nested into open draft MR !5, not merged to the default branch, tagged, or released) | smn 0.0.3 anchoring candidate: **first psc-to-smn.sssom.tsv** (ten prototype_accepted broadMatch rows), re-pinned source, alignment-gap doc retired |
 | v0.1.0-alpha.2 | 2026-07-31 | Prior prerelease vocabulary build (provisional, not an adopted PSC standard) |
 | v0.1.0-alpha.1 | 2026-07-31 | First prerelease — tag only, no GitLab Release object |
 
 Byte-pinned `releases/<version>/` dirs with per-artifact sha256 manifests;
-GitLab. Review branch: `feature/fair-mapping-products-roadmap`.
+GitLab. Alpha.3 exists only in the open integration change and is not a current
+release.
 **Integration defects recorded in PSC-0A:** current alpha.3 generation removes
 the versioned alpha.2 CAMP Adapter route; PSC-CV-000017's SMN rationale claims
 an exact-match chain where the gcdfo predicate is `closeMatch`; and the PSC
@@ -173,6 +205,10 @@ fixture.
 | 0.2.4 | #54 missing-value contract · #72 `ms_setup_github()` default · CI optional deps, non-C ambient collation, runnable examples |
 | 0.2.5 | #73 credential redaction covers qualified token names |
 | 0.2.6 | #77 tidy foundations — primary-key uniqueness, wide-format warning, placeholders surfaced |
+
+S8's R 0.3.0 implementation is green on open PR #39 at `f76ed4f`, but it is
+not merged or released. Do not describe its implementation or 0.3.0 package
+behavior as shipped until the owning repository does so.
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
@@ -211,11 +247,11 @@ S1 validation authority ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘ 
 S6 vocabulary release pinning ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
 S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
 
-S9 ontology conventions + alignment ── steps 0–5 ALL done 2026-08-14 (smn
-                                       0.0.3 released; gcdfo PR #78 and PSC
-                                       MR !6 merged, promotions approved);
-                                       remaining: step 6 propagation +
-                                       the parked #78 explainer
+S9 ontology conventions + alignment ── implementation evidence exists, with
+                                       different release states: SMN 0.0.3 is
+                                       released; gcdfo PR #78 is merged but
+                                       unreleased; PSC alpha.3 is nested in
+                                       open MR !5 and remains unmerged
 S2 correctness debt          ── independent
 S5 review flow (next minor)  ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
@@ -224,11 +260,11 @@ S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 methods vignette after S8
 
 PSC PLAN-0 + HQ activation ──► PSC-1 mapping-product contract ──┐
-S10 Python parity through SSSOM ────────────────────────────────┼─► S6 FAIR
+S10 full Python parity through current released R baseline ─────┼─► S6 FAIR
 META-0 plan alignment (this bundle) ────────────────────────────┘   consumer
 
 NUSED-0 authority + truthful targets or explicit gaps ──► governed NuSEDS product
-governed product + META-1R/PY + reconciled S8 R/Python delivery ──► paired consumer
+governed product + META-1R/PY + PR #39 merge/release + Python replay ──► paired consumer
 ```
 
 Read that as: S3's only hard blocker shipped in 0.2.5; S2, S5, S7, and S10 run
@@ -238,14 +274,18 @@ Python episodes execute against metasalmonpy). S4 is hard-blocked by S3 and by
 streams**: it decides what the SDP means, S1 then makes the validator enforce
 it, and S9 step 2's methods-as-SKOS migration implements the vocabulary half.
 The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
-it reuses R's existing SSSOM implementation and does not wait on S8, but new
-behavior lands in R and Python together after S10 reaches SSSOM parity. The
-first behavior is verification, pinning, archival, and provenance, not
-compatibility evaluation or predicate execution. Those need later approved
-contracts. The later NuSEDS migration does wait on source authority,
-reconciled S8 delivery,
-mirror parity, and any shared analytical-term coverage its approved scope
-requires.
+it reuses R's existing SSSOM implementation and has no semantic dependency on
+S8. The mirror invariant separately requires S10 to replay the complete current
+released R baseline in Python before new behavior lands in both languages; at
+the presently expected boundary that means through 0.3.0 after PR #39 merges
+and releases, not an SSSOM-only port. The first behavior is verification,
+pinning, archival, and provenance, not compatibility evaluation or predicate
+execution. PID-1 now selects readable stable product slugs under `/mappings/`.
+COMPAT-1 now lets a publisher assert expected compatibility while each consumer
+independently verifies and accepts or rejects it, but META-1 only preserves the
+qualified link and does not evaluate that assertion. The later NuSEDS migration
+also waits on source authority, PR #39 merge and release, its Python replay, and
+any shared analytical-term coverage its approved scope requires.
 
 ### The streams
 
@@ -273,7 +313,7 @@ requires.
 
 | Execplan | What it covers | Activation state |
 |---|---|---|
-| [governed mapping products](plans/2026-08-14-governed-mapping-products.md) | Reusable FAIR mapping-product verification contract, existing SSSOM reuse, immutable pins, provenance, and conditional compatibility/application/NuSEDS follow-ons | META-0 planning is authorized; implementation remains inactive until Brett HQ activation, a released PSC-1 contract, and S10 SSSOM parity |
+| [governed mapping products](plans/2026-08-14-governed-mapping-products.md) | Reusable FAIR mapping-product verification contract, existing SSSOM reuse, immutable pins, provenance, and conditional compatibility/application/NuSEDS follow-ons | Before implementation, verify activation in Brett HQ, a released PSC-1 contract, and S10 full parity through the then-current released R baseline; META-1 remains independent of S8's method semantics |
 
 ---
 
