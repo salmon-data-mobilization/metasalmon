@@ -511,3 +511,35 @@ test_that("a statistical modifier named only in the column name is detected", {
   expect_equal(nrow(modifier), 1L)
   expect_equal(modifier$search_query, "mean")
 })
+
+test_that("procedure columns named with full inflections route codes to method", {
+  # Regression: a bounded stem like \\b(estimat)\\b cannot match
+  # "estimation_type" -- exactly the naming this rule exists to catch.
+  for (column in c("enumeration_type", "estimation_type", "survey_method")) {
+    dict <- test_dictionary(
+      column_name = column,
+      column_label = column,
+      column_description = "How the value was produced",
+      column_role = "categorical",
+      value_type = "string"
+    )
+    codes <- tibble::tibble(
+      dataset_id = "d1",
+      table_id = "t1",
+      column_name = column,
+      code_value = "VISUAL",
+      code_label = "Visual",
+      code_description = "Visual survey",
+      term_iri = NA_character_
+    )
+    targets <- metasalmon:::.ms_semantic_discover_targets(
+      dict = dict,
+      codes = codes,
+      table_meta = tibble::tibble(),
+      dataset_meta = tibble::tibble(),
+      default_df = stats::setNames(tibble::tibble("VISUAL"), column)
+    )
+    code_targets <- targets[targets$target_scope == "code", , drop = FALSE]
+    expect_equal(unique(code_targets$dictionary_role), "method", info = column)
+  }
+})

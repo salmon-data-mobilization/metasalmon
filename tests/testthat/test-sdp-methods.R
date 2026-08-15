@@ -628,3 +628,100 @@ test_that("the legacy reader refuses a symlinked methods registry", {
   )
   expect_true(file.exists(outside))
 })
+
+test_that("migration rewrites the nested descriptor profile too", {
+  # The writer emits the profile URI twice (top level and under `sdp`);
+  # updating one leaves a descriptor contradicting itself.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(
+      abundance = "https://example.org/methods/weir-count",
+      density = "https://example.org/methods/weir-count"
+    )
+  )
+  add_legacy_registry(root)
+  descriptor_path <- file.path(root, "datapackage.json")
+  descriptor <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
+  legacy_profile <- paste0(
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/",
+    "profiles/salmon-data-package/v0.2/profile.json"
+  )
+  descriptor$profile <- legacy_profile
+  descriptor$sdp$profile <- legacy_profile
+  descriptor$sdp$specVersion <- "sdp-0.2.0"
+  jsonlite::write_json(
+    descriptor, descriptor_path,
+    auto_unbox = TRUE, pretty = TRUE, null = "null", na = "null"
+  )
+
+  suppressMessages(migrate_sdp_methods(root))
+
+  migrated <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
+  expect_match(migrated$profile, "v0.3", fixed = TRUE)
+  expect_match(migrated$sdp$profile, "v0.3", fixed = TRUE)
+  expect_identical(migrated$sdp$specVersion, "sdp-0.3.0")
+})
+
+test_that("the placement report is in canonical order regardless of input order", {
+  build <- function(order) {
+    root <- withr::local_tempdir(.local_envir = parent.frame())
+    make_migration_test_sdp(root)
+    dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+    dictionary <- readr::read_csv(
+      dictionary_path,
+      col_types = readr::cols(.default = readr::col_character()),
+      na = "",
+      show_col_types = FALSE
+    )
+    dictionary$method_iri <- NA_character_
+    dictionary$method_iri[dictionary$column_name == "abundance"] <-
+      "https://example.org/methods/weir-count"
+    dictionary$method_iri[dictionary$column_name == "density"] <-
+      "https://example.org/methods/weir-count"
+    readr::write_csv(dictionary[order, , drop = FALSE], dictionary_path, na = "")
+    suppressMessages(migrate_sdp_methods(root, dry_run = TRUE))$tables
+  }
+  forward <- build(seq_len(4))
+  reversed <- build(rev(seq_len(4)))
+  expect_identical(forward$table_id, reversed$table_id)
+  expect_identical(forward$method_iri, reversed$method_iri)
+  expect_identical(forward$columns, reversed$columns)
+})
+
+test_that("a backup whose restore fails survives the cleanup that follows", {
+  # Regression: the rollback branch used to leave the failed-restore backup
+  # on the cleanup list, so the on-exit unlink destroyed the only surviving
+  # copy of the original bytes.
+  directory <- withr::local_tempdir()
+  target <- file.path(directory, "keep.csv")
+  writeLines("original", target)
+
+  writes <- list(charToRaw("replacement\n"))
+  names(writes) <- target
+
+  # Fail validation so the writer rolls back, and make the restore itself
+  # fail by replacing the destination with a directory the rename cannot
+  # overwrite.
+  expect_error(suppressWarnings(
+    metasalmon:::.ms_sdp_extension_atomic_write_set(
+      writes,
+      validate = function() {
+        unlink(target)
+        dir.create(target)
+        stop("forced validation failure")
+      }
+    )
+  ))
+
+  # The backup is a dot-prefixed sibling in the same directory.
+  leftovers <- list.files(
+    directory,
+    pattern = "^\\.keep[.]csv-backup-",
+    all.files = TRUE,
+    full.names = TRUE
+  )
+  expect_length(leftovers, 1L)
+  expect_identical(readLines(leftovers[[1]]), "original")
+})

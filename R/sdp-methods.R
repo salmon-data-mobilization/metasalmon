@@ -244,9 +244,12 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   # every decision the contributor has to make.
   placements <- list()
   conflicts <- character()
-  for (tbl in unique(bindings$table_id)) {
+  # Canonical order: `report$tables` is an exported return value and the
+  # conflict text is user-facing, so neither may depend on the order rows
+  # happened to appear in the legacy metadata.
+  for (tbl in sort(unique(bindings$table_id), method = "radix")) {
     rows <- bindings[bindings$table_id == tbl, , drop = FALSE]
-    iris <- unique(rows$method_iri)
+    iris <- sort(unique(rows$method_iri), method = "radix")
     if (length(iris) == 1L) {
       placements[[length(placements) + 1]] <- tibble::tibble(
         table_id = tbl,
@@ -437,6 +440,9 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
       descriptor$profile <- sdp_schema$profile_uri %||% descriptor$profile
       if (!is.null(descriptor$sdp)) {
         descriptor$sdp$specVersion <- sdp_schema$version %||% descriptor$sdp$specVersion
+        # The writer emits the profile URI twice, top level and under `sdp`.
+        # Updating only one leaves a descriptor that contradicts itself.
+        descriptor$sdp$profile <- sdp_schema$profile_uri %||% descriptor$sdp$profile
         descriptor$sdp$rules <- sdp_schema$rules_uri %||% descriptor$sdp$rules
       }
       writes[[descriptor_path]] <- .ms_sdp_extension_json_bytes(descriptor)

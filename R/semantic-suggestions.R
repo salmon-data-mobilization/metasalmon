@@ -939,7 +939,9 @@
       # method placement left in the data under sdp-0.3.0 — so its codes get
       # method candidates even though the column itself is not a measurement.
       parent_names_procedure <- grepl(
-        "\\b(method|protocol|procedure|gear|estimat|enumerat|technique|survey type)\\b",
+        # Stems need `\\w*`: `\\b(estimat)\\b` cannot match "estimation",
+        # which is exactly the column naming this is meant to catch.
+        "\\b(method|protocol|procedure|gear|estimat\\w*|enumerat\\w*|technique|survey type)\\b",
         tolower(paste(
           gsub("[_.]", " ", as.character(column_name %||% "")),
           as.character(parent_label %||% ""),
