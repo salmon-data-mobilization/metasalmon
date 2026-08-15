@@ -57,6 +57,59 @@
 # per-field `iAdopt:methodIri` custom key (or a bare `method_iri` field
 # property). The CSV wins where both exist. Returned as a tibble of
 # table_id / column_name / method_iri with blanks already removed.
+# The measurement columns of each table, from the same carriers the bindings
+# come from. The agreement check needs this universe: a method is promoted to
+# the table only when EVERY measurement column carries it, not merely every
+# column that happens to have a binding.
+.ms_sdp_methods_measurement_universe <- function(root) {
+  rows <- list()
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  if (file.exists(dictionary_path) && !dir.exists(dictionary_path)) {
+    dictionary <- .ms_read_metadata_csv(dictionary_path)
+    if (all(c("table_id", "column_name", "column_role") %in% names(dictionary))) {
+      measurement <- !is.na(dictionary$column_role) &
+        tolower(trimws(as.character(dictionary$column_role))) == "measurement"
+      if (any(measurement)) {
+        rows[[length(rows) + 1]] <- tibble::tibble(
+          table_id = as.character(dictionary$table_id[measurement]),
+          column_name = as.character(dictionary$column_name[measurement])
+        )
+      }
+    }
+  }
+  descriptor_path <- file.path(root, "datapackage.json")
+  if (file.exists(descriptor_path) &&
+      !.ms_sdp_extension_is_symlink(descriptor_path)) {
+    descriptor <- tryCatch(
+      jsonlite::read_json(descriptor_path, simplifyVector = FALSE),
+      error = function(error) NULL
+    )
+    for (resource in descriptor$resources %||% list()) {
+      fields <- if (is.list(resource$schema)) {
+        resource$schema$fields %||% list()
+      } else {
+        list()
+      }
+      for (field in fields) {
+        custom <- field$custom %||% list()
+        role <- custom[["sdp:columnRole"]] %||% field$column_role %||% NA_character_
+        if (!is.na(role) &&
+            tolower(trimws(as.character(role))) == "measurement") {
+          rows[[length(rows) + 1]] <- tibble::tibble(
+            table_id = as.character(resource$name %||% NA_character_),
+            column_name = as.character(field$name %||% NA_character_)
+          )
+        }
+      }
+    }
+  }
+  if (length(rows) == 0L) {
+    return(tibble::tibble(table_id = character(), column_name = character()))
+  }
+  merged <- dplyr::bind_rows(rows)
+  merged[!duplicated(paste(merged$table_id, merged$column_name, sep = "\r")), , drop = FALSE]
+}
+
 .ms_sdp_methods_column_bindings <- function(root) {
   bindings <- list()
 
@@ -257,10 +310,28 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   # Canonical order: `report$tables` is an exported return value and the
   # conflict text is user-facing, so neither may depend on the order rows
   # happened to appear in the legacy metadata.
+  measurement_universe <- .ms_sdp_methods_measurement_universe(root)
   for (tbl in sort(unique(bindings$table_id), method = "radix")) {
     rows <- bindings[bindings$table_id == tbl, , drop = FALSE]
     iris <- sort(unique(rows$method_iri), method = "radix")
-    if (length(iris) == 1L) {
+    # Promotion claims the method for the WHOLE table, so every measurement
+    # column must carry it — a column with no resolved binding (including one
+    # whose binding was just dropped as REVIEW:) is a judgement call, not
+    # silent agreement.
+    unbound <- setdiff(
+      measurement_universe$column_name[measurement_universe$table_id == tbl],
+      rows$column_name
+    )
+    if (length(unbound) > 0L) {
+      conflicts <- c(conflicts, paste0(
+        "Table ", tbl, ": ",
+        paste(iris, collapse = ", "),
+        " is bound to only some measurement columns; ",
+        paste(sort(unbound, method = "radix"), collapse = ", "),
+        " carr", if (length(unbound) == 1L) "ies" else "y",
+        " no resolved method binding."
+      ))
+    } else if (length(iris) == 1L) {
       placements[[length(placements) + 1]] <- tibble::tibble(
         table_id = tbl,
         method_iri = iris,

@@ -531,7 +531,10 @@ test_that("a failed metadata rewrite restores the methods registry", {
   make_migration_test_sdp(root)
   add_legacy_dictionary_methods(
     root,
-    c(abundance = "https://example.org/methods/weir-count")
+    c(
+      abundance = "https://example.org/methods/weir-count",
+      density = "https://example.org/methods/weir-count"
+    )
   )
   add_legacy_registry(root)
   registry_path <- file.path(root, "metadata", "methods.csv")
@@ -735,4 +738,39 @@ test_that("a backup whose restore fails survives the cleanup that follows", {
   )
   expect_length(leftovers, 1L)
   expect_identical(readLines(leftovers[[1]]), "original")
+})
+
+test_that("a method bound to only some measurement columns stops the migration", {
+  # Promotion claims the method for the WHOLE table, so a measurement column
+  # with no resolved binding — including one whose binding was dropped as
+  # REVIEW: — is a judgement call, not silent agreement.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  before <- readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "carries no resolved method binding"
+  )
+  expect_identical(
+    before,
+    readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+  )
+
+  # The REVIEW-shadow variant: one resolved, one just dropped.
+  root2 <- withr::local_tempdir()
+  make_migration_test_sdp(root2)
+  add_legacy_dictionary_methods(root2, c(
+    abundance = "https://example.org/methods/weir-count",
+    density = "REVIEW: https://example.org/methods/aerial-survey"
+  ))
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root2)),
+    "carries no resolved method binding"
+  )
 })
