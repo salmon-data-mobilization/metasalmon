@@ -27,7 +27,7 @@ section and the R files it names — R is the complete spec for every port.
 | **The typed reader is born NA-safe.** At PR 3, `read_salmon_datapackage` gets `keep_default_na=False, na_values=["", "NA"]` (exact R-0.2.0 read parity), tightened to `na_values=[""]` at PR 5. The destructive pandas default (which silently converts literal "NA" gear codes) must never exist in any tagged state | A tagged state with pandas default NA parsing would be strictly worse than the R defect 0.2.4 fixed — read→edit→write bakes the loss into bytes | 2026-08-15 |
 | **specVersion misstatement is closed at PR 3, not before.** Python stamps `sdp-0.2.0` today from pre-0.2.0-behaviour code; rolling it back would churn user packages | Known, bounded misstatement; recorded here and in the CHANGELOG at PR 3 | 2026-08-15 |
 | **Archive parity is contract-level, not byte-level.** Python defines its own `zipfile` determinism reference; the R↔Python CI job asserts manifest/ordering/fail-closed, never bytes | R's determinism is `zip`-3.0.1-specific; cross-language bytes cannot match | 2026-08-15 |
-| **0.3.0 ports from the post-review tree** (metasalmon through `f76ed4f`), never from the first-cut commits; the R migration/gating/modifier fixtures land as pytest BEFORE the code | Five review rounds hardened the migrator (stop taxonomy, atomicity, dry_run typing, rollback); replaying pre-review chronology would reintroduce audited bugs | 2026-08-15 |
+| **0.3.0 ports from the merged release tree** (metasalmon main at the v0.3.0 merge, `5a37b11` — never any intermediate review-round commit; `f76ed4f` was only round one of five and lacks the rollback, role-hint, placement-validation, ordering, and method-promotion fixes), and the FINAL R fixture suite lands as pytest BEFORE the code | Five review rounds hardened the migrator (stop taxonomy, atomicity, dry_run typing, rollback); porting any pre-merge snapshot would tag 0.3.0 with known audited defects | 2026-08-15 |
 
 ## The nine-PR ladder
 
@@ -77,7 +77,7 @@ Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
    `migrate_sdp_methods` with the full hardened stop taxonomy, semantic
    retarget, EML placements + review-closure gating + return shape,
    default/strict placement IRI checks, pin flip to `sdp-0.3.0`. Port the R
-   fixtures (metasalmon `d587be4`+) as pytest first.
+   fixtures from the merged release tree (`5a37b11`) as pytest first.
 
 Hard ordering: 0 → 1 → 2 → 3 (loader needs the host fix; typed reader
 precedes the NA tightening) → … → 5 before any adoption push → 8 last.
