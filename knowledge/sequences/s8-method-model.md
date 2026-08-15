@@ -14,12 +14,15 @@ psc:
 **Model:** [SDP method model](../method-model-draft.md) — approved
 2026-08-13; **spec half shipped 2026-08-14 as sdp-0.3.0** (smn-data-pkg
 PR #4 — detail in that PR and the spec's own changelog/migration section).
-**Next action:** the metasalmon R implementation —
-execplan: [S8 metasalmon implementation](../plans/2026-08-14-s8-metasalmon-implementation.md)
-(re-vendor, registry removal + stop-and-report migration,
-`statistical_modifier_iri`, the logged frozen-contract role swap). The
-metasalmonpy mirror **rides the S10 replay** — "same version" is
-unsatisfiable at 0.1.6 parity, per the logged decision in the execplan.
+**Status: implemented.** The R implementation shipped as metasalmon 0.3.0
+(2026-08-15), per the
+[S8 implementation execplan](../plans/2026-08-14-s8-metasalmon-implementation.md):
+re-vendor, registry removal + `migrate_sdp_methods()` stop-and-report
+migration, `statistical_modifier_iri`, the logged frozen-contract role swap,
+and the spec-tag remote pin. Remaining S8-adjacent work lives elsewhere by
+design: the metasalmonpy mirror **rides the S10 replay** ("same version" is
+unsatisfiable at 0.1.6 parity, per the logged decision), and the methods
+vignette is S11 slice 5.
 
 Two coupled items that decide what the SDP *means* before S1 decides what it
 *checks*.

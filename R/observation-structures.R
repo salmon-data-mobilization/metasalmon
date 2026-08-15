@@ -354,17 +354,6 @@
   invisible(TRUE)
 }
 
-.ms_sdp_observation_method_registry <- function(root) {
-  methods_path <- file.path(root, .ms_sdp_methods_path)
-  if (!file.exists(methods_path)) {
-    return(tibble::tibble(
-      dataset_id = character(),
-      method_iri = character()
-    ))
-  }
-  read_sdp_methods(root, validate = TRUE)
-}
-
 .ms_sdp_observation_normalize_typed_values <- function(values, value_type,
                                                        column_name) {
   text <- as.character(values)
@@ -486,7 +475,7 @@
 }
 
 .ms_sdp_observation_validate_procedure_codes <- function(
-    structure, bound, data, observed_rows, codes, methods) {
+    structure, bound, data, observed_rows, codes) {
   procedure_components <- bound[
     !.ms_sdp_extension_is_blank(bound$component_relation_iri) &
       bound$component_relation_iri == .ms_sosa_used_procedure,
@@ -517,14 +506,12 @@
           "x" = "Column {.field {column}}, code {.val {code_value}}."
         ))
       }
-      registered <- any(
-        methods$dataset_id == structure$dataset_id[[1]] &
-          methods$method_iri == method_iri
-      )
-      if (!isTRUE(registered)) {
+      # sdp-0.3.0: procedures resolve to the shared vocabulary directly, so
+      # the check is IRI shape, not membership in a per-package registry.
+      if (!.ms_sdp_extension_is_absolute_iri(method_iri)) {
         .ms_sdp_extension_abort(c(
-          "An enumerated {.val sosa:usedProcedure} code resolves to an unregistered method.",
-          "x" = "Column {.field {column}}, code {.val {code_value}}."
+          "An enumerated {.val sosa:usedProcedure} code must resolve to an absolute shared-vocabulary IRI.",
+          "x" = "Column {.field {column}}, code {.val {code_value}}, term {.val {method_iri}}."
         ))
       }
     }
@@ -549,9 +536,10 @@
 
 .ms_sdp_observation_validate_data <- function(root, structures, components,
                                                package) {
-  methods <- .ms_sdp_observation_method_registry(root)
-  static_methods <- if ("method_iri" %in% names(package$dictionary)) {
-    unique(as.character(package$dictionary$method_iri))
+  # sdp-0.3.0: a table-constant procedure lives in tables.csv$method_iri and
+  # must point straight at the shared vocabulary — there is no registry.
+  static_methods <- if ("method_iri" %in% names(package$tables)) {
+    unique(as.character(package$tables$method_iri))
   } else {
     character()
   }
@@ -559,11 +547,13 @@
     !.ms_sdp_extension_is_blank(static_methods)
   ]
   if (length(static_methods) > 0L) {
-    missing_static <- setdiff(static_methods, methods$method_iri)
-    if (length(missing_static) > 0L) {
+    invalid_static <- static_methods[
+      !.ms_sdp_extension_is_absolute_iri(static_methods)
+    ]
+    if (length(invalid_static) > 0L) {
       .ms_sdp_extension_abort(c(
-        "Static procedure references used by observation structures require {.file metadata/methods.csv} registry rows.",
-        "x" = "Unregistered {.field method_iri}: {.val {missing_static}}."
+        "Every table-level {.field method_iri} must be an absolute shared-vocabulary IRI.",
+        "x" = "Invalid {.field method_iri}: {.val {invalid_static}}."
       ))
     }
   }
@@ -596,8 +586,7 @@
       bound,
       data,
       observed_rows,
-      codes,
-      methods
+      codes
     )
     if (length(observed_rows) == 0L) {
       next
@@ -770,7 +759,10 @@
   methods_path <- file.path(root, .ms_sdp_methods_path)
   if (file.exists(methods_path) ||
       .ms_sdp_extension_is_symlink(methods_path)) {
-    validate_sdp_methods(root)
+    .ms_sdp_extension_abort(c(
+      "{.file metadata/methods.csv} is an sdp-0.2.0 registry; sdp-0.3.0 packages must not carry one.",
+      "i" = "Run {.fun migrate_sdp_methods} to relocate its content and remove it."
+    ))
   }
   structure_paths <- .ms_sdp_observation_paths(root)
   structure_present <- vapply(structure_paths, function(candidate) {

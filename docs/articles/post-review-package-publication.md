@@ -323,8 +323,9 @@ write_sdp_sssom(
 validate_sdp_sssom(pkg_path)
 ```
 
-Store the ordered property, entity, constraint, method, and unit
-evidence in the separate SDP measurement-decomposition artifact:
+Store the ordered property, entity, constraint, statistical-modifier,
+and unit evidence in the separate SDP measurement-decomposition
+artifact:
 
 ``` r
 

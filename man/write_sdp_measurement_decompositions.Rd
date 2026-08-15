@@ -38,8 +38,8 @@ measurement row in \code{metadata/column_dictionary.csv}.
 \item \code{measurement_concept_iri} must exactly equal that dictionary row's
 \code{term_iri}.
 \item \code{component_order} is a positive, contiguous, per-measurement sequence.
-\item \code{component_role} is one of \code{property}, \code{entity}, \code{constraint}, \code{method}, or
-\code{unit}; repeated roles are allowed.
+\item \code{component_role} is one of \code{property}, \code{entity}, \code{constraint},
+\code{statistical_modifier}, or \code{unit}; repeated roles are allowed.
 \item \code{component_status} is \code{matched} or \code{gap}. A matched row requires an
 absolute \code{component_iri}. A gap requires a blank \code{component_iri} plus a
 non-empty \code{component_label} and \code{rationale}.
@@ -54,7 +54,7 @@ preserve caller-supplied text; they are never tokenized or inferred.
 }
 
 Every non-empty dictionary \code{property_iri}, \code{entity_iri}, \code{constraint_iri},
-\code{method_iri}, and \code{unit_iri} must appear as a matched component of the same
+\code{statistical_modifier_iri}, and \code{unit_iri} must appear as a matched component of the same
 role. Semicolon-separated dictionary constraints are checked separately.
 Additional same-role components and explicit gaps stay only in this
 artifact, leaving the frozen SDP dictionary columns unchanged. This is an

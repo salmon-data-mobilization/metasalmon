@@ -10,27 +10,30 @@ test_that("SDP schema loader falls back loudly to vendored schema", {
     "using vendored schemas"
   )
 
-  expect_equal(schema$version, "sdp-0.2.0")
+  expect_equal(schema$version, "sdp-0.3.0")
   # The contract is that the bundle agrees with itself, not that it matches a
   # constant compiled into metasalmon.
   expect_equal(schema$profile_uri, schema$rules$profile)
   expect_equal(schema$source, "vendored")
   expect_true(all(c(
     "dataset",
-    "methods",
+    "tables",
+    "column_dictionary",
     "observation_structures",
     "observation_components"
   ) %in% names(schema$metadata_tables)))
+  # sdp-0.3.0 removed the methods registry; a vendored "methods" schema would
+  # mean the re-vendor was partial.
+  expect_false("methods" %in% names(schema$metadata_tables))
 })
 
 test_that("vendored extension contracts match their writers", {
   old_options <- options(metasalmon.sdp_schema_source = "vendored")
   withr::defer(options(old_options))
 
-  expect_identical(
-    metasalmon:::.ms_sdp_schema_field_names("methods"),
-    metasalmon:::.ms_sdp_methods_columns
-  )
+  # sdp-0.3.0 removed the methods registry: the legacy column constant is
+  # migration input only, no longer schema-driven, so there is no
+  # schema-matches-writer check for it.
   expect_identical(
     metasalmon:::.ms_sdp_schema_field_names("observation_structures"),
     metasalmon:::.ms_sdp_observation_structures_columns
@@ -48,13 +51,15 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
   )
   withr::defer(options(old_options))
 
+  # The base URL is pinned to the spec release tag this package implements,
+  # not `main`: advancing the pin is part of implementing a new spec version.
   expect_identical(
     metasalmon:::.ms_default_sdp_schema_base_url(),
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.2.0"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
-    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json"
   )
 })
 
@@ -147,7 +152,7 @@ test_that("the vendored SDP bundle is internally consistent and uses the current
   # Pins the value too, so a partial re-vendor is caught.
   expect_identical(
     schema$profile_uri,
-    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.2/profile.json"
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json"
   )
 })
 
@@ -326,14 +331,17 @@ test_that("per-resource schema URLs are derived from the bundle", {
   vendored <- metasalmon:::.ms_load_sdp_schema(quiet = TRUE)
   declared <- NULL
   for (resource in vendored$profile[["sdp:metadataResources"]]) {
-    if (identical(resource$name, "sdp_methods")) {
+    if (identical(resource$name, "sdp_observation_structures")) {
       declared <- resource$schema
     }
   }
-  skip_if(is.null(declared), "vendored bundle has no sdp_methods resource")
+  skip_if(is.null(declared), "vendored bundle has no sdp_observation_structures resource")
 
   expect_identical(
-    metasalmon:::.ms_sdp_metadata_resource_schema("sdp_methods", "methods.schema.json"),
+    metasalmon:::.ms_sdp_metadata_resource_schema(
+      "sdp_observation_structures",
+      "observation_structures.schema.json"
+    ),
     declared
   )
   # A name the bundle does not declare falls back to the vendored base rather

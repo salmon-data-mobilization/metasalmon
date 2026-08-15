@@ -75,7 +75,8 @@ legacy `salmon:`-namespace variants.
 | `unit` | QUDT, NVS P06, OLS | QUDT preferred for SI units |
 | `property` | SMN, GCDFO, NVS P01, OLS, ZOOMA | Shared salmon-domain properties first; broader fallbacks after |
 | `entity` | SMN, GCDFO, GBIF, WoRMS, BioPortal, OLS | Shared salmon-domain entities first; taxon resolvers after |
-| `method` | SMN, GCDFO, BioPortal, OLS, ZOOMA | Shared/domain method semantics first |
+| `method` | SMN, GCDFO, BioPortal, OLS, ZOOMA | Code values only (`codes.csv` `term_iri`): a method is never a dictionary column under sdp-0.3.0 |
+| `statistical_modifier` | SMN, OLS | Aggregations and summaries (mean, maximum, total, peak); part of variable identity |
 | `variable` | SMN, GCDFO, NVS, OLS, ZOOMA | Shared salmon-domain variables first |
 | `constraint` | SMN, GCDFO, OLS | Shared/context vocabularies first |
 

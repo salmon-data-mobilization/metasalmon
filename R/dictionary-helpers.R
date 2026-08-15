@@ -53,7 +53,7 @@
 #' @return A tibble with dictionary schema columns in canonical Salmon Data
 #'   Package order: `dataset_id`, `table_id`, `column_name`, `column_label`,
 #'   `column_description`, `term_iri`, `property_iri`, `entity_iri`,
-#'   `constraint_iri`, `method_iri`, `unit_label`, `unit_iri`, `term_type`,
+#'   `constraint_iri`, `statistical_modifier_iri`, `unit_label`, `unit_iri`, `term_type`,
 #'   `value_type`, `column_role`, `required`. With semantic seeding, suggestions
 #'   are attached as `semantic_suggestions`; with explicit LLM review, the
 #'   30-column target summaries are attached as `semantic_llm_assessments`.
@@ -198,7 +198,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
       property_iri = rep(NA_character_, n_cols),
       entity_iri = rep(NA_character_, n_cols),
       constraint_iri = rep(NA_character_, n_cols),
-      method_iri = rep(NA_character_, n_cols),
+      statistical_modifier_iri = rep(NA_character_, n_cols),
       unit_label = rep(NA_character_, n_cols),
       unit_iri = rep(NA_character_, n_cols),
       term_type = rep(NA_character_, n_cols),
@@ -1246,7 +1246,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   # Ensure optional semantic columns exist (fill with NA if absent)
   semantic_cols <- c(
     "unit_label", "unit_iri", "term_iri", "term_type",
-    "property_iri", "entity_iri", "constraint_iri", "method_iri"
+    "property_iri", "entity_iri", "constraint_iri", "statistical_modifier_iri"
   )
   for (col in semantic_cols) {
     if (!col %in% names(dict)) {
@@ -1288,7 +1288,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
   semantic_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
   iri_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
     names(dict)
   )
 

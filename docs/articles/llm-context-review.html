@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -208,8 +208,8 @@ metadata</li>
 <p>What stays in <code>semantic_suggestions.csv</code> for manual
 review:</p>
 <ul>
-<li>constraint and method assessments, even when the model accepts
-them</li>
+<li>constraint and statistical-modifier assessments, even when the model
+accepts them</li>
 <li>dataset-level keyword suggestions targeting
 <code>metadata/dataset.csv</code>
 </li>
@@ -232,10 +232,15 @@ metadata and context, plus six ordered candidate slots:</p>
 <li>entity,</li>
 <li>unit,</li>
 <li>constraint, and</li>
-<li>method.</li>
+<li>statistical modifier.</li>
 </ol>
-<p>Method is reviewed as a <code>usedProcedure</code>-style companion
-slot; it is not a native I-ADOPT decomposition role.</p>
+<p>A statistical modifier is part of variable identity (I-ADOPT
+<code>StatisticalModifier</code>), so a slot is proposed only when the
+column is an aggregation or summary — a mean, maximum, total, or peak.
+Methods are never a dictionary slot under sdp-0.3.0: a table-constant
+procedure lives in <code>tables.csv</code>, and row-varying procedures
+resolve through <code>codes.csv</code>, where code-level method targets
+are still reviewed.</p>
 <p>The initial LLM request judges those six roles together. A malformed
 or missing slot falls back through the existing single-target adapter
 without discarding valid sibling decisions. A malformed top-level
@@ -354,13 +359,14 @@ unknown, or missing bundle slots fall back individually, while a
 malformed top-level response falls back the whole bundle. If the
 provider fails but deterministic candidates remain usable, the package
 warns and preserves the original shortlist for manual review.</p>
-<p>Pure deterministic validators run after LLM review. They check method
-and constraint evidence, role and ontology-type compatibility, known
-property/unit dimensions, and a small curated set of redundancy rules. A
-failed validator changes <code>accept</code> to <code>review</code>,
-clears the selected candidate, and appends a stable finding code and
-explanation while preserving model confidence. Validators never retrieve
-or substitute terms and never create an ontology gap.</p>
+<p>Pure deterministic validators run after LLM review. They check
+statistical-modifier and constraint evidence, role and ontology-type
+compatibility, known property/unit dimensions, and a small curated set
+of redundancy rules. A failed validator changes <code>accept</code> to
+<code>review</code>, clears the selected candidate, and appends a stable
+finding code and explanation while preserving model confidence.
+Validators never retrieve or substitute terms and never create an
+ontology gap.</p>
 </div>
 <div class="section level2">
 <h2 id="structured-ontology-gaps">Structured Ontology Gaps<a class="anchor" aria-label="anchor" href="#structured-ontology-gaps"></a>

@@ -81,8 +81,11 @@ measurement_decomposition_test_rows <- function() {
     "Manual bounded search of the pinned Salmon Domain Ontology source.",
     "demo-salmon-2026", "counts", "count",
     measurement_decomposition_test_concept,
-    5L, "method", "gap", "", NA_integer_, "", "Enumeration method",
-    "The source data do not identify one stable governed method term.",
+    # sdp-0.3.0: "method" is no longer a decomposition component role; the
+    # aggregation identity slot is "statistical_modifier".
+    5L, "statistical_modifier", "gap", "", NA_integer_, "",
+    "Aggregation modifier",
+    "The source data do not identify one stable governed statistical-modifier term.",
     "SMN", "2026-07-31", "https://w3id.org/smn/",
     "Source documentation and the pinned ontology were reviewed manually.",
     "demo-salmon-2026", "counts", "count",
@@ -280,7 +283,7 @@ test_that("matched and gap rows obey the closed component-state contract", {
         rows$component_role[[1]] <- "variable"
         rows
       },
-      message = "component_role.*property.*entity.*constraint.*method.*unit"
+      message = "component_role.*property.*entity.*constraint.*statistical_modifier.*unit"
     ),
     list(
       mutate = function(rows) {

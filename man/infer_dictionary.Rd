@@ -102,7 +102,7 @@ OpenAI-compatible request function.}
 A tibble with dictionary schema columns in canonical Salmon Data
 Package order: \code{dataset_id}, \code{table_id}, \code{column_name}, \code{column_label},
 \code{column_description}, \code{term_iri}, \code{property_iri}, \code{entity_iri},
-\code{constraint_iri}, \code{method_iri}, \code{unit_label}, \code{unit_iri}, \code{term_type},
+\code{constraint_iri}, \code{statistical_modifier_iri}, \code{unit_label}, \code{unit_iri}, \code{term_type},
 \code{value_type}, \code{column_role}, \code{required}. With semantic seeding, suggestions
 are attached as \code{semantic_suggestions}; with explicit LLM review, the
 30-column target summaries are attached as \code{semantic_llm_assessments}.

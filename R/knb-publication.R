@@ -384,13 +384,16 @@
     )
   }
 
-  # Methods and mixed-grain observation structures are optional SDP v0.2
-  # metadata. When present they are validated as one complete contract and
-  # become named objects in the expanded representation.
+  # Mixed-grain observation structures are optional metadata. When present
+  # they are validated as one complete contract and become named objects in
+  # the expanded representation. A methods.csv is an sdp-0.2.0 registry and
+  # must be migrated, not published.
   methods_relative <- character()
   if (file.exists(file.path(path, "metadata", "methods.csv"))) {
-    validate_sdp_methods(path)
-    methods_relative <- "metadata/methods.csv"
+    cli::cli_abort(c(
+      "{.file metadata/methods.csv} is an sdp-0.2.0 registry; sdp-0.3.0 packages must not carry one.",
+      "i" = "Run {.fun migrate_sdp_methods} to relocate its content and remove it."
+    ))
   }
   structure_files <- c(
     "metadata/structure/observation_structures.csv",

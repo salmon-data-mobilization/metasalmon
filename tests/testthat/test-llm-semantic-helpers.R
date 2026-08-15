@@ -755,16 +755,16 @@ test_that("measurement targets route to decomposition-aware review with bundle c
     column_description = c("Weight of catch", "Weight of catch", "Weight of catch", "Weight of catch"),
     column_role = c("measurement", "measurement", "measurement", "measurement"),
     code_value = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    dictionary_role = c("property", "property", "method", "method"),
+    dictionary_role = c("property", "property", "statistical_modifier", "statistical_modifier"),
     target_scope = c("column", "column", "column", "column"),
     target_sdp_file = c("column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv", "column_dictionary.csv"),
-    target_sdp_field = c("property_iri", "property_iri", "method_iri", "method_iri"),
-    search_query = c("catch weight", "catch weight", "catch weight method", "catch weight method"),
-    target_label = c("Weight of catch", "Weight of catch", "Catch weight method", "Catch weight method"),
-    target_description = c("Weight of catch", "Weight of catch", "Method used for catch weight", "Method used for catch weight"),
+    target_sdp_field = c("property_iri", "property_iri", "statistical_modifier_iri", "statistical_modifier_iri"),
+    search_query = c("catch weight", "catch weight", "catch weight total", "catch weight total"),
+    target_label = c("Weight of catch", "Weight of catch", "Catch weight modifier", "Catch weight modifier"),
+    target_description = c("Weight of catch", "Weight of catch", "Aggregation applied to catch weight", "Aggregation applied to catch weight"),
     target_query_basis = c("label", "label", "label", "label"),
     target_query_context = c("ctx", "ctx", "ctx", "ctx"),
-    label = c("Fish weight", "Catch mass", "Enumeration method", "Fork-length field method"),
+    label = c("Fish weight", "Catch mass", "Total value", "Cumulative value"),
     iri = c("https://example.org/p1", "https://example.org/p2", "https://example.org/m1", "https://example.org/m2"),
     source = c("smn", "smn", "smn", "smn"),
     ontology = c("demo", "demo", "demo", "demo"),
@@ -794,7 +794,7 @@ test_that("measurement targets route to decomposition-aware review with bundle c
   expect_match(messages[[1]]$content, "usedProcedure", fixed = TRUE)
   expect_false(grepl("iadoptMethod", messages[[1]]$content, fixed = TRUE))
   expect_match(messages[[2]]$content, '"bundle_context"', fixed = TRUE)
-  expect_match(messages[[2]]$content, '"method"', fixed = TRUE)
+  expect_match(messages[[2]]$content, '"statistical_modifier"', fixed = TRUE)
 })
 
 test_that("LLM retry_search can trigger a second deterministic retrieval pass", {
@@ -1458,7 +1458,7 @@ test_that("LLM context files are parsed and chunked once per assessment run", {
     property_iri = c(NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_)
   )
 
   fake_search <- function(query, role, sources) {
@@ -2160,7 +2160,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
     unit_iri = "https://qudt.org/vocab/unit/NUM",
     unit_label = "count",
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   dict_with_missing <- test_dictionary(
@@ -2178,7 +2178,7 @@ test_that("validate_dictionary keeps strong non-strict warnings for direct revie
     unit_iri = NA_character_,
     unit_label = "count",
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   expect_warning(
@@ -2207,7 +2207,7 @@ test_that("validate_dictionary fails final validation when REVIEW-prefixed IRIs 
     unit_iri = "https://qudt.org/vocab/unit/NUM",
     unit_label = "count",
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   expect_error(
@@ -2234,7 +2234,7 @@ test_that("weak LLM shortlist review triggers one bounded alternate-query pass",
     property_iri = "https://example.org/property/count",
     entity_iri = "https://example.org/entity/fish",
     constraint_iri = "https://example.org/constraint/all",
-    method_iri = "https://example.org/method/visual"
+    statistical_modifier_iri = "https://example.org/modifier/total"
   )
 
   fake_search <- function(query, role, sources) {
@@ -2354,7 +2354,7 @@ test_that("strong LLM shortlist acceptance skips bounded exploration", {
     property_iri = "https://example.org/property/count",
     entity_iri = "https://example.org/entity/fish",
     constraint_iri = "https://example.org/constraint/all",
-    method_iri = "https://example.org/method/visual"
+    statistical_modifier_iri = "https://example.org/modifier/total"
   )
 
   fake_search <- function(query, role, sources) {

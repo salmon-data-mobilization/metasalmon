@@ -44,6 +44,22 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   must keep identical column sets.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
+- **A semantic role is a contract across five layers, not a string.** Adding
+  or renaming a role (`variable`, `property`, `entity`, `unit`, `constraint`,
+  `statistical_modifier`; plus `method` for code values only) means touching
+  all of: the target/role maps (`semantic-suggestions.R`, `semantics-helpers.R`
+  `role_to_field`), the bundle roles and slot fields
+  (`semantic-bundle-review.R`), **the role-hint vocabulary** (`.smn_role_flags`
+  + the emitter in `term_search_smn.R`, and the RDF/XML hint builder in
+  `term_search.R`), the retrieval filters (`sources_for_role()` and
+  `.gcdfo_filter_for_role()`), and the deterministic validators
+  (`semantic-bundle-validators.R`). The hint layer is the one that gets
+  forgotten, and forgetting it is silent and total: `.ms_validate_semantic_role_type()`
+  vetoes any accept whose candidate carries hints not naming the role, so a
+  role with no hint emitter has **100% of its correct accepts downgraded** to
+  `review` while every test using a hand-written `role_hints` fixture still
+  passes. That is exactly how sdp-0.3.0's `statistical_modifier` shipped
+  broken through CI and PR review; see the 0.3.0 NEWS entry.
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:

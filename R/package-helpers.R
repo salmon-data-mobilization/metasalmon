@@ -220,8 +220,8 @@ write_salmon_datapackage <- function(
       if (!is.na(table_dict$constraint_iri[i]) && table_dict$constraint_iri[i] != "") {
         field$constraint_iri <- table_dict$constraint_iri[i]
       }
-      if (!is.na(table_dict$method_iri[i]) && table_dict$method_iri[i] != "") {
-        field$method_iri <- table_dict$method_iri[i]
+      if (!is.na(table_dict$statistical_modifier_iri[i]) && table_dict$statistical_modifier_iri[i] != "") {
+        field$statistical_modifier_iri <- table_dict$statistical_modifier_iri[i]
       }
 
       field[!purrr::map_lgl(field, is.null)]
@@ -1426,7 +1426,11 @@ read_salmon_datapackage <- function(path) {
             property_iri = custom[["iAdopt:propertyIri"]] %||% field$property_iri %||% NA_character_,
             entity_iri = custom[["iAdopt:entityIri"]] %||% field$entity_iri %||% NA_character_,
             constraint_iri = custom[["iAdopt:constraintIri"]] %||% field$constraint_iri %||% NA_character_,
-            method_iri = custom[["iAdopt:methodIri"]] %||% field$method_iri %||% NA_character_
+            # The legacy iAdopt:methodIri key is deliberately NOT read here:
+            # migrate_sdp_methods() reads old descriptors directly, so a
+            # descriptor-only sdp-0.2.0 package keeps its method binding
+            # until migration relocates it to tables.csv.
+            statistical_modifier_iri = custom[["iAdopt:statisticalModifierIri"]] %||% field$statistical_modifier_iri %||% NA_character_
           )
         }
       }
@@ -1584,6 +1588,48 @@ read_salmon_datapackage <- function(path) {
   )
 }
 
+# sdp-0.3.0 moved methods and protocols onto tables.csv and dataset.csv, so
+# those fields need the same absolute-IRI check the dictionary's IRI columns
+# get. Without it a table could claim `methods/weir-count` and validate
+# cleanly: the base schema accepts any string, and the observation-structure
+# validator that does check IRI shape only runs when the optional structure
+# sidecars exist.
+.ms_collect_placement_iri_issues <- function(meta, source_name, id_fields,
+                                             fields = c("method_iri", "protocol_iri")) {
+  if (!is.data.frame(meta) || nrow(meta) == 0) {
+    return(tibble::tibble())
+  }
+  present <- intersect(fields, names(meta))
+  if (length(present) == 0) {
+    return(tibble::tibble())
+  }
+
+  messages <- character()
+  for (field in present) {
+    vals <- as.character(meta[[field]])
+    populated <- !is.na(vals) & nzchar(trimws(vals))
+    # `REVIEW:` markers have their own dedicated reporting path.
+    invalid <- which(
+      populated &
+        !grepl("^REVIEW:", trimws(vals), ignore.case = TRUE) &
+        !.ms_sdp_extension_is_absolute_iri(vals)
+    )
+    for (row in invalid) {
+      messages <- c(messages, sprintf(
+        "%s %s field %s is not an absolute IRI: '%s'.",
+        source_name,
+        .ms_validation_row_context(meta, row, id_fields = id_fields),
+        field,
+        trimws(vals[[row]])
+      ))
+    }
+  }
+  if (length(messages) == 0) {
+    return(tibble::tibble())
+  }
+  tibble::tibble(message = messages)
+}
+
 #' Validate a Salmon Data Package end to end
 #'
 #' Reads a package from disk, checks that metadata/data files stay aligned,
@@ -1653,9 +1699,33 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   if (nrow(table_review_issues) > 0) {
     semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
   }
+  # Unconditional: a method or protocol placement that is not an absolute IRI
+  # is malformed in every validation mode, not only under `require_iris`.
+  placement_issues <- dplyr::bind_rows(
+    .ms_collect_placement_iri_issues(
+      pkg$tables,
+      source_name = "metadata/tables.csv",
+      id_fields = c("table_id", "file_name")
+    ),
+    .ms_collect_placement_iri_issues(
+      pkg$dataset,
+      source_name = "metadata/dataset.csv",
+      id_fields = "dataset_id",
+      fields = "protocol_iri"
+    )
+  )
+  if (nrow(placement_issues) > 0) {
+    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, placement_issues)
+  }
 
   if (isTRUE(require_iris)) {
-    final_review_issues <- dplyr::bind_rows(final_review_issues, table_review_issues)
+    # A malformed placement IRI is worse than an unreviewed one: strict
+    # validation must block it, exactly as it blocks a REVIEW: marker.
+    final_review_issues <- dplyr::bind_rows(
+      final_review_issues,
+      table_review_issues,
+      placement_issues
+    )
   }
 
   if (isTRUE(require_iris) && nrow(final_review_issues) > 0) {
@@ -3001,7 +3071,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
 }
 
-.ms_measurement_supports_procedure_slot <- function(suggestion, dict_row) {
+.ms_measurement_supports_statistical_modifier_slot <- function(suggestion, dict_row) {
   text <- tolower(paste(
     if ("search_query" %in% names(suggestion)) .ms_scalar_text(suggestion$search_query) else "",
     if ("target_label" %in% names(suggestion)) .ms_scalar_text(suggestion$target_label) else "",
@@ -3012,7 +3082,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   ))
 
   grepl(
-    "\\b(method|protocol|procedure|gear|estimated|estimate|estimation|enumerat|calculated|derived|modelled|modeled|assay|technique|field method|lab method|survey method)\\b",
+    "\\b(mean|average|max(imum)?|min(imum)?|total|cumulative|sum|peak|median|aggregate|aggregated|index)\\b",
     text,
     perl = TRUE
   )
@@ -3042,7 +3112,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   if (identical(target_field, "constraint_iri") && !.ms_measurement_supports_constraint_slot(suggestion, dict_row)) {
     return(FALSE)
   }
-  if (identical(target_field, "method_iri") && !.ms_measurement_supports_procedure_slot(suggestion, dict_row)) {
+  if (identical(target_field, "statistical_modifier_iri") && !.ms_measurement_supports_statistical_modifier_slot(suggestion, dict_row)) {
     return(FALSE)
   }
 
@@ -3330,7 +3400,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   iri_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
     names(dict)
   )
   if (length(iri_fields) == 0) {

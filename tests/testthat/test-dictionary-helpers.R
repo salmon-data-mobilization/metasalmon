@@ -15,7 +15,7 @@ test_that("infer_dictionary creates valid structure", {
     names(dict),
     c(
       "dataset_id", "table_id", "column_name", "column_label", "column_description",
-      "term_iri", "property_iri", "entity_iri", "constraint_iri", "method_iri",
+      "term_iri", "property_iri", "entity_iri", "constraint_iri", "statistical_modifier_iri",
       "unit_label", "unit_iri", "term_type",
       "value_type", "column_role", "required"
     )
@@ -27,7 +27,7 @@ test_that("infer_dictionary creates valid structure", {
     "column_description", "column_role", "value_type", "required"
   )
   expect_true(all(required_cols %in% names(dict)))
-  expect_true(all(c("property_iri", "entity_iri", "constraint_iri", "method_iri") %in% names(dict)))
+  expect_true(all(c("property_iri", "entity_iri", "constraint_iri", "statistical_modifier_iri") %in% names(dict)))
 
   # Check inferred types
   expect_equal(dict$value_type[dict$column_name == "count"], "integer")
@@ -44,7 +44,7 @@ test_that("inferred dataset metadata uses the current SDP profile version", {
     seed_verbose = FALSE
   )
 
-  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.2.0")
+  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.3.0")
 })
 
 test_that("infer_dictionary marks factor columns as categorical", {
@@ -570,7 +570,9 @@ test_that("infer_dictionary accepts named resource lists and can seed metadata-a
       expect_s3_class(dict, "tbl_df")
       expect_equal(nrow(dict), 6)
       expect_true(all(c("catches", "environments") %in% dict$table_id))
-      expect_equal(ncol(attr(dict, "inferred_table_meta")), 8)
+      # sdp-0.3.0 appended protocol_iri, protocol_citation, method_iri to
+      # tables.csv: 8 columns became 11.
+      expect_equal(ncol(attr(dict, "inferred_table_meta")), 11)
       expect_true(all(c("species", "station") %in% attr(dict, "inferred_codes")$column_name))
       expect_true(is.data.frame(attr(dict, "inferred_dataset_meta")))
       expect_true("dataset-1" %in% attr(dict, "inferred_dataset_meta")$dataset_id)
@@ -593,7 +595,7 @@ test_that("suggest_semantics attaches empty suggestions when sources disabled", 
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   res <- suggest_semantics(NULL, dict, sources = character(0))
@@ -618,7 +620,7 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   fake_search <- function(query, role, sources) {
@@ -635,10 +637,14 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
 
   res <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
   suggestions <- attr(res, "semantic_suggestions")
-  expect_equal(nrow(suggestions), 6) # includes count-like unit fallback query
+  # sdp-0.3.0: the dictionary method slot is gone, and a statistical_modifier
+  # target is emitted only when the column text names an aggregation — this
+  # label does not, so the five base roles remain (includes the count-like
+  # unit fallback query).
+  expect_equal(nrow(suggestions), 5)
   expect_equal(names(suggestions)[1:4], c("column_name", "dictionary_role", "table_id", "dataset_id"))
   expect_true(all(c("target_scope", "target_sdp_file", "target_sdp_field", "search_query") %in% names(suggestions)))
-  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "method")))
+  expect_true(all(suggestions$dictionary_role %in% c("variable", "property", "entity", "unit", "constraint", "statistical_modifier")))
   expect_true(all(suggestions$column_name == "value"))
   expect_true(all(suggestions$dataset_id == "d1"))
   expect_true(all(suggestions$table_id == "t1"))
@@ -650,10 +656,22 @@ test_that("suggest_semantics captures suggestions with dictionary_role and colum
   expect_equal(
     unique(suggestions[, c("dictionary_role", "target_sdp_field")]),
     tibble::tibble(
-      dictionary_role = c("variable", "property", "entity", "unit", "constraint", "method"),
-      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri")
+      dictionary_role = c("variable", "property", "entity", "unit", "constraint"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri")
     )
   )
+
+  # An aggregation token in the column text opens the statistical_modifier
+  # slot (sdp-0.3.0 measurement identity), searched with the token itself.
+  agg_dict <- dict
+  agg_dict$column_label <- "Mean spawner abundance"
+  agg_dict$column_description <- "Mean spawner abundance estimate"
+  agg_res <- suggest_semantics(NULL, agg_dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
+  agg_suggestions <- attr(agg_res, "semantic_suggestions")
+  modifier_rows <- agg_suggestions[agg_suggestions$dictionary_role == "statistical_modifier", , drop = FALSE]
+  expect_equal(nrow(modifier_rows), 1)
+  expect_equal(modifier_rows$target_sdp_field, "statistical_modifier_iri")
+  expect_equal(modifier_rows$search_query, "mean")
 
   res_dwc <- suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search, include_dwc = TRUE)
   dwc_map <- attr(res_dwc, "dwc_mappings")
@@ -675,7 +693,7 @@ test_that("suggest_semantics reports that suggestions are stored for review", {
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   fake_search <- function(query, role, sources) {
@@ -714,7 +732,7 @@ test_that("suggest_semantics strips review placeholders and applies role-aware c
     property_iri = c(NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_)
   )
 
   calls <- list()
@@ -756,7 +774,7 @@ test_that("suggest_semantics uses count-like measurement queries for adult spawn
     property_iri = c(NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_)
   )
 
   calls <- list()
@@ -825,7 +843,7 @@ test_that("suggest_semantics keeps biological qualifiers in count-like variable 
     property_iri = rep(NA_character_, 8),
     entity_iri = rep(NA_character_, 8),
     constraint_iri = rep(NA_character_, 8),
-    method_iri = rep(NA_character_, 8)
+    statistical_modifier_iri = rep(NA_character_, 8)
   )
 
   calls <- list()
@@ -885,7 +903,7 @@ test_that("suggest_semantics normalizes wide measurement headers and header unit
     property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
 
   calls <- list()
@@ -928,7 +946,7 @@ test_that("suggest_semantics treats explicitly supplied sources as an allowlist"
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   calls <- list()
@@ -982,7 +1000,7 @@ test_that("suggest_semantics ignores review placeholders when building table obs
     property_iri = c(NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_)
   )
   table_meta <- tibble::tibble(
     dataset_id = "d1",
@@ -1040,7 +1058,7 @@ test_that("suggest_semantics adds lighter non-measurement term suggestions for c
     property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
   codes <- tibble::tibble(
     dataset_id = c("d1", "d1", "d1"),
@@ -1157,7 +1175,7 @@ test_that("suggest_semantics keeps long-format observation helpers review-only",
     property_iri = rep(NA_character_, 9),
     entity_iri = rep(NA_character_, 9),
     constraint_iri = rep(NA_character_, 9),
-    method_iri = rep(NA_character_, 9)
+    statistical_modifier_iri = rep(NA_character_, 9)
   )
   fraser_codes <- tibble::tibble(
     dataset_id = rep("d1", 7),
@@ -1217,7 +1235,7 @@ test_that("suggest_semantics keeps long-format observation helpers review-only",
     property_iri = rep(NA_character_, 7),
     entity_iri = rep(NA_character_, 7),
     constraint_iri = rep(NA_character_, 7),
-    method_iri = rep(NA_character_, 7)
+    statistical_modifier_iri = rep(NA_character_, 7)
   )
   stage_codes <- tibble::tibble(
     dataset_id = rep("d2", 4),
@@ -1278,7 +1296,7 @@ test_that("suggest_semantics uses role-aware search roles for controlled attribu
     property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_, NA_character_, NA_character_)
   )
   codes <- tibble::tibble(
     dataset_id = c("d1", "d1", "d1", "d1", "d1"),
@@ -1347,7 +1365,7 @@ test_that("suggest_semantics keeps site and management-unit attributes on entity
     property_iri = c(NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_),
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_),
     term_type = c(NA_character_, NA_character_, NA_character_)
   )
   codes <- tibble::tibble(
@@ -1411,7 +1429,7 @@ test_that("suggest_semantics seeds location-like attribute term suggestions with
     property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     term_type = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
   codes <- tibble::tibble()
@@ -1466,7 +1484,7 @@ test_that("suggest_semantics uses taxon-style entity queries for species confirm
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_,
+    statistical_modifier_iri = NA_character_,
     term_type = NA_character_
   )
   codes <- tibble::tibble(
@@ -1521,7 +1539,7 @@ test_that("suggest_semantics expands waterbody-style attribute queries for auto-
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_,
+    statistical_modifier_iri = NA_character_,
     term_type = NA_character_
   )
   codes <- tibble::tibble(
@@ -1576,7 +1594,7 @@ test_that("apply_semantic_suggestions keeps compatible non-measurement term IRIs
     property_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
+    statistical_modifier_iri = c(NA_character_, NA_character_, NA_character_, NA_character_),
     term_type = c(NA_character_, NA_character_, NA_character_, NA_character_)
   )
 
@@ -1619,7 +1637,7 @@ test_that("suggest_semantics skips unit guesses when measurement has no unit clu
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   calls <- list()
@@ -1673,7 +1691,7 @@ test_that("count-like unit suggestions can be applied with unit_label backfill",
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   fake_search <- function(query, role, sources) {
@@ -1725,7 +1743,7 @@ test_that("suggest_semantics supports code, table, and dataset targets", {
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
   codes <- tibble::tibble(
     dataset_id = "d1",
@@ -1804,7 +1822,7 @@ test_that("suggest_semantics marks variable vs property collisions with destinat
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   fake_search <- function(query, role, sources) {
@@ -1858,7 +1876,7 @@ test_that("suggest_semantics uses role-specific hints when available", {
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   suggest_semantics(NULL, dict, sources = "ols", max_per_role = 1, search_fn = fake_search)
@@ -1881,7 +1899,7 @@ test_that("suggest_semantics deduplicates by source plus IRI without rewriting",
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   fake_search <- function(query, role, sources = NULL) {
@@ -1992,7 +2010,7 @@ test_that("apply_semantic_suggestions matches by column_name and dictionary_role
     property_iri = c(NA_character_, NA_character_),
     entity_iri = c(NA_character_, NA_character_),
     constraint_iri = c(NA_character_, NA_character_),
-    method_iri = c(NA_character_, NA_character_)
+    statistical_modifier_iri = c(NA_character_, NA_character_)
   )
 
   suggestions <- tibble::tibble(
@@ -2034,7 +2052,7 @@ test_that("apply_semantic_suggestions fills only missing fields unless overwrite
     property_iri = NA_character_,
     entity_iri = NA_character_,
     constraint_iri = NA_character_,
-    method_iri = NA_character_
+    statistical_modifier_iri = NA_character_
   )
 
   suggestions <- tibble::tibble(

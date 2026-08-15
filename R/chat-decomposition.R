@@ -135,9 +135,11 @@
     constraints = .ms_chat_trim_string(dict_row$constraint_iri %||% NA_character_),
     matrix = NA_character_,
     context_object = NA_character_,
-    used_procedure = .ms_chat_trim_string(dict_row$method_iri %||% NA_character_),
+    # sdp-0.3.0: the dictionary carries no procedure; usedProcedure context
+    # lives on tables.csv/codes.csv and is not guessed from a dictionary row.
+    used_procedure = NA_character_,
     unit = .ms_chat_first_non_empty(dict_row$unit_label %||% NA_character_, dict_row$unit_iri %||% NA_character_),
-    statistic = NA_character_,
+    statistic = .ms_chat_trim_string(dict_row$statistical_modifier_iri %||% NA_character_),
     derivation_status = NA_character_,
     temporal_granularity = NA_character_,
     spatial_granularity = NA_character_
@@ -1103,7 +1105,7 @@
 #'   property_iri = NA_character_,
 #'   entity_iri = NA_character_,
 #'   constraint_iri = NA_character_,
-#'   method_iri = NA_character_
+#'   statistical_modifier_iri = NA_character_
 #' )
 #'
 #' chat_decomposition(dict, column_name = "spawner_count")

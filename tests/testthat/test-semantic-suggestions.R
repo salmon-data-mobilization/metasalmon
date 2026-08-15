@@ -133,7 +133,12 @@ test_that("semantic target discovery emits normalized rows across all SDP scopes
     unique(targets$target_sdp_file),
     c("column_dictionary.csv", "codes.csv", "tables.csv", "dataset.csv")
   )
-  expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 6L)
+  # sdp-0.3.0: the dictionary method slot is gone and a statistical_modifier
+  # target is emitted only for aggregation-named columns, so this
+  # non-aggregated measurement column gets the five base roles. The
+  # codes-scope "method" search role survives: codes on measurement parents
+  # still search shared-vocabulary procedures for codes.csv term_iri.
+  expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 5L)
   expect_equal(nrow(targets[targets$target_scope == "code", , drop = FALSE]), 3L)
   expect_setequal(
     targets$dictionary_role[targets$target_scope == "code"],
@@ -421,4 +426,120 @@ test_that("LLM review adapter prefers parsed data over malformed wrapped content
   expect_equal(validated$decision, "review")
   expect_equal(validated$confidence, 0.44)
   expect_true(is.na(validated$selected_candidate_index))
+})
+
+test_that("procedure-column codes receive method candidates without a measurement parent", {
+  # sdp-0.3.0 makes codes.csv term_iri the ONLY placement for row-varying
+  # procedures, so a `counting_method` column inferred as categorical must
+  # still route its codes to the method search role.
+  dict <- test_dictionary(
+    column_name = "counting_method",
+    column_label = "Counting method",
+    column_description = "How the count was made",
+    column_role = "categorical",
+    value_type = "string"
+  )
+  codes <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "counting_method",
+    code_value = "VISUAL",
+    code_label = "Visual",
+    code_description = "Visual survey",
+    term_iri = NA_character_
+  )
+
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = codes,
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(counting_method = "VISUAL")
+  )
+
+  code_targets <- targets[targets$target_scope == "code", , drop = FALSE]
+  expect_equal(unique(code_targets$dictionary_role), "method")
+
+  # A plain categorical column keeps the entity-only default.
+  dict_plain <- test_dictionary(
+    column_name = "region",
+    column_label = "Region",
+    column_description = "Reporting region",
+    column_role = "categorical",
+    value_type = "string"
+  )
+  codes_plain <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "region",
+    code_value = "FRASER",
+    code_label = "Fraser",
+    code_description = "Fraser river region",
+    term_iri = NA_character_
+  )
+  targets_plain <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict_plain,
+    codes = codes_plain,
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(region = "FRASER")
+  )
+  code_plain <- targets_plain[targets_plain$target_scope == "code", , drop = FALSE]
+  expect_equal(unique(code_plain$dictionary_role), "entity")
+})
+
+test_that("a statistical modifier named only in the column name is detected", {
+  # `mean_temperature` whose description never says "mean": the aggregation
+  # evidence lives in the name/label, and underscores must not hide it.
+  dict <- test_dictionary(
+    column_name = "mean_temperature",
+    column_label = "Mean temperature",
+    column_description = "Water temperature in degrees C",
+    value_type = "number"
+  )
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = tibble::tibble(),
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(mean_temperature = 4.2)
+  )
+  modifier <- targets[
+    targets$dictionary_role == "statistical_modifier", ,
+    drop = FALSE
+  ]
+  expect_equal(nrow(modifier), 1L)
+  expect_equal(modifier$search_query, "mean")
+})
+
+test_that("procedure columns named with full inflections route codes to method", {
+  # Regression: a bounded stem like \\b(estimat)\\b cannot match
+  # "estimation_type" -- exactly the naming this rule exists to catch.
+  for (column in c("enumeration_type", "estimation_type", "survey_method")) {
+    dict <- test_dictionary(
+      column_name = column,
+      column_label = column,
+      column_description = "How the value was produced",
+      column_role = "categorical",
+      value_type = "string"
+    )
+    codes <- tibble::tibble(
+      dataset_id = "d1",
+      table_id = "t1",
+      column_name = column,
+      code_value = "VISUAL",
+      code_label = "Visual",
+      code_description = "Visual survey",
+      term_iri = NA_character_
+    )
+    targets <- metasalmon:::.ms_semantic_discover_targets(
+      dict = dict,
+      codes = codes,
+      table_meta = tibble::tibble(),
+      dataset_meta = tibble::tibble(),
+      default_df = stats::setNames(tibble::tibble("VISUAL"), column)
+    )
+    code_targets <- targets[targets$target_scope == "code", , drop = FALSE]
+    expect_equal(unique(code_targets$dictionary_role), "method", info = column)
+  }
 })

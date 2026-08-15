@@ -55,7 +55,7 @@ validate_semantics <- function(dict,
   }
 
   semantic_iri_cols <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "method_iri"),
+    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
     names(dict)
   )
   if (length(semantic_iri_cols) > 0) {

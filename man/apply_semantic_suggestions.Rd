@@ -39,7 +39,7 @@ select one value per column-role pair.}
 
 \item{roles}{Optional character vector limiting application to specific
 suggestion roles: \code{"variable"}, \code{"property"}, \code{"entity"}, \code{"unit"},
-\code{"constraint"}, \code{"method"}.}
+\code{"constraint"}, \code{"statistical_modifier"}.}
 
 \item{min_score}{Optional numeric threshold. Only available when
 \code{suggestions} includes a \code{score} column; otherwise the function errors.}

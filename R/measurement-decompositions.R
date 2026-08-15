@@ -61,7 +61,11 @@
 }
 
 .ms_sdp_decomposition_validate_row_states <- function(rows) {
-  allowed_roles <- c("property", "entity", "constraint", "method", "unit")
+  # sdp-0.3.0: no method role. A decomposition row binds one measurement's
+  # variable identity; a row-varying procedure is data bound with
+  # sosa:usedProcedure, so a method slot here would pin an arbitrary
+  # procedure to the variable.
+  allowed_roles <- c("property", "entity", "constraint", "statistical_modifier", "unit")
   if (any(!rows$component_role %in% allowed_roles)) {
     .ms_sdp_decomposition_abort(
       paste0(
@@ -285,7 +289,7 @@
     property_iri = "property",
     entity_iri = "entity",
     constraint_iri = "constraint",
-    method_iri = "method",
+    statistical_modifier_iri = "statistical_modifier",
     unit_iri = "unit"
   )
 
@@ -763,8 +767,8 @@ validate_sdp_measurement_decompositions <- function(path) {
 #' - `measurement_concept_iri` must exactly equal that dictionary row's
 #'   `term_iri`.
 #' - `component_order` is a positive, contiguous, per-measurement sequence.
-#' - `component_role` is one of `property`, `entity`, `constraint`, `method`, or
-#'   `unit`; repeated roles are allowed.
+#' - `component_role` is one of `property`, `entity`, `constraint`,
+#'   `statistical_modifier`, or `unit`; repeated roles are allowed.
 #' - `component_status` is `matched` or `gap`. A matched row requires an
 #'   absolute `component_iri`. A gap requires a blank `component_iri` plus a
 #'   non-empty `component_label` and `rationale`.
@@ -778,7 +782,7 @@ validate_sdp_measurement_decompositions <- function(path) {
 #'   preserve caller-supplied text; they are never tokenized or inferred.
 #'
 #' Every non-empty dictionary `property_iri`, `entity_iri`, `constraint_iri`,
-#' `method_iri`, and `unit_iri` must appear as a matched component of the same
+#' `statistical_modifier_iri`, and `unit_iri` must appear as a matched component of the same
 #' role. Semicolon-separated dictionary constraints are checked separately.
 #' Additional same-role components and explicit gaps stay only in this
 #' artifact, leaving the frozen SDP dictionary columns unchanged. This is an

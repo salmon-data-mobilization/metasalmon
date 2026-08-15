@@ -935,7 +935,7 @@ render_ontology_term_request <- function(
       "- Table + column(s): `{table_id}` / `{column_name}`\n",
       "- Example values: Not captured\n\n",
       "## I-ADOPT decomposition (for measurement-like terms)\n\n",
-      "- property_iri:\n- entity_iri:\n- unit_iri:\n- constraint_iri:\n- method_iri:\n\n",
+      "- property_iri:\n- entity_iri:\n- unit_iri:\n- constraint_iri:\n- statistical_modifier_iri:\n\n",
       "## Additional notes\n\n",
       "- Target field: `{target_field}`\n- Semantic role: `{role}`\n- Gap evidence: `{detection_basis}`\n",
       "- Rationale: {rationale}\n- Template: {smn_template}\n- Repository: https://github.com/{smn_repo}\n"

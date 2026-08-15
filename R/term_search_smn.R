@@ -203,6 +203,24 @@
       "constraint|context|phase|origin|benchmark|reference point|target|limit|status zone",
       subject_text
     )
+  # sdp-0.3.0: statistical modifiers are their own I-ADOPT component, and smn
+  # 0.0.3 gives them a scheme of their own. Without this hint every real
+  # modifier concept reaches review carrying only the broad
+  # "controlled-vocabularies" constraint hint, and the role-type validator
+  # then vetoes the accept as role-incompatible.
+  is_statistical_modifier <- grepl(
+    "statisticalmodifier|statistical modifier",
+    subject_text
+  ) ||
+    # Token fallback only inside the controlled-vocabulary module, so a
+    # variable named TotalRunSize does not pick up a modifier hint.
+    (
+      grepl("controlled-vocabularies", module_name) &&
+        grepl(
+          "\\b(mean|median|average|maximum|minimum|total|cumulative|peak)\\b",
+          subject_text
+        )
+    )
   is_variable <- (
     grepl(
       "measurement|abundance|count|rate|escapement|recruit",
@@ -223,7 +241,8 @@
     is_property = is_property,
     is_entity = is_entity,
     is_constraint = is_constraint,
-    is_method = is_method
+    is_method = is_method,
+    is_statistical_modifier = is_statistical_modifier
   )
 }
 
@@ -322,7 +341,8 @@
           if (isTRUE(role_flags$is_property)) "property",
           if (isTRUE(role_flags$is_entity)) "entity",
           if (isTRUE(role_flags$is_constraint)) "constraint",
-          if (isTRUE(role_flags$is_method)) "method"
+          if (isTRUE(role_flags$is_method)) "method",
+          if (isTRUE(role_flags$is_statistical_modifier)) "statistical_modifier"
         ),
         collapse = "|"
       )

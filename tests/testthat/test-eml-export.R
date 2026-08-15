@@ -374,92 +374,44 @@ test_that("canonical SDP archives are valid deterministic EML otherEntity object
   )
 })
 
-test_that("EML method steps include only registry procedures actually used", {
+test_that("EML method steps come from tables.csv and dataset.csv placements", {
+  # sdp-0.3.0: the methods registry is gone. A table-constant procedure and
+  # its protocol live on tables.csv; a dataset-wide protocol lives on
+  # dataset.csv. Labels and descriptions belong to the shared vocabulary, so
+  # the method steps carry IRIs and citations only.
   skip_if_not_installed("emld")
 
   package_path <- make_eml_test_sdp(withr::local_tempdir())
-  dictionary_path <- file.path(
-    package_path,
-    "metadata",
-    "column_dictionary.csv"
-  )
-  dictionary <- readr::read_csv(dictionary_path, show_col_types = FALSE)
-  dictionary$method_iri[dictionary$column_name == "count"] <-
-    "https://example.org/methods/mark-recapture"
-  readr::write_csv(dictionary, dictionary_path, na = "")
-  review_path <- file.path(
-    package_path,
-    "reviewed_semantic_selections.csv"
-  )
-  review <- readr::read_csv(review_path, show_col_types = FALSE)
-  review <- dplyr::bind_rows(
-    review,
-    tibble::tibble(
-      dataset_id = "demo-salmon-2026",
-      table_id = "counts",
-      column_name = "count",
-      target_scope = "column",
-      target_sdp_field = "method_iri",
-      dictionary_role = "method",
-      decision = "accepted",
-      confidence = "high",
-      review_rationale = "The procedure applies to each observed count.",
-      iri = "https://example.org/methods/mark-recapture"
-    )
-  )
-  readr::write_csv(review, review_path, na = "")
-  vocabulary_path <- file.path(
-    package_path,
-    "metadata",
-    "semantic_vocabulary.csv"
-  )
-  vocabulary <- readr::read_csv(
-    vocabulary_path,
+  tables_path <- file.path(package_path, "metadata", "tables.csv")
+  tables <- readr::read_csv(
+    tables_path,
     col_types = readr::cols(.default = readr::col_character()),
+    na = "",
     show_col_types = FALSE
   )
-  method_vocabulary <- vocabulary[1, , drop = FALSE]
-  method_vocabulary$iri <- "https://example.org/methods/mark-recapture"
-  method_vocabulary$label <- "Mark-recapture estimate"
-  method_vocabulary$definition <-
-    "A procedure for estimating abundance from marked and recaptured fish."
-  method_vocabulary$source <- "example"
-  method_vocabulary$ontology <- "example"
-  method_vocabulary$resource_kind <- "Procedure"
-  method_vocabulary$type_iris <- "http://www.w3.org/ns/sosa/Procedure"
-  method_vocabulary$native_type <- "sosa:Procedure"
-  method_vocabulary$source_url <- "https://example.org/methods/"
-  method_vocabulary$source_artifact_sha256 <- NA_character_
-  method_vocabulary$reviewed_snapshot_sha256 <-
-    .ms_eml_vocabulary_snapshot_sha256(method_vocabulary)
-  vocabulary <- dplyr::bind_rows(vocabulary, method_vocabulary)
-  readr::write_csv(vocabulary, vocabulary_path, na = "")
-  mapping_path <- file.path(package_path, "metadata", "eml-mapping.yml")
-  mapping <- yaml::read_yaml(mapping_path)
-  mapping$semantic_review$sha256 <- digest::digest(
-    file = review_path,
-    algo = "sha256",
-    serialize = FALSE
+  tables$method_iri <- "https://example.org/methods/mark-recapture"
+  tables$protocol_iri <- "https://example.org/protocols/mark-recapture"
+  tables$protocol_citation <-
+    "Example Salmon Program. 2026. Mark-recapture protocol."
+  readr::write_csv(tables, tables_path, na = "")
+  # The emitted method IRI must be inside the review/vocabulary closure;
+  # the protocol IRIs are citations and deliberately are not.
+  add_table_method_to_review_closure(
+    package_path,
+    "https://example.org/methods/mark-recapture",
+    "Mark-recapture"
   )
-  mapping$semantic_vocabulary$sha256 <- digest::digest(
-    file = vocabulary_path,
-    algo = "sha256",
-    serialize = FALSE
+  dataset_path <- file.path(package_path, "metadata", "dataset.csv")
+  dataset <- readr::read_csv(
+    dataset_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
   )
-  yaml::write_yaml(mapping, mapping_path)
-  methods <- tibble::tribble(
-    ~dataset_id, ~method_iri, ~method_label, ~method_description,
-    ~method_version, ~protocol_iri, ~citation,
-    "demo-salmon-2026", "https://example.org/methods/mark-recapture",
-    "Mark-recapture estimate",
-    "Estimate abundance from marked and subsequently recaptured fish.",
-    "2026", "https://example.org/protocols/mark-recapture",
-    "Example Salmon Program. 2026. Mark-recapture protocol.",
-    "demo-salmon-2026", "https://example.org/methods/unused-alternative",
-    "Unused alternative", "A registered alternative not used by these data.",
-    NA_character_, NA_character_, NA_character_
-  )
-  write_sdp_methods(package_path, methods)
+  dataset$protocol_iri <- "https://example.org/protocols/monitoring-program"
+  dataset$protocol_citation <-
+    "Example Salmon Program. 2026. Monitoring program protocol."
+  readr::write_csv(dataset, dataset_path, na = "")
 
   result <- write_eml_from_sdp(package_path)
   expect_true(isTRUE(emld::eml_validate(result$path)))
@@ -468,96 +420,113 @@ test_that("EML method steps include only registry procedures actually used", {
     document,
     "//*[local-name()='methods']/*[local-name()='methodStep']"
   )
-  expect_length(steps, 2L)
-  registry_text <- paste(xml2::xml_text(steps[[2]]), collapse = " ")
-  expect_match(registry_text, "Mark-recapture estimate", fixed = TRUE)
+  # One mapping-supplied narrative step, one table placement, one dataset
+  # placement.
+  expect_length(steps, 3L)
+  table_text <- paste(xml2::xml_text(steps[[2]]), collapse = " ")
+  expect_match(table_text, "table 'counts'", fixed = TRUE)
   expect_match(
-    registry_text,
+    table_text,
     "https://example.org/methods/mark-recapture",
     fixed = TRUE
   )
   expect_match(
-    registry_text,
+    table_text,
     "https://example.org/protocols/mark-recapture",
     fixed = TRUE
   )
-  expect_match(registry_text, "Mark-recapture protocol", fixed = TRUE)
-  expect_false(grepl(
-    "Unused alternative",
-    paste(xml2::xml_text(document), collapse = " "),
+  expect_match(table_text, "Mark-recapture protocol", fixed = TRUE)
+  dataset_text <- paste(xml2::xml_text(steps[[3]]), collapse = " ")
+  expect_match(dataset_text, "Dataset-level protocol.", fixed = TRUE)
+  expect_match(
+    dataset_text,
+    "https://example.org/protocols/monitoring-program",
     fixed = TRUE
-  ))
-  expect_identical(result$methods, read_sdp_methods(package_path))
-  expect_identical(
-    result$used_methods$method_iri,
-    "https://example.org/methods/mark-recapture"
   )
+  expect_match(dataset_text, "Monitoring program protocol", fixed = TRUE)
+
+  # The return value carries the placements tibble and the (empty) set of
+  # row-varying procedures.
+  expect_identical(
+    names(result$methods),
+    c("scope", "method_iri", "protocol_iri", "protocol_citation")
+  )
+  expect_identical(result$methods$scope, c("counts", "dataset"))
+  expect_identical(
+    result$methods$method_iri,
+    c("https://example.org/methods/mark-recapture", NA_character_)
+  )
+  expect_identical(result$used_methods, character(0))
 })
 
-test_that("EML does not assert an unreferenced registry method was performed", {
+test_that("EML export aborts on a leftover sdp-0.2.0 methods registry", {
   skip_if_not_installed("emld")
 
   package_path <- make_eml_test_sdp(withr::local_tempdir())
-  write_sdp_methods(
-    package_path,
+  readr::write_csv(
     tibble::tibble(
       dataset_id = "demo-salmon-2026",
-      method_iri = "https://example.org/methods/unreferenced",
-      method_label = "Unreferenced method",
-      method_description = "Registered but not used to produce this data object.",
+      method_iri = "https://example.org/methods/mark-recapture",
+      method_label = "Mark-recapture estimate",
+      method_description = "A legacy registry row.",
       method_version = NA_character_,
       protocol_iri = NA_character_,
       citation = NA_character_
-    )
+    ),
+    file.path(package_path, "metadata", "methods.csv"),
+    na = ""
   )
 
-  result <- write_eml_from_sdp(package_path)
-  document <- xml2::read_xml(result$path)
-  steps <- xml2::xml_find_all(
-    document,
-    "//*[local-name()='methods']/*[local-name()='methodStep']"
+  expect_error(
+    write_eml_from_sdp(package_path),
+    "Run.*migrate_sdp_methods"
   )
-  expect_length(steps, 1L)
-  expect_false(grepl(
-    "Unreferenced method",
-    paste(xml2::xml_text(document), collapse = " "),
-    fixed = TRUE
-  ))
-  expect_equal(nrow(result$used_methods), 0L)
 })
 
-test_that("EML does not assert methods attached to non-measurement columns", {
-  package_path <- make_eml_test_sdp(withr::local_tempdir())
-  dictionary_path <- file.path(
-    package_path,
-    "metadata",
-    "column_dictionary.csv"
+test_that("EML asserts only row-varying procedures actually observed", {
+  # Replaces the registry-era "only procedures actually used" tests: the
+  # used-procedure list now comes from enumerated sosa:usedProcedure code
+  # columns resolved through codes.csv term_iri, restricted to code values
+  # observed alongside a populated measure. An enumerated-but-unobserved code
+  # must not be asserted as performed.
+  root <- withr::local_tempdir()
+  make_structure_test_sdp(root)
+  write_sdp_observation_structures(
+    root,
+    structure_test_rows(),
+    component_test_rows()
   )
-  dictionary <- readr::read_csv(dictionary_path, show_col_types = FALSE)
-  dictionary$method_iri[dictionary$column_name == "literal_missing"] <-
-    "https://example.org/methods/attribute-cleanup"
-  readr::write_csv(dictionary, dictionary_path, na = "")
+  codes_path <- file.path(root, "metadata", "codes.csv")
+  codes <- readr::read_csv(codes_path, show_col_types = FALSE)
+  codes <- dplyr::bind_rows(
+    codes,
+    tibble::tibble(
+      dataset_id = "structure-test",
+      table_id = "stock_recruit",
+      column_name = "estimate_method",
+      code_value = "unobserved_method",
+      code_label = "Unobserved method",
+      code_description = "Enumerated but absent from current data rows",
+      vocabulary_iri = NA_character_,
+      term_iri = "https://example.org/methods/unobserved",
+      term_type = "owl_named_individual"
+    )
+  )
+  readr::write_csv(codes, codes_path, na = "")
 
-  pkg <- validate_salmon_datapackage(
-    package_path,
-    require_iris = TRUE
+  pkg <- suppressMessages(
+    validate_salmon_datapackage(root, require_iris = FALSE)
   )$package
-  registry <- tibble::tibble(
-    dataset_id = "demo-salmon-2026",
-    method_iri = "https://example.org/methods/attribute-cleanup",
-    method_label = "Attribute cleanup",
-    method_description = paste(
-      "A legacy dictionary annotation that must not be represented as a",
-      "performed measurement procedure."
-    ),
-    method_version = NA_character_,
-    protocol_iri = NA_character_,
-    citation = NA_character_
+  used <- .ms_eml_used_procedures(root, pkg)
+
+  expect_setequal(
+    used,
+    c(
+      "https://example.org/methods/mark-recapture",
+      "https://example.org/methods/expanded-count"
+    )
   )
-
-  used <- .ms_eml_used_sdp_methods(package_path, pkg, registry)
-
-  expect_equal(nrow(used), 0L)
+  expect_false("https://example.org/methods/unobserved" %in% used)
 })
 
 test_that("expanded SDP artifacts are valid path-preserving EML otherEntity objects", {

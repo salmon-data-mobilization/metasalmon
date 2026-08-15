@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -270,7 +270,7 @@ represents. It answers the question: “What exactly did you measure?”</p>
 <div class="section level3">
 <h3 id="the-core-components">The Core Components<a class="anchor" aria-label="anchor" href="#the-core-components"></a>
 </h3>
-<p>I-ADOPT defines observable properties using four components:</p>
+<p>I-ADOPT defines observable properties using five components:</p>
 <table class="table">
 <colgroup>
 <col width="26%">
@@ -301,7 +301,12 @@ represents. It answers the question: “What exactly did you measure?”</p>
 <tr class="even">
 <td><strong>Constraint</strong></td>
 <td>Any qualifiers or limits?</td>
-<td>Maximum, daily average, etc.</td>
+<td>Wild-origin only, female, spawner stage</td>
+</tr>
+<tr class="odd">
+<td><strong>Statistical modifier</strong></td>
+<td>What aggregation or summary?</td>
+<td>Mean, maximum, total, peak</td>
 </tr>
 </tbody>
 </table>
@@ -329,10 +334,16 @@ characteristic while a counting unit such as QUDT
 salmon”, “stream water”). Maps to <code>entity_iri</code>.</li>
 <li>
 <strong>Constraint</strong>: Optional fixed qualifiers that narrow
-the scope (e.g., “maximum”, “wild-origin only”, “female”, or “spawner
-stage”). Maps to <code>constraint_iri</code>; multiple constraint IRIs
-are separated with semicolons. Row-varying values belong in table
-dimensions rather than being repeated as fixed column constraints.</li>
+the scope (e.g., “wild-origin only”, “female”, or “spawner stage”). Maps
+to <code>constraint_iri</code>; multiple constraint IRIs are separated
+with semicolons. Row-varying values belong in table dimensions rather
+than being repeated as fixed column constraints.</li>
+<li>
+<strong>Statistical modifier</strong>: The aggregation or summary
+that is part of what the column <em>is</em> (e.g., a <em>mean</em>
+weight and a <em>maximum</em> weight are different variables). Maps to
+<code>statistical_modifier_iri</code>. Only aggregated or summarised
+columns carry one.</li>
 </ul>
 </div>
 <div class="section level3">
@@ -343,9 +354,15 @@ you’ll also need to record the <strong>units</strong> (how the
 measurement is expressed). metasalmon includes <code>unit_iri</code> for
 this purpose, typically linking to vocabularies like QUDT.</p>
 <p><strong>Note</strong>: Method (how the measurement was made) is
-important metadata but is not part of the I-ADOPT framework itself. You
-can document methods in your column descriptions or other metadata
-fields.</p>
+important metadata but is not part of the variable’s identity, so it is
+never a dictionary column. Since sdp-0.3.0 it has three exact
+placements: a procedure shared by a whole table goes in
+<code>tables.csv</code> <code>method_iri</code>, a protocol citation
+goes in <code>protocol_iri</code>/<code>protocol_citation</code> on
+<code>tables.csv</code> or <code>dataset.csv</code>, and a method that
+varies row by row lives in the data itself as a code column whose values
+resolve through <code>codes.csv</code> <code>term_iri</code> to
+shared-vocabulary procedures.</p>
 </div>
 </div>
 <div class="section level2">

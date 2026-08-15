@@ -35,12 +35,14 @@ collation_sensitive_fns <- c(
   # Exported tables whose row order is part of the return value
   "nuseds_enumeration_method_crosswalk",
   "nuseds_estimate_method_crosswalk",
-  # SDP v0.2 extension normalizers: their output IS the canonical row order
-  # written to metadata/methods.csv and metadata/structure/observation_*.csv
-  ".ms_sdp_methods_normalize",
+  # SDP extension normalizers: their output IS the canonical row order
+  # written to metadata/structure/observation_*.csv
   ".ms_sdp_observation_normalize_structures",
   ".ms_sdp_observation_normalize_components",
   "extract_sdp_observations",
+  # Exported: rewrites tables.csv/column_dictionary.csv/dataset.csv and the
+  # descriptor bytes, and sorts column names into its placement report.
+  "migrate_sdp_methods",
   # Reproducibility manifest artifact inventory
   ".ms_sdp_reproducibility_artifact_paths",
   # Canonical row order for the measurement-decomposition CSV and its hash, and
@@ -49,6 +51,11 @@ collation_sensitive_fns <- c(
   # silently restore locale-dependent bytes.
   ".ms_sdp_decomposition_normalize_rows",
   ".ms_eml_supplementary_objects",
+  # Returned as `used_methods` and written verbatim into EML paragraphs.
+  ".ms_eml_used_procedures",
+  # Drives methodStep emission, so its order reaches the exported EML bytes
+  # and the returned `methods` tibble.
+  ".ms_eml_sdp_method_placements",
   # Exported: the returned `dwc_mappings` attribute carries this row order.
   "suggest_dwc_mappings",
   ".ms_dwc_rank_mappings",

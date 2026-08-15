@@ -103,7 +103,7 @@ dict <- tibble::tibble(
   property_iri = NA_character_,
   entity_iri = NA_character_,
   constraint_iri = NA_character_,
-  method_iri = NA_character_
+  statistical_modifier_iri = NA_character_
 )
 
 chat_decomposition(dict, column_name = "spawner_count")

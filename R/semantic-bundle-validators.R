@@ -128,6 +128,38 @@
   )
 }
 
+.ms_semantic_validator_has_modifier_evidence <- function(evidence_text) {
+  text <- .ms_semantic_validator_text(evidence_text)
+  if (!nzchar(text)) {
+    return(FALSE)
+  }
+  # Underscores are not word boundaries, so `mean_weight` needs splitting.
+  grepl(
+    "\\b(mean|average|median|max|maximum|min|minimum|total|cumulative|sum|peak|aggregate|aggregated)\\b",
+    gsub("[_.]", " ", text),
+    perl = TRUE
+  )
+}
+
+# The dictionary's statistical modifier is part of variable identity, so an
+# accept needs the column itself to name an aggregation. Without this, an
+# unsupported modifier silently changes what the variable means.
+.ms_validate_semantic_modifier_evidence <- function(role, evidence_text) {
+  if (!identical(role, "statistical_modifier") ||
+      .ms_semantic_validator_has_modifier_evidence(evidence_text)) {
+    return(.ms_empty_semantic_validator_findings())
+  }
+
+  .ms_semantic_validator_finding(
+    code = "SEM_MODIFIER_EVIDENCE_REQUIRED",
+    role = role,
+    message = paste(
+      "The accepted statistical-modifier candidate lacks explicit",
+      "aggregation evidence (mean, median, maximum, minimum, total, or peak)."
+    )
+  )
+}
+
 .ms_semantic_validator_has_constraint_evidence <- function(evidence_text) {
   text <- .ms_semantic_validator_text(evidence_text)
   if (!nzchar(text)) {
@@ -748,6 +780,7 @@
     row_findings <- dplyr::bind_rows(
       .ms_validate_semantic_method_evidence(role, evidence_text),
       .ms_validate_semantic_constraint_evidence(role, evidence_text),
+      .ms_validate_semantic_modifier_evidence(role, evidence_text),
       .ms_validate_semantic_role_type(role, candidate),
       .ms_validate_semantic_dimension(role, candidate, dict_row),
       .ms_validate_semantic_property_unit_pair(

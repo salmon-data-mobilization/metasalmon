@@ -273,7 +273,7 @@
     entity_iri = "entity",
     unit_iri = "unit",
     constraint_iri = "constraint",
-    method_iri = "method"
+    statistical_modifier_iri = "statistical_modifier"
   )
   target_cols <- .ms_semantic_target_cols()
 
@@ -512,6 +512,10 @@
     if (!nzchar(base_query)) return("")
 
     base_lower <- tolower(base_query)
+    # The full column text, for evidence checks that must not depend on which
+    # single field won the query-preference order: `mean_temperature` with a
+    # description that never says "mean" still names its aggregation.
+    all_text_lower <- tolower(paste(desc_query, label_query, name_query))
     ctx <- table_context(row, dict)
 
     if (identical(role_name, "unit")) {
@@ -537,11 +541,20 @@
       return(base_query)
     }
 
-    if (identical(role_name, "method")) {
-      if (context_has(ctx, "method")) {
-        return("estimate method")
-      }
-      return(base_query)
+    if (identical(role_name, "statistical_modifier")) {
+      # Part of variable identity, and deliberately conservative: a
+      # statistical-modifier target is emitted only when the column text
+      # names an aggregation, so plain measurements do not gain a slot.
+      # Checked across name, label, AND description — the aggregation is
+      # often only in the column name (`mean_temperature`), and underscores
+      # do not form \b word boundaries, so they are split first.
+      modifier_text <- gsub("[_.]", " ", all_text_lower)
+      if (grepl("\\b(total|cumulative|sum)\\b", modifier_text)) return("total")
+      if (grepl("\\b(mean|average)\\b", modifier_text)) return("mean")
+      if (grepl("\\bmax(imum)?\\b", modifier_text)) return("maximum")
+      if (grepl("\\bmin(imum)?\\b", modifier_text)) return("minimum")
+      if (grepl("\\bpeak\\b", modifier_text)) return("peak")
+      return("")
     }
 
     if (identical(role_name, "entity")) {
@@ -922,7 +935,27 @@
       parent_label <- if (nrow(parent_row) > 0 && "column_label" %in% names(parent_row)) parent_row$column_label[[1]] else column_name
       parent_description <- if (nrow(parent_row) > 0 && "column_description" %in% names(parent_row)) parent_row$column_description[[1]] else NA_character_
 
-      role_set <- if (identical(parent_role, "measurement")) c("constraint", "entity", "method") else c("entity")
+      # A procedure column's codes ARE the row-varying methods — the only
+      # method placement left in the data under sdp-0.3.0 — so its codes get
+      # method candidates even though the column itself is not a measurement.
+      parent_names_procedure <- grepl(
+        # Stems need `\\w*`: `\\b(estimat)\\b` cannot match "estimation",
+        # which is exactly the column naming this is meant to catch.
+        "\\b(method|protocol|procedure|gear|estimat\\w*|enumerat\\w*|technique|survey type)\\b",
+        tolower(paste(
+          gsub("[_.]", " ", as.character(column_name %||% "")),
+          as.character(parent_label %||% ""),
+          as.character(parent_description %||% "")
+        )),
+        perl = TRUE
+      )
+      role_set <- if (identical(parent_role, "measurement")) {
+        c("constraint", "entity", "method")
+      } else if (parent_names_procedure) {
+        c("method")
+      } else {
+        c("entity")
+      }
       query <- clean_query(first_non_empty(list(code_description, code_label, code_value, parent_description, parent_label, column_name)))
       if (!nzchar(query)) return(tibble::tibble())
 

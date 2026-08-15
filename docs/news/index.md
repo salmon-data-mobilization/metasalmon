@@ -1,5 +1,111 @@
 # Changelog
 
+## metasalmon 0.3.0
+
+Roadmap S8, second half: the sdp-0.3.0 method placement model. A method
+describes how a value was produced; it was never part of what the value
+*is*, and the old placements let the two blur. This release implements
+the spec that separates them.
+
+### Breaking changes
+
+- **`column_dictionary.csv` loses `method_iri` and gains
+  `statistical_modifier_iri`.** A statistical modifier (I-ADOPT
+  `StatisticalModifier`) is part of variable identity — a *mean* weight
+  and a *maximum* weight are different variables — so it belongs in the
+  dictionary. A method never was: a procedure shared by a whole table
+  now lives in `tables.csv` `method_iri`, protocols are cited through
+  `protocol_iri` / `protocol_citation` on `tables.csv` and
+  `dataset.csv`, and a method that varies row by row lives in the data
+  as a code column resolving through `codes.csv` `term_iri` to
+  shared-vocabulary procedures.
+
+- **The `metadata/methods.csv` registry is gone**, and
+  `write_sdp_methods()`, `read_sdp_methods()`, and
+  `validate_sdp_methods()` are removed with it. Method labels and
+  descriptions belong in the shared vocabulary, not in per-package
+  registries that restate it. Every surface that consumed the registry —
+  observation-structure validation, EML method steps, KNB publication —
+  now reads the new placements, and a package still carrying a
+  `methods.csv` gets an error pointing at the migration.
+
+- **[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+  migrates sdp-0.2.0 packages.** It relocates what can be relocated
+  mechanically and **stops and reports** on anything needing a judgement
+  call: columns of one table bound to different methods stop the
+  migration (you decide whether to split the table, cite a protocol, or
+  move the method into the data); unresolved `REVIEW:` bindings are
+  dropped and reported; registry labels are reported toward the shared
+  vocabulary. The rewrite is atomic — on any stop, nothing on disk
+  changes. Descriptor-only packages are handled too: the legacy
+  `iAdopt:methodIri` custom key is read by the migration (and only by
+  the migration).
+
+- **The semantic pipeline reviews a statistical-modifier slot instead of
+  a method slot.** Measurement bundles carry variable, property, entity,
+  unit, constraint, and statistical modifier; a statistical-modifier
+  target is emitted only when the column text names an aggregation
+  (mean, maximum, total, peak), so plain measurements do not gain review
+  volume. The code-level method role survives — codes still resolve to
+  shared `sosa:Procedure` concepts — and
+  `sources_for_role("statistical_modifier")` searches SMN and OLS.
+  Measurement decompositions drop the `method` component role for the
+  same reason the dictionary did: a decomposition row binds one
+  variable’s identity, and a row-varying procedure would pin an
+  arbitrary one.
+
+- **EML method steps now come from the placements.** Table-level method
+  and protocol fields and dataset-level protocol fields each emit a
+  method step, and row-varying procedures actually used by the data are
+  listed from their code resolutions. The
+  [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  return value’s `methods` is now the placements tibble and
+  `used_methods` the used-procedure IRIs. Every vocabulary IRI the
+  method path emits stays inside the reviewed closure: a table-level
+  `method_iri` needs an accepted semantic-review ledger row, and
+  table-level and used row-varying procedure IRIs must appear in the
+  vocabulary snapshot. Protocol IRIs are citations, not vocabulary
+  terms, and are not gated.
+
+### Fixed
+
+- **The statistical-modifier slot can actually be filled from smn.** The
+  role-hint vocabulary never learned the new role, so every genuine
+  modifier concept — they live in smn’s controlled-vocabularies module —
+  reached review carrying only a `constraint` hint, and the
+  deterministic role-type validator downgraded 100% of correct accepts
+  to `review`. Both hint builders now emit `statistical_modifier`,
+  [`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)’s
+  companion index filter gained the matching case (it previously fell
+  through to “keep the whole ontology”), and a new
+  `SEM_MODIFIER_EVIDENCE_REQUIRED` validator holds an accept to the same
+  aggregation evidence the suggestion path requires.
+
+- [`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+  hardening found in review: two carriers disagreeing about one column’s
+  method now stop the migration instead of the dictionary silently
+  winning and the descriptor’s IRI being erased; bindings that name an
+  undeclared table, or that carry no table/column, stop before any write
+  rather than reporting a placement that lands nowhere; `dry_run`
+  rejects non-logical input (`isTRUE(1)` is `FALSE`, so a truthy
+  non-logical would have taken the destructive branch).
+
+- A failed rollback inside the shared atomic writer no longer deletes
+  the backup holding the original bytes, and the warning now names that
+  file.
+
+- The bundled `column_dictionary.csv` template had unquoted commas in
+  two descriptions, so every field after them shifted and the rows
+  parsed into schema-invalid `column_role`/`value_type` values.
+  Pre-existing since the template was added; the descriptions are now
+  quoted.
+
+- The default remote SDP schema source is pinned to the spec release tag
+  the package implements (now `sdp-0.3.0`) instead of the upstream
+  `main` branch, so an upstream spec release can no longer break
+  networked schema loads. The `metasalmon.sdp_schema_base_url` option
+  still overrides it.
+
 ## metasalmon 0.2.6
 
 Roadmap S8, first half: the tidy-data foundations the method placement
