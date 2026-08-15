@@ -140,7 +140,11 @@
       protocol_citation = character()
     ))
   }
-  dplyr::bind_rows(placements)
+  # Canonical order: these rows drive methodStep emission, so tables.csv row
+  # order would otherwise reach the exported XML bytes and the returned
+  # `methods` tibble.
+  placements <- dplyr::bind_rows(placements)
+  placements[order(placements$scope, method = "radix"), , drop = FALSE]
 }
 
 # Row-varying procedures actually used by the data: enumerated

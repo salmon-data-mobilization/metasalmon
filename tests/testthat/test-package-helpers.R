@@ -3828,3 +3828,53 @@ test_that("a primary key with missing values is rejected", {
     "missing values"
   )
 })
+
+test_that("a table or dataset placement that is not an absolute IRI is reported", {
+  # sdp-0.3.0 moved methods and protocols onto tables.csv/dataset.csv. The
+  # base schema accepts any string and the observation-structure validator
+  # only runs when the optional sidecars exist, so without a dedicated check
+  # `methods/weir-count` validated cleanly.
+  root <- withr::local_tempdir()
+  suppressMessages(create_sdp(
+    list(t1 = tibble::tibble(a = c("x", "y"), n = c(1, 2))),
+    path = root,
+    dataset_id = "d1",
+    seed_semantics = FALSE,
+    seed_verbose = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  ))
+
+  tables_path <- file.path(root, "metadata", "tables.csv")
+  tables <- .ms_read_metadata_csv(tables_path)
+  tables$method_iri <- "methods/weir-count"
+  readr::write_csv(tables, tables_path, na = "")
+
+  issues <- .ms_collect_placement_iri_issues(
+    .ms_read_metadata_csv(tables_path),
+    source_name = "metadata/tables.csv",
+    id_fields = c("table_id", "file_name")
+  )
+  expect_equal(nrow(issues), 1L)
+  expect_match(issues$message[[1]], "method_iri is not an absolute IRI")
+
+  # An absolute IRI and a REVIEW marker are both left to their own paths.
+  tables$method_iri <- "https://w3id.org/smn/WeirCount"
+  expect_equal(
+    nrow(.ms_collect_placement_iri_issues(
+      tables,
+      source_name = "metadata/tables.csv",
+      id_fields = "table_id"
+    )),
+    0L
+  )
+  tables$method_iri <- "REVIEW: https://w3id.org/smn/WeirCount"
+  expect_equal(
+    nrow(.ms_collect_placement_iri_issues(
+      tables,
+      source_name = "metadata/tables.csv",
+      id_fields = "table_id"
+    )),
+    0L
+  )
+})

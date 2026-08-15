@@ -72,6 +72,14 @@ separates them.
   holds an accept to the same aggregation evidence the suggestion path
   requires.
 
+- **A table or dataset method/protocol placement that is not an absolute IRI
+  is now reported.** Moving methods onto `tables.csv` and `dataset.csv` meant
+  those fields needed the IRI-shape check the dictionary columns already had:
+  the Frictionless schema accepts any string, and the validator that does
+  check IRI shape only runs when the optional observation-structure sidecars
+  exist. A table could therefore claim `methods/weir-count` and validate with
+  zero issues.
+
 - `migrate_sdp_methods()` hardening found in review: two carriers disagreeing
   about one column's method now stop the migration instead of the dictionary
   silently winning and the descriptor's IRI being erased; bindings that name

@@ -218,6 +218,16 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
 
   review_marked <- grepl("^REVIEW:", bindings$method_iri, ignore.case = TRUE)
   dropped_review <- bindings[review_marked, , drop = FALSE]
+  # Canonical order: `dropped_review` is part of the exported report.
+  dropped_review <- dropped_review[
+    order(
+      dropped_review$table_id,
+      dropped_review$column_name,
+      dropped_review$method_iri,
+      method = "radix"
+    ), ,
+    drop = FALSE
+  ]
   bindings <- bindings[!review_marked, , drop = FALSE]
 
   # "Nothing to migrate" means the package already has the v0.3 shape.

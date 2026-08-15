@@ -1588,6 +1588,48 @@ read_salmon_datapackage <- function(path) {
   )
 }
 
+# sdp-0.3.0 moved methods and protocols onto tables.csv and dataset.csv, so
+# those fields need the same absolute-IRI check the dictionary's IRI columns
+# get. Without it a table could claim `methods/weir-count` and validate
+# cleanly: the base schema accepts any string, and the observation-structure
+# validator that does check IRI shape only runs when the optional structure
+# sidecars exist.
+.ms_collect_placement_iri_issues <- function(meta, source_name, id_fields,
+                                             fields = c("method_iri", "protocol_iri")) {
+  if (!is.data.frame(meta) || nrow(meta) == 0) {
+    return(tibble::tibble())
+  }
+  present <- intersect(fields, names(meta))
+  if (length(present) == 0) {
+    return(tibble::tibble())
+  }
+
+  messages <- character()
+  for (field in present) {
+    vals <- as.character(meta[[field]])
+    populated <- !is.na(vals) & nzchar(trimws(vals))
+    # `REVIEW:` markers have their own dedicated reporting path.
+    invalid <- which(
+      populated &
+        !grepl("^REVIEW:", trimws(vals), ignore.case = TRUE) &
+        !.ms_sdp_extension_is_absolute_iri(vals)
+    )
+    for (row in invalid) {
+      messages <- c(messages, sprintf(
+        "%s %s field %s is not an absolute IRI: '%s'.",
+        source_name,
+        .ms_validation_row_context(meta, row, id_fields = id_fields),
+        field,
+        trimws(vals[[row]])
+      ))
+    }
+  }
+  if (length(messages) == 0) {
+    return(tibble::tibble())
+  }
+  tibble::tibble(message = messages)
+}
+
 #' Validate a Salmon Data Package end to end
 #'
 #' Reads a package from disk, checks that metadata/data files stay aligned,
@@ -1656,6 +1698,24 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   table_review_issues <- .ms_collect_review_iri_issues(pkg$tables, source_name = "metadata/tables.csv")
   if (nrow(table_review_issues) > 0) {
     semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, table_review_issues)
+  }
+  # Unconditional: a method or protocol placement that is not an absolute IRI
+  # is malformed in every validation mode, not only under `require_iris`.
+  placement_issues <- dplyr::bind_rows(
+    .ms_collect_placement_iri_issues(
+      pkg$tables,
+      source_name = "metadata/tables.csv",
+      id_fields = c("table_id", "file_name")
+    ),
+    .ms_collect_placement_iri_issues(
+      pkg$dataset,
+      source_name = "metadata/dataset.csv",
+      id_fields = "dataset_id",
+      fields = "protocol_iri"
+    )
+  )
+  if (nrow(placement_issues) > 0) {
+    semantic_validation$issues <- dplyr::bind_rows(semantic_validation$issues, placement_issues)
   }
 
   if (isTRUE(require_iris)) {

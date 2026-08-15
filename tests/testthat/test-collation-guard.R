@@ -53,6 +53,9 @@ collation_sensitive_fns <- c(
   ".ms_eml_supplementary_objects",
   # Returned as `used_methods` and written verbatim into EML paragraphs.
   ".ms_eml_used_procedures",
+  # Drives methodStep emission, so its order reaches the exported EML bytes
+  # and the returned `methods` tibble.
+  ".ms_eml_sdp_method_placements",
   # Exported: the returned `dwc_mappings` attribute carries this row order.
   "suggest_dwc_mappings",
   ".ms_dwc_rank_mappings",
