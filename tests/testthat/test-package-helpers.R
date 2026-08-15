@@ -3878,3 +3878,40 @@ test_that("a table or dataset placement that is not an absolute IRI is reported"
     0L
   )
 })
+
+test_that("a malformed placement IRI warns by default and blocks strict validation", {
+  # A malformed placement is worse than an unreviewed one, so strict
+  # validation must block it exactly as it blocks a REVIEW: marker.
+  root <- withr::local_tempdir()
+  suppressMessages(create_sdp(
+    list(t1 = tibble::tibble(a = c("x", "y"), n = c(1, 2))),
+    path = root,
+    dataset_id = "d1",
+    seed_semantics = FALSE,
+    seed_verbose = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  ))
+  tables_path <- file.path(root, "metadata", "tables.csv")
+  tables <- .ms_read_metadata_csv(tables_path)
+  # Braces included: the message carries user CSV text into cli.
+  tables$method_iri <- "methods/weir{count"
+  readr::write_csv(tables, tables_path, na = "")
+
+  result <- suppressMessages(suppressWarnings(
+    validate_salmon_datapackage(root)
+  ))
+  expect_true(nrow(result$semantic_validation$issues) > 0)
+  expect_true(any(grepl(
+    "method_iri is not an absolute IRI",
+    result$semantic_validation$issues$message,
+    fixed = TRUE
+  )))
+
+  expect_error(
+    suppressMessages(suppressWarnings(
+      validate_salmon_datapackage(root, require_iris = TRUE)
+    )),
+    "Final validation failed"
+  )
+})

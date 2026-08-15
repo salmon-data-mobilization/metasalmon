@@ -1719,7 +1719,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   if (isTRUE(require_iris)) {
-    final_review_issues <- dplyr::bind_rows(final_review_issues, table_review_issues)
+    # A malformed placement IRI is worse than an unreviewed one: strict
+    # validation must block it, exactly as it blocks a REVIEW: marker.
+    final_review_issues <- dplyr::bind_rows(
+      final_review_issues,
+      table_review_issues,
+      placement_issues
+    )
   }
 
   if (isTRUE(require_iris) && nrow(final_review_issues) > 0) {
