@@ -15,7 +15,7 @@ mappings. Supplying decompositions = NULL is an explicit no-op."><meta property=
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,8 +99,8 @@ measurement row in <code>metadata/column_dictionary.csv</code>.</p></li>
 <li><p><code>measurement_concept_iri</code> must exactly equal that dictionary row's
 <code>term_iri</code>.</p></li>
 <li><p><code>component_order</code> is a positive, contiguous, per-measurement sequence.</p></li>
-<li><p><code>component_role</code> is one of <code>property</code>, <code>entity</code>, <code>constraint</code>, <code>method</code>, or
-<code>unit</code>; repeated roles are allowed.</p></li>
+<li><p><code>component_role</code> is one of <code>property</code>, <code>entity</code>, <code>constraint</code>,
+<code>statistical_modifier</code>, or <code>unit</code>; repeated roles are allowed.</p></li>
 <li><p><code>component_status</code> is <code>matched</code> or <code>gap</code>. A matched row requires an
 absolute <code>component_iri</code>. A gap requires a blank <code>component_iri</code> plus a
 non-empty <code>component_label</code> and <code>rationale</code>.</p></li>
@@ -113,7 +113,7 @@ two constraints.</p></li>
 pinned source and review evidence. <code>component_label</code> and <code>rationale</code>
 preserve caller-supplied text; they are never tokenized or inferred.</p></li>
 </ul><p>Every non-empty dictionary <code>property_iri</code>, <code>entity_iri</code>, <code>constraint_iri</code>,
-<code>method_iri</code>, and <code>unit_iri</code> must appear as a matched component of the same
+<code>statistical_modifier_iri</code>, and <code>unit_iri</code> must appear as a matched component of the same
 role. Semicolon-separated dictionary constraints are checked separately.
 Additional same-role components and explicit gaps stay only in this
 artifact, leaving the frozen SDP dictionary columns unchanged. This is an

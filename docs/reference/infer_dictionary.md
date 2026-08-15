@@ -162,10 +162,10 @@ infer_dictionary(
 A tibble with dictionary schema columns in canonical Salmon Data Package
 order: `dataset_id`, `table_id`, `column_name`, `column_label`,
 `column_description`, `term_iri`, `property_iri`, `entity_iri`,
-`constraint_iri`, `method_iri`, `unit_label`, `unit_iri`, `term_type`,
-`value_type`, `column_role`, `required`. With semantic seeding,
-suggestions are attached as `semantic_suggestions`; with explicit LLM
-review, the 30-column target summaries are attached as
+`constraint_iri`, `statistical_modifier_iri`, `unit_label`, `unit_iri`,
+`term_type`, `value_type`, `column_role`, `required`. With semantic
+seeding, suggestions are attached as `semantic_suggestions`; with
+explicit LLM review, the 30-column target summaries are attached as
 `semantic_llm_assessments`.
 
 ## Examples

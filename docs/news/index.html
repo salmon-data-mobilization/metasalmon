@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +43,22 @@
       <small>Source: <a href="https://github.com/salmon-data-mobilization/metasalmon/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.3.0" id="metasalmon-030">metasalmon 0.3.0<a class="anchor" aria-label="anchor" href="#metasalmon-030"></a></h2>
+<p>Roadmap S8, second half: the sdp-0.3.0 method placement model. A method describes how a value was produced; it was never part of what the value <em>is</em>, and the old placements let the two blur. This release implements the spec that separates them.</p>
+<div class="section level3">
+<h3 id="breaking-changes-0-3-0">Breaking changes<a class="anchor" aria-label="anchor" href="#breaking-changes-0-3-0"></a></h3>
+<ul><li><p><strong><code>column_dictionary.csv</code> loses <code>method_iri</code> and gains <code>statistical_modifier_iri</code>.</strong> A statistical modifier (I-ADOPT <code>StatisticalModifier</code>) is part of variable identity — a <em>mean</em> weight and a <em>maximum</em> weight are different variables — so it belongs in the dictionary. A method never was: a procedure shared by a whole table now lives in <code>tables.csv</code> <code>method_iri</code>, protocols are cited through <code>protocol_iri</code> / <code>protocol_citation</code> on <code>tables.csv</code> and <code>dataset.csv</code>, and a method that varies row by row lives in the data as a code column resolving through <code>codes.csv</code> <code>term_iri</code> to shared-vocabulary procedures.</p></li>
+<li><p><strong>The <code>metadata/methods.csv</code> registry is gone</strong>, and <code>write_sdp_methods()</code>, <code>read_sdp_methods()</code>, and <code>validate_sdp_methods()</code> are removed with it. Method labels and descriptions belong in the shared vocabulary, not in per-package registries that restate it. Every surface that consumed the registry — observation-structure validation, EML method steps, KNB publication — now reads the new placements, and a package still carrying a <code>methods.csv</code> gets an error pointing at the migration.</p></li>
+<li><p><strong><code><a href="../reference/migrate_sdp_methods.html">migrate_sdp_methods()</a></code> migrates sdp-0.2.0 packages.</strong> It relocates what can be relocated mechanically and <strong>stops and reports</strong> on anything needing a judgement call: columns of one table bound to different methods stop the migration (you decide whether to split the table, cite a protocol, or move the method into the data); unresolved <code>REVIEW:</code> bindings are dropped and reported; registry labels are reported toward the shared vocabulary. The rewrite is atomic — on any stop, nothing on disk changes. Descriptor-only packages are handled too: the legacy <code>iAdopt:methodIri</code> custom key is read by the migration (and only by the migration).</p></li>
+<li><p><strong>The semantic pipeline reviews a statistical-modifier slot instead of a method slot.</strong> Measurement bundles carry variable, property, entity, unit, constraint, and statistical modifier; a statistical-modifier target is emitted only when the column text names an aggregation (mean, maximum, total, peak), so plain measurements do not gain review volume. The code-level method role survives — codes still resolve to shared <code>sosa:Procedure</code> concepts — and <code>sources_for_role("statistical_modifier")</code> searches SMN and OLS. Measurement decompositions drop the <code>method</code> component role for the same reason the dictionary did: a decomposition row binds one variable’s identity, and a row-varying procedure would pin an arbitrary one.</p></li>
+<li><p><strong>EML method steps now come from the placements.</strong> Table-level method and protocol fields and dataset-level protocol fields each emit a method step, and row-varying procedures actually used by the data are listed from their code resolutions. The <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> return value’s <code>methods</code> is now the placements tibble and <code>used_methods</code> the used-procedure IRIs.</p></li>
+</ul></div>
+<div class="section level3">
+<h3 id="fixed-0-3-0">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-3-0"></a></h3>
+<ul><li>The default remote SDP schema source is pinned to the spec release tag the package implements (now <code>sdp-0.3.0</code>) instead of the upstream <code>main</code> branch, so an upstream spec release can no longer break networked schema loads. The <code>metasalmon.sdp_schema_base_url</code> option still overrides it.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.6" id="metasalmon-026">metasalmon 0.2.6<a class="anchor" aria-label="anchor" href="#metasalmon-026"></a></h2>
 <p>Roadmap S8, first half: the tidy-data foundations the method placement model depends on.</p>

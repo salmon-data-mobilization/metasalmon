@@ -56,7 +56,7 @@ apply_semantic_suggestions(
 
   Optional character vector limiting application to specific suggestion
   roles: `"variable"`, `"property"`, `"entity"`, `"unit"`,
-  `"constraint"`, `"method"`.
+  `"constraint"`, `"statistical_modifier"`.
 
 - min_score:
 

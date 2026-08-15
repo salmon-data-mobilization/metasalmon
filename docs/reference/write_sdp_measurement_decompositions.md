@@ -48,7 +48,7 @@ Each row has the following closed schema:
 - `component_order` is a positive, contiguous, per-measurement sequence.
 
 - `component_role` is one of `property`, `entity`, `constraint`,
-  `method`, or `unit`; repeated roles are allowed.
+  `statistical_modifier`, or `unit`; repeated roles are allowed.
 
 - `component_status` is `matched` or `gap`. A matched row requires an
   absolute `component_iri`. A gap requires a blank `component_iri` plus
@@ -66,9 +66,9 @@ Each row has the following closed schema:
   inferred.
 
 Every non-empty dictionary `property_iri`, `entity_iri`,
-`constraint_iri`, `method_iri`, and `unit_iri` must appear as a matched
-component of the same role. Semicolon-separated dictionary constraints
-are checked separately. Additional same-role components and explicit
-gaps stay only in this artifact, leaving the frozen SDP dictionary
-columns unchanged. This is an ordered SDP semantic profile informed by
-I-ADOPT roles, not a claim of native I-ADOPT conformance.
+`constraint_iri`, `statistical_modifier_iri`, and `unit_iri` must appear
+as a matched component of the same role. Semicolon-separated dictionary
+constraints are checked separately. Additional same-role components and
+explicit gaps stay only in this artifact, leaving the frozen SDP
+dictionary columns unchanged. This is an ordered SDP semantic profile
+informed by I-ADOPT roles, not a claim of native I-ADOPT conformance.

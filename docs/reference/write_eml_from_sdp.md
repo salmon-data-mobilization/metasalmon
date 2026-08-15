@@ -4,11 +4,15 @@ Builds deterministic EML 2.2.0 XML from a strictly valid Salmon Data
 Package and an explicit EML mapping sidecar. The sidecar is required
 because EML concepts such as measurement scale, structured parties,
 dataset-level method narrative, and rights cannot be inferred defensibly
-from the canonical SDP tables. When `metadata/methods.csv` is present,
-validated procedures actually bound to observed measurements are emitted
-as method steps with their method and protocol IRIs, descriptions,
-versions, and citations; unreferenced registry alternatives are retained
-in the return value but are not asserted as performed.
+from the canonical SDP tables. Method and protocol placements are read
+from the sdp-0.3.0 fields — `tables.csv` (`method_iri`, `protocol_iri`,
+`protocol_citation`) and `dataset.csv` (`protocol_iri`,
+`protocol_citation`) — and emitted as method steps; row-varying
+procedures actually used by the data are resolved through `codes.csv`
+`term_iri` and listed in a dedicated method step. A legacy
+`metadata/methods.csv` registry is an error: run
+[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+first.
 
 ## Usage
 

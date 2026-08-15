@@ -122,14 +122,15 @@ It answers the question: “What exactly did you measure?”
 
 ### The Core Components
 
-I-ADOPT defines observable properties using four components:
+I-ADOPT defines observable properties using five components:
 
 | Component | Question it answers | Example |
 |----|----|----|
 | **Variable** | What compound concept? | “Sea surface temperature” (the full term) |
 | **Property** | What characteristic? | Temperature or abundance |
 | **Entity** | Of what thing? | Sea surface (water at ocean surface) |
-| **Constraint** | Any qualifiers or limits? | Maximum, daily average, etc. |
+| **Constraint** | Any qualifiers or limits? | Wild-origin only, female, spawner stage |
+| **Statistical modifier** | What aggregation or summary? | Mean, maximum, total, peak |
 
 **Why this matters**: Two researchers might both measure “temperature”
 but mean different things (air vs. water, surface vs. depth). I-ADOPT
@@ -148,10 +149,14 @@ what entity you measured.
 - **Entity**: The thing being measured (e.g., “spawning salmon”, “stream
   water”). Maps to `entity_iri`.
 - **Constraint**: Optional fixed qualifiers that narrow the scope (e.g.,
-  “maximum”, “wild-origin only”, “female”, or “spawner stage”). Maps to
+  “wild-origin only”, “female”, or “spawner stage”). Maps to
   `constraint_iri`; multiple constraint IRIs are separated with
   semicolons. Row-varying values belong in table dimensions rather than
   being repeated as fixed column constraints.
+- **Statistical modifier**: The aggregation or summary that is part of
+  what the column *is* (e.g., a *mean* weight and a *maximum* weight are
+  different variables). Maps to `statistical_modifier_iri`. Only
+  aggregated or summarised columns carry one.
 
 ### Units (Not Part of I-ADOPT Core)
 
@@ -161,8 +166,13 @@ metasalmon includes `unit_iri` for this purpose, typically linking to
 vocabularies like QUDT.
 
 **Note**: Method (how the measurement was made) is important metadata
-but is not part of the I-ADOPT framework itself. You can document
-methods in your column descriptions or other metadata fields.
+but is not part of the variable’s identity, so it is never a dictionary
+column. Since sdp-0.3.0 it has three exact placements: a procedure
+shared by a whole table goes in `tables.csv` `method_iri`, a protocol
+citation goes in `protocol_iri`/`protocol_citation` on `tables.csv` or
+`dataset.csv`, and a method that varies row by row lives in the data
+itself as a code column whose values resolve through `codes.csv`
+`term_iri` to shared-vocabulary procedures.
 
 ## Frictionless Data
 

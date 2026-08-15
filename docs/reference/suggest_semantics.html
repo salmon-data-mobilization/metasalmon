@@ -17,7 +17,7 @@ low-cardinality attributes."><meta property="og:image" content="https://salmon-d
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -122,7 +122,8 @@ Default is <code>FALSE</code> to keep the UI simple for non-DwC users.</p></dd>
 
 <dt id="arg-max-per-role">max_per_role<a class="anchor" aria-label="anchor" href="#arg-max-per-role"></a></dt>
 <dd><p>Maximum number of suggestions to keep per semantic role
-(variable, property, entity, unit, constraint, method) per column. Default
+(variable, property, entity, unit, constraint, statistical_modifier;
+plus method for code values) per column. Default
 is 3.</p></dd>
 
 
@@ -265,7 +266,8 @@ Table-level observation-unit queries ignore review placeholders such as
 <code>MISSING METADATA:</code> and fall back to real table metadata context instead.</p>
 <p>When <code>llm_assess = TRUE</code>, the LLM only judges deterministically retrieved
 candidates; it does not mint new IRIs. Measurement columns are reviewed as
-one bundle spanning variable, property, entity, unit, constraint, and method,
+one bundle spanning variable, property, entity, unit, constraint, and
+statistical modifier (method appears only for code values),
 including empty slots. The public output still contains one assessment row
 per target and positional candidate indexes. If the first shortlist looks
 weak, the package gathers valid retry requests, runs at most one retrieval
@@ -284,7 +286,7 @@ names are disambiguated in <code>llm_context_sources</code>. If a batched provid
 response has malformed, missing, or duplicate target items, valid siblings
 are retained and only affected targets fall back to individual review.
 Deterministic validators can downgrade an unsupported <code>accept</code> to <code>review</code>
-for missing method/constraint evidence, known role/type or dimensional
+for missing statistical-modifier/constraint evidence, known role/type or dimensional
 incompatibility, or a curated redundancy rule. A downgrade clears the
 selection, preserves model confidence as provenance, and never substitutes
 a term or creates an ontology gap.</p>

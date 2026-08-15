@@ -709,12 +709,8 @@ decompositions
 SOSA procedures, measure-specific observation structures, and closed
 reproducibility sidecars
 
-- [`read_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_methods.md)
-  : Read an SDP SOSA procedure registry
-- [`write_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_methods.md)
-  : Write an SDP SOSA procedure registry
-- [`validate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_methods.md)
-  : Validate an SDP SOSA procedure registry
+- [`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+  : Migrate an sdp-0.2.0 package's method metadata to sdp-0.3.0
 - [`read_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_observation_structures.md)
   : Read measure-specific SDP observation structures
 - [`write_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_observation_structures.md)
