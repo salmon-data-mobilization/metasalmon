@@ -394,6 +394,13 @@ test_that("EML method steps come from tables.csv and dataset.csv placements", {
   tables$protocol_citation <-
     "Example Salmon Program. 2026. Mark-recapture protocol."
   readr::write_csv(tables, tables_path, na = "")
+  # The emitted method IRI must be inside the review/vocabulary closure;
+  # the protocol IRIs are citations and deliberately are not.
+  add_table_method_to_review_closure(
+    package_path,
+    "https://example.org/methods/mark-recapture",
+    "Mark-recapture"
+  )
   dataset_path <- file.path(package_path, "metadata", "dataset.csv")
   dataset <- readr::read_csv(
     dataset_path,

@@ -53,6 +53,11 @@ separates them.
   and row-varying procedures actually used by the data are listed from their
   code resolutions. The `write_eml_from_sdp()` return value's `methods` is
   now the placements tibble and `used_methods` the used-procedure IRIs.
+  Every vocabulary IRI the method path emits stays inside the reviewed
+  closure: a table-level `method_iri` needs an accepted semantic-review
+  ledger row, and table-level and used row-varying procedure IRIs must
+  appear in the vocabulary snapshot. Protocol IRIs are citations, not
+  vocabulary terms, and are not gated.
 
 ### Fixed
 

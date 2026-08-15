@@ -427,3 +427,87 @@ test_that("LLM review adapter prefers parsed data over malformed wrapped content
   expect_equal(validated$confidence, 0.44)
   expect_true(is.na(validated$selected_candidate_index))
 })
+
+test_that("procedure-column codes receive method candidates without a measurement parent", {
+  # sdp-0.3.0 makes codes.csv term_iri the ONLY placement for row-varying
+  # procedures, so a `counting_method` column inferred as categorical must
+  # still route its codes to the method search role.
+  dict <- test_dictionary(
+    column_name = "counting_method",
+    column_label = "Counting method",
+    column_description = "How the count was made",
+    column_role = "categorical",
+    value_type = "string"
+  )
+  codes <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "counting_method",
+    code_value = "VISUAL",
+    code_label = "Visual",
+    code_description = "Visual survey",
+    term_iri = NA_character_
+  )
+
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = codes,
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(counting_method = "VISUAL")
+  )
+
+  code_targets <- targets[targets$target_scope == "code", , drop = FALSE]
+  expect_equal(unique(code_targets$dictionary_role), "method")
+
+  # A plain categorical column keeps the entity-only default.
+  dict_plain <- test_dictionary(
+    column_name = "region",
+    column_label = "Region",
+    column_description = "Reporting region",
+    column_role = "categorical",
+    value_type = "string"
+  )
+  codes_plain <- tibble::tibble(
+    dataset_id = "d1",
+    table_id = "t1",
+    column_name = "region",
+    code_value = "FRASER",
+    code_label = "Fraser",
+    code_description = "Fraser river region",
+    term_iri = NA_character_
+  )
+  targets_plain <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict_plain,
+    codes = codes_plain,
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(region = "FRASER")
+  )
+  code_plain <- targets_plain[targets_plain$target_scope == "code", , drop = FALSE]
+  expect_equal(unique(code_plain$dictionary_role), "entity")
+})
+
+test_that("a statistical modifier named only in the column name is detected", {
+  # `mean_temperature` whose description never says "mean": the aggregation
+  # evidence lives in the name/label, and underscores must not hide it.
+  dict <- test_dictionary(
+    column_name = "mean_temperature",
+    column_label = "Mean temperature",
+    column_description = "Water temperature in degrees C",
+    value_type = "number"
+  )
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = tibble::tibble(),
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble(),
+    default_df = tibble::tibble(mean_temperature = 4.2)
+  )
+  modifier <- targets[
+    targets$dictionary_role == "statistical_modifier", ,
+    drop = FALSE
+  ]
+  expect_equal(nrow(modifier), 1L)
+  expect_equal(modifier$search_query, "mean")
+})

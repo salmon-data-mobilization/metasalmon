@@ -51,6 +51,8 @@ collation_sensitive_fns <- c(
   # silently restore locale-dependent bytes.
   ".ms_sdp_decomposition_normalize_rows",
   ".ms_eml_supplementary_objects",
+  # Returned as `used_methods` and written verbatim into EML paragraphs.
+  ".ms_eml_used_procedures",
   # Exported: the returned `dwc_mappings` attribute carries this row order.
   "suggest_dwc_mappings",
   ".ms_dwc_rank_mappings",

@@ -442,3 +442,103 @@ test_that("a package with nothing to migrate is reported as a no-op", {
   expect_null(report$registry)
   expect_identical(lapply(paths, read_file_bytes), before)
 })
+
+test_that("a package with only REVIEW: bindings still migrates to the v0.3 shape", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  dictionary$method_iri[dictionary$column_role == "measurement"] <-
+    "REVIEW: https://example.org/methods/unresolved"
+  readr::write_csv(dictionary, dictionary_path, na = "")
+
+  report <- suppressMessages(migrate_sdp_methods(root))
+
+  expect_gt(nrow(report$dropped_review), 0L)
+  migrated <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  expect_false("method_iri" %in% names(migrated))
+  expect_true("statistical_modifier_iri" %in% names(migrated))
+})
+
+test_that("migration aborts before any writes when the descriptor cannot be parsed", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  add_legacy_registry(root)
+  descriptor_path <- file.path(root, "datapackage.json")
+  writeLines("{ not json", descriptor_path)
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  before <- readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "Could not parse"
+  )
+
+  after <- readBin(dictionary_path, "raw", n = file.info(dictionary_path)$size)
+  expect_identical(before, after)
+  expect_true(file.exists(file.path(root, "metadata", "methods.csv")))
+})
+
+test_that("migration aborts before any writes on a symlinked descriptor", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  add_legacy_registry(root)
+  descriptor_path <- file.path(root, "datapackage.json")
+  real_descriptor <- file.path(root, "datapackage-real.json")
+  file.rename(descriptor_path, real_descriptor)
+  file.symlink(real_descriptor, descriptor_path)
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root)),
+    "symlink"
+  )
+  expect_true(file.exists(file.path(root, "metadata", "methods.csv")))
+})
+
+test_that("a failed metadata rewrite restores the methods registry", {
+  # The registry is renamed aside before the atomic write set; a rewrite
+  # failure must put it back so the package is left exactly as found.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(
+    root,
+    c(abundance = "https://example.org/methods/weir-count")
+  )
+  add_legacy_registry(root)
+  registry_path <- file.path(root, "metadata", "methods.csv")
+  registry_before <- readBin(
+    registry_path, "raw", n = file.info(registry_path)$size
+  )
+  # A symlinked dataset.csv reads fine during the rewrite but makes the
+  # atomic writer refuse the replacement, failing the transaction mid-flight.
+  dataset_path <- file.path(root, "metadata", "dataset.csv")
+  real_dataset <- file.path(root, "metadata", "dataset-real.csv")
+  file.rename(dataset_path, real_dataset)
+  file.symlink(real_dataset, dataset_path)
+
+  expect_error(suppressMessages(migrate_sdp_methods(root)))
+
+  expect_true(file.exists(registry_path))
+  registry_after <- readBin(
+    registry_path, "raw", n = file.info(registry_path)$size
+  )
+  expect_identical(registry_before, registry_after)
+})

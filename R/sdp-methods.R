@@ -73,12 +73,23 @@
     }
   }
 
+  # A descriptor the migration cannot read or safely rewrite is a stop, not a
+  # skip: proceeding would relocate the CSV bindings and delete the registry
+  # while the descriptor keeps claiming the old shape.
   descriptor_path <- file.path(root, "datapackage.json")
-  if (file.exists(descriptor_path) &&
-      !.ms_sdp_extension_is_symlink(descriptor_path)) {
+  if (.ms_sdp_extension_is_symlink(descriptor_path)) {
+    .ms_sdp_extension_abort(
+      "Refusing symlinked {.file datapackage.json}; migration must be able to rewrite the descriptor."
+    )
+  }
+  if (file.exists(descriptor_path)) {
     descriptor <- tryCatch(
       jsonlite::read_json(descriptor_path, simplifyVector = FALSE),
-      error = function(error) NULL
+      error = function(error) {
+        .ms_sdp_extension_abort(
+          "Could not parse {.file datapackage.json}: {conditionMessage(error)}"
+        )
+      }
     )
     rows <- list()
     for (resource in descriptor$resources %||% list()) {
@@ -168,7 +179,17 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   dropped_review <- bindings[review_marked, , drop = FALSE]
   bindings <- bindings[!review_marked, , drop = FALSE]
 
-  if (nrow(bindings) == 0L && is.null(registry)) {
+  # "Nothing to migrate" means the package already has the v0.3 shape.
+  # REVIEW:-only bindings and a lingering dictionary method_iri column both
+  # still require the rewrite, or the obsolete schema would survive the run
+  # that reported dropping its values.
+  dictionary_probe_path <- file.path(root, "metadata", "column_dictionary.csv")
+  dictionary_has_method_column <-
+    file.exists(dictionary_probe_path) &&
+    !dir.exists(dictionary_probe_path) &&
+    "method_iri" %in% names(.ms_read_metadata_csv(dictionary_probe_path))
+  if (nrow(bindings) == 0L && nrow(dropped_review) == 0L &&
+      is.null(registry) && !dictionary_has_method_column) {
     cli::cli_inform("Nothing to migrate: no method bindings and no {.file metadata/methods.csv}.")
     return(invisible(list(
       tables = tibble::tibble(table_id = character(), method_iri = character()),
@@ -321,12 +342,17 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
     writes[[dataset_path]] <- .ms_sdp_extension_csv_bytes(dataset)
   }
 
+  # The gather phase already aborted on a symlinked or unparseable
+  # descriptor, so reaching here means it is safe to rewrite.
   descriptor_path <- file.path(root, "datapackage.json")
-  if (file.exists(descriptor_path) &&
-      !.ms_sdp_extension_is_symlink(descriptor_path)) {
+  if (file.exists(descriptor_path)) {
     descriptor <- tryCatch(
       jsonlite::read_json(descriptor_path, simplifyVector = FALSE),
-      error = function(error) NULL
+      error = function(error) {
+        .ms_sdp_extension_abort(
+          "Could not parse {.file datapackage.json}: {conditionMessage(error)}"
+        )
+      }
     )
     if (!is.null(descriptor)) {
       sdp_schema <- .ms_load_sdp_schema(quiet = TRUE)
@@ -361,17 +387,41 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
     }
   }
 
-  if (length(writes) > 0L) {
-    .ms_sdp_extension_atomic_write_set(writes)
-  }
-
+  # Registry removal is part of the transaction: the registry is renamed
+  # aside BEFORE the metadata rewrite, restored if the rewrite fails, and
+  # discarded only after it succeeds. A package can therefore never end up
+  # with v0.3 metadata beside a registry that v0.3 validation rejects.
   registry_path <- file.path(root, .ms_sdp_methods_path)
+  registry_backup <- NA_character_
   if (file.exists(registry_path)) {
-    if (unlink(registry_path) != 0L) {
-      cli::cli_warn(
-        "Could not remove {.file metadata/methods.csv}; delete it by hand."
+    registry_backup <- tempfile(
+      pattern = ".methods.csv-migrate-",
+      tmpdir = dirname(registry_path)
+    )
+    if (!file.rename(registry_path, registry_backup)) {
+      .ms_sdp_extension_abort(
+        "Could not remove {.file metadata/methods.csv}; migration aborted before any changes."
       )
     }
+  }
+
+  if (length(writes) > 0L) {
+    tryCatch(
+      .ms_sdp_extension_atomic_write_set(writes),
+      error = function(error) {
+        if (!is.na(registry_backup) && file.exists(registry_backup)) {
+          if (!file.rename(registry_backup, registry_path)) {
+            cli::cli_warn(
+              "Could not restore {.file metadata/methods.csv} after a failed migration; recover it from {.file {basename(registry_backup)}}."
+            )
+          }
+        }
+        stop(error)
+      }
+    )
+  }
+  if (!is.na(registry_backup) && file.exists(registry_backup)) {
+    unlink(registry_backup)
   }
 
   cli::cli_inform(c(

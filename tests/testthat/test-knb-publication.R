@@ -164,6 +164,11 @@ make_knb_test_methods_and_structure <- function(path) {
   tables$protocol_citation <-
     "Example Salmon Program. 2026. Count compilation."
   readr::write_csv(tables, tables_path, na = "")
+  add_table_method_to_review_closure(
+    path,
+    "https://example.org/methods/count-compilation",
+    "Count compilation"
+  )
   structures <- tibble::tibble(
     dataset_id = "demo-salmon-2026",
     table_id = "counts",

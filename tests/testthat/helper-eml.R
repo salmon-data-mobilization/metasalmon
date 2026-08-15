@@ -287,3 +287,76 @@ make_eml_test_sdp <- function(path,
 
   invisible(path)
 }
+
+# Extends a fixture package's review closure for a table-level method_iri:
+# appends the vocabulary row and the accepted table-scope ledger row, then
+# refreshes the mapping sidecar's hashes. Mirrors what a real reviewer does
+# when they place a table-constant procedure under sdp-0.3.0.
+add_table_method_to_review_closure <- function(path,
+                                               method_iri,
+                                               method_label,
+                                               table_id = "counts",
+                                               dataset_id = "demo-salmon-2026") {
+  vocabulary_path <- file.path(path, "metadata", "semantic_vocabulary.csv")
+  vocabulary <- readr::read_csv(
+    vocabulary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  method_row <- tibble::tibble(
+    iri = method_iri,
+    label = method_label,
+    definition = "A reviewed shared-vocabulary procedure.",
+    source = "smn",
+    ontology = "smn",
+    resource_kind = "Concept",
+    type_iris = "http://www.w3.org/ns/sosa/Procedure",
+    native_type = "skos:Concept",
+    source_url = "https://w3id.org/smn/",
+    source_artifact_sha256 = paste(rep("3", 64), collapse = "")
+  )
+  method_row$reviewed_snapshot_sha256 <-
+    .ms_eml_vocabulary_snapshot_sha256(method_row)
+  vocabulary <- dplyr::bind_rows(
+    vocabulary[, names(method_row), drop = FALSE],
+    method_row
+  )
+  readr::write_csv(vocabulary, vocabulary_path, na = "")
+
+  review_path <- file.path(path, "reviewed_semantic_selections.csv")
+  review <- readr::read_csv(
+    review_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  review <- dplyr::bind_rows(review, tibble::tibble(
+    dataset_id = dataset_id,
+    table_id = table_id,
+    column_name = "",
+    target_scope = "table",
+    target_sdp_field = "method_iri",
+    dictionary_role = "method",
+    decision = "accepted",
+    confidence = "high",
+    review_rationale = "The table-constant procedure was reviewed.",
+    iri = method_iri
+  ))
+  readr::write_csv(review, review_path, na = "")
+
+  mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
+  mapping <- yaml::read_yaml(mapping_path)
+  mapping$semantic_vocabulary$sha256 <- digest::digest(
+    file = vocabulary_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  mapping$semantic_review$sha256 <- digest::digest(
+    file = review_path,
+    algo = "sha256",
+    serialize = FALSE
+  )
+  yaml::write_yaml(mapping, mapping_path)
+  invisible(path)
+}

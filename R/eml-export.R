@@ -193,7 +193,10 @@
     }
   }
 
-  unique(used)
+  # Canonical order: this vector is returned as `used_methods` and written
+  # verbatim into EML paragraphs, so encounter order would make the exported
+  # bytes depend on row order.
+  sort(unique(used), method = "radix")
 }
 
 .ms_eml_scalar <- function(x, field, required = TRUE) {
@@ -916,7 +919,8 @@
   invisible(configs)
 }
 
-.ms_eml_canonical_measurement_iris <- function(dictionary) {
+.ms_eml_canonical_measurement_iris <- function(path, pkg) {
+  dictionary <- pkg$dictionary
   measurement <- dictionary[
     !is.na(dictionary$column_role) &
       dictionary$column_role == "measurement",
@@ -927,11 +931,25 @@
     "term_iri", "property_iri", "entity_iri",
     "constraint_iri", "statistical_modifier_iri", "unit_iri"
   )
-  unique(unlist(
+  dictionary_iris <- unlist(
     lapply(fields, function(field) {
       .ms_eml_split_iris(measurement[[field]])
     }),
     use.names = FALSE
+  )
+  # Every vocabulary IRI the EML method path emits stays inside the reviewed
+  # vocabulary closure: table-level procedures and row-varying procedures
+  # resolved through codes. Protocol IRIs are citations (a DOI or document
+  # link), not vocabulary terms, and are deliberately not gated here.
+  table_method_iris <- if ("method_iri" %in% names(pkg$tables)) {
+    .ms_eml_split_iris(pkg$tables$method_iri)
+  } else {
+    character()
+  }
+  unique(c(
+    dictionary_iris,
+    table_method_iris,
+    .ms_eml_used_procedures(path, pkg)
   ))
 }
 
@@ -987,7 +1005,32 @@
     )
   })
 
-  dplyr::distinct(dplyr::bind_rows(table_targets, column_targets))
+  # sdp-0.3.0: a table-level method_iri is a vocabulary selection the EML
+  # method path emits, so it needs an accepted ledger row exactly like the
+  # dictionary slots do. Protocol IRIs are citations, not vocabulary terms.
+  table_method_targets <- if ("method_iri" %in% names(pkg$tables)) {
+    purrr::map_dfr(seq_len(nrow(pkg$tables)), function(i) {
+      iris <- .ms_eml_split_iris(pkg$tables$method_iri[[i]])
+      if (length(iris) == 0L) {
+        return(tibble::tibble())
+      }
+      tibble::tibble(
+        dataset_id = as.character(pkg$tables$dataset_id[[i]]),
+        table_id = as.character(pkg$tables$table_id[[i]]),
+        column_name = "",
+        target_scope = "table",
+        target_sdp_field = "method_iri",
+        dictionary_role = "method",
+        iri = iris
+      )
+    })
+  } else {
+    tibble::tibble()
+  }
+
+  dplyr::distinct(
+    dplyr::bind_rows(table_targets, table_method_targets, column_targets)
+  )
 }
 
 .ms_eml_read_semantic_review <- function(path, pkg, mapping) {
@@ -1165,7 +1208,7 @@
   )
 }
 
-.ms_eml_read_vocabulary <- function(path, dictionary, mapping) {
+.ms_eml_read_vocabulary <- function(path, pkg, mapping) {
   vocabulary_path <- .ms_eml_resource_path(
     path,
     mapping$semantic_vocabulary$path
@@ -1277,7 +1320,7 @@
     )
   }
 
-  expected <- sort(.ms_eml_canonical_measurement_iris(dictionary))
+  expected <- sort(.ms_eml_canonical_measurement_iris(path, pkg))
   actual <- sort(unique(vocabulary$iri))
   if (!identical(expected, actual)) {
     cli::cli_abort(c(
@@ -2846,7 +2889,7 @@ write_eml_from_sdp <- function(path,
     required = require_revision_key
   )
   invisible(.ms_eml_read_semantic_review(path, pkg, mapping))
-  vocabulary <- .ms_eml_read_vocabulary(path, pkg$dictionary, mapping)
+  vocabulary <- .ms_eml_read_vocabulary(path, pkg, mapping)
   data_objects <- .ms_eml_data_objects(path, pkg, mapping)
   supplementary_objects <- .ms_eml_supplementary_objects(
     supplementary_objects
