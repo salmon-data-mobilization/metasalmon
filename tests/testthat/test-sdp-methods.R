@@ -238,6 +238,17 @@ test_that("an agreeing legacy package migrates end-to-end", {
       suppressMessages(validate_salmon_datapackage(root, require_iris = FALSE))
     )
   )
+  # A successful migration leaves no scratch behind. The rollback path
+  # deliberately preserves a backup when a restore fails, so the success
+  # path needs its own assertion that it does not.
+  expect_length(
+    list.files(
+      file.path(root, "metadata"),
+      pattern = "^[.].*(backup|stage)",
+      all.files = TRUE
+    ),
+    0L
+  )
 })
 
 test_that("method disagreement stops the migration with nothing changed", {
