@@ -1,136 +1,3 @@
-make_structure_test_sdp <- function(path, inconsistent_spawners = FALSE) {
-  spawners <- if (isTRUE(inconsistent_spawners)) c(100, 101, 120) else c(100, 100, 120)
-  data <- tibble::tibble(
-    stock_id = c("fraser", "fraser", "fraser"),
-    brood_year = c(2019L, 2019L, 2020L),
-    return_year = c(2022L, 2023L, 2024L),
-    age = c(3L, 4L, 4L),
-    total_spawners = spawners,
-    recruits = c(40, 55, 60),
-    estimate_method = c("mark_recapture", "expanded_count", "expanded_count")
-  )
-  dictionary <- tibble::tribble(
-    ~dataset_id, ~table_id, ~column_name, ~column_label, ~column_description,
-    ~column_role, ~value_type, ~unit_label, ~unit_iri, ~term_iri, ~term_type,
-    ~required, ~property_iri, ~entity_iri, ~constraint_iri, ~method_iri,
-    "structure-test", "stock_recruit", "stock_id", "Stock", "Stock identifier",
-    "identifier", "string", NA_character_, NA_character_, NA_character_,
-    NA_character_, TRUE, NA_character_, NA_character_, NA_character_, NA_character_,
-    "structure-test", "stock_recruit", "brood_year", "Brood year", "Brood year",
-    "temporal", "integer", NA_character_, NA_character_, NA_character_,
-    NA_character_, TRUE, NA_character_, NA_character_, NA_character_, NA_character_,
-    "structure-test", "stock_recruit", "return_year", "Return year", "Return year",
-    "temporal", "integer", NA_character_, NA_character_, NA_character_,
-    NA_character_, TRUE, NA_character_, NA_character_, NA_character_, NA_character_,
-    "structure-test", "stock_recruit", "age", "Age", "Age at return",
-    "attribute", "integer", "year", "http://qudt.org/vocab/unit/YR",
-    NA_character_, NA_character_, TRUE, NA_character_, NA_character_,
-    NA_character_, NA_character_,
-    "structure-test", "stock_recruit", "total_spawners", "Total spawners",
-    "Estimated total spawners", "measurement", "number", "individual",
-    "http://qudt.org/vocab/unit/INDIV", "https://example.org/variables/spawners",
-    "owl_class", TRUE, "https://w3id.org/smn/Abundance",
-    "https://w3id.org/smn/Stock", NA_character_,
-    "https://example.org/methods/spawning-ground-survey",
-    "structure-test", "stock_recruit", "recruits", "Recruits",
-    "Estimated recruits", "measurement", "number", "individual",
-    "http://qudt.org/vocab/unit/INDIV", "https://example.org/variables/recruits",
-    "owl_class", TRUE, "https://w3id.org/smn/Abundance",
-    "https://w3id.org/smn/Stock", NA_character_, NA_character_,
-    "structure-test", "stock_recruit", "estimate_method", "Estimate method",
-    "Row-varying recruit estimation procedure", "categorical", "string",
-    NA_character_, NA_character_, NA_character_, "skos_concept", TRUE,
-    NA_character_, NA_character_, NA_character_, NA_character_
-  )
-  codes <- tibble::tribble(
-    ~dataset_id, ~table_id, ~column_name, ~code_value, ~code_label,
-    ~code_description, ~vocabulary_iri, ~term_iri, ~term_type,
-    "structure-test", "stock_recruit", "estimate_method", "mark_recapture",
-    "Mark-recapture estimate", "Mark-recapture procedure", NA_character_,
-    "https://example.org/methods/mark-recapture", "owl_named_individual",
-    "structure-test", "stock_recruit", "estimate_method", "expanded_count",
-    "Expanded count", "Expanded-count procedure", NA_character_,
-    "https://example.org/methods/expanded-count", "owl_named_individual"
-  )
-
-  write_salmon_datapackage(
-    resources = list(stock_recruit = data),
-    dataset_meta = tibble::tibble(
-      dataset_id = "structure-test",
-      title = "Observation structure test",
-      description = "Mixed-grain fixture"
-    ),
-    table_meta = tibble::tibble(
-      dataset_id = "structure-test",
-      table_id = "stock_recruit",
-      file_name = "data/stock_recruit.csv",
-      table_label = "Stock recruit",
-      description = "Mixed-grain stock-recruit estimates"
-    ),
-    dict = dictionary,
-    codes = codes,
-    path = path,
-    overwrite = TRUE
-  )
-  write_sdp_methods(
-    path,
-    tibble::tribble(
-      ~dataset_id, ~method_iri, ~method_label, ~method_description,
-      ~method_version, ~protocol_iri, ~citation,
-      "structure-test", "https://example.org/methods/spawning-ground-survey",
-      "Spawning-ground survey", "Estimates total spawner abundance.",
-      NA_character_, NA_character_, NA_character_,
-      "structure-test", "https://example.org/methods/mark-recapture",
-      "Mark-recapture estimate", "Estimates recruits by mark-recapture.",
-      NA_character_, NA_character_, NA_character_,
-      "structure-test", "https://example.org/methods/expanded-count",
-      "Expanded count", "Estimates recruits by expanding counts.",
-      NA_character_, NA_character_, NA_character_
-    )
-  )
-  invisible(path)
-}
-
-structure_test_rows <- function() {
-  tibble::tribble(
-    ~dataset_id, ~table_id, ~observation_structure_id, ~structure_label,
-    ~structure_description,
-    "structure-test", "stock_recruit", "total_spawners_by_brood",
-    "Total spawners by brood",
-    "One logical total-spawner observation per stock and brood year.",
-    "structure-test", "stock_recruit", "recruits_by_age",
-    "Recruits by age",
-    "One logical recruit observation per stock, brood year, return year, and age."
-  )
-}
-
-component_test_rows <- function() {
-  tibble::tribble(
-    ~dataset_id, ~table_id, ~observation_structure_id, ~component_order,
-    ~column_name, ~component_role, ~component_relation_iri,
-    ~required_when_observed,
-    "structure-test", "stock_recruit", "total_spawners_by_brood", 1L,
-    "stock_id", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "total_spawners_by_brood", 2L,
-    "brood_year", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "total_spawners_by_brood", 3L,
-    "total_spawners", "measure", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 1L,
-    "stock_id", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 2L,
-    "brood_year", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 3L,
-    "return_year", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 4L,
-    "age", "dimension", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 5L,
-    "recruits", "measure", NA_character_, TRUE,
-    "structure-test", "stock_recruit", "recruits_by_age", 6L,
-    "estimate_method", "attribute", "http://www.w3.org/ns/sosa/usedProcedure",
-    TRUE
-  )
-}
-
 test_that("paired observation structures round-trip deterministically", {
   first <- withr::local_tempdir()
   second <- withr::local_tempdir()
@@ -263,10 +130,16 @@ test_that("observation structures enforce bindings, order, and required dimensio
   )
 })
 
-test_that("observation structures require static procedures in the registry", {
+test_that("table-level static procedures must be absolute shared-vocabulary IRIs", {
+  # sdp-0.3.0 replaced the per-package registry with direct shared-vocabulary
+  # references: a table-constant procedure in tables.csv$method_iri is
+  # validated by IRI shape, not registry membership.
   root <- withr::local_tempdir()
   make_structure_test_sdp(root)
-  unlink(file.path(root, "metadata", "methods.csv"))
+  tables_path <- file.path(root, "metadata", "tables.csv")
+  tables <- readr::read_csv(tables_path, show_col_types = FALSE)
+  tables$method_iri <- "methods/spawning-ground-survey"
+  readr::write_csv(tables, tables_path, na = "")
 
   expect_error(
     write_sdp_observation_structures(
@@ -274,7 +147,39 @@ test_that("observation structures require static procedures in the registry", {
       structure_test_rows(),
       component_test_rows()
     ),
-    "Static procedure references.*methods.csv"
+    "table-level.*method_iri.*absolute shared-vocabulary IRI"
+  )
+})
+
+test_that("a leftover sdp-0.2.0 methods registry points at migrate_sdp_methods", {
+  root <- withr::local_tempdir()
+  make_structure_test_sdp(root)
+  write_sdp_observation_structures(
+    root,
+    structure_test_rows(),
+    component_test_rows()
+  )
+  readr::write_csv(
+    tibble::tibble(
+      dataset_id = "structure-test",
+      method_iri = "https://example.org/methods/spawning-ground-survey",
+      method_label = "Spawning-ground survey",
+      method_description = "Estimates total spawner abundance.",
+      method_version = NA_character_,
+      protocol_iri = NA_character_,
+      citation = NA_character_
+    ),
+    file.path(root, "metadata", "methods.csv"),
+    na = ""
+  )
+
+  expect_error(
+    metasalmon:::.ms_validate_optional_sdp_observation_metadata(root),
+    "Run.*migrate_sdp_methods"
+  )
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(root, require_iris = FALSE)),
+    "Run.*migrate_sdp_methods"
   )
 })
 
@@ -316,13 +221,16 @@ test_that("required_when_observed is conditional on a populated measure", {
   ))
 })
 
-test_that("row-varying procedures resolve through codes to methods", {
+test_that("row-varying procedures resolve through codes to the shared vocabulary", {
+  # sdp-0.3.0: an enumerated sosa:usedProcedure code resolves through
+  # codes.csv$term_iri straight to the shared vocabulary, so the check is
+  # absolute-IRI shape, not membership in a per-package registry.
   root <- withr::local_tempdir()
   make_structure_test_sdp(root)
   codes_path <- file.path(root, "metadata", "codes.csv")
   codes <- readr::read_csv(codes_path, show_col_types = FALSE)
   codes$term_iri[codes$code_value == "mark_recapture"] <-
-    "https://example.org/methods/not-registered"
+    "methods/mark-recapture"
   readr::write_csv(codes, codes_path, na = "")
   expect_error(
     write_sdp_observation_structures(
@@ -330,7 +238,7 @@ test_that("row-varying procedures resolve through codes to methods", {
       structure_test_rows(),
       component_test_rows()
     ),
-    "unregistered method"
+    "must resolve to an absolute shared-vocabulary IRI"
   )
 
   codes$term_iri[codes$code_value == "mark_recapture"] <- NA_character_
@@ -360,7 +268,9 @@ test_that("all enumerated procedure codes resolve even when currently unobserved
       code_label = "Unused method",
       code_description = "Enumerated but absent from current data rows",
       vocabulary_iri = NA_character_,
-      term_iri = "https://example.org/methods/not-registered",
+      # Relative reference: enumerated-but-unobserved codes must still carry
+      # an absolute shared-vocabulary IRI under sdp-0.3.0.
+      term_iri = "methods/not-a-shared-vocabulary-iri",
       term_type = "owl_named_individual"
     )
   )
@@ -371,7 +281,7 @@ test_that("all enumerated procedure codes resolve even when currently unobserved
       structure_test_rows(),
       component_test_rows()
     ),
-    "enumerated.*unregistered|unregistered.*unused_method"
+    "must resolve to an absolute shared-vocabulary IRI"
   )
 })
 

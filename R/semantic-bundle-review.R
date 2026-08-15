@@ -196,9 +196,16 @@
     slots = purrr::map(roles, function(role) {
       target_index <- match(role, target_roles)
       if (is.na(target_index)) {
+        # `method` is a bundle role with no dictionary slot field (sdp-0.3.0
+        # dropped `method_iri`; the role survives only for codes-scope
+        # searches), so an unrequested role may have no slot field to name.
         return(list(
           dictionary_role = role,
-          target_sdp_field = unname(fields[[role]]),
+          target_sdp_field = if (role %in% names(fields)) {
+            unname(fields[[role]])
+          } else {
+            NA_character_
+          },
           status = "already_filled_or_not_requested",
           current_value = current_slots[[role]],
           candidates = list()

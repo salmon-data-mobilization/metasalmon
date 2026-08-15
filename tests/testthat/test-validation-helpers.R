@@ -12,7 +12,7 @@ test_that("validate_semantics adds required column and reports missing term_iri"
     entity_iri = c(NA_character_, NA_character_),
     unit_iri = c(NA_character_, NA_character_),
     constraint_iri = c("", ""),
-    method_iri = c("", "")
+    statistical_modifier_iri = c("", "")
   )
   res <- validate_semantics(dict)
   expect_true("required" %in% names(res$dict))
@@ -37,7 +37,7 @@ test_that("validate_semantics flags non-canonical salmon ontology IRIs", {
     entity_iri = "https://w3id.org/gcdfo/salmon/Stock",
     unit_iri = "http://w3id.org/smn/Unit",
     constraint_iri = "",
-    method_iri = "gcdfo:SpawnerSurveyMethod"
+    statistical_modifier_iri = "gcdfo:MeanValue"
   )
 
   res <- validate_semantics(dict)
@@ -63,7 +63,7 @@ test_that("validate_semantics warns that deprecated arguments are ignored", {
     entity_iri = NA_character_,
     unit_iri = NA_character_,
     constraint_iri = "",
-    method_iri = ""
+    statistical_modifier_iri = ""
   )
 
   expect_warning(
@@ -127,7 +127,7 @@ test_that("validate_dictionary and validate_semantics accept dictionary CSV path
     entity_iri = c(NA_character_, "https://w3id.org/smn/ConservationUnit"),
     unit_iri = c(NA_character_, "https://qudt.org/vocab/unit/NUM"),
     constraint_iri = c("", ""),
-    method_iri = c("", "https://w3id.org/gcdfo/salmon#SpawnerSurveyMethod"),
+    statistical_modifier_iri = c("", "https://w3id.org/gcdfo/salmon#MeanValue"),
     required = c(TRUE, FALSE)
   )
 

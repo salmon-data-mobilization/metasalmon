@@ -767,8 +767,8 @@ validate_sdp_measurement_decompositions <- function(path) {
 #' - `measurement_concept_iri` must exactly equal that dictionary row's
 #'   `term_iri`.
 #' - `component_order` is a positive, contiguous, per-measurement sequence.
-#' - `component_role` is one of `property`, `entity`, `constraint`, `method`, or
-#'   `unit`; repeated roles are allowed.
+#' - `component_role` is one of `property`, `entity`, `constraint`,
+#'   `statistical_modifier`, or `unit`; repeated roles are allowed.
 #' - `component_status` is `matched` or `gap`. A matched row requires an
 #'   absolute `component_iri`. A gap requires a blank `component_iri` plus a
 #'   non-empty `component_label` and `rationale`.

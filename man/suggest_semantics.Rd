@@ -48,7 +48,8 @@ vector is a strict allowlist for initial and retry retrieval; for example,
 Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 
 \item{max_per_role}{Maximum number of suggestions to keep per semantic role
-(variable, property, entity, unit, constraint, method) per column. Default
+(variable, property, entity, unit, constraint, statistical_modifier;
+plus method for code values) per column. Default
 is 3.}
 
 \item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
@@ -168,7 +169,8 @@ Table-level observation-unit queries ignore review placeholders such as
 
 When \code{llm_assess = TRUE}, the LLM only judges deterministically retrieved
 candidates; it does not mint new IRIs. Measurement columns are reviewed as
-one bundle spanning variable, property, entity, unit, constraint, and method,
+one bundle spanning variable, property, entity, unit, constraint, and
+statistical modifier (method appears only for code values),
 including empty slots. The public output still contains one assessment row
 per target and positional candidate indexes. If the first shortlist looks
 weak, the package gathers valid retry requests, runs at most one retrieval
@@ -187,7 +189,7 @@ names are disambiguated in \code{llm_context_sources}. If a batched provider
 response has malformed, missing, or duplicate target items, valid siblings
 are retained and only affected targets fall back to individual review.
 Deterministic validators can downgrade an unsupported \code{accept} to \code{review}
-for missing method/constraint evidence, known role/type or dimensional
+for missing statistical-modifier/constraint evidence, known role/type or dimensional
 incompatibility, or a curated redundancy rule. A downgrade clears the
 selection, preserves model confidence as provenance, and never substitutes
 a term or creates an ontology gap.

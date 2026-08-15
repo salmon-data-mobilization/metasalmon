@@ -1,313 +1,444 @@
-make_methods_test_sdp <- function(path, static_method = NA_character_) {
-  data <- tibble::tibble(
-    stock_id = c("fraser", "fraser"),
-    brood_year = c(2019L, 2020L),
-    abundance = c(100, 120)
-  )
-  dictionary <- tibble::tribble(
-    ~dataset_id, ~table_id, ~column_name, ~column_label,
-    ~column_description, ~column_role, ~value_type, ~unit_label, ~unit_iri,
-    ~term_iri, ~term_type, ~required, ~property_iri, ~entity_iri,
-    ~constraint_iri, ~method_iri,
-    "methods-test", "stock_recruit", "stock_id", "Stock", "Stock identifier",
-    "identifier", "string", NA_character_, NA_character_, NA_character_,
-    NA_character_, TRUE, NA_character_, NA_character_, NA_character_, NA_character_,
-    "methods-test", "stock_recruit", "brood_year", "Brood year", "Brood year",
-    "temporal", "integer", NA_character_, NA_character_, NA_character_,
-    NA_character_, TRUE, NA_character_, NA_character_, NA_character_, NA_character_,
-    "methods-test", "stock_recruit", "abundance", "Abundance", "Estimated abundance",
-    "measurement", "number", "individual", "http://qudt.org/vocab/unit/INDIV",
-    "https://example.org/variables/abundance", "owl_class", TRUE,
-    "https://w3id.org/smn/Abundance", "https://w3id.org/smn/Stock",
-    NA_character_, static_method
-  )
+# migrate_sdp_methods(): sdp-0.2.0 -> sdp-0.3.0 method relocation ------------
+#
+# sdp-0.3.0 removed the metadata/methods.csv registry, the registry APIs
+# (write_sdp_methods / read_sdp_methods / validate_sdp_methods), and the
+# column-dictionary method_iri field. The migration tool is the only surviving
+# methods API. Fixtures are made with the current writers and then hand-edited
+# back into the legacy sdp-0.2.0 shape the migration accepts as input.
 
-  write_salmon_datapackage(
-    resources = list(stock_recruit = data),
-    dataset_meta = tibble::tibble(
-      dataset_id = "methods-test",
-      title = "Methods test",
-      description = "Fixture for SDP methods metadata"
-    ),
-    table_meta = tibble::tibble(
-      dataset_id = "methods-test",
-      table_id = "stock_recruit",
-      file_name = "data/stock_recruit.csv",
-      table_label = "Stock recruit",
-      description = "Test table"
-    ),
-    dict = dictionary,
-    path = path,
-    overwrite = TRUE
+read_file_bytes <- function(path) {
+  readBin(path, "raw", n = file.info(path)$size)
+}
+
+migration_metadata_paths <- function(root) {
+  c(
+    tables = file.path(root, "metadata", "tables.csv"),
+    dictionary = file.path(root, "metadata", "column_dictionary.csv"),
+    dataset = file.path(root, "metadata", "dataset.csv"),
+    descriptor = file.path(root, "datapackage.json"),
+    registry = file.path(root, "metadata", "methods.csv")
   )
+}
+
+legacy_registry_rows <- function() {
+  tibble::tibble(
+    dataset_id = "methods-test",
+    method_iri = "https://ex.org/m/mark-recapture",
+    method_label = "Mark-recapture estimate",
+    method_description = "Estimates abundance from marked and recaptured fish.",
+    method_version = "2026",
+    protocol_iri = "https://ex.org/protocols/mark-recapture",
+    citation = "Example Program. 2026."
+  )
+}
+
+make_migration_test_sdp <- function(path) {
+  # A real, current package with two measurement columns in one table, so
+  # per-table method agreement and disagreement are both expressible.
+  resources <- list(
+    stock_recruit = tibble::tibble(
+      stock_id = c("fraser", "fraser"),
+      brood_year = c(2019L, 2020L),
+      abundance = c(100, 120),
+      density = c(0.5, 0.6)
+    )
+  )
+  suppressMessages(create_sdp(
+    resources,
+    path = path,
+    dataset_id = "methods-test",
+    seed_semantics = FALSE,
+    seed_verbose = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  ))
   invisible(path)
 }
 
-methods_test_rows <- function() {
-  tibble::tibble(
-    dataset_id = "methods-test",
-    method_iri = c(
-      "https://example.org/methods/expanded-count",
-      "https://example.org/methods/mark-recapture"
-    ),
-    method_label = c("Expanded count", "Mark-recapture estimate"),
-    method_description = c(
-      "Expands an observed count.",
-      "Estimates abundance from marked and recaptured fish."
-    ),
-    method_version = c(NA_character_, "2026"),
-    protocol_iri = c(NA_character_, "https://example.org/protocols/mark-recapture"),
-    citation = c("Example Program. 2026.", NA_character_)
+# Hand-add the legacy dictionary method_iri column: `bindings` is a named
+# character vector of column_name -> method IRI; unbound columns stay blank.
+add_legacy_dictionary_methods <- function(root, bindings) {
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
   )
+  dictionary$method_iri <- unname(bindings[dictionary$column_name])
+  readr::write_csv(dictionary, dictionary_path, na = "")
+  invisible(dictionary_path)
 }
 
-test_that("SDP methods round-trip with the exact upstream schema", {
-  first <- withr::local_tempdir()
-  second <- withr::local_tempdir()
-  make_methods_test_sdp(first)
-  make_methods_test_sdp(second)
+add_legacy_registry <- function(root, rows = legacy_registry_rows()) {
+  registry_path <- file.path(root, "metadata", "methods.csv")
+  readr::write_csv(rows, registry_path, na = "")
+  invisible(registry_path)
+}
 
-  reversed_methods <- methods_test_rows()[
-    2:1,
-    rev(names(methods_test_rows())),
-    drop = FALSE
-  ]
-  first_path <- write_sdp_methods(first, reversed_methods)
-  second_path <- write_sdp_methods(second, methods_test_rows())
-
-  expect_identical(
-    readBin(first_path, "raw", n = file.info(first_path)$size),
-    readBin(second_path, "raw", n = file.info(second_path)$size)
+# Rewind the descriptor to its sdp-0.2.0 shape: a declared registry resource,
+# the metadata pointer, the v0.2 identity, and optionally per-field custom
+# `iAdopt:methodIri` bindings (`field_methods` is column_name -> method IRI).
+add_legacy_descriptor_state <- function(root, field_methods = NULL) {
+  descriptor_path <- file.path(root, "datapackage.json")
+  descriptor <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
+  descriptor$profile <- paste0(
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/",
+    "profiles/salmon-data-package/v0.2/profile.json"
   )
-  expect_identical(
-    names(read_sdp_methods(first)),
-    c(
-      "dataset_id", "method_iri", "method_label", "method_description",
-      "method_version", "protocol_iri", "citation"
+  descriptor$sdp$specVersion <- "sdp-0.2.0"
+  descriptor$resources[[length(descriptor$resources) + 1L]] <- list(
+    name = "sdp_methods",
+    path = "metadata/methods.csv",
+    profile = "tabular-data-resource",
+    schema = paste0(
+      "https://salmon-data-mobilization.github.io/smn-data-pkg/",
+      "schema/frictionless/metadata/methods.schema.json"
     )
   )
-  expect_identical(read_sdp_methods(first), read_sdp_methods(second))
-  expect_true(isTRUE(validate_sdp_methods(first)))
+  descriptor$sdp$metadata$methods <- "metadata/methods.csv"
+  if (!is.null(field_methods)) {
+    descriptor$resources <- lapply(descriptor$resources, function(resource) {
+      if (!is.list(resource$schema)) {
+        return(resource)
+      }
+      fields <- resource$schema$fields
+      if (is.null(fields)) {
+        return(resource)
+      }
+      resource$schema$fields <- lapply(fields, function(field) {
+        name <- field$name
+        if (!is.null(name) && name %in% names(field_methods)) {
+          field$custom <- c(
+            field$custom,
+            list("iAdopt:methodIri" = unname(field_methods[[name]]))
+          )
+        }
+        field
+      })
+      resource
+    })
+  }
+  writeBin(
+    metasalmon:::.ms_sdp_extension_json_bytes(descriptor),
+    descriptor_path
+  )
+  invisible(descriptor_path)
+}
 
+set_dataset_spec_version <- function(root, version) {
+  dataset_path <- file.path(root, "metadata", "dataset.csv")
+  dataset <- readr::read_csv(
+    dataset_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  dataset$spec_version <- version
+  readr::write_csv(dataset, dataset_path, na = "")
+  invisible(dataset_path)
+}
+
+test_that("an agreeing legacy package migrates end-to-end", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  set_dataset_spec_version(root, "sdp-0.2.0")
+  add_legacy_dictionary_methods(root, c(
+    abundance = "https://ex.org/m/mark-recapture",
+    density = "https://ex.org/m/mark-recapture"
+  ))
+  add_legacy_registry(root)
+  add_legacy_descriptor_state(root)
+
+  report <- suppressMessages(migrate_sdp_methods(root))
+
+  expect_named(report, c("tables", "dropped_review", "registry"))
+  expect_equal(report$tables$table_id, "stock_recruit")
+  expect_equal(report$tables$method_iri, "https://ex.org/m/mark-recapture")
+  expect_equal(nrow(report$dropped_review), 0L)
+  expect_equal(report$registry$method_iri, "https://ex.org/m/mark-recapture")
+
+  # tables.csv carries the relocated table-constant method in v0.3 order.
+  tables <- readr::read_csv(
+    file.path(root, "metadata", "tables.csv"),
+    show_col_types = FALSE
+  )
+  expect_identical(
+    names(tables),
+    c(
+      "dataset_id", "table_id", "file_name", "table_label", "description",
+      "observation_unit", "observation_unit_iri", "primary_key",
+      "protocol_iri", "protocol_citation", "method_iri"
+    )
+  )
+  expect_equal(
+    tables$method_iri[tables$table_id == "stock_recruit"],
+    "https://ex.org/m/mark-recapture"
+  )
+
+  # The dictionary lost method_iri and is aligned to the v0.3 order ending in
+  # statistical_modifier_iri.
+  dictionary <- readr::read_csv(
+    file.path(root, "metadata", "column_dictionary.csv"),
+    show_col_types = FALSE
+  )
+  expect_identical(
+    names(dictionary),
+    c(
+      "dataset_id", "table_id", "column_name", "column_label",
+      "column_description", "column_role", "value_type", "required",
+      "unit_label", "unit_iri", "term_iri", "term_type", "property_iri",
+      "entity_iri", "constraint_iri", "statistical_modifier_iri"
+    )
+  )
+
+  # dataset.csv advances the spec pin.
+  dataset <- readr::read_csv(
+    file.path(root, "metadata", "dataset.csv"),
+    show_col_types = FALSE
+  )
+  expect_equal(dataset$spec_version, "sdp-0.3.0")
+
+  # The descriptor loses the registry resource and pointer and carries the
+  # v0.3 identity.
   descriptor <- jsonlite::read_json(
-    file.path(first, "datapackage.json"),
+    file.path(root, "datapackage.json"),
     simplifyVector = FALSE
   )
-  paths <- purrr::map_chr(descriptor$resources, ~ .x$path)
-  expect_true("metadata/methods.csv" %in% paths)
-  expect_identical(descriptor$sdp$metadata$methods, "metadata/methods.csv")
-})
-
-test_that("SDP methods validate identifiers, package bindings, and static procedures", {
-  root <- withr::local_tempdir()
-  fixed <- "https://example.org/methods/mark-recapture"
-  make_methods_test_sdp(root, static_method = fixed)
-  expect_no_error(write_sdp_methods(root, methods_test_rows()))
-
-  duplicate <- dplyr::bind_rows(methods_test_rows(), methods_test_rows()[1, ])
-  expect_error(
-    write_sdp_methods(root, duplicate, overwrite = TRUE),
-    "unique within each dataset"
+  resource_names <- vapply(
+    descriptor$resources,
+    function(resource) if (is.character(resource$name)) resource$name else "",
+    character(1)
+  )
+  expect_false("sdp_methods" %in% resource_names)
+  resource_paths <- vapply(
+    descriptor$resources,
+    function(resource) if (is.character(resource$path)) resource$path else "",
+    character(1)
+  )
+  expect_false("metadata/methods.csv" %in% resource_paths)
+  expect_null(descriptor$sdp$metadata$methods)
+  expect_identical(
+    descriptor$profile,
+    paste0(
+      "https://salmon-data-mobilization.github.io/smn-data-pkg/",
+      "profiles/salmon-data-package/v0.3/profile.json"
+    )
+  )
+  expect_identical(descriptor$sdp$specVersion, "sdp-0.3.0")
+  expect_identical(
+    descriptor$sdp$rules,
+    "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml"
   )
 
-  wrong_dataset <- methods_test_rows()
-  wrong_dataset$dataset_id[[1]] <- "another-dataset"
-  expect_error(
-    write_sdp_methods(root, wrong_dataset, overwrite = TRUE),
-    "must match.*dataset.csv"
-  )
-
-  missing_static <- methods_test_rows()[1, ]
-  expect_error(
-    write_sdp_methods(root, missing_static, overwrite = TRUE),
-    "Static procedure references.*missing"
-  )
-
-  invalid_protocol <- methods_test_rows()
-  invalid_protocol$protocol_iri[[1]] <- "not an IRI"
-  expect_error(
-    write_sdp_methods(root, invalid_protocol, overwrite = TRUE),
-    "protocol_iri.*absolute IRI"
-  )
-})
-
-test_that("legacy static procedure references remain valid without extensions", {
-  root <- withr::local_tempdir()
-  make_methods_test_sdp(
-    root,
-    static_method = "https://example.org/methods/mark-recapture"
-  )
-
+  # The registry file itself is gone, and the migrated package validates.
+  expect_false(file.exists(file.path(root, "metadata", "methods.csv")))
   expect_no_error(
-    suppressMessages(validate_salmon_datapackage(root))
+    suppressWarnings(
+      suppressMessages(validate_salmon_datapackage(root, require_iris = FALSE))
+    )
   )
 })
 
-test_that("SDP methods use explicit overwrite and reject metadata symlinks", {
+test_that("method disagreement stops the migration with nothing changed", {
   root <- withr::local_tempdir()
-  make_methods_test_sdp(root)
-  write_sdp_methods(root, methods_test_rows())
-  expect_error(
-    write_sdp_methods(root, methods_test_rows()),
-    "already exists.*overwrite"
-  )
-  expect_no_error(
-    write_sdp_methods(root, methods_test_rows(), overwrite = TRUE)
-  )
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(root, c(
+    abundance = "https://ex.org/m/a",
+    density = "https://ex.org/m/b"
+  ))
+  add_legacy_registry(root)
+  add_legacy_descriptor_state(root)
 
-  outside <- tempfile(fileext = ".csv")
-  writeLines("outside", outside)
-  methods_path <- file.path(root, "metadata", "methods.csv")
-  unlink(methods_path)
-  if (!file.symlink(outside, methods_path)) {
-    skip("Filesystem does not permit symlink creation")
-  }
-  expect_error(
-    write_sdp_methods(root, methods_test_rows(), overwrite = TRUE),
-    "symlink"
+  paths <- migration_metadata_paths(root)
+  before <- lapply(paths, read_file_bytes)
+
+  error <- expect_error(
+    migrate_sdp_methods(root),
+    "disagree about their table's method"
   )
-  expect_identical(readLines(outside), "outside")
+  # Stop AND report: the abort lists every conflicting IRI.
+  expect_match(conditionMessage(error), "https://ex.org/m/a", fixed = TRUE)
+  expect_match(conditionMessage(error), "https://ex.org/m/b", fixed = TRUE)
+
+  expect_identical(lapply(paths, read_file_bytes), before)
+  expect_true(file.exists(paths[["registry"]]))
 })
 
-test_that("SDP extension APIs reject only a symlinked package root", {
+test_that("an existing tables.csv method claim that disagrees also stops", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(root, c(
+    abundance = "https://ex.org/m/a",
+    density = "https://ex.org/m/a"
+  ))
+  add_legacy_registry(root)
+
+  tables_path <- file.path(root, "metadata", "tables.csv")
+  tables <- readr::read_csv(
+    tables_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  tables$method_iri <- "https://ex.org/m/already-claimed"
+  readr::write_csv(tables, tables_path, na = "")
+
+  paths <- migration_metadata_paths(root)
+  before <- lapply(paths, read_file_bytes)
+
+  error <- expect_error(
+    migrate_sdp_methods(root),
+    "tables.csv already claims"
+  )
+  expect_match(
+    conditionMessage(error),
+    "https://ex.org/m/already-claimed",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "https://ex.org/m/a", fixed = TRUE)
+
+  expect_identical(lapply(paths, read_file_bytes), before)
+})
+
+test_that("unresolved REVIEW bindings are dropped and reported, not migrated", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_dictionary_methods(root, c(
+    abundance = "REVIEW: https://ex.org/m/a"
+  ))
+  add_legacy_registry(root)
+
+  report <- suppressMessages(migrate_sdp_methods(root))
+
+  expect_equal(nrow(report$tables), 0L)
+  expect_equal(nrow(report$dropped_review), 1L)
+  expect_equal(report$dropped_review$column_name, "abundance")
+  expect_equal(report$dropped_review$method_iri, "REVIEW: https://ex.org/m/a")
+
+  # Nothing was placed at the table level, the dictionary slot is gone, and
+  # the registry was still removed.
+  tables <- readr::read_csv(
+    file.path(root, "metadata", "tables.csv"),
+    show_col_types = FALSE
+  )
+  expect_true(all(is.na(tables$method_iri)))
+  dictionary <- readr::read_csv(
+    file.path(root, "metadata", "column_dictionary.csv"),
+    show_col_types = FALSE
+  )
+  expect_false("method_iri" %in% names(dictionary))
+  expect_false(file.exists(file.path(root, "metadata", "methods.csv")))
+})
+
+test_that("dry_run reports the migration without touching any file", {
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  set_dataset_spec_version(root, "sdp-0.2.0")
+  add_legacy_dictionary_methods(root, c(
+    abundance = "https://ex.org/m/mark-recapture",
+    density = "https://ex.org/m/mark-recapture"
+  ))
+  add_legacy_registry(root)
+  add_legacy_descriptor_state(root)
+
+  paths <- migration_metadata_paths(root)
+  before <- lapply(paths, read_file_bytes)
+
+  messages <- testthat::capture_messages(
+    report <- migrate_sdp_methods(root, dry_run = TRUE)
+  )
+  expect_match(
+    paste(messages, collapse = "\n"),
+    "Dry run: no files were changed.",
+    fixed = TRUE
+  )
+
+  expect_equal(report$tables$table_id, "stock_recruit")
+  expect_equal(report$tables$method_iri, "https://ex.org/m/mark-recapture")
+  expect_identical(lapply(paths, read_file_bytes), before)
+  expect_true(file.exists(paths[["registry"]]))
+})
+
+test_that("descriptor-only iAdopt:methodIri bindings migrate", {
+  # A descriptor-first sdp-0.2.0 package bound methods through the per-field
+  # custom key with no dictionary method_iri column and no registry.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  add_legacy_descriptor_state(root, field_methods = c(
+    abundance = "https://ex.org/m/expanded-count",
+    density = "https://ex.org/m/expanded-count"
+  ))
+  # The descriptor still declared the registry resource; the file itself was
+  # never written, which the migration must tolerate.
+  expect_false(file.exists(file.path(root, "metadata", "methods.csv")))
+
+  report <- suppressMessages(migrate_sdp_methods(root))
+
+  expect_equal(report$tables$table_id, "stock_recruit")
+  expect_equal(report$tables$method_iri, "https://ex.org/m/expanded-count")
+  expect_null(report$registry)
+
+  tables <- readr::read_csv(
+    file.path(root, "metadata", "tables.csv"),
+    show_col_types = FALSE
+  )
+  expect_equal(
+    tables$method_iri[tables$table_id == "stock_recruit"],
+    "https://ex.org/m/expanded-count"
+  )
+
+  descriptor_text <- readLines(file.path(root, "datapackage.json"))
+  expect_false(any(grepl("iAdopt:methodIri", descriptor_text, fixed = TRUE)))
+  expect_false(any(grepl("sdp_methods", descriptor_text, fixed = TRUE)))
+})
+
+test_that("the migration rejects only a symlinked package root", {
   target <- withr::local_tempdir()
   link_parent <- withr::local_tempdir()
-  make_methods_test_sdp(target)
+  make_migration_test_sdp(target)
+  add_legacy_dictionary_methods(target, c(
+    abundance = "https://ex.org/m/mark-recapture",
+    density = "https://ex.org/m/mark-recapture"
+  ))
+  add_legacy_registry(target)
   linked_root <- file.path(link_parent, "linked-sdp")
   if (!file.symlink(target, linked_root)) {
     skip("Filesystem does not permit directory symlink creation")
   }
 
   expect_error(
-    write_sdp_methods(linked_root, methods_test_rows()),
+    migrate_sdp_methods(linked_root),
     "path.*symlink|unsafe"
   )
   expect_error(
-    write_sdp_methods(paste0(linked_root, "/"), methods_test_rows()),
+    migrate_sdp_methods(paste0(linked_root, "/")),
     "path.*symlink|unsafe"
   )
-  expect_false(file.exists(file.path(target, "metadata", "methods.csv")))
+  # The refusal happened before any work: the legacy registry is untouched.
+  expect_true(file.exists(file.path(target, "metadata", "methods.csv")))
 
   # On macOS the temporary directory is commonly spelled through the harmless
   # /var -> /private/var system alias. Only the supplied package-root entry,
   # not its ancestors, is part of this trust boundary.
-  expect_no_error(write_sdp_methods(target, methods_test_rows()))
+  expect_no_error(suppressMessages(migrate_sdp_methods(target)))
+  expect_false(file.exists(file.path(target, "metadata", "methods.csv")))
 })
 
-test_that("failed methods writes preserve CSV and descriptor bytes", {
+test_that("a package with nothing to migrate is reported as a no-op", {
   root <- withr::local_tempdir()
-  make_methods_test_sdp(root)
-  methods_path <- write_sdp_methods(root, methods_test_rows())
-  descriptor_path <- file.path(root, "datapackage.json")
-  before_methods <- readBin(
-    methods_path,
-    "raw",
-    n = file.info(methods_path)$size
-  )
+  make_migration_test_sdp(root)
 
-  writeLines("{ malformed descriptor", descriptor_path)
-  before_descriptor <- readBin(
-    descriptor_path,
-    "raw",
-    n = file.info(descriptor_path)$size
-  )
-  changed <- methods_test_rows()
-  changed$method_label[[1]] <- "Changed label"
+  paths <- migration_metadata_paths(root)
+  paths <- paths[names(paths) != "registry"]
+  before <- lapply(paths, read_file_bytes)
 
-  expect_error(
-    write_sdp_methods(root, changed, overwrite = TRUE),
-    "Could not parse.*datapackage.json"
+  expect_message(
+    report <- migrate_sdp_methods(root),
+    "Nothing to migrate"
   )
-  expect_identical(
-    readBin(methods_path, "raw", n = file.info(methods_path)$size),
-    before_methods
-  )
-  expect_identical(
-    readBin(descriptor_path, "raw", n = file.info(descriptor_path)$size),
-    before_descriptor
-  )
-
-  linked <- withr::local_tempdir()
-  make_methods_test_sdp(linked)
-  linked_methods_path <- write_sdp_methods(linked, methods_test_rows())
-  linked_descriptor <- file.path(linked, "datapackage.json")
-  descriptor_target <- tempfile(fileext = ".json")
-  expect_true(file.copy(linked_descriptor, descriptor_target))
-  unlink(linked_descriptor)
-  if (!file.symlink(descriptor_target, linked_descriptor)) {
-    skip("Filesystem does not permit descriptor symlink creation")
-  }
-  before_linked_methods <- readBin(
-    linked_methods_path,
-    "raw",
-    n = file.info(linked_methods_path)$size
-  )
-  before_target <- readBin(
-    descriptor_target,
-    "raw",
-    n = file.info(descriptor_target)$size
-  )
-
-  expect_error(
-    write_sdp_methods(linked, changed, overwrite = TRUE),
-    "symlinked.*datapackage.json"
-  )
-  expect_identical(
-    readBin(
-      linked_methods_path,
-      "raw",
-      n = file.info(linked_methods_path)$size
-    ),
-    before_linked_methods
-  )
-  expect_identical(
-    readBin(
-      descriptor_target,
-      "raw",
-      n = file.info(descriptor_target)$size
-    ),
-    before_target
-  )
-  expect_true(nzchar(Sys.readlink(linked_descriptor)))
-})
-
-test_that("SDP methods reader rejects schema and descriptor drift", {
-  root <- withr::local_tempdir()
-  make_methods_test_sdp(root)
-  write_sdp_methods(root, methods_test_rows())
-
-  descriptor_path <- file.path(root, "datapackage.json")
-  descriptor <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
-  descriptor$sdp$metadata$methods <- NULL
-  jsonlite::write_json(
-    descriptor,
-    descriptor_path,
-    auto_unbox = TRUE,
-    pretty = TRUE,
-    null = "null"
-  )
-  expect_error(validate_sdp_methods(root), "must declare.*methods.csv")
-
-  write_sdp_methods(root, methods_test_rows(), overwrite = TRUE)
-  descriptor <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
-  methods_index <- which(purrr::map_chr(
-    descriptor$resources,
-    ~ .x$path
-  ) == "metadata/methods.csv")
-  descriptor$resources[[methods_index]]$schema <- "https://example.org/wrong.json"
-  jsonlite::write_json(
-    descriptor,
-    descriptor_path,
-    auto_unbox = TRUE,
-    pretty = TRUE,
-    null = "null"
-  )
-  expect_error(validate_sdp_methods(root), "schema.*methods.schema.json")
-
-  write_sdp_methods(root, methods_test_rows(), overwrite = TRUE)
-  methods_path <- file.path(root, "metadata", "methods.csv")
-  methods <- readr::read_csv(methods_path, show_col_types = FALSE)
-  methods$unexpected <- "drift"
-  readr::write_csv(methods, methods_path, na = "")
-  expect_error(read_sdp_methods(root), "exact SDP schema")
+  expect_equal(nrow(report$tables), 0L)
+  expect_equal(nrow(report$dropped_review), 0L)
+  expect_null(report$registry)
+  expect_identical(lapply(paths, read_file_bytes), before)
 })

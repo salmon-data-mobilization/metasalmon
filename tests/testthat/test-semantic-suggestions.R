@@ -133,7 +133,12 @@ test_that("semantic target discovery emits normalized rows across all SDP scopes
     unique(targets$target_sdp_file),
     c("column_dictionary.csv", "codes.csv", "tables.csv", "dataset.csv")
   )
-  expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 6L)
+  # sdp-0.3.0: the dictionary method slot is gone and a statistical_modifier
+  # target is emitted only for aggregation-named columns, so this
+  # non-aggregated measurement column gets the five base roles. The
+  # codes-scope "method" search role survives: codes on measurement parents
+  # still search shared-vocabulary procedures for codes.csv term_iri.
+  expect_equal(nrow(targets[targets$target_scope == "column", , drop = FALSE]), 5L)
   expect_equal(nrow(targets[targets$target_scope == "code", , drop = FALSE]), 3L)
   expect_setequal(
     targets$dictionary_role[targets$target_scope == "code"],

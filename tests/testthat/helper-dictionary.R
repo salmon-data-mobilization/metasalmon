@@ -11,7 +11,7 @@ test_dictionary <- function(dataset_id = "d1",
                             property_iri = NA_character_,
                             entity_iri = NA_character_,
                             constraint_iri = NA_character_,
-                            method_iri = NA_character_,
+                            statistical_modifier_iri = NA_character_,
                             term_type = NA_character_,
                             required = NA) {
   fields <- list(
@@ -28,7 +28,7 @@ test_dictionary <- function(dataset_id = "d1",
     property_iri = property_iri,
     entity_iri = entity_iri,
     constraint_iri = constraint_iri,
-    method_iri = method_iri,
+    statistical_modifier_iri = statistical_modifier_iri,
     term_type = term_type,
     required = required
   )

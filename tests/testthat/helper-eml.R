@@ -51,7 +51,7 @@ make_eml_test_sdp <- function(path,
     provenance_note = "Counts were compiled from a documented monitoring program.",
     created = NA_character_,
     modified = "2026-01-01",
-    spec_version = "sdp-0.2.0"
+    spec_version = "sdp-0.3.0"
   )
   table_meta <- tibble::tibble(
     dataset_id = dataset_id,
@@ -65,7 +65,7 @@ make_eml_test_sdp <- function(path,
   )
   dictionary <- tibble::tribble(
     ~dataset_id, ~table_id, ~column_name, ~column_label, ~column_description,
-    ~term_iri, ~property_iri, ~entity_iri, ~constraint_iri, ~method_iri,
+    ~term_iri, ~property_iri, ~entity_iri, ~constraint_iri, ~statistical_modifier_iri,
     ~unit_label, ~unit_iri, ~term_type, ~value_type, ~column_role, ~required,
     dataset_id, "counts", "record_id", "Record identifier",
     "Stable identifier for the annual count record.",

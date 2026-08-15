@@ -82,7 +82,13 @@
     )
     rows <- list()
     for (resource in descriptor$resources %||% list()) {
-      fields <- resource$schema$fields %||% list()
+      # Metadata resources declare `schema` as a URL string; only inline
+      # (list) schemas can carry per-field method bindings.
+      fields <- if (is.list(resource$schema)) {
+        resource$schema$fields %||% list()
+      } else {
+        list()
+      }
       for (field in fields) {
         custom <- field$custom %||% list()
         method_iri <- custom[["iAdopt:methodIri"]] %||%
@@ -332,7 +338,8 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
         }
       )
       descriptor$resources <- purrr::map(descriptor$resources, function(resource) {
-        if (!is.null(resource$schema$fields)) {
+        # Metadata resources declare `schema` as a URL string, not a list.
+        if (is.list(resource$schema) && !is.null(resource$schema$fields)) {
           resource$schema$fields <- purrr::map(resource$schema$fields, function(field) {
             field$custom[["iAdopt:methodIri"]] <- NULL
             field$method_iri <- NULL

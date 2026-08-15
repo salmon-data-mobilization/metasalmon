@@ -149,16 +149,21 @@ make_knb_test_reproducibility <- function(path) {
 }
 
 make_knb_test_methods_and_structure <- function(path) {
-  methods <- tibble::tibble(
-    dataset_id = "demo-salmon-2026",
-    method_iri = "https://example.org/methods/count-compilation",
-    method_label = "Count compilation",
-    method_description = "Compile annual salmon abundance counts.",
-    method_version = "2026",
-    protocol_iri = "https://example.org/protocols/count-compilation",
-    citation = "Example Salmon Program. 2026. Count compilation."
+  # sdp-0.3.0: no methods registry. The table-constant procedure and its
+  # protocol live on tables.csv; only the observation structures remain
+  # extension files.
+  tables_path <- file.path(path, "metadata", "tables.csv")
+  tables <- readr::read_csv(
+    tables_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
   )
-  write_sdp_methods(path, methods)
+  tables$method_iri <- "https://example.org/methods/count-compilation"
+  tables$protocol_iri <- "https://example.org/protocols/count-compilation"
+  tables$protocol_citation <-
+    "Example Salmon Program. 2026. Count compilation."
+  readr::write_csv(tables, tables_path, na = "")
   structures <- tibble::tibble(
     dataset_id = "demo-salmon-2026",
     table_id = "counts",
@@ -180,6 +185,37 @@ make_knb_test_methods_and_structure <- function(path) {
   )
   write_sdp_observation_structures(path, structures, components)
 }
+
+test_that("KNB planning aborts on a leftover sdp-0.2.0 methods registry", {
+  skip_if_not_installed("emld")
+
+  package_path <- make_knb_test_sdp(withr::local_tempdir())
+  readr::write_csv(
+    tibble::tibble(
+      dataset_id = "demo-salmon-2026",
+      method_iri = "https://example.org/methods/count-compilation",
+      method_label = "Count compilation",
+      method_description = "A legacy registry row.",
+      method_version = NA_character_,
+      protocol_iri = NA_character_,
+      citation = NA_character_
+    ),
+    file.path(package_path, "metadata", "methods.csv"),
+    na = ""
+  )
+  manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
+
+  expect_error(
+    publish_sdp_to_knb(
+      package_path,
+      public = TRUE,
+      manifest_path = manifest_path,
+      dry_run = TRUE,
+      representation = "expanded"
+    ),
+    "Run.*migrate_sdp_methods"
+  )
+})
 
 test_that("KNB dry run writes an exact offline manifest and deterministic ORE", {
   skip_if_not_installed("emld")
@@ -1831,13 +1867,15 @@ test_that("private expanded revisions reconstruct from authenticated remote ORE"
   expect_true(all(c(
     "datapackage.json",
     "metadata/eml.xml",
-    "metadata/methods.csv",
     "metadata/structure/observation_structures.csv",
     "metadata/structure/observation_components.csv",
     "metadata/semantic/mapping-sets.json",
     "metadata/semantic/measurement-decompositions.json",
     "reproducibility/manifest.json"
   ) %in% remote_members$path))
+  # sdp-0.3.0 removed the methods registry: it must never appear in an
+  # artifact inventory.
+  expect_false("metadata/methods.csv" %in% remote_members$path)
 
   reconstructed <- file.path(workspace, "remote-reconstruction")
   dir.create(reconstructed)
@@ -1861,7 +1899,6 @@ test_that("private expanded revisions reconstruct from authenticated remote ORE"
   ))
   expect_no_error(validate_sdp_sssom(reconstructed))
   expect_no_error(validate_sdp_measurement_decompositions(reconstructed))
-  expect_no_error(validate_sdp_methods(reconstructed))
   expect_no_error(validate_sdp_observation_structures(reconstructed))
   expect_no_error(validate_sdp_reproducibility_manifest(reconstructed))
 
@@ -3469,7 +3506,6 @@ test_that("uploaded expanded objects reconstruct and strictly validate the SDP",
   ))
   expect_no_error(validate_sdp_sssom(reconstructed))
   expect_no_error(validate_sdp_measurement_decompositions(reconstructed))
-  expect_no_error(validate_sdp_methods(reconstructed))
   expect_no_error(validate_sdp_observation_structures(reconstructed))
   expect_no_error(validate_sdp_reproducibility_manifest(reconstructed))
 })

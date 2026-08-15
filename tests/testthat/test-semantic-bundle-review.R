@@ -18,7 +18,14 @@ theme_a_candidate <- function(role) {
   )
 }
 
-theme_a_bundle_response <- function(roles = metasalmon:::.ms_semantic_bundle_roles()) {
+# The roles actually targeted for this fixture's measurement column under
+# sdp-0.3.0: the dictionary method slot is gone, and no statistical_modifier
+# target is emitted because the column text names no aggregation.
+theme_a_target_roles <- function() {
+  c("variable", "property", "entity", "unit", "constraint")
+}
+
+theme_a_bundle_response <- function(roles = theme_a_target_roles()) {
   list(
     bundle_summary = "Spawner abundance for natural-origin fish.",
     assessments = lapply(roles, function(role) {
@@ -75,8 +82,8 @@ test_that("measurement semantics use one bundle request with per-slot assessment
   assessments <- attr(out, "semantic_llm_assessments")
 
   expect_equal(request_calls, 1L)
-  expect_equal(nrow(assessments), 6L)
-  expect_equal(assessments$dictionary_role, metasalmon:::.ms_semantic_bundle_roles())
+  expect_equal(nrow(assessments), 5L)
+  expect_equal(assessments$dictionary_role, theme_a_target_roles())
   expect_equal(names(assessments), metasalmon:::.ms_llm_assessment_cols())
   expect_setequal(
     suggestions$dictionary_role[suggestions$llm_selected],
@@ -84,7 +91,7 @@ test_that("measurement semantics use one bundle request with per-slot assessment
   )
   expect_false(any(
     suggestions$llm_selected &
-      suggestions$dictionary_role %in% c("constraint", "method")
+      suggestions$dictionary_role == "constraint"
   ))
 })
 
@@ -119,7 +126,7 @@ test_that("prompt top_n does not truncate the public deterministic shortlist", {
 
   suggestions <- attr(out, "semantic_suggestions")
 
-  expect_equal(nrow(suggestions), 18L)
+  expect_equal(nrow(suggestions), 15L)
   expect_true(all(table(suggestions$dictionary_role) == 3L))
   expect_equal(sum(suggestions$llm_selected), 4L)
 })
@@ -152,7 +159,7 @@ test_that("zero-candidate measurement targets remain assessable without placehol
 
   expect_equal(request_calls, 1L)
   expect_equal(nrow(attr(out, "semantic_suggestions")), 0L)
-  expect_equal(nrow(attr(out, "semantic_llm_assessments")), 6L)
+  expect_equal(nrow(attr(out, "semantic_llm_assessments")), 5L)
   expect_true(all(
     attr(out, "semantic_llm_assessments")$llm_decision == "request_new_term"
   ))
@@ -184,7 +191,7 @@ test_that("a provider outage preserves an empty deterministic shortlist", {
   assessments <- attr(out, "semantic_llm_assessments")
 
   expect_equal(nrow(suggestions), 0L)
-  expect_equal(nrow(assessments), 6L)
+  expect_equal(nrow(assessments), 5L)
   expect_equal(request_calls, 1L)
   expect_identical(names(assessments), metasalmon:::.ms_llm_assessment_cols())
   expect_true(all(!is.na(assessments$llm_error)))
@@ -207,15 +214,15 @@ test_that("a missing bundle slot falls back only that slot", {
       request_calls <<- request_calls + 1L
       if (grepl("Semantic bundle payload:", messages[[2]]$content, fixed = TRUE)) {
         return(theme_a_bundle_response(roles = setdiff(
-          metasalmon:::.ms_semantic_bundle_roles(),
-          "method"
+          theme_a_target_roles(),
+          "constraint"
         )))
       }
       list(
         decision = "review",
         selected_candidate_index = NULL,
         confidence = 0.4,
-        rationale = "Fallback reviewed the method slot.",
+        rationale = "Fallback reviewed the constraint slot.",
         missing_context = ""
       )
     }
@@ -224,16 +231,16 @@ test_that("a missing bundle slot falls back only that slot", {
   assessments <- attr(out, "semantic_llm_assessments")
 
   expect_equal(request_calls, 2L)
-  expect_equal(nrow(assessments), 6L)
+  expect_equal(nrow(assessments), 5L)
   expect_match(
-    assessments$llm_rationale[assessments$dictionary_role == "method"],
+    assessments$llm_rationale[assessments$dictionary_role == "constraint"],
     "Bundle response fallback",
     fixed = TRUE
   )
   expect_false(any(
     grepl(
       "Bundle response fallback",
-      assessments$llm_rationale[assessments$dictionary_role != "method"],
+      assessments$llm_rationale[assessments$dictionary_role != "constraint"],
       fixed = TRUE
     )
   ))
@@ -371,7 +378,7 @@ test_that("one malformed retry slot does not discard another valid reassessment"
     max_per_role = 2L,
     search_fn = function(query, role, sources) {
       if (identical(query, "fish abundance") &&
-          role %in% c("property", "method")) {
+          role %in% c("property", "constraint")) {
         candidate <- theme_a_candidate(role)
         candidate$label <- paste("Better", role)
         candidate$iri <- paste0(
@@ -398,9 +405,9 @@ test_that("one malformed retry slot does not discard another valid reassessment"
         "dictionary_role"
       )
       property <- match("property", roles)
-      method <- match("method", roles)
+      constraint <- match("constraint", roles)
       if (request_calls == 1L) {
-        for (slot in c(property, method)) {
+        for (slot in c(property, constraint)) {
           response$assessments[[slot]]$decision <- "retry_search"
           response$assessments[[slot]]$selected_candidate_id <- NULL
           response$assessments[[slot]]$retry_query <- "fish abundance"
@@ -410,8 +417,8 @@ test_that("one malformed retry slot does not discard another valid reassessment"
 
       response$assessments[[property]]$selected_candidate_id <-
         "smn::https://example.org/property-better"
-      response$assessments[[method]]$selected_candidate_id <-
-        "smn::https://example.org/unknown-method"
+      response$assessments[[constraint]]$selected_candidate_id <-
+        "smn::https://example.org/unknown-constraint"
       response
     }
   )
@@ -422,8 +429,8 @@ test_that("one malformed retry slot does not discard another valid reassessment"
     ,
     drop = FALSE
   ]
-  method <- assessments[
-    assessments$dictionary_role == "method",
+  constraint <- assessments[
+    assessments$dictionary_role == "constraint",
     ,
     drop = FALSE
   ]
@@ -431,8 +438,8 @@ test_that("one malformed retry slot does not discard another valid reassessment"
   expect_equal(request_calls, 2L)
   expect_equal(property$llm_decision, "accept")
   expect_equal(property$llm_selected_iri, "https://example.org/property-better")
-  expect_equal(method$llm_decision, "retry_search")
-  expect_true(is.na(method$llm_selected_iri))
+  expect_equal(constraint$llm_decision, "retry_search")
+  expect_true(is.na(constraint$llm_selected_iri))
 })
 
 test_that("a duplicate bundle retry is skipped while another slot can reassess", {
@@ -735,7 +742,10 @@ test_that("semantic source policy distinguishes omitted and explicit sources", {
 
   expect_identical(omitted_sources$unit, sources_for_role("unit"))
   expect_identical(omitted_sources$entity, sources_for_role("entity"))
-  expect_identical(omitted_sources$method, sources_for_role("method"))
+  expect_identical(omitted_sources$constraint, sources_for_role("constraint"))
+  # The statistical_modifier role has its own role-aware default sources even
+  # though this non-aggregated fixture emits no such target.
+  expect_identical(sources_for_role("statistical_modifier"), c("smn", "ols"))
 
   explicit_sources <- list()
   suggest_semantics(

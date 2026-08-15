@@ -1,4 +1,4 @@
-dataset_id,table_id,column_name,column_label,column_description,term_iri,property_iri,entity_iri,constraint_iri,method_iri,unit_label,unit_iri,term_type,value_type,column_role,required
+dataset_id,table_id,column_name,column_label,column_description,term_iri,property_iri,entity_iri,constraint_iri,statistical_modifier_iri,unit_label,unit_iri,term_type,value_type,column_role,required
 fraser-coho-2023-2024,escapement,POP_ID,Population ID,NuSEDS population identifier.,,,,,,,,,number,identifier,TRUE
 fraser-coho-2023-2024,escapement,POPULATION,Population name,Population name with local watershed context.,,,,,,,,,string,attribute,FALSE
 fraser-coho-2023-2024,escapement,AREA,PFMA area,Pacific Fishery Management Area code for the population.,,,,,,,,,string,attribute,FALSE

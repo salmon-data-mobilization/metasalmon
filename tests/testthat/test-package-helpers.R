@@ -851,18 +851,18 @@ test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer
   fake_suggest <- function(df, dict, ...) {
     suggestions <- tibble::tibble(
       column_name = rep("weight_kg", 6),
-      dictionary_role = c("variable", "property", "entity", "unit", "method", "constraint"),
+      dictionary_role = c("variable", "property", "entity", "unit", "statistical_modifier", "constraint"),
       table_id = rep("main", 6),
       dataset_id = rep("review-demo", 6),
       target_scope = rep("column", 6),
       target_sdp_file = rep("column_dictionary.csv", 6),
-      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "method_iri", "constraint_iri"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "unit_iri", "statistical_modifier_iri", "constraint_iri"),
       iri = c(
         "https://example.org/term/weight",
         "https://example.org/property/weight",
         "https://example.org/entity/fish-weight",
         "http://qudt.org/vocab/unit/KiloGM",
-        "https://example.org/method/fork-length",
+        "https://example.org/modifier/sample-value",
         "https://example.org/constraint/catch-context"
       ),
       label = c(
@@ -870,15 +870,15 @@ test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer
         "Fish weight",
         "Fish weight",
         "Kilogram",
-        "Fork-length field method",
+        "Sample value modifier",
         "Catch context"
       ),
       source = rep("smn", 6),
       ontology = rep("demo", 6),
-      role = c("variable", "property", "entity", "unit", "method", "constraint"),
+      role = c("variable", "property", "entity", "unit", "statistical_modifier", "constraint"),
       match_type = rep("label_partial", 6),
       definition = NA_character_,
-      search_query = c("weight kg", "fish weight kg", "fish weight kg", "kg", "fish weight method", "fish weight context"),
+      search_query = c("weight kg", "fish weight kg", "fish weight kg", "kg", "fish weight modifier", "fish weight context"),
       target_label = rep("Weight kg", 6),
       target_description = rep("Fish weight in kilograms", 6),
       llm_provider = rep("openrouter", 6),
@@ -946,7 +946,7 @@ test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer
   expect_equal(weight_row$property_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/property/weight"))
   expect_equal(weight_row$entity_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://example.org/entity/fish-weight"))
   expect_equal(weight_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/KiloGM"))
-  expect_true(is.na(weight_row$method_iri[[1]]) || weight_row$method_iri[[1]] == "")
+  expect_true(is.na(weight_row$statistical_modifier_iri[[1]]) || weight_row$statistical_modifier_iri[[1]] == "")
   expect_true(is.na(weight_row$constraint_iri[[1]]) || weight_row$constraint_iri[[1]] == "")
 })
 
@@ -1165,25 +1165,25 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
       dataset_id = c(rep("hydro-demo", 5), rep("hydro-demo", 2)),
       table_id = c(rep("hydro", 5), rep("hydro", 2)),
       column_name = c(rep("water_level", 5), rep("spawner_count", 2)),
-      dictionary_role = c("variable", "property", "entity", "method", "unit", "variable", "property"),
+      dictionary_role = c("variable", "property", "entity", "statistical_modifier", "unit", "variable", "property"),
       target_scope = "column",
       target_sdp_file = "column_dictionary.csv",
-      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "method_iri", "unit_iri", "term_iri", "property_iri"),
+      target_sdp_field = c("term_iri", "property_iri", "entity_iri", "statistical_modifier_iri", "unit_iri", "term_iri", "property_iri"),
       search_query = c("water level", "water level", "water level", "water level", "meter", "adult spawner count", "count"),
       column_label = c(rep("Water Level (m)", 5), rep("Spawner Count", 2)),
-      label = c("Escapement", "Mainstem phase", "Population", "uses observation procedure", "Meter", "Spawner abundance", "count"),
+      label = c("Escapement", "Mainstem phase", "Population", "Sample statistic", "Meter", "Spawner abundance", "count"),
       iri = c(
         "https://w3id.org/smn/Escapement",
         "https://w3id.org/smn/MainstemPhase",
         "https://w3id.org/smn/Population",
-        "https://w3id.org/smn/usesObservationProcedure",
+        "https://w3id.org/smn/SampleStatistic",
         "http://qudt.org/vocab/unit/M",
         "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
         "http://purl.obolibrary.org/obo/STATO_0000047"
       ),
       source = c("smn", "smn", "smn", "smn", "qudt", "gcdfo", "ols"),
       ontology = c("smn", "smn", "smn", "smn", "qudt", "gcdfo", "stato"),
-      role = c("variable", "property", "entity", "method", "unit", "variable", "property"),
+      role = c("variable", "property", "entity", "statistical_modifier", "unit", "variable", "property"),
       match_type = c("class", "concept", "class", "objectproperty", "unit", "class", "label_exact"),
       definition = NA_character_,
       score = c(8, 8, 8, 8, 4.4, 3, 0.8)
@@ -1213,7 +1213,7 @@ test_that("create_sdp keeps broad physical measurement matches review-only but s
   expect_true(is.na(water_row$term_iri[[1]]) || water_row$term_iri[[1]] == "")
   expect_true(is.na(water_row$property_iri[[1]]) || water_row$property_iri[[1]] == "")
   expect_true(is.na(water_row$entity_iri[[1]]) || water_row$entity_iri[[1]] == "")
-  expect_true(is.na(water_row$method_iri[[1]]) || water_row$method_iri[[1]] == "")
+  expect_true(is.na(water_row$statistical_modifier_iri[[1]]) || water_row$statistical_modifier_iri[[1]] == "")
   expect_equal(water_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M"))
 
   expect_equal(count_row$term_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "https://w3id.org/gcdfo/salmon#SpawnerAbundance"))
@@ -1320,7 +1320,7 @@ test_that("create_sdp keeps camelCase physical DwC property suggestions review-o
   expect_true(is.na(depth_row$term_iri[[1]]) || depth_row$term_iri[[1]] == "")
   expect_true(is.na(depth_row$property_iri[[1]]) || depth_row$property_iri[[1]] == "")
   expect_true(is.na(depth_row$entity_iri[[1]]) || depth_row$entity_iri[[1]] == "")
-  expect_true(is.na(depth_row$method_iri[[1]]) || depth_row$method_iri[[1]] == "")
+  expect_true(is.na(depth_row$statistical_modifier_iri[[1]]) || depth_row$statistical_modifier_iri[[1]] == "")
   expect_equal(depth_row$unit_iri[[1]], paste0(metasalmon:::.ms_review_iri_prefix(), "http://qudt.org/vocab/unit/M"))
 })
 
@@ -1981,7 +1981,7 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
     property_iri = c("https://example.org/property/abundance"),
     entity_iri = c("https://w3id.org/example/entity"),
     constraint_iri = c("https://w3id.org/example/constraint"),
-    method_iri = c("https://w3id.org/example/method")
+    statistical_modifier_iri = c("https://w3id.org/example/modifier")
   )
 
   temp_dir <- withr::local_tempdir()
@@ -1997,11 +1997,11 @@ test_that("I-ADOPT fields round-trip through datapackage.json", {
 
   pkg <- read_salmon_datapackage(temp_dir)
 
-  expect_true(all(c("property_iri", "entity_iri", "constraint_iri", "method_iri", "unit_iri") %in% names(pkg$dictionary)))
+  expect_true(all(c("property_iri", "entity_iri", "constraint_iri", "statistical_modifier_iri", "unit_iri") %in% names(pkg$dictionary)))
   expect_equal(pkg$dictionary$property_iri, dict$property_iri)
   expect_equal(pkg$dictionary$entity_iri, dict$entity_iri)
   expect_equal(pkg$dictionary$constraint_iri, dict$constraint_iri)
-  expect_equal(pkg$dictionary$method_iri, dict$method_iri)
+  expect_equal(pkg$dictionary$statistical_modifier_iri, dict$statistical_modifier_iri)
   expect_equal(pkg$dictionary$unit_iri, dict$unit_iri)
 })
 

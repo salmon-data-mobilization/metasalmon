@@ -583,9 +583,17 @@ test_that("REVIEW markers do not activate accepted-pair redundancy", {
 })
 
 test_that("bundle validators downgrade unsupported acceptances only", {
+  # sdp-0.3.0: the dictionary method slot is gone, so a column bundle carries
+  # the five base roles plus statistical_modifier (opened here by the
+  # aggregation token "Total"). The constraint acceptance lacks qualifier
+  # evidence and is downgraded; every other acceptance is retained.
   dict <- test_dictionary(
     column_description = "Total fish observed in a trawl catch.",
     unit_label = "count"
+  )
+  bundle_roles <- c(
+    "variable", "property", "entity", "unit", "constraint",
+    "statistical_modifier"
   )
   candidate_for_role <- function(role) {
     label <- switch(
@@ -595,7 +603,7 @@ test_that("bundle validators downgrade unsupported acceptances only", {
       entity = "Fish",
       unit = "Count",
       constraint = "Catch context",
-      method = "Fork-length field method"
+      statistical_modifier = "Total value"
     )
     tibble::tibble(
       label = label,
@@ -613,7 +621,7 @@ test_that("bundle validators downgrade unsupported acceptances only", {
     list(
       bundle_summary = "A catch count measurement.",
       assessments = lapply(
-        metasalmon:::.ms_semantic_bundle_roles(),
+        bundle_roles,
         function(role) {
           list(
             dictionary_role = role,
@@ -650,12 +658,13 @@ test_that("bundle validators downgrade unsupported acceptances only", {
 
   assessments <- attr(out, "semantic_llm_assessments")
   downgraded <- assessments[
-    assessments$dictionary_role %in% c("constraint", "method"),
+    assessments$dictionary_role == "constraint",
     ,
     drop = FALSE
   ]
   retained <- assessments[
-    assessments$dictionary_role %in% c("variable", "property", "entity", "unit"),
+    assessments$dictionary_role %in%
+      c("variable", "property", "entity", "unit", "statistical_modifier"),
     ,
     drop = FALSE
   ]
@@ -669,13 +678,11 @@ test_that("bundle validators downgrade unsupported acceptances only", {
   expect_true(all(is.na(downgraded$llm_selected_candidate_index)))
   expect_true(all(is.na(downgraded$llm_selected_iri)))
   expect_true(all(downgraded$llm_confidence == 0.94))
+  expect_equal(nrow(retained), 5L)
   expect_true(all(retained$llm_decision == "accept"))
   expect_setequal(
     findings$code,
-    c(
-      "SEM_CONSTRAINT_EVIDENCE_REQUIRED",
-      "SEM_METHOD_EVIDENCE_REQUIRED"
-    )
+    "SEM_CONSTRAINT_EVIDENCE_REQUIRED"
   )
   expect_true(all(grepl("\\[SEM_", downgraded$llm_rationale)))
 })
@@ -709,8 +716,11 @@ test_that("bundle validation downgrades an incompatible accepted property-unit p
   )
   response <- list(
     bundle_summary = "A deliberately incompatible pair.",
+    # Only the five base roles are targets for this non-aggregated
+    # measurement column; a response for a non-target role would be ignored
+    # with a warning.
     assessments = lapply(
-      metasalmon:::.ms_semantic_bundle_roles(),
+      c("variable", "property", "entity", "unit", "constraint"),
       function(role) {
         accepted <- role %in% c("property", "unit")
         iri <- if (accepted) candidates[[role]]$iri[[1]] else NULL
