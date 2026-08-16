@@ -42,6 +42,35 @@ Highest strategic value, least code. Run alongside S1–S5. Ordered:
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
 
+## gcdfo docs-pipeline gate substream
+
+The gcdfo documentation build had a **placebo gate**: its WebVOWL normalizer
+crashed on every run, but the `docs-widoco` recipe was a `;`-chained shell
+without `set -e`, so `make` reported the trailing `echo`'s status and printed
+success — and CI separately excluded the affected artifact from its
+dirty-tree check. The exclusion predated the normalizer by five weeks: a
+workaround that outlived its cause and then concealed a failure it was never
+written for.
+
+**Sequenced work, in order:**
+
+1. **Make the gate able to fail** — fix the normalizer crash (colliding
+   `xsd:gYear` nodes, resolved by widening the key rather than merging nodes,
+   which would silently change the rendering), add `set -e` to the affected
+   recipes, and remove the stale CI exclusion. *Landed as a gcdfo PR; verified
+   green on a clean CI runner with the exclusion removed, which is what
+   establishes cross-platform byte-stability of the normalizer output.*
+2. **Fix the self-seeding baseline** — the recipe snapshots the working-tree
+   artifact as the normalizer's baseline, then overwrites that same path with
+   raw output before the normalizer runs, so a failed build seeds its own
+   baseline and the next run goes green over un-normalized output. Tracked as
+   the first entry in [backlog.md](../backlog.md) with its mechanism, fix
+   path, verification trap, and retirement condition. **Blocked on step 1** —
+   it only makes sense once the recipe can fail at all.
+
+Retires when step 2 ships and its `docs/tech-debt.md` entry in gcdfo is
+deleted at the same time.
+
 ## Governed mapping-product consumer substream
 
 This is a parallel, dependency-gated part of S6. PSC draft GitLab MR !5 is the

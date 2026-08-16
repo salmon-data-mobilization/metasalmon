@@ -72,6 +72,22 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   it reads the slot fields as the authority and inspects the emitter and filter
   bodies, so keep its `hint_roles` and `hint_to_sources` lists current when a
   role is added, renamed, or deliberately exempted.
+- **A guard must say what would retire it.** Every suppression, exclusion,
+  allowlist entry, skip, or workaround records *the condition under which it
+  stops being needed* — the defect it routes around, the version that fixes
+  it, the successor that supersedes it. Without that, a guard outlives its
+  cause and then conceals the failure it was never written for, and reading
+  it alone tells you nothing is wrong. Observed three times on 2026-08-16
+  alone: a gcdfo CI exclusion added five weeks *before* the normalizer whose
+  crash it ended up hiding, with nothing in the repo connecting the two; a
+  `make` recipe whose missing `set -e` printed a success mark over a crashing
+  script; and duplicate placement guards in `migrate_sdp_methods()` that
+  became unreachable when the real checks moved earlier, leaving dead code
+  that invited someone to weaken the live copy. The existing decay-resistant
+  lists here work because they name their own maintenance rule
+  (`collation_sensitive_fns`, `hint_roles`); apply the same discipline to
+  anything that silences a signal.
+>>>>>>> 5d82685 (docs: a guard must say what would retire it; take the WebVOWL baseline handoff)
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:
