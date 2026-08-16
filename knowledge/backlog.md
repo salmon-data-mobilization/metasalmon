@@ -194,11 +194,16 @@ iteration across repeated refreshes — the handing session believes comparing
 against HEAD is equally stable because the render is deterministic given the
 same semantic input, but did not test a multi-refresh local edit cycle.
 
-**The test that matters** is not a clean build. Break the normalizer
-deliberately, run `make docs-widoco` so it fails and leaves raw output in the
-tree, then run it again *without restoring the file* and confirm the second
-run does not go green over raw bytes. That second run is the bug. A clean
-`SMN_FLAT_TTL=/nonexistent/smn.ttl make ci` twice (byte-identical
+**The test that matters** is not a clean build, and it has a trap. Break the
+normalizer deliberately, run `make docs-widoco` so it fails and leaves raw
+output in the tree — then **repair the normalizer while leaving that dirty
+`ontology.json` in place**, and re-run. The second run must not go green over
+the raw bytes. Skipping the repair step makes the second run fail for the
+trivial reason that the normalizer is still broken, which proves nothing and
+would pass identically against the unfixed self-seeding implementation. A clean
+`make ci` twice with `SMN_FLAT_TTL` pointed at a path that does not
+exist (that is how the repo's own CI forces the pinned-fetch route rather
+than a local sibling checkout), expecting a byte-identical
 `ontology.json`; sha256 `4d350546…` on main's pin `a5d4f28`) is necessary but
 not sufficient.
 
