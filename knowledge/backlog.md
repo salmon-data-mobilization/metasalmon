@@ -166,6 +166,47 @@ is the highest-value remaining collation item; pick it up next.**
 
 ## Correctness / UX bugs
 
+### 0. gcdfo `docs-widoco` seeds its own baseline, so a failed build goes green over raw output
+
+**Repo:** `dfo-pacific-science/dfo-salmon-ontology`. **Blocked on:** PR #82
+landing first — this change only makes sense on top of it. **Handed to this
+hub 2026-08-16** by the session that fixed #82 (Brett reversed the earlier
+"keep it there" call).
+
+`docs-widoco` copies the working-tree `docs/webvowl/data/ontology.json` to
+`release/tmp/webvowl-baseline.json` as the normalizer's baseline, and *then*
+`rsync` overwrites that same path with fresh raw WIDOCO output before the
+normalizer runs. Now that the recipe fails loudly (new in #82), a failed
+build leaves raw bytes in the tree; re-running adopts those raw bytes as the
+baseline, the normalizer finds the new raw output semantically equal to them,
+restores them, and the build goes **green over un-normalized output**. That
+self-perpetuation is what kept the whole placebo alive. Not a regression from
+#82 — it predates it; #82 only makes it reachable more often by failing where
+it used to silently continue.
+
+**Fix:** source the baseline from git instead of the working tree.
+`scripts/normalize_webvowl_json.py` already implements this as
+`load_git_head_text()` and uses it as its fallback when `--baseline` is
+absent; the Makefile currently overrides it with the working-tree snapshot,
+so the simplest change is to stop passing `--baseline` from `docs-widoco`.
+**Verify first** whether the working-tree baseline was deliberate for local
+iteration across repeated refreshes — the handing session believes comparing
+against HEAD is equally stable because the render is deterministic given the
+same semantic input, but did not test a multi-refresh local edit cycle.
+
+**The test that matters** is not a clean build. Break the normalizer
+deliberately, run `make docs-widoco` so it fails and leaves raw output in the
+tree, then run it again *without restoring the file* and confirm the second
+run does not go green over raw bytes. That second run is the bug. A clean
+`SMN_FLAT_TTL=/nonexistent/smn.ttl make ci` twice (byte-identical
+`ontology.json`; sha256 `4d350546…` on main's pin `a5d4f28`) is necessary but
+not sufficient.
+
+**Retire when:** the fix ships — and retire the matching
+`docs/tech-debt.md` "Active Technical Debt" entry dated 2026-08-16 in that
+repo at the same time.
+
+
 ### 1. `infer_dictionary()` silently drops LLM options when `seed_semantics = FALSE`
 - **Severity:** medium · **Status:** confirmed + spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed. `infer_dictionary()` now routes through
