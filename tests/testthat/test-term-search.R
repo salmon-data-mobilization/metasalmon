@@ -743,6 +743,9 @@ test_that("sources_for_role returns appropriate sources for each role", {
   expect_equal(sources_for_role("method"), c("smn", "gcdfo", "bioportal", "ols", "zooma"))
   expect_equal(sources_for_role("variable"), c("smn", "gcdfo", "nvs", "ols", "zooma"))
   expect_equal(sources_for_role("constraint"), c("smn", "gcdfo", "ols"))
+  # sdp-0.3.0: modifiers are reviewed in smn's StatisticalModifierScheme, with
+  # I-ADOPT and STATO reachable through OLS. gcdfo has no modifier vocabulary.
+  expect_equal(sources_for_role("statistical_modifier"), c("smn", "ols"))
   # Default fallback
   expect_equal(sources_for_role(NA), c("smn", "gcdfo", "ols", "nvs"))
   expect_equal(sources_for_role(""), c("smn", "gcdfo", "ols", "nvs"))
