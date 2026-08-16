@@ -89,9 +89,6 @@ approval status.
 
 Ordering that is not optional, independent of who is executing:
 
-- **metasalmon migration vignette lands after the dry-run fix.** The vignette
-  states an invariant that only the dry-run preview change establishes; merged
-  first it documents behaviour the code does not yet have.
 - **The gcdfo `docs-widoco` baseline fix lands after the WebVOWL gate fix.**
   The baseline change only makes sense once the recipe can fail at all.
 - **A gcdfo release and the WebVOWL gate fix resolve their
@@ -110,7 +107,7 @@ moment anything merges. Current work-in-flight lives in the owning execplan.
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
-authoritative; this index coordinates. Refreshed 2026-08-15 against repository
+authoritative; this index coordinates. Refreshed 2026-08-16 against repository
 version sources, remote tags, and the open changes that affect this sequence.
 
 ### metasalmon (R) — current **0.3.0**
@@ -339,7 +336,7 @@ any shared analytical-term coverage its approved scope requires.
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · #76, #77
-- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md)
+- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · gcdfo #67-#75 (nine SPSR holds = four decisions, step 7)
 - [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79
 

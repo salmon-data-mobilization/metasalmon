@@ -56,6 +56,33 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
    circular).
 7. **Step 6 — propagation** to workshop, hub docs, and guides; also hosts the
    parked #78 iop-triple-emission explainer (deferred by Brett 2026-08-13).
+8. **Step 7 — clear the nine SPSR term-review holds** (gcdfo issues #67–#75,
+   open since 2026-03-30 and untracked in this bundle until 2026-08-16). Each
+   issue proposes one `gcdfo:` concept from the SPSR ontology-draft inventory
+   and each is blocked on a decision, not on implementation — so the work is
+   nine *decisions*, and they are **not nine independent ones**. They collapse
+   into four, and the batching is the point: deciding them one issue at a time
+   invites three different answers to the same question.
+
+   | Group | Issues | The one decision |
+   |---|---|---|
+   | A — management geography | #67 DFO Management Area Name, #69 Lower Management Level, #75 Upper Management Level | Model the management-area *entity* once and reach names/levels through label and identifier properties, or mint a field concept per source column? |
+   | B — sockeye life history | #68 Lake Type, #74 River Type | Split the mixed `LIFE_HISTORY_TYPE` source field into its own scheme, or reuse an existing smn/gcdfo term if one already covers the distinction? |
+   | C — pink dominant cycle | #70 Odd Year Dominant Cycle | Dedicated dominant-cycle scheme or not — and if retained, mint the complementary `EvenYearDominantCycle` that the current SPSR extract does not contain? |
+   | D — quality rating codes | #71/#72/#73 (codes 1/2/3) | Do `INFORMATION_QUALITY` and `INDEX_QUALITY` share one scheme, and should undocumented numeric codes become concepts at all rather than staying data until a published scheme exists? |
+
+   Group D carries the sharpest risk: minting `QualityRatingCode1/2/3` with no
+   authoritative meaning publishes an IRI that asserts a distinction nobody can
+   define, and the two source fields may not even share a value set. "Leave it
+   as data" is a legitimate outcome for a hold — **closing an issue as
+   *rejected with reasoning* is a result, not a failure**, and #24's close is
+   the precedent for recording why.
+
+   Note the namespace question that #24 already settled once: these are
+   proposed as `gcdfo:`, but life history and dominant cycle are general salmon
+   concepts, not DFO administrative ones. Under the boundary the two ontologies
+   now hold to, groups B and C most likely belong in `smn:` — which changes who
+   decides them.
 
 **Cross-repo bookkeeping rule (Brett, 2026-08-12/13):** every repo this stream
 touches gets an OKF knowledge bundle (created if absent, updated as learned),
