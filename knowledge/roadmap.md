@@ -85,47 +85,27 @@ approval status.
 
 ---
 
-## Cross-session consolidation (2026-08-16)
+## Active sequencing constraints
 
-Work ran in five parallel sessions today and was consolidated into this hub.
-**Open across the ecosystem**, with what each is waiting on:
+Ordering that is not optional, independent of who is executing:
 
-| PR | Repo | What | State |
-|---|---|---|---|
-| [#45](https://github.com/salmon-data-mobilization/metasalmon/pull/45) | metasalmon | EML parity-deviation rows into the hub register | open |
-| [#46](https://github.com/salmon-data-mobilization/metasalmon/pull/46) | metasalmon | S11 migration + tidy-data vignettes | **must merge after #47** — its vignette states an invariant #47 establishes |
-| [#47](https://github.com/salmon-data-mobilization/metasalmon/pull/47) | metasalmon | statistical_modifier ranking prefs; honest dry-run previews | open |
-| [#48](https://github.com/salmon-data-mobilization/metasalmon/pull/48) | metasalmon | guard-expiry rule; WebVOWL baseline backlog entry | open |
-| [#79](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/79) | gcdfo | 0.0.9 release prep | open; **conflicts with #82 on `ontology.json` — regenerate, never hand-resolve** |
-| [#80](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/80) | gcdfo | remove two stray files from PR #78 | open, independent |
-| [#81](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/81) | gcdfo | retarget alignment overlays at `smn:` | open — closes the condition disclosed on #79 |
-| [#82](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/82) | gcdfo | make the WebVOWL stabilization gate able to fail | open |
+- **metasalmon migration vignette lands after the dry-run fix.** The vignette
+  states an invariant that only the dry-run preview change establishes; merged
+  first it documents behaviour the code does not yet have.
+- **The gcdfo `docs-widoco` baseline fix lands after the WebVOWL gate fix.**
+  The baseline change only makes sense once the recipe can fail at all.
+- **A gcdfo release and the WebVOWL gate fix resolve their
+  `docs/webvowl/data/ontology.json` conflict by REGENERATING** — run the repo's
+  `ci` target on the merged tree and commit what it produces against whichever
+  `SMN_PIN` survives. Both sides are whole-file derived output; a hand-picked
+  side is output no generator produces.
+- **S10's 0.3.0 rung must carry metasalmon's post-0.3.0 fixes**, not just the
+  release tree: the statistical-modifier ranking preferences, the corrected
+  bundle-review prompt, the dry-run stop parity, and the role-contract guard.
+  See the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md).
 
-**The dangling-overlay defect is 4× what this hub disclosed.** The #79
-disclosure named two IRIs; #81's full audit of both overlay files against the
-live ontology found **eight** (`SurveyEvent`, `EscapementSurveyEvent`,
-`EscapementMeasurement`, `IndicatorRiver`, `ReferencePoint`,
-`ReportingOrManagementStratum`, `hasDeme`, `hasPopulation`), retired when core
-migrated overlapping shared terms to `smn:` IRIs. Worse than dangling:
-ROBOT's OWL API declares any untyped IRI in class or property position, so a
-core+overlay merge **re-mints five retired terms**, actively recreating the
-`gcdfo:`/`smn:` duplication S9 step 3 removed. This hub's own disclosure was
-the least accurate version at every step — two IRIs and "latent", then eight
-and "reachable", then eight and "re-minted" — and each correction came from a
-different session. [#81](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/81)
-fixes it; verify with a `robot merge` of core+overlay, never `make test`,
-which never loads `ontology/modules/` and passes regardless.
-
-**Merge-order constraints that are not optional:** #47 before #46; #82 before
-the `docs-widoco` baseline fix (backlog item 0); #79 and #82 resolve their
-`ontology.json` conflict by running `make ci` on the merged tree and
-committing what it produces — expected `c14629eb…` under the 0.0.9 pin
-`f7205ee`, `4d350546…` under main's `a5d4f28`.
-
-**metasalmonpy 0.1.7** is four chunks deep on `feat/s10-017-parity` (SSSOM,
-decompositions, EML, KNB) plus twelve reviewed defect fixes. No PR yet by
-design: the version bump that makes the parity claim true comes with the
-final chunk.
+Live pull-request state is deliberately NOT tracked here — it is stale the
+moment anything merges. Current work-in-flight lives in the owning execplan.
 
 ## Release index
 
