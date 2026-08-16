@@ -80,7 +80,7 @@ approval status.
 | `brett-hq` | Program-activation gate | Brett HQ planning authority | Attributable activation for a named implementation child; HQ remains authoritative for whether the gate is satisfied | `brett-hq/roadmaps/semantic-psc-data-system-roadmap.md` | 2026-08-15 |
 | `psc-data-systems` | Validation-tool dependency | P06 and repository maintainers | The PSC OKF profile and `psc-okf` capture-tier validator used to check this bundle; neither is mapping authority | `brett-hq/projects/P06-psc-scientific-data-system-map/project.md` and the repository-local OKF plan | 2026-08-15 |
 | `psc-data-systems-site` | Documentation-link handoff | P08 and site maintainers | Optional orientation link to a released PSC vocabulary mapping catalog; no mapping-product implementation gate | `brett-hq/projects/P08-psc-data-systems-documentation-website/project.md` | 2026-08-15 |
-| `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | A released immutable Adapter/pin and qualified compatibility record; operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-15 |
+| `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | Consumes psc-salmon-vocabularies **v0.1.0-alpha.2** as a vendored offline projection (34 CAMP concepts, 52 literal assignments, 22 informational alignments), gated on contract and provenance self-consistency plus semantic structure — **but no longer on artifact byte equality**: runtime checksum enforcement was removed 2026-08-07 (their MR !5) over Windows line-ending failures, so the declared SHA-256s are self-attested from inside the consumer. The pin is current, not stale. Operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-16 |
 | `ctc-knowledge-map` | Descriptive-evidence handoff | CTC bundle maintainers and eligible reviewers | Evidence-backed description of the released mapping flow; never mapping rows or approval inherited from a release | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and any activated repository-local plan | 2026-08-15 |
 
 ---
@@ -106,8 +106,15 @@ disclosure named two IRIs; #81's full audit of both overlay files against the
 live ontology found **eight** (`SurveyEvent`, `EscapementSurveyEvent`,
 `EscapementMeasurement`, `IndicatorRiver`, `ReferencePoint`,
 `ReportingOrManagementStratum`, `hasDeme`, `hasPopulation`), retired when core
-migrated overlapping shared terms to `smn:` IRIs. Reported accurately here
-because the hub's own number was the low one.
+migrated overlapping shared terms to `smn:` IRIs. Worse than dangling:
+ROBOT's OWL API declares any untyped IRI in class or property position, so a
+core+overlay merge **re-mints five retired terms**, actively recreating the
+`gcdfo:`/`smn:` duplication S9 step 3 removed. This hub's own disclosure was
+the least accurate version at every step — two IRIs and "latent", then eight
+and "reachable", then eight and "re-minted" — and each correction came from a
+different session. [#81](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/81)
+fixes it; verify with a `robot merge` of core+overlay, never `make test`,
+which never loads `ontology/modules/` and passes regardless.
 
 **Merge-order constraints that are not optional:** #47 before #46; #82 before
 the `docs-widoco` baseline fix (backlog item 0); #79 and #82 resolve their
