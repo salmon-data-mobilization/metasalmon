@@ -135,10 +135,11 @@ current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 
-### metasalmonpy (Python mirror) — current **0.1.6** (= metasalmon 0.1.6 parity)
+### metasalmonpy (Python mirror) — current **0.1.7** (= metasalmon 0.1.7 parity)
 
 | Version | Date | One line |
 |---|---|---|
+| 0.1.7 | 2026-08-16 (tagged `v0.1.7`, GitHub Release published) | Parity with metasalmon 0.1.7: SSSOM 1.1, measurement decompositions, reviewed EML 2.2.0, KNB/DataONE publication with the deterministic SDP archive, and the era SDP-inference corrections. Verified by running both implementations over the same inputs against the R **v0.1.7 tag**, not by reading R source |
 | 0.1.6 | 2026-07-29 | Parity with metasalmon 0.1.6: `create_sdp` workflow, opt-in semantic review, term-gap detection |
 | 0.1.3 | 2026-05-13 | Parity with metasalmon 0.0.13: SDP CSV IO, inference, EDH export |
 | 0.1.2 | 2026-02-06 | Initial: GitHub CSV helpers, metasalmon 0.0.5 parity |
@@ -391,3 +392,19 @@ defect.** Two CI skips reported, correctly, that a private repository was
 unreadable. Asking *why the default pointed there* surfaced #72: an exported
 function defaulting to a private dataset repo, so a good token was reported as
 broken. Read the reason; then ask why it is true.
+
+**Patch-unique is not content-unique.** When auditing whether an abandoned
+branch can be discarded, `git cherry origin/main <branch>` is the obvious test
+and it produces false positives constantly. Three branches across the hub
+reported 14, 11, and 2 patch-unique commits and all three turned out to hold
+nothing `main` lacks, for three unrelated reasons: the branch retained
+generated artifacts `main` deliberately stopped tracking; a namespace migration
+(`gcdfo:` → `smn:`) preserved every concept while changing every line; and a
+later cleanup commit mutated the content a pre-rebase backup's patches touched,
+so the patch-ids stopped matching. Each needed a semantic diff — *is this
+concept present under any name?* — not a commit count. The inverse also holds:
+a branch can have **zero** patch-unique commits and still be worth reading, and
+one that is genuinely superseded is best recorded by *why* it is superseded
+(`feature/observation-structure-methods` carried `metadata/methods.csv`, the
+exact artifact sdp-0.3.0 removed) rather than by a claim that its content is
+"already in main", which was the wrong reason for the right verdict.

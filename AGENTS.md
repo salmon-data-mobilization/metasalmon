@@ -27,7 +27,7 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state: metasalmonpy is
-  at 0.1.6 parity; the 0.1.7→0.3.0 catch-up is roadmap stream S10. The same
+  at 0.1.7 parity; the 0.1.8→0.3.0 catch-up is roadmap stream S10. The same
   contract is stated in metasalmonpy's `AGENTS.md`; both files are
   git-tracked and must never be git-ignored.
 - **LLM review is strictly opt-in.** Supplying `llm_context_files` /
