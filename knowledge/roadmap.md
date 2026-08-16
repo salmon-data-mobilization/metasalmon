@@ -80,10 +80,32 @@ approval status.
 | `brett-hq` | Program-activation gate | Brett HQ planning authority | Attributable activation for a named implementation child; HQ remains authoritative for whether the gate is satisfied | `brett-hq/roadmaps/semantic-psc-data-system-roadmap.md` | 2026-08-15 |
 | `psc-data-systems` | Validation-tool dependency | P06 and repository maintainers | The PSC OKF profile and `psc-okf` capture-tier validator used to check this bundle; neither is mapping authority | `brett-hq/projects/P06-psc-scientific-data-system-map/project.md` and the repository-local OKF plan | 2026-08-15 |
 | `psc-data-systems-site` | Documentation-link handoff | P08 and site maintainers | Optional orientation link to a released PSC vocabulary mapping catalog; no mapping-product implementation gate | `brett-hq/projects/P08-psc-data-systems-documentation-website/project.md` | 2026-08-15 |
-| `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | A released immutable Adapter/pin and qualified compatibility record; operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-15 |
+| `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | Consumes psc-salmon-vocabularies **v0.1.0-alpha.2** as a vendored offline projection (34 CAMP concepts, 52 literal assignments, 22 informational alignments), gated on contract and provenance self-consistency plus semantic structure — **but no longer on artifact byte equality**: runtime checksum enforcement was removed 2026-08-07 (their MR !5) over Windows line-ending failures, so the declared SHA-256s are self-attested from inside the consumer. The pin is current, not stale. Operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-16 |
 | `ctc-knowledge-map` | Descriptive-evidence handoff | CTC bundle maintainers and eligible reviewers | Evidence-backed description of the released mapping flow; never mapping rows or approval inherited from a release | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and any activated repository-local plan | 2026-08-15 |
 
 ---
+
+## Active sequencing constraints
+
+Ordering that is not optional, independent of who is executing:
+
+- **metasalmon migration vignette lands after the dry-run fix.** The vignette
+  states an invariant that only the dry-run preview change establishes; merged
+  first it documents behaviour the code does not yet have.
+- **The gcdfo `docs-widoco` baseline fix lands after the WebVOWL gate fix.**
+  The baseline change only makes sense once the recipe can fail at all.
+- **A gcdfo release and the WebVOWL gate fix resolve their
+  `docs/webvowl/data/ontology.json` conflict by REGENERATING** — run the repo's
+  `ci` target on the merged tree and commit what it produces against whichever
+  `SMN_PIN` survives. Both sides are whole-file derived output; a hand-picked
+  side is output no generator produces.
+- **S10's 0.3.0 rung must carry metasalmon's post-0.3.0 fixes**, not just the
+  release tree: the statistical-modifier ranking preferences, the corrected
+  bundle-review prompt, the dry-run stop parity, and the role-contract guard.
+  See the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md).
+
+Live pull-request state is deliberately NOT tracked here — it is stale the
+moment anything merges. Current work-in-flight lives in the owning execplan.
 
 ## Release index
 
