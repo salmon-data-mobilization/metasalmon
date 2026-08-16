@@ -524,10 +524,10 @@ binding has no `table_id` or no `column_name` at all:
 Error: Method bindings without a table and column cannot be migrated.
 ```
 
-One practical note: the undeclared-table check runs when the migration writes,
-so a `dry_run = TRUE` preview does not surface it. The write is atomic, so a
-real run that hits this stop still leaves your package untouched — you simply
-find out at the real run rather than at the preview.
+Both of these stops surface in a `dry_run = TRUE` preview: every stop the real
+run raises also stops the preview, so a clean dry run is a trustworthy promise
+that the migration will apply. The rewrite is atomic besides, so a real run that
+hits a stop still leaves your package untouched.
 
 You may also see two carriers disagreeing about one column, if your package has
 both a dictionary `method_iri` and a legacy `iAdopt:methodIri` custom key in
