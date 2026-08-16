@@ -83,7 +83,8 @@ Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
 8. **0.3.0 standalone, atomic** — dictionary contract flip (including the
    bundled template header: Python's template is well-formed but still ends
    `method_iri`), registry removal + migration-pointing errors,
-   `migrate_sdp_methods` with the full hardened stop taxonomy, semantic
+   `migrate_sdp_methods` with the full hardened stop taxonomy, every one of
+   which must fire in the dry run as well as the real run, semantic
    retarget, EML placements + review-closure gating + return shape,
    default/strict placement IRI checks, pin flip to `sdp-0.3.0`. Port the R
    fixtures from the merged release tree (`5a37b11`) as pytest first.

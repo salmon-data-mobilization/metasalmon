@@ -225,9 +225,12 @@ themselves.
 - `R CMD check`: **Status: OK**, no NOTEs.
 - CI runs under a **non-C ambient collation** (`LC_ALL=en_US.UTF-8`), so the
   byte-reproducibility guards are exercised rather than skipped.
-- Two static guards stay honest: any new byte-producing function goes in
+- Three static guards stay honest: any new byte-producing function goes in
   `collation_sensitive_fns`; any new cli call uses literals or the escaping
-  helpers. Both contracts are stated in `AGENTS.md`.
+  helpers; any new or renamed semantic role reaches all five layers of the role
+  contract, including the ranking preferences and the hint emitters that the
+  role-contract guard checks by inspecting function bodies. All three contracts
+  are stated in `AGENTS.md`.
 - **Mirror invariant:** no metasalmon release ships without its metasalmonpy
   counterpart landing in the same stream (post-S10; during S10, the gap only
   shrinks).

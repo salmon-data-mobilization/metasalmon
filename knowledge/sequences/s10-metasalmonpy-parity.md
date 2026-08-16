@@ -62,6 +62,21 @@ already absorbed.
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.
 
+**Audit addition (2026-08-16) — the statistical-modifier role rides the 0.3.0
+replay, not a same-day mirror.** metasalmon fixed two 0.3.0 role-contract
+leftovers (see its NEWS "Fixed" entry): `inst/extdata/ontology-preferences.csv`
+gained three `statistical_modifier` rows, and the bundle review prompt's
+opening instruction now enumerates the six dictionary slots instead of naming
+the removed `method` slot. **Neither has a mirror to make yet** — metasalmonpy
+is at 0.1.6, `statistical_modifier` appears nowhere in its `src/`, and its
+`data/ontology-preferences.csv` carries the pre-0.3.0 role set (`constraint`,
+`entity`, `method`, `property`, `unit`, `variable`, `wikidata`). This is the
+logged reason for no same-day mirror; the role arrives with the 0.3.0 step of
+the ladder above, and **both surfaces must land in that step** or the Python
+mirror reproduces the exact gap R just closed. When it lands, mirror
+`tests/testthat/test-role-contract-guard.R` too: it is what makes the omission
+loud, and the R-side gap survived CI and PR review without it.
+
 **Audit additions (2026-08-13):** `github_io.py:85` still defaults
 `ms_setup_github()` to the private `dfo-pacific-science/qualark-data` repo —
 the exact defect metasalmon fixed as #72 in 0.2.4; mirror that fix. The
