@@ -1463,7 +1463,9 @@
     )
   }
 
-  if (any(!grepl("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$", values$pid))) {
+  # Shared predicate, not a local regex: `R/iri-predicates.R` owns the shape and
+  # the engine choice. Behaviour here is unchanged -- it already ran under TRE.
+  if (any(!.ms_absolute_iri_shape(values$pid))) {
     cli::cli_abort(
       "Every supplementary-object {.field pid} must be an absolute URI without whitespace."
     )

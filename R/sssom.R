@@ -369,9 +369,11 @@
 }
 
 .ms_sssom_is_absolute_uri <- function(value) {
+  # Shared predicate, not a local regex: `R/iri-predicates.R` owns the shape and
+  # the engine choice. Behaviour here is unchanged -- it already ran under TRE.
   length(value) == 1L &&
     !is.na(value) &&
-    grepl("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$", value)
+    .ms_absolute_iri_shape(value)
 }
 
 .ms_sssom_is_unambiguous_uri <- function(value) {

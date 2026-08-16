@@ -29,6 +29,26 @@ metasalmon (development version)
 
 ### Fixed
 
+* **SDP-extension IRI validation no longer accepts Unicode whitespace, and one
+  predicate now owns the check.** `.ms_sdp_extension_is_absolute_iri()` — the
+  validator behind observation structures, KNB publication and reproducibility
+  manifests — applied `perl = TRUE` to `[^[:space:]]`, and PCRE's
+  `[[:space:]]` is ASCII-only where R's default TRE engine resolves it against
+  Unicode. So it *accepted* an IRI containing U+3000 IDEOGRAPHIC SPACE or
+  U+1680 OGHAM SPACE MARK while `write_eml()` and `validate_sdp_sssom()`
+  rejected the same string: a package could clear extension validation and then
+  fail EML export on a character invisible in a diff. RFC 3987 requires those
+  characters to be percent-encoded, so the permissive answer was the wrong one;
+  dropping `perl = TRUE` makes this validator stricter and aligns all three.
+  **Observable change:** an `iri` field containing non-ASCII whitespace that
+  previously validated is now rejected. The shape is now defined once, in
+  `R/iri-predicates.R`, and called by the SDP-extension, EML and SSSOM
+  validators — four near-copies of one regex is how they came to disagree. EML
+  and SSSOM behaviour is unchanged; they already ran under TRE. The
+  measurement-decomposition validator deliberately keeps its own narrower,
+  ASCII-classed pattern, mirrored character-for-character in metasalmonpy.
+  Backlog #85; see the parity-deviations register, row 28.
+
 * **The statistical-modifier role reaches the ranking layer.** Two 0.3.0
   leftovers, the same class as the role-hint gap that release already fixed:
   `inst/extdata/ontology-preferences.csv` had no `statistical_modifier` row

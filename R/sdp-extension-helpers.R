@@ -33,14 +33,17 @@
 .ms_sdp_extension_is_absolute_iri <- function(value) {
   value <- as.character(value)
   valid <- !.ms_sdp_extension_is_blank(value) &
-    grepl("^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$", value, perl = TRUE) &
+    .ms_absolute_iri_shape(value) &
     !grepl("^REVIEW:", value, ignore.case = TRUE)
   web <- valid & grepl("^https?:", value, ignore.case = TRUE)
+  # No `perl = TRUE`: this must resolve `[[:space:]]` the same way
+  # `.ms_absolute_iri_shape()` above does, or an http IRI could clear the shape
+  # check and then be scored for its authority under a different definition of
+  # whitespace. See `R/iri-predicates.R` for why the engine is contractual.
   valid[web] <- grepl(
     "^https?://[^/[:space:]]+",
     value[web],
-    ignore.case = TRUE,
-    perl = TRUE
+    ignore.case = TRUE
   )
   valid
 }
