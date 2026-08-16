@@ -1,6 +1,32 @@
 metasalmon (development version)
 --------------------------------
 
+### Documentation
+
+* Two new vignettes, roadmap stream S11 slice 2. **Migrating to SDP 0.3.0**
+  (`vignettes/migrating-to-sdp-0-3-0.Rmd`) is the user-facing guide to the
+  0.3.0 breaking change that until now existed only as a NEWS entry: why a
+  method is not part of what a value *is*, the three exact placements with a
+  worked example of each, the new `statistical_modifier_iri` slot and when it
+  applies, a complete offline `migrate_sdp_methods()` walkthrough, every
+  stop-and-report case with how to resolve it, and where each column of the
+  removed `metadata/methods.csv` registry now belongs. **Tidy Data for Salmon
+  Data Packages** (`vignettes/tidy-data-for-sdp.Rmd`) documents the 0.2.6
+  enforcement: declared-primary-key uniqueness, the value-like column-name
+  warning and the heuristic behind it, and the `tidyr::pivot_longer()`
+  reshape, with the validator's actual messages.
+
+* Vignette corrections found auditing the set against 0.3.0. The quickstart
+  and the FAQ both still named a dictionary *method* slot that 0.3.0 removed,
+  and the quickstart's "never auto-filled" claim was also wrong on the
+  deterministic path, where a constraint or statistical modifier is applied
+  when the column text carries the evidence. The publication guide listed a
+  blank `observation_unit_iri` as an EDH rebuild refusal (only a `REVIEW:`
+  value is) and listed "methods" in the closed KNB inventory (the artifact is
+  gone; a package carrying one is refused). The vocabulary guide's `property`
+  source row omitted QUDT, and the glossary's quick-reference row still named
+  four I-ADOPT components instead of five.
+
 ### Fixed
 
 * **The statistical-modifier role reaches the ranking layer.** Two 0.3.0

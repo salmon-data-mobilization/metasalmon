@@ -40,5 +40,8 @@ Three kinds of entries: **Idiom** (same behaviour, Pythonic delivery),
 | 12 | Idiom | The `measurement-decompositions.json` provenance block names `metasalmonpy.write_sdp_measurement_decompositions` + its version; each validator accepts either implementation's provenance | The row-11 honest-provenance ruling applied to the 0.1.7 decomposition artifact; the artifact binding (path, sha256, row_count) and the decomposition CSV bytes stay byte-identical across languages |
 | 13 | Ahead | Python's SSSOM and decomposition writers treat a dangling symlink at a managed output path as existing (blocked without `overwrite`, then refused as a symlink); R's `file.exists()` misses dangling symlinks and silently writes through them | Fail-closed writer safety; read-side symlink handling matches R exactly |
 
+| 14 | Idiom | The EML mapping sidecar is parsed with PyYAML (in the `[eml]` extra), not the restricted YAML-subset parser used for SSSOM headers | The sidecar is genuinely nested (creators, contacts, per-table attribute configs), unlike the flat SSSOM header; R uses `yaml::read_yaml` here too. Core dependencies stay pandas+requests |
+| 15 | Idiom | EML documents are built with stdlib ElementTree and validated with lxml; parity with R is structural (`ET.canonicalize`), not byte-level | R serializes through libxml2, so whitespace differs while the documents are identical. lxml IS libxml2 — the engine behind `emld::eml_validate` — so accept/reject matches R by construction, and all UUIDv5 identifiers match exactly |
+
 Maintenance: a new deviation is added in the same PR that introduces it, in
 both registers, in the same stream.
