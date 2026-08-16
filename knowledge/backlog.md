@@ -897,6 +897,27 @@ the v0.2 extension resources.
 
 ### Open — P1 (highest value next)
 
+**#80 The Theme A exact-model live benchmark was never completed, and nothing in
+this bundle said so.** Tracked only in GitHub issue
+[metasalmon#6](https://github.com/salmon-data-mobilization/metasalmon/issues/6),
+open since 2026-07-29 and untracked here until 2026-08-16 — which is the actual
+defect being recorded. PR #5 merged at the maintainer's explicit request *before*
+the live cohort ran, so the 0.1.6 merge is not a live-provider attestation and
+must not be read as one. The one live attempt returned HTTP 401 for every
+benchmark target against `openrouter` / `openai/gpt-5.4-mini`, while a direct
+authenticated call to the same provider's model catalogue with the same
+credential returned 200 — so the open question is whether the fault is in the
+benchmark's request-auth wiring or in provider/endpoint behaviour, and that
+distinction is the first deliverable. The cohort gate is unchanged: three
+independent live captures, every critical case passing in at least two of three,
+zero forbidden method/constraint acceptances, zero false prefills, each capture
+sanitized and lineage-verified before promotion. **Substituting a different
+provider or model does not satisfy it** — an exact-model benchmark that silently
+changed models would attest to nothing. Evidence for the wiring defect belongs in
+a focused non-network regression test, since a network-only reproduction cannot
+be re-run in CI. Sequenced under S5; `notes/evidence/theme-a/` is the CI/test-wired
+evidence directory this feeds.
+
 **#63 The 0.1.8 extension normalizers shipped with locale-dependent ordering.**
 `.ms_sdp_methods_normalize()` and the two
 `.ms_sdp_observation_normalize_*()` functions produce the canonical row order
