@@ -42,8 +42,10 @@ crosswalk now.
 - [x] (2026-08-14) Record the bounded consumer substream in the hub roadmap and
   S6 card without creating a competing sequence.
 - [x] (2026-08-15) Re-audit the remote dependencies: S8 R implementation PR
-  #39 is open and green at `f76ed4f` but not merged or released; the
-  `sdp-0.3.0` tag exists; Python remains 0.1.6; SMN 0.0.3 is released; the
+  #39 **merged at `5a37b11`** (metasalmon 0.3.0 on main; that merge is the only
+  valid port baseline — `f76ed4f` was review round one of five and omits the
+  role-hint, rollback, placement-validation, ordering, and method-promotion
+  fixes); the `sdp-0.3.0` tag exists; Python remains 0.1.6; SMN 0.0.3 is released; the
   gcdfo S9 merge is unreleased; and PSC alpha.3 remains unmerged in nested draft
   MR !8 targeting draft MR !5.
 - [x] (2026-08-15) Record the six-repository allowlist and typed external-edge
@@ -88,11 +90,10 @@ crosswalk now.
   PR #78 is merged but its boundary work is unreleased; and reconciled alpha.3
   has nine provisional PSC-to-SMN broad mappings plus one deferred proposal in
   nested draft MR !8. Nine PSC analytical-method concepts remain unmatched.
-- S8's model and specification are decided. Its R 0.3.0 implementation is green
-  on open PR #39 at `f76ed4f`, but it is not merged or released; Python remains
-  0.1.6. Generic mapping consumption has no semantic dependency on S8. The
-  NuSEDS migration additionally waits for that R implementation to merge and
-  release and for S10 to replay it in Python.
+- S8's model and specification are decided and its R 0.3.0 implementation
+  **merged 2026-08-15** (PR #39, merge `5a37b11`); Python remains 0.1.6.
+  Generic mapping consumption has no semantic dependency on S8. The NuSEDS
+  migration now waits only on S10 replaying 0.3.0 in Python.
 - The remote `sdp-0.3.0` annotated tag exists, although no corresponding GitHub
   Release object exists. The hub must distinguish an immutable spec tag from a
   package release and from S8's still-open R implementation.
@@ -507,6 +508,5 @@ immutable fixture or fall back to a moving alias. Network failure yields
 `unknown` freshness while the last reviewed offline pin remains unchanged.
 
 Use clean worktrees for paired implementation. Do not remove a worktree or
-branch until it is clean, its PR is resolved, and it has no unique work. The
-open S8 PR #39 is independent and must be merged, released, or otherwise
-dispositioned by its owner rather than overwritten by this stream.
+branch until it is clean, its PR is resolved, and it has no unique work. S8's
+PR #39 was independent of this stream and merged on 2026-08-15.
