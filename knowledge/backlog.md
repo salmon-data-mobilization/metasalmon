@@ -979,6 +979,30 @@ the byte assertion is the only one that fails if the writer is not surgical.
 
 ### Open — P2 (correctness and conformance debt)
 
+**#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
+`metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
+that it mirrors `.ms_sdp_extension_is_absolute_iri`, but matches whitespace with
+Python's `\s` (`sdp_methods.py:67,69`) rather than the enumerated
+`metadata.R_SPACE_CLASS` that `eml.py:92` and `sssom.py:234` both import. `\s`
+is Unicode-aware but is not TRE's set. Measured on R 4.5.2 across
+U+0001–U+3100: **8 codepoints disagree — U+001C–U+001F, U+0085, U+00A0, U+2007,
+U+202F — Python rejecting every one R accepts.** Python is the stricter side, so
+the failure mode is a Python-written extension IRI refused by the mirror and
+accepted by R. It reaches users through `validate_sdp_methods()`,
+`observation_structures.py:256` and KNB publication
+(`knb_publication.py:575`).
+
+This is the same drift `sssom.py:228-232` records having already fixed once; the
+one extension module that never imported the constants was never given the same
+treatment, and `tests/test_sdp_methods.py` has no whitespace-membership test
+where `tests/test_eml.py` and `tests/test_sssom.py` do — which is why nothing
+caught it. Found by reading the Python side while fixing #85, testing the
+register's claim that "Python mirrors no such function"; it does. Registered as
+parity-deviations **row 29**, and it narrowed from 23 codepoints to 8 when #85
+landed. *Retires when:* `sdp_methods.py` builds both regexes from
+`R_SPACE_CLASS` and `tests/test_sdp_methods.py` pins the membership. Belongs to
+roadmap stream **S10**; the twin's `PARITY.md` needs the matching row.
+
 **#81 gcdfo ships a dead script and its orphaned output.**
 `scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
 normalizer superseded it — and `docs/webvowl/data/ontology.stamp` is its output,
@@ -1157,6 +1181,13 @@ predicate against `perl = TRUE` being reintroduced. Verified to fail on a build
 with only the extension site reverted. Found while reconciling the parity
 register, where the mismatch showed up as a Python/R difference that turned out
 to be an R/R difference.
+
+*And is a Python difference after all.* Checking the register's claim that
+"Python mirrors no such function" refuted it: `metasalmonpy/sdp_methods.py:95`
+mirrors this exact helper and uses Python's `\s`, which matches neither R
+engine. The fix **narrowed** that gap from 23 disagreeing codepoints to 8 rather
+than opening it, so it needed no Python change to land — but the residual 8 are
+now item **#86** and parity-deviations **row 29**.
 
 ### Fixed in 0.2.5
 
