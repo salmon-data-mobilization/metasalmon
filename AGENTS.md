@@ -65,7 +65,13 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   role with no hint emitter has **100% of its correct accepts downgraded** to
   `review` while every test using a hand-written `role_hints` fixture still
   passes. That is exactly how sdp-0.3.0's `statistical_modifier` shipped
-  broken through CI and PR review; see the 0.3.0 NEWS entry.
+  broken through CI and PR review; see the 0.3.0 NEWS entry. Ranking
+  preferences are the sixth surface and fail the same way: a role with no
+  `inst/extdata/ontology-preferences.csv` row ranks with no source preferences
+  at all. **`tests/testthat/test-role-contract-guard.R` checks every layer** —
+  it reads the slot fields as the authority and inspects the emitter and filter
+  bodies, so keep its `hint_roles` and `hint_to_sources` lists current when a
+  role is added, renamed, or deliberately exempted.
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:

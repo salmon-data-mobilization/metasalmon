@@ -3,6 +3,20 @@ metasalmon (development version)
 
 ### Fixed
 
+* **The statistical-modifier role reaches the ranking layer.** Two 0.3.0
+  leftovers, the same class as the role-hint gap that release already fixed:
+  `inst/extdata/ontology-preferences.csv` had no `statistical_modifier` row
+  at all, so the new role ranked with no source preferences; and the bundle
+  review prompt still told the model to judge "variable, property, entity,
+  unit, constraint, and method together", naming a slot the dictionary no
+  longer has while omitting the one it gained. The `method` preference rows
+  are correct and stay — that role survives for code values.
+
+* `migrate_sdp_methods(dry_run = TRUE)` previews the undeclared-table stop.
+  The check sat after the dry-run early return, so a clean preview promised a
+  migration the real run then refused. Nothing could be corrupted — the
+  rewrite is atomic — but the preview was not honest about the outcome.
+
 * `validate_sdp_measurement_decompositions()` accepts a manifest written by
   metasalmonpy, exactly as `validate_sdp_sssom()` now does — the mirror
   writes byte-identical decomposition CSVs and honestly names itself in the

@@ -458,15 +458,14 @@ test_that("a package with only REVIEW: bindings still migrates to the v0.3 shape
   root <- withr::local_tempdir()
   make_migration_test_sdp(root)
   dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
-  dictionary <- readr::read_csv(
-    dictionary_path,
-    col_types = readr::cols(.default = readr::col_character()),
-    na = "",
-    show_col_types = FALSE
-  )
-  dictionary$method_iri[dictionary$column_role == "measurement"] <-
-    "REVIEW: https://example.org/methods/unresolved"
-  readr::write_csv(dictionary, dictionary_path, na = "")
+  # Route through the legacy helper like every other legacy test. Assigning
+  # into `dictionary$method_iri` directly relied on `NULL[logical] <- value`
+  # materialising the column by accident -- the fixture is a current package,
+  # so 0.3.0 already removed that field.
+  add_legacy_dictionary_methods(root, c(
+    abundance = "REVIEW: https://example.org/methods/unresolved",
+    density = "REVIEW: https://example.org/methods/unresolved"
+  ))
 
   report <- suppressMessages(migrate_sdp_methods(root))
 
@@ -772,5 +771,28 @@ test_that("a method bound to only some measurement columns stops the migration",
   expect_error(
     suppressMessages(migrate_sdp_methods(root2)),
     "carries no resolved method binding"
+  )
+})
+
+test_that("dry_run previews the undeclared-table stop instead of promising a migration", {
+  # The check used to sit after the dry-run return, so a clean preview
+  # promised a migration the real run then refused.
+  root <- withr::local_tempdir()
+  make_migration_test_sdp(root)
+  dictionary_path <- file.path(root, "metadata", "column_dictionary.csv")
+  dictionary <- readr::read_csv(
+    dictionary_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = "",
+    show_col_types = FALSE
+  )
+  dictionary$method_iri <- NA_character_
+  dictionary$method_iri[[1]] <- "https://example.org/methods/weir-count"
+  dictionary$table_id[[1]] <- "not_a_declared_table"
+  readr::write_csv(dictionary, dictionary_path, na = "")
+
+  expect_error(
+    suppressMessages(migrate_sdp_methods(root, dry_run = TRUE)),
+    "does not declare"
   )
 })

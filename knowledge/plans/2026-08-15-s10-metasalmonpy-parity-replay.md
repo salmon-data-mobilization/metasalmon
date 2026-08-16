@@ -83,10 +83,30 @@ Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
 8. **0.3.0 standalone, atomic** — dictionary contract flip (including the
    bundled template header: Python's template is well-formed but still ends
    `method_iri`), registry removal + migration-pointing errors,
-   `migrate_sdp_methods` with the full hardened stop taxonomy, semantic
+   `migrate_sdp_methods` with the full hardened stop taxonomy, every one of
+   which must fire in the dry run as well as the real run, semantic
    retarget, EML placements + review-closure gating + return shape,
    default/strict placement IRI checks, pin flip to `sdp-0.3.0`. Port the R
-   fixtures from the merged release tree (`5a37b11`) as pytest first.
+   fixtures from the merged release tree (`5a37b11`) as pytest first —
+   **but refresh that pin before the port starts.** `5a37b11` predates the
+   role-contract and dry-run fixes on `fix/role-contract-leftovers`, so
+   replaying it literally reproduces the pre-fix suite: no dry-run regression
+   test for the undeclared-table stop, no static role-contract guard, and the
+   REVIEW-only fixture still reaching around
+   `add_legacy_dictionary_methods()`. Re-pin to that branch's merge commit,
+   which does not exist yet. A pin naming a tree older than the fixes it is
+   meant to carry is how the gap above survives into Python.
+
+   **The rung's scope is defined by behaviour, not by a commit hash**, so it
+   survives a stale pin. The 0.3.0 rung MUST carry, in addition to the release
+   tree: three `statistical_modifier` rows in the ranking-preferences data
+   (the role otherwise ranks with no source preferences at all); the bundle
+   review prompt naming `statistical_modifier` rather than the removed
+   dictionary `method` slot; every migration stop firing in the dry run; and
+   a static role-contract guard covering all six surfaces a role touches.
+   Python's own preference data still carries the pre-0.3.0 role set, so the
+   first three are net-new work there, not a copy. If the pin and this list
+   ever disagree, this list wins — it is the reason the pin exists.
 
 Hard ordering: 0 → 1 → 2 → 3 (loader needs the host fix; typed reader
 precedes the NA tightening) → … → 5 before any adoption push → 8 last.

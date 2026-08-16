@@ -426,6 +426,24 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
     registry = registry
   )
 
+  # Every stop the real run would raise must also stop the preview, or a
+  # clean dry run would promise a migration that then refuses to apply.
+  if (nrow(placements) > 0L && (is.null(tables) || !"table_id" %in% names(tables))) {
+    .ms_sdp_extension_abort(
+      "Cannot migrate table-level methods: {.file metadata/tables.csv} is missing or has no {.field table_id}."
+    )
+  }
+  if (nrow(placements) > 0L && !is.null(tables)) {
+    unmatched <- setdiff(placements$table_id, as.character(tables$table_id))
+    if (length(unmatched) > 0L) {
+      .ms_sdp_extension_abort(c(
+        "Method bindings name tables that {.file metadata/tables.csv} does not declare.",
+        .ms_cli_bullets(unmatched, "x"),
+        "i" = "Fix the table identifiers in the legacy metadata, then re-run."
+      ))
+    }
+  }
+
   if (isTRUE(dry_run)) {
     cli::cli_inform("Dry run: no files were changed.")
     return(invisible(report))
@@ -434,27 +452,16 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
   # ---- Rewrite --------------------------------------------------------------
   writes <- list()
 
-  # A placement that lands nowhere would erase every carrier of a method IRI
-  # while writing it to no file, so the destination must exist first.
-  if (nrow(placements) > 0L && (is.null(tables) || !"table_id" %in% names(tables))) {
-    .ms_sdp_extension_abort(
-      "Cannot migrate table-level methods: {.file metadata/tables.csv} is missing or has no {.field table_id}."
-    )
-  }
+  # The placement destination was already proved to exist above, before the
+  # dry-run return, on this same unchanged `placements`/`tables` pair — so a
+  # repeat of those checks here would be unreachable. Deliberately not
+  # duplicated: a dead guard invites someone to weaken the live one.
   if (!is.null(tables)) {
     new_tables <- tables
     if (!"method_iri" %in% names(new_tables)) {
       new_tables$method_iri <- NA_character_
     }
     if (nrow(placements) > 0L) {
-      unmatched <- setdiff(placements$table_id, as.character(new_tables$table_id))
-      if (length(unmatched) > 0L) {
-        .ms_sdp_extension_abort(c(
-          "Method bindings name tables that {.file metadata/tables.csv} does not declare.",
-          .ms_cli_bullets(unmatched, "x"),
-          "i" = "Fix the table identifiers in the legacy metadata, then re-run."
-        ))
-      }
       for (index in seq_len(nrow(placements))) {
         hit <- new_tables$table_id == placements$table_id[[index]]
         new_tables$method_iri[hit] <- placements$method_iri[[index]]
