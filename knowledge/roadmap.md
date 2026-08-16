@@ -89,13 +89,30 @@ approval status.
 
 Ordering that is not optional, independent of who is executing:
 
-- **The gcdfo `docs-widoco` baseline fix lands after the WebVOWL gate fix.**
-  The baseline change only makes sense once the recipe can fail at all.
-- **A gcdfo release and the WebVOWL gate fix resolve their
-  `docs/webvowl/data/ontology.json` conflict by REGENERATING** — run the repo's
-  `ci` target on the merged tree and commit what it produces against whichever
-  `SMN_PIN` survives. Both sides are whole-file derived output; a hand-picked
-  side is output no generator produces.
+- **The gcdfo WebVOWL normalizer fix lands FIRST — before the release, the
+  definition update, and the `docs-widoco` baseline change.** Not a preference:
+  on every branch that lacks it, `scripts/normalize_webvowl_json.py` dies
+  (`Non-unique semantic class key` — three `rdfs:Datatype` nodes share
+  `xsd:gYear`, introduced with the term expansion), the `docs-widoco` recipe has
+  no `set -e`, so **`make ci` prints its success mark and exits 0 over the
+  crash**, and what lands in `docs/webvowl/data/ontology.json` is raw
+  un-normalized WIDOCO output with nondeterministic ids. Regenerating that file
+  on any branch without the fix produces churn that is not reproducible and that
+  the fix will rewrite anyway.
+- **An `ontology.json` hash is only meaningful as a (pin + normalizer) pair.**
+  Two hashes circulated in this stream as "expected under pin X", and only one
+  of them means anything. `4d350546…` is genuine: regenerated stably across four
+  runs under pin `a5d4f28` **with the fixed normalizer**. `c14629eb…` was
+  unreachable on the release branch at all — that branch is the only one that
+  bumps the pin to `f7205ee`, and it carried the *broken* normalizer, so no
+  amount of regenerating there could produce it. It becomes reachable only once
+  the normalizer fix is merged beneath the pin bump. Regenerate on the merged
+  tree and accept what the generator produces; a hash that matches nothing
+  expected is a finding to report, never a number to force.
+- **`docs/webvowl/data/ontology.json` is derived output and is excluded from the
+  CI drift gate**, so nothing catches a hand-edit of it. Editing it by hand is
+  therefore possible, invisible, and wrong — except as a deliberate,
+  explicitly-flagged stopgap that a later regeneration supersedes.
 - **S10's 0.3.0 rung must carry metasalmon's post-0.3.0 fixes**, not just the
   release tree: the statistical-modifier ranking preferences, the corrected
   bundle-review prompt, the dry-run stop parity, and the role-contract guard.

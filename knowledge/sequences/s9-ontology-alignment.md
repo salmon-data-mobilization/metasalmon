@@ -71,12 +71,50 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
    | C — pink dominant cycle | #70 Odd Year Dominant Cycle | Dedicated dominant-cycle scheme or not — and if retained, mint the complementary `EvenYearDominantCycle` that the current SPSR extract does not contain? |
    | D — quality rating codes | #71/#72/#73 (codes 1/2/3) | Do `INFORMATION_QUALITY` and `INDEX_QUALITY` share one scheme, and should undocumented numeric codes become concepts at all rather than staying data until a published scheme exists? |
 
-   Group D carries the sharpest risk: minting `QualityRatingCode1/2/3` with no
-   authoritative meaning publishes an IRI that asserts a distinction nobody can
-   define, and the two source fields may not even share a value set. "Leave it
-   as data" is a legitimate outcome for a hold — **closing an issue as
-   *rejected with reasoning* is a result, not a failure**, and #24's close is
-   the precedent for recording why.
+   **A 2026-08-16 evidence pass answered the factual half of all four groups**
+   and is posted on the issues themselves (full write-ups on #67, #69, #68,
+   #70, #71; pointers on #75, #74, #72, #73), so the record lives where the
+   decision gets made. What it established, and how it moved each group:
+
+   - **A is now two separate things.** `DFO_AREA` holds one of four DFO Pacific
+     **salmon Areas** (South Coast, North Coast, Fraser and Interior, Yukon
+     Transboundary) — not a PFMA, which is one of ~142 SOR/2007-77 Schedule 2
+     divisions. The SPSR inventory has *already* adopted
+     `entity_iri = gcdfo:PacificFisheryManagementArea` for it, so **the mapping
+     that exists is probably a category error**, and no `DFOManagementAreaName`
+     concept is needed either way — the entity-plus-`rdfs:label` pattern is in
+     place. Meanwhile #69/#75 may not be vocabulary at all: both fields have
+     **zero observed values**, and the only unit-bearing definition in the
+     source gives them units of "Number of fish", making them measurements
+     rather than tiers. The two source documents genuinely disagree; a
+     data-steward ruling settles it, not more reading.
+   - **B collapsed into a bigger, better question.** `LIFE_HISTORY_TYPE` is
+     mixed as suspected (sockeye rearing type + pink brood cycle), and it is
+     also **perfectly redundant with the `CU_ID` prefix** — `SEL`/`SER`/`PKO`
+     map one-to-one onto its values. A single **CU species-code vocabulary**
+     (`CK`/`CM`/`CO`/`SEL`/`SER`/`PKE`/`PKO`) would resolve B and C together
+     instead of two schemes.
+   - **C's stated gap is closed.** `PKE` (Pink-Even) *is* documented in the DFO
+     CU species-code list even though the extract contains only odd-year rows.
+     So the question is no longer "does the complement exist" but the general
+     policy call: **mint from the source vocabulary or from observed data?**
+     Worth deciding once for every SPSR hold.
+   - **D's assumed shape is ruled out.** `INFORMATION_QUALITY` and
+     `INDEX_QUALITY` are **two different published 1–5 frameworks** — Ogden 2015
+     §2.3 and the New Zealand Quality Index, named verbatim in the SPSR
+     `Definitions` sheets. They never co-occur with values in any table, and
+     codes 1 and 3 appear only in `INFORMATION_QUALITY`. So framework-neutral
+     `QualityRatingCode1/2/3` shared across both fields would conflate two
+     distinct scales. Neither framework document is obtainable from these
+     repos, so **the meaning of the integers is not documented anywhere
+     readable**; gcdfo already carries an ordinal DFO quality vocabulary at
+     `gcdfo:EstimateTypeScheme` (Hyatt 1997, Type-1…Type-6).
+
+   Group D still carries the sharpest risk: minting concepts for integers whose
+   meaning no available document defines publishes IRIs asserting a distinction
+   nobody can state. "Leave it as data until a published scheme is in hand" is
+   a legitimate outcome — **closing an issue as *rejected with reasoning* is a
+   result, not a failure**, and #24's close is the precedent for recording why.
 
    Note the namespace question that #24 already settled once: these are
    proposed as `gcdfo:`, but life history and dominant cycle are general salmon
