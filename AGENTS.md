@@ -81,6 +81,14 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   `reject_shortlist`. An unresolved `reject_shortlist` escalates to
   `request_new_term` (surfaces an ontology gap) — keep that distinction.
 
+## Releases
+
+Every release from **0.3.0 forward** is tagged (`vX.Y.Z`, annotated) **and**
+published as a GitHub Release with its `NEWS.md` entry as the body (Brett,
+2026-08-15). Tag the commit that made the version current, not a later
+docs-only merge. Releases 0.2.0–0.2.6 are deliberately untagged history — do
+not backfill them.
+
 ## Build / test / docs
 
 ```r
