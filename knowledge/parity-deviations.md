@@ -35,6 +35,8 @@ Three kinds of entries: **Idiom** (same behaviour, Pythonic delivery),
 | 7 | Ahead | `is_statistical_modifier` is a real column in both Python term-index frames; R's TTL path carries it only inside `role_hints` | Saves the 0.3.0 milestone a retrofit; hint strings match R exactly |
 | 8 | Inapplicable | No interactive term-request console in Python, so R 0.2.0's cancel-must-not-submit semantics have no counterpart | Submission is a single explicit function call with confirmation |
 | 9 | Planned (0.1.8) | `write_sdp_methods` will not be implemented in Python; registry read/validate only | The writer would exist only to be deleted at 0.3.0 in the same replay; logged in the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md) |
+| 10 | Idiom | The SSSOM header is parsed with a restricted YAML-subset parser, not a YAML library (R uses `yaml::yaml.load`) | pandas+requests dependency policy; out-of-subset YAML raises the same "not valid YAML" report, and duplicate-key/quoting/comment behaviours are differentially tested against R |
+| 11 | Idiom | The SSSOM manifest provenance block names `metasalmonpy.write_sdp_sssom` + its version; R names its own. Each validator accepts either implementation's provenance | Provenance should be honest about which implementation wrote the artifact; the TSV mapping-set bytes stay byte-identical across languages |
 
 Maintenance: a new deviation is added in the same PR that introduces it, in
 both registers, in the same stream.
