@@ -91,6 +91,30 @@ Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
 Hard ordering: 0 → 1 → 2 → 3 (loader needs the host fix; typed reader
 precedes the NA tightening) → … → 5 before any adoption push → 8 last.
 
+## 0.1.7 progress (2026-08-16)
+
+Four chunks committed on `feat/s10-017-parity`, none released — the version
+stays 0.1.6 until the milestone completes, per the parity-claim rule.
+
+| Chunk | What | Parity evidence |
+|---|---|---|
+| 1 | SSSOM 1.1 read/write/validate | Canonical TSV **byte-identical** to era R under C collation; three R-generated fixtures assert sha256 |
+| 2 | Measurement decompositions (era shape, transitional `method` role) | Byte-identical, **unconditionally** — the only chunk whose claim needs no locale caveat |
+| 3 | Reviewed EML 2.2.0 export | `ET.canonicalize`-equal to R; every UUIDv5 identifier exact |
+| 4 | KNB/DataONE via raw REST, era 14-method adapter | Plan fingerprint, manifests, PIDs, Solr URL byte-exact; ORE + 9 SystemMetadata shapes canonically equal |
+
+Then twelve defects from an adversarial review, each demonstrated against a
+v0.1.7 extraction and each pinned by a test that fails on a source-reverted
+build (38 failures confirmed). Deviations recorded as register rows 20–24.
+
+**Remaining for the milestone:** the deterministic archive and the era
+inference fixes, then the single bump to 0.1.7. Two known defects to fold in:
+`sssom.py` still uses ASCII-only `\s`/`\S` where era R's TRE is Unicode-aware
+(R accepts U+00A0/U+0085/U+2007/U+202F/U+001C in `author_id`, Python rejects —
+same class as the EML fix already landed), and `package_io.py:538` is the last
+unconverted reader, taking pandas' full NA vocabulary with no trimming on data
+resources.
+
 ## Sidecar-survival rule
 
 Sidecars appear at PRs 1–2 but read→edit→write preservation is a PR-3

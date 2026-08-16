@@ -85,6 +85,41 @@ approval status.
 
 ---
 
+## Cross-session consolidation (2026-08-16)
+
+Work ran in five parallel sessions today and was consolidated into this hub.
+**Open across the ecosystem**, with what each is waiting on:
+
+| PR | Repo | What | State |
+|---|---|---|---|
+| [#45](https://github.com/salmon-data-mobilization/metasalmon/pull/45) | metasalmon | EML parity-deviation rows into the hub register | open |
+| [#46](https://github.com/salmon-data-mobilization/metasalmon/pull/46) | metasalmon | S11 migration + tidy-data vignettes | **must merge after #47** — its vignette states an invariant #47 establishes |
+| [#47](https://github.com/salmon-data-mobilization/metasalmon/pull/47) | metasalmon | statistical_modifier ranking prefs; honest dry-run previews | open |
+| [#48](https://github.com/salmon-data-mobilization/metasalmon/pull/48) | metasalmon | guard-expiry rule; WebVOWL baseline backlog entry | open |
+| [#79](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/79) | gcdfo | 0.0.9 release prep | open; **conflicts with #82 on `ontology.json` — regenerate, never hand-resolve** |
+| [#80](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/80) | gcdfo | remove two stray files from PR #78 | open, independent |
+| [#81](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/81) | gcdfo | retarget alignment overlays at `smn:` | open — closes the condition disclosed on #79 |
+| [#82](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/82) | gcdfo | make the WebVOWL stabilization gate able to fail | open |
+
+**The dangling-overlay defect is 4× what this hub disclosed.** The #79
+disclosure named two IRIs; #81's full audit of both overlay files against the
+live ontology found **eight** (`SurveyEvent`, `EscapementSurveyEvent`,
+`EscapementMeasurement`, `IndicatorRiver`, `ReferencePoint`,
+`ReportingOrManagementStratum`, `hasDeme`, `hasPopulation`), retired when core
+migrated overlapping shared terms to `smn:` IRIs. Reported accurately here
+because the hub's own number was the low one.
+
+**Merge-order constraints that are not optional:** #47 before #46; #82 before
+the `docs-widoco` baseline fix (backlog item 0); #79 and #82 resolve their
+`ontology.json` conflict by running `make ci` on the merged tree and
+committing what it produces — expected `c14629eb…` under the 0.0.9 pin
+`f7205ee`, `4d350546…` under main's `a5d4f28`.
+
+**metasalmonpy 0.1.7** is four chunks deep on `feat/s10-017-parity` (SSSOM,
+decompositions, EML, KNB) plus twelve reviewed defect fixes. No PR yet by
+design: the version bump that makes the parity claim true comes with the
+final chunk.
+
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
