@@ -1,3 +1,16 @@
+metasalmon (development version)
+--------------------------------
+
+### Fixed
+
+* `validate_sdp_sssom()` accepts a manifest written by metasalmonpy
+  (`generated_by = "metasalmonpy.write_sdp_sssom"` with
+  `metasalmonpy_version`). The mirror writes byte-identical mapping-set
+  artifacts and honestly names itself in the provenance block; rejecting
+  that provenance made every Python-written SDP fail R validation for no
+  data reason. Unknown generators, and known generators missing their
+  version, stay rejected. See the parity-deviations register, row 11.
+
 metasalmon 0.3.0
 ----------------
 

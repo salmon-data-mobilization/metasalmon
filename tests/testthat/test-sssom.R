@@ -415,3 +415,41 @@ test_that("SSSOM public entry points are exported", {
   expect_true("write_sdp_sssom" %in% getNamespaceExports("metasalmon"))
   expect_true("validate_sdp_sssom" %in% getNamespaceExports("metasalmon"))
 })
+
+test_that("the validator accepts a metasalmonpy-written manifest provenance", {
+  # Parity-deviations register row 11: the Python mirror writes
+  # byte-identical mapping-set artifacts and honestly names itself in the
+  # manifest provenance. Rejecting that provenance would make every
+  # Python-written SDP fail R validation for no data reason.
+  sdp <- withr::local_tempdir()
+  source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
+  sssom_test_write_raw(source, sssom_test_text())
+  write_sdp_sssom(sdp, mapping_sets = source, overwrite = TRUE)
+
+  manifest_path <- file.path(sdp, "metadata", "semantic", "mapping-sets.json")
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  manifest$provenance <- list(
+    generated_by = "metasalmonpy.write_sdp_sssom",
+    metasalmonpy_version = "0.1.7"
+  )
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+
+  expect_true(isTRUE(validate_sdp_sssom(sdp)))
+
+  # An unknown generator, or a known one missing its version, stays rejected.
+  manifest$provenance <- list(generated_by = "someone-else", version = "1")
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+  expect_error(validate_sdp_sssom(sdp), "provenance is incomplete")
+  manifest$provenance <- list(generated_by = "metasalmonpy.write_sdp_sssom")
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+  expect_error(validate_sdp_sssom(sdp), "provenance is incomplete")
+})
