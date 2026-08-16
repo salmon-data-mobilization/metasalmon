@@ -979,6 +979,26 @@ the byte assertion is the only one that fails if the writer is not surgical.
 
 ### Open — P2 (correctness and conformance debt)
 
+**#85 Four IRI validators share one regex shape and two different answers.**
+`^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$` appears in four places with the same
+intent — reject an IRI containing whitespace — but
+`R/sdp-extension-helpers.R:36` passes `perl = TRUE` while
+`R/eml-export.R:1466`, `R/sssom.R:374` and `R/measurement-decompositions.R:57`
+run under TRE. PCRE and TRE disagree about which characters `[[:space:]]`
+covers. Verified by running both engines: `U+00A0` and `U+2007` agree, but
+**`U+3000` (ideographic space) does not** — perl treats it as a non-space, so
+the SDP-extension validator *accepts* an IRI containing it, while the other
+three *reject* the same string.
+
+So a package can pass extension validation and fail EML export, or carry an
+`term_iri` that `validate_sdp_sssom()` refuses — on a character invisible in a
+diff. The odd one out is the single `perl = TRUE` site; dropping it aligns four
+validators on one engine. Better still is one shared predicate, since four
+copies of a regex is how they came to disagree. *Retires when:* one helper owns
+the check and the other three call it. Found while reconciling the parity
+register, where the mismatch showed up as a Python/R difference that turned out
+to be an R/R difference.
+
 **#81 gcdfo ships a dead script and its orphaned output.**
 `scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
 normalizer superseded it — and `docs/webvowl/data/ontology.stamp` is its output,
