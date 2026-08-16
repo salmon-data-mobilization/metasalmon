@@ -131,6 +131,10 @@ tables$protocol_citation[tables$table_id == "escapement"] <-
   "Salmon Program. 2019. Weir enumeration protocol v3.1."
 ```
 
+```{r}
+readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
+```
+
 `protocol_iri` is where the document lives; `protocol_citation` is the
 human-readable reference. You can supply either or both, and you can use a
 protocol *alongside* a table-level `method_iri` — the concept says what
@@ -171,7 +175,12 @@ readr::write_csv(
 )
 
 # 3. Each code value resolves to a shared procedure concept.
-codes <- tibble::tibble(
+#    NOTE: if your package already has codes.csv, read it first and bind to
+#    it. Writing the tibble below on its own would delete every code row you
+#    already have.
+existing_codes <- read_salmon_datapackage("weir-counts-sdp")$codes
+
+method_codes <- tibble::tibble(
   dataset_id       = "weir-counts",
   table_id         = "escapement",
   column_name      = "enumeration_method",
@@ -189,6 +198,7 @@ codes <- tibble::tibble(
   term_type        = "sosa:Procedure"
 )
 
+codes <- dplyr::bind_rows(existing_codes, method_codes)
 readr::write_csv(codes, "weir-counts-sdp/metadata/codes.csv", na = "")
 ```
 
@@ -571,7 +581,7 @@ of them need a decision and three of them need to leave your package entirely.
 
 | Old registry column | Where it goes now |
 |---|---|
-| `method_iri` | `tables.csv$method_iri`, or `codes.csv$term_iri` — the migration places this |
+| `method_iri` | `tables.csv$method_iri` **when every measurement column of a table agrees** — that promotion is the only one the migration makes. A method that varies by row goes to `codes.csv$term_iri`, which the migration cannot do for you: it needs a column added to your data |
 | `method_label` | The shared vocabulary — request the term |
 | `method_description` | The shared vocabulary — request the term |
 | `method_version` | `protocol_citation` |
@@ -593,7 +603,12 @@ package has a workflow for exactly this. It reaches GitHub, so it needs a
 network connection and the credentials from the
 [Setup and Credentials](setup.html) guide.
 
+The migration *reports* the registry rows rather than relocating their labels,
+and that report is the input here — the migrated dictionary no longer carries
+the registry's fields, so reading it back would find nothing to request.
+
 ```{r}
+# `report$registry` is what migrate_sdp_methods() returned above.
 reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary
 
 gaps <- detect_semantic_term_gaps(reviewed_dict)
