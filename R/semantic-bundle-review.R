@@ -232,7 +232,7 @@
 .ms_semantic_bundle_system_prompt <- function() {
   paste(
     "You are reviewing one whole measurement-column semantic bundle for the metasalmon R package.",
-    "Judge variable, property, entity, unit, constraint, and method together before finalizing any slot.",
+    "Judge variable, property, entity, unit, constraint, and statistical_modifier together before finalizing any slot.",
     "Role-fit beats topical relatedness. A nearby term is wrong when it does not fit the requested slot.",
     "Preserve each candidate's native ontology type; do not infer that a term is a SKOS concept merely because it targets term_iri.",
     "A method is never a dictionary slot: procedures are usedProcedure-style context recorded on tables.csv or resolved through codes.csv, so method targets appear only for code values.",
