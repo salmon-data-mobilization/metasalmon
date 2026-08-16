@@ -751,3 +751,50 @@ test_that("overwrite is explicit and cannot escape through a semantic symlink", 
     "symlink|outside.*SDP|unsafe"
   )
 })
+
+test_that("the validator accepts a metasalmonpy-written manifest provenance", {
+  # Parity-deviations register row 12: the Python mirror writes
+  # byte-identical decomposition CSVs and honestly names itself in the
+  # manifest provenance.
+  sdp <- withr::local_tempdir()
+  make_measurement_decomposition_test_sdp(sdp)
+  rows <- measurement_decomposition_test_rows()
+  write_sdp_measurement_decompositions(sdp, rows)
+
+  manifest_path <- file.path(
+    sdp, "metadata", "semantic", "measurement-decompositions.json"
+  )
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  manifest$provenance$generated_by <-
+    "metasalmonpy.write_sdp_measurement_decompositions"
+  manifest$provenance$metasalmon_version <- NULL
+  manifest$provenance$metasalmonpy_version <- "0.1.7"
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+
+  expect_true(isTRUE(validate_sdp_measurement_decompositions(sdp)))
+
+  # Unknown generators, and known ones missing their version, stay rejected.
+  manifest$provenance$generated_by <- "someone-else"
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+  expect_error(
+    validate_sdp_measurement_decompositions(sdp),
+    "provenance is incomplete"
+  )
+  manifest$provenance$generated_by <-
+    "metasalmonpy.write_sdp_measurement_decompositions"
+  manifest$provenance$metasalmonpy_version <- NULL
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE, null = "null"),
+    manifest_path
+  )
+  expect_error(
+    validate_sdp_measurement_decompositions(sdp),
+    "provenance is incomplete"
+  )
+})

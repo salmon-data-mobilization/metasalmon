@@ -3,6 +3,12 @@ metasalmon (development version)
 
 ### Fixed
 
+* `validate_sdp_measurement_decompositions()` accepts a manifest written by
+  metasalmonpy, exactly as `validate_sdp_sssom()` now does — the mirror
+  writes byte-identical decomposition CSVs and honestly names itself in the
+  provenance block. Unknown generators and missing versions stay rejected.
+  See the parity-deviations register, row 12.
+
 * `validate_sdp_sssom()` accepts a manifest written by metasalmonpy
   (`generated_by = "metasalmonpy.write_sdp_sssom"` with
   `metasalmonpy_version`). The mirror writes byte-identical mapping-set

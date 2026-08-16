@@ -671,15 +671,29 @@
       "Measurement-decomposition CSV does not match its manifest row count."
     )
   }
-  if (!is.list(manifest$provenance) ||
-      !identical(
+  # Either implementation's provenance is complete: the mirror writes
+  # byte-identical decomposition CSVs and honestly names metasalmonpy as the
+  # generator (parity-deviations register, row 12).
+  version_ok <- function(value) {
+    is.character(value) && length(value) == 1L && !is.na(value) &&
+      nzchar(trimws(value))
+  }
+  generator_ok <- is.list(manifest$provenance) && (
+    (
+      identical(
         manifest$provenance$generated_by,
         "metasalmon::write_sdp_measurement_decompositions"
-      ) ||
-      !is.character(manifest$provenance$metasalmon_version) ||
-      length(manifest$provenance$metasalmon_version) != 1L ||
-      is.na(manifest$provenance$metasalmon_version) ||
-      !nzchar(trimws(manifest$provenance$metasalmon_version)) ||
+      ) &&
+        version_ok(manifest$provenance$metasalmon_version)
+    ) || (
+      identical(
+        manifest$provenance$generated_by,
+        "metasalmonpy.write_sdp_measurement_decompositions"
+      ) &&
+        version_ok(manifest$provenance$metasalmonpy_version)
+    )
+  )
+  if (!generator_ok ||
       !is.character(manifest$provenance$semantic_profile) ||
       length(manifest$provenance$semantic_profile) != 1L ||
       is.na(manifest$provenance$semantic_profile) ||
