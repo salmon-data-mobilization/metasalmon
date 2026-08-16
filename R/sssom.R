@@ -1018,12 +1018,19 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
       !identical(manifest$sssom_version, .ms_sssom_version)) {
     .ms_sssom_abort("SSSOM manifest declares an unsupported schema or SSSOM version.")
   }
-  if (!is.list(manifest$provenance) ||
-      !identical(
-        manifest$provenance$generated_by,
-        "metasalmon::write_sdp_sssom"
-      ) ||
-      is.null(manifest$provenance$metasalmon_version)) {
+  # Either implementation's provenance is complete: the mirror writes
+  # byte-identical mapping-set artifacts, and its manifest honestly names
+  # metasalmonpy as the generator (parity-deviations register, row 11).
+  provenance_ok <- is.list(manifest$provenance) && (
+    (
+      identical(manifest$provenance$generated_by, "metasalmon::write_sdp_sssom") &&
+        !is.null(manifest$provenance$metasalmon_version)
+    ) || (
+      identical(manifest$provenance$generated_by, "metasalmonpy.write_sdp_sssom") &&
+        !is.null(manifest$provenance$metasalmonpy_version)
+    )
+  )
+  if (!provenance_ok) {
     .ms_sssom_abort("SSSOM manifest provenance is incomplete.")
   }
   if (!is.list(manifest$mapping_sets) || length(manifest$mapping_sets) == 0L) {
