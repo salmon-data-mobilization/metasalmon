@@ -168,10 +168,18 @@ is the highest-value remaining collation item; pick it up next.**
 
 ### 0. gcdfo `docs-widoco` seeds its own baseline, so a failed build goes green over raw output
 
-**Repo:** `dfo-pacific-science/dfo-salmon-ontology`. **Blocked on:** PR #82
-landing first — this change only makes sense on top of it. **Handed to this
-hub 2026-08-16** by the session that fixed #82 (Brett reversed the earlier
-"keep it there" call).
+**Repo:** `dfo-pacific-science/dfo-salmon-ontology`. **UNBLOCKED** — PR #82 has
+merged (`06e4db0`), so this is now the next actionable change in that repo.
+**Handed to this hub 2026-08-16** by the session that fixed #82 (Brett reversed
+the earlier "keep it there" call).
+
+Two things #82 fixed that this item no longer needs to carry: the `docs-widoco`
+recipe now has `set -e` (it previously printed a success mark over a crashing
+normalizer), and the CI drift gate's
+`:(exclude)docs/webvowl/data/ontology.json` is gone, so the artifact is
+enforced rather than silently unchecked. Both were cited in `AGENTS.md` as
+motivating examples for the guard-expiry rule; the rule stands, the two
+instances are closed.
 
 `docs-widoco` copies the working-tree `docs/webvowl/data/ontology.json` to
 `release/tmp/webvowl-baseline.json` as the normalizer's baseline, and *then*
@@ -970,6 +978,63 @@ passes with no `REVIEW:` markers left **and the data CSV bytes unchanged** —
 the byte assertion is the only one that fails if the writer is not surgical.
 
 ### Open — P2 (correctness and conformance debt)
+
+**#85 Four IRI validators share one regex shape and two different answers.**
+`^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$` appears in four places with the same
+intent — reject an IRI containing whitespace — but
+`R/sdp-extension-helpers.R:36` passes `perl = TRUE` while
+`R/eml-export.R:1466`, `R/sssom.R:374` and `R/measurement-decompositions.R:57`
+run under TRE. PCRE and TRE disagree about which characters `[[:space:]]`
+covers. Verified by running both engines: `U+00A0` and `U+2007` agree, but
+**`U+3000` (ideographic space) does not** — perl treats it as a non-space, so
+the SDP-extension validator *accepts* an IRI containing it, while the other
+three *reject* the same string.
+
+So a package can pass extension validation and fail EML export, or carry an
+`term_iri` that `validate_sdp_sssom()` refuses — on a character invisible in a
+diff. The odd one out is the single `perl = TRUE` site; dropping it aligns four
+validators on one engine. Better still is one shared predicate, since four
+copies of a regex is how they came to disagree. *Retires when:* one helper owns
+the check and the other three call it. Found while reconciling the parity
+register, where the mismatch showed up as a Python/R difference that turned out
+to be an R/R difference.
+
+**#81 gcdfo ships a dead script and its orphaned output.**
+`scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
+normalizer superseded it — and `docs/webvowl/data/ontology.stamp` is its output,
+a tracked file nothing regenerates. That is a direct violation of gcdfo's own
+"no ghost code" rule. Left in place deliberately: its `AGENTS.md` requires
+asking before deleting anything under `scripts/`, and it predates the PR that
+found it. *Retires when:* both are deleted, or the stamp file gains a live
+producer.
+
+**#82 gcdfo's WSP review-artifact generator is nondeterministic.**
+`scripts/generate_wsp_composite_escapement_review_artifacts.py` produced three
+different `.graphml` files in three consecutive runs on unchanged input —
+unordered edge emission. This is exactly the defect class metasalmon's
+C-collation contract exists to prevent, in a sibling repo that has no equivalent
+guard. Worth fixing *and* worth asking whether gcdfo should carry a collation
+rule of its own; a hub-wide contract that only one repo enforces is a contract
+in one repo.
+
+**#84 A "Resolved" tech-debt entry that silently un-resolved.**
+gcdfo's `docs/tech-debt.md` still lists "2026-03-15 — `make ci`/`make
+docs-refresh` WebVOWL churn stabilized" under *Resolved*, but it had been broken
+since the term expansion introduced the duplicate `xsd:gYear` datatype nodes,
+and stayed broken until #82. This is the guard-expiry rule pointed at the other
+end of a guard's life: **a resolution claim decays exactly like a suppression
+does.** "Resolved" with no re-verification hook is an assertion about the past
+presented as a fact about the present, and it actively discourages the next
+person from checking. Whatever replaces it should name what would falsify it —
+here, the drift gate now covers the artifact, so the gate *is* the hook.
+
+**#83 A stale definition fixture in `test-term-search.R:614`.**
+`gcdfo:ConservationUnit` now reads "A group of **wild salmon** sufficiently
+isolated…" per the WSP; the inline fixture still carries the old "A group of
+fish sufficiently isolated from other groups...". Cosmetic — the value is a
+ranking *input*, never asserted — so nothing fails. Recorded because a fixture
+that quotes an external definition will keep drifting silently, and the fix is
+to stop quoting it verbatim rather than to re-sync the string.
 
 **#75 `create_sdp()` auto-applies `method_iri` with no `metadata/methods.csv`.**
 Reproduced. The docs state that "constraint and method assessments always remain

@@ -89,16 +89,35 @@ approval status.
 
 Ordering that is not optional, independent of who is executing:
 
-- **metasalmon migration vignette lands after the dry-run fix.** The vignette
-  states an invariant that only the dry-run preview change establishes; merged
-  first it documents behaviour the code does not yet have.
-- **The gcdfo `docs-widoco` baseline fix lands after the WebVOWL gate fix.**
-  The baseline change only makes sense once the recipe can fail at all.
-- **A gcdfo release and the WebVOWL gate fix resolve their
-  `docs/webvowl/data/ontology.json` conflict by REGENERATING** — run the repo's
-  `ci` target on the merged tree and commit what it produces against whichever
-  `SMN_PIN` survives. Both sides are whole-file derived output; a hand-picked
-  side is output no generator produces.
+- **The gcdfo WebVOWL normalizer fix lands FIRST — before the release, the
+  definition update, and the `docs-widoco` baseline change.** Not a preference:
+  on every branch that lacks it, `scripts/normalize_webvowl_json.py` dies
+  (`Non-unique semantic class key` — three `rdfs:Datatype` nodes share
+  `xsd:gYear`, introduced with the term expansion), the `docs-widoco` recipe has
+  no `set -e`, so **`make ci` prints its success mark and exits 0 over the
+  crash**, and what lands in `docs/webvowl/data/ontology.json` is raw
+  un-normalized WIDOCO output with nondeterministic ids. Regenerating that file
+  on any branch without the fix produces churn that is not reproducible and that
+  the fix will rewrite anyway.
+- **An `ontology.json` hash is only meaningful as a (pin + normalizer) pair, and
+  a hash taken from a broken pipeline is meaningless by construction.** Two
+  hashes circulated in this stream as "expected under pin X". `4d350546…` is
+  genuine — regenerated stably across four runs under pin `a5d4f28` with the
+  fixed normalizer. `c14629eb…` was never reproducible **and never could have
+  been**: it was recorded while the normalizer was crashing, and raw
+  un-normalized WIDOCO/OWL2VOWL output is *nondeterministic* — two runs over
+  byte-identical input produced two different hashes, both at the raw line
+  count. That number was a single draw from a distribution, written down as if
+  it were a fact. The normalized artifact, by contrast, is byte-stable across
+  runs. Regenerate on the merged tree and accept what the generator produces; a
+  hash that matches nothing expected is a finding to report, never a number to
+  force. **The general form: a recorded hash inherits the trustworthiness of
+  the pipeline that produced it, and nothing in the hash itself reveals which
+  kind it is.**
+- **`docs/webvowl/data/ontology.json` is derived output and is excluded from the
+  CI drift gate**, so nothing catches a hand-edit of it. Editing it by hand is
+  therefore possible, invisible, and wrong — except as a deliberate,
+  explicitly-flagged stopgap that a later regeneration supersedes.
 - **S10's 0.3.0 rung must carry metasalmon's post-0.3.0 fixes**, not just the
   release tree: the statistical-modifier ranking preferences, the corrected
   bundle-review prompt, the dry-run stop parity, and the role-contract guard.
@@ -110,7 +129,7 @@ moment anything merges. Current work-in-flight lives in the owning execplan.
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
-authoritative; this index coordinates. Refreshed 2026-08-15 against repository
+authoritative; this index coordinates. Refreshed 2026-08-16 against repository
 version sources, remote tags, and the open changes that affect this sequence.
 
 ### metasalmon (R) — current **0.3.0**
@@ -135,10 +154,11 @@ current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 
-### metasalmonpy (Python mirror) — current **0.1.6** (= metasalmon 0.1.6 parity)
+### metasalmonpy (Python mirror) — current **0.1.7** (= metasalmon 0.1.7 parity)
 
 | Version | Date | One line |
 |---|---|---|
+| 0.1.7 | 2026-08-16 (tagged `v0.1.7`, GitHub Release published) | Parity with metasalmon 0.1.7: SSSOM 1.1, measurement decompositions, reviewed EML 2.2.0, KNB/DataONE publication with the deterministic SDP archive, and the era SDP-inference corrections. Verified by running both implementations over the same inputs against the R **v0.1.7 tag**, not by reading R source |
 | 0.1.6 | 2026-07-29 | Parity with metasalmon 0.1.6: `create_sdp` workflow, opt-in semantic review, term-gap detection |
 | 0.1.3 | 2026-05-13 | Parity with metasalmon 0.0.13: SDP CSV IO, inference, EDH export |
 | 0.1.2 | 2026-02-06 | Initial: GitHub CSV helpers, metasalmon 0.0.5 parity |
@@ -338,7 +358,7 @@ any shared analytical-term coverage its approved scope requires.
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · #76, #77
-- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md)
+- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · gcdfo #67-#75 (nine SPSR holds = four decisions, step 7)
 - [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79
 
@@ -391,3 +411,19 @@ defect.** Two CI skips reported, correctly, that a private repository was
 unreadable. Asking *why the default pointed there* surfaced #72: an exported
 function defaulting to a private dataset repo, so a good token was reported as
 broken. Read the reason; then ask why it is true.
+
+**Patch-unique is not content-unique.** When auditing whether an abandoned
+branch can be discarded, `git cherry origin/main <branch>` is the obvious test
+and it produces false positives constantly. Three branches across the hub
+reported 14, 11, and 2 patch-unique commits and all three turned out to hold
+nothing `main` lacks, for three unrelated reasons: the branch retained
+generated artifacts `main` deliberately stopped tracking; a namespace migration
+(`gcdfo:` → `smn:`) preserved every concept while changing every line; and a
+later cleanup commit mutated the content a pre-rebase backup's patches touched,
+so the patch-ids stopped matching. Each needed a semantic diff — *is this
+concept present under any name?* — not a commit count. The inverse also holds:
+a branch can have **zero** patch-unique commits and still be worth reading, and
+one that is genuinely superseded is best recorded by *why* it is superseded
+(`feature/observation-structure-methods` carried `metadata/methods.csv`, the
+exact artifact sdp-0.3.0 removed) rather than by a claim that its content is
+"already in main", which was the wrong reason for the right verdict.

@@ -127,13 +127,25 @@ Then twelve defects from an adversarial review, each demonstrated against a
 v0.1.7 extraction and each pinned by a test that fails on a source-reverted
 build (38 failures confirmed). Deviations recorded as register rows 20–24.
 
-**Remaining for the milestone:** the deterministic archive and the era
-inference fixes, then the single bump to 0.1.7. Two known defects to fold in:
-`sssom.py` still uses ASCII-only `\s`/`\S` where era R's TRE is Unicode-aware
-(R accepts U+00A0/U+0085/U+2007/U+202F/U+001C in `author_id`, Python rejects —
-same class as the EML fix already landed), and `package_io.py:538` is the last
-unconverted reader, taking pandas' full NA vocabulary with no trimming on data
-resources.
+**Milestone complete.** 0.1.7 shipped 2026-08-16 — merged, version bumped,
+tagged `v0.1.7`, GitHub Release published. The two defects listed here as
+remaining (`sssom.py`'s ASCII-only `\s`/`\S` against era R's Unicode-aware TRE,
+and `package_io.py:538` taking pandas' full NA vocabulary untrimmed) were folded
+in before the bump. Two Codex findings were also fixed at review: the
+`atomic_io` umask dance, which two concurrent writes could leave permanently at
+`000`, now measures the mode from a throwaway file instead of mutating process
+state; and `eml.py` accepts a bare relative output path, which R already did.
+
+### A correction that moves a later rung
+
+The register's row 20 said R adopted C collation at 0.3.0. **It was 0.2.0** —
+`R/sssom.R` uses `method = "radix"` throughout from that release. The locale
+hazard is live only against era R (≤ 0.1.8). Two consequences: the 0.3.0 rung
+below must NOT be relied on to deliver collation convergence, since it already
+happened three rungs earlier; and any byte-equality claim measured against era
+R needs its locale caveat, while one measured against 0.2.0+ does not. This is
+also why an era claim must name the tag it was measured at — the same
+comparison run against current `main` silently answers a different question.
 
 ## Sidecar-survival rule
 
