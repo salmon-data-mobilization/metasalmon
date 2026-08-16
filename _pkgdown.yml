@@ -161,10 +161,17 @@ articles:
     navbar: ~
     desc: "Step-by-step guides for common workflows"
     contents:
+      - tidy-data-for-sdp
       - post-review-package-publication
       - data-dictionary-publication
       - reusing-standards-salmon-data-terms
       - github-csv-access
+
+  - title: "Migration"
+    navbar: ~
+    desc: "Moving an existing package to a newer specification version"
+    contents:
+      - migrating-to-sdp-0-3-0
 
   - title: "Reference"
     navbar: ~
