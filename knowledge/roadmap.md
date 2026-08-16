@@ -100,9 +100,12 @@ version sources, remote tags, and the open changes that affect this sequence.
 | 0.2.5 | 2026-08-12 | Credential redaction covers qualified `*_token` names; duplicate redactor deleted |
 | 0.2.4 | 2026-08-11 | **Breaking:** canonical CSV missing-value token is the empty field |
 
-Recorded in `DESCRIPTION` + `NEWS.md`.
-**Discrepancy:** tags and GitHub releases stop at v0.1.8 (2026-08-05) —
-every release since, 0.2.0 through 0.3.0, is untagged (S6 governance item).
+Recorded in `DESCRIPTION` + `NEWS.md` + tags/GitHub releases.
+**Tagging policy (Brett, 2026-08-15): every release from 0.3.0 forward is
+tagged AND gets a GitHub Release object.** `v0.3.0` is tagged at merge
+`5a37b11` with its NEWS entry as the release body. 0.2.0–0.2.6 stay untagged
+by decision — backfilling would invent release dates after the fact; that
+historical gap remains an S6 governance note, not a task.
 **S8 shipped:** PR
 [#39](https://github.com/salmon-data-mobilization/metasalmon/pull/39) merged
 2026-08-15 after five review rounds (29 findings fixed), so **0.3.0** is the
