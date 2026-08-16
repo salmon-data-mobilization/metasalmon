@@ -29,6 +29,15 @@ section and the R files it names — R is the complete spec for every port.
 | **Archive parity is contract-level, not byte-level.** Python defines its own `zipfile` determinism reference; the R↔Python CI job asserts manifest/ordering/fail-closed, never bytes | R's determinism is `zip`-3.0.1-specific; cross-language bytes cannot match | 2026-08-15 |
 | **0.3.0 ports from the merged release tree** (metasalmon main at the v0.3.0 merge, `5a37b11` — never any intermediate review-round commit; `f76ed4f` was only round one of five and lacks the rollback, role-hint, placement-validation, ordering, and method-promotion fixes), and the FINAL R fixture suite lands as pytest BEFORE the code | Five review rounds hardened the migrator (stop taxonomy, atomicity, dry_run typing, rollback); porting any pre-merge snapshot would tag 0.3.0 with known audited defects | 2026-08-15 |
 
+### 0.1.7 dependency decisions (logged 2026-08-15, from the dependency recon)
+
+| Decision | Rationale |
+|---|---|
+| **EML: build with stdlib ElementTree; validate with lxml as an optional extra; vendor the EML 2.2.0 XSD set (27 files, ~1 MB) as package data with its NCEAS/EDI notices** | R's document is one namespaced root with unqualified descendants — fully within ElementTree (already the repo convention via `edh_xml.py`). lxml IS libxml2, the identical engine behind `emld::eml_validate`, so accept/reject semantics match R by construction. metapype rejected: forces a 3.11 floor, validates against its own rule set rather than XSD, and its builder API would turn the node-for-node port into a rewrite. Fallback if lxml is ever unacceptable: `xmlschema` (weaker parity, 3.10 floor) |
+| **DataONE: raw REST via `requests` behind a Python adapter mirroring R's 14-method boundary — no dataone.libclient** | The library is dormant (no release since mid-2023) with a disproportionate tree (PyXB fork, aiohttp, rdflib, cryptography) for a pandas+requests package — and R itself already bypasses it for roughly half the surface (anonymous reads, capabilities, formats, Solr are raw httr2; the ORE map is hand-built with xml2). The genuinely-library-provided part is ~11 REST endpoints and a flat single-namespace SystemMetadata document (~300–500 lines). The adapter seam keeps a future swap cheap and mirrors R's `metasalmon.knb_adapter` injection point |
+| **Extras: `eml = ["lxml>=5,<7"]`, `knb = ["metasalmonpy[eml]"]`; core stays pandas+requests** | Mirrors R's Suggests-with-runtime-guard pattern (`emld`/`dataone`/`datapack`); lazy imports raise actionable install messages |
+| **EML/ORE parity tests assert structural equivalence (`ET.canonicalize`), never bytes** | Python cannot match libxml2's formatter byte-for-byte; consistent with the existing contract-level archive ruling |
+
 ## The nine-PR ladder
 
 Each milestone = one PR ending in a version bump (both `pyproject.toml` AND

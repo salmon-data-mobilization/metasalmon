@@ -35,6 +35,14 @@ differ: the CSV read contract predates the 0.2.4 empty-string missing-value
 token, there is no primary-key validation (0.2.6), no credential redaction
 (0.2.5), no cli-safety/collation equivalents where applicable.
 
+**PR 0 shipped** (metasalmonpy PR #6, merged 2026-08-16, no version bump by
+design): the smn/gcdfo term indexes are real — verified row-for-row against
+live R (133/133 smn, 218/218 gcdfo, identical order and role hints) — and a
+non-Turtle module body now raises instead of silently dropping its terms.
+The same PR started the parity-deviations register (`PARITY.md` +
+`knowledge/parity-deviations.md`) and fixed metasalmonpy's gitignored,
+never-committed `AGENTS.md`/`CLAUDE.md`.
+
 **Sequencing within the stream:** the nine-PR ladder in the
 [S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
 (recon 2026-08-15): an un-bumped parity-debt PR 0 first (the smn/gcdfo term

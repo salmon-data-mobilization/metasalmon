@@ -18,7 +18,13 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   change requested or made in metasalmon is **presumed to require the same
   change in metasalmonpy** (github `salmon-data-mobilization/metasalmonpy`,
   formerly `metaSmnPy`); implement it there in the same stream or log in the
-  roadmap card why not. Functionality and **release numbers stay in lockstep**
+  roadmap card why not. **Parity is behavioural, not literal** (Brett,
+  2026-08-15): do not force 100% API mimicry where it would be unintuitive
+  for Python users, and simple language differences that do not materially
+  change behaviour or capability are fine — but every deliberate difference
+  is recorded in `knowledge/parity-deviations.md` here AND `PARITY.md` there,
+  in the same PR that introduces it. An undocumented difference is a
+  contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state: metasalmonpy is
   at 0.1.6 parity; the 0.1.7→0.3.0 catch-up is roadmap stream S10. The same

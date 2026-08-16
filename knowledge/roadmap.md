@@ -199,7 +199,8 @@ not the stable PSC-1 product-profile fixture required by a consumer child.
 
 ## metasalmon current state
 
-**Shipped: 0.2.6.** The 0.2.x sequence, all reviewed and CI-green:
+**Shipped: 0.3.0** (tagged `v0.3.0`, GitHub Release published 2026-08-15).
+The release sequence, all reviewed and CI-green:
 
 | Release | What |
 |---|---|
@@ -210,11 +211,10 @@ not the stable PSC-1 product-profile fixture required by a consumer child.
 | 0.2.4 | #54 missing-value contract · #72 `ms_setup_github()` default · CI optional deps, non-C ambient collation, runnable examples |
 | 0.2.5 | #73 credential redaction covers qualified token names |
 | 0.2.6 | #77 tidy foundations — primary-key uniqueness, wide-format warning, placeholders surfaced |
-
 | 0.3.0 | #76 sdp-0.3.0 method placement model — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()`, placement validation, spec-tag schema pin |
 
-S8's R 0.3.0 implementation merged 2026-08-15 (PR #39, merge `5a37b11`) and
-is shipped on main; it remains untagged with no GitHub Release object.
+S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
+and is tagged and released per the 0.3.0-forward tagging policy.
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
