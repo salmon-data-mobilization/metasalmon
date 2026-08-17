@@ -52,6 +52,11 @@
   )
 }
 
+# Deliberately NOT `.ms_absolute_iri_shape()` (`R/iri-predicates.R`): this shape
+# is narrower -- hierarchical `scheme://` or `urn:` only -- and `perl = TRUE` is
+# intentional, so `[[:space:]]` stays ASCII-only to match the Python mirror
+# character-for-character (`knowledge/parity-deviations.md` row 28). Changing
+# either the shape or the engine here is a both-sides decision, not a cleanup.
 .ms_sdp_decomposition_is_absolute_iri <- function(value) {
   grepl(
     "^(?:[A-Za-z][A-Za-z0-9+.-]*://|urn:)[^[:space:]]+$",

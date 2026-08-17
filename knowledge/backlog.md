@@ -979,25 +979,29 @@ the byte assertion is the only one that fails if the writer is not surgical.
 
 ### Open — P2 (correctness and conformance debt)
 
-**#85 Four IRI validators share one regex shape and two different answers.**
-`^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$` appears in four places with the same
-intent — reject an IRI containing whitespace — but
-`R/sdp-extension-helpers.R:36` passes `perl = TRUE` while
-`R/eml-export.R:1466`, `R/sssom.R:374` and `R/measurement-decompositions.R:57`
-run under TRE. PCRE and TRE disagree about which characters `[[:space:]]`
-covers. Verified by running both engines: `U+00A0` and `U+2007` agree, but
-**`U+3000` (ideographic space) does not** — perl treats it as a non-space, so
-the SDP-extension validator *accepts* an IRI containing it, while the other
-three *reject* the same string.
+**#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
+`metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
+that it mirrors `.ms_sdp_extension_is_absolute_iri`, but matches whitespace with
+Python's `\s` (`sdp_methods.py:67,69`) rather than the enumerated
+`metadata.R_SPACE_CLASS` that `eml.py:92` and `sssom.py:234` both import. `\s`
+is Unicode-aware but is not TRE's set. Measured on R 4.5.2 across
+U+0001–U+3100: **8 codepoints disagree — U+001C–U+001F, U+0085, U+00A0, U+2007,
+U+202F — Python rejecting every one R accepts.** Python is the stricter side, so
+the failure mode is a Python-written extension IRI refused by the mirror and
+accepted by R. It reaches users through `validate_sdp_methods()`,
+`observation_structures.py:256` and KNB publication
+(`knb_publication.py:575`).
 
-So a package can pass extension validation and fail EML export, or carry an
-`term_iri` that `validate_sdp_sssom()` refuses — on a character invisible in a
-diff. The odd one out is the single `perl = TRUE` site; dropping it aligns four
-validators on one engine. Better still is one shared predicate, since four
-copies of a regex is how they came to disagree. *Retires when:* one helper owns
-the check and the other three call it. Found while reconciling the parity
-register, where the mismatch showed up as a Python/R difference that turned out
-to be an R/R difference.
+This is the same drift `sssom.py:228-232` records having already fixed once; the
+one extension module that never imported the constants was never given the same
+treatment, and `tests/test_sdp_methods.py` has no whitespace-membership test
+where `tests/test_eml.py` and `tests/test_sssom.py` do — which is why nothing
+caught it. Found by reading the Python side while fixing #85, testing the
+register's claim that "Python mirrors no such function"; it does. Registered as
+parity-deviations **row 29**, and it narrowed from 23 codepoints to 8 when #85
+landed. *Retires when:* `sdp_methods.py` builds both regexes from
+`R_SPACE_CLASS` and `tests/test_sdp_methods.py` pins the membership. Belongs to
+roadmap stream **S10**; the twin's `PARITY.md` needs the matching row.
 
 **#81 gcdfo ships a dead script and its orphaned output.**
 `scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
@@ -1137,6 +1141,53 @@ belongs to **#48**, not here.
 *Gate:* a decision record naming which style is canonical for method concepts and
 how the other maps to it, then a consistency check in both repos. No code change
 is warranted until that decision exists — there is nothing broken to fix.
+
+### Fixed in the development version (post-0.3.0)
+
+**#85 Four IRI validators shared one regex shape and two different answers.**
+`^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$` appeared in four places with the same
+intent — reject an IRI containing whitespace — but `R/sdp-extension-helpers.R`
+passed `perl = TRUE` while `R/eml-export.R` and `R/sssom.R` ran under TRE, and
+PCRE and TRE do not agree on what `[[:space:]]` covers. Re-verified by running
+both engines on R 4.5.2: `U+00A0` and `U+2007` agree (neither engine treats them
+as whitespace, so both accept), but **`U+3000` IDEOGRAPHIC SPACE and `U+1680`
+OGHAM SPACE MARK do not** — PCRE treats them as non-space, so the SDP-extension
+validator accepted an IRI containing either while EML export and
+`validate_sdp_sssom()` rejected the same string.
+
+Fixed by dropping `perl = TRUE` from `.ms_sdp_extension_is_absolute_iri()`,
+which makes it stricter rather than looser: RFC 3987 requires those characters
+to be percent-encoded, so accepting them was the wrong answer, and rejecting
+them was already what the other validators did. The direction mattered — the
+alternative, converting the TRE sites to PCRE, would have silently invalidated
+metasalmonpy's enumerated `R_SPACE_CLASS` and tripped row 28's own retirement
+condition.
+
+The shape now has one owner, `R/iri-predicates.R`, called by the SDP-extension,
+EML and SSSOM validators. EML and SSSOM behaviour is unchanged; only the
+SDP-extension answer moved. *Note the original item's fourth site was described
+wrongly:* `R/measurement-decompositions.R` runs under **perl**, not TRE, and it
+tests a narrower shape (`scheme://` or `urn:` only). Its ASCII whitespace class
+is deliberate and mirrored character-for-character in Python, so it is
+documented as a non-caller rather than folded in — three of four consolidated,
+the fourth exempted with its reason recorded at the site.
+
+*Proof:* `tests/testthat/test-iri-predicates.R` pins the per-character answer
+for `U+0020`, `U+0009`, `U+00A0`, `U+2007` and `U+3000` (built with
+`intToUtf8()`, because a literal U+3000 in a test file is exactly the invisible
+thing at issue), asserts the SDP-extension validator and the *real*
+`.ms_eml_supplementary_objects()` path agree on all five, and guards the shared
+predicate against `perl = TRUE` being reintroduced. Verified to fail on a build
+with only the extension site reverted. Found while reconciling the parity
+register, where the mismatch showed up as a Python/R difference that turned out
+to be an R/R difference.
+
+*And is a Python difference after all.* Checking the register's claim that
+"Python mirrors no such function" refuted it: `metasalmonpy/sdp_methods.py:95`
+mirrors this exact helper and uses Python's `\s`, which matches neither R
+engine. The fix **narrowed** that gap from 23 disagreeing codepoints to 8 rather
+than opening it, so it needed no Python change to land — but the residual 8 are
+now item **#86** and parity-deviations **row 29**.
 
 ### Fixed in 0.2.5
 
