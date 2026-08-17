@@ -998,10 +998,70 @@ treatment, and `tests/test_sdp_methods.py` has no whitespace-membership test
 where `tests/test_eml.py` and `tests/test_sssom.py` do — which is why nothing
 caught it. Found by reading the Python side while fixing #85, testing the
 register's claim that "Python mirrors no such function"; it does. Registered as
-parity-deviations **row 29**, and it narrowed from 23 codepoints to 8 when #85
-landed. *Retires when:* `sdp_methods.py` builds both regexes from
-`R_SPACE_CLASS` and `tests/test_sdp_methods.py` pins the membership. Belongs to
-roadmap stream **S10**; the twin's `PARITY.md` needs the matching row.
+parity-deviations **row 33** (row 29 until 2026-08-17, when metasalmonpy's
+0.1.8 rows 29–32 took that number and this one moved), and it narrowed from 23
+codepoints to 8 when #85 landed. *Retires when:* `sdp_methods.py` builds both
+regexes from `R_SPACE_CLASS` and `tests/test_sdp_methods.py` pins the
+membership. Belongs to roadmap stream **S10**; the twin's `PARITY.md` needs the
+matching row 33.
+
+**#87 metasalmonpy's term ranker has no ranking-profile system, and its
+hardcoded weights are not R's.** `term_search.py:955` `_score_and_rank_terms`
+implements R's `match_type` ladder but nothing of the profile machinery around
+it: no `ranking_profile` argument, no `.merge_ranking_profile()`, no
+`.ranking_profile_defaults()` (`R/term_search.R:2040`, `:2222`), and every
+tunable inlined. The inlined values differ from R's, so the same candidate set
+comes back in a different order: base source weights (`smn` 1.2 vs 1.0,
+`gcdfo` 1.0 vs 0.9) and the unknown-source fallback (0 vs R's 0.1); role boosts
+for every role except `unit` (e.g. `variable`: R `smn` 1.7/`gcdfo` 1.3/`nvs`
+1.0/`ols` 0.4/`zooma` 0.4, Python `smn` 1.5/`gcdfo` 1.0/`nvs` 0.6/`ols`
+0.2/`bioportal` 0.4); and the vocabulary bonuses, which differ in magnitude
+*and* in gating — R applies `host_bonus` 0.8 / `slug_bonus` 0.8 /
+`label_pattern_bonus` 0.4 only inside the role-preferences branch, Python adds
+1 / 1 / 0.5 unconditionally. R's `backend_score` term has no counterpart.
+
+The worst part is not the absence. `benchmark_term_ranking_fixtures(profiles =
+...)` is exported on both sides, but Python's (`term_search.py:1185`) binds
+each profile to `_profile`, calls the scorer without it, and returns the
+profiles unchanged in its result — so benchmarking two profiles yields two
+identical summary rows under different names. The one exported surface for
+comparing ranking profiles silently reports that all profiles are equivalent,
+which is worse than not having it.
+
+This **predates the 0.1.6 parity claim** and no S10 rung covers it — logged as
+out of scope on the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
+so the omission is deliberate rather than forgotten. Registered as
+parity-deviations **row 32** / `PARITY.md` row 32. Severity: silent — nothing
+errors, candidate order just differs, and the benchmark that would catch it is
+the thing that is broken. *Retires when:* `_score_and_rank_terms` takes a
+profile merged over a Python `.ranking_profile_defaults()` read back from the
+claimed R release, `benchmark_term_ranking_fixtures` threads `profiles`
+through, and a differential fixture pins both rankers to the same order.
+Needs a rung or its own stream before the 0.2.0 replay work depends on
+ranking behaviour.
+
+**#88 The reproducibility-manifest validator is the one that never got its
+dual-provenance half.** metasalmon accepts either implementation's provenance
+for SSSOM (`R/sssom.R:1028-1032`) and for measurement decompositions
+(`R/measurement-decompositions.R:696-698`), but
+`.ms_sdp_reproducibility_validate_manifest()`
+(`R/reproducibility-manifest.R:298-306`) still requires
+`identical(generated_by, "metasalmon::write_sdp_reproducibility_manifest")`
+plus a `metasalmon_version`. metasalmonpy's validator already takes both
+writers (`reproducibility.py` `_ACCEPTED_PROVENANCE`), so the asymmetry runs
+one way: **a Python-written `reproducibility/manifest.json` is rejected by
+metasalmon**, while an R-written one is read fine by metasalmonpy. The
+manifest bytes are otherwise identical apart from those two provenance values,
+so nothing but the writer name is at stake. The honest-provenance ruling (PR
+#43, register rows 11–12) was applied writer-side to this artifact without its
+read-side half — the same shape as the decomposition fix in PR #44, one
+artifact later. Found 2026-08-17 while verifying register row 29 against both
+implementations. Severity: fail-closed, so it errors rather than corrupting —
+but it blocks exactly the R↔Python round-trip the S10 execplan lists as PR-3
+and PR-8 verification. *Retires when:* the R validator accepts
+`metasalmonpy.write_sdp_reproducibility_manifest` + `metasalmonpy_version`,
+with the round-trip test the other two validators have. Registered as
+parity-deviations **row 29**; stream **S10**.
 
 **#81 gcdfo ships a dead script and its orphaned output.**
 `scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
@@ -1187,7 +1247,8 @@ to be an R/R difference.
 mirrors this exact helper and uses Python's `\s`, which matches neither R
 engine. The fix **narrowed** that gap from 23 disagreeing codepoints to 8 rather
 than opening it, so it needed no Python change to land — but the residual 8 are
-now item **#86** and parity-deviations **row 29**.
+now item **#86** and parity-deviations **row 33** (numbered 29 until 2026-08-17,
+when metasalmonpy's 0.1.8 rows 29–32 claimed that number).
 
 ### Fixed in 0.2.5
 
