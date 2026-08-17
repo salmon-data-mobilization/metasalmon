@@ -164,6 +164,23 @@ that drop reviewed artifacts.
   term-request console — inapplicable, exception register.
 - Locale/radix sweeps: Python `sorted()` is codepoint-ordinal — mirror the
   determinism TESTS plus a no-`locale.strxfrm` guard, not the fix.
+- **The ranking-profile gap predates this replay and no rung covers it**
+  (backlog #87, parity-deviations row 32). Python's `_score_and_rank_terms`
+  has no `ranking_profile` argument and no equivalent of
+  `.ranking_profile_defaults()`/`.merge_ranking_profile()`, and its inlined
+  weights differ from R's across base source weights, the unknown-source
+  fallback, role boosts for every role but `unit`, and the vocabulary bonuses
+  — which differ in gating as well as magnitude. Candidate *order* therefore
+  differs for the same query. This is **older than the 0.1.6 claim**, so no
+  rung below inherits it: the 0.1.7 rung's `match_type` fix touches the ladder
+  inside the scorer, not the profile system around it, and the 0.3.0 rung's
+  `statistical_modifier` ranking-preferences rows are data for a system Python
+  does not have. Logged here as deliberately out of scope so the omission is
+  visible; it needs a rung or its own stream before any milestone verification
+  depends on ranking order. Note while sequencing that
+  `benchmark_term_ranking_fixtures` — the surface that would *measure* a
+  ranking regression — accepts `profiles` and discards them on the Python
+  side, so it cannot currently serve as the check for any rung.
 
 ## Verification
 
