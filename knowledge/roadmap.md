@@ -425,6 +425,30 @@ unreadable. Asking *why the default pointed there* surfaced #72: an exported
 function defaulting to a private dataset repo, so a good token was reported as
 broken. Read the reason; then ask why it is true.
 
+**A deferred import is still a hard dependency for every caller.** metasalmonpy
+keeps PyYAML out of its core dependencies and imports it inside the functions
+that need it. A change added a call from the KNB *archive* path into one of
+those functions, and the archive path stopped working on core deps — a real
+regression, in a package whose parity register claims core-deps safety as a
+property. Reading the import statements said the opposite: every `import yaml`
+was correctly deferred, and the archive module imported nothing. **The dependency
+entered through the call graph, not the import list**, so only running the path
+with the extra uninstalled could reveal it. Two readers reached the wrong
+conclusion from the imports alone before anyone ran it. The general rule: "the
+import is inside a function" is a statement about that function, never about its
+callers, and a claim of dependency-tier safety is only worth what the test that
+exercises it is worth.
+
+**A changelog block anchored on the section below it follows that section
+through a version promotion.** A branch added a `### Removed` block above
+`## [Unreleased]`, using the released section beneath as its context anchor.
+When the release branch promoted `[Unreleased]` to `[0.0.9]` and merged first,
+the rebase carried the new block *into the published, tagged `[0.0.9]`* — a
+second `### Removed` heading inside a cut release, silently and with no
+conflict. Caught by diffing the merged `CHANGELOG.md` against the tag rather
+than trusting a clean rebase. Verify a changelog rebase against the tag, not
+against the absence of conflicts.
+
 **Patch-unique is not content-unique.** When auditing whether an abandoned
 branch can be discarded, `git cherry origin/main <branch>` is the obvious test
 and it produces false positives constantly. Three branches across the hub
