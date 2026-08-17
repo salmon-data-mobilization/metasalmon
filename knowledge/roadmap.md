@@ -182,21 +182,34 @@ tag or GitHub release; the 0.0.0–0.0.2 flat serializations declare module 01's
 IRI as the ontology (generator defect, fixed from 0.0.3; immutable snapshots
 keep the historic shape).
 
-### dfo-salmon-ontology (gcdfo) — current **0.0.8**
+### dfo-salmon-ontology (gcdfo) — current **0.0.9**
 
 | Version | Date | One line |
 |---|---|---|
+| 0.0.9 | 2026-08-16 (tagged `0.0.9`, GitHub Release published — the repo's **first** tag) | The S9 step-3 boundary published as data: a 32-row SSSOM set, four `gcdfo:` object properties **removed**, one class re-namespaced, the WSP Conservation Unit definition ("wild salmon"), the WebVOWL normalizer fix + ADR-007, and `make check-modules` |
 | 0.0.8 | 2026-03-29 | Enhancement-status vocabulary, RemovalReference, abundance data-type classes |
 | 0.0.999 | 2026-01-30 | Pre-1.0 "beta" versioning adopted; JSON-LD docs pipeline |
 | 0.0.2 | 2025-01-07 | Initial structure, SKOS schemes, ROBOT toolchain |
 
-Recorded **only** in `CHANGELOG.md` + `owl:versionInfo` — zero tags, zero
-GitHub releases. **Discrepancies:** the sequence is non-monotonic (0.0.999
-predates 0.0.8). PR #78 merged the S9 step-3 boundary work into the default
-branch on 2026-08-14 (the 32-row SSSOM set, duplicate-property removal,
-re-namespacing, and refreshed mirrors), but that work remains unreleased.
-Cutting the next gcdfo release and fixing the version sequence are S6 item-3
-work.
+**0.0.9 is a breaking release for consumers holding retired IRIs** — four
+object properties are gone and one class moved namespace. `mappings/gcdfo-to-smn.sssom.tsv`
+carries replacement rows so a dataset holding a retired IRI can resolve it.
+
+**Discrepancies:** the sequence is non-monotonic (0.0.999 predates 0.0.8); the
+CHANGELOG documents that as an abandoned numbering experiment and the version
+line deliberately does not exceed it. Tags before 0.0.9 do not exist and are
+**not** being backfilled — 0.0.9 is where the tag-and-release practice starts,
+the same call made for metasalmon at 0.3.0.
+
+**A gap 0.0.9 exposed and did not close:** `docs/releases/<version>/` snapshots
+are written by `make release-snapshot` and never touched by `make ci`, so the
+CI drift gate structurally cannot see a stale snapshot. The 0.0.9 snapshot had
+been cut before the Conservation Unit definition change merged and **would have
+published the superseded definition with every gate green**. Caught by hand and
+re-cut before release. The fix — a CI check comparing
+`docs/releases/<current owl:versionInfo>/` against `docs/`, scoped to the
+current version so older snapshots stay free to diverge — is logged in that
+repo's `docs/tech-debt.md` with its retirement condition.
 
 ### smn-data-pkg (SDP spec) — current **sdp-0.3.0**
 
