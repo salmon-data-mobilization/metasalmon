@@ -1040,29 +1040,6 @@ through, and a differential fixture pins both rankers to the same order.
 Needs a rung or its own stream before the 0.2.0 replay work depends on
 ranking behaviour.
 
-**#88 The reproducibility-manifest validator is the one that never got its
-dual-provenance half.** metasalmon accepts either implementation's provenance
-for SSSOM (`R/sssom.R:1028-1032`) and for measurement decompositions
-(`R/measurement-decompositions.R:696-698`), but
-`.ms_sdp_reproducibility_validate_manifest()`
-(`R/reproducibility-manifest.R:298-306`) still requires
-`identical(generated_by, "metasalmon::write_sdp_reproducibility_manifest")`
-plus a `metasalmon_version`. metasalmonpy's validator already takes both
-writers (`reproducibility.py` `_ACCEPTED_PROVENANCE`), so the asymmetry runs
-one way: **a Python-written `reproducibility/manifest.json` is rejected by
-metasalmon**, while an R-written one is read fine by metasalmonpy. The
-manifest bytes are otherwise identical apart from those two provenance values,
-so nothing but the writer name is at stake. The honest-provenance ruling (PR
-#43, register rows 11–12) was applied writer-side to this artifact without its
-read-side half — the same shape as the decomposition fix in PR #44, one
-artifact later. Found 2026-08-17 while verifying register row 29 against both
-implementations. Severity: fail-closed, so it errors rather than corrupting —
-but it blocks exactly the R↔Python round-trip the S10 execplan lists as PR-3
-and PR-8 verification. *Retires when:* the R validator accepts
-`metasalmonpy.write_sdp_reproducibility_manifest` + `metasalmonpy_version`,
-with the round-trip test the other two validators have. Registered as
-parity-deviations **row 29**; stream **S10**.
-
 **#81 gcdfo ships a dead script and its orphaned output.**
 `scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
 normalizer superseded it — and `docs/webvowl/data/ontology.stamp` is its output,
@@ -1203,6 +1180,57 @@ how the other maps to it, then a consistency check in both repos. No code change
 is warranted until that decision exists — there is nothing broken to fix.
 
 ### Fixed in the development version (post-0.3.0)
+
+**#88 The reproducibility-manifest validator is the one that never got its
+dual-provenance half.** metasalmon accepted either implementation's provenance
+for SSSOM and for measurement decompositions, but
+`.ms_sdp_reproducibility_validate_manifest()` still required
+`identical(generated_by, "metasalmon::write_sdp_reproducibility_manifest")`
+plus a `metasalmon_version`, while metasalmonpy's validator already took both
+writers. So the asymmetry ran one way: **a Python-written
+`reproducibility/manifest.json` was rejected by metasalmon**, while an
+R-written one was read fine by metasalmonpy. The honest-provenance ruling (PR
+#43, register rows 11–12) had been applied writer-side to this artifact
+without its read-side half — the same shape as the decomposition fix in PR
+#44, one artifact later.
+
+*Wider than the original item said.* `R/knb-publication.R:297` validates the
+reproducibility manifest while planning a publication, so the defect blocked
+KNB publication of any Python-written SDP, not only a direct
+`validate_sdp_reproducibility_manifest()` call.
+
+Fixed by giving the accepted writer set one owner rather than a third copy.
+`R/provenance.R` holds the `generated_by` → version-field mapping, derived
+from the bare function name so R's `metasalmon::` and Python's `.` calling
+conventions are written once; all three validators now resolve their accepted
+writers through it. The original item asked only that the reproducibility
+validator accept both writers — three hand-maintained string lists is *how*
+the ruling got applied twice out of three times, so consolidating them was the
+part that stops it recurring. A deliberate exception is recorded at the SSSOM
+site: it keeps a presence-only version check because metasalmonpy's `sssom.py`
+asks exactly `provenance.get(version_key) is None`, and the two readers of one
+artifact must accept the same manifests. That exception carries its own
+retirement condition in `R/provenance.R`.
+
+*An audit for a fourth one-sided site found none.* The package has exactly
+three writer-provenance validate sites and three write sites; `written_by`,
+`produced_by`, `created_by`, `producer` and `software` appear nowhere. The
+other metasalmon-branded literals are write-only (UUID and fingerprint
+preimage salts, user agents) or not identity gates at all — `.metasalmon-package`
+is tested with `file.exists()` and its contents never compared.
+
+*Proof:* `tests/testthat/test-reproducibility-manifest.R` validates a
+metasalmonpy-provenanced manifest and keeps unknown generators, absent
+versions, whitespace-only versions and a writer versioned under the *other*
+implementation's field rejected; `tests/testthat/test-provenance.R` pins the
+accepted set for all three artifacts and fails if any validator re-types a
+writer literal instead of sharing it. Verified to fail on a build with only
+the reproducibility validator reverted — the regression test errors and the
+structural guard reports two re-typed literals. Verified end to end as well,
+which is the thing the item was really about: metasalmonpy 0.1.8 wrote a
+manifest over a tree R had written one for, R validated it, and the two
+manifests were identical apart from the two provenance values. Registered as
+parity-deviations **row 29**, whose retirement condition this discharges.
 
 **#85 Four IRI validators shared one regex shape and two different answers.**
 `^[A-Za-z][A-Za-z0-9+.-]*:[^[:space:]]+$` appeared in four places with the same

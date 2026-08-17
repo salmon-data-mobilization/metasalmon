@@ -678,26 +678,15 @@
   }
   # Either implementation's provenance is complete: the mirror writes
   # byte-identical decomposition CSVs and honestly names metasalmonpy as the
-  # generator (parity-deviations register, row 12).
-  version_ok <- function(value) {
-    is.character(value) && length(value) == 1L && !is.na(value) &&
-      nzchar(trimws(value))
-  }
-  generator_ok <- is.list(manifest$provenance) && (
-    (
-      identical(
-        manifest$provenance$generated_by,
-        "metasalmon::write_sdp_measurement_decompositions"
-      ) &&
-        version_ok(manifest$provenance$metasalmon_version)
-    ) || (
-      identical(
-        manifest$provenance$generated_by,
-        "metasalmonpy.write_sdp_measurement_decompositions"
-      ) &&
-        version_ok(manifest$provenance$metasalmonpy_version)
-    )
+  # generator (parity-deviations register, row 12). The accepted writer set is
+  # shared with the SSSOM and reproducibility validators -- see
+  # `R/provenance.R`.
+  version_field <- .ms_manifest_provenance_version_field(
+    manifest$provenance,
+    "write_sdp_measurement_decompositions"
   )
+  generator_ok <- !is.na(version_field) &&
+    .ms_manifest_provenance_version_ok(manifest$provenance[[version_field]])
   if (!generator_ok ||
       !is.character(manifest$provenance$semantic_profile) ||
       length(manifest$provenance$semantic_profile) != 1L ||

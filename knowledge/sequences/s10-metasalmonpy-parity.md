@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror from metasalmon 0.1.6 parity to 0.2.6, bumping its version only as parity actually lands; the mirror rule applies to all new work immediately."
+description: "Bring the Python mirror from metasalmon 0.1.6 parity to 0.3.0, bumping its version only as parity actually lands; the mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -9,15 +9,21 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S10 — metasalmonpy parity · 0.1.6 → 0.2.6
+# S10 — metasalmonpy parity · 0.1.6 → 0.3.0
 
-**Execplan:** to be written at stream start. Recon evidence: the 2026-08-13
-hub-restructure recon (see the [roadmap card](../roadmap.md) release index and
+**Execplan:** the
+[S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
+written 2026-08-15. Earlier recon evidence: the 2026-08-13 hub-restructure
+recon (see the [roadmap card](../roadmap.md) release index and
 `metasalmonpy/AGENTS.md`).
 
 metasalmonpy (formerly `metaSmnPy`; package formerly `salmonpy`; renamed and
 purged of foreign content on 2026-08-13) is the Python mirror of metasalmon.
-It last synced at **metasalmon 0.1.6**; metasalmon is at **0.2.6**.
+The stream opened at **metasalmon 0.1.6** parity against an R release of
+0.2.6. **Current state: metasalmonpy is at 0.1.8; metasalmon is at 0.3.0.**
+Rungs 1 (0.1.7) and 2 (0.1.8) have shipped; **the next rung is 3, `0.2.0 +
+0.2.1` collapsed.** The ladder's target moved to 0.3.0 when S8 shipped, which
+is why this card's range and the execplan's now agree on 0.3.0.
 
 **The contract (Brett, 2026-08-13), stated in both repos' `AGENTS.md`:**
 
@@ -68,7 +74,8 @@ leftovers (see its NEWS "Fixed" entry): `inst/extdata/ontology-preferences.csv`
 gained three `statistical_modifier` rows, and the bundle review prompt's
 opening instruction now enumerates the six dictionary slots instead of naming
 the removed `method` slot. **Neither has a mirror to make yet** — metasalmonpy
-is at 0.1.6, `statistical_modifier` appears nowhere in its `src/`, and its
+was at 0.1.6 when this was written (0.1.8 now, still short of the 0.3.0 rung),
+`statistical_modifier` appears nowhere in its modules, and its
 `data/ontology-preferences.csv` carries the pre-0.3.0 role set (`constraint`,
 `entity`, `method`, `property`, `unit`, `variable`, `wikidata`). This is the
 logged reason for no same-day mirror; the role arrives with the 0.3.0 step of
