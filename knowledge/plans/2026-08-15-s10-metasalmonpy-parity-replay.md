@@ -147,6 +147,47 @@ R needs its locale caveat, while one measured against 0.2.0+ does not. This is
 also why an era claim must name the tag it was measured at — the same
 comparison run against current `main` silently answers a different question.
 
+## 0.1.8 progress (2026-08-17)
+
+**Milestone complete.** 0.1.8 shipped 2026-08-17 — metasalmonpy PR #8 merged
+as `db85016`, version bumped, tagged `v0.1.8`, GitHub Release published. The
+rung carried the SDP method registry as **read and validate only**, the
+writer landing as an exported raising stub rather than being absent (the
+logged writer-only-skip decision above, now register row 9 and marked
+*landed* rather than *planned*); observation structures; the reproducibility
+manifest; reviewed-strategy apply; expanded KNB publication; the `package_io`
+host fix; and the demo-data and `match_type` ranking fixes. The vendored
+schema bundle now comes from the upstream `sdp-0.2.0` tag, which discharges
+register row 27's retirement condition — the Python profile version is no
+longer a literal — and creates row 30, which describes how that bundle is
+read.
+
+Verified the way the rung above was: by driving both implementations over the
+same inputs against the R **`v0.1.8` tag**, not by reading R source.
+`methods.csv`, both observation-structure files and the updated
+`datapackage.json` came out byte-identical, and the KNB plan matched on all
+20 objects — every PID and every checksum.
+
+Deviations recorded as register rows 29–34. Two of them are about the same
+mistake in opposite directions, and both are worth carrying forward. Row 34:
+mirroring R's helper *layout* imported a constraint R does not have — `yaml`
+is a hard `Imports` here, PyYAML is an extra there — and made the pure-stdlib
+SDP archive require the `[eml]` extra to build; the fix moved the
+reviewed-ledger binding assertions into the publication preflight, and the
+core-deps property is now enforced by CI and by a `sys.meta_path` blocker
+rather than asserted in prose (row 30). Row 29 is the converse: R had applied
+the honest-provenance ruling to the reproducibility manifest's writer and not
+its reader, so R **rejected** a Python-written manifest and, through
+`R/knb-publication.R:297`, refused to publish any Python-written SDP to KNB.
+Fixed R-side post-0.3.0 (backlog #88), with the accepted writer set
+consolidated into `R/provenance.R` so a fourth manifest type inherits dual
+acceptance instead of re-deriving it.
+
+**Next rung: 3 — `0.2.0 + 0.2.1` collapsed.** It is also the first of the two
+rungs whose verification is the R↔Python round-trip (see *Verification*
+below), which is why #88 had to be fixed before it starts rather than during
+it.
+
 ## Sidecar-survival rule
 
 Sidecars appear at PRs 1–2 but read→edit→write preservation is a PR-3
