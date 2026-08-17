@@ -114,13 +114,45 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
    meaning no available document defines publishes IRIs asserting a distinction
    nobody can state. "Leave it as data until a published scheme is in hand" is
    a legitimate outcome — **closing an issue as *rejected with reasoning* is a
-   result, not a failure**, and #24's close is the precedent for recording why.
+   result, not a failure**. Note there is **no precedent for it in this
+   repository yet** — #24 is sometimes cited as one and is not: it closed as
+   *completed*, because the `LifePhaseScheme` terms were minted, just under
+   `smn:` instead of the proposed `gcdfo:`. It is a precedent for recording why
+   a delivery differs from the request. A hold closed as rejected would be the
+   first of its kind, so its reasoning has to stand on its own rather than lean
+   on an earlier close.
 
    Note the namespace question that #24 already settled once: these are
    proposed as `gcdfo:`, but life history and dominant cycle are general salmon
    concepts, not DFO administrative ones. Under the boundary the two ontologies
    now hold to, groups B and C most likely belong in `smn:` — which changes who
    decides them.
+
+   ### Decided (Brett, 2026-08-17)
+
+   All four groups ruled on. Two of the four went against the recommendation
+   above, which is why the reasoning is recorded rather than just the outcome.
+
+   | Group | Ruling |
+   |---|---|
+   | **A1** (#67) | **Mint the PFMAs as a controlled vocabulary** in gcdfo, sourced from DFO materials, then close #67. The alternative — a separate four-value "DFO salmon Area" entity, which is what the evidence pointed at — was **rejected**. |
+   | **A2** (#69, #75) | **Capture as an issue.** Filed as **#84**, posing the single question: quantitative abundance reference points, or a coded hierarchy? Needs a data-steward ruling; #69/#75 stay open behind it. |
+   | **B + C** (#68, #74, #70) | **Three separate schemes, in `smn:`, scoped "very broad"** — explicitly *not* the single merged CU species-code vocabulary recommended above. Broad means species-agnostic: a life-history-type scheme that contains lake- and river-type rather than a sockeye scheme. Brett's second constraint is that **PSC should be able to leverage them**, so they are designed for `psc-salmon-vocabularies` to map onto rather than mint parallels. Mint from the source code list, not observed values — `PKE` lands alongside `PKO`. |
+   | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. |
+
+   **The A1 caveat, which survives the ruling:** minting the PFMA vocabulary
+   does not make `DFO_AREA`'s four values members of it. `DFO_AREA` holds a DFO
+   salmon Area, not a PFMA, and the SPSR inventory's `entity_iri` for it stays
+   pointed at `gcdfo:PacificFisheryManagementArea`. #67's close states what the
+   vocabulary does and does not resolve rather than implying coverage it lacks.
+
+   **Open disposition question:** #72's distinguishing premise — that code `2`
+   is shared between `INDEX_QUALITY` and `INFORMATION_QUALITY` — is factually
+   false, so nothing answerable remains in it. #71 and #73 are hollow but not
+   false. Closing all three as rejected-with-reasoning, with #85 as successor,
+   is defensible **only if** the `spsr-data-dict` hold drafts are dispositioned
+   in the same change, or the inventory and the tracker will disagree. Not done;
+   awaiting Brett.
 
 **Cross-repo bookkeeping rule (Brett, 2026-08-12/13):** every repo this stream
 touches gets an OKF knowledge bundle (created if absent, updated as learned),
