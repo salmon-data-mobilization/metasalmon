@@ -78,7 +78,7 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
 
    - **A is now two separate things.** `DFO_AREA` holds one of four DFO Pacific
      **salmon Areas** (South Coast, North Coast, Fraser and Interior, Yukon
-     Transboundary) — not a PFMA, which is one of ~142 SOR/2007-77 Schedule 2
+     Transboundary) — not a PFMA, which is one of 48 SOR/2007-77 Schedule 2
      divisions. The SPSR inventory has *already* adopted
      `entity_iri = gcdfo:PacificFisheryManagementArea` for it, so **the mapping
      that exists is probably a category error**, and no `DFOManagementAreaName`
@@ -140,11 +140,40 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
    | **B + C** (#68, #74, #70) | **Three separate schemes, in `smn:`, scoped "very broad"** — explicitly *not* the single merged CU species-code vocabulary recommended above. Broad means species-agnostic: a life-history-type scheme that contains lake- and river-type rather than a sockeye scheme. Brett's second constraint is that **PSC should be able to leverage them**, so they are designed for `psc-salmon-vocabularies` to map onto rather than mint parallels. Mint from the source code list, not observed values — `PKE` lands alongside `PKO`. |
    | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. |
 
-   **The A1 caveat, which survives the ruling:** minting the PFMA vocabulary
-   does not make `DFO_AREA`'s four values members of it. `DFO_AREA` holds a DFO
-   salmon Area, not a PFMA, and the SPSR inventory's `entity_iri` for it stays
-   pointed at `gcdfo:PacificFisheryManagementArea`. #67's close states what the
-   vocabulary does and does not resolve rather than implying coverage it lacks.
+   **A1 delivered** (gcdfo PR #86, issue #67 closed): 48 concepts plus
+   `gcdfo:PacificFisheryManagementAreaScheme`, sourced from SOR/2007-77
+   Schedule 2 (consolidation current to 2026-06-17) and cross-checked against
+   DFO's published area listing. Scope is **Areas only** — Schedule 2's 604
+   numbered Subareas are deliberately not minted, and the scheme's
+   `skos:scopeNote` says so, which makes the vocabulary complete for Areas and
+   explicitly silent about Subareas rather than quietly short.
+
+   **Correct the count wherever it appears: there are 48 PFMAs, not ~142.**
+   142 is the highest area *number* (the set is Areas 1–29, 101–111, 121,
+   123–127, 130, 142), not a cardinality. The wrong figure was in the evidence
+   comment on #67 and in this card; Schedule 2 numbers its items 1–48
+   contiguously, so a gap would have meant a missed area and there is none.
+
+   **The A1 caveat survives the ruling, and got sharper.** Minting the PFMA
+   vocabulary does not make `DFO_AREA`'s values members of it, and #67's close
+   says so. What remains open, none of it resolved by PR #86:
+
+   - `DFO_AREA` is **still mapped to the wrong entity** in `spsr-data-dict`'s
+     `columns.csv` (line **13**, not 15 as previously recorded) — wrong before
+     that PR and wrong after it.
+   - **No term exists for the coarse DFO salmon Area**, since minting one was
+     rejected, so `DFO_AREA` has no correct `entity_iri` available in either
+     ontology today. That is the live gap.
+   - `PFMA_ID` is an **unpopulated slot**: one fixture row in the live table,
+     6288/6289 population foreign keys NULL, and the SDP export is the literal
+     string `NA` for all 737 rows.
+   - The stored values are **uppercase** and read `YUKON AND TRANSBOUNDARY`,
+     not "Yukon Transboundary" as the data dictionary phrases it — any value
+     mapping written from the dictionary text will silently miss.
+
+   Closing #67 left the wrong mapping untracked. It is a `spsr-data-dict`
+   change and needs its own item; **awaiting Brett**, since he may want it
+   scoped alongside the remaining B+C work.
 
    **Open disposition question:** #72's distinguishing premise — that code `2`
    is shared between `INDEX_QUALITY` and `INFORMATION_QUALITY` — is factually
