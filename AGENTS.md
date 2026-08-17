@@ -87,7 +87,6 @@ index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
   lists here work because they name their own maintenance rule
   (`collation_sensitive_fns`, `hint_roles`); apply the same discipline to
   anything that silences a signal.
->>>>>>> 5d82685 (docs: a guard must say what would retire it; take the WebVOWL baseline handoff)
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:
