@@ -31,3 +31,4 @@ inst/extdata/\.gitkeep$
 ^Untitled-1\.R$
 ^artifacts(/|$)
 ^metasalmon_.*\.tar\.gz$
+.*\.local\.md$

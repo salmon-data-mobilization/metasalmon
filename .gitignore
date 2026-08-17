@@ -61,3 +61,6 @@ docs/todo-list.md
 
 # Local scratch (also in .Rbuildignore so it can never reach a built package)
 tmp/
+
+# Local scratch notes, never committed
+*.local.md
