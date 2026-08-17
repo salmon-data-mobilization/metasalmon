@@ -295,13 +295,19 @@
       "Reproducibility manifest has an unsupported profile or incomplete fields."
     )
   }
-  if (!is.list(manifest$provenance) ||
-      !identical(
-        manifest$provenance$generated_by,
-        "metasalmon::write_sdp_reproducibility_manifest"
-      ) ||
-      length(manifest$provenance$metasalmon_version) != 1L ||
-      !nzchar(as.character(manifest$provenance$metasalmon_version))) {
+  # Either implementation's provenance is complete: for the same declared
+  # artifact set the mirror writes a byte-identical manifest apart from these
+  # two values, and honestly names metasalmonpy as the generator
+  # (parity-deviations register, row 29). The accepted writer set is shared
+  # with the SSSOM and decomposition validators -- see `R/provenance.R`.
+  version_field <- .ms_manifest_provenance_version_field(
+    manifest$provenance,
+    "write_sdp_reproducibility_manifest"
+  )
+  if (is.na(version_field) ||
+      !.ms_manifest_provenance_version_ok(
+        manifest$provenance[[version_field]]
+      )) {
     .ms_sdp_reproducibility_abort(
       "Reproducibility manifest writer provenance is incomplete."
     )

@@ -230,6 +230,78 @@ test_that("reproducibility APIs reject only a symlinked package root", {
   ))
 })
 
+test_that("the validator accepts a metasalmonpy-written manifest provenance", {
+  # Parity-deviations register row 29 / backlog #88: for the same declared
+  # artifact set the Python mirror writes a manifest that is byte-identical to
+  # R's apart from the two provenance values, and honestly names itself as the
+  # generator. Rejecting that provenance blocked the R<->Python round trip and,
+  # through `.ms_knb_plan_*`, KNB publication of any Python-written SDP.
+  sdp <- make_reproducibility_test_sdp(withr::local_tempdir())
+  manifest_path <- write_sdp_reproducibility_manifest(
+    sdp,
+    reproducibility_test_artifacts()
+  )
+
+  rewrite <- function(manifest) {
+    writeLines(
+      jsonlite::toJSON(
+        manifest,
+        auto_unbox = TRUE,
+        pretty = TRUE,
+        null = "null",
+        digits = NA
+      ),
+      manifest_path
+    )
+  }
+
+  manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
+  manifest$provenance$generated_by <-
+    "metasalmonpy.write_sdp_reproducibility_manifest"
+  manifest$provenance$metasalmon_version <- NULL
+  manifest$provenance$metasalmonpy_version <- "0.1.8"
+  rewrite(manifest)
+
+  expect_true(isTRUE(validate_sdp_reproducibility_manifest(sdp)))
+  expect_identical(
+    read_sdp_reproducibility_manifest(sdp)$provenance$generated_by,
+    "metasalmonpy.write_sdp_reproducibility_manifest"
+  )
+
+  # Unknown generators stay rejected.
+  manifest$provenance$generated_by <- "someone-else"
+  rewrite(manifest)
+  expect_error(
+    validate_sdp_reproducibility_manifest(sdp),
+    "provenance is incomplete"
+  )
+
+  # So does a known generator whose version field is absent, blank, or the
+  # *other* implementation's -- naming one writer and versioning the other is
+  # not an accepted provenance block.
+  manifest$provenance$generated_by <-
+    "metasalmonpy.write_sdp_reproducibility_manifest"
+  manifest$provenance$metasalmonpy_version <- NULL
+  rewrite(manifest)
+  expect_error(
+    validate_sdp_reproducibility_manifest(sdp),
+    "provenance is incomplete"
+  )
+  manifest$provenance$metasalmonpy_version <- "   "
+  rewrite(manifest)
+  expect_error(
+    validate_sdp_reproducibility_manifest(sdp),
+    "provenance is incomplete"
+  )
+  manifest$provenance$metasalmonpy_version <- NULL
+  manifest$provenance$metasalmon_version <- "0.3.0"
+  rewrite(manifest)
+  expect_error(
+    validate_sdp_reproducibility_manifest(sdp),
+    "provenance is incomplete"
+  )
+})
+
 test_that("reproducibility manifest APIs are exported", {
   exports <- getNamespaceExports("metasalmon")
   expect_true(all(c(

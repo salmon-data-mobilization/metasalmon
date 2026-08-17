@@ -1022,16 +1022,20 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
   }
   # Either implementation's provenance is complete: the mirror writes
   # byte-identical mapping-set artifacts, and its manifest honestly names
-  # metasalmonpy as the generator (parity-deviations register, row 11).
-  provenance_ok <- is.list(manifest$provenance) && (
-    (
-      identical(manifest$provenance$generated_by, "metasalmon::write_sdp_sssom") &&
-        !is.null(manifest$provenance$metasalmon_version)
-    ) || (
-      identical(manifest$provenance$generated_by, "metasalmonpy.write_sdp_sssom") &&
-        !is.null(manifest$provenance$metasalmonpy_version)
-    )
+  # metasalmonpy as the generator (parity-deviations register, row 11). The
+  # accepted writer set is shared with the decomposition and reproducibility
+  # validators -- see `R/provenance.R`.
+  version_field <- .ms_manifest_provenance_version_field(
+    manifest$provenance,
+    "write_sdp_sssom"
   )
+  # Presence-only rather than `.ms_manifest_provenance_version_ok()`, which the
+  # other two validators use: metasalmonpy's `sssom.py` asks exactly
+  # `provenance.get(version_key) is None`, and the two readers of the same
+  # artifact must accept the same manifests. See the retirement condition on
+  # that predicate in `R/provenance.R`.
+  provenance_ok <- !is.na(version_field) &&
+    !is.null(manifest$provenance[[version_field]])
   if (!provenance_ok) {
     .ms_sssom_abort("SSSOM manifest provenance is incomplete.")
   }

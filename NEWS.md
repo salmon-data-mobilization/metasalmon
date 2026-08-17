@@ -63,6 +63,31 @@ metasalmon (development version)
   migration the real run then refused. Nothing could be corrupted — the
   rewrite is atomic — but the preview was not honest about the outcome.
 
+* **`validate_sdp_reproducibility_manifest()` accepts a manifest written by
+  metasalmonpy, and the accepted writer set now has one owner.** The
+  honest-provenance ruling reached this artifact's *writer* and not its
+  reader: the validator still demanded
+  `generated_by = "metasalmon::write_sdp_reproducibility_manifest"`, so a
+  `reproducibility/manifest.json` written by the Python mirror was rejected
+  outright — and because `publish_sdp_to_knb()` validates the manifest while
+  planning, that also blocked KNB publication of any Python-written SDP, not
+  just direct validation. **Observable change:** a manifest carrying
+  `metasalmonpy.write_sdp_reproducibility_manifest` + `metasalmonpy_version`
+  now validates; for the same declared artifact set the two implementations'
+  manifests differ in nothing else, verified by driving both writers over the
+  same tree. Two smaller behaviour changes come with it: a
+  `metasalmon_version` that is whitespace-only, or not a string at all, is now
+  rejected rather than accepted, which is what the decomposition validator and
+  both Python readers already did.
+
+  The ruling had been applied one artifact at a time, re-typing the same pair
+  of writer strings each time — SSSOM in PR #43, decompositions in PR #44, and
+  this one missed — so the set now lives once in `R/provenance.R` and all
+  three validators resolve their accepted writers through it. A structural
+  guard (`tests/testthat/test-provenance.R`) fails if any manifest validator
+  re-types a writer literal, which is the part that let a fourth manifest type
+  repeat the omission. Backlog #88; see the parity-deviations register, row 29.
+
 * `validate_sdp_measurement_decompositions()` accepts a manifest written by
   metasalmonpy, exactly as `validate_sdp_sssom()` now does — the mirror
   writes byte-identical decomposition CSVs and honestly names itself in the
