@@ -46,8 +46,10 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #79, #80, #82, #83, #86, #87, plus item 0 (gcdfo); #76 open
-  only in its crosswalk-retarget half.
+  (feature), #78, #80, #82, #83, #86, #87, plus item 0 (gcdfo). Open only in
+  part: **#76** (its crosswalk-retarget half) and **#79** (four of its six
+  findings shipped with S11 slice 2; the KNB-vignette split and the export
+  coverage count remain).
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
   0.2.5; #77 in 0.2.6. #85 and #88 are fixed in the development version.
@@ -992,7 +994,12 @@ missing producer. Design and milestones:
 passes with no `REVIEW:` markers left **and the data CSV bytes unchanged** —
 the byte assertion is the only one that fails if the writer is not surgical.
 
-### Open — P2 (correctness and conformance debt)
+### P2 — correctness and conformance debt
+
+**Mixed state; read each item's first line, not this heading.** Open: **#86**,
+**#87**, **#82**, **#83**. Fixed but unreleased in gcdfo: **#81**, **#84**.
+Superseded: **#75**. They stay interleaved because the resolved ones carry
+reasoning the open ones refer back to; the top-of-file snapshot is the index.
 
 **#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
 `metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
@@ -1084,6 +1091,10 @@ superseded", says the fix did not hold, names PR #78 as what replaced it and PR
 #82 as what repaired it, and records *why nobody noticed for five months* — PR
 #78 rewrote the Resolution text **in place**, so the log kept describing a live
 implementation and left no seam where a reader could notice the substitution.
+The repaired entry also gained a re-verification hook, which is what the
+original lacked. **Not yet released**, exactly as #81: PR #83 merged after the
+0.0.9 tag, so a consumer reading the tag still sees the misleading *Resolved*
+entry.
 
 Keep the lesson, not the instance: **a resolution claim decays exactly like a
 suppression does.** "Resolved" with no re-verification hook is an assertion
@@ -1406,18 +1417,22 @@ SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
 no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
 
-**#79 Vignettes lag the package by two breaking releases.** The 2026-08-13
-staleness audit (recorded on the
-[S11 sequence card](sequences/s11-vignettes-and-walkthroughs.md)) found: no
-vignette touched since 0.2.6; two shipped code defects
-(`reusing-standards-salmon-data-terms.Rmd:39` `devtools::load_all(".")` in a
-user chunk; `data-dictionary-publication.Rmd:129` repo-relative path); the
-0.2.6 placeholder warning fires unexplained on every quickstart package;
-zero vignette coverage of `primary_key`, tidy shape, or the 0.2.4
-missing-value token; 27 of 54 exports untaught; and the KNB workflow buried
-as §10 of another vignette with no articles-index entry. Fix via S11 slices;
-severity: user-facing, silent (nothing errors — readers just learn the old
-contract).
+**#79 Vignettes lag the package — mostly discharged by S11 slice 2; two
+findings remain.** The 2026-08-13 staleness audit (recorded on the
+[S11 sequence card](sequences/s11-vignettes-and-walkthroughs.md)) listed six
+findings. **Four are fixed on `main`** (PR #46, `ac6b722`): the two shipped
+code defects are gone (no `devtools::load_all(".")` anywhere in `vignettes/`;
+`data-dictionary-publication.Rmd` now uses `system.file()`), the 0.2.6
+placeholder warning is explained in the quickstart, and `primary_key`, tidy
+shape and the 0.2.4 missing-value token are all covered by the new
+`tidy-data-for-sdp.Rmd` and `faq.Rmd`. The headline itself is stale — two
+vignettes were added after 0.3.0.
+
+**Still open:** the KNB workflow is still buried as §10 of
+`post-review-package-publication.Rmd` with no `_pkgdown.yml` articles entry
+(that is S11 slice 3, gated on S3), and the "27 of 54 exports untaught"
+coverage figure has not been recounted since the audit. Severity: user-facing,
+silent (nothing errors — readers just learn the old contract).
 
 **#78 iop-triple emission from SDPs — explainer before decision.** metasalmon
 consumes I-ADOPT terminologies but never emits `iop:` triples stating that a

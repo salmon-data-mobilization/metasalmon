@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "Ontology conventions and alignment pass"
-description: "Execplan for the smn, gcdfo, and PSC CV conventions and alignment pass (stream S9); step 0 recon complete."
+description: "Execplan for the smn, gcdfo, and PSC CV conventions and alignment pass (stream S9); steps 0-5 complete, steps 6 and 7 remaining."
 status: draft
 tags: [execplan]
 psc:
@@ -11,7 +11,10 @@ psc:
 
 # Ontology conventions and alignment pass — smn, gcdfo, PSC CV
 
-**Roadmap stream:** S9. **Status: step 0 complete, step 1 ready to start.**
+**Roadmap stream:** S9. **Status: steps 0, 1a, 1b, 2, 3, 4 and 5 are complete.
+Remaining: step 6 (propagation) and step 7 (the SPSR term-review holds — added
+after this plan was written; its detail lives in the
+[S9 sequence card](../sequences/s9-ontology-alignment.md), not here).**
 
 This execplan is the detail home for the cross-vocabulary conventions and
 alignment pass Brett requested on 2026-08-12. It is self-contained: a reader
@@ -134,8 +137,10 @@ what a deterministic checker consumes.
   analysis concepts have no shared smn analytical-method concept — a
   future smn shared-term admission proposal with two-organization
   evidence. **Closed:** Brett approved MR !6 and the promotions on
-  2026-08-14 — the ten rows are `prototype_accepted` and publish as
-  `mappings/psc-to-smn.sssom.tsv` (smn wired into the emission loop;
+  2026-08-14 — **nine** of the ten rows are `prototype_accepted` and publish as
+  `mappings/psc-to-smn.sssom.tsv` (the released alpha.3 file carries nine
+  `skos:broadMatch` rows; the tenth, the unsupported `PSC-CV-000017`
+  composition, is visibly deferred rather than published); smn wired into the emission loop;
   object_source_version pins smn 0.0.3); MR !6 merged into the
   fair-mapping-products branch. First-ever PSC anchoring into the shared
   smn layer. Known blemish inherited from their pipeline: `mapping_date`

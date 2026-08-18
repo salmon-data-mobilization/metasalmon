@@ -298,7 +298,10 @@ the statistical-modifier ranking preferences and honest dry-run previews (PR
 PR #52), dual-provenance reproducibility-manifest validation (backlog #88, PR
 #58), and S11 slice 2's two vignettes (PR #46). `5a37b11` is the **release**
 baseline for S10's 0.3.0 rung; anything replaying those four fixes needs a
-later commit.
+later commit. Note `DESCRIPTION` is bumped only in the release PR, so `main`
+self-reports `0.3.0` while carrying those unreleased fixes — the same
+cite-the-commit-not-the-tag condition gcdfo and PSC are in above, and it
+applies to this repo too.
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
@@ -432,7 +435,7 @@ sequence from them.
 
 ---
 
-## Two process notes worth keeping
+## Process notes worth keeping
 
 **A green suite was not the signal it looked like.** Three 0.2.0 findings were
 invisible to 21k lines of tests because the suite pinned the vendored schema,

@@ -29,8 +29,9 @@ rows, the `FisheriesReferencePointLower` re-namespacing, refreshed MIREOT
 mirrors, pinned smn resolution — and gcdfo's `make ci` now reasons over the
 merged gcdfo+smn closure (1b's deferred item). **Step 4 closed 2026-08-14:**
 smn 0.0.3 released, PSC MR !6 merged with Brett's approval — the smn source
-re-pinned to the sha256-pinned 0.0.3 snapshot, ten `prototype_accepted`
-broadMatch rows publishing as `psc-to-smn.sssom.tsv` in v0.1.0-alpha.3, and
+re-pinned to the sha256-pinned 0.0.3 snapshot, nine `prototype_accepted`
+broadMatch rows publishing as `psc-to-smn.sssom.tsv` in v0.1.0-alpha.3 (the
+tenth, `PSC-CV-000017`, visibly deferred), and
 the alignment-gap objection retired (remaining gap documented: nine analysis
 concepts need a shared smn analytical-method concept). Remaining in S9: **step
 7's B+C implementation** (below), step 6 (propagation), and the parked #78
@@ -159,7 +160,9 @@ iop-triples explainer.
    DFO's published area listing. Scope is **Areas only** — Schedule 2's 604
    numbered Subareas are deliberately not minted, and the scheme's
    `skos:scopeNote` says so, which makes the vocabulary complete for Areas and
-   explicitly silent about Subareas rather than quietly short.
+   explicitly silent about Subareas rather than quietly short. PR #86 merged
+   **after** the 0.0.9 tag, so the vocabulary is on gcdfo `main` and in no
+   release; cite the commit until the next gcdfo release cuts.
 
    **Correct the count wherever it appears: there are 48 PFMAs, not ~142.**
    142 is the highest area *number* (the set is Areas 1–29, 101–111, 121,
@@ -169,14 +172,17 @@ iop-triples explainer.
 
    **The A1 caveat survives the ruling, and got sharper.** Minting the PFMA
    vocabulary does not make `DFO_AREA`'s values members of it, and #67's close
-   says so. What remains open, none of it resolved by PR #86:
+   says so. Closing #67 left that mis-mapping untracked; it is now tracked as
+   `spsr-data-dict` **issue #1**, filed 2026-08-17. What remains open, none of
+   it resolved by PR #86:
 
    - `DFO_AREA` is **still mapped to the wrong entity** in `spsr-data-dict`'s
      `columns.csv` (line **13**, not 15 as previously recorded) — wrong before
      that PR and wrong after it.
    - **No term exists for the coarse DFO salmon Area**, since minting one was
      rejected, so `DFO_AREA` has no correct `entity_iri` available in either
-     ontology today. That is the live gap.
+     ontology today. That is the live gap, and the substance of issue #1 — it
+     is a gap, not a typo, so the column cannot simply be repointed.
    - `PFMA_ID` is an **unpopulated slot**: one fixture row in the live table,
      6288/6289 population foreign keys NULL, and the SDP export is the literal
      string `NA` for all 737 rows.
@@ -184,14 +190,7 @@ iop-triples explainer.
      not "Yukon Transboundary" as the data dictionary phrases it — any value
      mapping written from the dictionary text will silently miss.
 
-   PR #86 merged **after** the 0.0.9 tag, so the vocabulary is on gcdfo `main`
-   and in no release; cite the commit until the next gcdfo release cuts.
-
-   Closing #67 left the wrong mapping untracked, and it is now tracked:
-   `spsr-data-dict` **issue #1**, filed 2026-08-17, carries the `DFO_AREA`
-   mis-mapping and the fact that no correct target term exists in either
-   ontology because minting a coarse "DFO salmon Area" concept was rejected.
-   Scoping against the remaining B+C work is still Brett's call.
+   Scoping issue #1 against the remaining B+C work is still Brett's call.
 
    **Open disposition question:** #72's distinguishing premise — that code `2`
    is shared between `INDEX_QUALITY` and `INFORMATION_QUALITY` — is factually
