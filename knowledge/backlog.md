@@ -1112,6 +1112,48 @@ from `git ls-tree origin/main`. The retirement condition is met. **Not yet
 released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
 gets both files.
 
+**#91 metasalmon's canonical date key may be platform-dependent, and the R
+verdicts corpus may be a macOS artifact.** `.ms_canonical_value_tokens()` renders
+the date key with `format(parsed, "%Y-%m-%d")`. metasalmonpy hit exactly this in
+Python: `strftime("%Y")` **does not zero-pad a year below 1000 on glibc** where
+macOS/BSD does, so `0001-01-01` became `1-01-01` on Linux only — and that key
+decides whether a data column validates against its own `codes.csv` *and* is
+written into package bytes. Three further sites carried the same defect,
+including one latent in `eml.py` since before the rung that found it.
+
+**Measured:** R 4.5.2 on macOS returns the padded `0001-01-01`. **Not measured:**
+the same call on a glibc build. R's internal tzcode is the `configure` option
+`--with-internal-tzcode`, **default on macOS and not generally on Linux**, so an
+R built against glibc may well emit `1-01-01`. If it does, metasalmon has a
+platform-dependent canonical key — the same class as the C-collation contract,
+in the same function family the contract already governs — and
+`metasalmonpy/tests/data/resource_types/r-token-verdicts.json` records a
+macOS-specific expectation that CI on Linux would disagree with.
+
+metasalmonpy pads unconditionally either way, so it is correct on both platforms
+regardless of the answer; this is an R question. *Retires when:* the call is
+measured on a glibc R build and either shown equivalent or fixed. Registered as
+`PARITY.md` row 40 with the same condition.
+
+**#92 metasalmonpy's extras-gated tests have zero CI coverage, and two documents
+say otherwise.** `parity.yml`'s `python` job installs `.[test]` — which is
+`build` plus `pytest` and **neither `[eml]` nor `[context]`** — so the only
+full-suite CI run is core-deps-shaped *by accident*, and the **97 extras-gated
+tests (EML, KNB, context readers) never run in CI at all**.
+
+The documentation is worse than the gap. `AGENTS.md` and `PARITY.md` row 30 both
+say "the core-deps CI job runs the whole suite with neither extra installed,"
+which reads as a dedicated core-deps job sitting *alongside* a normal one. There
+is only the one job. So a claim of deliberate narrow coverage is describing an
+accident, and the broad coverage it implies exists nowhere — the same shape as
+#89, where a determinism guard was real and passing while only ever exercising
+the shape the ontology happened to have.
+
+An extras job has been run green on both rung-3 branches, so adding one looks
+safe; it changes CI for the repo and is Brett's call. *Retires when:* CI runs
+both dependency configurations, and both documents describe what CI actually
+does.
+
 **#90 Every semantically annotated SDP either mirror writes fails
 smn-data-pkg's strict publication validator.** `write_salmon_datapackage()`
 attaches `unit_iri`, `term_iri`, `term_type`, `property_iri` and `entity_iri` to
