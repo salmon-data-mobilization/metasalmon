@@ -69,7 +69,12 @@ at `knowledge/roadmap.md`.
   broken through CI and PR review; see the 0.3.0 NEWS entry. Ranking
   preferences are the sixth surface and fail the same way: a role with no
   `inst/extdata/ontology-preferences.csv` row ranks with no source preferences
-  at all. **`tests/testthat/test-role-contract-guard.R` checks every layer** —
+  at all — and **`role_boost` in `.ranking_profile_defaults()` is a seventh**,
+  discovered 2026-08-17 when `statistical_modifier` was found to have carried
+  preference rows since 0.3.0 while having no boost entry, so it reached ranking
+  on base weight alone. That is the *same role* failing a *second* silent layer,
+  which is the strongest evidence available that this list is not yet closed:
+  assume an eighth exists and look for it when adding a role. **`tests/testthat/test-role-contract-guard.R` checks every layer** —
   it reads the slot fields as the authority and inspects the emitter and filter
   bodies, so keep its `hint_roles` and `hint_to_sources` lists current when a
   role is added, renamed, or deliberately exempted.

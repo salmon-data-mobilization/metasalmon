@@ -1086,6 +1086,27 @@ from `git ls-tree origin/main`. The retirement condition is met. **Not yet
 released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
 gets both files.
 
+**#90 Every semantically annotated SDP either mirror writes fails
+smn-data-pkg's strict publication validator.** `write_salmon_datapackage()`
+attaches `unit_iri`, `term_iri`, `term_type`, `property_iri` and `entity_iri` to
+each descriptor `schema.fields` entry. `scripts/validate_package.py:913` builds
+the expected field list from `column_dictionary.csv` and compares with `==`, so
+**any extra key is an error** — and that validator is normative: `sdp.rules.yaml`
+names it and `SPECIFICATION.md:86` makes it binding.
+
+metasalmonpy emits the identical keys, so this is **not** a parity divergence —
+both mirrors disagree with the spec repo the same way, which is why no
+comparison between them could ever have surfaced it. It stayed hidden because
+the only R-written fixture under test has a measurement column carrying **no
+IRIs at all**, so the extra keys are guarded away; a package annotated the way
+the SDP spec *requires* for measurement columns always carries them.
+
+Someone has to decide which side moves: either the writers stop projecting
+I-ADOPT into the descriptor, or `descriptor_field_from_column()` learns about
+those keys and the comparison stops being exact. *Retires when:* an SDP with a
+fully annotated measurement column passes `scripts/validate_package.py`
+unmodified.
+
 **#89 smn's flat-TTL generator was nondeterministic, and nothing would have
 caught it.** Merging triples without binding the source prefixes left rdflib to
 number predicate namespaces `ns1:`/`ns2:`/… in **hash-randomized** order. Eight
