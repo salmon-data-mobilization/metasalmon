@@ -49,15 +49,23 @@ The same PR started the parity-deviations register (`PARITY.md` +
 `knowledge/parity-deviations.md`) and fixed metasalmonpy's gitignored,
 never-committed `AGENTS.md`/`CLAUDE.md`.
 
-**Sequencing within the stream:** the nine-PR ladder in the
-[S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
-(recon 2026-08-15): an un-bumped parity-debt PR 0 first (the smn/gcdfo term
-indexes are stubs, so the existing 0.1.6 claim is overstated), then
-0.1.7 → 0.1.8 → 0.2.0+0.2.1 → 0.2.2+0.2.3 → 0.2.4 → 0.2.5 → 0.2.6 → the
-0.3.0 method-model change from S8 (scheduled here since 2026-08-14, when
-S8's R implementation ran ahead of this stream). The registry
-writer-only-skip at 0.1.8 and the born-NA-safe typed reader are logged
-decisions in the execplan.
+**Sequencing within the stream** — see the
+[S10 execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md). It has
+two halves, and the second replaced the first.
+
+*Replayed release by release:* an un-bumped parity-debt PR 0 (the smn/gcdfo
+term indexes were stubs, so the existing 0.1.6 claim was overstated), then
+**0.1.7 → 0.1.8 → 0.2.0+0.2.1**. Shipped and tagged through 0.1.8.
+
+*Ported by subsystem (Brett, 2026-08-17):* the remaining releases are **not**
+replayed. The replay was implementing behaviour metasalmon had already deleted
+— 0.1.8 built a reader for the registry sdp-0.3.0 removes, and 0.1.7 shipped a
+decomposition component annotated "it dies at 0.3.0". The remainder is chunked
+by subsystem against the **`v0.3.0` tag**, bumping straight to **0.3.0**, with
+0.3.0's breaking dictionary-contract flip landing **first** rather than last so
+nothing is built on a shape it replaces. The registry writer-only-skip and the
+born-NA-safe typed reader remain logged decisions; the replan and what would
+reverse it are logged alongside them.
 
 Bumping at each parity milestone rather than in one big jump keeps every bump a
 truthful claim and makes the release order carry the same breaking-change story
