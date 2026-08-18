@@ -14,7 +14,8 @@ psc:
 **Execplan:** to be written. Findings: [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).
 
 metasalmon is the workshop's designated final gate before DataONE deposit, and
-the gate under-checks. Confirmed premise: **zero of the 13 rule ids in
+the gate under-checks. Confirmed premise, re-verified after sdp-0.3.0 rewrote
+the rule set: **zero of the 14 rule ids in
 `sdp.rules.yaml` appear anywhere in `R/`** — the validator reimplements the spec
 by hand, so spec and implementation can diverge silently, and three
 error-severity rules are loaded and never executed. `validate_salmon_datapackage()`
