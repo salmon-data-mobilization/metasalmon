@@ -1362,8 +1362,14 @@ has no execplan.
 (`R/dictionary-helpers.R`, the role heuristic below the identifier checks).
 
 **#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
-coercion failures**, and the codes step silently `NA`s unlisted values.
-`R/dictionary-helpers.R:1149`.
+coercion failures**, and the codes step silently `NA`s unlisted values. Still
+live, and the mechanism is worth stating because it looks handled: the coercion
+is wrapped in `tryCatch(..., error = ...)` whose handler *does* branch on
+`strict` and `cli_abort`s — but `as.integer("abc")` and friends **warn and
+return `NA`** rather than erroring, so the handler never fires for exactly the
+failures the argument is supposed to catch. A `warning =` handler, not a
+different message, is the fix (`R/dictionary-helpers.R`, the coerce-type block
+in `apply_salmon_dictionary()`).
 
 **#56 Semantic retrieval issues one serial `search_fn()` call per target** with no
 deduplication of identical `(query, role, sources)` tuples. Still live: the
