@@ -125,6 +125,24 @@ iop-triples explainer.
    first of its kind, so its reasoning has to stand on its own rather than lean
    on an earlier close.
 
+   **There is now a mechanism for exactly this, and it is not optional.**
+   `salmon-knowledge-commons` carries a **term lifecycle** — see the
+   [domain card](../domains/salmon-data-ecosystem.md#the-term-lifecycle-is-what-connects-the-commons-to-the-ontologies).
+   Every gap has `state ∈ {open, proposed, rejected, minted}`, and **when a
+   term proposal closes unmerged the gap returns to the commons as `rejected`
+   with `rejected_because` and `evidence_needed`, in the same change that
+   closes the proposal.** The schema enforces it: both fields are required in
+   the `rejected` state, each with a 40-character minimum.
+
+   Two consequences for this step. Closing #71–#73 as rejected-with-reasoning
+   now has a **home for the reasoning** other than the issue thread, which is
+   what the "its reasoning has to stand on its own" worry was really about —
+   `evidence_needed` is precisely "Ogden 2015 §2.3 and the New Zealand Quality
+   Index, obtained". And if **PR #27's species scheme stays withdrawn**, that
+   is a closed-unmerged proposal and the commons gaps it came from should move
+   to `rejected` in the same change — not left `open`, which would read as
+   nobody having tried and invite the next agent to re-propose it.
+
    Note the namespace question that #24 already settled once: these are
    proposed as `gcdfo:`, but life history and dominant cycle are general salmon
    concepts, not DFO administrative ones. Under the boundary the two ontologies
@@ -146,13 +164,73 @@ iop-triples explainer.
    **B+C proposed, and contested — do not read the design as agreed.**
    salmon-domain-ontology
    [PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27)
-   is an open **draft** proposing three orthogonal `smn:` SKOS schemes —
-   life-history type, cycle line, salmon species — closing gcdfo #68/#74/#70 by
-   reference on acceptance. It is under active discussion and being reworked:
-   the species approach, whether a cycle-line concept should exist at all, and
-   the life-history structure are each still in question. Track it as an open
-   proposal; the ruling in the table above fixed the *namespace and breadth*,
-   not the modelling.
+   is an open **draft**, headed *"Proposal — do not merge"* with its ADR-0003
+   at `Status: Proposed`. The ruling in the table above fixed the *namespace
+   and breadth*, not the modelling, and the modelling is what is still open.
+
+   **The proposal was reworked 2026-08-17 and this card described the first
+   draft until 2026-08-18.** What it proposes now:
+
+   | | First draft | Now |
+   |---|---|---|
+   | Shape | 3 schemes / 12 concepts | **4 schemes / 13 concepts / 5 properties = 22 terms** |
+   | Species | `smn:SalmonSpeciesScheme` + 5 species concepts | **Withdrawn — deleted, not replaced** |
+   | Life-history type | Two flat concepts | **Decomposed into two species-neutral axes** (`JuvenileFreshwaterResidenceScheme`, `JuvenileNurseryHabitatScheme`) plus species-scoped named types |
+   | Cycle line | "largely independent *reproductive* lines" | **A year-series construct**; the reproductive claim moved onto its own property |
+   | Closes by reference | gcdfo #68 / #74 / #70 | **gcdfo #68 and #70 only** |
+
+   Why species was withdrawn is worth carrying, because it kills the option
+   rather than deferring it: **steelhead is in scope** (Brett, 2026-08-17) and
+   has no taxonomic identifier in ITIS, WoRMS, NCBI, GBIF or Catalogue of Life
+   — it is a vernacular for anadromous *O. mykiss* in all five. A vocabulary
+   that must carry steelhead is not a species vocabulary. The source's codes
+   (`SEL` = sockeye × lake-type, `PKO` = pink × odd-line) are administrative,
+   not taxonomic, and the authorities actively disagree with each other on
+   cutthroat rank. The only species assertion left anywhere in the change is a
+   literal `dwc:scientificName`.
+
+   **PR #27 is `CONFLICTING` / `DIRTY` and needs a rebase before review can
+   conclude** (checked 2026-08-18; created 08-17, last updated 08-18). Two
+   things make this more than routine. The branch carries the **large,
+   semantically empty prefix rewrite** described in decision 5 below, so a
+   conflicted rebase is being resolved across a diff that touches nearly every
+   line of the flat TTL and `docs/smn.ttl` — the shape in which a real change
+   is easiest to lose. And the branch is where backlog **#89** was found and
+   fixed (the flat-TTL generator's hash-randomized `ns1:`/`ns2:` numbering:
+   8 runs on `main` → 1 hash, 8 runs on the branch → **4 distinct hashes**), so
+   a rebase that drops the prefix-binding fix re-arms a CI flake with no source
+   change behind it.
+
+   ### The five decisions PR #27 needs from Brett
+
+   The PR lists **seven** open questions; these five are the ones that change
+   what gets minted, and none can be settled by an implementer. **Owner:
+   Brett** on all five — each is a modelling or policy call in `smn:`, and the
+   B+C ruling above deliberately left modelling out of scope.
+
+   | # | Decision | Why it cannot be deferred to whoever implements |
+   |---|---|---|
+   | 1 | **Does "species go in `smn`, never `gcdfo`" survive a `gcdfo` code vocabulary carrying `dwc:scientificName` + a WoRMS `dwc:scientificNameID` directly?** | Two of Brett's own 2026-08-17 statements pull against each other. They reconcile **only if the gcdfo codes never need an `smn:` species concept to point at** — which is a boundary question, not a preference. The standing "species are never minted in `gcdfo`" ruling recorded below is what is at stake |
+   | 2 | **Is `dwc:scientificName` as a bare literal acceptable on a life-history concept?** | It is the minimum that makes "species-scoped" machine-checkable rather than a naming convention, and it commits to no authority — but it is also the last species assertion of any kind in the change, so rejecting it removes species from the artifact entirely |
+   | 3 | **Two decomposition properties, or one generic `smn:hasLifeHistoryAxisValue`?** | A generic property lets a future axis be added with no new term, at the cost of a two-hop query through `skos:inScheme`. Cheap now, expensive to reverse once consumers query it |
+   | 4 | **Is `smn:SockeyeSeaTypeLifeHistory` wanted at all?** | It is **not in the source data**. It is minted to complete the duration axis and to put the "sea-type" homograph warning on a term rather than in a document — Gilbert 1913's name for chinook ocean-type is today a sockeye type, same string, two species-scoped meanings. This is the mint-from-source-vocabulary-versus-observed-data policy applied to a concrete term |
+   | 5 | **Accept the large, semantically empty prefix rewrite, or take the smaller fix?** | Binding the prefixes was necessary (it is the #89 fix). Rewriting the *published* artifact while doing it was a judgement call: the alternative leaves smn's own namespace rendering as `ns3:` in its own published TTL. Accepting it means one enormous diff, taken once |
+
+   Questions 6 (*"cycle line" renames away from issue #70's wording*) and 7
+   (*proposed straight into shared `smn:` rather than a
+   `smn/profile/<program>/` bridge, where CONVENTIONS §8 criterion 1 is
+   expected reuse rather than demonstrated*) are also open but do not change
+   the minted terms.
+
+   **One inconsistency to resolve while deciding, because it will otherwise
+   close the wrong issue.** PR #27's closes-by-reference list names gcdfo #68
+   and #70 and says *"#74 (species) stays open"* — but **#74 is "Term review:
+   River Type Life History"**, not a species issue (verified against the issue
+   directly, 2026-08-18), and the PR **does** mint
+   `smn:SockeyeRiverTypeLifeHistory`, which is exactly what #74 asks for. So
+   either the annotation is a slip and #74 should close with #68, or something
+   about river-type is deliberately being held back and the reason is not
+   recorded anywhere. It reads as a leftover from the withdrawn species scheme.
 
    **A1 delivered** (gcdfo PR #86, issue #67 closed): 48 concepts plus
    `gcdfo:PacificFisheryManagementAreaScheme`, sourced from SOR/2007-77
@@ -214,7 +292,52 @@ iop-triples explainer.
    and every later species proposal. **Retires only if the smn/gcdfo boundary
    itself is renegotiated** (step 3's boundary, published as data in
    `gcdfo-to-smn.sssom.tsv`); a species term appearing under `gcdfo:` is a
-   defect to report, not a precedent to follow.
+   defect to report, not a precedent to follow. **Decision 1 above puts this
+   ruling in play** — a `gcdfo` code vocabulary carrying `dwc:scientificName`
+   plus a WoRMS identifier is the shape that would test it, so do not treat the
+   ruling as settled while that question is open.
+
+   ### Where the SPSR holds actually stand (checked 2026-08-18)
+
+   **Eight of nine remain open**: gcdfo #68–#75. Only #67 closed (2026-08-17,
+   as *completed*, alongside PR #86). None of the eight is blocked on an
+   implementer, and they are blocked in **two different ways** that want
+   different actions:
+
+   | Holds | Blocked on | What unblocks it |
+   |---|---|---|
+   | **#69, #75** (management levels) | A **data-steward ruling**, tracked as gcdfo **#84** | Whether `UPPER_`/`LOWER_MANAGEMENT_LEVEL` are quantitative abundance reference points or a coded hierarchy. The two source documents genuinely disagree, both fields have **zero observed values**, and the only unit-bearing definition gives them units of "Number of fish" — so more reading will not settle it. A person with authority over the SPSR data must rule |
+   | **#71, #72, #73** (quality codes) | **Sourcing two documents**, tracked as gcdfo **#85** | Ogden 2015 §2.3 and the New Zealand Quality Index — the two published 1–5 frameworks `INFORMATION_QUALITY` and `INDEX_QUALITY` cite by name. **Neither is obtainable from these repos**, so the meaning of the integers is documented nowhere readable. This is a *retrieval* task, and it is the whole blocker |
+   | **#68, #70, #74** (life history, cycle line) | **PR #27's five decisions** above | Brett's rulings on the modelling. #68 and #70 close by reference on acceptance; #74's status is the inconsistency flagged above |
+
+   The distinction matters for sequencing: #71–#73 could be unblocked by
+   anyone who can obtain two documents, while #69/#75 cannot be unblocked by
+   effort at all. Filing them together as "SPSR holds" has hidden that.
+
+   ### Process exception: gcdfo PR #87 merged with no Kanban item
+
+   **Recorded rather than left silent.** dfo-salmon-ontology PR
+   [#87](https://github.com/dfo-pacific-science/dfo-salmon-ontology/pull/87)
+   (*"docs: route durable salmon knowledge to salmon-knowledge-commons"*,
+   merged 2026-08-18 as `e2a0888`) went through with no item on the repo's
+   GitHub Project board. That repo's `AGENTS.md` **"Git Workflow (Preferred
+   Pattern)"** section states as a non-negotiable: *"Always use a repo GitHub
+   Project Kanban board"*, with items moving Todo → In Progress → In Review →
+   Done. The PR is small, docs-only, and its content is not in question; the
+   exception is procedural.
+
+   It is logged here for one reason: **an unrecorded exception is
+   indistinguishable from the rule not existing.** The next agent to skip the
+   board has a precedent it cannot see was an exception, and the rule erodes
+   without anyone deciding to drop it. That is the same failure mode this
+   bundle's guard-expiry contract exists to prevent, applied to process rather
+   than to code. Either the board requirement is real and this was an
+   exception, or it is aspirational and `AGENTS.md` should stop calling it
+   non-negotiable — **Brett's call**, and this note is the ask.
+
+   Note the same commit landed as a sibling PR in four other repos the same
+   day (metasalmonpy #9, salmon-domain-ontology #28, salmon-knowledge-commons,
+   plus PSC MR **!9**, which is **still open** — the one unmerged limb).
 
 **Cross-repo bookkeeping rule (Brett, 2026-08-12/13):** every repo this stream
 touches gets an OKF knowledge bundle (created if absent, updated as learned),

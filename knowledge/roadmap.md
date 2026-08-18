@@ -42,7 +42,13 @@ Rules that keep this from decaying:
 - **Mirror rule:** metasalmonpy mirrors metasalmon — same functionality, same
   version numbers, bumped only when parity actually lands. Stated firmly in
   both repos' `AGENTS.md`; the catch-up is
-  [S10](sequences/s10-metasalmonpy-parity.md).
+  [S10](sequences/s10-metasalmonpy-parity.md). **Amended 2026-08-17 (Brett):
+  the mirror is not automatically the follower** — *"don't just make things
+  match metasalmon; if the Python implementation got it right, then update
+  metasalmon."* Mirroring keeps the two the same and says nothing about which
+  is correct, so each divergence is a question about which side is right, and
+  R changing is a normal answer rather than an exception. See
+  [parity-deviations](parity-deviations.md) row 32 for the first application.
 - **Domain allowlist:** the seven rows in the
   [domain card](domains/salmon-data-ecosystem.md) are exhaustive. The seventh,
   `salmon-knowledge-commons`, was added 2026-08-17 (Brett) because its ontology
@@ -132,9 +138,17 @@ moment anything merges. Current work-in-flight lives in the owning execplan.
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
-authoritative; this index coordinates. Refreshed 2026-08-17 against repository
+authoritative; this index coordinates. Refreshed 2026-08-18 against repository
 version sources, remote tags, GitHub/GitLab release objects, and the open
 changes that affect this sequence.
+
+**Read every row's tag line, not just its version heading.** At this refresh
+**five of the seven** repos have `main` ahead of their newest tag
+(metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
+smn-data-pkg), PSC's alpha.3 is merged and untagged, and the commons has no
+tags at all. Ahead-of-tag is the ecosystem's normal state rather than an
+anomaly worth flagging per row, so **cite a commit unless you have checked
+that the thing you mean is inside the tag.**
 
 ### metasalmon (R) — current **0.3.0**
 
@@ -169,9 +183,17 @@ review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 | 0.1.2 | 2026-02-06 | Initial: GitHub CSV helpers, metasalmon 0.0.5 parity |
 
 Renamed from `metaSmnPy`/`salmonpy` on 2026-08-13. Versions are **parity
-claims** — [S10](sequences/s10-metasalmonpy-parity.md) must replay the complete
-released R baseline through 0.3.0, or whatever later R baseline is current when
-META-1 starts. An isolated SSSOM port is not parity.
+claims** — [S10](sequences/s10-metasalmonpy-parity.md) must deliver the
+complete released R baseline through 0.3.0, or whatever later R baseline is
+current when META-1 starts. An isolated SSSOM port is not parity. **It no
+longer *replays* that baseline release by release:** the 2026-08-17 replan
+supersedes rungs 4–8 with a subsystem port straight to 0.3.0, so the ladder
+ends at rung 3 and the phrase "replay the complete baseline" is retired.
+
+**`main` is past the `v0.1.8` tag** (PR #9, commons routing, docs only), and
+**rung 3 is written but unmerged** — a `0.2.1` in `pyproject.toml` means the
+`feat/s10-020-021-parity` branch, not a release. This row stays at 0.1.8 until
+that merges and tags.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -185,7 +207,16 @@ Released via `make release VERSION=X.Y.Z` → immutable `docs/releases/` snapsho
 + tags + GitHub pre-releases. **Discrepancies:** 0.0.1 has a snapshot but no
 tag or GitHub release; the 0.0.0–0.0.2 flat serializations declare module 01's
 IRI as the ontology (generator defect, fixed from 0.0.3; immutable snapshots
-keep the historic shape).
+keep the historic shape). There is **no `CHANGELOG.md`** in this repo — the
+changelog exists only as a generated block inside the WIDOCO `docs/` output,
+which is why this index carries more smn history than the others.
+
+**`main` has moved past the tag here too** (5 commits ahead, checked
+2026-08-18): PR #26 (*one name per term, and only for terms smn owns*) and PR
+#28 (commons routing, docs only) both merged after `0.0.3`. Cite the commit.
+The live proposal on top of this is draft **PR #27**, which is `CONFLICTING`
+and needs a rebase — see the [S9 card](sequences/s9-ontology-alignment.md) for
+the five decisions it is waiting on.
 
 ### dfo-salmon-ontology (gcdfo) — current **0.0.9**
 
@@ -200,14 +231,23 @@ keep the historic shape).
 object properties are gone and one class moved namespace. `mappings/gcdfo-to-smn.sssom.tsv`
 carries replacement rows so a dataset holding a retired IRI can resolve it.
 
-**`main` has moved past the tag: two merges are unreleased.** PR #83 (deletes
-the dead WebVOWL stabilizer and its orphaned stamp — backlog #81/#84) and PR
+**`main` has moved past the tag: three merges are unreleased** (re-checked
+2026-08-18; `origin/main` is 7 commits ahead of the tag). PR #83 (deletes
+the dead WebVOWL stabilizer and its orphaned stamp — backlog #81/#84), PR
 #86 (the **Pacific fishery management area** SKOS vocabulary:
 `gcdfo:PacificFisheryManagementAreaScheme` plus **48** concepts from SOR/2007-77
-Schedule 2, S9 step 7 ruling A1) both merged *after* the 0.0.9 tag. They are on
-`main` and in the CHANGELOG's `[Unreleased]` section, so a consumer pinning the
-tag or the release object sees neither — the same reachable-by-branch,
-unreachable-by-pin state PSC alpha.3 is in below. Cite the commit, not 0.0.9.
+Schedule 2, S9 step 7 ruling A1), and PR #87 (routing durable salmon knowledge
+to the commons — docs only) all merged *after* the 0.0.9 tag. They are on
+`main` and the PFMA vocabulary sits in the CHANGELOG's `[Unreleased]` section,
+so a consumer pinning the tag or the release object sees none of it — the same
+reachable-by-branch, unreachable-by-pin state PSC alpha.3 is in below. Cite the
+commit, not 0.0.9.
+
+**This repo is under `dfo-pacific-science/`, not `salmon-data-mobilization/`** —
+the only hub member in a different GitHub org, and `0.0.9` is still its only
+tag. PR #87 also merged with no Kanban item, against that repo's own
+`AGENTS.md` requirement; recorded as a process exception in the
+[S9 card](sequences/s9-ontology-alignment.md).
 
 **Discrepancies:** the sequence is non-monotonic (0.0.999 predates 0.0.8); the
 CHANGELOG documents that as an abandoned numbering experiment and the version
@@ -245,6 +285,13 @@ state was abandoned metasmn-rename leftovers — preserved on local branch
 added a `methods.csv` registry the S8 method model removes; the port unwinds
 it.
 
+**`AGENTS.md` is now git-tracked here** (PR #5, merged 2026-08-18) — it had
+been git-ignored since the initial commit, so the repo's own agent guidance
+was invisible to every fresh clone. `main` is 2 commits past the `sdp-0.3.0`
+tag as a result; both are that change. The same defect was fixed in
+metasalmonpy at PR 0, and the mirror contract in this repo's `AGENTS.md`
+already forbids ignoring those files.
+
 ### psc-salmon-vocabularies (PSC CV) — latest **tag** v0.1.0-alpha.2; alpha.3 is **merged to the default branch but untagged**
 
 | Version | Date | One line |
@@ -281,11 +328,17 @@ requires, and tagging alone would not make it one.
 | *(none)* | — | No tags, no release objects, no declared content-versioning scheme. `okf_version: "0.2"` names the *format* the bundle is written to, not a version of what it says |
 
 Newest member of the domain, added 2026-08-17. **Private.** Created 2026-08-17
-(`2026-08-18T01:50Z`); zero tags and zero release objects, checked against the
-GitHub API on 2026-08-17. Four concepts — cycle line, broodline, cyclic
-dominance, run timing — **none human-verified**, carrying seven recorded
-ontology gaps, with the card schema and contribution flow being written
-concurrently with the content.
+(`2026-08-18T01:50Z`); zero tags and zero release objects, re-checked
+2026-08-18. **It cannot be pinned by version at all — only by commit SHA.**
+
+**It grew fast: eleven concepts and 24 gaps, not the four and seven recorded
+here on 2026-08-17.** PRs #1 and #2 merged 2026-08-18. The eleven cards are
+cycle line, broodline, cyclic dominance, run timing, conservation-unit
+independence, FishBase as a vocabulary source, migration-timing genetic
+architecture, Pacific salmonid taxonomic authorities, potamodromous migration
+vocabulary, sockeye rearing ecotypes, and stream-type/ocean-type chinook.
+**Still none human-verified.** Gap `mint_target`s: `smn` 18, `gcdfo` 4,
+`do-not-mint` 2.
 
 It is an **upstream OKF v0.2** bundle, not a PSC-profile one, and that is a
 decision rather than an oversight: the PSC profile's closed card schema rejects
@@ -405,8 +458,9 @@ The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
 released R baseline in Python before new behavior lands in both languages; that
-baseline is now **0.3.0, released**, and the replay stands at 0.1.8 with rung 3
-next. The first behavior is verification,
+baseline is now **0.3.0, released**, and the replay stands at 0.1.8 released
+with rung 3 written and awaiting merge — the **last** replayed rung, since the
+2026-08-17 replan ports the remainder by subsystem. The first behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer

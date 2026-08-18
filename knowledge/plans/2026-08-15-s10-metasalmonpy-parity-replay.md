@@ -227,10 +227,37 @@ Fixed R-side post-0.3.0 (backlog #88), with the accepted writer set
 consolidated into `R/provenance.R` so a fourth manifest type inherits dual
 acceptance instead of re-deriving it.
 
-**Next rung: 3 — `0.2.0 + 0.2.1` collapsed.** It is also the first of the two
-rungs whose verification is the R↔Python round-trip (see *Verification*
-below), which is why #88 had to be fixed before it starts rather than during
-it.
+## Rung 3 progress (2026-08-18)
+
+**Written, not yet merged.** Rung 3 — `0.2.0 + 0.2.1` collapsed — is
+metasalmonpy PR **#10** on `feat/s10-020-021-parity`, carrying `0.2.1` in
+`pyproject.toml` and `__init__.py`. Open and mergeable at the time of writing,
+with checks unstable; `main` is still 0.1.8 at tag `v0.1.8`.
+
+It is the rung whose verification is the R↔Python round-trip (see
+*Verification* below), which is why backlog #88 had to be fixed before it
+started rather than during it. **It is also the last replayed rung** — the
+replan above supersedes 4–8, so once #10 merges and tags, the next unit of
+work is chunk **A**, not a rung 4.
+
+Do not move the roadmap's release-index row for metasalmonpy to 0.2.1 before
+#10 merges and the tag exists: a branch version is not a parity claim the
+index can carry, and this is the same cite-the-commit-not-the-tag condition
+the index already records for gcdfo and PSC.
+
+### Working practice: the checkout directory name is load-bearing
+
+**A metasalmonpy worktree must live at a path whose last segment is
+`metasalmonpy`.** `pyproject.toml` maps `package-dir = { "metasalmonpy" = "."
+}`, so the repository root *is* the package directory and the import name is
+supplied by the directory name. Check it out as `s10-rung3/` or
+`metasalmonpy-parity/` and the entire suite errors on relative imports before
+a single test asserts anything — a failure that looks like broken code and is
+actually a broken path.
+
+So an auxiliary worktree gets a *nested* path — `.worktrees/<task>/metasalmonpy`
+— never `.worktrees/<task>-metasalmonpy`. Both existing checkouts follow this;
+it had not been written down.
 
 ## Sidecar-survival rule
 
@@ -265,7 +292,29 @@ that drop reviewed artifacts.
   depends on ranking order. Note while sequencing that
   `benchmark_term_ranking_fixtures` — the surface that would *measure* a
   ranking regression — accepts `profiles` and discards them on the Python
-  side, so it cannot currently serve as the check for any rung.
+  side, so it cannot currently serve as the check for any rung. It has **no
+  Python test**, and its default fixture path names a file that does not exist
+  in the repo, so the zero-argument call is dead as well.
+- **`validate_salmon_datapackage()`'s issue system diverges, and no rung owns
+  that either** (backlog #91, parity-deviations row 35). R tags every finding
+  with one of **eight** `issue_type` values and collects them all before a
+  single abort; Python raises an untyped `ValueError` at the **first**
+  structural problem, so a package with three bad tables reports one. On
+  `main` the returned `issues` frame is `pd.DataFrame(columns=["message"])`,
+  whose column set does not match R's five; chunk-A-era rung 3 adds exactly
+  one category, `columns`. **Older than the 0.1.6 claim** — `package_io.py`
+  dates to the initial 2026-02-06 commit — so, like the ranking gap, no rung
+  below inherits it. Logged here deliberately.
+
+  **This one constrains verification design, which the ranking gap does not.**
+  *No milestone may verify by comparing issue counts or issue categories
+  across the two implementations* until it closes: such a check passes
+  vacuously against 0.1.8's empty frame, and after rung 3 compares one
+  category against eight. Chunk **D** (validation hardening) is where it would
+  naturally land if it is ever scoped in — it is the only chunk whose subject
+  is this function — but scoping it there is a decision nobody has made, and
+  D's stated scope is primary-key and placeholder behaviour, not the reporting
+  mechanism.
 
 ## Verification
 

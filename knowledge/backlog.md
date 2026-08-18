@@ -46,10 +46,14 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, plus item 0 (gcdfo). Open only in
+  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, plus
+  item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half) and **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain).
+- **Open and awaiting a decision rather than an implementer:** #90 (which side
+  of the descriptor/validator disagreement moves) and #87's benchmark half.
+  Listing them as plain open items overstates how ready they are to pick up.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
   0.2.5; #77 in 0.2.6. #85 and #88 are fixed in the development version.
@@ -1057,12 +1061,34 @@ the role-preferences branch, Python adds 1 / 1 / 0.5 unconditionally. R's
 `backend_score` term has no counterpart.
 
 The worst part is not the absence. `benchmark_term_ranking_fixtures(profiles =
-...)` is exported on both sides, but Python's (`term_search.py:1185`) binds
-each profile to `_profile`, calls the scorer without it, and returns the
-profiles unchanged in its result — so benchmarking two profiles yields two
-identical summary rows under different names. The one exported surface for
-comparing ranking profiles silently reports that all profiles are equivalent,
-which is worse than not having it.
+...)` is exported on both sides, but Python's
+(`term_search.py:1185-1266`) binds each profile to `_profile` at **`:1224`**
+and never reads it again — the sole scorer call at **`:1230`** passes
+`candidates`, `role`, `vocab`, `query` and no profile — then echoes the names
+back at `:1244`/`:1255` and the whole input dict at `:1265`. So benchmarking
+two profiles yields two identical summary rows under different names. The one
+exported surface for comparing ranking profiles silently reports that all
+profiles are equivalent, which is worse than not having it.
+
+**Threading the argument through would not be enough, and that is easy to
+miss.** `_score_and_rank_terms` (`term_search.py:955`) has no parameter to
+receive a profile — a repo-wide search for `ranking_profile` finds one hit and
+it is a *comment*. So the fix is the profile system (the gap above), not a
+one-line pass-through; the discarded argument is the **symptom**, and a patch
+that only threads it would produce a plausible-looking benchmark over a scorer
+that still ignores it.
+
+**Two reasons nothing caught it, both worth fixing alongside.** metasalmonpy has
+**no test at all** for this function — `tests/test_public_api.py:33-44` asserts
+a hardcoded set of nine exported names that does not include it, so even the
+export check skips it. And the default fixture path
+(`term_search.py:1217`, `resources.files("metasalmonpy")/"tests/fixtures/semantic-ranking-fixtures.json"`)
+names a file **that does not exist in the repo**, so the no-argument call path
+is dead too — the R fixture it mirrors does exist, at
+`tests/testthat/fixtures/semantic-ranking-fixtures.json`. R by contrast pins
+exactly this behaviour: `tests/testthat/test-term-search.R:1352` benchmarks a
+`no_smn` profile against `baseline` and asserts the scores differ, which is the
+assertion Python cannot currently pass.
 
 This **predates the 0.1.6 parity claim** and no S10 rung covers it — logged as
 out of scope on the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
@@ -1101,11 +1127,77 @@ the only R-written fixture under test has a measurement column carrying **no
 IRIs at all**, so the extra keys are guarded away; a package annotated the way
 the SDP spec *requires* for measurement columns always carries them.
 
-Someone has to decide which side moves: either the writers stop projecting
-I-ADOPT into the descriptor, or `descriptor_field_from_column()` learns about
-those keys and the comparison stops being exact. *Retires when:* an SDP with a
-fully annotated measurement column passes `scripts/validate_package.py`
-unmodified.
+**This is a decision, not a fix, and naming it a defect hides that.** Nothing
+here is a mistake anyone can go and correct: the writers do what the SDP spec
+asks of an annotated measurement column, and the validator does what its own
+normative text says. They are two defensible readings of the same spec, and
+until one is chosen there is no correct implementation to write. Whoever picks
+it up otherwise faces a coin flip between two whole-ecosystem edits — and
+either edit is *cheap to make and expensive to reverse*, which is exactly the
+shape that should not be settled by whoever gets there first.
+
+**Owner: Brett**, as the authority over `smn-data-pkg`. It is a **spec-versus-
+implementation call** and it lands in the spec repo either way — either
+`SPECIFICATION.md` says descriptor `schema.fields` entries carry no I-ADOPT
+keys and both mirrors stop projecting them, or it says they may and
+`scripts/validate_package.py`'s `descriptor_field_from_column()` learns the
+keys so the comparison stops being exact. The second is the larger change: an
+exact `==` is what makes the validator able to reject an unknown key at all,
+so relaxing it means deciding *which* extra keys are legal, which is a
+vocabulary question rather than a code one.
+
+Two things a decider should have, because neither is obvious from the defect:
+the divergence is **not** a parity question — both mirrors emit identical keys,
+so no R↔Python comparison could ever surface it — and it is **not urgent in
+the way a validator failure usually is**, because the only fixture under test
+carries no IRIs and so nothing is red today. It bites the first real annotated
+package, not CI.
+
+*Retires when:* an SDP with a fully annotated measurement column passes
+`scripts/validate_package.py` unmodified — under whichever reading is chosen.
+
+**#91 `validate_salmon_datapackage()`'s issue system is a different mechanism
+in metasalmonpy, not a smaller one.** R's
+`.ms_collect_package_validation_issues()` (`R/package-helpers.R:1995-2381`)
+tags every finding with one of **eight** `issue_type` values — `dataset`,
+`tables`, `dictionary`, `codes`, `resource`, `columns`, `primary_key`,
+`composite_intent` — each carrying `table_id`, `column_name` and `value`, and
+collects **all** of them before `.ms_abort_package_validation_issues()` reports
+the total and previews up to ten. Python
+(`metasalmonpy/package_io.py:1593-1668`) has four unconditional
+`raise ValueError` sites and no collector, so it stops at the **first**
+structural problem with an untyped string: a package with three bad tables
+reports one, and the loop never reaches the other two. Fixing that first error
+reveals the second, which is the debugging experience R deliberately does not
+have.
+
+**Two corrections to how this is usually stated.** First, *R accumulates and
+Python raises* is not quite it — R accumulates and **then also aborts**. The
+`issues` tibble R returns to a caller is reachable only when it is empty
+(`R/package-helpers.R:1682-1685`), so the difference is not return-versus-raise
+but **how much of the truth one failed call tells you**: R's one abort names
+every problem, typed; Python's names one, untyped. Second, the gap on `main` is
+wider than the category count suggests — metasalmonpy 0.1.8 returns
+`pd.DataFrame(columns=["message"])`, a frame whose *column set* does not match
+R's five, so nothing populates it at all. The single `columns` category and
+R's column set arrive only with **unmerged rung 3** (PR #10), which is also
+where the divergence is self-documented in a source comment
+(`package_io.py:1555-1562`) — honest, but a comment is not a register entry.
+
+**No rung owns this and no register row covers it.** Verified older than the
+0.1.6 parity claim: `package_io.py` was added 2026-02-06 in the initial commit,
+six months before the 0.1.6 alignment, and the function has been revised at
+0.1.6, 0.1.8 and rung 3 without the control flow being reconciled. Registered
+now as parity-deviations **row 35**. Severity: silent — a caller inspecting
+`issues` on 0.1.8 gets an empty frame and cannot distinguish "validated clean"
+from "this mirror does not report that category".
+
+*Log it before any rung's verification depends on issue counts* — that is the
+concrete hazard. A milestone check of the form "both sides report N issues"
+would pass vacuously against 0.1.8 and compare one category against eight
+after rung 3. *Retires when:* Python collects rather than raises, emits R's
+eight categories with R's five columns, and a differential fixture pins both
+sides to the same issue set for the same broken package.
 
 **#89 smn's flat-TTL generator was nondeterministic, and nothing would have
 caught it.** Merging triples without binding the source prefixes left rdflib to

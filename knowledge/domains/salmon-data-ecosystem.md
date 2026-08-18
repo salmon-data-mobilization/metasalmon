@@ -30,8 +30,41 @@ what `detect_semantic_term_gaps()` → `render_ontology_term_request()` →
 `submit_term_request_issues()` already exists to carry. Its first four concepts
 (cycle line, broodline, cyclic dominance, run timing) came out of resolving a
 live modelling question in
-[salmon-domain-ontology PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27)
-and already carry seven recorded gaps.
+[salmon-domain-ontology PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27).
+It now holds **eleven concepts and 24 gaps** (2026-08-18).
+
+## The term lifecycle is what connects the commons to the ontologies
+
+A gap is not a note; it is a **state machine**, declared in
+`schema/concept.schema.json` and enforced by the schema rather than by
+convention. Each entry in a concept card's `alignment.gaps[]` carries
+`state ∈ {open, proposed, rejected, minted}`:
+
+| State | Means | Schema then requires |
+|---|---|---|
+| `open` | Nobody has proposed a term | — |
+| `proposed` | A term is up for review somewhere | `proposal` (the PR/issue URL) |
+| `rejected` | Review declined it | `proposal`, **`rejected_because`**, **`evidence_needed`** |
+| `minted` | The term exists | Move the IRI to `alignment.exact` and delete the gap |
+
+**The rule that matters to this hub: when a term proposal closes unmerged, the
+gap goes back to the commons as `rejected`, carrying `rejected_because` and
+`evidence_needed`, in the same change that closes the proposal.** Both fields
+have a 40-character minimum, so neither can be satisfied with a shrug.
+
+This is the mechanism, not a nicety. A rejection that records no reason and no
+way forward is **indistinguishable from nobody having tried** — so the same
+term gets proposed again unchanged, reviewed again, and declined again by
+whoever has forgotten the first round. `rejected_because` is what stops the
+loop; `evidence_needed` is what makes a rejection a *route* rather than a dead
+end, which is why S9's group D can record "leave it as data until a published
+scheme is in hand" as a **result** rather than a failure.
+
+Note the machinery is untested in practice: **all 24 gaps are currently
+`open`**, and `rejected_because` / `evidence_needed` appear in the schema, the
+contributing guide and the checker but in **no card**. smn PR #27 is the
+obvious first customer — it is a live proposal that withdrew its species
+scheme, which is a `rejected` gap in everything but the recording.
 
 **Do not read membership as maturity.** It was created 2026-08-17, holds four
 concepts, **none of them human-verified**, and its card schema and contribution
