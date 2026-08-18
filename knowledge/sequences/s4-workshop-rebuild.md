@@ -14,8 +14,11 @@ psc:
 **Execplan:** [KNB environments and workshop rebuild](../plans/2026-08-11-knb-environments-and-workshop-rebuild.md)
 
 Nine episodes, R-led with visible Python equivalents and two interleaved Excel
-passes. Hard-blocked by **S3** (staging target) and by **S8** for its
-method-annotation content; reads better after **S1**. The Python equivalents
+passes. Hard-blocked by **S3** (staging target); reads better after **S1**. The
+**S8 blocker is discharged** — the method model shipped as metasalmon 0.3.0
+against `sdp-0.3.0`, so the method-annotation content has a released contract to
+teach, and what it teaches is the three placements, not a dictionary method
+slot. The Python equivalents
 execute against **metasalmonpy**, which makes S10 parity a soft dependency —
 episodes must not demo Python behaviour that only exists in R.
 

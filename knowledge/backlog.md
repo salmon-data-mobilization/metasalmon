@@ -37,7 +37,7 @@ Severity = how much it can bite a real user.
 - **deferred** — deliberately left out of the current refactor because it belongs
   to a separate roadmap or would change behavior beyond the plan.
 
-**Current snapshot (updated 2026-08-11, after 0.2.4).**
+**Current snapshot (re-audited 2026-08-17 against `main` and the sibling repos).**
 
 - **Closed:** #1, #2, #4, #5, #6, #7, #8, #10, #11, #12, #14, #15, #16, #17, #18,
   #19, #20, #21, #25, #27, #28, #32, #34–#42 (the 0.2.0 P0 remediation), and
@@ -45,15 +45,23 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61,
-  #74 (feature), #75, #76 (draft).
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
+  (feature), #78, #80, #82, #83, #86, #87, plus item 0 (gcdfo). Open only in
+  part: **#76** (its crosswalk-retarget half) and **#79** (four of its six
+  findings shipped with S11 slice 2; the KNB-vignette split and the export
+  coverage count remain).
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
-  and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4.
+  and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
+  0.2.5; #77 in 0.2.6. #85 and #88 are fixed in the development version.
+- **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
+  `method_iri` slot and the `metadata/methods.csv` registry the item was about.
+- **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
+  the 0.0.9 tag).
 
 **Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
 and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
-start in parallel and is blocked only by #73. See `knowledge/roadmap.md` for the full
-ordering.
+start in parallel; its only hard blocker (#73) shipped in 0.2.5. See
+`knowledge/roadmap.md` for the full ordering.
 
 **Forward plan.** Sequencing, dependencies, and release state live in
 **`knowledge/roadmap.md`** — the single undated document that orders every stream and
@@ -197,10 +205,19 @@ it used to silently continue.
 `load_git_head_text()` and uses it as its fallback when `--baseline` is
 absent; the Makefile currently overrides it with the working-tree snapshot,
 so the simplest change is to stop passing `--baseline` from `docs-widoco`.
-**Verify first** whether the working-tree baseline was deliberate for local
-iteration across repeated refreshes — the handing session believes comparing
-against HEAD is equally stable because the render is deterministic given the
-same semantic input, but did not test a multi-refresh local edit cycle.
+**The "verify first" question is answered** (gcdfo `docs/tech-debt.md`,
+2026-08-16 entry, written after this item): the working-tree baseline *was*
+deliberate, so repeated local refreshes compare against the previous local run
+rather than the last commit. That is the property the fix trades away, and it
+is the thing to decide, not to discover.
+
+**Blast radius is smaller than this item first said, and that is what changed.**
+Now that PR #82 removed the CI exclusion, the drift check covers
+`docs/webvowl/data/ontology.json`, and CI checks out clean, so its baseline is
+always the committed file. Raw output pushed from a poisoned *local* baseline
+fails CI. The workaround is one command —
+`git checkout -- docs/webvowl/data/ontology.json` before retrying a failed docs
+build. Severity is local developer friction, not a silent publication defect.
 
 **The test that matters** is not a clean build, and it has a trap. Break the
 normalizer deliberately, run `make docs-widoco` so it fails and leaves raw
@@ -977,7 +994,12 @@ missing producer. Design and milestones:
 passes with no `REVIEW:` markers left **and the data CSV bytes unchanged** —
 the byte assertion is the only one that fails if the writer is not surgical.
 
-### Open — P2 (correctness and conformance debt)
+### P2 — correctness and conformance debt
+
+**Mixed state; read each item's first line, not this heading.** Open: **#86**,
+**#87**, **#82**, **#83**. Fixed but unreleased in gcdfo: **#81**, **#84**.
+Superseded: **#75**. They stay interleaved because the resolved ones carry
+reasoning the open ones refer back to; the top-of-file snapshot is the index.
 
 **#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
 `metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
@@ -1040,14 +1062,14 @@ through, and a differential fixture pins both rankers to the same order.
 Needs a rung or its own stream before the 0.2.0 replay work depends on
 ranking behaviour.
 
-**#81 gcdfo ships a dead script and its orphaned output.**
-`scripts/stabilize_webvowl_output.py` has zero references repo-wide — the
-normalizer superseded it — and `docs/webvowl/data/ontology.stamp` is its output,
-a tracked file nothing regenerates. That is a direct violation of gcdfo's own
-"no ghost code" rule. Left in place deliberately: its `AGENTS.md` requires
-asking before deleting anything under `scripts/`, and it predates the PR that
-found it. *Retires when:* both are deleted, or the stamp file gains a live
-producer.
+**#81 gcdfo ships a dead script and its orphaned output. FIXED 2026-08-17 in
+gcdfo PR #83.** `scripts/stabilize_webvowl_output.py` had zero references
+repo-wide — the normalizer superseded it — and `docs/webvowl/data/ontology.stamp`
+was its output, a tracked file nothing regenerated: a direct violation of
+gcdfo's own "no ghost code" rule. Both are deleted on `main`; verified absent
+from `git ls-tree origin/main`. The retirement condition is met. **Not yet
+released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
+gets both files.
 
 **#82 gcdfo's WSP review-artifact generator is nondeterministic.**
 `scripts/generate_wsp_composite_escapement_review_artifacts.py` produced three
@@ -1056,18 +1078,29 @@ unordered edge emission. This is exactly the defect class metasalmon's
 C-collation contract exists to prevent, in a sibling repo that has no equivalent
 guard. Worth fixing *and* worth asking whether gcdfo should carry a collation
 rule of its own; a hub-wide contract that only one repo enforces is a contract
-in one repo.
+in one repo. **Still open 2026-08-17** — gcdfo carries it as an Active entry in
+its own `docs/tech-debt.md` with the retirement condition stated there (two
+consecutive runs producing byte-identical `.graphml`).
 
-**#84 A "Resolved" tech-debt entry that silently un-resolved.**
-gcdfo's `docs/tech-debt.md` still lists "2026-03-15 — `make ci`/`make
-docs-refresh` WebVOWL churn stabilized" under *Resolved*, but it had been broken
-since the term expansion introduced the duplicate `xsd:gYear` datatype nodes,
-and stayed broken until #82. This is the guard-expiry rule pointed at the other
-end of a guard's life: **a resolution claim decays exactly like a suppression
-does.** "Resolved" with no re-verification hook is an assertion about the past
-presented as a fact about the present, and it actively discourages the next
-person from checking. Whatever replaces it should name what would falsify it —
-here, the drift gate now covers the artifact, so the gate *is* the hook.
+**#84 A "Resolved" tech-debt entry that silently un-resolved. FIXED 2026-08-17
+in gcdfo PR #83.** gcdfo's `docs/tech-debt.md` listed "2026-03-15 — `make
+ci`/`make docs-refresh` WebVOWL churn stabilized" under *Resolved*, but it had
+been broken since the term expansion introduced the duplicate `xsd:gYear`
+datatype nodes, and stayed broken until #82. The entry now reads "first attempt;
+superseded", says the fix did not hold, names PR #78 as what replaced it and PR
+#82 as what repaired it, and records *why nobody noticed for five months* — PR
+#78 rewrote the Resolution text **in place**, so the log kept describing a live
+implementation and left no seam where a reader could notice the substitution.
+The repaired entry also gained a re-verification hook, which is what the
+original lacked. **Not yet released**, exactly as #81: PR #83 merged after the
+0.0.9 tag, so a consumer reading the tag still sees the misleading *Resolved*
+entry.
+
+Keep the lesson, not the instance: **a resolution claim decays exactly like a
+suppression does.** "Resolved" with no re-verification hook is an assertion
+about the past presented as a fact about the present, and it discourages the
+next person from checking. An in-place rewrite of a resolution is worse than a
+stale one — a stale doc invites the question, a rewritten one destroys it.
 
 **#83 A stale definition fixture in `test-term-search.R:614`.**
 `gcdfo:ConservationUnit` now reads "A group of **wild salmon** sufficiently
@@ -1077,7 +1110,21 @@ ranking *input*, never asserted — so nothing fails. Recorded because a fixture
 that quotes an external definition will keep drifting silently, and the fix is
 to stop quoting it verbatim rather than to re-sync the string.
 
-**#75 `create_sdp()` auto-applies `method_iri` with no `metadata/methods.csv`.**
+**#75 `create_sdp()` auto-applies `method_iri` with no `metadata/methods.csv` —
+SUPERSEDED by sdp-0.3.0, not fixed as filed.** Every artifact this item names is
+gone from `main`: the dictionary has no `method_iri` slot, the
+`metadata/methods.csv` registry was removed, and `write_sdp_methods()`,
+`validate_sdp_methods()` and `.ms_measurement_supports_procedure_slot()` no
+longer exist in `R/`. `.ms_create_sdp_llm_auto_apply_roles()` returns
+`c("variable", "property", "entity", "unit")` and the deterministic seeded path
+can no longer write a method IRI there is no registry for. The S5 card and the
+r-native-review execplan both still credit their slice 1/slice 2 with fixing it;
+what actually removed the defect was S8's breaking change. Recorded rather than
+deleted because "fixed by the slice that was going to fix it" is exactly the
+marker that goes unverified.
+
+The original entry, kept for the reasoning:
+
 Reproduced. The docs state that "constraint and method assessments always remain
 manual", which holds only on the `llm_assess = TRUE` path, where
 `.ms_create_sdp_llm_auto_apply_roles()` returns exactly
@@ -1137,10 +1184,16 @@ roadmap S8.
 smn side implemented.** Brett ordered methods-as-SKOS ("migrate SMN methods
 from OWL classes to SKOS concepts"); smn PR #22 migrated the six method
 classes to `smn:MethodScheme` concepts (IRIs unchanged, instance-typed
-`sosa:Procedure`), resolving the cross-repo pun. Remaining code work rides
-S8: the metasalmon crosswalk retarget and the method-placement breaking
-change. The history below is kept because the reasoning was seductive and
-worth not repeating. Originally downgraded after review. The original entry claimed the
+`sosa:Procedure`), resolving the cross-repo pun.
+
+**Half of the remaining code work rode S8 and half did not — check before
+assuming this closed.** S8 shipped as 0.3.0 with the method-placement breaking
+change, but **the metasalmon crosswalk retarget did not land with it**:
+`R/nuseds-method-crosswalk.R` still emits `gcdfo:` CURIEs on every row (45
+occurrences, zero `smn:`), so gcdfo remains the de facto method source exactly
+as the entry below describes. That is the open half, and it now belongs to no
+stream — S8 is closed. The history below is kept because the reasoning was
+seductive and worth not repeating. Originally downgraded after review. The original entry claimed the
 mismatch made the SDP rule unsatisfiable and broke SOSA consumers. **Both claims
 were wrong**, and the correction is worth keeping because the reasoning was
 seductive:
@@ -1295,17 +1348,34 @@ gap arose, and a test now asserts the deleted function stays deleted.
 
 Unblocks roadmap **S3**.
 
+### Open — the S2 correctness cluster
+
+**These four were sitting under the "Fixed in 0.2.5" heading with no heading of
+their own, so the file read as if they had shipped with #73. They have not**
+(re-verified on `main` 2026-08-17); roadmap
+[S2](sequences/s2-correctness-debt.md) is the stream that owns them and still
+has no execplan.
+
 **#53 `infer_column_role()` classifies 4-digit measurement columns as
-`temporal`**, removing them from the entire semantic pipeline.
-`R/dictionary-helpers.R:765`.
+`temporal`**, removing them from the entire semantic pipeline. Still live:
+`.ms_values_look_yearish(col)` returns `"temporal"` on value shape alone
+(`R/dictionary-helpers.R`, the role heuristic below the identifier checks).
 
 **#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
-coercion failures**, and the codes step silently `NA`s unlisted values.
-`R/dictionary-helpers.R:1149`.
+coercion failures**, and the codes step silently `NA`s unlisted values. Still
+live, and the mechanism is worth stating because it looks handled: the coercion
+is wrapped in `tryCatch(..., error = ...)` whose handler *does* branch on
+`strict` and `cli_abort`s — but `as.integer("abc")` and friends **warn and
+return `NA`** rather than erroring, so the handler never fires for exactly the
+failures the argument is supposed to catch. A `warning =` handler, not a
+different message, is the fix (`R/dictionary-helpers.R`, the coerce-type block
+in `apply_salmon_dictionary()`).
 
 **#56 Semantic retrieval issues one serial `search_fn()` call per target** with no
-deduplication of identical `(query, role, sources)` tuples.
-`R/semantics-helpers.R:493`. Plus a cluster of smaller per-call costs listed in
+deduplication of identical `(query, role, sources)` tuples. Still live: the
+`purrr::map_dfr()` over `seq_len(nrow(targets))` in `suggest_semantics()` calls
+`.ms_retrieve_semantic_target_candidates()` once per row
+(`R/semantics-helpers.R`). Plus a cluster of smaller per-call costs listed in
 the review (`term_search.R:341,1763,2190`, `semantic-suggestions.R:863,920`).
 
 **#57 Assorted smaller correctness items** carried verbatim from the review:
@@ -1353,18 +1423,22 @@ SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
 no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
 
-**#79 Vignettes lag the package by two breaking releases.** The 2026-08-13
-staleness audit (recorded on the
-[S11 sequence card](sequences/s11-vignettes-and-walkthroughs.md)) found: no
-vignette touched since 0.2.6; two shipped code defects
-(`reusing-standards-salmon-data-terms.Rmd:39` `devtools::load_all(".")` in a
-user chunk; `data-dictionary-publication.Rmd:129` repo-relative path); the
-0.2.6 placeholder warning fires unexplained on every quickstart package;
-zero vignette coverage of `primary_key`, tidy shape, or the 0.2.4
-missing-value token; 27 of 54 exports untaught; and the KNB workflow buried
-as §10 of another vignette with no articles-index entry. Fix via S11 slices;
-severity: user-facing, silent (nothing errors — readers just learn the old
-contract).
+**#79 Vignettes lag the package — mostly discharged by S11 slice 2; two
+findings remain.** The 2026-08-13 staleness audit (recorded on the
+[S11 sequence card](sequences/s11-vignettes-and-walkthroughs.md)) listed six
+findings. **Four are fixed on `main`** (PR #46, `ac6b722`): the two shipped
+code defects are gone (no `devtools::load_all(".")` anywhere in `vignettes/`;
+`data-dictionary-publication.Rmd` now uses `system.file()`), the 0.2.6
+placeholder warning is explained in the quickstart, and `primary_key`, tidy
+shape and the 0.2.4 missing-value token are all covered by the new
+`tidy-data-for-sdp.Rmd` and `faq.Rmd`. The headline itself is stale — two
+vignettes were added after 0.3.0.
+
+**Still open:** the KNB workflow is still buried as §10 of
+`post-review-package-publication.Rmd` with no `_pkgdown.yml` articles entry
+(that is S11 slice 3, gated on S3), and the "27 of 54 exports untaught"
+coverage figure has not been recounted since the audit. Severity: user-facing,
+silent (nothing errors — readers just learn the old contract).
 
 **#78 iop-triple emission from SDPs — explainer before decision.** metasalmon
 consumes I-ADOPT terminologies but never emits `iop:` triples stating that a

@@ -13,17 +13,20 @@ psc:
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-08-10 (0.2.0 P0 remediation:
-schema identity, SDP round-trip integrity, sidecar preservation, cli message
-safety, and C collation). Preceded by 0.1.8 (mixed-grain observation
-structures, methods, reproducibility manifests, and expanded KNB publication).
+package evolves. Last substantial update: 2026-08-17 (re-anchored on 0.3.0).
+The two releases that set most of what follows: **0.3.0** (2026-08-15 — the
+sdp-0.3.0 method placement model: the dictionary swaps `method_iri` for
+`statistical_modifier_iri`, the `metadata/methods.csv` registry is removed, and
+`migrate_sdp_methods()` is the stop-and-report migration) and **0.2.0**
+(2026-08-10 P0 remediation: schema identity, SDP round-trip integrity, sidecar
+preservation, cli message safety, and C collation).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.2.0. License MIT.
-R >= 4.1.0.
+Package (SDP)** conventions. Released 0.3.0; `main` carries an unreleased
+development version. License MIT. R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
 - Canonical repository: https://github.com/salmon-data-mobilization/metasalmon
@@ -38,7 +41,7 @@ The headline path is one-shot package creation:
 
 ```
 create_sdp()                         # public one-shot: infer -> seed -> write -> (EDH XML)
-  └─ infer_salmon_datapackage_artifacts()   # the orchestrator (R/package-helpers.R:427)
+  └─ infer_salmon_datapackage_artifacts()   # the orchestrator (R/artifact-inference.R)
        ├─ infer_dictionary(seed_semantics = FALSE)   # column dictionary rows
        ├─ infer_*_from_resources()    # table_meta / codes / dataset_meta
        └─ suggest_semantics()         # deterministic retrieval + optional LLM review
@@ -70,8 +73,10 @@ return values, and attached attributes are a compatibility surface.
 - **Semantic supplements:** `read_sssom_mapping_set`, `write_sdp_sssom`,
   `validate_sdp_sssom`, `read_sdp_measurement_decompositions`,
   `write_sdp_measurement_decompositions`, `validate_sdp_measurement_decompositions`
-- **Extended structure and reproducibility:** `read_sdp_methods`,
-  `write_sdp_methods`, `validate_sdp_methods`,
+- **Extended structure and reproducibility:** `migrate_sdp_methods` (0.3.0
+  replaced the `read_/write_/validate_sdp_methods` registry trio with this
+  stop-and-report migration; metasalmonpy still has the trio until S10's 0.3.0
+  rung),
   `read_sdp_observation_structures`, `write_sdp_observation_structures`,
   `validate_sdp_observation_structures`, `extract_sdp_observations`,
   `read_sdp_reproducibility_manifest`, `write_sdp_reproducibility_manifest`,
@@ -81,9 +86,10 @@ return values, and attached attributes are a compatibility surface.
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
 - **Maintenance:** `check_for_updates`
 
-Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publication`,
+Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publication`,
 `post-review-package-publication`, `reusing-standards-salmon-data-terms`,
-`github-csv-access`, `faq`, `glossary`.
+`github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
+`migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
 
 ## Domain glossary
 
@@ -95,7 +101,8 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 - **SDP schema locations:** runtime schema fetches are pinned to the spec
   release tag the package implements
   (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`,
-  currently `sdp-0.2.0`); tracking `main` let upstream spec releases break
+  currently `sdp-0.3.0`; metasalmonpy still stamps `sdp-0.2.0` until S10's
+  0.3.0 rung — parity register row 27); tracking `main` let upstream spec releases break
   networked loads. Advancing the pin is part of implementing a new spec
   version. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
@@ -138,15 +145,19 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   offline string gate does not itself resolve IRIs or prove release governance;
   the transformation record must pin and verify the vocabulary release.
 - **I-ADOPT decomposition:** measurement columns are decomposed into semantic
-  "slots". The dictionary role → search role map (R/semantics-helpers.R:381-388):
-  `term_iri`→variable, `property_iri`→property, `entity_iri`→entity,
-  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. Multiple
+  "slots". The dictionary role → field map (`role_to_field` in
+  `R/semantics-helpers.R`): variable→`term_iri`, property→`property_iri`,
+  entity→`entity_iri`, unit→`unit_iri`, constraint→`constraint_iri`,
+  statistical_modifier→`statistical_modifier_iri`. Multiple
   fixed constraints may be stored as a deterministic semicolon-delimited list;
   row-varying year/age coordinates belong in the optional observation-structure
   extension instead. **Ontology convention:** "method" is NOT a native I-ADOPT
-  role. SDP methods are SOSA Procedure resources in `metadata/methods.csv`;
-  `column_dictionary.method_iri` is the fixed-procedure compatibility binding,
-  while row-varying procedures use a `sosa:usedProcedure` observation component.
+  role, and since **sdp-0.3.0 it is not a dictionary slot either** — the
+  dictionary has no `method_iri` and there is no `metadata/methods.csv`
+  registry. A method now lands in one of three places: `tables.csv$method_iri`
+  when it is constant for a table, a `codes.csv` term when it is a coded value,
+  or a `sosa:usedProcedure` observation component when it varies by row. The
+  slot the dictionary gained in its place is `statistical_modifier_iri`.
   Compound variables are SKOS concepts, not OWL classes (see the i-adopt
   chat-decomposition plan in `knowledge/plans/`).
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
@@ -164,7 +175,7 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 
 ## The semantic-review pipeline (the heart of the package)
 
-`suggest_semantics()` (R/semantics-helpers.R:312-1218) runs four stages:
+`suggest_semantics()` (R/semantics-helpers.R) runs four stages:
 
 1. **Target discovery** (`.ms_semantic_discover_targets()`): turns dict/codes/table_meta/
    dataset_meta into **semantic target rows** — one row per *empty* semantic slot
@@ -190,16 +201,16 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 with NA rendered literally as `<NA>` (`.ms_semantic_key_df`) — compare keys with
 the same encoding.
 
-## LLM context-file subsystem (R/llm-semantic-helpers.R ~270-690)
+## LLM context-file subsystem (R/llm-semantic-helpers.R)
 
 - **Strictly opt-in:** context is parsed and used ONLY when `llm_assess = TRUE`.
   Supplying `llm_context_files`/`llm_context_text` never enables network calls.
   This is the contract the 0.1.4 fix (issue #1) hardened.
 - **Accepted input:** local file *paths* (character) or inline *text*. Passing an
-  already-parsed object (tibble/XML/etc.) errors early (`.ms_validate_llm_context_files`
-  at :441).
-- **Supported extensions** (single source of truth `.ms_supported_context_extensions`
-  at :270): md, txt, csv, tsv, json, yaml, yml, rst, r, rmd, qmd, pdf, htm, html,
+  already-parsed object (tibble/XML/etc.) errors early
+  (`.ms_validate_llm_context_files`).
+- **Supported extensions** (single source of truth
+  `.ms_supported_context_extensions`): md, txt, csv, tsv, json, yaml, yml, rst, r, rmd, qmd, pdf, htm, html,
   docx, xls, xlsx, xlsm.
 - **Optional deps:** `pdftools` (PDF) and `readxl` (Excel) are Suggests; missing
   ones **abort with an actionable message** (not silent skip). `xml2` is a hard
@@ -220,7 +231,7 @@ the same encoding.
 - `.ms_llm_review_validate_assessment` / `.ms_llm_review_response_data` is the
   **shared response contract** — and it is **already a two-consumer seam**:
   - semantic review: `.ms_llm_chat_json_request` returns a *bare* parsed-JSON list.
-  - chat decomposition (`R/chat-decomposition.R:615`): `.ms_chat` returns a
+  - chat decomposition (`.ms_chat`, R/chat-decomposition.R): it returns a
     *wrapped* `list(content, data, ...)` shape.
   The adapter has a two-shape normalizer by design. (This matters: the
   `deepen-architecture` plan's Refactor 4 wrongly assumed a single review path.)
@@ -247,37 +258,43 @@ the same encoding.
 
 ## Known duplication map (drives the deepen-architecture refactors)
 
-Verified copy-paste that the refactor plan targets:
+**Four of the five are resolved** (re-verified on `main`, 2026-08-17). Kept as a
+map of where the duplication *was*, because the refactor plans still reference
+these numbers:
 
-1. **`llm_requested` 8-clause predicate** — byte-identical at
-   `dictionary-helpers.R:92-99` and `package-helpers.R:452-459`.
-2. **`suggest_semantics` arg-assembly** (base list + `if (llm_requested)` append
-   of 11 `llm_*` args + `do.call`) appears **3×**: `package-helpers.R:541-566`,
-   `dictionary-helpers.R:171-195`, `dictionary-helpers.R:247-271`. The 11-arg
-   `llm_*` surface also appears as a call-site at `create_sdp` (`package-helpers.R:844-854`)
-   → effectively **4 copies**.
-3. **Effective shortlist** is NOT inline-duplicated — it lives once in
-   `.ms_llm_effective_shortlist_size` (R/llm-semantic-helpers.R:79-93) and is
-   merely *called* twice. (So Refactor 2's "centralize shortlist" is mostly done.)
-4. **Column-target row construction is duplicated and divergent:**
-   `.ms_semantic_column_term_target_from_dictionary` (R/semantic-suggestions.R:147-185)
-   vs the inline block (R/semantics-helpers.R:966-984).
-5. **HTTP request-body builders duplicated:** `.ms_llm_chat_json_request`
-   (R/llm-semantic-helpers.R:1301-1330) vs `.ms_chat_http_request`
-   (R/chat-decomposition.R:435-472) — divergent temperature/header handling.
+1. ~~**`llm_requested` 8-clause predicate** duplicated across
+   `dictionary-helpers.R` and `package-helpers.R`~~ — **resolved.** One
+   definition, `.ms_llm_review_requested()` in `R/llm-semantic-helpers.R`,
+   reached through `.ms_llm_review_plan()` from both callers. Backlog #15.
+2. ~~**`suggest_semantics` arg-assembly** in effectively 4 copies~~ —
+   **resolved.** `.ms_llm_review_plan()` builds the conditional `llm_*` tail
+   once via `mget(.ms_llm_arg_names(), ...)`; both call sites in
+   `R/dictionary-helpers.R` consume it as `c(suggest_args,
+   llm_review$suggest_args)`. Backlog #14/#18.
+3. **Effective shortlist** was never inline-duplicated — it lives once in
+   `.ms_llm_effective_shortlist_size()` (`R/llm-semantic-helpers.R`) and is
+   merely *called* twice.
+4. ~~**Column-target row construction duplicated and divergent**~~ —
+   **resolved.** Discovery lives once in `.ms_semantic_discover_targets()` and
+   the row builder once beside it, both in `R/semantic-suggestions.R`; the
+   inline block in `R/semantics-helpers.R` is gone.
+5. **HTTP request-body builders duplicated — still live.**
+   `.ms_llm_chat_json_request()` (`R/llm-semantic-helpers.R`) vs
+   `.ms_chat_http_request()` (`R/chat-decomposition.R`), with divergent
+   temperature/header handling. This is backlog **#3**, still open.
 
 ## Return-value attribute contracts (preserve across refactors)
 
 - `infer_dictionary` **multi-table** path attaches `inferred_table_meta`,
   `inferred_codes`, `inferred_dataset_meta`, `inferred_resources`
-  (dictionary-helpers.R:196-199; asserted at test-dictionary-helpers.R:308-311).
+  (R/dictionary-helpers.R; asserted in tests/testthat/test-dictionary-helpers.R).
 - `infer_dictionary` **single-table** path attaches `seed_table_meta`,
   `seed_codes`, `seed_dataset_meta` — only when those args were non-NULL
-  (272-280). The two paths attach **disjoint** attribute sets.
+  The two paths attach **disjoint** attribute sets.
 - `suggest_semantics` attaches `semantic_suggestions` (always),
   `semantic_llm_assessments` (when `llm_assess`), optionally `dwc_mappings`.
-  `semantic_suggestions` is read in term-request-helpers.R:82,
-  package-helpers.R:568/859, chat-decomposition.R:961, and ~20 tests.
+  `semantic_suggestions` is read in `R/term-request-helpers.R`,
+  `R/package-helpers.R` (two sites), `R/chat-decomposition.R`, and ~20 tests.
 
 ## Test infrastructure conventions
 
@@ -290,7 +307,7 @@ Verified copy-paste that the refactor plan targets:
 - `with_mocked_bindings(suggest_semantics = fake_suggest)` is the standard way to
   capture forwarded args and inject canned `semantic_suggestions` attributes.
 - Results asserted via attributes and written `metadata/*.csv`, almost never via
-  internal locals — EXCEPT the parse-once test (test-llm-semantic-helpers.R:1100-1136)
+  internal locals — EXCEPT the parse-once test in tests/testthat/test-llm-semantic-helpers.R
   which mocks `.ms_context_text_from_file` / `.ms_chunk_context_text` **by name**
   (a refactor hazard).
 - Optional-dep formats gate with `skip_if_not_installed` (openxlsx/readxl/pdftools).
@@ -319,25 +336,37 @@ do not affect the built package or pkgdown site.
 
 ## R/ file → responsibility map
 
+Line counts recounted 2026-08-17 (`wc -l R/*.R`, 33.4k lines total). They drift
+every release — re-run the count rather than trusting these to the digit.
+
 | File | Lines | Responsibility |
 |---|---|---|
-| `package-helpers.R` | ~2975 | SDP orchestration: `infer_salmon_datapackage_artifacts`, `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
-| `term_search.R` | ~89KB | Deterministic ontology retrieval (`find_terms`) + ranking. |
-| `semantics-helpers.R` | ~1552 | `suggest_semantics` (target discovery, retrieval, role-collision, LLM handoff). |
-| `llm-semantic-helpers.R` | ~1692 | LLM context parsing/scoring + review orchestration (single/batch/explore/decomposition routing). |
-| `chat-decomposition.R` | ~1346 | Interactive I-ADOPT decomposition session (`chat_decomposition`); 2nd consumer of the review contract. |
-| `dictionary-helpers.R` | ~1209 | `infer_dictionary` + `infer_*_from_resources` (the latter also used by package-helpers). |
-| `semantic-suggestions.R` | ~268 | Target/candidate row-shape contract + LLM-assessment merge. |
-| `llm-review-adapter.R` | ~118 | Shared LLM review response contract (validate / response-data / row construction). |
-| `cli-safety.R` | ~70 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`, `.ms_abort_external`). |
-| `edh-xml-export.R` | ~43KB | EDH HNAP/ISO 19139 XML export. |
-| `eml-export.R` | — | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
-| `knb-sdp-archive.R` | — | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
-| `knb-publication.R` | — | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
-| `sssom.R` | — | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
-| `measurement-decompositions.R` | — | Ordered I-ADOPT-style component evidence kept separate from SSSOM mappings. |
-| `github-helpers.R` | ~22KB | GitHub CSV access + auth setup. |
-| `term-request-helpers.R` | ~28KB | Ontology new-term request rendering + issue submission. |
+| `package-helpers.R` | 3777 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
+| `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
+| `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
+| `term_search.R` | 2779 | Deterministic ontology retrieval (`find_terms`) + ranking; emits the role hints the role contract depends on. |
+| `llm-semantic-helpers.R` | 2236 | LLM context parsing/scoring + review orchestration (single/batch/explore/decomposition routing); owns `.ms_llm_review_plan()`. |
+| `dictionary-helpers.R` | 1578 | `infer_dictionary` + `infer_*_from_resources`, `apply_salmon_dictionary`. |
+| `chat-decomposition.R` | 1380 | Interactive I-ADOPT decomposition session (`chat_decomposition`); 2nd consumer of the review contract. |
+| `edh-xml-export.R` | 1293 | EDH HNAP/ISO 19139 XML export. |
+| `term-request-helpers.R` | 1267 | Ontology new-term request rendering + issue submission. |
+| `semantic-suggestions.R` | 1157 | Target discovery, the target/candidate row-shape contract, and LLM-assessment merge. |
+| `sssom.R` | 1131 | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
+| `observation-structures.R` | 1032 | Mixed-grain observation structures and `extract_sdp_observations`. |
+| `semantics-helpers.R` | 1014 | `suggest_semantics` (retrieval, role-collision, LLM handoff) and the `role_to_field` map. |
+| `semantic-bundle-review.R` | 936 | Bundle roles, slot fields, and the review prompt — **the role contract's authority**, read by the role-contract guard. |
+| `semantic-bundle-validators.R` | 853 | Deterministic bundle validators, including the role-type veto. |
+| `measurement-decompositions.R` | 849 | Ordered I-ADOPT-style component evidence kept separate from SSSOM mappings. |
+| `github-helpers.R` | 638 | GitHub CSV access + auth setup. |
+| `sdp-methods.R` | 582 | `migrate_sdp_methods()` — the 0.3.0 stop-and-report migration (this file no longer holds a registry read/write/validate trio). |
+| `reproducibility-manifest.R` | 481 | Reproducibility manifest read/write/validate. |
+| `knb-sdp-archive.R` | 479 | Closed, deterministic ZIP of canonical SDP data, metadata, SSSOM, and ordered decomposition artifacts. |
+| `sdp-extension-helpers.R` | 415 | Shared helpers for the SDP extension artifacts. |
+| `llm-review-adapter.R` | 272 | Shared LLM review response contract (validate / response-data / row construction); frozen ~30-col assessment row. |
+| `cli-safety.R` | 103 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`). |
+| `artifact-inference.R` | 101 | `infer_salmon_datapackage_artifacts()` — calls `infer_dictionary(seed_semantics = FALSE)`. |
+| `provenance.R` | 68 | Single owner of the accepted writer set (`metasalmon::` / `metasalmonpy.`) for dual-provenance validation. Backlog #88. |
+| `iri-predicates.R` | 34 | Single owner of the absolute-IRI shape used by four validators. Backlog #85. |
 | `term-deduplication.R`, `nuseds-method-crosswalk.R`, `ices-vocab.R`, `dwc-dp-*.R`, `schema-helpers.R`, `validation_helpers.R`, `version-check.R`, `ontology_fetch.R`, `term_search_smn.R` | — | Supporting subsystems. |
 
 ## Planning artifacts (read before related work)
@@ -407,11 +436,15 @@ Guard: `tests/testthat/test-cli-safety-guard.R`.
 
 ## Gotchas
 
-- `CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md` — `AGENTS.md`
-  self-references, so the project effectively ships **no agent instructions**
-  (and the include is a circular reference). See `knowledge/backlog.md`.
+- ~~`CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md`~~ — **fixed**
+  (backlog #9). `AGENTS.md` now carries the real contract; `CLAUDE.md` is the
+  one-line `@AGENTS.md` include, which is a pointer, not a self-reference.
 - On the `create_sdp` path, `infer_dictionary` is called with
-  `seed_semantics = FALSE` (package-helpers.R:499), so `infer_dictionary`'s own
-  `llm_requested`/arg-assembly/metadata blocks are **dead on that path** and only
-  execute when `infer_dictionary` is called directly — which is why the 0.1.4 fix
-  landed only in package-helpers and a parallel gap remains in dictionary-helpers.
+  `seed_semantics = FALSE` (now `R/artifact-inference.R`, not
+  `package-helpers.R`), so `infer_dictionary`'s own arg-assembly and metadata
+  blocks are **dead on that path** and only execute when `infer_dictionary` is
+  called directly. ~~which is why the 0.1.4 fix landed only in package-helpers
+  and a parallel gap remains in dictionary-helpers~~ — **that gap is closed:**
+  `.ms_llm_review_plan()` runs `.ms_validate_llm_context_files()` and
+  `.ms_warn_if_llm_semantic_options_ignored()` for *both* entry points, so the
+  opt-in contract and the ignored-options warning are single-sourced.

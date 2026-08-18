@@ -57,37 +57,38 @@ indexes are stubs, so the existing 0.1.6 claim is overstated), then
 0.3.0 method-model change from S8 (scheduled here since 2026-08-14, when
 S8's R implementation ran ahead of this stream). The registry
 writer-only-skip at 0.1.8 and the born-NA-safe typed reader are logged
-decisions in the execplan, bumping at each parity milestone — and when the replay reaches the release
-that introduces the remote schema loader, replay it WITH the spec-tag pin
-(metasalmon 2026-08-14): 0.1.6-era Python has no runtime schema fetch, so the
-pin itself has no same-day mirror and rides here instead — rather than
-one big jump — each bump stays a truthful claim and the release order carries
-the same breaking-change story (e.g. 0.2.4's missing-value token) that R users
-already absorbed.
+decisions in the execplan.
+
+Bumping at each parity milestone rather than in one big jump keeps every bump a
+truthful claim and makes the release order carry the same breaking-change story
+(e.g. 0.2.4's missing-value token) that R users already absorbed. When the
+replay reaches the release that introduces the remote schema loader, replay it
+**with** the spec-tag pin (metasalmon 2026-08-14): 0.1.6-era Python has no
+runtime schema fetch, so the pin has no same-day mirror and rides here instead.
 
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.
 
-**Audit addition (2026-08-16) — the statistical-modifier role rides the 0.3.0
-replay, not a same-day mirror.** metasalmon fixed two 0.3.0 role-contract
-leftovers (see its NEWS "Fixed" entry): `inst/extdata/ontology-preferences.csv`
-gained three `statistical_modifier` rows, and the bundle review prompt's
-opening instruction now enumerates the six dictionary slots instead of naming
-the removed `method` slot. **Neither has a mirror to make yet** — metasalmonpy
-was at 0.1.6 when this was written (0.1.8 now, still short of the 0.3.0 rung),
-`statistical_modifier` appears nowhere in its modules, and its
-`data/ontology-preferences.csv` carries the pre-0.3.0 role set (`constraint`,
-`entity`, `method`, `property`, `unit`, `variable`, `wikidata`). This is the
-logged reason for no same-day mirror; the role arrives with the 0.3.0 step of
-the ladder above, and **both surfaces must land in that step** or the Python
-mirror reproduces the exact gap R just closed. When it lands, mirror
-`tests/testthat/test-role-contract-guard.R` too: it is what makes the omission
-loud, and the R-side gap survived CI and PR review without it.
+**The statistical-modifier role is half-mirrored already — check before
+planning it.** metasalmon fixed two 0.3.0 role-contract leftovers (its NEWS
+"Fixed" entry): `inst/extdata/ontology-preferences.csv` gained three
+`statistical_modifier` rows, and the bundle review prompt now enumerates the
+six dictionary slots instead of the removed `method` slot. Of the layers a role
+spans, the **hint emitter already landed** in Python with PR 0 —
+`term_search.py` emits an `is_statistical_modifier` flag, and register row 7
+records Python as *ahead* of R here, since R carries it only inside
+`role_hints`. What is still missing at 0.1.8 is the **ranking-preferences
+rows** — `data/ontology-preferences.csv` carries the pre-0.3.0 role set
+(`constraint`, `entity`, `method`, `property`, `unit`, `variable`, `wikidata`)
+— and the review prompt. Both must land in the 0.3.0 rung, and mirror
+`tests/testthat/test-role-contract-guard.R` with them: a role whose hint layer
+works but whose preference rows are absent ranks with no source preferences at
+all, and nothing fails loudly. That is the R-side gap that survived CI and PR
+review.
 
-**Audit additions (2026-08-13):** `github_io.py:85` still defaults
-`ms_setup_github()` to the private `dfo-pacific-science/qualark-data` repo —
-the exact defect metasalmon fixed as #72 in 0.2.4; mirror that fix. The
-`SALMONPY_CACHE`/`SALMONPY_DEBUG_FETCH` env vars survived the rename —
-decide between renaming with legacy aliases or documenting as-is.
-`github_io.py:54-55` prints an R-syntax remediation message
-(`metasalmon::ms_setup_github()`) from Python.
+**Carried audit item:** the `SALMONPY_CACHE`/`SALMONPY_DEBUG_FETCH` env vars
+survived the rename (`term_search.py`) — decide between renaming with legacy
+aliases or documenting as-is. *(The two items filed beside it on 2026-08-13 are
+done: `ms_setup_github()`'s private `qualark-data` default and the R-syntax
+remediation message were both fixed the same day in `a7999b2`, "mirror
+metasalmon #72 (no default repo)", and shipped in v0.1.7.)*

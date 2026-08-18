@@ -142,8 +142,9 @@ network (`w3id.org`) — don't read a green offline run as full coverage.
 
 - Tidyverse style; native pipe where it reads well. Internal helpers are
   `.ms_`-prefixed and live in topic files under `R/`.
-- Core files are large (`package-helpers.R` ~3k lines, `term_search.R` ~89KB,
-  `llm-semantic-helpers.R`/`semantics-helpers.R` ~1.5k each) — delegate broad
+- Core files are large (`package-helpers.R` ~3.8k lines, `knb-publication.R`
+  ~3.7k, `eml-export.R` ~3.0k, `term_search.R` ~2.8k, `llm-semantic-helpers.R`
+  ~2.2k; counts recounted 2026-08-17) — delegate broad
   reads.
 - On the `create_sdp()` path, `infer_dictionary()` is called with
   `seed_semantics = FALSE`, so its own LLM/option blocks are dead there and only

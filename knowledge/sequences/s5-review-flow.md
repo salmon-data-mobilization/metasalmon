@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S5 — R-native review flow and API hygiene"
-description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as 0.3.0. Backlog items 58, 59, 60, 74."
+description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as the next minor at ship time. Backlog items 58, 59, 60, 74."
 status: draft
 tags: [review, api]
 psc:
@@ -9,7 +9,7 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ships as 0.3.0
+# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ships as the next minor
 
 **Execplan:** [R-native review and editing](../plans/2026-08-11-r-native-review-and-editing.md)
 (#74) · #58/#59/#60 detail in the [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).
@@ -26,8 +26,14 @@ re-runnable.
 the review queue has to read those attributes through a supported accessor. #58
 (condition classes) is breaking for anyone matching on message text and already
 wants a major bump, and #74 adds roughly ten exported functions, which wants the
-same bump. One 0.3.0 story is cheaper than three coordinated releases.
+same bump. One breaking-release story is cheaper than three coordinated
+releases. **That minor is no longer 0.3.0** — S8 took it; S5 ships as whatever
+minor is next when it lands.
 
-Independent of every other stream. Smaller sibling: **#75**, an auto-applied
-`method_iri` with no `metadata/methods.csv` — fixed by the execplan's slice 2.
-**Mirror rule:** the 0.3.0 API lands in metasalmonpy as the same version.
+Independent of every other stream. ~~Smaller sibling: **#75**, an auto-applied
+`method_iri` with no `metadata/methods.csv` — fixed by the execplan's
+slice 2.~~ **#75 no longer belongs to this stream**: sdp-0.3.0 removed the
+dictionary `method_iri` slot and the registry outright, so S8's breaking change
+superseded the defect before S5's slice 2 reached it. Do not carry it as S5
+scope. **Mirror rule:** whatever minor this ships as lands in metasalmonpy at
+the same version.

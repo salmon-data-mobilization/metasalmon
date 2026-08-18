@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "R-native review and editing flow"
-description: "Execplan for the R-native semantic review and editing flow (stream S5), shipping as 0.3.0."
+description: "Execplan for the R-native semantic review and editing flow (stream S5); the 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
 status: draft
 tags: [execplan]
 psc:
@@ -11,8 +11,18 @@ psc:
 
 # R-native semantic review and editing
 
-Created 2026-08-11. Roadmap stream **S5** (ships with 0.3.0). Sequencing lives in
+Created 2026-08-11. Roadmap stream **S5**. Sequencing lives in
 [`knowledge/roadmap.md`](../roadmap.md); this file is the detail.
+
+> **Two premises below were overtaken by S8 — read the rest with them in mind.**
+> **(1) The version is no longer 0.3.0.** S8's method-placement change took
+> that number on 2026-08-15; S5 ships as whatever minor is next at ship time.
+> **(2) #75 is not this plan's to fix.** sdp-0.3.0 removed the dictionary
+> `method_iri` slot and the `metadata/methods.csv` registry outright, so the
+> defect was superseded rather than fixed by the slice-1 suppression reasoned
+> through below. That reasoning is kept because it was correct for the model
+> that then existed, and because "fixed by the slice that was going to fix it"
+> is exactly the marker that goes unverified.
 
 Filed under `knowledge/plans/` rather than the `execplans` skill's default
 `docs/plans/`, because `AGENTS.md` git-ignores `docs/plans/` and this document

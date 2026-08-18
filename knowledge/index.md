@@ -24,7 +24,8 @@ and contains non-Markdown files a bundle cannot hold).
 - [Backlog](backlog.md) — every known defect and improvement, with evidence.
 - [Orientation](orientation.md) — architecture and file→responsibility map.
 - [Method model draft](method-model-draft.md) — the SDP methods/aggregation
-  draft awaiting port to `smn-data-pkg`.
+  design record. **Normative since sdp-0.3.0**: ported to `smn-data-pkg`
+  2026-08-14, so the spec is the authority and this card holds the reasoning.
 
 ## Validation
 

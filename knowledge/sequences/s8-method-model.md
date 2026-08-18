@@ -21,7 +21,8 @@ re-vendor, registry removal + `migrate_sdp_methods()` stop-and-report
 migration, `statistical_modifier_iri`, the logged frozen-contract role swap,
 and the spec-tag remote pin. Remaining S8-adjacent work lives elsewhere by
 design: the metasalmonpy mirror **rides the S10 replay** ("same version" is
-unsatisfiable at 0.1.6 parity, per the logged decision), and the methods
+unsatisfiable while the mirror trails — it was at 0.1.6 when that was decided
+and is at 0.1.8 now, with 0.3.0 the ladder's last rung), and the methods
 vignette is S11 slice 5.
 
 Two coupled items that decide what the SDP *means* before S1 decides what it
@@ -53,13 +54,18 @@ PR #2's registry rather than adapting it.
 the method constant within each table?", which is only sound when a table is a
 coherent observational unit.
 
-**Blocks:** S4's method-annotation teaching. (S9 step 2's smn side is
-already done — its metasalmon remainder now rides *this* stream, so the old
-"S8 blocks S9.2" edge is retired.)
+**Blocked nothing that is still blocked.** This stream shipped, so its edge
+into S4's method-annotation teaching is **discharged** — S4 now has a released
+contract to teach. (S9 step 2's smn side was already done; its metasalmon
+remainder rode *this* stream, so the old "S8 blocks S9.2" edge is likewise
+retired. One piece did not ride it: the `R/nuseds-method-crosswalk.R`
+retarget, still emitting `gcdfo:` — see backlog #76.)
 **Consumes:** S9 step 5 (the statistical-modifier scheme), which is independent of S9
 steps 2–4 precisely so this stream can consume it.
 
-**Breaking.** `method_iri` appears in 13 `R/` files, 14 test files, and 5 schema
-files. Spec version bump with a migration that stops and reports rather than
-guessing. **Mirror rule:** the breaking change lands in metasalmonpy at the
+**Breaking.** The scoping figure was `method_iri` in 13 `R/` files, 14 test
+files and 5 schema files; **after the change it is 5, 11 and 3** — the
+remaining sites are the surviving placements (`tables.csv`, codes, the
+observation component), not the removed dictionary slot. Spec version bump with
+a migration that stops and reports rather than guessing. **Mirror rule:** the breaking change lands in metasalmonpy at the
 same version.

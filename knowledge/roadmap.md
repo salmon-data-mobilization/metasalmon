@@ -89,16 +89,14 @@ approval status.
 
 Ordering that is not optional, independent of who is executing:
 
-- **The gcdfo WebVOWL normalizer fix lands FIRST — before the release, the
-  definition update, and the `docs-widoco` baseline change.** Not a preference:
-  on every branch that lacks it, `scripts/normalize_webvowl_json.py` dies
-  (`Non-unique semantic class key` — three `rdfs:Datatype` nodes share
-  `xsd:gYear`, introduced with the term expansion), the `docs-widoco` recipe has
-  no `set -e`, so **`make ci` prints its success mark and exits 0 over the
-  crash**, and what lands in `docs/webvowl/data/ontology.json` is raw
-  un-normalized WIDOCO output with nondeterministic ids. Regenerating that file
-  on any branch without the fix produces churn that is not reproducible and that
-  the fix will rewrite anyway.
+- **Discharged, kept for the reason it existed:** the gcdfo WebVOWL normalizer
+  fix had to land before the release, the definition update, and the
+  `docs-widoco` baseline change. All three happened in order — gcdfo PR #82
+  (normalizer + `set -e`) then #77 (definition) on 2026-08-16, release 0.0.9 on
+  2026-08-17 — so this constraint no longer orders anything. It ordered them
+  because on any branch lacking the fix `scripts/normalize_webvowl_json.py` died
+  on a non-unique semantic class key and the recipe exited 0 over the crash,
+  leaving raw un-normalized output in the tree.
 - **An `ontology.json` hash is only meaningful as a (pin + normalizer) pair, and
   a hash taken from a broken pipeline is meaningless by construction.** Two
   hashes circulated in this stream as "expected under pin X". `4d350546…` is
@@ -114,10 +112,12 @@ Ordering that is not optional, independent of who is executing:
   force. **The general form: a recorded hash inherits the trustworthiness of
   the pipeline that produced it, and nothing in the hash itself reveals which
   kind it is.**
-- **`docs/webvowl/data/ontology.json` is derived output and is excluded from the
-  CI drift gate**, so nothing catches a hand-edit of it. Editing it by hand is
-  therefore possible, invisible, and wrong — except as a deliberate,
-  explicitly-flagged stopgap that a later regeneration supersedes.
+- **`docs/webvowl/data/ontology.json` is no longer exempt from the CI drift
+  gate** — gcdfo PR #82 removed the `:(exclude)` now that the file is byte-stable
+  across consecutive `make ci` runs, so a hand-edit fails CI. What survives is
+  narrower and local: a failed `make docs-widoco` leaves raw generator bytes in
+  the working tree and the next run adopts them as its own baseline (backlog
+  item 0). CI checks out clean, so it cannot be poisoned that way.
 - **S10's 0.3.0 rung must carry metasalmon's post-0.3.0 fixes**, not just the
   release tree: the statistical-modifier ranking preferences, the corrected
   bundle-review prompt, the dry-run stop parity, and the role-contract guard.
@@ -129,8 +129,9 @@ moment anything merges. Current work-in-flight lives in the owning execplan.
 ## Release index
 
 Compact, hub-maintained. Each repo's own changelog/release page stays
-authoritative; this index coordinates. Refreshed 2026-08-16 against repository
-version sources, remote tags, and the open changes that affect this sequence.
+authoritative; this index coordinates. Refreshed 2026-08-17 against repository
+version sources, remote tags, GitHub/GitLab release objects, and the open
+changes that affect this sequence.
 
 ### metasalmon (R) — current **0.3.0**
 
@@ -187,7 +188,7 @@ keep the historic shape).
 
 | Version | Date | One line |
 |---|---|---|
-| 0.0.9 | 2026-08-16 (tagged `0.0.9`, GitHub Release published — the repo's **first** tag) | The S9 step-3 boundary published as data: a 32-row SSSOM set, four `gcdfo:` object properties **removed**, one class re-namespaced, the WSP Conservation Unit definition ("wild salmon"), the WebVOWL normalizer fix + ADR-007, and `make check-modules` |
+| 0.0.9 | CHANGELOG dates it 2026-08-16; **tagged `0.0.9` and released 2026-08-17** — the repo's **first** tag | The S9 step-3 boundary published as data: a 32-row SSSOM set, four `gcdfo:` object properties **removed**, one class re-namespaced, the WSP Conservation Unit definition ("wild salmon"), the WebVOWL normalizer fix + ADR-007, and `make check-modules` |
 | 0.0.8 | 2026-03-29 | Enhancement-status vocabulary, RemovalReference, abundance data-type classes |
 | 0.0.999 | 2026-01-30 | Pre-1.0 "beta" versioning adopted; JSON-LD docs pipeline |
 | 0.0.2 | 2025-01-07 | Initial structure, SKOS schemes, ROBOT toolchain |
@@ -195,6 +196,15 @@ keep the historic shape).
 **0.0.9 is a breaking release for consumers holding retired IRIs** — four
 object properties are gone and one class moved namespace. `mappings/gcdfo-to-smn.sssom.tsv`
 carries replacement rows so a dataset holding a retired IRI can resolve it.
+
+**`main` has moved past the tag: two merges are unreleased.** PR #83 (deletes
+the dead WebVOWL stabilizer and its orphaned stamp — backlog #81/#84) and PR
+#86 (the **Pacific fishery management area** SKOS vocabulary:
+`gcdfo:PacificFisheryManagementAreaScheme` plus **48** concepts from SOR/2007-77
+Schedule 2, S9 step 7 ruling A1) both merged *after* the 0.0.9 tag. They are on
+`main` and in the CHANGELOG's `[Unreleased]` section, so a consumer pinning the
+tag or the release object sees neither — the same reachable-by-branch,
+unreachable-by-pin state PSC alpha.3 is in below. Cite the commit, not 0.0.9.
 
 **Discrepancies:** the sequence is non-monotonic (0.0.999 predates 0.0.8); the
 CHANGELOG documents that as an abandoned numbering experiment and the version
@@ -282,6 +292,17 @@ The release sequence, all reviewed and CI-green:
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
 
+**`main` carries an unreleased development version.** Post-0.3.0 it has taken
+the statistical-modifier ranking preferences and honest dry-run previews (PR
+#47, merge `6c6acb8`), the single-owner IRI whitespace predicate (backlog #85,
+PR #52), dual-provenance reproducibility-manifest validation (backlog #88, PR
+#58), and S11 slice 2's two vignettes (PR #46). `5a37b11` is the **release**
+baseline for S10's 0.3.0 rung; anything replaying those four fixes needs a
+later commit. Note `DESCRIPTION` is bumped only in the release PR, so `main`
+self-reports `0.3.0` while carrying those unreleased fixes — the same
+cite-the-commit-not-the-tag condition gcdfo and PSC are in above, and it
+applies to this repo too.
+
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
 themselves.
@@ -324,9 +345,10 @@ S10 metasalmonpy parity ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ 
 
 S9 ontology conventions + alignment ── implementation evidence exists, with
                                        different release states: SMN 0.0.3 is
-                                       released; gcdfo PR #78 is merged but
-                                       unreleased; PSC alpha.3 is nested in
-                                       open MR !5 and remains unmerged
+                                       released; gcdfo PR #78 shipped in 0.0.9,
+                                       but #83/#86 sit unreleased on main; PSC
+                                       alpha.3 merged (MR !5, 2026-08-16) and
+                                       is still untagged
 S2 correctness debt          ── independent
 S5 review flow (next minor)  ── independent (#60 → #74 internally)
 S7 architecture + curation   ── independent, largest
@@ -339,28 +361,31 @@ S10 full Python parity through current released R baseline ─────┼─
 META-0 plan alignment (this bundle) ────────────────────────────┘   consumer
 
 NUSED-0 authority + truthful targets or explicit gaps ──► governed NuSEDS product
-governed product + META-1R/PY + PR #39 merge/release + Python replay ──► paired consumer
+governed product + META-1R/PY + Python replay of 0.3.0 ──► paired consumer
 ```
 
 Read that as: S3's only hard blocker shipped in 0.2.5; S2, S5, S7, and S10 run
 in parallel with everything (S10 is dashed into S4 because the workshop's
-Python episodes execute against metasalmonpy). S4 is hard-blocked by S3 and by
-**S8** for its method-annotation content. **S8 comes first among the spec
-streams**: it decides what the SDP means, S1 then makes the validator enforce
-it, and S9 step 2's methods-as-SKOS migration implements the vocabulary half.
+Python episodes execute against metasalmonpy). S4's **S8 blocker is discharged**
+— the method model shipped as 0.3.0, so S4's method-annotation content has a
+released contract to teach and S3 is its only remaining hard blocker. **S8 came
+first among the spec streams**: it decided what the SDP means, S1 then makes the
+validator enforce it, and S9 step 2's methods-as-SKOS migration implemented the
+vocabulary half.
 The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
-released R baseline in Python before new behavior lands in both languages; at
-the presently expected boundary that means through 0.3.0 after PR #39 merges
-and releases, not an SSSOM-only port. The first behavior is verification,
+released R baseline in Python before new behavior lands in both languages; that
+baseline is now **0.3.0, released**, and the replay stands at 0.1.8 with rung 3
+next. The first behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer
 independently verifies and accepts or rejects it, but META-1 only preserves the
 qualified link and does not evaluate that assertion. The later NuSEDS migration
-also waits on source authority, PR #39 merge and release, its Python replay, and
-any shared analytical-term coverage its approved scope requires.
+still waits on source authority, the Python replay of 0.3.0, and any shared
+analytical-term coverage its approved scope requires; the PR #39 merge and
+release half of that gate is satisfied.
 
 ### The streams
 
@@ -368,13 +393,13 @@ any shared analytical-term coverage its approved scope requires.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md)
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
-- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 is taken by S8, which ships first)
+- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8)
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
-- [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · #76, #77
-- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · gcdfo #67-#75 (nine SPSR holds = four decisions, step 7)
+- [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
+- [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
 - [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
-- [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79
+- [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 
 ### Continuous
 
@@ -410,7 +435,7 @@ sequence from them.
 
 ---
 
-## Two process notes worth keeping
+## Process notes worth keeping
 
 **A green suite was not the signal it looked like.** Three 0.2.0 findings were
 invisible to 21k lines of tests because the suite pinned the vendored schema,
