@@ -119,3 +119,78 @@ component_test_rows <- function() {
   )
 }
 
+
+# A minimal package whose observation *dimension* is declared `datetime`.
+# Since 0.2.0 the validator reads resources through `read_salmon_datapackage()`,
+# so this column arrives as a POSIXct rather than as CSV text.
+make_datetime_dimension_sdp <- function(path) {
+  data <- tibble::tibble(
+    stock_id = c("fraser", "fraser", "fraser"),
+    observed_at = c(
+      "2024-01-31T10:00:00Z",
+      "2024-02-01T10:00:00Z",
+      "2024-02-01T10:00:00Z"
+    ),
+    total_spawners = c(100, 120, 120)
+  )
+  dictionary <- tibble::tribble(
+    ~dataset_id, ~table_id, ~column_name, ~column_label, ~column_description,
+    ~column_role, ~value_type, ~unit_label, ~unit_iri, ~term_iri, ~term_type,
+    ~required, ~property_iri, ~entity_iri, ~constraint_iri,
+    "datetime-test", "counts", "stock_id", "Stock", "Stock identifier",
+    "identifier", "string", NA_character_, NA_character_, NA_character_,
+    NA_character_, TRUE, NA_character_, NA_character_, NA_character_,
+    "datetime-test", "counts", "observed_at", "Observed at",
+    "Instant the count was made", "temporal", "datetime", NA_character_,
+    NA_character_, NA_character_, NA_character_, TRUE, NA_character_,
+    NA_character_, NA_character_,
+    "datetime-test", "counts", "total_spawners", "Total spawners",
+    "Estimated total spawners", "measurement", "number", "individual",
+    "http://qudt.org/vocab/unit/INDIV", "https://example.org/variables/spawners",
+    "owl_class", TRUE, "https://w3id.org/smn/Abundance",
+    "https://w3id.org/smn/Stock", NA_character_
+  )
+  write_salmon_datapackage(
+    resources = list(counts = data),
+    dataset_meta = tibble::tibble(
+      dataset_id = "datetime-test",
+      title = "Datetime dimension test",
+      description = "A datetime-typed observation dimension"
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "datetime-test",
+      table_id = "counts",
+      file_name = "data/counts.csv",
+      table_label = "Counts",
+      description = "Spawner counts at an instant"
+    ),
+    dict = dictionary,
+    path = path,
+    overwrite = TRUE
+  )
+  invisible(path)
+}
+
+datetime_structure_rows <- function() {
+  tibble::tibble(
+    dataset_id = "datetime-test",
+    table_id = "counts",
+    observation_structure_id = "spawners_by_instant",
+    structure_label = "Spawners by instant",
+    structure_description = "One total-spawner observation per stock and instant."
+  )
+}
+
+datetime_component_rows <- function() {
+  tibble::tribble(
+    ~dataset_id, ~table_id, ~observation_structure_id, ~component_order,
+    ~column_name, ~component_role, ~component_relation_iri,
+    ~required_when_observed,
+    "datetime-test", "counts", "spawners_by_instant", 1L, "stock_id",
+    "dimension", NA_character_, TRUE,
+    "datetime-test", "counts", "spawners_by_instant", 2L, "observed_at",
+    "dimension", NA_character_, TRUE,
+    "datetime-test", "counts", "spawners_by_instant", 3L, "total_spawners",
+    "measure", NA_character_, TRUE
+  )
+}

@@ -354,9 +354,63 @@
   invisible(TRUE)
 }
 
+# Lexical form for an already-typed column.
+#
+# Since 0.2.0 `.ms_sdp_observation_validate_data()` reads resources through
+# `read_salmon_datapackage()`, which types each column from the dictionary, so
+# these normalizers no longer receive raw CSV text. `as.character()` on the
+# typed vectors is not the identity: `as.character()` of a POSIXct is
+# `"2024-01-31 10:00:00"` — a space, no `T`, no zone — which the ISO-8601
+# pattern below can never match, so every datetime-typed observation dimension
+# was rejected. Format the temporal classes in the canonical lexical form the
+# validators expect instead; character input is untouched, so genuinely
+# malformed text still fails its pattern.
+#
+# This helper is retired when `value_type` stops having temporal members, or
+# when the validators stop comparing typed columns against lexical patterns.
+.ms_sdp_observation_typed_character <- function(values) {
+  if (inherits(values, "POSIXt")) {
+    text <- format(values, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    text[is.na(values)] <- NA_character_
+    return(text)
+  }
+  if (inherits(values, "Date")) {
+    text <- format(values, "%Y-%m-%d")
+    text[is.na(values)] <- NA_character_
+    return(text)
+  }
+  as.character(values)
+}
+
+# Parse an ISO-8601 instant of the exact shape the validators accept.
+#
+# `as.POSIXct()` has no ISO-8601 entry in its default format list: given
+# `"2024-01-31T10:00:00Z"` it falls through to `"%Y-%m-%d"`, silently returning
+# midnight and discarding the time of day. Two distinct instants on one date
+# then produce one grain key, so a genuine invariance violation goes unreported
+# and a legitimate sub-daily series looks self-contradictory. Parse the
+# already-validated shape explicitly and fold the zone offset into UTC.
+#
+# This helper is retired when base R gains a default ISO-8601 datetime format,
+# or when the validators stop round-tripping instants through text.
+.ms_sdp_observation_parse_iso_datetime <- function(text) {
+  stamp <- substr(text, 1L, 19L)
+  zone <- substring(text, 20L)
+  parsed <- as.POSIXct(stamp, tz = "UTC", format = "%Y-%m-%dT%H:%M:%S")
+  offset <- rep(0, length(text))
+  shifted <- which(!is.na(zone) & nzchar(zone) & zone != "Z")
+  if (length(shifted) > 0L) {
+    direction <- ifelse(substr(zone[shifted], 1L, 1L) == "-", -1, 1)
+    hours <- suppressWarnings(as.integer(substr(zone[shifted], 2L, 3L)))
+    minutes <- suppressWarnings(as.integer(substr(zone[shifted], 5L, 6L)))
+    offset[shifted] <- direction * (hours * 3600 + minutes * 60)
+  }
+  parsed - offset
+}
+
 .ms_sdp_observation_normalize_typed_values <- function(values, value_type,
                                                        column_name) {
-  text <- as.character(values)
+  text <- .ms_sdp_observation_typed_character(values)
   blank <- .ms_sdp_extension_is_blank(text)
   normalized <- text
   normalized[blank] <- ""
@@ -415,7 +469,9 @@
       text[present],
       perl = TRUE
     )
-    parsed <- suppressWarnings(as.POSIXct(text[present], tz = "UTC"))
+    parsed <- suppressWarnings(
+      .ms_sdp_observation_parse_iso_datetime(text[present])
+    )
     if (any(!valid) || any(is.na(parsed))) {
       fail_type()
     }
@@ -466,7 +522,7 @@
     return(parsed)
   }
   if (identical(value_type, "datetime")) {
-    parsed <- as.POSIXct(normalized, tz = "UTC")
+    parsed <- .ms_sdp_observation_parse_iso_datetime(normalized)
     parsed[blank] <- as.POSIXct(NA, tz = "UTC")
     return(parsed)
   }
@@ -516,7 +572,12 @@
       }
     }
 
-    observed_values <- unique(as.character(data[[column]][observed_rows]))
+    # Typed lexical form, for the same reason the normalizers use it: the
+    # column arrives typed from `read_salmon_datapackage()` and is compared
+    # against the character text in `metadata/codes.csv`.
+    observed_values <- unique(
+      .ms_sdp_observation_typed_character(data[[column]][observed_rows])
+    )
     observed_values <- observed_values[
       !.ms_sdp_extension_is_blank(observed_values)
     ]
