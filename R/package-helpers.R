@@ -242,7 +242,16 @@ write_salmon_datapackage <- function(
     }
     if (!is.na(table_info$primary_key[1]) && table_info$primary_key[1] != "") {
       primary_key <- trimws(unlist(strsplit(table_info$primary_key[1], ",")))
-      resource_entry$schema$primaryKey <- if (length(primary_key) == 1) primary_key else primary_key
+      # A one-column key is a JSON string, a composite key a JSON array —
+      # `auto_unbox = TRUE` in the `write_json()` call below does the unboxing.
+      # This is not incidental: smn-data-pkg's strict publication validator
+      # derives the expected value with `descriptor_primary_key()`, which
+      # returns `parts[0]` for a single column, and reports
+      # "primaryKey must be 'pop_id'; found ['pop_id']" for the array form.
+      # Frictionless v1, which SDP targets via its top-level `profile` key,
+      # permits either shape, so only the SDP validator settles it. Wrapping
+      # this in `I()` to force an array would break publication.
+      resource_entry$schema$primaryKey <- primary_key
     }
 
     resource_list[[length(resource_list) + 1]] <- resource_entry
