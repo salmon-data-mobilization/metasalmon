@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "S10 metasalmonpy parity replay 0.1.6 → 0.3.0"
-description: "ExecPlan for the nine-PR release-by-release replay bringing the Python mirror from its 0.1.6 parity claim to metasalmon 0.3.0, with the registry writer-skip and pandas-NA decisions logged."
+description: "ExecPlan bringing the Python mirror from its 0.1.6 parity claim to metasalmon 0.3.0 — rungs 0-3 replayed release-by-release, the remainder ported by subsystem after the replay was found to be building things metasalmon had already removed."
 status: draft
 tags: [execplan, s10, parity, metasalmonpy]
 psc:
@@ -38,7 +38,15 @@ section and the R files it names — R is the complete spec for every port.
 | **Extras: `eml = ["lxml>=5,<7"]`, `knb = ["metasalmonpy[eml]"]`; core stays pandas+requests** | Mirrors R's Suggests-with-runtime-guard pattern (`emld`/`dataone`/`datapack`); lazy imports raise actionable install messages |
 | **EML/ORE parity tests assert structural equivalence (`ET.canonicalize`), never bytes** | Python cannot match libxml2's formatter byte-for-byte; consistent with the existing contract-level archive ruling |
 
-## The nine-PR ladder
+### Replan: rungs 4–8 become a subsystem port (Brett, 2026-08-17)
+
+| Decision | Rationale | Date |
+|---|---|---|
+| **Stop replaying releases after rung 3. Port the remainder by subsystem against the `v0.3.0` tag, and bump straight to 0.3.0** | The replay was implementing behaviour metasalmon had already deleted — rung 2 built a reader for a registry sdp-0.3.0 removes, and rung 1 shipped a decomposition component annotated "it dies at 0.3.0". The replay's real value is *differential verification*, which needs chunking but not *chronological* chunking; per-subsystem chunks against `v0.3.0` give the same reviewability without the dead work. The version contract permits the jump: it requires the claimed number to be true, not that every number be visited. **Reverses if** a consumer appears pinned to an intermediate metasalmonpy version, or a defect is traced to something only an era-by-era replay would have caught | 2026-08-17 |
+| **The breaking change moves from last to first.** 0.3.0's dictionary-contract flip was rung 8 because it is atomic; that ordering meant every earlier rung built on a shape it replaces. Chunk A lands it first | Nothing built after A sits on a superseded shape. This inversion is what the replan buys | 2026-08-17 |
+| **Legacy *read* support is kept and is not a reason to replay.** Python receives SDPs written by metasalmon 0.2.x carrying a methods registry, and 0.1.8-era EML quotes procedures from one | Real data-compatibility need, already satisfied at rung 2; it is a feature of the 0.3.0 port, not an argument for implementing 0.2.x in order | 2026-08-17 |
+
+## The ladder — rungs 0–3 replayed, the remainder ported by subsystem
 
 Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
 `__init__.py` — scripted, they drift; CHANGELOG entry; tag; GitHub release).
@@ -67,49 +75,85 @@ Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
    survival, datetime/date inference (public API in Python — behaviour
    change), symlink refusal, capture-time redaction. Two tagged bump
    commits inside one PR keep the number line intact.
-4. **0.2.2 + 0.2.3 (collapse optional)** — index session caching, call-time
-   env read (`SALMONPY_CACHE` is read at import today — the exact bug class
-   R 0.2.2 fixed; also decide the `SALMONPY_`→`METASALMONPY_` prefix rename
-   here and log it), http-error diagnostics, no-cache-on-degraded; KNB
-   dry-run overwrite, retry/`Retry-After`, BioPortal header auth. Split if
-   the KNB overwrite work runs heavy.
-5. **0.2.4 standalone, never collapsed** — the missing-value contract
-   (single NA helper, read/write sweep, literal-"NA" round-trip guard).
-   Bytes-on-disk; wants an undiluted diff. `ms_setup_github` already landed
-   drift-ahead — verify tests only.
-6. **0.2.5** — structural `*_token` redaction; assert exactly one redactor.
-7. **0.2.6** — primary-key uniqueness/NA errors, value-like-name warnings
-   (thresholds exact; the message points at `melt`), placeholder surfacing.
-8. **0.3.0 standalone, atomic** — dictionary contract flip (including the
-   bundled template header: Python's template is well-formed but still ends
-   `method_iri`), registry removal + migration-pointing errors,
-   `migrate_sdp_methods` with the full hardened stop taxonomy, every one of
-   which must fire in the dry run as well as the real run, semantic
-   retarget, EML placements + review-closure gating + return shape,
-   default/strict placement IRI checks, pin flip to `sdp-0.3.0`. Port the R
-   fixtures from the merged release tree (`5a37b11`) as pytest first —
-   **but refresh that pin before the port starts.** `5a37b11` predates the
-   role-contract and dry-run fixes on `fix/role-contract-leftovers`, so
-   replaying it literally reproduces the pre-fix suite: no dry-run regression
-   test for the undeclared-table stop, no static role-contract guard, and the
-   REVIEW-only fixture still reaching around
-   `add_legacy_dictionary_methods()`. Re-pin to that branch's merge commit,
-   which does not exist yet. A pin naming a tree older than the fixes it is
-   meant to carry is how the gap above survives into Python.
 
-   **The rung's scope is defined by behaviour, not by a commit hash**, so it
-   survives a stale pin. The 0.3.0 rung MUST carry, in addition to the release
-   tree: three `statistical_modifier` rows in the ranking-preferences data
-   (the role otherwise ranks with no source preferences at all); the bundle
-   review prompt naming `statistical_modifier` rather than the removed
-   dictionary `method` slot; every migration stop firing in the dry run; and
-   a static role-contract guard covering all six surfaces a role touches.
-   Python's own preference data still carries the pre-0.3.0 role set, so the
-   first three are net-new work there, not a copy. If the pin and this list
-   ever disagree, this list wins — it is the reason the pin exists.
+### Rungs 4–8 superseded — the remainder is a subsystem port to 0.3.0
 
-Hard ordering: 0 → 1 → 2 → 3 (loader needs the host fix; typed reader
-precedes the NA tightening) → … → 5 before any adoption push → 8 last.
+**Superseded 2026-08-17 (Brett).** Rungs 4–8 replayed 0.2.2, 0.2.3, 0.2.4,
+0.2.5, 0.2.6 and 0.3.0 in order. They are replaced by a single port organised
+by **subsystem**, verified against the **`v0.3.0` tag**, taking the version
+straight from rung 3's number to **0.3.0**.
+
+**Why.** The replay was building things metasalmon had already removed. Rung 2
+implemented read/validate for `metadata/methods.csv`, a registry sdp-0.3.0
+deletes from the spec — its writer was skipped with a note saying it "would be
+written only to be deleted in the same catch-up stream." Rung 1 shipped the
+transitional `method` decomposition component annotated "it dies at 0.3.0." The
+ladder had already been collapsed once for this reason (rung 3 merged 0.2.0 and
+0.2.1 "to avoid building an interim shape only to rewrite it"), so the
+rung-per-release granularity was never load-bearing; it had simply never been
+re-examined whole.
+
+**What the replay was actually buying, and why chronology is not required for
+it.** Its value is *differential verification* — running both implementations
+over the same inputs caught about a dozen divergences at 0.1.7 and more at
+0.1.8, which reading R source had missed. That value comes from **chunking**,
+not from *chronological* chunking. Chunking per subsystem against `v0.3.0`
+gives the same reviewability, and a divergence in behaviour that 0.3.0 deleted
+is not a divergence worth finding.
+
+**The version contract permits the jump.** `AGENTS.md` says the version *is a
+parity claim*, bumped when the mirrored behaviour lands. It does not require
+visiting intermediate numbers — it requires that whatever number is claimed is
+true.
+
+**What is genuinely kept from the chronology.** Python receives SDPs *written
+by* metasalmon 0.2.x that carry a methods registry, and 0.1.8-era EML documents
+quote procedures out of one. Legacy **read** support is therefore real — but it
+is a data-compatibility feature of the 0.3.0 port, already landed at rung 2, not
+a reason to implement 0.2.x releases in order.
+
+**What this gives up:** the ability to say metasalmonpy was verified at each
+historical point. No consumer needs it; see the rung-2 decision recording that
+no Python user ever existed at that parity level. **The risk it takes on** is a
+larger diff with fewer checkpoints, mitigated by per-subsystem differential
+verification rather than per-release.
+
+**What would reverse this decision:** a consumer appearing that is pinned to an
+intermediate metasalmonpy version, or a defect traced to a behaviour that only
+an era-by-era replay would have caught.
+
+### The subsystem chunks
+
+**A must land first**, and that inversion is the point of the re-plan: 0.3.0's
+breaking change was rung 8 precisely because it is atomic, which meant
+everything before it was built on a shape it replaces. Doing it first means
+nothing after is.
+
+| # | Subsystem | Scope |
+|---|---|---|
+| **A** | **Spec conformance and the dictionary contract** *(breaking; first)* | Methods leave `column_dictionary`; `statistical_modifier_iri` replaces `method_iri`; registry removal with errors that point at migration; `migrate_sdp_methods` with the full hardened stop taxonomy, **every stop firing in the dry run as well as the real run**; the three placements (`tables.csv$method_iri`, `protocol_iri`/`protocol_citation`, `codes.csv$term_iri`); default and strict placement-IRI checks; pin flip to `sdp-0.3.0`; the bundled template header, which in Python is well-formed but still ends `method_iri` |
+| **B** | **Semantic pipeline retarget** *(after A)* | Semantic retarget to `statistical_modifier`; **three `statistical_modifier` rows in the ranking-preferences data** — net-new in Python, whose preference data still carries the pre-0.3.0 role set; the bundle-review prompt naming `statistical_modifier` rather than the removed dictionary `method` slot; a static role-contract guard covering **all six** surfaces a role touches |
+| **C** | **Missing-value contract** *(standalone, never diluted)* | Single NA helper, read/write sweep, literal-`"NA"` round-trip guard. Bytes on disk — it wants an undiluted diff |
+| **D** | **Validation hardening** | Primary-key uniqueness and NA errors, value-like-name warnings (thresholds exact; the message points at `melt`), placeholder surfacing |
+| **E** | **Cache, environment and network robustness** | Index session caching; **call-time env read** (`SALMONPY_CACHE` is read at import today — the exact bug class R 0.2.2 fixed); the `SALMONPY_`→`METASALMONPY_` prefix rename, decided and logged here; http-error diagnostics; no-cache-on-degraded; KNB dry-run overwrite; retry and `Retry-After`; BioPortal header auth |
+| **F** | **Redaction** | Structural `*_token` redaction; assert exactly **one** redactor |
+| **G** | **Legacy read compatibility** *(verify, do not rebuild)* | Reading 0.2.x-written packages that carry a methods registry, and 0.1.8-era EML quoting procedures from one. Landed at rung 2 — confirm it survives A |
+
+Ordering: **A → B**, C standalone and undiluted, D/E/F independent of each
+other, G verified after A. One version bump to **0.3.0** at the end, not one per
+chunk.
+
+**Verification changes with the plan.** Differential runs go against the
+**`v0.3.0` tag** (annotated, so `git archive v0.3.0 | tar -x` is exact), not
+against era tags. A byte-equality claim measured at or after R 0.2.0 needs no
+locale caveat — R adopted C collation at 0.2.0 — while anything measured
+against ≤0.1.8 does. Say which was used.
+
+**The behaviour-defined scope survives unchanged.** Chunks A and B MUST carry
+metasalmon's post-0.3.0 fixes, not just the release tree: the three
+`statistical_modifier` ranking rows, the corrected bundle-review prompt, the
+dry-run stop parity, and the six-surface role-contract guard. If a pin and that
+list ever disagree, the list wins — it is the reason the pin exists.
 
 ## 0.1.7 progress (2026-08-16)
 
