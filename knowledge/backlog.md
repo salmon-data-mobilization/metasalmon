@@ -1071,6 +1071,24 @@ from `git ls-tree origin/main`. The retirement condition is met. **Not yet
 released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
 gets both files.
 
+**#89 smn's flat-TTL generator was nondeterministic, and nothing would have
+caught it.** Merging triples without binding the source prefixes left rdflib to
+number predicate namespaces `ns1:`/`ns2:`/… in **hash-randomized** order. Eight
+runs on `main` produced one hash; eight runs on a branch that used `smn:` and
+`dwc:` in *predicate* position for the first time produced **four distinct
+hashes**. `verify-flat-ttl` would have failed in CI with no source change behind
+it — a flake with a real cause, which is the worst kind to debug. Found and
+fixed while reworking smn PR #27; the fix also stopped smn's own namespace
+rendering as `ns3:` in its own published `docs/smn.ttl`.
+
+*Why it stayed hidden:* the defect only manifests when a term from a bound
+prefix appears as a **predicate**, and until that PR every smn predicate came
+from an imported vocabulary. A determinism guard that only exercises the current
+shape passes right up until the shape changes. This is the **third** ordering
+defect in a sibling repo with no equivalent of metasalmon's C-collation
+contract — see #82 for the second. *Retires when:* smn carries a determinism
+rule of its own, or the hub adopts one that spans the ontology repos.
+
 **#82 gcdfo's WSP review-artifact generator is nondeterministic.**
 `scripts/generate_wsp_composite_escapement_review_artifacts.py` produced three
 different `.graphml` files in three consecutive runs on unchanged input —
