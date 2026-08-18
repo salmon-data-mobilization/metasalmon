@@ -2040,8 +2040,8 @@ sources_for_role <- function(role) {
 .ranking_profile_defaults <- function() {
   list(
     base_source_weight = c(
-      smn = 1.0,
-      gcdfo = 0.9,
+      smn = 1.2,
+      gcdfo = 1.0,
       ols = 0.3,
       nvs = 0.6,
       zooma = 0.5,
@@ -2050,13 +2050,24 @@ sources_for_role <- function(role) {
       gbif = 0.6,
       worms = 0.6
     ),
+    # `gcdfo` is the DFO fallback behind the shared `smn` namespace, which is
+    # what ontology-preferences.csv declares (smn priority 1, gcdfo 2 where it
+    # is listed at all). Keep gcdfo at a flat 1.0: earlier per-role boosts of
+    # 1.3 put it within 0.5 of smn, and routine per-candidate bonuses -- label
+    # overlap plus cross-source agreement reach 0.6 on their own -- then
+    # overturned the source preference entirely. See
+    # tests/testthat/test-smn-outranks-gcdfo.R.
     role_boost = list(
       unit = c(qudt = 1.5, nvs = 1.2, ols = 0.3),
-      property = c(smn = 1.6, gcdfo = 1.0, nvs = 1.0, ols = 0.5, zooma = 0.4),
-      variable = c(smn = 1.7, gcdfo = 1.3, nvs = 1.0, ols = 0.4, zooma = 0.4),
-      entity = c(smn = 1.7, gcdfo = 1.3, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
-      constraint = c(smn = 1.4, gcdfo = 1.0, ols = 0.5),
-      method = c(smn = 1.7, gcdfo = 1.3, bioportal = 0.4, ols = 0.5, zooma = 0.4)
+      property = c(smn = 1.4, gcdfo = 1.0, nvs = 1.0, ols = 0.5, zooma = 0.4),
+      variable = c(smn = 1.5, gcdfo = 1.0, nvs = 1.0, ols = 0.4, zooma = 0.4),
+      entity = c(smn = 1.5, gcdfo = 1.0, gbif = 1.3, worms = 1.3, bioportal = 0.4, ols = 0.4),
+      constraint = c(smn = 1.3, gcdfo = 1.0, ols = 0.5),
+      method = c(smn = 1.3, gcdfo = 1.0, bioportal = 0.4, ols = 0.5, zooma = 0.4),
+      # sources_for_role() serves this role from smn and ols only, so there is
+      # no gcdfo entry to give it. Without the row the role reached ranking on
+      # base weight alone -- the sixth surface of the role contract.
+      statistical_modifier = c(smn = 1.5, ols = 0.4)
     ),
     ontology_preferences = list(
       host_bonus = 0.8,

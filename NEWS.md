@@ -29,6 +29,40 @@ metasalmon (development version)
 
 ### Fixed
 
+* **Semantic ranking now puts `smn` above `gcdfo`, which is what the ontology
+  preferences always said it did.** (Brett, 2026-08-17.) `smn` is the shared,
+  reviewed salmon namespace and `gcdfo` is the DFO fallback:
+  `inst/extdata/ontology-preferences.csv` ranks `smn` priority 1 and `gcdfo` 2
+  where it lists `gcdfo` at all, and omits it entirely for `variable`,
+  `property`, `constraint` and `statistical_modifier`. But
+  `.ranking_profile_defaults()` disagreed with that file. Its `role_boost` gave
+  `gcdfo` **1.3** against `smn`'s 1.7 for `variable`, `entity` and `method`, and
+  the base weights added only 0.1 more, so the entire preference came to a
+  **0.5** margin — while the routine per-candidate bonuses any candidate can
+  earn reach **0.6** on their own (0.2 label overlap plus 0.4 cross-source label
+  agreement across three sources). A `gcdfo` term that merely matched the query
+  text therefore outranked the reviewed `smn` term, and the preference was
+  decided by whichever candidate happened to collect bonuses rather than by the
+  declared source authority. `gcdfo` is now a flat **1.0** in every role and the
+  base weights are `smn` 1.2 / `gcdfo` 1.0, restoring a margin of 0.5–0.7 that
+  the bonus stack does not overturn. **This changes ranking order**: where an
+  `smn` and a `gcdfo` candidate previously came back with `gcdfo` first, `smn`
+  now leads, and `suggest_semantics()` / `infer_dictionary()` top-1 picks can
+  change accordingly. The measured differential against metasalmonpy — six
+  tie-heavy candidates under four input permutations — now returns the same
+  order *and the same scores* on both sides (`smn` 2.75, `gcdfo` 2.65); the
+  ordering half of `knowledge/parity-deviations.md` row 32 was an R defect, not
+  a Python gap. Pinned by `tests/testthat/test-smn-outranks-gcdfo.R`.
+
+* **`statistical_modifier` reached ranking with no source preference at all.**
+  The role has had `inst/extdata/ontology-preferences.csv` rows since 0.3.0
+  (`smn` priority 1, then I-ADOPT and STATO) and `sources_for_role()` serves it
+  from `smn` and `ols`, but `.ranking_profile_defaults()$role_boost` had no
+  `statistical_modifier` entry, so the role was scored on base weight alone —
+  the sixth surface of the role contract, silently absent exactly as
+  `AGENTS.md` warns. It now carries `smn = 1.5, ols = 0.4`, and a new guard
+  fails if any role with ranking preferences lacks a `role_boost` entry.
+
 * **SDP-extension IRI validation no longer accepts Unicode whitespace, and one
   predicate now owns the check.** `.ms_sdp_extension_is_absolute_iri()` — the
   validator behind observation structures, KNB publication and reproducibility
