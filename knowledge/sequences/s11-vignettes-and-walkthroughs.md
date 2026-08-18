@@ -16,7 +16,16 @@ below with file:line citations verified at audit time). Standing rule: the
 **mirror contract applies to docs** — metasalmonpy guides update in lockstep
 with the vignettes that cover the same workflow.
 
+**Status: slices 1 and 2 have landed** (PR #46, `ac6b722`, plus the 0.3.0
+staleness sweep) — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd`
+exist and the audit's code defects, framing, and coverage gaps below are fixed.
+Slices 3–5 remain.
+
 ## Audit verdicts (2026-08-13; metasalmon 0.2.6, metasalmonpy 0.1.6)
+
+**A dated record, largely discharged — do not read these as current defects.**
+Everything below was true at 0.2.6/0.1.6; slices 1–2 fixed most of it. Three
+entries need correcting where they would now mislead, flagged inline.
 
 No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
 
@@ -47,10 +56,12 @@ No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
   `guides/parity.qmd` never states what is *absent* (EML, KNB, SSSOM,
   decompositions) — the one guide whose job that is;
   `guides/github-access.qmd` has no runnable example (every example targets
-  a private DFO repo) and `github_io.py:85` still defaults to it — the
-  exact defect R fixed as #72 (logged on the S10 card).
+  a private DFO repo). *(Corrected: the `github_io.py` private default is
+  **fixed** — mirrored as metasalmonpy `a7999b2`, shipped in v0.1.7.)*
 - **Untaught API:** 27 of metasalmon's 54 exports appear in no vignette,
   including the whole `write_sdp_methods()`/`validate_sdp_methods()` family.
+  *(Corrected: that family no longer exists — 0.3.0 removed it — and the
+  export count is now 53. The 27 figure has not been recounted since.)*
 
 ## Slices, in order
 
@@ -69,12 +80,18 @@ No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
    index) into a dedicated end-to-end vignette: eml-mapping, dry-run
    manifest, staging rehearsal (S3), live deposit, DOI. `setup.Rmd`'s
    DataONE JWT section links to it.
-4. **R semantic-review workflow vignette (with S5 / 0.3.0):** the R twin of
+4. **R semantic-review workflow vignette (ships with S5, whatever minor S5
+   lands as — 0.3.0 was taken by S8):** the R twin of
    metasalmonpy's `guides/semantic-review.qmd`, covering the new
    `review_semantics()` flow and `chat_decomposition()`.
 5. **Methods and protocol annotation vignette (after S8 lands in code):**
    the three placements + `statistical_modifier_iri`; glossaries in both
-   packages updated in the same release.
+   packages updated in the same release. **Re-scope before starting** — slice
+   2's `migrating-to-sdp-0-3-0.Rmd` already teaches the three placements and
+   the new slot, and the R glossary is updated (five I-ADOPT components, the
+   "document methods in your column descriptions" line gone). What is left is
+   the Python glossary and whatever annotation guidance the migration framing
+   does not cover.
 
 **Continuous:** when a release changes observable behaviour, the release
 checklist includes "which vignette teaches this?" — untaught exports need a
