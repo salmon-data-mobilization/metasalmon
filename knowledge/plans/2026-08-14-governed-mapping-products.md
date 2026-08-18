@@ -133,6 +133,20 @@ crosswalk now.
   do not add members. External repositories appear only in the roadmap's typed
   dependency ledger; their owning plans retain tasks, status, branches,
   approvals, and release history.
+- **2026-08-17 — The allowlist is seven, not six (Brett).**
+  `salmon-knowledge-commons` joined as a member node. This supersedes the count
+  in the entry above and every present-tense "six repositories" statement
+  elsewhere in this dated execplan; the 2026-08-15 text is left standing
+  because it records what was decided then, and rewriting it would make this
+  plan a worse record without making it a better one. The live count is in
+  `knowledge/domains/salmon-data-ecosystem.md` and the roadmap's domain-
+  allowlist rule — read those, not this plan, for membership. The reasoning is
+  the part that generalizes: the commons is a member because its ontology gap
+  register feeds this package's own term-request pipeline, so it is upstream
+  work this hub sequences rather than an artifact this hub consumes. Shared
+  ownership of a GitHub organization was **not** the reason and does not confer
+  membership. Nothing else in META-0 changes: the allowlist mechanism, the
+  typed external-edge ledger, and the authority boundaries all hold as written.
 - **2026-08-15 — Resolve PID-1 with readable product slugs.** Stable mapping-
   product identifiers use readable slugs below `/mappings/`; versions remain
   immutable and separately identifiable. These identify datasets, not PSC

@@ -9,8 +9,9 @@ file→responsibility map). This file is the short, must-know contract;
 
 **This repo is also the coordinating hub** for the salmon data ecosystem
 (metasalmonpy, `smn-data-pkg`, `salmon-domain-ontology`, `dfo-salmon-ontology`,
-`psc-salmon-vocabularies`): sequencing, execplans, and the cross-repo release
-index live in the `knowledge/` OKF bundle, starting at `knowledge/roadmap.md`.
+`psc-salmon-vocabularies`, `salmon-knowledge-commons`): sequencing, execplans,
+and the cross-repo release index live in the `knowledge/` OKF bundle, starting
+at `knowledge/roadmap.md`.
 
 ## Non-negotiable contracts (do not break without a logged decision)
 

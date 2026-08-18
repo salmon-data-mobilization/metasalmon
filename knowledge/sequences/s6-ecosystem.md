@@ -79,7 +79,7 @@ in their semantic-asset repository. This hub coordinates consumers and release
 pins only. Brett HQ remains the program activation authority, and neither this
 card nor a passing validator confers scientific approval.
 
-The six repositories in the ecosystem domain card are an allowlist. The
+The seven repositories in the ecosystem domain card are an allowlist. The
 [roadmap's external dependency ledger](../roadmap.md#cross-program-authority-boundary)
 is the only hub record for `psc-data-systems`, `psc-data-systems-site`,
 `campModelInput`, and `ctc-knowledge-map`: shared tooling, documentation links,
