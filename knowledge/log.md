@@ -1,5 +1,55 @@
 # Bundle log
 
+## 2026-08-18
+
+- Currency pass across the bundle plus a sweep to give every known open
+  question a recorded home. Verified against the repositories themselves, not
+  against a summary — which mattered: two claims handed to this pass were
+  wrong in detail and are recorded here in corrected form.
+
+- **What the mirror contract's amendment changed.** Brett's 2026-08-17 ruling
+  — *"don't just make things match metasalmon; if the Python implementation got
+  it right, then update metasalmon"* — existed only inside a parity-register
+  row's prose. It is a **contract** change, so it now sits in `AGENTS.md`, the
+  roadmap's mirror rule, the hub-coordination context, and the S10 card. The
+  distinction it draws is between *what must be the same* and *which side is
+  correct*; those were being read as one rule.
+
+- **A guard claimed more coverage than it had.** `AGENTS.md` said
+  `test-role-contract-guard.R` "checks every layer" of the role contract. It
+  checks six; `role_boost` — the seventh, named only the day before — is
+  guarded in `test-smn-outranks-gcdfo.R`, and the role-contract guard does not
+  mention it. True when written, false the moment the seventh surface was
+  added without moving its check. This is the failure the guard-expiry
+  contract on the same page exists to prevent, committed on the same page.
+
+- **Two "facts" this pass was given did not survive checking**, and both would
+  have been written into the bundle unexamined. The Python
+  `validate_salmon_datapackage()` divergence is *not* "Python raises where R
+  accumulates" — R accumulates **and then aborts**, so its returned issue
+  tibble is only ever reachable empty; the real difference is that one R call
+  reports every problem typed while Python reports the first, untyped. And
+  smn PR #27's own body annotates gcdfo **#74 as "(species)"** when #74 is
+  *River Type Life History* — the PR mints the river-type term it declines to
+  close.
+
+- **The decay shapes from the 2026-08-17 entry all recurred**, which is
+  evidence they are structural rather than incidental. Counts drifted again
+  (three R file line counts, a KB figure, a validator count, a call-site
+  count, a test count) — every one on a file touched since the last recount.
+  A superseded plan kept its old language ("replay the complete baseline"
+  after the replay was superseded). And a status line described a first draft
+  (smn PR #27's three schemes including species) that had been reworked into
+  something materially different — 4 schemes, species withdrawn — the day
+  before.
+
+- **A shape not previously named: a fact can rot by being overtaken in a
+  *sibling* repo.** The commons went from 4 concepts / 7 gaps to 11 / 24, and
+  gained a term lifecycle, between one refresh and the next. Nothing in this
+  bundle was wrong when written and nothing here changed; the subject moved.
+  The release-index rule already anticipates this for versions — the lesson is
+  that it applies to counts and mechanisms too.
+
 ## 2026-08-17
 
 - Bundle-wide truth audit against the repositories themselves. The release

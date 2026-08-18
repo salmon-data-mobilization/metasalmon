@@ -13,7 +13,8 @@ psc:
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-08-17 (re-anchored on 0.3.0).
+package evolves. Last substantial update: 2026-08-18 (counts recounted, the
+role contract documented, and the duplication map re-checked).
 The two releases that set most of what follows: **0.3.0** (2026-08-15 — the
 sdp-0.3.0 method placement model: the dictionary swaps `method_iri` for
 `statistical_modifier_iri`, the `metadata/methods.csv` registry is removed, and
@@ -25,8 +26,15 @@ preservation, cli message safety, and C collation).
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Released 0.3.0; `main` carries an unreleased
-development version. License MIT. R >= 4.1.0.
+Package (SDP)** conventions. Released 0.3.0. License MIT. R >= 4.1.0.
+
+`main` carries unreleased changes under `NEWS.md`'s **"(development version)"**
+section, but **`DESCRIPTION` is still `Version: 0.3.0`** — there is no `.9000`
+bump, so the package self-reports the released number while carrying work past
+it. Cite the commit, not the version, for anything landed post-0.3.0: the
+`smn`-outranks-`gcdfo` ranking fix, the single-owner IRI whitespace predicate
+(backlog #85), dual-provenance manifest validation (backlog #88), the datetime
+observation-dimension fix, and S11 slice 2's vignettes are all in this state.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
 - Canonical repository: https://github.com/salmon-data-mobilization/metasalmon
@@ -160,8 +168,50 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
   slot the dictionary gained in its place is `statistical_modifier_iri`.
   Compound variables are SKOS concepts, not OWL classes (see the i-adopt
   chat-decomposition plan in `knowledge/plans/`).
+- **`method` is still a *role* even though it is no longer a *slot*, and the
+  two counts differ.** There are **6 dictionary slot roles**
+  (`.ms_semantic_bundle_slot_fields()`, `R/semantic-bundle-review.R`) and
+  **7 bundle/retrieval roles** (`.ms_semantic_bundle_roles()`, same file) —
+  the six plus `method`, retained because codes-scope targets still search
+  shared-vocabulary procedures for a `codes.csv` `term_iri`. Reading the
+  sdp-0.3.0 note above as "method is gone" is the easy mistake: the dictionary
+  slot is gone, the role is not.
+- **The role contract spans seven surfaces, three of which this card used to
+  omit.** Adding or renaming a role means touching all of them; `AGENTS.md`
+  states the contract and this is the file map for it:
+
+  | # | Surface | Where |
+  |---|---|---|
+  | 1 | Target/role maps | `role_to_field` (`R/semantics-helpers.R`), `R/semantic-suggestions.R` |
+  | 2 | Bundle roles + slot fields | `R/semantic-bundle-review.R` |
+  | 3 | **Role-hint vocabulary** | `.smn_role_flags` (`R/term_search_smn.R`), the RDF/XML hint builder in `R/term_search.R` |
+  | 4 | Retrieval filters | `sources_for_role()`, `.gcdfo_filter_for_role()` (both `R/term_search.R`) |
+  | 5 | Deterministic validators | `R/semantic-bundle-validators.R` |
+  | 6 | Ranking preferences | `inst/extdata/ontology-preferences.csv` |
+  | 7 | `role_boost` | `.ranking_profile_defaults()` (`R/term_search.R`) |
+
+  **Assume an eighth exists** — the same role (`statistical_modifier`) has now
+  failed two of these silently, which is the strongest available evidence the
+  list is not closed.
+
+  **Why surface 3 is the dangerous one.** `.ms_validate_semantic_role_type()`
+  (`R/semantic-bundle-validators.R`) vetoes any accept whose candidate carries
+  hints that do not name the role. So a role with **no hint emitter** has
+  **100% of its correct accepts silently downgraded** to `review` — while every
+  test using a hand-written `role_hints` fixture still passes. Nothing errors,
+  nothing goes red, and the pipeline simply stops accepting anything for that
+  role. That is exactly how sdp-0.3.0 shipped `statistical_modifier` broken
+  through both CI and PR review.
+
+  **Guard coverage is split and neither file covers all seven.**
+  `tests/testthat/test-role-contract-guard.R` (9 `test_that` blocks) covers
+  surfaces 1–6, reading the slot fields as the authority and inspecting emitter
+  and filter *bodies*; keep its `hint_roles` and `hint_to_sources` lists
+  current. Surface 7 is guarded in `tests/testthat/test-smn-outranks-gcdfo.R`,
+  which asserts every ranked role has a `role_boost` entry — the role-contract
+  guard does not mention `role_boost` at all.
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
-  (`R/term_search.R` is ~89KB). `suggest_semantics()` calls it (default
+  (`R/term_search.R` is ~96KB). `suggest_semantics()` calls it (default
   `search_fn = find_terms`) to build a per-target candidate shortlist before any
   LLM review. `sources_for_role()` selects vocab sources per role.
 - **EDH (Enterprise Data Hub):** DFO metadata system; the package can emit HNAP /
@@ -268,12 +318,14 @@ these numbers:
    reached through `.ms_llm_review_plan()` from both callers. Backlog #15.
 2. ~~**`suggest_semantics` arg-assembly** in effectively 4 copies~~ —
    **resolved.** `.ms_llm_review_plan()` builds the conditional `llm_*` tail
-   once via `mget(.ms_llm_arg_names(), ...)`; both call sites in
-   `R/dictionary-helpers.R` consume it as `c(suggest_args,
-   llm_review$suggest_args)`. Backlog #14/#18.
+   once via `mget(.ms_llm_arg_names(), ...)`; all three call sites consume it
+   as `c(suggest_args, llm_review$suggest_args)` — `R/dictionary-helpers.R:172`
+   and `:234`, plus `R/package-helpers.R:836`. Backlog #14/#18.
 3. **Effective shortlist** was never inline-duplicated — it lives once in
    `.ms_llm_effective_shortlist_size()` (`R/llm-semantic-helpers.R`) and is
-   merely *called* twice.
+   now called exactly **once**, from inside `.ms_llm_review_plan()`
+   (`R/llm-semantic-helpers.R:177`). Item 2's consolidation removed the second
+   call; this bullet said "called twice" until 2026-08-18.
 4. ~~**Column-target row construction duplicated and divergent**~~ —
    **resolved.** Discovery lives once in `.ms_semantic_discover_targets()` and
    the row builder once beside it, both in `R/semantic-suggestions.R`; the
@@ -294,7 +346,10 @@ these numbers:
 - `suggest_semantics` attaches `semantic_suggestions` (always),
   `semantic_llm_assessments` (when `llm_assess`), optionally `dwc_mappings`.
   `semantic_suggestions` is read in `R/term-request-helpers.R`,
-  `R/package-helpers.R` (two sites), `R/chat-decomposition.R`, and ~20 tests.
+  `R/package-helpers.R` (two sites), `R/chat-decomposition.R`,
+  **`R/semantics-helpers.R` — `apply_semantic_suggestions()`'s default
+  `suggestions` argument, the public re-entry point and arguably the most
+  load-bearing reader of the four** — and **11 test files**.
 
 ## Test infrastructure conventions
 
@@ -336,15 +391,15 @@ do not affect the built package or pkgdown site.
 
 ## R/ file → responsibility map
 
-Line counts recounted 2026-08-17 (`wc -l R/*.R`, 33.4k lines total). They drift
+Line counts recounted 2026-08-18 (`wc -l R/*.R`, 33.5k lines total). They drift
 every release — re-run the count rather than trusting these to the digit.
 
 | File | Lines | Responsibility |
 |---|---|---|
-| `package-helpers.R` | 3777 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
+| `package-helpers.R` | 3786 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |
-| `term_search.R` | 2779 | Deterministic ontology retrieval (`find_terms`) + ranking; emits the role hints the role contract depends on. |
+| `term_search.R` | 2790 | Deterministic ontology retrieval (`find_terms`) + ranking; emits the role hints the role contract depends on. |
 | `llm-semantic-helpers.R` | 2236 | LLM context parsing/scoring + review orchestration (single/batch/explore/decomposition routing); owns `.ms_llm_review_plan()`. |
 | `dictionary-helpers.R` | 1578 | `infer_dictionary` + `infer_*_from_resources`, `apply_salmon_dictionary`. |
 | `chat-decomposition.R` | 1380 | Interactive I-ADOPT decomposition session (`chat_decomposition`); 2nd consumer of the review contract. |
@@ -352,7 +407,7 @@ every release — re-run the count rather than trusting these to the digit.
 | `term-request-helpers.R` | 1267 | Ontology new-term request rendering + issue submission. |
 | `semantic-suggestions.R` | 1157 | Target discovery, the target/candidate row-shape contract, and LLM-assessment merge. |
 | `sssom.R` | 1131 | Strict SSSOM 1.1 mapping-set serialization and manifest validation. |
-| `observation-structures.R` | 1032 | Mixed-grain observation structures and `extract_sdp_observations`. |
+| `observation-structures.R` | 1093 | Mixed-grain observation structures and `extract_sdp_observations`. |
 | `semantics-helpers.R` | 1014 | `suggest_semantics` (retrieval, role-collision, LLM handoff) and the `role_to_field` map. |
 | `semantic-bundle-review.R` | 936 | Bundle roles, slot fields, and the review prompt — **the role contract's authority**, read by the role-contract guard. |
 | `semantic-bundle-validators.R` | 853 | Deterministic bundle validators, including the role-type veto. |
@@ -366,7 +421,7 @@ every release — re-run the count rather than trusting these to the digit.
 | `cli-safety.R` | 103 | Escaping/redaction so external text never becomes a cli template (`.ms_cli_escape`, `.ms_cli_bullets`, `.ms_redact_secrets`). |
 | `artifact-inference.R` | 101 | `infer_salmon_datapackage_artifacts()` — calls `infer_dictionary(seed_semantics = FALSE)`. |
 | `provenance.R` | 68 | Single owner of the accepted writer set (`metasalmon::` / `metasalmonpy.`) for dual-provenance validation. Backlog #88. |
-| `iri-predicates.R` | 34 | Single owner of the absolute-IRI shape used by four validators. Backlog #85. |
+| `iri-predicates.R` | 34 | Single owner of the absolute-IRI shape used by **three** validators (EML PIDs, SSSOM references, SDP metadata extensions). The decomposition IRI predicate (`R/measurement-decompositions.R`) is deliberately **not** a caller — narrower shape, ASCII-only whitespace class, mirrored character-for-character in Python. Backlog #85. |
 | `term-deduplication.R`, `nuseds-method-crosswalk.R`, `ices-vocab.R`, `dwc-dp-*.R`, `schema-helpers.R`, `validation_helpers.R`, `version-check.R`, `ontology_fetch.R`, `term_search_smn.R` | — | Supporting subsystems. |
 
 ## Planning artifacts (read before related work)

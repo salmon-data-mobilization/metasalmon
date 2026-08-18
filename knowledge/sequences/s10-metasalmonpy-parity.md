@@ -20,10 +20,23 @@ recon (see the [roadmap card](../roadmap.md) release index and
 metasalmonpy (formerly `metaSmnPy`; package formerly `salmonpy`; renamed and
 purged of foreign content on 2026-08-13) is the Python mirror of metasalmon.
 The stream opened at **metasalmon 0.1.6** parity against an R release of
-0.2.6. **Current state: metasalmonpy is at 0.1.8; metasalmon is at 0.3.0.**
-Rungs 1 (0.1.7) and 2 (0.1.8) have shipped; **the next rung is 3, `0.2.0 +
-0.2.1` collapsed.** The ladder's target moved to 0.3.0 when S8 shipped, which
+0.2.6. **Current state: metasalmonpy's `main` is at 0.1.8 (tagged `v0.1.8`);
+metasalmon is at 0.3.0.** Rungs 1 (0.1.7) and 2 (0.1.8) have shipped. **Rung 3
+(`0.2.0 + 0.2.1` collapsed) is written and awaiting merge** — metasalmonpy PR
+**#10**, branch `feat/s10-020-021-parity`, which carries `0.2.1` in both
+version strings. It is the **last replayed rung**: everything after it is the
+subsystem port below. The ladder's target moved to 0.3.0 when S8 shipped, which
 is why this card's range and the execplan's now agree on 0.3.0.
+
+Because rung 3 is unmerged, `0.2.1` is a **branch** claim and not yet a
+released one — the release index in the [roadmap](../roadmap.md) correctly
+still reads 0.1.8, and it should not move until #10 merges and tags. A reader
+who checks out metasalmonpy and finds `0.2.1` in `pyproject.toml` is on that
+branch, not on `main`.
+
+Also open there: metasalmonpy **PR #11**, mirroring metasalmon #65's descriptor
+adjudication and the datetime fix. It is a same-stream mirror under contract
+point 3, not a rung.
 
 **The contract (Brett, 2026-08-13), stated in both repos' `AGENTS.md`:**
 
@@ -33,6 +46,33 @@ is why this card's range and the execplan's now agree on 0.3.0.
    version only when it actually delivers that version's behaviour.
 3. New metasalmon work started after 2026-08-13 lands its Python mirror in the
    same stream, so the gap never widens again.
+
+**Amended (Brett, 2026-08-17) — the mirror is not automatically the follower:**
+*"Don't just make things match metasalmon. If the Python implementation got it
+right, then update metasalmon."* Point 1 governs **what has to be the same**,
+not **which side is correct**; those were being read as one rule and they are
+two. So when this stream's differential verification finds a divergence, the
+finding is *"the two disagree"* and the next step is a ruling, not a Python
+work item. Three things follow, and they change how a chunk is executed:
+
+- **A chunk may produce an R change.** Budget for it; a divergence found in
+  chunk B can land its fix in metasalmon. It does not make the chunk a
+  failure or push it out of S10 — the amendment was first applied to exactly
+  this stream's output (parity-deviations row 32: R ranked `gcdfo` above
+  `smn`, Python the reverse, and **R** moved).
+- **Direction is decided per divergence, by Brett.** There is no standing
+  tiebreak in either direction, so an implementer records the divergence and
+  the evidence rather than picking a side. What settles it is which behaviour
+  is *right*, which is a question about the salmon-data domain, not about
+  which repo is older.
+- **An R-side fix still gets a register row.** Changing metasalmon does not
+  make the divergence undocumented history: the row records the divergence,
+  the ruling, and which side moved, identically to a Python-side fix.
+
+This is why differential verification is the load-bearing part of the port
+(and why the replan below could drop chronology without losing anything): a
+run that only asks "does Python match R" cannot find an R defect, and this
+stream has now found one.
 
 **Known gap (headline level, from recon):** the 0.1.7+ feature families are
 entirely absent — EML export, KNB publication + SDP archive, SSSOM,

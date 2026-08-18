@@ -23,3 +23,10 @@ Brett's standing instructions (2026-08-12/13) that define this context:
   0.3.0 and [S10](../sequences/s10-metasalmonpy-parity.md) is the catch-up. A
   Python version number is a claim about behaviour delivered, so the gap is
   visible by design rather than papered over with a matching number.
+- **The mirror is not automatically the follower** (Brett, 2026-08-17):
+  *"don't just make things match metasalmon; if the Python implementation got
+  it right, then update metasalmon."* This coordination context therefore
+  routes a parity divergence to a **ruling on which side is correct**, not to
+  a Python work item by default. Both directions of fix are recorded the same
+  way, in [parity-deviations](../parity-deviations.md) and its `PARITY.md`
+  twin.

@@ -31,6 +31,19 @@ at `knowledge/roadmap.md`.
   at 0.1.8 parity; the 0.2.0→0.3.0 catch-up is roadmap stream S10. The same
   contract is stated in metasalmonpy's `AGENTS.md`; both files are
   git-tracked and must never be git-ignored.
+  **The mirror is not automatically the follower** (Brett, 2026-08-17):
+  *"Don't just make things match metasalmon. If the Python implementation got
+  it right, then update metasalmon."* Presumption of mirroring is about
+  *keeping the two the same*, never about which one is correct — so a parity
+  divergence opens the question of which side is right rather than settling
+  it, and the answer can be that R changes. First applied the day it was
+  stated: R ranked `gcdfo` above `smn` and Python the reverse, and metasalmon
+  was the side that moved (parity-deviations row 32). Two consequences worth
+  stating, because both are easy to get backwards. Direction is decided
+  **per divergence**, so "R leads" is not a tiebreak you may reach for; and
+  changing R does **not** close a parity row by itself — the row records the
+  divergence, the ruling, and which side moved, exactly as when Python
+  changes.
 - **LLM review is strictly opt-in.** Supplying `llm_context_files` /
   `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
@@ -74,10 +87,27 @@ at `knowledge/roadmap.md`.
   preference rows since 0.3.0 while having no boost entry, so it reached ranking
   on base weight alone. That is the *same role* failing a *second* silent layer,
   which is the strongest evidence available that this list is not yet closed:
-  assume an eighth exists and look for it when adding a role. **`tests/testthat/test-role-contract-guard.R` checks every layer** —
+  assume an eighth exists and look for it when adding a role.
+  **The guard coverage is split across two files, and neither one covers all
+  seven.** `tests/testthat/test-role-contract-guard.R` covers the first six —
   it reads the slot fields as the authority and inspects the emitter and filter
   bodies, so keep its `hint_roles` and `hint_to_sources` lists current when a
-  role is added, renamed, or deliberately exempted.
+  role is added, renamed, or deliberately exempted. **`role_boost`, the
+  seventh, is guarded in `tests/testthat/test-smn-outranks-gcdfo.R`**, whose
+  check asserts every ranked role has a boost entry; the role-contract guard
+  does not mention `role_boost` anywhere. *(Corrected 2026-08-18: this contract said
+  the role-contract guard "checks every layer", which was true of six layers
+  and became false the moment the seventh was named without moving its check.
+  A guard whose claimed scope exceeds its real scope is worse than a missing
+  guard, because green means "all seven verified" to the person reading this
+  line. Consolidating the seventh check into the role-contract guard, so one
+  file is the answer to "did I reach every layer", is worth doing.)*
+  Note the in-code comment beside `role_boost` in `.ranking_profile_defaults()`
+  calls it the *sixth* surface; this contract counts
+  `inst/extdata/ontology-preferences.csv` as sixth and `role_boost` as seventh.
+  The count is off by one between the two, not the substance — but fix the
+  comment rather than renumbering here, or the eighth surface arrives into an
+  ambiguity.
 - **A guard must say what would retire it.** Every suppression, exclusion,
   allowlist entry, skip, or workaround records *the condition under which it
   stops being needed* — the defect it routes around, the version that fixes
