@@ -184,3 +184,32 @@ Bundle cards are git-tracked and must contain **no absolute filesystem paths**.
 When ecosystem work reveals durable knowledge about a sibling repo, update
 *that repo's* `knowledge/` bundle (create it if absent) and keep its
 `AGENTS.md` pointing at it.
+
+## Durable salmon knowledge goes to the commons
+
+The `knowledge/` bundle above is about **this repo**. Knowledge about **salmon**
+belongs somewhere else, and it has a home:
+[`salmon-knowledge-commons`](https://github.com/salmon-data-mobilization/salmon-knowledge-commons).
+
+When work here establishes something durable about the domain — biology,
+ecology, management, what a term actually means, why a modelling choice went
+the way it did — write it there. Not into a PR description, a commit message,
+or a chat transcript. Those three evaporate, and the next agent re-derives the
+same finding from scratch and sometimes reaches a different answer; the
+divergence is silent, because nobody can see the earlier derivation to compare.
+Deciding what `cycle line` means, or that a run-timing label is a proxy for a
+physiological state, is exactly this kind of finding.
+
+If you can push there, open a PR. If you cannot, put the finding **in your
+report, with its sources**, so a maintainer can. Source-backed claims only: the
+commons rejects a claim with no citation, and **you never assert your own
+verification** — `generated` records who wrote a card, `verified` records who
+independently checked it, and if you wrote it you did not check it.
+
+The commons is also where an **ontology gap** gets recorded: a concept with no
+term in `smn`, `gcdfo` or the PSC CV, with a note saying what a term would have
+to say and where it should be minted. That register is the front end of the
+pipeline this package already implements — `detect_semantic_term_gaps()` →
+`render_ontology_term_request()` → `submit_term_request_issues()` — not a
+parallel artifact. A gap noticed during semantic-review work and left in a
+transcript is a term request that will never be filed.
