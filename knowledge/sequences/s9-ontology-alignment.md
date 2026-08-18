@@ -32,8 +32,9 @@ smn 0.0.3 released, PSC MR !6 merged with Brett's approval — the smn source
 re-pinned to the sha256-pinned 0.0.3 snapshot, ten `prototype_accepted`
 broadMatch rows publishing as `psc-to-smn.sssom.tsv` in v0.1.0-alpha.3, and
 the alignment-gap objection retired (remaining gap documented: nine analysis
-concepts need a shared smn analytical-method concept). Remaining in S9:
-step 6 (propagation) and the parked #78 iop-triples explainer.
+concepts need a shared smn analytical-method concept). Remaining in S9: **step
+7's B+C implementation** (below), step 6 (propagation), and the parked #78
+iop-triples explainer.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
@@ -57,7 +58,8 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
 7. **Step 6 — propagation** to workshop, hub docs, and guides; also hosts the
    parked #78 iop-triple-emission explainer (deferred by Brett 2026-08-13).
 8. **Step 7 — clear the nine SPSR term-review holds** (gcdfo issues #67–#75,
-   open since 2026-03-30 and untracked in this bundle until 2026-08-16). Each
+   open since 2026-03-30 and untracked in this bundle until 2026-08-16;
+   **#67 is now closed, eight remain**). Each
    issue proposes one `gcdfo:` concept from the SPSR ontology-draft inventory
    and each is blocked on a decision, not on implementation — so the work is
    nine *decisions*, and they are **not nine independent ones**. They collapse
@@ -140,6 +142,17 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
    | **B + C** (#68, #74, #70) | **Three separate schemes, in `smn:`, scoped "very broad"** — explicitly *not* the single merged CU species-code vocabulary recommended above. Broad means species-agnostic: a life-history-type scheme that contains lake- and river-type rather than a sockeye scheme. Brett's second constraint is that **PSC should be able to leverage them**, so they are designed for `psc-salmon-vocabularies` to map onto rather than mint parallels. Mint from the source code list, not observed values — `PKE` lands alongside `PKO`. |
    | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. |
 
+   **B+C proposed, and contested — do not read the design as agreed.**
+   salmon-domain-ontology
+   [PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27)
+   is an open **draft** proposing three orthogonal `smn:` SKOS schemes —
+   life-history type, cycle line, salmon species — closing gcdfo #68/#74/#70 by
+   reference on acceptance. It is under active discussion and being reworked:
+   the species approach, whether a cycle-line concept should exist at all, and
+   the life-history structure are each still in question. Track it as an open
+   proposal; the ruling in the table above fixed the *namespace and breadth*,
+   not the modelling.
+
    **A1 delivered** (gcdfo PR #86, issue #67 closed): 48 concepts plus
    `gcdfo:PacificFisheryManagementAreaScheme`, sourced from SOR/2007-77
    Schedule 2 (consolidation current to 2026-06-17) and cross-checked against
@@ -171,9 +184,14 @@ step 6 (propagation) and the parked #78 iop-triples explainer.
      not "Yukon Transboundary" as the data dictionary phrases it — any value
      mapping written from the dictionary text will silently miss.
 
-   Closing #67 left the wrong mapping untracked. It is a `spsr-data-dict`
-   change and needs its own item; **awaiting Brett**, since he may want it
-   scoped alongside the remaining B+C work.
+   PR #86 merged **after** the 0.0.9 tag, so the vocabulary is on gcdfo `main`
+   and in no release; cite the commit until the next gcdfo release cuts.
+
+   Closing #67 left the wrong mapping untracked, and it is now tracked:
+   `spsr-data-dict` **issue #1**, filed 2026-08-17, carries the `DFO_AREA`
+   mis-mapping and the fact that no correct target term exists in either
+   ontology because minting a coarse "DFO salmon Area" concept was rejected.
+   Scoping against the remaining B+C work is still Brett's call.
 
    **Open disposition question:** #72's distinguishing premise — that code `2`
    is shared between `INDEX_QUALITY` and `INFORMATION_QUALITY` — is factually

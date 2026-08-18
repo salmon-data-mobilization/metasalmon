@@ -13,17 +13,20 @@ psc:
 
 Durable orientation notes for working on this package. Captures facts that are
 expensive to re-derive from the (large) source files. Keep this current as the
-package evolves. Last substantial update: 2026-08-10 (0.2.0 P0 remediation:
-schema identity, SDP round-trip integrity, sidecar preservation, cli message
-safety, and C collation). Preceded by 0.1.8 (mixed-grain observation
-structures, methods, reproducibility manifests, and expanded KNB publication).
+package evolves. Last substantial update: 2026-08-17 (re-anchored on 0.3.0).
+The two releases that set most of what follows: **0.3.0** (2026-08-15 — the
+sdp-0.3.0 method placement model: the dictionary swaps `method_iri` for
+`statistical_modifier_iri`, the `metadata/methods.csv` registry is removed, and
+`migrate_sdp_methods()` is the stop-and-report migration) and **0.2.0**
+(2026-08-10 P0 remediation: schema identity, SDP round-trip integrity, sidecar
+preservation, cli message safety, and C collation).
 
 ## What the package is
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Development version 0.2.0. License MIT.
-R >= 4.1.0.
+Package (SDP)** conventions. Released 0.3.0; `main` carries an unreleased
+development version. License MIT. R >= 4.1.0.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
 - Canonical repository: https://github.com/salmon-data-mobilization/metasalmon
@@ -70,8 +73,10 @@ return values, and attached attributes are a compatibility surface.
 - **Semantic supplements:** `read_sssom_mapping_set`, `write_sdp_sssom`,
   `validate_sdp_sssom`, `read_sdp_measurement_decompositions`,
   `write_sdp_measurement_decompositions`, `validate_sdp_measurement_decompositions`
-- **Extended structure and reproducibility:** `read_sdp_methods`,
-  `write_sdp_methods`, `validate_sdp_methods`,
+- **Extended structure and reproducibility:** `migrate_sdp_methods` (0.3.0
+  replaced the `read_/write_/validate_sdp_methods` registry trio with this
+  stop-and-report migration; metasalmonpy still has the trio until S10's 0.3.0
+  rung),
   `read_sdp_observation_structures`, `write_sdp_observation_structures`,
   `validate_sdp_observation_structures`, `extract_sdp_observations`,
   `read_sdp_reproducibility_manifest`, `write_sdp_reproducibility_manifest`,
@@ -81,9 +86,10 @@ return values, and attached attributes are a compatibility surface.
 - **ICES vocab:** `ices_code_types`, `ices_codes`, `ices_find_code_types`, `ices_find_codes`
 - **Maintenance:** `check_for_updates`
 
-Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publication`,
+Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publication`,
 `post-review-package-publication`, `reusing-standards-salmon-data-terms`,
-`github-csv-access`, `faq`, `glossary`.
+`github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
+`migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
 
 ## Domain glossary
 
@@ -95,7 +101,8 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
 - **SDP schema locations:** runtime schema fetches are pinned to the spec
   release tag the package implements
   (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`,
-  currently `sdp-0.2.0`); tracking `main` let upstream spec releases break
+  currently `sdp-0.3.0`; metasalmonpy still stamps `sdp-0.2.0` until S10's
+  0.3.0 rung — parity register row 27); tracking `main` let upstream spec releases break
   networked loads. Advancing the pin is part of implementing a new spec
   version. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
@@ -138,15 +145,19 @@ Vignettes: `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-publica
   offline string gate does not itself resolve IRIs or prove release governance;
   the transformation record must pin and verify the vocabulary release.
 - **I-ADOPT decomposition:** measurement columns are decomposed into semantic
-  "slots". The dictionary role → search role map (R/semantics-helpers.R:381-388):
-  `term_iri`→variable, `property_iri`→property, `entity_iri`→entity,
-  `unit_iri`→unit, `constraint_iri`→constraint, `method_iri`→method. Multiple
+  "slots". The dictionary role → field map (`role_to_field` in
+  `R/semantics-helpers.R`): variable→`term_iri`, property→`property_iri`,
+  entity→`entity_iri`, unit→`unit_iri`, constraint→`constraint_iri`,
+  statistical_modifier→`statistical_modifier_iri`. Multiple
   fixed constraints may be stored as a deterministic semicolon-delimited list;
   row-varying year/age coordinates belong in the optional observation-structure
   extension instead. **Ontology convention:** "method" is NOT a native I-ADOPT
-  role. SDP methods are SOSA Procedure resources in `metadata/methods.csv`;
-  `column_dictionary.method_iri` is the fixed-procedure compatibility binding,
-  while row-varying procedures use a `sosa:usedProcedure` observation component.
+  role, and since **sdp-0.3.0 it is not a dictionary slot either** — the
+  dictionary has no `method_iri` and there is no `metadata/methods.csv`
+  registry. A method now lands in one of three places: `tables.csv$method_iri`
+  when it is constant for a table, a `codes.csv` term when it is a coded value,
+  or a `sosa:usedProcedure` observation component when it varies by row. The
+  slot the dictionary gained in its place is `statistical_modifier_iri`.
   Compound variables are SKOS concepts, not OWL classes (see the i-adopt
   chat-decomposition plan in `knowledge/plans/`).
 - **`find_terms()` / `term_search`:** the deterministic ontology retrieval engine
@@ -407,9 +418,9 @@ Guard: `tests/testthat/test-cli-safety-guard.R`.
 
 ## Gotchas
 
-- `CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md` — `AGENTS.md`
-  self-references, so the project effectively ships **no agent instructions**
-  (and the include is a circular reference). See `knowledge/backlog.md`.
+- ~~`CLAUDE.md` and `AGENTS.md` both contain only `@AGENTS.md`~~ — **fixed**
+  (backlog #9). `AGENTS.md` now carries the real contract; `CLAUDE.md` is the
+  one-line `@AGENTS.md` include, which is a pointer, not a self-reference.
 - On the `create_sdp` path, `infer_dictionary` is called with
   `seed_semantics = FALSE` (package-helpers.R:499), so `infer_dictionary`'s own
   `llm_requested`/arg-assembly/metadata blocks are **dead on that path** and only

@@ -18,4 +18,8 @@ Brett's standing instructions (2026-08-12/13) that define this context:
 - Every repo the work touches gets an OKF bundle (created if absent, updated
   as learned), git-tracked, containing **no absolute filesystem paths**.
 - metasalmonpy mirrors metasalmon: functionality and version numbers in
-  lockstep, with version bumps made only when parity actually lands.
+  lockstep, with version bumps made only when parity actually lands. Lockstep
+  is the target, not the present state — the mirror is at 0.1.8 against R's
+  0.3.0 and [S10](../sequences/s10-metasalmonpy-parity.md) is the catch-up. A
+  Python version number is a claim about behaviour delivered, so the gap is
+  visible by design rather than papered over with a matching number.

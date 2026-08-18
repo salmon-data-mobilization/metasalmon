@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S5 — R-native review flow and API hygiene"
-description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as 0.3.0. Backlog items 58, 59, 60, 74."
+description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as the next minor at ship time. Backlog items 58, 59, 60, 74."
 status: draft
 tags: [review, api]
 psc:
@@ -9,7 +9,7 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ships as 0.3.0
+# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ships as the next minor
 
 **Execplan:** [R-native review and editing](../plans/2026-08-11-r-native-review-and-editing.md)
 (#74) · #58/#59/#60 detail in the [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).

@@ -18,19 +18,21 @@ the gate under-checks. Confirmed premise: **zero of the 13 rule ids in
 `sdp.rules.yaml` appear anywhere in `R/`** — the validator reimplements the spec
 by hand, so spec and implementation can diverge silently, and three
 error-severity rules are loaded and never executed. `validate_salmon_datapackage()`
-additionally checks no declared primary keys, no required-column nullability, no
-schema-required metadata fields, and reports success on corrupt
-SSSOM/decomposition artifacts.
+additionally checks no required-column nullability, no schema-required metadata
+fields, and reports success on corrupt SSSOM/decomposition artifacts.
+**Declared primary keys are now checked** — 0.2.6 made a duplicate, missing, or
+absent key component a hard error under #77, so that item has dropped off S1's
+list even though it was #49's first example.
 
 **Why early:** everything downstream borrows its credibility. S4 teaches
 validation as the final gate before deposit; teaching that while the gate
 under-checks is the one sequencing mistake worth avoiding.
 
-**But run S8 first or alongside.** S1 builds the machinery that executes the
-rules the spec declares; S8 changes which rules it should declare. Building the
-machinery and then changing its inputs is the avoidable version of this work.
-#49's primary-key check is also #77's first gap, so the two streams overlap by
-construction.
+**The S8 precondition is met.** S1 builds the machinery that executes the rules
+the spec declares, and S8 changed which rules it should declare — building the
+machinery first and then changing its inputs was the avoidable version of this
+work. S8 shipped as 0.3.0 against `sdp-0.3.0`, so S1 now has a settled rule set
+to drive from and no longer needs to wait or interleave.
 
 **The change that stops it recurring:** a conformance test that fails when the
 spec declares a rule the implementation does not execute. Drive the checks from

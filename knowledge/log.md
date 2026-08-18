@@ -1,5 +1,14 @@
 # Bundle log
 
+## 2026-08-17
+
+- Bundle-wide truth audit against the repositories themselves. The release
+  index was re-verified against tags, release objects, and each repo's own
+  version source; the backlog's open/fixed markers were re-checked against
+  `main` in metasalmon, metasalmonpy, and gcdfo. Corrections are recorded in
+  the cards themselves, not here — this entry exists so the next reader knows
+  when the last full pass happened. Fifteen execplans now live in `plans/`.
+
 ## 2026-08-13
 
 - Bundle created by migrating the former `notes/` planning tree: roadmap,
