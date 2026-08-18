@@ -8,8 +8,9 @@ This Open Knowledge Format bundle is the **coordinating hub** for the salmon
 data ecosystem: metasalmon (R), metasalmonpy (Python mirror), the Salmon Data
 Package spec (`smn-data-pkg`), the Salmon Domain Ontology
 (`salmon-domain-ontology`), the GC DFO Salmon Ontology
-(`dfo-salmon-ontology`), and the PSC controlled vocabulary
-(`psc-salmon-vocabularies`). Sequencing, execplans, and the cross-repo release
+(`dfo-salmon-ontology`), the PSC controlled vocabulary
+(`psc-salmon-vocabularies`), and the salmon knowledge commons
+(`salmon-knowledge-commons`). Sequencing, execplans, and the cross-repo release
 index live here. It replaced the former `notes/` planning tree on 2026-08-13
 (only `notes/evidence/theme-a/` stays behind — it is wired into CI and tests
 and contains non-Markdown files a bundle cannot hold).

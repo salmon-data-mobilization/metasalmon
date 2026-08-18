@@ -1,7 +1,7 @@
 ---
 type: Context
 title: "Hub coordination"
-description: "The standing coordination context: metasalmon's bundle is the sequencing and release-index authority for the six-repo salmon data ecosystem, refreshed as work proceeds and as releases by other agents are discovered."
+description: "The standing coordination context: metasalmon's bundle is the sequencing and release-index authority for the seven-repo salmon data ecosystem, refreshed as work proceeds and as releases by other agents are discovered."
 status: draft
 tags: [coordination, roadmap]
 psc:

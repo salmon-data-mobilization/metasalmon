@@ -200,6 +200,22 @@ iop-triples explainer.
    in the same change, or the inventory and the tracker will disagree. Not done;
    awaiting Brett.
 
+   **Species concepts are never minted in `gcdfo` (Brett, 2026-08-17).** They
+   belong in `smn:`, the shared all-agency layer. `gcdfo:` is the DFO-specific
+   layer, and a salmon species is not a DFO administrative fact — no agency
+   owns it, and minting one there would hand every other agency a term it has
+   to map around instead of use. This closes the namespace question the
+   analysis above left at "most likely" for group C, and it closes it for
+   *future* proposals too: the merged CU species-code vocabulary was rejected
+   on shape, and this ruling means it cannot come back on a different
+   namespace either. Standing and not scoped to these holds — it governs the
+   species scheme in
+   [salmon-domain-ontology PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27)
+   and every later species proposal. **Retires only if the smn/gcdfo boundary
+   itself is renegotiated** (step 3's boundary, published as data in
+   `gcdfo-to-smn.sssom.tsv`); a species term appearing under `gcdfo:` is a
+   defect to report, not a precedent to follow.
+
 **Cross-repo bookkeeping rule (Brett, 2026-08-12/13):** every repo this stream
 touches gets an OKF knowledge bundle (created if absent, updated as learned),
 git-tracked, free of absolute filesystem paths, with an `AGENTS.md` pointer;

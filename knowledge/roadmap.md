@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "ROADMAP — salmon data ecosystem hub"
-description: "The single sequencing authority for metasalmon and the six-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
+description: "The single sequencing authority for metasalmon and the seven-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
 status: draft
 tags: [roadmap, sequencing, releases]
 psc:
@@ -12,7 +12,7 @@ psc:
 # ROADMAP — salmon data ecosystem hub
 
 **This is the single sequencing document for metasalmon and the salmon-data
-ecosystem around it** — the coordinating hub for the six repos in the
+ecosystem around it** — the coordinating hub for the seven repos in the
 [domain card](domains/salmon-data-ecosystem.md). It answers *what order, what
 blocks what, and what is the current state*, and it carries the cross-repo
 **release index**. It deliberately does **not** carry design detail: every
@@ -43,10 +43,13 @@ Rules that keep this from decaying:
   version numbers, bumped only when parity actually lands. Stated firmly in
   both repos' `AGENTS.md`; the catch-up is
   [S10](sequences/s10-metasalmonpy-parity.md).
-- **Domain allowlist:** the six rows in the
-  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. Shared tools,
-  hyperlinks, consumed artifacts, and transitive dependencies do not add a
-  repository to this hub.
+- **Domain allowlist:** the seven rows in the
+  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. The seventh,
+  `salmon-knowledge-commons`, was added 2026-08-17 (Brett) because its ontology
+  gap register is an *input* to this package's term-request pipeline, not an
+  artifact the hub consumes — that is the membership test, and the card records
+  it. Shared tools, hyperlinks, consumed artifacts, transitive dependencies,
+  and a shared GitHub organization do not add a repository to this hub.
 - **External-edge rule:** an external repository appears here only as a typed
   dependency edge naming its owner, required artifact or gate, owning plan, and
   observation date. Its tasks, priorities, status, branches, approvals, and
@@ -64,7 +67,7 @@ Rules that keep this from decaying:
   released mapping products and decisions remain authoritative in their owning
   semantic-asset repository, not here.
 - This hub retains technical sequencing, mirror coordination, and the release
-  index for the six-repository ecosystem. The bounded consumer plan is
+  index for the seven-repository ecosystem. The bounded consumer plan is
   [governed mapping products](plans/2026-08-14-governed-mapping-products.md).
 - Brett will coordinate identification of the competent CTC/domain and
   application authorities; that coordination is not their approval. Until
@@ -270,6 +273,32 @@ mapping-set licence, and serializes per-relationship dates. The nine-row
 PSC-to-SMN set passes metasalmon's strict 0.2.6 reader. Good interoperability
 evidence; still not the stable PSC-1 product-profile fixture a consumer child
 requires, and tagging alone would not make it one.
+
+### salmon-knowledge-commons — **no releases, and no versioning scheme yet**
+
+| Version | Date | One line |
+|---|---|---|
+| *(none)* | — | No tags, no release objects, no declared content-versioning scheme. `okf_version: "0.2"` names the *format* the bundle is written to, not a version of what it says |
+
+Newest member of the domain, added 2026-08-17. **Private.** Created 2026-08-17
+(`2026-08-18T01:50Z`); zero tags and zero release objects, checked against the
+GitHub API on 2026-08-17. Four concepts — cycle line, broodline, cyclic
+dominance, run timing — **none human-verified**, carrying seven recorded
+ontology gaps, with the card schema and contribution flow being written
+concurrently with the content.
+
+It is an **upstream OKF v0.2** bundle, not a PSC-profile one, and that is a
+decision rather than an oversight: the PSC profile's closed card schema rejects
+`sources`, `verified`, `generated`, `stale_after`, and `resource` — the fields
+the commons exists to carry — so `psc-okf`'s profile check is not its
+validator, and the capture-tier command this bundle documents does not apply
+to it.
+
+**What a later refresh should and should not do here.** A versioning scheme is
+a decision nobody has made, so do not invent one for this table; "no releases"
+is the finding, not a hole in the index. This entry retires the moment the
+repository declares a scheme or cuts its first tag, and until then the correct
+citation for anything it contains is a commit.
 
 ---
 
