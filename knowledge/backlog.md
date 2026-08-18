@@ -1032,15 +1032,29 @@ hardcoded weights are not R's.** `term_search.py:955` `_score_and_rank_terms`
 implements R's `match_type` ladder but nothing of the profile machinery around
 it: no `ranking_profile` argument, no `.merge_ranking_profile()`, no
 `.ranking_profile_defaults()` (`R/term_search.R:2040`, `:2222`), and every
-tunable inlined. The inlined values differ from R's, so the same candidate set
-comes back in a different order: base source weights (`smn` 1.2 vs 1.0,
-`gcdfo` 1.0 vs 0.9) and the unknown-source fallback (0 vs R's 0.1); role boosts
-for every role except `unit` (e.g. `variable`: R `smn` 1.7/`gcdfo` 1.3/`nvs`
-1.0/`ols` 0.4/`zooma` 0.4, Python `smn` 1.5/`gcdfo` 1.0/`nvs` 0.6/`ols`
-0.2/`bioportal` 0.4); and the vocabulary bonuses, which differ in magnitude
-*and* in gating — R applies `host_bonus` 0.8 / `slug_bonus` 0.8 /
-`label_pattern_bonus` 0.4 only inside the role-preferences branch, Python adds
-1 / 1 / 0.5 unconditionally. R's `backend_score` term has no counterpart.
+tunable inlined.
+
+**The ordering half of this item is closed, and it closed in R.** A
+differential on 2026-08-17 measured what this entry had inferred: over six
+tie-heavy candidates under four input permutations both rankers were
+deterministic, but R returned `gcdfo` above `smn` and metasalmonpy the
+reverse. Brett ruled that `smn` outranks `gcdfo` and that **metasalmonpy was
+right**, so metasalmon changed — `role_boost` had given `gcdfo` 1.3 against
+`smn`'s 1.7, a 0.5 margin the routine bonus stack (0.2 label overlap + 0.4
+cross-source agreement) overturned. R now uses a flat `gcdfo` 1.0 and base
+weights `smn` 1.2 / `gcdfo` 1.0, so `base_source_weight` **matches Python's
+map value-for-value** and the differential returns identical order and scores
+on both sides. Pinned by `tests/testthat/test-smn-outranks-gcdfo.R`.
+
+What remains here is the missing profile machinery, plus inlined values that
+still differ without being known to change order: the unknown-source fallback
+(Python 0 vs R's 0.1); role boosts for the non-salmon sources (e.g.
+`variable`: R `nvs` 1.0/`ols` 0.4/`zooma` 0.4, Python `nvs` 0.6/`ols`
+0.2/`bioportal` 0.4), with `statistical_modifier` present only in R; and the
+vocabulary bonuses, which differ in magnitude *and* in gating — R applies
+`host_bonus` 0.8 / `slug_bonus` 0.8 / `label_pattern_bonus` 0.4 only inside
+the role-preferences branch, Python adds 1 / 1 / 0.5 unconditionally. R's
+`backend_score` term has no counterpart.
 
 The worst part is not the absence. `benchmark_term_ranking_fixtures(profiles =
 ...)` is exported on both sides, but Python's (`term_search.py:1185`) binds
@@ -1054,8 +1068,9 @@ This **predates the 0.1.6 parity claim** and no S10 rung covers it — logged as
 out of scope on the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
 so the omission is deliberate rather than forgotten. Registered as
 parity-deviations **row 32** / `PARITY.md` row 32. Severity: silent — nothing
-errors, candidate order just differs, and the benchmark that would catch it is
-the thing that is broken. *Retires when:* `_score_and_rank_terms` takes a
+errors, candidate order can still differ outside the pinned `smn`/`gcdfo`
+comparison, and the benchmark that would catch it is the thing that is broken.
+*Retires when:* `_score_and_rank_terms` takes a
 profile merged over a Python `.ranking_profile_defaults()` read back from the
 claimed R release, `benchmark_term_ranking_fixtures` threads `profiles`
 through, and a differential fixture pins both rankers to the same order.
