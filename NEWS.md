@@ -1,6 +1,34 @@
 metasalmon (development version)
 --------------------------------
 
+### Bug fixes
+
+* **A `datetime` observation dimension no longer rejects a valid package.**
+  Since 0.2.0 `.ms_sdp_observation_validate_data()` has read resources through
+  `read_salmon_datapackage()`, which types each column from the dictionary, so
+  a column declared `datetime` reaches the observation validators as a POSIXct
+  rather than as CSV text. The normalizer took `as.character()` of it, yielding
+  `"2024-01-31 10:00:00"` — a space, no `T`, no zone — and tested that against
+  a strict ISO-8601 pattern the string can never match. Every package with a
+  datetime-typed dimension was rejected, and `write_sdp_observation_structures()`
+  refused to write one. The normalizer now formats the temporal classes into
+  the canonical lexical form the validators expect; character input is
+  untouched, so malformed text still fails its pattern. The same lexical form
+  is used where observed `sosa:usedProcedure` codes are compared against
+  `metadata/codes.csv`, which had the identical exposure.
+
+* **ISO-8601 instants keep their time of day.** `as.POSIXct()` has no
+  ISO-8601 entry in its default format list: given `"2024-01-31T10:00:00Z"` it
+  falls through to `"%Y-%m-%d"` and silently returns midnight. Both the
+  observation normalizer and the caster did this, so two distinct instants on
+  one date collapsed to a single grain key — a genuine invariance violation
+  would go unreported, and a legitimate sub-daily series looked
+  self-contradictory. Instants are now parsed explicitly, with a `+HH:MM` or
+  `-HH:MM` zone offset folded into UTC rather than discarded. The defect was
+  unreachable before the fix above, because every datetime dimension aborted
+  first; metasalmonpy's mirror was correct throughout, and this brings
+  metasalmon into line with it.
+
 ### Documentation
 
 * Two new vignettes, roadmap stream S11 slice 2. **Migrating to SDP 0.3.0**

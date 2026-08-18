@@ -552,3 +552,113 @@ test_that("whole-package validation includes optional methods and structures", {
     "dimension grain.*not invariant"
   )
 })
+
+test_that("a datetime-typed observation dimension is accepted", {
+  # Regression: since 0.2.0 `.ms_sdp_observation_validate_data()` reads
+  # resources through `read_salmon_datapackage()`, so a `datetime` dimension
+  # arrives as POSIXct. `as.character()` of a POSIXct is "2024-01-31 10:00:00",
+  # which the ISO-8601 pattern can never match, and every such package was
+  # rejected.
+  root <- withr::local_tempdir()
+  make_datetime_dimension_sdp(root)
+
+  expect_no_error(
+    write_sdp_observation_structures(
+      root,
+      datetime_structure_rows(),
+      datetime_component_rows()
+    )
+  )
+  expect_true(isTRUE(validate_sdp_observation_structures(root)))
+  expect_no_error(
+    suppressMessages(validate_salmon_datapackage(root, require_iris = FALSE))
+  )
+})
+
+test_that("datetime normalization is invariant to lexical form and to typing", {
+  # The same instant, however it is spelled or typed, must normalize to one
+  # grain key — otherwise repeated observations at one grain are missed.
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      as.POSIXct("2024-01-31 10:00:00", tz = "UTC"),
+      "datetime",
+      "observed_at"
+    ),
+    "2024-01-31T10:00:00Z"
+  )
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      as.POSIXct("2024-01-31 02:00:00", tz = "America/Vancouver"),
+      "datetime",
+      "observed_at"
+    ),
+    .ms_sdp_observation_normalize_typed_values(
+      "2024-01-31T10:00:00Z",
+      "datetime",
+      "observed_at"
+    )
+  )
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      as.POSIXct(c("2024-01-31 10:00:00", NA), tz = "UTC"),
+      "datetime",
+      "observed_at"
+    ),
+    c("2024-01-31T10:00:00Z", "")
+  )
+  # Text input keeps its time of day. `as.POSIXct()` has no ISO-8601 default
+  # format and silently truncated a "T"-separated stamp to midnight, so two
+  # distinct instants on one date collapsed into one grain key.
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      c("2024-01-31T10:00:00Z", "2024-01-31T23:45:01Z"),
+      "datetime",
+      "observed_at"
+    ),
+    c("2024-01-31T10:00:00Z", "2024-01-31T23:45:01Z")
+  )
+  # A zone offset folds into UTC rather than being discarded.
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      c("2024-01-31T02:00:00-08:00", "2024-01-31T17:00:00+07:00"),
+      "datetime",
+      "observed_at"
+    ),
+    c("2024-01-31T10:00:00Z", "2024-01-31T10:00:00Z")
+  )
+  # And the casting path returns the same instant it normalized.
+  expect_identical(
+    .ms_sdp_observation_cast_typed_values(
+      "2024-01-31T10:00:00Z",
+      "datetime",
+      "observed_at"
+    ),
+    as.POSIXct("2024-01-31 10:00:00", tz = "UTC")
+  )
+  # An impossible instant is still rejected.
+  expect_error(
+    .ms_sdp_observation_normalize_typed_values(
+      "2024-02-31T10:00:00Z",
+      "datetime",
+      "observed_at"
+    ),
+    "do not match their dictionary"
+  )
+  # A Date-typed column still normalizes, and malformed *text* still fails.
+  expect_identical(
+    .ms_sdp_observation_normalize_typed_values(
+      as.Date("2024-01-31"),
+      "date",
+      "observed_on"
+    ),
+    "2024-01-31"
+  )
+  expect_error(
+    .ms_sdp_observation_normalize_typed_values(
+      "2024-01-31 10:00:00",
+      "datetime",
+      "observed_at"
+    ),
+    "do not match their dictionary"
+  )
+})
