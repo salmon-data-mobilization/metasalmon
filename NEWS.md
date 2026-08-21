@@ -3,6 +3,26 @@ metasalmon (development version)
 
 ### Bug fixes
 
+* **`write_salmon_datapackage()` can read back the dates it writes.** A `Date`
+  column holding a year below 1000 was written as text this package's own
+  reader rejected: `readr::write_csv()` renders a `Date` through
+  `as.character.Date`, whose R-4.3 fast path emits an unpadded year, and
+  `readr::parse_date("1-01-01")` returns `NA` — so a round trip aborted with
+  "unparseable as that type". Date columns are now rendered through
+  `.ms_iso_date_columns()` before writing.
+
+  This is **not** the platform split fixed below, and the two point in opposite
+  directions: that one disagreed between macOS and Linux, this one was wrong on
+  every platform, so no amount of cross-platform CI could surface it.
+
+  The fix is deliberately confined to `Date`. Measured rather than assumed:
+  `readr` already emits `0001-01-01T00:00:00Z` for a `POSIXct`, so its instant
+  path was never broken — and coercing it would have changed bytes twice over,
+  swapping `T…Z` for a space and reinstating a fractional second that `readr`
+  drops. Applying the fix to both types by symmetry would have corrupted the one
+  that was correct. metasalmonpy was already correct here (`date.isoformat()`,
+  `str()` and `pandas.to_csv` all pad), so R is the side that moved.
+
 * **Calendar years below 1000 are zero-padded on every platform.** `%Y` is the
   one strftime field whose width the C standard leaves unspecified, and glibc
   does not pad it. R delegates `%Y` to the platform strftime unless it was

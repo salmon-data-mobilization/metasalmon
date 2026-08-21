@@ -182,7 +182,15 @@ write_salmon_datapackage <- function(
     # which is a real fisheries code -- so a literal "NA" and a genuinely
     # missing value produced *identical bytes* and the distinction was destroyed
     # at write time, where no reader could recover it.
-    readr::write_csv(resource_df, file_path, na = .ms_csv_na_token())
+    # Date columns are rendered here rather than by readr, which reaches
+    # `as.character.Date` and emits an unpadded year below 1000 -- text this
+    # package's own reader parses as NA. Date only; readr's POSIXct output is
+    # already correct and coercing it would change bytes. See
+    # `.ms_iso_date_columns()`.
+    readr::write_csv(
+      .ms_iso_date_columns(resource_df), file_path,
+      na = .ms_csv_na_token()
+    )
 
     table_dict <- dict %>%
       dplyr::filter(

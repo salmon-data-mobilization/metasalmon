@@ -1191,15 +1191,37 @@ case was handled and did nothing.
 **What is left needs a decision, not a substitution, which is why it is a
 separate item.**
 
-1. **`write_salmon_datapackage()` writes resource columns uncoerced**
-   (`package-helpers.R`, the `readr::write_csv(resource_df, ...)` call). A
-   user's `Date` column with a year below 1000 is written as `1-01-01`, and the
-   package's own reader (`.ms_read_resource_csv()` →
-   `readr::parse_date`) returns `NA` and aborts with "unparseable as that
-   type". **The write/read round-trip is broken on every platform.** The fix is
-   to coerce typed columns before writing, which touches the core write path
-   and can change bytes for other types — a design call about where coercion
-   belongs, not a one-line edit.
+1. ~~**`write_salmon_datapackage()` writes resource columns uncoerced.**~~
+   **FIXED 2026-08-21.** Date columns now go through `.ms_iso_date_columns()`
+   before `readr::write_csv()`, and a pre-1000 `Date` survives
+   write → read unchanged (`test-date-column-round-trip.R`, verified to fail on
+   a reverted write site).
+
+   **The design call, and it was settled by measurement rather than argument.**
+   The worry was that coercing typed columns could change bytes for other
+   types. It can — so the fix touches **`Date` only**:
+
+   | | `readr::write_csv` | `as.character` |
+   |---|---|---|
+   | `Date`, year 1 | `1-01-01` | `1-01-01` — *identical, both wrong* |
+   | `POSIXct`, year 1 | `0001-01-01T00:00:00Z` — *already correct* | `1-01-01` |
+   | `POSIXct` with `.5` | `2024-01-31T10:00:00Z` — *fractional dropped* | `2024-01-31 10:00:00.5` — *kept* |
+
+   Because `write_csv` and `as.character` agree exactly on a `Date`, padding the
+   rendered text reproduces readr's own output for every year it already got
+   right. Because they agree on **nothing** for a `POSIXct` — separator, zone
+   marker, and whether a fractional second survives — a fix applied to both
+   types "for symmetry" would have corrupted the path that was never broken.
+   A regression test pins that non-interference.
+
+   **This unblocks item 2 below**: with the Date-only rule established and
+   evidenced, coercing in `.ms_align_cols()` is now a substitution rather than a
+   decision. Items 3, 4 and 5 remain open.
+
+   metasalmonpy needed no change — `date.isoformat()`, `str()` and
+   `pandas.to_csv` all pad — so no parity register row is added, because after
+   the fix there is no difference to record. Under the 2026-08-17 ruling that
+   the mirror is not automatically the follower, R is the side that moved.
 2. **EML `calendarDate` and the `dataset.csv` writer** are safe *only because*
    the on-disk path pins `col_types = cols(.default = col_character())` in
    `.ms_read_metadata_csv()`. The in-memory path's only normalizer,
