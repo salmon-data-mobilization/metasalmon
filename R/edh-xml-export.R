@@ -79,10 +79,16 @@ edh_build_hnap_xml <- function(dataset_meta,
       if (length(value) == 0 || is.null(value) || is.na(value)) {
         next
       }
-      if (inherits(value, c("POSIXct", "POSIXt", "Date"))) {
-        value <- as.character(value)
+      # Both branches used to be `as.character(value)`, so the type test bought
+      # nothing while reading as though the temporal case was handled. It was
+      # not: `as.character()` of a Date drops the year padding on every
+      # platform, so a `temporal_start` of year 999 emitted
+      # `<gml:beginPosition>999-01-01</gml:beginPosition>` -- not a valid
+      # `xs:date`, and schema-invalid HNAP. See R/platform-time.R.
+      value <- if (inherits(value, c("POSIXct", "POSIXt", "Date"))) {
+        .ms_iso_character(value)
       } else {
-        value <- as.character(value)
+        as.character(value)
       }
       if (!allow_blank && !nzchar(trimws(value))) {
         next

@@ -3,6 +3,62 @@ metasalmon (development version)
 
 ### Bug fixes
 
+* **Calendar years below 1000 are zero-padded on every platform.** `%Y` is the
+  one strftime field whose width the C standard leaves unspecified, and glibc
+  does not pad it. R delegates `%Y` to the platform strftime unless it was
+  built with `--with-internal-tzcode` — the configure default on macOS, and not
+  generally on Linux — so `format(as.Date("0001-01-01"), "%Y-%m-%d")` returned
+  the padded `"0001-01-01"` on macOS and the unpadded `"1-01-01"` on Linux.
+  Measured on this package's Linux CI runner on 2026-08-21, which returned
+  `"1-01-01"`, `"100-02-03"` and `"999-12-31"` for years 1, 100 and 999.
+
+  This reached four paths, and the failure was different in each. In
+  `.ms_canonical_value_tokens()` the canonical date and datetime keys are
+  written into package bytes, so the same input produced different packages on
+  the two platforms — and nothing errored, because both sides of a `codes.csv`
+  comparison shifted together. In `.ms_sdp_observation_typed_character()` and
+  the observation normalizer, the rendered text is matched against a `[0-9]{4}`
+  year pattern, so on Linux a valid year-1 date was rejected as malformed and a
+  normalized value would not have survived a second normalization. In the EML
+  export, a round-trip check compared the reformatted date against the user's
+  own token, so a valid `dateTime` calendar value **aborted the export** on
+  Linux while exporting cleanly on macOS. The spreadsheet-preview reader had
+  the implicit form of the same defect, via `as.character()` of a Date.
+
+  Calendar text is now rendered through `R/platform-time.R`. The fix is
+  deliberately narrow — only the year is built by hand, and `%m`, `%d`, `%H`,
+  `%M`, `%OS` stay with strftime, because `%OS6` *truncates* the fractional
+  second where `sprintf("%.6f", ...)` rounds and a hand-built timestamp would
+  have changed bytes on the platform that was already correct. Verified
+  byte-identical to the previous calls for every year the two platforms already
+  agreed on. **On macOS nothing changes; on Linux, packages written with a
+  pre-1000 date now match.** `tests/testthat/test-year-padding-guard.R` fails
+  on any new `format()` carrying a raw `%Y`.
+
+  metasalmonpy hit the identical split in Python in 0.2.0 and pads
+  unconditionally, so this brings metasalmon into line with the mirror rather
+  than the other way round (Brett's 2026-08-17 ruling); parity register row 40.
+
+* **Inferred temporal coverage and EDH temporal positions are padded too.**
+  Looking for the `%Y` sites turned up a *second*, unrelated defect:
+  `as.character()` of a `Date` is not `format()`. Since R 4.3 it takes an
+  internal fast path that emits an unpadded year on **every** platform, macOS
+  included — so the two defects point in opposite directions, and a path that
+  formats on one side and coerces on the other mismatches on macOS and matches
+  on Linux. `infer_dataset_metadata_from_resources()` used it for
+  `temporal_start`/`temporal_end`, which are computed from the user's own date
+  columns and written into `metadata/dataset.csv`, EML `calendarDate` and EDH
+  `gml:beginPosition`; the EDH metadata accessor used it for every temporal
+  field, behind an `inherits(value, c("POSIXct", "POSIXt", "Date"))` test whose
+  two branches were identical, so it read as though the case was handled and did
+  nothing. A year-999 coverage bound emitted `999-01-01` — not a valid
+  `xs:date`. Both now go through `.ms_iso_character()`, which pads the rendered
+  text without re-deriving it, so every four-digit year is byte-identical to
+  before. **This is not fully fixed**: `write_salmon_datapackage()` still writes
+  resource columns uncoerced, so a `Date` column with a pre-1000 year is written
+  as text this package's own reader cannot parse. That needs a decision about
+  where type coercion belongs and is tracked as backlog #93.
+
 * **A `datetime` observation dimension no longer rejects a valid package.**
   Since 0.2.0 `.ms_sdp_observation_validate_data()` has read resources through
   `read_salmon_datapackage()`, which types each column from the dictionary, so

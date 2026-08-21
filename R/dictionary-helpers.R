@@ -582,8 +582,14 @@ infer_dataset_metadata_from_resources <- function(resources, dataset_id = "datas
     license = NA_character_,
     contact_org = NA_character_,
     contact_position = NA_character_,
-    temporal_start = as.character(temporal_start),
-    temporal_end = as.character(temporal_end),
+    # These are `Date` objects computed by `min()`/`max()` over dates parsed out
+    # of the user's own columns, and they are written straight into
+    # `metadata/dataset.csv` and from there into EML `calendarDate` and EDH
+    # `gml:beginPosition`. Plain `as.character()` drops the year padding on
+    # every platform (see R/platform-time.R), which would put `999-01-01` into
+    # package bytes and an invalid `xs:date` into the XML.
+    temporal_start = .ms_iso_character(temporal_start),
+    temporal_end = .ms_iso_character(temporal_end),
     spatial_extent = spatial_extent,
     dataset_type = NA_character_,
     source_citation = NA_character_,
@@ -698,7 +704,10 @@ infer_value_type <- function(col) {
     integer  = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
     number   = vapply(parsed, .ms_format_number_token, character(1), USE.NAMES = FALSE),
     boolean  = ifelse(is.na(parsed), NA_character_, ifelse(parsed, "TRUE", "FALSE")),
-    date     = format(parsed, "%Y-%m-%d"),
+    # `.ms_iso_date()` rather than `format(parsed, "%Y-%m-%d")`: glibc does not
+    # zero-pad `%Y`, so year 1 keyed as "1-01-01" on Linux and "0001-01-01" on
+    # macOS. See R/platform-time.R.
+    date     = .ms_iso_date(parsed),
     # Microsecond ISO, widened only when that would lose information. %S alone
     # collapses distinct sub-second timestamps; %OS6 alone still collapses
     # anything finer than a microsecond. Appending the exact epoch value in that
@@ -967,7 +976,10 @@ infer_value_type <- function(col) {
   if (is.na(value)) {
     return(NA_character_)
   }
-  token <- format(value, "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")
+  # `.ms_iso_stamp()` keeps `%OS6` -- which truncates rather than rounds -- in
+  # strftime's hands and replaces only the year, which glibc leaves unpadded.
+  # See R/platform-time.R.
+  token <- .ms_iso_stamp(value, "-%m-%dT%H:%M:%OS6Z", tz = "UTC")
   seconds <- as.numeric(value)
   if (identical(seconds, round(seconds, 6))) {
     return(token)

@@ -369,13 +369,17 @@
 # This helper is retired when `value_type` stops having temporal members, or
 # when the validators stop comparing typed columns against lexical patterns.
 .ms_sdp_observation_typed_character <- function(values) {
+  # Year rendered by R/platform-time.R rather than strftime: glibc leaves `%Y`
+  # unpadded, and the lexical patterns these strings are matched against below
+  # all require exactly four year digits -- so on Linux a valid year-1 date
+  # would be rejected as malformed while the same call passed on macOS.
   if (inherits(values, "POSIXt")) {
-    text <- format(values, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    text <- .ms_iso_stamp(values, "-%m-%dT%H:%M:%SZ", tz = "UTC")
     text[is.na(values)] <- NA_character_
     return(text)
   }
   if (inherits(values, "Date")) {
-    text <- format(values, "%Y-%m-%d")
+    text <- .ms_iso_date(values)
     text[is.na(values)] <- NA_character_
     return(text)
   }
@@ -462,7 +466,12 @@
     if (any(!valid) || any(is.na(parsed))) {
       fail_type()
     }
-    normalized[present] <- format(parsed, "%Y-%m-%d")
+    # These normalized values are written into the observation-structure CSVs,
+    # so an unpadded year is a byte difference between platforms -- and it fails
+    # the very `[0-9]{4}` pattern the input was just checked against, so the
+    # output of one normalization would not survive a second. See
+    # R/platform-time.R.
+    normalized[present] <- .ms_iso_date(parsed)
   } else if (identical(value_type, "datetime")) {
     valid <- grepl(
       "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:Z|[+-][0-9]{2}:[0-9]{2})$",
@@ -475,9 +484,9 @@
     if (any(!valid) || any(is.na(parsed))) {
       fail_type()
     }
-    normalized[present] <- format(
+    normalized[present] <- .ms_iso_stamp(
       parsed,
-      "%Y-%m-%dT%H:%M:%SZ",
+      "-%m-%dT%H:%M:%SZ",
       tz = "UTC"
     )
   } else if (!identical(value_type, "string")) {

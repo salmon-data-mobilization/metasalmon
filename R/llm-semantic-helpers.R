@@ -501,11 +501,17 @@
     }
 
     sheet_df[] <- lapply(sheet_df, function(col) {
+      # A spreadsheet preview is user data rendered to text and handed to a
+      # provider, and the Theme A evidence fixtures pin prompts, so the same
+      # workbook must preview identically on every machine. Both branches were
+      # wrong and in *different* ways: the POSIXt one through the platform's
+      # `%Y`, and the Date one through `as.character()`, which is not `format()`
+      # and drops the padding on every platform. See R/platform-time.R.
       if (inherits(col, "POSIXt")) {
-        return(format(col, "%Y-%m-%d %H:%M:%S"))
+        return(.ms_iso_stamp(col, "-%m-%d %H:%M:%S"))
       }
       if (inherits(col, "Date")) {
-        return(as.character(col))
+        return(.ms_iso_date(col))
       }
       out <- as.character(col)
       out[is.na(out)] <- ""

@@ -12,7 +12,10 @@
 }
 
 .ms_chat_now <- function(time = Sys.time()) {
-  format(as.POSIXct(time, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  # Written into session-ledger JSON. The default is the current time, whose
+  # year always pads, but `time` is a parameter and this is file bytes -- so it
+  # goes through R/platform-time.R rather than relying on the caller.
+  .ms_iso_stamp(as.POSIXct(time, tz = "UTC"), "-%m-%dT%H:%M:%SZ", tz = "UTC")
 }
 
 .ms_chat_default_session_root <- function(session_root = NULL) {
