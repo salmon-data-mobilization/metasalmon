@@ -172,10 +172,12 @@ current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 
-### metasalmonpy (Python mirror) — current **0.1.8** (= metasalmon 0.1.8 parity)
+### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
 | Version | Date | One line |
 |---|---|---|
+| 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
+| 0.2.0 | 2026-08-18 (tagged `v0.2.0`, GitHub Release published) | The dictionary is the type authority: typed round-trip reader with raw-token preservation, overwrite/prune ownership, sidecar survival, symlink refusal, capture-time redaction, remote schema loader pinned to the upstream `sdp-0.2.0` tag. An era-R package round-trips through Python and back **byte-for-byte** |
 | 0.1.8 | 2026-08-17 (merged `db85016`, tagged `v0.1.8`, GitHub Release published) | Parity with metasalmon 0.1.8: the SDP method registry read and validated with the **writer deliberately absent as a raising stub** (register row 9), observation structures, the reproducibility manifest, reviewed-strategy apply, expanded KNB publication, the `package_io` host fix, and the demo-data and `match_type` ranking fixes; the vendored schema bundle now comes from the upstream `sdp-0.2.0` tag. Verified by driving both implementations over the same inputs against the R **`v0.1.8` tag**: `methods.csv`, both observation-structure files and the updated `datapackage.json` came out byte-identical, and the KNB plan matched on all 20 objects, every PID and every checksum |
 | 0.1.7 | 2026-08-16 (tagged `v0.1.7`, GitHub Release published) | Parity with metasalmon 0.1.7: SSSOM 1.1, measurement decompositions, reviewed EML 2.2.0, KNB/DataONE publication with the deterministic SDP archive, and the era SDP-inference corrections. Verified by running both implementations over the same inputs against the R **v0.1.7 tag**, not by reading R source |
 | 0.1.6 | 2026-07-29 | Parity with metasalmon 0.1.6: `create_sdp` workflow, opt-in semantic review, term-gap detection |
