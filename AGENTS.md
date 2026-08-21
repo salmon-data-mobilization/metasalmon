@@ -28,9 +28,16 @@ at `knowledge/roadmap.md`.
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state: metasalmonpy is
-  at 0.1.8 parity; the 0.2.0→0.3.0 catch-up is roadmap stream S10. The same
-  contract is stated in metasalmonpy's `AGENTS.md`; both files are
-  git-tracked and must never be git-ignored.
+  at **0.2.1** parity — tagged `v0.2.1`, GitHub Release published — so the
+  catch-up window is **0.2.2→0.3.0**, roadmap stream S10. The same contract is
+  stated in metasalmonpy's `AGENTS.md`; both files are git-tracked and must
+  never be git-ignored. **When the two files disagree about that number, one of
+  them is wrong about the single fact the mirror contract turns on**, and
+  nothing in either file reveals which: this line read 0.1.8 (with a
+  0.2.0→0.3.0 window) for three days after metasalmonpy tagged 0.2.1 and said
+  so in its own `AGENTS.md`, corrected here 2026-08-21. Whenever either
+  version moves, read the other file in the same change; the release index in
+  `knowledge/roadmap.md` is the third copy and must agree with both.
   **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"Don't just make things match metasalmon. If the Python implementation got
   it right, then update metasalmon."* Presumption of mirroring is about
@@ -198,7 +205,7 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
   and the cross-repo release index.** Undated, edited in place, the single
   sequencing authority for the whole ecosystem. Start here.
-- **`knowledge/sequences/`** — one card per stream (S1–S11) with the detail the
+- **`knowledge/sequences/`** — one card per stream (S1–S13) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
   of open items. Severity lives here; *ordering* lives in the roadmap, and the
