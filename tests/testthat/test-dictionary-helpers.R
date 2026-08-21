@@ -2513,6 +2513,56 @@ test_that("canonical tokens keep distinct values distinct", {
   )
 })
 
+test_that("canonical date and datetime keys zero-pad years below 1000", {
+  # `format(..., "%Y")` hands the year to the platform's strftime unless R was
+  # built with `--with-internal-tzcode` -- the default on macOS, not generally
+  # on Linux. glibc does not zero-pad a year below 1000 where the BSD/macOS
+  # implementation does, so `as.Date("0001-01-01")` can render as "1-01-01".
+  # metasalmonpy shipped exactly that defect in 0.2.0: green on every macOS run,
+  # red on Linux CI only. These keys decide whether a data column validates
+  # against its own `codes.csv` *and* are written into package bytes, so an
+  # unpadded year would be a platform-dependent canonical key -- the same class
+  # of defect the C-collation contract governs, in the same function family.
+  #
+  # This test is the measurement. It runs on the Linux CI runner, which is the
+  # platform in question; a green run there is the evidence that R's formatter
+  # pads on glibc too, and the test then stays as the regression guard.
+  # *Retires when:* nothing formats a year through `%Y` into a canonical key or
+  # into written bytes -- i.e. the day these keys are built from explicit
+  # calendar parts, which would make the platform's strftime irrelevant.
+  canon <- metasalmon:::.ms_canonical_value_tokens
+
+  # Year 1 is the extreme case: three padding digits.
+  expect_identical(canon(as.Date("0001-01-01"), "date"), "0001-01-01")
+  # 100-999 needs its own case. A fix that pads only what it recognises as
+  # "very small", or a check written against year 1 alone, can still drop the
+  # single leading zero here.
+  expect_identical(canon(as.Date("0100-02-03"), "date"), "0100-02-03")
+  expect_identical(canon(as.Date("0999-12-31"), "date"), "0999-12-31")
+
+  # POSIXct is rendered by `.ms_format_datetime_token()` with its own format
+  # string, so it needs its own assertions rather than inheriting the Date ones.
+  expect_identical(
+    canon(as.POSIXct("0001-01-01 00:00:00", tz = "UTC"), "datetime"),
+    "0001-01-01T00:00:00.000000Z"
+  )
+  expect_identical(
+    canon(as.POSIXct("0500-06-07 08:09:10", tz = "UTC"), "datetime"),
+    "0500-06-07T08:09:10.000000Z"
+  )
+
+  # The character branch parses first and renders through the same formatter, so
+  # a raw `codes.csv` token must land on the byte-identical key as the parsed
+  # data column it is compared against.
+  expect_identical(canon("0001-01-01", "date"), canon(as.Date("0001-01-01"), "date"))
+  expect_identical(canon("0100-02-03", "date"), canon(as.Date("0100-02-03"), "date"))
+  expect_identical(canon("0999-12-31", "date"), canon(as.Date("0999-12-31"), "date"))
+  expect_identical(
+    canon("0001-01-01T00:00:00Z", "datetime"),
+    canon(as.POSIXct("0001-01-01 00:00:00", tz = "UTC"), "datetime")
+  )
+})
+
 test_that("numeric canonical tokens ignore the OutDec option", {
   # `format()` defaults `decimal.mark` to `getOption("OutDec")`, so under a
   # comma the canonical key became "0,10000000000000001" and the round-trip
