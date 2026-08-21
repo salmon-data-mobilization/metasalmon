@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror from metasalmon 0.1.6 parity to 0.3.0, bumping its version only as parity actually lands; the mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to metasalmon 0.3.0 parity, bumping its version only as parity actually lands; the replay ladder is complete at 0.2.1 and the remainder ports by subsystem. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -9,7 +9,7 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S10 — metasalmonpy parity · 0.1.6 → 0.3.0
+# S10 — metasalmonpy parity · 0.2.1 → 0.3.0
 
 **Execplan:** the
 [S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
@@ -19,24 +19,27 @@ recon (see the [roadmap card](../roadmap.md) release index and
 
 metasalmonpy (formerly `metaSmnPy`; package formerly `salmonpy`; renamed and
 purged of foreign content on 2026-08-13) is the Python mirror of metasalmon.
-The stream opened at **metasalmon 0.1.6** parity against an R release of
-0.2.6. **Current state: metasalmonpy's `main` is at 0.1.8 (tagged `v0.1.8`);
-metasalmon is at 0.3.0.** Rungs 1 (0.1.7) and 2 (0.1.8) have shipped. **Rung 3
-(`0.2.0 + 0.2.1` collapsed) is written and awaiting merge** — metasalmonpy PR
-**#10**, branch `feat/s10-020-021-parity`, which carries `0.2.1` in both
-version strings. It is the **last replayed rung**: everything after it is the
-subsystem port below. The ladder's target moved to 0.3.0 when S8 shipped, which
-is why this card's range and the execplan's now agree on 0.3.0.
+The stream opened at **metasalmon 0.1.6** parity against an R release of 0.2.6.
 
-Because rung 3 is unmerged, `0.2.1` is a **branch** claim and not yet a
-released one — the release index in the [roadmap](../roadmap.md) correctly
-still reads 0.1.8, and it should not move until #10 merges and tags. A reader
-who checks out metasalmonpy and finds `0.2.1` in `pyproject.toml` is on that
-branch, not on `main`.
+**The replay ladder is complete.** Verified 2026-08-21: metasalmonpy `main`
+carries `version = "0.2.1"`, the annotated tags `v0.2.0` and `v0.2.1` exist,
+and the GitHub Release is published. Rung 3 — `0.2.0 + 0.2.1` collapsed,
+formerly PR #10 — merged, and it was the **last replayed rung**. PR #11 (the
+#65 descriptor adjudication and datetime fix) is likewise merged. So nothing in
+this stream is waiting on a merge, and **the next unit of work is chunk A, not
+started** — the breaking dictionary-contract flip, which the 2026-08-17 replan
+put first precisely so nothing later is built on a shape it replaces.
 
-Also open there: metasalmonpy **PR #11**, mirroring metasalmon #65's descriptor
-adjudication and the datetime fix. It is a same-stream mirror under contract
-point 3, not a rung.
+*(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
+rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all
+stale in the same direction, because each described a moment rather than a
+condition. The durable version is the one above: the ladder is done, and what
+comes next is named. The [S10 execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md)'s
+"Rung 3 progress (2026-08-18)" section is a dated record of that moment and is
+correct as history — read it as history.)*
+
+Target: metasalmon **0.3.0**. The ladder's target moved there when S8 shipped,
+which is why this card's range and the execplan's agree.
 
 **The contract (Brett, 2026-08-13), stated in both repos' `AGENTS.md`:**
 
@@ -95,7 +98,8 @@ two halves, and the second replaced the first.
 
 *Replayed release by release:* an un-bumped parity-debt PR 0 (the smn/gcdfo
 term indexes were stubs, so the existing 0.1.6 claim was overstated), then
-**0.1.7 → 0.1.8 → 0.2.0+0.2.1**. Shipped and tagged through 0.1.8.
+**0.1.7 → 0.1.8 → 0.2.0+0.2.1**. **All shipped and tagged; this half is
+closed.**
 
 *Ported by subsystem (Brett, 2026-08-17):* the remaining releases are **not**
 replayed. The replay was implementing behaviour metasalmon had already deleted
@@ -107,12 +111,13 @@ nothing is built on a shape it replaces. The registry writer-only-skip and the
 born-NA-safe typed reader remain logged decisions; the replan and what would
 reverse it are logged alongside them.
 
-Bumping at each parity milestone rather than in one big jump keeps every bump a
-truthful claim and makes the release order carry the same breaking-change story
-(e.g. 0.2.4's missing-value token) that R users already absorbed. When the
-replay reaches the release that introduces the remote schema loader, replay it
-**with** the spec-tag pin (metasalmon 2026-08-14): 0.1.6-era Python has no
-runtime schema fetch, so the pin has no same-day mirror and rides here instead.
+Bumping at each parity milestone rather than in one big jump kept every bump a
+truthful claim and made the release order carry the same breaking-change story
+(e.g. 0.2.4's missing-value token) that R users already absorbed. One bump is
+left, at the end of the chunks: **0.2.1 → 0.3.0**. The remote schema loader and
+its spec-tag pin have landed; both the vendored bundle and `SDP_SPEC_TAG` still
+name `sdp-0.2.0` and **must move to `sdp-0.3.0` together** in chunk A, never
+separately (metasalmonpy `PARITY.md` rows 27 and 38).
 
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.
@@ -125,18 +130,39 @@ six dictionary slots instead of the removed `method` slot. Of the layers a role
 spans, the **hint emitter already landed** in Python with PR 0 —
 `term_search.py` emits an `is_statistical_modifier` flag, and register row 7
 records Python as *ahead* of R here, since R carries it only inside
-`role_hints`. What is still missing at 0.1.8 is the **ranking-preferences
-rows** — `data/ontology-preferences.csv` carries the pre-0.3.0 role set
+`role_hints`. What is still missing **at 0.2.1** (re-checked 2026-08-21, not
+carried forward from the 0.1.8 reading) is the **ranking-preferences rows** —
+`data/ontology-preferences.csv` still carries the pre-0.3.0 role set
 (`constraint`, `entity`, `method`, `property`, `unit`, `variable`, `wikidata`)
-— and the review prompt. Both must land in the 0.3.0 rung, and mirror
+— and the review prompt. Both must land in chunk B, and mirror
 `tests/testthat/test-role-contract-guard.R` with them: a role whose hint layer
 works but whose preference rows are absent ranks with no source preferences at
 all, and nothing fails loudly. That is the R-side gap that survived CI and PR
 review.
 
-**Carried audit item:** the `SALMONPY_CACHE`/`SALMONPY_DEBUG_FETCH` env vars
-survived the rename (`term_search.py`) — decide between renaming with legacy
-aliases or documenting as-is. *(The two items filed beside it on 2026-08-13 are
-done: `ms_setup_github()`'s private `qualark-data` default and the R-syntax
-remediation message were both fixed the same day in `a7999b2`, "mirror
-metasalmon #72 (no default repo)", and shipped in v0.1.7.)*
+**Carried audit item — and this card and its execplan disagree about whether
+it is still open.** The `SALMONPY_CACHE`/`SALMONPY_DEBUG_FETCH` env vars
+survived the rename (`term_search.py`; both still present at 0.2.1). This card
+has carried it since 2026-08-13 as an **undecided** choice between renaming
+with legacy aliases and documenting the old prefix as-is. The
+[S10 execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md)'s chunk E
+instead lists *"the `SALMONPY_`→`METASALMONPY_` prefix rename, **decided and
+logged here**"* — a third option, stated as settled.
+
+**Do not read either document as the answer.** Neither cites a decider or a
+date, and the execplan's "logged here" points at no decision record in its own
+text, so what exists is two assertions and no evidence. Naming it precisely:
+*was the prefix rename ruled, and if so by whom, and does it carry legacy
+aliases?* Getting this wrong is cheap in one direction and expensive in the
+other — documenting as-is and later renaming is a second breaking change for
+anyone who set the variable, while renaming on the strength of a decision
+nobody can locate breaks them once on no authority.
+
+**What it blocks:** chunk E cannot be implemented as written until this is
+settled, because the rename *is* a scope line in it. **Retires when:** a dated
+decision naming the decider lands in one place, and the other document is
+corrected to point at it in the same change — or the execplan's "decided and
+logged here" is struck as an error and this stays open. *(The two items filed
+beside it on 2026-08-13 are done: `ms_setup_github()`'s private `qualark-data`
+default and the R-syntax remediation message were both fixed the same day in
+`a7999b2`, "mirror metasalmon #72 (no default repo)", and shipped in v0.1.7.)*

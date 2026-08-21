@@ -189,24 +189,65 @@ iop-triples explainer.
    cutthroat rank. The only species assertion left anywhere in the change is a
    literal `dwc:scientificName`.
 
-   **PR #27 is `CONFLICTING` / `DIRTY` and needs a rebase before review can
-   conclude** (checked 2026-08-18; created 08-17, last updated 08-18). Two
-   things make this more than routine. The branch carries the **large,
-   semantically empty prefix rewrite** described in decision 5 below, so a
-   conflicted rebase is being resolved across a diff that touches nearly every
-   line of the flat TTL and `docs/smn.ttl` — the shape in which a real change
-   is easiest to lose. And the branch is where backlog **#89** was found and
-   fixed (the flat-TTL generator's hash-randomized `ns1:`/`ns2:` numbering:
-   8 runs on `main` → 1 hash, 8 runs on the branch → **4 distinct hashes**), so
-   a rebase that drops the prefix-binding fix re-arms a CI flake with no source
-   change behind it.
+   **PR #27 is `CONFLICTING` / `DIRTY`, and the conflict is one changelog
+   block. Merge `main`; do not rebase.** *(This card previously described the
+   conflict as a hazardous rebase across the whole flat TTL, which is why the
+   PR has been treated as dangerous to touch. That was never measured. It is
+   now, and it was wrong.)* Measured 2026-08-21 from the merge base
+   `f7205ee`:
 
-   ### The five decisions PR #27 needs from Brett
+   - **The only files changed on both sides are `docs/index-en.html` and
+     `docs/index.html`.** `main` changed seven files, the branch fifteen; the
+     intersection is those two.
+   - **The conflicting region in each is a single changelog block, and both
+     sides applied the same fix.** Both replace `<div id="changelog">null</div>`
+     — `main` with the empty "Changes from last version" heading, the branch
+     with the fully generated block. Same defect, same direction, different
+     completeness.
+   - **The flat TTL and `docs/smn.ttl` do not conflict at all.**
+     `salmon-domain-ontology.ttl` and `docs/smn.ttl` are branch-only; `main`
+     never touched them. The prefix rewrite of decision 5 is large, and it is
+     large *alone* — nothing merges into it.
+   - **`scripts/build_flat_smn_ttl.py` is untouched by `main`.** That is where
+     the backlog **#89** determinism fix lives, so **no merge strategy can drop
+     it.** The re-arming-a-CI-flake worry was real as a worry and is
+     unsupported as a fact.
+   - **All three CI checks pass on the branch** — *Reasoner gate (ELK)*,
+     *Validate committed ontology artifacts*, *Verify published docs artifacts*.
 
-   The PR lists **seven** open questions; these five are the ones that change
-   what gets minted, and none can be settled by an implementer. **Owner:
-   Brett** on all five — each is a modelling or policy call in `smn:`, and the
-   B+C ruling above deliberately left modelling out of scope.
+   So the instruction is: **merge `origin/main` into the branch** (a rebase
+   replays every branch commit over `main` and re-resolves the same two
+   generated files repeatedly, for nothing), **take the branch side on both
+   generated HTMLs**, **regenerate the docs**, and let the
+   `verify-generated-artifacts` recipe — which the *Verify published docs
+   artifacts* job runs — prove the result rather than asserting it by hand. A
+   generated file is the one kind of conflict you never resolve by reading:
+   you resolve it by rebuilding.
+
+   *Retires when:* PR #27 is merged or closed. If it is reworked again, re-measure
+   rather than trusting this paragraph — that is exactly the mistake it replaces.
+
+   **PR #27 does not unblock the Fraser Recruits case study
+   ([S13](s13-fraser-recruits-case-study.md)), and it has been assumed to.**
+   Measured 2026-08-21: the recipe uses **twelve distinct `smn:` terms** —
+   `Abundance`, `AgeAtReturnBasis`, `AgeClassValue1`, `AgeClassValue2`,
+   `BroodYearBasis`, `FreshwaterAgeDimension`, `GilbertRichAgeNotation`,
+   `Observation`, `RecruitAbundance`, `ReturnYearBasis`, `SpawnerStageContext`,
+   `Stock` — and **all twelve already exist** in `salmon-domain-ontology.ttl`.
+   (A thirteenth `w3id.org/smn/` match is the `modules` path segment, not a
+   term; count carefully, because thirteen is the number a naive grep returns.)
+   The recipe mentions **cycle line and life history nowhere at all**. Both
+   streams are Fraser sockeye, which is what makes the assumption natural and
+   wrong: S13's ontology dependency is on terms that shipped in smn 0.0.3, not
+   on this proposal. Sequence them independently.
+
+   ### The decisions PR #27 needs from Brett
+
+   The PR lists **seven** open questions; five of them change what gets
+   minted, and none can be settled by an implementer. An **eighth** was found
+   here and is not on the PR's list at all — it is row 8 below. **Owner: Brett**
+   on all six in the table — each is a modelling or policy call in `smn:`, and
+   the B+C ruling above deliberately left modelling out of scope.
 
    | # | Decision | Why it cannot be deferred to whoever implements |
    |---|---|---|
@@ -215,6 +256,37 @@ iop-triples explainer.
    | 3 | **Two decomposition properties, or one generic `smn:hasLifeHistoryAxisValue`?** | A generic property lets a future axis be added with no new term, at the cost of a two-hop query through `skos:inScheme`. Cheap now, expensive to reverse once consumers query it |
    | 4 | **Is `smn:SockeyeSeaTypeLifeHistory` wanted at all?** | It is **not in the source data**. It is minted to complete the duration axis and to put the "sea-type" homograph warning on a term rather than in a document — Gilbert 1913's name for chinook ocean-type is today a sockeye type, same string, two species-scoped meanings. This is the mint-from-source-vocabulary-versus-observed-data policy applied to a concrete term |
    | 5 | **Accept the large, semantically empty prefix rewrite, or take the smaller fix?** | Binding the prefixes was necessary (it is the #89 fix). Rewriting the *published* artifact while doing it was a judgement call: the alternative leaves smn's own namespace rendering as `ns3:` in its own published TTL. Accepting it means one enormous diff, taken once |
+   | 8 | **Are lake-, river- and sea-type sockeye peers, and if the PR mints them as peers, must a scope note say so?** | Not on the PR's list — see below. It asserts a grouping the cited literature reports as unsettled, in a `skos:Concept` that consumers will read as a fact |
+
+   **Decision 8 — sockeye river-type peerhood (new, 2026-08-21).** PR #27 mints
+   `smn:SockeyeLakeTypeLifeHistory`, `smn:SockeyeRiverTypeLifeHistory` and
+   `smn:SockeyeSeaTypeLifeHistory` as three flat `skos:broader
+   smn:LifeHistoryType` peers in `smn:LifeHistoryTypeScheme`, sourced to Burgner
+   1991 and Holtby & Ciruna 2007. `salmon-knowledge-commons` records the same
+   distinction with gap status **`contested`**: Beacham & Withler 2017 report
+   that **river-type has been considered a special case of sea-type**, because
+   neither rears in lakes — a grouping by nursery habitat that cuts across the
+   duration axis, and *both* readings are in that one paper.
+
+   The three scope notes on the PR's concepts are careful about other hazards
+   (the `SEL`/`SER` code halves, the chinook `sea-type` homograph, the
+   stream-type false friend) and **say nothing about this one**. So the artifact
+   asserts peerhood where the source declines to. The PR's axis properties encode
+   a *different* grouping again — river-type and lake-type share
+   `YearlingFreshwaterResidence` while sea-type does not — so the modelling
+   splits by duration, the commons's contested reading splits by habitat, and
+   the flat scheme records neither as a choice.
+
+   Three possible rulings: **(a)** peers are right, and a `skos:scopeNote`
+   records that Beacham & Withler group them otherwise; **(b)** peers are wrong
+   and river-type gets `skos:broader smn:SockeyeSeaTypeLifeHistory`, which
+   changes the hierarchy consumers query; **(c)** peers stand with no note,
+   accepting that the vocabulary is more decided than its sources. Only (c) is
+   free, and it is the one that cannot be reversed quietly later.
+   **Unblocks:** gcdfo **#74** (*Term review: River Type Life History*), which
+   is the hold this concept exists to close — see the closes-by-reference
+   inconsistency flagged above, which is about the same term. *Retires when:*
+   Brett rules, and the commons gap moves off `contested` in the same change.
 
    Questions 6 (*"cycle line" renames away from issue #70's wording*) and 7
    (*proposed straight into shared `smn:` rather than a
@@ -308,7 +380,7 @@ iop-triples explainer.
    |---|---|---|
    | **#69, #75** (management levels) | A **data-steward ruling**, tracked as gcdfo **#84** | Whether `UPPER_`/`LOWER_MANAGEMENT_LEVEL` are quantitative abundance reference points or a coded hierarchy. The two source documents genuinely disagree, both fields have **zero observed values**, and the only unit-bearing definition gives them units of "Number of fish" — so more reading will not settle it. A person with authority over the SPSR data must rule |
    | **#71, #72, #73** (quality codes) | **Sourcing two documents**, tracked as gcdfo **#85** | Ogden 2015 §2.3 and the New Zealand Quality Index — the two published 1–5 frameworks `INFORMATION_QUALITY` and `INDEX_QUALITY` cite by name. **Neither is obtainable from these repos**, so the meaning of the integers is documented nowhere readable. This is a *retrieval* task, and it is the whole blocker |
-   | **#68, #70, #74** (life history, cycle line) | **PR #27's five decisions** above | Brett's rulings on the modelling. #68 and #70 close by reference on acceptance; #74's status is the inconsistency flagged above |
+   | **#68, #70, #74** (life history, cycle line) | **PR #27's six decisions** above | Brett's rulings on the modelling. #68 and #70 close by reference on acceptance; #74 is blocked twice over — by the closes-by-reference inconsistency flagged above and by decision 8, which is about the river-type concept itself |
 
    The distinction matters for sequencing: #71–#73 could be unblocked by
    anyone who can obtain two documents, while #69/#75 cannot be unblocked by
