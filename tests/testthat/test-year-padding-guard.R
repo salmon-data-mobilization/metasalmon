@@ -17,10 +17,15 @@
 #
 # LIMITATIONS, stated plainly:
 #   1. It is blind to the IMPLICIT form, and that is the miss that matters most.
-#      `as.character(<Date>)` is `format(x, "%Y-%m-%d")` underneath and contains
-#      no "%Y" anywhere, so nothing here can see it. `R/llm-semantic-helpers.R`
-#      had exactly one of these, found by reading rather than by this guard.
-#      When you touch a Date, check the coercions as well as the formats.
+#      `as.character(<Date>)` contains no "%Y" anywhere, so nothing here can see
+#      it -- and it is not even the same defect: since R 4.3 it takes an
+#      internal fast path that does not call `format()` at all and emits an
+#      unpadded year on EVERY platform, macOS included. So the two point in
+#      opposite directions, and a path that formats on one side and coerces on
+#      the other mismatches on macOS while matching on Linux. Several of these
+#      exist and are tracked as backlog #93; they were found by reading, not by
+#      this guard. When you touch a Date, check the coercions, not just the
+#      formats.
 #   2. It only classifies by the CALLED function. `as.Date(x, format = "%Y")`
 #      and `try_parse(x, "%Y")` are parsing and are correctly ignored, but a new
 #      parser helper taking a format string is ignored for the same reason --
