@@ -124,24 +124,141 @@ an era-by-era replay would have caught.
 
 ### The subsystem chunks
 
-**A must land first**, and that inversion is the point of the re-plan: 0.3.0's
-breaking change was rung 8 precisely because it is atomic, which meant
-everything before it was built on a shape it replaces. Doing it first means
-nothing after is.
+**A comes first among the chunks that depend on it**, and that inversion is the
+point of the re-plan: 0.3.0's breaking change was rung 8 precisely because it is
+atomic, which meant everything before it was built on a shape it replaces. Doing
+it first means nothing built on that shape is. Read "first" as *before B and G*,
+not as *before everything* — see **Ordering** below, which the table's top-to-
+bottom order otherwise makes it easy to read as a ladder.
 
 | # | Subsystem | Scope |
 |---|---|---|
-| **A** | **Spec conformance and the dictionary contract** *(breaking; first)* | Methods leave `column_dictionary`; `statistical_modifier_iri` replaces `method_iri`; registry removal with errors that point at migration; `migrate_sdp_methods` with the full hardened stop taxonomy, **every stop firing in the dry run as well as the real run**; the three placements (`tables.csv$method_iri`, `protocol_iri`/`protocol_citation`, `codes.csv$term_iri`); default and strict placement-IRI checks; pin flip to `sdp-0.3.0`; the bundled template header, which in Python is well-formed but still ends `method_iri` |
-| **B** | **Semantic pipeline retarget** *(after A)* | Semantic retarget to `statistical_modifier`; **three `statistical_modifier` rows in the ranking-preferences data** — net-new in Python, whose preference data still carries the pre-0.3.0 role set; the bundle-review prompt naming `statistical_modifier` rather than the removed dictionary `method` slot; a static role-contract guard covering **all six** surfaces a role touches |
+| **A** | **Spec conformance and the dictionary contract** *(breaking; B and G depend on it)* | Methods leave `column_dictionary`; `statistical_modifier_iri` replaces `method_iri`; registry removal with errors that point at migration; `migrate_sdp_methods` with the full hardened stop taxonomy, **every stop firing in the dry run as well as the real run**; the three placements (`tables.csv$method_iri`, `protocol_iri`/`protocol_citation`, `codes.csv$term_iri`); default and strict placement-IRI checks; pin flip to `sdp-0.3.0`; the bundled template header, which in Python is well-formed but still ends `method_iri`; **EML method steps from the placements** — `write_eml_from_sdp()`'s `methods` becomes the placements tibble and `used_methods` the used-procedure IRIs, with reviewed-closure gating; **the `_atomic_write_set` rollback fix**; **backlog #86 / register row 33**, the `sdp_methods.py` whitespace class |
+| **B** | **Semantic pipeline retarget** *(after A)* | Semantic retarget to `statistical_modifier`; **three `statistical_modifier` rows in the ranking-preferences data** (`data/ontology-preferences.csv`, still on the pre-0.3.0 role set `constraint`/`entity`/`method`/`property`/`unit`/`variable`/`wikidata`); the bundle-review prompt naming `statistical_modifier` rather than the removed dictionary `method` slot; **`SEM_MODIFIER_EVIDENCE_REQUIRED`**, added *beside* the surviving `SEM_METHOD_EVIDENCE_REQUIRED` (`llm_review.py:1529`) and not replacing it — the code-level `method` role survives 0.3.0; a static role-contract guard **scoped to the six surfaces Python has**, and saying so (below) |
 | **C** | **Missing-value contract** *(standalone, never diluted)* | Single NA helper, read/write sweep, literal-`"NA"` round-trip guard. Bytes on disk — it wants an undiluted diff |
 | **D** | **Validation hardening** | Primary-key uniqueness and NA errors, value-like-name warnings (thresholds exact; the message points at `melt`), placeholder surfacing |
-| **E** | **Cache, environment and network robustness** | Index session caching; **call-time env read** (`SALMONPY_CACHE` is read at import today — the exact bug class R 0.2.2 fixed); the `SALMONPY_`→`METASALMONPY_` prefix rename, decided and logged here; http-error diagnostics; no-cache-on-degraded; KNB dry-run overwrite; retry and `Retry-After`; BioPortal header auth |
-| **F** | **Redaction** | Structural `*_token` redaction; assert exactly **one** redactor |
+| **E** | **Cache, environment and network robustness** | Index session caching; **call-time env read** (`SALMONPY_CACHE` is read at import today — the exact bug class R 0.2.2 fixed); the `SALMONPY_`→`METASALMONPY_` prefix rename — **open, see below**; http-error diagnostics; no-cache-on-degraded; KNB dry-run overwrite; retry and `Retry-After`; BioPortal header auth (`term_search.py:300` still puts the key in the query string) |
+| **F** | **Redaction** | Structural `*_token` redaction; assert exactly **one** redactor (`knb_publication._redact` is the second one, and `text_safety.py:56-68` already carries the retirement condition naming this chunk); **0.2.3's URL redaction** — R passes request URLs through the same `.ms_redact_secrets()` at capture (`R/term_search.R:592`, `:606`), which is why the one-redactor assertion and the URL rule belong together |
 | **G** | **Legacy read compatibility** *(verify, do not rebuild)* | Reading 0.2.x-written packages that carry a methods registry, and 0.1.8-era EML quoting procedures from one. Landed at rung 2 — confirm it survives A |
 
-Ordering: **A → B**, C standalone and undiluted, D/E/F independent of each
-other, G verified after A. One version bump to **0.3.0** at the end, not one per
-chunk.
+#### Behaviours added to the chunks 2026-08-21
+
+A NEWS sweep found five observable metasalmon behaviours that no chunk named.
+All five are now in the table above; where each landed, and why, is below —
+because a one-line table cell cannot carry the reason, and the reason is what
+stops the next reader moving it.
+
+- **0.3.0's EML method-step rewrite → A.** Not merely a rename: A *deletes* the
+  registry, and `eml.py` reads it today — `write_eml_from_sdp()` returns
+  `methods` = the registry frame from `read_sdp_methods()` and `used_methods` =
+  the registry subset bound to observed measurements (`eml.py:3488-3524`,
+  `_used_sdp_methods` at `:2941`). R 0.3.0 makes `methods` the **placements**
+  tibble and `used_methods` the **used-procedure IRIs**, and gates every
+  vocabulary IRI the method path emits inside the reviewed closure (a
+  table-level `method_iri` needs an accepted ledger row; table-level and used
+  row-varying procedure IRIs must appear in the vocabulary snapshot; protocol
+  IRIs are citations and are not gated). It lands in A because A is what breaks
+  it — leaving it out means A ships an `eml.py` reading a file the same chunk
+  removed. Note the interaction with **G**: G keeps the *reader* of a legacy
+  registry alive, which is not the same code path as the writer of method steps.
+- **`SEM_MODIFIER_EVIDENCE_REQUIRED` → B.** Python has
+  `SEM_METHOD_EVIDENCE_REQUIRED` (`llm_review.py:1529`) and no modifier
+  counterpart. R keeps **both** (`R/semantic-bundle-validators.R:122`, `:154`),
+  so this is an addition, not a retarget; the modifier validator holds an accept
+  to the same aggregation evidence (mean/median/max/min/total/peak) the
+  suggestion path requires. It is one of the six role surfaces below, which is
+  the reason it cannot be deferred past B.
+- **Backlog #86 / register row 33 → A.** `sdp_methods.py:95` `_is_absolute_iri()`
+  matches whitespace with Python's `\s` instead of the enumerated
+  `metadata.R_SPACE_CLASS` that `eml.py` and `sssom.py` both import; 8
+  codepoints disagree and Python is the stricter side. A rewrites that module
+  anyway, so the constant import and the membership test in
+  `tests/test_sdp_methods.py` are cheapest there. *Retires when:* both regexes
+  are built from `R_SPACE_CLASS` and the membership is pinned by a test.
+- **0.2.3's URL redaction → F** (see the chunk row).
+
+**0.3.0's atomic-writer rollback fix → A**, and it is a live defect rather than
+a missing feature. `sdp_methods.py:_atomic_write_set` mirrors R's writer
+faithfully, *including* the bug 0.3.0 fixed: when `rollback()`'s
+`os.replace(backup, path)` raises, it warns without naming the backup and leaves
+`backups[index]` set, so the `finally: cleanup()` unlinks the only surviving
+copy of the original bytes. R's fix detaches the backup from the cleanup list
+and names the file in the warning (`R/sdp-extension-helpers.R:206-216`). A owns
+this because A rewrites `sdp_methods.py`; `observation_structures.py:974` is the
+other caller and inherits the fix.
+
+#### The role-contract guard reaches six of seven surfaces, and must say so
+
+`AGENTS.md` counts **seven** surfaces a semantic role has to reach. Six have
+Python counterparts, all verified present 2026-08-21:
+
+1. target/role maps — `semantics.py:1127` `role_to_field`, `:24`
+2. bundle roles and slot fields — `semantics.py:737`
+3. the role-hint vocabulary — the emitter is **already ahead of R** here
+   (register row 7); `term_search.py:721` emits `is_statistical_modifier`
+4. retrieval filters — `sources_for_role()` at `term_search.py:1054`
+5. deterministic validators — the `SEM_*` family, `llm_review.py:1529-1611`
+6. ranking preferences — `data/ontology-preferences.csv` is real and is
+   consumed at `term_search.py:960` via `_load_role_preferences()`
+
+**The seventh has no counterpart to guard.** In R, `role_boost` lives inside
+`.ranking_profile_defaults()` (`R/term_search.R:2060`) — a named, mergeable,
+overridable defaults table, which is what lets
+`tests/testthat/test-smn-outranks-gcdfo.R` enumerate every ranked role and
+assert each has a boost entry. Python has no profile system: `role_boost`
+survives only as an inlined dict literal inside `_score_and_rank_terms`
+(`term_search.py:972`), with no `ranking_profile` parameter, no defaults
+function to enumerate, no override path — and no `statistical_modifier` key,
+where R now carries `c(smn = 1.5, ols = 0.4)`. That absence is backlog **#87** /
+register row 32, logged as out of scope below, so **chunk B cannot guard the
+seventh surface.**
+
+Therefore the Python guard **states its own scope**: the six surfaces by name,
+`role_boost` named as the one it does not reach, and #87 named as the condition
+that would let it. This is `AGENTS.md`'s rule applied to itself — *"a guard
+whose claimed scope exceeds its real scope is worse than a missing guard,
+because green means all seven verified to the person reading this line."* A
+guard called "the role-contract guard" that silently covers six is exactly the
+failure that shipped `statistical_modifier` broken through CI and PR review on
+the R side. *Retires when:* #87 lands a Python `ranking_profile_defaults()` and
+the guard is extended to seven — or R consolidates its seventh check into
+`test-role-contract-guard.R` and Python mirrors the consolidated file.
+
+*(This section replaces "all six surfaces" and "the six-surface role-contract
+guard", which were correct when written on 2026-08-17 and stale within a day:
+`role_boost` was named as the seventh surface that same day, and `AGENTS.md`
+recorded the split guard coverage on 2026-08-18. Corrected here 2026-08-21.)*
+
+### Ordering — only two chunks are forced after A
+
+**Only B and G depend on A.** B retargets the semantic pipeline onto the
+dictionary shape A introduces; G verifies that legacy registry *reading*
+survives A deleting the registry, so it has nothing to verify until A lands.
+**C, D, E and F depend on nothing in A** and may be started before it, beside
+it, or after it in any order — they are 0.2.2–0.2.6 behaviours in subsystems A
+does not reshape (the missing-value contract, the tidy/validation checks, the
+cache and network layer, redaction). *(Recorded 2026-08-21 because the reverse
+was the natural reading: the chunk table runs A→G down the page, and "A must
+land first" sat above it unqualified. Nothing in the 2026-08-17 replan intended
+a serial ladder — it intended one inversion.)*
+
+Two coordination notes that are **not** dependencies. C and D both touch
+`package_io.py`, which A also edits, so they will conflict on merge if run
+concurrently; that is a rebase cost, not an ordering constraint, and it should
+not be recorded as one. And because the single version bump is at the end, the
+order chunks land in has no effect on what any released number claims.
+
+One version bump to **0.3.0** at the end, not one per chunk — but *which* number
+that bump may be is an open decision, not a settled one; see **Open decisions**
+below.
+
+**A is not blocked upstream.** Verified 2026-08-21: `smn-data-pkg` carries an
+**annotated `sdp-0.3.0` tag** ("Salmon Data Package spec sdp-0.3.0: method-model
+change"), alongside `sdp-0.2.0`. So A's two upstream-facing scope lines — the
+`SDP_SPEC_TAG` pin flip and the vendored-bundle swap, which `PARITY.md` rows 27
+and 38 require to move together — can proceed today. Several documents in this
+bundle describe the pin flip as *pending* in a way that reads as *waiting*; it
+is only unstarted.
 
 **Verification changes with the plan.** Differential runs go against the
 **`v0.3.0` tag** (annotated, so `git archive v0.3.0 | tar -x` is exact), not
@@ -152,8 +269,123 @@ against ≤0.1.8 does. Say which was used.
 **The behaviour-defined scope survives unchanged.** Chunks A and B MUST carry
 metasalmon's post-0.3.0 fixes, not just the release tree: the three
 `statistical_modifier` ranking rows, the corrected bundle-review prompt, the
-dry-run stop parity, and the six-surface role-contract guard. If a pin and that
-list ever disagree, the list wins — it is the reason the pin exists.
+dry-run stop parity, and the role-contract guard. If a pin and that list ever
+disagree, the list wins — it is the reason the pin exists. **Note that this
+paragraph and the one above it are not fully reconciled:** "verify against the
+`v0.3.0` tag" and "carry metasalmon's post-0.3.0 fixes" name two different R
+trees. The "list wins" rule settles *scope* — the named fixes are in — but it
+does not say which tree a differential is run against for everything else, and
+metasalmon is now **110 commits past `v0.3.0`** (measured 2026-08-21). That
+unstated baseline is the same question the version decision turns on.
+
+## Open decisions — recorded as open, not as preferences
+
+Three questions this plan needs answered before the chunks can finish. None has
+a decider or a date behind it, so **nothing below is a ruling** and no option is
+endorsed — the options are listed so a decider sees the field, not so a reader
+infers a preference from the order. All three were surfaced or restated
+2026-08-21, and two of them (1b and 2) are live disagreements between two
+documents rather than unfilled blanks, which is the harder kind: each side reads
+as settled on its own page.
+
+### 1. What must metasalmonpy 0.3.0 contain?
+
+Two known divergences predate the 0.1.6 parity claim and **no chunk owns
+either** — both are logged out of scope below:
+
+- **#87 / register row 32** — no ranking-profile system; candidate *order* can
+  differ for the same query outside the pinned `smn`/`gcdfo` comparison, and
+  `benchmark_term_ranking_fixtures`, the surface that would measure a ranking
+  regression, discards its `profiles` argument.
+- **#91 / register row 35** — `validate_salmon_datapackage()` reports through a
+  different mechanism: R tags eight `issue_type` values and collects all
+  findings before one abort, Python raises untyped at the first structural
+  problem.
+
+*The question:* does the **0.3.0 parity claim require closing them**, or may
+0.3.0 ship with both open and documented as register rows? The mirror contract
+supports either reading — it says a deliberate difference is legitimate once
+recorded in both registers, and both *are* recorded; but it also says the
+version number is a parity claim, and these are behavioural gaps rather than
+deliberate design choices, which is a different kind of difference.
+
+*Options, none preferred:* **(a)** scope both into 0.3.0 — #91 into chunk D (the
+only chunk whose subject is that function, though D's stated scope is
+primary-key and placeholder behaviour, not the reporting mechanism) and #87 into
+a chunk or stream of its own, since it needs a profile system rather than a
+pass-through; **(b)** scope #91 in and leave #87 to a later number, since #91
+constrains verification design and #87 does not; **(c)** ship 0.3.0 with both
+open, on the strength of the register rows.
+
+*What it unblocks:* the chunk list is not final until this is answered — (a) and
+(b) add work to it. It also decides whether **chunk D can be written at all**
+without first ruling on #91, and it interacts with the constraint already logged
+below: *no milestone may verify by comparing issue counts or categories across
+the two implementations* while #91 is open.
+
+### 1b. The `SALMONPY_` prefix rename was never decided — struck 2026-08-21
+
+Chunk E listed *"the `SALMONPY_`→`METASALMONPY_` prefix rename, **decided and
+logged here**"*. **That claim is false about this document:** it contains no
+decision record for the rename — no decider, no date, no rationale — and the
+S10 sequence card has carried the same question as *undecided* since
+2026-08-13. Two documents asserting opposite states with no evidence behind
+either is worse than an open item, so the "decided and logged here" clause is
+struck as an error and the question stays open, which is the resolution the
+sequence card's retirement condition already offers.
+
+*The question:* was the prefix rename ruled, and if so by whom, and does it
+carry legacy aliases? `SALMONPY_CACHE` and `SALMONPY_DEBUG_FETCH` are both
+still live in `term_search.py` at 0.2.1. *Options:* rename with legacy aliases;
+rename cleanly; document the old prefix as-is and never rename. The asymmetry
+matters — documenting now and renaming later breaks anyone who set the variable
+a *second* time, while renaming on an unlocatable decision breaks them once on
+no authority. *What it blocks:* chunk E cannot be implemented as written, since
+the rename is a scope line in it. *Retires when:* a dated decision naming the
+decider lands in one place and the other document is corrected to point at it in
+the same change.
+
+### 2. What version number may the finished port carry?
+
+This plan says **"one version bump to 0.3.0 at the end."** metasalmonpy's
+CHANGELOG has since adopted a rule that points elsewhere. Its current
+*Unreleased* section reads: *"Not a version bump: the parity claim stays at
+metasalmon 0.2.1 because the metasalmon change mirrored here is in that
+package's development version, not in a release. Bump on parity, not on
+calendar."* Under that rule a metasalmonpy number claims a **released**
+metasalmon version.
+
+**The two reach opposite answers**, because this plan also requires chunks A and
+B to carry metasalmon's **post-0.3.0** behaviour — the three
+`statistical_modifier` ranking rows, the corrected bundle-review prompt, the
+dry-run stop parity, the role-contract guard — none of which is in the `v0.3.0`
+tree. metasalmon is **110 commits past `v0.3.0`** as of 2026-08-21, with a
+populated development-version NEWS section. So the finished port would deliver
+behaviour that no metasalmon release contains, under a number naming a
+metasalmon release.
+
+*The question:* which number, and what does it claim? *Options, none preferred:*
+**(a)** metasalmonpy 0.3.0 means "mirrors `v0.3.0` as tagged", and the
+post-0.3.0 fixes are held back — which contradicts this plan's behaviour-defined
+scope, and would knowingly ship the `statistical_modifier` role broken the way R
+shipped it; **(b)** 0.3.0 means "verified against the R tree at the point the
+chunks were done", naming the commit — honest, but it is not a claim about any R
+release, which is what the CHANGELOG rule denies; **(c)** metasalmon cuts the
+release containing those fixes first and metasalmonpy claims **that** number,
+skipping 0.3.0 on the Python side — clean, but it makes the Python port wait on
+an R release decision that is nobody's current priority, and it breaks the
+version lockstep the mirror contract describes; **(d)** 0.3.0 plus an explicit
+"and these named post-0.3.0 fixes" qualifier in the CHANGELOG and both
+registers — cheapest, but it makes the number mean something a reader cannot
+recover from the number alone, which is the property the parity-claim rule
+exists to give it.
+
+*What it unblocks:* the final bump and the roadmap release-index row — and,
+before either, the **verification baseline**: which R tree a differential is run
+against. This plan currently says the `v0.3.0` tag in one paragraph and
+"post-0.3.0 fixes" in the next, so an implementer starting chunk A cannot read
+the answer out of it. *Whoever decides this should correct both documents in the
+same change*, or the disagreement simply moves.
 
 ## 0.1.7 progress (2026-08-16)
 
@@ -227,23 +459,81 @@ Fixed R-side post-0.3.0 (backlog #88), with the accepted writer set
 consolidated into `R/provenance.R` so a fourth manifest type inherits dual
 acceptance instead of re-deriving it.
 
-## Rung 3 progress (2026-08-18)
+## Rung 3 progress (2026-08-18; outcome recorded 2026-08-21)
 
-**Written, not yet merged.** Rung 3 — `0.2.0 + 0.2.1` collapsed — is
-metasalmonpy PR **#10** on `feat/s10-020-021-parity`, carrying `0.2.1` in
-`pyproject.toml` and `__init__.py`. Open and mergeable at the time of writing,
-with checks unstable; `main` is still 0.1.8 at tag `v0.1.8`.
+*As of 2026-08-18:* **written, not yet merged.** Rung 3 — `0.2.0 + 0.2.1`
+collapsed — was metasalmonpy PR **#10** on `feat/s10-020-021-parity`, carrying
+`0.2.1` in `pyproject.toml` and `__init__.py`; open and mergeable with checks
+unstable, `main` still 0.1.8 at tag `v0.1.8`. The caution attached to that state
+was: do not move the roadmap's release-index row to 0.2.1 before the tag exists,
+because a branch version is not a parity claim an index can carry.
 
-It is the rung whose verification is the R↔Python round-trip (see
-*Verification* below), which is why backlog #88 had to be fixed before it
-started rather than during it. **It is also the last replayed rung** — the
-replan above supersedes 4–8, so once #10 merges and tags, the next unit of
-work is chunk **A**, not a rung 4.
+**It shipped, and that caution is discharged.** Verified 2026-08-21: PR #10
+merged 2026-08-18 (`3fdd323`), `main` carries `version = "0.2.1"` in both files,
+and the annotated tags `v0.2.0` (`7439145`) and `v0.2.1` (`f1d9b0e`) exist with
+the GitHub Release published. **It was the last replayed rung** — the replan
+above supersedes 4–8, so the next unit of work is chunk **A**, not a rung 4.
+Rung 3's verification was the R↔Python round-trip (see *Verification* below),
+which is why backlog #88 had to be fixed before it started rather than during it.
 
-Do not move the roadmap's release-index row for metasalmonpy to 0.2.1 before
-#10 merges and the tag exists: a branch version is not a parity claim the
-index can carry, and this is the same cite-the-commit-not-the-tag condition
-the index already records for gcdfo and PSC.
+### What landed alongside it
+
+**PR #11 — adjudication of the seven 0.2.0 descriptor divergences** (merged
+2026-08-18, `6485afa`). Under the 2026-08-17 amendment that the mirror is not
+automatically the follower, the seven `write_salmon_datapackage()` descriptor
+differences that 0.2.0 had closed *by conforming to metasalmon* were re-decided
+on their merits rather than by direction. **All seven fixes stand**, and no
+change was warranted on either side — an outcome worth noting because the
+amendment's first application, the `smn`/`gcdfo` ranking divergence, went the
+other way and moved R. Re-deciding on the merits is not a bias toward Python.
+
+Three of the seven are load-bearing for publication rather than house style, and
+the authority that made them so is worth naming because neither side had cited
+it: it is **`smn-data-pkg`'s `scripts/validate_package.py`, not Frictionless**.
+That script compares `schema.fields` against the `column_dictionary.csv`-derived
+list with an exact equality, so suppressing `title` when it equals `name`,
+emitting `constraints: {"required": false}`, and rendering a one-element
+`primaryKey` as an array each fail it by name. Measured rather than reasoned: a
+metasalmon-written package passes the validator, and each pre-0.2.0 Python
+behaviour reintroduced individually makes it fail. Recorded in metasalmonpy's
+CHANGELOG under *Adjudication of the 0.2.0 descriptor divergences*.
+
+**That same script is the subject of hub backlog #90, and PR #11 did not settle
+it.** #90 asks whether the validator may reject the seven I-ADOPT
+`schema.fields` keys each mirror attaches to an annotated column, and the evidence
+assembled 2026-08-21 argues the script is *not* normative — `schema/sdp.rules.yaml`
+never mentions it, the published v0.3 profile has no `additionalProperties`
+constraint, and no CI in any ecosystem repo runs it. The two records lean on the
+same script in opposite directions, and that tension should be visible rather
+than smoothed over: **the "authority" framing is the weaker half of PR #11's own
+argument**, and the seven fixes survive without it, because making Python's
+descriptor match R's is what the mirror contract requires on its own. #90 remains
+an open decision and is Brett's, as the authority over `smn-data-pkg`. Do not
+read PR #11 as having made it. One consequence does reach this plan either way:
+Python's seventh descriptor key is `method_iri` where R's is
+`statistical_modifier_iri`, because Python still vendors sdp-0.2.0 — a separate
+divergence that **chunk A** closes regardless of how #90 goes.
+
+**PR #12 — the two-leg CI matrix** (merged 2026-08-21, `c13df83`), which
+**discharges hub backlog #92**. `parity.yml`'s `python` job installed `.[test]`
+— `build` plus `pytest`, and neither `[eml]` nor `[context]` — so the only
+full-suite CI run was core-deps-shaped *by accident* and the extras-gated tests
+(EML, KNB, context readers) ran nowhere, while `AGENTS.md` and `PARITY.md` row
+30 described that accident as a deliberate core-deps job sitting alongside a
+normal one. The job is now a matrix of *core only* (`.[test]`) and *with extras*
+(`.[test,eml,context]`) over an identical step list, and **each leg verifies its
+own dependency configuration before running anything** — the core leg fails if
+`yaml`, `lxml`, `openpyxl`, `pypdf` or `xlrd` imports, the extras leg fails if
+any does not. That verification step is the transferable part: without it a typo
+in the extras list silently turns the second leg into a second core-deps run,
+the extras-gated tests go back to skipping, and the job stays green under a name
+describing coverage it had stopped providing. The workflow carries its own
+retirement condition in a header comment. #92 retires as met.
+
+**What both mean for this plan.** Differential verification for the chunks now
+runs in a configuration where the EML and KNB suites actually execute — which
+matters most for chunk **A**, whose EML method-step rewrite is covered by
+extras-gated tests that CI had never run.
 
 ### Working practice: the checkout directory name is load-bearing
 
@@ -267,6 +557,10 @@ INTRODUCED — reproducing R's window costs nothing and avoids tagged states
 that drop reviewed artifacts.
 
 ## Out of scope, logged
+
+The last two entries (#87, #91) are out of scope **as this plan currently
+stands**, not permanently: whether 0.3.0 must close them is *Open decision 1*
+above, and answering it can move either into the chunk list.
 
 - `ontology_fetch.py:15` old host: R is also stale here and the paths
   diverge — a separate cross-repo coordination task, not an S10 item.
