@@ -1112,28 +1112,123 @@ from `git ls-tree origin/main`. The retirement condition is met. **Not yet
 released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
 gets both files.
 
-**#91 metasalmon's canonical date key may be platform-dependent, and the R
-verdicts corpus may be a macOS artifact.** `.ms_canonical_value_tokens()` renders
-the date key with `format(parsed, "%Y-%m-%d")`. metasalmonpy hit exactly this in
-Python: `strftime("%Y")` **does not zero-pad a year below 1000 on glibc** where
+**#91 metasalmon's canonical date key WAS platform-dependent. CONFIRMED and
+fixed 2026-08-21.** `.ms_canonical_value_tokens()` rendered the date key with
+`format(parsed, "%Y-%m-%d")`. metasalmonpy hit exactly this in Python:
+`strftime("%Y")` **does not zero-pad a year below 1000 on glibc** where
 macOS/BSD does, so `0001-01-01` became `1-01-01` on Linux only — and that key
 decides whether a data column validates against its own `codes.csv` *and* is
-written into package bytes. Three further sites carried the same defect,
-including one latent in `eml.py` since before the rung that found it.
+written into package bytes.
 
-**Measured:** R 4.5.2 on macOS returns the padded `0001-01-01`. **Not measured:**
-the same call on a glibc build. R's internal tzcode is the `configure` option
-`--with-internal-tzcode`, **default on macOS and not generally on Linux**, so an
-R built against glibc may well emit `1-01-01`. If it does, metasalmon has a
-platform-dependent canonical key — the same class as the C-collation contract,
-in the same function family the contract already governs — and
-`metasalmonpy/tests/data/resource_types/r-token-verdicts.json` records a
-macOS-specific expectation that CI on Linux would disagree with.
+**Measured, on both platforms, and the open question is closed.** macOS R 4.5.2
+returns the padded `0001-01-01`. **This repo's Linux CI runner returns
+`1-01-01`** — and `100-02-03` and `999-12-31` for years 100 and 999. The
+measurement was made by writing the assertion as a test and reading the check
+result rather than by reasoning about `--with-internal-tzcode`, which is the
+only way this could have been settled: every call site reads as correct, and
+the platform where it is wrong is not the one anyone develops on.
 
-metasalmonpy pads unconditionally either way, so it is correct on both platforms
-regardless of the answer; this is an R question. *Retires when:* the call is
-measured on a glibc R build and either shown equivalent or fixed. Registered as
-`PARITY.md` row 40 with the same condition.
+**Four sites carried it, and only one was the one everybody was looking at.**
+
+| site | what the unpadded year did |
+|---|---|
+| `.ms_canonical_value_tokens()` (date + datetime) | canonical key written into package bytes — silent, because both sides of a `codes.csv` comparison shift together, so two machines simply write different packages |
+| `.ms_sdp_observation_typed_character()` and `.ms_sdp_observation_normalize_typed_values()` | rendered text is matched against a `[0-9]{4}` year pattern, so on Linux a valid year-1 date was **rejected as malformed**, and a normalized value would not survive a second normalization |
+| `.ms_eml_validate_observed_domain()` round-trip check | compared the reformatted date against the user's own token, so a valid EML `dateTime` value **aborted the export** on Linux — the latent EML site, matching the one metasalmonpy found in `eml.py` |
+| the spreadsheet-preview reader in `llm-semantic-helpers.R` | the **implicit** form: `as.character()` of a Date is `format(x, "%Y-%m-%d")` underneath and contains no `%Y` to grep for |
+
+Fixed in `R/platform-time.R`, which renders only the year by hand and leaves
+`%m`/`%d`/`%H`/`%M`/`%OS` to strftime — `%OS6` truncates where `sprintf` rounds,
+so rebuilding a whole timestamp would have changed bytes on the platform that
+was already correct. Verified byte-identical for every year the two platforms
+already agreed on. Guarded by `tests/testthat/test-year-padding-guard.R`, which
+walks the installed namespace (a grep-based guard would skip under `R CMD
+check`, where `R/` holds only `metasalmon.rdb`) and was negative-tested against
+planted violations.
+
+**`metasalmonpy/tests/data/resource_types/r-token-verdicts.json` is fine, and
+the doubt is retired.** It records `0001-01-01` → `0001-01-01`, which was a
+macOS-only truth when it was captured and is now true on both platforms. The
+corpus encoded the *correct* expectation and the R implementation has been
+brought to it; nothing needs regenerating. Had the fix gone the other way the
+corpus would have been the artifact.
+
+*Retires when:* nothing — the risk is closed. The **guard** retires when R
+guarantees a zero-padded `%Y` on every platform it builds on, which is the
+platform's contract and not this package's to change. Registered as `PARITY.md`
+row 40 / register row 40; row 40 is marked *converged* once the R fix merges,
+and its "not measured" clause is already corrected.
+
+**#93 `as.character()` of a Date drops the year padding on every platform, and
+the package cannot read back what it writes.** Found while fixing #91 and
+**verified on macOS R 4.5.2**, which is what makes it a different defect rather
+than more of the same one:
+
+```r
+as.character(as.Date("0001-01-01"))   #> "1-01-01"      <- macOS too
+format(as.Date("0001-01-01"))         #> "0001-01-01"
+readr::format_csv(data.frame(d = as.Date("0001-01-01")))
+                                      #> "d\n1-01-01\n"
+readr::parse_date("1-01-01")          #> NA + a parsing failure
+```
+
+Since R 4.3, `as.character.Date` takes an internal fast path that does not go
+through `format()`/strftime at all. So this one is **not platform-dependent**,
+and CI cannot surface it by disagreeing with a developer's machine — the way
+#91 was surfaced. It is also worth naming that the two defects point in
+**opposite directions**: a path that `format()`s on one side and
+`as.character()`s on the other mismatches on macOS and *matches* on Linux,
+which is the reverse of #91 and is a good way to fix the wrong side.
+
+Three sites were fixed with #91, using `.ms_iso_character()` (pads the rendered
+text rather than re-deriving it, so `as.character()`'s shape choices survive):
+the inferred `temporal_start`/`temporal_end` in
+`infer_dataset_metadata_from_resources()`, and the `meta()` accessor in
+`edh-xml-export.R` — where the existing `inherits(value, c("POSIXct", "POSIXt",
+"Date"))` test had **identical branches**, so it read as though the temporal
+case was handled and did nothing.
+
+**What is left needs a decision, not a substitution, which is why it is a
+separate item.**
+
+1. **`write_salmon_datapackage()` writes resource columns uncoerced**
+   (`package-helpers.R`, the `readr::write_csv(resource_df, ...)` call). A
+   user's `Date` column with a year below 1000 is written as `1-01-01`, and the
+   package's own reader (`.ms_read_resource_csv()` →
+   `readr::parse_date`) returns `NA` and aborts with "unparseable as that
+   type". **The write/read round-trip is broken on every platform.** The fix is
+   to coerce typed columns before writing, which touches the core write path
+   and can change bytes for other types — a design call about where coercion
+   belongs, not a one-line edit.
+2. **EML `calendarDate` and the `dataset.csv` writer** are safe *only because*
+   the on-disk path pins `col_types = cols(.default = col_character())` in
+   `.ms_read_metadata_csv()`. The in-memory path's only normalizer,
+   `.ms_align_cols()`, does no type coercion, so a caller-supplied tibble with
+   a `Date` column reaches them intact. One type coercion in `.ms_align_cols()`
+   would cover both; whether that is the right place is the same design call.
+3. **`.ms_sssom_canonical_bytes()` renders the same column two ways**: the sort
+   key via `as.character()` (unpadded everywhere) and the emitted bytes via
+   `as.matrix()` inside `apply()` (which uses `format()`, so padded on macOS and
+   unpadded on Linux). Row *order* and row *content* can therefore disagree
+   about the same value, and `mapping_date` / `publication_date` /
+   `review_date` are declared SSSOM columns.
+4. **`datapackage.json` and `metadata/dataset.csv` disagree with each other**:
+   `jsonlite::write_json()` pads a `Date` and `readr::write_csv()` does not, so
+   one `write_salmon_datapackage()` call can emit `0999-01-01` in the JSON and
+   `999-01-01` in the CSV.
+5. `.ms_canonical_value_tokens()` still takes `trimws(as.character(x))` for its
+   `original` fallback, so a Date column declared `value_type = "string"` keys
+   unpadded while the `date` branch beside it now keys padded.
+
+Severity: silent data corruption at (1) and (3), silent inconsistency at (4) and
+(5), latent at (2). Not urgent — every case needs a pre-1000 date, which no
+salmon dataset has — but it is a **byte-reproducibility** defect in a package
+whose contract is byte reproducibility, and (1) is a genuine round-trip break.
+*Retires when:* a `Date`-typed column survives
+`write_salmon_datapackage()` → `read_salmon_datapackage()` unchanged for a
+pre-1000 year, and the SSSOM sort key and emitted bytes are rendered by the same
+function. `tests/testthat/test-year-padding-guard.R` does **not** cover any of
+this — it is blind to the implicit form by construction, and says so.
 
 **#92 metasalmonpy's extras-gated tests have zero CI coverage, and two documents
 say otherwise.** `parity.yml`'s `python` job installs `.[test]` — which is

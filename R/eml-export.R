@@ -2064,9 +2064,15 @@
     } else {
       syntactic <- grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", tokens)
       parsed_dates <- suppressWarnings(as.Date(tokens, format = "%Y-%m-%d"))
+      # `.ms_iso_date()`, not `format(parsed_dates, "%Y-%m-%d")`: this is a
+      # round-trip check, so an unpadded year makes it compare "1-01-01" against
+      # the user's own "0001-01-01" and fail. On glibc that aborted the export
+      # of a perfectly valid EML calendar value that macOS accepted -- the
+      # `[0-9]{4}` test above having already agreed it was well formed. See
+      # R/platform-time.R.
       syntactic &
         !is.na(parsed_dates) &
-        format(parsed_dates, "%Y-%m-%d") == tokens
+        .ms_iso_date(parsed_dates) == tokens
     }
     if (any(!valid)) {
       offending <- unique(tokens[!valid])

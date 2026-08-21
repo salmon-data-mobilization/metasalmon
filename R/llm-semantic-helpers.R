@@ -501,11 +501,17 @@
     }
 
     sheet_df[] <- lapply(sheet_df, function(col) {
+      # A spreadsheet preview is user data rendered to text and handed to a
+      # provider, and the Theme A evidence fixtures pin prompts, so the same
+      # workbook must preview identically on every machine. `as.character()` of
+      # a Date is `format(x, "%Y-%m-%d")` underneath and carries the unpadded
+      # `%Y` with it -- the implicit form of the same defect. See
+      # R/platform-time.R.
       if (inherits(col, "POSIXt")) {
-        return(format(col, "%Y-%m-%d %H:%M:%S"))
+        return(.ms_iso_stamp(col, "-%m-%d %H:%M:%S"))
       }
       if (inherits(col, "Date")) {
-        return(as.character(col))
+        return(.ms_iso_date(col))
       }
       out <- as.character(col)
       out[is.na(out)] <- ""
