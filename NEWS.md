@@ -60,6 +60,20 @@ metasalmon (development version)
   concept is defensible under either answer. A network-gated test now asserts
   every IRI in the shipped example metadata resolves.
 
+* **Both shipped examples are now round-tripped through
+  `validate_salmon_datapackage()` by the test suite** (backlog #100), the gate
+  whose absence let #95, #96, and #98 ship invisibly. The 30-row example must
+  pass **both** modes — its last strict blocker, a blank
+  `tables.csv$observation_unit_iri`, is filled with the released
+  `smn:EscapementEstimate` (the IRI for the `EscapementEstimate` observation
+  unit the row already declared; resolves 200) — and the 173-row starter must
+  pass lenient and fail strict with *exactly* its one documented failure
+  (`Measurement columns require term_iri; missing in rows 8.`), so drift in
+  either direction is caught. The shipped `codes.csv` was also repaired in
+  passing: it declared 9 header columns while every data row carried 8 fields,
+  so each read emitted 26 readr parsing problems; a well-formedness test now
+  covers every shipped example CSV.
+
 * **`detect_semantic_term_gaps()` now sees the targets retrieval found nothing
   for** (backlog #97). Both entry paths short-circuited on an empty suggestions
   table, so a concept absent from every vocabulary — the strongest possible

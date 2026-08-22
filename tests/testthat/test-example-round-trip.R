@@ -38,3 +38,84 @@ test_that("the 30-row example and its bundled dictionary pass lenient validation
   )
   expect_true(is.list(result))
 })
+
+test_that("the 30-row example passes STRICT validation with zero issues", {
+  skip_if_not_installed("readr")
+
+  pkg_path <- .build_tiny_example_package(withr::local_tempdir())
+
+  # The tiny example is the walkthrough artifact, so it must clear the
+  # package's final gate completely. Its last strict blocker -- a blank
+  # `tables.csv$observation_unit_iri` -- was filled with the released
+  # `smn:EscapementEstimate` (the IRI for the `EscapementEstimate`
+  # observation unit the row already declared). If this test starts
+  # reporting issues, the shipped artifacts drifted; fix them, do not relax
+  # this assertion.
+  result <- expect_no_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))
+  )
+  expect_identical(nrow(result$issues), 0L)
+})
+
+test_that("the shipped example metadata CSVs are well-formed", {
+  skip_if_not_installed("readr")
+
+  # The shipped codes.csv declared 9 header columns while every data row had
+  # 8 fields, so each read emitted 26 parsing problems that every caller had
+  # to suppress. Any shipped metadata file must parse clean.
+  for (file in c(
+    "dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv",
+    "nuseds-fraser-coho-sample.csv",
+    "nuseds-fraser-coho-2023-2024.csv",
+    "nuseds-fraser-coho-2023-2024-column_dictionary.csv"
+  )) {
+    df <- readr::read_csv(
+      example_extdata_path(file),
+      show_col_types = FALSE,
+      col_types = readr::cols(.default = readr::col_character())
+    )
+    expect_identical(nrow(readr::problems(df)), 0L, label = file)
+  }
+})
+
+test_that("the fuller example with its starter dictionary validates as documented", {
+  skip_if_not_installed("readr")
+
+  # The 173-row example is documented as a STARTER, not a finished package:
+  # lenient passes, and strict fails with exactly one missing measurement
+  # term_iri (see inst/extdata/example-data-README.md). Pinning the exact
+  # failure catches drift in either direction -- a new failure appearing, or
+  # the documented one silently changing shape.
+  tmp <- withr::local_tempdir()
+  fuller <- readr::read_csv(
+    example_extdata_path("nuseds-fraser-coho-2023-2024.csv"),
+    show_col_types = FALSE
+  )
+  pkg_path <- suppressMessages(suppressWarnings(create_sdp(
+    fuller,
+    path = file.path(tmp, "fraser-coho-fuller"),
+    dataset_id = "fraser-coho-2023-2024",
+    table_id = "escapement",
+    seed_semantics = FALSE,
+    check_updates = FALSE,
+    overwrite = TRUE
+  )))
+  # Install the shipped starter dictionary, as the README walkthrough does.
+  file.copy(
+    example_extdata_path("nuseds-fraser-coho-2023-2024-column_dictionary.csv"),
+    file.path(pkg_path, "metadata", "column_dictionary.csv"),
+    overwrite = TRUE
+  )
+
+  expect_no_error(suppressMessages(suppressWarnings(
+    validate_salmon_datapackage(pkg_path, require_iris = FALSE)
+  )))
+
+  expect_error(
+    suppressMessages(suppressWarnings(
+      validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+    )),
+    "Measurement columns require term_iri; missing in rows 8.",
+    fixed = TRUE
+  )
+})
