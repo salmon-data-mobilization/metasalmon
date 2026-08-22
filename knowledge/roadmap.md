@@ -603,7 +603,10 @@ as PR #71 on 2026-08-21, confined to `Date` because readr's `POSIXct` output was
 measured already correct. The eight 2026-08-21 recon defects merged as **PR #75**
 (backlog #93-item-2 and #96–#102): the descriptor builder no longer destroys a
 package directory on a Date-typed `temporal_start` (with the honest caveat that
-the unlink-before-abort *ordering* is its own open half, recorded on #96), gap
+the unlink-before-abort *ordering* was its own open half — retired 2026-08-22 by
+making the write path transactional, branch
+`fix/2026-08-22-abort-safe-write-path`; the smaller `create_sdp()` sidecar shape
+it exposed is backlog #111), gap
 detection now reports `no_candidates` instead of going silently blind, both
 shipped examples validate and are round-trip-tested, the two 404 example IRIs
 resolve, the estimate-classification crosswalk exists and the enumeration

@@ -48,12 +48,11 @@ Severity = how much it can bite a real user.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
   (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**
   (items 3–5 only),
-  and **#95**, **#103–#108**, **#112**, plus
+  and **#95**, **#103–#108**, **#111**, **#112**, plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
-  coverage count remain), **#96** (the destructive Date trigger is fixed; the
-  unlink-before-the-last-abortable-step ordering is its own open half), and
+  coverage count remain), and
   **#99** (this repo's dictionary is fixed; metasalmonpy and smn-data-pkg
   still ship the two 404 IRIs).
 - **Open and awaiting a decision rather than an implementer:** #90 (which side
@@ -69,6 +68,13 @@ Severity = how much it can bite a real user.
   and the 2026-08-21 recon-fix pass (branch
   `fix/2026-08-21-recon-defects`) fixed **#97, #98, #100, #101, #102**, #93
   item 2, #96's destructive trigger, and #99 for this repo's own dictionary.
+  **#96 is now fully retired**: its remaining ordering half (unlink before the
+  last abortable step) was fixed in the development version on 2026-08-22
+  (branch `fix/2026-08-22-abort-safe-write-path`) by making
+  `write_salmon_datapackage()` transactional — render everything, then install
+  through the atomic write set with rollback — with RED-verified abort-injection
+  tests; the adjacent smaller shape it exposed in `create_sdp()`'s sidecars is
+  **#111**.
 - **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
   `method_iri` slot and the `metadata/methods.csv` registry the item was about.
 - **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
@@ -105,12 +111,18 @@ review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were foun
 during the 0.2.4 work; **#95–#108 came from the 2026-08-21 recon**, which
 executed the package's own examples through both validators instead of reading
 the code, and carries its evidence inline in each item rather than in a plan.
+<<<<<<< HEAD
 **#112 came from S10 chunk A's migration differential** (2026-08-22,
 metasalmonpy PR #14) — a divergence where the mirror was the internally
 consistent side, logged rather than fixed pending a ruling. (#111 was claimed
 the same day by the concurrent abort-safe write-path stream for the
 `create_sdp()` sidecar shape; the collision was caught pre-merge and each item
 keeps the number it committed under.)
+=======
+**#111 came from S10 chunk A's migration differential** (2026-08-22,
+metasalmonpy PR #14) — a divergence where the mirror was the internally
+consistent side, logged rather than fixed pending a ruling.
+>>>>>>> origin/main
 Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
@@ -966,7 +978,9 @@ the v0.2 extension resources.
 ### Open — P1 (highest value next)
 
 **#96 A `Date` in `dataset_meta$temporal_start` destroys the package already on
-disk. The most severe item on this list.** `R/package-helpers.R:318` reads
+disk. The most severe item on this list.** *(Retired 2026-08-22 — both halves
+fixed in the development version; see the closing paragraphs.)*
+`R/package-helpers.R:318` read
 
 ```r
 if (!is.na(dataset_meta$temporal_start[1]) && dataset_meta$temporal_start[1] != "") {
@@ -1015,12 +1029,70 @@ values render through `.ms_iso_character()` so the JSON and the CSV agree; and
 `.ms_align_cols()` now coerces `Date` columns to padded ISO text (#93 item 2),
 so no typed date reaches the comparisons or the writers at all.
 `test-write-datapackage-typed-metadata.R` proves the Date round trip and that
-the directory survives, verified RED first. **The second half of the retire
-condition is NOT met and stays open:** unlinking the managed paths before the
-last thing that can abort is its own defect, and no test yet asserts that an
-*arbitrary* post-unlink abort leaves the previous package intact. That needs a
-write-then-swap (or backup-and-restore) ordering, which is a design change,
-not a comparison fix.
+the directory survives, verified RED first. The second half of the retire
+condition — unlinking the managed paths before the last thing that can abort
+is its own defect, and no test asserted that an *arbitrary* post-unlink abort
+leaves the previous package intact — stayed open at that point, because it
+needs a write-then-swap ordering, a design change rather than a comparison
+fix.
+
+**RETIRED 2026-08-22 — the ordering half is fixed and both halves of the
+retire condition are now met** (branch `fix/2026-08-22-abort-safe-write-path`).
+The fix is structural, not a hoist of individual abort points:
+`write_salmon_datapackage()` now renders its entire write set — data CSVs,
+metadata CSVs, `datapackage.json`, ownership sentinel — to bytes *before*
+anything on disk is touched, and installs the rendered set through
+`.ms_sdp_extension_atomic_write_set()`, the same staged, rollback-protected
+mechanism the sdp-0.2.0 methods migration already used (each replacement fully
+staged as a same-directory sibling, originals renamed aside, restored on any
+mid-install failure). Managed paths not rewritten (orphans, legacy root
+shadows, stale `codes.csv`) are unlinked only after the install succeeds.
+Output bytes are unchanged: each file is rendered by the exact writer call
+that used to write it in place. `test-write-datapackage-abort-safety.R`
+injects aborts at two post-unlink points of the old ordering
+(`.ms_sdp_metadata_resource_entries()` in descriptor assembly,
+`.ms_meta_scalar_present()` in the resource loop — the very helper PR #75
+introduced, whose fixed comparison sat at an unfixed ordering point) and
+asserts the surviving package is **byte-identical** (hash comparison) and
+readable by `read_salmon_datapackage()`; all injection tests were verified RED
+against the pre-fix code (package destroyed, unreadable). A structural guard
+in the same file keeps direct filesystem mutations out of the writer body, with
+its retirement condition stated.
+
+Two honest narrowings recorded rather than silently absorbed. (1) `prune =
+TRUE` deletes files the writer does not own and therefore cannot restore; its
+wipe now runs only after every input-dependent computation and the full byte
+rendering have succeeded (test-verified: an injected input-dependent abort
+under `prune = TRUE` leaves package *and* unmanaged sidecar intact, RED before
+the fix), but a pure filesystem failure — disk full, permissions revoked —
+between wipe and install can still lose the wiped files. That residual is
+documented at `.ms_commit_package_write()` and in the writer's roxygen, and is
+deliberate: restoring unowned files would require copying arbitrarily large
+data the caller explicitly asked to delete. (2) `create_sdp()`'s create-owned
+sidecars (`README-review.txt`, `semantic_suggestions.csv`,
+`metadata/metadata-edh-hnap.xml`) still go through
+`.ms_replace_create_output()` — unlink-then-rewrite with abort points between
+— which is the same defect shape at single-file blast radius; filed as **#111**
+rather than stretched into this item's scope.
+
+**Mirror measurement, 2026-08-22 (measured, not assumed).** PR #75's exposure
+table (s10 replay plan) marked metasalmonpy `#96` "clean" because `_has_value`
+is type-safe and pandas does not date-guess — that covered the *comparison*
+trigger only. The *ordering* defect is present in Python:
+`package_io.py::write_salmon_datapackage` calls `_prepare_package_dir()` (which
+unlinks the managed paths, or `shutil.rmtree`-wipes for prune) and only
+afterwards runs `render_resource_frame(...).to_csv(...)`,
+`load_sdp_schema(quiet=True)`, the descriptor build, `json.dump`, and
+`_write_metadata_csv(...)` — so any exception in that window (a typed-column
+rendering error, a broken vendored bundle, a non-serializable numpy value,
+plain I/O failure) deletes `metadata/` and `datapackage.json` and writes
+nothing back. metasalmonpy's `atomic_io.py` has a single-file `atomic_write()`
+but no multi-file staged write set with rollback, which is the mechanism this
+fix reuses on the R side. Not fixed there in this stream — S10 chunk A is
+actively rewriting metasalmonpy — so this paragraph is the durable record for
+the replay: the mirror needs the same render-first/install-atomically ordering
+when its 0.3.x catch-up reaches the writer, and metasalmonpy's own
+`knowledge/` bundle should carry this once chunk A settles.
 
 **#80 The Theme A exact-model live benchmark was never completed, and nothing in
 this bundle said so.** Tracked only in GitHub issue
@@ -1097,9 +1169,32 @@ the byte assertion is the only one that fails if the writer is not surgical.
 ### P2 — correctness and conformance debt
 
 **Mixed state; read each item's first line, not this heading.** Open: **#86**,
-**#87**, **#82**, **#83**. Fixed but unreleased in gcdfo: **#81**, **#84**.
-Superseded: **#75**. They stay interleaved because the resolved ones carry
-reasoning the open ones refer back to; the top-of-file snapshot is the index.
+**#87**, **#82**, **#83**, **#111**. Fixed but unreleased in gcdfo: **#81**,
+**#84**. Superseded: **#75**. They stay interleaved because the resolved ones
+carry reasoning the open ones refer back to; the top-of-file snapshot is the
+index.
+
+**#111 `create_sdp()`'s create-owned sidecars are unlink-then-rewrite, the same
+defect shape #96 retired, at single-file blast radius.** Found while retiring
+#96's ordering half (2026-08-22): `write_salmon_datapackage()` is now
+transactional over the files it owns, but `create_sdp()` writes three files of
+its own *after* the package write, each through `.ms_replace_create_output()`
+(`R/package-helpers.R`) — unlink the existing file, then have the caller write
+a replacement. `README-review.txt` (`.ms_write_sdp_review_readme()`),
+`semantic_suggestions.csv` (`readr::write_csv` after the unlink), and
+`metadata/metadata-edh-hnap.xml` (`edh_build_hnap_xml()` after the unlink) each
+have abort points between the unlink and the completed rewrite — the EDH XML
+builder is the widest, since it renders from metadata at write time. An abort
+destroys only that one file, not the package, and a re-run of `create_sdp()`
+regenerates it — but a *reviewed* `README-review.txt` a user annotated in
+place, or the EDH XML of a package whose inputs have since changed, is not
+recoverable by re-running. The fix is mechanical now that the writer shows the
+shape: render to bytes, install via `.ms_sdp_extension_atomic_write_set()`
+(single-file case already wrapped as `.ms_sdp_extension_atomic_write()`), and
+retire `.ms_replace_create_output()` — its hard-link rationale is subsumed,
+since staged-sibling rename never writes through an existing inode. *Retires
+when:* `.ms_replace_create_output()` has no callers and a test injects an
+abort into each of the three rewrites and finds the prior file intact.
 
 **#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
 `metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
@@ -2141,7 +2236,11 @@ from `Authors@R`. No documented naming convention for the exported surface;
 `semantic_suggestions` / `semantic_llm_assessments` are attributes with no
 accessor.
 
+<<<<<<< HEAD
 **#112 `migrate_sdp_methods()`'s no-op report shape is internally
+=======
+**#111 `migrate_sdp_methods()`'s no-op report shape is internally
+>>>>>>> origin/main
 inconsistent.** The nothing-to-migrate early return builds `report$tables` as
 a **two**-column frame — `table_id`, `method_iri` (`R/sdp-methods.R:299`) —
 while every populated path builds **three**, adding `columns` (`:335`). A
