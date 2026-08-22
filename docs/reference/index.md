@@ -85,6 +85,8 @@ Crosswalk legacy NuSEDS method labels to canonical method families
   : NuSEDS enumeration method crosswalk
 - [`nuseds_estimate_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_method_crosswalk.md)
   : NuSEDS estimate method crosswalk
+- [`nuseds_estimate_classification_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_classification_crosswalk.md)
+  : NuSEDS estimate classification crosswalk
 
 ## Darwin Core (DwC-DP)
 

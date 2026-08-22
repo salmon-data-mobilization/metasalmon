@@ -329,11 +329,16 @@ unit slot. Use `sources_for_role("unit")` when you want the normal unit
 vocabulary set.
 
 For measurement columns, the LLM reviews variable, property, entity,
-unit, constraint, and method candidates together. Only variable,
-property, entity, and unit acceptances can become `REVIEW:` prefills.
-Constraint and method decisions always require manual application, and
-deterministic validators can downgrade unsupported model acceptances to
-`review`.
+unit, constraint, and statistical-modifier candidates together. Only
+variable, property, entity, and unit acceptances can become `REVIEW:`
+prefills. Constraint and statistical-modifier decisions always require
+manual application, and deterministic validators can downgrade
+unsupported model acceptances to `review`.
+
+A method is not among them: since sdp-0.3.0 a method is never a
+dictionary column. See [Migrating to SDP
+0.3.0](https://salmon-data-mobilization.github.io/metasalmon/articles/migrating-to-sdp-0-3-0.md)
+for where it lives now.
 
 ### Should I edit the dictionary before or after validation?
 

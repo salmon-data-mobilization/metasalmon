@@ -358,10 +358,12 @@ This is the reviewed-package wrapper around
 It refuses to rebuild while obvious review-state markers still exist,
 including:
 
-- `REVIEW:`-prefixed IRIs;
-- unresolved `MISSING DESCRIPTION:` / `MISSING METADATA:` placeholders;
-  and
-- blank final `observation_unit_iri` values in `metadata/tables.csv`.
+- `REVIEW:`-prefixed IRIs; and
+- unresolved `MISSING DESCRIPTION:` / `MISSING METADATA:` placeholders
+  in `description`, `observation_unit`, and `table_label`.
+
+A *blank* `observation_unit_iri` is not one of those markers and does
+not block a rebuild; only a `REVIEW:`-prefixed value does.
 
 ### 9) Run strict final validation
 
@@ -469,12 +471,15 @@ their exact package-relative paths, the EML science-metadata record, and
 the OAI-ORE map. The EML record describes raw files as data tables and
 named SDP artifacts as supplementary entities; ORE `prov:atLocation`
 values preserve the hierarchy for exact reconstruction. A closed
-inventory includes SSSOM, ordered measurement decompositions, methods,
+inventory includes SSSOM, ordered measurement decompositions,
 observation structures, and manifest-declared reproducibility records
-without scanning arbitrary files. The KNB-specific
-`metadata/eml-mapping.yml`, its authorization evidence and party
-details, and all mutable `publication/` receipts remain local and are
-not deposited.
+without scanning arbitrary files. There is no methods artifact to
+deposit: since sdp-0.3.0 a package carrying a `metadata/methods.csv` is
+refused outright, with a pointer to
+[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md).
+The KNB-specific `metadata/eml-mapping.yml`, its authorization evidence
+and party details, and all mutable `publication/` receipts remain local
+and are not deposited.
 
 KNB DOI minting is a later opt-in release action, not part of
 [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md).

@@ -127,19 +127,23 @@ CSVs. That includes variable, property, entity, and unit IRIs in
 `metadata/column_dictionary.csv` plus strong table-level
 observation-unit drafts in `metadata/tables.csv`, using
 `observation_unit`/`description` when available and otherwise falling
-back to `table_label`/`table_id`. Constraint and method candidates are
-never auto-filled. Any auto-applied semantic IRI draft is written back
-as `REVIEW: <iri>` so you still confirm it manually. It does not
-overwrite existing non-empty semantic values. Code-level suggestions
-default to factor and low-cardinality character source columns; use
+back to `table_label`/`table_id`. Constraint and statistical-modifier
+candidates are held back unless the column’s own name, label, or
+description carries the evidence for them, and under LLM review
+(`llm_assess = TRUE`) they are never auto-filled at all. Any
+auto-applied semantic IRI draft is written back as `REVIEW: <iri>` so
+you still confirm it manually. It does not overwrite existing non-empty
+semantic values. Code-level suggestions default to factor and
+low-cardinality character source columns; use
 `semantic_code_scope = "all"` if you want broader code-level seeding.
 
-When LLM review is enabled, the six measurement roles are judged
-together and then checked by deterministic validators. A validator can
-downgrade an unsupported acceptance to manual review, but it never
-substitutes or invents a term. Omit `semantic_sources` for role-aware
-defaults; an explicitly supplied vector is a strict allowlist through
-the single retry round.
+When LLM review is enabled, the six measurement roles — variable,
+property, entity, unit, constraint, and statistical modifier — are
+judged together and then checked by deterministic validators. A
+validator can downgrade an unsupported acceptance to manual review, but
+it never substitutes or invents a term. Omit `semantic_sources` for
+role-aware defaults; an explicitly supplied vector is a strict allowlist
+through the single retry round.
 
 The inferred metadata includes `MISSING DESCRIPTION:` and
 `MISSING METADATA:` placeholders for required fields so the package is
@@ -205,3 +209,14 @@ package, use:
 
 - [Publishing Data
   Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/data-dictionary-publication.html)
+
+Two more guides are worth knowing about before you package real data:
+
+- [Tidy Data for Salmon Data
+  Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/tidy-data-for-sdp.html)
+  — what the primary-key and untidy-column-name checks mean, and how to
+  reshape a year-per-column table.
+- [Migrating to SDP
+  0.3.0](https://salmon-data-mobilization.github.io/metasalmon/articles/migrating-to-sdp-0-3-0.html)
+  — required reading if you have a package built with metasalmon 0.2.x,
+  since methods left the column dictionary.

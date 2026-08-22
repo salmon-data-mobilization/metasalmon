@@ -200,7 +200,9 @@ packages, which means:
 | SKOS | System for organizing term lists |
 | OWL | System for classification hierarchies |
 | Semantic | Data that carries its meaning with it |
-| I-ADOPT | Framework for describing observable properties (variable, property, entity, constraint) |
+| I-ADOPT | Framework for describing observable properties (variable, property, entity, constraint, statistical modifier) |
+| Statistical modifier | The aggregation that is part of a variable’s identity (mean, maximum, total, peak); `statistical_modifier_iri` |
+| Method placement | Where a method lives since sdp-0.3.0: `tables.csv` `method_iri`, a `protocol_iri`/`protocol_citation` citation, or a code column resolved through `codes.csv` |
 | Frictionless | International data package standard |
 | DwC-DP | Darwin Core Data Package profile (Frictionless-based) |
 | Assertion (DwC-DP) | MeasurementOrFact pattern: assertionType/value/unit |
