@@ -549,6 +549,22 @@ So an auxiliary worktree gets a *nested* path — `.worktrees/<task>/metasalmonp
 — never `.worktrees/<task>-metasalmonpy`. Both existing checkouts follow this;
 it had not been written down.
 
+## Python exposure of the 2026-08-21 recon defects, mapped to chunks
+
+metasalmon PR #75 fixed eight defects; each was measured (not assumed) against
+metasalmonpy, and the exposures land in existing chunks rather than new ones:
+
+| Defect | Python state (measured) | Chunk |
+|---|---|---|
+| #96 destructive Date write | **clean** — `_has_value` is type-safe, pandas does not guess dates | none |
+| #93 item 2 metadata Date coercion | **clean** — `to_csv` pads | none |
+| #97 gap detection blind to zero candidates | **has the defect**, same repro (0 gaps, no `semantic_targets`) | **B** |
+| #98 example fails validation | partial: same DD-MON-YY sample, but the validator does not enforce `value_type: date` at all — a validator-parity divergence in its own right — and the bundled `column_dictionary.csv` is **corrupt as shipped** (unquoted commas shift two rows; stale `method_iri` header) | corruption + header → **A** (that file is in A's swap); the value_type enforcement gap → **D** |
+| #99 404 IRIs | has both | **A** (example data moves with the contract flip) |
+| #100 no round-trip test | none exists; one would fail today on the corrupt dictionary | **D** |
+| #101 classification crosswalk | absent | **B** |
+| #102 crosswalk wiring | broader than R's defect: **neither** existing crosswalk is wired into the package path at all — an undocumented divergence `PARITY.md` does not record, itself a mirror-contract violation until registered | **B**, with the register row due in the same change |
+
 ## Sidecar-survival rule
 
 Sidecars appear at PRs 1–2 but read→edit→write preservation is a PR-3
