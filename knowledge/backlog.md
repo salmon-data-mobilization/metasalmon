@@ -111,18 +111,12 @@ review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were foun
 during the 0.2.4 work; **#95–#108 came from the 2026-08-21 recon**, which
 executed the package's own examples through both validators instead of reading
 the code, and carries its evidence inline in each item rather than in a plan.
-<<<<<<< HEAD
 **#112 came from S10 chunk A's migration differential** (2026-08-22,
 metasalmonpy PR #14) — a divergence where the mirror was the internally
 consistent side, logged rather than fixed pending a ruling. (#111 was claimed
 the same day by the concurrent abort-safe write-path stream for the
 `create_sdp()` sidecar shape; the collision was caught pre-merge and each item
 keeps the number it committed under.)
-=======
-**#111 came from S10 chunk A's migration differential** (2026-08-22,
-metasalmonpy PR #14) — a divergence where the mirror was the internally
-consistent side, logged rather than fixed pending a ruling.
->>>>>>> origin/main
 Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
@@ -2236,11 +2230,7 @@ from `Authors@R`. No documented naming convention for the exported surface;
 `semantic_suggestions` / `semantic_llm_assessments` are attributes with no
 accessor.
 
-<<<<<<< HEAD
 **#112 `migrate_sdp_methods()`'s no-op report shape is internally
-=======
-**#111 `migrate_sdp_methods()`'s no-op report shape is internally
->>>>>>> origin/main
 inconsistent.** The nothing-to-migrate early return builds `report$tables` as
 a **two**-column frame — `table_id`, `method_iri` (`R/sdp-methods.R:299`) —
 while every populated path builds **three**, adding `columns` (`:335`). A
