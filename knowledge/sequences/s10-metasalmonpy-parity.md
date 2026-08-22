@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1, the remainder ports by subsystem, and chunk A landed 2026-08-22 (unversioned pending Q7). Next: chunks B and G; C–F parallel. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed chunks A, B, C and G (2026-08-22, all unversioned pending Q7). D and E+F are in flight; the only scope after them is chunk H (the metasalmon-PR-#77 write-path mirror) and the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -27,18 +27,26 @@ and the GitHub Release is published. Rung 3 — `0.2.0 + 0.2.1` collapsed,
 formerly PR #10 — merged, and it was the **last replayed rung**. PR #11 (the
 #65 descriptor adjudication and datetime fix) is likewise merged.
 
-**Chunk A is done.** The breaking dictionary-contract flip — which the
-2026-08-17 replan put first precisely so nothing later is built on a shape it
-replaces — merged 2026-08-22 as metasalmonpy PR #14, **unversioned by
-design**: metasalmonpy stays at 0.2.1 because which number the finished port
-may carry is open (Q7 / execplan open decision 2), so A landed under the
-CHANGELOG's *Unreleased* heading and the single bump comes at the end of the
-chunks. Verified against metasalmon `main` at `e02111a` — see the execplan's
-chunk-A record for the counts and the baseline convention it set. **The next
-work is chunks B and G**, the only two that depend on A; **C, D, E and F are
-parallelisable** in any order, and no longer even risk merge collision with
-A's rewrite of `package_io.py` and `sdp_methods.py`. (E is still blocked as
-written on the prefix-rename question below.)
+**Chunks A, B, C and G are done.** Chunk A — the breaking dictionary-contract
+flip, which the 2026-08-17 replan put first precisely so nothing later is
+built on a shape it replaces — merged 2026-08-22 as metasalmonpy PR #14,
+verified against metasalmon `main` at `e02111a`. Chunk C — the missing-value
+contract, undiluted — merged the same day as PR #15, verified against `main`
+at `39818ce`, converging register row 22 and closing its live interop hazard.
+Chunks B and G — the semantic-pipeline retarget plus the legacy-read
+verification — merged as PR #16, verified against `main` at `9d8f125` after a
+mid-stream re-baseline (Q7's second data point). All three PRs are
+**unversioned by design**: metasalmonpy stays at 0.2.1 because which number
+the finished port may carry is open (Q7 / execplan open decision 2), so
+everything lands under the CHANGELOG's *Unreleased* heading and the single
+bump comes at the end of the chunks. See the execplan's dated chunk records
+for counts, baselines and revert verification. **D and E+F are in flight**
+(2026-08-22). The only scope after them is chunk **H** — the mirror of
+metasalmon PR #77's abort-safe write path, routed 2026-08-22 because no
+earlier chunk owned it (backlog #96's measured Python ordering defect) — and
+the terminal version bump, which waits on Q7. (E's prefix-rename question
+below is still open as a question; the execplan struck its own "decided and
+logged here" claim on 2026-08-21.)
 
 *(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
 rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all
@@ -141,6 +149,16 @@ converged, and the bundle is a verbatim byte-copy of the upstream tag.
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.
 
+**The statistical-modifier role is fully mirrored as of chunk B (2026-08-22,
+metasalmonpy PR #16):** the ranking-preferences rows landed byte-identical to
+metasalmon's file, the review prompt judges exactly the six dictionary slots,
+`SEM_MODIFIER_EVIDENCE_REQUIRED` sits beside the surviving method validator,
+and the mirrored role-contract guard states its own six-surface scope — with
+`role_boost` named as the one surface Python cannot guard (no profile system;
+backlog #87) and a tripwire test that goes red the moment one appears. The
+paragraph below is the pre-B state, kept as the record of what the chunk had
+to check and why.
+
 **The statistical-modifier role is half-mirrored already — check before
 planning it.** metasalmon fixed two 0.3.0 role-contract leftovers (its NEWS
 "Fixed" entry): `inst/extdata/ontology-preferences.csv` gained three
@@ -181,7 +199,11 @@ nobody can locate breaks them once on no authority.
 settled, because the rename *is* a scope line in it. **Retires when:** a dated
 decision naming the decider lands in one place, and the other document is
 corrected to point at it in the same change — or the execplan's "decided and
-logged here" is struck as an error and this stays open. *(The two items filed
+logged here" is struck as an error and this stays open. **The second arm
+happened (2026-08-21):** the execplan struck the claim as an error (its open
+decision 1b), so the two documents no longer disagree — the *question* itself
+stays open, and E+F is in flight with it unresolved; how that chunk handled
+the rename scope line gets recorded here when it lands. *(The two items filed
 beside it on 2026-08-13 are done: `ms_setup_github()`'s private `qualark-data`
 default and the R-syntax remediation message were both fixed the same day in
 `a7999b2`, "mirror metasalmon #72 (no default repo)", and shipped in v0.1.7.)*
