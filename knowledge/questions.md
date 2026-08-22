@@ -115,6 +115,13 @@ convention while this stays open. Every chunk verified this way widens the
 set of delivered behaviour that no existing release number can truthfully
 claim, which strengthens the recommendation above: the sooner the metasalmon
 release exists, the less behaviour the final bump has to qualify away.
+*Second data point (2026-08-22, chunk B):* chunk B had to **re-baseline
+mid-stream** when metasalmon `main` moved under it (`39818ce` → `9d8f125`,
+docs plus PR #77) — the same moving-target cost chunk A paid when `main`
+moved during its fixture cut. Two chunks, two re-baselines: while no release
+exists, each in-flight chunk pays a re-measurement cost against a target that
+keeps moving, on top of the widening-claim cost above. Still open — recorded,
+not resolved.
 
 ### Q8 — Where do PFMA subareas and a species reference get minted?
 **Unblocks:** two of the four gap columns in the coho example's codes.csv.

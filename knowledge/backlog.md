@@ -1088,6 +1088,14 @@ the replay: the mirror needs the same render-first/install-atomically ordering
 when its 0.3.x catch-up reaches the writer, and metasalmonpy's own
 `knowledge/` bundle should carry this once chunk A settles.
 
+**Routed 2026-08-22:** the Python side is no longer merely recorded here — it
+is chunk **H** in the S10 execplan
+(`knowledge/plans/2026-08-15-s10-metasalmonpy-parity-replay.md`), its own
+small item sequenced after the in-flight D and E+F chunks, with the measured
+evidence above as its brief. Chunk C's PR flagged the mirror gap for the hub
+rather than absorbing it, and no pre-existing chunk owned write-path
+ordering.
+
 **#80 The Theme A exact-model live benchmark was never completed, and nothing in
 this bundle said so.** Tracked only in GitHub issue
 [metasalmon#6](https://github.com/salmon-data-mobilization/metasalmon/issues/6),
@@ -2019,6 +2027,14 @@ row contract is unchanged. Tests in `test-term-request-helpers.R`, verified
 RED first (gaps = 0 for the zero-candidate column). **metasalmonpy has the
 same defect, measured 2026-08-21**: the identical reproduction returns 0 gap
 rows and no `semantic_targets` attribute exists there — S10 catch-up work.
+**Mirror half discharged 2026-08-22** (metasalmonpy PR #16, S10 chunk B):
+`suggest_semantics()` attaches `semantic_targets` and
+`detect_semantic_term_gaps()` reports any target with no retrieval evidence
+at all as `gap_detection_basis = "no_candidates"` — per target, not per
+column, checked before `min_score`, the explicit-`suggestions` path keeping
+row-in/row-out — differential-matched against metasalmon `main` (`9d8f125`)
+including the `no_candidates`/`candidate_gap` split and the role filter.
+Both halves are now closed; nothing remains open under this number.
 
 **#98 The shipped 30-row example and its bundled dictionary fail
 `validate_salmon_datapackage()` in both modes.** Writing
@@ -2173,6 +2189,12 @@ a shared prefill engine (`.ms_prefill_legacy_code_terms()`), added to
 `collation_sensitive_fns`, verified RED first. metasalmonpy, measured
 2026-08-21: no classification crosswalk exists there — and neither crosswalk
 it *does* have is wired into its create_sdp path at all (see #102's note).
+**Mirror half discharged 2026-08-22** (metasalmonpy PR #16, S10 chunk B):
+`nuseds_estimate_classification_crosswalk()` ported with the same recorded
+non-mappings (`NO SURVEY THIS YEAR` and `UNKNOWN` stay `NA`) and the
+scheme-level multi-year rows, wired through the ported shared prefill engine;
+the crosswalk frame matched R's value-for-value **and column-and-order
+exact** against metasalmon `main` (`9d8f125`). Both halves are now closed.
 
 **#102 "Fence" is in the crosswalk `create_sdp()` does not use.**
 `nuseds_enumeration_method_crosswalk()` maps `"Fence"` → family `FS` →
@@ -2207,6 +2229,17 @@ verified RED first. **metasalmonpy's exposure is broader, measured
 else — Python wires NO crosswalk into its package path, not even the estimate
 one R has wired all along, and `PARITY.md` records no such difference, which
 is itself a mirror-contract violation to resolve in S10.
+**Mirror half discharged 2026-08-22** (metasalmonpy PR #16, S10 chunk B): the
+shared prefill engine is ported (`package_io._prefill_legacy_code_terms`,
+mirror of `.ms_prefill_legacy_code_terms`) with all three wrappers —
+estimate method (the pre-existing gap), classification (#101), and
+enumeration, matching on `enumeration` alone for the same plural-header
+reason as R — wired at the same point in the artifact path (after codes
+settle, before semantic seeding; explicit caller IRIs never overwritten),
+with identical `term_iri` fills against metasalmon `main` (`9d8f125`). The
+previously unregistered wired-nothing divergence is now **parity-deviations /
+`PARITY.md` row 47**, a permanent record with no retirement condition. Both
+halves closed.
 
 ### Open — P3 (R-package and API hygiene)
 

@@ -708,8 +708,10 @@ S8. The mirror invariant separately requires S10 to replay the complete current
 released R baseline in Python before new behavior lands in both languages; that
 baseline is now **0.3.0, released**. The replay ladder is complete at 0.2.1
 (rung 3 was the **last** replayed rung; the 2026-08-17 replan ports the
-remainder by subsystem), and the subsystem port landed its first chunk — A,
-the breaking dictionary-contract flip, 2026-08-22, unversioned pending Q7. The first behavior is verification,
+remainder by subsystem), and the subsystem port has landed chunks A, B, C and
+G (2026-08-22, metasalmonpy PRs #14–#16, all unversioned pending Q7), with D
+and E+F in flight and only the PR-#77 write-path mirror (chunk H) and the
+terminal bump behind them. The first behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer
@@ -730,7 +732,7 @@ release half of that gate is satisfied.
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
-- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · chunk A landed 2026-08-22 (metasalmonpy PR #14, unversioned pending Q7); next B and G, C–F parallel
+- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · chunks A, B, C and G landed 2026-08-22 (metasalmonpy PRs #14–#16, all unversioned pending Q7); D and E+F in flight; then chunk H (the PR-#77 write-path mirror) and the terminal bump
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 - [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md)
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
