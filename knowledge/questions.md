@@ -107,6 +107,14 @@ whether the parity claim requires closing #87 and #91 first is equally open.
 first, then metasalmonpy claims that number — it makes both version claims
 literally true. **Owner:** [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
 open decisions 1 and 2.
+*New evidence (2026-08-22, chunk A):* the port's first subsystem chunk
+(metasalmonpy PR #14, merged unversioned) was verified against metasalmon
+**`main` at the moment of measurement** — `e02111a`, including PR #75 — not
+against any release, and the execplan now records that as the operative
+convention while this stays open. Every chunk verified this way widens the
+set of delivered behaviour that no existing release number can truthfully
+claim, which strengthens the recommendation above: the sooner the metasalmon
+release exists, the less behaviour the final bump has to qualify away.
 
 ### Q8 — Where do PFMA subareas and a species reference get minted?
 **Unblocks:** two of the four gap columns in the coho example's codes.csv.

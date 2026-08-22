@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the remainder ports by subsystem. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1, the remainder ports by subsystem, and chunk A landed 2026-08-22 (unversioned pending Q7). Next: chunks B and G; C–F parallel. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -25,10 +25,20 @@ The stream opened at **metasalmon 0.1.6** parity against an R release of 0.2.6.
 carries `version = "0.2.1"`, the annotated tags `v0.2.0` and `v0.2.1` exist,
 and the GitHub Release is published. Rung 3 — `0.2.0 + 0.2.1` collapsed,
 formerly PR #10 — merged, and it was the **last replayed rung**. PR #11 (the
-#65 descriptor adjudication and datetime fix) is likewise merged. So nothing in
-this stream is waiting on a merge, and **the next unit of work is chunk A, not
-started** — the breaking dictionary-contract flip, which the 2026-08-17 replan
-put first precisely so nothing later is built on a shape it replaces.
+#65 descriptor adjudication and datetime fix) is likewise merged.
+
+**Chunk A is done.** The breaking dictionary-contract flip — which the
+2026-08-17 replan put first precisely so nothing later is built on a shape it
+replaces — merged 2026-08-22 as metasalmonpy PR #14, **unversioned by
+design**: metasalmonpy stays at 0.2.1 because which number the finished port
+may carry is open (Q7 / execplan open decision 2), so A landed under the
+CHANGELOG's *Unreleased* heading and the single bump comes at the end of the
+chunks. Verified against metasalmon `main` at `e02111a` — see the execplan's
+chunk-A record for the counts and the baseline convention it set. **The next
+work is chunks B and G**, the only two that depend on A; **C, D, E and F are
+parallelisable** in any order, and no longer even risk merge collision with
+A's rewrite of `package_io.py` and `sdp_methods.py`. (E is still blocked as
+written on the prefix-rename question below.)
 
 *(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
 rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all
@@ -123,9 +133,10 @@ claiming the next R release number instead. **The chunk list itself is also not
 final** until the execplan's first open decision (whether the parity claim
 requires closing #87 and #91) is answered — (a) and (b) there add work to it.
 The remote schema loader and
-its spec-tag pin have landed; both the vendored bundle and `SDP_SPEC_TAG` still
-name `sdp-0.2.0` and **must move to `sdp-0.3.0` together** in chunk A, never
-separately (metasalmonpy `PARITY.md` rows 27 and 38).
+its spec-tag pin have landed, and chunk A moved the vendored bundle and
+`SDP_SPEC_TAG` to `sdp-0.3.0` **together**, never separately, exactly as
+required — metasalmonpy `PARITY.md` rows 27 and 38 are both now marked
+converged, and the bundle is a verbatim byte-copy of the upstream tag.
 
 **Interacts with S4:** the workshop's Python episodes execute against
 metasalmonpy, so S4 must not demo Python behaviour that has not landed.

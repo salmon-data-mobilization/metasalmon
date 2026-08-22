@@ -347,25 +347,27 @@ and pushed — they carry metasalmon's pinned remote schema source, which is
 why they exist — but neither has a corresponding GitHub Release object
 (remaining release mechanics are S6 item 3 / S1 cross-repo work).
 
-**The spec-version spread — four consumers, three eras, and only one of them
-current.** Checked 2026-08-21 against the sibling checkouts. No single repo can
+**The spec-version spread — four consumers, three eras, and two of them
+current.** Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
+row re-checked 2026-08-22 after S10 chunk A. No single repo can
 see this table, which is the reason the hub carries it.
 
 | Consumer | Declares or pins | Current? |
 |---|---|---|
-| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes — the only one** |
-| `metasalmonpy` | Vendors **sdp-0.2.0** and pins its remote loader to that tag (`SDP_SPEC_TAG`); stamps `sdp-0.2.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | No — era lag, deliberate |
+| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, byte-identical to metasalmon's vendored bundle, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** — while the package *version* stays 0.2.1 pending Q7 |
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
-Two things the spread makes visible. First, the vendored Python bundle carries
-`schema/frictionless/metadata/methods.schema.json` — a file the spec repo **no
-longer has**, since sdp-0.3.0 removed that registry — so metasalmonpy validates
-against a schema with no upstream. That is the correct state for a 0.2.1 parity
-claim and both sides record it with a retirement condition (metasalmonpy
-`PARITY.md` rows 27 and 38: the pin and the bundle move together at S10's 0.3.0
-rung, and must never name different eras). It is still worth stating plainly,
-because "vendored" reads as "vendored from something that exists". Second, **the
+Two things the spread made visible, one of them now resolved. First —
+resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry
+`schema/frictionless/metadata/methods.schema.json`, a file the spec repo **no
+longer has** since sdp-0.3.0 removed that registry, so metasalmonpy validated
+against a schema with no upstream. The chunk-A bundle swap removed it, the pin
+and the bundle moved together exactly as the retirement condition required,
+and `PARITY.md` rows 27 and 38 are marked converged; metasalmonpy's
+`SDP_METHODS_COLUMNS` is now a frozen legacy contract for *reading* 0.2.x-era
+packages, not a read of any schema. Second, **the
 spec repo ships examples of the version it superseded**, so the normative
 document and its own demonstrations disagree — a smn-data-pkg defect that
 belongs in that repo's tracker, noted here only because the hub is where the
@@ -704,9 +706,10 @@ The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
 released R baseline in Python before new behavior lands in both languages; that
-baseline is now **0.3.0, released**, and the replay stands at 0.1.8 released
-with rung 3 written and awaiting merge — the **last** replayed rung, since the
-2026-08-17 replan ports the remainder by subsystem. The first behavior is verification,
+baseline is now **0.3.0, released**. The replay ladder is complete at 0.2.1
+(rung 3 was the **last** replayed rung; the 2026-08-17 replan ports the
+remainder by subsystem), and the subsystem port landed its first chunk — A,
+the breaking dictionary-contract flip, 2026-08-22, unversioned pending Q7. The first behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer
@@ -727,7 +730,7 @@ release half of that gate is satisfied.
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
-- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
+- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · chunk A landed 2026-08-22 (metasalmonpy PR #14, unversioned pending Q7); next B and G, C–F parallel
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 - [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md)
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
