@@ -37,7 +37,7 @@ Severity = how much it can bite a real user.
 - **deferred** — deliberately left out of the current refactor because it belongs
   to a separate roadmap or would change behavior beyond the plan.
 
-**Current snapshot (re-audited 2026-08-17 against `main` and the sibling repos).**
+**Current snapshot (re-audited 2026-08-21 against `main` and the sibling repos).**
 
 - **Closed:** #1, #2, #4, #5, #6, #7, #8, #10, #11, #12, #14, #15, #16, #17, #18,
   #19, #20, #21, #25, #27, #28, #32, #34–#42 (the 0.2.0 P0 remediation), and
@@ -46,21 +46,36 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, plus
+  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**,
+  and **#95–#108**, plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half) and **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain).
 - **Open and awaiting a decision rather than an implementer:** #90 (which side
-  of the descriptor/validator disagreement moves) and #87's benchmark half.
-  Listing them as plain open items overstates how ready they are to pick up.
+  of the descriptor/validator disagreement moves — the evidence assembled
+  2026-08-21 is one-sided, but the call has not been made), #87's benchmark
+  half, #93's coercion-placement half, and #106 (which reading of
+  "typed as a SOSA Procedure" the spec means, the same undecided question as
+  #76's open half). Listing them as plain open items overstates how ready they
+  are to pick up.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
-  0.2.5; #77 in 0.2.6. #85 and #88 are fixed in the development version.
+  0.2.5; #77 in 0.2.6. #85, #88 and #94 are fixed in the development version.
 - **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
   `method_iri` slot and the `metadata/methods.csv` registry the item was about.
 - **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
-  the 0.0.9 tag).
+  the 0.0.9 tag); **#92**, by metasalmonpy PR #12 (merged 2026-08-21).
+
+**One number was doing two jobs, and three citations pointed at the ambiguity.**
+Two unrelated defects were both filed as **#91**. The
+`validate_salmon_datapackage()` issue-system parity gap keeps **#91** — it is
+the one this snapshot's Open list always meant. The canonical-date-key defect
+is renumbered **#94**. Anything that says "#91" and means year padding means
+**#94**: `knowledge/parity-deviations.md` row 40, the release index in
+`knowledge/roadmap.md`, and metasalmonpy's `PARITY.md` row 40. Those three
+files have other owners and are **not** corrected by this change. Row 35 in
+both registers, and the S10 execplan's citation, still correctly mean #91.
 
 **Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
 and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
@@ -72,7 +87,7 @@ start in parallel; its only hard blocker (#73) shipped in 0.2.5. See
 links to its execplan. This file stays the live index of *what is wrong*;
 the roadmap decides *what order to fix it in*.
 
-Evidence for items #34+ is in
+Evidence for items #34–#71 is in
 `knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md`. The two older
 documents that called themselves roadmaps
 (`2026-08-10-post-0.2.0-roadmap.md`, `2026-06-26-next-behaviours-roadmap.md`) are
@@ -80,11 +95,16 @@ now historical records; the second still holds the Theme A–E design detail.
 
 **How to read this file.** Items #1–#33 came from the 2026-06-24 architecture
 review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were found
-during the 0.2.4 work. Priorities here are severity; *ordering* is decided in
+during the 0.2.4 work; **#95–#108 came from the 2026-08-21 recon**, which
+executed the package's own examples through both validators instead of reading
+the code, and carries its evidence inline in each item rather than in a plan.
+Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
 should name a check that proves it from a clean clone; #9 is the cautionary
-example of what happens otherwise.
+example of what happens otherwise. **A number here is a permanent handle**: an
+item is renumbered only to break a collision (#94 is the only case), and the
+snapshot records where the old citations point.
 
 **Theme A implementation checkpoint (2026-07-28):** A4, A5, A2, A1, and A3
 merged to `main` in PR #5 at `f774673`. The evidence pack (A0) passed its final
@@ -636,7 +656,7 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
 
 ## Larger opportunities (future refactors, not the current plan)
 
-### 29. `package-helpers.R` is a ~2975-line god-file
+### 29. `package-helpers.R` is a 3786-line god-file
 - **Implementation status:** partially addressed. R5 created
   `R/artifact-inference.R` and moved package artifact inference context there.
   `package-helpers.R` remains large and still owns writing, reading, validation,
@@ -646,6 +666,12 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   (1292), and a composite-hint cluster (1955-2490). **Recommendation:** land plan R5's
   orchestration extraction in a *new* file (e.g. `R/artifact-inference.R`) to capture
   the Locality win instead of deepening inside the god-file.
+- The headline figure said "~2975" until 2026-08-21, when the file was **3786
+  lines** (`wc -l`, on `main` and on this branch — the two agree). It has grown
+  ~27% since the item was written while the item still described the smaller
+  file. The figure is a moving target by construction: **recount it before
+  citing it**, and treat any line count in this bundle the same way. `AGENTS.md`
+  carries the same number rounded ("~3.8k"), so the two now agree.
 
 ### 30. `infer_*_from_resources` defined in `dictionary-helpers.R` but core to the package path
 - **Implementation status:** partially addressed/open. The package path now uses
@@ -926,6 +952,47 @@ the v0.2 extension resources.
 
 ### Open — P1 (highest value next)
 
+**#96 A `Date` in `dataset_meta$temporal_start` destroys the package already on
+disk. The most severe item on this list.** `R/package-helpers.R:318` reads
+
+```r
+if (!is.na(dataset_meta$temporal_start[1]) && dataset_meta$temporal_start[1] != "") {
+```
+
+Comparing a `Date` with `""` coerces the string to `NA_Date_`, so the whole
+`&&` is `NA` and R aborts with *"missing value where TRUE/FALSE needed"*. That
+line sits **after** `write_salmon_datapackage()` has unlinked the managed paths
+and before it writes any of `metadata/dataset.csv`, `metadata/tables.csv`,
+`metadata/column_dictionary.csv`, `metadata/codes.csv` or `datapackage.json`.
+The call does not fail cleanly — it **deletes a valid package's metadata and
+descriptor and leaves nothing in their place**.
+
+**The triggering input is what the package itself wrote.** Reproduced
+2026-08-21: write a valid SDP; read its own `metadata/dataset.csv` back with a
+plain `readr::read_csv()`; write it again. `read_csv()` type-guesses
+`temporal_start` as `Date` — correctly, since metasalmon wrote an ISO date
+there — and the second write aborts. Before: `data/`, `datapackage.json` and
+four `metadata/*.csv`. After: `data/nuseds_fraser_coho.csv` alone; `metadata/`
+empty, `datapackage.json` gone. No warning, and no reason for a caller to
+suspect the read they did was the wrong one — nothing in the API says
+`dataset_meta` must be all-character.
+
+The read path escapes only because `.ms_read_metadata_csv()` pins
+`col_types = cols(.default = col_character())`; the in-memory path has no such
+coercion, which is the same seam #93 item (2) describes. Two fixes, and they
+are not the same size: comparing with `!nzchar(as.character(...))` is a local
+correction — the same `!= ""` idiom guards `contact_name`, `contact_email`,
+`contact_org` and `license` in the twenty lines above, and is safe there only
+because `readr` does not type-guess those columns as anything but character —
+while coercing typed columns once in `.ms_align_cols()` is the design call #93
+is waiting on. **The destructive part should not wait for the design call** —
+unlinking before the last thing that can abort is its own defect.
+
+*Retires when:* a `dataset_meta` carrying `Date`-typed `temporal_start` /
+`temporal_end` round-trips through `write_salmon_datapackage()`, **and** a
+regression test asserts that an aborted write leaves the previously valid
+package on disk intact.
+
 **#80 The Theme A exact-model live benchmark was never completed, and nothing in
 this bundle said so.** Tracked only in GitHub issue
 [metasalmon#6](https://github.com/salmon-data-mobilization/metasalmon/issues/6),
@@ -1112,8 +1179,10 @@ from `git ls-tree origin/main`. The retirement condition is met. **Not yet
 released** — PR #83 merged after the 0.0.9 tag, so a consumer on the tag still
 gets both files.
 
-**#91 metasalmon's canonical date key WAS platform-dependent. CONFIRMED and
-fixed 2026-08-21.** `.ms_canonical_value_tokens()` rendered the date key with
+**#94 metasalmon's canonical date key WAS platform-dependent. CONFIRMED and
+fixed 2026-08-21.** *(Filed as a second #91 until 2026-08-21; renumbered so the
+three registers citing "#91" for year padding have an unambiguous target. See
+the snapshot.)* `.ms_canonical_value_tokens()` rendered the date key with
 `format(parsed, "%Y-%m-%d")`. metasalmonpy hit exactly this in Python:
 `strftime("%Y")` **does not zero-pad a year below 1000 on glibc** where
 macOS/BSD does, so `0001-01-01` became `1-01-01` on Linux only — and that key
@@ -1155,12 +1224,17 @@ corpus would have been the artifact.
 
 *Retires when:* nothing — the risk is closed. The **guard** retires when R
 guarantees a zero-padded `%Y` on every platform it builds on, which is the
-platform's contract and not this package's to change. Registered as `PARITY.md`
-row 40 / register row 40; row 40 is marked *converged* once the R fix merges,
-and its "not measured" clause is already corrected.
+platform's contract and not this package's to change.
+
+**Register state, and the twins disagree.** `knowledge/parity-deviations.md`
+row 40 reads *Ahead (converged 2026-08-21, in R)*; metasalmonpy's `PARITY.md`
+row 40 still reads *Ahead (open; hub owns the R side)* and still says the row
+is marked converged "when metasalmon's fix merges" — which it has. Python's
+copy is the stale one. Both rows also still cite this item as "#91" and want
+"#94".
 
 **#93 `as.character()` of a Date drops the year padding on every platform, and
-the package cannot read back what it writes.** Found while fixing #91 and
+the package cannot read back what it writes.** Found while fixing #94 and
 **verified on macOS R 4.5.2**, which is what makes it a different defect rather
 than more of the same one:
 
@@ -1175,12 +1249,12 @@ readr::parse_date("1-01-01")          #> NA + a parsing failure
 Since R 4.3, `as.character.Date` takes an internal fast path that does not go
 through `format()`/strftime at all. So this one is **not platform-dependent**,
 and CI cannot surface it by disagreeing with a developer's machine — the way
-#91 was surfaced. It is also worth naming that the two defects point in
+#94 was surfaced. It is also worth naming that the two defects point in
 **opposite directions**: a path that `format()`s on one side and
 `as.character()`s on the other mismatches on macOS and *matches* on Linux,
-which is the reverse of #91 and is a good way to fix the wrong side.
+which is the reverse of #94 and is a good way to fix the wrong side.
 
-Three sites were fixed with #91, using `.ms_iso_character()` (pads the rendered
+Three sites were fixed with #94, using `.ms_iso_character()` (pads the rendered
 text rather than re-deriving it, so `as.character()`'s shape choices survive):
 the inferred `temporal_start`/`temporal_end` in
 `infer_dataset_metadata_from_resources()`, and the `meta()` accessor in
@@ -1252,8 +1326,9 @@ pre-1000 year, and the SSSOM sort key and emitted bytes are rendered by the same
 function. `tests/testthat/test-year-padding-guard.R` does **not** cover any of
 this — it is blind to the implicit form by construction, and says so.
 
-**#92 metasalmonpy's extras-gated tests have zero CI coverage, and two documents
-say otherwise.** `parity.yml`'s `python` job installs `.[test]` — which is
+**#92 metasalmonpy's extras-gated tests had zero CI coverage, and two documents
+said otherwise. FIXED 2026-08-21 in metasalmonpy PR #12.** `parity.yml`'s
+`python` job installed `.[test]` — which is
 `build` plus `pytest` and **neither `[eml]` nor `[context]`** — so the only
 full-suite CI run is core-deps-shaped *by accident*, and the **97 extras-gated
 tests (EML, KNB, context readers) never run in CI at all**.
@@ -1266,54 +1341,102 @@ accident, and the broad coverage it implies exists nowhere — the same shape as
 #89, where a determinism guard was real and passing while only ever exercising
 the shape the ontology happened to have.
 
-An extras job has been run green on both rung-3 branches, so adding one looks
-safe; it changes CI for the repo and is Brett's call. *Retires when:* CI runs
-both dependency configurations, and both documents describe what CI actually
-does.
+**Fixed 2026-08-21** (metasalmonpy PR #12, merge `c13df83`, from
+`ci/run-both-dependency-configurations`). `parity.yml`'s `python` job is now a
+two-leg matrix — *core dependencies only* (`.[test]`) and *with `[eml]` and
+`[context]` extras* (`.[test,eml,context]`) — running an identical step list,
+and each leg **verifies its own dependency configuration before it runs
+anything**: the core leg asserts `yaml lxml openpyxl pypdf xlrd` are absent,
+the extras leg asserts they are present. That verification step is the part
+worth copying: without it a typo in the extras list turns the second leg into a
+second core-deps run, the extras-gated tests go back to skipping, and the job
+stays green under a name describing coverage it had stopped providing. The
+workflow carries its own retirement condition in a header comment, and
+`PARITY.md` row 30 now describes what CI does, with the old overstatement kept
+and marked as such.
+
+The count moved with the suite: this item recorded 97 extras-gated tests when
+found, the fix records 94. Neither figure is load-bearing and neither was
+re-counted here.
+
+*Retires when:* met — CI runs both dependency configurations and both documents
+describe it. Nothing here is outstanding.
 
 **#90 Every semantically annotated SDP either mirror writes fails
 smn-data-pkg's strict publication validator.** `write_salmon_datapackage()`
-attaches `unit_iri`, `term_iri`, `term_type`, `property_iri` and `entity_iri` to
-each descriptor `schema.fields` entry. `scripts/validate_package.py:913` builds
-the expected field list from `column_dictionary.csv` and compares with `==`, so
-**any extra key is an error** — and that validator is normative: `sdp.rules.yaml`
-names it and `SPECIFICATION.md:86` makes it binding.
+attaches **seven** keys to each descriptor `schema.fields` entry —
+`unit_iri`, `term_iri`, `term_type`, `property_iri`, `entity_iri`,
+`constraint_iri` and `statistical_modifier_iri`
+(`R/package-helpers.R:205-225`). `scripts/validate_package.py` builds the
+expected field list with `descriptor_field_from_column()` — `name`, `title`,
+`description`, `type`, plus `constraints` when required — and compares the
+whole list with `!=` (`scripts/validate_package.py:917-925`), so **any extra
+key is an error**.
 
-metasalmonpy emits the identical keys, so this is **not** a parity divergence —
-both mirrors disagree with the spec repo the same way, which is why no
-comparison between them could ever have surfaced it. It stayed hidden because
-the only R-written fixture under test has a measurement column carrying **no
-IRIs at all**, so the extra keys are guarded away; a package annotated the way
-the SDP spec *requires* for measurement columns always carries them.
+**Reproduced 2026-08-21, end to end.** `create_sdp()` on the bundled 173-row
+example, one measurement column annotated with `term_iri` / `property_iri` /
+`entity_iri` / `unit_iri`, written with `write_salmon_datapackage()`, then
+`python3 scripts/validate_package.py <pkg>` from a `smn-data-pkg` checkout on
+`main`: `datapackage.json resource data/nuseds_fraser_coho.csv schema.fields
+must match metadata/column_dictionary.csv-derived fields.` The same package
+with the IRIs left blank does not raise that error, which is the whole
+mechanism — the extra keys appear only once a measurement column is annotated
+the way the SDP spec asks.
 
-**This is a decision, not a fix, and naming it a defect hides that.** Nothing
-here is a mistake anyone can go and correct: the writers do what the SDP spec
-asks of an annotated measurement column, and the validator does what its own
-normative text says. They are two defensible readings of the same spec, and
-until one is chosen there is no correct implementation to write. Whoever picks
-it up otherwise faces a coin flip between two whole-ecosystem edits — and
-either edit is *cheap to make and expensive to reverse*, which is exactly the
-shape that should not be settled by whoever gets there first.
+**metasalmonpy emits seven keys too, but not the same seven** — corrected
+2026-08-21. Python's descriptor projection (`package_io.py:680-686`,
+`:910-917`) ends in **`method_iri`** where R ends in
+`statistical_modifier_iri`, because it still vendors sdp-0.2.0, whose
+dictionary had a `method_iri` slot that sdp-0.3.0 deleted (see #75). So the
+conclusion "not a parity divergence" survives — both mirrors fail this
+validator, and no R↔Python comparison would surface it — but the premise
+"identical keys" was wrong, and it matters: whichever way #90 is decided,
+Python's seventh key is a *separate* divergence that the S10 0.2.2→0.3.0
+catch-up has to close on its own.
 
-**Owner: Brett**, as the authority over `smn-data-pkg`. It is a **spec-versus-
-implementation call** and it lands in the spec repo either way — either
-`SPECIFICATION.md` says descriptor `schema.fields` entries carry no I-ADOPT
-keys and both mirrors stop projecting them, or it says they may and
-`scripts/validate_package.py`'s `descriptor_field_from_column()` learns the
-keys so the comparison stops being exact. The second is the larger change: an
-exact `==` is what makes the validator able to reject an unknown key at all,
-so relaxing it means deciding *which* extra keys are legal, which is a
-vocabulary question rather than a code one.
+**The two readings are not evenly supported, and the item used to imply they
+were.** The normativity claim behind "the validator is normative" does not
+hold up:
+
+- All 76 lines of `schema/sdp.rules.yaml` **never mention
+  `validate_package.py`**. The only repo-wide references to the script are
+  `README.md:90` and `docs/entrypoints.md:12`, both describing it as something
+  to run, not as a normative authority.
+- The published **v0.3 profile has zero `additionalProperties` constraints**
+  (as does v0.2) — so the profile the packages actually declare already
+  permits the keys.
+- Frictionless Table Schema explicitly allows custom field properties, which
+  is the standard the descriptor claims to follow.
+- **No CI in any ecosystem repo runs the script** — `smn-data-pkg` has no
+  `.github/` at all (#103), and neither metasalmon's, metasalmonpy's nor
+  gcdfo's workflows invoke it.
+
+`SPECIFICATION.md:80-96` says a descriptor must "include a field entry for
+each matching row in `metadata/column_dictionary.csv`", which is a
+completeness requirement; the "no extra columns" sentence beside it is about
+**canonical metadata CSV headers**, not descriptor field keys.
+
+**Still a decision, and still Brett's** — as the authority over
+`smn-data-pkg`. It lands in the spec repo either way: either `SPECIFICATION.md`
+says descriptor `schema.fields` entries carry no I-ADOPT keys and both mirrors
+stop projecting them, or it says they may and
+`descriptor_field_from_column()` learns the keys so the comparison stops being
+exact. The second is the larger change — an exact comparison is what lets the
+validator reject an unknown key at all, so relaxing it means deciding *which*
+extra keys are legal, a vocabulary question rather than a code one. **The
+evidence assembled here favours permitting the keys; it does not settle it,
+and nothing in this item should be read as the call having been made.**
 
 Two things a decider should have, because neither is obvious from the defect:
-the divergence is **not** a parity question — both mirrors emit identical keys,
-so no R↔Python comparison could ever surface it — and it is **not urgent in
-the way a validator failure usually is**, because the only fixture under test
-carries no IRIs and so nothing is red today. It bites the first real annotated
-package, not CI.
+this is **not** a parity question (both mirrors fail the validator, so no
+R↔Python comparison could surface it), and it is **not urgent in the way a
+validator failure usually is** — nothing is red today, because the only
+fixture under test carries no IRIs and no CI runs the script at all. It bites
+the first real annotated package.
 
 *Retires when:* an SDP with a fully annotated measurement column passes
-`scripts/validate_package.py` unmodified — under whichever reading is chosen.
+`scripts/validate_package.py` unmodified — under whichever reading is chosen —
+and metasalmonpy's seventh key matches R's.
 
 **#91 `validate_salmon_datapackage()`'s issue system is a different mechanism
 in metasalmonpy, not a smaller one.** R's
@@ -1347,7 +1470,7 @@ where the divergence is self-documented in a source comment
 0.1.6 parity claim: `package_io.py` was added 2026-02-06 in the initial commit,
 six months before the 0.1.6 alignment, and the function has been revised at
 0.1.6, 0.1.8 and rung 3 without the control flow being reconciled. Registered
-now as parity-deviations **row 35**. Severity: silent — a caller inspecting
+now as parity-deviations **row 41**. Severity: silent — a caller inspecting
 `issues` on 0.1.8 gets an empty frame and cannot distinguish "validated clean"
 from "this mirror does not report that category".
 
@@ -1692,6 +1815,167 @@ cannot widen the shortlist on the direct `suggest_semantics()` path;
 error instead of degrading on a missing column; the composite-intent gate's
 `optional_hint_fields` is inert.
 
+### Open — the 2026-08-21 example-and-validator recon
+
+**Every item below was reproduced by executing the tools, not by reading
+them**, and the reason is worth stating once for the group: each one is
+invisible to `devtools::test()` on `main`, and #100 is why. The package ships
+two examples, ships a validator, and never points the second at the first.
+
+**#95 `create_sdp()` writes `codes.csv` rows for columns its own
+`infer_column_role()` typed `attribute`, and the spec requires `categorical`.**
+On the bundled 173-row example this is **22 of the 27** errors
+`scripts/validate_package.py` reports, one per `codes.csv` row across **six**
+columns — `AREA`, `SPECIES`, `RUN_TYPE`, `ESTIMATE_METHOD`,
+`ESTIMATE_CLASSIFICATION`, `ESTIMATE_STAGE`:
+
+```
+metadata/codes.csv row 2 targets a non-categorical or unknown column:
+  ('dataset-1', 'nuseds_fraser_coho', 'AREA').
+```
+
+The other five errors are the four blank measurement IRIs and the placeholder
+license, both of which `create_sdp()` announces on the console. These 22 it
+does not announce — it emits `column_role = "attribute"` in the dictionary and
+code rows for the same column in the same call, prints "Dictionary validation
+passed", and hands back a package that is internally inconsistent by the
+spec's own rule. The count scales with the data, not with
+the defect: the same call on the 30-row example produces **157** of these
+across **14** columns, because that file has more free-text columns. Six and
+22 are properties of one example, the mechanism is the durable part.
+
+Which side is wrong is a real question — `infer_column_role()` typing an
+enumerable string column `attribute`, or `create_sdp()` seeding codes for
+non-categorical columns — and it is close to #53, which is the same heuristic
+mis-typing a different column shape. *Retires when:* `create_sdp()` on both
+bundled examples produces no `targets a non-categorical or unknown column`
+error, under whichever of the two is corrected.
+
+**#97 `detect_semantic_term_gaps()` returns zero gaps when the search returned
+zero candidates** — it is structurally blind to precisely the case a term
+request exists for. Both entry paths short-circuit on empty input:
+`R/term-request-helpers.R:109-110` returns `.empty_term_gap_result()` when
+`suggestions` and `assessments` are both empty, and `:206-208` does the same
+when `suggestions` is empty and no assessment carries `request_new_term`.
+
+Verified 2026-08-21 with a `search_fn` returning zero rows for a column
+described as a concept with no ontology term: `suggestions = 0`,
+`gaps = 0`, and the console says *"No semantic suggestions found for missing
+semantic metadata."* — which reads like a clean result. A gap is currently
+detectable only when retrieval found *something* and it was judged
+insufficient; a term that no vocabulary contains at all produces silence. That
+inverts the pipeline `AGENTS.md` describes (`detect_semantic_term_gaps()` →
+`render_ontology_term_request()` → `submit_term_request_issues()`), whose
+whole purpose is surfacing terms that do not exist.
+
+*Retires when:* a target with an unfilled required IRI field and zero
+candidates appears in the gap result, with a `gap_detection_basis` that
+distinguishes "nothing found" from "found and rejected", and a test pins it.
+
+**#98 The shipped 30-row example and its bundled dictionary fail
+`validate_salmon_datapackage()` in both modes.** Writing
+`inst/extdata/nuseds-fraser-coho-sample.csv` with the bundled
+`dataset.csv` / `tables.csv` / `column_dictionary.csv` / `codes.csv` and
+validating it aborts with 2 structural issues at `require_iris = FALSE` and
+again at `require_iris = TRUE`:
+
+```
+Table 'nuseds_fraser_coho' column 'START_DTT' declares value_type 'date'
+  but 14 values did not satisfy it (unparseable as that type):
+  06-NOV-01, 03-NOV-18, 07-OCT-16.
+```
+
+The CSV stores Oracle `DD-MON-YY` dates as NuSEDS exports them; the bundled
+dictionary declares `value_type: date`. The strict spec validator rejects the
+same 28 values plus the `FULL_CU_IN` codes that the bundled `codes.csv` does
+not enumerate. So the artifact the docs hand a new user as the fastest
+walkthrough does not pass the package's own final gate. Note the *fuller*
+173-row example does not have this defect — `data-raw/` converts `START_DTT`
+and `END_DTT` to ISO there — which is why this survived: the two examples
+disagree and only one is exercised.
+
+Two defensible resolutions and they are not equivalent: declare the two
+columns `string` in the bundled dictionary (honest about NuSEDS bytes,
+loses the date semantics), or convert the sample CSV to ISO as the fuller
+example already does (changes a file kept "unchanged for backwards
+compatibility"). *Retires when:* both bundled examples pass
+`validate_salmon_datapackage()` in both modes, pinned by the test #100 asks
+for.
+
+**#99 Two IRIs that 404 ship in `inst/extdata/column_dictionary.csv`, and two
+sibling repos copy them.** `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance`
+and `https://w3id.org/example/salmon#WildOriginConstraint`, both **HTTP 404**
+when fetched 2026-08-21 (`https://w3id.org/smn/Abundance` in the same file
+returns 200, so the check is discriminating). The same two values are in
+`metasalmonpy/data/column_dictionary.csv` and
+`smn-data-pkg/examples/minimal-example/metadata/column_dictionary.csv` —
+the ecosystem's three "here is what a good dictionary looks like" artifacts
+all carry unresolvable IRIs under a namespace nobody owns.
+
+They are recognisably placeholders, which is the problem: `REVIEW:` is this
+package's marker for an unfinished IRI and strict validation rejects it, while
+a plausible-looking `w3id.org` IRI passes every check the package has. Two
+routes and they are not the same kind of work: make them visibly fake (a docs
+fix), or mint real terms for an absolute spawner abundance and a wild-origin
+constraint — which is an ontology question for `smn`, and belongs in the gap
+register before it belongs in a CSV. *Retires when:* every IRI in the three
+shipped example dictionaries resolves, and a network-gated test asserts it.
+
+**#100 No test round-trips either bundled example through a validator.**
+`grep` over `tests/testthat/` finds twelve references to the example CSVs and
+not one of them calls `validate_salmon_datapackage()` on a package built from
+them; none calls the spec validator at all. `test-package-helpers.R:525-544`
+comes closest — it runs `create_sdp()` on the 30-row sample and then asserts
+two inferred `temporal_*` strings and one file's existence.
+
+This is the reason #95, #96 and #98 were all invisible to a green suite, and
+it is the same lesson the 0.2.0 pass recorded at the top of this file ("the
+suite … never round-trips a package through its own validator") arriving a
+second time in a place the earlier fix did not reach. A test that builds each
+example and validates it would have caught three of the items in this section
+on the day they were introduced.
+
+*Retires when:* a test creates a package from each bundled example and asserts
+`validate_salmon_datapackage()` passes in both modes; the spec-validator leg
+may be network- or dependency-gated, but the R leg must not be.
+
+**#101 `ESTIMATE_CLASSIFICATION` has no crosswalk, and the terms it needs are
+released.** `R/nuseds-method-crosswalk.R` covers `ENUMERATION_METHODS` and
+`ESTIMATE_METHOD`; `ESTIMATE_CLASSIFICATION` appears **nowhere in `R/`**. The
+bundled 173-row example's values are `TRUE ABUNDANCE (TYPE-1)`,
+`RELATIVE ABUNDANCE (TYPE-3)`, `(TYPE-4)`, `(TYPE-5)` and
+`NO SURVEY THIS YEAR` — they name the type in the string — and
+`gcdfo:Type1`–`gcdfo:Type6` are `skos:Concept`s under `gcdfo:EstimateType`
+in the **released** gcdfo 0.0.9 (`gcdfo:Type1` is labelled "Type-1, True
+Abundance, high resolution").
+
+**This is a wiring gap, not an ontology gap**, and the distinction is the
+point: it must not be filed as a term request. The terms exist, are released,
+and are labelled to match. Only `NO SURVEY THIS YEAR` may need a decision — it
+is an absence-of-observation marker rather than an estimate type, and mapping
+it to a `Type` concept would be wrong. *Retires when:*
+`nuseds_estimate_classification_crosswalk()` (or an equivalent) maps the five
+observed values, `create_sdp()` wires it as it wires the estimate crosswalk,
+and the disposition of `NO SURVEY THIS YEAR` is recorded rather than guessed.
+
+**#102 "Fence" is in the crosswalk `create_sdp()` does not use.**
+`nuseds_enumeration_method_crosswalk()` maps `"Fence"` → family `FS` →
+`gcdfo:FixedSiteCensusManual`. The only crosswalk `create_sdp()` actually
+wires is `nuseds_estimate_method_crosswalk()`
+(`R/package-helpers.R:1897`, the sole reference to either function outside
+their own file), and that one has no `"Fence"` row — its `FS` family is
+`Fixed Site Census` / `Resistivity Counter` / `Video Counter`. So a NuSEDS
+column recording `Fence` gets no `term_iri`, and the crosswalk that would have
+supplied one is exported, documented, tested and unreachable from the package
+path.
+
+Whether `"Fence"` belongs in the estimate crosswalk is not obvious — it is an
+enumeration method, and NuSEDS files record it under `ENUMERATION_METHODS` —
+so the real gap is that `create_sdp()` reads only one of the two columns.
+*Retires when:* `create_sdp()` applies the enumeration crosswalk to
+`ENUMERATION_METHODS` values as it applies the estimate crosswalk to
+`ESTIMATE_METHOD`, with a test that a `Fence` code row gets its IRI.
+
 ### Open — P3 (R-package and API hygiene)
 
 **#58 No condition classes anywhere.** 415 `cli_abort` + 38 `cli_warn` + 3
@@ -1727,6 +2011,171 @@ highest-leverage, in order: vocabulary-release pinning is impossible today
 SDP's semantic payload; the `smn:`/`gcdfo:` boundary is not machine-checkable;
 no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
+
+#### smn-data-pkg (verified on `main`, 2026-08-21)
+
+**#103 Four of 23 tests fail on `main`, in a repo with no CI to notice.**
+`python -m pytest tests/` reports `4 failed, 19 passed`. All four are
+`ObservationStructureValidationTests` and all four are about the
+`metadata/methods.csv` that sdp-0.3.0 removed, in a copy of
+`examples/mixed-grain-example`. They fail in four different ways, which is
+what a stale test suite looks like from the inside:
+
+```
+FileNotFoundError: .../mixed-grain-example/metadata/methods.csv
+ValueError: dict contains fields not in fieldnames: 'method_iri'
+AssertionError: Expected error containing
+  'resources must include metadata/methods.csv'; found []
+AssertionError: Expected error containing
+  'not registered in metadata/methods.csv'; found []
+```
+
+The two assertions are the interesting pair: the validator correctly reports
+*no* error, and the test insists there should be one. They are asserting the
+pre-0.3.0 contract.
+
+`smn-data-pkg` has **no `.github/` directory at all**, so nothing has been
+running these; the breakage is as old as the 0.3.0 method-model change and
+`git` shows no CI that could have caught it. This is the concrete instance of
+#61's "no LICENSE, CI, or Pages configuration" bullet, and it is worth
+separating because the missing CI is no longer hypothetical — it is already
+hiding a red suite in the repo that owns the spec every other repo validates
+against. The four tests are also the ones that would have to be rewritten
+against the post-0.3.0 model, so deleting them is a decision, not cleanup.
+
+*Retires when:* `pytest tests/` is green on `main` and a workflow runs it on
+every push and pull request.
+
+**#104 The generated template README tells users to delete a file the template
+does not contain, and `--check` calls it in sync.**
+`templates/salmon-data-package-template/README.md:9-13` says the template
+"includes optional `metadata/methods.csv`" and "Delete `methods.csv` when no
+procedure registry is needed". `templates/salmon-data-package-template/metadata/`
+contains `codes.csv`, `column_dictionary.csv`, `dataset.csv`, `tables.csv` and
+`structure/` — no `methods.csv`. `python3 scripts/generate_artifacts.py --check`
+reports **"Generated artifacts are in sync."**
+
+**A textbook guard-expiry instance, and the mechanism is exactly the one
+`AGENTS.md` warns about.** `render_template_readme()`
+(`scripts/generate_artifacts.py:271-284`) reads
+`template-source/salmon-data-package-template/README.md` and returns it
+verbatim — its only checks are that the file exists and contains no `{{`
+placeholders. So the generator **structurally cannot see stale prose**: the
+check compares generated output against a source that is a byte-for-byte copy
+of it, and will report "in sync" for any text whatsoever. A green check here
+means "the copy succeeded", and it is read as "the README is current".
+
+*Retires when:* the template README's file list is derived from the template
+tree rather than copied from prose — or, if it stays prose, `--check` asserts
+that every `metadata/*.csv` the README names exists in the generated template,
+and fails when one does not.
+
+**#105 Four documentation references are published 404s.** Checked live
+2026-08-21 against `https://salmon-data-mobilization.github.io/smn-data-pkg/`,
+which serves the repo and returns 200 for its profiles and Frictionless
+schemas. These four return **404**, and none of the four exists in the repo:
+
+| reference | cited by |
+|---|---|
+| `docs/quickstart.md` | `README.md:83`, and the walkthrough the README sends users to first |
+| `docs/implementation-guide.md` | `docs/entrypoints.md:28` |
+| `docs/edh-hnap-mapping.md` | `README.md:94` |
+| `schema/frictionless/metadata/methods.schema.json` | `docs/entrypoints.md:24` |
+
+The last one is 0.3.0 fallout like #103 and #104 — `docs/entrypoints.md` still
+routes SOSA-procedure questions to a schema the method-model change deleted.
+The other three are documents the README promises and that were never written
+or were removed. `docs/entrypoints.md` exists to be the answer to "what is
+actually used", so a dead route in it is worse than a dead route elsewhere.
+
+*Retires when:* every relative path cited in `README.md` and
+`docs/entrypoints.md` resolves in the repo, and a link check runs in the CI
+#103 asks for.
+
+**#106 `sdp.rules.yaml` requires method IRIs to be "typed as a SOSA Procedure";
+gcdfo and smn do not type them that way.** The `methods_are_sosa_procedures`
+rule reads *"Every method or protocol IRI resolves to a shared vocabulary
+concept typed as a SOSA Procedure"*, and `row_varying_procedures_use_codes`
+says the same of every enumerated `codes.csv` `term_iri`. In the released
+gcdfo 0.0.9, **only `smn:EnumerationMethod` carries
+`rdf:type sosa:Procedure`**; the ten narrower concepts beneath it
+(`gcdfo:VisualGroundCount`, `FixedSiteCensusManual`, `AerialSurveyCount`,
+`HydroacousticSonarCount`, `TrapCount`, `ReddCount`, `ElectrofishingCount`,
+`MarkRecaptureFieldProgram`, `VisualSnorkelCount`, `FixedSiteCensusElectronic`)
+are untyped `skos:Concept`s reaching it by `skos:broader`. smn does the same:
+`salmon-domain-ontology.ttl` types six concepts `sosa:Procedure` and expresses
+the narrower constraint as a `skos:broader*` path in
+`ontology/shapes/method-shapes.ttl`, with an in-file comment saying why
+(`someValuesFrom` cannot range over concept individuals).
+
+**Reading, not defect — and it is the same undecided question as #76's open
+half.** A literal reading makes every crosswalk target this package emits
+non-conformant; a `skos:broader*` reading makes them all conformant and makes
+the rule's wording imprecise. Nothing is red either way, because
+`methods_are_sosa_procedures` is one of the three rules that are loaded and
+never executed (#48) — so the rule text has never been tested against real
+data, which is how the wording and the modelling drifted apart unnoticed.
+Deciding it is a prerequisite for #48 implementing the rule, and #48 must not
+pick a reading by itself.
+
+*Retires when:* the rule text says which of the two it means (direct typing,
+or reachability by `skos:broader*` from a typed concept), and #48's
+implementation checks that.
+
+#### salmon-domain-ontology — two live defects, promoted out of a dated plan
+
+**Both were found in the 2026-08-10 review and have sat in
+`knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md` (rows P1-10 and
+P1-11) ever since.** That file is a dated record of a decision, not a live
+index; this one is the live index. Re-verified on `main` 2026-08-21 — both are
+still present, unchanged.
+
+**#107 `smn:Characteristic rdfs:subClassOf sosa:Property`, and `sosa:Property`
+is not declared in smn's own vendored SOSA.**
+`ontology/modules/02-observation-measurement.ttl:28`. The string
+`sosa:Property` appears **zero times** in `ontology/imports/sosa.ttl`, so the
+entire `smn:Characteristic` hierarchy hangs off an undefined IRI in W3C's
+namespace and no SOSA-aware reasoner relates it to `sosa:ObservableProperty`.
+`ontology/modules/02-observation-measurement.ttl:282` puts the same IRI in an
+`rdfs:domain`.
+
+**It is silent because ELK does not flag an undefined term** — an
+un-axiomatised IRI is simply a class about which nothing is known, so the
+ontology is consistent, the build is green, and the I-ADOPT Property bridge
+quietly relates nothing to nothing.
+
+**This is not abstract, and the case study is the one everyone uses.**
+`smn:Abundance` — the `property_iri` the bundled example dictionary uses, and
+which `inst/extdata/example-data-README.md` singles out as the deliberate
+choice for spawner counts — is `rdfs:subClassOf smn:Characteristic`, so its
+superclass chain terminates in the undeclared IRI. The fix is `ssn:Property` or `sosa:ObservableProperty`;
+which one is a modelling call for the ontology's owner, and the plan row
+estimates a day.
+
+*Retires when:* every superclass IRI asserted in `ontology/modules/` is either
+declared in the module or present in a vendored import, checked in that repo's
+build rather than by inspection.
+
+**#108 `smn:observedTaxonSpecies rdfs:range obo:NCBITaxon_8018` — so annotating
+a coho observation entails it is chum.**
+`ontology/modules/02-observation-measurement.ttl:265`. `NCBITaxon_8018` is
+*Oncorhynchus keta*, chum salmon, and smn's own file says so twenty lines
+earlier: `smn:NCBITaxon_8018` is labelled `"Oncorhynchus keta proxy class"`,
+under an in-file comment naming the mirrored hierarchy as "Oncorhynchus keta
+under Salmonidae". The sibling property `smn:observedTaxonFamily` (declared
+immediately above it) ranges over `obo:NCBITaxon_8015`, Salmonidae — so the
+family-level property is correct and the species-level one was pinned to one
+species, which is what makes this a slip rather than a modelling position.
+
+A range is an entailment, not a constraint: any observation using this
+property on a coho or chinook is *inferred* to be an observation of chum. In a
+five-species integration ontology that is data corruption produced by a
+reasoner, arriving with no error anywhere. Same case study as #107 —
+`smn:Abundance` observations are exactly what would carry this property.
+
+*Retires when:* the range is `obo:NCBITaxon_8015` (or the property is dropped),
+and a competency query in that repo asserts that a coho observation does not
+entail chum.
 
 **#79 Vignettes lag the package — mostly discharged by S11 slice 2; two
 findings remain.** The 2026-08-13 staleness audit (recorded on the

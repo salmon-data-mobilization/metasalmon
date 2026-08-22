@@ -24,6 +24,15 @@ recommendation*, which was wrong in a way that would have deleted a user's
 staging rehearsal. Kept rather than quietly edited: the reasoning is the useful
 part.
 
+**Currency pass 2026-08-21.** Three things this plan waited on have shipped, and
+each is annotated where it is stated rather than only here: REVIEW 1's redaction
+leak (#73) in **0.2.5**; the tidy checks (#77) in **0.2.6**; roadmap **S8**, and
+with it REVIEW 7's method-annotation blocker, as **0.3.0** and spec `sdp-0.3.0`.
+REVIEW 6's version arithmetic went stale as a result. Everything still open is
+open for a reason stated at the point it appears — chiefly roadmap **S1**, and
+the Python lane, which is at metasalmonpy 0.2.1 and demonstrates none of the new
+behaviour yet. Nothing here has been re-decided; only re-dated.
+
 ---
 
 ## Part 1 — `knb_environment` in metasalmon
@@ -88,6 +97,17 @@ while looking addressed.
 in the KNB redaction tests, and consider whether the two redactors should
 converge — two implementations of one security contract is how this gap arose.
 Backlog **#73**.
+
+**FIXED in 0.2.5** (recorded here 2026-08-21). The rule shipped **structural**
+rather than enumerated — any qualified `*_token` name, so a credential
+introduced later is covered without another patch, with `token` required as the
+final name segment so provider diagnostics keep `max_token_count` and
+`total_tokens` intact. And the parenthetical suggestion was taken all the way:
+`.ms_knb_redact()` is **deleted**, not extended, with KNB messages routed
+through the shared function — strictly stronger, since that one also catches
+`x-api-key`, provider API keys, and serialized JSON credential forms the
+narrow copy missed. Nothing in this review is outstanding; step 0 of the
+sequencing table below is done, and **S3 has no remaining hard blocker**.
 
 ### REVIEW 2 — staging EML would overwrite production EML (blocking, correctness)
 
@@ -160,13 +180,32 @@ govern **endpoints and tokens**, not the adapter injection point. State that
 distinction in the code comment, or a later reader will remove the hook in the
 name of the rule and take the dry-run isolation tests with it.
 
-### REVIEW 6 — version claim is stale
+### REVIEW 6 — version claim is stale (and so, since 2026-08-11, is this review)
 
-The plan says "if parallel work has reached 0.3.0, this becomes the next 0.3.x".
-Current version is **0.2.4**. `knb_environment` is additive, so on its own it is
-**0.2.5**. It only becomes 0.3.0 if bundled with S5 (#58 condition classes are
-breaking). Do not bundle for its own sake — S4 pins an exact released version,
-and a smaller release is easier to pin.
+The plan said "if parallel work has reached 0.3.0, this becomes the next 0.3.x".
+*Answered 2026-08-11:* current version is **0.2.4**; `knb_environment` is
+additive, so on its own it is **0.2.5**; it only becomes 0.3.0 if bundled with
+S5 (#58 condition classes are breaking). Do not bundle for its own sake — S4
+pins an exact released version, and a smaller release is easier to pin.
+
+**Both numbers in that answer are now wrong (recorded 2026-08-21).** Current is
+**0.3.0**, tagged `v0.3.0`, with `main`'s development version 107 commits past
+it. And **0.2.5 shipped as something else**: the credential-redaction fix this
+document's own REVIEW 1 called for (backlog #73) — qualified `*_token` names
+redacted structurally, and the second redactor deleted. So the plan's original
+sentence turned out to be the accurate one; parallel work did reach 0.3.0.
+
+The *reasoning* survives, the arithmetic does not. `knb_environment` is still
+additive, so sized against 0.3.0 it is the next patch, **0.3.1**. Whether to
+bundle with S5 was never decided, then or now — it stays an open call, and the
+advice against bundling for its own sake is advice, not a ruling.
+
+*Worth generalising, because this document produced the same failure twice —
+here, and in "smoke-test Python 0.1.6" under Verification and delivery:* a plan
+that writes down a **current version number** has written a fact with a few
+weeks' shelf life, and the number is the part a later reader acts on. The sizing
+rule ("additive, therefore next patch") kept its value across four releases; the
+number it produced did not survive one. Prefer recording the rule.
 
 ### Behaviour
 
@@ -280,15 +319,40 @@ without columns and rows has nothing to describe.
 
 Two things to be honest about, because a learner will hit both:
 
-1. **The package does not currently check any of this** (backlog **#77** — no
-   `primary_key` uniqueness check, no wide-format detection). Until S8 lands,
-   tidiness is the learner's responsibility and the tool will not catch it.
-   Teaching it as enforced when it is not would be the worst outcome.
+1. **The package now checks part of this — demonstrate it rather than disclaim
+   it.** *(Corrected 2026-08-21. This item read "the package does not currently
+   check any of this (backlog #77)", which was true on 2026-08-11 and stopped
+   being true when **0.2.6 shipped #77** as S8's first half.)* Be exact about
+   which part, because over-claiming here is the same mistake the original
+   caveat was guarding against:
+   - A **declared `primary_key` is enforced, as an error.** Both a missing value
+     in a key column and a duplicate key are reported. The check exists only
+     when `tables.csv` declares a key *and* every declared component is present
+     in the data — a table that declares no key is still unchecked, which is
+     worth saying out loud.
+   - **Wide-format column names are a warning, never an error**, deliberately:
+     the SDP may accept untidy data, it should simply stop implying it checked.
+     It fires on bare year-like names, or a shared stem with numeric suffixes,
+     across three or more columns, and its message already points at
+     `tidyr::pivot_longer()`.
+   - Unresolved `MISSING METADATA:` placeholders are surfaced in the default
+     validation mode as well; previously they were errors only under
+     `require_iris = TRUE`, so an ordinary call said nothing while the package
+     stated in its own metadata that its metadata was missing.
+
+   The wide escapement counter-example above is precisely the input that trips
+   the warning, so the episode can run it live: the teaching example and the
+   demonstration are the same file, and the tool says the thing the instructor
+   just said.
 2. **Reshaping is real work.** Point at `tidyr::pivot_longer()` for R learners
    and the pandas equivalent for Python, in this episode rather than later.
 
-*Cross-check when S8 lands:* if #77's wide-format warning ships, this episode
-should demonstrate it, and the "not currently checked" caveat comes out.
+**The caveat moves to the Python lane.** metasalmonpy writes `primaryKey` into
+the descriptor but implements none of the three checks — they are S10 chunk
+**D**, unstarted. An episode demonstrating the tidy checks demonstrates them in
+**R only** until D lands, and Python learners must be told that at the shared
+checkpoint rather than inferring from a quiet run that their package was clean.
+*(This replaces the "cross-check when S8 lands" note, which is discharged.)*
 
 ### Content
 
@@ -321,13 +385,36 @@ should demonstrate it, and the "not currently checked" caveat comes out.
   what the validator actually does. Do not teach the stronger claim.
 - **"Copy the latest SDP template"** needs a canonical, versioned template with a
   stable URL. That is `smn-data-pkg`, which S1 also touches. Name the exact
-  source and version in the episode, not "the latest".
-- **Method annotation is blocked by roadmap S8.** The episodes cannot teach
-  where a method goes until the spec settles it. Under the draft model,
-  `column_dictionary.method_iri` disappears and method moves to the dataset, the
-  table, or a data column — so any episode written against today's layout would
-  teach a placement that is about to be removed. **Write the method content
-  after S8, not before.**
+  source and version in the episode, not "the latest". *(Half-resolved
+  2026-08-21: the versioned source now exists — `smn-data-pkg` carries an
+  annotated **`sdp-0.3.0`** tag beside `sdp-0.2.0` — so the episode has an exact
+  version to name. What S1 still owes is the validation authority, not the
+  template's identity.)*
+- **Method annotation was blocked by roadmap S8. DISCHARGED — S8 shipped as
+  metasalmon 0.3.0 against spec `sdp-0.3.0`** (2026-08-15; recorded here
+  2026-08-21). The draft model this bullet anticipated is now the released one,
+  and it landed the way the bullet predicted: `column_dictionary.method_iri` is
+  gone. The dictionary instead carries **`statistical_modifier_iri`**, on the
+  reasoning that a *mean* weight and a *maximum* weight are different variables
+  while a method never was part of what a value **is**. That distinction is the
+  teachable idea, and it is now safe to teach.
+
+  A method has three settled placements the episode can name:
+  `tables.csv` `method_iri` for a procedure shared by a whole table;
+  `protocol_iri` / `protocol_citation` on `tables.csv` and `dataset.csv` for a
+  cited protocol; and, for a method that varies row by row, a code column in the
+  data resolving through `codes.csv` `term_iri` to a shared-vocabulary
+  procedure. The `metadata/methods.csv` registry is removed.
+
+  Two things the episode author should know rather than rediscover. Learners
+  arriving with an sdp-0.2.0 package need `migrate_sdp_methods()`, which
+  relocates what it can mechanically and stops on anything needing a judgement
+  call — *whether the episode covers migration at all is a content decision, not
+  one made here*. And the **Python lane cannot demonstrate any of this yet**:
+  metasalmonpy is at 0.2.1, still vendors sdp-0.2.0, and its dictionary still
+  has `method_iri`. That is S10 chunk A, unstarted, so the S10 card's rule —
+  *S4 must not demo Python behaviour that has not landed* — binds this episode
+  harder than any other.
 
 ### Publication narrative
 
@@ -358,10 +445,12 @@ prepare a reviewed package and hand it to an R steward.
 ### Verification and delivery
 
 Run the NuSEDS and personal-data R examples against the merged metasalmon
-version; smoke-test Python 0.1.6; validate Excel template headers; confirm the
-shared checkpoints. `sandpaper::check_lesson()` and `sandpaper::build_lesson()`.
-Inspect learner, instructor, and all-in-one HTML for complete paths, valid links,
-unique ids, and visible print content.
+version; smoke-test the released metasalmonpy — **0.2.1 as of 2026-08-21**, not
+the 0.1.6 this line originally named, and still sdp-0.2.0-shaped, so record the
+version tested rather than restating a number here; validate Excel template
+headers; confirm the shared checkpoints. `sandpaper::check_lesson()` and
+`sandpaper::build_lesson()`. Inspect learner, instructor, and all-in-one HTML
+for complete paths, valid links, unique ids, and visible print content.
 
 Update `config.yaml`, setup/reference/instructor guidance, README/index, links,
 and the workshop's own `docs/entrypoints.md`. Preserve the untracked `.DS_Store`;
@@ -374,7 +463,7 @@ live site and the key R / Python / Excel and KNB / EDH routes.
 
 | Step | Depends on | Gate |
 |---|---|---|
-| 0. Fix `dataone_test_token` in **both** redactors (#73) | — | cli-safety and KNB redaction tests both cover the qualified name |
+| 0. ~~Fix `dataone_test_token` in **both** redactors (#73)~~ — **done, shipped in 0.2.5** (the second redactor was deleted rather than fixed) | — | met |
 | 1. `knb_environment` API + registry | 0 | Enum, URL/token isolation |
 | 2. Staging EML output path (REVIEW 2) | 1 | Production `metadata/eml.xml` byte-identical |
 | 3. Manifest and overwrite gating (REVIEW 3) | 1 | Pre-existing production manifest validates |

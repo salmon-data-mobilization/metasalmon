@@ -11,6 +11,13 @@ psc:
 The domain this bundle coordinates. The table below is the complete allowlist:
 seven repositories, one hub.
 
+**"Complete" is currently contested.** This card and the roadmap state two
+different membership tests, and they disagree — see
+*[Open decision — which membership test governs](#open-decision--which-membership-test-governs)*
+at the foot of this card. The table is **unchanged** pending a ruling; a
+contested count stays as it is rather than moving to whichever answer the next
+reader finds more natural.
+
 | Repo | Role |
 |---|---|
 | `metasalmon` (this repo) | R tooling for Salmon Data Packages; **the coordinating hub** — sequencing, execplans, and the release index live in this bundle |
@@ -31,7 +38,8 @@ what `detect_semantic_term_gaps()` → `render_ontology_term_request()` →
 (cycle line, broodline, cyclic dominance, run timing) came out of resolving a
 live modelling question in
 [salmon-domain-ontology PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27).
-It now holds **eleven concepts and 24 gaps** (2026-08-18).
+It now holds **eleven concepts and 24 gaps** (2026-08-18; re-checked 2026-08-21
+against the checkout — unchanged, and every gap still `open`).
 
 ## The term lifecycle is what connects the commons to the ontologies
 
@@ -66,9 +74,12 @@ contributing guide and the checker but in **no card**. smn PR #27 is the
 obvious first customer — it is a live proposal that withdrew its species
 scheme, which is a `rejected` gap in everything but the recording.
 
-**Do not read membership as maturity.** It was created 2026-08-17, holds four
-concepts, **none of them human-verified**, and its card schema and contribution
-flow are being written concurrently with its first content. It uses upstream
+**Do not read membership as maturity.** It was created 2026-08-17, **none of its
+concepts is human-verified**, and its card schema and contribution flow are
+being written concurrently with its first content. The concept and gap counts
+live in exactly one place — the admission note above — because this paragraph
+carried a stale "four concepts" for days after that note was refreshed to
+eleven, inside the same card. It uses upstream
 OKF v0.2 rather than the PSC profile deliberately: that profile's closed card
 schema rejects `sources`, `verified`, `generated`, `stale_after`, and
 `resource`, which are precisely the fields the commons exists to carry, so
@@ -83,3 +94,41 @@ to the hub. When one matters to this domain, the hub records only a typed
 dependency edge with its owner, required artifact or gate, owning plan, and
 observation date; it does not absorb that repository's tasks, status, branches,
 approvals, or releases.
+
+## Open decision — which membership test governs
+
+**Not ruled. Do not resolve this by editing or deleting either test.** Recorded
+2026-08-21; the roadmap carries the same question, with the candidate rulings
+and what each one costs, as
+[OD-1](../roadmap.md#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member).
+
+The two documents state **two different tests**:
+
+| Where | The test it states |
+|---|---|
+| This card, closing paragraph above | Membership follows from **this hub sequencing that repository's work** |
+| `roadmap.md`, the *Domain allowlist* rule | A repository joins when **its output is an input to this pipeline** — the reason given for admitting `salmon-knowledge-commons` on 2026-08-17 |
+
+They disagree about two repositories, and they disagree in opposite directions:
+
+- **`psc-data-transformations`** (PSC Data Systems, private GitLab) consumes
+  metasalmon as a pinned execution engine — `0.1.8` at revision `886e01d`, with
+  calls into `metasalmon:::` internals — so its requirements drive this package,
+  which the roadmap's input test arguably admits. The hub sequences none of its
+  work, which this card's test excludes. It is currently recorded only as an
+  external dependency edge in the roadmap: that is where an unruled repository
+  sits by default, and it is **not** a ruling.
+- **`salmon-data-standards-workshop`** is sequenced by this hub as stream S4, so
+  this card's test admits it — while a lesson's output is not an input to any
+  stage of the term-request or packaging pipeline, so the roadmap's test
+  excludes it. **It has not been added to the table above.** Its absence is why
+  the table's "seven repositories" claim sits in tension with the hub sequencing
+  an eighth repository's rebuild as a named stream, and why the roadmap's
+  release index now carries eight sections for seven members.
+
+**What the ruling unblocks:** whether the table above is seven rows or eight;
+whether the workshop's release-index section is a member row or a courtesy
+record; and whether a pin held by an external consumer creates an obligation on
+this package rather than merely a constraint it should know about. *Retires
+when:* Brett rules — and the losing test is deleted in the same change, or the
+pair regrows and the next reader inherits this contradiction unchanged.

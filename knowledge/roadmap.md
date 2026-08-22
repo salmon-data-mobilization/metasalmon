@@ -12,8 +12,9 @@ psc:
 # ROADMAP — salmon data ecosystem hub
 
 **This is the single sequencing document for metasalmon and the salmon-data
-ecosystem around it** — the coordinating hub for the seven repos in the
-[domain card](domains/salmon-data-ecosystem.md). It answers *what order, what
+ecosystem around it** — the coordinating hub for the repos in the
+[domain card](domains/salmon-data-ecosystem.md) (seven today; whether that is
+the right count is an open decision below). It answers *what order, what
 blocks what, and what is the current state*, and it carries the cross-repo
 **release index**. It deliberately does **not** carry design detail: every
 stream links to a sequence card under `sequences/` and every sequence card
@@ -56,6 +57,11 @@ Rules that keep this from decaying:
   artifact the hub consumes — that is the membership test, and the card records
   it. Shared tools, hyperlinks, consumed artifacts, transitive dependencies,
   and a shared GitHub organization do not add a repository to this hub.
+  **The card states a *different* test in its closing paragraph, and the two
+  disagree** — unruled, recorded as
+  [OD-1](#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member).
+  Neither test has been deleted and the allowlist is unchanged; apply both and
+  report the disagreement rather than picking one.
 - **External-edge rule:** an external repository appears here only as a typed
   dependency edge naming its owner, required artifact or gate, owning plan, and
   observation date. Its tasks, priorities, status, branches, approvals, and
@@ -91,6 +97,40 @@ approval status.
 | `psc-data-systems-site` | Documentation-link handoff | P08 and site maintainers | Optional orientation link to a released PSC vocabulary mapping catalog; no mapping-product implementation gate | `brett-hq/projects/P08-psc-data-systems-documentation-website/project.md` | 2026-08-15 |
 | `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | Consumes psc-salmon-vocabularies **v0.1.0-alpha.2** as a vendored offline projection (34 CAMP concepts, 52 literal assignments, 22 informational alignments), gated on contract and provenance self-consistency plus semantic structure — **but no longer on artifact byte equality**: runtime checksum enforcement was removed 2026-08-07 (their MR !5) over Windows line-ending failures, so the declared SHA-256s are self-attested from inside the consumer. The pin is current, not stale. Operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-16 |
 | `ctc-knowledge-map` | Descriptive-evidence handoff | CTC bundle maintainers and eligible reviewers | Evidence-backed description of the released mapping flow; never mapping rows or approval inherited from a release | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and any activated repository-local plan | 2026-08-15 |
+| `psc-data-transformations` | **Requirements-driving consumer** (new edge type — see below) | PSC Data Systems; private GitLab under `pacific-salmon-commission/psc-data-systems/` | Consumes this package as a pinned execution engine: `metasalmon` **0.1.8** at revision `886e01d`, alongside psc-salmon-vocabularies **v0.1.0-alpha.2** and salmon-domain-ontology **0.0.2**. It calls internals (`metasalmon:::.ms_eml_validate_mapping`, `metasalmon:::.ms_sdp_profile_version`), so its pin constrains what this package may rename | A repository-local plan in that repo; no hub plan owns it | 2026-08-21 |
+
+**`psc-data-transformations` needed a new edge type, and naming it was cheaper
+than bending an old one.** Every other row above describes something this hub
+*consumes* — a validator, a gate, a mapping product, a documentation link. This
+one runs the other way: an external repository consumes **metasalmon itself** as
+a pinned execution engine, so its requirements constrain what this package may
+change. `campModelInput`'s *application-consumer handoff* is the nearest
+existing type and is still the wrong one, because that repo vendors a
+**vocabulary release** rather than this package; filing this row under it would
+have hidden the only property that matters — a consumer pinned to `0.1.8` at
+`886e01d` and calling `metasalmon:::` internals is a compatibility constraint on
+this package, not a downstream reader of an artifact.
+
+**It also asserts a KNB staging model that contradicts the S3 execplan, and
+nobody has ruled between them.** That repo's `docs/architecture.md` states KNB
+provides **no separate hosted draft object** and that a *restricted persistent
+version in production* is the review/staging state; its
+`profiles/knb-private-review.yml` encodes exactly that — `deposit_kind:
+production`, `access: restricted`, `staging_model: private_persistent_version`,
+`creates_persistent_objects: true`. The
+[S3 execplan](plans/2026-08-11-knb-environments-and-workshop-rebuild.md) assumes
+the opposite shape: a `knb_environment = "staging"` switch resolving to the
+DataONE **STAGING** network and member node `urn:node:mnTestKNB`, zero replicas,
+a separate token. Both can be literally true at once — a test *node* and a
+restricted production *version* are different objects — which is why this is an
+open question and not a defect on either side. Recorded under *Open decisions*
+below, because it changes what S3 must build and what S4 can teach.
+
+**What this edge does not import.** That repository's gates (`rights`,
+`semantic`, `private_review`, `public_release`), their approval evidence, its
+branches, its receipts, and its lifecycle status stay in its own plan and never
+enter this roadmap or release index. The external-edge rule is not weakened by
+the pin being on this package rather than on an artifact.
 
 ---
 
@@ -140,15 +180,22 @@ moment anything merges. Current work-in-flight lives in the owning execplan.
 Compact, hub-maintained. Each repo's own changelog/release page stays
 authoritative; this index coordinates. Refreshed 2026-08-18 against repository
 version sources, remote tags, GitHub/GitLab release objects, and the open
-changes that affect this sequence.
+changes that affect this sequence; the metasalmon, metasalmonpy, smn-data-pkg,
+psc-salmon-vocabularies and workshop rows were re-checked 2026-08-21 against
+sibling checkouts.
 
-**Read every row's tag line, not just its version heading.** At this refresh
-**five of the seven** repos have `main` ahead of their newest tag
+**Read every row's tag line, not just its version heading.**
+**Five of the seven** members have `main` ahead of their newest tag
 (metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
-smn-data-pkg), PSC's alpha.3 is merged and untagged, and the commons has no
-tags at all. Ahead-of-tag is the ecosystem's normal state rather than an
-anomaly worth flagging per row, so **cite a commit unless you have checked
-that the thing you mean is inside the tag.**
+smn-data-pkg), PSC's alpha.3 is merged and untagged, and neither the commons
+nor the workshop has a tag at all. Ahead-of-tag is the ecosystem's normal state
+rather than an anomaly worth flagging per row, so **cite a commit unless you
+have checked that the thing you mean is inside the tag.**
+
+The index carries **eight sections for seven members**: the workshop is
+sequenced here as S4 whether or not it is a member, so leaving its state
+unrecorded served nobody. That mismatch is an *Open decision* below, not a
+quiet expansion of the allowlist.
 
 ### metasalmon (R) — current **0.3.0**
 
@@ -171,6 +218,9 @@ historical gap remains an S6 governance note, not a task.
 current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
+**No release has been cut since**: `v0.3.0` (2026-08-15) is still the newest tag
+while `main` is 107 commits past it with twelve unreleased fix entries in
+`NEWS.md` — details under *metasalmon current state* below.
 
 ### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
@@ -192,10 +242,11 @@ longer *replays* that baseline release by release:** the 2026-08-17 replan
 supersedes rungs 4–8 with a subsystem port straight to 0.3.0, so the ladder
 ends at rung 3 and the phrase "replay the complete baseline" is retired.
 
-**`main` is past the `v0.1.8` tag** (PR #9, commons routing, docs only), and
-**rung 3 is written but unmerged** — a `0.2.1` in `pyproject.toml` means the
-`feat/s10-020-021-parity` branch, not a release. This row stays at 0.1.8 until
-that merges and tags.
+Rung 3 has merged and tagged: metasalmonpy PRs #10, #11 and #12 are in, `v0.2.0`
+and `v0.2.1` exist as tags and GitHub Releases, and `pyproject.toml` reads
+`0.2.1` as a **released** parity claim rather than a branch state. The catch-up
+window is therefore **0.2.2→0.3.0**. Both `AGENTS.md` files must carry that same
+number — see the mirror rule above.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -272,15 +323,52 @@ repo's `docs/tech-debt.md` with its retirement condition.
 | Version | Date | One line |
 |---|---|---|
 | sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
-| sdp-0.2.0 | 2026-08-11 (retroactively dated) | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
+| sdp-0.2.0 | tag cut 2026-08-14; **no changelog heading of its own** — see below | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
 | 0.1.1 | 2026-01-14 (malformed in changelog) | I-ADOPT component columns in `column_dictionary.csv` |
 | 0.1.0 | 2025-12-21 | Initial specification draft |
 
-The 0.3.0 changelog entry is dated and 0.2.0 got its retroactive dated
-entry. Both `sdp-0.2.0` and `sdp-0.3.0` annotated tags were cut 2026-08-14
+**0.2.0 got retroactive *content*, not a retroactive dated entry — there is no
+`## [sdp-0.2.0]` heading in `CHANGELOG.md` at all.** (Corrected 2026-08-21;
+this index asserted the opposite.) The headings run `## [Unreleased]`,
+`## [sdp-0.3.0] - 2026-08-14`, `## [0.1.1]`, `## [0.1.0]`, and the entire
+sdp-0.2.0 body of work sits *inside* the 0.3.0 entry as a second
+`### Added`/`### Changed` pair, beneath a `### Fixed` note recording that it
+"had no dated changelog entry". The visible consequence is that **one version
+entry both removes and adds `metadata/methods.csv`** — removed in its own
+breaking `### Changed`, added again in the nested 0.2.0 `### Added` — so
+reading sdp-0.3.0's entry to learn what sdp-0.3.0 changed returns two eras at
+once. *Retires when:* those nested blocks are lifted under their own
+`## [sdp-0.2.0] - 2026-08-11` heading; delete this note in the same change.
+
+Both `sdp-0.2.0` and `sdp-0.3.0` annotated tags were cut 2026-08-14
 and pushed — they carry metasalmon's pinned remote schema source, which is
 why they exist — but neither has a corresponding GitHub Release object
 (remaining release mechanics are S6 item 3 / S1 cross-repo work).
+
+**The spec-version spread — four consumers, three eras, and only one of them
+current.** Checked 2026-08-21 against the sibling checkouts. No single repo can
+see this table, which is the reason the hub carries it.
+
+| Consumer | Declares or pins | Current? |
+|---|---|---|
+| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes — the only one** |
+| `metasalmonpy` | Vendors **sdp-0.2.0** and pins its remote loader to that tag (`SDP_SPEC_TAG`); stamps `sdp-0.2.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | No — era lag, deliberate |
+| `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
+| the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
+
+Two things the spread makes visible. First, the vendored Python bundle carries
+`schema/frictionless/metadata/methods.schema.json` — a file the spec repo **no
+longer has**, since sdp-0.3.0 removed that registry — so metasalmonpy validates
+against a schema with no upstream. That is the correct state for a 0.2.1 parity
+claim and both sides record it with a retirement condition (metasalmonpy
+`PARITY.md` rows 27 and 38: the pin and the bundle move together at S10's 0.3.0
+rung, and must never name different eras). It is still worth stating plainly,
+because "vendored" reads as "vendored from something that exists". Second, **the
+spec repo ships examples of the version it superseded**, so the normative
+document and its own demonstrations disagree — a smn-data-pkg defect that
+belongs in that repo's tracker, noted here only because the hub is where the
+mismatch is visible.
+
 **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
 `attic/abandoned-metasmn-rename-2026-06`, main fast-forwarded. Note PR #2
@@ -323,6 +411,20 @@ PSC-to-SMN set passes metasalmon's strict 0.2.6 reader. Good interoperability
 evidence; still not the stable PSC-1 product-profile fixture a consumer child
 requires, and tagging alone would not make it one.
 
+**alpha.3's smn pin is mixed, and a reader who checks one row will get the wrong
+answer** (observed 2026-08-21). `public/release/v0.1.0-alpha.3/` pins smn at
+**`f7205ee`** for the 0.0.3 release TTL — the `manifest.json` and
+`external-sources.json` entries for `docs/releases/0.0.3/smn.ttl`, and the
+provenance column on the nine `EnumerationMethod` mapping rows — while other
+rows in the *same* release still cite **`b6978b0`**: the `CONVENTIONS.md`
+source entry in both files, and the `sdo-alignment-gap.md` rationale whose whole
+argument is about what was true at that older commit. Two smn commits inside one
+byte-pinned release is not automatically an error — the gap document is a
+historical argument and re-pinning it would falsify it — but nothing in the
+release says which rows are lagged on purpose. *Retires when:* alpha.3's
+manifest states, per source entry, whether its pin is current or deliberately
+historical; until then cite the specific entry, never "alpha.3's smn pin".
+
 ### salmon-knowledge-commons — **no releases, and no versioning scheme yet**
 
 | Version | Date | One line |
@@ -355,6 +457,101 @@ is the finding, not a hole in the index. This entry retires the moment the
 repository declares a scheme or cuts its first tag, and until then the correct
 citation for anything it contains is a commit.
 
+### salmon-data-standards-workshop — **no releases, and no versioning scheme yet**
+
+| Version | Date | One line |
+|---|---|---|
+| *(none)* | — | A Carpentries-style lesson (sandpaper/`config.yaml`, six sessions plus a bonus). Zero tags, zero release objects, no declared content-versioning scheme. Last commit `b080fc9`, 2026-08-11 |
+
+**This repository was silently absent from the index while being sequenced as
+[S4](sequences/s4-workshop-rebuild.md)** — the hub was ordering a rebuild of a
+repo whose current state the index did not record. Added 2026-08-21 for that
+reason alone. **Its membership in the domain is an open decision, not settled by
+its appearing here**: see *Open decisions* below. A release-index row is a
+statement about what a repo has shipped, not a membership grant.
+
+A lesson has no versioning scheme for the same reason the commons has none:
+nobody has decided one. Do not invent one for this table. What a lesson pins
+*instead* of versioning itself is the software it teaches against, and those
+pins are the sequencing-relevant fact: `README.md` and `session-1.Rmd` target
+`metasalmon` **0.2.3 or later from GitHub `main`** (README adds "the latest
+tagged R release at the time of this update is 0.1.8", written before `v0.3.0`
+existed), and the Python companion is named as `salmonpy` **0.1.6** — a package
+name retired in the 2026-08-13 rename to `metasalmonpy`, at a version four
+releases behind. So the lesson currently teaches against an untagged moving
+branch on the R side and a renamed, stale package on the Python side, which is
+exactly the condition S4 exists to end: episodes must execute against *released*
+metasalmon and metasalmonpy. *Retires when:* the rebuild lands and the episodes
+name released versions, or the repository declares a versioning scheme — either
+one makes this paragraph a row in the table above instead of prose.
+
+---
+
+## Open decisions
+
+Questions this bundle has surfaced that **Brett has not ruled on**. They live
+here so they stop being re-derived, not so they can be quietly settled. Writing
+a preference into a card as though it were a ruling converts a recon finding
+into a fake decision, and afterwards nothing downstream can tell the two apart —
+which is worse than leaving the question open, because an open question at least
+looks like one. Each entry names its options and what the ruling unblocks.
+**Do not resolve one by editing another card to match your preferred answer.**
+
+### OD-1 — Which membership test governs, and is `salmon-data-standards-workshop` the eighth member?
+
+**This bundle states two different membership tests, and they disagree.**
+
+- This card's *Domain allowlist* rule admits a repository when **its output is
+  an input to this pipeline** — the stated reason `salmon-knowledge-commons` was
+  admitted 2026-08-17, its gap register feeding `detect_semantic_term_gaps()`.
+- The [domain card](domains/salmon-data-ecosystem.md) closes with a different
+  rule: **membership follows from this hub sequencing that repository's work.**
+
+They give **opposite answers for `psc-data-transformations`**: the hub does not
+sequence its work, so the second test excludes it, while it drives requirements
+into this package through a version pin and calls to `metasalmon:::` internals,
+which the first test arguably admits. And they invert for the workshop — the hub
+**does** sequence its rebuild as S4, so the second test admits it, while a
+lesson's output is not an input to any pipeline stage, so the first excludes it.
+Meanwhile the domain card asserts "seven repositories, one hub" as
+**exhaustive** while this roadmap sequences an eighth repository's rebuild as a
+named stream.
+
+| # | Possible ruling | Consequence |
+|---|---|---|
+| A | The **input** test governs | The domain card's sequencing sentence is corrected; the workshop stays external, and S4 becomes a stream sequencing a non-member — which the external-edge rule above does not currently permit |
+| B | The **sequencing** test governs | The workshop becomes the **eighth** member, the allowlist count changes, and the commons's 2026-08-17 admission is restated in sequencing terms |
+| C | **Both** must hold | Neither joins; the commons's admission re-opens; S4 needs a stated exception for sequencing a non-member |
+| D | Membership unchanged; the hub **explicitly permits** sequencing an external repository | Cheapest change; requires extending the external-edge rule to cover "sequenced here, owned elsewhere" |
+
+**Unblocks:** whether the workshop's release-index section above is a member row
+or a courtesy record; whether `psc-data-transformations`' pin on metasalmon
+0.1.8 is an obligation on this package or advisory; and whether "seven
+repositories" is a count anyone must maintain. Until it is ruled, **neither test
+has been deleted and the workshop has not been added.** The same question is
+recorded in the domain card, so a reader arriving from either direction meets
+it. *Retires when:* Brett rules — and the losing test is deleted in the same
+change, or this pair regrows.
+
+### OD-2 — What does "the KNB test environment" mean?
+
+The [S3 execplan](plans/2026-08-11-knb-environments-and-workshop-rebuild.md) and
+`psc-data-transformations` describe incompatible things by the same name; the
+evidence for both sides is in the external-edge notes above.
+
+| # | Possible ruling | Consequence |
+|---|---|---|
+| A | A **distinct DataONE test node** — STAGING network, `urn:node:mnTestKNB`, zero replicas, separate token — as the S3 execplan assumes | `S3 ──► S4` holds exactly as drawn: S3 builds the switch, S4 teaches against the test node |
+| B | A **restricted persistent version on production KNB** is the rehearsal, as `psc-data-transformations` asserts and has already implemented | **The `S3 ──► S4` arrow dissolves.** The rehearsal already exists in shipped form, so S4 stops being hard-blocked and instead needs the private-review path documented and taught |
+| C | **Both**, as two values of `knb_environment` | S3 grows rather than shrinks: it must build and distinguish both, and S4 must teach which one a first-time depositor should reach for |
+
+**Unblocks:** the hard `S3 ──► S4` arrow in the sequencing diagram below — S4's
+only remaining hard blocker — and therefore whether the workshop rebuild can
+start now. Under B it can. *Retires when:* Brett rules. Verifying directly
+against KNB whether `urn:node:mnTestKNB` accepts the deposits S3 describes would
+settle the *factual* half and still leave the "which one do we teach" half open,
+so that check is useful evidence and not a substitute for the ruling.
+
 ---
 
 ## metasalmon current state
@@ -376,16 +573,35 @@ The release sequence, all reviewed and CI-green:
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
 
-**`main` carries an unreleased development version.** Post-0.3.0 it has taken
-the statistical-modifier ranking preferences and honest dry-run previews (PR
-#47, merge `6c6acb8`), the single-owner IRI whitespace predicate (backlog #85,
-PR #52), dual-provenance reproducibility-manifest validation (backlog #88, PR
-#58), and S11 slice 2's two vignettes (PR #46). `5a37b11` is the **release**
-baseline for S10's 0.3.0 rung; anything replaying those four fixes needs a
-later commit. Note `DESCRIPTION` is bumped only in the release PR, so `main`
-self-reports `0.3.0` while carrying those unreleased fixes — the same
-cite-the-commit-not-the-tag condition gcdfo and PSC are in above, and it
-applies to this repo too.
+**No release has been cut since 0.3.0.** `v0.3.0` was tagged 2026-08-15 and
+nothing has been released since; `main` is **107 commits past that tag**
+(2026-08-21) and `NEWS.md`'s development section has accumulated **twelve fix
+entries** (four under `### Bug fixes`, eight under `### Fixed`) plus two
+documentation entries. `DESCRIPTION` is bumped only in the release PR, so `main`
+self-reports `0.3.0` while carrying all of it — the same
+cite-the-commit-not-the-tag condition gcdfo and PSC are in above, and it applies
+hardest here, because this is the repo whose released version other repos pin.
+State this plainly wherever the 0.3.0 number appears: **released 0.3.0 and
+`main` are now materially different packages.**
+
+Post-0.3.0, `main` has taken S11 slice 2's two vignettes (PR #46), the
+statistical-modifier ranking preferences and honest dry-run previews (PR #47,
+merge `6c6acb8`), the single-owner IRI whitespace predicate (backlog #85, PR
+#52), dual-provenance reproducibility-manifest validation (backlog #88, PR #58),
+`smn` ranked above `gcdfo` at the cause (PR #64 — the first application of
+Brett's 2026-08-17 mirror ruling, where R was the side that moved), descriptor
+adjudication and the `datetime` observation dimension (PR #65), and
+platform-independent zero-padding of calendar years below 1000 (PR #70, backlog
+#94 — a real cross-platform byte divergence, where metasalmonpy was already
+correct); and the write-side half of backlog #93 (`write_salmon_datapackage()`
+wrote `Date` columns in a form this package's own reader could not parse) merged
+as PR #71 on 2026-08-21, confined to `Date` because readr's `POSIXct` output was
+measured already correct. Live PR state is not
+tracked here as a rule; this one is named because a reader counting the padding
+fixes on `main` would otherwise conclude #93 is closed.
+
+`5a37b11` is the **release** baseline for S10's 0.3.0 rung; anything replaying
+the post-0.3.0 fixes needs a later commit than the tag.
 
 **Health invariants.** Hold these at every step; a regression in any of them is
 as serious as a failing test, and unlike a failure most will not announce
@@ -416,9 +632,13 @@ outranks its own bite. Streams that do not block each other run in parallel.
 No cost or duration estimates are kept here.
 
 Solid arrows are hard blocks. Dashed are *credibility* dependencies: the work
-ships without them, but says something it cannot fully back.
+ships without them, but says something it cannot fully back. **One solid arrow
+is marked conditional** — it is drawn as a hard block because that is the
+current plan of record, and it survives only under some rulings of
+[OD-2](#od-2--what-does-the-knb-test-environment-mean).
 
 ```
+                                          ▼ conditional — OD-2, not yet ruled
 #73 redaction ✔ ──► S3 KNB environments ──► S4 workshop rebuild
                                               ▲   ▲   ▲   ▲
 S8 method model + tidy ──► S9.2 methods-as-SKOS ──┘   │   │   │
@@ -452,10 +672,23 @@ Read that as: S3's only hard blocker shipped in 0.2.5; S2, S5, S7, and S10 run
 in parallel with everything (S10 is dashed into S4 because the workshop's
 Python episodes execute against metasalmonpy). S4's **S8 blocker is discharged**
 — the method model shipped as 0.3.0, so S4's method-annotation content has a
-released contract to teach and S3 is its only remaining hard blocker. **S8 came
-first among the spec streams**: it decided what the SDP means, S1 then makes the
-validator enforce it, and S9 step 2's methods-as-SKOS migration implemented the
-vocabulary half.
+released contract to teach and S3 is its only remaining hard blocker.
+
+**That last clause is conditional, and the condition is unruled.** `S3 ──► S4`
+holds only if "the KNB test environment" means a *distinct DataONE test node*.
+If a **restricted persistent version on production KNB** is accepted as the
+rehearsal S4 should teach — the model `psc-data-transformations` asserts in
+`docs/architecture.md` and has already implemented in
+`profiles/knb-private-review.yml` — then the rehearsal S4 needs already exists,
+**the arrow dissolves, and S4 has no hard blockers left at all.** That is a live
+possibility, not a preference expressed here; see
+[OD-2](#od-2--what-does-the-knb-test-environment-mean) for the three candidate
+rulings and what each one costs. Read the arrow as the plan of record awaiting a
+ruling, and do not re-draw it in either direction before one exists.
+
+**S8 came first among the spec streams**: it decided what the SDP means, S1 then
+makes the validator enforce it, and S9 step 2's methods-as-SKOS migration
+implemented the vocabulary half.
 The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
@@ -485,6 +718,20 @@ release half of that gate is satisfied.
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
 - [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md)
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
+- [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md)
+- [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
+
+**S12 and S13 are new streams for work that was already a stated top priority
+and had no card.** Before 2026-08-21 the phrase "gold standard" appeared
+**nowhere in this bundle** — not in the roadmap, not in a sequence card, not in
+a backlog item, not in `AGENTS.md`. The nearest thing to it was
+`nuseds-fraser-coho-2023-2024.csv` appearing as an *exercise dataset* inside the
+S3/S4 execplan, which is a workshop input, not an exemplar anyone owns. A
+priority with no card cannot be sequenced, cannot block anything, and cannot be
+noticed as missing — it simply is not in the ordering, and every reader of this
+card concludes, correctly on the evidence in front of them, that it is not
+priority work. Treat a stated priority that fails a bundle-wide grep as the
+finding it is.
 
 ### Continuous
 

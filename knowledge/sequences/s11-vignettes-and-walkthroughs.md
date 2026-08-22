@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S11 — Vignettes and user-facing walkthroughs"
-description: "Keep metasalmon vignettes and metasalmonpy guides current, and add the missing walkthroughs: KNB golden path, tidy-data preparation, R semantic review, methods annotation, and a migration page. Seeded by the 2026-08-13 staleness audit."
+description: "Keep metasalmon vignettes and metasalmonpy guides current, and add the missing walkthroughs: KNB golden path, R semantic review, methods annotation, and an executable end-to-end NuSEDS run. Seeded by the 2026-08-13 staleness audit."
 status: draft
 tags: [vignettes, docs, teaching]
 psc:
@@ -19,17 +19,34 @@ with the vignettes that cover the same workflow.
 **Status: slices 1 and 2 have landed** (PR #46, `ac6b722`, plus the 0.3.0
 staleness sweep) — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd`
 exist and the audit's code defects, framing, and coverage gaps below are fixed.
-Slices 3–5 remain.
+Slices 3–6 remain.
+
+**Two named remainders survive inside the landed slices** (re-checked
+2026-08-21) — carried up here because "LANDED" on a slice line has been read as
+"nothing left in it":
+
+- **Slice 2: `tidyr` is still not in `DESCRIPTION`.** Zero matches. The
+  vignette that teaches `pivot_longer` therefore names a package the installed
+  package does not declare. It is display-only, so nothing errors — which is
+  why it has survived two sweeps.
+- **Slice 1: `guides/github-access.qmd` still has no runnable example**, and
+  the blocker is a decision, not work: **Brett has to name a public CSV
+  repository** to point it at. Every current example targets a private DFO
+  repo. Nobody can unblock this by trying harder.
 
 ## Audit verdicts (2026-08-13; metasalmon 0.2.6, metasalmonpy 0.1.6)
 
 **A dated record, largely discharged — do not read these as current defects.**
 Everything below was true at 0.2.6/0.1.6; slices 1–2 fixed nearly all of it.
-Only two findings survive: the `tidyr`-not-in-DESCRIPTION half of the
-tidy-data bullet, and the KNB-vignette split (slice 3). Corrections are
-flagged inline.
+**Three** findings survive, re-checked 2026-08-21: the
+`tidyr`-not-in-DESCRIPTION half of the tidy-data bullet, the
+`github-access.qmd` runnable example, and the KNB-vignette split (slice 3).
+*(This line said "two" and omitted the second, while slice 1 below recorded it
+as outstanding — the same card counting differently in two places.)*
+Corrections are flagged inline.
 
-No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
+"No vignette was touched since 0.2.6 landed" was the audit's finding **on
+2026-08-13** and is no longer true — slices 1–2 rewrote several and added two.
 
 - **Stale framing:** `metasalmon.Rmd:144` and
   `post-review-package-publication.Rmd:64-86` present default-mode
@@ -105,6 +122,38 @@ No vignette was touched since 0.2.6 landed, and only one since 0.2.4.
    "document methods in your column descriptions" line gone). What is left is
    the Python glossary and whatever annotation guidance the migration framing
    does not cover.
+
+6. **Executable end-to-end NuSEDS walkthrough — NEW, and the only slice about
+   *running* anything.** Slices 1–5 are all about other vignettes' prose;
+   slice 3 in particular extracts §10's existing text into its own page, which
+   improves where the walkthrough lives and not whether it works. Measured
+   2026-08-21: **all eleven vignettes set `eval = FALSE` globally**, so not one
+   line of the documented pipeline executes when the docs are built. That is a
+   deliberate design — display-only chunks, `purl = FALSE`, backlog #32 —
+   and its cost is that the end-to-end path is *shown*, never *checked*.
+
+   The slice: one walkthrough that runs, from a bundled Fraser coho CSV through
+   `create_sdp()` → semantic review → `validate_salmon_datapackage()` to a
+   dry-run publication plan, executing in CI on every push. It is the natural
+   home for the round-trip test backlog **#100** asks for, and it is the check
+   that would have caught **#95**, **#96** and **#98** on the day each was
+   introduced — three defects invisible to a green suite because twelve test
+   references to the example CSVs exist and none validates a package built from
+   them.
+
+   **It cannot end green today, and that is the point.** The 30-row example
+   fails `validate_salmon_datapackage()` in both modes (#98); the 173-row one
+   returns a 0-row issues tibble while the spec validator reports 27 errors
+   (#95, and [S1](s1-validation-authority.md)). So this slice either lands
+   *after* those are fixed, or lands first and asserts the current failure
+   exactly — which is a legitimate choice and has to be a stated one, because a
+   walkthrough that documents its own failure needs to say so on the page.
+
+   **Depends on [S12](s12-fraser-coho-gold-standard.md):** which example it
+   executes is S12's open artifact decision, not this slice's to make.
+   *Done when:* the walkthrough runs in CI against the chosen bundled example,
+   the docs render its real output rather than a transcript, and a drift in
+   `create_sdp()`'s behaviour turns the build red.
 
 **Continuous:** when a release changes observable behaviour, the release
 checklist includes "which vignette teaches this?" — untaught exports need a
