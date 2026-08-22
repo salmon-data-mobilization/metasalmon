@@ -48,7 +48,7 @@ Severity = how much it can bite a real user.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
   (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**
   (items 3–5 only),
-  and **#95**, **#103–#108**, plus
+  and **#95**, **#103–#108**, **#112**, plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
@@ -105,6 +105,12 @@ review. Items #34+ came from the 2026-08-10 comprehensive review; #72+ were foun
 during the 0.2.4 work; **#95–#108 came from the 2026-08-21 recon**, which
 executed the package's own examples through both validators instead of reading
 the code, and carries its evidence inline in each item rather than in a plan.
+**#112 came from S10 chunk A's migration differential** (2026-08-22,
+metasalmonpy PR #14) — a divergence where the mirror was the internally
+consistent side, logged rather than fixed pending a ruling. (#111 was claimed
+the same day by the concurrent abort-safe write-path stream for the
+`create_sdp()` sidecar shape; the collision was caught pre-merge and each item
+keeps the number it committed under.)
 Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
@@ -2134,6 +2140,23 @@ a hard Import. `DESCRIPTION` has a hand-written `Author:` naming someone absent
 from `Authors@R`. No documented naming convention for the exported surface;
 `semantic_suggestions` / `semantic_llm_assessments` are attributes with no
 accessor.
+
+**#112 `migrate_sdp_methods()`'s no-op report shape is internally
+inconsistent.** The nothing-to-migrate early return builds `report$tables` as
+a **two**-column frame — `table_id`, `method_iri` (`R/sdp-methods.R:299`) —
+while every populated path builds **three**, adding `columns` (`:335`). A
+caller who reads `report$tables$columns` therefore gets `NULL` exactly when
+the package was already clean, the branch least likely to be tested; low
+severity, since the frame is empty there either way, but it is an exported
+return value with two shapes. Found 2026-08-22 by S10 chunk A's nine-case
+migration differential (metasalmonpy PR #14): Python's no-op frame carried
+the third column — the internally *consistent* shape — and was changed to
+mirror R, because under the amended mirror contract which side is right is a
+ruling, not an implementer's call. Deliberately not fixed unilaterally here
+for the same reason. *Retires when:* the no-op branch returns the same
+three-column empty frame as the populated paths (or a logged ruling says the
+shapes deliberately differ), metasalmonpy mirrors the same shape in the same
+stream, and a test on each side pins the column set of both branches.
 
 ### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
 

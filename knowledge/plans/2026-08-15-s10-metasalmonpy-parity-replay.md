@@ -133,13 +133,13 @@ bottom order otherwise makes it easy to read as a ladder.
 
 | # | Subsystem | Scope |
 |---|---|---|
-| **A** | **Spec conformance and the dictionary contract** *(breaking; B and G depend on it)* | Methods leave `column_dictionary`; `statistical_modifier_iri` replaces `method_iri`; registry removal with errors that point at migration; `migrate_sdp_methods` with the full hardened stop taxonomy, **every stop firing in the dry run as well as the real run**; the three placements (`tables.csv$method_iri`, `protocol_iri`/`protocol_citation`, `codes.csv$term_iri`); default and strict placement-IRI checks; pin flip to `sdp-0.3.0`; the bundled template header, which in Python is well-formed but still ends `method_iri`; **EML method steps from the placements** — `write_eml_from_sdp()`'s `methods` becomes the placements tibble and `used_methods` the used-procedure IRIs, with reviewed-closure gating; **the `_atomic_write_set` rollback fix**; **backlog #86 / register row 33**, the `sdp_methods.py` whitespace class |
-| **B** | **Semantic pipeline retarget** *(after A)* | Semantic retarget to `statistical_modifier`; **three `statistical_modifier` rows in the ranking-preferences data** (`data/ontology-preferences.csv`, still on the pre-0.3.0 role set `constraint`/`entity`/`method`/`property`/`unit`/`variable`/`wikidata`); the bundle-review prompt naming `statistical_modifier` rather than the removed dictionary `method` slot; **`SEM_MODIFIER_EVIDENCE_REQUIRED`**, added *beside* the surviving `SEM_METHOD_EVIDENCE_REQUIRED` (`llm_review.py:1529`) and not replacing it — the code-level `method` role survives 0.3.0; a static role-contract guard **scoped to the six surfaces Python has**, and saying so (below) |
-| **C** | **Missing-value contract** *(standalone, never diluted)* | Single NA helper, read/write sweep, literal-`"NA"` round-trip guard. Bytes on disk — it wants an undiluted diff |
+| **A** | **Spec conformance and the dictionary contract** *(breaking; B and G depend on it)* | Methods leave `column_dictionary`; `statistical_modifier_iri` replaces `method_iri`; registry removal with errors that point at migration; `migrate_sdp_methods` with the full hardened stop taxonomy, **every stop firing in the dry run as well as the real run**; the three placements (`tables.csv$method_iri`, `protocol_iri`/`protocol_citation`, `codes.csv$term_iri`); default and strict placement-IRI checks; pin flip to `sdp-0.3.0`; the bundled demo dictionary and metadata *(corrected 2026-08-22: this cell claimed the Python copy was "well-formed but still ends `method_iri`" — **false**. The file was semantically corrupt: two unquoted description commas shifted the RUN_TYPE and ESTIMATE_STAGE rows' fields into schema-invalid `column_role`/`value_type` values, exactly as this plan's own exposures table below had already recorded from the 2026-08-21 recon — the two claims sat unreconciled in one document. Chunk A replaced the file with a byte-copy of metasalmon `main`'s)*; **EML method steps from the placements** — `write_eml_from_sdp()`'s `methods` becomes the placements tibble and `used_methods` the used-procedure IRIs, with reviewed-closure gating; **the `_atomic_write_set` rollback fix**; **backlog #86 / register row 33**, the `sdp_methods.py` whitespace class |
+| **B** | **Semantic pipeline retarget** *(after A)* | Semantic retarget to `statistical_modifier`; **three `statistical_modifier` rows in the ranking-preferences data** (`data/ontology-preferences.csv`, still on the pre-0.3.0 role set `constraint`/`entity`/`method`/`property`/`unit`/`variable`/`wikidata`); the bundle-review prompt naming `statistical_modifier` rather than the removed dictionary `method` slot; **`SEM_MODIFIER_EVIDENCE_REQUIRED`**, added *beside* the surviving `SEM_METHOD_EVIDENCE_REQUIRED` (`llm_review.py:1529`) and not replacing it — the code-level `method` role survives 0.3.0; a static role-contract guard **scoped to the six surfaces Python has**, and saying so (below). **B inherits a documented five-slot intermediate state from A** (2026-08-22): post-A, measurements review five column slots and the bundle's method slot arrives `already_filled_or_not_requested` with no candidates — deliberate, with breadcrumbs naming this chunk in metasalmonpy `tests/test_llm_review.py` |
+| **C** | **Missing-value contract** *(standalone, never diluted)* | Single NA helper, read/write sweep, literal-`"NA"` round-trip guard. Bytes on disk — it wants an undiluted diff. **C also owns regenerating the era EML structural fixtures** (`tests/data/eml/`, noted 2026-08-22): register row 22's live divergence — `_ERA_NA_TOKENS` still governing the EML raw-token audit — actively blocks regenerating them against current R, so chunk A deliberately left them era-shaped; they stay so until this chunk retires the split |
 | **D** | **Validation hardening** | Primary-key uniqueness and NA errors, value-like-name warnings (thresholds exact; the message points at `melt`), placeholder surfacing |
 | **E** | **Cache, environment and network robustness** | Index session caching; **call-time env read** (`SALMONPY_CACHE` is read at import today — the exact bug class R 0.2.2 fixed); the `SALMONPY_`→`METASALMONPY_` prefix rename — **open, see below**; http-error diagnostics; no-cache-on-degraded; KNB dry-run overwrite; retry and `Retry-After`; BioPortal header auth (`term_search.py:300` still puts the key in the query string) |
 | **F** | **Redaction** | Structural `*_token` redaction; assert exactly **one** redactor (`knb_publication._redact` is the second one, and `text_safety.py:56-68` already carries the retirement condition naming this chunk); **0.2.3's URL redaction** — R passes request URLs through the same `.ms_redact_secrets()` at capture (`R/term_search.R:592`, `:606`), which is why the one-redactor assertion and the URL rule belong together |
-| **G** | **Legacy read compatibility** *(verify, do not rebuild)* | Reading 0.2.x-written packages that carry a methods registry, and 0.1.8-era EML quoting procedures from one. Landed at rung 2 — confirm it survives A |
+| **G** | **Legacy read compatibility** *(verify, do not rebuild)* | Reading 0.2.x-written packages that carry a methods registry, and 0.1.8-era EML quoting procedures from one. Landed at rung 2 — confirm it survives A. **Partly discharged by A itself** (2026-08-22): the untouched `methods-sdp` legacy fixture (`tests/data/sdp-extensions/methods-sdp`) kept the reader and validator exercised through A's rewrite, so what remains here is deliberate re-verification of the legacy read path, not first evidence that it works |
 
 #### Behaviours added to the chunks 2026-08-21
 
@@ -278,6 +278,17 @@ does not say which tree a differential is run against for everything else, and
 metasalmon is now **107 commits past `v0.3.0`** (measured 2026-08-21 against `v0.3.0..main`). That
 unstated baseline is the same question the version decision turns on.
 
+**Resolved in practice at chunk A (2026-08-22), pending a ruling.** Chunk A's
+differential ran against metasalmon **`main` at the moment of measurement** —
+`e02111a`, the v0.3.0 release tree plus every post-0.3.0 fix including PR
+#75's recon wave — with all four R-derived fixture families regenerated at
+that commit and re-verified byte-identical after `main` moved mid-stream.
+That is the operative convention for the remaining chunks unless open
+decision 2 rules otherwise: not the `v0.3.0` tag, not a frozen post-tag
+commit, but current `main` when the chunk's fixtures are cut, **named by
+commit** so the claim stays checkable. It is also a data point *for* the
+decision, not a substitute for it — see open decision 2 below and hub Q7.
+
 ## Open decisions — recorded as open, not as preferences
 
 Three questions this plan needs answered before the chunks can finish. None has
@@ -386,6 +397,14 @@ against. This plan currently says the `v0.3.0` tag in one paragraph and
 "post-0.3.0 fixes" in the next, so an implementer starting chunk A cannot read
 the answer out of it. *Whoever decides this should correct both documents in the
 same change*, or the disagreement simply moves.
+
+*Data point (2026-08-22):* chunk A resolved the verification-baseline half in
+practice — it measured against `main` at `e02111a`, option (b)'s shape,
+recorded above as the operative convention while this decision stays open. Every
+chunk verified this way widens the set of delivered behaviour that no existing
+release number can truthfully claim, which strengthens hub Q7's standing
+recommendation: cut the metasalmon release containing the post-0.3.0 fixes
+first, and let metasalmonpy claim that number.
 
 ## 0.1.7 progress (2026-08-16)
 
@@ -549,6 +568,69 @@ So an auxiliary worktree gets a *nested* path — `.worktrees/<task>/metasalmonp
 — never `.worktrees/<task>-metasalmonpy`. Both existing checkouts follow this;
 it had not been written down.
 
+## Chunk A progress (2026-08-22)
+
+**Chunk complete.** Chunk A — the sdp-0.3.0 breaking dictionary-contract flip
+— merged 2026-08-22 as metasalmonpy PR #14 (`a3910ab`), **unversioned by
+design**: which number the finished port may carry is open decision 2 / hub
+Q7, so A landed under the CHANGELOG's *Unreleased* heading and the single
+bump comes at the end of the chunks once that ruling exists. Do not read the
+unversioned state as an oversight, and do not let a later pass "fix" it.
+
+What landed, against this chunk's scope line above: the dictionary swap
+(`method_iri` → `statistical_modifier_iri`) across nine modules and the demo
+data; the vendored bundle and `SDP_SPEC_TAG`/profile constants flipped to
+`sdp-0.3.0` **together** (register rows 27 and 38, both now marked
+converged); `migrate_sdp_methods()` with the full hardened stop taxonomy,
+every stop firing in the dry run; registry-removal errors pointing at the
+migration on every current-package surface, with the reader and validator
+kept as legacy read support (row 9, rewritten for the landed shape); the
+three placements with default and strict IRI checks; the EML method-step
+rewrite with reviewed-closure gating; the `_atomic_write_set` rollback fix;
+and backlog #86 / register row 33 discharged. The final R fixture suite
+landed as pytest **before** the code, red by design, per the logged decision.
+Register rows 9, 27, 33, 38 and 46 were updated in both registers; no new
+number was spent.
+
+**Honest test counts, both dependency configurations, each verified by import
+probe:** extras leg **629 passed / 3 skipped**; core leg (PyYAML, lxml,
+openpyxl, pypdf, xlrd genuinely absent) **533 passed / 99 skipped**. The key
+fixes are revert-verified — the rollback fix, the whitespace class, and the
+dry-run stop parity each go red on reverted source.
+
+**Verification baseline:** metasalmon **`main` at the moment of measurement**
+(`e02111a` — the v0.3.0 tree plus every post-0.3.0 fix, including PR #75's
+recon wave), fixtures regenerated at that commit and re-verified after `main`
+moved mid-stream. This resolved the tag-versus-fixes ambiguity in practice;
+the convention and its status as a data point for open decision 2 are
+recorded under *Verification changes with the plan* above.
+
+**A finding about R, deliberately not fixed unilaterally.** The nine-case
+migration differential found **R's own no-op report shape internally
+inconsistent**: `migrate_sdp_methods()` returns a two-column `tables` frame
+(`table_id`, `method_iri`) on nothing-to-migrate (`R/sdp-methods.R:299`) and
+a three-column frame (adding `columns`) on every populated path (`:335`).
+Python's no-op frame carried the third column — internally consistent, but a
+divergence — and was changed to **mirror R**, because under the amended
+mirror contract which side is right is a ruling, not an implementer's call.
+Filed as **backlog #112** with a retirement condition; a candidate metasalmon
+tidy-up. (#111 was claimed the same day, concurrently, by the abort-safe
+write-path stream for the `create_sdp()` sidecar shape — the numbering
+collision was caught before either commit merged, and #112 is this item's
+permanent handle.)
+
+**What is now unblocked.** **B and G immediately**: B retargets the semantic
+pipeline onto the dictionary shape A introduced, inheriting the documented
+five-slot intermediate state (breadcrumbs in metasalmonpy
+`tests/test_llm_review.py`); G's re-verification finally has a post-A tree to
+verify against, and is already partly discharged — the untouched
+`methods-sdp` legacy fixture kept the reader exercised through A's rewrite.
+**C, D, E and F were never blocked on A**, but they no longer risk merge
+collision with A's rewrite of `package_io.py` and `sdp_methods.py`, so the
+rebase-cost caution under *Ordering* is spent. C's one inheritance from A:
+the era EML structural fixtures deliberately stay era-shaped until C retires
+the row-22 split.
+
 ## Python exposure of the 2026-08-21 recon defects, mapped to chunks
 
 metasalmon PR #75 fixed eight defects; each was measured (not assumed) against
@@ -564,6 +646,11 @@ metasalmonpy, and the exposures land in existing chunks rather than new ones:
 | #100 no round-trip test | none exists; one would fail today on the corrupt dictionary | **D** |
 | #101 classification crosswalk | absent | **B** |
 | #102 crosswalk wiring | broader than R's defect: **neither** existing crosswalk is wired into the package path at all — an undocumented divergence `PARITY.md` does not record, itself a mirror-contract violation until registered | **B**, with the register row due in the same change |
+
+Chunk A has since landed (2026-08-22) and discharged its rows above: the #98
+corruption-and-stale-header half and #99's example data both shipped in the
+byte-copy demo-data swap. Still open here: #97, #101 and #102 (chunk B), and
+the #98 `value_type`-enforcement gap plus #100 (chunk D).
 
 ## Sidecar-survival rule
 
