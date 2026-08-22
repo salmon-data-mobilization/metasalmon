@@ -130,3 +130,61 @@ test_that("typed scalar metadata fields do not abort the descriptor builder", {
   )))
   expect_true(file.exists(file.path(path, "datapackage.json")))
 })
+
+test_that("metadata normalization renders Date columns as padded ISO text", {
+  # Backlog #93 item 2: the in-memory path's only normalizer did no type
+  # coercion, so a caller-supplied Date column reached readr::write_csv()
+  # (which renders an unpadded year below 1000) and the EML calendarDate
+  # renderer intact. The on-disk path was safe only because
+  # .ms_read_metadata_csv() pins col_character. The Date-only rule is the
+  # one #93 item 1 established by measurement; POSIXct must NOT be coerced.
+  meta <- tibble::tibble(
+    dataset_id = "d1",
+    title = "T",
+    description = "D",
+    temporal_start = as.Date("0999-01-01"),
+    temporal_end = as.Date("2024-12-31")
+  )
+  normalized <- metasalmon:::.ms_normalize_dataset_meta(meta)
+  expect_type(normalized$temporal_start, "character")
+  expect_identical(normalized$temporal_start[[1]], "0999-01-01")
+  expect_identical(normalized$temporal_end[[1]], "2024-12-31")
+
+  # POSIXct is deliberately left alone: readr's instant rendering is already
+  # correct, and coercing it would change bytes (separator, zone marker,
+  # fractional seconds).
+  with_instant <- tibble::tibble(
+    dataset_id = "d1",
+    title = "T",
+    description = "D",
+    created = as.POSIXct("2024-01-31 10:00:00", tz = "UTC")
+  )
+  normalized_instant <- metasalmon:::.ms_normalize_dataset_meta(with_instant)
+  expect_s3_class(normalized_instant$created, "POSIXct")
+})
+
+test_that("a pre-1000 Date temporal_start survives the write as padded bytes", {
+  skip_if_not_installed("readr")
+
+  path <- withr::local_tempdir()
+  fixture <- .typed_meta_fixture()
+  fixture$dataset_meta$temporal_start <- as.Date("0999-01-01")
+  fixture$dataset_meta$temporal_end <- as.Date("2024-12-31")
+
+  suppressMessages(write_salmon_datapackage(
+    resources = fixture$resources,
+    dataset_meta = fixture$dataset_meta,
+    table_meta = fixture$table_meta,
+    dict = fixture$dict,
+    path = path,
+    overwrite = TRUE
+  ))
+
+  written <- readLines(file.path(path, "metadata", "dataset.csv"))
+  expect_true(any(grepl("0999-01-01", written, fixed = TRUE)))
+  expect_false(any(grepl("(^|,)999-01-01(,|$)", written)))
+
+  # The descriptor and the CSV must agree about the same field.
+  descriptor <- jsonlite::read_json(file.path(path, "datapackage.json"))
+  expect_identical(descriptor$temporal$start, "0999-01-01")
+})

@@ -123,7 +123,25 @@ metasalmon (development version)
   check runs before `min_score` filtering, so a below-threshold candidate
   still counts as "found"; the explicit-`suggestions` path keeps its
   historical row-in/row-out behaviour; the 33-column gap row contract is
-  unchanged. A `Date`
+  unchanged.
+
+* **Metadata normalization now renders `Date` columns as padded ISO text**
+  (backlog #93 item 2, unblocked by item 1's Date-only ruling).
+  `.ms_align_cols()` — the in-memory path's only normalizer for
+  `dataset.csv` / `tables.csv` / `column_dictionary.csv` / `codes.csv` frames —
+  did no type coercion, so a caller-supplied `Date` column reached
+  `readr::write_csv()` (which renders an unpadded year below 1000) and the EML
+  `calendarDate` renderer intact; the on-disk path was safe only because
+  `.ms_read_metadata_csv()` pins every column to character. Normalization now
+  applies `.ms_iso_date_columns()` — `Date` only, per the measured rule:
+  readr's `POSIXct` rendering is already correct and coercing it would change
+  bytes. A consequence worth naming: `datapackage.json` and
+  `metadata/dataset.csv` can no longer disagree about a metadata `Date` field
+  (item 4's failure mode on this path), because no `Date` survives to either
+  writer. Items 3 and 5 of #93 (SSSOM canonical bytes; canonical value
+  tokens) remain open under Q12.
+
+* **`write_salmon_datapackage()` can read back the dates it writes.** A `Date`
   column holding a year below 1000 was written as text this package's own
   reader rejected: `readr::write_csv()` renders a `Date` through
   `as.character.Date`, whose R-4.3 fast path emits an unpadded year, and

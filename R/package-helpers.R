@@ -1849,6 +1849,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   df <- tibble::as_tibble(df)
+  # SDP metadata frames are text contracts. A caller-supplied Date column
+  # otherwise reaches readr::write_csv() -- whose as.character.Date rendering
+  # drops the year padding below 1000 -- and the EML calendarDate renderer
+  # intact; the on-disk path was safe only because .ms_read_metadata_csv()
+  # pins col_character (backlog #93 item 2). Date ONLY, by measurement:
+  # readr's POSIXct output is already correct and coercing it would change
+  # bytes. See .ms_iso_date_columns().
+  df <- .ms_iso_date_columns(df)
   missing_cols <- setdiff(cols, names(df))
   for (col in missing_cols) {
     df[[col]] <- NA_character_
