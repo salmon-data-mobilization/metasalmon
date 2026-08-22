@@ -101,3 +101,11 @@ characteristic from its unit. Values are expressed in QUDT `Individual`
 Salmon Domain Ontology `smn:Abundance` characteristic. In particular, do not
 restore the former QUDT `NumberOfOrganisms` value: that IRI does not exist, and
 a counting unit is not a substitute for the ecological property being measured.
+
+The tiny sample's annotated row also resolves end to end (2026-08, backlog
+#99): `term_iri` is the released `gcdfo:SpawnerAbundance` (an `owl:Class`, so
+`term_type` is `owl_class`) and `constraint_iri` is the released
+`smn:NaturalOrigin` concept, replacing two placeholder IRIs under
+`w3id.org/example/salmon#` that returned HTTP 404. Placeholders that look like
+real IRIs pass every offline check; an unfinished IRI belongs behind the
+`REVIEW:` marker instead, which strict validation refuses to ship.

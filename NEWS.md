@@ -41,6 +41,25 @@ metasalmon (development version)
   builds the package from the shipped artifacts and validates it so the pair
   cannot silently diverge again.
 
+* **The shipped example dictionary's two placeholder IRIs are replaced with
+  released terms that resolve** (backlog #99).
+  `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance` and
+  `https://w3id.org/example/salmon#WildOriginConstraint` — both HTTP 404, under
+  a namespace nobody owns — shipped in `inst/extdata/column_dictionary.csv`'s
+  one annotated row. They were recognisably placeholders, which is the problem:
+  `REVIEW:` is the package's marker for an unfinished IRI and strict validation
+  rejects it, while a plausible-looking `w3id.org` IRI passed every offline
+  check. `term_iri` is now the released `gcdfo:SpawnerAbundance` (an
+  `owl:Class` in gcdfo 0.0.9, so `term_type` moves from `skos_concept` to
+  `owl_class`), and `constraint_iri` is the released `smn:NaturalOrigin`
+  concept ("born and reared in the wild", broader `smn:SalmonOrigin`) — the
+  wild-origin filter the placeholder faked. `property_iri` stays
+  `smn:Abundance`: which of `smn:Abundance` / `gcdfo:SpawnerAbundance` belongs
+  in the property slot is open question Q9, and this fix deliberately does not
+  prejudge it — the term slot holding the most specific released variable
+  concept is defensible under either answer. A network-gated test now asserts
+  every IRI in the shipped example metadata resolves.
+
 * **`detect_semantic_term_gaps()` now sees the targets retrieval found nothing
   for** (backlog #97). Both entry paths short-circuited on an empty suggestions
   table, so a concept absent from every vocabulary — the strongest possible
