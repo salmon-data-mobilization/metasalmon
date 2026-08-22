@@ -143,6 +143,11 @@ dictionary gains a parallel \code{semantic_llm_assessments} attribute with one
 row per assessed target. Its 30-column schema preserves the legacy
 28-column prefix and appends \code{llm_escalated_from} and
 \code{llm_retry_query_rejection_reason}.
+The dictionary also carries a \code{semantic_targets} attribute with the
+discovered search targets (one row per unfilled semantic field, in the
+\code{.ms_semantic_target_cols()} shape). \code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} reads
+it to report targets whose retrieval returned zero candidates, which by
+construction have no suggestion rows at all.
 }
 \description{
 Searches external vocabularies to suggest IRIs for semantic gaps in the

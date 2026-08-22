@@ -522,11 +522,20 @@ test_that("create_sdp exposes seed_table_meta and seed_dataset_meta defaults as 
   expect_true(identical(formals(infer_salmon_datapackage_artifacts)$seed_dataset_meta, TRUE))
 })
 
-test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {
+test_that("create_sdp handles NuSEDS-style DD-MON-YY dates", {
   withr::local_tempdir() -> tmp
-
-  sample_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-  fraser_coho <- readr::read_csv(sample_path, show_col_types = FALSE)
+  # The DD-MON-YY fixture is inline rather than the shipped 30-row sample: the
+  # sample's dates were converted to ISO in the backlog #98 fix (they had to
+  # validate against the bundled `value_type: date` dictionary), so this test
+  # carries its own Oracle-format bytes to keep exercising the parser --
+  # including the century pivot ("03-DEC-97" is 1997, not 2097).
+  fraser_coho <- tibble::tibble(
+    POP_ID = c(1L, 2L, 3L),
+    WATERBODY = c("THUNDER RIVER", "GUICHON CREEK", "PERRY RIVER"),
+    NATURAL_SPAWNERS_TOTAL = c(10L, 20L, 30L),
+    START_DTT = c("03-DEC-97", "07-OCT-16", "06-NOV-24"),
+    END_DTT = c("29-JAN-98", "23-NOV-16", "20-NOV-24")
+  )
 
   pkg_path <- create_sdp(
     fraser_coho,
@@ -3913,5 +3922,128 @@ test_that("a malformed placement IRI warns by default and blocks strict validati
       validate_salmon_datapackage(root, require_iris = TRUE)
     )),
     "Final validation failed"
+  )
+})
+
+test_that("create_sdp prefills legacy estimate-classification code IRIs without overwriting explicit values", {
+  # Backlog #101: the classification crosswalk must be wired exactly where the
+  # estimate-method crosswalk is wired, with the same do-not-overwrite rule.
+  resources <- list(
+    escapement = tibble::tibble(
+      ESTIMATE_CLASSIFICATION = c(
+        "TRUE ABUNDANCE (TYPE-1)",
+        "NO SURVEY THIS YEAR",
+        "RELATIVE ABUNDANCE (TYPE-4)"
+      ),
+      RUN_TYPE = c("EARLY", "LATE", "EARLY"),
+      count = c(10L, 20L, 30L)
+    )
+  )
+  seed_codes <- tibble::tibble(
+    dataset_id = rep("scope-demo", 4),
+    table_id = rep("escapement", 4),
+    column_name = c(
+      "ESTIMATE_CLASSIFICATION", "ESTIMATE_CLASSIFICATION",
+      "ESTIMATE_CLASSIFICATION", "RUN_TYPE"
+    ),
+    code_value = c(
+      "TRUE ABUNDANCE (TYPE-1)", "NO SURVEY THIS YEAR",
+      "RELATIVE ABUNDANCE (TYPE-4)", "EARLY"
+    ),
+    code_label = c(
+      "True abundance type 1", "No survey this year",
+      "Relative abundance type 4", "Early"
+    ),
+    code_description = c(
+      "Hyatt classification", "Absence marker",
+      "Hyatt classification", "Run timing"
+    ),
+    vocabulary_iri = NA_character_,
+    term_iri = c(NA_character_, NA_character_, "https://example.org/custom-type4", NA_character_),
+    term_type = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources,
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE
+  )
+  cls_rows <- artifacts$codes[
+    artifacts$codes$column_name == "ESTIMATE_CLASSIFICATION", ,
+    drop = FALSE
+  ]
+
+  expect_equal(
+    cls_rows$term_iri[cls_rows$code_value == "TRUE ABUNDANCE (TYPE-1)"],
+    "https://w3id.org/gcdfo/salmon#Type1"
+  )
+  # The absence marker maps to nothing, by recorded design.
+  expect_true(
+    is.na(cls_rows$term_iri[cls_rows$code_value == "NO SURVEY THIS YEAR"]) ||
+      cls_rows$term_iri[cls_rows$code_value == "NO SURVEY THIS YEAR"] == ""
+  )
+  # An explicit caller-supplied IRI wins over the crosswalk.
+  expect_equal(
+    cls_rows$term_iri[cls_rows$code_value == "RELATIVE ABUNDANCE (TYPE-4)"],
+    "https://example.org/custom-type4"
+  )
+  # Unrelated columns stay untouched.
+  expect_true(
+    is.na(artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"]) ||
+      artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"] == ""
+  )
+})
+
+test_that("create_sdp prefills ENUMERATION_METHODS code IRIs from the enumeration crosswalk", {
+  # Backlog #102: nuseds_enumeration_method_crosswalk() maps "Fence" ->
+  # gcdfo:FixedSiteCensusManual, but the only crosswalk create_sdp() wired was
+  # the estimate one -- so a NuSEDS ENUMERATION_METHODS column recording
+  # "Fence" got no term_iri while the crosswalk that supplies one sat
+  # exported, documented, tested, and unreachable. The division of labour is
+  # the documented one: enumeration (field) methods stay in the enumeration
+  # crosswalk; "Fence" does NOT get added to the estimate crosswalk.
+  resources <- list(
+    escapement = tibble::tibble(
+      ENUMERATION_METHODS = c("Fence", "Bank Walk", "Stream Walk, Other"),
+      count = c(10L, 20L, 30L)
+    )
+  )
+  seed_codes <- tibble::tibble(
+    dataset_id = rep("scope-demo", 3),
+    table_id = rep("escapement", 3),
+    column_name = rep("ENUMERATION_METHODS", 3),
+    code_value = c("Fence", "Bank Walk", "Stream Walk, Other"),
+    code_label = c("Fence", "Bank walk", "Stream walk with other methods"),
+    code_description = c("Counting fence", "Bank walk survey", "Combined methods"),
+    vocabulary_iri = NA_character_,
+    term_iri = c(NA_character_, "https://example.org/custom-bank-walk", NA_character_),
+    term_type = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources,
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE
+  )
+  enum_rows <- artifacts$codes[
+    artifacts$codes$column_name == "ENUMERATION_METHODS", ,
+    drop = FALSE
+  ]
+
+  expect_equal(
+    enum_rows$term_iri[enum_rows$code_value == "Fence"],
+    "https://w3id.org/gcdfo/salmon#FixedSiteCensusManual"
+  )
+  # An explicit caller-supplied IRI wins over the crosswalk.
+  expect_equal(
+    enum_rows$term_iri[enum_rows$code_value == "Bank Walk"],
+    "https://example.org/custom-bank-walk"
+  )
+  # A combined multi-method value has no crosswalk row and stays blank.
+  expect_true(
+    is.na(enum_rows$term_iri[enum_rows$code_value == "Stream Walk, Other"]) ||
+      enum_rows$term_iri[enum_rows$code_value == "Stream Walk, Other"] == ""
   )
 })

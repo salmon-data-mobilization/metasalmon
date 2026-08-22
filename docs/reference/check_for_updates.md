@@ -57,7 +57,6 @@ can call it optionally when `check_updates = TRUE`.
 # \donttest{
 # Queries the GitHub releases API and degrades quietly when unreachable.
 check_for_updates()
-#> ℹ Installed metasalmon "0.3.0" is newer than the latest GitHub release "0.1.8".
-#> ℹ You're probably on an unreleased development build.
+#> ✔ metasalmon "0.3.0" matches the latest GitHub release "0.3.0".
 # }
 ```

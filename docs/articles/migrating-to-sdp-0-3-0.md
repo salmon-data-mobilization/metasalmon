@@ -1,0 +1,712 @@
+# Migrating to SDP 0.3.0: Where Methods Live Now
+
+## Overview
+
+metasalmon 0.3.0 implements version `sdp-0.3.0` of the Salmon Data
+Package specification, and that version moved **methods** out of the
+column dictionary. If you have a package built with metasalmon 0.2.x,
+this guide takes you through the change: why it happened, where each
+piece of your method metadata belongs now, and how to run the migration
+tool on your existing package.
+
+You do not need to have followed the specification discussion. You do
+need to be able to open your package’s `metadata/` CSVs.
+
+The migration itself needs no internet connection and no LLM. The
+complete worked example below runs offline in a few seconds, and the
+console output shown beside it is real output from that example. Code
+chunks are not executed when this page is built, so you can copy them
+and run them yourself. Two later sections — term search and term
+requests — do reach the network, and are marked where they appear.
+
+If you are starting a brand-new package, you do not need this guide at
+all —
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+already writes the new shape. Read the section [Where a method belongs
+now](#where-a-method-belongs-now) for the concepts, and skip the
+migration sections.
+
+### What Changed, in One Paragraph
+
+In sdp-0.2.0, a measurement column in `metadata/column_dictionary.csv`
+could carry a `method_iri`, and an optional `metadata/methods.csv`
+registry held labels, descriptions, versions, and citations for those
+methods. In sdp-0.3.0 the dictionary’s `method_iri` column is **gone**,
+the registry file is **gone**, and a method now lives in one of three
+places depending on what it actually describes. In exchange, the
+dictionary gained a new column, `statistical_modifier_iri`, for the one
+kind of “how” that really is part of what a column measures.
+
+### Why Methods Moved
+
+A dictionary row answers the question *what is this column?* A method
+answers a different question: *how was this value produced?* Those are
+not the same question, and putting the answer to the second one inside
+the answer to the first one let them blur together.
+
+Two examples make the difference concrete.
+
+**A weir count and an aerial count are the same variable.** Both columns
+hold the number of adult spawners in a stream. If you counted at a weir
+and your colleague counted from a float plane, you measured the same
+thing with different instruments. Your data should link to the *same*
+term for “spawner count”, so that anyone combining your datasets gets
+one variable, not two. Recording the counting method inside the
+variable’s identity quietly split it in half.
+
+**A mean weight and a maximum weight are different variables.** Here the
+summary really is part of what the column *is*. A column of mean weights
+and a column of maximum weights cannot be pooled, compared, or averaged
+as though they were the same measurement. The aggregation belongs to the
+variable’s identity.
+
+The old `method_iri` column could not tell those two cases apart, so
+sdp-0.3.0 splits them. Aggregations get their own dictionary column,
+`statistical_modifier_iri`. Everything else — the gear, the survey
+design, the laboratory procedure, the field protocol — moves out of the
+dictionary to the level where it is actually constant.
+
+### Where a Method Belongs Now
+
+There are exactly three placements. Pick by asking **what the method is
+constant across**.
+
+| If the method is… | It goes in | Field |
+|----|----|----|
+| The same for every row of a table | `metadata/tables.csv` | `method_iri` |
+| A published procedure document you want to cite | `metadata/tables.csv` or `metadata/dataset.csv` | `protocol_iri`, `protocol_citation` |
+| Different from row to row | your data, as a code column | `metadata/codes.csv` `term_iri` |
+
+#### Placement 1: One Method for the Whole Table
+
+Use this when every row of a table was produced the same way. A table of
+weir counts is the classic case: the weir is the method, and it applies
+to the whole table.
+
+``` r
+
+tables <- readr::read_csv("weir-counts-sdp/metadata/tables.csv", na = "")
+
+tables$method_iri[tables$table_id == "escapement"] <-
+  "https://example.org/methods/weir-count"
+
+readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
+```
+
+The value must be an **absolute IRI**. Since 0.3.0, a table or dataset
+method/protocol field holding something like `methods/weir-count` is
+reported by
+[`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+rather than silently accepted.
+
+A table-level `method_iri` is a genuine vocabulary term, so it carries
+the same obligations as any other reviewed IRI when you export or
+publish: EML export requires an accepted semantic-review ledger row for
+it, and requires it to appear in the reviewed vocabulary snapshot. (A
+`protocol_iri` is a citation, not a vocabulary term, and is not gated
+that way.) If you do not have a term for your method yet, see [What to
+Do With the Old Registry](#what-to-do-with-the-old-registry) below.
+
+#### Placement 2: Cite a Protocol
+
+Use this when what you want to record is a **document** — a published
+field manual, a standard operating procedure, a methods paper — rather
+than a vocabulary concept. Protocols are citations, not vocabulary
+terms, so they are not checked against the ontology.
+
+Put them on `tables.csv` when the protocol governs one table, and on
+`dataset.csv` when it governs the whole dataset.
+
+``` r
+
+tables$protocol_iri[tables$table_id == "escapement"] <-
+  "https://example.org/protocols/weir-2019"
+tables$protocol_citation[tables$table_id == "escapement"] <-
+  "Salmon Program. 2019. Weir enumeration protocol v3.1."
+```
+
+``` r
+
+readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
+```
+
+`protocol_iri` is where the document lives; `protocol_citation` is the
+human-readable reference. You can supply either or both, and you can use
+a protocol *alongside* a table-level `method_iri` — the concept says
+what procedure was used, the citation says where it is written down.
+
+#### Placement 3: The Method Varies by Row
+
+Use this when different rows of the same table were produced differently
+— a long-running escapement series where some years were flown and some
+were counted at a fence, for example. A method that varies by row is
+**data**, not metadata, so it belongs in a column of your data file.
+
+Add the column to your data, describe it in the dictionary as a code
+column, and then give each code a definition in `metadata/codes.csv`,
+pointing `term_iri` at the shared-vocabulary procedure it means.
+
+``` r
+
+# 1. The method becomes a column in the data itself.
+escapement <- readr::read_csv("weir-counts-sdp/data/escapement.csv", na = "")
+escapement$enumeration_method <- c("weir", "aerial", "weir")
+readr::write_csv(escapement, "weir-counts-sdp/data/escapement.csv", na = "")
+
+# 2. Describe the new column in the dictionary, like any other column.
+dictionary <- readr::read_csv(
+  "weir-counts-sdp/metadata/column_dictionary.csv", na = ""
+)
+dictionary <- dplyr::bind_rows(dictionary, tibble::tibble(
+  dataset_id         = "weir-counts",
+  table_id           = "escapement",
+  column_name        = "enumeration_method",
+  column_label       = "Enumeration method",
+  column_description = "How the spawners in this row were counted.",
+  column_role        = "categorical",
+  value_type         = "string"
+))
+readr::write_csv(
+  dictionary, "weir-counts-sdp/metadata/column_dictionary.csv", na = ""
+)
+
+# 3. Each code value resolves to a shared procedure concept.
+#    NOTE: if your package already has codes.csv, read it first and bind to
+#    it. Writing the tibble below on its own would delete every code row you
+#    already have.
+existing_codes <- read_salmon_datapackage("weir-counts-sdp")$codes
+
+method_codes <- tibble::tibble(
+  dataset_id       = "weir-counts",
+  table_id         = "escapement",
+  column_name      = "enumeration_method",
+  code_value       = c("weir", "aerial"),
+  code_label       = c("Weir count", "Aerial survey count"),
+  code_description = c(
+    "Complete enumeration of adults passing a fixed weir.",
+    "Visual count of adults from a fixed-wing aircraft or helicopter."
+  ),
+  vocabulary_iri   = "https://example.org/methods/",
+  term_iri         = c(
+    "https://example.org/methods/weir-count",
+    "https://example.org/methods/aerial-survey-count"
+  ),
+  term_type        = "sosa:Procedure"
+)
+
+codes <- dplyr::bind_rows(existing_codes, method_codes)
+readr::write_csv(codes, "weir-counts-sdp/metadata/codes.csv", na = "")
+```
+
+This is the placement that the migration tool cannot make for you,
+because it requires adding a column to your data — a change only you can
+make correctly.
+
+If your method values come from NuSEDS, the bundled crosswalks give you
+a starting map from the legacy labels to canonical method families:
+
+``` r
+
+nuseds_enumeration_method_crosswalk()
+nuseds_estimate_method_crosswalk()
+```
+
+### The New `statistical_modifier_iri` Column
+
+This is the piece that moved *into* the dictionary rather than out of
+it.
+
+Fill `statistical_modifier_iri` when the column holds an **aggregation
+or summary** rather than a single observation: a mean, a maximum, a
+minimum, a total, a peak. That summary is part of the variable’s
+identity, which is why it lives beside `property_iri`, `entity_iri`, and
+`constraint_iri` as the fifth I-ADOPT component.
+
+Leave it blank for plain measurements. A column of individual fish
+weights has no statistical modifier; a column of *mean* fish weights per
+sample does.
+
+The semantic pipeline is deliberately conservative here. It proposes a
+statistical-modifier candidate only when the column’s name, label, or
+description actually names an aggregation — the words it looks for are
+*total*, *cumulative*, *sum*, *mean*, *average*, *max*/*maximum*,
+*min*/*minimum*, and *peak*. So `mean_fork_length` gets a suggestion and
+`fork_length` does not, and ordinary measurement columns do not gain
+review work they do not need.
+
+When you do want candidates for the slot,
+[`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
+knows the role.
+[`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
+is a local lookup;
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+queries vocabulary services and needs a network connection.
+
+``` r
+
+sources_for_role("statistical_modifier")
+
+find_terms("mean", role = "statistical_modifier")
+```
+
+A quick way to tell the two apart: if you changed how you counted and
+the numbers are still the same kind of number, that is a **method**. If
+you changed it and the numbers now mean something different, that is a
+**statistical modifier**.
+
+### Migrating an Existing Package
+
+[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+does the mechanical part of the move and **stops and reports** on
+anything that needs your judgement. It never guesses. The rewrite is
+atomic: if the migration stops, nothing on disk has changed, so you can
+fix the problem and run it again.
+
+#### Always Dry-Run First
+
+``` r
+
+library(metasalmon)
+
+report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
+```
+
+`dry_run = TRUE` reports exactly what a real run would do without
+touching a single file. Read the report, decide whether you agree with
+it, and only then run it for real.
+
+#### A Complete Worked Example
+
+This builds a small sdp-0.2.0-shaped package in a temporary directory,
+migrates it, and shows the result. It runs offline in a few seconds and
+leaves nothing behind on your machine.
+
+First, write the legacy package: three columns, one measurement column
+carrying a dictionary `method_iri`, and a `metadata/methods.csv`
+registry describing that method.
+
+``` r
+
+library(metasalmon)
+
+legacy_path <- file.path(tempdir(), "weir-counts-sdp")
+dir.create(file.path(legacy_path, "data"), recursive = TRUE)
+dir.create(file.path(legacy_path, "metadata"), recursive = TRUE)
+
+readr::write_csv(
+  tibble::tibble(
+    stream_id     = c("BEAR", "BEAR", "COHO"),
+    survey_year   = c(2023L, 2024L, 2023L),
+    spawner_count = c(412L, 388L, 1204L)
+  ),
+  file.path(legacy_path, "data", "escapement.csv"),
+  na = ""
+)
+
+readr::write_csv(
+  tibble::tibble(
+    dataset_id   = "weir-counts",
+    title        = "Weir counts",
+    description  = "Adult spawner counts at fixed weirs.",
+    spec_version = "sdp-0.2.0"
+  ),
+  file.path(legacy_path, "metadata", "dataset.csv"),
+  na = ""
+)
+
+readr::write_csv(
+  tibble::tibble(
+    dataset_id  = "weir-counts",
+    table_id    = "escapement",
+    file_name   = "data/escapement.csv",
+    table_label = "Escapement",
+    primary_key = "stream_id,survey_year"
+  ),
+  file.path(legacy_path, "metadata", "tables.csv"),
+  na = ""
+)
+
+readr::write_csv(
+  tibble::tibble(
+    dataset_id         = "weir-counts",
+    table_id           = "escapement",
+    column_name        = c("stream_id", "survey_year", "spawner_count"),
+    column_label       = c("Stream", "Survey year", "Spawner count"),
+    column_description = c("Stream code.", "Year surveyed.", "Adult spawners counted."),
+    column_role        = c("identifier", "identifier", "measurement"),
+    value_type         = c("string", "integer", "integer"),
+    # The sdp-0.2.0 placement this migration removes:
+    method_iri         = c("", "", "https://example.org/methods/weir-count")
+  ),
+  file.path(legacy_path, "metadata", "column_dictionary.csv"),
+  na = ""
+)
+
+readr::write_csv(
+  tibble::tibble(
+    dataset_id         = "weir-counts",
+    method_iri         = "https://example.org/methods/weir-count",
+    method_label       = "Weir count",
+    method_description = "Complete enumeration of adults passing a fixed weir.",
+    method_version     = "3.1",
+    protocol_iri       = "https://example.org/protocols/weir-2019",
+    citation           = "Salmon Program. 2019. Weir enumeration protocol v3.1."
+  ),
+  file.path(legacy_path, "metadata", "methods.csv"),
+  na = ""
+)
+```
+
+Now preview the migration:
+
+``` r
+
+report <- migrate_sdp_methods(legacy_path, dry_run = TRUE)
+```
+
+    Table-level method placements:
+    ✔ escapement -> https://example.org/methods/weir-count (from spawner_count)
+    'metadata/methods.csv' is removed by this migration. Its labels and
+    descriptions belong in the shared vocabulary; its version and citation belong
+    beside protocol_iri:
+    • https://example.org/methods/weir-count (Weir count)
+    ℹ Request missing vocabulary terms through the ontology's shared-term admission
+      policy, and copy any registry citation into protocol_citation.
+    Dry run: no files were changed.
+
+The report is also returned, invisibly, as a list with three parts:
+`tables` (the placements it will apply), `dropped_review` (unresolved
+`REVIEW:` bindings it will drop), and `registry` (the rows of the old
+`methods.csv`, so you can relocate their content).
+
+``` r
+
+report$tables
+```
+
+    # A tibble: 1 × 3
+      table_id   method_iri                             columns
+      <chr>      <chr>                                  <chr>
+    1 escapement https://example.org/methods/weir-count spawner_count
+
+``` r
+
+report$registry[c("method_label", "method_version", "citation")]
+```
+
+    # A tibble: 1 × 3
+      method_label method_version citation
+      <chr>        <chr>          <chr>
+    1 Weir count   3.1            Salmon Program. 2019. Weir enumeration protocol v…
+
+The dry run agrees with what we intended, so run it for real:
+
+``` r
+
+report <- migrate_sdp_methods(legacy_path)
+```
+
+The same report prints, followed by:
+
+    ✔ Migration complete.
+    ℹ Run `validate_salmon_datapackage("...")` to confirm the package.
+
+Check the result. The method is now a property of the table:
+
+``` r
+
+tables <- readr::read_csv(
+  file.path(legacy_path, "metadata", "tables.csv"),
+  show_col_types = FALSE, na = ""
+)
+tables[c("table_id", "method_iri", "protocol_iri", "protocol_citation")]
+```
+
+    # A tibble: 1 × 4
+      table_id   method_iri                           protocol_iri protocol_citation
+      <chr>      <chr>                                <lgl>        <lgl>
+    1 escapement https://example.org/methods/weir-co… NA           NA
+
+The dictionary has lost `method_iri` and gained
+`statistical_modifier_iri`:
+
+``` r
+
+names(readr::read_csv(
+  file.path(legacy_path, "metadata", "column_dictionary.csv"),
+  show_col_types = FALSE, na = ""
+))
+```
+
+     [1] "dataset_id"               "table_id"
+     [3] "column_name"              "column_label"
+     [5] "column_description"       "column_role"
+     [7] "value_type"               "required"
+     [9] "unit_label"               "unit_iri"
+    [11] "term_iri"                 "term_type"
+    [13] "property_iri"             "entity_iri"
+    [15] "constraint_iri"           "statistical_modifier_iri"
+
+And the registry is gone:
+
+``` r
+
+file.exists(file.path(legacy_path, "metadata", "methods.csv"))
+#> [1] FALSE
+```
+
+Notice what the migration did *not* do: it left `protocol_iri` and
+`protocol_citation` empty, even though the old registry had both. That
+is deliberate. Deciding that a registry citation describes the table
+rather than the dataset is a judgement call, so the migration hands you
+the values in `report$registry` and lets you place them. Doing that is
+the next section.
+
+The migration also updates `datapackage.json` — it drops the
+`sdp_methods` resource, removes any legacy `iAdopt:methodIri` custom
+keys from the field definitions, and stamps the new profile and spec
+version — and sets `dataset.csv`’s `spec_version` to `sdp-0.3.0`.
+
+#### Finally, Validate
+
+``` r
+
+validate_salmon_datapackage(legacy_path, require_iris = FALSE)
+```
+
+Run this after every migration. It is also worth knowing that a package
+still carrying a `metadata/methods.csv` is now refused by the surfaces
+that consume method metadata — EML export, KNB publication, and
+observation-structure validation — with an error pointing back at
+[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md).
+
+### When the Migration Stops
+
+[`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+stops rather than guessing whenever the old metadata does not determine
+a single correct answer. Each stop leaves your package exactly as it
+was. Here is each case and what to do about it.
+
+#### Columns of One Table Bound to Different Methods
+
+    Error in migrate_sdp_methods(path, dry_run = TRUE) :
+      Method migration stopped: measurement columns disagree about their
+    table's method.
+    ✖ Table escapement: https://example.org/methods/electrofishing (fry_density) vs
+      https://example.org/methods/weir-count (spawner_count)
+    ℹ Split the table, cite a protocol instead, or move the method into the data as
+      a code column, then re-run.
+    ℹ See the methods section of the SDP specification for the three placements.
+
+The tool cannot promote a method to the table when the table’s columns
+disagree about what it is. You have three ways out, and which one is
+right depends on your data:
+
+1.  **Split the table.** If `fry_density` and `spawner_count` really are
+    separate observational units produced by separate field programs,
+    they are two tables. This is usually the honest answer, and it also
+    makes the primary key easier to declare.
+2.  **Cite a protocol instead.** If both columns come from one field
+    programme documented in one manual, drop the per-column methods and
+    put the manual in `protocol_iri` / `protocol_citation` on the table.
+3.  **Move the method into the data.** If the difference is real and
+    varies, add an enumeration-method column as in [Placement
+    3](#placement-3-the-method-varies-by-row).
+
+A related message appears when a method is bound to *some* measurement
+columns of a table but not all of them:
+
+    ✖ Table escapement: https://example.org/methods/weir-count is bound to only
+      some measurement columns; fry_density carries no resolved method binding.
+
+Promotion claims the method for the **whole** table, so silence from a
+column is treated as disagreement rather than consent. Either bind the
+missing columns to the same method, or take one of the three options
+above.
+
+#### Bindings Naming an Undeclared Table
+
+    Error: Method bindings name tables that 'metadata/tables.csv' does not declare.
+    ✖ escapement
+    ℹ Fix the table identifiers in the legacy metadata, then re-run.
+
+A dictionary row claims `table_id = "escapement"`, but `tables.csv` has
+no such table — usually a typo or a table that was renamed on one side
+only. Fix the identifier so both files agree, then re-run. A closely
+related stop fires when a binding has no `table_id` or no `column_name`
+at all:
+
+    Error: Method bindings without a table and column cannot be migrated.
+
+Both of these stops surface in a `dry_run = TRUE` preview: every stop
+the real run raises also stops the preview, so a clean dry run is a
+trustworthy promise that the migration will apply. The rewrite is atomic
+besides, so a real run that hits a stop still leaves your package
+untouched.
+
+You may also see two carriers disagreeing about one column, if your
+package has both a dictionary `method_iri` and a legacy
+`iAdopt:methodIri` custom key in `datapackage.json`:
+
+    Error: Method migration stopped: two carriers disagree about one column's method.
+
+The tool refuses to pick a winner, because picking one would erase the
+other from your package. Decide which is correct, make both files say
+it, and re-run.
+
+#### Unresolved `REVIEW:` Values Are Dropped
+
+    Unresolved `REVIEW:` method bindings dropped (resolve them via term search
+    before publishing):
+    ✖ escapement.fry_density = REVIEW: https://example.org/methods/electrofishing
+    ✖ escapement.spawner_count = REVIEW: https://example.org/methods/weir-count
+
+A `REVIEW:` prefix means a suggestion nobody confirmed. The migration
+does not carry unconfirmed suggestions into the new shape — that would
+launder a draft into a fact — so it drops them and tells you which ones
+it dropped.
+
+This is not an error, and the migration continues. But note what it
+means: those columns now have **no** method recorded anywhere. If the
+method matters, resolve the term before or after migrating
+([`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md),
+or the term-request workflow below) and then add it in the right
+placement by hand.
+
+Watch for one interaction: dropping a `REVIEW:` binding can turn a table
+that looked unanimous into one where only some measurement columns carry
+a method, which then produces the “bound to only some measurement
+columns” stop above. Resolving the `REVIEW:` value is the cleanest fix.
+
+### What to Do With the Old Registry
+
+The old `metadata/methods.csv` had seven columns. They do not all go to
+the same place, and the migration reports them rather than relocating
+them, because two of them need a decision and three of them need to
+leave your package entirely.
+
+| Old registry column | Where it goes now |
+|----|----|
+| `method_iri` | `tables.csv$method_iri` **when every measurement column of a table agrees** — that promotion is the only one the migration makes. A method that varies by row goes to `codes.csv$term_iri`, which the migration cannot do for you: it needs a column added to your data |
+| `method_label` | The shared vocabulary — request the term |
+| `method_description` | The shared vocabulary — request the term |
+| `method_version` | `protocol_citation` |
+| `protocol_iri` | `protocol_iri` on `tables.csv` or `dataset.csv` |
+| `citation` | `protocol_citation` on `tables.csv` or `dataset.csv` |
+| `dataset_id` | Nothing — it was only there to key the registry |
+
+#### Labels and Descriptions Belong in the Vocabulary
+
+This is the reasoning behind removing the registry. A label and a
+definition for “weir count” are the same in every package that uses weir
+counts. Copying them into each package’s `methods.csv` meant every
+package restated the vocabulary, inconsistently, with no way to correct
+all the copies at once. The IRI is the link; the definition lives at the
+other end of it.
+
+So if your registry described a method that has no shared term yet, the
+fix is to **request the term** rather than to keep a local copy of the
+definition. The package has a workflow for exactly this. It reaches
+GitHub, so it needs a network connection and the credentials from the
+[Setup and
+Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.md)
+guide.
+
+The migration *reports* the registry rows rather than relocating their
+labels, and that report is the input here — the migrated dictionary no
+longer carries the registry’s fields, so reading it back would find
+nothing to request.
+
+``` r
+
+# `report$registry` is what migrate_sdp_methods() returned above.
+reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary
+
+gaps <- detect_semantic_term_gaps(reviewed_dict)
+
+requests <- render_ontology_term_request(gaps, scope = "auto", ask = FALSE)
+
+# Review every draft, then preview the issues without submitting them:
+requests |>
+  dplyr::filter(request_scope %in% c("smn", "gcdfo")) |>
+  submit_term_request_issues(dry_run = TRUE)
+```
+
+Your old `method_label` becomes the proposed label and your
+`method_description` becomes the proposed definition, which is usually
+most of a good term request already. Route it by scope: terms that other
+organizations would also use go to the shared salmon-domain ontology,
+and DFO-specific operational terms go to the DFO salmon ontology.
+
+- shared cross-organization/domain terms -\>
+  <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
+- DFO-specific policy/operations terms -\>
+  <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
+
+For the full term-request walkthrough, see [After Excel Review: Finalize
+and Publish Your
+Package](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.md)
+and [Linking to Standard
+Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md).
+
+#### Versions and Citations Become `protocol_citation`
+
+A `method_version` such as `3.1` and a `citation` such as
+`Salmon Program. 2019. Weir enumeration protocol v3.1.` are describing a
+**document**, not a concept. Version 3.1 of your weir protocol and
+version 2.0 are the same procedure, differently written down — which is
+exactly what `protocol_citation` is for.
+
+Take them from `report$registry` and place them by hand, deciding as you
+go whether the protocol governs one table or the whole dataset:
+
+``` r
+
+report <- migrate_sdp_methods("weir-counts-sdp", dry_run = TRUE)
+
+report$registry[c("method_version", "protocol_iri", "citation")]
+
+# Then, after the real migration, place them where they belong:
+tables <- readr::read_csv("weir-counts-sdp/metadata/tables.csv", na = "")
+tables$protocol_iri[tables$table_id == "escapement"] <-
+  "https://example.org/protocols/weir-2019"
+tables$protocol_citation[tables$table_id == "escapement"] <-
+  "Salmon Program. 2019. Weir enumeration protocol v3.1."
+readr::write_csv(tables, "weir-counts-sdp/metadata/tables.csv", na = "")
+```
+
+If the same protocol governs everything in the dataset, put it on
+`metadata/dataset.csv` instead — the fields have the same names there.
+
+### Migration Checklist
+
+1.  Back up the package, or make sure it is committed to version
+    control.
+2.  Run `migrate_sdp_methods(path, dry_run = TRUE)` and read the whole
+    report.
+3.  Resolve any stop: split a table, cite a protocol, or move the method
+    into the data as a code column.
+4.  Resolve or accept the dropped `REVIEW:` bindings.
+5.  Run `migrate_sdp_methods(path)` for real.
+6.  Place `protocol_iri` and `protocol_citation` from the registry
+    report.
+7.  Fill `statistical_modifier_iri` for any aggregated columns.
+8.  Request shared terms for method labels and descriptions that have no
+    IRI yet.
+9.  Run `validate_salmon_datapackage(path)`.
+
+### Related Reading
+
+- [Tidy Data for Salmon Data
+  Packages](https://salmon-data-mobilization.github.io/metasalmon/articles/tidy-data-for-sdp.md)
+  — the tidy foundations the method model depends on. “Is the method
+  constant within this table?” is only a sound question when the table
+  is a coherent observational unit.
+- [Glossary of
+  Terms](https://salmon-data-mobilization.github.io/metasalmon/articles/glossary.md)
+  — the I-ADOPT components, including the statistical modifier.
+- [Linking to Standard
+  Vocabularies](https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.md)
+  — finding and requesting terms.
+- The `NEWS.md` entry for 0.3.0 is the authoritative statement of the
+  change.

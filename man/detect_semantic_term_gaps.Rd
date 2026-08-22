@@ -14,7 +14,9 @@ detect_semantic_term_gaps(
 }
 \arguments{
 \item{dict}{A dictionary tibble. When \code{suggestions} is \code{NULL}, the function
-reads both \code{semantic_suggestions} and \code{semantic_llm_assessments} attributes.}
+reads the \code{semantic_suggestions}, \code{semantic_llm_assessments}, and
+\code{semantic_targets} attributes; the last is how zero-candidate targets are
+detected.}
 
 \item{suggestions}{Optional semantic suggestion table. If omitted, this function
 uses the dictionary attributes. If supplied explicitly, only candidate and
@@ -35,8 +37,11 @@ A tibble with one row per unresolved semantic target. The existing
 23-column candidate-gap prefix is preserved, followed by target metadata,
 \code{gap_detection_basis}, LLM decision/rationale, proposed-term fields, and
 \code{llm_escalated_from}. Detection values are \code{candidate_gap},
-\code{llm_request_new_term}, or
-\code{candidate_gap_and_llm_request_new_term}.
+\code{llm_request_new_term},
+\code{candidate_gap_and_llm_request_new_term}, or \code{no_candidates} -- the last
+marks a target whose retrieval returned nothing at all (read from the
+dictionary's \code{semantic_targets} attribute, so it is reported only on the
+\code{dict} path), distinguishing "nothing found" from "found and rejected".
 Key columns:
 \itemize{
 \item \code{dataset_id}, \code{table_id}, \code{column_name}, \code{target_scope},

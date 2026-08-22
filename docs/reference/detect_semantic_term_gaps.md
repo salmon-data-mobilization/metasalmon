@@ -22,7 +22,9 @@ detect_semantic_term_gaps(
 - dict:
 
   A dictionary tibble. When `suggestions` is `NULL`, the function reads
-  both `semantic_suggestions` and `semantic_llm_assessments` attributes.
+  the `semantic_suggestions`, `semantic_llm_assessments`, and
+  `semantic_targets` attributes; the last is how zero-candidate targets
+  are detected.
 
 - suggestions:
 
@@ -51,8 +53,11 @@ A tibble with one row per unresolved semantic target. The existing
 23-column candidate-gap prefix is preserved, followed by target
 metadata, `gap_detection_basis`, LLM decision/rationale, proposed-term
 fields, and `llm_escalated_from`. Detection values are `candidate_gap`,
-`llm_request_new_term`, or `candidate_gap_and_llm_request_new_term`. Key
-columns:
+`llm_request_new_term`, `candidate_gap_and_llm_request_new_term`, or
+`no_candidates` – the last marks a target whose retrieval returned
+nothing at all (read from the dictionary's `semantic_targets` attribute,
+so it is reported only on the `dict` path), distinguishing "nothing
+found" from "found and rejected". Key columns:
 
 - `dataset_id`, `table_id`, `column_name`, `target_scope`,
   `target_sdp_file`, `target_sdp_field`, `target_row_key`,

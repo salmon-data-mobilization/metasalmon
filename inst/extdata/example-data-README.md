@@ -10,7 +10,15 @@ or a fuller official slice.
 | `nuseds-fraser-coho-sample.csv` | 30 | 1996–2024 | Smallest possible walkthroughs, fast examples, light semantic seeding demos |
 | `nuseds-fraser-coho-2023-2024.csv` | 173 | 2023–2024 | More realistic package creation, testing, and documentation examples |
 
-The tiny sample is retained unchanged for backwards compatibility.
+The tiny sample's `START_DTT`/`END_DTT` values were converted from the Oracle
+`DD-MON-YY` format NuSEDS exports to ISO dates (2026-08, backlog #98): its
+bundled dictionary declares `value_type: date`, and the shipped pair must pass
+`validate_salmon_datapackage()` — an example that fails the package's own
+final gate teaches the wrong thing. The conversion used the same
+`%d-%b-%y` parse the package's temporal inference applies, so the dates are
+unchanged in meaning; every other byte of the file is as originally shipped.
+This matches the fuller example, whose derivation script already converts the
+same columns to ISO.
 
 ## Provenance for the fuller official example
 
@@ -93,3 +101,11 @@ characteristic from its unit. Values are expressed in QUDT `Individual`
 Salmon Domain Ontology `smn:Abundance` characteristic. In particular, do not
 restore the former QUDT `NumberOfOrganisms` value: that IRI does not exist, and
 a counting unit is not a substitute for the ecological property being measured.
+
+The tiny sample's annotated row also resolves end to end (2026-08, backlog
+#99): `term_iri` is the released `gcdfo:SpawnerAbundance` (an `owl:Class`, so
+`term_type` is `owl_class`) and `constraint_iri` is the released
+`smn:NaturalOrigin` concept, replacing two placeholder IRIs under
+`w3id.org/example/salmon#` that returned HTTP 404. Placeholders that look like
+real IRIs pass every offline check; an unfinished IRI belongs behind the
+`REVIEW:` marker instead, which strict validation refuses to ship.

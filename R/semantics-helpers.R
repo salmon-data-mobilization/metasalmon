@@ -332,6 +332,11 @@
 #'   row per assessed target. Its 30-column schema preserves the legacy
 #'   28-column prefix and appends `llm_escalated_from` and
 #'   `llm_retry_query_rejection_reason`.
+#'   The dictionary also carries a `semantic_targets` attribute with the
+#'   discovered search targets (one row per unfilled semantic field, in the
+#'   `.ms_semantic_target_cols()` shape). [detect_semantic_term_gaps()] reads
+#'   it to report targets whose retrieval returned zero candidates, which by
+#'   construction have no suggestion rows at all.
 #'
 #' @details
 #' Column targets keep full I-ADOPT behavior for
@@ -477,6 +482,7 @@ suggest_semantics <- function(df,
 
   if (nrow(dict) == 0 && nrow(codes) == 0 && nrow(table_meta) == 0 && nrow(dataset_meta) == 0) {
     attr(dict, "semantic_suggestions") <- tibble::tibble()
+    attr(dict, "semantic_targets") <- tibble::tibble()
     if (isTRUE(llm_assess)) {
       attr(dict, "semantic_llm_assessments") <- .ms_empty_llm_assessments()
     }
@@ -593,6 +599,11 @@ suggest_semantics <- function(df,
   }
 
   attr(dict, "semantic_suggestions") <- suggestions
+  # The discovered targets ride along so `detect_semantic_term_gaps()` can see
+  # the targets retrieval found NOTHING for. Without them, a concept absent
+  # from every vocabulary -- the strongest possible term-gap evidence --
+  # contributed zero suggestion rows and therefore zero gaps (backlog #97).
+  attr(dict, "semantic_targets") <- targets
 
   if (isTRUE(include_dwc)) {
     attr(dict, "dwc_mappings") <- metasalmon::suggest_dwc_mappings(dict) |> attr("dwc_mappings")

@@ -16,7 +16,9 @@
 #' 4. optionally submit issues with `submit_term_request_issues()`.
 #'
 #' @param dict A dictionary tibble. When `suggestions` is `NULL`, the function
-#'   reads both `semantic_suggestions` and `semantic_llm_assessments` attributes.
+#'   reads the `semantic_suggestions`, `semantic_llm_assessments`, and
+#'   `semantic_targets` attributes; the last is how zero-candidate targets are
+#'   detected.
 #' @param suggestions Optional semantic suggestion table. If omitted, this function
 #'   uses the dictionary attributes. If supplied explicitly, only candidate and
 #'   embedded `llm_*` fields in this table are used; dictionary assessment
@@ -32,8 +34,11 @@
 #'   23-column candidate-gap prefix is preserved, followed by target metadata,
 #'   `gap_detection_basis`, LLM decision/rationale, proposed-term fields, and
 #'   `llm_escalated_from`. Detection values are `candidate_gap`,
-#'   `llm_request_new_term`, or
-#'   `candidate_gap_and_llm_request_new_term`.
+#'   `llm_request_new_term`,
+#'   `candidate_gap_and_llm_request_new_term`, or `no_candidates` -- the last
+#'   marks a target whose retrieval returned nothing at all (read from the
+#'   dictionary's `semantic_targets` attribute, so it is reported only on the
+#'   `dict` path), distinguishing "nothing found" from "found and rejected".
 #'   Key columns:
 #'   - `dataset_id`, `table_id`, `column_name`, `target_scope`,
 #'     `target_sdp_file`, `target_sdp_field`, `target_row_key`, `dictionary_role`;
@@ -106,7 +111,16 @@ detect_semantic_term_gaps <- function(
     }
   }
 
-  if (nrow(suggestions) == 0L && nrow(assessments) == 0L) {
+  # Targets whose retrieval returned ZERO candidates leave no suggestion row
+  # behind, so an empty suggestions table is not evidence of "no gaps" -- it is
+  # exactly what a concept absent from every vocabulary looks like (backlog
+  # #97). `suggest_semantics()` attaches the discovered targets as
+  # `semantic_targets`; the explicit-suggestions path has no dictionary to read
+  # them from and keeps its historical row-in/row-out behaviour.
+  targets <- if (suggestions_supplied) NULL else attr(dict, "semantic_targets")
+  targets <- if (is.null(targets)) tibble::tibble() else tibble::as_tibble(targets)
+
+  if (nrow(suggestions) == 0L && nrow(assessments) == 0L && nrow(targets) == 0L) {
     return(.empty_term_gap_result())
   }
 
@@ -188,6 +202,54 @@ detect_semantic_term_gaps <- function(
     }
   }
 
+  no_candidate_targets <- tibble::tibble()
+  if (nrow(targets) > 0L) {
+    targets$target_scope <- tolower(trimws(as.character(targets$target_scope)))
+    targets$dictionary_role <- tolower(trimws(as.character(targets$dictionary_role)))
+    targets <- targets[
+      targets$target_scope %in% include_target_scopes,
+      ,
+      drop = FALSE
+    ]
+    if (!is.null(include_dictionary_roles)) {
+      targets <- targets[
+        targets$dictionary_role %in% include_dictionary_roles,
+        ,
+        drop = FALSE
+      ]
+    }
+    # "No candidates" means no retrieval evidence AT ALL: neither a suggestion
+    # row (checked BEFORE min_score filtering, so a below-threshold candidate
+    # still counts as "found") nor an assessment of any decision. A target
+    # whose candidates were found and then filtered or rejected keeps its
+    # historical treatment; the basis distinguishes "nothing found" from
+    # "found and rejected".
+    if (nrow(targets) > 0L) {
+      retrieved_keys <- character()
+      if (nrow(suggestions) > 0L) {
+        retrieved_keys <- .ms_semantic_key_df(
+          suggestions,
+          .ms_semantic_assessment_join_cols()
+        )
+      }
+      if (nrow(assessments) > 0L) {
+        retrieved_keys <- union(
+          retrieved_keys,
+          .ms_semantic_key_df(assessments, .ms_semantic_assessment_join_cols())
+        )
+      }
+      targets$.ms_gap_key <- .ms_semantic_key_df(
+        targets,
+        .ms_semantic_assessment_join_cols()
+      )
+      no_candidate_targets <- targets[
+        !targets$.ms_gap_key %in% retrieved_keys,
+        ,
+        drop = FALSE
+      ]
+    }
+  }
+
   if (nrow(suggestions) > 0L) {
     suggestions$source <- tolower(trimws(as.character(suggestions$source)))
     suggestions$score <- suppressWarnings(as.numeric(suggestions$score))
@@ -203,7 +265,8 @@ detect_semantic_term_gaps <- function(
     ,
     drop = FALSE
   ]
-  if (nrow(suggestions) == 0L && nrow(llm_gaps) == 0L) {
+  if (nrow(suggestions) == 0L && nrow(llm_gaps) == 0L &&
+      nrow(no_candidate_targets) == 0L) {
     return(.empty_term_gap_result())
   }
 
@@ -227,9 +290,20 @@ detect_semantic_term_gaps <- function(
   } else {
     list()
   }
+  no_candidate_groups <- if (nrow(no_candidate_targets) > 0L) {
+    lapply(
+      split(no_candidate_targets, no_candidate_targets$.ms_gap_key),
+      function(rows) rows[1, , drop = FALSE]
+    )
+  } else {
+    list()
+  }
   all_keys <- union(
-    names(candidate_rows)[vapply(candidate_rows, function(x) isTRUE(x$candidate_gap), logical(1))],
-    names(llm_groups)
+    union(
+      names(candidate_rows)[vapply(candidate_rows, function(x) isTRUE(x$candidate_gap), logical(1))],
+      names(llm_groups)
+    ),
+    names(no_candidate_groups)
   )
   if (length(all_keys) == 0L) {
     return(.empty_term_gap_result())
@@ -238,12 +312,14 @@ detect_semantic_term_gaps <- function(
   rows <- lapply(all_keys, function(key) {
     candidate <- candidate_rows[[key]]
     llm <- llm_groups[[key]]
+    no_candidate <- no_candidate_groups[[key]]
     .ms_term_gap_combine_evidence(
       key = key,
       candidate = candidate,
       assessment_rows = llm,
       dict = if (suggestions_supplied) NULL else dict,
-      target_metadata = target_metadata[[key]]
+      target_metadata = target_metadata[[key]] %||% no_candidate,
+      basis = if (is.null(no_candidate)) NULL else "no_candidates"
     )
   })
 
@@ -403,7 +479,8 @@ detect_semantic_term_gaps <- function(
                                           candidate = NULL,
                                           assessment_rows = NULL,
                                           dict = NULL,
-                                          target_metadata = NULL) {
+                                          target_metadata = NULL,
+                                          basis = NULL) {
   assessment_rows <- if (is.null(assessment_rows)) {
     .ms_empty_llm_assessments()
   } else {
@@ -430,7 +507,9 @@ detect_semantic_term_gaps <- function(
 
   candidate_gap <- !is.null(candidate) && isTRUE(candidate$candidate_gap)
   llm_gap <- nrow(assessment_rows) > 0L
-  basis <- if (candidate_gap && llm_gap) {
+  # An explicit `basis` wins: "no_candidates" rows have neither candidate nor
+  # LLM evidence, and the fallthrough below would mislabel them candidate_gap.
+  basis <- basis %||% if (candidate_gap && llm_gap) {
     "candidate_gap_and_llm_request_new_term"
   } else if (llm_gap) {
     "llm_request_new_term"

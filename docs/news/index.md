@@ -1,5 +1,477 @@
 # Changelog
 
+## metasalmon (development version)
+
+### New
+
+- **[`nuseds_estimate_classification_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_estimate_classification_crosswalk.md)
+  maps NuSEDS `ESTIMATE_CLASSIFICATION` values onto the released gcdfo
+  Hyatt (1997) estimate types** (backlog
+  [\#101](https://github.com/salmon-data-mobilization/metasalmon/issues/101)),
+  and
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  wires it in exactly where the estimate-method crosswalk is wired, with
+  the same never-overwrite-an-explicit-IRI rule.
+  `TRUE ABUNDANCE (TYPE-1)` … `PRESENCE-ABSENCE (TYPE-6)` map to
+  `gcdfo:Type1`–`gcdfo:Type6` (`skos:Concept`s under
+  `gcdfo:EstimateType`, released in gcdfo 0.0.9). Two families of values
+  deliberately map to no Type concept, and the crosswalk records the
+  disposition instead of forcing it: `NO SURVEY THIS YEAR` is an
+  absence-of-observation marker, not an estimate type (mapping it would
+  assert a survey quality for a survey that did not happen), and the two
+  `RELATIVE: … MULTI-YEAR METHODS` classifications have no released
+  concept of their own so they link at scheme level, the convention the
+  estimate-method crosswalk already uses for `Cumulative CPUE`. The two
+  prefill passes now share one engine
+  (`.ms_prefill_legacy_code_terms()`) rather than a copy-paste sibling.
+
+- **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  now applies the enumeration crosswalk to `ENUMERATION_METHODS` codes**
+  (backlog
+  [\#102](https://github.com/salmon-data-mobilization/metasalmon/issues/102)).
+  `"Fence"` has always been in
+  [`nuseds_enumeration_method_crosswalk()`](https://salmon-data-mobilization.github.io/metasalmon/reference/nuseds_enumeration_method_crosswalk.md)
+  (→ `gcdfo:FixedSiteCensusManual`), but the only crosswalk
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  wired was the estimate one — so a NuSEDS column recording `Fence` got
+  no `term_iri` while the crosswalk that supplies one sat exported,
+  documented, tested, and unreachable from the package path. Resolved by
+  wiring, not by row: `Fence` is an enumeration (field) method recorded
+  under `ENUMERATION_METHODS`, exactly the division of labour the two
+  crosswalks document, so adding a `Fence` row to the estimate crosswalk
+  would have misfiled it. The prefill matches on the word `enumeration`
+  alone because NuSEDS names the column in the plural
+  (`ENUMERATION_METHODS`) and a `\bmethod\b` test would never match it;
+  combined multi-method values (`"Stream Walk, Other"`) have no
+  crosswalk row and stay blank, and explicit caller-supplied IRIs are
+  never overwritten.
+
+### Bug fixes
+
+- **A `Date`-typed `temporal_start` no longer destroys the package on
+  disk** (backlog
+  [\#96](https://github.com/salmon-data-mobilization/metasalmon/issues/96)).
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  tested `dataset_meta$temporal_start[1] != ""`; comparing a `Date` with
+  `""` coerces `""` to `NA_Date_`, the `if` condition evaluated to `NA`,
+  and the call aborted with *“missing value where TRUE/FALSE needed”* —
+  **after** the managed paths had been unlinked and **before** any
+  replacement was written, deleting `metadata/` and `datapackage.json`
+  and leaving nothing in their place. The triggering input is what the
+  package itself wrote: reading a valid package’s `metadata/dataset.csv`
+  back with a plain
+  [`readr::read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
+  type-guesses `temporal_start` as `Date`, because metasalmon put an ISO
+  date there. Every scalar presence test in the descriptor builder
+  (`creator`, `contact_*`, `license`, `temporal_*`, `table_label`,
+  `description`, `primary_key`) now renders the value to character
+  before deciding presence (`.ms_meta_scalar_present()`), a `POSIXct` —
+  whose `!= ""` comparison throws outright rather than yielding `NA` —
+  is covered by the same route, and the descriptor’s temporal values are
+  rendered with `.ms_iso_character()` so the JSON and the CSV cannot
+  disagree about the same field. A regression test proves the directory
+  survives the round trip.
+
+- **The shipped 30-row example now passes
+  [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)**
+  (backlog
+  [\#98](https://github.com/salmon-data-mobilization/metasalmon/issues/98)).
+  `inst/extdata/nuseds-fraser-coho-sample.csv` stored
+  `START_DTT`/`END_DTT` as Oracle `DD-MON-YY` text while its bundled
+  dictionary declared `value_type: date`, so writing the pair and
+  validating aborted with 2 structural issues in **both** modes — the
+  artifact the docs hand a new user as the fastest walkthrough failed
+  the package’s own final gate. The data was fixed rather than the
+  dictionary: the `date` declaration is the semantically correct one for
+  `column_role: temporal` columns, the fuller 173-row example’s
+  derivation script already converts the same columns to ISO, and
+  retyping them `string` would teach users to discard date semantics
+  whenever source bytes are ugly. The 28 values were converted with the
+  same `%d-%b-%y` parse the package’s temporal inference uses (so the
+  century pivot matches: `03-DEC-97` → `1997-12-03`); every other byte
+  of the file is unchanged, and no other bundled metadata derives from
+  the date format. The DD-MON-YY parsing test now carries its own inline
+  Oracle-format fixture instead of leaning on the shipped sample, and a
+  new round-trip test builds the package from the shipped artifacts and
+  validates it so the pair cannot silently diverge again.
+
+- **The shipped example dictionary’s two placeholder IRIs are replaced
+  with released terms that resolve** (backlog
+  [\#99](https://github.com/salmon-data-mobilization/metasalmon/issues/99)).
+  `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance` and
+  `https://w3id.org/example/salmon#WildOriginConstraint` — both HTTP
+  404, under a namespace nobody owns — shipped in
+  `inst/extdata/column_dictionary.csv`’s one annotated row. They were
+  recognisably placeholders, which is the problem: `REVIEW:` is the
+  package’s marker for an unfinished IRI and strict validation rejects
+  it, while a plausible-looking `w3id.org` IRI passed every offline
+  check. `term_iri` is now the released `gcdfo:SpawnerAbundance` (an
+  `owl:Class` in gcdfo 0.0.9, so `term_type` moves from `skos_concept`
+  to `owl_class`), and `constraint_iri` is the released
+  `smn:NaturalOrigin` concept (“born and reared in the wild”, broader
+  `smn:SalmonOrigin`) — the wild-origin filter the placeholder faked.
+  `property_iri` stays `smn:Abundance`: which of `smn:Abundance` /
+  `gcdfo:SpawnerAbundance` belongs in the property slot is open question
+  Q9, and this fix deliberately does not prejudge it — the term slot
+  holding the most specific released variable concept is defensible
+  under either answer. A network-gated test now asserts every IRI in the
+  shipped example metadata resolves.
+
+- **Both shipped examples are now round-tripped through
+  [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
+  by the test suite** (backlog
+  [\#100](https://github.com/salmon-data-mobilization/metasalmon/issues/100)),
+  the gate whose absence let
+  [\#95](https://github.com/salmon-data-mobilization/metasalmon/issues/95),
+  [\#96](https://github.com/salmon-data-mobilization/metasalmon/issues/96),
+  and
+  [\#98](https://github.com/salmon-data-mobilization/metasalmon/issues/98)
+  ship invisibly. The 30-row example must pass **both** modes — its last
+  strict blocker, a blank `tables.csv$observation_unit_iri`, is filled
+  with the released `smn:EscapementEstimate` (the IRI for the
+  `EscapementEstimate` observation unit the row already declared;
+  resolves 200) — and the 173-row starter must pass lenient and fail
+  strict with *exactly* its one documented failure
+  (`Measurement columns require term_iri; missing in rows 8.`), so drift
+  in either direction is caught. The shipped `codes.csv` was also
+  repaired in passing: it declared 9 header columns while every data row
+  carried 8 fields, so each read emitted 26 readr parsing problems; a
+  well-formedness test now covers every shipped example CSV.
+
+- **[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+  now sees the targets retrieval found nothing for** (backlog
+  [\#97](https://github.com/salmon-data-mobilization/metasalmon/issues/97)).
+  Both entry paths short-circuited on an empty suggestions table, so a
+  concept absent from every vocabulary — the strongest possible term-gap
+  evidence, and precisely the case the term-request pipeline exists for
+  — produced *zero* gaps and a console message that read like a clean
+  result. A gap was detectable only when retrieval found *something* and
+  it was judged insufficient.
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  now attaches its discovered targets as a `semantic_targets` attribute
+  (additive; the existing `semantic_suggestions` /
+  `semantic_llm_assessments` contract is unchanged), and
+  [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+  reports any target with no retrieval evidence at all as
+  `gap_detection_basis = "no_candidates"` — distinguishing “nothing
+  found” from “found and rejected” (`llm_request_new_term`). The check
+  runs before `min_score` filtering, so a below-threshold candidate
+  still counts as “found”; the explicit-`suggestions` path keeps its
+  historical row-in/row-out behaviour; the 33-column gap row contract is
+  unchanged.
+
+- **Metadata normalization now renders `Date` columns as padded ISO
+  text** (backlog
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  item 2, unblocked by item 1’s Date-only ruling). `.ms_align_cols()` —
+  the in-memory path’s only normalizer for `dataset.csv` / `tables.csv`
+  / `column_dictionary.csv` / `codes.csv` frames — did no type coercion,
+  so a caller-supplied `Date` column reached
+  [`readr::write_csv()`](https://readr.tidyverse.org/reference/write_delim.html)
+  (which renders an unpadded year below 1000) and the EML `calendarDate`
+  renderer intact; the on-disk path was safe only because
+  `.ms_read_metadata_csv()` pins every column to character.
+  Normalization now applies `.ms_iso_date_columns()` — `Date` only, per
+  the measured rule: readr’s `POSIXct` rendering is already correct and
+  coercing it would change bytes. A consequence worth naming:
+  `datapackage.json` and `metadata/dataset.csv` can no longer disagree
+  about a metadata `Date` field (item 4’s failure mode on this path),
+  because no `Date` survives to either writer. Items 3 and 5 of
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  (SSSOM canonical bytes; canonical value tokens) remain open under Q12.
+
+- **[`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  can read back the dates it writes.** A `Date` column holding a year
+  below 1000 was written as text this package’s own reader rejected:
+  [`readr::write_csv()`](https://readr.tidyverse.org/reference/write_delim.html)
+  renders a `Date` through `as.character.Date`, whose R-4.3 fast path
+  emits an unpadded year, and `readr::parse_date("1-01-01")` returns
+  `NA` — so a round trip aborted with “unparseable as that type”. Date
+  columns are now rendered through `.ms_iso_date_columns()` before
+  writing.
+
+  This is **not** the platform split fixed below, and the two point in
+  opposite directions: that one disagreed between macOS and Linux, this
+  one was wrong on every platform, so no amount of cross-platform CI
+  could surface it.
+
+  The fix is deliberately confined to `Date`. Measured rather than
+  assumed: `readr` already emits `0001-01-01T00:00:00Z` for a `POSIXct`,
+  so its instant path was never broken — and coercing it would have
+  changed bytes twice over, swapping `T…Z` for a space and reinstating a
+  fractional second that `readr` drops. Applying the fix to both types
+  by symmetry would have corrupted the one that was correct.
+  metasalmonpy was already correct here (`date.isoformat()`,
+  [`str()`](https://rdrr.io/r/utils/str.html) and `pandas.to_csv` all
+  pad), so R is the side that moved.
+
+- **Calendar years below 1000 are zero-padded on every platform.** `%Y`
+  is the one strftime field whose width the C standard leaves
+  unspecified, and glibc does not pad it. R delegates `%Y` to the
+  platform strftime unless it was built with `--with-internal-tzcode` —
+  the configure default on macOS, and not generally on Linux — so
+  `format(as.Date("0001-01-01"), "%Y-%m-%d")` returned the padded
+  `"0001-01-01"` on macOS and the unpadded `"1-01-01"` on Linux.
+  Measured on this package’s Linux CI runner on 2026-08-21, which
+  returned `"1-01-01"`, `"100-02-03"` and `"999-12-31"` for years 1, 100
+  and 999.
+
+  This reached four paths, and the failure was different in each. In
+  `.ms_canonical_value_tokens()` the canonical date and datetime keys
+  are written into package bytes, so the same input produced different
+  packages on the two platforms — and nothing errored, because both
+  sides of a `codes.csv` comparison shifted together. In
+  `.ms_sdp_observation_typed_character()` and the observation
+  normalizer, the rendered text is matched against a `[0-9]{4}` year
+  pattern, so on Linux a valid year-1 date was rejected as malformed and
+  a normalized value would not have survived a second normalization. In
+  the EML export, a round-trip check compared the reformatted date
+  against the user’s own token, so a valid `dateTime` calendar value
+  **aborted the export** on Linux while exporting cleanly on macOS. The
+  spreadsheet-preview reader had the implicit form of the same defect,
+  via [`as.character()`](https://rdrr.io/r/base/character.html) of a
+  Date.
+
+  Calendar text is now rendered through `R/platform-time.R`. The fix is
+  deliberately narrow — only the year is built by hand, and `%m`, `%d`,
+  `%H`, `%M`, `%OS` stay with strftime, because `%OS6` *truncates* the
+  fractional second where `sprintf("%.6f", ...)` rounds and a hand-built
+  timestamp would have changed bytes on the platform that was already
+  correct. Verified byte-identical to the previous calls for every year
+  the two platforms already agreed on. **On macOS nothing changes; on
+  Linux, packages written with a pre-1000 date now match.**
+  `tests/testthat/test-year-padding-guard.R` fails on any new
+  [`format()`](https://rdrr.io/r/base/format.html) carrying a raw `%Y`.
+
+  metasalmonpy hit the identical split in Python in 0.2.0 and pads
+  unconditionally, so this brings metasalmon into line with the mirror
+  rather than the other way round (Brett’s 2026-08-17 ruling); parity
+  register row 40.
+
+- **Inferred temporal coverage and EDH temporal positions are padded
+  too.** Looking for the `%Y` sites turned up a *second*, unrelated
+  defect: [`as.character()`](https://rdrr.io/r/base/character.html) of a
+  `Date` is not [`format()`](https://rdrr.io/r/base/format.html). Since
+  R 4.3 it takes an internal fast path that emits an unpadded year on
+  **every** platform, macOS included — so the two defects point in
+  opposite directions, and a path that formats on one side and coerces
+  on the other mismatches on macOS and matches on Linux.
+  `infer_dataset_metadata_from_resources()` used it for
+  `temporal_start`/`temporal_end`, which are computed from the user’s
+  own date columns and written into `metadata/dataset.csv`, EML
+  `calendarDate` and EDH `gml:beginPosition`; the EDH metadata accessor
+  used it for every temporal field, behind an
+  `inherits(value, c("POSIXct", "POSIXt", "Date"))` test whose two
+  branches were identical, so it read as though the case was handled and
+  did nothing. A year-999 coverage bound emitted `999-01-01` — not a
+  valid `xs:date`. Both now go through `.ms_iso_character()`, which pads
+  the rendered text without re-deriving it, so every four-digit year is
+  byte-identical to before. **This is not fully fixed**:
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  still writes resource columns uncoerced, so a `Date` column with a
+  pre-1000 year is written as text this package’s own reader cannot
+  parse. That needs a decision about where type coercion belongs and is
+  tracked as backlog
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93).
+
+- **A `datetime` observation dimension no longer rejects a valid
+  package.** Since 0.2.0 `.ms_sdp_observation_validate_data()` has read
+  resources through
+  [`read_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.md),
+  which types each column from the dictionary, so a column declared
+  `datetime` reaches the observation validators as a POSIXct rather than
+  as CSV text. The normalizer took
+  [`as.character()`](https://rdrr.io/r/base/character.html) of it,
+  yielding `"2024-01-31 10:00:00"` — a space, no `T`, no zone — and
+  tested that against a strict ISO-8601 pattern the string can never
+  match. Every package with a datetime-typed dimension was rejected, and
+  [`write_sdp_observation_structures()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_observation_structures.md)
+  refused to write one. The normalizer now formats the temporal classes
+  into the canonical lexical form the validators expect; character input
+  is untouched, so malformed text still fails its pattern. The same
+  lexical form is used where observed `sosa:usedProcedure` codes are
+  compared against `metadata/codes.csv`, which had the identical
+  exposure.
+
+- **ISO-8601 instants keep their time of day.**
+  [`as.POSIXct()`](https://rdrr.io/r/base/as.POSIXlt.html) has no
+  ISO-8601 entry in its default format list: given
+  `"2024-01-31T10:00:00Z"` it falls through to `"%Y-%m-%d"` and silently
+  returns midnight. Both the observation normalizer and the caster did
+  this, so two distinct instants on one date collapsed to a single grain
+  key — a genuine invariance violation would go unreported, and a
+  legitimate sub-daily series looked self-contradictory. Instants are
+  now parsed explicitly, with a `+HH:MM` or `-HH:MM` zone offset folded
+  into UTC rather than discarded. The defect was unreachable before the
+  fix above, because every datetime dimension aborted first;
+  metasalmonpy’s mirror was correct throughout, and this brings
+  metasalmon into line with it.
+
+### Documentation
+
+- Two new vignettes, roadmap stream S11 slice 2. **Migrating to SDP
+  0.3.0** (`vignettes/migrating-to-sdp-0-3-0.Rmd`) is the user-facing
+  guide to the 0.3.0 breaking change that until now existed only as a
+  NEWS entry: why a method is not part of what a value *is*, the three
+  exact placements with a worked example of each, the new
+  `statistical_modifier_iri` slot and when it applies, a complete
+  offline
+  [`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+  walkthrough, every stop-and-report case with how to resolve it, and
+  where each column of the removed `metadata/methods.csv` registry now
+  belongs. **Tidy Data for Salmon Data Packages**
+  (`vignettes/tidy-data-for-sdp.Rmd`) documents the 0.2.6 enforcement:
+  declared-primary-key uniqueness, the value-like column-name warning
+  and the heuristic behind it, and the
+  [`tidyr::pivot_longer()`](https://tidyr.tidyverse.org/reference/pivot_longer.html)
+  reshape, with the validator’s actual messages.
+
+- Vignette corrections found auditing the set against 0.3.0. The
+  quickstart and the FAQ both still named a dictionary *method* slot
+  that 0.3.0 removed, and the quickstart’s “never auto-filled” claim was
+  also wrong on the deterministic path, where a constraint or
+  statistical modifier is applied when the column text carries the
+  evidence. The publication guide listed a blank `observation_unit_iri`
+  as an EDH rebuild refusal (only a `REVIEW:` value is) and listed
+  “methods” in the closed KNB inventory (the artifact is gone; a package
+  carrying one is refused). The vocabulary guide’s `property` source row
+  omitted QUDT, and the glossary’s quick-reference row still named four
+  I-ADOPT components instead of five.
+
+### Fixed
+
+- **Semantic ranking now puts `smn` above `gcdfo`, which is what the
+  ontology preferences always said it did.** (Brett, 2026-08-17.) `smn`
+  is the shared, reviewed salmon namespace and `gcdfo` is the DFO
+  fallback: `inst/extdata/ontology-preferences.csv` ranks `smn` priority
+  1 and `gcdfo` 2 where it lists `gcdfo` at all, and omits it entirely
+  for `variable`, `property`, `constraint` and `statistical_modifier`.
+  But `.ranking_profile_defaults()` disagreed with that file. Its
+  `role_boost` gave `gcdfo` **1.3** against `smn`’s 1.7 for `variable`,
+  `entity` and `method`, and the base weights added only 0.1 more, so
+  the entire preference came to a **0.5** margin — while the routine
+  per-candidate bonuses any candidate can earn reach **0.6** on their
+  own (0.2 label overlap plus 0.4 cross-source label agreement across
+  three sources). A `gcdfo` term that merely matched the query text
+  therefore outranked the reviewed `smn` term, and the preference was
+  decided by whichever candidate happened to collect bonuses rather than
+  by the declared source authority. `gcdfo` is now a flat **1.0** in
+  every role and the base weights are `smn` 1.2 / `gcdfo` 1.0, restoring
+  a margin of 0.5–0.7 that the bonus stack does not overturn. **This
+  changes ranking order**: where an `smn` and a `gcdfo` candidate
+  previously came back with `gcdfo` first, `smn` now leads, and
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  /
+  [`infer_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.md)
+  top-1 picks can change accordingly. The measured differential against
+  metasalmonpy — six tie-heavy candidates under four input permutations
+  — now returns the same order *and the same scores* on both sides
+  (`smn` 2.75, `gcdfo` 2.65); the ordering half of
+  `knowledge/parity-deviations.md` row 32 was an R defect, not a Python
+  gap. Pinned by `tests/testthat/test-smn-outranks-gcdfo.R`.
+
+- **`statistical_modifier` reached ranking with no source preference at
+  all.** The role has had `inst/extdata/ontology-preferences.csv` rows
+  since 0.3.0 (`smn` priority 1, then I-ADOPT and STATO) and
+  [`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
+  serves it from `smn` and `ols`, but
+  `.ranking_profile_defaults()$role_boost` had no `statistical_modifier`
+  entry, so the role was scored on base weight alone — the sixth surface
+  of the role contract, silently absent exactly as `AGENTS.md` warns. It
+  now carries `smn = 1.5, ols = 0.4`, and a new guard fails if any role
+  with ranking preferences lacks a `role_boost` entry.
+
+- **SDP-extension IRI validation no longer accepts Unicode whitespace,
+  and one predicate now owns the check.**
+  `.ms_sdp_extension_is_absolute_iri()` — the validator behind
+  observation structures, KNB publication and reproducibility manifests
+  — applied `perl = TRUE` to `[^[:space:]]`, and PCRE’s `[[:space:]]` is
+  ASCII-only where R’s default TRE engine resolves it against Unicode.
+  So it *accepted* an IRI containing U+3000 IDEOGRAPHIC SPACE or U+1680
+  OGHAM SPACE MARK while `write_eml()` and
+  [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  rejected the same string: a package could clear extension validation
+  and then fail EML export on a character invisible in a diff. RFC 3987
+  requires those characters to be percent-encoded, so the permissive
+  answer was the wrong one; dropping `perl = TRUE` makes this validator
+  stricter and aligns all three. **Observable change:** an `iri` field
+  containing non-ASCII whitespace that previously validated is now
+  rejected. The shape is now defined once, in `R/iri-predicates.R`, and
+  called by the SDP-extension, EML and SSSOM validators — four
+  near-copies of one regex is how they came to disagree. EML and SSSOM
+  behaviour is unchanged; they already ran under TRE. The
+  measurement-decomposition validator deliberately keeps its own
+  narrower, ASCII-classed pattern, mirrored character-for-character in
+  metasalmonpy. Backlog
+  [\#85](https://github.com/salmon-data-mobilization/metasalmon/issues/85);
+  see the parity-deviations register, row 28.
+
+- **The statistical-modifier role reaches the ranking layer.** Two 0.3.0
+  leftovers, the same class as the role-hint gap that release already
+  fixed: `inst/extdata/ontology-preferences.csv` had no
+  `statistical_modifier` row at all, so the new role ranked with no
+  source preferences; and the bundle review prompt still told the model
+  to judge “variable, property, entity, unit, constraint, and method
+  together”, naming a slot the dictionary no longer has while omitting
+  the one it gained. The `method` preference rows are correct and stay —
+  that role survives for code values.
+
+- `migrate_sdp_methods(dry_run = TRUE)` previews the undeclared-table
+  stop. The check sat after the dry-run early return, so a clean preview
+  promised a migration the real run then refused. Nothing could be
+  corrupted — the rewrite is atomic — but the preview was not honest
+  about the outcome.
+
+- **[`validate_sdp_reproducibility_manifest()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_reproducibility_manifest.md)
+  accepts a manifest written by metasalmonpy, and the accepted writer
+  set now has one owner.** The honest-provenance ruling reached this
+  artifact’s *writer* and not its reader: the validator still demanded
+  `generated_by = "metasalmon::write_sdp_reproducibility_manifest"`, so
+  a `reproducibility/manifest.json` written by the Python mirror was
+  rejected outright — and because
+  [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
+  validates the manifest while planning, that also blocked KNB
+  publication of any Python-written SDP, not just direct validation.
+  **Observable change:** a manifest carrying
+  `metasalmonpy.write_sdp_reproducibility_manifest` +
+  `metasalmonpy_version` now validates; for the same declared artifact
+  set the two implementations’ manifests differ in nothing else,
+  verified by driving both writers over the same tree. Two smaller
+  behaviour changes come with it: a `metasalmon_version` that is
+  whitespace-only, or not a string at all, is now rejected rather than
+  accepted, which is what the decomposition validator and both Python
+  readers already did.
+
+  The ruling had been applied one artifact at a time, re-typing the same
+  pair of writer strings each time — SSSOM in PR
+  [\#43](https://github.com/salmon-data-mobilization/metasalmon/issues/43),
+  decompositions in PR
+  [\#44](https://github.com/salmon-data-mobilization/metasalmon/issues/44),
+  and this one missed — so the set now lives once in `R/provenance.R`
+  and all three validators resolve their accepted writers through it. A
+  structural guard (`tests/testthat/test-provenance.R`) fails if any
+  manifest validator re-types a writer literal, which is the part that
+  let a fourth manifest type repeat the omission. Backlog
+  [\#88](https://github.com/salmon-data-mobilization/metasalmon/issues/88);
+  see the parity-deviations register, row 29.
+
+- [`validate_sdp_measurement_decompositions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_measurement_decompositions.md)
+  accepts a manifest written by metasalmonpy, exactly as
+  [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  now does — the mirror writes byte-identical decomposition CSVs and
+  honestly names itself in the provenance block. Unknown generators and
+  missing versions stay rejected. See the parity-deviations register,
+  row 12.
+
+- [`validate_sdp_sssom()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_sdp_sssom.md)
+  accepts a manifest written by metasalmonpy
+  (`generated_by = "metasalmonpy.write_sdp_sssom"` with
+  `metasalmonpy_version`). The mirror writes byte-identical mapping-set
+  artifacts and honestly names itself in the provenance block; rejecting
+  that provenance made every Python-written SDP fail R validation for no
+  data reason. Unknown generators, and known generators missing their
+  version, stay rejected. See the parity-deviations register, row 11.
+
 ## metasalmon 0.3.0
 
 Roadmap S8, second half: the sdp-0.3.0 method placement model. A method
@@ -80,6 +552,14 @@ the spec that separates them.
   through to “keep the whole ontology”), and a new
   `SEM_MODIFIER_EVIDENCE_REQUIRED` validator holds an accept to the same
   aggregation evidence the suggestion path requires.
+
+- **A table or dataset method/protocol placement that is not an absolute
+  IRI is now reported.** Moving methods onto `tables.csv` and
+  `dataset.csv` meant those fields needed the IRI-shape check the
+  dictionary columns already had: the Frictionless schema accepts any
+  string, and the validator that does check IRI shape only runs when the
+  optional observation-structure sidecars exist. A table could therefore
+  claim `methods/weir-count` and validate with zero issues.
 
 - [`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
   hardening found in review: two carriers disagreeing about one column’s

@@ -46,22 +46,29 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**,
-  and **#95–#108**, plus
+  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**
+  (items 3–5 only),
+  and **#95**, **#103–#108**, plus
   item 0 (gcdfo). Open only in
-  part: **#76** (its crosswalk-retarget half) and **#79** (four of its six
+  part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
-  coverage count remain).
+  coverage count remain), **#96** (the destructive Date trigger is fixed; the
+  unlink-before-the-last-abortable-step ordering is its own open half), and
+  **#99** (this repo's dictionary is fixed; metasalmonpy and smn-data-pkg
+  still ship the two 404 IRIs).
 - **Open and awaiting a decision rather than an implementer:** #90 (which side
   of the descriptor/validator disagreement moves — the evidence assembled
   2026-08-21 is one-sided, but the call has not been made), #87's benchmark
-  half, #93's coercion-placement half, and #106 (which reading of
+  half, #93's items 3–5 (open question Q12), and #106 (which reading of
   "typed as a SOSA Procedure" the spec means, the same undecided question as
   #76's open half). Listing them as plain open items overstates how ready they
   are to pick up.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
-  0.2.5; #77 in 0.2.6. #85, #88 and #94 are fixed in the development version.
+  0.2.5; #77 in 0.2.6. #85, #88 and #94 are fixed in the development version,
+  and the 2026-08-21 recon-fix pass (branch
+  `fix/2026-08-21-recon-defects`) fixed **#97, #98, #100, #101, #102**, #93
+  item 2, #96's destructive trigger, and #99 for this repo's own dictionary.
 - **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
   `method_iri` slot and the `metadata/methods.csv` registry the item was about.
 - **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
@@ -993,6 +1000,22 @@ unlinking before the last thing that can abort is its own defect.
 regression test asserts that an aborted write leaves the previously valid
 package on disk intact.
 
+**The destructive trigger is FIXED in the development version, 2026-08-21**
+(branch `fix/2026-08-21-recon-defects`). Every scalar presence test in the
+descriptor builder now renders to character before deciding presence
+(`.ms_meta_scalar_present()`), covering the `POSIXct` case — whose `!= ""`
+comparison throws rather than yielding NA — as well; descriptor temporal
+values render through `.ms_iso_character()` so the JSON and the CSV agree; and
+`.ms_align_cols()` now coerces `Date` columns to padded ISO text (#93 item 2),
+so no typed date reaches the comparisons or the writers at all.
+`test-write-datapackage-typed-metadata.R` proves the Date round trip and that
+the directory survives, verified RED first. **The second half of the retire
+condition is NOT met and stays open:** unlinking the managed paths before the
+last thing that can abort is its own defect, and no test yet asserts that an
+*arbitrary* post-unlink abort leaves the previous package intact. That needs a
+write-then-swap (or backup-and-restore) ordering, which is a design change,
+not a comparison fix.
+
 **#80 The Theme A exact-model live benchmark was never completed, and nothing in
 this bundle said so.** Tracked only in GitHub issue
 [metasalmon#6](https://github.com/salmon-data-mobilization/metasalmon/issues/6),
@@ -1288,20 +1311,26 @@ separate item.**
    types "for symmetry" would have corrupted the path that was never broken.
    A regression test pins that non-interference.
 
-   **This unblocks item 2 below**: with the Date-only rule established and
-   evidenced, coercing in `.ms_align_cols()` is now a substitution rather than a
-   decision. Items 3, 4 and 5 remain open.
+   **This unblocked item 2 below**, which took the substitution on
+   2026-08-21. Items 3 and 5 remain open under Q12; item 4's failure mode is
+   mooted on the metadata path by item 2's fix (see its entry).
 
    metasalmonpy needed no change — `date.isoformat()`, `str()` and
    `pandas.to_csv` all pad — so no parity register row is added, because after
    the fix there is no difference to record. Under the 2026-08-17 ruling that
    the mirror is not automatically the follower, R is the side that moved.
-2. **EML `calendarDate` and the `dataset.csv` writer** are safe *only because*
+2. ~~**EML `calendarDate` and the `dataset.csv` writer** are safe *only because*
    the on-disk path pins `col_types = cols(.default = col_character())` in
-   `.ms_read_metadata_csv()`. The in-memory path's only normalizer,
-   `.ms_align_cols()`, does no type coercion, so a caller-supplied tibble with
-   a `Date` column reaches them intact. One type coercion in `.ms_align_cols()`
-   would cover both; whether that is the right place is the same design call.
+   `.ms_read_metadata_csv()`.~~ **FIXED 2026-08-21** (branch
+   `fix/2026-08-21-recon-defects`). `.ms_align_cols()` now applies
+   `.ms_iso_date_columns()` — the substitution item 1's ruling made it — so a
+   caller-supplied `Date` column is rendered as padded ISO text before any
+   metadata frame reaches a writer, POSIXct deliberately untouched and pinned
+   by test. A consequence: item 4's `datapackage.json` vs `dataset.csv`
+   disagreement can no longer occur for metadata-frame `Date` fields, because
+   no `Date` survives to either writer; item 4 remains listed for any
+   non-metadata path Q12 uncovers. metasalmonpy needed no change (re-measured
+   2026-08-21: `pandas.to_csv` renders `date(999, 1, 1)` as `0999-01-01`).
 3. **`.ms_sssom_canonical_bytes()` renders the same column two ways**: the sort
    key via `as.character()` (unpadded everywhere) and the emitted bytes via
    `as.matrix()` inside `apply()` (which uses `format()`, so padded on macOS and
@@ -1883,6 +1912,19 @@ whole purpose is surfacing terms that do not exist.
 candidates appears in the gap result, with a `gap_detection_basis` that
 distinguishes "nothing found" from "found and rejected", and a test pins it.
 
+**FIXED in the development version, 2026-08-21** (branch
+`fix/2026-08-21-recon-defects`), exactly per the retire condition:
+`suggest_semantics()` attaches its discovered targets as a `semantic_targets`
+attribute, and `detect_semantic_term_gaps()` reports any target with no
+retrieval evidence at all as `gap_detection_basis = "no_candidates"` —
+distinct from `llm_request_new_term` ("found and rejected"). Checked before
+`min_score` filtering so a below-threshold candidate still counts as found;
+the explicit-`suggestions` path keeps its historical behaviour; the 33-column
+row contract is unchanged. Tests in `test-term-request-helpers.R`, verified
+RED first (gaps = 0 for the zero-candidate column). **metasalmonpy has the
+same defect, measured 2026-08-21**: the identical reproduction returns 0 gap
+rows and no `semantic_targets` attribute exists there — S10 catch-up work.
+
 **#98 The shipped 30-row example and its bundled dictionary fail
 `validate_salmon_datapackage()` in both modes.** Writing
 `inst/extdata/nuseds-fraser-coho-sample.csv` with the bundled
@@ -1913,6 +1955,27 @@ compatibility"). *Retires when:* both bundled examples pass
 `validate_salmon_datapackage()` in both modes, pinned by the test #100 asks
 for.
 
+**FIXED in the development version, 2026-08-21** (branch
+`fix/2026-08-21-recon-defects`). The data was converted, not the dictionary:
+`date` is the correct declaration for `column_role: temporal` columns, the
+fuller example's derivation already converts the same columns, and retyping
+them `string` would teach discarding date semantics. The 28 values were
+converted with the same `%d-%b-%y` parse the temporal inference uses (century
+pivot verified: `03-DEC-97` → `1997-12-03`); every other byte is unchanged,
+and the DD-MON-YY parsing test now carries an inline Oracle-format fixture so
+that coverage survived. The 30-row example now passes **both** modes — its
+last strict blocker, a blank `tables.csv$observation_unit_iri`, was filled
+with the released, resolving `smn:EscapementEstimate` during the #100 work.
+The retire condition is met in the only form the examples support: the
+fuller example is a documented *starter* whose strict failure is by design,
+and the #100 tests pin it exactly. The "unchanged for backwards
+compatibility" README note is replaced by a dated conversion record.
+metasalmonpy, measured 2026-08-21: ships the same DD-MON-YY sample, but the
+failure does not reproduce there because **its validator does not enforce
+`value_type: date` parsing at all** — a validator-parity divergence for S10 —
+and its bundled `column_dictionary.csv` is corrupt as shipped (unquoted
+description commas shift two rows; pre-0.3.0 `method_iri` header).
+
 **#99 Two IRIs that 404 ship in `inst/extdata/column_dictionary.csv`, and two
 sibling repos copy them.** `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance`
 and `https://w3id.org/example/salmon#WildOriginConstraint`, both **HTTP 404**
@@ -1932,6 +1995,24 @@ constraint — which is an ontology question for `smn`, and belongs in the gap
 register before it belongs in a CSV. *Retires when:* every IRI in the three
 shipped example dictionaries resolves, and a network-gated test asserts it.
 
+**FIXED for this repo's dictionary in the development version, 2026-08-21**
+(branch `fix/2026-08-21-recon-defects`) — a third route the item did not list:
+the terms needed no minting because released equivalents already exist.
+`term_iri` → `gcdfo:SpawnerAbundance` (`owl:Class` in the gcdfo 0.0.9 release
+artifacts; `term_type` corrected `skos_concept` → `owl_class`) and
+`constraint_iri` → `smn:NaturalOrigin` (released `skos:Concept`, "born and
+reared in the wild"), both verified resolving before use. `property_iri` was
+deliberately left as `smn:Abundance` so open question Q9 is not prejudged;
+the term slot holding the most specific released concept is defensible under
+either Q9 answer. The network-gated test
+(`test-example-iri-resolution.R`) fetches every unique IRI document across
+all four shipped example metadata files, verified RED with exactly
+`https://w3id.org/example/salmon (404)`. **The other two repos remain**:
+metasalmonpy's `data/column_dictionary.csv` carries the same two 404 IRIs
+(plus corrupt rows and the stale header — measured 2026-08-21), and
+smn-data-pkg's minimal example carries them per the evidence above. The item
+stays open for those two dictionaries.
+
 **#100 No test round-trips either bundled example through a validator.**
 `grep` over `tests/testthat/` finds twelve references to the example CSVs and
 not one of them calls `validate_salmon_datapackage()` on a package built from
@@ -1949,6 +2030,21 @@ on the day they were introduced.
 *Retires when:* a test creates a package from each bundled example and asserts
 `validate_salmon_datapackage()` passes in both modes; the spec-validator leg
 may be network- or dependency-gated, but the R leg must not be.
+
+**FIXED in the development version, 2026-08-21** (branch
+`fix/2026-08-21-recon-defects`). `test-example-round-trip.R` builds a package
+from each bundled example and validates it, no network or optional deps
+needed: the 30-row example must pass **both** modes with zero issues (its
+last strict blocker, blank `tables.csv$observation_unit_iri`, was filled with
+the released `smn:EscapementEstimate`), and the 173-row starter must pass
+lenient and fail strict with *exactly* its one documented failure
+("Measurement columns require term_iri; missing in rows 8."), so drift in
+either direction is caught. Also caught in passing: the shipped `codes.csv`
+declared 9 header columns over 8-field rows (26 parsing problems per read);
+repaired, and a well-formedness test now covers every shipped example CSV.
+The spec-validator leg was not added — the R leg was the mandatory half.
+metasalmonpy, measured 2026-08-21: it has no example round-trip test either,
+and one would fail immediately on its corrupt bundled dictionary — S10 work.
 
 **#101 `ESTIMATE_CLASSIFICATION` has no crosswalk, and the terms it needs are
 released.** `R/nuseds-method-crosswalk.R` covers `ENUMERATION_METHODS` and
@@ -1969,6 +2065,20 @@ it to a `Type` concept would be wrong. *Retires when:*
 observed values, `create_sdp()` wires it as it wires the estimate crosswalk,
 and the disposition of `NO SURVEY THIS YEAR` is recorded rather than guessed.
 
+**FIXED in the development version, 2026-08-21** (branch
+`fix/2026-08-21-recon-defects`), per the retire condition:
+`nuseds_estimate_classification_crosswalk()` maps the observed values from
+both bundled examples plus `TYPE-2` (completing the released Hyatt series)
+onto `gcdfo:Type1`–`Type6`; `NO SURVEY THIS YEAR` is recorded as `NA` with
+its absence-marker rationale, `UNKNOWN` stays `NA` as an administrative
+label, and the two `RELATIVE: … MULTI-YEAR METHODS` values link at scheme
+level (`gcdfo:EstimateType`), the estimate crosswalk's own convention for
+`Cumulative CPUE`. Wired at the same call site as the estimate crosswalk via
+a shared prefill engine (`.ms_prefill_legacy_code_terms()`), added to
+`collation_sensitive_fns`, verified RED first. metasalmonpy, measured
+2026-08-21: no classification crosswalk exists there — and neither crosswalk
+it *does* have is wired into its create_sdp path at all (see #102's note).
+
 **#102 "Fence" is in the crosswalk `create_sdp()` does not use.**
 `nuseds_enumeration_method_crosswalk()` maps `"Fence"` → family `FS` →
 `gcdfo:FixedSiteCensusManual`. The only crosswalk `create_sdp()` actually
@@ -1986,6 +2096,22 @@ so the real gap is that `create_sdp()` reads only one of the two columns.
 *Retires when:* `create_sdp()` applies the enumeration crosswalk to
 `ENUMERATION_METHODS` values as it applies the estimate crosswalk to
 `ESTIMATE_METHOD`, with a test that a `Fence` code row gets its IRI.
+
+**FIXED in the development version, 2026-08-21** (branch
+`fix/2026-08-21-recon-defects`), by wiring, not by row — `Fence` is an
+enumeration (field) method and adding it to the estimate crosswalk would have
+misfiled it. `.ms_prefill_legacy_enumeration_method_code_terms()` rides the
+shared prefill engine and matches on the word `enumeration` alone, because
+NuSEDS names the column in the plural (`ENUMERATION_METHODS`) and a
+`\bmethod\b` test can never match "methods" — a `c("enumeration", "method")`
+rule would have been silently dead, the same shape of failure the role-hint
+layer teaches. Test: a `Fence` code row gets `gcdfo:FixedSiteCensusManual`,
+explicit IRIs win, combined values ("Stream Walk, Other") stay blank;
+verified RED first. **metasalmonpy's exposure is broader, measured
+2026-08-21**: its two crosswalks are data-only exports referenced nowhere
+else — Python wires NO crosswalk into its package path, not even the estimate
+one R has wired all along, and `PARITY.md` records no such difference, which
+is itself a mirror-contract violation to resolve in S10.
 
 ### Open — P3 (R-package and API hygiene)
 

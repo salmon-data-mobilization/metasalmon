@@ -820,3 +820,113 @@ test_that("interactive routing honours a chosen menu option", {
     .package = "utils"
   )
 })
+
+test_that("a target with zero retrieval candidates is reported as a no_candidates gap", {
+  # Backlog #97: both entry paths short-circuited on empty suggestions, so a
+  # concept no vocabulary contains -- retrieval finds nothing -- produced ZERO
+  # gaps. That is structurally blind to precisely the case a term request
+  # exists for. `suggest_semantics()` now attaches the discovered targets as
+  # `semantic_targets`, and `detect_semantic_term_gaps()` reports any target
+  # with no retrieval evidence at all as `gap_detection_basis = "no_candidates"`.
+  dict <- test_dictionary(
+    column_name = "cryptic_novel_metric",
+    column_label = "Cryptic novel metric",
+    column_description = "A concept no vocabulary contains a term for"
+  )
+  empty_search <- function(query, role, sources) tibble::tibble()
+
+  out <- suppressMessages(suggest_semantics(
+    NULL, dict,
+    sources = "ols", max_per_role = 1, search_fn = empty_search
+  ))
+  suggestions <- attr(out, "semantic_suggestions")
+  expect_equal(nrow(suggestions), 0L)
+
+  targets <- attr(out, "semantic_targets")
+  expect_true(inherits(targets, "data.frame"))
+  expect_true(nrow(targets) >= 1L)
+
+  gaps <- detect_semantic_term_gaps(out)
+  expect_true(nrow(gaps) >= 1L)
+  expect_equal(names(gaps), metasalmon:::.ms_term_gap_cols())
+  expect_true(all(gaps$gap_detection_basis == "no_candidates"))
+
+  term_row <- gaps[
+    gaps$column_name == "cryptic_novel_metric" &
+      gaps$target_sdp_field == "term_iri", ,
+    drop = FALSE
+  ]
+  expect_equal(nrow(term_row), 1L)
+  expect_equal(term_row$candidate_count, 0L)
+  expect_true(is.na(term_row$top_non_smn_iri))
+  expect_true(is.na(term_row$llm_decision))
+})
+
+test_that("no_candidates and candidate_gap coexist and honor the role filter", {
+  dict <- test_dictionary(
+    column_name = c("spawner_count", "cryptic_novel_metric"),
+    column_label = c("Spawner count", "Cryptic novel metric"),
+    column_description = c(
+      "Natural-origin spawner abundance estimate",
+      "A concept no vocabulary contains a term for"
+    )
+  )
+  # Candidates exist only for the spawner column, and only non-SMN ones, so it
+  # is a classic candidate_gap; the cryptic column finds nothing anywhere.
+  selective_search <- function(query, role, sources) {
+    if (!grepl("spawner", query, ignore.case = TRUE)) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      label = "Spawner abundance",
+      iri = "https://example.org/spawner-abundance",
+      source = "ols",
+      ontology = "demo",
+      role = role,
+      match_type = "label",
+      definition = "External candidate",
+      score = 0.9
+    )
+  }
+
+  out <- suppressMessages(suggest_semantics(
+    NULL, dict,
+    sources = "ols", max_per_role = 1, search_fn = selective_search
+  ))
+  gaps <- detect_semantic_term_gaps(out)
+
+  cryptic <- gaps[gaps$column_name == "cryptic_novel_metric", , drop = FALSE]
+  spawner <- gaps[gaps$column_name == "spawner_count", , drop = FALSE]
+  expect_true(nrow(cryptic) >= 1L)
+  expect_true(all(cryptic$gap_detection_basis == "no_candidates"))
+  # The distinction is per TARGET, not per column: the spawner targets whose
+  # query matched keep the historical candidate_gap basis, while its unit
+  # target -- whose query found nothing -- is reported as no_candidates.
+  expect_equal(
+    spawner$gap_detection_basis[spawner$target_sdp_field == "term_iri"],
+    "candidate_gap"
+  )
+  expect_equal(
+    spawner$gap_detection_basis[spawner$target_sdp_field == "unit_iri"],
+    "no_candidates"
+  )
+
+  # The include filters apply to no-candidate targets exactly as they apply to
+  # suggestion-backed ones.
+  only_variable <- detect_semantic_term_gaps(
+    out,
+    include_dictionary_roles = "variable"
+  )
+  expect_true(all(only_variable$dictionary_role == "variable"))
+  expect_true(
+    "no_candidates" %in%
+      only_variable$gap_detection_basis[only_variable$column_name == "cryptic_novel_metric"]
+  )
+
+  # The explicit-suggestions path is unchanged: it sees only the rows it was
+  # handed, so an empty table still yields an empty result.
+  expect_equal(
+    nrow(detect_semantic_term_gaps(suggestions = tibble::tibble())),
+    0L
+  )
+})

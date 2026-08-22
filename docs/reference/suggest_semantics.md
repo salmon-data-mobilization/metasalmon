@@ -195,7 +195,12 @@ review columns such as `llm_decision`, `llm_confidence`, `llm_selected`,
 dictionary gains a parallel `semantic_llm_assessments` attribute with
 one row per assessed target. Its 30-column schema preserves the legacy
 28-column prefix and appends `llm_escalated_from` and
-`llm_retry_query_rejection_reason`.
+`llm_retry_query_rejection_reason`. The dictionary also carries a
+`semantic_targets` attribute with the discovered search targets (one row
+per unfilled semantic field, in the `.ms_semantic_target_cols()` shape).
+[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+reads it to report targets whose retrieval returned zero candidates,
+which by construction have no suggestion rows at all.
 
 ## Details
 

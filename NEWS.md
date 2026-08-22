@@ -1,7 +1,145 @@
 metasalmon (development version)
 --------------------------------
 
+### New
+
+* **`nuseds_estimate_classification_crosswalk()` maps NuSEDS
+  `ESTIMATE_CLASSIFICATION` values onto the released gcdfo Hyatt (1997)
+  estimate types** (backlog #101), and `create_sdp()` wires it in exactly
+  where the estimate-method crosswalk is wired, with the same
+  never-overwrite-an-explicit-IRI rule. `TRUE ABUNDANCE (TYPE-1)` …
+  `PRESENCE-ABSENCE (TYPE-6)` map to `gcdfo:Type1`–`gcdfo:Type6`
+  (`skos:Concept`s under `gcdfo:EstimateType`, released in gcdfo 0.0.9). Two
+  families of values deliberately map to no Type concept, and the crosswalk
+  records the disposition instead of forcing it: `NO SURVEY THIS YEAR` is an
+  absence-of-observation marker, not an estimate type (mapping it would assert
+  a survey quality for a survey that did not happen), and the two
+  `RELATIVE: … MULTI-YEAR METHODS` classifications have no released concept of
+  their own so they link at scheme level, the convention the estimate-method
+  crosswalk already uses for `Cumulative CPUE`. The two prefill passes now
+  share one engine (`.ms_prefill_legacy_code_terms()`) rather than a
+  copy-paste sibling.
+
+* **`create_sdp()` now applies the enumeration crosswalk to
+  `ENUMERATION_METHODS` codes** (backlog #102). `"Fence"` has always been in
+  `nuseds_enumeration_method_crosswalk()` (→ `gcdfo:FixedSiteCensusManual`),
+  but the only crosswalk `create_sdp()` wired was the estimate one — so a
+  NuSEDS column recording `Fence` got no `term_iri` while the crosswalk that
+  supplies one sat exported, documented, tested, and unreachable from the
+  package path. Resolved by wiring, not by row: `Fence` is an enumeration
+  (field) method recorded under `ENUMERATION_METHODS`, exactly the division of
+  labour the two crosswalks document, so adding a `Fence` row to the estimate
+  crosswalk would have misfiled it. The prefill matches on the word
+  `enumeration` alone because NuSEDS names the column in the plural
+  (`ENUMERATION_METHODS`) and a `\bmethod\b` test would never match it;
+  combined multi-method values (`"Stream Walk, Other"`) have no crosswalk row
+  and stay blank, and explicit caller-supplied IRIs are never overwritten.
+
 ### Bug fixes
+
+* **A `Date`-typed `temporal_start` no longer destroys the package on disk**
+  (backlog #96). `write_salmon_datapackage()` tested
+  `dataset_meta$temporal_start[1] != ""`; comparing a `Date` with `""` coerces
+  `""` to `NA_Date_`, the `if` condition evaluated to `NA`, and the call
+  aborted with *"missing value where TRUE/FALSE needed"* — **after** the
+  managed paths had been unlinked and **before** any replacement was written,
+  deleting `metadata/` and `datapackage.json` and leaving nothing in their
+  place. The triggering input is what the package itself wrote: reading a valid
+  package's `metadata/dataset.csv` back with a plain `readr::read_csv()`
+  type-guesses `temporal_start` as `Date`, because metasalmon put an ISO date
+  there. Every scalar presence test in the descriptor builder (`creator`,
+  `contact_*`, `license`, `temporal_*`, `table_label`, `description`,
+  `primary_key`) now renders the value to character before deciding presence
+  (`.ms_meta_scalar_present()`), a `POSIXct` — whose `!= ""` comparison throws
+  outright rather than yielding `NA` — is covered by the same route, and the
+  descriptor's temporal values are rendered with `.ms_iso_character()` so the
+  JSON and the CSV cannot disagree about the same field. A regression test
+  proves the directory survives the round trip.
+
+* **The shipped 30-row example now passes `validate_salmon_datapackage()`**
+  (backlog #98). `inst/extdata/nuseds-fraser-coho-sample.csv` stored
+  `START_DTT`/`END_DTT` as Oracle `DD-MON-YY` text while its bundled
+  dictionary declared `value_type: date`, so writing the pair and validating
+  aborted with 2 structural issues in **both** modes — the artifact the docs
+  hand a new user as the fastest walkthrough failed the package's own final
+  gate. The data was fixed rather than the dictionary: the `date` declaration
+  is the semantically correct one for `column_role: temporal` columns, the
+  fuller 173-row example's derivation script already converts the same columns
+  to ISO, and retyping them `string` would teach users to discard date
+  semantics whenever source bytes are ugly. The 28 values were converted with
+  the same `%d-%b-%y` parse the package's temporal inference uses (so the
+  century pivot matches: `03-DEC-97` → `1997-12-03`); every other byte of the
+  file is unchanged, and no other bundled metadata derives from the date
+  format. The DD-MON-YY parsing test now carries its own inline Oracle-format
+  fixture instead of leaning on the shipped sample, and a new round-trip test
+  builds the package from the shipped artifacts and validates it so the pair
+  cannot silently diverge again.
+
+* **The shipped example dictionary's two placeholder IRIs are replaced with
+  released terms that resolve** (backlog #99).
+  `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance` and
+  `https://w3id.org/example/salmon#WildOriginConstraint` — both HTTP 404, under
+  a namespace nobody owns — shipped in `inst/extdata/column_dictionary.csv`'s
+  one annotated row. They were recognisably placeholders, which is the problem:
+  `REVIEW:` is the package's marker for an unfinished IRI and strict validation
+  rejects it, while a plausible-looking `w3id.org` IRI passed every offline
+  check. `term_iri` is now the released `gcdfo:SpawnerAbundance` (an
+  `owl:Class` in gcdfo 0.0.9, so `term_type` moves from `skos_concept` to
+  `owl_class`), and `constraint_iri` is the released `smn:NaturalOrigin`
+  concept ("born and reared in the wild", broader `smn:SalmonOrigin`) — the
+  wild-origin filter the placeholder faked. `property_iri` stays
+  `smn:Abundance`: which of `smn:Abundance` / `gcdfo:SpawnerAbundance` belongs
+  in the property slot is open question Q9, and this fix deliberately does not
+  prejudge it — the term slot holding the most specific released variable
+  concept is defensible under either answer. A network-gated test now asserts
+  every IRI in the shipped example metadata resolves.
+
+* **Both shipped examples are now round-tripped through
+  `validate_salmon_datapackage()` by the test suite** (backlog #100), the gate
+  whose absence let #95, #96, and #98 ship invisibly. The 30-row example must
+  pass **both** modes — its last strict blocker, a blank
+  `tables.csv$observation_unit_iri`, is filled with the released
+  `smn:EscapementEstimate` (the IRI for the `EscapementEstimate` observation
+  unit the row already declared; resolves 200) — and the 173-row starter must
+  pass lenient and fail strict with *exactly* its one documented failure
+  (`Measurement columns require term_iri; missing in rows 8.`), so drift in
+  either direction is caught. The shipped `codes.csv` was also repaired in
+  passing: it declared 9 header columns while every data row carried 8 fields,
+  so each read emitted 26 readr parsing problems; a well-formedness test now
+  covers every shipped example CSV.
+
+* **`detect_semantic_term_gaps()` now sees the targets retrieval found nothing
+  for** (backlog #97). Both entry paths short-circuited on an empty suggestions
+  table, so a concept absent from every vocabulary — the strongest possible
+  term-gap evidence, and precisely the case the term-request pipeline exists
+  for — produced *zero* gaps and a console message that read like a clean
+  result. A gap was detectable only when retrieval found *something* and it
+  was judged insufficient. `suggest_semantics()` now attaches its discovered
+  targets as a `semantic_targets` attribute (additive; the existing
+  `semantic_suggestions` / `semantic_llm_assessments` contract is unchanged),
+  and `detect_semantic_term_gaps()` reports any target with no retrieval
+  evidence at all as `gap_detection_basis = "no_candidates"` — distinguishing
+  "nothing found" from "found and rejected" (`llm_request_new_term`). The
+  check runs before `min_score` filtering, so a below-threshold candidate
+  still counts as "found"; the explicit-`suggestions` path keeps its
+  historical row-in/row-out behaviour; the 33-column gap row contract is
+  unchanged.
+
+* **Metadata normalization now renders `Date` columns as padded ISO text**
+  (backlog #93 item 2, unblocked by item 1's Date-only ruling).
+  `.ms_align_cols()` — the in-memory path's only normalizer for
+  `dataset.csv` / `tables.csv` / `column_dictionary.csv` / `codes.csv` frames —
+  did no type coercion, so a caller-supplied `Date` column reached
+  `readr::write_csv()` (which renders an unpadded year below 1000) and the EML
+  `calendarDate` renderer intact; the on-disk path was safe only because
+  `.ms_read_metadata_csv()` pins every column to character. Normalization now
+  applies `.ms_iso_date_columns()` — `Date` only, per the measured rule:
+  readr's `POSIXct` rendering is already correct and coercing it would change
+  bytes. A consequence worth naming: `datapackage.json` and
+  `metadata/dataset.csv` can no longer disagree about a metadata `Date` field
+  (item 4's failure mode on this path), because no `Date` survives to either
+  writer. Items 3 and 5 of #93 (SSSOM canonical bytes; canonical value
+  tokens) remain open under Q12.
 
 * **`write_salmon_datapackage()` can read back the dates it writes.** A `Date`
   column holding a year below 1000 was written as text this package's own

@@ -242,14 +242,14 @@ write_salmon_datapackage <- function(
       schema = list(fields = fields)
     )
 
-    if (!is.na(table_info$table_label[1]) && table_info$table_label[1] != "") {
+    if (.ms_meta_scalar_present(table_info$table_label)) {
       resource_entry$title <- table_info$table_label[1]
     }
-    if (!is.na(table_info$description[1]) && table_info$description[1] != "") {
+    if (.ms_meta_scalar_present(table_info$description)) {
       resource_entry$description <- table_info$description[1]
     }
-    if (!is.na(table_info$primary_key[1]) && table_info$primary_key[1] != "") {
-      primary_key <- trimws(unlist(strsplit(table_info$primary_key[1], ",")))
+    if (.ms_meta_scalar_present(table_info$primary_key)) {
+      primary_key <- trimws(unlist(strsplit(as.character(table_info$primary_key[1]), ",")))
       # A one-column key is a JSON string, a composite key a JSON array —
       # `auto_unbox = TRUE` in the `write_json()` call below does the unboxing.
       # This is not incidental: smn-data-pkg's strict publication validator
@@ -300,33 +300,43 @@ write_salmon_datapackage <- function(
     resources = resource_list
   )
 
-  if (!is.na(dataset_meta$creator[1]) && dataset_meta$creator[1] != "") {
+  # Every presence test below goes through `.ms_meta_scalar_present()`, never a
+  # bare `!= ""`: `readr::read_csv()` type-guesses `temporal_start` as a Date
+  # (it holds the ISO date this package wrote), and a Date-vs-"" comparison is
+  # NA -- which aborted this function after the unlink and destroyed the
+  # package on disk (backlog #96). The sibling fields are guarded the same way
+  # because they fail the same way the moment a caller hands them a typed
+  # column.
+  if (.ms_meta_scalar_present(dataset_meta$creator)) {
     datapackage$contributors <- list(list(
       title = dataset_meta$creator[1],
       role = "creator"
     ))
   }
-  if (!is.na(dataset_meta$contact_name[1]) && dataset_meta$contact_name[1] != "") {
+  if (.ms_meta_scalar_present(dataset_meta$contact_name)) {
     contact <- list(
       title = dataset_meta$contact_name[1],
       role = "contact"
     )
-    if (!is.na(dataset_meta$contact_email[1]) && dataset_meta$contact_email[1] != "") {
+    if (.ms_meta_scalar_present(dataset_meta$contact_email)) {
       contact$email <- dataset_meta$contact_email[1]
     }
-    if (!is.na(dataset_meta$contact_org[1]) && dataset_meta$contact_org[1] != "") {
+    if (.ms_meta_scalar_present(dataset_meta$contact_org)) {
       contact$organization <- dataset_meta$contact_org[1]
     }
     datapackage$contributors <- c(datapackage$contributors %||% list(), list(contact))
   }
   license_value <- dataset_meta$license[1]
-  if (!is.na(license_value) && license_value != "" && !.ms_is_review_placeholder(license_value)) {
+  if (.ms_meta_scalar_present(license_value) && !.ms_is_review_placeholder(license_value)) {
     datapackage$licenses <- list(.ms_license_descriptor(license_value))
   }
-  if (!is.na(dataset_meta$temporal_start[1]) && dataset_meta$temporal_start[1] != "") {
-    datapackage$temporal <- list(start = dataset_meta$temporal_start[1])
-    if (!is.na(dataset_meta$temporal_end[1]) && dataset_meta$temporal_end[1] != "") {
-      datapackage$temporal$end <- dataset_meta$temporal_end[1]
+  if (.ms_meta_scalar_present(dataset_meta$temporal_start)) {
+    # `.ms_iso_character()` renders a typed value as the ISO text the CSV side
+    # writes (identity for character), so the descriptor and
+    # `metadata/dataset.csv` cannot disagree about the same field.
+    datapackage$temporal <- list(start = .ms_iso_character(dataset_meta$temporal_start[1]))
+    if (.ms_meta_scalar_present(dataset_meta$temporal_end)) {
+      datapackage$temporal$end <- .ms_iso_character(dataset_meta$temporal_end[1])
     }
   }
 
@@ -351,6 +361,23 @@ write_salmon_datapackage <- function(
 
   cli::cli_alert_success("Created Salmon Data Package at {.path {path}}")
   invisible(path)
+}
+
+# Presence test for a single descriptor metadata field that must tolerate
+# typed columns. `x != ""` looks safe and is not: comparing a Date with ""
+# coerces "" to `NA_Date_` (so the test is NA and `if` aborts), and comparing a
+# POSIXct with "" throws outright. Backlog #96 -- the abort landed after
+# `write_salmon_datapackage()` had unlinked the managed paths and before it
+# wrote any replacement, so it destroyed the package on disk, triggered by
+# nothing more exotic than `readr::read_csv()` type-guessing the ISO date this
+# package itself wrote into `metadata/dataset.csv`. Render to character first
+# so every column type answers the same question.
+.ms_meta_scalar_present <- function(x) {
+  value <- x[1]
+  if (length(value) == 0 || is.na(value)) {
+    return(FALSE)
+  }
+  nzchar(trimws(as.character(value)))
 }
 
 .ms_package_sentinel_file <- function(path) {
@@ -1822,6 +1849,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   df <- tibble::as_tibble(df)
+  # SDP metadata frames are text contracts. A caller-supplied Date column
+  # otherwise reaches readr::write_csv() -- whose as.character.Date rendering
+  # drops the year padding below 1000 -- and the EML calendarDate renderer
+  # intact; the on-disk path was safe only because .ms_read_metadata_csv()
+  # pins col_character (backlog #93 item 2). Date ONLY, by measurement:
+  # readr's POSIXct output is already correct and coercing it would change
+  # bytes. See .ms_iso_date_columns().
+  df <- .ms_iso_date_columns(df)
   missing_cols <- setdiff(cols, names(df))
   for (col in missing_cols) {
     df[[col]] <- NA_character_
@@ -1854,7 +1889,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   .ms_align_cols(codes, .ms_codes_cols())
 }
 
-.ms_prefill_legacy_estimate_method_code_terms <- function(codes, dict = NULL) {
+# Shared engine for the legacy NuSEDS code-term prefills. A codes.csv row gets
+# its term_iri filled from `crosswalk` when (a) its column's name -- or its
+# dictionary name/label/description -- contains every word in
+# `required_words`, (b) the row has no explicit term_iri, and (c) the code
+# value has a crosswalk row with a non-missing ontology term. Explicit values
+# always win; crosswalk rows that map to NA (recorded non-mappings, e.g.
+# "NO SURVEY THIS YEAR") never fill anything.
+.ms_prefill_legacy_code_terms <- function(codes, dict, required_words, crosswalk) {
   codes <- .ms_normalize_codes(codes)
   if (is.null(codes) || nrow(codes) == 0) {
     return(codes)
@@ -1872,18 +1914,22 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     out[is_curie] <- sub("^gcdfo:", "https://w3id.org/gcdfo/salmon#", out[is_curie])
     out
   }
-  estimate_method_flag <- function(column_name, column_label = NULL, column_description = NULL) {
+  column_flag <- function(column_name, column_label = NULL, column_description = NULL) {
     column_name <- if (is.null(column_name)) "" else dplyr::coalesce(as.character(column_name), "")
     column_label <- if (is.null(column_label)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_label), "")
     column_description <- if (is.null(column_description)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_description), "")
     text <- normalize_text(gsub("[^[:alnum:]]+", " ", paste(column_name, column_label, column_description)))
-    !is.na(text) & grepl("\\bestimate\\b", text, perl = TRUE) & grepl("\\bmethod\\b", text, perl = TRUE)
+    flags <- !is.na(text)
+    for (word in required_words) {
+      flags <- flags & grepl(paste0("\\b", word, "\\b"), text, perl = TRUE)
+    }
+    flags
   }
 
-  estimate_rows <- estimate_method_flag(codes$column_name)
+  target_rows <- column_flag(codes$column_name)
   if (!is.null(dict) && nrow(dict) > 0) {
     dict <- .ms_normalize_dictionary(dict)
-    dict_flags <- estimate_method_flag(dict$column_name, dict$column_label, dict$column_description)
+    dict_flags <- column_flag(dict$column_name, dict$column_label, dict$column_description)
     dict_keys <- paste(
       dplyr::coalesce(as.character(dict$dataset_id), ""),
       dplyr::coalesce(as.character(dict$table_id), ""),
@@ -1899,10 +1945,9 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     )
     lookup_flags <- unname(flag_lookup[code_keys])
     lookup_flags[is.na(lookup_flags)] <- FALSE
-    estimate_rows <- estimate_rows | lookup_flags
+    target_rows <- target_rows | lookup_flags
   }
 
-  crosswalk <- nuseds_estimate_method_crosswalk()
   crosswalk_lookup <- stats::setNames(
     expand_gcdfo_term(crosswalk$ontology_term),
     normalize_text(crosswalk$nuseds_value)
@@ -1910,13 +1955,44 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   mapped_terms <- unname(crosswalk_lookup[normalize_text(codes$code_value)])
   existing_terms <- trimws(as.character(codes$term_iri))
   missing_terms <- is.na(existing_terms) | !nzchar(existing_terms)
-  fill_rows <- estimate_rows & missing_terms & !is.na(mapped_terms) & nzchar(mapped_terms)
+  fill_rows <- target_rows & missing_terms & !is.na(mapped_terms) & nzchar(mapped_terms)
 
   if (any(fill_rows)) {
     codes$term_iri[fill_rows] <- mapped_terms[fill_rows]
   }
 
   codes
+}
+
+.ms_prefill_legacy_estimate_method_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = c("estimate", "method"),
+    crosswalk = nuseds_estimate_method_crosswalk()
+  )
+}
+
+.ms_prefill_legacy_estimate_classification_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = c("estimate", "classification"),
+    crosswalk = nuseds_estimate_classification_crosswalk()
+  )
+}
+
+# "enumeration" alone, not c("enumeration", "method"): NuSEDS names the column
+# ENUMERATION_METHODS (plural), and the engine's \bword\b test would never
+# match "methods" with the singular. The single word is specific enough --
+# crosswalk keys ("Fence", "Bank Walk", ...) gate what actually fills.
+.ms_prefill_legacy_enumeration_method_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = "enumeration",
+    crosswalk = nuseds_enumeration_method_crosswalk()
+  )
 }
 
 .ms_parse_logical <- function(x) {
