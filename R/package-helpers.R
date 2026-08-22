@@ -1974,6 +1974,19 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
 }
 
+# "enumeration" alone, not c("enumeration", "method"): NuSEDS names the column
+# ENUMERATION_METHODS (plural), and the engine's \bword\b test would never
+# match "methods" with the singular. The single word is specific enough --
+# crosswalk keys ("Fence", "Bank Walk", ...) gate what actually fills.
+.ms_prefill_legacy_enumeration_method_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = "enumeration",
+    crosswalk = nuseds_enumeration_method_crosswalk()
+  )
+}
+
 .ms_parse_logical <- function(x) {
   if (is.logical(x)) {
     return(x)

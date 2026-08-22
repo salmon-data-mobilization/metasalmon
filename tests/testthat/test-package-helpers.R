@@ -3994,3 +3994,56 @@ test_that("create_sdp prefills legacy estimate-classification code IRIs without 
       artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"] == ""
   )
 })
+
+test_that("create_sdp prefills ENUMERATION_METHODS code IRIs from the enumeration crosswalk", {
+  # Backlog #102: nuseds_enumeration_method_crosswalk() maps "Fence" ->
+  # gcdfo:FixedSiteCensusManual, but the only crosswalk create_sdp() wired was
+  # the estimate one -- so a NuSEDS ENUMERATION_METHODS column recording
+  # "Fence" got no term_iri while the crosswalk that supplies one sat
+  # exported, documented, tested, and unreachable. The division of labour is
+  # the documented one: enumeration (field) methods stay in the enumeration
+  # crosswalk; "Fence" does NOT get added to the estimate crosswalk.
+  resources <- list(
+    escapement = tibble::tibble(
+      ENUMERATION_METHODS = c("Fence", "Bank Walk", "Stream Walk, Other"),
+      count = c(10L, 20L, 30L)
+    )
+  )
+  seed_codes <- tibble::tibble(
+    dataset_id = rep("scope-demo", 3),
+    table_id = rep("escapement", 3),
+    column_name = rep("ENUMERATION_METHODS", 3),
+    code_value = c("Fence", "Bank Walk", "Stream Walk, Other"),
+    code_label = c("Fence", "Bank walk", "Stream walk with other methods"),
+    code_description = c("Counting fence", "Bank walk survey", "Combined methods"),
+    vocabulary_iri = NA_character_,
+    term_iri = c(NA_character_, "https://example.org/custom-bank-walk", NA_character_),
+    term_type = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources,
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE
+  )
+  enum_rows <- artifacts$codes[
+    artifacts$codes$column_name == "ENUMERATION_METHODS", ,
+    drop = FALSE
+  ]
+
+  expect_equal(
+    enum_rows$term_iri[enum_rows$code_value == "Fence"],
+    "https://w3id.org/gcdfo/salmon#FixedSiteCensusManual"
+  )
+  # An explicit caller-supplied IRI wins over the crosswalk.
+  expect_equal(
+    enum_rows$term_iri[enum_rows$code_value == "Bank Walk"],
+    "https://example.org/custom-bank-walk"
+  )
+  # A combined multi-method value has no crosswalk row and stays blank.
+  expect_true(
+    is.na(enum_rows$term_iri[enum_rows$code_value == "Stream Walk, Other"]) ||
+      enum_rows$term_iri[enum_rows$code_value == "Stream Walk, Other"] == ""
+  )
+})

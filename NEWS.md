@@ -20,6 +20,21 @@ metasalmon (development version)
   share one engine (`.ms_prefill_legacy_code_terms()`) rather than a
   copy-paste sibling.
 
+* **`create_sdp()` now applies the enumeration crosswalk to
+  `ENUMERATION_METHODS` codes** (backlog #102). `"Fence"` has always been in
+  `nuseds_enumeration_method_crosswalk()` (→ `gcdfo:FixedSiteCensusManual`),
+  but the only crosswalk `create_sdp()` wired was the estimate one — so a
+  NuSEDS column recording `Fence` got no `term_iri` while the crosswalk that
+  supplies one sat exported, documented, tested, and unreachable from the
+  package path. Resolved by wiring, not by row: `Fence` is an enumeration
+  (field) method recorded under `ENUMERATION_METHODS`, exactly the division of
+  labour the two crosswalks document, so adding a `Fence` row to the estimate
+  crosswalk would have misfiled it. The prefill matches on the word
+  `enumeration` alone because NuSEDS names the column in the plural
+  (`ENUMERATION_METHODS`) and a `\bmethod\b` test would never match it;
+  combined multi-method values (`"Stream Walk, Other"`) have no crosswalk row
+  and stay blank, and explicit caller-supplied IRIs are never overwritten.
+
 ### Bug fixes
 
 * **A `Date`-typed `temporal_start` no longer destroys the package on disk**

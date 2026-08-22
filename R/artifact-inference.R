@@ -73,6 +73,7 @@
   if (!is.null(dict)) {
     codes <- .ms_prefill_legacy_estimate_method_code_terms(codes, dict = dict)
     codes <- .ms_prefill_legacy_estimate_classification_code_terms(codes, dict = dict)
+    codes <- .ms_prefill_legacy_enumeration_method_code_terms(codes, dict = dict)
   }
 
   dataset_meta <- if (is.null(seed_dataset_meta) || isTRUE(seed_dataset_meta)) {
