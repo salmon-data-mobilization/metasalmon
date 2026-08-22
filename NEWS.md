@@ -37,6 +37,33 @@ metasalmon (development version)
 
 ### Bug fixes
 
+* **An abort anywhere in `write_salmon_datapackage()` now leaves the caller's
+  existing package intact** (backlog #96, the ordering half). The write path
+  unlinked every managed path (`metadata/*.csv`, `datapackage.json`, declared
+  `data/` resources, the ownership sentinel) *first* and wrote replacements
+  *afterwards*, so any abort in between — a broken schema bundle, a
+  serialization error, the next typed-column bug — deleted the package's
+  metadata and descriptor and left nothing in their place. The `Date`
+  comparison fixed below was one trigger; the delete-then-write ordering was
+  the defect class. The writer is now transactional over the files it owns:
+  every output (data CSVs, metadata CSVs, descriptor, sentinel) is rendered to
+  bytes **before** anything on disk is touched, and the rendered set is
+  installed through the same staged, rollback-protected mechanism the methods
+  migration already used (`.ms_sdp_extension_atomic_write_set()`), so even a
+  failure mid-install restores the previous files. Managed paths this call
+  does not rewrite (orphaned data resources, legacy root-level metadata
+  shadows, a stale `codes.csv`) are unlinked only after the install succeeds.
+  Output bytes are unchanged — each file is rendered by the exact writer call
+  it was written with before. One deliberate exception, stated rather than
+  silent: `prune = TRUE` deletes files the writer does not own and therefore
+  cannot restore, so its wipe runs only after every input-dependent step has
+  succeeded, and the residual window is pure filesystem failure (disk full,
+  permissions) between wipe and install. Regression tests inject aborts at
+  post-unlink points of the old ordering — verified to destroy the package
+  before the fix — and assert the surviving package is byte-identical and
+  readable; a structural guard keeps direct filesystem writes out of the
+  writer body so the ordering cannot silently regress.
+
 * **A `Date`-typed `temporal_start` no longer destroys the package on disk**
   (backlog #96). `write_salmon_datapackage()` tested
   `dataset_meta$temporal_start[1] != ""`; comparing a `Date` with `""` coerces

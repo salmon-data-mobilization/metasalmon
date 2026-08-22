@@ -65,6 +65,15 @@ the package root.
 \details{
 The SDP CSV files remain the canonical package metadata. \code{datapackage.json}
 is a convenience export, not the source of truth.
+
+The write is transactional over the files it owns: every output is fully
+rendered before anything on disk is deleted or replaced, and a failure while
+installing the rendered files restores the previous package. An error partway
+through therefore leaves an existing package intact rather than destroyed.
+The one exception is \code{prune = TRUE}, which deletes files the writer does not
+own and so cannot restore: the wipe still happens only after every
+input-dependent step has succeeded, but a filesystem failure (disk full,
+permissions) between the wipe and the install can lose the deleted files.
 }
 \examples{
 \dontrun{
