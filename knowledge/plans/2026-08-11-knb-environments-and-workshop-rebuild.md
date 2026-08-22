@@ -189,7 +189,7 @@ S5 (#58 condition classes are breaking). Do not bundle for its own sake — S4
 pins an exact released version, and a smaller release is easier to pin.
 
 **Both numbers in that answer are now wrong (recorded 2026-08-21).** Current is
-**0.3.0**, tagged `v0.3.0`, with `main`'s development version 110 commits past
+**0.3.0**, tagged `v0.3.0`, with `main`'s development version 107 commits past
 it. And **0.2.5 shipped as something else**: the credential-redaction fix this
 document's own REVIEW 1 called for (backlog #73) — qualified `*_token` names
 redacted structurally, and the second redactor deleted. So the plan's original

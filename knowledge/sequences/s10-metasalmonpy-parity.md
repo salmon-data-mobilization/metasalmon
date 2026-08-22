@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to metasalmon 0.3.0 parity, bumping its version only as parity actually lands; the replay ladder is complete at 0.2.1 and the remainder ports by subsystem. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the remainder ports by subsystem. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -9,7 +9,7 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S10 — metasalmonpy parity · 0.2.1 → 0.3.0
+# S10 — metasalmonpy parity · from 0.2.1 to metasalmon-0.3.0 behaviour
 
 **Execplan:** the
 [S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
@@ -105,7 +105,7 @@ closed.**
 replayed. The replay was implementing behaviour metasalmon had already deleted
 — 0.1.8 built a reader for the registry sdp-0.3.0 removes, and 0.1.7 shipped a
 decomposition component annotated "it dies at 0.3.0". The remainder is chunked
-by subsystem against the **`v0.3.0` tag**, bumping straight to **0.3.0**, with
+by subsystem against the **`v0.3.0` tag**, with
 0.3.0's breaking dictionary-contract flip landing **first** rather than last so
 nothing is built on a shape it replaces. The registry writer-only-skip and the
 born-NA-safe typed reader remain logged decisions; the replan and what would
@@ -114,7 +114,15 @@ reverse it are logged alongside them.
 Bumping at each parity milestone rather than in one big jump kept every bump a
 truthful claim and made the release order carry the same breaking-change story
 (e.g. 0.2.4's missing-value token) that R users already absorbed. One bump is
-left, at the end of the chunks: **0.2.1 → 0.3.0**. The remote schema loader and
+left, at the end of the chunks — and **what number it may carry is an open
+decision, not 0.3.0 by default** (execplan, "What version number may the
+finished port carry?", four options, none preferred). The chunks are
+contractually required to carry metasalmon's **post-0.3.0** fixes, so a bare
+"0.3.0" would name a tree no metasalmon release contains; the options include
+claiming the next R release number instead. **The chunk list itself is also not
+final** until the execplan's first open decision (whether the parity claim
+requires closing #87 and #91) is answered — (a) and (b) there add work to it.
+The remote schema loader and
 its spec-tag pin have landed; both the vendored bundle and `SDP_SPEC_TAG` still
 name `sdp-0.2.0` and **must move to `sdp-0.3.0` together** in chunk A, never
 separately (metasalmonpy `PARITY.md` rows 27 and 38).

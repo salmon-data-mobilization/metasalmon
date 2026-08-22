@@ -1448,7 +1448,7 @@ where the divergence is self-documented in a source comment
 0.1.6 parity claim: `package_io.py` was added 2026-02-06 in the initial commit,
 six months before the 0.1.6 alignment, and the function has been revised at
 0.1.6, 0.1.8 and rung 3 without the control flow being reconciled. Registered
-now as parity-deviations **row 35**. Severity: silent — a caller inspecting
+now as parity-deviations **row 41**. Severity: silent — a caller inspecting
 `issues` on 0.1.8 gets an empty frame and cannot distinguish "validated clean"
 from "this mirror does not report that category".
 

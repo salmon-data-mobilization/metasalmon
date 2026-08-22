@@ -592,11 +592,11 @@ merge `6c6acb8`), the single-owner IRI whitespace predicate (backlog #85, PR
 Brett's 2026-08-17 mirror ruling, where R was the side that moved), descriptor
 adjudication and the `datetime` observation dimension (PR #65), and
 platform-independent zero-padding of calendar years below 1000 (PR #70, backlog
-#91 — a real cross-platform byte divergence, where metasalmonpy was already
-correct). One further fix is written and **not** merged: the write-side half of
-backlog #93 (`write_salmon_datapackage()` still writes `Date` columns in a form
-this package's own reader cannot parse) sits on `fix/date-column-write-coercion`
-as PR #71, and `main` therefore still has that defect. Live PR state is not
+#94 — a real cross-platform byte divergence, where metasalmonpy was already
+correct); and the write-side half of backlog #93 (`write_salmon_datapackage()`
+wrote `Date` columns in a form this package's own reader could not parse) merged
+as PR #71 on 2026-08-21, confined to `Date` because readr's `POSIXct` output was
+measured already correct. Live PR state is not
 tracked here as a rule; this one is named because a reader counting the padding
 fixes on `main` would otherwise conclude #93 is closed.
 

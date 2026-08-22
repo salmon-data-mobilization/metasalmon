@@ -275,7 +275,7 @@ paragraph and the one above it are not fully reconciled:** "verify against the
 `v0.3.0` tag" and "carry metasalmon's post-0.3.0 fixes" name two different R
 trees. The "list wins" rule settles *scope* — the named fixes are in — but it
 does not say which tree a differential is run against for everything else, and
-metasalmon is now **110 commits past `v0.3.0`** (measured 2026-08-21). That
+metasalmon is now **107 commits past `v0.3.0`** (measured 2026-08-21 against `v0.3.0..main`). That
 unstated baseline is the same question the version decision turns on.
 
 ## Open decisions — recorded as open, not as preferences
@@ -297,7 +297,7 @@ either** — both are logged out of scope below:
   differ for the same query outside the pinned `smn`/`gcdfo` comparison, and
   `benchmark_term_ranking_fixtures`, the surface that would measure a ranking
   regression, discards its `profiles` argument.
-- **#91 / register row 35** — `validate_salmon_datapackage()` reports through a
+- **#91 / register row 41** — `validate_salmon_datapackage()` reports through a
   different mechanism: R tags eight `issue_type` values and collects all
   findings before one abort, Python raises untyped at the first structural
   problem.
@@ -359,7 +359,7 @@ metasalmon version.
 B to carry metasalmon's **post-0.3.0** behaviour — the three
 `statistical_modifier` ranking rows, the corrected bundle-review prompt, the
 dry-run stop parity, the role-contract guard — none of which is in the `v0.3.0`
-tree. metasalmon is **110 commits past `v0.3.0`** as of 2026-08-21, with a
+tree. metasalmon is **107 commits past `v0.3.0`** as of 2026-08-21 (measured against `v0.3.0..main`), with a
 populated development-version NEWS section. So the finished port would deliver
 behaviour that no metasalmon release contains, under a number naming a
 metasalmon release.
@@ -590,7 +590,7 @@ above, and answering it can move either into the chunk list.
   Python test**, and its default fixture path names a file that does not exist
   in the repo, so the zero-argument call is dead as well.
 - **`validate_salmon_datapackage()`'s issue system diverges, and no rung owns
-  that either** (backlog #91, parity-deviations row 35). R tags every finding
+  that either** (backlog #91, parity-deviations row 41). R tags every finding
   with one of **eight** `issue_type` values and collects them all before a
   single abort; Python raises an untyped `ValueError` at the **first**
   structural problem, so a package with three bad tables reports one. On
