@@ -207,7 +207,19 @@ column is an ordinary categorical column with coded values.
 The last line matters as much as the rest. A slot that must be filled produces
 `MISSING METADATA:` noise, and this model has no required method field anywhere.
 
-## Worked example — NuSEDS escapement
+## Worked example — NuSEDS escapement (aspirational)
+
+**This is the model applied to a table, not a description of anything shipped.**
+Checked 2026-08-21: the bundled NuSEDS examples implement **neither** placement
+in the table below. The 173-row example ships no `tables.csv` at all, so it has
+nowhere to put a `protocol_iri`; the `tables.csv` in `inst/extdata/` belongs to
+the 30-row demo, and its `protocol_iri` is empty while its `method_iri` asserts
+one table-level `gcdfo:AerialSurveyCount`. No `sosa:usedProcedure` binding
+exists in either example — `create_sdp()` writes no
+`metadata/structure/observation_structures.csv`, which is where that binding
+lives. What it does do is resolve most `ESTIMATE_METHOD` values to `gcdfo`
+method IRIs in the `codes.csv` it generates: the raw material for the second
+row below, not the row itself.
 
 One table, one row per (population, year), reporting an escapement estimate.
 Counting technique varies by year; the estimation approach is constant.
@@ -220,6 +232,27 @@ Counting technique varies by year; the estimation approach is constant.
 
 Three questions, no extension, no registry, and the only thing written twice is
 the thing that actually varies.
+
+**Why this is marked aspirational rather than rewritten to match what ships.**
+The model is normative in `smn-data-pkg` since sdp-0.3.0, so an example lagging
+it is a gap in the example, not evidence against the model; editing this table
+to describe the lag would quietly reverse an approved decision, and this card is
+the design record for that decision. Two questions follow, and **both are open —
+nobody has decided either**:
+
+1. **Should a bundled example exercise this model?** Options: leave the 173-row
+   file a minimal starter and demonstrate methods elsewhere; add the protocol
+   and the `usedProcedure` binding to it; or add a third, smaller example built
+   for the method model. Nothing is blocked today. Deciding it would give
+   contributors and `smn-data-pkg` a worked reference that can be executed
+   rather than read, and would give backlog **#100**'s validator round-trip a
+   package with methods in it to validate.
+2. **Is there a citable NuSEDS protocol for `protocol_iri`?** The first row
+   asserts "the NuSEDS standard" as though a document were identifiable. Nobody
+   has checked whether one exists in any of the three forms this card allows, or
+   whether a term would have to be minted. Until that is answered the first row
+   is a placeholder, not an instruction — and question 1 cannot be executed
+   without it.
 
 ## I-ADOPT: what to adopt, and what to leave
 
