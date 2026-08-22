@@ -11,6 +11,13 @@ psc:
 
 # S4 — Workshop rebuild · repo: `salmon-data-standards-workshop`
 
+**Q2 answered 2026-08-22 (Brett): currency pass first — landed 2026-08-21 as
+workshop PR #4 — then the golden-path/rebuild work after the KNB test
+environment's API workability is determined.** Q1's environment half is now
+verified (mnTestKNB live at dev.nceas.ucsb.edu; see the S3 card), so
+workability reduces to a token plus one successful end-to-end test deposit.
+The golden-path section unblocks the moment that deposit succeeds.
+
 **Execplan:** [KNB environments and workshop rebuild](../plans/2026-08-11-knb-environments-and-workshop-rebuild.md)
 
 Nine episodes, R-led with visible Python equivalents and two interleaved Excel

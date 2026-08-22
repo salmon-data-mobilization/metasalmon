@@ -28,35 +28,6 @@ entry links its owner.
 
 ## Open
 
-### Q1 — What does "the KNB test environment" actually mean?
-**Unblocks:** S3 entirely, and through it S4's golden-path section — the top
-priority. **The largest single unblock on this list.**
-The S3 execplan specifies `urn:node:mnTestKNB` / `dataone_test_token` with no
-cited source, and nobody has checked whether that node is live or whether a
-token is obtainable. psc-data-transformations asserts the contradicting model:
-KNB exposes no server-side draft, and a restricted persistent *production*
-version IS the staging state (`deposit_kind: production`).
-**Recommendation:** check the DataONE node registry for `urn:node:mnTestKNB`
-first — that single fact decides whether S3 as written is buildable. Regardless
-of the answer, write the workshop's golden path against production
-private-review now (the only path executable against released code, and the one
-the ecosystem has actually run once), without letting that quietly kill S3 —
-twenty learners minting persistent production objects is the failure S3 exists
-to prevent. **Owner:** [S3](sequences/s3-knb-staging.md). *New evidence (2026-08-21):* the
-workshop's own session-6 KNB text already describes the production
-private-review model — so of the two contradictory answers, the one the
-teaching material encodes is psc-data-transformations', not the S3 execplan's.
-
-### Q2 — Workshop scope: currency pass now, or the nine-episode rebuild?
-**Unblocks:** S4's shape and schedule.
-The workshop teaches `method_iri` (removed at 0.3.0) as current, and four
-session-6 chunks render R errors into the published site. A currency pass is
-proceeding as non-blocked work (the lockfile fix and factually-wrong content);
-the rebuild and the golden-path section wait on this and Q1.
-**The one input agents cannot supply: is a workshop delivery date booked?**
-If yes, currency-then-golden-path is the only survivable scope; if no, the
-rebuild becomes defensible. **Owner:** [S4](sequences/s4-workshop-rebuild.md).
-
 ### Q3 — Backlog #90: may a descriptor `schema.fields` entry carry I-ADOPT keys?
 **Unblocks:** the gold standard passing the spec validator; S1's premise.
 The evidence is one-sided and the item now says so: nothing normative names
@@ -187,5 +158,34 @@ reading it.
 
 ## Answered
 
-*(none yet — answers move here with their date and where the ruling was
-recorded)*
+### Q1 — What does "the KNB test environment" actually mean? — ANSWERED 2026-08-22 (Brett)
+
+**Ruling:** there is a test/dev environment for the KNB API, and the golden
+path is to develop data packages against it first; once they look good there,
+post to the production KNB endpoint
+(`https://knb.ecoinformatics.org/knb/d1/mn/v2`) — "as long as it works out to
+use the test/dev endpoint."
+
+**Verified the same day, read-only:** the test environment exists and answers.
+`https://dev.nceas.ucsb.edu/knb/d1/mn/v2/node` returns 200 with identity
+**`urn:node:mnTestKNB` / "KNB Test Node"** (demo.nceas serves the same
+identity), and `urn:node:mnTestKNB` is registered in the DataONE staging CN
+(`cn-stage.test.dataone.org`). Production confirmed as `urn:node:KNB`. So the
+S3 execplan's node id was right and its endpoint is now sourced. **Remaining
+workability question, which is Brett's:** obtaining a dev.nceas login/token and
+one end-to-end test deposit. Ruling recorded in the
+[S3 card](sequences/s3-knb-staging.md); S3 implementation is unblocked.
+
+**Note on the psc-data-transformations contradiction:** its claim was that
+*production* KNB exposes no server-side draft — the test node is a separate
+environment, which is exactly what S3 proposed, so both statements can be true;
+the private-review model remains the production-side fallback if the test path
+"does not work out."
+
+### Q2 — Workshop scope — ANSWERED 2026-08-22 (Brett)
+
+**Ruling:** currency pass first (landed 2026-08-21, workshop PR #4), then the
+golden-path/rebuild work **after the KNB test environment's API workability is
+determined**. With Q1's environment verified live, workability now means: a
+token plus one successful end-to-end test deposit. The
+[S4 card](sequences/s4-workshop-rebuild.md) carries the ruling.
