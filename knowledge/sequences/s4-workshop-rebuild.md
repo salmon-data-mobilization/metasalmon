@@ -27,6 +27,23 @@ for free. That is the strategic reason to finish it, beyond teaching.
 
 ## What the current lesson is, today
 
+**2026-08-21 currency pass landed** (workshop PR #4, merged; the post-merge
+site deploy is green). Fixed: metasalmon is in the lesson lockfile pinned to
+the **v0.3.0 release tag** with its dependency tree snapshotted, and a hidden
+`library(metasalmon)` chunk proves the pin loads at every build; the four
+session-6 chunks no longer publish R error blocks — they are `eval = FALSE`
+**honestly**, because with metasalmon installed they still fail for
+non-currency reasons (learner-session state, a reviewed sidecar the lesson
+must not fabricate, an interactive upload), and making them genuinely execute
+IS the golden path, blocked on Q1/Q2; `method_iri` teaching corrected to the
+0.3.0 three-placement shape in session-4 and the learner reference;
+`setup.md`'s pre-rename metaSmnPy wheel replaced with the metasalmonpy v0.2.1
+tag tarball (releases carry no wheel assets). **Still absent, rebuild scope:**
+primary-key and tidy-shape content. One Q1-relevant observation: session-6's
+KNB text already describes the production private-review model, i.e. the
+lesson as written agrees with psc-data-transformations' staging claim, not
+with the S3 execplan's unverified test-node registry.
+
 **The rebuild has not begun, and this card said nothing about the thing being
 rebuilt** — which made "S4 is blocked" read as "nothing is wrong yet".
 Something is wrong now. Measured against the repository, 2026-08-21:

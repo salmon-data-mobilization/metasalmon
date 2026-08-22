@@ -2025,6 +2025,18 @@ Pages configuration.
 
 #### smn-data-pkg (verified on `main`, 2026-08-21)
 
+**#110 metasalmonpy's README install guidance is stale in both directions.**
+It claims no tag is installable as `metasalmonpy` while v0.1.7 through v0.2.1
+all are, and it recommends installing `@main` although the version is a parity
+*claim* — `@main` can carry unreleased behaviour ahead of any claimed number,
+which is precisely what the claim rule exists to prevent readers assuming.
+Found while fixing the workshop's setup instructions, which had inherited the
+confusion (a pre-rename metaSmnPy wheel URL). Also: releases carry **no wheel
+assets**, so installers need the tag tarball form. *Retires when:* the README
+recommends installing a tagged release, states the parity-claim rule, and
+either wheels are attached to releases or the tarball form is documented as
+the supported path.
+
 **#109 `spec_version` is read by nothing in smn-data-pkg, so version drift is
 invisible.** `spec_version`/`specVersion` appears nowhere in
 `validate_package.py` or `generate_artifacts.py`: any declaration validates

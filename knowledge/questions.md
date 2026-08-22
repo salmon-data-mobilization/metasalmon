@@ -42,7 +42,10 @@ of the answer, write the workshop's golden path against production
 private-review now (the only path executable against released code, and the one
 the ecosystem has actually run once), without letting that quietly kill S3 —
 twenty learners minting persistent production objects is the failure S3 exists
-to prevent. **Owner:** [S3](sequences/s3-knb-staging.md).
+to prevent. **Owner:** [S3](sequences/s3-knb-staging.md). *New evidence (2026-08-21):* the
+workshop's own session-6 KNB text already describes the production
+private-review model — so of the two contradictory answers, the one the
+teaching material encodes is psc-data-transformations', not the S3 execplan's.
 
 ### Q2 — Workshop scope: currency pass now, or the nine-episode rebuild?
 **Unblocks:** S4's shape and schedule.
