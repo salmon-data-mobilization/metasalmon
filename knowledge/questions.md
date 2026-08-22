@@ -61,7 +61,9 @@ The evidence is one-sided and the item now says so: nothing normative names
 allows custom field properties, and no CI anywhere runs the script.
 **Recommendation:** permit the keys — make `descriptor_field_from_column()`
 learn them, deriving the allowlist from `column_dictionary.schema.json`.
-**Owner:** [backlog #90](backlog.md).
+**Owner:** [backlog #90](backlog.md). *Also sequenced behind this ruling:*
+backlog #109 (`spec_version` enforcement in smn-data-pkg touches the same
+validator).
 
 ### Q4 — Which artifact is THE gold standard, and where is its finish line?
 **Unblocks:** S12, the workshop's teaching artifact, what metasalmonpy mirrors.

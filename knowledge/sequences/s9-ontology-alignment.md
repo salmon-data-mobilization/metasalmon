@@ -227,6 +227,21 @@ iop-triples explainer.
    *Retires when:* PR #27 is merged or closed. If it is reworked again, re-measure
    rather than trusting this paragraph — that is exactly the mistake it replaces.
 
+   **2026-08-21 update — executed, twice.** The build/determinism half shipped
+   alone as smn **PR #29** (merged to `main`): the backlog-#89 fix extracted
+   verbatim from this branch, determinism measured 8 runs → 1 hash, byte-equal
+   to the committed artifacts. PR #27 then absorbed `origin/main` twice by
+   merge — the second time, after #29 landed, the two generated *TTL* artifacts
+   conflicted because both sides now carry the same prefix fix; resolved by
+   taking the branch side and regenerating, with `verify-flat-ttl` and
+   `verify-generated-artifacts` both reporting synchronized. #27 is now a
+   **conflict-free draft containing only the 22 contested terms**, blocked
+   solely on the eight modelling rulings (Q6 in [questions](../questions.md)).
+   One consequence worth knowing: decision 5's "big diff" — the `smn:` prefix
+   compaction of the published TTL — arrives **with the terms**, not with the
+   mechanism, because on pre-#27 content the old defect was dormant: `smn:`
+   only enters predicate position once the terms exist.
+
    **PR #27 does not unblock the Fraser Recruits case study
    ([S13](s13-fraser-recruits-case-study.md)), and it has been assumed to.**
    Measured 2026-08-21: the recipe uses **twelve distinct `smn:` terms** —

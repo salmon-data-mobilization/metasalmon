@@ -1481,7 +1481,18 @@ after rung 3. *Retires when:* Python collects rather than raises, emits R's
 eight categories with R's five columns, and a differential fixture pins both
 sides to the same issue set for the same broken package.
 
-**#89 smn's flat-TTL generator was nondeterministic, and nothing would have
+**#89 ~~smn's flat-TTL generator was nondeterministic~~ — FIXED 2026-08-21**
+(smn PR #29, extracted verbatim from draft PR #27's build half and merged to
+`main`). Measured before/after on the same content: 8 runs → 3 distinct hashes
+pre-fix (the count varies with the per-process hash seed — same defect), 8 → 1
+post-fix, byte-equal to the committed artifacts. One nuance the measurement
+surfaced: on `main`'s pre-#27 content the defect was **dormant** — stable by
+luck, because `smn:` only enters predicate position with #27's terms — so the
+full `smn:` prefix compaction (PR #27 decision 5's "big diff") arrives when the
+terms do, while the mechanism is already on `main`. Original entry follows for
+the record.
+
+**~~#89 original~~ smn's flat-TTL generator was nondeterministic, and nothing would have
 caught it.** Merging triples without binding the source prefixes left rdflib to
 number predicate namespaces `ns1:`/`ns2:`/… in **hash-randomized** order. Eight
 runs on `main` produced one hash; eight runs on a branch that used `smn:` and
@@ -2014,7 +2025,26 @@ Pages configuration.
 
 #### smn-data-pkg (verified on `main`, 2026-08-21)
 
-**#103 Four of 23 tests fail on `main`, in a repo with no CI to notice.**
+**#109 `spec_version` is read by nothing in smn-data-pkg, so version drift is
+invisible.** `spec_version`/`specVersion` appears nowhere in
+`validate_package.py` or `generate_artifacts.py`: any declaration validates
+against whatever the checked-out scripts implement. That is exactly how both
+shipped examples sat declaring `sdp-0.2.0` through the `sdp-0.3.0` tag while
+passing validation (they now declare sdp-0.3.0 — PR #6 — but nothing would
+notice a regression). *Retires when:* the strict validator reads the declared
+version and validates against that version's contract, or errors on one it
+does not support. **Sequenced behind Q3/#90** — implementing it touches
+`validate_package.py`, whose comparison behaviour is under an open ruling.
+
+**#103 ~~Four of 23 tests fail on `main`, in a repo with no CI to notice~~ —
+FIXED 2026-08-21** (smn-data-pkg PR #6). All four red tests asserted the
+pre-0.3.0 method registry; **in all four the validator was already correct and
+the tests were stale**, rewritten to the 0.3.0 shape (23/23 green). A minimal
+CI workflow now runs the suite and `generate_artifacts.py --check` on push/PR,
+which is what retires this item — a red suite on `main` went unnoticed
+precisely because nothing ran it. Original entry follows.
+
+**~~#103 original~~ Four of 23 tests fail on `main`, in a repo with no CI to notice.**
 `python -m pytest tests/` reports `4 failed, 19 passed`. All four are
 `ObservationStructureValidationTests` and all four are about the
 `metadata/methods.csv` that sdp-0.3.0 removed, in a copy of
@@ -2046,7 +2076,15 @@ against the post-0.3.0 model, so deleting them is a decision, not cleanup.
 *Retires when:* `pytest tests/` is green on `main` and a workflow runs it on
 every push and pull request.
 
-**#104 The generated template README tells users to delete a file the template
+**#104 ~~stale template README with a check that cannot see it~~ — FIXED
+2026-08-21** (smn-data-pkg PR #6), by the entry's own alternative retirement:
+the prose is corrected AND `generate_artifacts.py` now fails `--check`/`--write`
+when the README source names a `metadata/*.csv` absent from the generated
+template — proven by reintroducing the stale sentence (non-zero exit). The
+guard documents its coverage limits and retirement condition. Original entry
+follows.
+
+**~~#104 original~~ The generated template README tells users to delete a file the template
 does not contain, and `--check` calls it in sync.**
 `templates/salmon-data-package-template/README.md:9-13` says the template
 "includes optional `metadata/methods.csv`" and "Delete `methods.csv` when no
@@ -2070,7 +2108,17 @@ tree rather than copied from prose — or, if it stays prose, `--check` asserts
 that every `metadata/*.csv` the README names exists in the generated template,
 and fails when one does not.
 
-**#105 Four documentation references are published 404s.** Checked live
+**#105 ~~Four documentation references are published 404s~~ — FIXED 2026-08-21**
+(smn-data-pkg PR #6), plus a **fifth** dead reference found in the same pass
+(`docs/sdp-profile-schema-guide.md`, in SPECIFICATION.md's guide list). Never-
+written targets were removed and their entrypoints rows repointed; stale v0.2
+pointers moved to v0.3 with v0.2 marked frozen; every repo-relative path in the
+three docs now resolves, swept mechanically. **Residual:** no dedicated
+link-check CI step exists — the validator is exercised via the tests, not
+standalone — so a future dead link is caught only if a test happens to walk it.
+*Retires fully when:* a link check runs in CI. Original entry follows.
+
+**~~#105 original~~ Four documentation references are published 404s.** Checked live
 2026-08-21 against `https://salmon-data-mobilization.github.io/smn-data-pkg/`,
 which serves the repo and returns 200 for its profiles and Frictionless
 schemas. These four return **404**, and none of the four exists in the repo:
