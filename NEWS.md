@@ -1,6 +1,25 @@
 metasalmon (development version)
 --------------------------------
 
+### New
+
+* **`nuseds_estimate_classification_crosswalk()` maps NuSEDS
+  `ESTIMATE_CLASSIFICATION` values onto the released gcdfo Hyatt (1997)
+  estimate types** (backlog #101), and `create_sdp()` wires it in exactly
+  where the estimate-method crosswalk is wired, with the same
+  never-overwrite-an-explicit-IRI rule. `TRUE ABUNDANCE (TYPE-1)` …
+  `PRESENCE-ABSENCE (TYPE-6)` map to `gcdfo:Type1`–`gcdfo:Type6`
+  (`skos:Concept`s under `gcdfo:EstimateType`, released in gcdfo 0.0.9). Two
+  families of values deliberately map to no Type concept, and the crosswalk
+  records the disposition instead of forcing it: `NO SURVEY THIS YEAR` is an
+  absence-of-observation marker, not an estimate type (mapping it would assert
+  a survey quality for a survey that did not happen), and the two
+  `RELATIVE: … MULTI-YEAR METHODS` classifications have no released concept of
+  their own so they link at scheme level, the convention the estimate-method
+  crosswalk already uses for `Cumulative CPUE`. The two prefill passes now
+  share one engine (`.ms_prefill_legacy_code_terms()`) rather than a
+  copy-paste sibling.
+
 ### Bug fixes
 
 * **A `Date`-typed `temporal_start` no longer destroys the package on disk**

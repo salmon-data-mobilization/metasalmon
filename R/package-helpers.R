@@ -1881,7 +1881,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   .ms_align_cols(codes, .ms_codes_cols())
 }
 
-.ms_prefill_legacy_estimate_method_code_terms <- function(codes, dict = NULL) {
+# Shared engine for the legacy NuSEDS code-term prefills. A codes.csv row gets
+# its term_iri filled from `crosswalk` when (a) its column's name -- or its
+# dictionary name/label/description -- contains every word in
+# `required_words`, (b) the row has no explicit term_iri, and (c) the code
+# value has a crosswalk row with a non-missing ontology term. Explicit values
+# always win; crosswalk rows that map to NA (recorded non-mappings, e.g.
+# "NO SURVEY THIS YEAR") never fill anything.
+.ms_prefill_legacy_code_terms <- function(codes, dict, required_words, crosswalk) {
   codes <- .ms_normalize_codes(codes)
   if (is.null(codes) || nrow(codes) == 0) {
     return(codes)
@@ -1899,18 +1906,22 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     out[is_curie] <- sub("^gcdfo:", "https://w3id.org/gcdfo/salmon#", out[is_curie])
     out
   }
-  estimate_method_flag <- function(column_name, column_label = NULL, column_description = NULL) {
+  column_flag <- function(column_name, column_label = NULL, column_description = NULL) {
     column_name <- if (is.null(column_name)) "" else dplyr::coalesce(as.character(column_name), "")
     column_label <- if (is.null(column_label)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_label), "")
     column_description <- if (is.null(column_description)) rep("", length(column_name)) else dplyr::coalesce(as.character(column_description), "")
     text <- normalize_text(gsub("[^[:alnum:]]+", " ", paste(column_name, column_label, column_description)))
-    !is.na(text) & grepl("\\bestimate\\b", text, perl = TRUE) & grepl("\\bmethod\\b", text, perl = TRUE)
+    flags <- !is.na(text)
+    for (word in required_words) {
+      flags <- flags & grepl(paste0("\\b", word, "\\b"), text, perl = TRUE)
+    }
+    flags
   }
 
-  estimate_rows <- estimate_method_flag(codes$column_name)
+  target_rows <- column_flag(codes$column_name)
   if (!is.null(dict) && nrow(dict) > 0) {
     dict <- .ms_normalize_dictionary(dict)
-    dict_flags <- estimate_method_flag(dict$column_name, dict$column_label, dict$column_description)
+    dict_flags <- column_flag(dict$column_name, dict$column_label, dict$column_description)
     dict_keys <- paste(
       dplyr::coalesce(as.character(dict$dataset_id), ""),
       dplyr::coalesce(as.character(dict$table_id), ""),
@@ -1926,10 +1937,9 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     )
     lookup_flags <- unname(flag_lookup[code_keys])
     lookup_flags[is.na(lookup_flags)] <- FALSE
-    estimate_rows <- estimate_rows | lookup_flags
+    target_rows <- target_rows | lookup_flags
   }
 
-  crosswalk <- nuseds_estimate_method_crosswalk()
   crosswalk_lookup <- stats::setNames(
     expand_gcdfo_term(crosswalk$ontology_term),
     normalize_text(crosswalk$nuseds_value)
@@ -1937,13 +1947,31 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   mapped_terms <- unname(crosswalk_lookup[normalize_text(codes$code_value)])
   existing_terms <- trimws(as.character(codes$term_iri))
   missing_terms <- is.na(existing_terms) | !nzchar(existing_terms)
-  fill_rows <- estimate_rows & missing_terms & !is.na(mapped_terms) & nzchar(mapped_terms)
+  fill_rows <- target_rows & missing_terms & !is.na(mapped_terms) & nzchar(mapped_terms)
 
   if (any(fill_rows)) {
     codes$term_iri[fill_rows] <- mapped_terms[fill_rows]
   }
 
   codes
+}
+
+.ms_prefill_legacy_estimate_method_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = c("estimate", "method"),
+    crosswalk = nuseds_estimate_method_crosswalk()
+  )
+}
+
+.ms_prefill_legacy_estimate_classification_code_terms <- function(codes, dict = NULL) {
+  .ms_prefill_legacy_code_terms(
+    codes,
+    dict,
+    required_words = c("estimate", "classification"),
+    crosswalk = nuseds_estimate_classification_crosswalk()
+  )
 }
 
 .ms_parse_logical <- function(x) {

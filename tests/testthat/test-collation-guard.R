@@ -35,6 +35,7 @@ collation_sensitive_fns <- c(
   # Exported tables whose row order is part of the return value
   "nuseds_enumeration_method_crosswalk",
   "nuseds_estimate_method_crosswalk",
+  "nuseds_estimate_classification_crosswalk",
   # SDP extension normalizers: their output IS the canonical row order
   # written to metadata/structure/observation_*.csv
   ".ms_sdp_observation_normalize_structures",

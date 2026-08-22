@@ -85,6 +85,7 @@ reference:
     contents:
       - nuseds_enumeration_method_crosswalk
       - nuseds_estimate_method_crosswalk
+      - nuseds_estimate_classification_crosswalk
 
   - title: "Darwin Core (DwC-DP)"
     desc: "Darwin Core Data Package mapping and export helpers"

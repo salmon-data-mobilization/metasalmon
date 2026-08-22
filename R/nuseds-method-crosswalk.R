@@ -259,3 +259,84 @@ nuseds_estimate_method_crosswalk <- function() {
 
   tibble::as_tibble(data[order(data$method_family, data$nuseds_value, method = "radix"), ])
 }
+
+
+#' NuSEDS estimate classification crosswalk
+#'
+#' Return a static crosswalk of NuSEDS `ESTIMATE_CLASSIFICATION` values to the
+#' released gcdfo Hyatt (1997) estimate-type concepts
+#' (`gcdfo:Type1`--`gcdfo:Type6`, `skos:Concept`s under `gcdfo:EstimateType`).
+#'
+#' Two families of values deliberately map to no Type concept, and the
+#' distinction is recorded here rather than forced:
+#'
+#' * `NO SURVEY THIS YEAR` is an absence-of-observation marker, not an
+#'   estimate type -- assigning any Hyatt type would assert a survey quality
+#'   for a survey that did not happen. It maps to `NA` with a note.
+#' * `RELATIVE: CONSTANT MULTI-YEAR METHODS` / `RELATIVE: VARYING MULTI-YEAR
+#'   METHODS` are real classifications with no released concept of their own;
+#'   they link at scheme level (`gcdfo:EstimateType`), the same convention
+#'   [nuseds_estimate_method_crosswalk()] uses for `Cumulative CPUE`.
+#'
+#' @return A tibble with columns `nuseds_value`, `estimate_type`,
+#'   `ontology_term`, and `notes`.
+#' @export
+#' @examples
+#' nuseds_estimate_classification_crosswalk()
+#'
+#' @seealso [nuseds_estimate_method_crosswalk()],
+#'   [nuseds_enumeration_method_crosswalk()]
+nuseds_estimate_classification_crosswalk <- function() {
+  estimate_type <- c(
+    "TRUE ABUNDANCE (TYPE-1)" = "Type-1",
+    "TRUE ABUNDANCE (TYPE-2)" = "Type-2",
+    "RELATIVE ABUNDANCE (TYPE-3)" = "Type-3",
+    "RELATIVE ABUNDANCE (TYPE-4)" = "Type-4",
+    "RELATIVE ABUNDANCE (TYPE-5)" = "Type-5",
+    "PRESENCE-ABSENCE (TYPE-6)" = "Type-6",
+    "RELATIVE: CONSTANT MULTI-YEAR METHODS" = NA_character_,
+    "RELATIVE: VARYING MULTI-YEAR METHODS" = NA_character_,
+    "NO SURVEY THIS YEAR" = NA_character_,
+    "UNKNOWN" = NA_character_
+  )
+
+  ontology_term <- c(
+    "TRUE ABUNDANCE (TYPE-1)" = "gcdfo:Type1",
+    "TRUE ABUNDANCE (TYPE-2)" = "gcdfo:Type2",
+    "RELATIVE ABUNDANCE (TYPE-3)" = "gcdfo:Type3",
+    "RELATIVE ABUNDANCE (TYPE-4)" = "gcdfo:Type4",
+    "RELATIVE ABUNDANCE (TYPE-5)" = "gcdfo:Type5",
+    "PRESENCE-ABSENCE (TYPE-6)" = "gcdfo:Type6",
+    "RELATIVE: CONSTANT MULTI-YEAR METHODS" = "gcdfo:EstimateType",
+    "RELATIVE: VARYING MULTI-YEAR METHODS" = "gcdfo:EstimateType",
+    "NO SURVEY THIS YEAR" = NA_character_,
+    "UNKNOWN" = NA_character_
+  )
+
+  note <- c(
+    "TRUE ABUNDANCE (TYPE-1)" = "",
+    "TRUE ABUNDANCE (TYPE-2)" = "",
+    "RELATIVE ABUNDANCE (TYPE-3)" = "",
+    "RELATIVE ABUNDANCE (TYPE-4)" = "",
+    "RELATIVE ABUNDANCE (TYPE-5)" = "",
+    "PRESENCE-ABSENCE (TYPE-6)" = "",
+    "RELATIVE: CONSTANT MULTI-YEAR METHODS" = "No released concept for the multi-year relative classifications; linked at EstimateType scheme level. Mint a specific term before asserting more.",
+    "RELATIVE: VARYING MULTI-YEAR METHODS" = "No released concept for the multi-year relative classifications; linked at EstimateType scheme level. Mint a specific term before asserting more.",
+    "NO SURVEY THIS YEAR" = "Absence-of-observation marker, not an estimate type: no survey happened, so no Hyatt classification applies. Deliberately unmapped.",
+    "UNKNOWN" = "Administrative unknown label. Treat as classification-unknown unless documented elsewhere."
+  )
+
+  classifications <- names(estimate_type)
+  data <- data.frame(
+    nuseds_value = classifications,
+    estimate_type = unname(estimate_type[classifications]),
+    ontology_term = unname(ontology_term[classifications]),
+    notes = unname(note[classifications]),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+  tibble::as_tibble(
+    data[order(data$estimate_type, data$nuseds_value, method = "radix", na.last = TRUE), ]
+  )
+}

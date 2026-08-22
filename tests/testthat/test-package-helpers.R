@@ -3924,3 +3924,73 @@ test_that("a malformed placement IRI warns by default and blocks strict validati
     "Final validation failed"
   )
 })
+
+test_that("create_sdp prefills legacy estimate-classification code IRIs without overwriting explicit values", {
+  # Backlog #101: the classification crosswalk must be wired exactly where the
+  # estimate-method crosswalk is wired, with the same do-not-overwrite rule.
+  resources <- list(
+    escapement = tibble::tibble(
+      ESTIMATE_CLASSIFICATION = c(
+        "TRUE ABUNDANCE (TYPE-1)",
+        "NO SURVEY THIS YEAR",
+        "RELATIVE ABUNDANCE (TYPE-4)"
+      ),
+      RUN_TYPE = c("EARLY", "LATE", "EARLY"),
+      count = c(10L, 20L, 30L)
+    )
+  )
+  seed_codes <- tibble::tibble(
+    dataset_id = rep("scope-demo", 4),
+    table_id = rep("escapement", 4),
+    column_name = c(
+      "ESTIMATE_CLASSIFICATION", "ESTIMATE_CLASSIFICATION",
+      "ESTIMATE_CLASSIFICATION", "RUN_TYPE"
+    ),
+    code_value = c(
+      "TRUE ABUNDANCE (TYPE-1)", "NO SURVEY THIS YEAR",
+      "RELATIVE ABUNDANCE (TYPE-4)", "EARLY"
+    ),
+    code_label = c(
+      "True abundance type 1", "No survey this year",
+      "Relative abundance type 4", "Early"
+    ),
+    code_description = c(
+      "Hyatt classification", "Absence marker",
+      "Hyatt classification", "Run timing"
+    ),
+    vocabulary_iri = NA_character_,
+    term_iri = c(NA_character_, NA_character_, "https://example.org/custom-type4", NA_character_),
+    term_type = NA_character_
+  )
+
+  artifacts <- infer_salmon_datapackage_artifacts(
+    resources,
+    dataset_id = "scope-demo",
+    seed_codes = seed_codes,
+    seed_semantics = FALSE
+  )
+  cls_rows <- artifacts$codes[
+    artifacts$codes$column_name == "ESTIMATE_CLASSIFICATION", ,
+    drop = FALSE
+  ]
+
+  expect_equal(
+    cls_rows$term_iri[cls_rows$code_value == "TRUE ABUNDANCE (TYPE-1)"],
+    "https://w3id.org/gcdfo/salmon#Type1"
+  )
+  # The absence marker maps to nothing, by recorded design.
+  expect_true(
+    is.na(cls_rows$term_iri[cls_rows$code_value == "NO SURVEY THIS YEAR"]) ||
+      cls_rows$term_iri[cls_rows$code_value == "NO SURVEY THIS YEAR"] == ""
+  )
+  # An explicit caller-supplied IRI wins over the crosswalk.
+  expect_equal(
+    cls_rows$term_iri[cls_rows$code_value == "RELATIVE ABUNDANCE (TYPE-4)"],
+    "https://example.org/custom-type4"
+  )
+  # Unrelated columns stay untouched.
+  expect_true(
+    is.na(artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"]) ||
+      artifacts$codes$term_iri[artifacts$codes$column_name == "RUN_TYPE"] == ""
+  )
+})
