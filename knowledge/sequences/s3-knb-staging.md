@@ -11,6 +11,21 @@ psc:
 
 # S3 — KNB staging environment
 
+**UNBLOCKED — Q1 answered 2026-08-22 (Brett), and the environment verified the
+same day.** The ruling: the golden path develops packages against the KNB
+test/dev environment first, then posts to production
+(`https://knb.ecoinformatics.org/knb/d1/mn/v2`) once they look good — "as long
+as it works out." Measured, read-only: `urn:node:mnTestKNB` ("KNB Test Node")
+is **live at `https://dev.nceas.ucsb.edu/knb/d1/mn`** (200, identity read from
+the node document; demo.nceas serves the same identity) and is registered in
+the DataONE staging CN. So this card's previously unsourced node id was right,
+and the endpoint now has a source. The psc-data-transformations contradiction
+dissolves rather than resolves: its claim concerned *production* having no
+server-side draft, and the test node is a separate environment — both are
+true; production private-review remains the fallback if the test path does not
+work out. **Remaining before the golden path can be taught (S4): a dev.nceas
+token (Brett's — credentials) and one end-to-end test deposit.**
+
 **Execplan:** [KNB environments and workshop rebuild](../plans/2026-08-11-knb-environments-and-workshop-rebuild.md)
 
 A guarded rehearsal path so the workshop — and any new user — can practise a
