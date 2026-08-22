@@ -125,3 +125,35 @@
   }
   text
 }
+
+# Render a data frame's Date columns as platform-independent ISO text, and
+# leave every other column alone.
+#
+# THE NARROWNESS IS THE DESIGN, and it was measured rather than reasoned
+# (macOS R 4.5.2, readr 2.x). `readr::write_csv()` and `as.character()` agree
+# exactly on a Date -- both emit the unpadded `1-01-01` -- so padding the
+# rendered text reproduces readr's own output for every year it already got
+# right, and fixes only the years it did not.
+#
+# POSIXct is deliberately NOT touched, and this is the part that would be easy
+# to get wrong by symmetry:
+#
+#   write_csv  POSIXct year 1  #> "0001-01-01T00:00:00Z"   <- ALREADY padded
+#   write_csv  POSIXct 10:00.5 #> "2024-01-31T10:00:00Z"   <- fractional dropped
+#   as.character(same)         #> "2024-01-31 10:00:00.5"  <- space, no Z, kept
+#
+# readr's instant path is correct already, and coercing it would change bytes
+# twice over -- the separator and the zone marker, and whether a fractional
+# second survives. A "fix" applied to both types would corrupt the one that was
+# never broken.
+#
+# *Retires when:* R's `as.character.Date` fast path zero-pads, at which point
+# this collapses to the identity.
+.ms_iso_date_columns <- function(df) {
+  is_date <- vapply(df, function(col) inherits(col, "Date"), logical(1))
+  if (!any(is_date)) {
+    return(df)
+  }
+  df[is_date] <- lapply(df[is_date], .ms_iso_character)
+  df
+}
