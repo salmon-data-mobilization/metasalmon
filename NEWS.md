@@ -22,6 +22,25 @@ metasalmon (development version)
   JSON and the CSV cannot disagree about the same field. A regression test
   proves the directory survives the round trip.
 
+* **The shipped 30-row example now passes `validate_salmon_datapackage()`**
+  (backlog #98). `inst/extdata/nuseds-fraser-coho-sample.csv` stored
+  `START_DTT`/`END_DTT` as Oracle `DD-MON-YY` text while its bundled
+  dictionary declared `value_type: date`, so writing the pair and validating
+  aborted with 2 structural issues in **both** modes — the artifact the docs
+  hand a new user as the fastest walkthrough failed the package's own final
+  gate. The data was fixed rather than the dictionary: the `date` declaration
+  is the semantically correct one for `column_role: temporal` columns, the
+  fuller 173-row example's derivation script already converts the same columns
+  to ISO, and retyping them `string` would teach users to discard date
+  semantics whenever source bytes are ugly. The 28 values were converted with
+  the same `%d-%b-%y` parse the package's temporal inference uses (so the
+  century pivot matches: `03-DEC-97` → `1997-12-03`); every other byte of the
+  file is unchanged, and no other bundled metadata derives from the date
+  format. The DD-MON-YY parsing test now carries its own inline Oracle-format
+  fixture instead of leaning on the shipped sample, and a new round-trip test
+  builds the package from the shipped artifacts and validates it so the pair
+  cannot silently diverge again.
+
 * **`detect_semantic_term_gaps()` now sees the targets retrieval found nothing
   for** (backlog #97). Both entry paths short-circuited on an empty suggestions
   table, so a concept absent from every vocabulary — the strongest possible

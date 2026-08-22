@@ -522,11 +522,20 @@ test_that("create_sdp exposes seed_table_meta and seed_dataset_meta defaults as 
   expect_true(identical(formals(infer_salmon_datapackage_artifacts)$seed_dataset_meta, TRUE))
 })
 
-test_that("create_sdp handles NuSEDS-style DD-MON-YY dates in built-in sample", {
+test_that("create_sdp handles NuSEDS-style DD-MON-YY dates", {
   withr::local_tempdir() -> tmp
-
-  sample_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
-  fraser_coho <- readr::read_csv(sample_path, show_col_types = FALSE)
+  # The DD-MON-YY fixture is inline rather than the shipped 30-row sample: the
+  # sample's dates were converted to ISO in the backlog #98 fix (they had to
+  # validate against the bundled `value_type: date` dictionary), so this test
+  # carries its own Oracle-format bytes to keep exercising the parser --
+  # including the century pivot ("03-DEC-97" is 1997, not 2097).
+  fraser_coho <- tibble::tibble(
+    POP_ID = c(1L, 2L, 3L),
+    WATERBODY = c("THUNDER RIVER", "GUICHON CREEK", "PERRY RIVER"),
+    NATURAL_SPAWNERS_TOTAL = c(10L, 20L, 30L),
+    START_DTT = c("03-DEC-97", "07-OCT-16", "06-NOV-24"),
+    END_DTT = c("29-JAN-98", "23-NOV-16", "20-NOV-24")
+  )
 
   pkg_path <- create_sdp(
     fraser_coho,

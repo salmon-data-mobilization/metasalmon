@@ -1,11 +1,5 @@
-example_extdata_path <- function(name) {
-  installed_path <- system.file("extdata", name, package = "metasalmon")
-  if (nzchar(installed_path)) {
-    return(installed_path)
-  }
-
-  testthat::test_path("..", "..", "inst", "extdata", name)
-}
+# `example_extdata_path()` moved to helper-example-data.R so the round-trip
+# validation tests can share it.
 
 test_that("bundled Fraser coho examples are available and sized as documented", {
   tiny_path <- example_extdata_path("nuseds-fraser-coho-sample.csv")
