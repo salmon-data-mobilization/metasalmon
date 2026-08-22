@@ -2118,11 +2118,18 @@ the term slot holding the most specific released concept is defensible under
 either Q9 answer. The network-gated test
 (`test-example-iri-resolution.R`) fetches every unique IRI document across
 all four shipped example metadata files, verified RED with exactly
-`https://w3id.org/example/salmon (404)`. **The other two repos remain**:
-metasalmonpy's `data/column_dictionary.csv` carries the same two 404 IRIs
-(plus corrupt rows and the stale header — measured 2026-08-21), and
-smn-data-pkg's minimal example carries them per the evidence above. The item
-stays open for those two dictionaries.
+`https://w3id.org/example/salmon (404)`. **The metasalmonpy half is discharged** —
+S10 chunk A (metasalmonpy PR #14, merged 2026-08-22) replaced the bundled demo
+metadata with byte-copies of metasalmon `main` at `e02111a`, per parity row 46.
+Re-verified against metasalmonpy `main` on 2026-08-22 with a CSV parser rather
+than a grep: zero `w3id.org/example/salmon` hits, the resolving
+`gcdfo:SpawnerAbundance` / `smn:NaturalOrigin` pair present, the header ends
+`statistical_modifier_iri` (no `method_iri`), all rows a uniform 16 columns,
+and the two previously shifted rows (`RUN_TYPE`, `ESTIMATE_STAGE`) read
+`categorical`/`string` — the corruption is gone with the IRIs. **The item stays
+open only for smn-data-pkg's minimal example**, which still carries the two 404
+IRIs (re-measured 2026-08-22, 1 hit). *Retires when:* that dictionary's IRIs
+resolve — noting the fix there intersects Q9 the same way this repo's did.
 
 **#100 No test round-trips either bundled example through a validator.**
 `grep` over `tests/testthat/` finds twelve references to the example CSVs and
