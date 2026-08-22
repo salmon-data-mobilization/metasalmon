@@ -22,7 +22,22 @@ metasalmon (development version)
   JSON and the CSV cannot disagree about the same field. A regression test
   proves the directory survives the round trip.
 
-* **`write_salmon_datapackage()` can read back the dates it writes.** A `Date`
+* **`detect_semantic_term_gaps()` now sees the targets retrieval found nothing
+  for** (backlog #97). Both entry paths short-circuited on an empty suggestions
+  table, so a concept absent from every vocabulary — the strongest possible
+  term-gap evidence, and precisely the case the term-request pipeline exists
+  for — produced *zero* gaps and a console message that read like a clean
+  result. A gap was detectable only when retrieval found *something* and it
+  was judged insufficient. `suggest_semantics()` now attaches its discovered
+  targets as a `semantic_targets` attribute (additive; the existing
+  `semantic_suggestions` / `semantic_llm_assessments` contract is unchanged),
+  and `detect_semantic_term_gaps()` reports any target with no retrieval
+  evidence at all as `gap_detection_basis = "no_candidates"` — distinguishing
+  "nothing found" from "found and rejected" (`llm_request_new_term`). The
+  check runs before `min_score` filtering, so a below-threshold candidate
+  still counts as "found"; the explicit-`suggestions` path keeps its
+  historical row-in/row-out behaviour; the 33-column gap row contract is
+  unchanged. A `Date`
   column holding a year below 1000 was written as text this package's own
   reader rejected: `readr::write_csv()` renders a `Date` through
   `as.character.Date`, whose R-4.3 fast path emits an unpadded year, and
