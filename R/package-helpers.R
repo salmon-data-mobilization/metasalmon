@@ -11,6 +11,15 @@
 #' The SDP CSV files remain the canonical package metadata. `datapackage.json`
 #' is a convenience export, not the source of truth.
 #'
+#' The write is transactional over the files it owns: every output is fully
+#' rendered before anything on disk is deleted or replaced, and a failure while
+#' installing the rendered files restores the previous package. An error partway
+#' through therefore leaves an existing package intact rather than destroyed.
+#' The one exception is `prune = TRUE`, which deletes files the writer does not
+#' own and so cannot restore: the wipe still happens only after every
+#' input-dependent step has succeeded, but a filesystem failure (disk full,
+#' permissions) between the wipe and the install can lose the deleted files.
+#'
 #' @param resources Named list of data frames/tibbles (one per resource)
 #' @param dataset_meta Tibble with dataset-level metadata (one row)
 #' @param table_meta Tibble with table-level metadata (one row per table)
@@ -150,22 +159,20 @@ write_salmon_datapackage <- function(
   orphaned <- setdiff(.ms_previous_declared_data_paths(path), resolved_file_names)
   orphaned <- orphaned[file.exists(file.path(path, orphaned))]
 
-  .ms_prepare_package_write_dir(
-    path,
-    overwrite = overwrite,
-    managed_paths = managed_paths,
-    prune = prune
-  )
+  # Non-destructive preflight only. Nothing on disk is deleted or replaced
+  # until every input-dependent computation below has succeeded: the old
+  # ordering unlinked the managed paths here and wrote replacements afterwards,
+  # so ANY abort in between -- a typed metadata column, a broken schema bundle,
+  # a serialization error -- destroyed the caller's package (backlog #96). The
+  # entire write set is rendered to bytes first and every deletion/replacement
+  # happens in one place, `.ms_commit_package_write()`, at the end.
+  .ms_check_package_write_dir(path, overwrite = overwrite, prune = prune)
 
-  if (!isTRUE(prune) && length(orphaned) > 0) {
-    cli::cli_alert_info(
-      "Removed data resource{?s} no longer declared in {.file tables.csv}: {.file {orphaned}}"
-    )
-  }
-
-  dir.create(.ms_metadata_dir(path), recursive = TRUE, showWarnings = FALSE)
-
-  # Write resources and build derived datapackage descriptor.
+  # Render resources to bytes and build the derived datapackage descriptor.
+  # `writes` is keyed by absolute target path; list-assignment by name keeps
+  # the last rendering when two resources resolve to one file, matching the
+  # last-write-wins behaviour of the sequential writes it replaced.
+  writes <- list()
   resource_list <- list()
   for (resource_name in writable_resources) {
     resource_df <- resources[[resource_name]]
@@ -176,9 +183,9 @@ write_salmon_datapackage <- function(
     file_name <- resolved_file_names[[resource_name]]
 
     file_path <- file.path(path, file_name)
-    dir.create(dirname(file_path), recursive = TRUE, showWarnings = FALSE)
+    # Rendered to bytes now, installed later by `.ms_commit_package_write()`.
     # `na = ""` on both sides of the round trip, matching the metadata writers
-    # above. readr's default writes a missing value as the two characters `NA`,
+    # below. readr's default writes a missing value as the two characters `NA`,
     # which is a real fisheries code -- so a literal "NA" and a genuinely
     # missing value produced *identical bytes* and the distinction was destroyed
     # at write time, where no reader could recover it.
@@ -187,8 +194,8 @@ write_salmon_datapackage <- function(
     # package's own reader parses as NA. Date only; readr's POSIXct output is
     # already correct and coercing it would change bytes. See
     # `.ms_iso_date_columns()`.
-    readr::write_csv(
-      .ms_iso_date_columns(resource_df), file_path,
+    writes[[file_path]] <- .ms_sdp_extension_csv_bytes(
+      .ms_iso_date_columns(resource_df),
       na = .ms_csv_na_token()
     )
 
@@ -340,24 +347,34 @@ write_salmon_datapackage <- function(
     }
   }
 
-  # Write canonical SDP metadata after any file_name defaults were resolved.
-  readr::write_csv(dataset_meta, .ms_metadata_path(path, "dataset.csv"), na = "")
-  readr::write_csv(table_meta, .ms_metadata_path(path, "tables.csv"), na = "")
-  readr::write_csv(dict, .ms_metadata_path(path, "column_dictionary.csv"), na = "")
+  # Render canonical SDP metadata after any file_name defaults were resolved.
+  writes[[.ms_metadata_path(path, "dataset.csv")]] <- .ms_sdp_extension_csv_bytes(dataset_meta)
+  writes[[.ms_metadata_path(path, "tables.csv")]] <- .ms_sdp_extension_csv_bytes(table_meta)
+  writes[[.ms_metadata_path(path, "column_dictionary.csv")]] <- .ms_sdp_extension_csv_bytes(dict)
   if (!is.null(codes)) {
-    readr::write_csv(codes, .ms_metadata_path(path, "codes.csv"), na = "")
+    writes[[.ms_metadata_path(path, "codes.csv")]] <- .ms_sdp_extension_csv_bytes(codes)
   }
 
   if (isTRUE(write_datapackage)) {
-    jsonlite::write_json(
-      datapackage,
-      file.path(path, "datapackage.json"),
-      pretty = TRUE,
-      auto_unbox = TRUE,
-      null = "null"
+    writes[[file.path(path, "datapackage.json")]] <- .ms_datapackage_json_bytes(datapackage)
+  }
+  writes[[.ms_package_sentinel_file(path)]] <- .ms_package_ownership_bytes()
+
+  # The single destructive step: everything above this line is pure
+  # computation over the caller's inputs, everything below it is filesystem
+  # installation of already-final bytes.
+  .ms_commit_package_write(
+    path,
+    writes,
+    managed_paths = managed_paths,
+    prune = prune
+  )
+
+  if (!isTRUE(prune) && length(orphaned) > 0) {
+    cli::cli_alert_info(
+      "Removed data resource{?s} no longer declared in {.file tables.csv}: {.file {orphaned}}"
     )
   }
-  .ms_mark_package_ownership(path)
 
   cli::cli_alert_success("Created Salmon Data Package at {.path {path}}")
   invisible(path)
@@ -384,9 +401,30 @@ write_salmon_datapackage <- function(
   file.path(path, ".metasalmon-package")
 }
 
-.ms_mark_package_ownership <- function(path) {
-  writeLines("metasalmon-owned", .ms_package_sentinel_file(path), useBytes = TRUE)
-  invisible(path)
+# Byte-identical to the `writeLines("metasalmon-owned", ..., useBytes = TRUE)`
+# call that wrote the sentinel before the write path became transactional.
+.ms_package_ownership_bytes <- function() {
+  charToRaw("metasalmon-owned\n")
+}
+
+# Render the descriptor with the exact writer -- and therefore the exact bytes
+# -- `write_salmon_datapackage()` has always used; the file itself is
+# installed later by `.ms_commit_package_write()`. Deliberately NOT
+# `.ms_sdp_extension_json_bytes()`: that helper goes through `toJSON()` with
+# `na = "null"`, `digits = NA` and a trailing newline, none of which
+# `write_json()` emits, and changing the descriptor's bytes is an observable
+# behaviour change this fix must not smuggle in.
+.ms_datapackage_json_bytes <- function(datapackage) {
+  temporary <- tempfile(fileext = ".json")
+  on.exit(unlink(temporary), add = TRUE)
+  jsonlite::write_json(
+    datapackage,
+    temporary,
+    pretty = TRUE,
+    auto_unbox = TRUE,
+    null = "null"
+  )
+  readBin(temporary, what = "raw", n = file.info(temporary)$size)
 }
 
 # Remove a create-owned output before recreating it. The containment check
@@ -620,10 +658,18 @@ write_salmon_datapackage <- function(
     dir.exists(.ms_metadata_dir(path))
 }
 
-.ms_prepare_package_write_dir <- function(path,
-                                          overwrite = FALSE,
-                                          managed_paths = character(),
-                                          prune = FALSE) {
+# Non-destructive preflight for a package write: create a missing directory,
+# and refuse the calls that must not proceed (missing `overwrite`, `prune`
+# without `overwrite`, a non-metasalmon target). Deliberately performs NO
+# deletion -- that is `.ms_commit_package_write()`'s job, and only after the
+# entire write set has been rendered. Keeping deletion out of this function is
+# the fix for backlog #96's second half: its predecessor
+# (`.ms_prepare_package_write_dir()`) unlinked the managed paths here, before
+# the descriptor build and metadata rendering, so every abort in between
+# destroyed the caller's package.
+.ms_check_package_write_dir <- function(path,
+                                        overwrite = FALSE,
+                                        prune = FALSE) {
   if (isTRUE(prune) && !isTRUE(overwrite)) {
     cli::cli_abort("{.arg prune} requires {.arg overwrite = TRUE}.")
   }
@@ -651,15 +697,57 @@ write_salmon_datapackage <- function(
     ))
   }
 
+  invisible(path)
+}
+
+# The single destructive step of a package write. `writes` is the complete,
+# already-rendered write set (raw vectors keyed by absolute target path), so
+# nothing user-input-dependent can abort past this point.
+#
+# Non-prune: install through `.ms_sdp_extension_atomic_write_set()` -- each
+# replacement is fully staged as a same-directory sibling before any current
+# file moves, every replaced file is renamed aside first, and a failure
+# mid-install restores the originals -- then unlink the managed paths this
+# call did not rewrite (orphaned data resources, legacy root-level metadata
+# shadows, a stale codes.csv). An abort anywhere leaves the previous package
+# intact.
+#
+# Prune wipes files this writer does not own, which is exactly what makes the
+# rollback guarantee unavailable there: the wiped sidecars are not in the
+# write set, so nothing exists to restore them from. The wipe therefore runs
+# as late as possible -- after every input-dependent computation and the full
+# byte rendering have succeeded -- and the residual window is pure filesystem
+# failure (disk full, permissions revoked) between the wipe and the install.
+# That difference is deliberate: `prune = TRUE` is an explicit request to
+# delete everything this call does not write.
+.ms_commit_package_write <- function(path,
+                                     writes,
+                                     managed_paths = character(),
+                                     prune = FALSE) {
+  # Containment before anything destructive: refuse to delete or replace
+  # through a symbolic link. The same guard the pre-#96 unlink ran, now also
+  # covering the prune wipe (which previously relied on the writer's earlier
+  # metadata-subset check alone).
+  .ms_assert_managed_path_contained(path, managed_paths)
+
   if (isTRUE(prune)) {
-    unlink(existing_files, recursive = TRUE, force = TRUE)
-    return(invisible(path))
+    unlink(.ms_dir_entries(path), recursive = TRUE, force = TRUE)
   }
 
-  .ms_assert_managed_path_contained(path, managed_paths)
-  # No `recursive =`: if a managed path ever resolves to a directory, unlink()
-  # is a no-op rather than a recursive wipe.
-  unlink(managed_paths[file.exists(managed_paths)], force = TRUE)
+  for (target_dir in unique(dirname(names(writes)))) {
+    dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  .ms_sdp_extension_atomic_write_set(writes)
+
+  if (!isTRUE(prune)) {
+    stale <- setdiff(managed_paths, names(writes))
+    stale <- stale[file.exists(stale)]
+    # No `recursive =`: if a managed path ever resolves to a directory, unlink()
+    # is a no-op rather than a recursive wipe.
+    unlink(stale, force = TRUE)
+  }
+
   invisible(path)
 }
 

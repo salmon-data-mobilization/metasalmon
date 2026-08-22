@@ -267,10 +267,13 @@
   invisible(path)
 }
 
-.ms_sdp_extension_csv_bytes <- function(rows) {
+# `na = ""` is the SDP metadata convention; the package writer's data
+# resources pass `.ms_csv_na_token()` instead (see the round-trip rationale at
+# its call site in `write_salmon_datapackage()`).
+.ms_sdp_extension_csv_bytes <- function(rows, na = "") {
   temporary <- tempfile(fileext = ".csv")
   on.exit(unlink(temporary), add = TRUE)
-  readr::write_csv(rows, temporary, na = "")
+  readr::write_csv(rows, temporary, na = na)
   readBin(temporary, what = "raw", n = file.info(temporary)$size)
 }
 

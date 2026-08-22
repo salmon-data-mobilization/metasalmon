@@ -2809,7 +2809,7 @@ test_that("prune = TRUE restores the full wipe and requires overwrite", {
   writeLines("reviewed", file.path(temp_dir, "metadata", "semantic", "example.sssom.tsv"))
 
   expect_error(
-    .ms_prepare_package_write_dir(temp_dir, overwrite = FALSE, prune = TRUE),
+    .ms_check_package_write_dir(temp_dir, overwrite = FALSE, prune = TRUE),
     "requires"
   )
 
@@ -3199,27 +3199,50 @@ test_that("rewriting refuses to delete through a symlinked managed directory", {
   file.symlink(outside, file.path(pkg, "metadata"))
 
   managed <- .ms_package_managed_paths(pkg)
+  writes <- stats::setNames(
+    list(charToRaw("dataset_id\nd1\n")),
+    file.path(pkg, "metadata", "dataset.csv")
+  )
   expect_error(
-    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed),
+    .ms_commit_package_write(pkg, writes, managed_paths = managed),
     "symbolic-link path component"
   )
   expect_true(file.exists(file.path(outside, "tables.csv")))
+  expect_identical(
+    readLines(file.path(outside, "tables.csv")),
+    "precious external file"
+  )
 })
 
 test_that("an ordinary package directory is still updated in place", {
-  # The symlink guard must not block the normal managed-update path.
+  # The symlink guard must not block the normal managed-update path: the
+  # commit replaces the files in the write set and unlinks the managed paths
+  # it did not rewrite, while unmanaged sidecars survive untouched.
   base <- withr::local_tempdir()
   pkg <- file.path(base, "pkg")
   dir.create(file.path(pkg, "metadata"), recursive = TRUE)
   writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
   writeLines(c("dataset_id", "d1"), file.path(pkg, "metadata", "dataset.csv"))
+  writeLines(c("table_id", "obs"), file.path(pkg, "metadata", "tables.csv"))
   writeLines("keep me", file.path(pkg, "README-review.txt"))
 
   managed <- .ms_package_managed_paths(pkg)
-  expect_no_error(
-    .ms_prepare_package_write_dir(pkg, overwrite = TRUE, managed_paths = managed)
+  writes <- stats::setNames(
+    list(charToRaw("dataset_id\nd2\n")),
+    file.path(pkg, "metadata", "dataset.csv")
   )
-  expect_false(file.exists(file.path(pkg, "metadata", "dataset.csv")))
+  expect_no_error(
+    .ms_commit_package_write(pkg, writes, managed_paths = managed)
+  )
+  # The write-set file was replaced with the new bytes.
+  expect_identical(
+    readLines(file.path(pkg, "metadata", "dataset.csv")),
+    c("dataset_id", "d2")
+  )
+  # A managed path not in the write set is removed, exactly as the pre-commit
+  # unlink removed it.
+  expect_false(file.exists(file.path(pkg, "metadata", "tables.csv")))
+  # An unmanaged sidecar survives.
   expect_true(file.exists(file.path(pkg, "README-review.txt")))
 })
 
