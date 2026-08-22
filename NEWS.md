@@ -3,6 +3,25 @@ metasalmon (development version)
 
 ### Bug fixes
 
+* **A `Date`-typed `temporal_start` no longer destroys the package on disk**
+  (backlog #96). `write_salmon_datapackage()` tested
+  `dataset_meta$temporal_start[1] != ""`; comparing a `Date` with `""` coerces
+  `""` to `NA_Date_`, the `if` condition evaluated to `NA`, and the call
+  aborted with *"missing value where TRUE/FALSE needed"* — **after** the
+  managed paths had been unlinked and **before** any replacement was written,
+  deleting `metadata/` and `datapackage.json` and leaving nothing in their
+  place. The triggering input is what the package itself wrote: reading a valid
+  package's `metadata/dataset.csv` back with a plain `readr::read_csv()`
+  type-guesses `temporal_start` as `Date`, because metasalmon put an ISO date
+  there. Every scalar presence test in the descriptor builder (`creator`,
+  `contact_*`, `license`, `temporal_*`, `table_label`, `description`,
+  `primary_key`) now renders the value to character before deciding presence
+  (`.ms_meta_scalar_present()`), a `POSIXct` — whose `!= ""` comparison throws
+  outright rather than yielding `NA` — is covered by the same route, and the
+  descriptor's temporal values are rendered with `.ms_iso_character()` so the
+  JSON and the CSV cannot disagree about the same field. A regression test
+  proves the directory survives the round trip.
+
 * **`write_salmon_datapackage()` can read back the dates it writes.** A `Date`
   column holding a year below 1000 was written as text this package's own
   reader rejected: `readr::write_csv()` renders a `Date` through

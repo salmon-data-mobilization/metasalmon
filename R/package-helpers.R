@@ -242,14 +242,14 @@ write_salmon_datapackage <- function(
       schema = list(fields = fields)
     )
 
-    if (!is.na(table_info$table_label[1]) && table_info$table_label[1] != "") {
+    if (.ms_meta_scalar_present(table_info$table_label)) {
       resource_entry$title <- table_info$table_label[1]
     }
-    if (!is.na(table_info$description[1]) && table_info$description[1] != "") {
+    if (.ms_meta_scalar_present(table_info$description)) {
       resource_entry$description <- table_info$description[1]
     }
-    if (!is.na(table_info$primary_key[1]) && table_info$primary_key[1] != "") {
-      primary_key <- trimws(unlist(strsplit(table_info$primary_key[1], ",")))
+    if (.ms_meta_scalar_present(table_info$primary_key)) {
+      primary_key <- trimws(unlist(strsplit(as.character(table_info$primary_key[1]), ",")))
       # A one-column key is a JSON string, a composite key a JSON array —
       # `auto_unbox = TRUE` in the `write_json()` call below does the unboxing.
       # This is not incidental: smn-data-pkg's strict publication validator
@@ -300,33 +300,43 @@ write_salmon_datapackage <- function(
     resources = resource_list
   )
 
-  if (!is.na(dataset_meta$creator[1]) && dataset_meta$creator[1] != "") {
+  # Every presence test below goes through `.ms_meta_scalar_present()`, never a
+  # bare `!= ""`: `readr::read_csv()` type-guesses `temporal_start` as a Date
+  # (it holds the ISO date this package wrote), and a Date-vs-"" comparison is
+  # NA -- which aborted this function after the unlink and destroyed the
+  # package on disk (backlog #96). The sibling fields are guarded the same way
+  # because they fail the same way the moment a caller hands them a typed
+  # column.
+  if (.ms_meta_scalar_present(dataset_meta$creator)) {
     datapackage$contributors <- list(list(
       title = dataset_meta$creator[1],
       role = "creator"
     ))
   }
-  if (!is.na(dataset_meta$contact_name[1]) && dataset_meta$contact_name[1] != "") {
+  if (.ms_meta_scalar_present(dataset_meta$contact_name)) {
     contact <- list(
       title = dataset_meta$contact_name[1],
       role = "contact"
     )
-    if (!is.na(dataset_meta$contact_email[1]) && dataset_meta$contact_email[1] != "") {
+    if (.ms_meta_scalar_present(dataset_meta$contact_email)) {
       contact$email <- dataset_meta$contact_email[1]
     }
-    if (!is.na(dataset_meta$contact_org[1]) && dataset_meta$contact_org[1] != "") {
+    if (.ms_meta_scalar_present(dataset_meta$contact_org)) {
       contact$organization <- dataset_meta$contact_org[1]
     }
     datapackage$contributors <- c(datapackage$contributors %||% list(), list(contact))
   }
   license_value <- dataset_meta$license[1]
-  if (!is.na(license_value) && license_value != "" && !.ms_is_review_placeholder(license_value)) {
+  if (.ms_meta_scalar_present(license_value) && !.ms_is_review_placeholder(license_value)) {
     datapackage$licenses <- list(.ms_license_descriptor(license_value))
   }
-  if (!is.na(dataset_meta$temporal_start[1]) && dataset_meta$temporal_start[1] != "") {
-    datapackage$temporal <- list(start = dataset_meta$temporal_start[1])
-    if (!is.na(dataset_meta$temporal_end[1]) && dataset_meta$temporal_end[1] != "") {
-      datapackage$temporal$end <- dataset_meta$temporal_end[1]
+  if (.ms_meta_scalar_present(dataset_meta$temporal_start)) {
+    # `.ms_iso_character()` renders a typed value as the ISO text the CSV side
+    # writes (identity for character), so the descriptor and
+    # `metadata/dataset.csv` cannot disagree about the same field.
+    datapackage$temporal <- list(start = .ms_iso_character(dataset_meta$temporal_start[1]))
+    if (.ms_meta_scalar_present(dataset_meta$temporal_end)) {
+      datapackage$temporal$end <- .ms_iso_character(dataset_meta$temporal_end[1])
     }
   }
 
@@ -351,6 +361,23 @@ write_salmon_datapackage <- function(
 
   cli::cli_alert_success("Created Salmon Data Package at {.path {path}}")
   invisible(path)
+}
+
+# Presence test for a single descriptor metadata field that must tolerate
+# typed columns. `x != ""` looks safe and is not: comparing a Date with ""
+# coerces "" to `NA_Date_` (so the test is NA and `if` aborts), and comparing a
+# POSIXct with "" throws outright. Backlog #96 -- the abort landed after
+# `write_salmon_datapackage()` had unlinked the managed paths and before it
+# wrote any replacement, so it destroyed the package on disk, triggered by
+# nothing more exotic than `readr::read_csv()` type-guessing the ISO date this
+# package itself wrote into `metadata/dataset.csv`. Render to character first
+# so every column type answers the same question.
+.ms_meta_scalar_present <- function(x) {
+  value <- x[1]
+  if (length(value) == 0 || is.na(value)) {
+    return(FALSE)
+  }
+  nzchar(trimws(as.character(value)))
 }
 
 .ms_package_sentinel_file <- function(path) {
