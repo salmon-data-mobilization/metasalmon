@@ -219,8 +219,10 @@ current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 **No release has been cut since**: `v0.3.0` (2026-08-15) is still the newest tag
-while `main` is 107 commits past it with twelve unreleased fix entries in
-`NEWS.md` — details under *metasalmon current state* below.
+while `main` is 132 commits past it with 23 unreleased fix entries in
+`NEWS.md` (measured 2026-08-21) — details under *metasalmon current state*
+below. That gap is itself evidence for Q7's recommendation: cutting the release
+is what would give the metasalmonpy port a truthful number to claim.
 
 ### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
@@ -596,9 +598,15 @@ platform-independent zero-padding of calendar years below 1000 (PR #70, backlog
 correct); and the write-side half of backlog #93 (`write_salmon_datapackage()`
 wrote `Date` columns in a form this package's own reader could not parse) merged
 as PR #71 on 2026-08-21, confined to `Date` because readr's `POSIXct` output was
-measured already correct. Live PR state is not
-tracked here as a rule; this one is named because a reader counting the padding
-fixes on `main` would otherwise conclude #93 is closed.
+measured already correct. The eight 2026-08-21 recon defects merged as **PR #75**
+(backlog #93-item-2 and #96–#102): the descriptor builder no longer destroys a
+package directory on a Date-typed `temporal_start` (with the honest caveat that
+the unlink-before-abort *ordering* is its own open half, recorded on #96), gap
+detection now reports `no_candidates` instead of going silently blind, both
+shipped examples validate and are round-trip-tested, the two 404 example IRIs
+resolve, the estimate-classification crosswalk exists and the enumeration
+crosswalk is wired, and `.ms_align_cols()` Date-coerces (mooting #93 item 4 on
+the metadata path).
 
 `5a37b11` is the **release** baseline for S10's 0.3.0 rung; anything replaying
 the post-0.3.0 fixes needs a later commit than the tag.
