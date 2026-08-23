@@ -46,6 +46,18 @@ section and the R files it names — R is the complete spec for every port.
 | **The breaking change moves from last to first.** 0.3.0's dictionary-contract flip was rung 8 because it is atomic; that ordering meant every earlier rung built on a shape it replaces. Chunk A lands it first | Nothing built after A sits on a superseded shape. This inversion is what the replan buys | 2026-08-17 |
 | **Legacy *read* support is kept and is not a reason to replay.** Python receives SDPs written by metasalmon 0.2.x carrying a methods registry, and 0.1.8-era EML quotes procedures from one | Real data-compatibility need, already satisfied at rung 2; it is a feature of the 0.3.0 port, not an argument for implementing 0.2.x in order | 2026-08-17 |
 
+### Decisions logged during the subsystem chunks
+
+Both were made by an implementer inside a chunk, not by Brett, and both are
+recorded here because the chunk that made them is the only other place they
+exist. Neither is a mirror-contract question — the first is Python-only surface
+naming, the second is a scope boundary between two chunks.
+
+| Decision | Rationale | Date |
+|---|---|---|
+| **The `SALMONPY_*` → `METASALMONPY_*` env-prefix rename ships with deprecated aliases, and the aliases are removed in the first tagged release after the S10 parity release.** The pre-rename spellings keep working, warn **once per process**, and are consulted only when the current spelling is unset or empty. Test-suite-only gates (`METASALMONPY_RUN_QUALARK_TEST`, `METASALMONPY_QUALARK_TEST_*`) were renamed **cleanly with no alias** | This is the dated decision **open decision 1b** asked for, and it takes the middle option 1b listed. No known external consumer ever existed at any parity level metasalmonpy has claimed, so one release of overlap is already generous; keeping two live spellings of a cache switch beyond that invites the silent divergence the register exists to prevent. Developer knobs are not package API, which is why the Qualark gates got no window. Registered as parity row **50** with the retirement condition in both registers | 2026-08-22 (chunk E, metasalmonpy PR #17) |
+| **URL redaction splits across E and F by layer: the call *sites* are E-scope, the *pattern* they call is F-scope** | 0.2.3's URL redaction was written into chunk F's scope line, but E is the chunk that rewrites `_safe_json` — so E added the capture-time redaction call sites and F strengthened the shared pattern to 0.2.5's structural rule, which the E sites inherit automatically. Splitting by layer rather than by release keeps each chunk's diff reviewable and makes F's one-redactor assertion meaningful, since it is only meaningful over E's final call-site set | 2026-08-22 (chunks E and F, metasalmonpy PRs #17 and #19) |
+
 ## The ladder — rungs 0–3 replayed, the remainder ported by subsystem
 
 Each milestone = one PR ending in a version bump (both `pyproject.toml` AND
@@ -140,7 +152,7 @@ bottom order otherwise makes it easy to read as a ladder.
 | **E** | **Cache, environment and network robustness** | Index session caching; **call-time env read** (`SALMONPY_CACHE` is read at import today — the exact bug class R 0.2.2 fixed); the `SALMONPY_`→`METASALMONPY_` prefix rename — **open, see below**; http-error diagnostics; no-cache-on-degraded; KNB dry-run overwrite; retry and `Retry-After`; BioPortal header auth (`term_search.py:300` still puts the key in the query string) |
 | **F** | **Redaction** | Structural `*_token` redaction; assert exactly **one** redactor (`knb_publication._redact` is the second one, and `text_safety.py:56-68` already carries the retirement condition naming this chunk); **0.2.3's URL redaction** — R passes request URLs through the same `.ms_redact_secrets()` at capture (`R/term_search.R:592`, `:606`), which is why the one-redactor assertion and the URL rule belong together |
 | **G** | **Legacy read compatibility** *(verify, do not rebuild)* | Reading 0.2.x-written packages that carry a methods registry, and 0.1.8-era EML quoting procedures from one. Landed at rung 2 — confirm it survives A. **Partly discharged by A itself** (2026-08-22): the untouched `methods-sdp` legacy fixture (`tests/data/sdp-extensions/methods-sdp`) kept the reader and validator exercised through A's rewrite, so what remains here is deliberate re-verification of the legacy read path, not first evidence that it works |
-| **H** | **Abort-safe write path** *(added 2026-08-22 — the metasalmon PR #77 mirror, backlog #96's ordering half; no earlier chunk routed it)* | Render-first/install-atomically ordering for `write_salmon_datapackage()`: render the full write set to bytes before anything on disk is touched, install through a multi-file staged write set with rollback, unlink unrewritten managed paths only after the install succeeds. The Python ordering defect is **measured present** (2026-08-22, backlog #96's mirror measurement): `package_io.py::write_salmon_datapackage` calls `_prepare_package_dir()` — which unlinks the managed paths, or `shutil.rmtree`-wipes under prune — and only afterwards renders resources, loads the schema, builds the descriptor and writes metadata, so any exception in that window destroys the package; `atomic_io.py` has a single-file `atomic_write()` only, no multi-file set with rollback. Sequenced **after D and E+F** (both in flight when this row was added): it is write-path work in `package_io.py`, the module D also touches, so running it beside them repeats the rebase cost the *Ordering* section retired for A — an ordering choice, not a dependency. R's implementation is the spec: `.ms_commit_package_write()` / `.ms_sdp_extension_atomic_write_set()` and the abort-injection tests in `test-write-datapackage-abort-safety.R`, including the two honest narrowings (`prune` residual, create-owned sidecars = backlog #111) |
+| **H** | **Abort-safe write path** *(added 2026-08-22 — the metasalmon PR #77 mirror, backlog #96's ordering half; no earlier chunk routed it. **In flight 2026-08-22**, on branch `feat/s10-chunk-h-abort-safe-write`; D and E+F, the chunks it was sequenced behind, are complete)* | Render-first/install-atomically ordering for `write_salmon_datapackage()`: render the full write set to bytes before anything on disk is touched, install through a multi-file staged write set with rollback, unlink unrewritten managed paths only after the install succeeds. The Python ordering defect is **measured present** (2026-08-22, backlog #96's mirror measurement): `package_io.py::write_salmon_datapackage` calls `_prepare_package_dir()` — which unlinks the managed paths, or `shutil.rmtree`-wipes under prune — and only afterwards renders resources, loads the schema, builds the descriptor and writes metadata, so any exception in that window destroys the package; `atomic_io.py` has a single-file `atomic_write()` only, no multi-file set with rollback. Sequenced **after D and E+F** (both in flight when this row was added): it is write-path work in `package_io.py`, the module D also touches, so running it beside them repeats the rebase cost the *Ordering* section retired for A — an ordering choice, not a dependency. R's implementation is the spec: `.ms_commit_package_write()` / `.ms_sdp_extension_atomic_write_set()` and the abort-injection tests in `test-write-datapackage-abort-safety.R`, including the two honest narrowings (`prune` residual, create-owned sidecars = backlog #111) |
 
 #### Behaviours added to the chunks 2026-08-21
 
@@ -243,8 +255,15 @@ the state the mirror contract calls a violation-in-waiting, so it is now
 chunk **H** — its own small item rather than a rider on D or E: D's subject
 is validation reporting and E's is cache/network, while this is write-path
 *ordering*, and PR #16's own flag said "chunk C's neighbourhood or its own
-item" with C already closed. It runs after the in-flight D and E+F for the
+item" with C already closed. It runs after D and E+F for the
 rebase-cost reason stated in its row, not because anything in them blocks it.
+
+**Now in flight (2026-08-22).** D and E+F have all merged, so the rebase-cost
+reason for sequencing H behind them is spent and H started: branch
+`feat/s10-chunk-h-abort-safe-write`, cut from metasalmonpy `main` at `258db8d`
+(the chunk-D merge). No PR yet at the time of this entry. **H is the last
+subsystem chunk** — after it the only remaining S10 scope is the terminal
+version bump, which waits on Q7 / open decision 2 and on nothing else.
 
 ### Ordering — only two chunks are forced after A
 
@@ -325,13 +344,23 @@ either** — both are logged out of scope below:
   differ for the same query outside the pinned `smn`/`gcdfo` comparison, and
   `benchmark_term_ranking_fixtures`, the surface that would measure a ranking
   regression, discards its `profiles` argument.
-- **#91 / register row 41** — `validate_salmon_datapackage()` reports through a
+- ~~**#91 / register row 41** — `validate_salmon_datapackage()` reports through a
   different mechanism: R tags eight `issue_type` values and collects all
   findings before one abort, Python raises untyped at the first structural
-  problem.
+  problem.~~ **Closed at chunk D (2026-08-22), which settles this half of the
+  decision in practice rather than by ruling:** D scoped #91 in — option (a)/(b)'s
+  #91 arm — and closed it, so 0.3.0 will not have to choose whether to ship with
+  it open. See the chunk D progress section below.
 
-*The question:* does the **0.3.0 parity claim require closing them**, or may
-0.3.0 ship with both open and documented as register rows? The mirror contract
+**Half of this question is now moot.** #91 was closed at chunk D
+(2026-08-22) without the decision ever being made — the chunk scoped it in,
+which is option (a)/(b)'s #91 arm taken by an implementer rather than by a
+decider. So **only #87 is still live here**, and the question below should now
+be read as being about #87 alone.
+
+*The question (as originally posed, over both items):* does the **0.3.0 parity
+claim require closing them**, or may 0.3.0 ship with both open and documented as
+register rows? The mirror contract
 supports either reading — it says a deliberate difference is legitimate once
 recorded in both registers, and both *are* recorded; but it also says the
 version number is a parity claim, and these are behavioural gaps rather than
@@ -345,13 +374,13 @@ pass-through; **(b)** scope #91 in and leave #87 to a later number, since #91
 constrains verification design and #87 does not; **(c)** ship 0.3.0 with both
 open, on the strength of the register rows.
 
-*What it unblocks:* the chunk list is not final until this is answered — (a) and
-(b) add work to it. It also decides whether **chunk D can be written at all**
-without first ruling on #91, and it interacts with the constraint already logged
-below: *no milestone may verify by comparing issue counts or categories across
-the two implementations* while #91 is open.
+*What it unblocks:* the chunk list is not final until this is answered —
+(a) adds work to it. *(The two clauses that stood here, about whether chunk D
+could be written at all without first ruling on #91, and about the verification
+constraint that held while #91 was open, are both spent: D was written, it
+closed #91, and the constraint is lifted. Struck 2026-08-22.)*
 
-### 1b. The `SALMONPY_` prefix rename was never decided — struck 2026-08-21
+### 1b. The `SALMONPY_` prefix rename was never decided — struck 2026-08-21, **DECIDED at chunk E 2026-08-22**
 
 Chunk E listed *"the `SALMONPY_`→`METASALMONPY_` prefix rename, **decided and
 logged here**"*. **That claim is false about this document:** it contains no
@@ -361,6 +390,20 @@ S10 sequence card has carried the same question as *undecided* since
 either is worse than an open item, so the "decided and logged here" clause is
 struck as an error and the question stays open, which is the resolution the
 sequence card's retirement condition already offers.
+
+**Decided 2026-08-22, at chunk E (metasalmonpy PR #17).** Rename **with**
+deprecated aliases: `METASALMONPY_CACHE` / `METASALMONPY_DEBUG_FETCH` read at
+call time, the `SALMONPY_*` spellings surviving as aliases that warn once per
+process and are **removed in the first tagged release after the S10 parity
+release**. The decision, its decider (the chunk-E implementer, not Brett) and
+its rationale are in the *Decisions logged during the subsystem chunks* table
+above, and its retirement condition is parity row **50** in both registers.
+This satisfies the retirement condition below in the form it asked for: a dated
+decision in one place, with the other document corrected to point at it in the
+same change — the S10 sequence card is corrected in this same hub pass. Note
+what the resolution was *not*: nobody located a prior ruling, because there was
+none. The question was answered by making the decision, which is the honest
+outcome when a document has been asserting a decision that never happened.
 
 *The question:* was the prefix rename ruled, and if so by whom, and does it
 carry legacy aliases? `SALMONPY_CACHE` and `SALMONPY_DEBUG_FETCH` are both
@@ -422,6 +465,15 @@ chunk verified this way widens the set of delivered behaviour that no existing
 release number can truthfully claim, which strengthens hub Q7's standing
 recommendation: cut the metasalmon release containing the post-0.3.0 fixes
 first, and let metasalmonpy claim that number.
+
+*Data points 2 and 3 (2026-08-22):* chunk B re-baselined mid-stream when `main`
+moved under it (`39818ce` → `9d8f125`); chunks D, E and F measured at `9d8f125`
+and `794647a` respectively, and E/F's move was a **re-pin rather than a
+re-baseline** — they confirmed the R tree identical in `R/`, `tests/` and
+`inst/` first. Six chunks, none measured against a release. The recurring cost
+while no release exists is checking whether the target moved in a way that
+matters; that is cheaper than re-measuring, and it is only cheap because someone
+checks. Recorded in hub Q7, not resolved here.
 
 ## 0.1.7 progress (2026-08-16)
 
@@ -801,6 +853,280 @@ the committed-first precedent — the first collision prevented rather than
 repaired. The hub twins for 47/48 and the row 21/22 updates landed in this
 hub-side pass (2026-08-22).
 
+## Chunk D progress (2026-08-22)
+
+**Chunk complete.** Chunk D — validation hardening — merged 2026-08-22 as
+metasalmonpy PR #20, **unversioned by design** (hub Q7 / open decision 2, same
+as A, B, C and G): the CHANGELOG entry sits under *Unreleased* and the single
+bump comes at the end of the chunks. `validate_salmon_datapackage()` is now
+metasalmon's validator — the typed accumulate-then-report issue system,
+metasalmon 0.2.6's tidy checks, `value_type` enforcement and the placeholder
+fill, all converged on current R.
+
+**Verification baseline:** metasalmon **`main` @ `9d8f125`** (2026-08-22),
+extracted with `git archive` to a scratch directory — never the hub working
+checkout, which is dirty under concurrent agents. The chunk-A convention held:
+current `main` at the moment of measurement, named by commit so the claim stays
+checkable.
+
+**Honest counts, both dependency configurations, each import-probe verified**
+(the core leg confirmed `yaml`, `lxml`, `openpyxl`, `pypdf` and `xlrd` are
+genuinely absent; both legs confirmed `metasalmonpy.__file__` resolves inside
+the worktree rather than the primary checkout): extras **753 passed /
+3 skipped**; core **648 passed / 108 skipped**. **Revert-verified:** the
+`required` guard, the placeholder prose, the wide-column thresholds, the `melt`
+pointer, the strict per-field message and the typed-frame enforcement each go
+red on reverted source.
+
+### The finding that matters most: Python was not reporting one problem at a time, it was reporting none
+
+Everything in this subsection was **measured by running both implementations
+over the same inputs**, never by reading R source.
+
+**Before this chunk, on eighteen fixture packages, Python passed clean on
+thirteen of them.** Duplicate `table_id`s, ghost table references, non-unique
+primary keys, primary-key NAs, unlisted code values, composite-intent
+violations and a `dataset.csv` with two rows in it all validated with **zero
+issues**; the other five aborted with one untyped `ValueError`. R aborted on all
+eighteen with a typed, itemised list.
+
+That is worse than the shape backlog #91 and register row 41 had been
+describing for weeks. Both said Python "stops at the first structural problem"
+and "reports one where R reports three" — true of five fixtures, and a
+significant understatement of the other thirteen, where the number reported was
+zero and the call returned normally. A caller could not distinguish *validated
+clean* from *this mirror does not check that at all*, which #91 had correctly
+flagged as the severity but had attached to the empty `issues` frame rather than
+to the checks themselves. **The register rows are corrected to the measured
+state**, not left describing the milder version.
+
+**After: field-for-field, message bytes included.** Seventeen single-defect
+corruptions of the shipped example — one per issue category and per behaviour —
+plus one stacked five-issue package. Every issue row matched R's across **all
+five columns**: `issue_type`, `table_id`, `column_name`, `value`, `message`. The
+transcribed rows are pinned in metasalmonpy's `tests/test_validation_hardening.py`,
+so a wording drift on either side fails there rather than dissolving into
+"roughly the same report". Two whole written packages came out **byte-identical
+file-for-file** as well — the shipped 30-row example and a blank-metadata fill
+probe, 11 files across the two. Two supporting batteries also ran zero
+mismatches: 20 probes for the wide-column detector
+(`.ms_detect_wide_columns()` vs `_detect_wide_columns()`) and 23 for
+`tools::toTitleCase` via `.ms_titleize_identifier()`.
+
+### Two defects the byte differential exposed that nobody had scoped
+
+Neither was in D's scope. Both were found by **comparing bytes**, and the first
+one is the reason to say so.
+
+1. **A blank `required` wrote the inverted claim.** `iterrows()` hands a
+   boolean-dtype NA back as a truthy float `nan`, so `bool(row.get("required"))
+   is True` passed and every unlabeled-required column wrote
+   `constraints: {"required": true}` into the descriptor — asserting the column
+   *is* required, on the strength of the field being blank. It was firing on the
+   shipped example's own `RUN_TYPE` and `ESTIMATE_STAGE` rows.
+2. **A blank `column_label` omitted `title`** where R emits an explicit `null`.
+
+**Reading the call site could not have found the first one.** The expression
+is correct-looking Python over a value whose dtype is not visible at that line;
+nothing in `package_io.py` reads as wrong, and no test that did not compare
+against R's bytes would have had a reason to disagree with it. Only the byte
+comparison surfaced it. That is **evidence for the differential method itself**,
+and it should be read that way when weighing whether a later chunk's differential
+is worth its cost: every chunk in this stream has found something outside its
+brief this way — A found R's inconsistent no-op report shape (#112), B found the
+unshaped constraint/entity queries and the vacuous in-request assertion, C found
+the placeholder divergence that became row 48 — and D found a defect that
+inverted a written descriptor claim in the package the project ships as its
+example. A chunk verified by reading the R source and porting it would have
+reproduced the intent and kept the defect.
+
+### The prohibition on cross-implementation issue counts is lifted
+
+This plan and register row 41 both carried a standing constraint while #91 was
+open: *no milestone may verify by comparing issue counts or issue categories
+across the two implementations*, because such a check passed vacuously against
+an empty frame and compared one category against eight after rung 3. **Both
+sides now report the same issue set for the same broken package**, so the
+constraint is spent: later milestones — chunk H, the terminal bump, and any
+post-S10 verification — **may** compare counts and categories. It is lifted in
+the *Out of scope, logged* section below and in open decision 1 above; those
+three places are the ones that stated it.
+
+### What landed, against the chunk's scope line
+
+- **#91 / register row 41, closed.** All eight typed categories — `dataset`,
+  `tables`, `dictionary`, `codes`, `resource`, `columns`, `primary_key`,
+  `composite_intent` — accumulate into R's five-column frame, and one abort
+  carries the total, a ten-message preview, and the full frame as `.issues` on
+  the raised error. `codes` and `composite_intent` were ported whole (code
+  values canonicalized through their declared type on both sides; the WSP
+  composite-intent check reading route hints from metadata *and* the
+  descriptor). The `.issues` attachment is a delivery affordance R's cli abort
+  has no equivalent of — row 1's conditions-to-exceptions licence, not a new
+  difference.
+- **The `value_type` enforcement gap** (#98's Python half). Python's validator
+  did not enforce `value_type: date` at all; a mismatch was reported in a
+  side-channel frame while the call returned normally. It is now a structural
+  `columns` issue and the call aborts.
+- **0.2.6's validation behaviours.** Primary-key NAs and duplicates as errors;
+  value-like column names as a **warning in both modes, never an error**, with
+  thresholds exact (two detection shapes, three-column minimum, C-collation
+  sort, head-6 preview); unresolved `MISSING METADATA:` placeholders surfaced as
+  a default-mode warning naming each `file$column`.
+- **Register row 48, converged** — and converged the way the row asked, by
+  measuring current R rather than porting the row's examples: R's guidance prose
+  for blank `creator`/`contact_name`/`contact_email`/`license`, titleized
+  `title`/`table_label` through a verbatim `toTitleCase` port, R's exact
+  dataset/table/column wording, and `infer_*` returning placeholder-filled
+  frames as R's do.
+- **#100's missing round-trip test.** `tests/test_example_round_trip.py` builds
+  an SDP from the shipped example and validates it in **both** modes — strict
+  pinned to **zero** issues, lenient pinned to silence — plus a well-formedness
+  gate over every shipped metadata CSV.
+- **Register row 49 claimed** for the one deliberate difference: the tidy-shape
+  warning ends `Consider pandas.melt() before packaging.` where R's ends
+  `Consider tidyr::pivot_longer() before packaging.` Named as intended scope in
+  D's chunk row; everything else about the check is exact.
+
+### Three existing tests updated rather than worked around
+
+Each pinned a behaviour this chunk deliberately changes, which is the only
+condition under which editing a test is not a way of avoiding a failure:
+`test_typed_roundtrip.py` now expects the abort and reads the frame off
+`.issues`; `test_current_workflow.py` expects `validate_dictionary()`'s REVIEW
+abort, and its "reviewed" fixture was given real contacts — a package still
+holding `MISSING METADATA:` contacts is by definition not reviewed, so the
+fixture was asserting a state its own name denied.
+
+## Chunks E and F progress (2026-08-22)
+
+**Both complete.** Chunk E — cache, environment and network robustness
+(metasalmon 0.2.2 + 0.2.3) — merged 2026-08-22 as metasalmonpy PR #17. Chunk F
+— the 0.2.5 redaction contract — merged the same day as PR #19, **stacked on
+E's branch** deliberately: both chunks edit `knb_publication.py` and the shared
+CHANGELOG/PARITY surfaces, and F's one-redactor assertion is only meaningful
+over E's final call-site set, because E's new capture-time URL-redaction sites
+in `_safe_json` call the very redactor F strengthens. Both **unversioned by
+design** (hub Q7), each with its own *Unreleased* CHANGELOG section.
+
+*(Numbering footnote, because the PR numbers do not run in order: F was
+originally PR #18, auto-closed when its stacked base branch was deleted on
+merge, and reopened as **#19** on the same branch at the same commit `1b76a69`,
+based directly on `main` with E already in it.)*
+
+**Verification baseline for both:** metasalmon **`main` @ `794647a`**,
+`git archive`d to scratch, never the hub working checkout. This was a
+**re-pin**, not a re-measurement: `main` moved mid-stream and the chunks
+re-pinned, having first confirmed the R tree is **identical to `9d8f125` in
+`R/`, `tests/` and `inst/`** — the move was documentation. Worth distinguishing
+from chunks A's and B's re-baselines, which changed measured surface; see the
+Q7 note below.
+
+**Honest counts, both dependency legs, import-probe verified.** E: extras
+**717 passed / 3 skipped**, core **612 passed / 108 skipped**. F: extras
+**721 passed / 3 skipped**, core **616 passed / 108 skipped**.
+**Revert-verified.** E: term_search reverted → 22 red, llm_review → 15 red, knb
+→ 6 red. F: reverting the pattern fails the structural-token tests (2 red),
+reverting the consolidation fails the one-redactor guard (1 red). All green
+restored in both.
+
+### Chunk E — what landed
+
+- **Index session caching (0.2.2):** `_smn_term_index()`/`_gcdfo_term_index()`
+  resolve once per session through `_cached_term_index`, the mirror of
+  `.ms_cached_term_index`; `refresh=True` bypasses and replaces; **a failed
+  resolve caches nothing.**
+- **Call-time environment reads, and the prefix rename.** `SALMONPY_CACHE` was
+  read **at import** — the exact bug class R 0.2.2 fixed for
+  `METASALMON_CACHE`. The switches are now call-time
+  `METASALMONPY_CACHE` / `METASALMONPY_DEBUG_FETCH` through one helper. The
+  rename is a **logged decision** now, with a window: see the *Decisions logged
+  during the subsystem chunks* table above, open decision 1b (closed by it), and
+  register row **50**.
+- **HTTP-error diagnostics and no-cache-on-degraded (0.2.2):** per-source
+  failure signalling (`status="http_error"`, R's diagnostic columns including
+  `elapsed_secs`, partial answers kept but never called clean successes), a
+  degraded-lookup warning, and degraded results never cached. The curl fallback
+  gained `--fail`, so an error page served as JSON can no longer masquerade as
+  success.
+- **KNB dry-run overwrite (0.2.3):** `publish_sdp_to_knb(overwrite=)` re-plans
+  after a corrected input; eligibility is decided **before** the plan builder
+  mutates; published manifests stay immutable; all three former dead-end gates
+  now name the remedy.
+- **Provider retry with `Retry-After` (0.2.3):** 3 total attempts (4 for
+  openrouter `:free` / chapi `gpt-oss*`), delta-seconds and IMF-fixdate forms
+  honoured and capped at 60s, locale-independent date parsing, jittered
+  exponential backoff, R's retryable set. A sentinel `request_fn` still proves
+  exactly one call. Chat decomposition stays direct, matching R.
+- **BioPortal header auth and URL redaction at capture (0.2.3):** the key moves
+  out of the query string into `Authorization: apikey token=…`, and every URL
+  `_safe_json` records is redacted at capture through the shared redactor — the
+  E/F placement split logged in the decisions table above.
+
+**Differential: 23/23 probes matched** — cache-switch truth table (13 values),
+retry limits (8 provider/model configs), retryable classifier (17 messages),
+HTTP-date parsing (6 forms, including the exact epoch for IMF-fixdate and
+`None` for both obsolete forms), `Retry-After` delta/cap/blank/missing/past-date,
+backoff bounds at four attempt levels, BioPortal URL and header byte-identical,
+and degraded-lookup semantics (status, count, error text, warning, diagnostic
+columns, plus 2-calls-for-2-lookups proving no caching). **KNB overwrite ran
+end-to-end over the same package** (`tests/data/knb/sdp-full`): 13/13 matched —
+dry-run status, idempotent re-run, the corrected-input refusal firing at the
+same gate with the same remedy, the re-plan under `overwrite=True` with a
+changed plan fingerprint, the published-manifest refusal firing **before** any
+local bytes were touched, orphan-resource-map non-bypass, and flag validation —
+with `package_id` and `series_id` **byte-exact across implementations**.
+
+**A register row updated in passing:** row 39 gained the cache-key consequence
+of the ranking-profile gap. metasalmon 0.2.2 folds `.ms_ranking_identity()` into
+the `find_terms()` cache key so a user who flips a ranking knob mid-session is
+not served the previous ordering; metasalmonpy's cache key deliberately omits
+that component because it has **no ranking knobs to key on**. The omission is
+correct exactly as long as row 32's gap stands — so whoever closes row 32 /
+backlog **#87** with a profile system must extend the cache key **in the same
+change**, or they reintroduce R's 0.2.2 stale-ranking bug on the Python side as
+a side effect of adding a feature.
+
+### Chunk F — what landed
+
+- **Structural `*_token` redaction.** `_CREDENTIAL_NAME` replaced the enumerated
+  `dataone[_-]?token` with R 0.2.5's `[a-z0-9]+[_-]token(?![A-Za-z0-9_])` — any
+  qualified name whose final segment is `token`. That closes the split where
+  `dataone_token` was redacted while `dataone_test_token` and
+  `knb_staging_token` leaked **at rest**, which matters more than at display:
+  captured provider errors are stored on returned frames and written to CSV.
+  `max_token_count` / `total_tokens` / `prompt_tokens` survive;
+  `dataone_token_v2` is now deliberately **unmatched**, adopting R's recorded
+  trade — a verdict that flipped on the Python side from redacted to left alone.
+  The separator whitespace class was aligned to R's PCRE `[[:space:]]`.
+- **Exactly one redactor** — register row 37's retirement condition, executed.
+  `knb_publication._redact` is **deleted**; its three call sites (`_abort_safe`,
+  the live-adapter warning wrapper, the DataONE REST error path) route through
+  `text_safety.redact_secrets()`; and
+  `tests/test_text_safety.py::test_exactly_one_redactor_exists` is the standing
+  guard — it asserts `_redact` is gone, scans every package module for a second
+  `def *redact*`, and checks the KNB boundary actually calls the shared
+  function. One observable output changed with the consolidation, exactly as in
+  R at 0.2.5: an `Authorization: Bearer …` line is redacted as a whole
+  credential-header line, not just its Bearer payload. The era `expected.json`
+  `redact_*` helper values retired with the deleted function they pinned.
+
+**Differential: a 31-string adversarial battery** — credential headers, cookie
+jars, serialized JSON credentials, qualified staging and production tokens,
+token-count diagnostics, JWTs, `sk-`/`AIza` keys, URLs with query-string keys,
+prose decoys — driven through both implementations, **byte-identical** to
+`.ms_redact_secrets()` on metasalmon `main` @ `794647a`, against exactly three
+divergences before the chunk. The same battery run inside chunk E's session had
+shown those same three and nothing else, which is what let E state cleanly that
+redaction was untouched by it. The three re-pinned KNB fixture strings were
+additionally verified string-for-string through R.
+
+**Row 37's retirement condition is met on its redaction half, and it is the
+first retirement condition in this register a chunk has executed rather than
+inherited.** The *Inapplicable* escape half never retires — Python has no
+glue-template layer to converge on — so the row stays as the record of why, with
+the redaction half marked converged and surviving as the guard test.
+
 ## Python exposure of the 2026-08-21 recon defects, mapped to chunks
 
 metasalmon PR #75 fixed eight defects; each was measured (not assumed) against
@@ -821,8 +1147,19 @@ Chunk A has since landed (2026-08-22) and discharged its rows above: the #98
 corruption-and-stale-header half and #99's example data both shipped in the
 byte-copy demo-data swap. Chunk B has since landed too (2026-08-22,
 metasalmonpy PR #16) and discharged **#97, #101 and #102** — see the chunk
-B+G progress section above. Still open here: the #98
-`value_type`-enforcement gap plus #100 (chunk D, in flight).
+B+G progress section above. **Chunk D has since landed too (2026-08-22,
+metasalmonpy PR #20) and discharged the last two:** the #98
+`value_type`-enforcement gap — Python's validator did not enforce
+`value_type: date` at all, reporting a mismatch in a side-channel frame while
+the call returned normally, and it is now a structural `columns` issue that
+aborts — and **#100**, whose round-trip test (`tests/test_example_round_trip.py`)
+builds an SDP from the shipped example and validates it in both modes, strict
+pinned to zero issues and lenient pinned to silence, with a well-formedness
+gate over every shipped metadata CSV. **Every row of this table is now
+discharged.** One asymmetry worth keeping: metasalmon pins its fuller 173-row
+example to one known strict failure, and that example is not shipped in Python
+(register row 46, open), so the tiny example's zero-issue pin is the whole gate
+there.
 
 ## Sidecar-survival rule
 
@@ -833,9 +1170,11 @@ that drop reviewed artifacts.
 
 ## Out of scope, logged
 
-The last two entries (#87, #91) are out of scope **as this plan currently
-stands**, not permanently: whether 0.3.0 must close them is *Open decision 1*
-above, and answering it can move either into the chunk list.
+The last two entries (#87, #91) were out of scope **as this plan stood when
+they were written**, not permanently: whether 0.3.0 must close them is *Open
+decision 1* above. **#91 has since moved into the chunk list and closed** —
+chunk D scoped it in and discharged it on 2026-08-22 — so only #87 is still out
+of scope here.
 
 - `ontology_fetch.py:15` old host: R is also stale here and the paths
   diverge — a separate cross-repo coordination task, not an S10 item.
@@ -865,7 +1204,11 @@ above, and answering it can move either into the chunk list.
   Python test**, and its default fixture path names a file that does not exist
   in the repo, so the zero-argument call is dead as well.
 - **`validate_salmon_datapackage()`'s issue system diverges, and no rung owns
-  that either** (backlog #91, parity-deviations row 41). R tags every finding
+  that either** (backlog #91, parity-deviations row 41). **Superseded
+  2026-08-22: chunk D owned it after all, and closed it.** The entry stays as
+  the record of what was scoped out and why, and of the verification constraint
+  that held while it was open; the constraint itself is lifted, immediately
+  below. R tags every finding
   with one of **eight** `issue_type` values and collects them all before a
   single abort; Python raises an untyped `ValueError` at the **first**
   structural problem, so a package with three bad tables reports one. On
@@ -875,15 +1218,20 @@ above, and answering it can move either into the chunk list.
   dates to the initial 2026-02-06 commit — so, like the ranking gap, no rung
   below inherits it. Logged here deliberately.
 
-  **This one constrains verification design, which the ranking gap does not.**
-  *No milestone may verify by comparing issue counts or issue categories
-  across the two implementations* until it closes: such a check passes
-  vacuously against 0.1.8's empty frame, and after rung 3 compares one
-  category against eight. Chunk **D** (validation hardening) is where it would
-  naturally land if it is ever scoped in — it is the only chunk whose subject
-  is this function — but scoping it there is a decision nobody has made, and
-  D's stated scope is primary-key and placeholder behaviour, not the reporting
-  mechanism.
+  **This one constrained verification design, which the ranking gap does not
+  — and the constraint is now LIFTED (2026-08-22).** While it was open the rule
+  was: *no milestone may verify by comparing issue counts or issue categories
+  across the two implementations*, because such a check passed vacuously
+  against 0.1.8's empty frame and compared one category against eight after
+  rung 3. **Chunk D closed it**, which is where this entry said it would
+  naturally land — the only chunk whose subject is that function — even though
+  scoping it there was, at the time this was written, a decision nobody had
+  made and outside D's stated primary-key-and-placeholder scope. Both
+  implementations now report the same issue set, field-for-field including
+  message bytes, for the same broken package, so **later milestones may compare
+  issue counts and categories across the two implementations.** Chunk H and the
+  terminal bump are free to use such a check; anywhere this plan still reads as
+  forbidding it, the chunk D progress section governs.
 
 ## Verification
 

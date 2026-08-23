@@ -91,8 +91,21 @@ mid-stream** when metasalmon `main` moved under it (`39818ce` → `9d8f125`,
 docs plus PR #77) — the same moving-target cost chunk A paid when `main`
 moved during its fixture cut. Two chunks, two re-baselines: while no release
 exists, each in-flight chunk pays a re-measurement cost against a target that
-keeps moving, on top of the widening-claim cost above. Still open — recorded,
-not resolved.
+keeps moving, on top of the widening-claim cost above.
+
+*Third data point, and it refines the second (2026-08-22, chunks D, E and F):*
+all three measured against `main` at the moment of measurement — D at `9d8f125`,
+E and F at `794647a` — so five of the six landed chunks now sit on option (b)'s
+shape and none on any release. But E and F's move was a **re-pin, not a
+re-baseline**: they confirmed the R tree was *identical* to `9d8f125` in `R/`,
+`tests/` and `inst/` before re-pinning, so the move was documentation only. That
+narrows the second data point's cost claim rather than confirming it — the
+recurring per-chunk cost while no release exists is **checking whether the
+target moved in a way that matters**, which is cheaper than re-measuring but is
+paid by every chunk, and it is only cheap because someone checked. The widening
+claim above is untouched: three more chunks of delivered behaviour that no
+existing release number can truthfully name. Still open — recorded, not
+resolved.
 
 ### Q8 — Where do PFMA subareas and a species reference get minted?
 **Unblocks:** two of the four gap columns in the coho example's codes.csv.
