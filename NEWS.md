@@ -3,6 +3,62 @@ metasalmon (development version)
 
 ### New
 
+* **`publish_sdp_to_knb()` and `write_eml_from_sdp()` take a
+  `knb_environment`, so a deposit can finally be rehearsed** (roadmap S3).
+  Both functions hardcoded production, and the member node, coordinating node,
+  resolver, and Solr endpoints were module-level constants — this is the first
+  state those modules have ever had to vary. Two environments, matched
+  exactly, with no partial matching, no custom endpoints, and no fallback
+  between them:
+
+  | Environment | DataONE network | Member node | Credential |
+  |---|---|---|---|
+  | `"test"` | `STAGING` | `urn:node:mnTestKNB` at `dev.nceas.ucsb.edu` | `dataone_test_token` |
+  | `"production"` | `PROD` | `urn:node:KNB` at `knb.ecoinformatics.org` | `dataone_token` |
+
+  Every value was read from the DataONE node documents themselves on
+  2026-08-22 rather than assumed: the KNB Test Node answers 200 at
+  `https://dev.nceas.ucsb.edu/knb/d1/mn` and is registered `state="up"` in the
+  staging coordinating node (`urn:node:cnStage`, `cn-stage.test.dataone.org`).
+
+  **A dry run defaults to `"test"`; a live call has no default.** That is
+  Brett's 2026-08-22 ruling — develop against the test node first, post to
+  production once the package looks good there — and an unstated environment
+  on a live call is an error rather than a silent production target. Live
+  publication still demands `confirm = TRUE` in both environments; naming an
+  environment is not a substitute for approving the plan.
+
+  Three properties are structural rather than advisory, and each is tested:
+
+  - **An environment switches whole.** Every derived URL is built from that
+    environment's own member-node and coordinating-node base URLs, so no
+    assignment in the package can pair a test node with a production Solr
+    endpoint. Reads re-derive the whole record from the plan's fingerprinted
+    `node_id` and refuse any plan whose network, node, and environment name
+    disagree — a hand-edited manifest cannot smuggle a mixed pair through.
+  - **A test deposit cannot mint production identity.** The node identifier in
+    every SystemMetadata and OAI-ORE artifact is the selected environment's
+    own, and identifiers are scoped so a test PID can never collide with or be
+    mistaken for a production one. The SDP archive is the sharpest case: its
+    bytes are environment-independent, so without the scope the same package
+    would mint the same archive identifier in both.
+  - **The reviewed production EML is never replaced.** A test document has
+    different bytes, and those bytes are hashed into `plan_sha256`, the
+    deterministic archive, and the reproducibility manifest — so test
+    artifacts go to `publication/test/` while production keeps
+    `metadata/eml.xml` and `publication/knb-manifest.json`. A rehearsal is
+    publication-writer output that the base package writer preserves.
+
+  Test deposits also request zero replicas, and a revision may not cross
+  environments. **Production behaviour is unchanged**: production identifier
+  preimages are byte-identical to those minted before this change, so an
+  existing manifest still validates and an existing package can still be
+  re-planned.
+
+  No live deposit has been performed in either environment; a test-node token
+  is still outstanding. Everything verified for this release was a read-only
+  node-capabilities GET.
+
 * **`nuseds_estimate_classification_crosswalk()` maps NuSEDS
   `ESTIMATE_CLASSIFICATION` values onto the released gcdfo Hyatt (1997)
   estimate types** (backlog #101), and `create_sdp()` wires it in exactly

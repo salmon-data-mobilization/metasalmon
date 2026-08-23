@@ -2,7 +2,7 @@
 % Please edit documentation in R/knb-publication.R
 \name{publish_sdp_to_knb}
 \alias{publish_sdp_to_knb}
-\title{Publish a reviewed Salmon Data Package to production KNB}
+\title{Publish a reviewed Salmon Data Package to KNB}
 \usage{
 publish_sdp_to_knb(
   path,
@@ -13,7 +13,8 @@ publish_sdp_to_knb(
   confirm = interactive(),
   revision_manifest = NULL,
   representation = c("archive", "expanded"),
-  overwrite = FALSE
+  overwrite = FALSE,
+  knb_environment = NULL
 )
 }
 \arguments{
@@ -58,9 +59,24 @@ archive and \code{eml.xml}) when they already exist with different bytes. The
 default \code{FALSE} refuses, which protects an artifact you may already have
 published; pass \code{TRUE} to re-plan after correcting an input such as
 \code{eml-mapping.yml}. Live publication is gated separately by \code{confirm}.}
+
+\item{knb_environment}{Deposit environment: \code{"test"} or \code{"production"}.
+Selects the DataONE network, member node, coordinating node, resolver,
+Solr catalog endpoint, credential option, and default artifact paths
+together -- these never vary independently. A dry run defaults to
+\code{"test"}; a live call has no default and must state the environment
+explicitly alongside \code{confirm = TRUE}. Matched exactly: there is no
+partial matching, no custom endpoint, and no fallback between
+environments. Test deposits use the separate \code{dataone_test_token}
+credential, mint identifiers that cannot collide with production ones,
+request zero replicas, and write their artifacts under
+\verb{publication/test/} so the reviewed production \code{metadata/eml.xml} is
+never replaced. They are a rehearsal: non-durable, not promotable, and
+ineligible for a DOI.}
 }
 \value{
-Invisibly returns publication status, identifiers, normalized
+Invisibly returns publication status, the resolved
+\code{knb_environment}, identifiers, normalized
 manifest and resource-map paths, the optional SDP-archive path, the
 representation, and the manifest.
 }
@@ -79,12 +95,22 @@ recorded separately in the reviewed EML sidecar.
 }
 \details{
 DataONE credentials are read only inside the live adapter. Use a short-lived
-DataONE JWT through the supported \code{dataone_token} runtime option; credentials
-are never accepted as function arguments or written to the manifest.
+DataONE JWT through the runtime option belonging to the selected
+environment -- \code{dataone_token} for production, \code{dataone_test_token} for the
+test node. They are separate credentials, and supplying one never satisfies
+the other. Credentials are never accepted as function arguments or written
+to the manifest.
 
-A live restricted deposit is the KNB review/staging mechanism; KNB does not
-expose a separate server-side draft state. The persistent object identifiers
-remain even while access is private. This function does not call KNB's
+There are two deposit environments, selected with \code{knb_environment}. The
+KNB Test Node (\code{urn:node:mnTestKNB}, DataONE \code{STAGING}) is the rehearsal
+target and the default for a dry run; production KNB (\code{urn:node:KNB},
+DataONE \code{PROD}) is the durable one and must always be named explicitly. The
+golden path develops a package against the test node first and posts to
+production once it looks good there.
+
+Within production, a live restricted deposit is the review mechanism; KNB
+does not expose a separate server-side draft state. The persistent object
+identifiers remain even while access is private. This function does not call KNB's
 separate Publish action and never mints a DOI. If a reviewed dataset should
 receive a DOI, request it for the science-metadata version through KNB when
 making that version public. The DOI identifies the metadata version, not each

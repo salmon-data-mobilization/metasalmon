@@ -1,7 +1,3 @@
-make_knb_test_sdp <- function(path, dataset_id = "demo-salmon-2026") {
-  make_eml_test_sdp(path, dataset_id = dataset_id)
-}
-
 make_knb_test_sssom <- function(path) {
   source_path <- tempfile(fileext = ".sssom.tsv")
   lines <- c(
@@ -215,6 +211,7 @@ test_that("KNB planning aborts on a leftover sdp-0.2.0 methods registry", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     ),
@@ -239,7 +236,11 @@ test_that("KNB dry run writes an exact offline manifest and deterministic ORE", 
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
-    dry_run = TRUE
+    dry_run = TRUE,
+    # This test asserts the production plan shape -- PROD, urn:node:KNB, and
+    # cn.dataone.org resolve URLs -- so it names production rather than
+    # taking the dry-run default, which is the test node since S3.
+    knb_environment = "production"
   )
 
   expect_false(adapter_accessed)
@@ -398,7 +399,9 @@ test_that("expanded KNB plans preserve the canonical SDP hierarchy without a ZIP
     package_path,
     public = TRUE,
     dry_run = TRUE,
-    representation = "expanded"
+    representation = "expanded",
+    # Reads the reviewed `metadata/eml.xml`, which is the production default.
+    knb_environment = "production"
   )
 
   expect_identical(result$manifest$representation, "expanded")
@@ -461,6 +464,7 @@ test_that("expanded KNB plans publish the closed reproducibility inventory", {
   result <- publish_sdp_to_knb(
     package_path,
     public = TRUE,
+    knb_environment = "production",
     dry_run = TRUE,
     representation = "expanded"
   )
@@ -514,6 +518,7 @@ test_that("expanded KNB plan bytes are independent of the process locale", {
     publish_sdp_to_knb(
       first_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     )
@@ -523,6 +528,7 @@ test_that("expanded KNB plan bytes are independent of the process locale", {
     publish_sdp_to_knb(
       second_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     )
@@ -579,6 +585,7 @@ test_that("KNB plans reject annotations to review-candidate vocabulary IRIs", {
     publish_sdp_to_knb(
       package_path,
       public = FALSE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "review-candidate.*ObservedRateOrAbundance"
@@ -595,8 +602,12 @@ test_that("KNB dry-run artifacts are path-independent and ignore decoy files", {
   writeLines("not part of the package", file.path(first_path, "secret.txt"))
   writeLines("also excluded", file.path(second_path, "metadata", "notes.txt"))
 
-  first <- publish_sdp_to_knb(first_path, public = TRUE, dry_run = TRUE)
-  second <- publish_sdp_to_knb(second_path, public = TRUE, dry_run = TRUE)
+  first <- publish_sdp_to_knb(
+    first_path, public = TRUE, dry_run = TRUE, knb_environment = "production"
+  )
+  second <- publish_sdp_to_knb(
+    second_path, public = TRUE, dry_run = TRUE, knb_environment = "production"
+  )
 
   first_manifest <- jsonlite::read_json(
     first$manifest_path,
@@ -645,6 +656,7 @@ test_that("KNB includes only manifest-declared SSSOM supplements", {
   result <- publish_sdp_to_knb(
     package_path,
     public = TRUE,
+    knb_environment = "production",
     dry_run = TRUE
   )
   objects <- .ms_knb_manifest_objects(result$manifest)
@@ -680,6 +692,7 @@ test_that("KNB refuses a tampered manifest-declared SSSOM supplement", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "SSSOM.*SHA-256|SHA-256.*SSSOM"
@@ -704,6 +717,7 @@ test_that("KNB includes only manifest-declared measurement decompositions", {
   result <- publish_sdp_to_knb(
     package_path,
     public = TRUE,
+    knb_environment = "production",
     dry_run = TRUE
   )
   members <- zip::zip_list(result$sdp_archive_path)$filename
@@ -747,6 +761,7 @@ test_that("KNB refuses hash drift in a declared measurement decomposition", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "decomposition.*SHA-256|SHA-256.*decomposition"
@@ -769,6 +784,7 @@ test_that("KNB refuses measurement decompositions reached through a symlink", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "symlink|outside.*SDP|unsafe"
@@ -790,6 +806,7 @@ test_that("expanded KNB plans reject in-package artifact symlinks", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     ),
@@ -812,6 +829,7 @@ test_that("KNB publication rejects only a symlinked package root", {
     publish_sdp_to_knb(
       linked_root,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     ),
@@ -821,6 +839,7 @@ test_that("KNB publication rejects only a symlinked package root", {
     publish_sdp_to_knb(
       paste0(linked_root, "/"),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE,
       representation = "expanded"
     ),
@@ -832,6 +851,7 @@ test_that("KNB publication rejects only a symlinked package root", {
   expect_no_error(publish_sdp_to_knb(
     target,
     public = TRUE,
+    knb_environment = "production",
     dry_run = TRUE,
     representation = "expanded"
   ))
@@ -879,6 +899,7 @@ test_that("KNB publication binds authentication to an EML metadata-provider ORCI
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "exactly one metadata-provider ORCID"
@@ -894,6 +915,7 @@ test_that("KNB dry run refuses a changed plan at an existing manifest", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = TRUE
   )
   manifest <- jsonlite::read_json(
@@ -913,6 +935,7 @@ test_that("KNB dry run refuses a changed plan at an existing manifest", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "existing publication manifest.*different plan"
@@ -932,6 +955,7 @@ test_that("KNB publication access must match the reviewed EML sidecar", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "publication\\.public.*public"
@@ -1022,9 +1046,10 @@ test_that("default KNB connection validates anonymous capabilities before authen
   skip_if_not_installed("XML")
 
   adapter <- .ms_knb_default_adapter()
+  production <- .ms_knb_config("production")
   client <- adapter$connect("PROD", "urn:node:KNB")
   expect_true(is.environment(client))
-  expect_identical(client$endpoint, .ms_knb_mn_endpoint)
+  expect_identical(client$endpoint, production$mn_endpoint)
   expect_null(client$d1_client)
 
   withr::local_options(list(dataone_token = NULL))
@@ -1042,7 +1067,7 @@ test_that("default KNB connection validates anonymous capabilities before authen
   )
   expect_identical(
     observed,
-    paste0("capabilities:", .ms_knb_mn_endpoint)
+    paste0("capabilities:", production$mn_endpoint)
   )
   expect_null(client$d1_client)
 })
@@ -1142,6 +1167,7 @@ test_that("publication paths are contained, distinct, and owned", {
       package_path,
       public = TRUE,
       manifest_path = outside_manifest,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "inside the SDP directory"
@@ -1153,6 +1179,7 @@ test_that("publication paths are contained, distinct, and owned", {
       package_path,
       eml_path = file.path(package_path, "data", "counts.csv"),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "path collision"
@@ -1162,6 +1189,7 @@ test_that("publication paths are contained, distinct, and owned", {
       package_path,
       manifest_path = file.path(package_path, "metadata", "eml.xml"),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "path collision"
@@ -1175,6 +1203,7 @@ test_that("publication paths are contained, distinct, and owned", {
         "resource-map.rdf"
       ),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "path collision"
@@ -1188,6 +1217,7 @@ test_that("publication paths are contained, distinct, and owned", {
         "demo-salmon-2026-salmon-data-package.zip"
       ),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "path collision"
@@ -1204,6 +1234,7 @@ test_that("publication paths are contained, distinct, and owned", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "pre-existing.*resource map.*not owned"
@@ -1224,6 +1255,7 @@ test_that("dot segments in declared data paths are rejected", {
     publish_sdp_to_knb(
       package_path,
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "dot path segment"
@@ -1245,6 +1277,7 @@ test_that("dot segments in publication artifact paths are rejected", {
         "knb-manifest.json"
       ),
       public = TRUE,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "dot path segment"
@@ -1529,13 +1562,19 @@ make_knb_memory_adapter <- function(manifest_path,
 review_knb_plan <- function(package_path,
                             manifest_path,
                             public = TRUE,
-                            representation = "archive") {
+                            representation = "archive",
+                            knb_environment = "production") {
+  # The live-path tests in this file all rehearse the production deposit with
+  # a fake adapter, so their dry run has to plan production too -- a live call
+  # requires an exact matching manifest, and the environment is fingerprinted
+  # into it.
   publish_sdp_to_knb(
     package_path,
     public = public,
     manifest_path = manifest_path,
     dry_run = TRUE,
-    representation = representation
+    representation = representation,
+    knb_environment = knb_environment
   )
 }
 
@@ -1557,6 +1596,7 @@ test_that("KNB revisions preserve the series and link immutable versions", {
     prior_path,
     public = TRUE,
     manifest_path = prior_manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -1576,6 +1616,7 @@ test_that("KNB revisions preserve the series and link immutable versions", {
     public = TRUE,
     manifest_path = revised_manifest_path,
     revision_manifest = prior_manifest_path,
+    knb_environment = "production",
     dry_run = TRUE
   )
 
@@ -1634,6 +1675,7 @@ test_that("KNB revisions preserve the series and link immutable versions", {
     public = TRUE,
     manifest_path = revised_manifest_path,
     revision_manifest = prior_manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -1661,6 +1703,7 @@ test_that("KNB revisions preserve the series and link immutable versions", {
     public = TRUE,
     manifest_path = revised_manifest_path,
     revision_manifest = prior_manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -1724,6 +1767,7 @@ test_that("private expanded revisions reconstruct from authenticated remote ORE"
     prior_path,
     public = FALSE,
     manifest_path = prior_manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE,
     representation = "expanded"
@@ -1772,6 +1816,7 @@ test_that("private expanded revisions reconstruct from authenticated remote ORE"
     revised_path,
     public = FALSE,
     manifest_path = revised_manifest_path,
+    knb_environment = "production",
     dry_run = TRUE,
     revision_manifest = prior_manifest_path,
     representation = "expanded"
@@ -1798,6 +1843,7 @@ test_that("private expanded revisions reconstruct from authenticated remote ORE"
     revised_path,
     public = FALSE,
     manifest_path = revised_manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE,
     revision_manifest = prior_manifest_path,
@@ -2010,6 +2056,7 @@ test_that("KNB revisions reject reused metadata and resource-map PIDs", {
       revised_path,
       public = TRUE,
       revision_manifest = prior_manifest_path,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "reuse.*metadata.*resource-map.*revision_key"
@@ -2171,6 +2218,7 @@ test_that("KNB migrates a verified private schema-v2 manifest to schema v3", {
     revised_path,
     public = FALSE,
     revision_manifest = prior_manifest_path,
+    knb_environment = "production",
     dry_run = TRUE
   )
 
@@ -2251,6 +2299,7 @@ test_that("KNB revisions require a fresh versioned SDP directory", {
         "revision-manifest.json"
       ),
       revision_manifest = prior_manifest_path,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "fresh versioned SDP directory"
@@ -2285,6 +2334,7 @@ test_that("KNB revision planning requires a reviewed revision key", {
       revised_path,
       public = TRUE,
       revision_manifest = prior_manifest_path,
+      knb_environment = "production",
       dry_run = TRUE
     ),
     "revision_key"
@@ -2317,6 +2367,7 @@ test_that("private-review publication refuses anonymously readable objects", {
       package_path,
       public = FALSE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2356,6 +2407,7 @@ test_that("private-review publication verifies anonymous non-disclosure for ever
     package_path,
     public = FALSE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2472,6 +2524,7 @@ test_that("private-review resume rejects permissive remote replication", {
     package_path,
     public = FALSE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2486,6 +2539,7 @@ test_that("private-review resume rejects permissive remote replication", {
       package_path,
       public = FALSE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2521,6 +2575,7 @@ test_that("private-review publication refuses anonymously readable SystemMetadat
       package_path,
       public = FALSE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2559,6 +2614,7 @@ test_that("private-review publication refuses anonymously discoverable catalog o
       package_path,
       public = FALSE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2609,6 +2665,7 @@ test_that("live KNB publication requires an exact pre-existing dry run", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2651,6 +2708,7 @@ test_that("live private publication requires the reviewed schema-v3 policy", {
       package_path,
       public = FALSE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2684,6 +2742,7 @@ test_that("confirm approves the plan but does not substitute for rights evidence
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2707,6 +2766,7 @@ test_that("live KNB path writes pending first, uploads in order, and verifies", 
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2775,6 +2835,7 @@ test_that("identical completed retry verifies remotely and creates nothing", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2784,6 +2845,7 @@ test_that("identical completed retry verifies remotely and creates nothing", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2814,6 +2876,7 @@ test_that("partial KNB failure is recoverable with the same immutable PIDs", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -2837,6 +2900,7 @@ test_that("partial KNB failure is recoverable with the same immutable PIDs", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -2887,6 +2951,7 @@ test_that("preflight failures make no creates and redact JWT-like secrets", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     )
@@ -2921,6 +2986,7 @@ test_that("remote error text is never evaluated as a cli template", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     )
@@ -2958,6 +3024,7 @@ test_that("live adapter warnings abort without leaking token material", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     )
@@ -2990,6 +3057,7 @@ test_that("live publication preflights every planned DataONE format ID", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3017,6 +3085,7 @@ test_that("server-verified identity must match the EML metadata provider", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3034,6 +3103,7 @@ test_that("a remote PID collision stops before any new object is created", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = TRUE
   )
   first <- dry_run$manifest$objects[[1]]
@@ -3060,6 +3130,7 @@ test_that("a remote PID collision stops before any new object is created", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3100,6 +3171,7 @@ test_that("a later PID collision is found before any object is created", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3132,6 +3204,7 @@ test_that("metadata series collisions are found before any create", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3156,6 +3229,7 @@ test_that("catalog lag remains recoverable without re-upload", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3167,6 +3241,7 @@ test_that("catalog lag remains recoverable without re-upload", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3190,6 +3265,7 @@ test_that("public catalog completion requires an anonymous full graph", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3239,6 +3315,7 @@ test_that("forged local catalog evidence cannot bypass a fresh failed check", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3319,6 +3396,7 @@ test_that("catalog completion requires every PID and package relationship", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     )
@@ -3341,6 +3419,7 @@ test_that("completed manifest evidence is monotonic across retries", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3351,6 +3430,7 @@ test_that("completed manifest evidence is monotonic across retries", {
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = TRUE
   )
   expect_equal(dry$manifest$status, "complete")
@@ -3378,6 +3458,7 @@ test_that("completed manifest evidence is monotonic across retries", {
       package_path,
       public = TRUE,
       manifest_path = manifest_path,
+      knb_environment = "production",
       dry_run = FALSE,
       confirm = TRUE
     ),
@@ -3423,6 +3504,7 @@ test_that("uploaded allowlist reconstructs the SDP and retains measurement IRIs"
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE
   )
@@ -3475,6 +3557,7 @@ test_that("uploaded expanded objects reconstruct and strictly validate the SDP",
     package_path,
     public = TRUE,
     manifest_path = manifest_path,
+    knb_environment = "production",
     dry_run = FALSE,
     confirm = TRUE,
     representation = "expanded"
@@ -3535,7 +3618,7 @@ test_that("default adapter SystemMetadata contract serializes as DataONE v2", {
     subject,
     public = TRUE,
     node_id = "urn:node:KNB",
-    replication_policy = .ms_knb_replication_policy(TRUE)
+    replication_policy = .ms_knb_replication_policy(TRUE, .ms_knb_config("production"))
   )
   xml <- datapack::serializeSystemMetadata(
     system_metadata,
@@ -3710,7 +3793,11 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     object,
     subject,
     public = TRUE,
-    replication_policy = .ms_knb_replication_policy(TRUE)
+    replication_policy = .ms_knb_replication_policy(
+      TRUE,
+      .ms_knb_config("production")
+    ),
+    config = .ms_knb_config("production")
   ))
 
   # DataONE defines serialVersion as xs:unsignedLong, and production KNB
@@ -3722,7 +3809,11 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
     object,
     subject,
     public = TRUE,
-    replication_policy = .ms_knb_replication_policy(TRUE)
+    replication_policy = .ms_knb_replication_policy(
+      TRUE,
+      .ms_knb_config("production")
+    ),
+    config = .ms_knb_config("production")
   ))
 
   invalid_values <- list(
@@ -3752,7 +3843,11 @@ test_that("read-back requires valid server-owned SystemMetadata fields", {
         object,
         subject,
         public = TRUE,
-        replication_policy = .ms_knb_replication_policy(TRUE)
+        replication_policy = .ms_knb_replication_policy(
+          TRUE,
+          .ms_knb_config("production")
+        ),
+        config = .ms_knb_config("production")
       ),
       field
     )
@@ -3770,7 +3865,8 @@ test_that("a dry run can be re-planned after correcting an input", {
   manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
 
   first <- publish_sdp_to_knb(
-    package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+    package_path, public = TRUE, manifest_path = manifest_path,
+    dry_run = TRUE, knb_environment = "production"
   )
   expect_equal(first$status, "dry_run")
 
@@ -3788,14 +3884,15 @@ test_that("a dry run can be re-planned after correcting an input", {
   # The default still refuses, and now says what to do about it.
   expect_error(
     publish_sdp_to_knb(
-      package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+      package_path, public = TRUE, manifest_path = manifest_path,
+      dry_run = TRUE, knb_environment = "production"
     ),
     "overwrite"
   )
 
   second <- publish_sdp_to_knb(
     package_path, public = TRUE, manifest_path = manifest_path,
-    dry_run = TRUE, overwrite = TRUE
+    dry_run = TRUE, overwrite = TRUE, knb_environment = "production"
   )
   expect_equal(second$status, "dry_run")
   # The re-plan must actually reflect the corrected input, not just succeed.
@@ -3813,7 +3910,8 @@ test_that("overwrite does not let a published plan be replaced", {
   package_path <- make_knb_test_sdp(withr::local_tempdir())
   manifest_path <- file.path(package_path, "publication", "knb-manifest.json")
   publish_sdp_to_knb(
-    package_path, public = TRUE, manifest_path = manifest_path, dry_run = TRUE
+    package_path, public = TRUE, manifest_path = manifest_path,
+    dry_run = TRUE, knb_environment = "production"
   )
 
   manifest <- jsonlite::read_json(manifest_path, simplifyVector = TRUE)
@@ -3848,7 +3946,7 @@ test_that("overwrite does not let a published plan be replaced", {
   expect_error(
     publish_sdp_to_knb(
       package_path, public = TRUE, manifest_path = manifest_path,
-      dry_run = TRUE, overwrite = TRUE
+      dry_run = TRUE, overwrite = TRUE, knb_environment = "production"
     ),
     "immutable|different plan|published manifest"
   )

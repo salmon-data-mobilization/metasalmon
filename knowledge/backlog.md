@@ -98,9 +98,10 @@ is the unrelated `integer`-storage decision. *(Corrected 2026-08-22, in the pass
 that closed #91.)*
 
 **Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
-and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
-start in parallel; its only hard blocker (#73) shipped in 0.2.5. See
-`knowledge/roadmap.md` for the full ordering.
+and the credibility dependency for the workshop. **S3** (KNB environments) had
+its R side implemented 2026-08-22 — unreleased, unmirrored, and with no deposit
+yet made in either environment. See `knowledge/roadmap.md` for the full
+ordering.
 
 **Forward plan.** Sequencing, dependencies, and release state live in
 **`knowledge/roadmap.md`** — the single undated document that orders every stream and
@@ -1961,7 +1962,9 @@ is strictly stronger (it also caught `x-api-key`, provider keys, and JSON forms
 the KNB version missed). Two implementations of one security contract is how the
 gap arose, and a test now asserts the deleted function stays deleted.
 
-Unblocks roadmap **S3**.
+Unblocks roadmap **S3**. *Discharged 2026-08-22:* S3's environment registry
+reads `dataone_test_token` as the test-node credential, so the redactor that
+covered a token name nothing read now covers one the package actually uses.
 
 ### Open — the S2 correctness cluster
 

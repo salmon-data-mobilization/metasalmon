@@ -10,16 +10,16 @@
 .ms_eml_format_id <- .ms_eml_namespace
 .ms_eml_system <- "knb"
 .ms_eml_url_namespace_uuid <- "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
-.ms_eml_knb_object_endpoint <-
-  "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/"
-
-.ms_eml_knb_object_url <- function(pid) {
+# The member-node object endpoint is environment-derived; it comes from the
+# registry in `R/knb-environments.R` rather than from a constant pinned to
+# production.
+.ms_eml_knb_object_url <- function(pid, object_endpoint) {
   # Keep the URN colons literal: MetacatUI matches an EML distribution to its
   # DataONE object by finding the unescaped PID as a substring of this URL.
   encoded_pid <- utils::URLencode(pid, reserved = TRUE)
   encoded_pid <- gsub("%3A", ":", encoded_pid, fixed = TRUE)
   paste0(
-    .ms_eml_knb_object_endpoint,
+    object_endpoint,
     encoded_pid
   )
 }
@@ -1362,7 +1362,7 @@
   resolved
 }
 
-.ms_eml_data_objects <- function(path, pkg, mapping) {
+.ms_eml_data_objects <- function(path, pkg, mapping, config) {
   purrr::map_dfr(seq_len(nrow(pkg$tables)), function(i) {
     row <- pkg$tables[i, , drop = FALSE]
     table_id <- as.character(row$table_id[[1]])
@@ -1375,13 +1375,13 @@
     )
     pid <- paste0(
       "urn:uuid:",
-      .ms_eml_uuid5(paste(
+      .ms_eml_uuid5(.ms_knb_pid_preimage(
+        config$pid_scope,
         "data",
         mapping$dataset_id,
         table_id,
         basename(file_name),
-        checksum,
-        sep = ":"
+        checksum
       ))
     )
     tibble::tibble(
@@ -1414,7 +1414,7 @@
   )
 }
 
-.ms_eml_supplementary_objects <- function(objects) {
+.ms_eml_supplementary_objects <- function(objects, config) {
   if (is.null(objects)) {
     return(.ms_eml_empty_supplementary_objects())
   }
@@ -1595,7 +1595,7 @@
     description = values$description,
     compression_method = compression_method,
     entity_type = entity_type,
-    online_url = .ms_eml_knb_object_url(values$pid)
+    online_url = .ms_eml_knb_object_url(values$pid, config$object_endpoint)
   ) |>
     dplyr::arrange(.data$object_name, .data$pid, .locale = "C")
 }
@@ -2353,7 +2353,8 @@
                                    data_objects,
                                    supplementary_objects,
                                    sdp_methods,
-                                   used_procedures) {
+                                   used_procedures,
+                                   config) {
   root <- xml2::read_xml(paste0(
     '<eml:eml xmlns:eml="', .ms_eml_namespace, '" ',
     'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ',
@@ -2376,11 +2377,18 @@
   }
   package_id <- paste0(
     "urn:uuid:",
-    .ms_eml_uuid5(paste(package_id_preimage, collapse = ":"))
+    .ms_eml_uuid5(.ms_knb_pid_preimage(
+      config$pid_scope,
+      package_id_preimage
+    ))
   )
   series_id <- paste0(
     "urn:uuid:",
-    .ms_eml_uuid5(paste("series", mapping$series_key, sep = ":"))
+    .ms_eml_uuid5(.ms_knb_pid_preimage(
+      config$pid_scope,
+      "series",
+      mapping$series_key
+    ))
   )
   xml2::xml_set_attr(root, "packageId", package_id)
   xml2::xml_set_attr(root, "system", mapping$system)
@@ -2611,7 +2619,10 @@
     .ms_eml_add_text(
       online,
       "url",
-      .ms_eml_knb_object_url(data_object$pid[[1]])
+      .ms_eml_knb_object_url(
+        data_object$pid[[1]],
+        config$object_endpoint
+      )
     )
 
     attribute_list <- xml2::xml_add_child(data_table, "attributeList")
@@ -2827,6 +2838,16 @@
 #' @param require_revision_key Logical; when `TRUE`, require a reviewed
 #'   `publication.revision_key` in the EML mapping sidecar. The key creates a
 #'   new deterministic metadata package ID without changing the series ID.
+#' @param knb_environment KNB deposit environment the document is written for:
+#'   `"production"` (the default) or `"test"`. It selects the DataONE member
+#'   node whose object URLs the EML distribution elements point at, and is
+#'   folded into the deterministic package and series identifiers so a test
+#'   identifier can never be mistaken for a production one. Accepted exactly;
+#'   there is no partial matching and no custom endpoint. The default is
+#'   `"production"` because this function writes the package's reviewed
+#'   `metadata/eml.xml`; `publish_sdp_to_knb()` supplies its own environment
+#'   and writes a test document to a separate path, leaving the reviewed
+#'   production record untouched.
 #'
 #' @return Invisibly returns a list containing the XML text, normalized output
 #'   path, EML version, metadata package ID, stable series ID, validation
@@ -2844,7 +2865,9 @@ write_eml_from_sdp <- function(path,
                                mapping_path = NULL,
                                overwrite = FALSE,
                                supplementary_objects = NULL,
-                               require_revision_key = FALSE) {
+                               require_revision_key = FALSE,
+                               knb_environment = "production") {
+  config <- .ms_knb_config(knb_environment)
   if (length(require_revision_key) != 1L ||
       !is.logical(require_revision_key) ||
       is.na(require_revision_key)) {
@@ -2902,9 +2925,10 @@ write_eml_from_sdp <- function(path,
   )
   invisible(.ms_eml_read_semantic_review(path, pkg, mapping))
   vocabulary <- .ms_eml_read_vocabulary(path, pkg, mapping)
-  data_objects <- .ms_eml_data_objects(path, pkg, mapping)
+  data_objects <- .ms_eml_data_objects(path, pkg, mapping, config)
   supplementary_objects <- .ms_eml_supplementary_objects(
-    supplementary_objects
+    supplementary_objects,
+    config
   )
   methods_path <- file.path(path, "metadata", "methods.csv")
   if (file.exists(methods_path)) {
@@ -2924,7 +2948,8 @@ write_eml_from_sdp <- function(path,
     data_objects,
     supplementary_objects,
     sdp_methods,
-    used_procedures
+    used_procedures,
+    config
   )
   .ms_eml_validate_document_links(
     built$document,
@@ -2988,6 +3013,7 @@ write_eml_from_sdp <- function(path,
   result <- list(
     xml = paste(readLines(output_path, warn = FALSE), collapse = "\n"),
     path = normalizePath(output_path, mustWork = TRUE),
+    knb_environment = config$knb_environment,
     eml_version = .ms_eml_version,
     format_id = .ms_eml_format_id,
     package_id = built$package_id,
