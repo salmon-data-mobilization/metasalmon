@@ -398,16 +398,51 @@ publish_sdp_to_knb(
 )
 ```
 
+That dry run targets the **KNB Test Node** (`urn:node:mnTestKNB`), which is
+what `knb_environment` defaults to for a dry run. The golden path develops a
+package against the test node first and posts to production once it looks good
+there, so rehearse in that order:
+
+1. credential-free **test dry run** (the call above)
+2. optional authorized **test deposit**, with a `dataone_test_token`
+3. fresh **production dry run**, naming the environment explicitly
+4. optional private **production deposit**
+5. separate **KNB Publish** action for public release and DOI
+
+Test objects are never promoted to production: a production deposit is planned
+separately, with production credentials, and mints its own identifiers.
+
+```{r, purl = FALSE}
+publish_sdp_to_knb(
+  pkg_path,
+  public = FALSE,
+  dry_run = TRUE,
+  representation = "expanded",
+  knb_environment = "production"
+)
+```
+
+Switching the environment switches the DataONE network, member node,
+coordinating node, resolver, and catalog endpoint together — they never vary
+independently — along with which credential is read. Test artifacts are written
+under `publication/test/`, so the reviewed production `metadata/eml.xml` and
+`publication/knb-manifest.json` are left exactly as they were.
+
 Live KNB publication is a separate explicit action. It requires a short-lived
-DataONE JWT in the process-local `dataone_token` option, an ORCID-authenticated
-subject matching the EML metadata provider, and an explicitly supplied
-`confirm = TRUE`. The confirmation means both that the exact pending manifest
-is approved and that the caller has authority to redistribute the package.
+DataONE JWT in the process-local option belonging to the environment
+(`dataone_token` for production, `dataone_test_token` for the test node — they
+are separate credentials), an ORCID-authenticated subject matching the EML
+metadata provider, an explicitly named `knb_environment`, and an explicitly
+supplied `confirm = TRUE`. A live call never infers its environment. The
+confirmation means both that the exact pending manifest is approved and that
+the caller has authority to redistribute the package.
 
 Keep the JWT out of scripts, YAML, manifests, and shell history. Enter it into
 the current R process only and clear it immediately after the live call:
 
 ```{r, purl = FALSE}
+# `dataone_token` is the production credential; the test node reads
+# `dataone_test_token` instead.
 options(dataone_token = rstudioapi::askForPassword("Short-lived DataONE JWT"))
 on.exit(options(dataone_token = NULL), add = TRUE)
 
@@ -416,7 +451,8 @@ publish_sdp_to_knb(
   public = FALSE,
   dry_run = FALSE,
   confirm = TRUE,
-  representation = "expanded"
+  representation = "expanded",
+  knb_environment = "production"
 )
 ```
 
@@ -475,9 +511,13 @@ publish_sdp_to_knb(
   ),
   revision_manifest = previous_manifest_path,
   dry_run = TRUE,
-  representation = "expanded"
+  representation = "expanded",
+  knb_environment = "production"
 )
 ```
+
+A revision continues the environment it started in; a manifest from one
+environment can never be revised into the other.
 
 Review that new manifest before repeating the live call with
 `dry_run = FALSE, confirm = TRUE`. An interrupted live call is resumable: reuse

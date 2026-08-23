@@ -360,3 +360,11 @@ add_table_method_to_review_closure <- function(path,
   yaml::write_yaml(mapping, mapping_path)
   invisible(path)
 }
+
+# Shared by the KNB publication and KNB environment suites. It lived in
+# test-knb-publication.R until S3 added a second KNB test file; testthat gives
+# each test file its own environment but shares helper-*.R, so a fixture used
+# by two files has to live here.
+make_knb_test_sdp <- function(path, dataset_id = "demo-salmon-2026") {
+  make_eml_test_sdp(path, dataset_id = dataset_id)
+}

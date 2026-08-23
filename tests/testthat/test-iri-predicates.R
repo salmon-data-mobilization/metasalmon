@@ -83,7 +83,13 @@ test_that("EML export and SDP-extension validation agree on Unicode whitespace",
     )
     # Any abort counts as a reject: an ASCII tab trips the `[[:cntrl:]]` check
     # before the pid check, and both are the same answer for our purposes.
-    !inherits(try(.ms_eml_supplementary_objects(objects), silent = TRUE), "try-error")
+    !inherits(
+      try(
+        .ms_eml_supplementary_objects(objects, .ms_knb_config("production")),
+        silent = TRUE
+      ),
+      "try-error"
+    )
   }
 
   expect_true(eml_accepts("http://example.org/a-b"))

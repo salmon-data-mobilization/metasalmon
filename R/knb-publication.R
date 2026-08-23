@@ -5,31 +5,35 @@
 # OAI-ORE resource map, and recovery manifest before any network boundary is
 # constructed.
 
-.ms_knb_environment <- "PROD"
-.ms_knb_node_id <- "urn:node:KNB"
-.ms_knb_mn_endpoint <- "https://knb.ecoinformatics.org/knb/d1/mn/v2"
+# The node identifier, member-node endpoint, and coordinating-node resolver
+# used to be module-level constants pinned to production. They now come from
+# the environment registry in `R/knb-environments.R`, which is what lets a
+# deposit be rehearsed. The three values below stay constant because they are
+# properties of metasalmon's OAI-ORE profile, not of any DataONE environment.
 .ms_knb_ore_format_id <- "http://www.openarchives.org/ore/terms"
 .ms_knb_ore_media_type <- "application/rdf+xml"
-.ms_knb_resolver <- "https://cn.dataone.org/cn/v2/resolve/"
 .ms_knb_ore_profile <- "metasalmon-dataone-ore-v2"
 
-.ms_knb_replication_policy <- function(public) {
+.ms_knb_replication_policy <- function(public, config) {
   .ms_knb_validate_flag(public, "public")
 
-  # Private review is deliberately KNB-only. Public deposits retain DataONE's
-  # current three-replica preservation policy, but it is made explicit and is
-  # therefore part of the exact reviewed plan instead of an unreviewed client
-  # default.
+  # Private review is deliberately KNB-only. Public production deposits retain
+  # DataONE's current three-replica preservation policy, but it is made
+  # explicit and is therefore part of the exact reviewed plan instead of an
+  # unreviewed client default. A rehearsal environment caps replicas at zero:
+  # asking peer nodes to preserve copies of a practice deposit would outlive
+  # the practice.
+  replicas <- if (isTRUE(public)) config$max_replicas else 0L
   list(
-    replication_allowed = isTRUE(public),
-    number_replicas = if (isTRUE(public)) 3L else 0L,
+    replication_allowed = isTRUE(public) && replicas > 0L,
+    number_replicas = as.integer(replicas),
     preferred_member_nodes = list(),
     blocked_member_nodes = list()
   )
 }
 
-.ms_knb_require_replication_policy <- function(policy, public) {
-  expected <- .ms_knb_replication_policy(public)
+.ms_knb_require_replication_policy <- function(policy, public, config) {
+  expected <- .ms_knb_replication_policy(public, config)
   if (!identical(policy, expected)) {
     cli::cli_abort(
       "The publication plan has an invalid replication policy for the selected {.arg public} value."
@@ -509,8 +513,8 @@
   )
 }
 
-.ms_knb_resolve_url <- function(pid) {
-  paste0(.ms_knb_resolver, utils::URLencode(pid, reserved = TRUE))
+.ms_knb_resolve_url <- function(pid, config) {
+  paste0(config$resolver, utils::URLencode(pid, reserved = TRUE))
 }
 
 .ms_knb_resource_map_pid <- function(package_id,
@@ -561,7 +565,8 @@
 .ms_knb_build_ore <- function(resource_map_pid,
                               package_id,
                               publication_date,
-                              member_objects) {
+                              member_objects,
+                              config) {
   root <- xml2::read_xml(paste0(
     '<rdf:RDF ',
     'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ',
@@ -572,10 +577,10 @@
     'xmlns:xsd="http://www.w3.org/2001/XMLSchema#"/>'
   ))
   root <- xml2::xml_root(root)
-  resource_map_url <- .ms_knb_resolve_url(resource_map_pid)
+  resource_map_url <- .ms_knb_resolve_url(resource_map_pid, config)
   aggregation_pid <- paste0(resource_map_pid, "#aggregation")
   aggregation_url <- paste0(resource_map_url, "#aggregation")
-  metadata_url <- .ms_knb_resolve_url(package_id)
+  metadata_url <- .ms_knb_resolve_url(package_id, config)
 
   resource_map <- xml2::xml_add_child(root, "rdf:Description")
   xml2::xml_set_attr(resource_map, "rdf:about", resource_map_url)
@@ -626,7 +631,7 @@
     .ms_knb_add_resource(
       aggregation,
       "ore:aggregates",
-      .ms_knb_resolve_url(object$pid)
+      .ms_knb_resolve_url(object$pid, config)
     )
   }
 
@@ -652,7 +657,7 @@
     logical(1)
   )]
   for (object in documented_objects) {
-    object_url <- .ms_knb_resolve_url(object$pid)
+    object_url <- .ms_knb_resolve_url(object$pid, config)
     .ms_knb_add_resource(metadata, "cito:documents", object_url)
     object_description <- xml2::xml_add_child(root, "rdf:Description")
     xml2::xml_set_attr(object_description, "rdf:about", object_url)
@@ -694,14 +699,15 @@
 
 .ms_knb_validate_ore <- function(document,
                                  resource_map_pid,
-                                 member_objects) {
+                                 member_objects,
+                                 config) {
   aggregates <- xml2::xml_attr(
     xml2::xml_find_all(document, "//*[local-name()='aggregates']"),
     "resource"
   )
   expected <- vapply(
     member_objects,
-    function(x) .ms_knb_resolve_url(x$pid),
+    function(x) .ms_knb_resolve_url(x$pid, config),
     character(1)
   )
   if (!setequal(aggregates, expected) ||
@@ -712,7 +718,7 @@
     )
   }
 
-  resource_map_url <- .ms_knb_resolve_url(resource_map_pid)
+  resource_map_url <- .ms_knb_resolve_url(resource_map_pid, config)
   aggregation_url <- paste0(resource_map_url, "#aggregation")
   descriptions <- xml2::xml_find_all(
     document,
@@ -766,7 +772,7 @@
   )]
   documented_urls <- vapply(
     documented_objects,
-    function(x) .ms_knb_resolve_url(x$pid),
+    function(x) .ms_knb_resolve_url(x$pid, config),
     character(1)
   )
   metadata_object <- member_objects[vapply(
@@ -774,7 +780,7 @@
     function(x) identical(x$role, "metadata"),
     logical(1)
   )][[1]]
-  metadata_url <- .ms_knb_resolve_url(metadata_object$pid)
+  metadata_url <- .ms_knb_resolve_url(metadata_object$pid, config)
   documents <- xml2::xml_attr(
     xml2::xml_find_all(
       document,
@@ -1009,8 +1015,17 @@
   list(
     schema_version = 3L,
     status = durable_status,
+    # `environment` is the DataONE network and `node_id` the member node;
+    # both are fingerprinted, and together they are the authority on which
+    # environment this manifest belongs to. `knb_environment` is the
+    # human-readable name for the same fact and is deliberately NOT
+    # fingerprinted -- adding a field to the fingerprint would invalidate
+    # every production manifest written before this change. Nothing decides
+    # on it; `.ms_knb_plan_config()` refuses any record where it disagrees
+    # with the node identifier.
     environment = plan$environment,
     node_id = plan$node_id,
+    knb_environment = plan$knb_environment,
     public = plan$public,
     replication_policy = plan$replication_policy,
     expected_subject = plan$expected_subject,
@@ -1086,7 +1101,7 @@
   NA_character_
 }
 
-.ms_knb_revision_manifest <- function(path) {
+.ms_knb_revision_manifest <- function(path, config) {
   if (is.null(path)) {
     return(NULL)
   }
@@ -1111,8 +1126,16 @@
     schema_version %in% c(2L, 3L) &&
     length(status) == 1L &&
     status %in% c("published_pending_catalog", "complete") &&
-    identical(as.character(manifest$environment), .ms_knb_environment) &&
-    identical(as.character(manifest$node_id), .ms_knb_node_id) &&
+    # A revision must continue the same environment it started in. Reading
+    # these against the selected environment is what refuses a
+    # cross-environment revision.
+    identical(as.character(manifest$environment), config$dataone_network) &&
+    identical(as.character(manifest$node_id), config$node_id) &&
+    (is.null(manifest$knb_environment) ||
+       identical(
+         as.character(manifest$knb_environment),
+         config$knb_environment
+       )) &&
     length(objects) > 0L &&
     sum(roles == "metadata") == 1L &&
     sum(roles == "resource_map") == 1L &&
@@ -1372,7 +1395,8 @@
 
 .ms_knb_sdp_artifact_object <- function(local_path,
                                         path,
-                                        dataset_id) {
+                                        dataset_id,
+                                        config) {
   relative <- .ms_knb_relative_path(path, local_path)
   extension <- tolower(tools::file_ext(relative))
   format_id <- switch(
@@ -1401,12 +1425,12 @@
     local_path = local_path,
     pid = paste0(
       "urn:uuid:",
-      .ms_eml_uuid5(paste(
+      .ms_eml_uuid5(.ms_knb_pid_preimage(
+        config$pid_scope,
         "sdp-artifact",
         dataset_id,
         relative,
-        sha256,
-        sep = ":"
+        sha256
       ))
     ),
     format_id = format_id,
@@ -1417,19 +1441,22 @@
   )
 }
 
-.ms_knb_sdp_archive_object <- function(archive, path, dataset_id) {
+.ms_knb_sdp_archive_object <- function(archive, path, dataset_id, config) {
   relative <- .ms_knb_relative_path(path, archive$path)
   list(
     role = "sdp_archive",
     path = relative,
     local_path = archive$path,
+    # The archive's bytes are environment-independent, so without the
+    # environment scope the same package would mint the same archive
+    # identifier in test and in production.
     pid = paste0(
       "urn:uuid:",
-      .ms_eml_uuid5(paste(
+      .ms_eml_uuid5(.ms_knb_pid_preimage(
+        config$pid_scope,
         "sdp-archive",
         dataset_id,
-        archive$sha256,
-        sep = ":"
+        archive$sha256
       ))
     ),
     format_id = archive$format_id,
@@ -1442,7 +1469,7 @@
   )
 }
 
-.ms_knb_sdp_artifact_objects <- function(path, dataset_id) {
+.ms_knb_sdp_artifact_objects <- function(path, dataset_id, config) {
   artifact_paths <- unname(.ms_knb_sdp_artifact_paths(path))
   lapply(
     artifact_paths,
@@ -1450,7 +1477,8 @@
       object <- .ms_knb_sdp_artifact_object(
         local_path,
         path,
-        dataset_id
+        dataset_id,
+        config
       )
       object$obsoletes <- NA_character_
       object$obsoleted_by <- NA_character_
@@ -1531,6 +1559,7 @@
                                eml_path,
                                manifest_path,
                                public,
+                               config,
                                representation = c("archive", "expanded"),
                                prior_manifest = NULL,
                                resource_map_path = file.path(
@@ -1549,10 +1578,11 @@
     list(.ms_knb_sdp_archive_object(
       archive,
       path,
-      mapping$dataset_id
+      mapping$dataset_id,
+      config
     ))
   } else {
-    .ms_knb_sdp_artifact_objects(path, mapping$dataset_id)
+    .ms_knb_sdp_artifact_objects(path, mapping$dataset_id, config)
   }
   supplementary_objects <- .ms_knb_supplementary_object_plan(
     package_objects
@@ -1562,7 +1592,8 @@
     output_path = eml_path,
     overwrite = overwrite,
     supplementary_objects = supplementary_objects,
-    require_revision_key = !is.null(prior_manifest)
+    require_revision_key = !is.null(prior_manifest),
+    knb_environment = config$knb_environment
   )
   if (!identical(eml$public, public)) {
     cli::cli_abort(
@@ -1649,9 +1680,10 @@
     resource_map_pid,
     eml$package_id,
     mapping$publication_date,
-    members
+    members,
+    config
   )
-  .ms_knb_validate_ore(ore, resource_map_pid, members)
+  .ms_knb_validate_ore(ore, resource_map_pid, members, config)
 
   resource_map_path <- .ms_knb_inside_path(
     path,
@@ -1686,10 +1718,11 @@
 
   plan <- list(
     package_path = path,
-    environment = .ms_knb_environment,
-    node_id = .ms_knb_node_id,
+    environment = config$dataone_network,
+    node_id = config$node_id,
+    knb_environment = config$knb_environment,
     public = public,
-    replication_policy = .ms_knb_replication_policy(public),
+    replication_policy = .ms_knb_replication_policy(public, config),
     expected_subject = expected_subject,
     rights_authorization = mapping$rights_authorization %||% list(
       status = "unconfirmed",
@@ -1891,13 +1924,14 @@
                                              object,
                                              subject,
                                              public,
-                                             replication_policy) {
+                                             replication_policy,
+                                             config) {
   if (!is.list(remote)) {
     cli::cli_abort(
       "Remote SystemMetadata for {.val {object$pid}} is missing or malformed."
     )
   }
-  .ms_knb_require_replication_policy(replication_policy, public)
+  .ms_knb_require_replication_policy(replication_policy, public, config)
   expected <- list(
     identifier = object$pid,
     format_id = object$format_id,
@@ -1919,8 +1953,11 @@
     ),
     obsoletes = .ms_knb_optional_scalar(object$obsoletes),
     obsoleted_by = .ms_knb_optional_scalar(object$obsoleted_by),
-    origin_member_node = .ms_knb_node_id,
-    authoritative_member_node = .ms_knb_node_id
+    # The node identifier every deposited object must carry is the selected
+    # environment's own. This is the read-back half of "a test publish never
+    # mints into production".
+    origin_member_node = config$node_id,
+    authoritative_member_node = config$node_id
   )
   actual <- list(
     identifier = .ms_knb_optional_scalar(remote$identifier),
@@ -2111,7 +2148,8 @@
                                   bytes,
                                   subject,
                                   public,
-                                  replication_policy) {
+                                  replication_policy,
+                                  config) {
   remote_bytes <- adapter$get_bytes(client, object$pid)
   if (!is.raw(remote_bytes) || !identical(remote_bytes, bytes)) {
     cli::cli_abort(
@@ -2124,7 +2162,8 @@
     object,
     subject,
     public,
-    replication_policy
+    replication_policy,
+    config
   )
   remote_checksum <- adapter$get_checksum(
     client,
@@ -2156,7 +2195,8 @@
       object,
       subject,
       public,
-      replication_policy
+      replication_policy,
+      config
     )
   } else {
     .ms_knb_verify_anonymous_denial(adapter, endpoint, object)
@@ -2392,7 +2432,8 @@
     prior_object,
     subject,
     plan$public,
-    plan$replication_policy
+    plan$replication_policy,
+    .ms_knb_plan_config(plan)
   )
   invisible(linked_to)
 }
@@ -2402,6 +2443,7 @@
                                             subject,
                                             public,
                                             replication_policy,
+                                            config,
                                             plan = NULL) {
   if (is.null(remote)) {
     return(invisible(TRUE))
@@ -2436,7 +2478,8 @@
     metadata_object,
     subject,
     public,
-    replication_policy
+    replication_policy,
+    config
   )
   invisible(TRUE)
 }
@@ -2459,9 +2502,14 @@
           specification
         }
       )
+      # One environment record for the whole live call, re-derived from the
+      # plan's own node identifier and refusing any plan whose recorded
+      # network, node, and environment name do not agree.
+      config <- .ms_knb_plan_config(plan)
       .ms_knb_require_replication_policy(
         plan$replication_policy,
-        plan$public
+        plan$public,
+        config
       )
 
       .ms_knb_validate_adapter(adapter)
@@ -2515,7 +2563,8 @@
             object,
             subject,
             plan$public,
-            plan$replication_policy
+            plan$replication_policy,
+            config
           )
           checksum <- adapter$get_checksum(
             client,
@@ -2593,6 +2642,7 @@
         subject,
         plan$public,
         plan$replication_policy,
+        config,
         plan = plan
       )
       if (!is.null(remote_objects[[metadata_index]]) &&
@@ -2646,7 +2696,8 @@
               object,
               subject,
               plan$public,
-              plan$replication_policy
+              plan$replication_policy,
+              config
             )
           }
         }
@@ -2659,7 +2710,8 @@
           object$bytes,
           subject,
           plan$public,
-          plan$replication_policy
+          plan$replication_policy,
+          config
         )
         update_of <- .ms_knb_optional_scalar(object$obsoletes)
         if (!is.na(update_of)) {
@@ -2730,6 +2782,7 @@
         )
         return(invisible(list(
           status = "published_pending_catalog",
+          knb_environment = plan$knb_environment,
           package_id = plan$package_id,
           series_id = plan$series_id,
           resource_map_pid = plan$resource_map_pid,
@@ -2759,6 +2812,7 @@
       }
       result <- list(
         status = status,
+        knb_environment = plan$knb_environment,
         package_id = plan$package_id,
         series_id = plan$series_id,
         resource_map_pid = plan$resource_map_pid,
@@ -2828,7 +2882,11 @@
                                         public,
                                         node_id,
                                         replication_policy) {
-  .ms_knb_require_replication_policy(replication_policy, public)
+  .ms_knb_require_replication_policy(
+    replication_policy,
+    public,
+    .ms_knb_config_for_node(node_id)
+  )
   system_metadata <- methods::new("SystemMetadata")
   # `datapack::SystemMetadata()` supplies local defaults for several fields
   # that the DataONE service owns.  Do not serialize those invented values.
@@ -3057,19 +3115,24 @@
   } else {
     .ms_knb_nonempty_scalar(client@mn@endpoint, "endpoint")
   }
+  # Resolve the environment from the client itself, so the capabilities
+  # document, the token option, and the node identity checked below all come
+  # from one registry record rather than three independent constants.
+  config <- if (is.environment(client) && !is.null(client$config)) {
+    client$config
+  } else if (is.environment(client)) {
+    .ms_knb_config_for_node(client$node_id)
+  } else {
+    .ms_knb_config_for_node(client@mn@identifier)
+  }
   document <- .ms_knb_anonymous_capabilities(endpoint)
   .ms_knb_validate_live_capabilities(
     document,
     endpoint,
-    .ms_knb_node_id
+    config$node_id
   )
 
-  token <- getOption("dataone_token")
-  if (!.ms_eml_nonempty(token)) {
-    cli::cli_abort(
-      "A short-lived DataONE JWT is required in the process-local {.code dataone_token} option."
-    )
-  }
+  .ms_knb_require_token(config)
 
   # Constructing a D1Client resolves its Member Node through the Coordinating
   # Node and can therefore attach configured credentials. Do this only after
@@ -3089,7 +3152,7 @@
     "node_id"
   )
   if (!identical(sub("/+$", "", d1_endpoint), sub("/+$", "", endpoint)) ||
-      !identical(d1_node_id, .ms_knb_node_id)) {
+      !identical(d1_node_id, config$node_id)) {
     cli::cli_abort(
       "The authenticated DataONE client did not resolve to the pinned KNB node and endpoint."
     )
@@ -3126,7 +3189,7 @@
   list(
     subject = .ms_knb_nonempty_scalar(subject, "subject"),
     endpoint = endpoint,
-    node_id = .ms_knb_node_id
+    node_id = config$node_id
   )
 }
 
@@ -3276,6 +3339,10 @@
 }
 
 .ms_knb_catalog_url <- function(plan) {
+  # Re-derived from the plan's fingerprinted node identifier, so the catalog
+  # queried is always the coordinating node of the environment the plan was
+  # actually built for.
+  config <- .ms_knb_plan_config(plan)
   pids <- vapply(
     plan$objects,
     function(object) object$pid,
@@ -3288,7 +3355,7 @@
     collapse = " OR "
   )
   httr::modify_url(
-    "https://cn.dataone.org/cn/v2/query/solr/",
+    config$solr_endpoint,
     query = list(
       q = query,
       fl = "id,resourceMap,documents,isDocumentedBy",
@@ -3327,16 +3394,21 @@
 
   list(
     connect = function(environment, node_id) {
-      if (!identical(environment, .ms_knb_environment) ||
-          !identical(node_id, .ms_knb_node_id)) {
-        cli::cli_abort(
-          "The default publisher only supports production KNB."
-        )
+      # Unknown nodes are refused, and so is a registered node paired with
+      # another environment's DataONE network -- the endpoint below is only
+      # ever the one belonging to `node_id`.
+      config <- .ms_knb_config_for_node(node_id)
+      if (!identical(environment, config$dataone_network)) {
+        cli::cli_abort(c(
+          "The requested DataONE network mixes KNB environments.",
+          "x" = "Node {.val {node_id}} belongs to the {.val {config$dataone_network}} network, but {.val {environment}} was requested."
+        ))
       }
       client <- new.env(parent = emptyenv())
       client$environment <- environment
       client$node_id <- node_id
-      client$endpoint <- .ms_knb_mn_endpoint
+      client$endpoint <- config$mn_endpoint
+      client$config <- config
       client$d1_client <- NULL
       client
     },
@@ -3441,7 +3513,7 @@
   )
 }
 
-#' Publish a reviewed Salmon Data Package to production KNB
+#' Publish a reviewed Salmon Data Package to KNB
 #'
 #' Plans an immutable DataONE package containing the original data resources
 #' named by `tables.csv`, one validated EML 2.2.0 metadata object, and a
@@ -3456,12 +3528,22 @@
 #' recorded separately in the reviewed EML sidecar.
 #'
 #' DataONE credentials are read only inside the live adapter. Use a short-lived
-#' DataONE JWT through the supported `dataone_token` runtime option; credentials
-#' are never accepted as function arguments or written to the manifest.
+#' DataONE JWT through the runtime option belonging to the selected
+#' environment -- `dataone_token` for production, `dataone_test_token` for the
+#' test node. They are separate credentials, and supplying one never satisfies
+#' the other. Credentials are never accepted as function arguments or written
+#' to the manifest.
 #'
-#' A live restricted deposit is the KNB review/staging mechanism; KNB does not
-#' expose a separate server-side draft state. The persistent object identifiers
-#' remain even while access is private. This function does not call KNB's
+#' There are two deposit environments, selected with `knb_environment`. The
+#' KNB Test Node (`urn:node:mnTestKNB`, DataONE `STAGING`) is the rehearsal
+#' target and the default for a dry run; production KNB (`urn:node:KNB`,
+#' DataONE `PROD`) is the durable one and must always be named explicitly. The
+#' golden path develops a package against the test node first and posts to
+#' production once it looks good there.
+#'
+#' Within production, a live restricted deposit is the review mechanism; KNB
+#' does not expose a separate server-side draft state. The persistent object
+#' identifiers remain even while access is private. This function does not call KNB's
 #' separate Publish action and never mints a DOI. If a reviewed dataset should
 #' receive a DOI, request it for the science-metadata version through KNB when
 #' making that version public. The DOI identifies the metadata version, not each
@@ -3507,13 +3589,27 @@
 #'   the reviewed sidecar must contain a new `publication.revision_key`, the
 #'   metadata series stays stable, and the new EML/resource-map objects
 #'   obsolete their predecessors. Access cannot change in the same operation.
+#' @param knb_environment Deposit environment: `"test"` or `"production"`.
+#'   Selects the DataONE network, member node, coordinating node, resolver,
+#'   Solr catalog endpoint, credential option, and default artifact paths
+#'   together -- these never vary independently. A dry run defaults to
+#'   `"test"`; a live call has no default and must state the environment
+#'   explicitly alongside `confirm = TRUE`. Matched exactly: there is no
+#'   partial matching, no custom endpoint, and no fallback between
+#'   environments. Test deposits use the separate `dataone_test_token`
+#'   credential, mint identifiers that cannot collide with production ones,
+#'   request zero replicas, and write their artifacts under
+#'   `publication/test/` so the reviewed production `metadata/eml.xml` is
+#'   never replaced. They are a rehearsal: non-durable, not promotable, and
+#'   ineligible for a DOI.
 #' @param representation Publication representation. `"expanded"` publishes
 #'   the closed SDP artifact inventory as individually named objects whose
 #'   relative paths can reconstruct the package. `"archive"` (the compatibility
 #'   default) publishes one deterministic ZIP in addition to each source data
 #'   object. Neither mode scans arbitrary package files.
 #'
-#' @return Invisibly returns publication status, identifiers, normalized
+#' @return Invisibly returns publication status, the resolved
+#'   `knb_environment`, identifiers, normalized
 #'   manifest and resource-map paths, the optional SDP-archive path, the
 #'   representation, and the manifest.
 #' @export
@@ -3534,12 +3630,16 @@ publish_sdp_to_knb <- function(path,
                                confirm = interactive(),
                                revision_manifest = NULL,
                                representation = c("archive", "expanded"),
-                               overwrite = FALSE) {
+                               overwrite = FALSE,
+                               knb_environment = NULL) {
   confirm_missing <- missing(confirm)
   representation <- match.arg(representation)
   .ms_knb_validate_flag(overwrite, "overwrite")
   .ms_knb_validate_flag(public, "public")
   .ms_knb_validate_flag(dry_run, "dry_run")
+  # The confirmation gate stays first and unchanged. Naming an environment is
+  # never a substitute for approving the plan, and a live call has to satisfy
+  # both this and the explicit-environment rule below.
   if (!isTRUE(dry_run) &&
       (confirm_missing || !isTRUE(confirm))) {
     cli::cli_abort(c(
@@ -3547,11 +3647,23 @@ publish_sdp_to_knb <- function(path,
       "i" = "This approves the pre-existing exact dry-run manifest; redistribution authority is recorded separately."
     ))
   }
+  config <- .ms_knb_resolve_environment(knb_environment, dry_run)
+  if (!config$durable) {
+    # Said at the call, not only in the documentation. The template is a
+    # literal and the two values are interpolated by cli, never pasted into
+    # the template -- computed text in a cli template is a contract violation
+    # even when the text is an internal constant.
+    knb_environment_name <- config$knb_environment
+    knb_node_id <- config$node_id
+    cli::cli_alert_info(
+      "Planning against the {.val {knb_environment_name}} KNB environment ({.val {knb_node_id}}): a rehearsal that is non-durable, not promotable to production, unsuitable for sensitive data, and cannot receive a DOI."
+    )
+  }
   if (!dir.exists(path)) {
     cli::cli_abort("SDP directory {.path {path}} does not exist.")
   }
   path <- .ms_knb_package_root(path)
-  prior_manifest <- .ms_knb_revision_manifest(revision_manifest)
+  prior_manifest <- .ms_knb_revision_manifest(revision_manifest, config)
   if (!is.null(prior_manifest)) {
     prior_manifest_path <- normalizePath(revision_manifest, mustWork = TRUE)
     package_prefix <- paste0(path, .Platform$file.sep)
@@ -3563,16 +3675,17 @@ publish_sdp_to_knb <- function(path,
     }
   }
 
+  # Environment-specific defaults. A test EML document has different bytes
+  # from the reviewed production record, so it gets its own path rather than
+  # replacing `metadata/eml.xml`; production keeps both of its existing
+  # defaults so a package published before this change still finds its
+  # manifest where it left it.
   if (is.null(eml_path)) {
-    eml_path <- file.path(path, "metadata", "eml.xml")
+    eml_path <- file.path(path, config$default_eml_relpath)
   }
 
   if (is.null(manifest_path)) {
-    manifest_path <- file.path(
-      path,
-      "publication",
-      "knb-manifest.json"
-    )
+    manifest_path <- file.path(path, config$default_manifest_relpath)
   }
   publication_paths <- .ms_knb_publication_paths(
     path,
@@ -3620,6 +3733,7 @@ publish_sdp_to_knb <- function(path,
     eml_path,
     manifest_path,
     public,
+    config,
     representation = representation,
     prior_manifest = prior_manifest,
     resource_map_path = resource_map_path,
@@ -3670,6 +3784,7 @@ publish_sdp_to_knb <- function(path,
   if (isTRUE(dry_run)) {
     result <- list(
       status = "dry_run",
+      knb_environment = plan$knb_environment,
       package_id = plan$package_id,
       series_id = plan$series_id,
       resource_map_pid = plan$resource_map_pid,

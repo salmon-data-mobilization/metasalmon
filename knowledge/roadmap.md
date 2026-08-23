@@ -725,7 +725,7 @@ release half of that gate is satisfied.
 
 - [S1 — One validation authority](sequences/s1-validation-authority.md) · #48, #49
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
-- [S3 — KNB staging environment](sequences/s3-knb-staging.md)
+- [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node. Unreleased (held at 0.3.0 for mirror lockstep), unmirrored in metasalmonpy, and no deposit has been made in either environment: a test-node token and one end-to-end deposit are what S4 still waits on
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
 - [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8)
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61

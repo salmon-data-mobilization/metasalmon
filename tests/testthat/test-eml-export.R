@@ -216,7 +216,8 @@ test_that("the default EML profile is unchanged without supplementary objects", 
 
 test_that("KNB object URLs retain raw UUID URNs for MetacatUI matching", {
   pid <- "urn:uuid:9bedbe72-e58c-52e7-a24c-599e5d4575a2"
-  object_url <- .ms_eml_knb_object_url(pid)
+  production <- .ms_knb_config("production")
+  object_url <- .ms_eml_knb_object_url(pid, production$object_endpoint)
 
   # MetacatUI associates an EML distribution with its DataONE object by
   # looking for the literal PID inside the URL. Percent-encoding the colons
@@ -233,6 +234,15 @@ test_that("KNB object URLs retain raw UUID URNs for MetacatUI matching", {
       "https://knb.ecoinformatics.org/knb/d1/mn/v2/object/",
       pid
     )
+  )
+
+  # The same literal-PID property has to hold for the test member node, whose
+  # object endpoint is a different host.
+  test_url <- .ms_eml_knb_object_url(pid, .ms_knb_config("test")$object_endpoint)
+  expect_true(metacatui_matches_pid(test_url, pid))
+  expect_identical(
+    test_url,
+    paste0("https://dev.nceas.ucsb.edu/knb/d1/mn/v2/object/", pid)
   )
 })
 
@@ -729,7 +739,8 @@ test_that("raw-object identifiers bind the immutable DataONE filename", {
       table_id = "counts",
       file_name = "data/counts.csv"
     )),
-    list(dataset_id = "demo-salmon-2026")
+    list(dataset_id = "demo-salmon-2026"),
+    .ms_knb_config("production")
   )
   second <- .ms_eml_data_objects(
     second_path,
@@ -737,7 +748,8 @@ test_that("raw-object identifiers bind the immutable DataONE filename", {
       table_id = "counts",
       file_name = "data/renamed.csv"
     )),
-    list(dataset_id = "demo-salmon-2026")
+    list(dataset_id = "demo-salmon-2026"),
+    .ms_knb_config("production")
   )
 
   expect_false(identical(first$pid, second$pid))

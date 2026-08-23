@@ -19,6 +19,12 @@ Short map of the package's public starts and their canonical implementations.
   dry_run = TRUE)` -> review exact manifest -> explicit resumable live deposit.
   Re-plan after correcting an input with `overwrite = TRUE`; it replaces
   artifacts from an unpublished dry run only, never from a published manifest
+- KNB environments: `knb_environment = "test"` (KNB Test Node,
+  `urn:node:mnTestKNB`, credential `dataone_test_token`) or `"production"`
+  (`urn:node:KNB`, credential `dataone_token`). A dry run defaults to `"test"`;
+  a live call must name the environment explicitly and still requires
+  `confirm = TRUE`. Test artifacts are written under `publication/test/`, so
+  the reviewed production `metadata/eml.xml` is left untouched
 - Package site: <https://salmon-data-mobilization.github.io/metasalmon/>
 - Repository: <https://github.com/salmon-data-mobilization/metasalmon>
 - Optional LLM variables: `OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `CHAPI_API_KEY`
