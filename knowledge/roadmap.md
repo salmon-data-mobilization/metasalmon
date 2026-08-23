@@ -226,6 +226,13 @@ is what would give the metasalmonpy port a truthful number to claim.
 
 ### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
+> **This number is now materially understated, and deliberately so.** S10's
+> implementation completed 2026-08-22 — all eight chunks A–H merged — but every
+> chunk landed *unversioned* because what number the finished port may carry is
+> [Q7](questions.md), Brett's. `main` therefore carries metasalmon-0.3.0-plus
+> behaviour under a 0.2.1 tag. Read this row as a **pending claim awaiting Q7**,
+> not as the tree's current capability.
+
 | Version | Date | One line |
 |---|---|---|
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
@@ -732,7 +739,7 @@ release half of that gate is satisfied.
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
-- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · chunks A–G all landed 2026-08-22 (metasalmonpy PRs #14–#17, #19, #20; all unversioned pending Q7); chunk **H** — the PR-#77 abort-safe write-path mirror, the last chunk — is in flight; then the terminal bump, which waits on Q7 alone. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification
+- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · **implementation COMPLETE 2026-08-22** — all eight chunks A–H merged (metasalmonpy PRs #14–#17, #19, #20, #21), every one unversioned. The only remaining scope is the terminal bump, which waits on Q7 alone. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification; chunk H registered two divergences rather than fixing them — the two-sentinel problem ([Q14](questions.md), parity row 51) and the wider Python `create_sdp()` sidecar window (row 53, which does **not** retire when #111 closes)
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 - [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md)
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)

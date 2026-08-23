@@ -1099,9 +1099,17 @@ when its 0.3.x catch-up reaches the writer, and metasalmonpy's own
 is chunk **H** in the S10 execplan
 (`knowledge/plans/2026-08-15-s10-metasalmonpy-parity-replay.md`), its own
 small item sequenced after the D and E+F chunks, with the measured evidence
-above as its brief. **Those chunks have since merged and H is in flight**
-(2026-08-22, branch `feat/s10-chunk-h-abort-safe-write`); it is the last S10
-chunk. Chunk C's PR flagged the mirror gap for the hub
+above as its brief. **FULLY RETIRED 2026-08-22**: chunk H merged as metasalmonpy PR #21, the last
+S10 chunk, mirroring R's fix by reusing `sdp_methods._atomic_write_set()` —
+Python's mirror of the very R file R's own fix reuses — rather than building a
+second transactional writer. 7 of 8 new tests RED on unfixed `main`; an abort
+at the descriptor build had reduced a valid package to a lone `data/obs.csv`.
+R's warning about pre-unlink injection points repeated exactly: Python's
+`_has_value` fires pre-unlink and was rejected as an injection point. Both
+halves of #96 — the destructive Date comparison and the unlink-before-abort
+ordering — are now closed in both implementations. The adjacent `create_sdp()`
+sidecar shape is **#111** in R and **parity row 53** in Python, where the
+window is wider; row 53 does not retire when #111 closes. Chunk C's PR flagged the mirror gap for the hub
 rather than absorbing it, and no pre-existing chunk owned write-path
 ordering.
 

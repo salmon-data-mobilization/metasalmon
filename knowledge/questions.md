@@ -161,6 +161,41 @@ can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
 
+### Q14 — Two ownership sentinels: which side gives way?
+
+**Unblocks:** parity row 51, and the tidiness of any package touched by both
+implementations.
+
+A package directory written by metasalmon and then rewritten by metasalmonpy
+ends up holding **both** `.metasalmon-package` and `.metasalmonpy-package`,
+because each writer's managed-path inventory names only its own sentinel and
+so neither ever removes the other's. Measured 2026-08-22 during S10 chunk H;
+previously unregistered in both registers, having arrived silently with the
+2026-08-13 package rename. Harm is low — a stray dot-file — but it is
+undeclared package content that a hand-made ZIP would carry, and the count
+grows with every cross-implementation rewrite.
+
+Three options:
+
+1. **One shared sentinel name** recognised and written by both (say
+   `.sdp-package`). Cleanest end state; a compatibility break for every
+   existing package, needing a read-both/write-one transition.
+2. **Each writer recognises and removes the other's.** No break, no
+   migration — but it couples the two managed-path sets, so each
+   implementation now deletes a file it does not own, and adding a third
+   implementation means editing both.
+3. **Leave it and document it.** Zero risk, permanent minor untidiness.
+
+**Recommendation: (1), with (3) as the interim.** The sentinel answers "who
+owns this directory", and the honest answer is *the SDP tooling*, not one
+language's copy of it — the per-language name encodes an implementation detail
+into user-visible package content. The ownership test already falls back to
+the SDP-CSV check on both sides, so a shared name can be introduced as
+read-both/write-shared with no user-visible failure, and the old names retired
+a release later. Until that lands, (3) is the honest state and row 51 records
+it. **Do not do (2)** — one implementation deleting another's owned file is
+the coupling this ecosystem has spent the whole S10 stream removing.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
