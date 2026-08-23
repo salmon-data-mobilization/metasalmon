@@ -46,7 +46,7 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#91**, **#93**
+  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#93**
   (items 3–5 only),
   and **#95**, **#103–#108**, **#111**, **#112**, plus
   item 0 (gcdfo). Open only in
@@ -78,7 +78,9 @@ Severity = how much it can bite a real user.
 - **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
   `method_iri` slot and the `metadata/methods.csv` registry the item was about.
 - **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
-  the 0.0.9 tag); **#92**, by metasalmonpy PR #12 (merged 2026-08-21).
+  the 0.0.9 tag); **#92**, by metasalmonpy PR #12 (merged 2026-08-21); **#91**,
+  by metasalmonpy PR #20 — S10 chunk D, merged 2026-08-22 — which is the whole
+  of that item, since #91 never had an R half.
 
 **One number was doing two jobs, and three citations pointed at the ambiguity.**
 Two unrelated defects were both filed as **#91**. The
@@ -87,8 +89,13 @@ the one this snapshot's Open list always meant. The canonical-date-key defect
 is renumbered **#94**. Anything that says "#91" and means year padding means
 **#94**: `knowledge/parity-deviations.md` row 40, the release index in
 `knowledge/roadmap.md`, and metasalmonpy's `PARITY.md` row 40. Those three
-files have other owners and are **not** corrected by this change. Row 35 in
-both registers, and the S10 execplan's citation, still correctly mean #91.
+files have other owners and are **not** corrected by this change. The S10
+execplan's citation still correctly means #91, and so does the row that was
+**row 35 in this file's own text when this note was written** — the hub register
+moved it to **41** on 2026-08-21, in the second collision described above, so
+read every "row 35 means #91" as **row 41** and note that metasalmonpy's row 35
+is the unrelated `integer`-storage decision. *(Corrected 2026-08-22, in the pass
+that closed #91.)*
 
 **Next up:** roadmap **S1** (one validation authority, #48/#49) — the last P1,
 and the credibility dependency for the workshop. **S3** (KNB staging) is ready to
@@ -1091,8 +1098,10 @@ when its 0.3.x catch-up reaches the writer, and metasalmonpy's own
 **Routed 2026-08-22:** the Python side is no longer merely recorded here — it
 is chunk **H** in the S10 execplan
 (`knowledge/plans/2026-08-15-s10-metasalmonpy-parity-replay.md`), its own
-small item sequenced after the in-flight D and E+F chunks, with the measured
-evidence above as its brief. Chunk C's PR flagged the mirror gap for the hub
+small item sequenced after the D and E+F chunks, with the measured evidence
+above as its brief. **Those chunks have since merged and H is in flight**
+(2026-08-22, branch `feat/s10-chunk-h-abort-safe-write`); it is the last S10
+chunk. Chunk C's PR flagged the mirror gap for the hub
 rather than absorbing it, and no pre-existing chunk owned write-path
 ordering.
 
@@ -1613,6 +1622,33 @@ after rung 3. *Retires when:* Python collects rather than raises, emits R's
 eight categories with R's five columns, and a differential fixture pins both
 sides to the same issue set for the same broken package.
 
+**RETIRED 2026-08-22 — S10 chunk D (metasalmonpy PR #20).** Every clause of the
+retire condition is met and was measured, not asserted:
+`_collect_package_validation_issues()` accumulates all eight typed categories
+into R's five-column frame, the validator aborts once carrying the total, a
+ten-message preview and the full frame as `.issues`, and the differential ran
+seventeen single-defect corruptions of the shipped example plus one stacked
+five-issue package against metasalmon `main` @ `9d8f125` with **every issue row
+matching field-for-field across all five columns, message bytes included**
+(pinned in metasalmonpy's `tests/test_validation_hardening.py`). The hazard this
+item asked to be logged before it bit is **lifted** in the same change: both
+sides now report the same issue set for the same broken package, so a milestone
+check comparing issue counts or categories is finally meaningful. **This item
+had no R half** — it was entirely a statement about metasalmonpy's validator —
+so closing the Python side closes it outright.
+
+**One correction to how this item described the defect, on the evidence of the
+same differential.** "Stops at the first structural problem" and "a package with
+three bad tables reports one" were true of five of the eighteen fixtures.
+**On the other thirteen Python reported *zero* issues and returned normally** —
+duplicate `table_id`s, ghost table references, non-unique primary keys,
+primary-key NAs, unlisted code values, composite-intent violations and a
+two-row `dataset.csv` all validated clean. The severity note above was right
+that a caller could not tell "validated clean" from "this mirror does not report
+that category", but it attached that to the empty `issues` frame; the checks
+themselves were the larger part of it. Parity row 41 is corrected to the
+measured state in the same pass.
+
 **#89 ~~smn's flat-TTL generator was nondeterministic~~ — FIXED 2026-08-21**
 (smn PR #29, extracted verbatim from draft PR #27's build half and merged to
 `main`). Measured before/after on the same content: 8 runs → 3 distinct hashes
@@ -2086,6 +2122,11 @@ failure does not reproduce there because **its validator does not enforce
 `value_type: date` parsing at all** — a validator-parity divergence for S10 —
 and its bundled `column_dictionary.csv` is corrupt as shipped (unquoted
 description commas shift two rows; pre-0.3.0 `method_iri` header).
+**Both metasalmonpy halves are now discharged (2026-08-22):** S10 chunk A
+(PR #14) replaced the bundled dictionary with a byte-copy of metasalmon `main`,
+taking the corruption and the stale header with it, and S10 chunk D (PR #20)
+made `value_type: date` a structural `columns` issue that aborts rather than a
+mismatch reported in a side-channel frame while the call returned normally.
 
 **#99 Two IRIs that 404 ship in `inst/extdata/column_dictionary.csv`, and two
 sibling repos copy them.** `https://w3id.org/example/salmon#AbsoluteSpawnerAbundance`
@@ -2156,6 +2197,13 @@ repaired, and a well-formedness test now covers every shipped example CSV.
 The spec-validator leg was not added — the R leg was the mandatory half.
 metasalmonpy, measured 2026-08-21: it has no example round-trip test either,
 and one would fail immediately on its corrupt bundled dictionary — S10 work.
+**Discharged 2026-08-22 by S10 chunk D (PR #20):**
+`tests/test_example_round_trip.py` builds an SDP from the shipped example and
+validates it in both modes — strict pinned to **zero** issues, lenient pinned to
+silence — with a well-formedness gate over every shipped metadata CSV. One
+asymmetry, not a gap: metasalmon pins its fuller 173-row example to one known
+strict failure, and that example is not shipped in Python (parity row 46, open),
+so the tiny example's zero-issue pin is the whole gate there.
 
 **#101 `ESTIMATE_CLASSIFICATION` has no crosswalk, and the terms it needs are
 released.** `R/nuseds-method-crosswalk.R` covers `ENUMERATION_METHODS` and

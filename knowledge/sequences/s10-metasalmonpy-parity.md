@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed chunks A, B, C and G (2026-08-22, all unversioned pending Q7). D and E+F are in flight; the only scope after them is chunk H (the metasalmon-PR-#77 write-path mirror) and the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed chunks A through G (2026-08-22, all unversioned pending Q7). Chunk H — the metasalmon-PR-#77 abort-safe write-path mirror — is in flight and is the last chunk; after it the only remaining scope is the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -27,26 +27,53 @@ and the GitHub Release is published. Rung 3 — `0.2.0 + 0.2.1` collapsed,
 formerly PR #10 — merged, and it was the **last replayed rung**. PR #11 (the
 #65 descriptor adjudication and datetime fix) is likewise merged.
 
-**Chunks A, B, C and G are done.** Chunk A — the breaking dictionary-contract
-flip, which the 2026-08-17 replan put first precisely so nothing later is
-built on a shape it replaces — merged 2026-08-22 as metasalmonpy PR #14,
-verified against metasalmon `main` at `e02111a`. Chunk C — the missing-value
-contract, undiluted — merged the same day as PR #15, verified against `main`
-at `39818ce`, converging register row 22 and closing its live interop hazard.
-Chunks B and G — the semantic-pipeline retarget plus the legacy-read
-verification — merged as PR #16, verified against `main` at `9d8f125` after a
-mid-stream re-baseline (Q7's second data point). All three PRs are
-**unversioned by design**: metasalmonpy stays at 0.2.1 because which number
-the finished port may carry is open (Q7 / execplan open decision 2), so
-everything lands under the CHANGELOG's *Unreleased* heading and the single
-bump comes at the end of the chunks. See the execplan's dated chunk records
-for counts, baselines and revert verification. **D and E+F are in flight**
-(2026-08-22). The only scope after them is chunk **H** — the mirror of
-metasalmon PR #77's abort-safe write path, routed 2026-08-22 because no
-earlier chunk owned it (backlog #96's measured Python ordering defect) — and
-the terminal version bump, which waits on Q7. (E's prefix-rename question
-below is still open as a question; the execplan struck its own "decided and
-logged here" claim on 2026-08-21.)
+**Chunks A through G are done — seven of eight, all on 2026-08-22.** Chunk A
+— the breaking dictionary-contract flip, which the 2026-08-17 replan put first
+precisely so nothing later is built on a shape it replaces — merged as
+metasalmonpy PR #14, verified against metasalmon `main` at `e02111a`. Chunk C —
+the missing-value contract, undiluted — merged as PR #15 against `39818ce`,
+converging register row 22 and closing its live interop hazard. Chunks B and G —
+the semantic-pipeline retarget plus the legacy-read verification — merged as
+PR #16 against `9d8f125` after a mid-stream re-baseline (Q7's second data
+point). Chunk D — validation hardening — merged as PR #20 against `9d8f125`.
+Chunks E and F — cache/environment/network robustness, then the redaction
+contract stacked on it — merged as PRs #17 and #19 against `794647a`, a
+**re-pin** rather than a re-baseline (the R tree was confirmed identical to
+`9d8f125` in `R/`, `tests/` and `inst/`). Every one is **unversioned by
+design**: metasalmonpy stays at 0.2.1 because which number the finished port may
+carry is open (Q7 / execplan open decision 2), so everything lands under the
+CHANGELOG's *Unreleased* heading and the single bump comes at the end. See the
+execplan's dated chunk records for counts, baselines and revert verification.
+
+**Chunk H is in flight, and it is the last one** (2026-08-22, branch
+`feat/s10-chunk-h-abort-safe-write`): the mirror of metasalmon PR #77's
+abort-safe write path, routed on 2026-08-22 because no earlier chunk owned it
+(backlog #96's measured Python ordering defect). It was sequenced behind D and
+E+F for rebase cost, not dependency, and those have now landed.
+
+**This is the last stretch, so it is worth saying what "done" means concretely.**
+S10 is finished when three things are true, and not before:
+
+1. **Chunk H merges** — `write_salmon_datapackage()` renders the full write set
+   to bytes before touching disk, installs through a multi-file staged write set
+   with rollback, and unlinks unrewritten managed paths only after the install
+   succeeds, with abort-injection tests mirroring
+   `test-write-datapackage-abort-safety.R` and R's two honest narrowings
+   (`prune` residual; create-owned sidecars = backlog #111).
+2. **Q7 is answered** — the terminal bump cannot be truthful until someone rules
+   on what number a port carrying metasalmon's post-0.3.0 behaviour may claim.
+   This is the only remaining **decision**; everything else is work.
+3. **The bump ships** in metasalmonpy's own lockstep form: both version strings
+   agreeing, the CHANGELOG's *Unreleased* sections resolved into the release
+   entry, an annotated tag, a published GitHub Release — and, in the same
+   stream, the three places that must agree about the number: metasalmonpy's
+   `AGENTS.md`, metasalmon's `AGENTS.md`, and the release index in
+   [`roadmap.md`](../roadmap.md).
+
+What does **not** gate it: backlog **#87** / register row 32, the
+ranking-profile gap, which stays open with no milestone and is the surviving
+half of the execplan's open decision 1 (#91, its other half, closed at chunk D).
+Whether the parity claim tolerates shipping with #87 open is part of Q7.
 
 *(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
 rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all
@@ -201,9 +228,29 @@ decision naming the decider lands in one place, and the other document is
 corrected to point at it in the same change — or the execplan's "decided and
 logged here" is struck as an error and this stays open. **The second arm
 happened (2026-08-21):** the execplan struck the claim as an error (its open
-decision 1b), so the two documents no longer disagree — the *question* itself
-stays open, and E+F is in flight with it unresolved; how that chunk handled
-the rename scope line gets recorded here when it lands. *(The two items filed
+decision 1b), so the two documents no longer disagreed — but the *question*
+stayed open, and E+F went into flight with it unresolved.
+
+**RETIRED 2026-08-22 — the first arm happened too, and chunk E is where.**
+metasalmonpy PR #17 renamed the switches to `METASALMONPY_CACHE` /
+`METASALMONPY_DEBUG_FETCH`, read at call time through one helper, and kept the
+`SALMONPY_*` spellings as deprecated aliases that warn **once per process** and
+are **removed in the first tagged release after the S10 parity release**. That
+is the middle option of the three this card listed: rename *with* legacy
+aliases, on a stated window rather than an open-ended one. The decider is the
+chunk-E implementer, not Brett — recorded honestly, because this card spent nine
+days asking who ruled and the answer must not become vague again. The dated
+decision lives in the [S10 execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md)'s
+*Decisions logged during the subsystem chunks* table, its open decision 1b is
+marked decided, and the retirement condition is parity-deviations row **50** in
+both registers. Test-suite-only gates (`METASALMONPY_RUN_QUALARK_TEST`,
+`METASALMONPY_QUALARK_TEST_*`) were renamed cleanly with no alias — developer
+knobs, not package API.
+
+*The resolution was not the discovery of a prior ruling; there was none. The
+question was closed by someone making the decision and dating it, which is the
+only honest way out when two documents have been asserting a decision that never
+happened.* *(The two items filed
 beside it on 2026-08-13 are done: `ms_setup_github()`'s private `qualark-data`
 default and the R-syntax remediation message were both fixed the same day in
 `a7999b2`, "mirror metasalmon #72 (no default repo)", and shipped in v0.1.7.)*
