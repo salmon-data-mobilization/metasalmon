@@ -267,6 +267,68 @@ version bump, which waits on Q7 / open decision 2 and on nothing else.
 
 ### Ordering — only two chunks are forced after A
 
+**Chunk H merged 2026-08-22 as metasalmonpy PR #21 — S10's implementation is
+complete.** Mechanism: **reuse `sdp_methods._atomic_write_set()`**, which is
+this package's mirror of the very R file R's own fix reuses
+(`.ms_commit_package_write()` reaches into `sdp-extension-helpers.R`), rather
+than growing a second multi-file writer in `atomic_io.py` — `atomic_io`
+documents itself as the mode primitive and `_atomic_write_set` already calls
+into it, so the layering was correct before the chunk arrived, and it already
+carried chunk A's backup-detach rollback fix. Shape mirrors R:
+`_check_package_write_dir()` deletes nothing, `_commit_package_write()` is the
+single destructive step, stale managed paths unlink only after install
+succeeds.
+
+**RED evidence, and the trap that repeated across languages.** 7 of 8 new
+tests fail on unfixed `main` (`258db8d`); the 8th — the post-fix scratch
+cleanup — passes vacuously because unfixed code stages nothing, which the
+chunk stated rather than counting as coverage. The failure is destruction, not
+an incidental error: an abort at the descriptor build reduced a valid package
+to a lone `data/obs.csv`, with `datapackage.json`, all three `metadata/*.csv`
+and the sentinel gone, and under `prune=True` a reviewed `README-review.txt`
+went with them. R's PR #77 had discovered that its first two injection points
+fired *pre*-unlink and so passed on unfixed code; that warning was carried into
+chunk H and **the identical trap was present** — Python's `_has_value` is the
+direct counterpart to R's `.ms_meta_scalar_present` and fires pre-unlink inside
+`_force_data_path`. It was rejected for two confirmed-downstream points. Byte
+identity held: five packages built pristine-vs-branch, 52 manifest entries,
+`diff -r` clean, and the example package byte-identical to metasalmon `main` @
+`3b620ae` on all six shared files. Counts: extras 761/3, core 656/108.
+
+**Two divergences registered rather than fixed** — both correctly, because both
+need a ruling rather than a drive-by. Row **51**: the ownership sentinel
+(`.metasalmon-package` vs `.metasalmonpy-package`) is named in each side's
+managed-path inventory but never the other's, so a cross-written directory
+accumulates both and neither writer removes either. Unregistered in both
+registers since the 2026-08-13 rename, and found only because chunk H's byte
+differential left the sentinel as the single difference between otherwise
+byte-identical packages. Now open as hub **Q14**. Row **53**: `create_sdp()`'s
+sidecars are unlink-then-rewrite on both sides (backlog #111), but Python's EDH
+window is *wider* — R builds from the in-memory `artifacts$dataset_meta` while
+Python runs a full `read_salmon_datapackage()` from disk after the unlink, so
+every read and parse failure of the whole package sits inside the destroyed-file
+window. Measured at 5479 bytes of EDH XML deleted with nothing in its place.
+**Row 53 does not retire when #111 closes** — #111 is the R shape.
+
+### S10 implementation status: complete (2026-08-22)
+
+Every chunk A–H is merged. What remains is **not implementation**:
+
+1. **The terminal version bump** — open decision 2 / hub **Q7**. The port is
+   finished and unversioned, so the question is now the only thing between the
+   work and a truthful parity claim.
+2. **Hub twins for rows 51–53** — landing with this record.
+3. **Registered, deliberately-unfixed divergences** — rows 51 and 53 are
+   *registered*, which is their correct state, not outstanding work. Row 51
+   needs Q14; row 53 needs #111 plus a Python-side decision.
+
+The differential method is what carried the stream, and the strongest single
+piece of evidence for it is chunk D's: **metasalmonpy passed clean on 13 of 18
+deliberately corrupted packages** before that chunk, and the inverted `required`
+constraint — a blank cell writing `required: true` because `iterrows()` returns
+boolean-dtype NA as a truthy float — was reachable only by comparing bytes, not
+by reading the call site.
+
 **Only B and G depend on A.** B retargets the semantic pipeline onto the
 dictionary shape A introduces; G verifies that legacy registry *reading*
 survives A deleting the registry, so it has nothing to verify until A lands.

@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed chunks A through G (2026-08-22, all unversioned pending Q7). Chunk H — the metasalmon-PR-#77 abort-safe write-path mirror — is in flight and is the last chunk; after it the only remaining scope is the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -27,7 +27,7 @@ and the GitHub Release is published. Rung 3 — `0.2.0 + 0.2.1` collapsed,
 formerly PR #10 — merged, and it was the **last replayed rung**. PR #11 (the
 #65 descriptor adjudication and datetime fix) is likewise merged.
 
-**Chunks A through G are done — seven of eight, all on 2026-08-22.** Chunk A
+**All eight chunks are done — A through H, all on 2026-08-22.** Chunk A
 — the breaking dictionary-contract flip, which the 2026-08-17 replan put first
 precisely so nothing later is built on a shape it replaces — merged as
 metasalmonpy PR #14, verified against metasalmon `main` at `e02111a`. Chunk C —
@@ -45,14 +45,20 @@ carry is open (Q7 / execplan open decision 2), so everything lands under the
 CHANGELOG's *Unreleased* heading and the single bump comes at the end. See the
 execplan's dated chunk records for counts, baselines and revert verification.
 
-**Chunk H is in flight, and it is the last one** (2026-08-22, branch
-`feat/s10-chunk-h-abort-safe-write`): the mirror of metasalmon PR #77's
-abort-safe write path, routed on 2026-08-22 because no earlier chunk owned it
-(backlog #96's measured Python ordering defect). It was sequenced behind D and
-E+F for rebase cost, not dependency, and those have now landed.
+**Chunk H merged as PR #21 — the last chunk, and S10's implementation is
+complete.** It mirrors metasalmon PR #77's abort-safe write path by reusing
+`sdp_methods._atomic_write_set()` (the mirror of the R file R's own fix
+reuses) rather than building a second transactional writer. 7 of 8 new tests
+RED on unfixed main; an abort at the descriptor build had reduced a valid
+package to a single data CSV. Two divergences were registered rather than
+fixed — the two-sentinel problem (row 51, now hub **Q14**) and the wider
+Python `create_sdp()` sidecar window (row 53, which does **not** retire when
+backlog #111 closes).
 
-**This is the last stretch, so it is worth saying what "done" means concretely.**
-S10 is finished when three things are true, and not before:
+**What "done" means now, concretely:** every chunk merged; behaviour matches
+metasalmon `main`; and the single remaining step is deciding what version
+number the finished port may carry — **Q7**, Brett's. Until that lands, the
+release index's metasalmonpy entry (0.2.1) understates the tree.
 
 1. **Chunk H merges** — `write_salmon_datapackage()` renders the full write set
    to bytes before touching disk, installs through a multi-file staged write set
