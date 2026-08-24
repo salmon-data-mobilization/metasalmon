@@ -2066,7 +2066,13 @@ sources_for_role <- function(role) {
       method = c(smn = 1.3, gcdfo = 1.0, bioportal = 0.4, ols = 0.5, zooma = 0.4),
       # sources_for_role() serves this role from smn and ols only, so there is
       # no gcdfo entry to give it. Without the row the role reached ranking on
-      # base weight alone -- the sixth surface of the role contract.
+      # base weight alone -- the SEVENTH surface of the role contract.
+      # (Renumbered 2026-08-24: this said "sixth", disagreeing with AGENTS.md,
+      # which counts inst/extdata/ontology-preferences.csv as the sixth surface
+      # and this table as the seventh. The count was off by one here, not
+      # there, and an ambiguity in the numbering is how an eighth surface
+      # arrives unnoticed. Coverage of this table is
+      # tests/testthat/test-role-contract-guard.R, SURFACE 7.)
       statistical_modifier = c(smn = 1.5, ols = 0.4)
     ),
     ontology_preferences = list(

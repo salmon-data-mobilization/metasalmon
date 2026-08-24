@@ -680,10 +680,13 @@ themselves.
   byte-reproducibility guards are exercised rather than skipped.
 - Three static guards stay honest: any new byte-producing function goes in
   `collation_sensitive_fns`; any new cli call uses literals or the escaping
-  helpers; any new or renamed semantic role reaches all five layers of the role
-  contract, including the ranking preferences and the hint emitters that the
-  role-contract guard checks by inspecting function bodies. All three contracts
-  are stated in `AGENTS.md`.
+  helpers; any new or renamed semantic role reaches all **seven** surfaces of
+  the role contract, including the ranking preferences, the `role_boost` table
+  and the hint emitters that the role-contract guard checks by inspecting
+  function bodies. All three contracts are stated in `AGENTS.md`. *(Was "five
+  layers" until 2026-08-24, when the seventh-surface check was consolidated
+  into `tests/testthat/test-role-contract-guard.R` — one file now answers "did
+  I reach every layer", and each surface has a recorded RED demonstration.)*
 - **Mirror invariant:** no metasalmon release ships without its metasalmonpy
   counterpart landing in the same stream (post-S10; during S10, the gap only
   shrinks).

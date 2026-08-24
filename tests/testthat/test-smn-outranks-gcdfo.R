@@ -17,6 +17,25 @@
 # retrieval source, or replacing additive scoring with a model that encodes
 # source authority structurally rather than as a score margin. Until then the
 # margin is load-bearing and a weight edit can silently erase it.
+#
+# SCOPE (2026-08-24). This file is about the smn-over-gcdfo *margin*. It used
+# to also carry `every role with ranking preferences has a role boost entry`,
+# the coverage check for the seventh surface of the role contract — which put
+# the answer to "did I reach every layer" in two files, neither of which
+# covered all seven. That check now lives in
+# tests/testthat/test-role-contract-guard.R and is not duplicated here: the
+# consolidated version subsumes it and is strictly wider, asserting boosts for
+# every *bundle* role rather than only the roles ontology-preferences.csv
+# ranks, and additionally that each entry is a non-empty named numeric vector.
+# Duplicating it would have made this file a second place to look and a second
+# place to forget.
+#
+# What stays here, deliberately: the `role_boost` reads below. They are margin
+# assertions, not coverage assertions — each one needs an entry to exist only
+# so it can compare smn against gcdfo in it — and they are scoped to
+# `both_source_roles`, so on their own they say nothing about
+# `statistical_modifier` (smn + ols, never gcdfo), the very role whose missing
+# boost entry motivated the consolidation.
 
 vocab <- metasalmon:::.iadopt_vocab()
 
@@ -104,9 +123,10 @@ test_that("the ranking profile and ontology-preferences.csv agree that smn leads
   # Surface 1: the base source weight.
   expect_gt(unname(base[["smn"]]), unname(base[["gcdfo"]]))
 
-  # Surface 2: the per-role boost. Every role the retrieval layer serves with
-  # both sources needs a boost entry, and smn must lead in it -- a role missing
-  # from role_boost ranks with no role-level source preference at all.
+  # Surface 2: the per-role boost. smn must lead gcdfo in it. Coverage of the
+  # boost table -- that every role has an entry at all -- is the role-contract
+  # guard's job (see SCOPE above); the null check here is only a precondition
+  # so a missing entry fails on the entry rather than erroring on the compare.
   for (role in both_source_roles) {
     boosts <- profile$role_boost[[role]]
     expect_false(is.null(boosts), info = role)
@@ -125,23 +145,4 @@ test_that("the ranking profile and ontology-preferences.csv agree that smn leads
       expect_lt(smn_priority, gcdfo_priority)
     }
   }
-})
-
-test_that("every role with ranking preferences has a role boost entry", {
-  # The sixth surface of the role contract (AGENTS.md): a role that reaches
-  # ranking with no `role_boost` row is scored on base weight alone, which is
-  # a 0.1-0.2 spread across sources and effectively no preference at all.
-  profile <- metasalmon:::.ranking_profile_defaults()
-  prefs <- metasalmon:::.role_preferences()
-
-  ranked_roles <- setdiff(unique(prefs$role), "wikidata")
-  missing <- setdiff(ranked_roles, names(profile$role_boost))
-
-  expect_equal(
-    missing, character(0),
-    info = paste(
-      "Roles in ontology-preferences.csv with no .ranking_profile_defaults()",
-      "role_boost entry:", paste(missing, collapse = ", ")
-    )
-  )
 })
