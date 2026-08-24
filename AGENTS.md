@@ -28,8 +28,9 @@ at `knowledge/roadmap.md`.
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
   when the mirrored behaviour actually lands. Current state: metasalmonpy is
-  at **0.2.1** parity — tagged `v0.2.1`, GitHub Release published — so the
-  catch-up window is **0.2.2→0.3.0**, roadmap stream S10. The same contract is
+  at **0.2.1** parity — tagged `v0.2.1`, GitHub Release published — while
+  metasalmon released **0.4.0** on 2026-08-24, so the catch-up window is
+  **0.2.2→0.4.0**, roadmap stream S10. The same contract is
   stated in metasalmonpy's `AGENTS.md`; both files are git-tracked and must
   never be git-ignored. **When the two files disagree about that number, one of
   them is wrong about the single fact the mirror contract turns on**, and

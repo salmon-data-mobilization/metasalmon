@@ -1,4 +1,4 @@
-# Publish a reviewed Salmon Data Package to production KNB
+# Publish a reviewed Salmon Data Package to KNB
 
 Plans an immutable DataONE package containing the original data
 resources named by `tables.csv`, one validated EML 2.2.0 metadata
@@ -25,7 +25,8 @@ publish_sdp_to_knb(
   confirm = interactive(),
   revision_manifest = NULL,
   representation = c("archive", "expanded"),
-  overwrite = FALSE
+  overwrite = FALSE,
+  knb_environment = NULL
 )
 ```
 
@@ -92,26 +93,51 @@ publish_sdp_to_knb(
   published; pass `TRUE` to re-plan after correcting an input such as
   `eml-mapping.yml`. Live publication is gated separately by `confirm`.
 
+- knb_environment:
+
+  Deposit environment: `"test"` or `"production"`. Selects the DataONE
+  network, member node, coordinating node, resolver, Solr catalog
+  endpoint, credential option, and default artifact paths together –
+  these never vary independently. A dry run defaults to `"test"`; a live
+  call has no default and must state the environment explicitly
+  alongside `confirm = TRUE`. Matched exactly: there is no partial
+  matching, no custom endpoint, and no fallback between environments.
+  Test deposits use the separate `dataone_test_token` credential, mint
+  identifiers that cannot collide with production ones, request zero
+  replicas, and write their artifacts under `publication/test/` so the
+  reviewed production `metadata/eml.xml` is never replaced. They are a
+  rehearsal: non-durable, not promotable, and ineligible for a DOI.
+
 ## Value
 
-Invisibly returns publication status, identifiers, normalized manifest
-and resource-map paths, the optional SDP-archive path, the
-representation, and the manifest.
+Invisibly returns publication status, the resolved `knb_environment`,
+identifiers, normalized manifest and resource-map paths, the optional
+SDP-archive path, the representation, and the manifest.
 
 ## Details
 
 DataONE credentials are read only inside the live adapter. Use a
-short-lived DataONE JWT through the supported `dataone_token` runtime
-option; credentials are never accepted as function arguments or written
-to the manifest.
+short-lived DataONE JWT through the runtime option belonging to the
+selected environment – `dataone_token` for production,
+`dataone_test_token` for the test node. They are separate credentials,
+and supplying one never satisfies the other. Credentials are never
+accepted as function arguments or written to the manifest.
 
-A live restricted deposit is the KNB review/staging mechanism; KNB does
-not expose a separate server-side draft state. The persistent object
-identifiers remain even while access is private. This function does not
-call KNB's separate Publish action and never mints a DOI. If a reviewed
-dataset should receive a DOI, request it for the science-metadata
-version through KNB when making that version public. The DOI identifies
-the metadata version, not each raw or supplementary object.
+There are two deposit environments, selected with `knb_environment`. The
+KNB Test Node (`urn:node:mnTestKNB`, DataONE `STAGING`) is the rehearsal
+target and the default for a dry run; production KNB (`urn:node:KNB`,
+DataONE `PROD`) is the durable one and must always be named explicitly.
+The golden path develops a package against the test node first and posts
+to production once it looks good there.
+
+Within production, a live restricted deposit is the review mechanism;
+KNB does not expose a separate server-side draft state. The persistent
+object identifiers remain even while access is private. This function
+does not call KNB's separate Publish action and never mints a DOI. If a
+reviewed dataset should receive a DOI, request it for the
+science-metadata version through KNB when making that version public.
+The DOI identifies the metadata version, not each raw or supplementary
+object.
 
 Revisions must be built in a fresh versioned SDP directory. Keep the
 prior package and its verified manifest unchanged, write the corrected

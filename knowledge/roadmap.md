@@ -197,10 +197,11 @@ sequenced here as S4 whether or not it is a member, so leaving its state
 unrecorded served nobody. That mismatch is an *Open decision* below, not a
 quiet expansion of the allowlist.
 
-### metasalmon (R) — current **0.3.0**
+### metasalmon (R) — current **0.4.0**
 
 | Version | Date | One line |
 |---|---|---|
+| 0.4.0 | 2026-08-24 | KNB environments (S3) — a deposit can be rehearsed against the test node; plus the post-0.3.0 fix stream: transactional package writer, platform-independent calendar text, both shipped examples validate, `smn` ranked above `gcdfo`, dual-provenance manifest validation |
 | 0.3.0 | 2026-08-15 | **Breaking:** sdp-0.3.0 implemented — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()` stop-and-report migration, semantic pipeline reviews the statistical-modifier slot, remote schema source pinned to spec tags |
 | 0.2.6 | 2026-08-12 | Tidy-data enforcement: primary-key uniqueness, wide-format warning, placeholders surfaced |
 | 0.2.5 | 2026-08-12 | Credential redaction covers qualified `*_token` names; duplicate redactor deleted |
@@ -218,11 +219,11 @@ historical gap remains an S6 governance note, not a task.
 current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
-**No release has been cut since**: `v0.3.0` (2026-08-15) is still the newest tag
-while `main` is 132 commits past it with 23 unreleased fix entries in
-`NEWS.md` (measured 2026-08-21) — details under *metasalmon current state*
-below. That gap is itself evidence for Q7's recommendation: cutting the release
-is what would give the metasalmonpy port a truthful number to claim.
+**The gap is closed**: `v0.4.0` (2026-08-24) is the newest tag, cut per Q7 —
+153 commits and the whole post-0.3.0 development section released as one minor
+bump, so `main` and the newest tag are the same package again. Details under
+*metasalmon current state* below. Q7's other half now falls due: metasalmonpy
+has a truthful number to claim, and claiming it is its own change.
 
 ### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
@@ -254,8 +255,10 @@ ends at rung 3 and the phrase "replay the complete baseline" is retired.
 Rung 3 has merged and tagged: metasalmonpy PRs #10, #11 and #12 are in, `v0.2.0`
 and `v0.2.1` exist as tags and GitHub Releases, and `pyproject.toml` reads
 `0.2.1` as a **released** parity claim rather than a branch state. The catch-up
-window is therefore **0.2.2→0.3.0**. Both `AGENTS.md` files must carry that same
-number — see the mirror rule above.
+window is therefore **0.2.2→0.4.0** — the endpoint moved from 0.3.0 when the R
+side cut **0.4.0** on 2026-08-24, and it is the same content either way, because
+0.4.0 *is* 0.3.0 plus the post-0.3.0 fixes S10 already ported. Both `AGENTS.md`
+files must carry that same number — see the mirror rule above.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -567,7 +570,7 @@ so that check is useful evidence and not a substitute for the ruling.
 
 ## metasalmon current state
 
-**Shipped: 0.3.0** (tagged `v0.3.0`, GitHub Release published 2026-08-15).
+**Shipped: 0.4.0** (tagged `v0.4.0`, GitHub Release published 2026-08-24).
 The release sequence, all reviewed and CI-green:
 
 | Release | What |
@@ -580,20 +583,20 @@ The release sequence, all reviewed and CI-green:
 | 0.2.5 | #73 credential redaction covers qualified token names |
 | 0.2.6 | #77 tidy foundations — primary-key uniqueness, wide-format warning, placeholders surfaced |
 | 0.3.0 | #76 sdp-0.3.0 method placement model — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()`, placement validation, spec-tag schema pin |
+| 0.4.0 | S3 KNB environments (a deposit can be rehearsed) and the post-0.3.0 fix stream — #93 item 2, #94, #96–#102, #85, #88 — plus two S11 vignettes |
 
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
 
-**No release has been cut since 0.3.0.** `v0.3.0` was tagged 2026-08-15 and
-nothing has been released since; `main` is **107 commits past that tag**
-(2026-08-21) and `NEWS.md`'s development section has accumulated **twelve fix
-entries** (four under `### Bug fixes`, eight under `### Fixed`) plus two
-documentation entries. `DESCRIPTION` is bumped only in the release PR, so `main`
-self-reports `0.3.0` while carrying all of it — the same
-cite-the-commit-not-the-tag condition gcdfo and PSC are in above, and it applies
-hardest here, because this is the repo whose released version other repos pin.
-State this plainly wherever the 0.3.0 number appears: **released 0.3.0 and
-`main` are now materially different packages.**
+**0.4.0 closes the release gap**, cut 2026-08-24 per Q7. It carries 153 commits
+of post-0.3.0 work: a genuinely new user-facing capability (`knb_environment`
+on `publish_sdp_to_knb()` and `write_eml_from_sdp()`), one new export
+(`nuseds_estimate_classification_crosswalk()`), and twenty fix entries, several
+of which change observable behaviour — hence a **minor** bump rather than a
+patch. `DESCRIPTION` is bumped only in the release PR, which is why `main`
+self-reported `0.3.0` for nine days while carrying all of it. That condition
+is over for this repo; it still holds for gcdfo and PSC above, so keep citing
+the commit there.
 
 Post-0.3.0, `main` has taken S11 slice 2's two vignettes (PR #46), the
 statistical-modifier ranking preferences and honest dry-run previews (PR #47,

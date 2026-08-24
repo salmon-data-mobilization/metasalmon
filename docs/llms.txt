@@ -735,7 +735,7 @@ Reviewed EML 2.2.0 export and verified DataONE/KNB publication
 - [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
   : Write reviewed EML 2.2.0 metadata from a Salmon Data Package
 - [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
-  : Publish a reviewed Salmon Data Package to production KNB
+  : Publish a reviewed Salmon Data Package to KNB
 
 ## GitHub Access
 
