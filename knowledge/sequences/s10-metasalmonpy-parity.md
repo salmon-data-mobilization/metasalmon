@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port carries was RULED 2026-08-24 (Brett): metasalmon cuts the release containing its post-0.3.0 fixes first, then metasalmonpy claims that number and skips 0.3.0 — so the bump now waits on a release, not a decision. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port carries was RULED 2026-08-24 (Brett): metasalmon cuts the release containing its post-0.3.0 fixes first, then metasalmonpy claims that number and skips 0.3.0. metasalmon 0.4.0 shipped the same day, so the number is 0.4.0 and only the bump itself remains. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -43,7 +43,7 @@ contract stacked on it — merged as PRs #17 and #19 against `794647a`, a
 design**: metasalmonpy stayed at 0.2.1 while which number the finished port may
 carry was open (Q7 / execplan open decision 2), so everything landed under the
 CHANGELOG's *Unreleased* heading and the single bump comes at the end — now
-against the number of the metasalmon release Q7's ruling puts first. See the
+against **0.4.0**, the metasalmon release Q7's ruling put first. See the
 execplan's dated chunk records for counts, baselines and revert verification.
 
 **Chunk H merged as PR #21 — the last chunk, and S10's implementation is
@@ -59,10 +59,10 @@ backlog #111 closes).
 **What "done" means now, concretely:** every chunk merged; behaviour matches
 metasalmon `main`; and the single remaining step is the terminal version bump.
 **Q7 was ruled 2026-08-24 (Brett)** — *"cut a metasalmon release containing the
-post-0.3.0 fixes first, then metasalmonpy claims that number"* — so this is no
-longer a decision, it is a **dependency on a metasalmon release**. metasalmonpy
-**skips 0.3.0** and claims that release's number. Do not write the number into
-this card before the release exists. Until the bump lands, the release index's
+post-0.3.0 fixes first, then metasalmonpy claims that number"* — and
+**metasalmon 0.4.0 was released the same day** (tagged `v0.4.0`). So this is
+neither a decision nor a dependency any more: metasalmonpy **skips 0.3.0** and
+its terminal bump claims **0.4.0**. Until that bump lands, the release index's
 metasalmonpy entry (0.2.1) understates the tree.
 
 1. **Chunk H merges** — `write_salmon_datapackage()` renders the full write set
@@ -71,10 +71,9 @@ metasalmonpy entry (0.2.1) understates the tree.
    succeeds, with abort-injection tests mirroring
    `test-write-datapackage-abort-safety.R` and R's two honest narrowings
    (`prune` residual; create-owned sidecars = backlog #111).
-2. ~~**Q7 is answered**~~ — **done 2026-08-24.** The ruling is two-step: the
-   metasalmon release carrying the post-0.3.0 fixes is cut first, then this bump
-   claims that number. What remains in this slot is therefore **the metasalmon
-   release**, which is another agent's work, not a decision anyone owes.
+2. ~~**Q7 is answered**~~ — **done 2026-08-24**, and its first step with it:
+   metasalmon **0.4.0** is released and tagged, so the number this bump claims is
+   0.4.0. Nothing remains in this slot.
 3. **The bump ships** in metasalmonpy's own lockstep form: both version strings
    agreeing, the CHANGELOG's *Unreleased* sections resolved into the release
    entry, an annotated tag, a published GitHub Release — and, in the same

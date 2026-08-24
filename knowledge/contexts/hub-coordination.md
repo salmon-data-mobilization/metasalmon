@@ -20,15 +20,17 @@ Brett's standing instructions (2026-08-12/13) that define this context:
 - metasalmonpy mirrors metasalmon: functionality and version numbers in
   lockstep, with version bumps made only when parity actually lands. Lockstep
   is the target, not the present state — the mirror is tagged **0.2.1** against
-  R's 0.3.0 while its `main` carries S10's complete 0.3.0-plus port unversioned,
-  and [S10](../sequences/s10-metasalmonpy-parity.md) is the catch-up. (This line
+  R's **0.4.0** (released 2026-08-24) while its `main` carries S10's complete
+  0.3.0-plus port unversioned, and
+  [S10](../sequences/s10-metasalmonpy-parity.md) is the catch-up. (This line
   read "0.1.8" until 2026-08-24, having lagged the 2026-08-18 tags; the release
   index in the [roadmap](../roadmap.md) is the authority for the number.) A
   Python version number is a claim about behaviour delivered, so the gap is
   visible by design rather than papered over with a matching number. **The order
   of the final bump is ruled** (Brett, 2026-08-24, hub
   [Q7](../questions.md)): metasalmon releases the tree carrying its post-0.3.0
-  fixes first, then metasalmonpy claims that number and skips 0.3.0.
+  fixes first, then metasalmonpy claims that number and skips 0.3.0. That release
+  is **0.4.0**, so the outstanding step is metasalmonpy's bump.
 - **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"don't just make things match metasalmon; if the Python implementation got
   it right, then update metasalmon."* This coordination context therefore

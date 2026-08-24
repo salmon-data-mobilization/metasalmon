@@ -1604,8 +1604,9 @@ dictionary had a `method_iri` slot that sdp-0.3.0 deleted (see #75). So the
 conclusion "not a parity divergence" survives — both mirrors fail this
 validator, and no R↔Python comparison would surface it — but the premise
 "identical keys" was wrong, and it matters: whichever way #90 is decided,
-Python's seventh key is a *separate* divergence that the S10 0.2.2→0.3.0
-catch-up has to close on its own.
+Python's seventh key is a *separate* divergence that the S10 0.2.2→0.4.0
+catch-up has to close on its own (window endpoint moved when metasalmon released
+0.4.0 on 2026-08-24).
 
 **The two readings are not evenly supported, and the item used to imply they
 were.** The normativity claim behind "the validator is normative" does not

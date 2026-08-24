@@ -318,9 +318,9 @@ Every chunk A–H is merged. What remains is **not implementation**:
 
 1. **The terminal version bump** — open decision 2 / hub **Q7**, **ruled
    2026-08-24**: metasalmon releases the tree carrying its post-0.3.0 fixes
-   first, and this bump claims that number, skipping 0.3.0. The port is finished
-   and unversioned; what stands between it and a truthful parity claim is now a
-   **release**, not a decision.
+   first, and this bump claims that number, skipping 0.3.0. **metasalmon 0.4.0
+   was released the same day**, so the number is 0.4.0 and nothing stands between
+   the finished port and a truthful parity claim except the bump itself.
 2. **Hub twins for rows 51–53** — landing with this record.
 3. **Registered, deliberately-unfixed divergences** — row 53 is *registered*,
    which is its correct state, and needs #111 plus a Python-side decision. **Row
@@ -500,9 +500,10 @@ the same change.
 > **The sequencing is fixed, and it is the part to carry forward:** metasalmon
 > releases the tree containing its post-0.3.0 fixes **first**; metasalmonpy's
 > terminal bump then claims **that same number** as a parity claim on a release
-> that exists. metasalmonpy **skips 0.3.0**. The number is deliberately not
-> written into this plan — a separate agent is cutting that release; read it off
-> the release rather than predicting it.
+> that exists. metasalmonpy **skips 0.3.0**. **The release landed the same day:
+> metasalmon 0.4.0, tagged `v0.4.0` (2026-08-24), 153 commits carrying the whole
+> post-0.3.0 development section.** So the number is **0.4.0**, and it is a
+> measured fact rather than a forecast.
 >
 > **What this costs, since option (c) was the one whose costs this plan named.**
 > It makes the Python bump wait on an R release decision — that wait is now
@@ -514,18 +515,21 @@ the same change.
 >
 > **The verification baseline half is settled with it.** Chunks A–H measured
 > against `main` at the moment of measurement — option (b)'s shape — and that
-> stops being a standing convention the moment the release exists: the release
-> tree is the baseline the final differential runs against, and it should contain
-> what those chunks measured. If it does not, that is a finding to report before
-> the bump, not a discrepancy to absorb into it.
+> convention ends now that `v0.4.0` exists: **the 0.4.0 tree is the baseline the
+> final differential runs against.** The chunks measured `main` at `e02111a`,
+> `39818ce`, `9d8f125` and `794647a`, all of which are inside 0.4.0 by commit
+> order — but that is an inference, **not a verification**. Confirm the 0.4.0
+> tree contains what those chunks measured before the bump; if it does not, that
+> is a finding to report, not a discrepancy to absorb into the version number.
 >
 > **Three copies of one fact move together or the mirror contract is broken by
-> the fix.** The catch-up window reads `0.2.2→0.3.0` in *both* repositories'
-> `AGENTS.md`; its upper end becomes the new release number, and the release
-> index in `knowledge/roadmap.md` is the third copy. That file's own contract
-> says a disagreement between the two `AGENTS.md` copies is unresolvable from
-> either one alone — it has already happened once, for three days — so update all
-> three in the change that lands the bump.
+> the fix.** The catch-up window is `0.2.2→0.4.0` — it read `0.2.2→0.3.0` in
+> *both* repositories' `AGENTS.md` until 0.4.0 shipped — and the release index in
+> `knowledge/roadmap.md` is the third copy. metasalmon's `AGENTS.md` and the
+> release index moved with the 0.4.0 release; **metasalmonpy's `AGENTS.md` has
+> not**, and that file's own contract says a disagreement between the two copies
+> is unresolvable from either one alone — it has already happened once, for three
+> days. Move it in the change that lands the bump.
 
 **The question as it stood, kept because the options are the reasoning behind
 the ruling.**

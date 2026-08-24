@@ -281,16 +281,18 @@ metasalmonpy therefore **skips 0.3.0** on the Python side. The version lockstep
 the mirror contract describes is preserved, because both numbers name the same
 released behaviour — which is the property the ruling's own words turn on.
 
-**The number is deliberately not written here.** A separate agent is cutting that
-metasalmon release; read the number off the release, do not infer it. Any
-document that states it before the release exists is stating a forecast.
+**Step 1 happened the same day: metasalmon 0.4.0**, tagged `v0.4.0` and released
+2026-08-24 by a separate agent, concurrently with this pass. So the number
+metasalmonpy claims is **0.4.0**. This entry was deliberately written to state
+the rule rather than a forecast, and the rule produced a number within hours;
+what remains is step 2, metasalmonpy's own change.
 
-**What must move in the same change as the release, because three copies of one
-fact are in play** (the `AGENTS.md` mirror contract says so, and has already been
-wrong about it once): the catch-up window reads `0.2.2→0.3.0` in **both**
-repositories' `AGENTS.md`, and its upper end becomes the new release number; the
-release index in [roadmap](roadmap.md) is the third copy and must agree with
-both.
+**Three copies of that number are in play** (the `AGENTS.md` mirror contract says
+so, and has already been wrong about it once, for three days): the catch-up
+window in **both** repositories' `AGENTS.md`, and the release index in
+[roadmap](roadmap.md). metasalmon's `AGENTS.md` and the release index are already
+at `0.2.2→0.4.0`; **metasalmonpy's `AGENTS.md` is the outstanding copy**, and it
+moves with the bump.
 
 **Recorded in:** the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
 open decision 2 (now decided), the [S10 card](sequences/s10-metasalmonpy-parity.md),

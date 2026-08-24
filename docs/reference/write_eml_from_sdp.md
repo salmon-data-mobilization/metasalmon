@@ -23,7 +23,8 @@ write_eml_from_sdp(
   mapping_path = NULL,
   overwrite = FALSE,
   supplementary_objects = NULL,
-  require_revision_key = FALSE
+  require_revision_key = FALSE,
+  knb_environment = "production"
 )
 ```
 
@@ -66,6 +67,20 @@ write_eml_from_sdp(
   Logical; when `TRUE`, require a reviewed `publication.revision_key` in
   the EML mapping sidecar. The key creates a new deterministic metadata
   package ID without changing the series ID.
+
+- knb_environment:
+
+  KNB deposit environment the document is written for: `"production"`
+  (the default) or `"test"`. It selects the DataONE member node whose
+  object URLs the EML distribution elements point at, and is folded into
+  the deterministic package and series identifiers so a test identifier
+  can never be mistaken for a production one. Accepted exactly; there is
+  no partial matching and no custom endpoint. The default is
+  `"production"` because this function writes the package's reviewed
+  `metadata/eml.xml`;
+  [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
+  supplies its own environment and writes a test document to a separate
+  path, leaving the reviewed production record untouched.
 
 ## Value
 
