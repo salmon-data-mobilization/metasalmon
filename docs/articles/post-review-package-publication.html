@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -467,17 +467,58 @@ or making a network request:</p>
 <span>  dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  representation <span class="op">=</span> <span class="st">"expanded"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>That dry run targets the <strong>KNB Test Node</strong>
+(<code>urn:node:mnTestKNB</code>), which is what
+<code>knb_environment</code> defaults to for a dry run. The golden path
+develops a package against the test node first and posts to production
+once it looks good there, so rehearse in that order:</p>
+<ol style="list-style-type: decimal">
+<li>credential-free <strong>test dry run</strong> (the call above)</li>
+<li>optional authorized <strong>test deposit</strong>, with a
+<code>dataone_test_token</code>
+</li>
+<li>fresh <strong>production dry run</strong>, naming the environment
+explicitly</li>
+<li>optional private <strong>production deposit</strong>
+</li>
+<li>separate <strong>KNB Publish</strong> action for public release and
+DOI</li>
+</ol>
+<p>Test objects are never promoted to production: a production deposit
+is planned separately, with production credentials, and mints its own
+identifiers.</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
+<span>  <span class="va">pkg_path</span>,</span>
+<span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  representation <span class="op">=</span> <span class="st">"expanded"</span>,</span>
+<span>  knb_environment <span class="op">=</span> <span class="st">"production"</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Switching the environment switches the DataONE network, member node,
+coordinating node, resolver, and catalog endpoint together — they never
+vary independently — along with which credential is read. Test artifacts
+are written under <code>publication/test/</code>, so the reviewed
+production <code>metadata/eml.xml</code> and
+<code>publication/knb-manifest.json</code> are left exactly as they
+were.</p>
 <p>Live KNB publication is a separate explicit action. It requires a
-short-lived DataONE JWT in the process-local <code>dataone_token</code>
-option, an ORCID-authenticated subject matching the EML metadata
-provider, and an explicitly supplied <code>confirm = TRUE</code>. The
-confirmation means both that the exact pending manifest is approved and
-that the caller has authority to redistribute the package.</p>
+short-lived DataONE JWT in the process-local option belonging to the
+environment (<code>dataone_token</code> for production,
+<code>dataone_test_token</code> for the test node — they are separate
+credentials), an ORCID-authenticated subject matching the EML metadata
+provider, an explicitly named <code>knb_environment</code>, and an
+explicitly supplied <code>confirm = TRUE</code>. A live call never
+infers its environment. The confirmation means both that the exact
+pending manifest is approved and that the caller has authority to
+redistribute the package.</p>
 <p>Keep the JWT out of scripts, YAML, manifests, and shell history.
 Enter it into the current R process only and clear it immediately after
 the live call:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># `dataone_token` is the production credential; the test node reads</span></span>
+<span><span class="co"># `dataone_test_token` instead.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/on.exit.html" class="external-link">on.exit</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span>, add <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
@@ -485,7 +526,8 @@ the live call:</p>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  dry_run <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  confirm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  representation <span class="op">=</span> <span class="st">"expanded"</span></span>
+<span>  representation <span class="op">=</span> <span class="st">"expanded"</span>,</span>
+<span>  knb_environment <span class="op">=</span> <span class="st">"production"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p><code>public = FALSE</code> is the recommended review path, but it is
 not a server-side draft: a live call creates persistent production KNB
@@ -527,10 +569,10 @@ than overwriting bytes.</p>
 dry run to the verified manifest for the preceding version. Build the
 revision in a fresh versioned SDP directory; never reuse or overwrite
 the prior package directory:</p>
-<div class="sourceCode" id="cb18"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
-<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">revised_pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -541,8 +583,11 @@ the prior package directory:</p>
 <span>  <span class="op">)</span>,</span>
 <span>  revision_manifest <span class="op">=</span> <span class="va">previous_manifest_path</span>,</span>
 <span>  dry_run <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  representation <span class="op">=</span> <span class="st">"expanded"</span></span>
+<span>  representation <span class="op">=</span> <span class="st">"expanded"</span>,</span>
+<span>  knb_environment <span class="op">=</span> <span class="st">"production"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>A revision continues the environment it started in; a manifest from
+one environment can never be revised into the other.</p>
 <p>Review that new manifest before repeating the live call with
 <code>dry_run = FALSE, confirm = TRUE</code>. An interrupted live call
 is resumable: reuse the byte-identical package, revision manifest, and

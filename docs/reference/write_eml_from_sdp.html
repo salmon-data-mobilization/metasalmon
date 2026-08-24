@@ -27,7 +27,7 @@ is an error: run migrate_sdp_methods() first."><meta property="og:image" content
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,7 +88,8 @@ is an error: run <code><a href="migrate_sdp_methods.html">migrate_sdp_methods()<
 <span>  mapping_path <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  supplementary_objects <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  require_revision_key <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  require_revision_key <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  knb_environment <span class="op">=</span> <span class="st">"production"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -132,6 +133,19 @@ standalone EML export leaves the argument <code>NULL</code>.</p></dd>
 <dd><p>Logical; when <code>TRUE</code>, require a reviewed
 <code>publication.revision_key</code> in the EML mapping sidecar. The key creates a
 new deterministic metadata package ID without changing the series ID.</p></dd>
+
+
+<dt id="arg-knb-environment">knb_environment<a class="anchor" aria-label="anchor" href="#arg-knb-environment"></a></dt>
+<dd><p>KNB deposit environment the document is written for:
+<code>"production"</code> (the default) or <code>"test"</code>. It selects the DataONE member
+node whose object URLs the EML distribution elements point at, and is
+folded into the deterministic package and series identifiers so a test
+identifier can never be mistaken for a production one. Accepted exactly;
+there is no partial matching and no custom endpoint. The default is
+<code>"production"</code> because this function writes the package's reviewed
+<code>metadata/eml.xml</code>; <code><a href="publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code> supplies its own environment
+and writes a test document to a separate path, leaving the reviewed
+production record untouched.</p></dd>
 
 </dl></div>
     <div class="section level2">

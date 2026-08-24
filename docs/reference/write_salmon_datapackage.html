@@ -19,7 +19,7 @@ the package root."><meta property="og:image" content="https://salmon-data-mobili
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.3.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -148,6 +148,14 @@ deleted first (the pre-0.2.0 behaviour). Requires <code>overwrite = TRUE</code>.
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The SDP CSV files remain the canonical package metadata. <code>datapackage.json</code>
 is a convenience export, not the source of truth.</p>
+<p>The write is transactional over the files it owns: every output is fully
+rendered before anything on disk is deleted or replaced, and a failure while
+installing the rendered files restores the previous package. An error partway
+through therefore leaves an existing package intact rather than destroyed.
+The one exception is <code>prune = TRUE</code>, which deletes files the writer does not
+own and so cannot restore: the wipe still happens only after every
+input-dependent step has succeeded, but a filesystem failure (disk full,
+permissions) between the wipe and the install can lose the deleted files.</p>
     </div>
 
     <div class="section level2">
