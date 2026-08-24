@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "ROADMAP — salmon data ecosystem hub"
-description: "The single sequencing authority for metasalmon and the seven-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
+description: "The single sequencing authority for metasalmon and the eight-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
 status: draft
 tags: [roadmap, sequencing, releases]
 psc:
@@ -13,8 +13,8 @@ psc:
 
 **This is the single sequencing document for metasalmon and the salmon-data
 ecosystem around it** — the coordinating hub for the repos in the
-[domain card](domains/salmon-data-ecosystem.md) (seven today; whether that is
-the right count is an open decision below). It answers *what order, what
+[domain card](domains/salmon-data-ecosystem.md) (**eight**, ruled 2026-08-24 —
+the count was an open decision here until then). It answers *what order, what
 blocks what, and what is the current state*, and it carries the cross-repo
 **release index**. It deliberately does **not** carry design detail: every
 stream links to a sequence card under `sequences/` and every sequence card
@@ -50,18 +50,20 @@ Rules that keep this from decaying:
   is correct, so each divergence is a question about which side is right, and
   R changing is a normal answer rather than an exception. See
   [parity-deviations](parity-deviations.md) row 32 for the first application.
-- **Domain allowlist:** the seven rows in the
-  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. The seventh,
-  `salmon-knowledge-commons`, was added 2026-08-17 (Brett) because its ontology
-  gap register is an *input* to this package's term-request pipeline, not an
-  artifact the hub consumes — that is the membership test, and the card records
-  it. Shared tools, hyperlinks, consumed artifacts, transitive dependencies,
-  and a shared GitHub organization do not add a repository to this hub.
-  **The card states a *different* test in its closing paragraph, and the two
-  disagree** — unruled, recorded as
-  [OD-1](#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member).
-  Neither test has been deleted and the allowlist is unchanged; apply both and
-  report the disagreement rather than picking one.
+- **Domain allowlist:** the **eight** rows in the
+  [domain card](domains/salmon-data-ecosystem.md) are exhaustive. **The
+  membership test, ruled 2026-08-24 (Brett): a repository is a member when this
+  hub sequences that repository's work.** That is the domain card's test, and it
+  is now the only one — the competing *input* test this card used to state ("a
+  repository joins when its output is an input to this pipeline") is **deleted**,
+  which is what [OD-1](#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member)'s
+  retirement condition required. Under it, `salmon-data-standards-workshop` is
+  the eighth member (this hub sequences its rebuild as S4), and
+  `salmon-knowledge-commons`'s 2026-08-17 admission is restated in sequencing
+  terms in the domain card rather than re-opened. Shared tools, hyperlinks,
+  consumed artifacts, transitive dependencies, and a shared GitHub organization
+  do not add a repository to this hub, and neither does being consumed by it or
+  consuming it.
 - **External-edge rule:** an external repository appears here only as a typed
   dependency edge naming its owner, required artifact or gate, owning plan, and
   observation date. Its tasks, priorities, status, branches, approvals, and
@@ -79,7 +81,7 @@ Rules that keep this from decaying:
   released mapping products and decisions remain authoritative in their owning
   semantic-asset repository, not here.
 - This hub retains technical sequencing, mirror coordination, and the release
-  index for the seven-repository ecosystem. The bounded consumer plan is
+  index for the eight-repository ecosystem. The bounded consumer plan is
   [governed mapping products](plans/2026-08-14-governed-mapping-products.md).
 - Brett will coordinate identification of the competent CTC/domain and
   application authorities; that coordination is not their approval. Until
@@ -171,6 +173,27 @@ Ordering that is not optional, independent of who is executing:
   release tree: the statistical-modifier ranking preferences, the corrected
   bundle-review prompt, the dry-run stop parity, and the role-contract guard.
   See the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md).
+- **The metasalmon release comes before metasalmonpy's terminal bump** (Brett,
+  2026-08-24, hub [Q7](questions.md)): *"cut a metasalmon release containing the
+  post-0.3.0 fixes first, then metasalmonpy claims that number — it makes both
+  version claims literally true."* Two consequences that order work rather than
+  merely describing it: metasalmonpy **skips 0.3.0** and claims whatever number
+  that release carries, and no number may be written into this bundle before the
+  release exists. When it does, the catch-up window in **both** repositories'
+  `AGENTS.md` and this card's release index — three copies of one fact — move
+  together.
+- **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
+  2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
+  needs."* The carve-out is currently **one item — PFMA subareas** for the
+  173-row example's `AREA` column (`29F`, `29G`, `29J`, `29K`), which
+  [Q8](questions.md) sends to gcdfo because it already owns
+  `gcdfo:PacificFisheryManagementAreaScheme`. Everything else in gcdfo stays
+  de-prioritised and `psc-salmon-vocabularies` stays fully de-prioritised.
+  Species goes to an external taxonomy, not to gcdfo. **Still to decide, and it
+  is a scope question rather than a priority one:** whether the mint is the four
+  Subareas the example holds or all 604 in SOR/2007-77 Schedule 2 — owner
+  [S12](sequences/s12-fraser-coho-gold-standard.md), routed through
+  [S9 step 7](sequences/s9-ontology-alignment.md).
 
 Live pull-request state is deliberately NOT tracked here — it is stale the
 moment anything merges. Current work-in-flight lives in the owning execplan.
@@ -185,17 +208,18 @@ psc-salmon-vocabularies and workshop rows were re-checked 2026-08-21 against
 sibling checkouts.
 
 **Read every row's tag line, not just its version heading.**
-**Five of the seven** members have `main` ahead of their newest tag
+**Five of the eight** members have `main` ahead of their newest tag
 (metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
 smn-data-pkg), PSC's alpha.3 is merged and untagged, and neither the commons
 nor the workshop has a tag at all. Ahead-of-tag is the ecosystem's normal state
 rather than an anomaly worth flagging per row, so **cite a commit unless you
 have checked that the thing you mean is inside the tag.**
 
-The index carries **eight sections for seven members**: the workshop is
-sequenced here as S4 whether or not it is a member, so leaving its state
-unrecorded served nobody. That mismatch is an *Open decision* below, not a
-quiet expansion of the allowlist.
+The index carries **eight sections for eight members** — the mismatch it used to
+carry ("eight sections for seven members", the workshop recorded here while
+absent from the allowlist) was closed by the 2026-08-24 membership ruling, which
+made the workshop the eighth member. Its section is a member row now, not a
+courtesy record.
 
 ### metasalmon (R) — current **0.3.0**
 
@@ -221,17 +245,26 @@ review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
 **No release has been cut since**: `v0.3.0` (2026-08-15) is still the newest tag
 while `main` is 132 commits past it with 23 unreleased fix entries in
 `NEWS.md` (measured 2026-08-21) — details under *metasalmon current state*
-below. That gap is itself evidence for Q7's recommendation: cutting the release
-is what would give the metasalmonpy port a truthful number to claim.
+below. **Closing that gap is now sequenced work, not an argument**: Q7 was ruled
+2026-08-24, and cutting this release is step 1 of the two-step it fixed — the
+metasalmonpy terminal bump claims whatever number this release carries.
 
 ### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
 
-> **This number is now materially understated, and deliberately so.** S10's
+> **This number is materially understated, and deliberately so.** S10's
 > implementation completed 2026-08-22 — all eight chunks A–H merged — but every
-> chunk landed *unversioned* because what number the finished port may carry is
+> chunk landed *unversioned* because what number the finished port may carry was
 > [Q7](questions.md), Brett's. `main` therefore carries metasalmon-0.3.0-plus
-> behaviour under a 0.2.1 tag. Read this row as a **pending claim awaiting Q7**,
-> not as the tree's current capability.
+> behaviour under a 0.2.1 tag.
+>
+> **Q7 was ruled 2026-08-24** — *"cut a metasalmon release containing the
+> post-0.3.0 fixes first, then metasalmonpy claims that number"* — so this row is
+> now waiting on a **release**, not on a decision. The order is fixed: metasalmon
+> releases the tree carrying its post-0.3.0 fixes, then metasalmonpy's terminal
+> bump claims that same number and **skips 0.3.0**. The number is deliberately
+> not written here; read it off the metasalmon release when it exists, and update
+> this row, both `AGENTS.md` catch-up windows, and the metasalmon row above in the
+> same change.
 
 | Version | Date | One line |
 |---|---|---|
@@ -477,9 +510,11 @@ citation for anything it contains is a commit.
 **This repository was silently absent from the index while being sequenced as
 [S4](sequences/s4-workshop-rebuild.md)** — the hub was ordering a rebuild of a
 repo whose current state the index did not record. Added 2026-08-21 for that
-reason alone. **Its membership in the domain is an open decision, not settled by
-its appearing here**: see *Open decisions* below. A release-index row is a
-statement about what a repo has shipped, not a membership grant.
+reason alone, with its membership explicitly unsettled: a release-index row is a
+statement about what a repo has shipped, not a membership grant. **Membership was
+then ruled 2026-08-24 (Brett): it is the eighth member of the domain**, admitted
+by the sequencing test, and this is now a member section. See
+[OD-1](#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member).
 
 A lesson has no versioning scheme for the same reason the commons has none:
 nobody has decided one. Do not invent one for this table. What a lesson pins
@@ -508,41 +543,46 @@ which is worse than leaving the question open, because an open question at least
 looks like one. Each entry names its options and what the ruling unblocks.
 **Do not resolve one by editing another card to match your preferred answer.**
 
+**A ruled entry stays here, in place, with its ruling stated at the top and its
+heading unchanged** — other cards link to these anchors, and an entry that
+disappears on being answered takes every link with it. OD-1 is the first, ruled
+2026-08-24; the full index of decisions and their status is
+[questions.md](questions.md).
+
 ### OD-1 — Which membership test governs, and is `salmon-data-standards-workshop` the eighth member?
 
-**This bundle states two different membership tests, and they disagree.**
+> **RULED 2026-08-24 (Brett) — option B.** *"sounds good I will take your
+> suggestions."* Kept in place, with its heading unchanged, so every existing
+> link to this anchor still resolves; a ruled entry stays where it was and says
+> so rather than vanishing. Hub question: [Q10](questions.md).
 
-- This card's *Domain allowlist* rule admits a repository when **its output is
-  an input to this pipeline** — the stated reason `salmon-knowledge-commons` was
-  admitted 2026-08-17, its gap register feeding `detect_semantic_term_gaps()`.
-- The [domain card](domains/salmon-data-ecosystem.md) closes with a different
-  rule: **membership follows from this hub sequencing that repository's work.**
+**The ruling.** The **sequencing** test governs: *a repository is a member when
+this hub sequences that repository's work.* The **input** test — a repository
+joins when its output is an input to this pipeline — **is deleted** from the
+*Domain allowlist* rule above, which now states the sequencing test alone. That
+deletion was this entry's own retirement condition, and it is the half that is
+easy to skip: leaving both tests alive is how the pair regrew after 2026-08-17.
 
-They give **opposite answers for `psc-data-transformations`**: the hub does not
-sequence its work, so the second test excludes it, while it drives requirements
-into this package through a version pin and calls to `metasalmon:::` internals,
-which the first test arguably admits. And they invert for the workshop — the hub
-**does** sequence its rebuild as S4, so the second test admits it, while a
-lesson's output is not an input to any pipeline stage, so the first excludes it.
-Meanwhile the domain card asserts "seven repositories, one hub" as
-**exhaustive** while this roadmap sequences an eighth repository's rebuild as a
-named stream.
+Three consequences, all applied in the same change:
 
-| # | Possible ruling | Consequence |
-|---|---|---|
-| A | The **input** test governs | The domain card's sequencing sentence is corrected; the workshop stays external, and S4 becomes a stream sequencing a non-member — which the external-edge rule above does not currently permit |
-| B | The **sequencing** test governs | The workshop becomes the **eighth** member, the allowlist count changes, and the commons's 2026-08-17 admission is restated in sequencing terms |
-| C | **Both** must hold | Neither joins; the commons's admission re-opens; S4 needs a stated exception for sequencing a non-member |
-| D | Membership unchanged; the hub **explicitly permits** sequencing an external repository | Cheapest change; requires extending the external-edge rule to cover "sequenced here, owned elsewhere" |
+- **`salmon-data-standards-workshop` is the eighth member.** The domain-card
+  allowlist is eight rows; its release-index section below is a member row.
+- **`psc-data-transformations` stays external**, as a typed *requirements-driving
+  consumer* edge. Its pin on metasalmon 0.1.8 at `886e01d` is a compatibility
+  constraint this package should know about — **not an obligation on it** — and
+  its substance stays in S13.
+- **`salmon-knowledge-commons` keeps its membership**, restated in sequencing
+  terms in the domain card (this hub sequences work that lands there: S12's two
+  ontology gaps, S9's term-request routing, gcdfo PR #87's knowledge routing).
+  Option B said that restatement would be required, and it is the weakest link
+  in the ruling — the place to re-examine if any part of it is wrong.
 
-**Unblocks:** whether the workshop's release-index section above is a member row
-or a courtesy record; whether `psc-data-transformations`' pin on metasalmon
-0.1.8 is an obligation on this package or advisory; and whether "seven
-repositories" is a count anyone must maintain. Until it is ruled, **neither test
-has been deleted and the workshop has not been added.** The same question is
-recorded in the domain card, so a reader arriving from either direction meets
-it. *Retires when:* Brett rules — and the losing test is deleted in the same
-change, or this pair regrows.
+**And "seven repositories" is no longer a count anyone maintains** — it is eight,
+in the domain card, this card's frontmatter and body, the hub-coordination
+context, and the S6 card. The original four candidate rulings, and what each one
+would have cost, are in this file's history; they are not reproduced here,
+because a menu of rejected options beside a ruling is what makes a ruled decision
+read as still-open.
 
 ### OD-2 — What does "the KNB test environment" mean?
 
@@ -739,9 +779,9 @@ release half of that gate is satisfied.
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
-- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · **implementation COMPLETE 2026-08-22** — all eight chunks A–H merged (metasalmonpy PRs #14–#17, #19, #20, #21), every one unversioned. The only remaining scope is the terminal bump, which waits on Q7 alone. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification; chunk H registered two divergences rather than fixing them — the two-sentinel problem ([Q14](questions.md), parity row 51) and the wider Python `create_sdp()` sidecar window (row 53, which does **not** retire when #111 closes)
+- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · **implementation COMPLETE 2026-08-22** — all eight chunks A–H merged (metasalmonpy PRs #14–#17, #19, #20, #21), every one unversioned. The only remaining scope is the terminal bump; **Q7 ruled it 2026-08-24**, so the bump now waits on the metasalmon release it claims, not on a decision. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification; chunk H registered two divergences rather than fixing them — the two-sentinel problem ([Q14](questions.md), parity row 51) and the wider Python `create_sdp()` sidecar window (row 53, which does **not** retire when #111 closes)
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
-- [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md)
+- [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md) · **the artifact is ruled (Brett, 2026-08-24, [Q4](questions.md)): the 173-row `nuseds-fraser-coho-2023-2024.csv`**, with the 30-row sample demoted to the speed fixture it already claims to be. Its finish line is two-staged — clean through both validators, then deposited under S3's exit criteria — so S12 now depends on S3 for its second stage and on #90/#95 for its first
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
 
 **S12 and S13 are new streams for work that was already a stated top priority

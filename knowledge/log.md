@@ -1,5 +1,68 @@
 # Bundle log
 
+## 2026-08-24
+
+- **Brett ruled eight of the fourteen open questions; this pass recorded them
+  in the cards where the work happens, not only in the index.** Q3 (descriptor
+  I-ADOPT keys are permitted, the spec validator learns them), Q4 (the 173-row
+  Fraser coho example is the gold standard), Q5 (gcdfo is carved out for exactly
+  what the gold standard needs), Q7 (metasalmon releases first, metasalmonpy
+  claims that number), Q8 (PFMA Subareas to gcdfo, species to an external
+  taxonomy), Q10 (the sequencing membership test governs; the workshop is the
+  eighth member), Q11 (`metadata/semantic/**` is adopted into the SDP spec), and
+  Q14 (one shared ownership sentinel, breaking change accepted).
+
+- **A ruling deleted a rule, which is the part that is easy to skip.** Q10's
+  answer required deleting the roadmap's *input* membership test, not merely
+  choosing against it — OD-1 said so as its retirement condition. The two tests
+  had coexisted since 2026-08-17 and gave opposite answers for two repositories.
+  With one test deleted, `salmon-knowledge-commons`'s admission had to be
+  **restated** in sequencing terms, because the sentence that admitted it cited
+  the deleted test. That restatement is recorded as the weakest link in the
+  ruling rather than smoothed over.
+
+- **A count that nobody owned had drifted into six documents.** "Seven
+  repositories" appeared in the domain card, the roadmap's frontmatter, its
+  allowlist rule, its release index, the hub-coordination context, and the S6
+  card. All now read eight. The 2026-08-14 execplan keeps its dated "seven, not
+  six" entry and gains a 2026-08-24 successor entry, because a dated plan records
+  what was decided when — but its *reasoning* is now stated in a test that no
+  longer governs, which is a decay shape worth naming: an entry can stay true as
+  history while its argument stops being usable.
+
+- **One question was answered by rewriting it rather than by ruling on it.**
+  Q12 asked where type coercion belongs on the write path, in language that
+  assumed context Brett did not have; he reasonably guessed it was about the KNB
+  deposit reaching the DataONE CN. It is not — it is about which of R's two
+  `Date`-to-text renderers a given code path uses. The rewrite states the three
+  symptoms concretely, says plainly that no salmon dataset has a pre-1000 date so
+  nothing is broken in practice, names byte reproducibility as what is actually
+  at stake, and reduces the ask to one decision. **A question a decider cannot
+  parse is not an open decision; it is an unwritten one**, and it had been
+  sitting in the open list looking like the former.
+
+- **Q6 was expanded, not answered.** Brett asked for the precise questions,
+  recommendations and trade-offs before ruling on smn PR #27. The briefing was
+  given and the entry stays open. While recording that, a counting discrepancy
+  surfaced in the S9 card: eight decisions live there, but only six are in the
+  decision table (rows 1–5 and 8) and two sit in the prose beneath it. Anyone
+  counting the table would conclude two were missing; the card now says so.
+
+- **Two rulings created work that lands outside this repository**, so they were
+  filed as backlog items with the ruling attached rather than left in the
+  questions index: **#113** (one shared package-ownership sentinel, in both
+  implementations) and **#114** (adopt `metadata/semantic/**` into
+  `smn-data-pkg`). A ruling recorded only in `questions.md` is an index entry
+  pointing at nothing.
+
+- **The parity register moved on rows 46 and 51 with no Python PR to ride** —
+  the same structural cause as its two historical numbering collisions, in
+  content form. Both rows now record a ruling; the twin text was written into
+  this pass's pull request for a metasalmonpy agent to apply, and the register
+  says the twin is a version behind until it does. The number checker cannot see
+  a content lag, which the register already states as its standing limit.
+
+
 ## 2026-08-18
 
 - Currency pass across the bundle plus a sweep to give every known open

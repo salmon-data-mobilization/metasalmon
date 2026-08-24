@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port may carry is an OPEN decision — see the execplan. The mirror rule applies to all new work immediately."
+description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port carries was RULED 2026-08-24 (Brett): metasalmon cuts the release containing its post-0.3.0 fixes first, then metasalmonpy claims that number and skips 0.3.0 — so the bump now waits on a release, not a decision. The mirror rule applies to all new work immediately."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -40,9 +40,10 @@ Chunks E and F — cache/environment/network robustness, then the redaction
 contract stacked on it — merged as PRs #17 and #19 against `794647a`, a
 **re-pin** rather than a re-baseline (the R tree was confirmed identical to
 `9d8f125` in `R/`, `tests/` and `inst/`). Every one is **unversioned by
-design**: metasalmonpy stays at 0.2.1 because which number the finished port may
-carry is open (Q7 / execplan open decision 2), so everything lands under the
-CHANGELOG's *Unreleased* heading and the single bump comes at the end. See the
+design**: metasalmonpy stayed at 0.2.1 while which number the finished port may
+carry was open (Q7 / execplan open decision 2), so everything landed under the
+CHANGELOG's *Unreleased* heading and the single bump comes at the end — now
+against the number of the metasalmon release Q7's ruling puts first. See the
 execplan's dated chunk records for counts, baselines and revert verification.
 
 **Chunk H merged as PR #21 — the last chunk, and S10's implementation is
@@ -51,14 +52,18 @@ complete.** It mirrors metasalmon PR #77's abort-safe write path by reusing
 reuses) rather than building a second transactional writer. 7 of 8 new tests
 RED on unfixed main; an abort at the descriptor build had reduced a valid
 package to a single data CSV. Two divergences were registered rather than
-fixed — the two-sentinel problem (row 51, now hub **Q14**) and the wider
+fixed — the two-sentinel problem (row 51, hub **Q14** — **ruled 2026-08-24**: one shared sentinel name, breaking change accepted, now backlog #113) and the wider
 Python `create_sdp()` sidecar window (row 53, which does **not** retire when
 backlog #111 closes).
 
 **What "done" means now, concretely:** every chunk merged; behaviour matches
-metasalmon `main`; and the single remaining step is deciding what version
-number the finished port may carry — **Q7**, Brett's. Until that lands, the
-release index's metasalmonpy entry (0.2.1) understates the tree.
+metasalmon `main`; and the single remaining step is the terminal version bump.
+**Q7 was ruled 2026-08-24 (Brett)** — *"cut a metasalmon release containing the
+post-0.3.0 fixes first, then metasalmonpy claims that number"* — so this is no
+longer a decision, it is a **dependency on a metasalmon release**. metasalmonpy
+**skips 0.3.0** and claims that release's number. Do not write the number into
+this card before the release exists. Until the bump lands, the release index's
+metasalmonpy entry (0.2.1) understates the tree.
 
 1. **Chunk H merges** — `write_salmon_datapackage()` renders the full write set
    to bytes before touching disk, installs through a multi-file staged write set
@@ -66,9 +71,10 @@ release index's metasalmonpy entry (0.2.1) understates the tree.
    succeeds, with abort-injection tests mirroring
    `test-write-datapackage-abort-safety.R` and R's two honest narrowings
    (`prune` residual; create-owned sidecars = backlog #111).
-2. **Q7 is answered** — the terminal bump cannot be truthful until someone rules
-   on what number a port carrying metasalmon's post-0.3.0 behaviour may claim.
-   This is the only remaining **decision**; everything else is work.
+2. ~~**Q7 is answered**~~ — **done 2026-08-24.** The ruling is two-step: the
+   metasalmon release carrying the post-0.3.0 fixes is cut first, then this bump
+   claims that number. What remains in this slot is therefore **the metasalmon
+   release**, which is another agent's work, not a decision anyone owes.
 3. **The bump ships** in metasalmonpy's own lockstep form: both version strings
    agreeing, the CHANGELOG's *Unreleased* sections resolved into the release
    entry, an annotated tag, a published GitHub Release — and, in the same
@@ -79,7 +85,10 @@ release index's metasalmonpy entry (0.2.1) understates the tree.
 What does **not** gate it: backlog **#87** / register row 32, the
 ranking-profile gap, which stays open with no milestone and is the surviving
 half of the execplan's open decision 1 (#91, its other half, closed at chunk D).
-Whether the parity claim tolerates shipping with #87 open is part of Q7.
+**Whether the parity claim tolerates shipping with #87 open was folded into Q7,
+and Q7's ruling does not address it** — the ruling is about *which number*, and
+says nothing about *what the number must contain*. Treat that as still open and
+say so at the bump, rather than reading the silence as permission.
 
 *(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
 rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all

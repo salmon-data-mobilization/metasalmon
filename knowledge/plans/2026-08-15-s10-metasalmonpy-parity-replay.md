@@ -263,7 +263,9 @@ reason for sequencing H behind them is spent and H started: branch
 `feat/s10-chunk-h-abort-safe-write`, cut from metasalmonpy `main` at `258db8d`
 (the chunk-D merge). No PR yet at the time of this entry. **H is the last
 subsystem chunk** — after it the only remaining S10 scope is the terminal
-version bump, which waits on Q7 / open decision 2 and on nothing else.
+version bump, which waited on Q7 / open decision 2 and on nothing else. **Q7 was
+ruled 2026-08-24**, so it now waits on the metasalmon release whose number it
+will claim.
 
 ### Ordering — only two chunks are forced after A
 
@@ -314,13 +316,17 @@ window. Measured at 5479 bytes of EDH XML deleted with nothing in its place.
 
 Every chunk A–H is merged. What remains is **not implementation**:
 
-1. **The terminal version bump** — open decision 2 / hub **Q7**. The port is
-   finished and unversioned, so the question is now the only thing between the
-   work and a truthful parity claim.
+1. **The terminal version bump** — open decision 2 / hub **Q7**, **ruled
+   2026-08-24**: metasalmon releases the tree carrying its post-0.3.0 fixes
+   first, and this bump claims that number, skipping 0.3.0. The port is finished
+   and unversioned; what stands between it and a truthful parity claim is now a
+   **release**, not a decision.
 2. **Hub twins for rows 51–53** — landing with this record.
-3. **Registered, deliberately-unfixed divergences** — rows 51 and 53 are
-   *registered*, which is their correct state, not outstanding work. Row 51
-   needs Q14; row 53 needs #111 plus a Python-side decision.
+3. **Registered, deliberately-unfixed divergences** — row 53 is *registered*,
+   which is its correct state, and needs #111 plus a Python-side decision. **Row
+   51 stopped being one on 2026-08-24**: Q14 ruled one shared sentinel name with
+   the compatibility break accepted, so it is now outstanding work in both
+   repositories (hub backlog #113).
 
 The differential method is what carried the stream, and the strongest single
 piece of evidence for it is chunk D's: **metasalmonpy passed clean on 13 of 18
@@ -384,18 +390,25 @@ that commit and re-verified byte-identical after `main` moved mid-stream.
 That is the operative convention for the remaining chunks unless open
 decision 2 rules otherwise: not the `v0.3.0` tag, not a frozen post-tag
 commit, but current `main` when the chunk's fixtures are cut, **named by
-commit** so the claim stays checkable. It is also a data point *for* the
-decision, not a substitute for it — see open decision 2 below and hub Q7.
+commit** so the claim stays checkable. It was also a data point *for* the
+decision rather than a substitute for it — see open decision 2 below, **decided
+2026-08-24**, and hub Q7.
 
 ## Open decisions — recorded as open, not as preferences
 
-Three questions this plan needs answered before the chunks can finish. None has
-a decider or a date behind it, so **nothing below is a ruling** and no option is
-endorsed — the options are listed so a decider sees the field, not so a reader
-infers a preference from the order. All three were surfaced or restated
-2026-08-21, and two of them (1b and 2) are live disagreements between two
-documents rather than unfilled blanks, which is the harder kind: each side reads
-as settled on its own page.
+Three questions this plan needed answered before the chunks could finish. They
+were written with **no option endorsed** — listed so a decider saw the field, not
+so a reader inferred a preference from the order. All three were surfaced or
+restated 2026-08-21, and two of them (1b and 2) were live disagreements between
+two documents rather than unfilled blanks, which is the harder kind: each side
+reads as settled on its own page.
+
+**Two of the three are now decided, and both entries keep their headings and
+their option lists.** 1b was decided at chunk E (2026-08-22, by an implementer);
+**2 was ruled by Brett on 2026-08-24** and carries the ruling at the top of its
+section. The options are kept beneath each ruling because they are the reasoning
+behind it — but read the ruling first: an option list under a decided question is
+the shape a settled decision most easily decays back into an open one.
 
 ### 1. What must metasalmonpy 0.3.0 contain?
 
@@ -478,7 +491,45 @@ the rename is a scope line in it. *Retires when:* a dated decision naming the
 decider lands in one place and the other document is corrected to point at it in
 the same change.
 
-### 2. What version number may the finished port carry?
+### 2. What version number may the finished port carry? — **DECIDED 2026-08-24 (Brett), option (c)**
+
+> **Ruling:** *"yes, cut a metasalmon release containing the post-0.3.0 fixes
+> first, then metasalmonpy claims that number — it makes both version claims
+> literally true."* Hub [Q7](../questions.md).
+>
+> **The sequencing is fixed, and it is the part to carry forward:** metasalmon
+> releases the tree containing its post-0.3.0 fixes **first**; metasalmonpy's
+> terminal bump then claims **that same number** as a parity claim on a release
+> that exists. metasalmonpy **skips 0.3.0**. The number is deliberately not
+> written into this plan — a separate agent is cutting that release; read it off
+> the release rather than predicting it.
+>
+> **What this costs, since option (c) was the one whose costs this plan named.**
+> It makes the Python bump wait on an R release decision — that wait is now
+> scheduled work rather than an open question, which is what removes the cost.
+> The "breaks the version lockstep" objection does **not** survive the ruling:
+> both numbers name the same released behaviour, which is exactly the property
+> Brett's sentence turns on. Lockstep meant *same number for same behaviour*, and
+> skipping 0.3.0 on the Python side is what preserves it here.
+>
+> **The verification baseline half is settled with it.** Chunks A–H measured
+> against `main` at the moment of measurement — option (b)'s shape — and that
+> stops being a standing convention the moment the release exists: the release
+> tree is the baseline the final differential runs against, and it should contain
+> what those chunks measured. If it does not, that is a finding to report before
+> the bump, not a discrepancy to absorb into it.
+>
+> **Three copies of one fact move together or the mirror contract is broken by
+> the fix.** The catch-up window reads `0.2.2→0.3.0` in *both* repositories'
+> `AGENTS.md`; its upper end becomes the new release number, and the release
+> index in `knowledge/roadmap.md` is the third copy. That file's own contract
+> says a disagreement between the two `AGENTS.md` copies is unresolvable from
+> either one alone — it has already happened once, for three days — so update all
+> three in the change that lands the bump.
+
+**The question as it stood, kept because the options are the reasoning behind
+the ruling.**
+
 
 This plan says **"one version bump to 0.3.0 at the end."** metasalmonpy's
 CHANGELOG has since adopted a rule that points elsewhere. Its current

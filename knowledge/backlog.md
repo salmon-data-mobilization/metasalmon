@@ -46,22 +46,31 @@ Severity = how much it can bite a real user.
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90**, **#93**
+  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90** (ruled 2026-08-24,
+  the spec-repo change is unwritten), **#93**
   (items 3–5 only),
-  and **#95**, **#103–#108**, **#111**, **#112**, plus
+  and **#95**, **#103–#108**, **#111**, **#112**, **#113** and **#114** (both
+  ruled 2026-08-24 and both unimplemented), plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain), and
   **#99** (this repo's dictionary is fixed; metasalmonpy and smn-data-pkg
   still ship the two 404 IRIs).
-- **Open and awaiting a decision rather than an implementer:** #90 (which side
-  of the descriptor/validator disagreement moves — the evidence assembled
-  2026-08-21 is one-sided, but the call has not been made), #87's benchmark
-  half, #93's items 3–5 (open question Q12), and #106 (which reading of
-  "typed as a SOSA Procedure" the spec means, the same undecided question as
-  #76's open half). Listing them as plain open items overstates how ready they
-  are to pick up.
+- **Open and awaiting a decision rather than an implementer:** #87's benchmark
+  half, #93's items 3–5 (open question [Q12](questions.md), **rewritten
+  2026-08-24** because its previous framing was unanswerable), and #106 (which
+  reading of "typed as a SOSA Procedure" the spec means, the same undecided
+  question as #76's open half). Listing them as plain open items overstates how
+  ready they are to pick up.
+- **Ruled 2026-08-24 (Brett), and therefore now awaiting an implementer rather
+  than a decision:** **#90** (permit the I-ADOPT descriptor keys; the spec
+  validator learns them — [Q3](questions.md)), which also unblocks **#109**;
+  **#113** (one shared package-ownership sentinel, breaking change accepted —
+  [Q14](questions.md)); **#114** (adopt `metadata/semantic/**` into the SDP
+  specification — [Q11](questions.md)). Each carries its ruling inline. **All
+  three land outside this package** — two in `smn-data-pkg`, one in both
+  implementations — which is why none of them is in a metasalmon release plan.
 - **Fixed by release:** #63 in the 0.2.0 merge; #43 and #62 in 0.2.1; #45, #46
   and #50 in 0.2.2; #47, #51 and #52 in 0.2.3; #54 and #72 in 0.2.4; #73 in
   0.2.5; #77 in 0.2.6. #85, #88 and #94 are fixed in the development version,
@@ -125,6 +134,12 @@ consistent side, logged rather than fixed pending a ruling. (#111 was claimed
 the same day by the concurrent abort-safe write-path stream for the
 `create_sdp()` sidecar shape; the collision was caught pre-merge and each item
 keeps the number it committed under.)
+**#113 and #114 came from Brett's 2026-08-24 rulings**, not from a defect hunt:
+each is work a ruling created an owner for. #113 is the two-sentinel divergence
+S10 chunk H registered rather than fixed, now ruled (Q14); #114 is the
+`metadata/semantic/**` specification gap Q11 ruled on. Both are filed here
+because the ruling needs somewhere to live that an implementer reads — a ruling
+recorded only in `questions.md` is an index entry pointing at nothing.
 Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
@@ -1189,10 +1204,48 @@ the byte assertion is the only one that fails if the writer is not surgical.
 ### P2 — correctness and conformance debt
 
 **Mixed state; read each item's first line, not this heading.** Open: **#86**,
-**#87**, **#82**, **#83**, **#111**. Fixed but unreleased in gcdfo: **#81**,
-**#84**. Superseded: **#75**. They stay interleaved because the resolved ones
-carry reasoning the open ones refer back to; the top-of-file snapshot is the
-index.
+**#87**, **#82**, **#83**, **#111**, **#113**. Fixed but unreleased in gcdfo:
+**#81**, **#84**. Superseded: **#75**. They stay interleaved because the
+resolved ones carry reasoning the open ones refer back to; the top-of-file
+snapshot is the index.
+
+**#113 One shared package-ownership sentinel, replacing the two per-language
+ones. RULED, not yet implemented.** A package directory written by metasalmon
+and then rewritten by metasalmonpy ends up holding **both**
+`.metasalmon-package` (content `metasalmon-owned\n`) and `.metasalmonpy-package`
+(`metasalmonpy-owned\n`), because each writer's managed-path inventory —
+`.ms_package_managed_paths()` in R, `_package_managed_paths()` in Python — names
+only its own, so neither ever removes the other's. Measured 2026-08-22 during
+S10 chunk H, on a package that came out byte-identical on all six shared files
+and differed **only** in the sentinel. Harm is low — a stray dot-file — but it is
+undeclared package content that a hand-made ZIP carries, and the count grows with
+every cross-implementation rewrite. Registered as
+[parity-deviations](parity-deviations.md) row **51** and its `PARITY.md` twin;
+the file was renamed with the package on 2026-08-13, exactly the class of change
+that looks cosmetic and is not.
+
+**The ruling (Brett, 2026-08-24, hub [Q14](questions.md)):** *"I want one share
+sentinel name. Nobody uses this yet so dont worry about breaking changes."*
+(reading "share" as *shared*). So: **one shared sentinel name**, recognised and
+written by both implementations — the honest answer to "who owns this directory"
+is the SDP tooling, not one language's copy of it — and **the compatibility break
+is explicitly accepted**. The recommendation had proposed a read-both /
+write-shared transition with the old names retired a release later; the ruling's
+second sentence makes that transition optional rather than owed. The rejected
+option stays rejected and is worth restating, because it is the one a passing
+implementer would reach for: **do not** make each writer remove the other's file
+— one implementation deleting another's owned file is the coupling S10 spent the
+whole stream removing, and it makes a third implementation a two-repository
+change.
+
+**What is left to do, and neither half is decided by the ruling:** pick the name
+(`.sdp-package` was the illustration in Q14, not a decision) and its content
+line, then land it in both repositories — R's `.ms_package_managed_paths()` and
+its writer, Python's `_package_managed_paths()` and its writer, plus whatever
+each side's ownership test reads. Both sides already fall back to the SDP-CSV
+check, so no package is refused during the change. *Retires when:* both
+implementations write and recognise the one name, neither writes a per-language
+sentinel, and parity row 51 records the convergence in both registers.
 
 **#111 `create_sdp()`'s create-owned sidecars are unlink-then-rewrite, the same
 defect shape #96 retired, at single-file blast radius.** Found while retiring
@@ -1466,6 +1519,16 @@ separate item.**
    `original` fallback, so a Date column declared `value_type = "string"` keys
    unpadded while the `date` branch beside it now keys padded.
 
+**Items 3–5 are still open, and the question that holds them was rewritten
+2026-08-24.** [Q12](questions.md) had been written in language that assumed
+context Brett did not have, and it drew the reasonable guess that this was about
+the KNB deposit reaching the DataONE CN. **It is not, and nothing here touches
+KNB or DataONE**: it is about which of R's two `Date`-to-text renderers a given
+code path uses. The rewritten entry states the symptoms in those terms and names
+the single decision that is actually Brett's — *fix the three now, or accept them
+permanently and caveat the byte-reproducibility claim where it is made* —
+because everything else about items 3–5 is an implementer's call.
+
 Severity: silent data corruption at (1) and (3), silent inconsistency at (4) and
 (5), latent at (2). Not urgent — every case needs a pre-1000 date, which no
 salmon dataset has — but it is a **byte-reproducibility** defect in a package
@@ -1566,16 +1629,27 @@ each matching row in `metadata/column_dictionary.csv`", which is a
 completeness requirement; the "no extra columns" sentence beside it is about
 **canonical metadata CSV headers**, not descriptor field keys.
 
-**Still a decision, and still Brett's** — as the authority over
-`smn-data-pkg`. It lands in the spec repo either way: either `SPECIFICATION.md`
-says descriptor `schema.fields` entries carry no I-ADOPT keys and both mirrors
-stop projecting them, or it says they may and
-`descriptor_field_from_column()` learns the keys so the comparison stops being
-exact. The second is the larger change — an exact comparison is what lets the
-validator reject an unknown key at all, so relaxing it means deciding *which*
-extra keys are legal, a vocabulary question rather than a code one. **The
-evidence assembled here favours permitting the keys; it does not settle it,
-and nothing in this item should be read as the call having been made.**
+**RULED 2026-08-24 (Brett), hub [Q3](questions.md): permit the keys.** *"Yes I
+accept your recommendation."* It lands in the spec repo, as this item always
+said it would: `SPECIFICATION.md` states that descriptor `schema.fields` entries
+**may** carry the I-ADOPT keys, and `descriptor_field_from_column()` in
+`scripts/validate_package.py` learns them so the whole-list `!=` comparison stops
+rejecting every annotated package. Neither mirror stops projecting the keys.
+
+**This is the larger of the two possible changes, and the ruling does not shrink
+it.** An exact comparison is what lets the validator reject an unknown key at
+all, so relaxing it means deciding *which* extra keys are legal — a vocabulary
+question rather than a code one. **Derive the allowlist from
+`column_dictionary.schema.json`**, which is what the accepted recommendation
+said: a hand-written list in the script is a second place for the dictionary
+contract to live, and it will drift from the first.
+
+*Before the ruling this item said: "the evidence assembled here favours
+permitting the keys; it does not settle it." The evidence was reframed during
+the 2026-08-21 recon from "two defensible readings" to that one-sided form, and
+the ruling was made on the reframed item — recorded in
+[questions.md](questions.md)'s notes-on-framing section, because a reader of the
+ruling alone cannot see it.*
 
 Two things a decider should have, because neither is obvious from the defect:
 this is **not** a parity question (both mirrors fail the validator, so no
@@ -1585,8 +1659,8 @@ fixture under test carries no IRIs and no CI runs the script at all. It bites
 the first real annotated package.
 
 *Retires when:* an SDP with a fully annotated measurement column passes
-`scripts/validate_package.py` unmodified — under whichever reading is chosen —
-and metasalmonpy's seventh key matches R's.
+`scripts/validate_package.py` — under the permit-the-keys ruling, so the script
+is the thing that changes — and metasalmonpy's seventh key matches R's.
 
 **#91 `validate_salmon_datapackage()`'s issue system is a different mechanism
 in metasalmonpy, not a smaller one.** R's
@@ -2041,6 +2115,15 @@ mis-typing a different column shape. *Retires when:* `create_sdp()` on both
 bundled examples produces no `targets a non-categorical or unknown column`
 error, under whichever of the two is corrected.
 
+**Which example this bites first is now ruled.** Brett promoted the **173-row**
+`nuseds-fraser-coho-2023-2024.csv` to gold standard on 2026-08-24
+([Q4](questions.md)), so the **22 errors across six columns** are the ones
+standing between S12 and stage 1 of its finish line; the 30-row sample's 157 are
+a speed fixture's problem and rank behind them. The retirement condition still
+names **both** examples deliberately — fixing the generator fixes both, and a
+fix that only cleaned the promoted file would be a fix to the data, not to the
+defect.
+
 **#97 `detect_semantic_term_gaps()` returns zero gaps when the search returned
 zero candidates** — it is structurally blind to precisely the case a term
 request exists for. Both entry paths short-circuit on empty input:
@@ -2355,6 +2438,37 @@ Pages configuration.
 
 #### smn-data-pkg (verified on `main`, 2026-08-21)
 
+**#114 `metadata/semantic/**` is specified nowhere, so metasalmon is the de
+facto specification for a whole directory of package content. RULED 2026-08-24:
+adopt it into `smn-data-pkg`.** Brett, hub [Q11](questions.md): *"Yes."* The
+recommendation accepted was the adoption — the status quo quietly makes this
+package the spec authority for content the spec repo has never described, which
+is the failure the hub exists to prevent, and it gets worse rather than better
+as metasalmonpy mirrors metasalmon's shape.
+
+**The next concrete step, so this item is pickup-able:** file a `smn-data-pkg`
+issue carrying the inventory of what metasalmon writes there today, and
+proposing the `SPECIFICATION.md` section plus the profile/schema entries that go
+with it. The inventory, read from this package's source rather than remembered:
+
+- `metadata/semantic/*.sssom.tsv` — SSSOM mapping sets, name-constrained by
+  `R/sssom.R` to `^[A-Za-z0-9][A-Za-z0-9._-]*\\.sssom\\.tsv$`.
+- `metadata/semantic/mapping-sets.json` — the manifest binding each mapping set
+  by path, sha256, row count and source; canonical bytes and ordering.
+- `metadata/semantic/measurement-decompositions.csv` and its `.json` binding
+  (`R/measurement-decompositions.R`).
+- `metadata/semantic_vocabulary.csv` — adjacent rather than inside the
+  directory, and pinned by the EML mapping sidecar
+  (`R/eml-export.R`), so it belongs in the same proposal.
+
+**Order matters here, and it is the reason to file before implementing:** the
+spec repo owns the layout **before** metasalmonpy mirrors it. If the mirror
+copies metasalmon's shape first, the adoption stops being a specification
+decision and becomes a rename with two implementations already committed to it.
+*Retires when:* `SPECIFICATION.md` describes `metadata/semantic/**` and the
+profile/schema entries exist, and both implementations validate against them
+rather than against each other.
+
 **#110 metasalmonpy's README install guidance is stale in both directions.**
 It claims no tag is installable as `metasalmonpy` while v0.1.7 through v0.2.1
 all are, and it recommends installing `@main` although the version is a parity
@@ -2375,8 +2489,10 @@ shipped examples sat declaring `sdp-0.2.0` through the `sdp-0.3.0` tag while
 passing validation (they now declare sdp-0.3.0 — PR #6 — but nothing would
 notice a regression). *Retires when:* the strict validator reads the declared
 version and validates against that version's contract, or errors on one it
-does not support. **Sequenced behind Q3/#90** — implementing it touches
-`validate_package.py`, whose comparison behaviour is under an open ruling.
+does not support. **Was sequenced behind Q3/#90; that ruling landed 2026-08-24**
+(permit the I-ADOPT keys, the validator learns them), so this is unblocked and
+should ride the same change — both edit `validate_package.py`'s comparison
+behaviour, and doing them separately means reviewing that comparison twice.
 
 **#103 ~~Four of 23 tests fail on `main`, in a repo with no CI to notice~~ —
 FIXED 2026-08-21** (smn-data-pkg PR #6). All four red tests asserted the

@@ -28,35 +28,6 @@ entry links its owner.
 
 ## Open
 
-### Q3 — Backlog #90: may a descriptor `schema.fields` entry carry I-ADOPT keys?
-**Unblocks:** the gold standard passing the spec validator; S1's premise.
-The evidence is one-sided and the item now says so: nothing normative names
-`validate_package.py`, the published v0.3 profile permits the keys, Frictionless
-allows custom field properties, and no CI anywhere runs the script.
-**Recommendation:** permit the keys — make `descriptor_field_from_column()`
-learn them, deriving the allowlist from `column_dictionary.schema.json`.
-**Owner:** [backlog #90](backlog.md). *Also sequenced behind this ruling:*
-backlog #109 (`spec_version` enforcement in smn-data-pkg touches the same
-validator).
-
-### Q4 — Which artifact is THE gold standard, and where is its finish line?
-**Unblocks:** S12, the workshop's teaching artifact, what metasalmonpy mirrors.
-30-row `nuseds-fraser-coho-sample.csv` (already drifted into fabrication in
-smn-data-pkg's copy) vs the 173-row `nuseds-fraser-coho-2023-2024.csv` (has a
-reproducible derivation script and licensed upstream).
-**Recommendation:** promote the 173-row slice; demote the 30-row file to a
-named speed fixture; finish line = strict local validation AND spec-validator
-clean (stage 1), then a deposit under S3's exit criteria (stage 2).
-**Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md).
-
-### Q5 — De-prioritise gcdfo in full, or carve out what the gold standard needs?
-**Unblocks:** how semantically complete the gold standard can be.
-Two of its four unmapped code columns are metasalmon wiring defects being fixed
-now with released gcdfo terms (no gcdfo work needed). The genuine gcdfo needs
-are PFMA subareas and whatever Q8 decides.
-**Recommendation:** narrow carve-out for exactly those; psc-salmon-vocabularies
-stays fully de-prioritised. **Owner:** roadmap sequencing constraints.
-
 ### Q6 — smn PR #27: the modelling rulings (now eight questions)
 **Unblocks:** 22 smn terms, gcdfo holds #68/#70 (not #74's species half, and
 NOT Fraser Recruits, which needs none of it).
@@ -68,52 +39,16 @@ PR mints flat peers.
 **Recommendation:** rule the eight as one pass; add the peerhood scope note
 (one triple now vs a migration later).
 **Owner:** [S9 step 7](sequences/s9-ontology-alignment.md).
-
-### Q7 — What version number may the finished metasalmonpy port carry?
-**Unblocks:** S10's terminal bump only — the chunks proceed regardless.
-The chunks must carry metasalmon's post-0.3.0 fixes (~107 commits past the
-tag), so a bare "0.3.0" names a tree no metasalmon release contains; and
-whether the parity claim requires closing #87 and #91 first is equally open.
-**Recommendation:** cut a metasalmon release containing the post-0.3.0 fixes
-first, then metasalmonpy claims that number — it makes both version claims
-literally true. **Owner:** [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
-open decisions 1 and 2.
-*New evidence (2026-08-22, chunk A):* the port's first subsystem chunk
-(metasalmonpy PR #14, merged unversioned) was verified against metasalmon
-**`main` at the moment of measurement** — `e02111a`, including PR #75 — not
-against any release, and the execplan now records that as the operative
-convention while this stays open. Every chunk verified this way widens the
-set of delivered behaviour that no existing release number can truthfully
-claim, which strengthens the recommendation above: the sooner the metasalmon
-release exists, the less behaviour the final bump has to qualify away.
-*Second data point (2026-08-22, chunk B):* chunk B had to **re-baseline
-mid-stream** when metasalmon `main` moved under it (`39818ce` → `9d8f125`,
-docs plus PR #77) — the same moving-target cost chunk A paid when `main`
-moved during its fixture cut. Two chunks, two re-baselines: while no release
-exists, each in-flight chunk pays a re-measurement cost against a target that
-keeps moving, on top of the widening-claim cost above.
-
-*Third data point, and it refines the second (2026-08-22, chunks D, E and F):*
-all three measured against `main` at the moment of measurement — D at `9d8f125`,
-E and F at `794647a` — so five of the six landed chunks now sit on option (b)'s
-shape and none on any release. But E and F's move was a **re-pin, not a
-re-baseline**: they confirmed the R tree was *identical* to `9d8f125` in `R/`,
-`tests/` and `inst/` before re-pinning, so the move was documentation only. That
-narrows the second data point's cost claim rather than confirming it — the
-recurring per-chunk cost while no release exists is **checking whether the
-target moved in a way that matters**, which is cheaper than re-measuring but is
-paid by every chunk, and it is only cheap because someone checked. The widening
-claim above is untouched: three more chunks of delivered behaviour that no
-existing release number can truthfully name. Still open — recorded, not
-resolved.
-
-### Q8 — Where do PFMA subareas and a species reference get minted?
-**Unblocks:** two of the four gap columns in the coho example's codes.csv.
-**Recommendation:** split — species points at an external taxonomy (smn has
-deliberately withdrawn its scheme); PFMA subareas go to gcdfo, which owns the
-Area scheme, because splitting one regulatory vocabulary across repos for a
-temporary priority ordering fractures it permanently. **Owner:**
-[S12](sequences/s12-fraser-coho-gold-standard.md); intersects Q5.
+*Expansion requested and delivered (2026-08-24).* Brett: *"You'll have to
+expand on Q6 for me to be able to answer. What are your precise questions and
+recommendations and trade offs?"* An expanded briefing was provided the same
+day. The **eight** decisions — each with its precise question, its trade-off,
+and what cannot be deferred to an implementer — are stated in the
+[S9 card](sequences/s9-ontology-alignment.md)'s decision section: six of them in
+the decision table (rows **1–5 and 8**) and questions **6** and **7** in the
+prose immediately beneath it, which are open but change nothing that gets
+minted. **Still open.** A briefing is not a ruling, and this entry does not move
+until the eight are ruled.
 
 ### Q9 — For a spawner count, is `property_iri` `smn:Abundance` or `gcdfo:SpawnerAbundance`?
 **Unblocks:** the gold standard's single annotated column, which currently
@@ -124,33 +59,62 @@ the R seeder is wrong (it writes the same IRI into both slots) and gets fixed
 with a test. Record as an ecosystem I-ADOPT ruling, not a metasalmon fix.
 **Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md).
 
-### Q10 — Which membership test governs the hub, and is the workshop the eighth member?
-**Unblocks:** every future membership question; makes S4's subject visible to
-the authority sequencing it.
-The bundle states the test two incompatible ways (roadmap: "output is an input
-to this pipeline"; domain card: "the hub sequences that repository's work"),
-and they give opposite answers for psc-data-transformations. The allowlist says
-seven-is-exhaustive while the roadmap sequences an eighth repo as S4.
-**Recommendation:** the domain card's test (it predicts what is actually in the
-roadmap); workshop becomes the eighth member; psc-data-transformations stays a
-typed external edge with its substance in S13. **Owner:** roadmap +
-[domain card](domains/salmon-data-ecosystem.md), recorded as OD-1 in both.
+### Q12 — When R turns a `Date` into text, which renderer wins? (backlog #93, items 3–5)
 
-### Q11 — Do `metadata/semantic/**` files belong in the SDP specification?
-**Unblocks:** what metasalmonpy mirrors; stops metasalmon accreting spec
-authority by default.
-**Recommendation:** adopt them into smn-data-pkg — the status quo quietly makes
-metasalmon the de facto spec, which is the failure the hub exists to prevent.
-**Owner:** [backlog](backlog.md) smn-data-pkg items.
+**Rewritten 2026-08-24, because the previous wording assumed context that was
+never stated.** Brett: *"I don't really understand what happened and what your
+asking for. Is that just for the KNB deposit making it to DataONE CN?"* No —
+and that is the first thing to fix. **This has nothing to do with KNB or
+DataONE.** No deposit, no member node, no coordinating node. It is about how
+**R converts a `Date` value into the characters written into a file**, and the
+fact that this package uses more than one converter for the same value.
 
-### Q12 — Backlog #93's remaining half: where does type coercion belong on the write path?
-**Unblocks:** items 3–5 of #93 (SSSOM canonical bytes rendering one column two
-ways; datapackage.json vs dataset.csv disagreement; the `original` fallback).
-Items 1–2 are fixed/unblocked.
-**Recommendation:** adopt the Python design (coerce at render, per-type,
-measured); rule on parity "Ahead" row 13 in the same pass — it is the only one
-where current R behaviour can silently destroy a user's file.
-**Owner:** [backlog #93](backlog.md).
+R has two renderers and they disagree for years before 1000:
+`format(as.Date("0999-01-01"))` gives `0999-01-01`, while
+`as.character(as.Date("0999-01-01"))` gives `999-01-01` (since R 4.3 it takes an
+internal fast path that never reaches `format()`). Different code paths in this
+package reach for different ones.
+
+**The three concrete symptoms, all in [backlog #93](backlog.md):**
+
+- **Item 4 — one call, two spellings of the same date.** A single
+  `write_salmon_datapackage()` can write `0999-01-01` into `datapackage.json`
+  (`jsonlite::write_json()` pads) and `999-01-01` into `metadata/dataset.csv`
+  (`readr::write_csv()` does not), in the same package.
+- **Item 3 — sorted by one rendering, emitted as another.**
+  `.ms_sssom_canonical_bytes()` takes its sort key through `as.character()`
+  (never padded) and its emitted bytes through `format()` (padded on macOS, not
+  on Linux). Row *order* and row *content* can therefore disagree about the same
+  value, and `mapping_date` / `publication_date` / `review_date` are declared
+  SSSOM columns.
+- **Item 5 — the fallback keys unpadded.** `.ms_canonical_value_tokens()` still
+  takes `trimws(as.character(x))` for its `original` fallback, so a `Date`
+  column declared `value_type = "string"` keys unpadded while the `date` branch
+  beside it keys padded.
+
+**Nothing is broken in practice, and saying so is part of the question.** Every
+case needs a **pre-1000 date**, and no salmon dataset has one. What is actually
+at stake is the package's **byte-reproducibility contract** — same inputs, same
+bytes, on every platform — which is the property that makes a canonical hash, an
+archive checksum and a DataONE PID mean anything. Items 1 and 2 of #93 are
+already fixed; these three are the remainder.
+
+**Recommendation:** adopt the Python design — **coerce at render, per type, and
+measure each type before touching it.** metasalmonpy has no such divergence
+because `date.isoformat()`, `str()` and `pandas.to_csv` all pad. Item 1's fix is
+the model for *how*: `Date` and `POSIXct` needed different treatment (the two
+renderers agree exactly on a `Date` and on nothing for a `POSIXct` — separator,
+zone marker, and whether a fractional second survives), so a change applied to
+both "for symmetry" would have corrupted the path that was never broken.
+
+**The one decision that is actually yours:** is a defect that cannot bite real
+salmon data worth changing a contract this package advertises — **fix the three
+now**, or **record them as accepted permanently** and state the caveat wherever
+byte reproducibility is claimed? Which functions move, and in what order, is an
+implementer's call either way. *Also on the table in the same pass:* parity
+"Ahead" row 13, the only deviation where current R behaviour can silently
+destroy a user's file.
+**Owner:** [backlog #93](backlog.md) items 3–5.
 
 ### Q13 — The stuck production KNB deposit: send the support request?
 **Unblocks:** the ecosystem's only open publication incident, and the Fraser
@@ -161,48 +125,16 @@ can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
 
-### Q14 — Two ownership sentinels: which side gives way?
-
-**Unblocks:** parity row 51, and the tidiness of any package touched by both
-implementations.
-
-A package directory written by metasalmon and then rewritten by metasalmonpy
-ends up holding **both** `.metasalmon-package` and `.metasalmonpy-package`,
-because each writer's managed-path inventory names only its own sentinel and
-so neither ever removes the other's. Measured 2026-08-22 during S10 chunk H;
-previously unregistered in both registers, having arrived silently with the
-2026-08-13 package rename. Harm is low — a stray dot-file — but it is
-undeclared package content that a hand-made ZIP would carry, and the count
-grows with every cross-implementation rewrite.
-
-Three options:
-
-1. **One shared sentinel name** recognised and written by both (say
-   `.sdp-package`). Cleanest end state; a compatibility break for every
-   existing package, needing a read-both/write-one transition.
-2. **Each writer recognises and removes the other's.** No break, no
-   migration — but it couples the two managed-path sets, so each
-   implementation now deletes a file it does not own, and adding a third
-   implementation means editing both.
-3. **Leave it and document it.** Zero risk, permanent minor untidiness.
-
-**Recommendation: (1), with (3) as the interim.** The sentinel answers "who
-owns this directory", and the honest answer is *the SDP tooling*, not one
-language's copy of it — the per-language name encodes an implementation detail
-into user-visible package content. The ownership test already falls back to
-the SDP-CSV check on both sides, so a shared name can be introduced as
-read-both/write-shared with no user-visible failure, and the old names retired
-a release later. Until that lands, (3) is the honest state and row 51 records
-it. **Do not do (2)** — one implementation deleting another's owned file is
-the coupling this ecosystem has spent the whole S10 stream removing.
-
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
 readings" to "the evidence favours permitting the keys". The reframing is
 evidence-backed (each claim was independently verified) and the item still says
 the call is Brett's — but the frame moved, and you should know that before
-reading it.
+reading it. **Q3 was then answered on 2026-08-24 in the direction the reframed
+evidence pointed.** This note stays where it is rather than moving to the
+answered entry: it records that the frame moved *before* the ruling, which is
+exactly the thing a reader of the ruling alone cannot see.
 
 ## Answered
 
@@ -237,3 +169,230 @@ golden-path/rebuild work **after the KNB test environment's API workability is
 determined**. With Q1's environment verified live, workability now means: a
 token plus one successful end-to-end test deposit. The
 [S4 card](sequences/s4-workshop-rebuild.md) carries the ruling.
+
+### Q3 — Backlog #90: may a descriptor `schema.fields` entry carry I-ADOPT keys? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Yes I accept your recommendation."*
+
+**What was accepted, restated so nobody has to chase the earlier text:**
+descriptor `schema.fields` entries **may** carry the I-ADOPT keys, and it is
+`smn-data-pkg` that moves, not the two mirrors. `SPECIFICATION.md` says the keys
+are permitted, and `descriptor_field_from_column()` in
+`scripts/validate_package.py` learns them — deriving the allowlist of legal extra
+keys from `column_dictionary.schema.json` rather than hard-coding one — so its
+exact `!=` comparison stops rejecting every semantically annotated package.
+Neither `write_salmon_datapackage()` nor metasalmonpy's projection stops
+emitting the seven keys.
+
+**The larger half of the change, named in #90 and unchanged by the ruling:**
+relaxing an exact comparison means deciding *which* extra keys are legal, which
+is a vocabulary question. Deriving the allowlist from the dictionary schema is
+what keeps it from becoming a hand-maintained list.
+
+**Two things this does not settle.** metasalmonpy's seventh key was `method_iri`
+where R's is `statistical_modifier_iri`, because it still vendored sdp-0.2.0 when
+#90 was written — a separate divergence, not a consequence of this ruling. S10
+chunk A has since flipped that vendored bundle to sdp-0.3.0, so the key may
+already agree; **re-measure the Python projection rather than assuming either
+way**, and update #90's retirement condition with what you find. And backlog **#109** (`spec_version` enforcement)
+was sequenced behind this ruling only because it touches the same script; it is
+now free to proceed, and should land in the same pass, since both change
+`validate_package.py`'s comparison behaviour.
+
+**Recorded in:** [backlog #90](backlog.md), and the sequencing note in
+[#109](backlog.md).
+
+### Q4 — Which artifact is THE gold standard, and where is its finish line? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Promote the 173 row one."*
+
+So the gold standard is **`inst/extdata/nuseds-fraser-coho-2023-2024.csv`** —
+the 173-row official 2023–2024 slice with a reproducible `data-raw/` derivation
+and a licensed upstream. The 30-row `nuseds-fraser-coho-sample.csv` is demoted
+to the named speed fixture it already claims to be ("the fastest built-in
+demo"), which is ruling **(a)** in S12's table. The backwards-compatibility
+promise in the example README is therefore not broken by this ruling — the
+30-row file keeps its job.
+
+**Finish line, now stated in the card rather than in a recommendation** —
+two stages: **stage 1**, the package is clean through *both* validators (strict
+`validate_salmon_datapackage()` **and** `scripts/validate_package.py`); **stage
+2**, it is deposited under [S3](sequences/s3-knb-staging.md)'s exit criteria and
+has a resolvable identifier the docs can cite. Stage 1 is gated on Q3 (now
+ruled) and on backlog #95; stage 2 is gated on S3.
+
+**Recorded in:** [S12](sequences/s12-fraser-coho-gold-standard.md) (the open
+decision is now the ruling, with the finish line beneath it), the
+[backlog](backlog.md) recon items measured against it, and
+[parity-deviations](parity-deviations.md) row 46, whose *which artifact* half
+this settles: the mirror obligation now attaches to the 173-row example. What
+stays open in row 46 is narrower — whether the two repositories share one
+derivation script or each keeps its own.
+
+### Q5 — De-prioritise gcdfo in full, or carve out what the gold standard needs? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Carve out what the gold standard needs."*
+
+Read it as exactly that and no wider: gcdfo is **not** de-prioritised in full and
+**not** re-opened in full. The subset the gold standard depends on is carved out
+and proceeds; everything else in gcdfo stays de-prioritised, and
+`psc-salmon-vocabularies` stays fully de-prioritised.
+
+**The subset, as far as the cards know it today, is one item: PFMA subareas.**
+The gold standard's `AREA` column holds `29F`, `29G`, `29J`, `29K` — Subareas,
+which gcdfo PR #86 deliberately did not mint (it minted the 48 Areas and said so
+in a `skos:scopeNote`). Q8 sends subareas to gcdfo, so that mint **is** the
+carve-out. Nothing else in the example needs gcdfo work: `SPECIES` goes to an
+external taxonomy under Q8, and the other two unmapped code columns were
+metasalmon wiring defects already fixed in the development version
+(backlog **#101** the `ESTIMATE_CLASSIFICATION` crosswalk, **#102** the
+enumeration crosswalk `create_sdp()` did not use).
+
+**What is genuinely a next step, with an owner.** The ruling fixes *what class*
+of term is carved out; it does not fix the **mint scope** — the four Subareas the
+example actually holds, or all 604 of SOR/2007-77 Schedule 2. That is the next
+decision, and it is a vocabulary-completeness call rather than a priority one.
+**Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md) states the need and
+holds the evidence; [S9 step 7](sequences/s9-ontology-alignment.md) routes the
+request into gcdfo through `detect_semantic_term_gaps()` →
+`render_ontology_term_request()` → `submit_term_request_issues()`; the carve-out
+itself is recorded in the [roadmap](roadmap.md)'s active sequencing constraints.
+Note **#97**: that detector is blind to a zero-candidate search, which is the
+shape this gap has, so filing it today is manual work.
+
+**Recorded in:** [roadmap](roadmap.md) (active sequencing constraints),
+[S12](sequences/s12-fraser-coho-gold-standard.md), and the PFMA section of the
+[S9 card](sequences/s9-ontology-alignment.md).
+
+### Q7 — What version number may the finished metasalmonpy port carry? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"yes, cut a metasalmon release containing the post-0.3.0 fixes
+first, then metasalmonpy claims that number — it makes both version claims
+literally true."*
+
+That is option **(c)** in the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)'s
+open decision 2. **The sequencing is now fixed:**
+
+1. metasalmon cuts a release of the tree containing the post-0.3.0 fixes.
+2. metasalmonpy's terminal bump claims **that same number**, as a parity claim on
+   a metasalmon release that actually exists.
+
+metasalmonpy therefore **skips 0.3.0** on the Python side. The version lockstep
+the mirror contract describes is preserved, because both numbers name the same
+released behaviour — which is the property the ruling's own words turn on.
+
+**The number is deliberately not written here.** A separate agent is cutting that
+metasalmon release; read the number off the release, do not infer it. Any
+document that states it before the release exists is stating a forecast.
+
+**What must move in the same change as the release, because three copies of one
+fact are in play** (the `AGENTS.md` mirror contract says so, and has already been
+wrong about it once): the catch-up window reads `0.2.2→0.3.0` in **both**
+repositories' `AGENTS.md`, and its upper end becomes the new release number; the
+release index in [roadmap](roadmap.md) is the third copy and must agree with
+both.
+
+**Recorded in:** the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
+open decision 2 (now decided), the [S10 card](sequences/s10-metasalmonpy-parity.md),
+and the metasalmonpy row of the [roadmap](roadmap.md)'s release index.
+
+### Q8 — Where do PFMA subareas and a species reference get minted? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"I agree with your recommendation PFMA Sub areas go to gcdfo."*
+
+The recommendation was a **split**, and both halves are accepted:
+
+- **PFMA subareas → `gcdfo`.** It already owns
+  `gcdfo:PacificFisheryManagementAreaScheme` and Schedule 2's 48 Areas, and
+  splitting one regulatory vocabulary across repositories to suit a temporary
+  priority ordering fractures it permanently.
+- **Species → an external taxonomy.** smn deliberately withdrew its species
+  scheme in PR #27, and species concepts are never minted in `gcdfo` (Brett,
+  2026-08-17), so there is no internal home to point at and none is being
+  created.
+
+**Recorded in:** the PFMA/A1 section of the
+[S9 card](sequences/s9-ontology-alignment.md) — the gcdfo-facing item — and
+[S12](sequences/s12-fraser-coho-gold-standard.md)'s two-gap section. It is also
+the content of Q5's carve-out.
+
+### Q10 — Which membership test governs the hub, and is the workshop the eighth member? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"sounds good I will take your suggestions."* — which is
+[OD-1](roadmap.md#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member)
+option **B**, in all three of its parts:
+
+1. The **domain card's** test governs: *membership follows from this hub
+   sequencing that repository's work.* The roadmap's *input* test loses and has
+   been **deleted**, as OD-1's retirement condition required — leaving both
+   alive is how the contradiction regrew last time.
+2. **`salmon-data-standards-workshop` is the eighth member.** The allowlist is
+   now eight rows, and its release-index section is a member row rather than a
+   courtesy record.
+3. **`psc-data-transformations` stays a typed external edge** —
+   requirements-driving consumer — with its substance in
+   [S13](sequences/s13-fraser-recruits-case-study.md). Its pin on metasalmon
+   0.1.8 is a constraint this package should know about, not an obligation on it.
+
+**Applied, not merely recorded:** the allowlist table, the roadmap's *Domain
+allowlist* rule, and every ecosystem "seven" count in the bundle
+([roadmap](roadmap.md) frontmatter and body, the
+[domain card](domains/salmon-data-ecosystem.md), the
+[hub-coordination context](contexts/hub-coordination.md), the
+[S6 card](sequences/s6-ecosystem.md)) now read eight. OD-1 is resolved in both
+places; its heading is kept **verbatim** so every existing link to it still
+resolves.
+
+**One consequence worth naming, because it is the weakest link in this ruling.**
+`salmon-knowledge-commons` was admitted 2026-08-17 under the *input* test that
+has now been deleted. It stays a member under the sequencing test — this hub
+sequences work that lands in it: S12's two ontology gaps, S9's term-request
+routing, and gcdfo PR #87's routing of durable salmon knowledge there are all
+hub-sequenced work whose output is a commons card. Its admission is therefore
+**restated in sequencing terms**, exactly as option B said it would have to be,
+rather than re-opened. If that restatement is wrong, this is the place to
+re-examine.
+
+### Q11 — Do `metadata/semantic/**` files belong in the SDP specification? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Yes."* — i.e. adopt them into `smn-data-pkg`, per the
+recommendation. The status quo quietly makes metasalmon the de facto
+specification for a whole directory of package content, which is the failure the
+hub exists to prevent.
+
+**The next concrete step is now stated in the owning backlog item
+([#114](backlog.md)):** file a `smn-data-pkg` issue carrying the inventory of
+what metasalmon writes there today — the `*.sssom.tsv` mapping sets and their
+`metadata/semantic/mapping-sets.json` manifest, and
+`metadata/semantic/measurement-decompositions.csv` with its `.json` binding
+(plus the adjacent `metadata/semantic_vocabulary.csv` the EML mapping pins) —
+proposing a `SPECIFICATION.md` section and the profile/schema entries that go
+with it. The spec repo owns the layout **before** metasalmonpy mirrors it, or
+the mirror inherits metasalmon's shape and the adoption becomes a rename.
+
+**Recorded in:** [backlog #114](backlog.md) (smn-data-pkg section).
+
+### Q14 — Two ownership sentinels: which side gives way? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"I want one share sentinel name. Nobody uses this yet so dont worry
+about breaking changes."* (reading "share" as *shared*.)
+
+Option **(1)**: **one shared sentinel name**, recognised and written by both
+implementations, because the honest answer to "who owns this directory" is *the
+SDP tooling*, not one language's copy of it. Option (2) — each writer removing
+the other's file — stays ruled out.
+
+**The compatibility break is explicitly accepted.** The recommendation had
+proposed a read-both/write-shared transition with the old names retired a
+release later; the second sentence of the ruling makes that transition
+**optional rather than required**. Both implementations may write the shared
+name and stop recognising the per-language ones, and no migration is owed to
+existing packages. The ownership test already falls back to the SDP-CSV check on
+both sides, so nothing refuses a package written by the other implementation
+either way.
+
+**Filed, not done here.** Choosing the name and landing it in both repositories
+is follow-up work: **[backlog #113](backlog.md)** in this repo, with the ruling
+attached, and the twin text for metasalmonpy's `PARITY.md` row **51**.
+[parity-deviations](parity-deviations.md) row 51's retirement condition now names
+the ruling instead of the open question. This pass renames nothing.

@@ -1,7 +1,7 @@
 ---
 type: ScientificDataDomain
 title: "Salmon data ecosystem"
-description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, and the salmon knowledge commons, coordinated through the metasalmon hub."
+description: "The salmon data mobilization ecosystem: SDP tooling in R and Python, the SDP specification, the shared and agency ontologies, the PSC controlled vocabulary, the salmon knowledge commons, and the standards workshop, coordinated through the metasalmon hub. Eight repositories, one hub; membership follows from this hub sequencing that repository's work (ruled 2026-08-24)."
 status: draft
 tags: [salmon, sdp, ecosystem]
 psc:
@@ -9,14 +9,16 @@ psc:
 ---
 
 The domain this bundle coordinates. The table below is the complete allowlist:
-seven repositories, one hub.
+**eight repositories, one hub.**
 
-**"Complete" is currently contested.** This card and the roadmap state two
-different membership tests, and they disagree — see
-*[Open decision — which membership test governs](#open-decision--which-membership-test-governs)*
-at the foot of this card. The table is **unchanged** pending a ruling; a
-contested count stays as it is rather than moving to whichever answer the next
-reader finds more natural.
+**"Complete" was contested until 2026-08-24, and is not any more.** This card
+and the roadmap stated two different membership tests. Brett ruled that
+**this card's test governs** — *membership follows from this hub sequencing that
+repository's work* — and the roadmap's competing *input* test has been deleted
+rather than left beside it. `salmon-data-standards-workshop` is the eighth row
+as a result. See
+*[Which membership test governs — RULED 2026-08-24](#which-membership-test-governs--ruled-2026-08-24)*
+at the foot of this card.
 
 | Repo | Role |
 |---|---|
@@ -27,13 +29,20 @@ reader finds more natural.
 | `dfo-salmon-ontology` | The GC DFO Salmon Ontology (`gcdfo:`) |
 | `psc-salmon-vocabularies` | The PSC controlled vocabulary (SKOS-only, CSV-authoritative, GitLab) |
 | `salmon-knowledge-commons` | Source-backed prose about salmon ecology, biology, conservation, management, and research, written for people and agents (upstream OKF v0.2, private) — every concept names its ontology term or records a structured gap, and that gap register is the front end of this package's term-request pipeline |
+| `salmon-data-standards-workshop` | The Carpentries-style lesson teaching the SDP workflow (sandpaper; six sessions plus a bonus) — **the eighth member, admitted 2026-08-24 (Brett)** because this hub sequences its rebuild as [S4](../sequences/s4-workshop-rebuild.md) |
 
-**`salmon-knowledge-commons` was added 2026-08-17 (Brett), and it is a member
-rather than an external edge for one reason: its gap register is an input to
-this ecosystem's own pipeline**, not an artifact the hub happens to consume.
-Every concept records the ontology term it corresponds to, or a structured gap
-stating what a term would have to say and where it should be minted — which is
-what `detect_semantic_term_gaps()` → `render_ontology_term_request()` →
+**`salmon-knowledge-commons` was added 2026-08-17 (Brett).** Its original
+admission note said it was a member "because its gap register is an *input* to
+this ecosystem's own pipeline" — that was the roadmap's input test, which the
+2026-08-24 ruling deleted, so the reason is **restated in sequencing terms
+here**: this hub sequences the work that lands in that repository. S12's two
+ontology gaps, S9's term-request routing, and gcdfo PR #87's routing of durable
+salmon knowledge there are hub-sequenced work whose output is a commons card.
+The substance is unchanged and the membership is not re-opened; what the gap
+register *is* still matters, and it is this. Every concept records the ontology
+term it corresponds to, or a structured gap stating what a term would have to
+say and where it should be minted — which is what
+`detect_semantic_term_gaps()` → `render_ontology_term_request()` →
 `submit_term_request_issues()` already exists to carry. Its first four concepts
 (cycle line, broodline, cyclic dominance, run timing) came out of resolving a
 live modelling question in
@@ -87,48 +96,52 @@ schema rejects `sources`, `verified`, `generated`, `stale_after`, and
 
 Shared tools, hyperlinks, consumed artifacts, and transitive dependencies do
 not add repositories to this domain, and neither does sharing a GitHub
-organization — membership follows from this hub sequencing that repository's
-work, not from who owns it. In particular, `psc-data-systems`,
+organization — **membership follows from this hub sequencing that repository's
+work**, not from who owns it and not from what it produces. That sentence is
+the ruled membership test as of 2026-08-24; it is the only one in this bundle,
+and the roadmap now states it in the same words. In particular, `psc-data-systems`,
 `psc-data-systems-site`, `campModelInput`, and `ctc-knowledge-map` are external
 to the hub. When one matters to this domain, the hub records only a typed
 dependency edge with its owner, required artifact or gate, owning plan, and
 observation date; it does not absorb that repository's tasks, status, branches,
 approvals, or releases.
 
-## Open decision — which membership test governs
+## Which membership test governs — RULED 2026-08-24
 
-**Not ruled. Do not resolve this by editing or deleting either test.** Recorded
-2026-08-21; the roadmap carries the same question, with the candidate rulings
-and what each one costs, as
-[OD-1](../roadmap.md#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member).
+**Ruled by Brett, 2026-08-24** (hub [Q10](../questions.md), roadmap
+[OD-1](../roadmap.md#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member),
+option B). Recorded here rather than deleted, because the two-test contradiction
+lasted from 2026-08-17 to 2026-08-24 and the record of *which* test was
+discarded is what stops it regrowing.
 
-The two documents state **two different tests**:
+**The ruling, in three parts:**
 
-| Where | The test it states |
-|---|---|
-| This card, closing paragraph above | Membership follows from **this hub sequencing that repository's work** |
-| `roadmap.md`, the *Domain allowlist* rule | A repository joins when **its output is an input to this pipeline** — the reason given for admitting `salmon-knowledge-commons` on 2026-08-17 |
+1. **This card's test governs:** membership follows from **this hub sequencing
+   that repository's work**. The roadmap's *input* test — a repository joins when
+   its output is an input to this pipeline — **is deleted**, not parked. OD-1's
+   retirement condition demanded that explicitly: leaving both alive is how the
+   pair regrew last time.
+2. **`salmon-data-standards-workshop` is the eighth member**, added to the table
+   above. Its release-index section in the roadmap is a member row, not a
+   courtesy record.
+3. **`psc-data-transformations` stays external** — a typed *requirements-driving
+   consumer* edge, with its substance in
+   [S13](../sequences/s13-fraser-recruits-case-study.md). Its pin on metasalmon
+   0.1.8 is a constraint this package should know about, **not** an obligation on
+   it. That was the third half-question inside OD-1 and it is answered.
 
-They disagree about two repositories, and they disagree in opposite directions:
+**What moved in the same change:** the allowlist table (eight rows), the
+"eight repositories, one hub" line at the top of this card, the roadmap's
+*Domain allowlist* rule (now the sequencing test alone), the roadmap's
+"eight sections for seven members" note, its frontmatter description, the
+[hub-coordination context](../contexts/hub-coordination.md), and the
+[S6 card](../sequences/s6-ecosystem.md). A count nobody maintains is the decay
+this rule exists to prevent, so the count now has one ruled answer in every
+place it appears.
 
-- **`psc-data-transformations`** (PSC Data Systems, private GitLab) consumes
-  metasalmon as a pinned execution engine — `0.1.8` at revision `886e01d`, with
-  calls into `metasalmon:::` internals — so its requirements drive this package,
-  which the roadmap's input test arguably admits. The hub sequences none of its
-  work, which this card's test excludes. It is currently recorded only as an
-  external dependency edge in the roadmap: that is where an unruled repository
-  sits by default, and it is **not** a ruling.
-- **`salmon-data-standards-workshop`** is sequenced by this hub as stream S4, so
-  this card's test admits it — while a lesson's output is not an input to any
-  stage of the term-request or packaging pipeline, so the roadmap's test
-  excludes it. **It has not been added to the table above.** Its absence is why
-  the table's "seven repositories" claim sits in tension with the hub sequencing
-  an eighth repository's rebuild as a named stream, and why the roadmap's
-  release index now carries eight sections for seven members.
-
-**What the ruling unblocks:** whether the table above is seven rows or eight;
-whether the workshop's release-index section is a member row or a courtesy
-record; and whether a pin held by an external consumer creates an obligation on
-this package rather than merely a constraint it should know about. *Retires
-when:* Brett rules — and the losing test is deleted in the same change, or the
-pair regrows and the next reader inherits this contradiction unchanged.
+**The one thing the ruling forces, stated so it is not lost.**
+`salmon-knowledge-commons` was admitted on 2026-08-17 under the test that has
+now been deleted. It stays a member under the sequencing test — the admission
+note above is restated in those terms rather than re-opened — and that
+restatement is the weakest link in this ruling. If it is wrong, the commons's
+membership is the place to re-examine, not the workshop's.
