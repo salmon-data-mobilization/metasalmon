@@ -147,6 +147,18 @@ crosswalk now.
   ownership of a GitHub organization was **not** the reason and does not confer
   membership. Nothing else in META-0 changes: the allowlist mechanism, the
   typed external-edge ledger, and the authority boundaries all hold as written.
+- **2026-08-24 — The allowlist is eight, and the membership test changed
+  (Brett).** `salmon-data-standards-workshop` joined as the eighth member, and
+  the governing test is now *this hub sequences that repository's work* — the
+  "output is an input to this pipeline" test used in the entry above was deleted
+  in the same change. This entry is added rather than rewriting the two above
+  it, for the reason the 2026-08-17 entry already states: a dated plan records
+  what was decided when. **Read the domain card and the roadmap's
+  domain-allowlist rule for membership, never this plan** — that instruction is
+  now load-bearing twice over, because the 2026-08-17 entry's *reasoning* (the
+  commons feeds the term-request pipeline) is stated in a test that no longer
+  governs. The commons is still a member; the domain card restates why in
+  sequencing terms.
 - **2026-08-15 — Resolve PID-1 with readable product slugs.** Stable mapping-
   product identifiers use readable slugs below `/mappings/`; versions remain
   immutable and separately identifiable. These identify datasets, not PSC

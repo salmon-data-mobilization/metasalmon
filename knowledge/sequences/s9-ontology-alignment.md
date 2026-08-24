@@ -264,6 +264,21 @@ iop-triples explainer.
    on all six in the table — each is a modelling or policy call in `smn:`, and
    the B+C ruling above deliberately left modelling out of scope.
 
+   **Count the eight carefully, because this section states them in two
+   places.** Six are in the table below — rows **1–5 and 8**. The remaining two,
+   **6** (*"cycle line" renames away from issue #70's wording*) and **7**
+   (*proposed straight into shared `smn:` rather than a `smn/profile/<program>/`
+   bridge*), are in the paragraph after the table, because neither changes what
+   gets minted. Eight decisions, six rows: hub [Q6](../questions.md) points here
+   for all eight, and a reader who counts the table alone will think two are
+   missing.
+
+   **Status (2026-08-24):** Brett asked for an expansion before ruling —
+   *"You'll have to expand on Q6 for me to be able to answer. What are your
+   precise questions and recommendations and trade offs?"* — and a briefing was
+   provided that day. **The eight are still unruled.** This section is where the
+   answers land.
+
    | # | Decision | Why it cannot be deferred to whoever implements |
    |---|---|---|
    | 1 | **Does "species go in `smn`, never `gcdfo`" survive a `gcdfo` code vocabulary carrying `dwc:scientificName` + a WoRMS `dwc:scientificNameID` directly?** | Two of Brett's own 2026-08-17 statements pull against each other. They reconcile **only if the gcdfo codes never need an `smn:` species concept to point at** — which is a boundary question, not a preference. The standing "species are never minted in `gcdfo`" ruling recorded below is what is at stake |
@@ -334,6 +349,27 @@ iop-triples explainer.
    123–127, 130, 142), not a cardinality. The wrong figure was in the evidence
    comment on #67 and in this card; Schedule 2 numbers its items 1–48
    contiguously, so a gap would have meant a missed area and there is none.
+
+   **PFMA Subareas are ruled into gcdfo (Brett, 2026-08-24).** Hub
+   [Q8](../questions.md): *"I agree with your recommendation PFMA Sub areas go
+   to gcdfo."* The scheme above is complete for the 48 Areas and explicitly
+   silent about Schedule 2's 604 numbered Subareas — and the gold-standard Fraser
+   coho example's `AREA` column holds Subareas (`29F`, `29G`, `29J`, `29K`), so
+   the silence is now a gap with an owner. It goes to gcdfo because gcdfo already
+   owns `gcdfo:PacificFisheryManagementAreaScheme`, and splitting one regulatory
+   vocabulary across repositories to suit a temporary priority ordering fractures
+   it permanently. The paired half of the same ruling: **species go to an
+   external taxonomy**, never to gcdfo and no longer to `smn` either, since PR
+   #27 withdrew that scheme.
+
+   **This mint is also the whole of the gcdfo carve-out** (Brett, 2026-08-24, hub
+   [Q5](../questions.md): *"Carve out what the gold standard needs."*). gcdfo is
+   not de-prioritised in full and not re-opened in full; the Subarea mint is
+   carved out and nothing else is, and `psc-salmon-vocabularies` stays fully
+   de-prioritised. **The scope is the open half:** four Subareas (what the
+   example holds) or all 604 (what Schedule 2 numbers contiguously). Owner for
+   that call is [S12](s12-fraser-coho-gold-standard.md), which holds the
+   evidence; the request routes into gcdfo through this step's term-request path.
 
    **The A1 caveat survives the ruling, and got sharper.** Minting the PFMA
    vocabulary does not make `DFO_AREA`'s values members of it, and #67's close
