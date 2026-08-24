@@ -255,8 +255,10 @@ ends at rung 3 and the phrase "replay the complete baseline" is retired.
 Rung 3 has merged and tagged: metasalmonpy PRs #10, #11 and #12 are in, `v0.2.0`
 and `v0.2.1` exist as tags and GitHub Releases, and `pyproject.toml` reads
 `0.2.1` as a **released** parity claim rather than a branch state. The catch-up
-window is therefore **0.2.2→0.3.0**. Both `AGENTS.md` files must carry that same
-number — see the mirror rule above.
+window is therefore **0.2.2→0.4.0** — the endpoint moved from 0.3.0 when the R
+side cut **0.4.0** on 2026-08-24, and it is the same content either way, because
+0.4.0 *is* 0.3.0 plus the post-0.3.0 fixes S10 already ported. Both `AGENTS.md`
+files must carry that same number — see the mirror rule above.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
