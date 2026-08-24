@@ -125,6 +125,40 @@ can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
 
+### Q15 — Writing into an existing *empty* directory: which order is right?
+**Unblocks:** parity row 54, and a test on both sides that nothing currently pins.
+metasalmon refuses it without `overwrite = TRUE`; metasalmonpy writes into it.
+Pre-0.1.6 debt found by metasalmonpy's 0.4.0 audit, carried faithfully and
+silently since before the parity claim, and **pinned by neither suite** — R's
+test uses a non-empty directory, the mirror does not test the case. **Only you
+can rule it**, because it is user-visible whichever way it goes (refusing a
+write that used to succeed, or permitting one that used to abort) and the
+2026-08-17 amendment says a divergence opens the question rather than settling
+it. **It turns on which failure is worse:** R's order is the safer default — an
+existing directory is a signal the caller may not have meant this path — while
+metasalmonpy's is friendlier to `mkdir -p && write`, where an empty directory
+has no data to destroy and demanding `overwrite` for it trains callers to pass
+`overwrite` habitually, which is the flag's whole value gone.
+**Recommendation:** none offered; the two grounds are genuinely opposed and a
+recommendation here would be the invented ruling row 54 exists to avoid.
+**Owner:** [parity row 54](parity-deviations.md).
+
+### Q16 — Does `create_sdp()` deterministically prefill constraint and statistical modifier?
+**Unblocks:** parity row 57, and the same sentence of prose on both sides.
+metasalmon applies every role the evidence gates allow; metasalmonpy restricts
+the deterministic path to `variable`, `property`, `entity`, `unit`. Each side's
+docs matched its own code while the code diverged, so no reader was positioned
+to catch it — metasalmon 0.4.0 corrected its quickstart's "never auto-filled"
+claim as wrong for R, and the identical sentence is still true for Python.
+**It turns on what a marked prefill is worth against an unreviewed IRI in a slot
+the user did not ask about:** R's gates already demand the evidence come from
+the column's own text and the path marks what it filled, so the wider behaviour
+is review-visible rather than silent — but constraint and statistical modifier
+are the two roles that change what a variable *is*, and a wrong one is harder
+for a reviewer to notice than a missing one.
+**Recommendation:** none offered, for the same reason as Q15.
+**Owner:** [parity row 57](parity-deviations.md).
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible

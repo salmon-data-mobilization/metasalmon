@@ -21,9 +21,16 @@
 # own users would call it. Both are derived from the bare function name, so a
 # validator names its writer once.
 #
-# The mirror keeps the same table under the same rule -- metasalmonpy's
-# `_ACCEPTED_PROVENANCE` dicts in `sssom.py`, `measurement_decompositions.py`
-# and `reproducibility.py`. Adding a writer here means adding it there.
+# The mirror keeps the same table under the same rule, and as of its 0.4.0 port
+# it keeps it the same way: one owner, `provenance.py`, resolved by all three
+# validators. Adding a writer here means adding it there.
+#
+# This comment said `_ACCEPTED_PROVENANCE` dicts lived per module in `sssom.py`,
+# `measurement_decompositions.py` and `reproducibility.py` until 2026-08-24 --
+# true when written, false once the mirror consolidated, and the same stale
+# claim parity-deviations row 29 carried. metasalmonpy's `tests/test_provenance.py`
+# now fails if any of those three modules regrows the dict, which is the mirror
+# of `tests/testthat/test-provenance.R` here.
 
 # Returns the provenance field that must carry a version for this manifest's
 # declared writer, or `NA_character_` when `generated_by` is absent, malformed,
