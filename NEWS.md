@@ -239,6 +239,10 @@ preferences always said it did.
   where type coercion belongs and is tracked as backlog #93.
 
 * **A `datetime` observation dimension no longer rejects a valid package.**
+  *(Correction, 2026-08-24: this entry reads as though R found and fixed the
+  defect first. metasalmonpy had fixed it seven days earlier — it had
+  deliberately mirrored the defect, then repaired it — so R was the follower
+  here. Recorded as parity row 55, which the entry should have cited.)*
   Since 0.2.0 `.ms_sdp_observation_validate_data()` has read resources through
   `read_salmon_datapackage()`, which types each column from the dictionary, so
   a column declared `datetime` reaches the observation validators as a POSIXct
@@ -416,7 +420,11 @@ preferences always said it did.
   same tree. Two smaller behaviour changes come with it: a
   `metasalmon_version` that is whitespace-only, or not a string at all, is now
   rejected rather than accepted, which is what the decomposition validator and
-  both Python readers already did.
+  one Python reader already did. *(Correction, 2026-08-24: this entry shipped
+  saying "both Python readers". The 0.4.0 parity audit measured it — only one
+  refused a non-string version, and metasalmonpy's other reader was fixed to
+  match in its own 0.4.0. The claim was true of the behaviour and wrong about
+  how widely it already held.)*
 
   The ruling had been applied one artifact at a time, re-typing the same pair
   of writer strings each time — SSSOM in PR #43, decompositions in PR #44, and
