@@ -1,3 +1,69 @@
+metasalmon (development version)
+--------------------------------
+
+### Internal
+
+* **The role-contract guard now checks all seven surfaces in one file, and
+  each one is demonstrated to fail.** `AGENTS.md` has said since 2026-08-18
+  that the coverage was split — `tests/testthat/test-role-contract-guard.R`
+  claiming the first six, `role_boost` guarded over in
+  `tests/testthat/test-smn-outranks-gcdfo.R` — so "did I reach every layer"
+  had two answers and neither was complete. metasalmonpy's 0.4.0 parity work
+  consolidated its own copy first (`tests/test_role_contract_guard.py`), and
+  this is that design ported back under Brett's 2026-08-17 ruling that the
+  mirror is not automatically the follower.
+
+  The guard is now section-headed `SURFACE 1` … `SURFACE 7`, so a missing
+  layer is legible in the failure rather than only in the test name. Two
+  findings came out of doing it, and both are arguments for demonstrating a
+  guard rather than reading it:
+
+  - **Surface 5 was never checked here at all.** The deterministic validators
+    (`semantic-bundle-validators.R`) were listed in `AGENTS.md` among the
+    "first six" this file covered and were not among them, so the honest
+    figure was five, not six. Dropping an evidence gate from
+    `.ms_semantic_apply_bundle_validators()` removed the only deterministic
+    check between the model's word and an IRI written into the dictionary,
+    and nothing failed. A new pair of tests asserts each gated role
+    (`method`, `statistical_modifier`, `constraint`) has a validator that
+    names it, that the dispatcher calls it, that it raises its own `SEM_*`
+    code, and that the role-type veto is wired in.
+  - **`sources_for_role()` had no fall-through check.** metasalmonpy's guard
+    had one where R's did not; ported. A role that falls through to the
+    generic source list has no retrieval identity of its own, which is the
+    shape of failure that let `statistical_modifier` reach ranking with no
+    source preferences in the first place.
+
+  Each of the seven surfaces was broken in turn and the guard confirmed RED
+  for each; the demonstrations are in the pull request that introduced this
+  entry.
+
+  `role_boost` is read in place from `.ranking_profile_defaults()` rather
+  than hoisted to a package constant as metasalmonpy hoisted `ROLE_BOOST`.
+  Python hoisted because its table was an inlined dict literal inside the
+  scorer with nothing enumerable to assert against; R's is already a named
+  list returned by the function that is the merge base for the
+  `ranking_profile` override system, and hoisting would have created a second
+  copy of the authority — the drift metasalmonpy then needed an extra test to
+  rule out. What did port is that extra test: a pin that the `role_boost`
+  table the guard enumerates is the table `.score_and_rank_terms()` actually
+  merges.
+
+  `tests/testthat/test-smn-outranks-gcdfo.R` keeps the smn-over-gcdfo
+  **margin**, which is its own subject, and no longer carries the coverage
+  check. Its header says so, and says why the margin assertions that remain
+  are not a second coverage check: they are scoped to roles served by both
+  sources, so they say nothing about `statistical_modifier`.
+
+* **The `role_boost` comment in `.ranking_profile_defaults()` called it the
+  sixth surface of the role contract; it is the seventh.** `AGENTS.md` counts
+  `inst/extdata/ontology-preferences.csv` as the sixth. The count was off by
+  one in the comment, not in the contract, and `AGENTS.md` had flagged it
+  explicitly as a thing to fix in the comment — an eighth surface arriving
+  into a numbering ambiguity is how the seventh went unnoticed. The 0.4.0
+  entry below inherited the wrong number from that comment and carries a
+  dated correction rather than a silent edit.
+
 metasalmon 0.4.0
 ----------------
 
@@ -377,7 +443,8 @@ preferences always said it did.
   from `smn` and `ols`, but `.ranking_profile_defaults()$role_boost` had no
   `statistical_modifier` entry, so the role was scored on base weight alone —
   the sixth surface of the role contract, silently absent exactly as
-  `AGENTS.md` warns. It now carries `smn = 1.5, ols = 0.4`, and a new guard
+  `AGENTS.md` warns [corrected 2026-08-24: the **seventh** surface — this
+  entry inherited the off-by-one from the in-code comment, now fixed]. It now carries `smn = 1.5, ols = 0.4`, and a new guard
   fails if any role with ranking preferences lacks a `role_boost` entry.
 
 * **SDP-extension IRI validation no longer accepts Unicode whitespace, and one

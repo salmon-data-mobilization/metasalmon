@@ -73,50 +73,61 @@ at `knowledge/roadmap.md`.
   must keep identical column sets.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
-- **A semantic role is a contract across five layers, not a string.** Adding
+- **A semantic role is a contract across seven surfaces, not a string.** Adding
   or renaming a role (`variable`, `property`, `entity`, `unit`, `constraint`,
   `statistical_modifier`; plus `method` for code values only) means touching
-  all of: the target/role maps (`semantic-suggestions.R`, `semantics-helpers.R`
-  `role_to_field`), the bundle roles and slot fields
-  (`semantic-bundle-review.R`), **the role-hint vocabulary** (`.smn_role_flags`
-  + the emitter in `term_search_smn.R`, and the RDF/XML hint builder in
-  `term_search.R`), the retrieval filters (`sources_for_role()` and
-  `.gcdfo_filter_for_role()`), and the deterministic validators
-  (`semantic-bundle-validators.R`). The hint layer is the one that gets
+  all of: **(1)** the target/role maps (`semantic-suggestions.R`,
+  `semantics-helpers.R` `role_to_field`), **(2)** the bundle roles and slot
+  fields (`semantic-bundle-review.R`, including the review prompt), **(3) the
+  role-hint vocabulary** (`.smn_role_flags` + the emitter in
+  `term_search_smn.R`, and the RDF/XML hint builder in `term_search.R`),
+  **(4)** the retrieval filters (`sources_for_role()` and
+  `.gcdfo_filter_for_role()`), **(5)** the deterministic validators
+  (`semantic-bundle-validators.R`), **(6)** the ranking preferences in
+  `inst/extdata/ontology-preferences.csv`, and **(7)** `role_boost` in
+  `.ranking_profile_defaults()`. The hint layer is the one that gets
   forgotten, and forgetting it is silent and total: `.ms_validate_semantic_role_type()`
   vetoes any accept whose candidate carries hints not naming the role, so a
   role with no hint emitter has **100% of its correct accepts downgraded** to
   `review` while every test using a hand-written `role_hints` fixture still
   passes. That is exactly how sdp-0.3.0's `statistical_modifier` shipped
-  broken through CI and PR review; see the 0.3.0 NEWS entry. Ranking
-  preferences are the sixth surface and fail the same way: a role with no
-  `inst/extdata/ontology-preferences.csv` row ranks with no source preferences
-  at all — and **`role_boost` in `.ranking_profile_defaults()` is a seventh**,
-  discovered 2026-08-17 when `statistical_modifier` was found to have carried
-  preference rows since 0.3.0 while having no boost entry, so it reached ranking
-  on base weight alone. That is the *same role* failing a *second* silent layer,
-  which is the strongest evidence available that this list is not yet closed:
-  assume an eighth exists and look for it when adding a role.
-  **The guard coverage is split across two files, and neither one covers all
-  seven.** `tests/testthat/test-role-contract-guard.R` covers the first six —
-  it reads the slot fields as the authority and inspects the emitter and filter
-  bodies, so keep its `hint_roles` and `hint_to_sources` lists current when a
-  role is added, renamed, or deliberately exempted. **`role_boost`, the
-  seventh, is guarded in `tests/testthat/test-smn-outranks-gcdfo.R`**, whose
-  check asserts every ranked role has a boost entry; the role-contract guard
-  does not mention `role_boost` anywhere. *(Corrected 2026-08-18: this contract said
-  the role-contract guard "checks every layer", which was true of six layers
-  and became false the moment the seventh was named without moving its check.
-  A guard whose claimed scope exceeds its real scope is worse than a missing
-  guard, because green means "all seven verified" to the person reading this
-  line. Consolidating the seventh check into the role-contract guard, so one
-  file is the answer to "did I reach every layer", is worth doing.)*
-  Note the in-code comment beside `role_boost` in `.ranking_profile_defaults()`
-  calls it the *sixth* surface; this contract counts
-  `inst/extdata/ontology-preferences.csv` as sixth and `role_boost` as seventh.
-  The count is off by one between the two, not the substance — but fix the
-  comment rather than renumbering here, or the eighth surface arrives into an
-  ambiguity.
+  broken through CI and PR review; see the 0.3.0 NEWS entry. The ranking
+  preferences fail the same way: a role with no CSV row ranks with no source
+  preferences at all — and `role_boost` was **discovered 2026-08-17**, when
+  `statistical_modifier` was found to have carried preference rows since 0.3.0
+  while having no boost entry, so it reached ranking on base weight alone. That
+  is the *same role* failing a *second* silent layer, which is the strongest
+  evidence available that this list is not yet closed: assume an eighth exists
+  and look for it when adding a role.
+  **`tests/testthat/test-role-contract-guard.R` is the one file that checks all
+  seven**, section-headed `SURFACE 1` … `SURFACE 7` so a missing layer is
+  legible in the failure. It reads the slot fields as the authority and
+  inspects the emitter, filter, dispatcher and scorer bodies, so keep its
+  `hint_roles`, `hint_to_sources` and `role_evidence_validators` lists current
+  when a role is added, renamed, or deliberately exempted.
+  *(History, kept because it is the lesson and not merely the changelog.
+  Corrected 2026-08-18: this contract said the role-contract guard "checks
+  every layer", which was true of six layers and became false the moment the
+  seventh was named without moving its check. A guard whose claimed scope
+  exceeds its real scope is worse than a missing guard, because green means
+  "all seven verified" to the person reading this line. From 2026-08-18 to
+  2026-08-24 the coverage was honestly described but split — the first six
+  here, `role_boost` in `tests/testthat/test-smn-outranks-gcdfo.R` — so
+  "did I reach every layer" had two answers and neither was complete.
+  Consolidated 2026-08-24, porting metasalmonpy's 0.4.0 design, which did the
+  same consolidation first. Two things the consolidation found, both of which
+  argue for distrusting a scope claim until it is demonstrated: **surface 5 was
+  never checked here at all**, so the "first six" figure was itself an
+  overstatement by one; and each of the seven now has a recorded RED
+  demonstration, because a guard claiming seven-surface coverage that has not
+  been shown to fail on all seven is exactly the claim this paragraph exists to
+  warn about. `test-smn-outranks-gcdfo.R` keeps the smn-over-gcdfo **margin**,
+  which is its own subject, and states in its header that the coverage check
+  moved.)*
+  R reads `role_boost` in place from `.ranking_profile_defaults()` rather than
+  hoisting it to a constant as metasalmonpy did; the reasoning, and the pin
+  that keeps the enumerated table the one the scorer merges, are in the
+  `SURFACE 7` header of the guard.
 - **A guard must say what would retire it.** Every suppression, exclusion,
   allowlist entry, skip, or workaround records *the condition under which it
   stops being needed* — the defect it routes around, the version that fixes
