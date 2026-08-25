@@ -59,63 +59,6 @@ the R seeder is wrong (it writes the same IRI into both slots) and gets fixed
 with a test. Record as an ecosystem I-ADOPT ruling, not a metasalmon fix.
 **Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md).
 
-### Q12 — When R turns a `Date` into text, which renderer wins? (backlog #93, items 3–5)
-
-**Rewritten 2026-08-24, because the previous wording assumed context that was
-never stated.** Brett: *"I don't really understand what happened and what your
-asking for. Is that just for the KNB deposit making it to DataONE CN?"* No —
-and that is the first thing to fix. **This has nothing to do with KNB or
-DataONE.** No deposit, no member node, no coordinating node. It is about how
-**R converts a `Date` value into the characters written into a file**, and the
-fact that this package uses more than one converter for the same value.
-
-R has two renderers and they disagree for years before 1000:
-`format(as.Date("0999-01-01"))` gives `0999-01-01`, while
-`as.character(as.Date("0999-01-01"))` gives `999-01-01` (since R 4.3 it takes an
-internal fast path that never reaches `format()`). Different code paths in this
-package reach for different ones.
-
-**The three concrete symptoms, all in [backlog #93](backlog.md):**
-
-- **Item 4 — one call, two spellings of the same date.** A single
-  `write_salmon_datapackage()` can write `0999-01-01` into `datapackage.json`
-  (`jsonlite::write_json()` pads) and `999-01-01` into `metadata/dataset.csv`
-  (`readr::write_csv()` does not), in the same package.
-- **Item 3 — sorted by one rendering, emitted as another.**
-  `.ms_sssom_canonical_bytes()` takes its sort key through `as.character()`
-  (never padded) and its emitted bytes through `format()` (padded on macOS, not
-  on Linux). Row *order* and row *content* can therefore disagree about the same
-  value, and `mapping_date` / `publication_date` / `review_date` are declared
-  SSSOM columns.
-- **Item 5 — the fallback keys unpadded.** `.ms_canonical_value_tokens()` still
-  takes `trimws(as.character(x))` for its `original` fallback, so a `Date`
-  column declared `value_type = "string"` keys unpadded while the `date` branch
-  beside it keys padded.
-
-**Nothing is broken in practice, and saying so is part of the question.** Every
-case needs a **pre-1000 date**, and no salmon dataset has one. What is actually
-at stake is the package's **byte-reproducibility contract** — same inputs, same
-bytes, on every platform — which is the property that makes a canonical hash, an
-archive checksum and a DataONE PID mean anything. Items 1 and 2 of #93 are
-already fixed; these three are the remainder.
-
-**Recommendation:** adopt the Python design — **coerce at render, per type, and
-measure each type before touching it.** metasalmonpy has no such divergence
-because `date.isoformat()`, `str()` and `pandas.to_csv` all pad. Item 1's fix is
-the model for *how*: `Date` and `POSIXct` needed different treatment (the two
-renderers agree exactly on a `Date` and on nothing for a `POSIXct` — separator,
-zone marker, and whether a fractional second survives), so a change applied to
-both "for symmetry" would have corrupted the path that was never broken.
-
-**The one decision that is actually yours:** is a defect that cannot bite real
-salmon data worth changing a contract this package advertises — **fix the three
-now**, or **record them as accepted permanently** and state the caveat wherever
-byte reproducibility is claimed? Which functions move, and in what order, is an
-implementer's call either way. *Also on the table in the same pass:* parity
-"Ahead" row 13, the only deviation where current R behaviour can silently
-destroy a user's file.
-**Owner:** [backlog #93](backlog.md) items 3–5.
-
 ### Q13 — The stuck production KNB deposit: send the support request?
 **Unblocks:** the ecosystem's only open publication incident, and the Fraser
 recipe's migration off metasalmon 0.1.8 (migrating first risks two live heads
@@ -171,6 +114,102 @@ answered entry: it records that the frame moved *before* the ruling, which is
 exactly the thing a reader of the ruling alone cannot see.
 
 ## Answered
+
+### Q12 — When R turns a `Date` into text, which renderer wins? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Fix them as per the metasalmonpy implementation by fixing all
+three by coercing them once at render time per type."* So: fix, not accept —
+and the design is the mirror's, which renders each cell **once**, choosing the
+renderer by the value's type.
+
+**Implemented 2026-08-25** (branch `fix/2026-08-25-q12-date-render`) and
+recorded in [backlog #93](backlog.md), which is now **fully retired**. Two of
+the three were code fixes routed through one new `.ms_canonical_character()`
+(`R/platform-time.R`): item 3, where `.ms_sssom_canonical_bytes()` sorted by
+`as.character()` and emitted through `format()`; and item 5, where
+`.ms_canonical_value_tokens()`'s `original` fallback keyed a `Date` unpadded.
+**Item 4 was a trace rather than a fix**: its stated mechanism is unreachable —
+item 2's coercion covers every frame that reaches the descriptor — and two
+corrections to its premise came out of the trace, both measured. jsonlite
+serializes a `Date` through `format.Date`, so on glibc it emits `999-01-01`
+too and item 4 was a **macOS-only** split even historically; and the same
+*shape* is alive for `POSIXct`, in both implementations, filed as **#115**
+because it needs its own ruling on which spelling a descriptor instant takes.
+That last finding also corrects a sentence in the quoted question below: it
+says metasalmonpy has no such divergence because `date.isoformat()`, `str()`
+and `pandas.to_csv` all pad. Measured 2026-08-25 on pandas 3.0.5, the claim
+holds for a `date` column and for an `object`-dtype `datetime` column, and
+**fails for the dtype pandas actually chooses**: a column built from
+`datetime.datetime` objects becomes `datetime64[us]`, and `to_csv` renders
+`datetime(999, 6, 5, 13, 45, 30)` from it as `999-06-05 13:45:30` — unpadded —
+while `str()` of the same value gives `0999-06-05 13:45:30`. That is a
+year-padding split inside the mirror's own writer, of exactly the class its
+`test_platform_determinism_guard.py` exists to catch. It belongs to **#115**.
+
+**The part of the ruling that did the work is "per type."** The obvious
+symmetry — treat `Date` and `POSIXct` alike — would have corrupted a path that
+was never broken, exactly as item 1 found in 2026-08-21. The two live one
+`git grep` apart and take opposite decisions about `POSIXct` because they sit
+on different baselines, and a regression test pins that the new one did not
+leak into the old one.
+
+*(The question as it stood when it was answered follows, unedited, because the
+rewrite of 2026-08-24 is itself part of the record.)*
+
+> **Rewritten 2026-08-24, because the previous wording assumed context that was
+> never stated.** Brett: *"I don't really understand what happened and what your
+> asking for. Is that just for the KNB deposit making it to DataONE CN?"* No —
+> and that is the first thing to fix. **This has nothing to do with KNB or
+> DataONE.** No deposit, no member node, no coordinating node. It is about how
+> **R converts a `Date` value into the characters written into a file**, and the
+> fact that this package uses more than one converter for the same value.
+>
+> R has two renderers and they disagree for years before 1000:
+> `format(as.Date("0999-01-01"))` gives `0999-01-01`, while
+> `as.character(as.Date("0999-01-01"))` gives `999-01-01` (since R 4.3 it takes an
+> internal fast path that never reaches `format()`). Different code paths in this
+> package reach for different ones.
+>
+> **The three concrete symptoms, all in [backlog #93](backlog.md):**
+>
+> - **Item 4 — one call, two spellings of the same date.** A single
+>   `write_salmon_datapackage()` can write `0999-01-01` into `datapackage.json`
+>   (`jsonlite::write_json()` pads) and `999-01-01` into `metadata/dataset.csv`
+>   (`readr::write_csv()` does not), in the same package.
+> - **Item 3 — sorted by one rendering, emitted as another.**
+>   `.ms_sssom_canonical_bytes()` takes its sort key through `as.character()`
+>   (never padded) and its emitted bytes through `format()` (padded on macOS, not
+>   on Linux). Row *order* and row *content* can therefore disagree about the same
+>   value, and `mapping_date` / `publication_date` / `review_date` are declared
+>   SSSOM columns.
+> - **Item 5 — the fallback keys unpadded.** `.ms_canonical_value_tokens()` still
+>   takes `trimws(as.character(x))` for its `original` fallback, so a `Date`
+>   column declared `value_type = "string"` keys unpadded while the `date` branch
+>   beside it keys padded.
+>
+> **Nothing is broken in practice, and saying so is part of the question.** Every
+> case needs a **pre-1000 date**, and no salmon dataset has one. What is actually
+> at stake is the package's **byte-reproducibility contract** — same inputs, same
+> bytes, on every platform — which is the property that makes a canonical hash, an
+> archive checksum and a DataONE PID mean anything. Items 1 and 2 of #93 are
+> already fixed; these three are the remainder.
+>
+> **Recommendation:** adopt the Python design — **coerce at render, per type, and
+> measure each type before touching it.** metasalmonpy has no such divergence
+> because `date.isoformat()`, `str()` and `pandas.to_csv` all pad. Item 1's fix is
+> the model for *how*: `Date` and `POSIXct` needed different treatment (the two
+> renderers agree exactly on a `Date` and on nothing for a `POSIXct` — separator,
+> zone marker, and whether a fractional second survives), so a change applied to
+> both "for symmetry" would have corrupted the path that was never broken.
+>
+> **The one decision that is actually yours:** is a defect that cannot bite real
+> salmon data worth changing a contract this package advertises — **fix the three
+> now**, or **record them as accepted permanently** and state the caveat wherever
+> byte reproducibility is claimed? Which functions move, and in what order, is an
+> implementer's call either way. *Also on the table in the same pass:* parity
+> "Ahead" row 13, the only deviation where current R behaviour can silently
+> destroy a user's file.
+> **Owner:** [backlog #93](backlog.md) items 3–5.
 
 ### Q1 — What does "the KNB test environment" actually mean? — ANSWERED 2026-08-22 (Brett)
 

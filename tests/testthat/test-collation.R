@@ -131,6 +131,25 @@ test_that("canonical artifacts are identical under the ambient locale and LC_COL
       stringsAsFactors = FALSE
     )
   )
+  # A typed `mapping_date`, because the character-only set above cannot reach
+  # the rendering the locale can move. Both the sort key and the emitted bytes
+  # now come from `.ms_canonical_character()`, so this set's bytes must be
+  # locale-invariant for the same reason the character one's are (backlog #93
+  # item 3).
+  dated_set <- list(
+    metadata = list(
+      mapping_set_id = "https://example.org/sets/dated",
+      curie_map = list(alpha = "https://example.org/a_", Beta = "https://example.org/B_")
+    ),
+    mappings = data.frame(
+      subject_id = c("alpha:1", "alpha:2", "Beta:1"),
+      predicate_id = rep("skos:exactMatch", 3L),
+      object_id = c("Beta:1", "Beta:2", "alpha:1"),
+      mapping_justification = rep("semapv:ManualMappingCuration", 3L),
+      mapping_date = as.Date(c("1000-01-01", "0999-01-01", NA)),
+      stringsAsFactors = FALSE
+    )
+  )
   members <- list(
     list(role = "data", path = "data/Apple.csv", pid = "urn:uuid:1",
          format_id = "text/csv", size = 10, sha256 = "aa"),
@@ -139,6 +158,7 @@ test_that("canonical artifacts are identical under the ambient locale and LC_COL
   )
 
   ambient_bytes <- metasalmon:::.ms_sssom_canonical_bytes(mapping_set)
+  ambient_dated_bytes <- metasalmon:::.ms_sssom_canonical_bytes(dated_set)
   ambient_pid <- metasalmon:::.ms_knb_resource_map_pid("pkg-1", "2026-01-01", members)
   ambient_crosswalk <- nuseds_enumeration_method_crosswalk()$nuseds_value
 
@@ -148,6 +168,7 @@ test_that("canonical artifacts are identical under the ambient locale and LC_COL
   skip_if(!nzchar(applied), "Cannot set LC_COLLATE=C on this platform")
 
   expect_identical(metasalmon:::.ms_sssom_canonical_bytes(mapping_set), ambient_bytes)
+  expect_identical(metasalmon:::.ms_sssom_canonical_bytes(dated_set), ambient_dated_bytes)
   expect_identical(
     metasalmon:::.ms_knb_resource_map_pid("pkg-1", "2026-01-01", members),
     ambient_pid

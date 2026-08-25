@@ -47,10 +47,9 @@ Severity = how much it can bite a real user.
 - **Partially addressed:** #26, #29, #30.
 - **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
   (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90** (ruled 2026-08-24,
-  the spec-repo change is unwritten), **#93**
-  (items 3–5 only),
-  and **#95**, **#103–#108**, **#111**, **#112**, **#113** and **#114** (both
-  ruled 2026-08-24 and both unimplemented), plus
+  the spec-repo change is unwritten),
+  and **#95**, **#103–#108**, **#111**, **#112**, **#113**, **#114** (both
+  ruled 2026-08-24 and both unimplemented) and **#115** (new 2026-08-25), plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
@@ -58,11 +57,14 @@ Severity = how much it can bite a real user.
   **#99** (this repo's dictionary is fixed; metasalmonpy and smn-data-pkg
   still ship the two 404 IRIs).
 - **Open and awaiting a decision rather than an implementer:** #87's benchmark
-  half, #93's items 3–5 (open question [Q12](questions.md), **rewritten
-  2026-08-24** because its previous framing was unanswerable), and #106 (which
+  half, **#115** (which spelling a descriptor `POSIXct` takes — a shared defect
+  in both implementations, and ruling on it in one repository only would create
+  a parity row instead of closing one), and #106 (which
   reading of "typed as a SOSA Procedure" the spec means, the same undecided
   question as #76's open half). Listing them as plain open items overstates how
-  ready they are to pick up.
+  ready they are to pick up. *(#93's items 3–5 were on this list until
+  2026-08-24; [Q12](questions.md) ruled, and they are now retired — see
+  the Fixed line below.)*
 - **Ruled 2026-08-24 (Brett), and therefore now awaiting an implementer rather
   than a decision:** **#90** (permit the I-ADOPT descriptor keys; the spec
   validator learns them — [Q3](questions.md)), which also unblocks **#109**;
@@ -84,6 +86,14 @@ Severity = how much it can bite a real user.
   through the atomic write set with rollback — with RED-verified abort-injection
   tests; the adjacent smaller shape it exposed in `create_sdp()`'s sidecars is
   **#111**.
+  **#93 is now fully retired** (2026-08-25, branch
+  `fix/2026-08-25-q12-date-render`): [Q12](questions.md) ruled *coerce once at
+  render time, per type*, items 3 and 5 were fixed through one new
+  `.ms_canonical_character()`, and item 4's stated mechanism was traced and
+  found unreachable — closed as a finding with a standing agreement test rather
+  than as a fix. Both halves of the item's retire condition are met. The
+  `POSIXct` shape item 4's trace exposed is **#115**, deliberately not folded
+  in.
 - **Superseded rather than fixed:** #75 — sdp-0.3.0 deleted both the dictionary
   `method_iri` slot and the `metadata/methods.csv` registry the item was about.
 - **Fixed in a sibling repo:** #81 and #84, by gcdfo PR #83 (unreleased — after
@@ -140,6 +150,12 @@ S10 chunk H registered rather than fixed, now ruled (Q14); #114 is the
 `metadata/semantic/**` specification gap Q11 ruled on. Both are filed here
 because the ruling needs somewhere to live that an implementer reads — a ruling
 recorded only in `questions.md` is an index entry pointing at nothing.
+**#115 came out of closing #93 item 4** (2026-08-25): the trace that proved the
+item's stated mechanism unreachable found the same *shape* alive under a
+different type, in both implementations. It is filed separately rather than
+folded in, because #93's retire condition names `Date` and the SSSOM renderer,
+and quietly widening a condition an item has already met is how a retired item
+comes back without anyone deciding that it should.
 Priorities here are severity; *ordering* is decided in
 `knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
@@ -1505,39 +1521,208 @@ separate item.**
    no `Date` survives to either writer; item 4 remains listed for any
    non-metadata path Q12 uncovers. metasalmonpy needed no change (re-measured
    2026-08-21: `pandas.to_csv` renders `date(999, 1, 1)` as `0999-01-01`).
-3. **`.ms_sssom_canonical_bytes()` renders the same column two ways**: the sort
-   key via `as.character()` (unpadded everywhere) and the emitted bytes via
-   `as.matrix()` inside `apply()` (which uses `format()`, so padded on macOS and
-   unpadded on Linux). Row *order* and row *content* can therefore disagree
-   about the same value, and `mapping_date` / `publication_date` /
-   `review_date` are declared SSSOM columns.
-4. **`datapackage.json` and `metadata/dataset.csv` disagree with each other**:
-   `jsonlite::write_json()` pads a `Date` and `readr::write_csv()` does not, so
-   one `write_salmon_datapackage()` call can emit `0999-01-01` in the JSON and
-   `999-01-01` in the CSV.
-5. `.ms_canonical_value_tokens()` still takes `trimws(as.character(x))` for its
-   `original` fallback, so a Date column declared `value_type = "string"` keys
-   unpadded while the `date` branch beside it now keys padded.
+3. ~~**`.ms_sssom_canonical_bytes()` renders the same column two ways**: the
+   sort key via `as.character()` (unpadded everywhere) and the emitted bytes
+   via `as.matrix()` inside `apply()` (which uses `format()`, so padded on
+   macOS and unpadded on Linux). Row *order* and row *content* can therefore
+   disagree about the same value, and `mapping_date` / `publication_date` /
+   `review_date` are declared SSSOM columns.~~ **FIXED 2026-08-25** (branch
+   `fix/2026-08-25-q12-date-render`), under the Q12 ruling below. The sort key
+   and the emitted bytes now both read one `lapply(mappings,
+   .ms_canonical_character)`, mirroring metasalmonpy's `_canonical_bytes()`,
+   whose `cells` dict is built once and indexed by both.
+   `tests/testthat/test-canonical-date-render.R` was verified RED first: with
+   `mapping_date` values `1000-01-01` and `0999-01-01` and every earlier column
+   held equal, the pre-fix function emitted the padded spellings in the
+   unpadded order, so the canonical table was not sorted by its own visible
+   contents.
 
-**Items 3–5 are still open, and the question that holds them was rewritten
-2026-08-24.** [Q12](questions.md) had been written in language that assumed
-context Brett did not have, and it drew the reasonable guess that this was about
-the KNB deposit reaching the DataONE CN. **It is not, and nothing here touches
-KNB or DataONE**: it is about which of R's two `Date`-to-text renderers a given
-code path uses. The rewritten entry states the symptoms in those terms and names
-the single decision that is actually Brett's — *fix the three now, or accept them
-permanently and caveat the byte-reproducibility claim where it is made* —
-because everything else about items 3–5 is an implementer's call.
+   **It was worse than the item says, in a way that needs no pre-1000 date.**
+   `format()` on a data-frame column is *vector-wise*: it picks one notation
+   for the whole column. A `confidence` of `1.5` was emitted as `1.5e+00`
+   merely because another row held `100000` — while sorting as `1.5`. A cell's
+   canonical bytes were a function of its neighbours, which is disqualifying
+   for a canonical form and was reachable by any typed numeric column. Pinned
+   by a test that renders the same row in a one-row and a two-row set and
+   requires identical bytes.
+
+   Observable byte changes are confined to an **in-memory** mapping set
+   carrying a non-character column; a set read from a `.sssom.tsv` is all
+   character, where every renderer agrees. **No golden hash moved and none was
+   regenerated** — `test-collation.R`'s fixed-value SSSOM hash is
+   character-valued and still passes unchanged, which is the evidence that the
+   change is confined where this paragraph says it is. The residual
+   cross-implementation spelling difference for such a column is registered as
+   [parity-deviations](parity-deviations.md) row **59**.
+4. ~~**`datapackage.json` and `metadata/dataset.csv` disagree with each
+   other**: `jsonlite::write_json()` pads a `Date` and `readr::write_csv()`
+   does not, so one `write_salmon_datapackage()` call can emit `0999-01-01` in
+   the JSON and `999-01-01` in the CSV.~~ **UNREACHABLE as stated, confirmed by
+   trace 2026-08-25 — closed as a finding, not as a fix.** Item 2's coercion
+   inside `.ms_align_cols()` is applied to *every* frame that reaches the
+   descriptor, and the descriptor builder has no other source of a typed value:
+   both assembly sites were read end to end, and there is no `created` /
+   `sources` / custom-field passthrough, the `schema.fields` objects are built
+   from the dictionary alone, `licenses` and `primaryKey` are hard-cast to
+   character anyway, and no value from a data resource is copied into the
+   descriptor. No `Date` survives to either writer, on any path.
+
+   **Two corrections to the item's own premise, both measured rather than
+   reasoned**, and the first makes the item smaller than it ever read:
+   jsonlite 2.0.0 serializes a `Date` through `format.Date` (verified by
+   tracing `format.Date` under `toJSON()`), which delegates `%Y` to the
+   platform strftime — so on glibc **jsonlite emits `999-01-01` too**, and
+   "the JSON pads and the CSV does not" was a **macOS-only** split even before
+   item 2 closed it. And the same *shape* is alive for `POSIXct`, which
+   `.ms_align_cols()` deliberately leaves typed: measured end to end, a
+   `temporal_start` of `as.POSIXct("0999-06-05 13:45:30", tz = "UTC")` is
+   written `0999-06-05 13:45:30` into `datapackage.json` and
+   `0999-06-05T13:45:30Z` into `metadata/dataset.csv`. That is a *format*
+   disagreement rather than a padding one, deciding it needs a ruling on which
+   spelling a descriptor instant takes, and **metasalmonpy has the same
+   disagreement plus an unpadded CSV side**. Filed as **#115** rather than
+   folded into this item, because it is a different mechanism under a
+   different type and the item's retire condition does not cover it.
+
+   The finding is enforced rather than asserted:
+   `test-canonical-date-render.R` writes a package from a `Date`-typed
+   `dataset_meta` and requires `datapackage.json` and `metadata/dataset.csv` to
+   **agree**, not merely to be coerced — so it still fails if a future
+   descriptor key starts carrying a typed value, whichever writer changes. It
+   was verified RED by removing the coercion from `.ms_align_cols()`:
+   descriptor `0999-01-01`, CSV `999-01-01`, exactly the symptom this item
+   described.
+5. ~~`.ms_canonical_value_tokens()` still takes `trimws(as.character(x))` for
+   its `original` fallback, so a Date column declared `value_type = "string"`
+   keys unpadded while the `date` branch beside it now keys padded.~~ **FIXED
+   2026-08-25**, same branch and same helper. The consequence was not only
+   internal inconsistency: the CSV `write_salmon_datapackage()` produces from
+   that column reads `0999-01-01`, so an in-memory frame disagreed with **its
+   own written package** about whether a data value was listed in `codes.csv`.
+   RED-verified across all four branches that return `original` (`string`, the
+   empty declaration, an unknown declaration, and the unparseable fallback).
+
+**Items 3–5 were held by a question, and the question was rewritten 2026-08-24
+before it was answered.** [Q12](questions.md) had been written in language that
+assumed context Brett did not have, and it drew the reasonable guess that this
+was about the KNB deposit reaching the DataONE CN. **It is not, and nothing here
+touches KNB or DataONE**: it is about which of R's two `Date`-to-text renderers a
+given code path uses. The rewritten entry states the symptoms in those terms and
+named the single decision that was actually Brett's — *fix the three now, or
+accept them permanently and caveat the byte-reproducibility claim where it is
+made*.
+
+**The ruling (Brett, 2026-08-24, hub [Q12](questions.md)):** *"Fix them as per
+the metasalmonpy implementation by fixing all three by coercing them once at
+render time per type."* Implemented 2026-08-25 on branch
+`fix/2026-08-25-q12-date-render`. Two of the three were code fixes and the third
+was a trace; all three are recorded above. The ruling's second half — *per type*
+— is the part that does the work, and it is why one helper could serve two very
+different call sites without a symmetry error: `.ms_canonical_character()`
+(`R/platform-time.R`) dispatches on the value's class, and its `POSIXt` branch
+pads where `.ms_iso_date_columns()`'s deliberately does not, because the two
+sit on different baselines (`as.character()` there, `readr::write_csv()` here).
+A regression test pins that the second did not leak into the first.
 
 Severity: silent data corruption at (1) and (3), silent inconsistency at (4) and
 (5), latent at (2). Not urgent — every case needs a pre-1000 date, which no
-salmon dataset has — but it is a **byte-reproducibility** defect in a package
-whose contract is byte reproducibility, and (1) is a genuine round-trip break.
-*Retires when:* a `Date`-typed column survives
-`write_salmon_datapackage()` → `read_salmon_datapackage()` unchanged for a
-pre-1000 year, and the SSSOM sort key and emitted bytes are rendered by the same
-function. `tests/testthat/test-year-padding-guard.R` does **not** cover any of
-this — it is blind to the implicit form by construction, and says so.
+salmon dataset has, except the neighbour-dependent numeric spelling found inside
+(3), which needed no date at all — but it is a **byte-reproducibility** defect in
+a package whose contract is byte reproducibility, and (1) is a genuine round-trip
+break.
+
+**RETIRED 2026-08-25 — the stated retire condition is met, and the honest
+reading of "met" is recorded rather than assumed.** *Retires when:* a
+`Date`-typed column survives `write_salmon_datapackage()` →
+`read_salmon_datapackage()` unchanged for a pre-1000 year — met since 2026-08-21
+by item 1, pinned by `tests/testthat/test-date-column-round-trip.R` — **and** the
+SSSOM sort key and emitted bytes are rendered by the same function — met
+2026-08-25 by item 3, where both now read one `lapply(mappings,
+.ms_canonical_character)` and a test requires the emitted rows to be in C order
+*of themselves*. Item 4 is closed as a finding rather than a fix; the `POSIXct`
+shape it exposed is **#115** and is deliberately not carried by this item's
+condition, which names `Date` and the SSSOM renderer and nothing else.
+`tests/testthat/test-year-padding-guard.R` still does **not** cover any of this
+— it is blind to the implicit form by construction, and says so; the coverage
+lives in `tests/testthat/test-canonical-date-render.R`.
+
+**#115 `datapackage.json` and `metadata/dataset.csv` spell the same `POSIXct`
+two different ways, in both implementations.** Found 2026-08-25 while closing
+#93 item 4, and filed separately because it is a different mechanism under a
+different type: item 4's condition names `Date` and year padding, and this is
+neither.
+
+`.ms_align_cols()` coerces `Date` columns and **deliberately leaves `POSIXct`
+alone** — #93 item 1 ruled that, correctly, because `readr::write_csv()`'s
+instant output is already ISO-correct and coercing it would change the
+separator, the zone marker, and whether a fractional second survives. The
+consequence is that a typed instant reaches *both* writers, and they disagree.
+Measured end to end on macOS (R 4.5.2, jsonlite 2.0.0, readr 2.2.0), a
+`dataset_meta$temporal_start` of `as.POSIXct("0999-06-05 13:45:30", tz = "UTC")`:
+
+| file | writer | bytes |
+|---|---|---|
+| `datapackage.json` | `.ms_iso_character()` (`R/package-helpers.R:344`) | `0999-06-05 13:45:30` |
+| `metadata/dataset.csv` | `readr::write_csv()` | `0999-06-05T13:45:30Z` |
+
+Year padding **agrees**; the separator and the `Z` do not, and a midnight
+instant additionally loses its time in the descriptor because `as.character()`
+drops it. The same two files therefore carry two spellings of one value that a
+consumer reading either is entitled to treat as the package's answer.
+
+**The mirror has it too, and worse — measured, not assumed** (2026-08-25, same
+fixture through `metasalmonpy.package_io.write_salmon_datapackage`): descriptor
+`0999-06-05T13:45:30`, `metadata/dataset.csv` `999-06-05 13:45:30`. So Python
+disagrees with itself on the separator *and* on the year padding, and each
+implementation's descriptor disagrees with the other's. Four spellings of one
+instant across two packages. Nothing here favours R or Python; it is a shared
+defect neither side noticed, which is the argument for ruling on it once rather
+than fixing whichever copy is in front of you.
+
+**The Python half is a second, separable defect, and it is the mirror's own
+determinism contract rather than this one.** Narrowed on pandas 3.0.5: a column
+built from `datetime.datetime` objects becomes `datetime64[us]`, and `to_csv`
+renders it with an **unpadded** year, while `str()` of the same value and an
+`object`-dtype column both pad.
+
+```
+str(datetime(999,6,5,13,45,30))                     -> '0999-06-05 13:45:30'
+DataFrame({'t':[that]}).to_csv()   # datetime64[us] -> '999-06-05 13:45:30'
+DataFrame({'t':Series([that], dtype=object)})       -> '0999-06-05 13:45:30'
+DataFrame({'t':[date(999,6,5)]}).to_csv()           -> '0999-06-05'
+```
+
+`resource_types.py`'s header claims `date.isoformat()` is "already safe (it is
+pure Python)" and that the padded form is what the module converges on; that is
+true of every path it renders itself and **not** of the one where pandas
+renders for it. #93 item 2's mirror note ("re-measured 2026-08-21:
+`pandas.to_csv` renders `date(999, 1, 1)` as `0999-01-01`") is correct as
+written and does not generalize to `datetime`, which is the trap: the
+measurement was taken on the type that passes. Whoever fixes the Python half
+should route the metadata frame through `render_resource_frame()`'s
+`datetime64` branch — which already emits `_iso_seconds(...) + "Z"` — or add an
+equivalent, and extend `tests/test_platform_determinism_guard.py`, which is the
+guard this slipped past. **Do not fix it from this repository**; report it and
+let metasalmonpy's own stream take it, with the descriptor spelling ruled
+first so the two land together.
+
+**Why this is not a substitution.** Making the two agree means deciding *which*
+spelling a descriptor instant takes, and every candidate has a cost:
+`readr`'s `...T...Z` is the ISO form and is already in the CSV, but adopting it
+in the descriptor changes `datapackage.json` bytes for every package with a
+typed instant; `.ms_iso_character()`'s form is what the descriptor emits today
+but is not valid `xs:dateTime`; and coercing `POSIXct` inside `.ms_align_cols()`
+is the one move #93 item 1 explicitly ruled out. It needs a ruling, and the
+ruling has to be made in both repositories at once or it creates a parity row
+instead of closing one.
+
+Severity: silent inconsistency, low reach — a caller must supply a typed
+`POSIXct` rather than the character metadata both packages produce themselves.
+*Retires when:* one spelling is ruled for a descriptor instant, both
+implementations emit it, and a test in each asserts that `datapackage.json` and
+`metadata/dataset.csv` agree for a `POSIXct` — the R half of that assertion
+already exists for `Date` in `tests/testthat/test-canonical-date-render.R` and
+is the shape to copy.
 
 **#92 metasalmonpy's extras-gated tests had zero CI coverage, and two documents
 said otherwise. FIXED 2026-08-21 in metasalmonpy PR #12.** `parity.yml`'s
