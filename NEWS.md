@@ -1,6 +1,43 @@
 metasalmon (development version)
 --------------------------------
 
+### Changed
+
+* **An existing but *empty* directory no longer requires `overwrite = TRUE`.**
+  `write_salmon_datapackage()` and `create_sdp()` now write into a directory
+  that exists and contains nothing, where they previously aborted with
+  "Directory ... already exists." `overwrite` exists to authorize destroying
+  something, and an empty directory has nothing to destroy; demanding it for
+  the ordinary `dir.create()`-then-write shape trained callers to pass
+  `overwrite = TRUE` habitually, which is the flag's whole value gone.
+
+  **"Empty" is literal, and the definition is the substance of the change.** It
+  means `.ms_dir_entries()` returns nothing — `list.files(all.files = TRUE,
+  no.. = TRUE)` — so a dot-file, a stale `.metasalmon-package` sentinel, or an
+  empty `data/` subdirectory each make the directory **non-empty**, and the
+  `overwrite` gate applies to them exactly as before. Emptiness is never
+  recursive. Each of those three is now pinned by its own test, alongside the
+  unchanged behaviour for a directory holding an ordinary file.
+
+  This adopts metasalmonpy's guard order on Brett's ruling of 2026-08-24
+  ("Go with the python implementation"), retiring `knowledge/parity-deviations.md`
+  row 54. The divergence is older than the mirror's parity claim: it arrived in
+  metasalmonpy with its 0.1.6 alignment commit and metasalmon 0.1.6 already had
+  the other order, so the two sides have disagreed here since **before** the
+  0.1.6 claim was made. It survived because **neither suite tested it** — R's
+  test used a *non-empty* directory and the mirror did not test the case at all
+  — so a whole-suite parity run stayed green over it for four minor versions.
+  What the measurement added: both sides already computed the *identical* notion
+  of "empty" (`list(path.iterdir())` is the same predicate), and only its
+  position relative to the `overwrite` gate differed. Of five directory shapes
+  driven through both implementations, exactly one cell disagreed.
+
+  `create_sdp()` carries its own earlier copy of the gate — deliberately, so a
+  doomed call never spends a retrieval pass or an LLM request — and that copy
+  moved with the authoritative one. It had to: leaving it would have let the
+  coarser guard silently win, which is a fair warning about duplicated checks
+  and is now registered as row 60.
+
 ### Fixed
 
 * **The 173-row Fraser coho example now reaches a KNB deposit plan.** Its one
@@ -126,6 +163,26 @@ metasalmon (development version)
   CSV side. Filed as backlog **#115** rather than folded into this change.
 
 ### Internal
+
+* **`create_sdp()`'s deterministic constraint and statistical-modifier prefill
+  is now pinned.** No behaviour changed here — Brett ruled on 2026-08-24
+  ("Yeah lets go the R way") that this side was correct and metasalmonpy moved
+  — but the *reason* the divergence survived was that neither suite pinned the
+  positive case. Both had asserted several times over that the two qualifier
+  slots stay **empty** when the evidence gate rejects, and neither asserted
+  they ever fill. `tests/testthat/test-package-helpers.R` now drives a
+  `mean_wild_spawner_count` column through `create_sdp()` and asserts both
+  slots fill **and carry the `REVIEW:` marker**; the marking is asserted rather
+  than assumed, because review-visibility is the property the ruling turned on.
+  Retires `knowledge/parity-deviations.md` row 57.
+
+  Two findings worth carrying: this package's "no role restriction" is true of
+  the **deterministic path only** — the LLM path restricts to the same four
+  core roles the mirror used everywhere — and the two implementations spell the
+  `REVIEW:` marker differently (`REVIEW: ` here, `REVIEW:` there). The second is
+  inert to behaviour, invisible to every test on either side, and now
+  registered as row 61 with [Q18](knowledge/questions.md) open on it.
+
 
 * **The role-contract guard now checks all seven surfaces in one file, and
   each one is demonstrated to fail.** `AGENTS.md` has said since 2026-08-18

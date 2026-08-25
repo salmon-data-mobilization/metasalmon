@@ -68,39 +68,44 @@ can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
 
-### Q15 — Writing into an existing *empty* directory: which order is right?
-**Unblocks:** parity row 54, and a test on both sides that nothing currently pins.
-metasalmon refuses it without `overwrite = TRUE`; metasalmonpy writes into it.
-Pre-0.1.6 debt found by metasalmonpy's 0.4.0 audit, carried faithfully and
-silently since before the parity claim, and **pinned by neither suite** — R's
-test uses a non-empty directory, the mirror does not test the case. **Only you
-can rule it**, because it is user-visible whichever way it goes (refusing a
-write that used to succeed, or permitting one that used to abort) and the
-2026-08-17 amendment says a divergence opens the question rather than settling
-it. **It turns on which failure is worse:** R's order is the safer default — an
-existing directory is a signal the caller may not have meant this path — while
-metasalmonpy's is friendlier to `mkdir -p && write`, where an empty directory
-has no data to destroy and demanding `overwrite` for it trains callers to pass
-`overwrite` habitually, which is the flag's whole value gone.
-**Recommendation:** none offered; the two grounds are genuinely opposed and a
-recommendation here would be the invented ruling row 54 exists to avoid.
-**Owner:** [parity row 54](parity-deviations.md).
+### Q17 — Should `create_sdp()` refuse a doomed write *before* running inference?
+**Unblocks:** parity row 59, and a test on both sides that nothing currently pins.
+Found while implementing your Q15 ruling: metasalmon re-tests the write
+directory early, so a call that will be refused never reaches
+`infer_salmon_datapackage_artifacts()`; metasalmonpy has no early guard and
+runs the whole inference first, refusing at write time. **Measured, not read**
+— a doomed `create_sdp()` runs inference 0 times in R and 1 time in Python.
+**The outcome is identical either way**, which is why no assertion about the
+result has ever seen it; what differs is the wasted work, and with
+`llm_assess = TRUE` that work is billable. **It turns on whether a duplicated
+check is worth what it saves:** the early guard is a second copy of a rule, and
+a second copy drifts — it *did* drift, for the whole life of row 54, and had to
+be moved by hand when the authoritative one moved. Against that, the mirror's
+single-check shape can spend a full retrieval pass, or real money, producing
+output it is about to refuse.
+**Recommendation:** none offered; both grounds are real and the choice is yours.
+**Owner:** [parity row 60](parity-deviations.md).
 
-### Q16 — Does `create_sdp()` deterministically prefill constraint and statistical modifier?
-**Unblocks:** parity row 57, and the same sentence of prose on both sides.
-metasalmon applies every role the evidence gates allow; metasalmonpy restricts
-the deterministic path to `variable`, `property`, `entity`, `unit`. Each side's
-docs matched its own code while the code diverged, so no reader was positioned
-to catch it — metasalmon 0.4.0 corrected its quickstart's "never auto-filled"
-claim as wrong for R, and the identical sentence is still true for Python.
-**It turns on what a marked prefill is worth against an unreviewed IRI in a slot
-the user did not ask about:** R's gates already demand the evidence come from
-the column's own text and the path marks what it filled, so the wider behaviour
-is review-visible rather than silent — but constraint and statistical modifier
-are the two roles that change what a variable *is*, and a wrong one is harder
-for a reviewer to notice than a missing one.
-**Recommendation:** none offered, for the same reason as Q15.
-**Owner:** [parity row 57](parity-deviations.md).
+### Q18 — `REVIEW: ` or `REVIEW:` — does the marker's exact spelling matter?
+**Unblocks:** parity row 60, and any future byte differential over
+`column_dictionary.csv`.
+metasalmon writes `REVIEW: https://…` (trailing space), metasalmonpy writes
+`REVIEW:https://…`. Every detector on both sides matches the prefix `REVIEW:`
+with no space, so each recognises the other and strict validation refuses both
+— **the difference is inert to behaviour and visible only in bytes.** Found by
+the Q16 differential, and it is invisible to every test either side has: both
+suites build the expected string from their own prefix, so both stay green
+forever whichever spelling they use. Not folded into the Q16 ruling because you
+were asked about which slots a prefill may fill, not about the marker's
+bytes, and changing it would move the four already-marked roles' output too.
+**It turns on whether "the same package written twice" should mean the same
+bytes.** If yes, one side gives way (cheapest: metasalmonpy grows a prefix
+helper). If the marker is a display convention, the row stands as a caution and
+nothing changes.
+**Recommendation:** if you rule at all, rule the *no-space* spelling in, since
+it is what both sides' detectors already encode and what the two `AGENTS.md`
+files name; but the honest answer may be that this is not worth a change.
+**Owner:** [parity row 61](parity-deviations.md).
 
 ## Notes on framing
 
@@ -488,3 +493,59 @@ is follow-up work: **[backlog #113](backlog.md)** in this repo, with the ruling
 attached, and the twin text for metasalmonpy's `PARITY.md` row **51**.
 [parity-deviations](parity-deviations.md) row 51's retirement condition now names
 the ruling instead of the open question. This pass renames nothing.
+
+### Q15 — Writing into an existing *empty* directory: which order is right? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Go with the python implementation."*
+
+So **metasalmon moved**: `.ms_check_package_write_dir()` now tests emptiness
+**before** the `overwrite` gate, matching `package_io._check_package_write_dir()`,
+and an existing directory with nothing in it is written into without
+`overwrite = TRUE`. `create_sdp()`'s own earlier copy of the gate moved with it,
+or the coarser guard would have silently won.
+
+**The ruling settled the direction; the measurement settled what it means.**
+Both sides already computed the *identical* notion of "empty" —
+`.ms_dir_entries()` is `list.files(all.files = TRUE, no.. = TRUE)`, Python's is
+`list(target.iterdir())`, so dot-files count on both — and only the predicate's
+**position** relative to the `overwrite` gate differed. Driving five directory
+shapes through both implementations found exactly one divergent cell (a truly
+empty directory) and agreement on the other four: a dot-file, a stale
+`.metasalmon-package` sentinel, an empty `data/` subdirectory and a non-empty
+directory all abort on both sides. So **emptiness is literal and never
+recursive**, and a near-empty directory still requires `overwrite`.
+
+**Done, not filed.** Both suites now pin the empty-directory write and each of
+the three near misses — the case the question said neither side tested.
+[parity-deviations](parity-deviations.md) row 54 is retired as converged, in
+both registers, recording that R moved and why.
+
+### Q16 — Does `create_sdp()` deterministically prefill constraint and statistical modifier? — ANSWERED 2026-08-24 (Brett)
+
+**Ruling:** *"Yeah lets go the R way."*
+
+So **metasalmonpy moved**: `_auto_apply_package_suggestions()` drops the
+four-role restriction on the deterministic path, letting the evidence gates in
+`_measurement_suggestion_is_compatible()` decide, and **marks** the two
+qualifier slots `REVIEW:` alongside the four core ones. The marking is not a
+detail of the port — review-visibility is what the question turned on, so a
+port that filled the same slots without marking them would have taken the
+behaviour and dropped its justification.
+
+**Two things the port found that the question did not describe.** First,
+metasalmon's "no role restriction" is true of its **deterministic path only**:
+its LLM path restricts to the same four roles, so porting `roles = NULL`
+unconditionally would have widened the mirror *past* R and re-opened the
+divergence in the other direction. Second, **neither side pinned the positive
+case** — both suites already asserted the two slots stay *empty* when the gate
+rejects, and nothing asserted they ever fill, which is precisely how the
+divergence survived two green suites. Both now pin the written dictionary, each
+with an unqualified-column twin proving the gate still holds.
+
+**Done, not filed**, including the prose: the mirror's `guides/faq.qmd` and
+`guides/parity.qmd` carried the "never auto-filled" sentence that was true for
+Python and is now false, corrected in the same change.
+[parity-deviations](parity-deviations.md) row 57 is retired as converged in both
+registers. The differential also turned up one thing the ruling deliberately
+does **not** cover — the two sides spell the `REVIEW:` marker differently — now
+row 60 and [Q18](#q18--review--or-review--does-the-markers-exact-spelling-matter).

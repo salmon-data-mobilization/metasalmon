@@ -27,10 +27,13 @@
 #' @param codes Optional tibble with code lists
 #' @param path Character; directory path where package will be written
 #' @param format Character; resource format: `"csv"` (default, only format supported)
-#' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
+#' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
+#'   directory that already holds something. An existing but *completely empty*
+#'   directory is written into without `overwrite` — there is nothing there to
+#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for empty directories or directories previously written by
-#'   `metasalmon`.
+#'   allowed for directories previously written by `metasalmon`.
 #' @param write_datapackage Logical; if `TRUE` (default), write a root
 #'   `datapackage.json` descriptor declaring the SDP Frictionless profile after
 #'   package validation passes. Use `FALSE` for draft authoring output.
@@ -667,6 +670,31 @@ write_salmon_datapackage <- function(
 # (`.ms_prepare_package_write_dir()`) unlinked the managed paths here, before
 # the descriptor build and metadata rendering, so every abort in between
 # destroyed the caller's package.
+#
+# GUARD ORDER IS THE BEHAVIOUR. An existing directory with nothing in it is
+# not a reason to abort: `overwrite` exists to authorize destroying something,
+# and an empty directory has nothing to destroy. Demanding it there trains
+# callers to pass `overwrite = TRUE` habitually for the ordinary
+# `dir.create()`-then-write shape, which is the flag's whole value gone.
+# So the emptiness test runs BEFORE the `overwrite` gate, not after it.
+#
+# "Empty" means `.ms_dir_entries()` returns nothing -- `list.files(all.files =
+# TRUE, no.. = TRUE)`, so a dot-file, a stale `.metasalmon-package` sentinel,
+# or an empty `data/` subdirectory each make the directory NON-empty and the
+# `overwrite` gate applies as before. Only a directory with literally zero
+# entries is written into. That is deliberately the strictest reading: every
+# one of those three is evidence that something already used this path, and
+# the guard should not have to judge which of them is safe to walk over.
+#
+# This is the metasalmonpy order, adopted here on Brett's Q15 ruling
+# (2026-08-24, "Go with the python implementation") -- `parity-deviations.md`
+# row 54, which the ruling retires. The two implementations already computed
+# the identical notion of "empty" (`list(target.iterdir())` is the same
+# predicate); only its POSITION relative to the `overwrite` gate differed,
+# silently, since before the 0.1.6 parity claim. Pinned on both sides now:
+# `test-package-helpers.R` "an existing EMPTY directory is written into
+# without overwrite" and metasalmonpy's
+# `test_writer_writes_into_an_existing_empty_directory_without_overwrite`.
 .ms_check_package_write_dir <- function(path,
                                         overwrite = FALSE,
                                         prune = FALSE) {
@@ -679,15 +707,15 @@ write_salmon_datapackage <- function(
     return(invisible(path))
   }
 
+  existing_files <- .ms_dir_entries(path)
+  if (length(existing_files) == 0) {
+    return(invisible(path))
+  }
+
   if (!isTRUE(overwrite)) {
     cli::cli_abort(
       "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
     )
-  }
-
-  existing_files <- .ms_dir_entries(path)
-  if (length(existing_files) == 0) {
-    return(invisible(path))
   }
 
   if (!.ms_is_metasalmon_package_dir(path)) {
@@ -1043,10 +1071,13 @@ infer_salmon_datapackage_artifacts <- function(
 #'   [check_for_updates()] call after writing the package and mention newer
 #'   releases only when one is available. Defaults to `interactive()`.
 #' @param format Character; resource format: `"csv"` (default, only format supported)
-#' @param overwrite Logical; if `FALSE` (default), errors if path exists. If
+#' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
+#'   directory that already holds something. An existing but *completely empty*
+#'   directory is written into without `overwrite` — there is nothing there to
+#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for empty directories or directories previously written by
-#'   `metasalmon`.
+#'   allowed for directories previously written by `metasalmon`.
 #' @param prune Logical; if `FALSE` (default), reviewed sidecars in an existing
 #'   package directory are preserved and only files this writer owns are
 #'   replaced. If `TRUE`, the directory is emptied first. Requires
@@ -1225,7 +1256,22 @@ create_sdp <- function(
     path <- file.path(getwd(), paste0(.ms_safe_path_slug(dataset_id), "-sdp"))
   }
 
-  if (!isTRUE(overwrite) && dir.exists(path)) {
+  # `create_sdp()`'s own copy of the write-directory gate, deliberately kept
+  # rather than deferred to `.ms_check_package_write_dir()`: this one runs
+  # BEFORE inference, so a doomed call never reaches `suggest_semantics()` and
+  # never spends an LLM request or a network round trip on output it will
+  # refuse to write. `test-package-helpers.R` "create_sdp requires
+  # overwrite=TRUE to write into an existing directory" pins that by asserting
+  # the mocked `suggest_semantics()` was called zero times.
+  #
+  # The emptiness test has to be repeated here for the same reason the gate is
+  # (parity-deviations row 54, Brett's Q15 ruling): without it, this early copy
+  # would abort on an empty directory that the writer would happily accept, and
+  # the coarser guard would silently win. Same definition of "empty" as
+  # `.ms_check_package_write_dir()` -- `.ms_dir_entries()`, dot-files included.
+  # metasalmonpy has no early guard at all here and reaches the same decision
+  # at write time; that difference is parity-deviations row 60.
+  if (!isTRUE(overwrite) && dir.exists(path) && length(.ms_dir_entries(path)) > 0L) {
     cli::cli_abort(
       "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
     )
