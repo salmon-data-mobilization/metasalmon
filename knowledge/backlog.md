@@ -2668,8 +2668,13 @@ Four separate things are wrong, in descending order of how badly they block:
    returned nothing. The post-review vignette walked from strict validation
    straight to the EML sidecar. Partially discharged 2026-08-25: that vignette
    now has a "reviewed closure" section stating both files, their columns, and
-   the two canonical IRI sets. **Documentation is not a producer**, so the item
-   stays open.
+   the two canonical IRI sets. The **workshop** carries it too as of
+   2026-08-25 (`salmon-data-standards-workshop` PR #5): session 6 states the
+   gap in a callout and tells learners plainly that a complete deposit is not
+   reachable unaided, which is why its four publication chunks stay
+   `eval = FALSE`. **Documentation is not a producer**, so the item stays
+   open — and it now has two downstream surfaces that must be revisited when
+   a producer ships.
 2. **`reviewed_snapshot_sha256` cannot be computed by any exported function.**
    `.ms_eml_vocabulary_snapshot_sha256()` (`R/eml-export.R:1182`) is a verifier
    only. Its sole producing caller in the whole repo is
