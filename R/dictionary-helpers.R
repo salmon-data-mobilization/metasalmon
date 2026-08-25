@@ -680,7 +680,17 @@ infer_value_type <- function(col) {
     value_type <- "string"
   }
 
-  original <- trimws(as.character(x))
+  # One render-time coercion, per type, at the top -- so the `string` return and
+  # the unparseable fallback below key a `Date` the same way the `date` branch
+  # does, and the same way `write_salmon_datapackage()` spells it on disk.
+  # `as.character()` here keyed a `Date` column declared `value_type =
+  # "string"` as "999-01-01" while the CSV written from that same column reads
+  # back "0999-01-01", so an in-memory frame and its own written package
+  # disagreed about whether a data value was listed in `codes.csv`
+  # (backlog #93 item 5). Inert for character input, which is every on-disk
+  # path. metasalmonpy has no such split: its `original` is `str(value)`, which
+  # is pure Python and padded for both `date` and `datetime`.
+  original <- trimws(.ms_canonical_character(x))
   if (identical(value_type, "string") || !value_type %in% .ms_value_types()) {
     return(original)
   }

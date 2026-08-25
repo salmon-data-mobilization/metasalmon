@@ -790,20 +790,43 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
   columns <- .ms_sssom_column_order[.ms_sssom_column_order %in%
     names(mapping_set$mappings)]
   mappings <- mapping_set$mappings[, columns, drop = FALSE]
+
+  # ONE rendering, read by BOTH the sort key and the emitted bytes. Before this,
+  # the key came from `as.character()` and the bytes from `as.matrix()` inside
+  # `apply()` -- which renders through `format()`, vector-wise -- so row order
+  # and row content could disagree about the same cell, and a numeric cell's
+  # notation depended on the other rows in its column. `mapping_date`,
+  # `publication_date` and `review_date` are declared SSSOM columns, so a
+  # `Date`-typed mapping table hit it directly (backlog #93 item 3).
+  # `.ms_canonical_character()` states which renderer each type gets and why;
+  # this function's only job is to call it exactly once per column. Mirrors
+  # metasalmonpy's `sssom._canonical_bytes()`, whose `cells` dict is built once
+  # and indexed by both the sort key and the row writer.
+  #
+  # `unname()` before each `do.call()`: the list carries column names, and a
+  # column named `method`, `sep` or `collapse` would otherwise be matched to
+  # `order()`'s or `paste()`'s formal of that name instead of being sorted or
+  # pasted. No SSSOM 1.1 slot is named any of those today, which is why nothing
+  # has gone wrong; stripping the names means it cannot start to when the model
+  # grows a slot that is.
+  #
+  # One deliberate difference from the `apply()` this replaces: a table with
+  # rows and NO columns produced that many empty lines and now produces none.
+  # `.ms_sssom_required_columns` makes it unreachable through validation, and
+  # neither output is meaningful, so this records the change rather than
+  # reproducing it.
+  cells <- lapply(mappings, .ms_canonical_character)
   if (nrow(mappings) > 0L) {
     ordering <- do.call(
       order,
-      c(lapply(mappings, as.character), list(na.last = TRUE, method = "radix"))
+      c(unname(cells), list(na.last = TRUE, method = "radix"))
     )
-    mappings <- mappings[ordering, , drop = FALSE]
+    cells <- lapply(cells, function(column) column[ordering])
   }
   table_lines <- paste(columns, collapse = "\t")
-  if (nrow(mappings) > 0L) {
-    row_lines <- apply(
-      as.data.frame(mappings, stringsAsFactors = FALSE),
-      1L,
-      function(row) paste(ifelse(is.na(row), "", row), collapse = "\t")
-    )
+  if (nrow(mappings) > 0L && length(columns) > 0L) {
+    fields <- lapply(cells, function(column) ifelse(is.na(column), "", column))
+    row_lines <- do.call(paste, c(unname(fields), list(sep = "\t")))
     table_lines <- c(table_lines, row_lines)
   }
   charToRaw(enc2utf8(paste0(

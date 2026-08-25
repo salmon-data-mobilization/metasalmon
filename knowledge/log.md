@@ -1,5 +1,52 @@
 # Bundle log
 
+## 2026-08-25
+
+- **Q12 was ruled and implemented, and backlog #93 is fully retired.** Brett:
+  *"Fix them as per the metasalmonpy implementation by fixing all three by
+  coercing them once at render time per type."* Items 3 and 5 route through one
+  new `.ms_canonical_character()`; item 4 turned out to be **unreachable as
+  stated** and is closed as a finding with a standing agreement test rather than
+  as a fix. Both halves of the item's own retire condition are met, which is why
+  it retires rather than shrinking.
+
+- **The item was worse than it read in one direction and smaller in another,
+  and both were found by measuring rather than by reading the item.** Worse:
+  `.ms_sssom_canonical_bytes()`'s second renderer was `format()` *via*
+  `as.matrix()`, which is **vector-wise** — a `confidence` of `1.5` was emitted
+  as `1.5e+00` because another row held `100000`, so a cell's canonical bytes
+  were a function of its neighbours, and that needed no pre-1000 date at all.
+  Smaller: jsonlite serializes a `Date` through `format.Date`, so item 4's "the
+  JSON pads and the CSV does not" was a **macOS-only** split even before item 2
+  closed it. An item's severity claim is a hypothesis; this one was wrong in
+  both directions at once.
+
+- **A closed item's trace opened a new one, deliberately rather than by
+  widening the old.** The item 4 trace found the same *shape* alive under
+  `POSIXct` — `datapackage.json` says `0999-06-05 13:45:30`, `dataset.csv` says
+  `0999-06-05T13:45:30Z`, and metasalmonpy disagrees with itself on the
+  separator *and* the year — filed as **#115**. #93's retire condition names
+  `Date` and the SSSOM renderer; quietly widening a condition an item has
+  already met is how a retired item comes back without anyone deciding that it
+  should.
+
+- **The package now holds two renderers that disagree about `POSIXct` on
+  purpose, and that is recorded as a contract rather than as a comment.**
+  `.ms_canonical_character()` pads an instant; `.ms_iso_date_columns()` does
+  not. The baseline decides, not the type: the first sits on `as.character()`,
+  the second on `readr::write_csv()`, whose instant output was measured already
+  correct in 2026-08-21. `AGENTS.md` gains the rule and the trap, because the
+  two live one `git grep` apart and the symmetric "fix" is the plausible one.
+
+- **The mirror needed no change, measured rather than assumed** — Python's
+  `_canonical_bytes()` has built its `cells` once since it was written, and its
+  `canonical_value_tokens()` keys through `str()`. What the measurement *did*
+  find is a residual spelling difference for non-character SSSOM cells,
+  registered as parity row **59** with its `PARITY.md` twin owed, and an
+  unpadded-year defect in pandas' `datetime64` `to_csv` path that belongs to
+  #115 and to metasalmonpy's own determinism guard.
+
+
 ## 2026-08-24
 
 - **Brett ruled eight of the fourteen open questions; this pass recorded them

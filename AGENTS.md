@@ -165,6 +165,34 @@ at `knowledge/roadmap.md`.
   produces canonical bytes, a hash, or a PID, **add it to
   `collation_sensitive_fns` in `tests/testthat/test-collation-guard.R`** — that
   list is what keeps the guard from decaying.
+- **One value, one rendering — and the renderer is chosen by type.** A value
+  that becomes canonical bytes is coerced to text **once**, at render time, and
+  every consumer of it — sort key, comparison key, emitted byte — reads that one
+  rendering. Two renderings of one value is the defect, and it is worse than a
+  spelling difference: `.ms_sssom_canonical_bytes()` sorted through
+  `as.character()` and emitted through `apply()`/`as.matrix()` (i.e. `format()`),
+  so row order and row content disagreed, differently on each platform, and a
+  numeric cell's bytes depended on *other rows in its column* because `format()`
+  is vector-wise. Use `.ms_canonical_character()` (`R/platform-time.R`); its
+  per-type dispatch is the load-bearing part, and each branch exists because the
+  branch above it is wrong for that type (character must not be re-rendered —
+  `.ms_iso_character()` would rewrite a user's `12-34-56`). **Ruled by Brett
+  2026-08-24 (Q12), and no static guard can see a violation**: two renderings of
+  one value looks like ordinary code from every angle except the one where you
+  compare the outputs. It is found by reading, and by asking of any canonical
+  emitter: *is the thing I sorted the thing I wrote?*
+  **The `POSIXct` trap, stated because the package now holds both answers and
+  they are one `git grep` apart.** `.ms_canonical_character()` pads a `POSIXct`;
+  `.ms_iso_date_columns()` deliberately does not. Neither is a mistake: the
+  first sits on the `as.character()` path, where the year is unpadded for
+  `Date` and `POSIXct` alike, and the second sits on the `readr::write_csv()`
+  path, whose instant output is already correct and differs from
+  `as.character()` in separator, zone marker *and* whether a fractional second
+  survives — so padding it there would corrupt a path that was never broken
+  (backlog #93 item 1). **The baseline decides, not the type.** When you add a
+  third renderer, name its baseline before you choose. Pinned in
+  `tests/testthat/test-canonical-date-render.R`, which asserts the two disagree
+  about a `POSIXct` on purpose.
 - **External text is never a cli template.** Text from an LLM provider, an HTTP
   response, an ontology label, or a user's CSV must be wrapped in
   `.ms_cli_escape()` / `.ms_cli_bullets()` (`R/cli-safety.R`) before it reaches

@@ -157,3 +157,63 @@
   df[is_date] <- lapply(df[is_date], .ms_iso_character)
   df
 }
+
+# THE THIRD DEFECT, and it is neither of the two above: the same value rendered
+# TWICE, by two different renderers, inside one function.
+#
+# `.ms_sssom_canonical_bytes()` took its sort key through `as.character()` and
+# its emitted bytes through `as.matrix()` inside `apply()`, which renders a
+# non-character column with `format()`. Row *order* and row *content* therefore
+# disagreed about the same value, and they disagreed differently on each
+# platform. It is worse than the padding split it was found next to, because
+# `format()` on a data frame column is **vector-wise**: it picks one notation
+# for the whole column, so a `confidence` of 1.5 emitted as `1.5e+00` merely
+# because another row held 100000, while sorting as `1.5`. A cell's bytes
+# depended on its neighbours.
+#
+# THE RULE, which is Brett's 2026-08-24 ruling on Q12: **coerce once, at render
+# time, per type.** One rendering per value, chosen by that value's type, and
+# every consumer -- sort key, comparison key, emitted byte -- reads that one
+# rendering. Two renderings of one value is the defect; which renderer wins is
+# secondary to there being only one.
+#
+# The per-type dispatch is not decoration. Each branch below exists because the
+# branch above it would be wrong for that type:
+#
+#   character  identity. `.ms_iso_character()` pads anything matching
+#              `^[0-9]{1,3}-[0-9]{2}-[0-9]{2}`, so a user's `object_id` of
+#              "12-34-56" would be silently rewritten. Text is already text;
+#              re-rendering it is how a canonicalizer corrupts data.
+#   Date       `.ms_iso_character()`. `as.character()` drops the year padding on
+#              every platform (see above) and `format()` does not, so this is
+#              the one type where the two renderers genuinely disagree.
+#   POSIXt     `.ms_iso_character()` as well -- and this is the branch to read
+#              twice, because backlog #93 item 1 ruled the exact opposite for
+#              `.ms_iso_date_columns()`. THE TWO CONTEXTS HAVE DIFFERENT
+#              BASELINES. There, the baseline is `readr::write_csv()`, whose
+#              instant output is already correct and differs from
+#              `as.character()` in separator, zone marker and whether a
+#              fractional second survives -- so touching POSIXct corrupts a path
+#              that was never broken. Here the baseline is `as.character()`
+#              itself (it is what the sort key already used), the year is
+#              unpadded in it, and `.ms_iso_character()` pads the rendered text
+#              without re-deriving any other field. metasalmonpy pads both types
+#              here for the same reason: its `_cell()` renders a `date` and a
+#              `datetime` alike through `str()`, which is padded and pure
+#              Python. Behavioural parity, measured.
+#   everything `as.character()`. Element-wise, so a cell cannot be reshaped by
+#   else       its neighbours the way `format()` reshapes one.
+#
+# *Retires when:* R's `as.character()` fast path zero-pads AND no caller renders
+# a canonical value twice -- at which point this collapses to `as.character()`.
+# The first half is the platform's contract; the second is enforced by reading,
+# because no static guard can see two renderings of one value.
+.ms_canonical_character <- function(x) {
+  if (is.character(x)) {
+    return(x)
+  }
+  if (inherits(x, "Date") || inherits(x, "POSIXt")) {
+    return(.ms_iso_character(x))
+  }
+  as.character(x)
+}

@@ -675,7 +675,12 @@ detection now reports `no_candidates` instead of going silently blind, both
 shipped examples validate and are round-trip-tested, the two 404 example IRIs
 resolve, the estimate-classification crosswalk exists and the enumeration
 crosswalk is wired, and `.ms_align_cols()` Date-coerces (mooting #93 item 4 on
-the metadata path).
+the metadata path — and, as the 2026-08-25 trace established, on **every** path,
+which is what closed item 4 as a finding rather than a fix). The rest of
+backlog #93 — items 3 and 5, held by [Q12](questions.md) — merged 2026-08-25
+from `fix/2026-08-25-q12-date-render`, retiring the item: one render-time
+coercion, `.ms_canonical_character()`, chosen per type, read by both the SSSOM
+sort key and its emitted bytes.
 
 `5a37b11` is the **release** baseline for S10's 0.3.0 rung; anything replaying
 the post-0.3.0 fixes needs a later commit than the tag.

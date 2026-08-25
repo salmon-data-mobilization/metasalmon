@@ -1,6 +1,100 @@
 metasalmon (development version)
 --------------------------------
 
+### Fixed
+
+* **One value, one rendering: canonical text is now coerced once, at render
+  time, per type.** Brett's 2026-08-24 ruling on hub [Q12] closes backlog #93
+  items 3 and 5 — *"fix all three by coercing them once at render time per
+  type"* — and the shape is ported from metasalmonpy, whose
+  `sssom._canonical_bytes()` builds its `cells` once and indexes both the sort
+  key and the row writer into it.
+
+  `.ms_sssom_canonical_bytes()` took its sort key through `as.character()` and
+  its emitted bytes through `as.matrix()` inside `apply()` — which renders
+  through `format()`. Row *order* and row *content* could therefore disagree
+  about the same cell. `mapping_date`, `publication_date` and `review_date`
+  are declared SSSOM columns, so an in-memory mapping set with a typed date
+  column hit it directly: given `mapping_date` values `1000-01-01` and
+  `0999-01-01`, the function ordered by the unpadded spellings (where
+  `"1000-01-01"` sorts *before* `"999-01-01"`, because `"1" < "9"`) and
+  emitted the padded ones — a canonical table not sorted by its own visible
+  contents.
+
+  Two things it turned out to be worse than, both fixed by the same change:
+
+  - **It needs no pre-1000 date at all.** `format()` on a data-frame column is
+    *vector-wise*: it picks one notation for the whole column. A `confidence`
+    of `1.5` was emitted as `1.5e+00` merely because another row held
+    `100000` — while sorting as `1.5`. A cell's canonical bytes were a
+    function of its neighbours.
+  - **The key/content disagreement is different on each platform.**
+    `format()` pads `%Y` on macOS and glibc does not, so macOS emitted padded
+    bytes in an unpadded order while Linux was self-consistent and unpadded.
+    A single-platform run cannot see the whole defect.
+
+  `.ms_canonical_value_tokens()` had the same split at smaller blast radius
+  (#93 item 5): its `original` fallback took `trimws(as.character(x))`, so a
+  `Date` column declared `value_type = "string"` keyed `999-01-01` while the
+  `date` branch beside it keyed `0999-01-01` — and while the CSV
+  `write_salmon_datapackage()` produces from that same column reads
+  `0999-01-01`. An in-memory frame disagreed with its own written package
+  about whether a data value was listed in `codes.csv`.
+
+  Both now route through one new internal helper, `.ms_canonical_character()`
+  (`R/platform-time.R`), which renders a value **once**, choosing the renderer
+  by type: character is identity (`.ms_iso_character()` would rewrite a user's
+  `psc:12-34-56` into `0012-34-56`), `Date` and `POSIXct` are padded, and
+  everything else takes element-wise `as.character()` so no cell can be
+  reshaped by another row.
+
+  **Observable byte changes, stated plainly.** Only an in-memory SSSOM mapping
+  set carrying a non-character column is affected — a set read from a
+  `.sssom.tsv` file is all character, where every renderer agrees, so no
+  existing golden hash moved and none was regenerated. For such a set:
+  `confidence` `1.5` now emits `1.5` rather than `1.5e+00`; `100000` emits
+  `1e+05` rather than `1.0e+05`; a pre-1000 `mapping_date` emits its padded
+  ISO form on every platform, and rows sort by that same form. The `sha256`
+  recorded in `metadata/semantic/mapping-sets.json` moves with the bytes, as
+  it should.
+
+  **`.ms_iso_date_columns()` is deliberately unchanged, and the asymmetry is
+  the point.** It sits on the `readr::write_csv()` path, whose instant output
+  is already correct, so #93 item 1 ruled that padding a `POSIXct` there would
+  corrupt a path that was never broken. `.ms_canonical_character()` sits on the
+  `as.character()` path, where the year is unpadded for both types, so it pads
+  both — which is also what metasalmonpy's `_cell()` does, since `str()` is
+  pure Python and padded for `date` and `datetime` alike. Same package,
+  opposite rulings for the same type, both correct; a regression test pins
+  that the second did not leak into the first.
+
+* **Backlog #93 item 4 was investigated and found unreachable, not fixed.**
+  The item read that `jsonlite::write_json()` pads a `Date` while
+  `readr::write_csv()` does not, so one `write_salmon_datapackage()` call could
+  emit `0999-01-01` into `datapackage.json` and `999-01-01` into
+  `metadata/dataset.csv`. Item 2's 2026-08-21 fix put `.ms_iso_date_columns()`
+  inside `.ms_align_cols()`, and every frame that reaches the descriptor is
+  aligned — traced across the whole descriptor builder in both assembly sites:
+  no `created`/`sources`/custom-field passthrough, field objects built from the
+  dictionary alone, no resource value copied into the descriptor. No `Date`
+  survives to either writer. A regression test asserts the two files *agree*
+  rather than asserting the coercion, so it still fails if a future descriptor
+  key starts carrying a typed value; it was verified RED by removing the
+  coercion.
+
+  Two corrections to the item's premise came out of the trace, both measured.
+  jsonlite 2.0.0 serializes a `Date` through `format.Date`, which delegates
+  `%Y` to the platform's strftime — so on glibc jsonlite emits `999-01-01`
+  too, and item 4 was a **macOS-only** split even before item 2 closed it. And
+  the same *shape* of defect is alive for `POSIXct`, which `.ms_align_cols()`
+  deliberately leaves typed: a `temporal_start` of
+  `as.POSIXct("0999-06-05 13:45:30", tz = "UTC")` is written as
+  `0999-06-05 13:45:30` in `datapackage.json` and `0999-06-05T13:45:30Z` in
+  `metadata/dataset.csv`. That is a *format* disagreement rather than a
+  padding one, deciding it needs a ruling on which spelling a descriptor
+  instant takes, and metasalmonpy has the same disagreement plus an unpadded
+  CSV side. Filed as backlog **#115** rather than folded into this change.
+
 ### Internal
 
 * **The role-contract guard now checks all seven surfaces in one file, and
