@@ -315,18 +315,35 @@ metasalmonpy therefore **skips 0.3.0** on the Python side. The version lockstep
 the mirror contract describes is preserved, because both numbers name the same
 released behaviour — which is the property the ruling's own words turn on.
 
-**Step 1 happened the same day: metasalmon 0.4.0**, tagged `v0.4.0` and released
-2026-08-24 by a separate agent, concurrently with this pass. So the number
-metasalmonpy claims is **0.4.0**. This entry was deliberately written to state
-the rule rather than a forecast, and the rule produced a number within hours;
-what remains is step 2, metasalmonpy's own change.
+**FULLY DISCHARGED 2026-08-24 — both steps executed, in the ruled order, on the
+day of the ruling.** Step 1: metasalmon **0.4.0**, tagged `v0.4.0` (`4e2bbb6`)
+and released by a separate agent concurrently with the pass that recorded this
+answer. Step 2: metasalmonpy claimed **0.4.0**, tagged `v0.4.0` (`3b587e6`) with
+its GitHub Release published, skipping 0.3.0. **Both version claims are now
+literally true, which is the exact property the ruling's own words asked for**
+— and the second one was earned rather than declared: all 25 entries of
+metasalmon 0.4.0's `NEWS.md` were audited against the Python tree before the
+number moved, the two genuinely absent (`knb_environment`, the
+`statistical_modifier` `role_boost`) were ported for the release, five
+differences were registered with retirement conditions, and both dependency legs
+ran green. This entry was deliberately written to state the *rule* rather than a
+forecast, and the rule produced a number within hours and a released mirror the
+same day.
 
-**Three copies of that number are in play** (the `AGENTS.md` mirror contract says
-so, and has already been wrong about it once, for three days): the catch-up
+**Three copies of that number were in play** (the `AGENTS.md` mirror contract
+says so, and had already been wrong about it once, for three days): the catch-up
 window in **both** repositories' `AGENTS.md`, and the release index in
-[roadmap](roadmap.md). metasalmon's `AGENTS.md` and the release index are already
-at `0.2.2→0.4.0`; **metasalmonpy's `AGENTS.md` is the outstanding copy**, and it
-moves with the bump.
+[roadmap](roadmap.md). **All three now read 0.4.0 with no window open** —
+metasalmonpy's `AGENTS.md` moved with the bump, metasalmon's and the release
+index in the change that recorded this discharge. The copies-must-agree rule is
+what survives Q7; the number in it will move again.
+
+**What the ruling did not settle, and what therefore outlives it:** Q7 answered
+*which number*, never *what the number must contain*. Backlog **#87** / register
+row 32 — the ranking-profile gap — is open, owned by no milestone, and **not**
+claimed by 0.4.0; the release entry names it rather than letting the number
+imply otherwise. Backlog **#113** (one shared ownership sentinel — **Q14** below) and register
+row 53 likewise outlived the stream.
 
 **Recorded in:** the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)
 open decision 2 (now decided), the [S10 card](sequences/s10-metasalmonpy-parity.md),

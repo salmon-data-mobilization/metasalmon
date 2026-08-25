@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S10 — metasalmonpy parity"
-description: "Bring the Python mirror to full behavioural parity with metasalmon (the v0.3.0 tag plus its post-0.3.0 fixes); the replay ladder is complete at 0.2.1 and the subsystem port has landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7). Implementation is COMPLETE; the only remaining scope is the terminal version bump. What version number the finished port carries was RULED 2026-08-24 (Brett): metasalmon cuts the release containing its post-0.3.0 fixes first, then metasalmonpy claims that number and skips 0.3.0. metasalmon 0.4.0 shipped the same day, so the number is 0.4.0 and only the bump itself remains. The mirror rule applies to all new work immediately."
+description: "DONE 2026-08-24. Brought the Python mirror to full behavioural parity with metasalmon: the replay ladder completed at 0.2.1, the subsystem port landed ALL chunks A through H (2026-08-22, every one unversioned pending Q7), and the terminal bump released them as metasalmonpy 0.4.0 after an entry-by-entry audit of metasalmon 0.4.0's NEWS. Q7 was RULED 2026-08-24 (Brett) — metasalmon cuts the release containing its post-0.3.0 fixes first, then metasalmonpy claims that number and skips 0.3.0 — and both steps happened that day. What outlived the stream: backlog #87 (the ranking-profile gap, unowned), backlog #113 (the shared ownership sentinel), and register row 53. The mirror rule now governs new work rather than a backlog."
 status: draft
 tags: [metasalmonpy, parity, python]
 psc:
@@ -9,7 +9,30 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S10 — metasalmonpy parity · from 0.2.1 to metasalmon-0.3.0 behaviour
+# S10 — metasalmonpy parity · from 0.2.1 to metasalmon-0.4.0 behaviour — **DONE 2026-08-24**
+
+**Outcome, in two lines** (the rest of this card is the record of how it got
+there, and is kept for its lessons rather than as live work): all eight
+subsystem chunks A–H merged 2026-08-22 unversioned, and the terminal bump
+released them as metasalmonpy **0.4.0** on 2026-08-24 — tagged `v0.4.0` at
+`3b587e6`, GitHub Release published — after every one of the 25 entries in
+metasalmon 0.4.0's `NEWS.md` was audited against the Python tree and resolved
+to present / absent / registered / not-applicable with the file and line that
+proved it. Two were genuinely absent and were ported for the release
+(`knb_environment`, the `statistical_modifier` `role_boost`); five differences
+were registered with retirement conditions instead (register rows 54–58); both
+dependency legs ran green (795/3 with extras, 682/116 core) and production KNB
+identifiers were pinned against metasalmon's own v0.1.8 manifest fixture, so
+"production is unchanged" is a cross-implementation measurement.
+
+**What outlived the stream, and is therefore not closed by its being done:**
+backlog **#87** / register row 32, the ranking-profile gap — no milestone owns
+it, the 0.4.0 release deliberately does not claim it, and the card's standing
+warning below (that Q7 ruled *which number*, never *what the number must
+contain*) is the reason the release says so out loud rather than letting the
+number imply otherwise; backlog **#113**, the one shared ownership sentinel
+[Q14](../questions.md) ruled; and register **row 53**, the wider Python
+`create_sdp()` sidecar window, which does not retire when backlog #111 closes.
 
 **Execplan:** the
 [S10 replay execplan](../plans/2026-08-15-s10-metasalmonpy-parity-replay.md),
@@ -39,11 +62,11 @@ point). Chunk D — validation hardening — merged as PR #20 against `9d8f125`.
 Chunks E and F — cache/environment/network robustness, then the redaction
 contract stacked on it — merged as PRs #17 and #19 against `794647a`, a
 **re-pin** rather than a re-baseline (the R tree was confirmed identical to
-`9d8f125` in `R/`, `tests/` and `inst/`). Every one is **unversioned by
+`9d8f125` in `R/`, `tests/` and `inst/`). Every one was **unversioned by
 design**: metasalmonpy stayed at 0.2.1 while which number the finished port may
 carry was open (Q7 / execplan open decision 2), so everything landed under the
-CHANGELOG's *Unreleased* heading and the single bump comes at the end — now
-against **0.4.0**, the metasalmon release Q7's ruling put first. See the
+CHANGELOG's *Unreleased* heading and the single bump came at the end —
+**0.4.0**, the metasalmon release Q7's ruling put first, cut 2026-08-24. See the
 execplan's dated chunk records for counts, baselines and revert verification.
 
 **Chunk H merged as PR #21 — the last chunk, and S10's implementation is
@@ -56,38 +79,37 @@ fixed — the two-sentinel problem (row 51, hub **Q14** — **ruled 2026-08-24**
 Python `create_sdp()` sidecar window (row 53, which does **not** retire when
 backlog #111 closes).
 
-**What "done" means now, concretely:** every chunk merged; behaviour matches
-metasalmon `main`; and the single remaining step is the terminal version bump.
-**Q7 was ruled 2026-08-24 (Brett)** — *"cut a metasalmon release containing the
-post-0.3.0 fixes first, then metasalmonpy claims that number"* — and
-**metasalmon 0.4.0 was released the same day** (tagged `v0.4.0`). So this is
-neither a decision nor a dependency any more: metasalmonpy **skips 0.3.0** and
-its terminal bump claims **0.4.0**. Until that bump lands, the release index's
-metasalmonpy entry (0.2.1) understates the tree.
+**The three terminal steps, all complete.** They are kept as a list because
+each one was a distinct thing that could have been skipped, and the record of
+having done all three is what makes the parity claim checkable.
 
-1. **Chunk H merges** — `write_salmon_datapackage()` renders the full write set
+1. **Chunk H merged** — `write_salmon_datapackage()` renders the full write set
    to bytes before touching disk, installs through a multi-file staged write set
    with rollback, and unlinks unrewritten managed paths only after the install
    succeeds, with abort-injection tests mirroring
    `test-write-datapackage-abort-safety.R` and R's two honest narrowings
    (`prune` residual; create-owned sidecars = backlog #111).
 2. ~~**Q7 is answered**~~ — **done 2026-08-24**, and its first step with it:
-   metasalmon **0.4.0** is released and tagged, so the number this bump claims is
-   0.4.0. Nothing remains in this slot.
-3. **The bump ships** in metasalmonpy's own lockstep form: both version strings
-   agreeing, the CHANGELOG's *Unreleased* sections resolved into the release
-   entry, an annotated tag, a published GitHub Release — and, in the same
-   stream, the three places that must agree about the number: metasalmonpy's
-   `AGENTS.md`, metasalmon's `AGENTS.md`, and the release index in
-   [`roadmap.md`](../roadmap.md).
+   metasalmon **0.4.0** was released and tagged, so the number this bump claims
+   is 0.4.0.
+3. ~~**The bump ships**~~ — **done 2026-08-24**, in metasalmonpy's own lockstep
+   form: both version strings agreeing at `0.4.0`, the CHANGELOG's *Unreleased*
+   sections resolved into the release entry, the annotated tag `v0.4.0` at
+   `3b587e6`, a published GitHub Release — and the three places that must agree
+   about the number now do: metasalmonpy's `AGENTS.md`, metasalmon's
+   `AGENTS.md`, and the release index in [`roadmap.md`](../roadmap.md).
 
-What does **not** gate it: backlog **#87** / register row 32, the
-ranking-profile gap, which stays open with no milestone and is the surviving
+What did **not** gate it, and is still open: backlog **#87** / register row 32,
+the ranking-profile gap, which stays open with no milestone and is the surviving
 half of the execplan's open decision 1 (#91, its other half, closed at chunk D).
 **Whether the parity claim tolerates shipping with #87 open was folded into Q7,
 and Q7's ruling does not address it** — the ruling is about *which number*, and
-says nothing about *what the number must contain*. Treat that as still open and
-say so at the bump, rather than reading the silence as permission.
+says nothing about *what the number must contain*. That silence was not read as
+permission: the 0.4.0 release entry names #87 as still open, and its
+`test_the_ranking_profile_system_is_still_absent` tripwire goes red the moment
+a profile system appears. So 0.4.0 is a parity claim with one **stated**
+exclusion rather than an unqualified one, and whoever closes #87 must extend the
+Python cache key in the same change (register row 39).
 
 *(This card asserted the opposite state until 2026-08-21 — `main` at 0.1.8,
 rung 3 "awaiting merge as PR #10", PR #11 "also open". Three claims, all
@@ -98,7 +120,10 @@ comes next is named. The [S10 execplan](../plans/2026-08-15-s10-metasalmonpy-par
 correct as history — read it as history.)*
 
 Target: metasalmon **0.3.0**. The ladder's target moved there when S8 shipped,
-which is why this card's range and the execplan's agree.
+which is why this card's range and the execplan's agree. *(The **delivered**
+target is 0.4.0 — 0.3.0 plus the post-0.3.0 fixes the chunks were always
+contractually required to carry, which is exactly why a bare "0.3.0" could
+never have been a truthful Python number and why Q7 existed at all.)*
 
 **The contract (Brett, 2026-08-13), stated in both repos' `AGENTS.md`:**
 

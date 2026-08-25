@@ -1603,10 +1603,24 @@ the way the SDP spec asks.
 dictionary had a `method_iri` slot that sdp-0.3.0 deleted (see #75). So the
 conclusion "not a parity divergence" survives — both mirrors fail this
 validator, and no R↔Python comparison would surface it — but the premise
-"identical keys" was wrong, and it matters: whichever way #90 is decided,
-Python's seventh key is a *separate* divergence that the S10 0.2.2→0.4.0
-catch-up has to close on its own (window endpoint moved when metasalmon released
-0.4.0 on 2026-08-24).
+"identical keys" was wrong, and it mattered: whichever way #90 is decided,
+Python's seventh key was a *separate* divergence that the S10 catch-up had to
+close on its own.
+
+**It did, and the premise is true again — re-measured 2026-08-24.** S10 chunk A
+(2026-08-22) flipped the vendored bundle and the dictionary contract to
+sdp-0.3.0 together, and the catch-up closed with metasalmonpy **0.4.0** on
+2026-08-24. Python's descriptor projection now ends in
+`statistical_modifier_iri` in both sites this item named
+(`package_io.py:851-858` optional-key list, `:1110-1121` descriptor read, which
+also deliberately declines the legacy `iAdopt:methodIri` key so an unmigrated
+sdp-0.2.0 package keeps its binding until `migrate_sdp_methods()` moves it).
+The surviving `method_iri` in `package_io.py` is in
+`_collect_placement_iri_issues()` — the mirror of R's own placement validator,
+which is *supposed* to name that field. So **both mirrors emit the same seven
+keys and both still fail this validator for the same reason**, which is the
+state this item's conclusion always assumed; #90 is now a single decision rather
+than a decision plus a Python-side cleanup.
 
 **The two readings are not evenly supported, and the item used to imply they
 were.** The normativity claim behind "the validator is normative" does not
@@ -2472,7 +2486,10 @@ rather than against each other.
 
 **#110 metasalmonpy's README install guidance is stale in both directions.**
 It claims no tag is installable as `metasalmonpy` while v0.1.7 through v0.2.1
-all are, and it recommends installing `@main` although the version is a parity
+all are — and **`v0.4.0` since 2026-08-24, which makes the claim staler and the
+fix more valuable**: 0.4.0 is the first tag a workshop or a new user should be
+pointed at, and it is the one the README denies exists. It recommends
+installing `@main` although the version is a parity
 *claim* — `@main` can carry unreleased behaviour ahead of any claimed number,
 which is precisely what the claim rule exists to prevent readers assuming.
 Found while fixing the workshop's setup instructions, which had inherited the

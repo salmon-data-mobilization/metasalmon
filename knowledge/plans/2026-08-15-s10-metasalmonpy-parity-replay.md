@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "S10 metasalmonpy parity replay 0.1.6 → 0.3.0"
-description: "ExecPlan bringing the Python mirror from its 0.1.6 parity claim to metasalmon 0.3.0 — rungs 0-3 replayed release-by-release, the remainder ported by subsystem after the replay was found to be building things metasalmon had already removed."
+description: "COMPLETE 2026-08-24. ExecPlan that brought the Python mirror from its 0.1.6 parity claim to metasalmon 0.4.0 — rungs 0-3 replayed release-by-release, the remainder ported by subsystem after the replay was found to be building things metasalmon had already removed, and the whole port released as metasalmonpy 0.4.0 once Q7 ruled the number. All three open decisions are decided; what outlived the plan is backlog #87, #113 and register row 53."
 status: draft
 tags: [execplan, s10, parity, metasalmonpy]
 psc:
@@ -9,7 +9,42 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S10 — metasalmonpy parity replay, 0.1.6 → 0.3.0
+# S10 — metasalmonpy parity replay, 0.1.6 → 0.3.0 — **COMPLETE 2026-08-24**
+
+> **Outcome.** The plan is executed and the stream is closed. Rungs 0–3 shipped
+> as metasalmonpy 0.1.7, 0.1.8 and 0.2.0+0.2.1; the 2026-08-17 replan's chunks
+> A–H all merged 2026-08-22 unversioned; and the terminal bump released the lot
+> as metasalmonpy **0.4.0** on 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub
+> Release published), the number [Q7](../questions.md) ruled and metasalmon's
+> own `v0.4.0` (`4e2bbb6`) made available the same day.
+>
+> **The plan's title says 0.3.0 and the delivered number is 0.4.0. That is not
+> drift — it is open decision 2 resolving.** The chunks were always
+> contractually required to carry metasalmon's *post*-0.3.0 fixes, so "0.3.0"
+> could never have been a truthful Python number; the gap between the title and
+> the outcome is precisely the problem the decision existed to name, and the
+> title is left as written so that reading it still raises the question.
+>
+> **The bump's own verification, since a version number is a claim and this
+> plan's whole method was to measure rather than read:** every one of the 25
+> entries in metasalmon 0.4.0's `NEWS.md` was resolved against the Python tree
+> to present / absent / registered / not-applicable with the file and line that
+> proved it, against a pristine `git archive` of `v0.4.0` rather than a working
+> checkout. Two entries were genuinely absent and were ported for the release —
+> `knb_environment` (the S3 mirror, whose R original landed *after* every chunk
+> here was written, which is exactly the failure mode a bump-at-the-end plan
+> invites) and the `statistical_modifier` `role_boost`. Five differences were
+> registered with retirement conditions instead of ported (register rows 54–58).
+> Both dependency legs green: 795 passed / 3 skipped with extras, 682 / 116
+> core, the core leg asserted to have no extra importable.
+>
+> **All three open decisions below are decided** — 1's #91 half at chunk D and
+> its #87 half explicitly *not* closed, 1b at chunk E, 2 by Brett at Q7. **What
+> outlived the plan:** backlog **#87** / register row 32 (the ranking-profile
+> gap, unowned, and named as excluded in the release entry rather than left to
+> the number to imply), backlog **#113** (the one shared ownership sentinel Q14
+> ruled), and register **row 53**. Everything below this box is the dated record
+> of how the work was done — read it as history.
 
 Evidence base: a three-agent recon (2026-08-15) that mapped every metasalmon
 release 0.1.7–0.3.0 from NEWS, inventoried the current Python tree, and
@@ -312,21 +347,27 @@ every read and parse failure of the whole package sits inside the destroyed-file
 window. Measured at 5479 bytes of EDH XML deleted with nothing in its place.
 **Row 53 does not retire when #111 closes** — #111 is the R shape.
 
-### S10 implementation status: complete (2026-08-22)
+### S10 implementation status: complete (2026-08-22); **released 2026-08-24**
 
-Every chunk A–H is merged. What remains is **not implementation**:
+Every chunk A–H is merged, and the three non-implementation items that stood
+after them are resolved:
 
-1. **The terminal version bump** — open decision 2 / hub **Q7**, **ruled
-   2026-08-24**: metasalmon releases the tree carrying its post-0.3.0 fixes
-   first, and this bump claims that number, skipping 0.3.0. **metasalmon 0.4.0
-   was released the same day**, so the number is 0.4.0 and nothing stands between
-   the finished port and a truthful parity claim except the bump itself.
-2. **Hub twins for rows 51–53** — landing with this record.
+1. ~~**The terminal version bump**~~ — **DONE 2026-08-24.** Open decision 2 /
+   hub **Q7** ruled that metasalmon releases the tree carrying its post-0.3.0
+   fixes first and this bump claims that number, skipping 0.3.0; metasalmon
+   0.4.0 was released the same day and metasalmonpy claimed 0.4.0 the same day
+   after auditing all 25 of that release's NEWS entries against its own tree.
+   The parity claim is truthful, with backlog #87 named as its one stated
+   exclusion.
+2. ~~**Hub twins for rows 51–53**~~ — landed with this record; rows **54–58**,
+   opened by the 0.4.0 audit, got their hub twins on 2026-08-24 as well, so
+   `check-parity-registers.py` reports no one-sided rows.
 3. **Registered, deliberately-unfixed divergences** — row 53 is *registered*,
    which is its correct state, and needs #111 plus a Python-side decision. **Row
    51 stopped being one on 2026-08-24**: Q14 ruled one shared sentinel name with
    the compatibility break accepted, so it is now outstanding work in both
-   repositories (hub backlog #113).
+   repositories (hub backlog #113). Rows 54–58 join it as registered
+   differences that the release deliberately did not close.
 
 The differential method is what carried the stream, and the strongest single
 piece of evidence for it is chunk D's: **metasalmonpy passed clean on 13 of 18
@@ -352,9 +393,9 @@ concurrently; that is a rebase cost, not an ordering constraint, and it should
 not be recorded as one. And because the single version bump is at the end, the
 order chunks land in has no effect on what any released number claims.
 
-One version bump to **0.3.0** at the end, not one per chunk — but *which* number
-that bump may be is an open decision, not a settled one; see **Open decisions**
-below.
+One version bump at the end, not one per chunk — written here as "**0.3.0**"
+while *which* number it may be was open decision 2. **Decided 2026-08-24 and
+shipped: the number is 0.4.0**; see **Open decisions** below.
 
 **A is not blocked upstream.** Verified 2026-08-21: `smn-data-pkg` carries an
 **annotated `sdp-0.3.0` tag** ("Salmon Data Package spec sdp-0.3.0: method-model
@@ -515,21 +556,33 @@ the same change.
 >
 > **The verification baseline half is settled with it.** Chunks A–H measured
 > against `main` at the moment of measurement — option (b)'s shape — and that
-> convention ends now that `v0.4.0` exists: **the 0.4.0 tree is the baseline the
-> final differential runs against.** The chunks measured `main` at `e02111a`,
+> convention ended once `v0.4.0` existed: **the 0.4.0 tree is the baseline the
+> final differential ran against.** The chunks measured `main` at `e02111a`,
 > `39818ce`, `9d8f125` and `794647a`, all of which are inside 0.4.0 by commit
-> order — but that is an inference, **not a verification**. Confirm the 0.4.0
-> tree contains what those chunks measured before the bump; if it does not, that
-> is a finding to report, not a discrepancy to absorb into the version number.
+> order — but that was an inference, **not a verification**, so the instruction
+> here was to confirm rather than assume. **Done at the bump (2026-08-24):** the
+> release audit ran against a pristine `git archive` of `v0.4.0` (`4e2bbb6`),
+> never a working checkout, and resolved all 25 of that release's NEWS entries
+> against the Python tree. It found the inference **not quite complete** — two
+> entries were genuinely absent, `knb_environment` and the
+> `statistical_modifier` `role_boost` — which is precisely the finding this
+> paragraph asked for rather than a discrepancy absorbed into the number: both
+> were ported *before* the bump, so the number claims them. Note what the gap
+> was: 0.4.0's headline feature landed in R **after** every chunk here was
+> written, so no chunk could have carried it. A bump-at-the-end plan has to
+> re-measure against the release, not against the tree the chunks knew.
 >
 > **Three copies of one fact move together or the mirror contract is broken by
-> the fix.** The catch-up window is `0.2.2→0.4.0` — it read `0.2.2→0.3.0` in
+> the fix.** The catch-up window was `0.2.2→0.4.0` — it read `0.2.2→0.3.0` in
 > *both* repositories' `AGENTS.md` until 0.4.0 shipped — and the release index in
 > `knowledge/roadmap.md` is the third copy. metasalmon's `AGENTS.md` and the
-> release index moved with the 0.4.0 release; **metasalmonpy's `AGENTS.md` has
-> not**, and that file's own contract says a disagreement between the two copies
-> is unresolvable from either one alone — it has already happened once, for three
-> days. Move it in the change that lands the bump.
+> release index moved with the 0.4.0 release; metasalmonpy's `AGENTS.md` moved
+> with the bump on 2026-08-24, and metasalmon's `AGENTS.md` and the release index
+> were then rewritten again to state parity rather than a window. **All three now
+> read 0.4.0 with no window open.** That file's own contract says a disagreement
+> between the two copies is unresolvable from either one alone — it has happened
+> once in each direction now — so the rule outlives this decision even though the
+> window it described is closed.
 
 **The question as it stood, kept because the options are the reasoning behind
 the ruling.**
