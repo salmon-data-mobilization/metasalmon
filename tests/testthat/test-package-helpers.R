@@ -959,6 +959,80 @@ test_that("create_sdp only auto-writes role-compatible LLM suggestions for safer
   expect_true(is.na(weight_row$constraint_iri[[1]]) || weight_row$constraint_iri[[1]] == "")
 })
 
+# --- Q16: the POSITIVE half of the deterministic prefill ---------------------
+#
+# The suite already pins, several times over, that the constraint and
+# statistical-modifier slots stay EMPTY when the gate rejects (the test above,
+# and the water-temperature and depth cases further down). Nothing pinned that
+# they ever fill, which is how parity-deviations row 57 survived: metasalmonpy
+# restricted `create_sdp()`'s prefill to variable/property/entity/unit and R
+# did not, both suites were green, and the divergence was found by a
+# documentation audit rather than by a test.
+#
+# Brett ruled 2026-08-24 ("Yeah lets go the R way"), so this side is the one
+# that stays put -- which makes pinning it the whole job here. The twin is
+# metasalmonpy's `test_create_sdp_prefills_and_marks_constraint_and_
+# statistical_modifier`.
+#
+# MARKING is not incidental to this test. The ruling turned on a prefill being
+# review-visible: an unmarked constraint IRI is an unreviewed assertion in a
+# slot the user never asked about, so the `REVIEW:` prefix is asserted on the
+# two qualifier slots, not just their presence.
+test_that("create_sdp prefills and MARKS constraint and statistical modifier from column evidence", {
+  resources <- list(
+    escapement = tibble::tibble(
+      stream_name = c("Alpha Creek", "Beta Creek"),
+      # Both kinds of evidence live in the column's own name: "mean" for the
+      # modifier, "wild" for the constraint. That is the gate -- the retrieval
+      # offering a hit is never enough on its own.
+      mean_wild_spawner_count = c(120L, 340L)
+    )
+  )
+
+  fake_find_terms <- function(query, role = NA_character_, sources = c("smn", "gcdfo", "ols", "nvs"), ...) {
+    hit <- function(label, iri, role) tibble::tibble(
+      label = label, iri = iri, source = "smn", ontology = "smn", role = role,
+      match_type = "label_exact", definition = paste("Demo", role, "term"), score = 4.9
+    )
+    switch(
+      as.character(role),
+      variable = hit("Mean wild spawner count", "https://w3id.org/smn/MeanWildSpawnerCount", "variable"),
+      property = hit("Abundance", "https://w3id.org/smn/Abundance", "property"),
+      entity = hit("Spawner", "https://w3id.org/smn/Spawner", "entity"),
+      unit = hit("Count", "http://qudt.org/vocab/unit/NUM", "unit"),
+      constraint = hit("Wild origin", "https://w3id.org/smn/WildOrigin", "constraint"),
+      statistical_modifier = hit("Mean", "https://w3id.org/smn/Mean", "statistical_modifier"),
+      tibble::tibble()
+    )
+  }
+
+  pkg_path <- with_mocked_bindings(
+    find_terms = fake_find_terms,
+    create_sdp(
+      resources,
+      path = file.path(withr::local_tempdir(), "q16-qualified"),
+      dataset_id = "q16-demo",
+      seed_semantics = TRUE,
+      seed_verbose = FALSE,
+      check_updates = FALSE,
+      overwrite = TRUE
+    )
+  )
+
+  dict_written <- readr::read_csv(
+    file.path(pkg_path, "metadata", "column_dictionary.csv"),
+    show_col_types = FALSE
+  )
+  row <- dict_written[dict_written$column_name == "mean_wild_spawner_count", , drop = FALSE]
+  review <- metasalmon:::.ms_review_iri_prefix()
+
+  expect_equal(row$constraint_iri[[1]], paste0(review, "https://w3id.org/smn/WildOrigin"))
+  expect_equal(row$statistical_modifier_iri[[1]], paste0(review, "https://w3id.org/smn/Mean"))
+  # The four core roles are untouched by the ruling and still marked.
+  expect_equal(row$term_iri[[1]], paste0(review, "https://w3id.org/smn/MeanWildSpawnerCount"))
+  expect_equal(row$unit_iri[[1]], paste0(review, "http://qudt.org/vocab/unit/NUM"))
+})
+
 test_that("create_sdp seed note explains slower semantic lookup", {
   note <- metasalmon:::.ms_create_sdp_seed_note(
     seed_semantics = TRUE,
@@ -2059,6 +2133,158 @@ test_that("write_salmon_datapackage errors on existing path without overwrite", 
     ),
     "already exists"
   )
+})
+
+# --- The Q15 pair: what "already exists" means -------------------------------
+#
+# The test ABOVE pins a directory that HOLDS SOMETHING (`test.txt`): it still
+# aborts without `overwrite`, and that behaviour is unchanged.
+#
+# The tests BELOW pin the case that was undefined-by-omission on both sides
+# until 2026-08-24 (parity-deviations row 54): an existing directory with
+# NOTHING in it. metasalmon aborted, metasalmonpy wrote, neither suite tested
+# it, and the divergence rode silently from before the 0.1.6 parity claim.
+# Brett's Q15 ruling was "Go with the python implementation", so R adopted the
+# mirror's guard order and both suites now pin it.
+#
+# The definition of "empty" is the whole content of the ruling, so it is
+# enumerated rather than implied. Empty means `.ms_dir_entries()` -- i.e.
+# `list.files(all.files = TRUE, no.. = TRUE)` -- returns nothing. Three near
+# misses are therefore NOT empty and still need `overwrite`, one per case
+# below: a dot-file, a stale `.metasalmon-package` sentinel, and an empty
+# `data/` subdirectory. Each is evidence that something already used the path.
+# metasalmonpy's `list(target.iterdir())` is the same predicate, and its twin
+# test is `test_writer_writes_into_an_existing_empty_directory_without_overwrite`.
+.ms_test_q15_artifacts <- function() {
+  list(
+    resources = list(main_table = tibble::tibble(x = 1)),
+    dataset_meta = tibble::tibble(
+      dataset_id = "q15-1",
+      title = "Q15",
+      description = "Empty-directory write",
+      creator = NA_character_,
+      contact_name = NA_character_,
+      contact_email = NA_character_,
+      license = NA_character_,
+      temporal_start = NA_character_,
+      temporal_end = NA_character_,
+      spatial_extent = NA_character_,
+      dataset_type = NA_character_,
+      source_citation = NA_character_
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "q15-1",
+      table_id = "main_table",
+      file_name = "data/main_table.csv",
+      table_label = "Main",
+      description = NA_character_,
+      observation_unit = NA_character_,
+      observation_unit_iri = NA_character_,
+      primary_key = NA_character_
+    ),
+    dict = fill_measurement_components(
+      infer_dictionary(
+        tibble::tibble(x = 1),
+        dataset_id = "q15-1",
+        table_id = "main_table"
+      )
+    )
+  )
+}
+
+test_that("write_salmon_datapackage writes into an existing EMPTY directory without overwrite", {
+  temp_dir <- withr::local_tempdir()
+  target <- file.path(temp_dir, "existing-but-empty")
+  dir.create(target)
+
+  expect_length(.ms_dir_entries(target), 0L)
+
+  a <- .ms_test_q15_artifacts()
+  expect_no_error(
+    write_salmon_datapackage(
+      a$resources,
+      a$dataset_meta,
+      a$table_meta,
+      a$dict,
+      path = target,
+      overwrite = FALSE
+    )
+  )
+
+  # Not merely "no error": the package is really there and reads back.
+  expect_true(file.exists(file.path(target, "datapackage.json")))
+  expect_true(file.exists(file.path(target, "data", "main_table.csv")))
+  expect_equal(read_salmon_datapackage(target)$dataset$dataset_id[[1]], "q15-1")
+})
+
+test_that("an existing directory holding only a dot-file is NOT empty for overwrite purposes", {
+  temp_dir <- withr::local_tempdir()
+  target <- file.path(temp_dir, "dotfile-only")
+  dir.create(target)
+  writeLines("x", file.path(target, ".hidden"))
+
+  a <- .ms_test_q15_artifacts()
+  expect_error(
+    write_salmon_datapackage(
+      a$resources, a$dataset_meta, a$table_meta, a$dict,
+      path = target, overwrite = FALSE
+    ),
+    "already exists"
+  )
+  expect_true(file.exists(file.path(target, ".hidden")))
+})
+
+test_that("an existing directory holding only a stale metasalmon sentinel is NOT empty", {
+  temp_dir <- withr::local_tempdir()
+  target <- file.path(temp_dir, "stale-sentinel")
+  dir.create(target)
+  writeLines("metasalmon-owned", .ms_package_sentinel_file(target))
+
+  a <- .ms_test_q15_artifacts()
+  expect_error(
+    write_salmon_datapackage(
+      a$resources, a$dataset_meta, a$table_meta, a$dict,
+      path = target, overwrite = FALSE
+    ),
+    "already exists"
+  )
+})
+
+test_that("an existing directory holding only an empty data/ subdirectory is NOT empty", {
+  temp_dir <- withr::local_tempdir()
+  target <- file.path(temp_dir, "empty-data-subdir")
+  dir.create(file.path(target, "data"), recursive = TRUE)
+  expect_length(.ms_dir_entries(file.path(target, "data")), 0L)
+
+  a <- .ms_test_q15_artifacts()
+  expect_error(
+    write_salmon_datapackage(
+      a$resources, a$dataset_meta, a$table_meta, a$dict,
+      path = target, overwrite = FALSE
+    ),
+    "already exists"
+  )
+})
+
+test_that("create_sdp writes into an existing EMPTY directory without overwrite", {
+  # The user-facing half of the Q15 ruling: `mkdir -p && create_sdp()` is the
+  # shape the mirror's order was friendlier to, and it is now R's shape too.
+  tmp <- withr::local_tempdir()
+  target <- file.path(tmp, "empty-create-sdp")
+  dir.create(target)
+
+  pkg_path <- with_mocked_bindings(
+    suggest_semantics = function(dict, ...) dict,
+    create_sdp(
+      tibble::tibble(col = 1:2),
+      path = target,
+      dataset_id = "q15-create",
+      table_id = "t1",
+      overwrite = FALSE
+    )
+  )
+
+  expect_true(file.exists(file.path(pkg_path, "datapackage.json")))
 })
 
 test_that("write_salmon_datapackage refuses overwrite for non-metasalmon directories", {

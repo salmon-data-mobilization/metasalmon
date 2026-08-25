@@ -32,10 +32,13 @@ write_salmon_datapackage(
 
 \item{format}{Character; resource format: \code{"csv"} (default, only format supported)}
 
-\item{overwrite}{Logical; if \code{FALSE} (default), errors if path exists. If
+\item{overwrite}{Logical; if \code{FALSE} (default), errors when \code{path} is a
+directory that already holds something. An existing but \emph{completely empty}
+directory is written into without \code{overwrite} — there is nothing there to
+destroy — while a dot-file, a stale \code{.metasalmon-package} sentinel, or an
+empty \verb{data/} subdirectory all count as content and still require it. If
 \code{TRUE}, the package is updated in place — see \code{prune}. Replacement is only
-allowed for empty directories or directories previously written by
-\code{metasalmon}.}
+allowed for directories previously written by \code{metasalmon}.}
 
 \item{write_datapackage}{Logical; if \code{TRUE} (default), write a root
 \code{datapackage.json} descriptor declaring the SDP Frictionless profile after
