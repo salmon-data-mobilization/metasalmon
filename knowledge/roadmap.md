@@ -42,8 +42,11 @@ Rules that keep this from decaying:
   against the repos' own version sources and fixes drift.
 - **Mirror rule:** metasalmonpy mirrors metasalmon — same functionality, same
   version numbers, bumped only when parity actually lands. Stated firmly in
-  both repos' `AGENTS.md`; the catch-up is
-  [S10](sequences/s10-metasalmonpy-parity.md). **Amended 2026-08-17 (Brett):
+  both repos' `AGENTS.md`. **Both are at 0.4.0 as of 2026-08-24**, so the
+  catch-up stream [S10](sequences/s10-metasalmonpy-parity.md) is **done** and
+  the rule now governs *new* work rather than a backlog — a divergence
+  introduced from here is a fresh one, not the tail of an old gap.
+  **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
   metasalmon."* Mirroring keeps the two the same and says nothing about which
@@ -173,17 +176,18 @@ Ordering that is not optional, independent of who is executing:
   release tree: the statistical-modifier ranking preferences, the corrected
   bundle-review prompt, the dry-run stop parity, and the role-contract guard.
   See the [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md).
-- **The metasalmon release comes before metasalmonpy's terminal bump** (Brett,
+- **The metasalmon release came before metasalmonpy's terminal bump** (Brett,
   2026-08-24, hub [Q7](questions.md)): *"cut a metasalmon release containing the
   post-0.3.0 fixes first, then metasalmonpy claims that number — it makes both
-  version claims literally true."* **Step 1 landed the same day — metasalmon
-  0.4.0, tagged `v0.4.0`** — so what this constrains now is step 2: metasalmonpy
-  **skips 0.3.0** and its terminal bump claims **0.4.0**. The three copies of
-  that number — both repositories' `AGENTS.md` catch-up windows and this card's
-  release index — move together; the R-side window and this index are already at
-  `0.2.2→0.4.0`, so metasalmonpy's `AGENTS.md` is the outstanding one, and a
-  disagreement between the two `AGENTS.md` files is unresolvable from either one
-  alone.
+  version claims literally true."* **Both steps landed on 2026-08-24** —
+  metasalmon `v0.4.0`, then metasalmonpy `v0.4.0`, **skipping 0.3.0** — so this
+  bullet is now a discharged ruling rather than a constraint on pending work,
+  and it is kept because the *sequencing rule* it states governs the next
+  release pair too: the R release exists before the Python number claims it.
+  The three copies of that number — both repositories' `AGENTS.md` and this
+  card's release index — are at **0.4.0 with no window open**, and they move
+  together, because a disagreement between the two `AGENTS.md` files is
+  unresolvable from either one alone.
 - **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
   2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
   needs."* The carve-out is currently **one item — PFMA subareas** for the
@@ -207,7 +211,9 @@ authoritative; this index coordinates. Refreshed 2026-08-18 against repository
 version sources, remote tags, GitHub/GitLab release objects, and the open
 changes that affect this sequence; the metasalmon, metasalmonpy, smn-data-pkg,
 psc-salmon-vocabularies and workshop rows were re-checked 2026-08-21 against
-sibling checkouts.
+sibling checkouts, and the metasalmon and metasalmonpy rows again on 2026-08-24
+against their tags, `DESCRIPTION`/`pyproject.toml`, and their GitHub Release
+objects, when both reached **0.4.0**.
 
 **Read every row's tag line, not just its version heading.**
 **Five of the eight** members have `main` ahead of their newest tag
@@ -253,25 +259,26 @@ is a two-step — metasalmon releases first (done), then metasalmonpy's terminal
 bump claims **that** number. So the number metasalmonpy claims is **0.4.0**, and
 claiming it is its own change.
 
-### metasalmonpy (Python mirror) — current **0.2.1** (= metasalmon 0.2.1 parity)
+### metasalmonpy (Python mirror) — current **0.4.0** (= metasalmon 0.4.0 parity)
 
-> **This number is materially understated, and deliberately so.** S10's
-> implementation completed 2026-08-22 — all eight chunks A–H merged — but every
-> chunk landed *unversioned* because what number the finished port may carry was
-> [Q7](questions.md), Brett's. `main` therefore carries metasalmon-0.3.0-plus
-> behaviour under a 0.2.1 tag.
+> **The number is now true, and it is the first time in this stream that it has
+> been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
+> merged — but every chunk landed *unversioned* because what number the finished
+> port may carry was [Q7](questions.md), Brett's. `main` therefore carried
+> metasalmon-0.3.0-plus behaviour under a 0.2.1 tag for six days, which this row
+> recorded as a deliberate understatement.
 >
 > **Q7 was ruled 2026-08-24** — *"cut a metasalmon release containing the
-> post-0.3.0 fixes first, then metasalmonpy claims that number"* — and **step 1
-> happened the same day**: metasalmon `v0.4.0` is tagged and released. So this
-> row is waiting on neither a decision nor a release, but on **the bump itself**.
-> The number metasalmonpy claims is **0.4.0**; it **skips 0.3.0**, which is what
-> makes both version claims literally true. Update this row, both `AGENTS.md`
-> catch-up windows (already moved to `0.2.2→0.4.0` on the R side) and
-> `pyproject.toml` in the change that lands it.
+> post-0.3.0 fixes first, then metasalmonpy claims that number"* — and **both
+> steps happened the same day**: metasalmon `v0.4.0` was tagged and released,
+> and metasalmonpy then claimed 0.4.0, **skipping 0.3.0**, which is what makes
+> both version claims literally true. The three copies of the number — this
+> index and both repositories' `AGENTS.md` — are at 0.4.0 with no catch-up
+> window open.
 
 | Version | Date | One line |
 |---|---|---|
+| 0.4.0 | 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub Release published) | The terminal S10 bump: chunks A–H released as one number, plus the two gaps an entry-by-entry audit of metasalmon 0.4.0's NEWS found genuinely absent and ported for it — `knb_environment` on `publish_sdp_to_knb()`/`write_eml_from_sdp()` (the S3 mirror, whose R original landed after every chunk was written) and the `statistical_modifier` `role_boost`. Five further differences were **registered rather than ported**, each with its retirement condition (register rows 54–58). Verified against a pristine `git archive` of metasalmon `v0.4.0` (`4e2bbb6`), never a working checkout; both dependency legs green (795 extras / 682 core, 116 skipped), production KNB identifiers pinned against metasalmon's own fixture |
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
 | 0.2.0 | 2026-08-18 (tagged `v0.2.0`, GitHub Release published) | The dictionary is the type authority: typed round-trip reader with raw-token preservation, overwrite/prune ownership, sidecar survival, symlink refusal, capture-time redaction, remote schema loader pinned to the upstream `sdp-0.2.0` tag. An era-R package round-trips through Python and back **byte-for-byte** |
 | 0.1.8 | 2026-08-17 (merged `db85016`, tagged `v0.1.8`, GitHub Release published) | Parity with metasalmon 0.1.8: the SDP method registry read and validated with the **writer deliberately absent as a raising stub** (register row 9), observation structures, the reproducibility manifest, reviewed-strategy apply, expanded KNB publication, the `package_io` host fix, and the demo-data and `match_type` ranking fixes; the vendored schema bundle now comes from the upstream `sdp-0.2.0` tag. Verified by driving both implementations over the same inputs against the R **`v0.1.8` tag**: `methods.csv`, both observation-structure files and the updated `datapackage.json` came out byte-identical, and the KNB plan matched on all 20 objects, every PID and every checksum |
@@ -288,13 +295,17 @@ longer *replays* that baseline release by release:** the 2026-08-17 replan
 supersedes rungs 4–8 with a subsystem port straight to 0.3.0, so the ladder
 ends at rung 3 and the phrase "replay the complete baseline" is retired.
 
-Rung 3 has merged and tagged: metasalmonpy PRs #10, #11 and #12 are in, `v0.2.0`
-and `v0.2.1` exist as tags and GitHub Releases, and `pyproject.toml` reads
-`0.2.1` as a **released** parity claim rather than a branch state. The catch-up
-window is therefore **0.2.2→0.4.0** — the endpoint moved from 0.3.0 when the R
-side cut **0.4.0** on 2026-08-24, and it is the same content either way, because
-0.4.0 *is* 0.3.0 plus the post-0.3.0 fixes S10 already ported. Both `AGENTS.md`
-files must carry that same number — see the mirror rule above.
+Rung 3 merged and tagged: metasalmonpy PRs #10, #11 and #12 are in, `v0.2.0`
+and `v0.2.1` exist as tags and GitHub Releases. **The catch-up window
+`0.2.2→0.4.0` is closed**: its endpoint moved from 0.3.0 when the R side cut
+**0.4.0** on 2026-08-24 — the same content either way, because 0.4.0 *is* 0.3.0
+plus the post-0.3.0 fixes S10 had already ported — and metasalmonpy claimed
+0.4.0 the same day. `pyproject.toml` reads `0.4.0` as a **released** parity
+claim rather than a branch state, and both `AGENTS.md` files carry that same
+number; see the mirror rule above. What is *not* closed by it: register row 32 /
+backlog **#87**, the ranking-profile gap, which no milestone owns and which the
+0.4.0 release does not contain — the release states as much rather than letting
+the number imply otherwise.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -401,7 +412,7 @@ see this table, which is the reason the hub carries it.
 | Consumer | Declares or pins | Current? |
 |---|---|---|
 | `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, byte-identical to metasalmon's vendored bundle, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** — while the package *version* stays 0.2.1 pending Q7 |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, byte-identical to metasalmon's vendored bundle, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
@@ -762,12 +773,13 @@ The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
 released R baseline in Python before new behavior lands in both languages; that
-baseline is now **0.3.0, released**. The replay ladder is complete at 0.2.1
-(rung 3 was the **last** replayed rung; the 2026-08-17 replan ports the
-remainder by subsystem), and the subsystem port has landed chunks **A through
-G** (2026-08-22, metasalmonpy PRs #14–#17, #19 and #20, all unversioned pending
-Q7), leaving the PR-#77 write-path mirror (chunk **H**, in flight) and the
-terminal bump behind them. The first behavior is verification,
+baseline is now **0.4.0, released**. **That requirement is satisfied:** the
+replay ladder completed at 0.2.1 (rung 3 was the **last** replayed rung; the
+2026-08-17 replan ports the remainder by subsystem), the subsystem port landed
+chunks **A through H** (2026-08-22, metasalmonpy PRs #14–#17, #19, #20 and #21,
+all unversioned pending Q7), and the terminal bump released them as
+metasalmonpy **0.4.0** on 2026-08-24. So S10 no longer gates anything
+downstream. The first behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer
@@ -781,14 +793,14 @@ release half of that gate is satisfied.
 
 - [S1 — One validation authority](sequences/s1-validation-authority.md) · #48, #49
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
-- [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node. Unreleased (held at 0.3.0 for mirror lockstep), unmirrored in metasalmonpy, and no deposit has been made in either environment: a test-node token and one end-to-end deposit are what S4 still waits on
+- [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
 - [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8)
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
 - [S9 — Ontology conventions and alignment pass](sequences/s9-ontology-alignment.md) · step 7's four decisions are made; gcdfo #67 is closed, #68–#75 stay open behind successors #84/#85 and smn PR #27
-- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · **implementation COMPLETE 2026-08-22** — all eight chunks A–H merged (metasalmonpy PRs #14–#17, #19, #20, #21), every one unversioned. The only remaining scope is the terminal bump; **Q7 ruled it 2026-08-24**, so the bump now waits on the metasalmon release it claims, not on a decision. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification; chunk H registered two divergences rather than fixing them — the two-sentinel problem ([Q14](questions.md), parity row 51) and the wider Python `create_sdp()` sidecar window (row 53, which does **not** retire when #111 closes)
+- [S10 — metasalmonpy parity](sequences/s10-metasalmonpy-parity.md) · **DONE 2026-08-24** — all eight chunks A–H merged 2026-08-22 (metasalmonpy PRs #14–#17, #19, #20, #21), every one unversioned pending [Q7](questions.md), and the terminal bump released them as metasalmonpy **0.4.0** (tagged `v0.4.0` at `3b587e6`, GitHub Release published) after an entry-by-entry audit of metasalmon 0.4.0's NEWS found two genuine gaps to port and five differences to register. The stream is closed; **what outlived it** is backlog **#87** / register row 32, the ranking-profile gap, which no milestone owns and which the release deliberately does not claim, plus backlog **#113** (the shared ownership sentinel, [Q14](questions.md)) and register row 53's `create_sdp()` sidecar window. Chunk D closed backlog #91 and lifted the standing ban on cross-implementation issue-count verification
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 - [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md) · **the artifact is ruled (Brett, 2026-08-24, [Q4](questions.md)): the 173-row `nuseds-fraser-coho-2023-2024.csv`**, with the 30-row sample demoted to the speed fixture it already claims to be. Its finish line is two-staged — clean through both validators, then deposited under S3's exit criteria — so S12 now depends on S3 for its second stage and on #90/#95 for its first
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)

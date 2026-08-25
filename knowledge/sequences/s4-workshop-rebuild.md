@@ -45,7 +45,9 @@ must not fabricate, an interactive upload), and making them genuinely execute
 IS the golden path, blocked on Q1/Q2; `method_iri` teaching corrected to the
 0.3.0 three-placement shape in session-4 and the learner reference;
 `setup.md`'s pre-rename metaSmnPy wheel replaced with the metasalmonpy v0.2.1
-tag tarball (releases carry no wheel assets). **Still absent, rebuild scope:**
+tag tarball (releases carry no wheel assets) — **now itself stale: the mirror
+released `v0.4.0` on 2026-08-24, so the rebuild pins that tarball, not v0.2.1.**
+**Still absent, rebuild scope:**
 primary-key and tidy-shape content. One Q1-relevant observation: session-6's
 KNB text already describes the production private-review model, i.e. the
 lesson as written agrees with psc-data-transformations' staging claim, not
@@ -94,9 +96,11 @@ teaches both; the workshop has not inherited it.
 installs `salmonpy 0.1.6` from
 `github.com/salmon-data-mobilization/metaSmnPy/releases/download/v0.1.6/…` —
 the repository was renamed to `metasalmonpy` on 2026-08-13, and the mirror is
-now at **0.2.1** with `v0.1.7`, `v0.1.8`, `v0.2.0` and `v0.2.1` tagged. Whether
-that URL still redirects is not the point: the lesson teaches an install of a
-package under a name that no longer exists, three parity milestones back.
+now at **0.4.0** (released 2026-08-24; `v0.1.7`, `v0.1.8`, `v0.2.0`, `v0.2.1`
+and `v0.4.0` tagged — there is no `v0.3.0`, which the mirror skipped by
+[Q7](../questions.md)'s ruling). Whether that URL still redirects is not the
+point: the lesson teaches an install of a package under a name that no longer
+exists, now four parity milestones back.
 
 *None of the above is rebuild scope creep — it is the reason the rebuild is
 scoped as a rebuild.* Recorded here so that "S4 is blocked" stops being read as

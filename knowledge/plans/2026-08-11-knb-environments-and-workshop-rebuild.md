@@ -30,8 +30,11 @@ leak (#73) in **0.2.5**; the tidy checks (#77) in **0.2.6**; roadmap **S8**, and
 with it REVIEW 7's method-annotation blocker, as **0.3.0** and spec `sdp-0.3.0`.
 REVIEW 6's version arithmetic went stale as a result. Everything still open is
 open for a reason stated at the point it appears — chiefly roadmap **S1**, and
-the Python lane, which is at metasalmonpy 0.2.1 and demonstrates none of the new
-behaviour yet. Nothing here has been re-decided; only re-dated.
+the Python lane, which was at metasalmonpy 0.2.1 and demonstrated none of the
+new behaviour. *(That last clause expired 2026-08-24: metasalmonpy released
+**0.4.0**, mirroring `knb_environment` and the sdp-0.3.0 shape, so the Python
+lane is no longer the constraint this paragraph treated it as.)* Nothing here
+has been re-decided; only re-dated.
 
 ---
 
@@ -414,7 +417,10 @@ checkpoint rather than inferring from a quiet run that their package was clean.
   metasalmonpy is at 0.2.1, still vendors sdp-0.2.0, and its dictionary still
   has `method_iri`. That is S10 chunk A, unstarted, so the S10 card's rule —
   *S4 must not demo Python behaviour that has not landed* — binds this episode
-  harder than any other.
+  harder than any other. **Superseded 2026-08-24:** chunk A landed 2026-08-22
+  and metasalmonpy released **0.4.0**, vendoring sdp-0.3.0 with
+  `statistical_modifier_iri`, so the Python lane *can* demonstrate this now. The
+  S10 rule still binds — it just no longer excludes this episode's content.
 
 ### Publication narrative
 
@@ -445,9 +451,11 @@ prepare a reviewed package and hand it to an R steward.
 ### Verification and delivery
 
 Run the NuSEDS and personal-data R examples against the merged metasalmon
-version; smoke-test the released metasalmonpy — **0.2.1 as of 2026-08-21**, not
-the 0.1.6 this line originally named, and still sdp-0.2.0-shaped, so record the
-version tested rather than restating a number here; validate Excel template
+version; smoke-test the released metasalmonpy — **0.4.0 as of 2026-08-24**
+(0.2.1 as of 2026-08-21, and the 0.1.6 this line originally named), now
+sdp-0.3.0-shaped, **so record the version tested rather than restating a number
+here — this line has already gone stale twice in three days**; validate Excel
+template
 headers; confirm the shared checkpoints. `sandpaper::check_lesson()` and
 `sandpaper::build_lesson()`. Inspect learner, instructor, and all-in-one HTML
 for complete paths, valid links, unique ids, and visible print content.

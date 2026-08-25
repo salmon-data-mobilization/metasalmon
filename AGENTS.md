@@ -28,18 +28,31 @@ at `knowledge/roadmap.md`.
   in the same PR that introduces it. An undocumented difference is a
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
-  when the mirrored behaviour actually lands. Current state: metasalmonpy is
-  at **0.2.1** parity — tagged `v0.2.1`, GitHub Release published — while
-  metasalmon released **0.4.0** on 2026-08-24, so the catch-up window is
-  **0.2.2→0.4.0**, roadmap stream S10. The same contract is
-  stated in metasalmonpy's `AGENTS.md`; both files are git-tracked and must
-  never be git-ignored. **When the two files disagree about that number, one of
-  them is wrong about the single fact the mirror contract turns on**, and
-  nothing in either file reveals which: this line read 0.1.8 (with a
+  when the mirrored behaviour actually lands. Current state: **both packages are
+  at 0.4.0, and the mirror is at parity rather than chasing it.** metasalmon
+  released `v0.4.0` (`4e2bbb6`) on 2026-08-24; metasalmonpy claimed the same
+  number the same day — tagged `v0.4.0` at `3b587e6`, GitHub Release published —
+  which **closes the `0.2.2→0.4.0` catch-up window** that roadmap stream S10
+  existed to close. That claim was measured rather than asserted: all 25 of
+  metasalmon 0.4.0's NEWS entries were audited against the Python tree entry by
+  entry, the two found genuinely absent (`knb_environment` and the
+  `statistical_modifier` `role_boost`) were ported for the release, five
+  remaining differences were registered instead of ported, and both dependency
+  legs ran green. **Parity is the state that decays fastest**: the next
+  metasalmon change breaks it, silently, and nothing in this file will say so —
+  so read this sentence as a dated measurement, not as a standing property. The
+  same contract is stated in metasalmonpy's `AGENTS.md`; both files are
+  git-tracked and must never be git-ignored. **When the two files disagree about
+  that number, one of them is wrong about the single fact the mirror contract
+  turns on**, and nothing in either file reveals which. That has now happened
+  once in each direction, which is the argument for checking rather than
+  trusting whichever file you happen to be reading: this line read 0.1.8 (with a
   0.2.0→0.3.0 window) for three days after metasalmonpy tagged 0.2.1 and said
-  so in its own `AGENTS.md`, corrected here 2026-08-21. Whenever either
-  version moves, read the other file in the same change; the release index in
-  `knowledge/roadmap.md` is the third copy and must agree with both.
+  so in its own `AGENTS.md`, corrected here 2026-08-21; and metasalmonpy's line
+  carried a stale `0.2.2→0.3.0` window after metasalmon tagged 0.4.0, corrected
+  there 2026-08-24. Whenever either version moves, read the other file in the
+  same change; the release index in `knowledge/roadmap.md` is the third copy
+  and must agree with both.
   **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"Don't just make things match metasalmon. If the Python implementation got
   it right, then update metasalmon."* Presumption of mirroring is about
