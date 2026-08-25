@@ -76,30 +76,13 @@ jobs:
             metasalmon/knowledge/parity-deviations.md \
             metasalmonpy/PARITY.md
 
-      # The check above is the gate. This step additionally proves the R guard
-      # *runs* rather than skipping -- a skipped test is green, which is how the
-      # gap arose in the first place.
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
-      - name: Install testthat
-        run: Rscript -e 'install.packages("testthat")'
-      - name: The R guard runs, and does not skip
-        working-directory: metasalmon
-        env:
-          METASALMONPY_PATH: ${{ github.workspace }}/metasalmonpy
-        run: |
-          set -euo pipefail
-          Rscript -e '
-            res <- testthat::test_file(
-              "tests/testthat/test-parity-register-guard.R",
-              reporter = "silent"
-            )
-            df <- as.data.frame(res)
-            cat("passed:", sum(df$passed), " failed:", sum(df$failed),
-                " skipped:", sum(df$skipped), "\n")
-            if (sum(df$failed) > 0) stop("the parity register guard failed")
-            if (sum(df$skipped) > 0) {
-              stop("the guard SKIPPED in CI -- it is not actually checking anything, which is the exact condition this workflow exists to prevent")
-            }
-          '
+      # Deliberately NOT re-running the R guard here. It sources helpers that
+      # `library(metasalmon)`, so proving it does not skip would mean installing
+      # the package and its dependencies a second time -- duplicating what
+      # R-CMD-check already does, for a check the step above already makes.
+      #
+      # Instead, R-CMD-check.yaml checks out the sibling and sets
+      # METASALMONPY_PATH, so the guard runs for real inside the suite that
+      # already has the package built. The two workflows cover it from opposite
+      # ends: this one fails fast and needs no R, that one proves the guard
+      # itself is live rather than skipping.
