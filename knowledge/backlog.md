@@ -49,7 +49,8 @@ Severity = how much it can bite a real user.
   (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90** (ruled 2026-08-24,
   the spec-repo change is unwritten),
   and **#95**, **#103–#108**, **#111**, **#112**, **#113**, **#114** (both
-  ruled 2026-08-24 and both unimplemented) and **#115** (new 2026-08-25), plus
+  ruled 2026-08-24 and both unimplemented) and **#115**, **#116**, **#117**
+  (all new 2026-08-25), plus
   item 0 (gcdfo). Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
@@ -2637,6 +2638,115 @@ no workshop episode is executable; and `smn-data-pkg` has no LICENSE, CI, or
 Pages configuration.
 
 #### smn-data-pkg (verified on `main`, 2026-08-21)
+
+**#116 The reviewed closure has no producer and no documentation, so the
+publication path is unreachable from the published docs.** Found 2026-08-25
+while taking the Fraser coho example to a KNB test-node dry run. Severity:
+**high** — it is not a defect in any one function, it is a hole in the golden
+path, and the symptom is that a user who does everything the vignette says gets
+`metadata/semantic_vocabulary.csv does not exist` with nowhere to go.
+
+`write_eml_from_sdp()` and `publish_sdp_to_knb()` both require a reviewed
+closure. Three files carry it, and **metasalmon validates all three and writes
+none of them**:
+
+- `metadata/semantic_vocabulary.csv` — read by `.ms_eml_read_vocabulary()`
+  (`R/eml-export.R:1215`), required by `.ms_knb_sdp_artifact_paths()`
+  (`R/knb-publication.R:271`). It is *deliberately* excluded from
+  `.ms_package_managed_paths()` (`R/package-helpers.R:448`), so the exclusion is
+  intentional; what is missing is anything that fills the gap it leaves.
+- `reviewed_semantic_selections.csv` — read by
+  `.ms_eml_read_semantic_review()` (`R/eml-export.R:1040`).
+- `metadata/eml-mapping.yml` — the one with a real story: a template ships at
+  `inst/extdata/eml-mapping-template.yml` and the post-review vignette says to
+  copy and edit it.
+
+Four separate things are wrong, in descending order of how badly they block:
+
+1. **Neither closure CSV appeared in any vignette or the README** before this
+   item was filed — `git grep semantic_vocabulary vignettes/ README.md`
+   returned nothing. The post-review vignette walked from strict validation
+   straight to the EML sidecar. Partially discharged 2026-08-25: that vignette
+   now has a "reviewed closure" section stating both files, their columns, and
+   the two canonical IRI sets. **Documentation is not a producer**, so the item
+   stays open.
+2. **`reviewed_snapshot_sha256` cannot be computed by any exported function.**
+   `.ms_eml_vocabulary_snapshot_sha256()` (`R/eml-export.R:1182`) is a verifier
+   only. Its sole producing caller in the whole repo is
+   `tests/testthat/helper-eml.R:134`. A user's only options are to hand-write a
+   SHA-256 into a CSV or to reach into `metasalmon:::`, and the first of those
+   is not a workflow.
+3. **The two canonical sets are derivable only from internals.** The vocabulary
+   must equal `.ms_eml_canonical_measurement_iris()` exactly and the ledger must
+   equal `.ms_eml_canonical_review_targets()` exactly, both internal. The sets
+   legitimately differ (`observation_unit_iri` is a review target but not a
+   measurement term), so a user cannot even reason one from the other.
+4. **The closure demands provenance evidence for vocabularies `find_terms()`
+   cannot search.** `find_terms()` supplies six of the eight evidence fields
+   (`label`, `definition`, `source`, `ontology`, `resource_kind`, `type_iris`)
+   for `smn`/`gcdfo`, but `native_type` and `source_url` are always hand-supplied,
+   and QUDT — which the shipped examples annotate against for units — is not a
+   searchable source at all, so a QUDT row is 100% hand-authored.
+
+**Proposed shape (not a decision):** one exported `write_sdp_semantic_closure()`
+that reads the package, derives both canonical sets, resolves evidence for each
+IRI through the existing search path, computes the snapshot digests, and writes
+both files plus the two hashes into an existing sidecar — with any IRI it cannot
+resolve reported as a gap rather than guessed at. That would make the closure a
+product of the review pipeline instead of a thing reviewers reconstruct.
+
+**Worked reference in the meantime:** `scripts/build-fraser-coho-knb-rehearsal.R`
+takes the shipped 173-row example from `create_sdp()` to a clean KNB test-node
+dry run. It reaches into `metasalmon:::` in exactly two places, both marked, and
+those two calls are the precise measure of this gap.
+
+**The mirror has the identical gap, measured rather than presumed
+(2026-08-25).** metasalmonpy requires both files on the same path
+(`eml.py:1654` `_read_vocabulary()` raises `FileNotFoundError`;
+`knb_publication.py:82-89` lists the vocabulary in `_REQUIRED_SDP_ARTIFACTS`),
+has no public producer for either (none of the nine `write_*` entries in
+`__init__.py:78-140` writes them; `package_io.py` contains zero occurrences of
+either filename), keeps its digest helper private
+(`eml.py:1636 _vocabulary_snapshot_sha256`, reached in tests only by importing
+past the API boundary at `tests/test_eml.py:901`), and mentions neither file in
+any user-facing doc — including `guides/semantic-review.qmd`, whose whole
+subject is semantic review. So this is not an R defect to mirror; it is one
+design decision that left the same hole twice, and the fix is owed on both
+sides in the same stream.
+
+*Retires when:* a user can produce a publishable package without `:::` and
+without hand-writing a digest, and the rehearsal script's two internal calls
+become calls to exported functions.
+
+**#117 `term_type` is required by EML export but not by strict validation, so
+the SDP gate does not gate publication.** Found 2026-08-25, same session. The
+shipped Fraser coho starter dictionary carried `term_iri` with an empty
+`term_type`; `validate_salmon_datapackage(require_iris = TRUE)` passed, and
+`write_eml_from_sdp()` then aborted with *"EML export requires measurement
+term_type to be owl_class or skos_concept; found NA"*
+(`.ms_eml_measurement_term_annotation()`, `R/eml-export.R:2167`). The dictionary
+was fixed in the same change, but the asymmetry is the real finding: strict
+validation is documented as "the last gate", and it demonstrably is not one for
+the publication path. Either `validate_salmon_datapackage(require_iris = TRUE)`
+should require `term_type` wherever `term_iri` is present, or the docs should
+stop calling it the final gate. Related to #116 but separable — this one is a
+single-field rule, not a missing producer.
+
+**Shared with the mirror, and one case wider there (measured 2026-08-25).**
+metasalmonpy's `eml.py:1813-1819` raises the same requirement while
+`dictionary.py:50` `CORE_SEMANTIC_FIELDS` omits `term_type`, so
+`validate_salmon_datapackage(require_iris=True)` passes the same package. Python
+adds a case R does not have: its vendored
+`column_dictionary.schema.json:102-110` declares `term_type` with
+`enum: [owl_class, owl_object_property, skos_concept]` and no conditional
+requirement — so `owl_object_property` is *schema-valid* and still aborts EML
+export. Worth noting for whoever fixes this, because it means the schema and the
+exporter disagree about the allowed value set, not merely about whether the
+field is required. (That enum is decorative in any case: no non-test Python
+source reads `constraints.enum` from the frictionless bundle at all.)
+
+*Retires when:* the two gates agree
+about `term_type`, or the documentation states which gate covers what.
 
 **#114 `metadata/semantic/**` is specified nowhere, so metasalmon is the de
 facto specification for a whole directory of package content. RULED 2026-08-24:

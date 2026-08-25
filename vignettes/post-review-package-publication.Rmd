@@ -37,8 +37,12 @@ This is the post-review path:
 5. decide whether each missing term belongs in the shared salmon-domain
    ontology or the DFO-specific bucket;
 6. produce a concrete list of term requests to file;
-7. rebuild EDH XML if needed; and
-8. run strict final validation before publishing.
+7. rebuild EDH XML if needed;
+8. run strict final validation; and
+9. assemble the **reviewed closure** the EML/KNB path needs before publishing.
+
+Step 9 is the one that surprises people. Strict validation is the last gate the
+*Salmon Data Package* has; it is not the last gate before a **deposit**.
 
 ## 1) Reload the reviewed package
 
@@ -358,12 +362,85 @@ new shared or DFO-specific ontology term, that is not a bug in the workflow —
 it means the package is **not finalized yet**. Keep the term-request plan with
 the package, resolve the ontology decision, then run strict validation again.
 
-## 10) Build reviewed EML and preview KNB publication when needed
+## 10) Assemble the reviewed closure
+
+**Strict validation is not the publication gate.** A package that passes
+`validate_salmon_datapackage(require_iris = TRUE)` can still be refused by
+`write_eml_from_sdp()` and `publish_sdp_to_knb()`, because the EML/KNB path
+additionally requires a **reviewed closure**: a standing record of which
+vocabulary terms you accepted, on what evidence, and for which target.
+
+Three files carry it, and **metasalmon validates all three but writes none of
+them** (see the note at the end of this section):
+
+| File | What it must contain |
+| --- | --- |
+| `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less |
+| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target |
+| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above |
+
+**The canonical measurement IRI set** is every non-empty value across
+`term_iri`, `property_iri`, `entity_iri`, `constraint_iri`,
+`statistical_modifier_iri` and `unit_iri` on your `measurement` dictionary rows,
+plus any `tables.csv` `method_iri` and any procedure IRIs reached through
+`codes.csv` from an observation-structures binding.
+
+**The canonical review target set** is that same set *plus* each table's
+`observation_unit_iri`. The two differ, deliberately: the observation unit is a
+reviewed selection but not a measurement term, so it belongs in the ledger and
+not in the vocabulary.
+
+`semantic_vocabulary.csv` needs these columns, all non-empty except
+`type_iris` and `source_artifact_sha256`:
+
+```
+iri, label, definition, source, ontology, resource_kind, type_iris,
+native_type, source_url, source_artifact_sha256, reviewed_snapshot_sha256
+```
+
+`find_terms()` returns `label`, `definition`, `source`, `ontology`,
+`resource_kind` and `type_iris` directly, so re-running the search that
+justified each accepted IRI is how you source that evidence rather than
+transcribing it. `native_type` and `source_url` are yours to supply.
+
+`reviewed_semantic_selections.csv` needs:
+
+```
+dataset_id, table_id, column_name, target_scope, target_sdp_field,
+dictionary_role, decision, confidence, review_rationale, iri
+```
+
+Every `decision` must be `accepted` — a final ledger holds no open decisions —
+and `column_name` is empty only for table-scope rows.
+
+<div class="alert alert-warning">
+**Known gap.** `reviewed_snapshot_sha256` binds each vocabulary row to its own
+evidence, and there is **no exported function that computes it**. Neither
+closure file has an exported producer at all; metasalmon only validates them.
+Until that is fixed, see `scripts/build-fraser-coho-knb-rehearsal.R` in the
+source repository, which builds both files end to end for the shipped Fraser
+coho example and takes it to a clean KNB test-node dry run. Tracked as backlog
+item #116.
+</div>
+
+## 11) Build reviewed EML and preview KNB publication when needed
 
 KNB publication requires EML-specific facts that the canonical SDP does not
 guess, including structured parties, rights, methods, measurement scales,
 missing-value meanings, and access intent. Record those reviewed decisions in
-`metadata/eml-mapping.yml`, then build and validate EML 2.2.0:
+`metadata/eml-mapping.yml`, then build and validate EML 2.2.0.
+
+Three of its fields are cross-checked against the package and will abort the
+build if they drift, so set them from one source rather than retyping them:
+`source_provenance.source_citation` and `source_provenance.provenance_note` must
+byte-match `dataset.csv`, and `publication.public` must equal the `public`
+argument you pass to `publish_sdp_to_knb()`.
+
+A live deposit also requires the sidecar to name **exactly one**
+metadata-provider `orcid`, and it must be the ORCID behind the DataONE token you
+authenticate with. A dry run accepts any syntactically valid ORCID, so the
+placeholder in the shipped template will pass a rehearsal and be refused by the
+live call.
 
 ```{r, purl = FALSE}
 # Copy once, then replace every example value and checksum with reviewed facts.
@@ -539,7 +616,7 @@ itself prove that a vocabulary release was governed. The canonical
 transformation record must separately pin the approved vocabulary release and
 verify its public term IRIs before the SDP is deposited.
 
-## 11) Publish or share the finished package
+## 12) Publish or share the finished package
 
 Once strict validation passes:
 

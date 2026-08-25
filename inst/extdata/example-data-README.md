@@ -71,20 +71,25 @@ are true of it as shipped:
   is a data CSV plus a column dictionary; the other three metadata levels are
   what `create_sdp()` generates for you, not something you can copy from here.
 - **Exactly one of its 14 dictionary rows carries any IRI.**
-  `NATURAL_ADULT_SPAWNERS` has `property_iri` and `unit_iri`; even that row
-  leaves `term_iri` and `entity_iri` blank, and the other 13 rows are
-  unannotated.
-- **It does not pass strict validation as shipped.** Build a package from the
-  173-row CSV, put this dictionary in `metadata/`, and
-  `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` fails with:
+  `NATURAL_ADULT_SPAWNERS` is fully annotated — `term_iri`, `property_iri`,
+  `entity_iri`, `unit_iri`, and `term_type` — and the other 13 rows are
+  unannotated. Its `entity_iri` is `smn:Population`, **not** the
+  `gcdfo:ConservationUnit` the 30-row demo uses: this slice keys on `POP_ID`,
+  which is a finer grain than a CU.
+- **Its one measurement row now passes strict validation** (2026-08). Build a
+  package from the 173-row CSV, put this dictionary in `metadata/`, fill the
+  `MISSING METADATA:` placeholders `create_sdp()` writes into `dataset.csv` and
+  `tables.csv`, and `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`
+  passes. Until then it does not: strict mode is the final gate, and the
+  placeholders are yours to resolve.
 
-  ```
-  Measurement columns require term_iri; missing in rows 8.
-  ```
-
-  That is the expected state of a *starter*: strict mode is the final gate, and
-  semantic review is what gets you through it. Do not read the example as a
-  validated package, and do not work around the failure — fill the IRIs.
+  Read that as a *starter that clears the SDP gate*, not as a publishable
+  package. **Strict validation is not the publication gate.** The KNB/EML path
+  additionally requires a reviewed closure — `metadata/semantic_vocabulary.csv`
+  and `reviewed_semantic_selections.csv` — plus `metadata/eml-mapping.yml`, none
+  of which strict validation looks at. `scripts/build-fraser-coho-knb-rehearsal.R`
+  in the source repository builds this example all the way to a clean KNB
+  test-node dry run, and is the worked reference for that distinction.
 - **No method or protocol binding ships with it.** `ESTIMATE_METHOD` varies
   from row to row in the data, but nothing here carries a `protocol_iri` and
   nothing declares the column as `sosa:usedProcedure`. `create_sdp()` does
