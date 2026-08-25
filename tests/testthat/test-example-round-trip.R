@@ -81,11 +81,13 @@ test_that("the shipped example metadata CSVs are well-formed", {
 test_that("the fuller example with its starter dictionary validates as documented", {
   skip_if_not_installed("readr")
 
-  # The 173-row example is documented as a STARTER, not a finished package:
-  # lenient passes, and strict fails with exactly one missing measurement
-  # term_iri (see inst/extdata/example-data-README.md). Pinning the exact
-  # failure catches drift in either direction -- a new failure appearing, or
-  # the documented one silently changing shape.
+  # The 173-row example is documented as a STARTER whose one measurement row is
+  # fully annotated (see inst/extdata/example-data-README.md). Lenient passes.
+  # Strict fails -- but on the `MISSING METADATA:` placeholders `create_sdp()`
+  # writes, NOT on a missing measurement IRI, and it passes once those are
+  # resolved. Pinning both halves catches drift in either direction: an IRI
+  # regression would reintroduce the term_iri failure, and a placeholder
+  # regression would break the second half.
   tmp <- withr::local_tempdir()
   fuller <- readr::read_csv(
     example_extdata_path("nuseds-fraser-coho-2023-2024.csv"),
@@ -111,11 +113,58 @@ test_that("the fuller example with its starter dictionary validates as documente
     validate_salmon_datapackage(pkg_path, require_iris = FALSE)
   )))
 
-  expect_error(
+  strict_error <- expect_error(
     suppressMessages(suppressWarnings(
       validate_salmon_datapackage(pkg_path, require_iris = TRUE)
-    )),
-    "Measurement columns require term_iri; missing in rows 8.",
-    fixed = TRUE
+    ))
   )
+  # The remaining strict failures are placeholders the reviewer must resolve,
+  # not unresolved semantics.
+  expect_match(
+    conditionMessage(strict_error),
+    "unresolved review placeholder"
+  )
+  expect_false(
+    grepl(
+      "Measurement columns require term_iri",
+      conditionMessage(strict_error),
+      fixed = TRUE
+    )
+  )
+
+  # Resolving exactly the placeholders -- no semantic edits -- takes the shipped
+  # example through the strict gate. This is what makes it the gold standard.
+  dataset_meta <- readr::read_csv(
+    file.path(pkg_path, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    na = ""
+  )
+  dataset_meta$description <- "Fraser coho escapement estimates, 2023-2024."
+  dataset_meta$creator <- "Example Program"
+  dataset_meta$contact_name <- "Example Contact"
+  dataset_meta$contact_email <- "contact@example.org"
+  dataset_meta$license <- "CC-BY-4.0"
+  readr::write_csv(
+    dataset_meta,
+    file.path(pkg_path, "metadata", "dataset.csv"),
+    na = ""
+  )
+
+  table_meta <- readr::read_csv(
+    file.path(pkg_path, "metadata", "tables.csv"),
+    col_types = readr::cols(.default = readr::col_character()),
+    na = ""
+  )
+  table_meta$description <- "One row per population and analysis year."
+  table_meta$observation_unit <- "Population-year escapement observation."
+  table_meta$observation_unit_iri <- "https://w3id.org/smn/Observation"
+  readr::write_csv(
+    table_meta,
+    file.path(pkg_path, "metadata", "tables.csv"),
+    na = ""
+  )
+
+  expect_no_error(suppressMessages(suppressWarnings(
+    validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+  )))
 })

@@ -3,6 +3,36 @@ metasalmon (development version)
 
 ### Fixed
 
+* **The 173-row Fraser coho example now reaches a KNB deposit plan.** Its one
+  measurement row, `NATURAL_ADULT_SPAWNERS`, was missing `term_iri`,
+  `entity_iri` and `term_type`; all three are now filled in the shipped starter
+  dictionary `inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv`.
+
+  `entity_iri` is **`smn:Population`**, not the `gcdfo:ConservationUnit` the
+  30-row demo uses. That is not a copy of the smaller example with a different
+  spelling: this slice keys on `POP_ID`, which is a finer grain than a
+  Conservation Unit, so annotating it as a CU would have been wrong at the row
+  level while passing every check the package can run.
+
+  `term_type` is the half of this that a reader should not skip. Strict
+  validation — `validate_salmon_datapackage(require_iris = TRUE)`, which the
+  docs call the final gate — passed with `term_type` empty; `write_eml_from_sdp()`
+  then refused the same package, because EML annotation requires the term to be
+  declared `owl_class` or `skos_concept`
+  (`.ms_eml_measurement_term_annotation()`). **Strict validation is not the
+  publication gate**, and nothing said so. Filed as backlog #117 with the two
+  ways to reconcile them; the vignette and the example README now both state the
+  distinction rather than implying there is one gate.
+
+  The example's own README claimed the dictionary "does not pass strict
+  validation as shipped" and pinned the exact failure text. That claim was true
+  when written and became false with this change, so it is corrected rather than
+  left to mislead. The two tests that encoded the same stale state
+  (`test-example-round-trip.R`, `test-example-data.R`) are updated — the
+  round-trip test now pins both halves of the new behaviour, including that
+  resolving *only* the `MISSING METADATA:` placeholders carries the shipped
+  example through the strict gate.
+
 * **One value, one rendering: canonical text is now coerced once, at render
   time, per type.** Brett's 2026-08-24 ruling on hub [Q12] closes backlog #93
   items 3 and 5 — *"fix all three by coercing them once at render time per

@@ -150,13 +150,51 @@ test_that("Fraser coho example uses improved deterministic semantic queries for 
   expect_equal(unique(estimate$search_role), "constraint")
   expect_equal(unique(estimate$search_query), "abundance data type")
 
+  # `entity_iri` is resolved in the shipped dictionary, so `suggest_semantics()`
+  # correctly declines to shortlist it: a resolved target is not a target.
   natural_entity <- dplyr::filter(
     semantic_suggestions,
     .data$column_name == "NATURAL_ADULT_SPAWNERS",
     .data$target_scope == "column",
     .data$target_sdp_field == "entity_iri"
   )
-  expect_equal(unique(natural_entity$search_query), "population")
+  expect_equal(nrow(natural_entity), 0L)
+
+  # The query-derivation logic this test exists to pin only runs on an
+  # *unresolved* field, so exercise it against the pre-review state a user
+  # actually starts from.
+  unresolved_dict <- dict
+  unresolved_dict$entity_iri[
+    unresolved_dict$column_name == "NATURAL_ADULT_SPAWNERS"
+  ] <- NA_character_
+  unresolved_suggestions <- attr(
+    suggest_semantics(
+      NULL,
+      unresolved_dict,
+      codes = codes,
+      sources = "ols",
+      max_per_role = 1,
+      search_fn = function(query, role, sources) {
+        tibble::tibble(
+          label = paste("candidate", role),
+          iri = paste0("https://example.org/", role),
+          source = "ols",
+          ontology = "demo",
+          role = role,
+          match_type = "label_partial",
+          definition = ""
+        )
+      }
+    ),
+    "semantic_suggestions"
+  )
+  unresolved_entity <- dplyr::filter(
+    unresolved_suggestions,
+    .data$column_name == "NATURAL_ADULT_SPAWNERS",
+    .data$target_scope == "column",
+    .data$target_sdp_field == "entity_iri"
+  )
+  expect_equal(unique(unresolved_entity$search_query), "population")
 
   natural_constraint <- dplyr::filter(
     semantic_suggestions,
