@@ -39,11 +39,30 @@ jobs:
       # differently is what tests that claim instead of assuming it.
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
+      # Read by test-parity-register-guard.R; see the checkout step below.
+      METASALMONPY_PATH: ${{ github.workspace }}/.metasalmonpy-sibling
 
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # `test-parity-register-guard.R` compares this repo's register against
+      # metasalmonpy's and SKIPS when the sibling is absent -- which it always
+      # was here, so the guard has never actually run in CI and drift stayed
+      # invisible while every run went green. Checking the sibling out lets it
+      # run for real. Both repositories are public, so the default token reads
+      # it; if metasalmonpy ever goes private this step fails loudly rather
+      # than returning the guard to a silent skip.
+      #
+      # RETIREMENT CONDITION: drop this step and the env var below if the two
+      # registers ever stop being independently edited files.
+      - name: Check out metasalmonpy so the register guard can run
+        uses: actions/checkout@v4
+        with:
+          repository: salmon-data-mobilization/metasalmonpy
+          path: .metasalmonpy-sibling
+          ref: main
 
       # The byte-reproducibility guards compare an ordering under C collation
       # against a contrasting locale, and skip when none is installed. A default
