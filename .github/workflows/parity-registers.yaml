@@ -1,0 +1,105 @@
+name: parity-registers
+
+# Why this workflow exists.
+#
+# `tests/testthat/test-parity-register-guard.R` compares this repo's
+# knowledge/parity-deviations.md against metasalmonpy's PARITY.md. It is a real
+# guard and it works — but it needs BOTH repositories on disk, and no other
+# workflow checks out the sibling. So in CI it **skips**. It skips loudly and
+# honestly, which is the right behaviour for a test that cannot run, but the
+# practical effect was that register drift was invisible to CI by construction:
+# a one-sided row could sit on main indefinitely and every run stayed green.
+#
+# That is not hypothetical. Row 59 was added here on 2026-08-25 and its twin
+# never landed in metasalmonpy; nothing caught it until someone ran the checker
+# by hand on a machine that happened to have both checkouts side by side. Green
+# CI was never evidence the registers agreed.
+#
+# This job checks out both and runs the comparison directly, so drift fails a
+# check instead of waiting for a coincidence.
+#
+# RETIREMENT CONDITION: delete this workflow if the two registers stop being
+# separate files -- if they are ever generated from one source, or if
+# metasalmonpy's PARITY.md becomes a rendering of the hub register rather than
+# an independently edited twin. Until then the two can disagree, so something
+# has to check.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-registers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  registers-agree:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out metasalmon
+        uses: actions/checkout@v4
+        with:
+          path: metasalmon
+
+      # Both repositories are public, so the default token can read the sibling.
+      # If metasalmonpy is ever made private this step fails loudly rather than
+      # silently skipping -- which is the failure mode this workflow exists to
+      # end, so do not "fix" it by making the step continue-on-error.
+      - name: Check out metasalmonpy
+        uses: actions/checkout@v4
+        with:
+          repository: salmon-data-mobilization/metasalmonpy
+          path: metasalmonpy
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Both registers are present
+        run: |
+          set -euo pipefail
+          test -f metasalmon/knowledge/parity-deviations.md
+          test -f metasalmonpy/PARITY.md
+          echo "hub rows:    $(grep -cE '^\| [0-9]+ \|' metasalmon/knowledge/parity-deviations.md)"
+          echo "mirror rows: $(grep -cE '^\| [0-9]+ \|' metasalmonpy/PARITY.md)"
+
+      - name: Registers agree
+        run: |
+          set -euo pipefail
+          python3 metasalmon/scripts/check-parity-registers.py \
+            metasalmon/knowledge/parity-deviations.md \
+            metasalmonpy/PARITY.md
+
+      # The check above is the gate. This step additionally proves the R guard
+      # *runs* rather than skipping -- a skipped test is green, which is how the
+      # gap arose in the first place.
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Install testthat
+        run: Rscript -e 'install.packages("testthat")'
+      - name: The R guard runs, and does not skip
+        working-directory: metasalmon
+        env:
+          METASALMONPY_PATH: ${{ github.workspace }}/metasalmonpy
+        run: |
+          set -euo pipefail
+          Rscript -e '
+            res <- testthat::test_file(
+              "tests/testthat/test-parity-register-guard.R",
+              reporter = "silent"
+            )
+            df <- as.data.frame(res)
+            cat("passed:", sum(df$passed), " failed:", sum(df$failed),
+                " skipped:", sum(df$skipped), "\n")
+            if (sum(df$failed) > 0) stop("the parity register guard failed")
+            if (sum(df$skipped) > 0) {
+              stop("the guard SKIPPED in CI -- it is not actually checking anything, which is the exact condition this workflow exists to prevent")
+            }
+          '
