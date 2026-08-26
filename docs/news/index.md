@@ -1,5 +1,409 @@
 # Changelog
 
+## metasalmon (development version)
+
+### Added
+
+- **The semantic review no longer has to leave R.**
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md),
+  [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md),
+  [`reject_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+  and
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md),
+  plus the
+  [`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md)
+  /
+  [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
+  accessors, make the most consequential decision in the pipeline
+  scriptable and re-runnable. Roadmap stream S5; backlog **\#74** (and
+  the accessor half of **\#60**).
+
+  Until now the documented workflow was: open
+  `metadata/column_dictionary.csv` in a spreadsheet, read
+  `semantic_suggestions.csv` as a shortlist, copy an IRI across by hand.
+  The only record of that decision was the mutated CSV — the one
+  unreproducible link in a chain that is otherwise byte-reproducible,
+  C-collated, hash-verified and guarded.
+
+  ``` r
+
+  review <- review_semantics(pkg_path)
+  review
+  #> ── spawners · spawner_count · variable ─────────────────────────────
+  #>    field:   column_dictionary.csv · term_iri
+  #>    current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+  #>
+  #>   [1] Spawner Abundance   smn   score 4.9
+  #>       The number of mature salmon returning to spawn in a stream.
+  #>       https://w3id.org/smn/SpawnerAbundance
+  #>       review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+
+  review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+  apply_sdp_semantics(pkg_path, review)
+  ```
+
+  **The console prints the exact call and the user pastes it. That paste
+  is the audit trail**, and it is why there is no interactive prompt, no
+  menu and no TUI: a
+  [`readline()`](https://rdrr.io/r/base/readline.html) loop would leave
+  the decision exactly as unreproducible as the spreadsheet it replaces.
+  Because the printed string is the contract rather than decoration, the
+  argument set is computed by *resolving* it — `table =` and
+  `code_value =` appear only when they are needed to make the call
+  address one slot — and the tests evaluate every printed line and
+  assert it produces the decision it claims. That test found two real
+  defects before release: a table-level slot printed
+  `accept_suggestion(review, "NA", "entity", …)`, naming a column that
+  does not exist, and a phantom `NA` row made an unrelated dictionary
+  slot print a spurious `table =`. Both came from one unguarded `==`
+  against a column that is legitimately `NA`.
+
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+  is **surgical and re-runnable**: it strips `REVIEW:` from decided
+  fields, clears rejected ones, leaves undecided slots untouched, and
+  does not touch the data CSV bytes. Applying the same review twice
+  produces identical bytes. The metadata CSVs,
+  `semantic_suggestions.csv` and the field entries `datapackage.json`
+  duplicates are installed as **one** transactional set through the
+  existing atomic write path — per-file atomicity is not enough here,
+  because the rule that would catch a CSV/descriptor drift
+  (`datapackage_consistent_with_csv_metadata`) is one of the dead rules
+  in `sdp.rules.yaml`, so nothing would detect a half-applied edit.
+
+  Two limits are documented rather than papered over. **A slot with no
+  candidate never appears in the queue** —
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  shows shortlists, not gaps — so a completed review can still fail
+  `require_iris = TRUE`; the validation report remains the authority.
+  And **free-text fields are still edited in the CSVs**;
+  `review_metadata()` and the `set_sdp_*()` setters are the next
+  milestone.
+
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  **never contacts a network or an LLM.** It reads suggestions that
+  already exist, and surfaces LLM review only when the suggestions were
+  generated with `llm_assess = TRUE`. A
+  [`stop()`](https://rdrr.io/r/base/stop.html)ing `find_terms` binding
+  is the sentinel that pins this.
+
+### Fixed
+
+- **A reviewed semantic decision is no longer overruled by the
+  unattended auto-apply heuristic.**
+  `apply_semantic_suggestions(strategy = "reviewed")` ran every accepted
+  row through `.ms_filter_auto_apply_suggestions()`, the lexical
+  compatibility gate that decides whether a *seeded* top-1 hit is safe
+  to write into a dictionary nobody has looked at. On the reviewed path
+  a human has read the definition and said yes, so the effect was that a
+  regex silently overruled the decision and the caller was told only
+  that some rows “did not meet the requested filters”. Found while
+  building
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md),
+  which would have dropped accepted terms for exactly this reason; the
+  unattended `strategy = "top"` path keeps the gate, which is the whole
+  reason the gate exists. Backlog **\#118**.
+
+### Changed
+
+- `_pkgdown.yml` gains a **Semantic Review (in R)** reference group, and
+  the `README` review workflow now names the R path first with the
+  spreadsheet path kept as the supported alternative.
+
+- **An existing but *empty* directory no longer requires
+  `overwrite = TRUE`.**
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  and
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  now write into a directory that exists and contains nothing, where
+  they previously aborted with “Directory … already exists.” `overwrite`
+  exists to authorize destroying something, and an empty directory has
+  nothing to destroy; demanding it for the ordinary
+  [`dir.create()`](https://rdrr.io/r/base/files2.html)-then-write shape
+  trained callers to pass `overwrite = TRUE` habitually, which is the
+  flag’s whole value gone.
+
+  **“Empty” is literal, and the definition is the substance of the
+  change.** It means `.ms_dir_entries()` returns nothing —
+  `list.files(all.files = TRUE, no.. = TRUE)` — so a dot-file, a stale
+  `.metasalmon-package` sentinel, or an empty `data/` subdirectory each
+  make the directory **non-empty**, and the `overwrite` gate applies to
+  them exactly as before. Emptiness is never recursive. Each of those
+  three is now pinned by its own test, alongside the unchanged behaviour
+  for a directory holding an ordinary file.
+
+  This adopts metasalmonpy’s guard order on Brett’s ruling of 2026-08-24
+  (“Go with the python implementation”), retiring
+  `knowledge/parity-deviations.md` row 54. The divergence is older than
+  the mirror’s parity claim: it arrived in metasalmonpy with its 0.1.6
+  alignment commit and metasalmon 0.1.6 already had the other order, so
+  the two sides have disagreed here since **before** the 0.1.6 claim was
+  made. It survived because **neither suite tested it** — R’s test used
+  a *non-empty* directory and the mirror did not test the case at all —
+  so a whole-suite parity run stayed green over it for four minor
+  versions. What the measurement added: both sides already computed the
+  *identical* notion of “empty” (`list(path.iterdir())` is the same
+  predicate), and only its position relative to the `overwrite` gate
+  differed. Of five directory shapes driven through both
+  implementations, exactly one cell disagreed.
+
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  carries its own earlier copy of the gate — deliberately, so a doomed
+  call never spends a retrieval pass or an LLM request — and that copy
+  moved with the authoritative one. It had to: leaving it would have let
+  the coarser guard silently win, which is a fair warning about
+  duplicated checks and is now registered as row 60.
+
+### Fixed
+
+- **The 173-row Fraser coho example now reaches a KNB deposit plan.**
+  Its one measurement row, `NATURAL_ADULT_SPAWNERS`, was missing
+  `term_iri`, `entity_iri` and `term_type`; all three are now filled in
+  the shipped starter dictionary
+  `inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv`.
+
+  `entity_iri` is **`smn:Population`**, not the `gcdfo:ConservationUnit`
+  the 30-row demo uses. That is not a copy of the smaller example with a
+  different spelling: this slice keys on `POP_ID`, which is a finer
+  grain than a Conservation Unit, so annotating it as a CU would have
+  been wrong at the row level while passing every check the package can
+  run.
+
+  `term_type` is the half of this that a reader should not skip. Strict
+  validation — `validate_salmon_datapackage(require_iris = TRUE)`, which
+  the docs call the final gate — passed with `term_type` empty;
+  [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  then refused the same package, because EML annotation requires the
+  term to be declared `owl_class` or `skos_concept`
+  (`.ms_eml_measurement_term_annotation()`). **Strict validation is not
+  the publication gate**, and nothing said so. Filed as backlog
+  [\#117](https://github.com/salmon-data-mobilization/metasalmon/issues/117)
+  with the two ways to reconcile them; the vignette and the example
+  README now both state the distinction rather than implying there is
+  one gate.
+
+  The example’s own README claimed the dictionary “does not pass strict
+  validation as shipped” and pinned the exact failure text. That claim
+  was true when written and became false with this change, so it is
+  corrected rather than left to mislead. The two tests that encoded the
+  same stale state (`test-example-round-trip.R`, `test-example-data.R`)
+  are updated — the round-trip test now pins both halves of the new
+  behaviour, including that resolving *only* the `MISSING METADATA:`
+  placeholders carries the shipped example through the strict gate.
+
+- **One value, one rendering: canonical text is now coerced once, at
+  render time, per type.** Brett’s 2026-08-24 ruling on hub \[Q12\]
+  closes backlog
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  items 3 and 5 — *“fix all three by coercing them once at render time
+  per type”* — and the shape is ported from metasalmonpy, whose
+  `sssom._canonical_bytes()` builds its `cells` once and indexes both
+  the sort key and the row writer into it.
+
+  `.ms_sssom_canonical_bytes()` took its sort key through
+  [`as.character()`](https://rdrr.io/r/base/character.html) and its
+  emitted bytes through
+  [`as.matrix()`](https://rdrr.io/r/base/matrix.html) inside
+  [`apply()`](https://rdrr.io/r/base/apply.html) — which renders through
+  [`format()`](https://rdrr.io/r/base/format.html). Row *order* and row
+  *content* could therefore disagree about the same cell.
+  `mapping_date`, `publication_date` and `review_date` are declared
+  SSSOM columns, so an in-memory mapping set with a typed date column
+  hit it directly: given `mapping_date` values `1000-01-01` and
+  `0999-01-01`, the function ordered by the unpadded spellings (where
+  `"1000-01-01"` sorts *before* `"999-01-01"`, because `"1" < "9"`) and
+  emitted the padded ones — a canonical table not sorted by its own
+  visible contents.
+
+  Two things it turned out to be worse than, both fixed by the same
+  change:
+
+  - **It needs no pre-1000 date at all.**
+    [`format()`](https://rdrr.io/r/base/format.html) on a data-frame
+    column is *vector-wise*: it picks one notation for the whole column.
+    A `confidence` of `1.5` was emitted as `1.5e+00` merely because
+    another row held `100000` — while sorting as `1.5`. A cell’s
+    canonical bytes were a function of its neighbours.
+  - **The key/content disagreement is different on each platform.**
+    [`format()`](https://rdrr.io/r/base/format.html) pads `%Y` on macOS
+    and glibc does not, so macOS emitted padded bytes in an unpadded
+    order while Linux was self-consistent and unpadded. A
+    single-platform run cannot see the whole defect.
+
+  `.ms_canonical_value_tokens()` had the same split at smaller blast
+  radius
+  ([\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  item 5): its `original` fallback took `trimws(as.character(x))`, so a
+  `Date` column declared `value_type = "string"` keyed `999-01-01` while
+  the `date` branch beside it keyed `0999-01-01` — and while the CSV
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  produces from that same column reads `0999-01-01`. An in-memory frame
+  disagreed with its own written package about whether a data value was
+  listed in `codes.csv`.
+
+  Both now route through one new internal helper,
+  `.ms_canonical_character()` (`R/platform-time.R`), which renders a
+  value **once**, choosing the renderer by type: character is identity
+  (`.ms_iso_character()` would rewrite a user’s `psc:12-34-56` into
+  `0012-34-56`), `Date` and `POSIXct` are padded, and everything else
+  takes element-wise
+  [`as.character()`](https://rdrr.io/r/base/character.html) so no cell
+  can be reshaped by another row.
+
+  **Observable byte changes, stated plainly.** Only an in-memory SSSOM
+  mapping set carrying a non-character column is affected — a set read
+  from a `.sssom.tsv` file is all character, where every renderer
+  agrees, so no existing golden hash moved and none was regenerated. For
+  such a set: `confidence` `1.5` now emits `1.5` rather than `1.5e+00`;
+  `100000` emits `1e+05` rather than `1.0e+05`; a pre-1000
+  `mapping_date` emits its padded ISO form on every platform, and rows
+  sort by that same form. The `sha256` recorded in
+  `metadata/semantic/mapping-sets.json` moves with the bytes, as it
+  should.
+
+  **`.ms_iso_date_columns()` is deliberately unchanged, and the
+  asymmetry is the point.** It sits on the
+  [`readr::write_csv()`](https://readr.tidyverse.org/reference/write_delim.html)
+  path, whose instant output is already correct, so
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  item 1 ruled that padding a `POSIXct` there would corrupt a path that
+  was never broken. `.ms_canonical_character()` sits on the
+  [`as.character()`](https://rdrr.io/r/base/character.html) path, where
+  the year is unpadded for both types, so it pads both — which is also
+  what metasalmonpy’s `_cell()` does, since
+  [`str()`](https://rdrr.io/r/utils/str.html) is pure Python and padded
+  for `date` and `datetime` alike. Same package, opposite rulings for
+  the same type, both correct; a regression test pins that the second
+  did not leak into the first.
+
+- **Backlog
+  [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93)
+  item 4 was investigated and found unreachable, not fixed.** The item
+  read that
+  [`jsonlite::write_json()`](https://jeroen.r-universe.dev/jsonlite/reference/read_json.html)
+  pads a `Date` while
+  [`readr::write_csv()`](https://readr.tidyverse.org/reference/write_delim.html)
+  does not, so one
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  call could emit `0999-01-01` into `datapackage.json` and `999-01-01`
+  into `metadata/dataset.csv`. Item 2’s 2026-08-21 fix put
+  `.ms_iso_date_columns()` inside `.ms_align_cols()`, and every frame
+  that reaches the descriptor is aligned — traced across the whole
+  descriptor builder in both assembly sites: no
+  `created`/`sources`/custom-field passthrough, field objects built from
+  the dictionary alone, no resource value copied into the descriptor. No
+  `Date` survives to either writer. A regression test asserts the two
+  files *agree* rather than asserting the coercion, so it still fails if
+  a future descriptor key starts carrying a typed value; it was verified
+  RED by removing the coercion.
+
+  Two corrections to the item’s premise came out of the trace, both
+  measured. jsonlite 2.0.0 serializes a `Date` through `format.Date`,
+  which delegates `%Y` to the platform’s strftime — so on glibc jsonlite
+  emits `999-01-01` too, and item 4 was a **macOS-only** split even
+  before item 2 closed it. And the same *shape* of defect is alive for
+  `POSIXct`, which `.ms_align_cols()` deliberately leaves typed: a
+  `temporal_start` of `as.POSIXct("0999-06-05 13:45:30", tz = "UTC")` is
+  written as `0999-06-05 13:45:30` in `datapackage.json` and
+  `0999-06-05T13:45:30Z` in `metadata/dataset.csv`. That is a *format*
+  disagreement rather than a padding one, deciding it needs a ruling on
+  which spelling a descriptor instant takes, and metasalmonpy has the
+  same disagreement plus an unpadded CSV side. Filed as backlog
+  **\#115** rather than folded into this change.
+
+### Internal
+
+- **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)’s
+  deterministic constraint and statistical-modifier prefill is now
+  pinned.** No behaviour changed here — Brett ruled on 2026-08-24 (“Yeah
+  lets go the R way”) that this side was correct and metasalmonpy moved
+  — but the *reason* the divergence survived was that neither suite
+  pinned the positive case. Both had asserted several times over that
+  the two qualifier slots stay **empty** when the evidence gate rejects,
+  and neither asserted they ever fill.
+  `tests/testthat/test-package-helpers.R` now drives a
+  `mean_wild_spawner_count` column through
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  and asserts both slots fill **and carry the `REVIEW:` marker**; the
+  marking is asserted rather than assumed, because review-visibility is
+  the property the ruling turned on. Retires
+  `knowledge/parity-deviations.md` row 57.
+
+  Two findings worth carrying: this package’s “no role restriction” is
+  true of the **deterministic path only** — the LLM path restricts to
+  the same four core roles the mirror used everywhere — and the two
+  implementations spell the `REVIEW:` marker differently (`REVIEW:`
+  here, `REVIEW:` there). The second is inert to behaviour, invisible to
+  every test on either side, and now registered as row 61 with
+  [Q18](https://salmon-data-mobilization.github.io/metasalmon/news/knowledge/questions.md)
+  open on it.
+
+- **The role-contract guard now checks all seven surfaces in one file,
+  and each one is demonstrated to fail.** `AGENTS.md` has said since
+  2026-08-18 that the coverage was split —
+  `tests/testthat/test-role-contract-guard.R` claiming the first six,
+  `role_boost` guarded over in
+  `tests/testthat/test-smn-outranks-gcdfo.R` — so “did I reach every
+  layer” had two answers and neither was complete. metasalmonpy’s 0.4.0
+  parity work consolidated its own copy first
+  (`tests/test_role_contract_guard.py`), and this is that design ported
+  back under Brett’s 2026-08-17 ruling that the mirror is not
+  automatically the follower.
+
+  The guard is now section-headed `SURFACE 1` … `SURFACE 7`, so a
+  missing layer is legible in the failure rather than only in the test
+  name. Two findings came out of doing it, and both are arguments for
+  demonstrating a guard rather than reading it:
+
+  - **Surface 5 was never checked here at all.** The deterministic
+    validators (`semantic-bundle-validators.R`) were listed in
+    `AGENTS.md` among the “first six” this file covered and were not
+    among them, so the honest figure was five, not six. Dropping an
+    evidence gate from `.ms_semantic_apply_bundle_validators()` removed
+    the only deterministic check between the model’s word and an IRI
+    written into the dictionary, and nothing failed. A new pair of tests
+    asserts each gated role (`method`, `statistical_modifier`,
+    `constraint`) has a validator that names it, that the dispatcher
+    calls it, that it raises its own `SEM_*` code, and that the
+    role-type veto is wired in.
+  - **[`sources_for_role()`](https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.md)
+    had no fall-through check.** metasalmonpy’s guard had one where R’s
+    did not; ported. A role that falls through to the generic source
+    list has no retrieval identity of its own, which is the shape of
+    failure that let `statistical_modifier` reach ranking with no source
+    preferences in the first place.
+
+  Each of the seven surfaces was broken in turn and the guard confirmed
+  RED for each; the demonstrations are in the pull request that
+  introduced this entry.
+
+  `role_boost` is read in place from `.ranking_profile_defaults()`
+  rather than hoisted to a package constant as metasalmonpy hoisted
+  `ROLE_BOOST`. Python hoisted because its table was an inlined dict
+  literal inside the scorer with nothing enumerable to assert against;
+  R’s is already a named list returned by the function that is the merge
+  base for the `ranking_profile` override system, and hoisting would
+  have created a second copy of the authority — the drift metasalmonpy
+  then needed an extra test to rule out. What did port is that extra
+  test: a pin that the `role_boost` table the guard enumerates is the
+  table `.score_and_rank_terms()` actually merges.
+
+  `tests/testthat/test-smn-outranks-gcdfo.R` keeps the smn-over-gcdfo
+  **margin**, which is its own subject, and no longer carries the
+  coverage check. Its header says so, and says why the margin assertions
+  that remain are not a second coverage check: they are scoped to roles
+  served by both sources, so they say nothing about
+  `statistical_modifier`.
+
+- **The `role_boost` comment in `.ranking_profile_defaults()` called it
+  the sixth surface of the role contract; it is the seventh.**
+  `AGENTS.md` counts `inst/extdata/ontology-preferences.csv` as the
+  sixth. The count was off by one in the comment, not in the contract,
+  and `AGENTS.md` had flagged it explicitly as a thing to fix in the
+  comment — an eighth surface arriving into a numbering ambiguity is how
+  the seventh went unnoticed. The 0.4.0 entry below inherited the wrong
+  number from that comment and carries a dated correction rather than a
+  silent edit.
+
 ## metasalmon 0.4.0
 
 Released 2026-08-24. Roadmap S3 makes a KNB deposit rehearsable against
@@ -289,8 +693,12 @@ the package’s own final gate, and semantic ranking puts `smn` above
   [\#93](https://github.com/salmon-data-mobilization/metasalmon/issues/93).
 
 - **A `datetime` observation dimension no longer rejects a valid
-  package.** Since 0.2.0 `.ms_sdp_observation_validate_data()` has read
-  resources through
+  package.** *(Correction, 2026-08-24: this entry reads as though R
+  found and fixed the defect first. metasalmonpy had fixed it seven days
+  earlier — it had deliberately mirrored the defect, then repaired it —
+  so R was the follower here. Recorded as parity row 55, which the entry
+  should have cited.)* Since 0.2.0 `.ms_sdp_observation_validate_data()`
+  has read resources through
   [`read_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_salmon_datapackage.md),
   which types each column from the dictionary, so a column declared
   `datetime` reaches the observation validators as a POSIXct rather than
@@ -456,9 +864,11 @@ the package’s own final gate, and semantic ranking puts `smn` above
   serves it from `smn` and `ols`, but
   `.ranking_profile_defaults()$role_boost` had no `statistical_modifier`
   entry, so the role was scored on base weight alone — the sixth surface
-  of the role contract, silently absent exactly as `AGENTS.md` warns. It
-  now carries `smn = 1.5, ols = 0.4`, and a new guard fails if any role
-  with ranking preferences lacks a `role_boost` entry.
+  of the role contract, silently absent exactly as `AGENTS.md` warns
+  \[corrected 2026-08-24: the **seventh** surface — this entry inherited
+  the off-by-one from the in-code comment, now fixed\]. It now carries
+  `smn = 1.5, ols = 0.4`, and a new guard fails if any role with ranking
+  preferences lacks a `role_boost` entry.
 
 - **SDP-extension IRI validation no longer accepts Unicode whitespace,
   and one predicate now owns the check.**
@@ -508,8 +918,12 @@ the package’s own final gate, and semantic ranking puts `smn` above
   verified by driving both writers over the same tree. Two smaller
   behaviour changes come with it: a `metasalmon_version` that is
   whitespace-only, or not a string at all, is now rejected rather than
-  accepted, which is what the decomposition validator and both Python
-  readers already did.
+  accepted, which is what the decomposition validator and one Python
+  reader already did. *(Correction, 2026-08-24: this entry shipped
+  saying “both Python readers”. The 0.4.0 parity audit measured it —
+  only one refused a non-string version, and metasalmonpy’s other reader
+  was fixed to match in its own 0.4.0. The claim was true of the
+  behaviour and wrong about how widely it already held.)*
 
   The ruling had been applied one artifact at a time, re-typing the same
   pair of writer strings each time — SSSOM in PR

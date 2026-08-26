@@ -1,7 +1,90 @@
 metasalmon (development version)
 --------------------------------
 
+### Added
+
+* **The semantic review no longer has to leave R.** `review_semantics()`,
+  `accept_suggestion()`, `reject_suggestion()` and `apply_sdp_semantics()`, plus
+  the `semantic_suggestions()` / `semantic_llm_assessments()` accessors, make
+  the most consequential decision in the pipeline scriptable and re-runnable.
+  Roadmap stream S5; backlog **#74** (and the accessor half of **#60**).
+
+  Until now the documented workflow was: open `metadata/column_dictionary.csv`
+  in a spreadsheet, read `semantic_suggestions.csv` as a shortlist, copy an IRI
+  across by hand. The only record of that decision was the mutated CSV — the
+  one unreproducible link in a chain that is otherwise byte-reproducible,
+  C-collated, hash-verified and guarded.
+
+  ```r
+  review <- review_semantics(pkg_path)
+  review
+  #> ── spawners · spawner_count · variable ─────────────────────────────
+  #>    field:   column_dictionary.csv · term_iri
+  #>    current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+  #>
+  #>   [1] Spawner Abundance   smn   score 4.9
+  #>       The number of mature salmon returning to spawn in a stream.
+  #>       https://w3id.org/smn/SpawnerAbundance
+  #>       review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+
+  review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+  apply_sdp_semantics(pkg_path, review)
+  ```
+
+  **The console prints the exact call and the user pastes it. That paste is the
+  audit trail**, and it is why there is no interactive prompt, no menu and no
+  TUI: a `readline()` loop would leave the decision exactly as unreproducible as
+  the spreadsheet it replaces. Because the printed string is the contract rather
+  than decoration, the argument set is computed by *resolving* it — `table =`
+  and `code_value =` appear only when they are needed to make the call address
+  one slot — and the tests evaluate every printed line and assert it produces
+  the decision it claims. That test found two real defects before release: a
+  table-level slot printed `accept_suggestion(review, "NA", "entity", …)`,
+  naming a column that does not exist, and a phantom `NA` row made an unrelated
+  dictionary slot print a spurious `table =`. Both came from one unguarded `==`
+  against a column that is legitimately `NA`.
+
+  `apply_sdp_semantics()` is **surgical and re-runnable**: it strips `REVIEW:`
+  from decided fields, clears rejected ones, leaves undecided slots untouched,
+  and does not touch the data CSV bytes. Applying the same review twice produces
+  identical bytes. The metadata CSVs, `semantic_suggestions.csv` and the field
+  entries `datapackage.json` duplicates are installed as **one** transactional
+  set through the existing atomic write path — per-file atomicity is not enough
+  here, because the rule that would catch a CSV/descriptor drift
+  (`datapackage_consistent_with_csv_metadata`) is one of the dead rules in
+  `sdp.rules.yaml`, so nothing would detect a half-applied edit.
+
+  Two limits are documented rather than papered over. **A slot with no candidate
+  never appears in the queue** — `review_semantics()` shows shortlists, not gaps
+  — so a completed review can still fail `require_iris = TRUE`; the validation
+  report remains the authority. And **free-text fields are still edited in the
+  CSVs**; `review_metadata()` and the `set_sdp_*()` setters are the next
+  milestone.
+
+  `review_semantics()` **never contacts a network or an LLM.** It reads
+  suggestions that already exist, and surfaces LLM review only when the
+  suggestions were generated with `llm_assess = TRUE`. A `stop()`ing
+  `find_terms` binding is the sentinel that pins this.
+
+### Fixed
+
+* **A reviewed semantic decision is no longer overruled by the unattended
+  auto-apply heuristic.** `apply_semantic_suggestions(strategy = "reviewed")`
+  ran every accepted row through `.ms_filter_auto_apply_suggestions()`, the
+  lexical compatibility gate that decides whether a *seeded* top-1 hit is safe
+  to write into a dictionary nobody has looked at. On the reviewed path a human
+  has read the definition and said yes, so the effect was that a regex silently
+  overruled the decision and the caller was told only that some rows "did not
+  meet the requested filters". Found while building `apply_sdp_semantics()`,
+  which would have dropped accepted terms for exactly this reason; the
+  unattended `strategy = "top"` path keeps the gate, which is the whole reason
+  the gate exists. Backlog **#118**.
+
 ### Changed
+
+* `_pkgdown.yml` gains a **Semantic Review (in R)** reference group, and the
+  `README` review workflow now names the R path first with the spreadsheet path
+  kept as the supported alternative.
 
 * **An existing but *empty* directory no longer requires `overwrite = TRUE`.**
   `write_salmon_datapackage()` and `create_sdp()` now write into a directory

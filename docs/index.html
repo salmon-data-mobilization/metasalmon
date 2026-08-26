@@ -166,6 +166,42 @@ concept schemes) while preserving your original data structure.
 <p><code><a href="reference/create_sdp.html">create_sdp()</a></code> is the main path. It writes the canonical <code>metadata/*.csv</code> files plus your <code>data/*.csv</code> tables, adds a short review checklist, writes prefilled semantic drafts directly into <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> only where target fields were blank, and keeps <code>semantic_suggestions.csv</code> as a fallback shortlist when you want more context or a better match. Code-level semantic seeding stays conservative by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run <code>validate_salmon_datapackage(pkg_path, require_iris = TRUE)</code> to catch package/data/codes mismatches in one pass. In interactive use <code><a href="reference/create_sdp.html">create_sdp()</a></code> can also mention an available package update; set <code>check_updates = FALSE</code> to skip that check.</p>
 </div>
 <div class="section level2">
+<h2 id="review-the-semantics-in-r-not-in-a-spreadsheet">Review the semantics in R, not in a spreadsheet<a class="anchor" aria-label="anchor" href="#review-the-semantics-in-r-not-in-a-spreadsheet"></a>
+</h2>
+<p><code><a href="reference/create_sdp.html">create_sdp()</a></code> seeds draft <code>REVIEW:</code>-prefixed IRIs. You can review them without leaving R, and — this is the point — the review becomes an ordinary script you can re-run, diff, and hand to someone else:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/review_semantics.html">review_semantics</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
+<span><span class="va">review</span></span>
+<span><span class="co">#&gt; ── spawners · spawner_count · variable ────────────────────────────────</span></span>
+<span><span class="co">#&gt;    field:   column_dictionary.csv · term_iri</span></span>
+<span><span class="co">#&gt;    current: REVIEW: https://w3id.org/smn/SpawnerAbundance</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt;   [1] Spawner Abundance   smn   score 4.9</span></span>
+<span><span class="co">#&gt;       The number of mature salmon returning to spawn in a stream.</span></span>
+<span><span class="co">#&gt;       https://w3id.org/smn/SpawnerAbundance</span></span>
+<span><span class="co">#&gt;       review &lt;- accept_suggestion(review, "spawner_count", "variable", rank = 1)</span></span>
+<span><span class="co">#&gt;</span></span>
+<span><span class="co">#&gt;   [2] Escapement   smn   score 3.2</span></span>
+<span><span class="co">#&gt;       Fish that escape the fishery and reach the spawning grounds.</span></span>
+<span><span class="co">#&gt;       https://w3id.org/smn/Escapement</span></span>
+<span><span class="co">#&gt;       review &lt;- accept_suggestion(review, "spawner_count", "variable", rank = 2)</span></span></code></pre></div>
+<p>The console prints the <strong>exact call that decides each candidate</strong>. Paste it into your script — that paste <em>is</em> the audit trail. There is no interactive prompt, deliberately: a prompt would make the decision as unreproducible as the spreadsheet it replaces.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/accept_suggestion.html">accept_suggestion</a></span><span class="op">(</span><span class="va">review</span>, <span class="st">"spawner_count"</span>, <span class="st">"variable"</span>, rank <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/accept_suggestion.html">reject_suggestion</a></span><span class="op">(</span><span class="va">review</span>, <span class="st">"gear_code"</span>, <span class="st">"variable"</span>,</span>
+<span>                            reason <span class="op">=</span> <span class="st">"no candidate describes gear type"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/apply_sdp_semantics.html">apply_sdp_semantics</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="va">review</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> strips the <code>REVIEW:</code> prefix from decided fields, clears rejected ones, leaves undecided slots untouched, records the decision in <code>semantic_suggestions.csv</code>, and <strong>does not touch your data CSV bytes</strong>. Running it twice produces identical bytes.</p>
+<p>Two limits worth knowing before you rely on it:</p>
+<ul>
+<li>A slot with <strong>no</strong> candidate never appears in the queue. <code><a href="reference/review_semantics.html">review_semantics()</a></code> shows shortlists, not gaps, so a package can be fully reviewed and still fail <code>require_iris = TRUE</code>. Read the validation report, not just the queue.</li>
+<li>Free-text fields (<code>description</code>, <code>creator</code>, <code>contact_email</code>, <code>license</code>, …) are still edited in the CSVs. Named setters and a gaps report are the next milestone.</li>
+</ul>
+<p>Reviewing in Excel still works and remains supported; the R path is now the recommended one because it leaves a record of <em>why</em> each IRI was chosen.</p>
+</div>
+<div class="section level2">
 <h2 id="bundled-nuseds-example">Bundled NuSEDS Example<a class="anchor" aria-label="anchor" href="#bundled-nuseds-example"></a>
 </h2>
 <p>The default quickstart and get-started flow use <code>nuseds-fraser-coho-2023-2024.csv</code>, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.</p>
@@ -192,7 +228,7 @@ concept schemes) while preserving your original data structure.
 <h2 id="package-native-llm-semantic-review-optional">Package-native LLM semantic review (optional)<a class="anchor" aria-label="anchor" href="#package-native-llm-semantic-review-optional"></a>
 </h2>
 <p>If you want an LLM to judge the shortlisted semantic matches directly from R, keep the deterministic search path and add an opt-in review pass:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">context_files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"column_dictionary.csv"</span><span class="op">)</span>,</span>
 <span>  <span class="st">"README.md"</span>,</span>
@@ -223,17 +259,17 @@ concept schemes) while preserving your original data structure.
 <p>For the full workflow across <code>dataset.csv</code>, <code>tables.csv</code>, <code>column_dictionary.csv</code>, <code>codes.csv</code>, and the post-review EDH rebuild, use the <a href="https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html">LLM Review With Context Files</a> guide.</p>
 <p>The quickstart path does not require an API key. Only set up one of these providers when you want <code>create_sdp(..., llm_assess = TRUE)</code> or <code>suggest_semantics(..., llm_assess = TRUE)</code>.</p>
 <p>For DFO internal users on the internal network or VPN, open <a href="https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/" class="external-link uri">https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/</a>, click the user icon in the bottom left, open <strong>Settings</strong>, click <strong>Show</strong> next to <strong>API Keys</strong>, and copy the key value. Then run:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">CHAPI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p><code>chapi</code> defaults to <code>ollama2.mistral:7b</code> and <code>https://chapi-dev.intra.azure.cloud.dfo-mpo.gc.ca/api</code>. Optional overrides are <code>CHAPI_MODEL</code> and <code>CHAPI_BASE_URL</code>. <code>gpt-oss:latest</code> is also supported, but it can be slower to warm up and now gets a longer automatic timeout.</p>
 <p>For external users, OpenRouter is the easiest free option:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">OPENROUTER_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p><code>llm_provider = "openrouter"</code> defaults to <code>openrouter/free</code>.</p>
 <p>If you already have OpenAI API credits, use:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/file.edit.html" class="external-link">file.edit</a></span><span class="op">(</span><span class="st">"~/.Renviron"</span><span class="op">)</span></span>
 <span><span class="va">OPENAI_API_KEY</span><span class="op">=</span><span class="st">"paste key here"</span></span></code></pre></div>
 <p>Then pass an OpenAI model explicitly, for example <code>llm_model = "gpt-4.1-mini"</code>.</p>
@@ -245,7 +281,7 @@ concept schemes) while preserving your original data structure.
 <ol style="list-style-type: decimal">
 <li>Run <code>create_sdp(...)</code> to create the Salmon Data Package.</li>
 <li>If you want semantic review, set <code>llm_assess = TRUE</code>.</li>
-<li>Open <code>README-review.txt</code>, then review <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> first. Those files already contain the prefilled semantic values you are actually finalizing.</li>
+<li>Review the seeded IRIs. Preferred: <code>review_semantics(pkg_path)</code> in the console, then paste the printed <code><a href="reference/accept_suggestion.html">accept_suggestion()</a></code> / <code><a href="reference/accept_suggestion.html">reject_suggestion()</a></code> calls into a script and finish with <code>apply_sdp_semantics(pkg_path, review)</code>. Alternative: open <code>README-review.txt</code> and edit <code>metadata/column_dictionary.csv</code> and <code>metadata/tables.csv</code> in a spreadsheet.</li>
 <li>For any prefilled or <code>REVIEW:</code>-prefixed IRI, click through and read the term definition before keeping it.</li>
 <li>Use <code>semantic_suggestions.csv</code> only as a fallback shortlist if you are unsure or want a better match.</li>
 <li>If no candidate fits, request a new term instead of forcing a bad match:
@@ -262,7 +298,7 @@ concept schemes) while preserving your original data structure.
 <li>For KNB, add the reviewed <code>metadata/eml-mapping.yml</code> sidecar, generate schema-valid EML 2.2.0 with <code>write_eml_from_sdp(pkg_path)</code>, and inspect the credential-free restricted-review plan with <code>publish_sdp_to_knb(pkg_path, public = FALSE, dry_run = TRUE, representation = "expanded")</code>. A live private review still creates persistent production objects; it verifies authenticated exact readback and anonymous non-disclosure, and explicitly disables DataONE peer replication so the restricted bytes remain KNB-only. The plan contains the original data files plus each validated canonical SDP artifact as a named object with its package-relative path. No ZIP is required, and the KNB-specific EML mapping and publication receipts remain local. KNB has no separate server-side draft state, and metasalmon does not mint a DOI. DOI minting and public release are a later, per-metadata-version decision in KNB. Referenced vocabulary rows labelled as review candidates are blocked; the transformation workflow must separately pin and verify the governed vocabulary release. Corrections use a new sidecar <code>revision_key</code> and the preceding verified manifest, preserving the KNB series instead of overwriting immutable objects.</li>
 <li>Publish/share only after the <code>REVIEW:</code> markers are gone and validation passes; send the whole package folder, not individual files.</li>
 </ol>
-<p>In other words: <strong>create -&gt; review in Excel -&gt; reload/check gaps -&gt; remove <code>REVIEW:</code> markers -&gt; validate -&gt; build the required export -&gt; dry-run -&gt; publish</strong>.</p>
+<p>In other words: <strong>create -&gt; review (in R, or in Excel) -&gt; reload/check gaps -&gt; remove <code>REVIEW:</code> markers -&gt; validate -&gt; build the required export -&gt; dry-run -&gt; publish</strong>.</p>
 </div>
 <div class="section level2">
 <h2 id="who-is-this-for">Who Is This For?<a class="anchor" aria-label="anchor" href="#who-is-this-for"></a>
@@ -308,7 +344,7 @@ concept schemes) while preserving your original data structure.
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Install from GitHub</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"remotes"</span><span class="op">)</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"salmon-data-mobilization/metasalmon"</span><span class="op">)</span></span></code></pre></div>
@@ -445,7 +481,7 @@ Development setup and package structure
 </summary><div class="section level3">
 <h3 id="installation-for-development">Installation for Development<a class="anchor" aria-label="anchor" href="#installation-for-development"></a>
 </h3>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"devtools"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span>, <span class="st">"knitr"</span>, <span class="st">"rmarkdown"</span>,</span>
 <span>                   <span class="st">"tibble"</span>, <span class="st">"readr"</span>, <span class="st">"jsonlite"</span>, <span class="st">"cli"</span>, <span class="st">"rlang"</span>, <span class="st">"dplyr"</span>,</span>
 <span>                   <span class="st">"tidyr"</span>, <span class="st">"purrr"</span>, <span class="st">"withr"</span>, <span class="st">"frictionless"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -453,15 +489,15 @@ Development setup and package structure
 <div class="section level3">
 <h3 id="build-and-check">Build and Check<a class="anchor" aria-label="anchor" href="#build-and-check"></a>
 </h3>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/build_vignettes.html" class="external-link">build_vignettes</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="ex">Rscript</span> scripts/build-pkgdown.R</span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="ex">Rscript</span> scripts/build-pkgdown.R</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># Canonical source-tarball build path (writes into the repo root, not ../)</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="ex">./scripts/build-package.sh</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>
