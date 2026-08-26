@@ -17,20 +17,165 @@
 # `.ms_commit_package_write()`, which stages every replacement before moving any
 # current file and restores the originals on failure.
 
-# Which descriptor field key mirrors a dictionary column. The writer in
-# `write_salmon_datapackage()` emits these keys verbatim and omits them when
-# empty; this table is what keeps the surgical patch producing the same shape
-# the full rebuild would.
+# --------------------------------------------------------------------------
+# The descriptor builders, shared by the full rebuild and the surgical patch
+# --------------------------------------------------------------------------
+#
+# `datapackage.json` duplicates metadata that lives canonically in the CSVs, so
+# there are two producers of the same JSON: `write_salmon_datapackage()`, which
+# builds the whole descriptor, and the setters/write-back below, which change a
+# few cells and must leave the descriptor in the state a rebuild would have
+# produced. Two producers of one shape is the defect class `AGENTS.md` calls
+# "one value, one rendering": they look correct separately and disagree in
+# ways nothing checks, because the rule that would catch CSV/descriptor drift
+# (`datapackage_consistent_with_csv_metadata`) is one of the dead rules in
+# `sdp.rules.yaml`.
+#
+# So the three builders below are the ONE spelling, and both producers call
+# them. `write_salmon_datapackage()` calls them on the frames it is about to
+# write; the setters call them on the frames they just read and edited. That
+# makes "the patch produces the shape a rebuild would" true by construction
+# rather than by a test that has to imagine every field.
+
+# Which descriptor field key mirrors a dictionary column. The ORDER is the
+# writer's emission order, not alphabetical and not the schema's: a key that
+# was absent and is now filled has to land where a rebuild would have put it.
 .ms_descriptor_field_keys <- function() {
   c(
+    unit_iri = "unit_iri",
     term_iri = "term_iri",
     term_type = "term_type",
     property_iri = "property_iri",
     entity_iri = "entity_iri",
-    unit_iri = "unit_iri",
     constraint_iri = "constraint_iri",
     statistical_modifier_iri = "statistical_modifier_iri"
   )
+}
+
+# One cell of a one-row metadata frame, or `NA` when the frame has no such
+# column. A package written by an older spec version legitimately lacks
+# columns this one knows about, and a missing column must read as absent
+# rather than abort the setter.
+.ms_meta_cell <- function(row, name) {
+  if (!name %in% names(row)) {
+    return(NA)
+  }
+  row[[name]][[1]]
+}
+
+# `required` is logical on the writer's in-memory path and character on the
+# read-from-CSV path. `isTRUE(as.logical(x))` answers both, and answers `NA`
+# and a blank the same way the writer's `isTRUE()` did.
+.ms_descriptor_required_flag <- function(value) {
+  isTRUE(suppressWarnings(as.logical(value)))
+}
+
+# One `schema.fields[]` entry, built from one `column_dictionary.csv` row.
+.ms_descriptor_field_entry <- function(row) {
+  field <- list(
+    name = .ms_meta_cell(row, "column_name"),
+    title = .ms_meta_cell(row, "column_label"),
+    type = .ms_meta_cell(row, "value_type"),
+    description = .ms_meta_cell(row, "column_description")
+  )
+  if (.ms_descriptor_required_flag(.ms_meta_cell(row, "required"))) {
+    field$constraints <- list(required = TRUE)
+  }
+  for (key in names(.ms_descriptor_field_keys())) {
+    value <- .ms_meta_cell(row, key)
+    if (!is.na(value) && value != "") {
+      field[[.ms_descriptor_field_keys()[[key]]]] <- value
+    }
+  }
+  field[!purrr::map_lgl(field, is.null)]
+}
+
+# The `tables.csv`-derived keys of one data resource entry. Each is dropped
+# first and re-added in the writer's order, so a resource that gains a title it
+# did not have ends up with the key order a rebuild would emit rather than
+# whichever order the edits happened in.
+.ms_descriptor_apply_resource_meta <- function(resource, table_info) {
+  resource$title <- NULL
+  resource$description <- NULL
+  if (is.list(resource$schema)) {
+    resource$schema$primaryKey <- NULL
+  }
+
+  if (.ms_meta_scalar_present(table_info$table_label)) {
+    resource$title <- table_info$table_label[1]
+  }
+  if (.ms_meta_scalar_present(table_info$description)) {
+    resource$description <- table_info$description[1]
+  }
+  if (.ms_meta_scalar_present(table_info$primary_key)) {
+    primary_key <- trimws(unlist(strsplit(as.character(table_info$primary_key[1]), ",")))
+    # A one-column key is a JSON string, a composite key a JSON array —
+    # `auto_unbox = TRUE` in the `write_json()` call does the unboxing.
+    # This is not incidental: smn-data-pkg's strict publication validator
+    # derives the expected value with `descriptor_primary_key()`, which
+    # returns `parts[0]` for a single column, and reports
+    # "primaryKey must be 'pop_id'; found ['pop_id']" for the array form.
+    # Frictionless v1, which SDP targets via its top-level `profile` key,
+    # permits either shape, so only the SDP validator settles it. Wrapping
+    # this in `I()` to force an array would break publication.
+    resource$schema$primaryKey <- primary_key
+  }
+  resource
+}
+
+# The `dataset.csv`-derived keys of the descriptor.
+#
+# Every presence test goes through `.ms_meta_scalar_present()`, never a bare
+# `!= ""`: `readr::read_csv()` type-guesses `temporal_start` as a Date (it
+# holds the ISO date this package wrote), and a Date-vs-"" comparison is NA --
+# which aborted `write_salmon_datapackage()` after the unlink and before any
+# replacement was written, destroying the package on disk (backlog #96). The
+# sibling fields are guarded the same way because they fail the same way the
+# moment a caller hands them a typed column.
+#
+# `title`/`description` are assigned unconditionally, and deliberately with
+# `NA` rather than `NULL` for an absent value: `x$title <- NULL` *deletes* the
+# key, and the writer emits it as JSON `null`.
+.ms_descriptor_apply_dataset_meta <- function(datapackage, dataset_meta) {
+  datapackage$title <- .ms_meta_cell(dataset_meta, "title")
+  datapackage$description <- .ms_meta_cell(dataset_meta, "description")
+  datapackage$contributors <- NULL
+  datapackage$licenses <- NULL
+  datapackage$temporal <- NULL
+
+  if (.ms_meta_scalar_present(dataset_meta$creator)) {
+    datapackage$contributors <- list(list(
+      title = dataset_meta$creator[1],
+      role = "creator"
+    ))
+  }
+  if (.ms_meta_scalar_present(dataset_meta$contact_name)) {
+    contact <- list(
+      title = dataset_meta$contact_name[1],
+      role = "contact"
+    )
+    if (.ms_meta_scalar_present(dataset_meta$contact_email)) {
+      contact$email <- dataset_meta$contact_email[1]
+    }
+    if (.ms_meta_scalar_present(dataset_meta$contact_org)) {
+      contact$organization <- dataset_meta$contact_org[1]
+    }
+    datapackage$contributors <- c(datapackage$contributors %||% list(), list(contact))
+  }
+  license_value <- dataset_meta$license[1]
+  if (.ms_meta_scalar_present(license_value) && !.ms_is_review_placeholder(license_value)) {
+    datapackage$licenses <- list(.ms_license_descriptor(license_value))
+  }
+  if (.ms_meta_scalar_present(dataset_meta$temporal_start)) {
+    # `.ms_iso_character()` renders a typed value as the ISO text the CSV side
+    # writes (identity for character), so the descriptor and
+    # `metadata/dataset.csv` cannot disagree about the same field.
+    datapackage$temporal <- list(start = .ms_iso_character(dataset_meta$temporal_start[1]))
+    if (.ms_meta_scalar_present(dataset_meta$temporal_end)) {
+      datapackage$temporal$end <- .ms_iso_character(dataset_meta$temporal_end[1])
+    }
+  }
+  datapackage
 }
 
 # Update one resource's schema fields from the (already updated) dictionary.
@@ -267,7 +412,24 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
   if (file.exists(suggestions_path) && !dir.exists(suggestions_path)) {
     suggestions <- tibble::as_tibble(.ms_read_metadata_csv(suggestions_path))
     if (all(c("target_sdp_file", "target_row_key", "target_sdp_field", "iri") %in% names(suggestions))) {
-      suggestions$decision <- NA_character_
+      # Existing decisions are PRESERVED, not reset. Blanking the column first
+      # made the file a record of the last review object rather than of the
+      # package: a reviewer who rejected four slots on Monday and accepted two
+      # more on Tuesday lost Monday's four, because the Tuesday review object
+      # did not carry them. Every slot this call decides is rewritten whole
+      # (including the `not_selected` siblings), so preserving costs nothing
+      # and only slots nobody touched keep their earlier answer.
+      if (!"decision" %in% names(suggestions)) {
+        suggestions$decision <- NA_character_
+      }
+      # `decision_reason` is the "why", and it is the field this feature's
+      # whole thesis is about. It lived only on the in-memory review object and
+      # printed to the console; the bare word `rejected` was all that reached
+      # disk, so the one thing a later reader most needs -- why no candidate
+      # fitted -- was the one thing not recorded.
+      if (!"decision_reason" %in% names(suggestions)) {
+        suggestions$decision_reason <- NA_character_
+      }
       slot <- .ms_review_slot_id(suggestions)
       for (i in seq_len(nrow(decisions))) {
         row <- decisions[i, , drop = FALSE]
@@ -277,13 +439,20 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         }
         if (identical(row$decision[[1]], "reject")) {
           suggestions$decision[in_slot] <- "rejected"
+          suggestions$decision_reason[in_slot] <- .ms_scalar_text(row$decision_reason)
           next
         }
         accepted <- in_slot &
           .ms_strip_review_iri(as.character(suggestions$iri)) == .ms_scalar_text(row$decision_iri)
         suggestions$decision[in_slot] <- "not_selected"
         suggestions$decision[accepted] <- "accepted"
+        suggestions$decision_reason[in_slot] <- NA_character_
       }
+      # `""` and `NA` share the empty CSV field, so a reason that was never
+      # given round-trips as absent rather than as an empty string.
+      blank_reason <- !is.na(suggestions$decision_reason) &
+        !nzchar(trimws(suggestions$decision_reason))
+      suggestions$decision_reason[blank_reason] <- NA_character_
       writes[[suggestions_path]] <- .ms_sdp_extension_csv_bytes(
         suggestions,
         na = .ms_csv_na_token()

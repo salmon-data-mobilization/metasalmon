@@ -13,7 +13,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 ## The Solution
 
-`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then send you back to the created package so you can confirm or edit those values directly in Excel.
+`metasalmon` wraps your salmon data with a **data dictionary** that travels with it—explaining every column, every code, and linking to standard scientific definitions. These definitions come from the [Salmon Domain Ontology](https://w3id.org/smn/) (shared layer) and the [DFO Salmon Ontology](https://w3id.org/gcdfo/salmon/) (DFO-specific layer), alongside other published controlled vocabularies, and the data is packaged according to the [Salmon Data Package Specification](https://github.com/salmon-data-mobilization/smn-data-pkg/blob/main/SPECIFICATION.md). The preferred review workflow now happens **inside the R package**: `metasalmon` can retrieve candidate terms, optionally ask an LLM to review them, write draft REVIEW-prefixed IRIs into the package metadata, and then hand you back a package you finish reviewing **in R**: `review_semantics()` prints each candidate with its definition and the exact call that accepts it, and `review_metadata()` prints the call that fills every remaining required field.
 
 **Integration context:** See the Salmon Data Integration System overview page (https://br-johnson.github.io/salmon-data-integration-system/) and walkthrough video (https://youtu.be/B0Zqac49zng?si=VmOjbfMDMd2xW9fH).
 
@@ -31,7 +31,7 @@ You've spent years collecting salmon data. But when you try to share it:
 
 Before you start, do the one-time [Setup and Credentials](https://salmon-data-mobilization.github.io/metasalmon/articles/setup.html) check so GitHub installs work cleanly and any optional LLM provider is ready in advance.
 
-Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then review in Excel.
+Install, run one function on the bundled Fraser Coho 2023-2024 example (173 rows), then finish the review in R.
 
 ```r
 # Install from GitHub (recommended)
@@ -52,14 +52,11 @@ pkg_path <- create_sdp(
   overwrite = TRUE
 )
 
-# Open pkg_path and review:
-# - metadata/dataset.csv
-# - metadata/tables.csv
-# - metadata/column_dictionary.csv
-# - metadata/codes.csv (if present)
-# - data/*.csv
-# - semantic_suggestions.csv (if present)
-# - README-review.txt
+# Finish the review without leaving R:
+review <- review_semantics(pkg_path)   # decide the seeded IRIs
+apply_sdp_semantics(pkg_path, review)
+review_metadata(pkg_path)              # fill the remaining required fields
+validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 
 `create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a short review checklist, writes prefilled semantic drafts directly into `metadata/column_dictionary.csv` and `metadata/tables.csv` only where target fields were blank, and keeps `semantic_suggestions.csv` as a fallback shortlist when you want more context or a better match. Code-level semantic seeding stays conservative by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
@@ -107,17 +104,40 @@ rejected ones, leaves undecided slots untouched, records the decision in
 `semantic_suggestions.csv`, and **does not touch your data CSV bytes**. Running
 it twice produces identical bytes.
 
-Two limits worth knowing before you rely on it:
+Decisions persist in the package, so a review you stop halfway through picks up
+where you left it rather than asking the same questions again.
 
-- A slot with **no** candidate never appears in the queue. `review_semantics()`
-  shows shortlists, not gaps, so a package can be fully reviewed and still fail
-  `require_iris = TRUE`. Read the validation report, not just the queue.
-- Free-text fields (`description`, `creator`, `contact_email`, `license`, …)
-  are still edited in the CSVs. Named setters and a gaps report are the next
-  milestone.
+`review_semantics()` shows **shortlists, not gaps** — a slot retrieval found
+nothing for never enters its queue, and free-text fields have no shortlist at
+all. `review_metadata()` is the other half, and it reads the package against
+the rules that decide strict validation rather than against the suggestions:
 
-Reviewing in Excel still works and remains supported; the R path is now the
-recommended one because it leaves a record of *why* each IRI was chosen.
+```r
+review_metadata(pkg_path)
+#> ── dataset.csv ────────────────────────────────────────────────────────
+#>    creator: placeholder text, refused by strict validation
+#>       MISSING METADATA: add creator, team, or originating program.
+#>    license: placeholder text, refused by strict validation
+#>       MISSING METADATA: add dataset license (for example, CC-BY-4.0).
+#>
+#>    set_sdp_dataset(pkg_path,
+#>      creator = "<add creator, team, or originating program>",
+#>      license = "<add dataset license (for example, CC-BY-4.0)>"
+#>    )
+```
+
+Replace each `<…>` with the real value and paste. Pasting one unedited is
+refused, because a package whose `creator` reads `<add creator…>` would pass
+strict validation while saying nothing. The setters are `set_sdp_dataset()`,
+`set_sdp_table()`, `set_sdp_column()` and `set_sdp_code()`; each keeps
+`datapackage.json` in step in the same transactional write.
+
+When `review_metadata()` reports nothing, `require_iris = TRUE` passes — so a
+package created by `create_sdp()` can be taken all the way to strict validation
+**without opening a spreadsheet at any point**.
+
+Reviewing in a spreadsheet still works and remains supported; the R path is the
+recommended one because it leaves a record of *why* each value was chosen.
 
 ## Bundled NuSEDS Example
 
@@ -238,14 +258,15 @@ For the current package-native review path, use this order:
 2. If you want semantic review, set `llm_assess = TRUE`.
 3. Review the seeded IRIs. Preferred: `review_semantics(pkg_path)` in the console, then paste the printed `accept_suggestion()` / `reject_suggestion()` calls into a script and finish with `apply_sdp_semantics(pkg_path, review)`. Alternative: open `README-review.txt` and edit `metadata/column_dictionary.csv` and `metadata/tables.csv` in a spreadsheet.
 4. For any prefilled or `REVIEW:`-prefixed IRI, click through and read the term definition before keeping it.
-5. Use `semantic_suggestions.csv` only as a fallback shortlist if you are unsure or want a better match.
-6. If no candidate fits, request a new term instead of forcing a bad match:
+5. Run `review_metadata(pkg_path)` for the free-text fields and for any required IRI nothing was suggested for, and paste the `set_sdp_*()` calls it prints. Steps 3 and 5 together are what make step 9 reachable without a spreadsheet.
+6. Use `semantic_suggestions.csv` only as a fallback shortlist if you are unsure or want a better match.
+7. If no candidate fits, request a new term instead of forcing a bad match:
    - shared cross-organization/domain terms -> <https://github.com/salmon-data-mobilization/salmon-domain-ontology/issues/new/choose>
    - DFO-specific policy/operations terms -> <https://github.com/dfo-pacific-science/dfo-salmon-ontology/issues/new/choose>
-7. Follow the [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html) guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.
-8. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder). It now refuses to rebuild while `REVIEW:` markers or unresolved dataset/table placeholder text remain.
-9. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
-10. For KNB, add the reviewed `metadata/eml-mapping.yml` sidecar, generate
+8. Follow the [After Excel Review](https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html) guide to reload the package, detect unresolved semantic gaps, and produce a concrete shared-vs-DFO term-request plan.
+9. If you are preparing EDH metadata, regenerate the XML from the reviewed package with `write_edh_xml_from_sdp(pkg_path)` (the reviewed-package wrapper around the canonical `edh_build_hnap_xml()` builder). It now refuses to rebuild while `REVIEW:` markers or unresolved dataset/table placeholder text remain.
+10. Re-run validation with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`.
+11. For KNB, add the reviewed `metadata/eml-mapping.yml` sidecar, generate
     schema-valid EML 2.2.0 with `write_eml_from_sdp(pkg_path)`, and inspect the
     credential-free restricted-review plan with
     `publish_sdp_to_knb(pkg_path, public = FALSE, dry_run = TRUE,
@@ -263,11 +284,11 @@ For the current package-native review path, use this order:
     vocabulary release. Corrections use a new sidecar `revision_key` and
     the preceding verified manifest, preserving the KNB series instead of
     overwriting immutable objects.
-11. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder, not individual files.
+12. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder, not individual files.
 
-In other words: **create -> review (in R, or in Excel) -> reload/check gaps ->
-remove `REVIEW:` markers -> validate -> build the required export -> dry-run ->
-publish**.
+In other words: **create -> decide the IRIs -> fill the remaining metadata ->
+check gaps -> validate -> build the required export -> dry-run -> publish**. All
+of it from R; the spreadsheet is the fallback, not the route.
 
 ## Who Is This For?
 

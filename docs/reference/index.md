@@ -36,10 +36,10 @@ Infer, validate, and apply semantic data dictionaries
 - [`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   : Apply semantic suggestions into a dictionary
 
-## Semantic Review (in R)
+## Review and Edit (in R)
 
-Review the seeded IRIs in the console, decide them in a script, and
-write the decisions back
+Review the seeded IRIs in the console, decide them in a script, fill in
+the remaining metadata, and write it all back — no spreadsheet required
 
 - [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   : Review semantic suggestions in the console
@@ -48,6 +48,14 @@ write the decisions back
   : Decide a semantic review slot
 - [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
   : Write semantic review decisions into a package
+- [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  : Report the metadata a package still needs, with the call that fills
+  it
+- [`set_sdp_dataset()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  [`set_sdp_table()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  [`set_sdp_column()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  [`set_sdp_code()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  : Fill in a package's free-text metadata
 - [`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md)
   : Semantic suggestions attached to a dictionary or package
 - [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)

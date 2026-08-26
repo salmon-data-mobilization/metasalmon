@@ -103,16 +103,96 @@ Excel workbooks, or PDF reports as context, continue with:
 - [LLM Review With Context
   Files](https://salmon-data-mobilization.github.io/metasalmon/articles/llm-context-review.html)
 
-## Review In Excel
+## Review In R
 
-Open `README-review.txt`, then review these files in this order:
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+gives you a package that is **review-ready, not finished**. Two calls
+take it the rest of the way, and both print the exact call for the next
+step — you paste it, and the script you end up with is the record of
+what you decided.
 
-1.  `metadata/column_dictionary.csv`
-2.  `metadata/tables.csv`
-3.  `metadata/dataset.csv`
-4.  `metadata/codes.csv` (when present)
-5.  `semantic_suggestions.csv` (only if you want more context or a
-    better match)
+**1. Decide the semantic IRIs.**
+[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+queues every unfilled slot with its ranked candidates and their
+definitions:
+
+``` r
+
+review <- review_semantics(pkg_path)
+review
+```
+
+    ── escapement · spawner_count · variable ──────────────────────────
+       field:   column_dictionary.csv · term_iri
+       current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+
+       [1] Spawner Abundance   smn   score 4.9
+           The number of mature salmon returning to spawn in a stream.
+           https://w3id.org/smn/SpawnerAbundance
+           review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+
+Paste the line for the candidate you want, or the printed
+`reject_suggestion(..., reason = "…")` when none fits — the reason is
+written into the package, so the next reader can see why. Then write the
+decisions back:
+
+``` r
+
+review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+apply_sdp_semantics(pkg_path, review)
+```
+
+[`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+is surgical and safe to re-run: it strips the `REVIEW:` prefix from the
+fields you decided, leaves the ones you did not alone, and does not
+touch a single byte of your data CSVs. Decisions persist, so you can
+stop and pick the review up tomorrow without being asked the same
+questions again.
+
+**2. Fill in the free text and anything with no candidates.**
+[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+reads the package against the rules that decide strict validation rather
+than against the shortlist, so it sees something the semantic review
+structurally cannot: a required field that **no candidate was ever found
+for**.
+
+``` r
+
+review_metadata(pkg_path)
+```
+
+    ── dataset.csv ────────────────────────────────────────────────────
+       creator: placeholder text, refused by strict validation
+          MISSING METADATA: add creator, team, or originating program.
+
+       set_sdp_dataset(pkg_path,
+         creator = "<add creator, team, or originating program>"
+       )
+
+Replace each `<…>` with the real value and paste. (Pasting one unedited
+is refused — a package whose `creator` reads `<add creator…>` would pass
+validation while saying nothing.) The four setters are
+[`set_sdp_dataset()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md),
+[`set_sdp_table()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md),
+[`set_sdp_column()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+and
+[`set_sdp_code()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md);
+each keeps `datapackage.json` in step in the same write.
+
+When
+[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+reports nothing, strict validation passes:
+
+``` r
+
+validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+```
+
+Editing `metadata/*.csv` in a spreadsheet still works and is still
+supported. It is the fallback rather than the recommended path, for one
+reason: a spreadsheet edit leaves no record of **why** a term was
+chosen, and that record is the most valuable thing the review produces.
+`README-review.txt` in the package folder carries the same checklist.
 
 The path to `metadata/column_dictionary.csv` is also a reasonable
 `llm_context_files` input when you want the LLM review step to reason
@@ -146,9 +226,11 @@ role-aware defaults; an explicitly supplied vector is a strict allowlist
 through the single retry round.
 
 The inferred metadata includes `MISSING DESCRIPTION:` and
-`MISSING METADATA:` placeholders for required fields so the package is
-immediately reviewable in Excel. Replace those placeholders before
-publishing — and expect
+`MISSING METADATA:` placeholders for required fields, so the package
+tells you what it is still missing.
+[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+lists exactly those fields and prints the call that fills each one.
+Expect
 [`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
 to **warn about every placeholder it finds** (since 0.2.6), including on
 a package you created seconds ago. That warning on a fresh package is
@@ -171,9 +253,14 @@ Replace it when the term is close but not exact.
 
 Remove it (leave blank) when no candidate is reliable yet.
 
-When the top auto-applied suggestion is wrong, use
-`semantic_suggestions.csv` to pick a better alternative and copy that
-IRI into `metadata/column_dictionary.csv`.
+When the top auto-applied suggestion is wrong,
+[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+prints the whole shortlist with each candidate’s definition; accept a
+different one with the `rank =` it shows. When the right term exists but
+retrieval never surfaced it, pass it directly:
+`accept_suggestion(review, "spawner_count", "variable", iri = "…")`, or
+`set_sdp_column(pkg_path, "spawner_count", term_iri = "…")` for a slot
+with no shortlist at all.
 
 If no candidate fits, request a new term instead of forcing a bad match:
 
@@ -184,8 +271,10 @@ If no candidate fits, request a new term instead of forcing a bad match:
 
 ## Finalize
 
-After Excel edits, save the metadata back to CSV and reload the package
-in R:
+[`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+and the `set_sdp_*()` setters write straight into the package, so there
+is nothing to save or reload. If you did edit the CSVs in a spreadsheet,
+save them back as CSV and reload:
 
 ``` r
 

@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "R-native review and editing flow"
-description: "Execplan for the R-native semantic review and editing flow (stream S5); M1-M3 landed 2026-08-25, M4-M5 remain. The 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
+description: "Execplan for the R-native semantic review and editing flow (stream S5). COMPLETE: M1-M5 all landed 2026-08-25 and a package now reaches strict validation entirely from R. The 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
 status: draft
 tags: [execplan]
 psc:
@@ -35,6 +35,10 @@ redaction gap in the meantime.
 ---
 
 ## Purpose / Big Picture
+
+> *Written 2026-08-11 and kept in the present tense as the record of the
+> problem. All six proofs below were delivered on 2026-08-25; the vignette
+> section named here is now titled "Review In R".*
 
 Today a user runs `create_sdp()` and then **leaves R**. The documented workflow
 (`README.md`, and a vignette section literally titled *"Review In Excel"*) tells
@@ -95,10 +99,11 @@ validate_salmon_datapackage(pkg, require_iris = TRUE)
       `.ms_review_render_lines()`, `.ms_term_browse_url()` (2026-08-25)
 - [x] M3 — Decisions and write-back — `accept_suggestion()`,
       `reject_suggestion()`, `apply_sdp_semantics()` (2026-08-25)
-- [ ] M4 — Free-text editing
-- [ ] M5 — Docs (partially done with M1–M3: `_pkgdown.yml` group, README
-      R-native-first section. The vignette rewrite and the `README-review.txt`
-      generator remain.)
+- [x] M4 — Free-text editing — `review_metadata()`, `set_sdp_dataset()`,
+      `set_sdp_table()`, `set_sdp_column()`, `set_sdp_code()` (2026-08-25)
+- [x] M5 — Docs — the vignette's *"Review In Excel"* section, the
+      `README-review.txt` generator, `create_sdp()`'s closing message, the
+      `_pkgdown.yml` group and the README (2026-08-25)
 - [x] 2026-08-11 — Plan written; #75 reproduced; all source-plan citations
       re-checked against the working tree (several had shifted)
 - [x] 2026-08-11 — Review pass: slice-1 scope reversed for methods (see Decision
@@ -109,6 +114,16 @@ validate_salmon_datapackage(pkg, require_iris = TRUE)
       #60's accessor clause closed; #74 narrowed to M4/M5; #118 filed and
       fixed. See Surprises & Discoveries below for the four things the plan got
       wrong.
+- [x] 2026-08-25 — M4–M5 implemented. **The stream's own bar is met and
+      measured**: a `create_sdp()` package reaches
+      `validate_salmon_datapackage(require_iris = TRUE)` entirely from R, with
+      no file opened in a spreadsheet, asserted end to end in
+      `tests/testthat/test-sdp-field-setters.R`. Proofs 4, 5 and 6 delivered;
+      **#74 closed**. Three round-trip defects in the M1–M3 API found by
+      teaching it and fixed here (decision replay, persisted rejection reason,
+      the lying empty-queue message), plus a `prune` warning; **#119** filed
+      for the `variable`/`property` retrieval overlap rather than fixed blind.
+      Full suite green (0 failures, 5 skips locally), `R CMD check` Status OK.
 
 ---
 
@@ -210,16 +225,18 @@ this, and the target-experience mock-up in this document silently assumes
 otherwise.
 
 **Two limits found by testing, both now documented rather than hidden.**
-`review_semantics()` shows *shortlists, not gaps*: a slot for which retrieval
-returned nothing never appears in the queue, so a user can complete the entire
-review and still fail `require_iris = TRUE`. That is the strongest argument yet
-for M4's `review_metadata()`, which reports required-but-unfilled fields
-regardless of whether anything was suggested. Second, `require_iris = TRUE` also
-refuses free-text `MISSING …:` placeholders, so **proof 5 of this plan cannot be
-met by M1–M3 alone** — the round-trip test fills those fields with a direct CSV
-edit and says in a comment that M4 is what replaces that step. Proof 6 ("a user
-who never opens Excel can complete the whole review") is therefore *also* M4's
-to deliver; M1–M3 deliver it for the semantic half only.
+*(Both closed by M4 on 2026-08-25 — kept because they are the measurement that
+scoped it.)* `review_semantics()` shows *shortlists, not gaps*: a slot for
+which retrieval returned nothing never appears in the queue, so a user can
+complete the entire review and still fail `require_iris = TRUE`. That is the
+strongest argument yet for M4's `review_metadata()`, which reports
+required-but-unfilled fields regardless of whether anything was suggested.
+Second, `require_iris = TRUE` also refuses free-text `MISSING …:` placeholders,
+so **proof 5 of this plan cannot be met by M1–M3 alone** — the round-trip test
+fills those fields with a direct CSV edit and says in a comment that M4 is what
+replaces that step. Proof 6 ("a user who never opens Excel can complete the
+whole review") is therefore *also* M4's to deliver; M1–M3 deliver it for the
+semantic half only.
 
 **Two defects the printed-call test caught before release**, recorded because
 they are the exact failure mode this feature was most likely to ship with. A
@@ -260,6 +277,11 @@ validation.
 | Console emits via `cat()`, and therefore does **not** escape external text | `.ms_cli_escape()` is the mechanism for the cli template path. On a `cat()` path it would print `{{reach}}` for `{reach}`, corrupting the text the rule protects. The rule is met by keeping the text off the template path; the cli aborts in the same files still escape, and the namespace-walking guard checks them | 2026-08-25 |
 | `dataset.csv`/`keywords` excluded from the queue; `tables.csv`/`observation_unit_iri` included | A keyword list has no "accept this candidate" semantics, and showing an undecidable row is the state the row below reversed itself over. An `observation_unit_iri` **can** carry a `REVIEW:` marker, so excluding it would leave a marker the console cannot clear | 2026-08-25 |
 | **Reversed: #75 is fixed in slice 1 by suppressing method/constraint auto-apply.** Method *acceptance* + `methods.csv` registration stay slice 2 | Review caught that the two rows above were jointly unsatisfiable: showing an unacceptable `REVIEW:` marker means slice 1 cannot deliver proof 5 (validation passes) or proof 6 (finish without Excel) for any package with a method-ish column name. Stopping the marker at its source is smaller than supporting acceptance, and it closes #75 | 2026-08-11 |
+| The three descriptor builders are extracted from `write_salmon_datapackage()` and shared with the setters — **narrowing, not reversing, the "patched not rebuilt" row above** | The rejected extraction was `.ms_rebuild_datapackage_descriptor(path)`, a whole-descriptor rebuild interleaved with CSV rendering. These are three pure functions over one metadata row each, with no filesystem knowledge, and the patch-versus-rebuild choice stays the caller's. At M4's size a private patch table would be a second implementation of the descriptor, and `datapackage_consistent_with_csv_metadata` is dead so nothing would catch the drift. Extract the shared *shape*, not the shared *procedure* | 2026-08-25 |
+| `review_metadata()` reports what the **validator** refuses, not what the schema calls required | The schema calls `observation_unit_iri` `recommended` and the measurement IRIs `conditional`, yet strict validation refuses both. A reporter that trusted the schema would show a clean package that still fails. The enumeration of the measurement IRIs is pinned by a test that drives `validate_dictionary()` itself | 2026-08-25 |
+| The printed value slot is `<hint>` and the setters **refuse** it | `creator = "..."` is pasteable, and a package whose `creator` is `...` passes strict validation with the `MISSING METADATA:` marker gone — strictly worse than before. The address is resolved before the value is checked, so an unedited paste still proves the row exists | 2026-08-25 |
+| The setters name the common fields and accept the rest through schema-checked `...` | The plan's "named arguments beat a generic `field = value`" is right about discoverability and wrong about closure: the schema is loaded at runtime and can gain fields, so a fixed argument list is a second spelling of it that decays silently. Checking `...` against the schema keeps the misspelling-is-an-error property that was the argument for naming them | 2026-08-25 |
+| A printed call is emitted one argument per line and is **never** passed through `strwrap()` | `strwrap()` normalises whitespace and adds sentence spacing, so wrapping a call rewrites the text inside its own string literals. Prose may be wrapped; code may only be broken at an argument boundary | 2026-08-25 |
 
 ---
 
@@ -521,3 +543,78 @@ remains, not the smaller one. It closes both open gaps at once — free-text
 placeholders *and* the shortlists-not-gaps blind spot — because it reads
 required-but-unfilled from the schema rather than from whatever retrieval
 happened to return.
+
+---
+
+**M4–M5, 2026-08-25. The stream's own bar is met, and it is measurable.**
+`create_sdp()` → `review_semantics()` → `apply_sdp_semantics()` →
+`review_metadata()` → `set_sdp_*()` →
+`validate_salmon_datapackage(require_iris = TRUE)` **passes, with no file
+opened in a spreadsheet at any point.** Proofs 4, 5 and 6 are delivered, and
+the round-trip test that used to fill the free-text fields with a direct CSV
+edit no longer contains one. What is worth carrying forward is not that it
+works.
+
+**The M1–M3 agent's call that M4 was the larger half was right, and for a
+reason it could not have known.** It argued from the two gaps
+`review_metadata()` had to close. The actual cost was somewhere else: the
+setters mutate a metadata CSV, and **`datapackage.json` duplicates most of what
+they mutate** — title, description, contributors, licences, temporal extent,
+resource titles and descriptions, primary keys, every field entry. M1–M3 met
+that duplication once, narrowly, for seven IRI keys, and solved it with a small
+patch table. M4 meets it across three files and every free-text field, and at
+that size a patch table is a *second implementation of the descriptor*, free to
+drift from the writer's — and nothing would ever notice, because the rule that
+would (`datapackage_consistent_with_csv_metadata`) is one of the dead rules in
+`sdp.rules.yaml`. So the three descriptor builders were **extracted from
+`write_salmon_datapackage()` and shared**, and the assertion the plan asked for
+("the patch produces the shape a rebuild would") became true by construction
+rather than by a test that has to imagine every field. The test still exists
+and compares against an actual rebuild.
+
+Note what this does **not** contradict. The plan's rejected extraction was
+`.ms_rebuild_datapackage_descriptor(path)` — a whole-descriptor rebuild
+interleaved with CSV byte rendering, which M1–M3 correctly refused. Three
+pure functions over one metadata row each are a different object: they carry no
+filesystem knowledge, and the rebuild-versus-patch decision is still the
+caller's. *Extract the shared shape, not the shared procedure* is the rule that
+distinguishes them.
+
+**A `strwrap()` call would have shipped a printed line that is not the code it
+looks like.** The first version wrapped the printed setter call with the same
+helper that wraps a definition. `strwrap()` normalises whitespace and inserts
+sentence spacing, so it rewrites text *inside string literals* — a printed
+`set_sdp_column(pkg, "x", column_description = "counted.  twice")` comes back
+with different content than the user will paste. Definitions are prose and may
+be wrapped; a call is code and may only be broken at an argument boundary. The
+printed call is now emitted one argument per line. This is the M1–M3
+retrospective's rule ("if a program's output is meant to be run, run it in the
+tests") arriving at a defect it did not predict: rendering *and* execution are
+both needed, because the corruption happens in the rendering and is only
+visible after evaluation.
+
+**The value slot in a printed call must be un-pasteable.** An obvious design
+prints `creator = "..."`. That is worse than the placeholder it replaces: a
+user who pastes without editing gets a package whose `creator` is `...`, and it
+**passes strict validation**, because the `MISSING METADATA:` marker — the only
+thing that made the field visible — is gone. The templates are therefore
+`<add creator, team, or originating program>` and the setters refuse anything
+of that shape. The address is resolved *before* the value is checked, so
+pasting an unedited call still proves the row exists, which is what the
+printed-call test asserts.
+
+**Four defects in the M1–M3 API, all found by teaching it.** Writing a lesson
+against a shipped API is a harsher usability test than reviewing it, and it
+found three round-trip failures plus one retrieval question. All three of the
+first kind have the same shape: *the feature did the right thing once and then
+forgot it.* A rejection was written to `semantic_suggestions.csv` and never
+read back, so a reviewer was asked the same question the next day. The
+rejection `reason` — the one field this whole stream is about — was never
+persisted at all. And an empty queue under a mistyped `columns` filter printed
+the *completion* message. Each is a missing return leg on a path that was
+otherwise correct, which is a class worth naming: **a feature that writes a
+record and never reads it back has not been round-tripped, and no test that
+only writes will say so.** All three are fixed here. The fourth —
+`variable` and `property` retrieving the identical ranked list — is a
+retrieval-filter question, not a review one, and is filed as backlog **#119**
+rather than fixed blind.

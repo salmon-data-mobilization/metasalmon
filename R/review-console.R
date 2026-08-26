@@ -67,6 +67,43 @@
   c("column_dictionary.csv", "codes.csv", "tables.csv")
 }
 
+# The `decision` values `apply_sdp_semantics()` writes into
+# `semantic_suggestions.csv`, and how each maps back onto a review row.
+# `not_selected` is the sibling of an accept within the same slot: the slot IS
+# decided, but this candidate is not the one, so it carries no decision of its
+# own and the accepted row in the same slot supplies it.
+.ms_review_recorded_decisions <- function() {
+  c(accepted = "accept", accept = "accept", rejected = "reject")
+}
+
+# Replay the decisions recorded in the package onto a freshly built review.
+.ms_review_seed_recorded_decisions <- function(review, suggestions) {
+  if (!"decision" %in% names(suggestions) || nrow(review) == 0L) {
+    return(review)
+  }
+  recorded <- .ms_review_recorded_decisions()
+  decision <- trimws(as.character(suggestions$decision))
+  reason <- if ("decision_reason" %in% names(suggestions)) {
+    as.character(suggestions$decision_reason)
+  } else {
+    rep(NA_character_, length(decision))
+  }
+  # `review` is built from `suggestions` row for row and then filtered, so the
+  # positions still line up here -- this runs before any subsetting.
+  for (i in seq_len(nrow(review))) {
+    value <- decision[[i]]
+    if (is.na(value) || !value %in% names(recorded)) {
+      next
+    }
+    review$decision[[i]] <- recorded[[value]]
+    review$decision_reason[[i]] <- reason[[i]]
+    if (identical(recorded[[value]], "accept")) {
+      review$decision_iri[[i]] <- .ms_strip_review_iri(.ms_scalar_text(review$iri[[i]]))
+    }
+  }
+  review
+}
+
 # Row indices in `frame` matching one suggestion row on the identifying keys.
 # A key the suggestion leaves blank is not constrained -- `table_meta` targets
 # carry no `column_name`, and requiring one would match nothing.
@@ -250,6 +287,19 @@ review_semantics <- function(x,
   }
 
   if (!is.null(columns)) {
+    # A `columns` value naming nothing is a typo, and it must say so. Filtering
+    # first and then reporting an empty queue told the user "every slot that
+    # had a shortlist already holds a final IRI" -- which reads as SUCCESS, on
+    # a package where nothing had been reviewed at all.
+    known <- unique(as.character(suggestions$column_name))
+    unknown <- setdiff(as.character(columns), known)
+    if (length(unknown) > 0) {
+      cli::cli_abort(c(
+        "No suggestions target {cli::qty(length(unknown))}{?this/these} column{?s}.",
+        .ms_cli_bullets(unknown, "x"),
+        .ms_cli_bullets(utils::head(sort(known[nzchar(known)], method = "radix"), 20L), "i")
+      ))
+    }
     suggestions <- suggestions[as.character(suggestions$column_name) %in% columns, , drop = FALSE]
   }
 
@@ -324,12 +374,25 @@ review_semantics <- function(x,
     decision_reason = NA_character_
   )
 
+  # DECISIONS ALREADY ON DISK ARE READ BACK. `apply_sdp_semantics()` records
+  # each decision in `semantic_suggestions.csv`, and until this existed nothing
+  # read it: a reject CLEARS the field, a blank field reads as undecided, and
+  # so the next `review_semantics()` asked the same question again with no sign
+  # the user had ever answered it. A reviewer who works through sixteen slots,
+  # rejects four and comes back tomorrow was shown those four as if they were
+  # new. The round trip is the point of persisting the decision at all.
+  review <- .ms_review_seed_recorded_decisions(review, suggestions)
+
   if (!isTRUE(include_filled)) {
     # A slot with an unknown current value (no frame to read, or an ambiguous
     # row match) is kept: dropping it would hide work, and the console labels
     # it "current: <unknown>" so the user can see why.
     unfilled <- is.na(review$current_value) | .ms_review_is_unfilled(review$current_value)
-    review <- review[unfilled, , drop = FALSE]
+    # A recorded decision takes a slot out of the queue even though rejecting
+    # leaves the field blank -- "blank" and "undecided" are different states,
+    # and only `include_filled = TRUE` shows the decided ones again.
+    decided <- review$slot_id %in% unique(review$slot_id[!is.na(review$decision)])
+    review <- review[unfilled & !decided, , drop = FALSE]
   }
 
   if (is.finite(max_candidates)) {
@@ -411,12 +474,27 @@ review_semantics <- function(x,
       return(name)
     }
   }
+  .ms_binding_name_for(
+    x,
+    function(value) inherits(value, "ms_semantic_review") && identical(value, x),
+    default = default
+  )
+}
+
+# The name of a global binding holding this value, or `default`. Shared with
+# `review_metadata()`, whose printed calls take a package *path* rather than a
+# review object -- one scan, so the two console views cannot disagree about how
+# they name the user's own variable.
+.ms_binding_name_for <- function(x, matches, default) {
   # `ls()` is locale-ordered; radix keeps the choice reproducible when more
-  # than one binding holds the same review.
+  # than one binding holds the same value.
   names_in_global <- sort(ls(globalenv()), method = "radix")
   for (name in names_in_global) {
     value <- tryCatch(get0(name, envir = globalenv(), inherits = FALSE), error = function(e) NULL)
-    if (inherits(value, "ms_semantic_review") && identical(value, x)) {
+    if (is.null(value)) {
+      next
+    }
+    if (isTRUE(tryCatch(matches(value), error = function(e) FALSE))) {
       return(name)
     }
   }
@@ -542,10 +620,11 @@ review_semantics <- function(x,
 .ms_review_render_lines <- function(review, object_name = "review") {
   if (nrow(review) == 0L) {
     return(c(
-      "No unfilled semantic slots with suggestions.",
+      "Nothing left to review.",
       "",
-      "Every slot that had a shortlist already holds a final IRI.",
-      "Pass include_filled = TRUE to review the decided ones too."
+      "Every slot that had a shortlist is either filled or already decided.",
+      "Pass include_filled = TRUE to see the decided ones.",
+      "Run review_metadata(path) for the fields that still block validation."
     ))
   }
 

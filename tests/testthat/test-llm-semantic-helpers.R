@@ -2040,7 +2040,7 @@ test_that("create_sdp auto-writes LLM-selected IRIs with REVIEW prefix", {
 
       expect_equal(dict_written$term_iri[[1]], "REVIEW: https://w3id.org/smn/SpawnerAbundance")
       expect_match(review_txt, "REVIEW:", fixed = TRUE)
-      expect_match(review_txt, "already lives there", fixed = TRUE)
+      expect_match(review_txt, "a draft this package wrote for you", fixed = TRUE)
       expect_match(review_txt, "salmon-domain-ontology/issues/new/choose", fixed = TRUE)
     },
     .package = "metasalmon"

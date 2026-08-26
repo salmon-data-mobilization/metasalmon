@@ -185,7 +185,7 @@ test_that("review_semantics() refuses targets with no write-back address", {
   # Silently dropping them would be the worse failure: the user would never
   # learn the field still needs an edit.
   expect_true(any(grepl(
-    "No unfilled semantic slots with suggestions.",
+    "Nothing left to review.",
     .ms_review_render_lines(review),
     fixed = TRUE
   )))
@@ -489,4 +489,72 @@ test_that("reject_suggestion() marks the whole slot and records a reason", {
 test_that("the decision helpers refuse an object that is not a review", {
   expect_error(accept_suggestion(tibble::tibble(), "a", "variable"), "ms_semantic_review")
   expect_error(reject_suggestion(tibble::tibble(), "a", "variable"), "ms_semantic_review")
+})
+
+# --------------------------------------------------------------------------
+# Decisions survive the round trip (found while extending this API for M4)
+# --------------------------------------------------------------------------
+#
+# These three came out of writing a lesson against the M1-M3 API, which is the
+# harshest usability test an API gets. All three are the same shape: the
+# feature did the right thing once and then forgot it.
+
+test_that("a recorded decision takes its slot out of the next review", {
+  # A reject CLEARS the field, a blank field reads as undecided, and nothing
+  # read the `decision` column back -- so a reviewer who worked through the
+  # queue, rejected four slots and came back the next day was asked the same
+  # four questions with no sign they had ever answered them. The round trip is
+  # the point of persisting the decision at all.
+  suggestions <- fixture_suggestions()
+  suggestions$decision <- "rejected"
+  suggestions$decision_reason <- "no candidate describes a wild-origin count"
+
+  review <- review_semantics(with_suggestions(fixture_dict(), suggestions))
+  expect_equal(nrow(review), 0L)
+
+  revisited <- review_semantics(
+    with_suggestions(fixture_dict(), suggestions),
+    include_filled = TRUE
+  )
+  expect_equal(revisited$decision, "reject")
+  lines <- .ms_review_render_lines(revisited)
+  expect_true(any(grepl("DECIDED: reject", lines, fixed = TRUE)))
+  expect_true(any(grepl("no candidate describes a wild-origin count", lines, fixed = TRUE)))
+})
+
+test_that("a recorded acceptance comes back with the IRI it accepted", {
+  suggestions <- dplyr::bind_rows(
+    fixture_suggestions(),
+    fixture_suggestions(label = "Escapement", iri = "https://w3id.org/smn/Escapement")
+  )
+  suggestions$decision <- c("not_selected", "accepted")
+
+  review <- review_semantics(
+    with_suggestions(fixture_dict(), suggestions),
+    include_filled = TRUE
+  )
+  expect_equal(review$decision, c(NA, "accept"))
+  expect_equal(review$decision_iri[[2]], "https://w3id.org/smn/Escapement")
+})
+
+test_that("a columns filter that matches nothing says so instead of reporting success", {
+  # The empty-queue message reads as completion -- "every slot that had a
+  # shortlist already holds a final IRI". Printing it after a typo told the
+  # user their package was finished when nothing had been reviewed at all.
+  expect_error(
+    review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()), columns = "TYPO"),
+    "No suggestions target"
+  )
+  expect_error(
+    review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()), columns = "TYPO"),
+    "spawner_count"
+  )
+  # A column that exists but has nothing left to decide is NOT an error: that
+  # is the message doing its job.
+  filled <- fixture_dict(term_iri = "https://w3id.org/smn/SpawnerAbundance")
+  review <- review_semantics(
+    with_suggestions(filled, fixture_suggestions()),
+    columns = "spawner_count"
+  )
+  expect_equal(nrow(review), 0L)
 })

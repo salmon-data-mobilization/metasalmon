@@ -208,42 +208,10 @@ write_salmon_datapackage <- function(
         .data$table_id == resource_name
       )
 
-    fields <- purrr::map(seq_len(nrow(table_dict)), function(i) {
-      field <- list(
-        name = table_dict$column_name[i],
-        title = table_dict$column_label[i],
-        type = table_dict$value_type[i],
-        description = table_dict$column_description[i]
-      )
-
-      if (isTRUE(table_dict$required[i])) {
-        field$constraints <- list(required = TRUE)
-      }
-
-      if (!is.na(table_dict$unit_iri[i]) && table_dict$unit_iri[i] != "") {
-        field$unit_iri <- table_dict$unit_iri[i]
-      }
-      if (!is.na(table_dict$term_iri[i]) && table_dict$term_iri[i] != "") {
-        field$term_iri <- table_dict$term_iri[i]
-      }
-      if (!is.na(table_dict$term_type[i]) && table_dict$term_type[i] != "") {
-        field$term_type <- table_dict$term_type[i]
-      }
-      if (!is.na(table_dict$property_iri[i]) && table_dict$property_iri[i] != "") {
-        field$property_iri <- table_dict$property_iri[i]
-      }
-      if (!is.na(table_dict$entity_iri[i]) && table_dict$entity_iri[i] != "") {
-        field$entity_iri <- table_dict$entity_iri[i]
-      }
-      if (!is.na(table_dict$constraint_iri[i]) && table_dict$constraint_iri[i] != "") {
-        field$constraint_iri <- table_dict$constraint_iri[i]
-      }
-      if (!is.na(table_dict$statistical_modifier_iri[i]) && table_dict$statistical_modifier_iri[i] != "") {
-        field$statistical_modifier_iri <- table_dict$statistical_modifier_iri[i]
-      }
-
-      field[!purrr::map_lgl(field, is.null)]
-    })
+    fields <- purrr::map(
+      seq_len(nrow(table_dict)),
+      function(i) .ms_descriptor_field_entry(table_dict[i, , drop = FALSE])
+    )
 
     resource_entry <- list(
       name = resource_name,
@@ -251,26 +219,7 @@ write_salmon_datapackage <- function(
       profile = "tabular-data-resource",
       schema = list(fields = fields)
     )
-
-    if (.ms_meta_scalar_present(table_info$table_label)) {
-      resource_entry$title <- table_info$table_label[1]
-    }
-    if (.ms_meta_scalar_present(table_info$description)) {
-      resource_entry$description <- table_info$description[1]
-    }
-    if (.ms_meta_scalar_present(table_info$primary_key)) {
-      primary_key <- trimws(unlist(strsplit(as.character(table_info$primary_key[1]), ",")))
-      # A one-column key is a JSON string, a composite key a JSON array —
-      # `auto_unbox = TRUE` in the `write_json()` call below does the unboxing.
-      # This is not incidental: smn-data-pkg's strict publication validator
-      # derives the expected value with `descriptor_primary_key()`, which
-      # returns `parts[0]` for a single column, and reports
-      # "primaryKey must be 'pop_id'; found ['pop_id']" for the array form.
-      # Frictionless v1, which SDP targets via its top-level `profile` key,
-      # permits either shape, so only the SDP validator settles it. Wrapping
-      # this in `I()` to force an array would break publication.
-      resource_entry$schema$primaryKey <- primary_key
-    }
+    resource_entry <- .ms_descriptor_apply_resource_meta(resource_entry, table_info)
 
     resource_list[[length(resource_list) + 1]] <- resource_entry
   }
@@ -310,45 +259,7 @@ write_salmon_datapackage <- function(
     resources = resource_list
   )
 
-  # Every presence test below goes through `.ms_meta_scalar_present()`, never a
-  # bare `!= ""`: `readr::read_csv()` type-guesses `temporal_start` as a Date
-  # (it holds the ISO date this package wrote), and a Date-vs-"" comparison is
-  # NA -- which aborted this function after the unlink and destroyed the
-  # package on disk (backlog #96). The sibling fields are guarded the same way
-  # because they fail the same way the moment a caller hands them a typed
-  # column.
-  if (.ms_meta_scalar_present(dataset_meta$creator)) {
-    datapackage$contributors <- list(list(
-      title = dataset_meta$creator[1],
-      role = "creator"
-    ))
-  }
-  if (.ms_meta_scalar_present(dataset_meta$contact_name)) {
-    contact <- list(
-      title = dataset_meta$contact_name[1],
-      role = "contact"
-    )
-    if (.ms_meta_scalar_present(dataset_meta$contact_email)) {
-      contact$email <- dataset_meta$contact_email[1]
-    }
-    if (.ms_meta_scalar_present(dataset_meta$contact_org)) {
-      contact$organization <- dataset_meta$contact_org[1]
-    }
-    datapackage$contributors <- c(datapackage$contributors %||% list(), list(contact))
-  }
-  license_value <- dataset_meta$license[1]
-  if (.ms_meta_scalar_present(license_value) && !.ms_is_review_placeholder(license_value)) {
-    datapackage$licenses <- list(.ms_license_descriptor(license_value))
-  }
-  if (.ms_meta_scalar_present(dataset_meta$temporal_start)) {
-    # `.ms_iso_character()` renders a typed value as the ISO text the CSV side
-    # writes (identity for character), so the descriptor and
-    # `metadata/dataset.csv` cannot disagree about the same field.
-    datapackage$temporal <- list(start = .ms_iso_character(dataset_meta$temporal_start[1]))
-    if (.ms_meta_scalar_present(dataset_meta$temporal_end)) {
-      datapackage$temporal$end <- .ms_iso_character(dataset_meta$temporal_end[1])
-    }
-  }
+  datapackage <- .ms_descriptor_apply_dataset_meta(datapackage, dataset_meta)
 
   # Render canonical SDP metadata after any file_name defaults were resolved.
   writes[[.ms_metadata_path(path, "dataset.csv")]] <- .ms_sdp_extension_csv_bytes(dataset_meta)
@@ -748,6 +659,43 @@ write_salmon_datapackage <- function(
 # failure (disk full, permissions revoked) between the wipe and the install.
 # That difference is deliberate: `prune = TRUE` is an explicit request to
 # delete everything this call does not write.
+# `prune = TRUE` wipes the directory before installing the new bytes, and
+# `semantic_suggestions.csv` is not among the files a rewrite produces unless
+# semantics were seeded again. When it holds recorded review decisions, that
+# wipe destroys the audit trail this package exists to keep -- silently, and
+# after the point where anything could be recovered. It is not an error (a
+# caller may genuinely want a clean rebuild), but it must never be invisible.
+#
+# Retires when the write path preserves `semantic_suggestions.csv` across a
+# prune, at which point there is nothing left to warn about.
+.ms_warn_pruning_recorded_decisions <- function(path, writes) {
+  suggestions_path <- file.path(path, "semantic_suggestions.csv")
+  if (!file.exists(suggestions_path) || dir.exists(suggestions_path) ||
+      suggestions_path %in% names(writes)) {
+    return(invisible(NULL))
+  }
+  decisions <- tryCatch(
+    {
+      rows <- .ms_read_metadata_csv(suggestions_path)
+      if (!"decision" %in% names(rows)) {
+        character()
+      } else {
+        values <- trimws(as.character(rows$decision))
+        values[!is.na(values) & nzchar(values) & values != "not_selected"]
+      }
+    },
+    error = function(error) character()
+  )
+  if (length(decisions) == 0L) {
+    return(invisible(NULL))
+  }
+  cli::cli_warn(c(
+    "{.code prune = TRUE} is about to delete {.file semantic_suggestions.csv}, which records {length(decisions)} review decision{?s}.",
+    "i" = "Copy it first if you want to keep the record of what was accepted and why."
+  ))
+  invisible(NULL)
+}
+
 .ms_commit_package_write <- function(path,
                                      writes,
                                      managed_paths = character(),
@@ -759,6 +707,7 @@ write_salmon_datapackage <- function(
   .ms_assert_managed_path_contained(path, managed_paths)
 
   if (isTRUE(prune)) {
+    .ms_warn_pruning_recorded_decisions(path, writes)
     unlink(.ms_dir_entries(path), recursive = TRUE, force = TRUE)
   }
 
@@ -1460,9 +1409,9 @@ create_sdp <- function(
   }
 
   review_targets <- if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
-    "Open {.file README-review.txt}, then review {.file metadata/column_dictionary.csv} and {.file metadata/tables.csv} in Excel first. Use {.file semantic_suggestions.csv} only if you want more context or a better match."
+    "Review the seeded IRIs with {.code review <- review_semantics(pkg_path)}, then paste the printed decision calls and finish with {.code apply_sdp_semantics(pkg_path, review)}."
   } else {
-    "Open {.file README-review.txt}, then review {.file metadata/column_dictionary.csv} and {.file metadata/tables.csv} in Excel."
+    "No shortlist was seeded, so set any IRI you already know with {.fn set_sdp_column}."
   }
   update_note <- .ms_create_sdp_update_note(check_updates = check_updates)
 
@@ -1470,7 +1419,8 @@ create_sdp <- function(
     "Created review-ready one-shot package with {.fn create_sdp}.",
     "i" = "Prefilled semantic values were written directly into the metadata CSVs only where target fields were blank. Compatible table observation-unit drafts can be auto-applied using observation-unit/description first and otherwise table label/id fallback. Any {.val REVIEW:} entries already live in the metadata CSVs and must be confirmed or edited there.",
     "i" = review_targets,
-    "i" = "Next: replace placeholders, remove any {.val REVIEW:} markers once final, rebuild EDH XML if needed, then run {.code validate_salmon_datapackage(pkg_path, require_iris = TRUE)}."
+    "i" = "Then run {.code review_metadata(pkg_path)} for the free-text fields and any required IRI nothing was suggested for; it prints the {.fn set_sdp_dataset} / {.fn set_sdp_table} / {.fn set_sdp_column} call that fills each one.",
+    "i" = "Finish with {.code validate_salmon_datapackage(pkg_path, require_iris = TRUE)}, rebuilding the EDH XML first if you need it. {.file README-review.txt} has the same checklist."
   )
   if (!is.null(update_note)) {
     info_lines <- c(info_lines, "i" = update_note)
@@ -3695,33 +3645,34 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   )
 
   checklist <- c(
-    "Start in metadata/*.csv and replace every value that begins with 'MISSING DESCRIPTION:' or 'MISSING METADATA:'.",
-    paste(
-      "Review metadata/column_dictionary.csv and metadata/tables.csv first.",
-      "Those files already contain the prefilled labels and IRIs you are actually finalizing.",
-      if (isTRUE(has_review_prefill)) {
-        "Any IRI that begins with 'REVIEW:' already lives there; keep/edit it there and remove the REVIEW prefix only when final."
-      } else {
-        "Confirm or edit the prefilled IRIs there before touching anything else."
-      }
-    ),
-    if (isTRUE(has_codes)) {
-      "If metadata/codes.csv exists, confirm the coded values and descriptions there before publish."
-    },
     if (isTRUE(has_suggestions)) {
       paste(
-        "Use semantic_suggestions.csv only as a fallback shortlist if you are unsure or want a better match.",
-        "Click through and read the term definitions before changing an IRI.",
-        "If no candidate fits, request a new term instead of forcing a bad match."
+        "Decide the semantic IRIs:  review <- review_semantics(pkg_path)",
+        "Print `review` to see each unfilled slot with its ranked candidates and their definitions.",
+        "Each candidate prints the exact accept_suggestion() call that takes it -- paste the one you want.",
+        "If no candidate fits, use the printed reject_suggestion(..., reason = \"...\") call; the reason is recorded in the package."
       )
     } else {
       paste(
-        "No semantic_suggestions.csv was written for this package.",
-        "If you still need a missing term, request a new one instead of forcing a bad match."
+        "No semantic_suggestions.csv was written for this package, so there is no shortlist to review.",
+        "Set an IRI you already know with set_sdp_column(pkg_path, \"<column>\", term_iri = \"...\"),",
+        "or request a new term rather than forcing a bad match."
       )
     },
+    if (isTRUE(has_suggestions)) {
+      "Write those decisions into the package:  apply_sdp_semantics(pkg_path, review)"
+    },
+    paste(
+      "Fill in the free text and any remaining gaps:  review_metadata(pkg_path)",
+      "It lists every field that still blocks validation -- placeholders, blank required fields,",
+      "and required IRIs no candidate was ever found for -- and prints the set_sdp_*() call that fills each one.",
+      "Replace the <...> in the printed call with the real value and paste it."
+    ),
+    if (isTRUE(has_codes)) {
+      "If metadata/codes.csv exists, confirm the coded values with set_sdp_code(pkg_path, \"<column>\", \"<code>\", ...)."
+    },
+    "Validate:  validate_salmon_datapackage(pkg_path, require_iris = TRUE). It passes only once every placeholder and REVIEW marker is gone.",
     "If you need EDH XML after review, rebuild it from the finalized package with write_edh_xml_from_sdp(pkg_path).",
-    "Re-open the folder in R with read_salmon_datapackage(pkg_path), then run validate_salmon_datapackage(pkg_path, require_iris = TRUE). Validation should pass only after every REVIEW marker is gone.",
     "Share the whole package folder (or a zip of the whole folder) so the metadata and data stay together."
   )
   checklist <- checklist[nzchar(trimws(checklist))]
@@ -3732,8 +3683,12 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "",
     sprintf("Dataset ID: %s", dataset_id),
     "",
-    "Review the package in Excel, but treat metadata/column_dictionary.csv and metadata/tables.csv as the files you finalize.",
-    "semantic_suggestions.csv is backup context, not the main place to do the review.",
+    "Do this review in R. Every step below prints the exact call for the next one,",
+    "so pasting those calls into a script leaves a record of what you decided and why --",
+    "which is the one thing editing the CSVs in a spreadsheet cannot give you.",
+    "",
+    "Throughout, pkg_path is the folder this file is in:",
+    "  pkg_path <- \"<path to this folder>\"",
     "",
     "Checklist:",
     checklist_lines,
@@ -3741,9 +3696,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "If you need a new ontology term, route it here:",
     review_issue_urls,
     "",
-    "Recommended path: create package -> review/edit in Excel -> reload and check unresolved gaps -> remove REVIEW markers -> rebuild EDH XML if needed -> validate -> publish.",
-    "Tip: if you edit CSV files in Excel, save them back to CSV before re-validating in R.",
-    "Tip: semantic_suggestions.csv is the detailed evidence trail; metadata/column_dictionary.csv and metadata/tables.csv are the authoritative files you actually finalize.",
+    if (isTRUE(has_review_prefill)) {
+      "Any IRI beginning with 'REVIEW:' is a draft this package wrote for you; accepting it in review_semantics() removes the prefix."
+    },
+    "The authoritative files are metadata/column_dictionary.csv and metadata/tables.csv; semantic_suggestions.csv is the evidence trail, including the decision and reason once you apply them.",
+    "",
+    "Editing metadata/*.csv in a spreadsheet still works and is still supported. It is the fallback,",
+    "not the recommended path: a spreadsheet edit leaves no record of why a term was chosen.",
+    "If you do use one, save the files back as CSV before re-validating in R.",
     "Guide: https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html"
   )
   readme_path <- .ms_replace_create_output(file.path(pkg_path, "README-review.txt"))

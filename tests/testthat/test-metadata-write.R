@@ -369,3 +369,90 @@ test_that("an abort during the write leaves the package wholly unchanged", {
   # and its bytes were already rendered when the descriptor step aborted.
   expect_identical(after, before)
 })
+
+test_that("the rejection reason reaches disk and survives a second sitting", {
+  # The feature's whole thesis is the record of WHY. Until this, only the bare
+  # word `rejected` reached `semantic_suggestions.csv`: the reason lived on the
+  # in-memory review object and printed to the console, and then evaporated --
+  # the one field a later reader most needs was the one not written down.
+  path <- review_fixture_package()
+  review <- reject_suggestion(
+    suppressMessages(review_semantics(path)),
+    "spawner_count", "unit",
+    reason = "the count is dimensionless"
+  )
+  suppressMessages(apply_sdp_semantics(path, review))
+
+  suggestions <- readr::read_csv(
+    file.path(path, "semantic_suggestions.csv"),
+    col_types = readr::cols(.default = readr::col_character())
+  )
+  rejected <- suggestions[!is.na(suggestions$decision) & suggestions$decision == "rejected", , drop = FALSE]
+  expect_gt(nrow(rejected), 0L)
+  expect_equal(unique(rejected$decision_reason), "the count is dimensionless")
+
+  # Monday's rejection must survive Tuesday's acceptance. The column used to be
+  # blanked on every apply, so a review object that did not carry an earlier
+  # decision erased it.
+  tuesday <- accept_suggestion(
+    suppressMessages(review_semantics(path)), "spawner_count", "variable", rank = 1
+  )
+  suppressMessages(apply_sdp_semantics(path, tuesday))
+  suggestions <- readr::read_csv(
+    file.path(path, "semantic_suggestions.csv"),
+    col_types = readr::cols(.default = readr::col_character())
+  )
+  expect_true(any(suggestions$decision %in% "rejected"))
+  expect_true(any(suggestions$decision_reason %in% "the count is dimensionless"))
+  expect_true(any(suggestions$decision %in% "accepted"))
+})
+
+test_that("review_metadata() reads the rejection reason back onto the gap it left", {
+  # A rejection clears the field, so the gap comes back looking exactly like
+  # one nobody has ever considered. Reading the reason back is what makes
+  # recording it worth anything.
+  path <- review_fixture_package()
+  review <- reject_suggestion(
+    suppressMessages(review_semantics(path)),
+    "spawner_count", "unit",
+    reason = "the count is dimensionless"
+  )
+  suppressMessages(apply_sdp_semantics(path, review))
+
+  gaps <- review_metadata(path)
+  unit_gap <- gaps[gaps$file == "column_dictionary.csv" & gaps$field == "unit_iri", , drop = FALSE]
+  expect_equal(nrow(unit_gap), 1L)
+  expect_true(grepl("the count is dimensionless", unit_gap$note[[1]], fixed = TRUE))
+})
+
+test_that("prune warns before it destroys recorded review decisions", {
+  # `prune = TRUE` wipes the directory and `semantic_suggestions.csv` is not
+  # among the files a rewrite produces, so a user reaching for prune mid-review
+  # loses the audit trail -- silently, and after the point where anything could
+  # be recovered.
+  path <- review_fixture_package()
+  review <- reject_suggestion(
+    suppressMessages(review_semantics(path)), "spawner_count", "unit",
+    reason = "the count is dimensionless"
+  )
+  suppressMessages(apply_sdp_semantics(path, review))
+
+  expect_warning(
+    suppressMessages(create_sdp(
+      review_fixture_resources(),
+      path = path, dataset_id = "demo-1", seed_semantics = FALSE,
+      check_updates = FALSE, overwrite = TRUE, prune = TRUE
+    )),
+    "review decision"
+  )
+
+  # A package with no recorded decision is pruned without a word: the warning
+  # is about losing an audit trail, not about pruning.
+  clean <- review_fixture_package("prune-clean")
+  unlink(file.path(clean, "semantic_suggestions.csv"))
+  expect_no_warning(suppressMessages(create_sdp(
+    review_fixture_resources(),
+    path = clean, dataset_id = "demo-1", seed_semantics = FALSE,
+    check_updates = FALSE, overwrite = TRUE, prune = TRUE
+  )))
+})

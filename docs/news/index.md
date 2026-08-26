@@ -4,6 +4,85 @@
 
 ### Added
 
+- **A package can now reach strict validation entirely from R.**
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  and the
+  [`set_sdp_dataset()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  /
+  [`set_sdp_table()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  /
+  [`set_sdp_column()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  /
+  [`set_sdp_code()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  setters complete roadmap stream S5 and close backlog **\#74**.
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  →
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  →
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+  →
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  → `set_sdp_*()` → `validate_salmon_datapackage(require_iris = TRUE)`
+  **passes, with no file opened in a spreadsheet at any point**, and
+  that whole sequence is asserted end to end in
+  `tests/testthat/test-sdp-field-setters.R`.
+
+  Until now it could not. The semantic review that shipped last was only
+  half the job, and the half that was missing was the larger one:
+
+  1.  **Free-text `MISSING …:` placeholders** in `dataset.csv`,
+      `tables.csv` and `column_dictionary.csv` are refused by strict
+      validation, and the only way to replace them was a spreadsheet.
+  2.  **[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+      shows shortlists, not gaps.** A slot that retrieval returned
+      nothing for never entered the queue, so a user could complete the
+      entire console review and still be missing a required IRI, with
+      nothing in the review saying so.
+
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  closes both, because it does not read a suggestion list. It reads the
+  package against the rules that actually decide strict validation — the
+  Frictionless schema’s `constraints.required` (parsed as
+  `field$requirement` since the schema bundle landed, and read by
+  **nothing** until now), the placeholder markers, the
+  measurement-column IRI requirement, and the table observation-unit IRI
+  requirement. A field no retrieval ever touched is as visible to it as
+  one with five candidates.
+
+  ``` r
+
+  review_metadata(pkg_path)
+  #> ── dataset.csv ──────────────────────────────────────────────────────
+  #>    creator: placeholder text, refused by strict validation
+  #>       MISSING METADATA: add creator, team, or originating program.
+  #>
+  #>    set_sdp_dataset(pkg_path,
+  #>      creator = "<add creator, team, or originating program>"
+  #>    )
+  ```
+
+  **The printed call is the contract**, exactly as it is for
+  [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md):
+  replace the `<…>` with the real value and paste, and the paste is the
+  audit trail. Pasting one **unedited is refused** — a package whose
+  `creator` reads `<add creator, team, or originating program>` would
+  pass strict validation while saying nothing, which is worse than the
+  placeholder it replaced, because the marker is gone. The address is
+  resolved before the value is checked, so a printed call naming a row
+  that does not exist fails on the address rather than being masked by
+  that guard.
+
+  The setters name the commonly-unfilled fields as arguments for
+  discoverability and accept every other declared field through `...`,
+  checked against the schema — so a misspelled `licence =` is an error
+  rather than a silent no-op, and a schema that gains a field does not
+  need this code changed. Each setter writes its metadata CSV and the
+  `datapackage.json` keys that duplicate it as **one** transactional
+  set, and the three descriptor builders are now shared with
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  rather than re-spelled, so “the patch produces the shape a rebuild
+  would” is true by construction and asserted against an actual rebuild.
+
 - **The semantic review no longer has to leave R.**
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md),
   [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md),
@@ -70,14 +149,15 @@
   (`datapackage_consistent_with_csv_metadata`) is one of the dead rules
   in `sdp.rules.yaml`, so nothing would detect a half-applied edit.
 
-  Two limits are documented rather than papered over. **A slot with no
-  candidate never appears in the queue** —
+  Two limits were documented rather than papered over, and **both are
+  closed by
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  above** in this same development version. **A slot with no candidate
+  never appears in the queue** —
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
-  shows shortlists, not gaps — so a completed review can still fail
-  `require_iris = TRUE`; the validation report remains the authority.
-  And **free-text fields are still edited in the CSVs**;
-  `review_metadata()` and the `set_sdp_*()` setters are the next
-  milestone.
+  shows shortlists, not gaps — and **free-text fields had no R-native
+  editor**. Either one alone was enough to make a completed console
+  review still fail `require_iris = TRUE`.
 
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   **never contacts a network or an LLM.** It reads suggestions that
@@ -87,6 +167,50 @@
   is the sentinel that pins this.
 
 ### Fixed
+
+- **A review decision now survives being put down and picked up again.**
+  Three defects, all the same shape — the feature did the right thing
+  once and then forgot it — found by teaching the review flow to
+  learners, which is the harshest usability test an API gets.
+
+  **A rejection did not survive rebuilding the queue.**
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+  wrote `decision = "rejected"` into `semantic_suggestions.csv` and
+  cleared the field, but nothing ever read that column back, and a
+  cleared field reads as *undecided*. A reviewer who worked through
+  sixteen slots, rejected four and came back the next day was asked the
+  same four questions with no sign they had ever answered them.
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  now replays the recorded decisions, keeps decided slots out of the
+  default queue, and shows them under `include_filled = TRUE`.
+
+  **The rejection `reason` never reached disk.** It lived on the
+  in-memory review object and printed to the console; only the bare word
+  `rejected` was written. For a feature whose whole thesis is *the
+  record of why*, that was the single field that most wanted a column.
+  `semantic_suggestions.csv` gains `decision_reason`, and
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  reads it back onto the gap the rejection left — otherwise that gap
+  comes back looking exactly like one nobody ever considered. Applying a
+  review also **preserves** decisions it does not itself carry, where it
+  previously blanked the column first: Monday’s four rejections used to
+  be erased by Tuesday’s acceptance.
+
+  **An empty queue under a bad `columns` filter read as success.**
+  `review_semantics(pkg, columns = "TYPO")` printed *“No unfilled
+  semantic slots with suggestions … every slot that had a shortlist
+  already holds a final IRI”*, telling a user who mistyped a column name
+  that their package was finished. A `columns` value matching no column
+  is now an error that names the columns that do exist; a column that
+  exists but has nothing left to decide still gets the (now accurate)
+  completion message.
+
+- **`prune = TRUE` warns before it destroys recorded review decisions.**
+  Pruning wipes the package directory, and `semantic_suggestions.csv` is
+  not among the files a rewrite produces, so a user reaching for `prune`
+  mid-review silently lost the audit trail. The prune still happens — a
+  clean rebuild is a legitimate thing to want — but it now says what it
+  is about to take, and only when there is a recorded decision to lose.
 
 - **A reviewed semantic decision is no longer overruled by the
   unattended auto-apply heuristic.**
@@ -105,9 +229,25 @@
 
 ### Changed
 
-- `_pkgdown.yml` gains a **Semantic Review (in R)** reference group, and
-  the `README` review workflow now names the R path first with the
-  spreadsheet path kept as the supported alternative.
+- **The documentation stops sending users to a spreadsheet.** The
+  quickstart vignette’s section titled *“Review In Excel”* — which was
+  this stream’s whole subject — is now *“Review In R”* and walks the
+  two-call flow end to end. The `README-review.txt` checklist that
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  writes into every package told users to open the CSVs in Excel; it now
+  hands them the R calls in order, each of which prints the call for the
+  next step.
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)’s
+  own closing message does the same. The spreadsheet path is still
+  supported and is still described — as the fallback, with the reason it
+  is the fallback: a spreadsheet edit leaves no record of *why* a value
+  was chosen.
+
+- `_pkgdown.yml`’s **Semantic Review (in R)** group becomes **Review and
+  Edit (in R)** and gains
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  and the setters, and the `README` review workflow names the R path
+  first with the spreadsheet path kept as the supported alternative.
 
 - **An existing but *empty* directory no longer requires
   `overwrite = TRUE`.**
