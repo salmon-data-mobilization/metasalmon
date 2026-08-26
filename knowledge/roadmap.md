@@ -42,10 +42,13 @@ Rules that keep this from decaying:
   against the repos' own version sources and fixes drift.
 - **Mirror rule:** metasalmonpy mirrors metasalmon — same functionality, same
   version numbers, bumped only when parity actually lands. Stated firmly in
-  both repos' `AGENTS.md`. **Both are at 0.4.0 as of 2026-08-24**, so the
-  catch-up stream [S10](sequences/s10-metasalmonpy-parity.md) is **done** and
-  the rule now governs *new* work rather than a backlog — a divergence
-  introduced from here is a fresh one, not the tail of an old gap.
+  both repos' `AGENTS.md`. **metasalmon is at 0.5.0 (2026-08-25) and
+  metasalmonpy at 0.4.0**, so a `0.4.0→0.5.0` window is open. The catch-up
+  stream [S10](sequences/s10-metasalmonpy-parity.md) is still **done** — this
+  window is not its tail. It is the first window opened by *new* work under the
+  rule rather than by an old backlog, which is exactly the state the 2026-08-24
+  entry predicted when it said parity decays with the next change. What it owes
+  is an S5 port, not an S10 rung.
   **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
@@ -183,11 +186,14 @@ Ordering that is not optional, independent of who is executing:
   metasalmon `v0.4.0`, then metasalmonpy `v0.4.0`, **skipping 0.3.0** — so this
   bullet is now a discharged ruling rather than a constraint on pending work,
   and it is kept because the *sequencing rule* it states governs the next
-  release pair too: the R release exists before the Python number claims it.
-  The three copies of that number — both repositories' `AGENTS.md` and this
-  card's release index — are at **0.4.0 with no window open**, and they move
-  together, because a disagreement between the two `AGENTS.md` files is
-  unresolvable from either one alone.
+  release pair too: the R release exists before the Python number claims it —
+  and it just governed one. **metasalmon `v0.5.0` (2026-08-25, S5) is the R
+  release; metasalmonpy has not claimed that number and should not until the
+  nine review-and-edit functions actually land there.** Of the three copies of
+  the number — both repositories' `AGENTS.md` and this card's release index —
+  this one and metasalmon's are at 0.5.0/0.4.0 with the window open;
+  **metasalmonpy's `AGENTS.md` still reads 0.4.0/0.4.0 with no window**, and is
+  the copy that is wrong until someone amends it there.
 - **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
   2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
   needs."* The carve-out is currently **one item — PFMA subareas** for the
@@ -229,10 +235,11 @@ absent from the allowlist) was closed by the 2026-08-24 membership ruling, which
 made the workshop the eighth member. Its section is a member row now, not a
 courtesy record.
 
-### metasalmon (R) — current **0.4.0**
+### metasalmon (R) — current **0.5.0**
 
 | Version | Date | One line |
 |---|---|---|
+| 0.5.0 | 2026-08-25 | S5 R-native review and editing — `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` / `review_metadata()` and the four `set_sdp_*()` setters, plus the `semantic_suggestions()` / `semantic_llm_assessments()` accessors. A package reaches `validate_salmon_datapackage(require_iris = TRUE)` **without a spreadsheet**; closes #74, #118 and #60's accessor clause |
 | 0.4.0 | 2026-08-24 | KNB environments (S3) — a deposit can be rehearsed against the test node; plus the post-0.3.0 fix stream: transactional package writer, platform-independent calendar text, both shipped examples validate, `smn` ranked above `gcdfo`, dual-provenance manifest validation |
 | 0.3.0 | 2026-08-15 | **Breaking:** sdp-0.3.0 implemented — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()` stop-and-report migration, semantic pipeline reviews the statistical-modifier slot, remote schema source pinned to spec tags |
 | 0.2.6 | 2026-08-12 | Tidy-data enforcement: primary-key uniqueness, wide-format warning, placeholders surfaced |
@@ -251,15 +258,18 @@ historical gap remains an S6 governance note, not a task.
 current R release on main at merge `5a37b11` — which is the only valid port
 baseline for [S10](sequences/s10-metasalmonpy-parity.md); no intermediate
 review-round commit is. The spec-tag schema pin from PR #37 shipped inside it.
-**The gap is closed**: `v0.4.0` (2026-08-24) is the newest tag, cut per Q7 —
-153 commits and the whole post-0.3.0 development section released as one minor
-bump, so `main` and the newest tag are the same package again. Details under
-*metasalmon current state* below. **Q7's other half now falls due**: its ruling
-is a two-step — metasalmon releases first (done), then metasalmonpy's terminal
-bump claims **that** number. So the number metasalmonpy claims is **0.4.0**, and
-claiming it is its own change.
+**The gap is closed**: `v0.5.0` (2026-08-25) is the newest tag. `v0.4.0`
+(2026-08-24) closed the 153-commit post-0.3.0 gap per Q7, and `v0.5.0` released
+S5's 35 commits one day later — so `main` and the newest tag are the same
+package again, and have been at every point since 0.4.0. Details under
+*metasalmon current state* below. **Q7's other half fell due and was
+discharged** at 0.4.0: its ruling is a two-step — metasalmon releases first,
+then metasalmonpy's bump claims that number — and both steps happened on
+2026-08-24. The same two-step now applies to **0.5.0**: the R release exists,
+and metasalmonpy claiming that number is its own change, gated on the S5 port
+actually landing there.
 
-### metasalmonpy (Python mirror) — current **0.4.0** (= metasalmon 0.4.0 parity)
+### metasalmonpy (Python mirror) — current **0.4.0** (= metasalmon 0.4.0 parity; **behind metasalmon 0.5.0**)
 
 > **The number is now true, and it is the first time in this stream that it has
 > been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
@@ -273,8 +283,17 @@ claiming it is its own change.
 > steps happened the same day**: metasalmon `v0.4.0` was tagged and released,
 > and metasalmonpy then claimed 0.4.0, **skipping 0.3.0**, which is what makes
 > both version claims literally true. The three copies of the number — this
-> index and both repositories' `AGENTS.md` — are at 0.4.0 with no catch-up
+> index and both repositories' `AGENTS.md` — were at 0.4.0 with no catch-up
 > window open.
+>
+> **That lasted one day.** metasalmon released `v0.5.0` on 2026-08-25 (S5), so
+> a `0.4.0→0.5.0` window is open and this row is behind again. The difference
+> from every earlier window is its cause: this one was opened by new R work
+> under the mirror rule, not by an unfinished port, and what closes it is the
+> S5 port — the nine review-and-edit functions, the `decision_reason` column,
+> `decision` replay on queue rebuild, the schema `constraints.required`
+> consumer, the descriptor-builder extraction, and the #118 fix at
+> `semantics.py:1294`.
 
 | Version | Date | One line |
 |---|---|---|
@@ -306,6 +325,19 @@ number; see the mirror rule above. What is *not* closed by it: register row 32 /
 backlog **#87**, the ranking-profile gap, which no milestone owns and which the
 0.4.0 release does not contain — the release states as much rather than letting
 the number imply otherwise.
+
+**A new window `0.4.0→0.5.0` opened 2026-08-25** when metasalmon released S5.
+It is not a reopening of the old one: `0.2.2→0.4.0` was the tail of an
+unfinished port and stayed open for weeks, this one is one release of ordinary
+"R shipped first" lag. It is owed as a **port, not as register rows** — none of
+the nine functions is a deliberate difference, so adding `parity-deviations.md`
+entries for them would misfile absence as design. The one register change that
+*is* owed is a correction: **`PARITY.md` row 31's closing claim that
+`strategy = "reviewed"` is "verified identical to R's output for all three
+strategies" goes false with metasalmon 0.5.0** — R's reviewed path is now
+exempt from the unattended auto-apply gate (#118) and R writes a
+`decision_reason` column Python does not have. It must be **amended in place,
+not joined by a new row**; see `parity-deviations.md` for the drafted text.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
@@ -639,7 +671,7 @@ so that check is useful evidence and not a substitute for the ruling.
 
 ## metasalmon current state
 
-**Shipped: 0.4.0** (tagged `v0.4.0`, GitHub Release published 2026-08-24).
+**Shipped: 0.5.0** (tagged `v0.5.0`, GitHub Release published 2026-08-25).
 The release sequence, all reviewed and CI-green:
 
 | Release | What |
@@ -653,6 +685,7 @@ The release sequence, all reviewed and CI-green:
 | 0.2.6 | #77 tidy foundations — primary-key uniqueness, wide-format warning, placeholders surfaced |
 | 0.3.0 | #76 sdp-0.3.0 method placement model — dictionary swaps `method_iri` for `statistical_modifier_iri`, registry removed, `migrate_sdp_methods()`, placement validation, spec-tag schema pin |
 | 0.4.0 | S3 KNB environments (a deposit can be rehearsed) and the post-0.3.0 fix stream — #93 item 2, #94, #96–#102, #85, #88 — plus two S11 vignettes |
+| 0.5.0 | S5 R-native review and editing — #74, #118, #60's accessor clause; nine new exports and the two accessors, and the spreadsheet leaves the documented path |
 
 S8's 0.3.0 merged 2026-08-15 (PR #39, merge `5a37b11`, five review rounds)
 and is tagged and released per the 0.3.0-forward tagging policy.
@@ -666,6 +699,19 @@ patch. `DESCRIPTION` is bumped only in the release PR, which is why `main`
 self-reported `0.3.0` for nine days while carrying all of it. That condition
 is over for this repo; it still holds for gcdfo and PSC above, so keep citing
 the commit there.
+
+**0.5.0 releases S5**, cut 2026-08-25 — 35 commits on top of `v0.4.0`. It is a
+**minor** for the reason 0.4.0 was not quite: nine new exported functions and a
+materially new workflow, with nothing renamed, removed, or changed in
+documented return shape. **#58 (condition classes) wanted a breaking bump and
+was deliberately left out of it** — judged 2026-08-25, on the grounds that ~450
+mechanical call-site edits share no code with the review flow and bundling them
+would make both harder to review. So #58 and #59 are what remain of S5, and the
+breaking-release story they want is still ahead rather than spent. Two narrow
+byte changes ship inside the minor and are stated in the NEWS entry rather than
+implied: `semantic_suggestions.csv` gains a `decision_reason` column, and an
+in-memory SSSOM mapping set carrying a typed column renders canonically through
+one renderer instead of two.
 
 Post-0.3.0, `main` has taken S11 slice 2's two vignettes (PR #46), the
 statistical-modifier ranking preferences and honest dry-run previews (PR #47,
@@ -795,13 +841,16 @@ The generic FAIR mapping-product consumer is a dependency-gated S6 substream:
 it reuses R's existing SSSOM implementation and has no semantic dependency on
 S8. The mirror invariant separately requires S10 to replay the complete current
 released R baseline in Python before new behavior lands in both languages; that
-baseline is now **0.4.0, released**. **That requirement is satisfied:** the
+baseline was **0.4.0, released**, and is now **0.5.0, released** (2026-08-25).
+**That requirement was satisfied at 0.4.0 and is one release stale again:** the
 replay ladder completed at 0.2.1 (rung 3 was the **last** replayed rung; the
 2026-08-17 replan ports the remainder by subsystem), the subsystem port landed
 chunks **A through H** (2026-08-22, metasalmonpy PRs #14–#17, #19, #20 and #21,
 all unversioned pending Q7), and the terminal bump released them as
 metasalmonpy **0.4.0** on 2026-08-24. So S10 no longer gates anything
-downstream. The first behavior is verification,
+downstream, and the 0.5.0 shortfall is **S5's port to carry, not S10's** — the
+stream stays closed rather than reopening every time R releases. The first
+behavior is verification,
 pinning, archival, and provenance, not compatibility evaluation or predicate
 execution. PID-1 now selects readable stable product slugs under `/mappings/`.
 COMPAT-1 now lets a publisher assert expected compatibility while each consumer
@@ -817,7 +866,7 @@ release half of that gate is satisfied.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **the review episode moved ahead of the rebuild, 2026-08-25**: Brett committed `068dab3`/`24b9da3` to workshop `main`, and `episodes/session-4.Rmd` was then rewritten against S5's just-merged `review_semantics()` / `accept_suggestion()` / `apply_sdp_semantics()`, with every console block captured from a real run rather than composed. Three findings the episode surfaced, all workshop-side: the lesson now installs **untagged `main`** on both lanes while its renv lockfile still pins metasalmon **0.3.0**, so learners and the published site build against different packages and S4's "execute against *released* packages" requirement is violated on the install side; the review episode is the **first with an empty Python lane**, because metasalmonpy has none of M1–M3 (an unbuilt port, deliberately *not* a `parity-deviations.md` row); and of the gaps this card has been carrying, `method_iri` and tidy-shape are **closed**, while **`primary_key` remains absent from the entire lesson**. The install/lockfile split cannot be closed until S5 tags a release
-- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8) · **M1–M5 all landed 2026-08-25**, and **#74 is closed** (#60's accessor clause with it; its other clauses stand). `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **What remains of this stream: #58 and #59 only.** **Mirror owed:** metasalmonpy has none of the nine functions, no `decision_reason`, and no consumer of the schema's `constraints.required`; its `PARITY.md` **row 31** must be **amended** — its "verified identical to R's output for all three strategies" becomes false on release and nothing will say so
+- [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, and **#74 is closed** (#60's accessor clause with it; its other clauses stand). `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **What remains of this stream: #58 and #59 only.** **Mirror owed, and now actually due:** the release happened, so metasalmonpy is a version behind and the `0.4.0→0.5.0` window is open — it has none of the nine functions, no `decision_reason`, and no consumer of the schema's `constraints.required`; its `PARITY.md` **row 31** must be **amended in place**, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there will say so. The amendment text is drafted in [parity-deviations.md](parity-deviations.md)
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it

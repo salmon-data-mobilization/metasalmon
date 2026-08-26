@@ -1,5 +1,23 @@
-metasalmon (development version)
---------------------------------
+metasalmon 0.5.0
+----------------
+
+Released 2026-08-25. Roadmap S5, and the one claim worth putting first: **a
+salmon data package can now be taken from `create_sdp()` to
+`validate_salmon_datapackage(require_iris = TRUE)` without opening a single
+file in a spreadsheet.** Nine new exported functions — `review_semantics()`,
+`accept_suggestion()`, `reject_suggestion()`, `apply_sdp_semantics()`,
+`review_metadata()` and the four `set_sdp_*()` setters — plus the
+`semantic_suggestions()` / `semantic_llm_assessments()` accessors, make the
+most consequential decision in the pipeline scriptable, re-runnable and
+recorded. Backlog **#74** is closed, with **#118** and the accessor half of
+**#60**.
+
+The release is a minor rather than a major: #58 (condition classes) wants a
+breaking bump and was deliberately **not** bundled into it, so nothing here
+renames an exported function, drops an argument, or changes a documented
+return shape. It does change bytes in two narrow places, both stated in full
+below — an in-memory SSSOM mapping set carrying a typed column, and
+`semantic_suggestions.csv`, which gains a `decision_reason` column.
 
 ### Added
 

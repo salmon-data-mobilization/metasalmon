@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S5 — R-native review flow and API hygiene"
-description: "Scriptable, re-runnable semantic review and editing (review_semantics / accept_suggestion / apply_sdp_semantics / review_metadata / set_sdp_*), condition classes, and accessors; ships as the next minor at ship time. Backlog items 58, 59, 60, 74. M1-M5 all landed 2026-08-25 and #74 is closed; #58 and #59 remain."
+description: "Scriptable, re-runnable semantic review and editing (review_semantics / accept_suggestion / apply_sdp_semantics / review_metadata / set_sdp_*), condition classes, and accessors. Backlog items 58, 59, 60, 74. M1-M5 all landed 2026-08-25 and #74 is closed; shipped as metasalmon 0.5.0 the same day; #58 and #59 remain."
 status: draft
 tags: [review, api]
 psc:
@@ -9,10 +9,19 @@ psc:
   contexts: [metasalmon:context:hub-coordination]
 ---
 
-# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · ships as the next minor
+# S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · **shipped as 0.5.0**
 
 **#74 is closed (2026-08-25), and #60's accessor clause with it — #60's other
 clauses stand. #58 and #59 are what remain of this stream.**
+
+**Released as metasalmon `v0.5.0` on 2026-08-25** — annotated tag on the
+release merge, GitHub Release published with the `NEWS.md` entry as its body.
+The card said this stream "ships as the next minor at ship time"; the number
+that turned out to be is **0.5.0**, because S8 took 0.3.0 and S3's fix stream
+took 0.4.0. **It is a minor and not a major because #58 was left out of it**
+(judged 2026-08-25, below): nothing in the release renames an export, drops an
+argument, or changes a documented return shape, so the breaking-release story
+#58 and #59 want is still ahead rather than spent.
 
 **Execplan:** [R-native review and editing](../plans/2026-08-11-r-native-review-and-editing.md)
 (#74) · #58/#59/#60 detail in the [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).
@@ -46,21 +55,29 @@ consumer or even parser of the schema's `constraints.required`** — the fact
 `review_metadata()` is built on — and the descriptor's `contributors` /
 `licenses` blocks still inline in `package_io.py` (≈934–957) rather than
 extracted, which is exactly where R started. The **#118 defect is present in
-the same shape** at `semantics.py:1294`. Both packages claim 0.4.0 and this
-work is unreleased, so no `parity-deviations.md` row is owed yet — this is
-ordinary "R shipped first" state, not a deliberate difference at a claimed
-version.
+the same shape** at `semantics.py:1294`.
 
-**What IS owed the moment this releases, and it is a correction rather than an
-addition:** metasalmonpy's `PARITY.md` **row 31** ends with the claim that
+**This released on 2026-08-25, so the conditional below is no longer
+conditional.** metasalmon is 0.5.0 and metasalmonpy is 0.4.0: the
+`0.4.0→0.5.0` catch-up window is open, and it is still ordinary "R shipped
+first" lag rather than a set of deliberate differences — so it is owed as a
+**port**, and adding `parity-deviations.md` rows for the nine absent functions
+would misfile absence as design. (It would also fail
+`tests/testthat/test-parity-register-guard.R`, which errors on a number present
+in one register and not the other; the register is not the place to record a
+port.)
+
+**What IS owed now, and it is a correction rather than an addition:**
+metasalmonpy's `PARITY.md` **row 31** ends with the claim that
 `strategy = "reviewed"` is *"verified identical to R's output for all three
-strategies"*. That was true when written and is false the moment this ships —
+strategies"*. That was true when written and went false with `v0.5.0` —
 R's `reviewed` path is now exempt from the unattended auto-apply gate (#118),
 and R writes a `decision_reason` column Python does not have. **Nothing will
 announce that**, because the row still reads as a passing verification. It must
 be **amended in place, not joined by a new row**: a new row saying the two
 differ, sitting under an old row saying they were verified identical, leaves a
-reader to guess which sentence is current. The mirror port owes: the nine
+reader to guess which sentence is current. The drafted amendment text is in
+[parity-deviations.md](../parity-deviations.md). The mirror port owes: the nine
 functions, the `decision_reason` column, `decision` replay on queue rebuild,
 the `constraints.required` consumer, and the descriptor-builder extraction.
 
@@ -115,6 +132,14 @@ wants a major bump, and #74 adds roughly ten exported functions, which wants the
 same bump. One breaking-release story is cheaper than three coordinated
 releases. **That minor is no longer 0.3.0** — S8 took it; S5 ships as whatever
 minor is next when it lands.
+
+**Superseded in part, 2026-08-25.** The bundling argument lost to the judgment
+recorded above, and the release proved the milder half of it wrong: #74 adding
+nine exported functions did **not** want a breaking bump, because adding an
+export breaks nobody. Only #58 does. So 0.5.0 shipped #74 alone as an ordinary
+minor, and the "one breaking-release story" is now #58 and #59's to spend
+together, not #74's. Kept rather than rewritten because the paragraph is the
+reasoning that was tested, and it is worth knowing which clause failed.
 
 Independent of every other stream. ~~Smaller sibling: **#75**, an auto-applied
 `method_iri` with no `metadata/methods.csv` — fixed by the execplan's
