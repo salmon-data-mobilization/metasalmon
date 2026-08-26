@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">metasalmon</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.5.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,9 +46,11 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="development version" id="metasalmon-development-version">metasalmon (development version)<a class="anchor" aria-label="anchor" href="#metasalmon-development-version"></a></h2>
+<h2 class="pkg-version" data-toc-text="0.5.0" id="metasalmon-050">metasalmon 0.5.0<a class="anchor" aria-label="anchor" href="#metasalmon-050"></a></h2>
+<p>Released 2026-08-25. Roadmap S5, and the one claim worth putting first: <strong>a salmon data package can now be taken from <code><a href="../reference/create_sdp.html">create_sdp()</a></code> to <code>validate_salmon_datapackage(require_iris = TRUE)</code> without opening a single file in a spreadsheet.</strong> Nine new exported functions — <code><a href="../reference/review_semantics.html">review_semantics()</a></code>, <code><a href="../reference/accept_suggestion.html">accept_suggestion()</a></code>, <code><a href="../reference/accept_suggestion.html">reject_suggestion()</a></code>, <code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code>, <code><a href="../reference/review_metadata.html">review_metadata()</a></code> and the four <code>set_sdp_*()</code> setters — plus the <code><a href="../reference/semantic_suggestions.html">semantic_suggestions()</a></code> / <code><a href="../reference/semantic_llm_assessments.html">semantic_llm_assessments()</a></code> accessors, make the most consequential decision in the pipeline scriptable, re-runnable and recorded. Backlog <strong>#74</strong> is closed, with <strong>#118</strong> and the accessor half of <strong>#60</strong>.</p>
+<p>The release is a minor rather than a major: <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/58" class="external-link">#58</a> (condition classes) wants a breaking bump and was deliberately <strong>not</strong> bundled into it, so nothing here renames an exported function, drops an argument, or changes a documented return shape. It does change bytes in two narrow places, both stated in full below — an in-memory SSSOM mapping set carrying a typed column, and <code>semantic_suggestions.csv</code>, which gains a <code>decision_reason</code> column.</p>
 <div class="section level3">
-<h3 id="added-development-version">Added<a class="anchor" aria-label="anchor" href="#added-development-version"></a></h3>
+<h3 id="added-0-5-0">Added<a class="anchor" aria-label="anchor" href="#added-0-5-0"></a></h3>
 <ul><li>
 <p><strong>A package can now reach strict validation entirely from R.</strong> <code><a href="../reference/review_metadata.html">review_metadata()</a></code> and the <code><a href="../reference/set_sdp_dataset.html">set_sdp_dataset()</a></code> / <code><a href="../reference/set_sdp_dataset.html">set_sdp_table()</a></code> / <code><a href="../reference/set_sdp_dataset.html">set_sdp_column()</a></code> / <code><a href="../reference/set_sdp_dataset.html">set_sdp_code()</a></code> setters complete roadmap stream S5 and close backlog <strong>#74</strong>. <code><a href="../reference/create_sdp.html">create_sdp()</a></code> → <code><a href="../reference/review_semantics.html">review_semantics()</a></code> → <code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> → <code><a href="../reference/review_metadata.html">review_metadata()</a></code> → <code>set_sdp_*()</code> → <code>validate_salmon_datapackage(require_iris = TRUE)</code> <strong>passes, with no file opened in a spreadsheet at any point</strong>, and that whole sequence is asserted end to end in <code>tests/testthat/test-sdp-field-setters.R</code>.</p>
 <p>Until now it could not. The semantic review that shipped last was only half the job, and the half that was missing was the larger one:</p>
@@ -93,7 +95,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="fixed-development-version">Fixed<a class="anchor" aria-label="anchor" href="#fixed-development-version"></a></h3>
+<h3 id="fixed-0-5-0">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-5-0"></a></h3>
 <ul><li>
 <p><strong>A review decision now survives being put down and picked up again.</strong> Three defects, all the same shape — the feature did the right thing once and then forgot it — found by teaching the review flow to learners, which is the harshest usability test an API gets.</p>
 <p><strong>A rejection did not survive rebuilding the queue.</strong> <code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> wrote <code>decision = "rejected"</code> into <code>semantic_suggestions.csv</code> and cleared the field, but nothing ever read that column back, and a cleared field reads as <em>undecided</em>. A reviewer who worked through sixteen slots, rejected four and came back the next day was asked the same four questions with no sign they had ever answered them. <code><a href="../reference/review_semantics.html">review_semantics()</a></code> now replays the recorded decisions, keeps decided slots out of the default queue, and shows them under <code>include_filled = TRUE</code>.</p>
@@ -104,7 +106,7 @@
 <li><p><strong>A reviewed semantic decision is no longer overruled by the unattended auto-apply heuristic.</strong> <code>apply_semantic_suggestions(strategy = "reviewed")</code> ran every accepted row through <code>.ms_filter_auto_apply_suggestions()</code>, the lexical compatibility gate that decides whether a <em>seeded</em> top-1 hit is safe to write into a dictionary nobody has looked at. On the reviewed path a human has read the definition and said yes, so the effect was that a regex silently overruled the decision and the caller was told only that some rows “did not meet the requested filters”. Found while building <code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code>, which would have dropped accepted terms for exactly this reason; the unattended <code>strategy = "top"</code> path keeps the gate, which is the whole reason the gate exists. Backlog <strong>#118</strong>.</p></li>
 </ul></div>
 <div class="section level3">
-<h3 id="changed-development-version">Changed<a class="anchor" aria-label="anchor" href="#changed-development-version"></a></h3>
+<h3 id="changed-0-5-0">Changed<a class="anchor" aria-label="anchor" href="#changed-0-5-0"></a></h3>
 <ul><li><p><strong>The documentation stops sending users to a spreadsheet.</strong> The quickstart vignette’s section titled <em>“Review In Excel”</em> — which was this stream’s whole subject — is now <em>“Review In R”</em> and walks the two-call flow end to end. The <code>README-review.txt</code> checklist that <code><a href="../reference/create_sdp.html">create_sdp()</a></code> writes into every package told users to open the CSVs in Excel; it now hands them the R calls in order, each of which prints the call for the next step. <code><a href="../reference/create_sdp.html">create_sdp()</a></code>’s own closing message does the same. The spreadsheet path is still supported and is still described — as the fallback, with the reason it is the fallback: a spreadsheet edit leaves no record of <em>why</em> a value was chosen.</p></li>
 <li><p><code>_pkgdown.yml</code>’s <strong>Semantic Review (in R)</strong> group becomes <strong>Review and Edit (in R)</strong> and gains <code><a href="../reference/review_metadata.html">review_metadata()</a></code> and the setters, and the <code>README</code> review workflow names the R path first with the spreadsheet path kept as the supported alternative.</p></li>
 <li>
@@ -115,7 +117,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="fixed-development-version-1">Fixed<a class="anchor" aria-label="anchor" href="#fixed-development-version-1"></a></h3>
+<h3 id="fixed-0-5-0-1">Fixed<a class="anchor" aria-label="anchor" href="#fixed-0-5-0-1"></a></h3>
 <ul><li>
 <p><strong>The 173-row Fraser coho example now reaches a KNB deposit plan.</strong> Its one measurement row, <code>NATURAL_ADULT_SPAWNERS</code>, was missing <code>term_iri</code>, <code>entity_iri</code> and <code>term_type</code>; all three are now filled in the shipped starter dictionary <code>inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv</code>.</p>
 <p><code>entity_iri</code> is <strong><code>smn:Population</code></strong>, not the <code>gcdfo:ConservationUnit</code> the 30-row demo uses. That is not a copy of the smaller example with a different spelling: this slice keys on <code>POP_ID</code>, which is a finer grain than a Conservation Unit, so annotating it as a CU would have been wrong at the row level while passing every check the package can run.</p>
@@ -141,7 +143,7 @@
 </li>
 </ul></div>
 <div class="section level3">
-<h3 id="internal-development-version">Internal<a class="anchor" aria-label="anchor" href="#internal-development-version"></a></h3>
+<h3 id="internal-0-5-0">Internal<a class="anchor" aria-label="anchor" href="#internal-0-5-0"></a></h3>
 <ul><li>
 <p><strong><code><a href="../reference/create_sdp.html">create_sdp()</a></code>’s deterministic constraint and statistical-modifier prefill is now pinned.</strong> No behaviour changed here — Brett ruled on 2026-08-24 (“Yeah lets go the R way”) that this side was correct and metasalmonpy moved — but the <em>reason</em> the divergence survived was that neither suite pinned the positive case. Both had asserted several times over that the two qualifier slots stay <strong>empty</strong> when the evidence gate rejects, and neither asserted they ever fill. <code>tests/testthat/test-package-helpers.R</code> now drives a <code>mean_wild_spawner_count</code> column through <code><a href="../reference/create_sdp.html">create_sdp()</a></code> and asserts both slots fill <strong>and carry the <code>REVIEW:</code> marker</strong>; the marking is asserted rather than assumed, because review-visibility is the property the ruling turned on. Retires <code>knowledge/parity-deviations.md</code> row 57.</p>
 <p>Two findings worth carrying: this package’s “no role restriction” is true of the <strong>deterministic path only</strong> — the LLM path restricts to the same four core roles the mirror used everywhere — and the two implementations spell the <code>REVIEW:</code> marker differently (<code>REVIEW:</code> here, <code>REVIEW:</code> there). The second is inert to behaviour, invisible to every test on either side, and now registered as row 61 with <a href="knowledge/questions.html">Q18</a> open on it.</p>

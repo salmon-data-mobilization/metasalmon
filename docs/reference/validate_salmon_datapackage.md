@@ -59,7 +59,7 @@ pkg_path <- create_sdp(
 #> Semantic suggestions stored in attr('semantic_suggestions') for downstream
 #> review.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp
+#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpGfPTxr/demo-1-sdp
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -76,7 +76,7 @@ pkg_path <- create_sdp(
 #>   rebuilding the EDH XML first if you need it. README-review.txt has the same
 #>   checklist.
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
-#> ✔ Loaded Salmon Data Package from /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp
+#> ✔ Loaded Salmon Data Package from /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpGfPTxr/demo-1-sdp
 #> Warning: 8 metadata fields still hold a placeholder.
 #> ✖ column_dictionary.csv$column_description, dataset.csv$contact_email,
 #>   dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,
