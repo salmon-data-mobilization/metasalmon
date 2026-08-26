@@ -186,9 +186,13 @@ create_sdp(
 
 - overwrite:
 
-  Logical; if `FALSE` (default), errors if path exists. If `TRUE`, the
-  package is updated in place — see `prune`. Replacement is only allowed
-  for empty directories or directories previously written by
+  Logical; if `FALSE` (default), errors when `path` is a directory that
+  already holds something. An existing but *completely empty* directory
+  is written into without `overwrite` — there is nothing there to
+  destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or
+  an empty `data/` subdirectory all count as content and still require
+  it. If `TRUE`, the package is updated in place — see `prune`.
+  Replacement is only allowed for directories previously written by
   `metasalmon`.
 
 - include_edh_xml:

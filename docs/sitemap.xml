@@ -16,7 +16,9 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/authors.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/index.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/news/index.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/apply_salmon_dictionary.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/benchmark_term_ranking_fixtures.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/chat_decomposition.html</loc></url>
@@ -55,6 +57,9 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_sdp_reproducibility_manifest.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/sources_for_role.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/submit_term_request_issues.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_dwc_mappings.html</loc></url>

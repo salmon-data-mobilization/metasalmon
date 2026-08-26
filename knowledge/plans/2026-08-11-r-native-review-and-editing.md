@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "R-native review and editing flow"
-description: "Execplan for the R-native semantic review and editing flow (stream S5); the 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
+description: "Execplan for the R-native semantic review and editing flow (stream S5); M1-M3 landed 2026-08-25, M4-M5 remain. The 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
 status: draft
 tags: [execplan]
 psc:
@@ -89,16 +89,26 @@ validate_salmon_datapackage(pkg, require_iris = TRUE)
 
 ## Progress
 
-- [ ] M1 — Accessors and read side
-- [ ] M2 — Console view
-- [ ] M3 — Decisions and write-back
+- [x] M1 — Accessors and read side — `semantic_suggestions()` /
+      `semantic_llm_assessments()` (2026-08-25)
+- [x] M2 — Console view — `review_semantics()`, `print.ms_semantic_review()`,
+      `.ms_review_render_lines()`, `.ms_term_browse_url()` (2026-08-25)
+- [x] M3 — Decisions and write-back — `accept_suggestion()`,
+      `reject_suggestion()`, `apply_sdp_semantics()` (2026-08-25)
 - [ ] M4 — Free-text editing
-- [ ] M5 — Docs
+- [ ] M5 — Docs (partially done with M1–M3: `_pkgdown.yml` group, README
+      R-native-first section. The vignette rewrite and the `README-review.txt`
+      generator remain.)
 - [x] 2026-08-11 — Plan written; #75 reproduced; all source-plan citations
       re-checked against the working tree (several had shifted)
 - [x] 2026-08-11 — Review pass: slice-1 scope reversed for methods (see Decision
       Log), byte writers registered in the collation guard, cross-file atomicity
       contract added
+- [x] 2026-08-25 — M1–M3 implemented (PR #97). Full suite green (0 failures,
+      5 skips locally / 4 in CI), `R CMD check` Status OK, OKF bundle valid.
+      #60's accessor clause closed; #74 narrowed to M4/M5; #118 filed and
+      fixed. See Surprises & Discoveries below for the four things the plan got
+      wrong.
 
 ---
 
@@ -146,6 +156,90 @@ No test asserts a positive auto-apply for `method` or `constraint`. The nearest
 existing test passes only because its `water_level` fixture misses both regexes —
 a test that is green for an incidental reason.
 
+**M1–M3, 2026-08-25 — four things the plan did not survive contact with.**
+
+**1. `.ms_filter_auto_apply_suggestions()` was silently vetoing reviewed
+decisions.** The plan's write-back design assumed
+`apply_semantic_suggestions(strategy = "reviewed")` was simply an unreachable
+consumer waiting for a producer. It is worse than unreachable: it runs every
+accepted row through the *unattended* auto-apply compatibility gate — the
+lexical heuristic that decides whether a seeded top-1 hit is safe to write into
+a dictionary nobody has looked at. So a term a human read the definition of and
+accepted could be dropped because its label did not lexically match the column
+name, and the caller was told only that some rows "did not meet the requested
+filters". Filed as backlog **#118** and fixed here: `reviewed` is exempt, `top`
+keeps the gate. This is why the feature could not have shipped by "just wiring
+up the existing seam".
+
+**2. The descriptor is patched, not rebuilt — the plan said the opposite.**
+The plan specified extracting `.ms_rebuild_datapackage_descriptor(path)` from
+`write_salmon_datapackage()`. That block is ~160 lines interleaved with the CSV
+byte rendering inside a 3.8k-line file, and extracting it would have made this
+change mostly a refactor of the writer with the review flow as a passenger.
+`apply_sdp_semantics()` instead patches the seven `*_iri`/`term_type` field keys
+for exactly the columns the review changed — the same technique
+`migrate_sdp_methods()` already uses and which is already tested — and asserts
+the patched shape matches what a rebuild would emit (present when non-empty,
+**absent** when empty). A rebuild also has a cost the plan did not price: it
+would discard descriptor content a user added by hand. The extraction remains a
+reasonable refactor; it is not a prerequisite for this feature.
+
+**3. The console does not escape its external text, and escaping it would be a
+bug.** The plan's trap list says ontology definitions "must pass through
+`.ms_cli_escape()` before reaching cli". They never reach cli:
+`.ms_review_render_lines()` returns a plain character vector and
+`print.ms_semantic_review()` emits it with `cat()`, which has no template layer.
+Escaping there would render a definition containing `{reach}` as `{{reach}}` —
+corrupting exactly the text the rule protects. The rule is satisfied by keeping
+the text off the template path, and it *is* applied where this feature does use
+cli: every abort carrying a caller- or ontology-supplied string goes through
+`.ms_cli_escape()`/`.ms_cli_bullets()`, which `test-cli-safety-guard.R` checks
+automatically because it walks the whole installed namespace. The `cat()` branch
+gets its own pinned test, because a static guard cannot see a path it does not
+model. **Also corrected:** the plan says to use "cli's own fallback when
+`ansi_has_hyperlink_support()` is `FALSE`". That fallback drops the URL entirely
+when the link text differs from it, which would hide the OLS deep link
+completely. The fallback is written out rather than inherited.
+
+**4. `create_sdp()`'s default shortlist is one candidate long.**
+`semantic_max_per_role` defaults to **1** (`R/dictionary-helpers.R`), so the
+"numbered shortlist" a default package carries has exactly one entry per slot.
+The feature works, but its value shows only at `semantic_max_per_role = 3` or
+higher, or after re-running `suggest_semantics()`. Nothing in the plan noticed
+this, and the target-experience mock-up in this document silently assumes
+otherwise.
+
+**Two limits found by testing, both now documented rather than hidden.**
+`review_semantics()` shows *shortlists, not gaps*: a slot for which retrieval
+returned nothing never appears in the queue, so a user can complete the entire
+review and still fail `require_iris = TRUE`. That is the strongest argument yet
+for M4's `review_metadata()`, which reports required-but-unfilled fields
+regardless of whether anything was suggested. Second, `require_iris = TRUE` also
+refuses free-text `MISSING …:` placeholders, so **proof 5 of this plan cannot be
+met by M1–M3 alone** — the round-trip test fills those fields with a direct CSV
+edit and says in a comment that M4 is what replaces that step. Proof 6 ("a user
+who never opens Excel can complete the whole review") is therefore *also* M4's
+to deliver; M1–M3 deliver it for the semantic half only.
+
+**Two defects the printed-call test caught before release**, recorded because
+they are the exact failure mode this feature was most likely to ship with. A
+`tables.csv` slot carries no `column_name`, so the console printed
+`accept_suggestion(review, "NA", "entity", rank = 1)` — a call naming a column
+that does not exist. And because `review$column_name == "spawner_count"` is `NA`
+for that row, `df[NA, ]` inserted a phantom all-NA row, which made an unrelated
+dictionary slot look ambiguous and print a spurious `table = "spawners"`. One
+unguarded `==` against a legitimately-`NA` column produced both. The fix is
+`.ms_review_match_slot_rows()`, where every comparison is `!is.na()`-guarded and
+`column = NULL` deliberately selects the column-less slots.
+
+**One scope decision.** `dataset.csv` · `keywords` is excluded from the queue:
+it is a comma-joined list, not a single IRI, so it has no "accept this
+candidate" semantics. Queueing it would reproduce exactly the internally
+unsatisfiable state the decision log below reversed itself over. `tables.csv` ·
+`observation_unit_iri` **is** in scope, because `create_sdp()` can leave a
+`REVIEW:` marker there and a marker the console cannot clear would block strict
+validation.
+
 ---
 
 ## Decision Log
@@ -161,6 +255,10 @@ a test that is green for an incidental reason.
 | Write-back is surgical, then rebuild `datapackage.json` from the metadata | `datapackage.json` duplicates title/description/creator/contacts/license, and the rule that would catch drift is one of the three dead rules in `sdp.rules.yaml`. Resync rather than warn | 2026-08-11 |
 | Bundle into 0.3.0 with #58/#59/#60 | #60 is a **prerequisite**, not an adjacency: the review queue must read those attributes through a supported accessor. #58 already wants a major bump, and this adds ~10 exported functions | 2026-08-11 |
 | ~~Method rows shown but not acceptable in slice 1~~ **Superseded** — see the last row | `create_sdp()` can already leave a `REVIEW:`-prefixed `method_iri` (#75) and that marker blocks strict validation — hiding it would be worse than not handling it | 2026-08-11 |
+| Write-back addresses a slot by `target_sdp_file` + `target_row_key` + `target_sdp_field` | The producer already chose that address in `.ms_semantic_discover_targets()`. Re-deriving one would be a second spelling of the same thing, free to drift | 2026-08-25 |
+| Descriptor patched surgically, not rebuilt — **supersedes** the "rebuild `datapackage.json`" row above | Extraction is a 160-line refactor of `write_salmon_datapackage()` with this feature as a passenger, and a rebuild would discard hand-added descriptor content. The patch asserts it produces the shape a rebuild would | 2026-08-25 |
+| Console emits via `cat()`, and therefore does **not** escape external text | `.ms_cli_escape()` is the mechanism for the cli template path. On a `cat()` path it would print `{{reach}}` for `{reach}`, corrupting the text the rule protects. The rule is met by keeping the text off the template path; the cli aborts in the same files still escape, and the namespace-walking guard checks them | 2026-08-25 |
+| `dataset.csv`/`keywords` excluded from the queue; `tables.csv`/`observation_unit_iri` included | A keyword list has no "accept this candidate" semantics, and showing an undecidable row is the state the row below reversed itself over. An `observation_unit_iri` **can** carry a `REVIEW:` marker, so excluding it would leave a marker the console cannot clear | 2026-08-25 |
 | **Reversed: #75 is fixed in slice 1 by suppressing method/constraint auto-apply.** Method *acceptance* + `methods.csv` registration stay slice 2 | Review caught that the two rows above were jointly unsatisfiable: showing an unacceptable `REVIEW:` marker means slice 1 cannot deliver proof 5 (validation passes) or proof 6 (finish without Excel) for any package with a method-ish column name. Stopping the marker at its source is smaller than supporting acceptance, and it closes #75 | 2026-08-11 |
 
 ---
@@ -381,4 +479,45 @@ half-updated.
 
 ## Outcomes & Retrospective
 
-_To be completed as milestones land._
+**M1–M3, 2026-08-25.** The feature works and the console is what the plan
+described. What is worth carrying forward is narrower than that.
+
+**The one thing that mattered most was the cheapest to build.** Almost all the
+value of this milestone is in a design decision — print the call, let the user
+paste it — that costs nothing to implement and that a reasonable implementer
+would have replaced with an interactive prompt, because a prompt *feels* more
+helpful. It is not: a prompt reproduces the spreadsheet's defect in a nicer
+font. The plan was right to write that down in a decision log rather than leave
+it to be re-derived, and this retrospective exists to say the same thing again.
+
+**The riskiest artefact in the feature was a string.** Everything else here is
+guarded by machinery that already existed: collation, atomic writes,
+containment, cli safety. The printed call had no guard at all, and it is the
+part a user actually executes. Writing a test that *evaluates every printed
+line and asserts the resulting decision* found two defects in the first working
+version, both from the same unguarded `==` against a legitimately-`NA` column.
+The generalisable rule: **if a program's output is meant to be run, run it in
+the tests.** Rendering assertions (`grepl` on the line) would have passed over
+both.
+
+**The plan's four wrong calls were all in the same direction.** Each assumed an
+existing mechanism could be reused as-is: the `strategy = "reviewed"` seam
+(which silently filtered), the descriptor rebuild (a refactor, not an
+extraction), cli escaping (wrong for a `cat()` path), and cli's hyperlink
+fallback (drops the URL). None was a design error; all four were *unverified
+assumptions about code the plan cited but did not run*. A plan that cites a
+line number has checked that the line exists, not that it does what its name
+says.
+
+**What this milestone did not deliver, restated because it is easy to overclaim
+from the NEWS entry.** The gate in backlog #74 is met for IRIs and only IRIs.
+`validate_salmon_datapackage(require_iris = TRUE)` still fails after a complete
+console review, and the plan's proofs 5 and 6 belong to M4. The round-trip test
+fills the free-text fields with a direct CSV edit precisely so that this stays
+visible in the test rather than being smoothed over.
+
+**Kept for M4.** `review_metadata()` is now the more important half of what
+remains, not the smaller one. It closes both open gaps at once — free-text
+placeholders *and* the shortlists-not-gaps blind spot — because it reads
+required-but-unfilled from the schema rather than from whatever retrieval
+happened to return.

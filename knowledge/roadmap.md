@@ -739,7 +739,9 @@ S9 ontology conventions + alignment ── implementation evidence exists, with
                                        alpha.3 merged (MR !5, 2026-08-16) and
                                        is still untagged
 S2 correctness debt          ── independent
-S5 review flow (next minor)  ── independent (#60 → #74 internally)
+S5 review flow (next minor)  ── independent (#60 → #74 internally); #74's
+                                semantic half landed 2026-08-25 (M1–M3),
+                                M4/M5 + #58/#59 remain
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
@@ -800,7 +802,7 @@ release half of that gate is satisfied.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
-- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8)
+- [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8) · **M1–M3 landed 2026-08-25**: `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` plus the #60 accessors, so the semantic review is scriptable and re-runnable and the write-back is surgical, idempotent and cross-file atomic. **#60 narrowed** (accessor clause closed), **#74 narrowed** to M4/M5, **#118** filed and fixed (the unattended auto-apply heuristic was silently overruling explicit review decisions). **Still open and load-bearing:** M4's `review_metadata()` / `set_sdp_*()` — until it lands, strict validation still fails after a complete semantic review, because free-text placeholders are spreadsheet-edited and the console shows *shortlists, not gaps*. **#58 judged separable from the PR** (a release-bundling argument, not a PR one) and **#116 assessed and ruled separate** from this write-back. **Mirror owed:** metasalmonpy needs the whole M1–M3 surface plus the #118 fix, unversioned until the parity claim is measured
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it

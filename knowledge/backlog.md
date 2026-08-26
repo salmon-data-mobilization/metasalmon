@@ -51,7 +51,9 @@ Severity = how much it can bite a real user.
   and **#95**, **#103–#108**, **#111**, **#112**, **#113**, **#114** (both
   ruled 2026-08-24 and both unimplemented) and **#115**, **#116**, **#117**
   (all new 2026-08-25), plus
-  item 0 (gcdfo). Open only in
+  item 0 (gcdfo). **#74 narrowed 2026-08-25** to M4/M5 (free-text editing and
+  docs); **#60 narrowed** the same day (its accessor clause closed); **#118**
+  filed and fixed the same day. Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain), and
@@ -1200,23 +1202,47 @@ despite documenting itself as the end-to-end pre-flight.
 
 ### Open — feature
 
-**#74 R-native semantic review and editing.** The documented review workflow
-leaves R: open `metadata/column_dictionary.csv` in a spreadsheet, read
-`semantic_suggestions.csv` as a shortlist, copy an IRI across by hand. The only
-record of the decision is the mutated CSV — the one unreproducible link in a
-chain that is otherwise byte-reproducible and guarded.
+**#74 R-native semantic review and editing. NARROWED 2026-08-25 to free-text
+editing (M4) and the docs rewrite (M5); the semantic half shipped.**
+`review_semantics()`, `accept_suggestion()`, `reject_suggestion()` and
+`apply_sdp_semantics()` are in the development version, with the accessors #60
+required. The console prints the exact decision call and the user pastes it —
+that paste is the audit trail, and it is why there is no prompt loop. Design and
+milestones: `knowledge/plans/2026-08-11-r-native-review-and-editing.md`, whose
+Surprises section records the four things the plan got wrong.
 
-The write-back seam already exists and is unreachable:
-`apply_semantic_suggestions(strategy = "reviewed")` filters a `decision` column
-on `accepted`/`accept` (`R/semantics-helpers.R:844`), **nothing writes that
-column, and nothing reads `semantic_suggestions.csv` back**. This feature is the
-missing producer. Design and milestones:
-`knowledge/plans/2026-08-11-r-native-review-and-editing.md`.
+The write-back seam the original item named is now reachable *and* correct:
+`apply_semantic_suggestions(strategy = "reviewed")` filtered a `decision` column
+nothing wrote, and it also ran accepted rows through the unattended auto-apply
+heuristic — see **#118**, filed and fixed in the same change.
+`apply_sdp_semantics()` now writes that `decision` column back into
+`semantic_suggestions.csv`, so the decision survives in the package and not only
+in the user's script.
 
-*Gate:* `create_sdp()` → `review_semantics()` → `accept_suggestion()` →
-`apply_sdp_semantics()` → `validate_salmon_datapackage(require_iris = TRUE)`
-passes with no `REVIEW:` markers left **and the data CSV bytes unchanged** —
-the byte assertion is the only one that fails if the writer is not surgical.
+*Gate, measured:* `create_sdp()` → `review_semantics()` → `accept_suggestion()`
+→ `apply_sdp_semantics()` leaves **no `REVIEW:` markers** and the **data CSV
+bytes byte-identical**, and re-applying the same review produces identical
+bytes. All three are asserted in `tests/testthat/test-metadata-write.R`.
+
+**What remains open, and it is not cosmetic.** `validate_salmon_datapackage(path,
+require_iris = TRUE)` still fails after a complete semantic review, for two
+reasons the shipped half cannot address:
+
+1. **Free-text placeholders.** `MISSING DESCRIPTION:` / `MISSING METADATA:` in
+   `dataset.csv`, `tables.csv` and `column_dictionary.csv` are refused by strict
+   validation and are still edited in a spreadsheet. That is M4:
+   `review_metadata()` plus the `set_sdp_*()` setters. The round-trip test fills
+   them with a direct CSV edit and says so, because pretending the gate was met
+   would be the more expensive lie.
+2. **`review_semantics()` shows shortlists, not gaps.** A slot for which
+   retrieval returned nothing never enters the queue, so a user can complete the
+   whole console review and still be missing a required IRI. `review_metadata()`
+   is the reporter that closes this, because it reads
+   required-but-unfilled from the schema rather than from the suggestions.
+
+So the plan's proof 6 — *a user who never opens Excel can complete the whole
+review* — is delivered for the **semantic** half only. Do not read the shipped
+functions as closing it.
 
 ### P2 — correctness and conformance debt
 
@@ -2602,9 +2628,17 @@ example in `\dontrun{}`, including examples that run offline in under a second,
 so `R CMD check` validates almost no public example code; 15 of 45 exports ship no
 examples. `NAMESPACE` blanket-imports the superseded `httr` while `httr2` is also
 a hard Import. `DESCRIPTION` has a hand-written `Author:` naming someone absent
-from `Authors@R`. No documented naming convention for the exported surface;
-`semantic_suggestions` / `semantic_llm_assessments` are attributes with no
-accessor.
+from `Authors@R`. No documented naming convention for the exported surface.
+
+**One clause closed 2026-08-25:** `semantic_suggestions` /
+`semantic_llm_assessments` were attributes with no accessor. They now have
+`semantic_suggestions()` and `semantic_llm_assessments()`, which also read a
+written package's `semantic_suggestions.csv` and are deliberately `NULL`-on-absent
+so they are drop-in replacements for the `attr()` calls `?suggest_semantics`
+documents. This was #74's hard prerequisite — the review queue had to read those
+attributes through a supported accessor. Every other clause of this item stands:
+the `\dontrun{}` ratio, the 15 exports with no examples, the blanket `httr`
+import, and the hand-written `Author:`.
 
 **#112 `migrate_sdp_methods()`'s no-op report shape is internally
 inconsistent.** The nothing-to-migrate early return builds `report$tables` as
@@ -2622,6 +2656,65 @@ for the same reason. *Retires when:* the no-op branch returns the same
 three-column empty frame as the populated paths (or a logged ruling says the
 shapes deliberately differ), metasalmonpy mirrors the same shape in the same
 stream, and a test on each side pins the column set of both branches.
+
+**#118 A reviewed semantic decision was overruled by the unattended auto-apply
+heuristic. FIXED 2026-08-25, in the change that found it.** Severity when live:
+**high**, and invisible — the symptom was a term the user had read the definition
+of and explicitly accepted simply not appearing in the dictionary, with the only
+feedback being a count of rows that "did not meet the requested filters".
+
+`apply_semantic_suggestions()` ran `.ms_filter_auto_apply_suggestions()` on
+every strategy, including `strategy = "reviewed"`. That helper is the
+*unattended* gate: a lexical compatibility heuristic answering "is this seeded
+top-1 hit safe to write into a dictionary nobody has looked at". On the reviewed
+path the premise is the opposite — a human looked at it — so the heuristic was
+overruling the decision it exists to substitute for. It vetoes every suggestion
+for an `identifier` or `temporal` column outright, and measurement columns
+whenever the label does not lexically match.
+
+Found while building `apply_sdp_semantics()` (stream S5), which would have
+silently dropped accepted terms for exactly this reason. Fixed by exempting
+`reviewed`; `top` keeps the gate, which is the whole reason the gate exists.
+Pinned in `tests/testthat/test-metadata-write.R` with both halves asserted —
+`reviewed` applies, `top` still vetoes — because a fix that only asserted the
+new behaviour would not notice the gate being removed entirely.
+
+Nobody could have been relying on the old behaviour: nothing in the package
+wrote the `decision` column `strategy = "reviewed"` filters on, so the path was
+unreachable in practice.
+
+**The mirror has the identical defect, measured 2026-08-25 and not edited
+here.** `metasalmonpy/semantics.py:1294` calls
+`_filter_auto_apply_suggestions(out, suggestions_df)` unconditionally, with no
+strategy guard, against the same `{"top", "reviewed", "llm"}` set
+(`semantics.py:1214`) and the same lexical helper (`semantics.py:487-530`). It
+bites there for the same reason it bit here: the helper only early-returns for a
+row with no `target_sdp_field`, and every column-level target `suggest_semantics`
+emits sets one (`semantics.py:759`, `:814`).
+
+**Two things make this more than a straight port, and both are easy to miss.**
+(1) Python's docstring at `semantics.py:1196-1204` *documents the current
+behaviour as intended*, citing `PARITY.md` row 57 — so the fix is a guard **and**
+a docstring correction, not a guard alone. (2) **`PARITY.md` row 31
+(`PARITY.md:65`) claims the reviewed strategy is "verified identical to R's
+output for all three strategies".** That claim is true today, because both sides
+still have the defect at the 0.4.0 both packages claim. It becomes **false the
+moment metasalmon releases** this fix, and nothing will say so. Row 31 must be
+**amended** in the mirror stream, not merely supplemented with a new row — a
+stale "verified identical" is worse than a missing row, because it tells the
+next reader the question has already been asked and answered.
+
+Why the Python suite is green over it: the reviewed-strategy fixture
+(`tests/test_semantics.py:457-482`) is compatible-by-construction — its column
+description at `:448-451` lexically contains both accepted search queries, so
+the heuristic happens to pass every accepted row. It never exercises
+accept-then-drop.
+
+*Retires when:* fixed here (done); metasalmonpy adds the same guard, corrects
+the `semantics.py:1196-1204` docstring, amends `PARITY.md` row 31, and pins the
+accept-then-drop case with a fixture whose label does **not** lexically match
+the column. That fix is independently shippable ahead of the review-flow port —
+it depends on none of that surface existing.
 
 ### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
 
@@ -2713,6 +2806,39 @@ any user-facing doc — including `guides/semantic-review.qmd`, whose whole
 subject is semantic review. So this is not an R defect to mirror; it is one
 design decision that left the same hole twice, and the fix is owed on both
 sides in the same stream.
+
+**Assessed against S5's write-back and ruled SEPARATE (2026-08-25).** The
+question was whether `apply_sdp_semantics()` is the natural producer of
+`reviewed_semantic_selections.csv`, since both are about review decisions. It is
+not, and the reason is structural rather than a matter of missing columns.
+
+**Both closure files are closures over the *finished package*; a review object
+is a log of *one session's decisions*.** `.ms_eml_read_semantic_review()`
+requires the ledger to equal the canonical target set **exactly** — one accepted
+row per final IRI, no more and no fewer — and `.ms_eml_read_vocabulary()`
+requires the same of the measurement IRI set. A reviewer who decides three of
+nine slots, or who decides nothing because the seeded values were already right,
+still needs both files complete. A producer driven by the review object would
+have to invent rows for slots that review never touched, which is the opposite
+of what a review ledger is for. The producer must read the package.
+
+The column gap is real but secondary, and worth recording so the shape of
+`write_sdp_semantic_closure()` is not underestimated. Of the ledger's ten
+columns a review object supplies eight; `confidence` and `review_rationale` are
+human judgements the review API never asks for (`reject_suggestion(reason =)`
+covers rejections only, and rejections are exactly the rows a complete ledger
+must **not** contain). Of the vocabulary's eleven columns it supplies five to
+seven; `native_type`, `source_url` and `source_artifact_sha256` describe the
+*ontology artifact* that was searched, and nothing on the retrieval path records
+them — which is item 4 above, reached independently from the other end.
+
+**What S5 did contribute:** `apply_sdp_semantics()` now writes a `decision`
+column (`accepted` / `not_selected` / `rejected`) back into
+`semantic_suggestions.csv`. That is the first durable in-package record of which
+candidate was chosen and which were passed over, and it is evidence a future
+closure producer can read instead of asking the user to restate it. It narrows
+the *evidence* available to the fix; it does not narrow this item, which stays
+open at its full scope.
 
 *Retires when:* a user can produce a publishable package without `:::` and
 without hand-writing a digest, and the rehearsal script's two internal calls

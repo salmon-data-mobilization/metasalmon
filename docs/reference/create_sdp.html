@@ -233,10 +233,13 @@ releases only when one is available. Defaults to <code><a href="https://rdrr.io/
 
 
 <dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
-<dd><p>Logical; if <code>FALSE</code> (default), errors if path exists. If
+<dd><p>Logical; if <code>FALSE</code> (default), errors when <code>path</code> is a
+directory that already holds something. An existing but <em>completely empty</em>
+directory is written into without <code>overwrite</code> — there is nothing there to
+destroy — while a dot-file, a stale <code>.metasalmon-package</code> sentinel, or an
+empty <code>data/</code> subdirectory all count as content and still require it. If
 <code>TRUE</code>, the package is updated in place — see <code>prune</code>. Replacement is only
-allowed for empty directories or directories previously written by
-<code>metasalmon</code>.</p></dd>
+allowed for directories previously written by <code>metasalmon</code>.</p></dd>
 
 
 <dt id="arg-include-edh-xml">include_edh_xml<a class="anchor" aria-label="anchor" href="#arg-include-edh-xml"></a></dt>

@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S5 — R-native review flow and API hygiene"
-description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as the next minor at ship time. Backlog items 58, 59, 60, 74."
+description: "Scriptable, re-runnable semantic review (review_semantics / accept_suggestion / apply_sdp_semantics), condition classes, and accessors; ships as the next minor at ship time. Backlog items 58, 59, 60, 74. M1-M3 landed 2026-08-25; M4/M5, #58 and #59 remain."
 status: draft
 tags: [review, api]
 psc:
@@ -14,12 +14,56 @@ psc:
 **Execplan:** [R-native review and editing](../plans/2026-08-11-r-native-review-and-editing.md)
 (#74) · #58/#59/#60 detail in the [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).
 
-**#74 is the headline.** Today the documented review workflow leaves R for a
-spreadsheet, and the only record of the most consequential decision in the
-pipeline is a mutated CSV — the single unreproducible link in a chain that is
-otherwise byte-reproducible and guarded. `review_semantics()` /
-`accept_suggestion()` / `apply_sdp_semantics()` make the decision scriptable and
-re-runnable.
+**#74 is the headline, and its semantic half landed 2026-08-25.**
+`review_semantics()` / `accept_suggestion()` / `reject_suggestion()` /
+`apply_sdp_semantics()` are in the development version, with the #60 accessors
+(`semantic_suggestions()` / `semantic_llm_assessments()`) that were their hard
+prerequisite. The console prints the exact decision call and the user pastes it
+into a script — no prompt loop, no TUI, because **the paste is the audit trail**
+and an interactive prompt would leave the decision as unreproducible as the
+spreadsheet it replaces.
+
+**What is done (execplan M1–M3):** the read side and accessors; the console
+view; decisions and a surgical, re-runnable, cross-file-atomic write-back that
+leaves the data CSV bytes untouched. One defect was found and fixed on the way —
+**#118**, the unattended auto-apply heuristic silently overruling explicit
+review decisions — which is why this could not have shipped by merely wiring up
+the existing `strategy = "reviewed"` seam.
+
+**Mirror state, measured 2026-08-25 (metasalmonpy not edited).** All four
+pieces are gaps there: no accessor for the suggestion attributes (Python's only
+path is the raw `df.attrs[...]`, and `read_salmon_datapackage` never reads
+`semantic_suggestions.csv` back at all), no review-flow surface of any kind
+(zero hits for the four function names), and the **#118 defect present in the
+same shape** at `semantics.py:1294`. Both packages claim 0.4.0 and this work is
+unreleased, so no `parity-deviations.md` row is owed yet — this is ordinary "R
+shipped first" state, not a deliberate difference at a claimed version. **What
+IS owed the moment this releases:** metasalmonpy's `PARITY.md` **row 31** claims
+the reviewed strategy is *"verified identical to R's output for all three
+strategies"*. That is true today and becomes false on release, and nothing will
+announce it — the row must be amended, not merely joined by a new one.
+
+**What remains, and it is what the stream still ships for.** M4 (free-text
+editing: `review_metadata()` and the `set_sdp_*()` setters) and M5 (the vignette
+and `README-review.txt` rewrite; `_pkgdown.yml` and the README already name the
+R path first). Until M4 lands, `validate_salmon_datapackage(require_iris = TRUE)`
+still fails after a complete semantic review, for two reasons: free-text
+`MISSING …:` placeholders are refused and are still spreadsheet-edited, and
+`review_semantics()` shows **shortlists, not gaps** — a slot retrieval found
+nothing for never enters the queue. `review_metadata()` closes both, because it
+reads required-but-unfilled from the schema rather than from the suggestions.
+So the plan's proof 6 — *a user who never opens Excel can complete the whole
+review* — is delivered for the semantic half only. #58 and #59 are untouched.
+
+**#58 was judged, 2026-08-25, and does not need to be in the same PR.** The
+argument for bundling is about the *release*, not the change: both want a
+breaking bump, and one breaking-release story is cheaper than three. Condition
+classes are ~450 mechanical call-site edits across the whole package and share
+no code with the review flow, so bundling them into one PR would only make both
+harder to review. #58 can land any time before this stream's release; the
+review-flow functions deliberately do **not** invent a class naming scheme
+ahead of that ruling, because a half-classed package is worse than an unclassed
+one.
 
 **Why these four ship together:** #60 (the `semantic_suggestions` /
 `semantic_llm_assessments` attributes have no accessor) is #74's prerequisite —
