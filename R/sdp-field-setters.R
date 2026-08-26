@@ -480,7 +480,7 @@ review_metadata <- function(path) {
       .ms_scalar_text(head_row$code_value)
     )
     heading_parts <- heading_parts[nzchar(heading_parts)]
-    lines <- c(lines, .ms_review_rule(paste(heading_parts, collapse = " · ")))
+    lines <- c(lines, .ms_review_rule(paste(heading_parts, collapse = " \u00b7 ")))
 
     for (i in seq_len(nrow(rows))) {
       lines <- c(lines, paste0(
@@ -615,7 +615,7 @@ print.ms_metadata_review <- function(x, ...) {
   if (length(hits) == 0L) {
     available <- unique(apply(
       as.matrix(frame[, intersect(names(keys), names(frame)), drop = FALSE]),
-      1, function(row) paste(row, collapse = " · ")
+      1, function(row) paste(row, collapse = " \u00b7 ")
     ))
     cli::cli_abort(
       c(
