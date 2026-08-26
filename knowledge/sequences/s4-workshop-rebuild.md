@@ -202,12 +202,13 @@ exists, now four parity milestones back.
 scoped as a rebuild.* Recorded here so that "S4 is blocked" stops being read as
 "S4 is fine where it is".
 
-## The workshop's CI has been red on every PR, and not for the reason it looks like
+## The workshop's CI was red on every PR, and not for the reason it looked like
 
-**Measured 2026-08-25 from the failing run's log.** The `Receive Pull Request`
-check fails on every recent workshop PR — including `fix/2026-08-21-currency-pass`,
-which was **merged red** — reporting eleven packages `renv::restore` could not
-install, with `metasalmon` among them. That reads as the stale 0.3.0 pin's
+**Measured 2026-08-25 from the failing run's log, then fixed and confirmed
+green.** The `Receive Pull Request` check had failed on every recent workshop PR
+— including `fix/2026-08-21-currency-pass`, which was **merged red** —
+reporting eleven packages `renv::restore` could not install, with `metasalmon`
+among them. That reads as the stale 0.3.0 pin's
 dependency tree, and the S4 story made it easy to believe.
 
 It is not. The runner is **R 4.6.1**, and the log's actual error is
@@ -217,17 +218,34 @@ withdrawing those non-API entry points; the other **nine are cascade failures**
 downstream of exactly those two, `metasalmon`'s own spelled out in the log as
 *"dependency failed (usethis, yaml)"*. So moving the metasalmon pin alone could
 not have fixed it — metasalmon's `Imports` are byte-identical between 0.3.0 and
-0.5.0. PR #6 bumps `base64enc` to 0.1-6 and `yaml` to 2.3.12, which is the
-minimal change addressing the measured cause.
+0.5.0. PR #6 bumps `base64enc` to 0.1-6, `yaml` to 2.3.12 and
+`htmltools` to 0.5.9, which is the minimal change addressing the measured
+cause.
 
-Two things worth carrying past this fix. **A package named in a failure list is
-not necessarily a package that failed**: nine of the eleven were named because
-something they depend on failed, and the one name that mattered was two lines
-further down. And **a red check that has been red long enough stops being read**
-— this one was merged through, which is what makes the next genuine failure
-invisible.
-*Retires when:* the check goes green on a workshop PR, or the failure changes
-cause and this paragraph is rewritten rather than trusted.
+**It went green, in two rounds, and the second round is the interesting one.**
+Bumping those two took the failure list from eleven packages to six: both
+installed, and the error moved to `htmltools` 0.5.8.1 reporting the *identical*
+`SETLENGTH` symbol, with the other five named only as *"dependency failed
+(htmltools, …)"*. `htmltools` → 0.5.9 cleared it. **`Receive Pull Request` is
+now green on workshop PR #6 — the first green run in this series.** Three
+packages, one cause, and the failure list shrank 11 → 6 → 0.
+
+Scope was held deliberately: the lockfile carries **thirteen** compiled packages
+behind CRAN, and only the three CI actually failed on were bumped. Several of
+the rest are major (`curl` 7→8, `fs` 1→2, `jsonlite` 1→2) with nothing yet
+saying they are needed. A fourth `SETLENGTH` failure is the signal to decide
+whether the lockfile wants a wholesale refresh instead of another single bump.
+
+Three things worth carrying past this fix. **A package named in a failure list
+is not necessarily a package that failed**: nine of the eleven were named
+because something they depend on failed, and the one name that mattered was two
+lines further down. **A cascade hides its own depth** — clearing the first root
+cause did not reveal how many more there were, it revealed exactly one more, and
+only by being run. And **a red check that has been red long enough stops being
+read** — this one was merged through, which is what makes the next genuine
+failure invisible; it is now green, so the next failure means something again.
+*Retires when:* the failure changes cause and this paragraph is rewritten rather
+than trusted.
 
 ## The S3 dependency is real but conditional
 
