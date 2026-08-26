@@ -105,21 +105,24 @@ measurement fields (<code>term_iri</code>, <code>property_iri</code>, <code>enti
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Semantic suggestions stored in attr('semantic_suggestions') for downstream</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> review.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Dictionary validation passed</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpfA1J52/demo-1-sdp</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Created Salmon Data Package at <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp</span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Created review-ready one-shot package with `create_sdp()`.</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Prefilled semantic values were written directly into the metadata CSVs only</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   where target fields were blank. Compatible table observation-unit drafts can</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   be auto-applied using observation-unit/description first and otherwise table</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   label/id fallback. Any <span style="color: #0000BB;">"REVIEW:"</span> entries already live in the metadata CSVs</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span>   and must be confirmed or edited there.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Open <span style="color: #0000BB;">README-review.txt</span>, then review <span style="color: #0000BB;">metadata/column_dictionary.csv</span> and</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   <span style="color: #0000BB;">metadata/tables.csv</span> in Excel first. Use <span style="color: #0000BB;">semantic_suggestions.csv</span> only if you</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   want more context or a better match.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Next: replace placeholders, remove any <span style="color: #0000BB;">"REVIEW:"</span> markers once final, rebuild</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   EDH XML if needed, then run `validate_salmon_datapackage(pkg_path,</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span>   require_iris = TRUE)`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Review the seeded IRIs with `review &lt;- review_semantics(pkg_path)`, then</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   paste the printed decision calls and finish with</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `apply_sdp_semantics(pkg_path, review)`.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Then run `review_metadata(pkg_path)` for the free-text fields and any</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BBBB;">ℹ</span> Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   rebuilding the EDH XML first if you need it. <span style="color: #0000BB;">README-review.txt</span> has the same</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span>   checklist.</span>
 <span class="r-in"><span><span class="fu">validate_salmon_datapackage</span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Loaded Salmon Data Package from <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpfA1J52/demo-1-sdp</span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> <span style="color: #00BB00;">✔</span> Loaded Salmon Data Package from <span style="color: #0000BB;">/var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp</span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>8 metadata fields still hold a placeholder.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span style="color: #BB0000;">✖</span> column_dictionary.csv$column_description, dataset.csv$contact_email,</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span>   dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,</span>

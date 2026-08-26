@@ -45,15 +45,16 @@ Severity = how much it can bite a real user.
 - **Closed with a correction to a previously wrong marker:** #9 and #33 — both
   had been marked fixed but were not verifiable from a clean clone. See each item.
 - **Partially addressed:** #26, #29, #30.
-- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #74
-  (feature), #78, #80, #82, #83, #86, #87, **#89**, **#90** (ruled 2026-08-24,
+- **Open:** #3, #13, #22, #23, #24, #31, #44, #48, #49, #53, #55–#61, #78, #80, #82, #83, #86, #87, **#89**, **#90** (ruled 2026-08-24,
   the spec-repo change is unwritten),
   and **#95**, **#103–#108**, **#111**, **#112**, **#113**, **#114** (both
   ruled 2026-08-24 and both unimplemented) and **#115**, **#116**, **#117**
   (all new 2026-08-25), plus
-  item 0 (gcdfo). **#74 narrowed 2026-08-25** to M4/M5 (free-text editing and
-  docs); **#60 narrowed** the same day (its accessor clause closed); **#118**
-  filed and fixed the same day. Open only in
+  item 0 (gcdfo), and **#119**, **#120** (both new 2026-08-25). **#74 closed
+  2026-08-25** — the whole R-native review and editing flow shipped, and a
+  package now reaches strict validation entirely from R; **#60 narrowed** the
+  same day (its accessor clause closed, every other clause stands, so it stays
+  open above); **#118** filed and fixed the same day. Open only in
   part: **#76** (its crosswalk-retarget half), **#79** (four of its six
   findings shipped with S11 slice 2; the KNB-vignette split and the export
   coverage count remain), and
@@ -1200,49 +1201,108 @@ declared primary keys, no required-column nullability, no schema-required
 metadata fields, and it reports success on corrupt SSSOM/decomposition artifacts
 despite documenting itself as the end-to-end pre-flight.
 
-### Open — feature
+### Closed — feature
 
-**#74 R-native semantic review and editing. NARROWED 2026-08-25 to free-text
-editing (M4) and the docs rewrite (M5); the semantic half shipped.**
-`review_semantics()`, `accept_suggestion()`, `reject_suggestion()` and
-`apply_sdp_semantics()` are in the development version, with the accessors #60
-required. The console prints the exact decision call and the user pastes it —
-that paste is the audit trail, and it is why there is no prompt loop. Design and
+**#74 R-native semantic review and editing. CLOSED 2026-08-25.** All five
+milestones shipped the same day: `review_semantics()`, `accept_suggestion()`,
+`reject_suggestion()` and `apply_sdp_semantics()` with the accessors #60
+required (PR #97), then `review_metadata()`, `set_sdp_dataset()`,
+`set_sdp_table()`, `set_sdp_column()` and `set_sdp_code()`. Design and
 milestones: `knowledge/plans/2026-08-11-r-native-review-and-editing.md`, whose
-Surprises section records the four things the plan got wrong.
+Surprises section records what each half got wrong.
 
-The write-back seam the original item named is now reachable *and* correct:
-`apply_semantic_suggestions(strategy = "reviewed")` filtered a `decision` column
-nothing wrote, and it also ran accepted rows through the unattended auto-apply
-heuristic — see **#118**, filed and fixed in the same change.
-`apply_sdp_semantics()` now writes that `decision` column back into
-`semantic_suggestions.csv`, so the decision survives in the package and not only
-in the user's script.
+*Gate, measured — and this is the whole item:* `create_sdp()` →
+`review_semantics()` → `accept_suggestion()` → `apply_sdp_semantics()` →
+`review_metadata()` → `set_sdp_*()` →
+`validate_salmon_datapackage(require_iris = TRUE)` **passes, with no file
+opened in a spreadsheet at any point**, and no `REVIEW:` marker or
+`MISSING …:` placeholder remains. The data CSV bytes are byte-identical
+throughout, and re-applying the same review produces identical bytes. Asserted
+in `tests/testthat/test-metadata-write.R` and
+`tests/testthat/test-sdp-field-setters.R`, the latter by **executing the calls
+the console printed** rather than by matching their text.
 
-*Gate, measured:* `create_sdp()` → `review_semantics()` → `accept_suggestion()`
-→ `apply_sdp_semantics()` leaves **no `REVIEW:` markers** and the **data CSV
-bytes byte-identical**, and re-applying the same review produces identical
-bytes. All three are asserted in `tests/testthat/test-metadata-write.R`.
+**What closed the half that stayed open, and why it is the interesting part.**
+The M1–M3 half narrowed this item rather than closing it, for two reasons it
+measured honestly: free-text placeholders had no R-native editor, and
+`review_semantics()` shows *shortlists, not gaps* — a slot retrieval returned
+nothing for never entered the queue. Both are the same defect seen from two
+angles: **a queue built from a suggestion list cannot contain what retrieval
+never produced.** `review_metadata()` is not built from suggestions at all. It
+reads the package against the four rules that actually decide strict
+validation — the Frictionless schema's `constraints.required` (parsed as
+`field$requirement` since the schema bundle landed and read by *nothing* until
+now), the placeholder markers, the measurement-column IRI requirement in
+`validate_dictionary()`, and the blank-`observation_unit_iri` check — so an
+empty shortlist and a full one look identical to it.
 
-**What remains open, and it is not cosmetic.** `validate_salmon_datapackage(path,
-require_iris = TRUE)` still fails after a complete semantic review, for two
-reasons the shipped half cannot address:
+Three round-trip defects in the M1–M3 API were found while extending it, and
+fixed in the same change: a rejection was recorded in
+`semantic_suggestions.csv` and never read back (so the next review asked the
+same question again), the rejection **reason** never reached disk at all, and
+an empty queue under a mistyped `columns` filter printed the *completion*
+message. Their shared shape is the reusable finding: **a feature that writes a
+record and never reads it back has not been round-tripped, and no test that
+only writes will say so.**
 
-1. **Free-text placeholders.** `MISSING DESCRIPTION:` / `MISSING METADATA:` in
-   `dataset.csv`, `tables.csv` and `column_dictionary.csv` are refused by strict
-   validation and are still edited in a spreadsheet. That is M4:
-   `review_metadata()` plus the `set_sdp_*()` setters. The round-trip test fills
-   them with a direct CSV edit and says so, because pretending the gate was met
-   would be the more expensive lie.
-2. **`review_semantics()` shows shortlists, not gaps.** A slot for which
-   retrieval returned nothing never enters the queue, so a user can complete the
-   whole console review and still be missing a required IRI. `review_metadata()`
-   is the reporter that closes this, because it reads
-   required-but-unfilled from the schema rather than from the suggestions.
+*Retires when:* it already has. What is still open in stream S5 is #58 and #59,
+which share no code with this.
 
-So the plan's proof 6 — *a user who never opens Excel can complete the whole
-review* — is delivered for the **semantic** half only. Do not read the shipped
-functions as closing it.
+### Open — retrieval
+
+**#119 `variable` and `property` retrieve the identical ranked list from
+`gcdfo`. Reproduced 2026-08-25.** `find_terms("spawner abundance", role =
+"variable")` and the same query with `role = "property"` return the same terms
+in the same order, top hit `https://w3id.org/gcdfo/salmon#SpawnerAbundance` at
+score 18.60 in both. In I-ADOPT terms that is the tool decomposing a variable
+into itself: the Property of `SpawnerAbundance` is `Abundance`, not
+`SpawnerAbundance`.
+
+*Mechanism, located.* `.gcdfo_filter_for_role()` (`R/term_search.R:1739`) keeps
+a term for `variable` when `index$is_variable` **or** its search text matches
+`count|rate|abundance|estimate|escapement|spawner|recruit|run`, and for
+`property` when `index$is_property` **or** it matches
+`abundance|count|rate|length|weight|size|status|confidence|level|phase`. The
+two regexes share `abundance|count|rate`, and **gcdfo terms carry no I-ADOPT
+role typing at all**, so neither `is_variable` nor `is_property` ever
+discriminates: for any query containing one of the shared words, both roles get
+the same index and therefore the same ranking. `smn`, which does carry role
+typing, is not affected the same way.
+
+*Why this is not fixed here.* Deciding which gcdfo terms may legitimately serve
+as a Property is an ontology-modelling question that intersects hub **Q9** and
+the `sources_for_role()` filters, not a review-flow one. Tightening the
+`property` regex blind would silently drop candidates from packages that
+currently get useful ones. Filed with the reproduction so the ruling can be
+made with evidence.
+
+*Workaround, and it is a real one:* `accept_suggestion(review, column, role,
+iri = "https://w3id.org/smn/Abundance")` takes a term the shortlist never
+offered, and `set_sdp_column(path, column, property_iri = "…")` fills a slot
+with no shortlist at all. Both were added by #74.
+
+*Retires when:* the two roles return materially different candidate sets for a
+measurement query against `gcdfo`, or the overlap is ruled correct and this
+item is closed as expected behaviour with that ruling recorded.
+
+**#120 Code-level semantic slots filled by the NuSEDS crosswalk are unreachable
+from the review queue. Reported 2026-08-25, not yet reproduced in a test.** The
+NuSEDS crosswalk prefills `codes.csv` rows with final (non-`REVIEW:`) IRIs and
+produces **no suggestion rows** for them, so `review_semantics()` — which
+queues from suggestions — cannot show them, and `include_filled = TRUE` does
+not help because there is nothing to include. A reviewer who wants to check or
+change one of those code-level terms has no queue entry to work from. Observed
+while writing the S4 lesson, which teaches them as a read-only `codes.csv`
+inspection and says why.
+
+*Partially mitigated by #74:* `set_sdp_code(path, column, code_value, term_iri
+= "…")` can now change one from R, and `review_metadata()` reports a
+code-level placeholder. Neither surfaces the *candidates*, which is what a
+review is for.
+
+*Retires when:* a crosswalk-filled code slot appears in `review_semantics()`
+with its alternatives, or the decision is recorded that crosswalk prefills are
+authoritative and deliberately not reviewable.
 
 ### P2 — correctness and conformance debt
 

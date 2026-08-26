@@ -56,12 +56,14 @@ reference:
       - apply_salmon_dictionary
       - apply_semantic_suggestions
 
-  - title: "Semantic Review (in R)"
-    desc: "Review the seeded IRIs in the console, decide them in a script, and write the decisions back"
+  - title: "Review and Edit (in R)"
+    desc: "Review the seeded IRIs in the console, decide them in a script, fill in the remaining metadata, and write it all back — no spreadsheet required"
     contents:
       - review_semantics
       - accept_suggestion
       - apply_sdp_semantics
+      - review_metadata
+      - set_sdp_dataset
       - semantic_suggestions
       - semantic_llm_assessments
 

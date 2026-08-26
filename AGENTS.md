@@ -225,8 +225,23 @@ Rscript scripts/build-pkgdown.R                          # after doc changes
 
 ```sh
 git diff --check
-R CMD build . && R CMD check <tarball>   # before merging
+R CMD build . && R CMD check <tarball>   # local pass
+
+# The line CI runs (.github/workflows/R-CMD-check.yaml). `error_on = "warning"`
+# means any WARNING fails the merge, so run this rather than reading `Status: OK`.
+Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'
 ```
+
+**A green local check is evidence about your R, not about CI's.** CI installs
+the current release; this machine may be a version behind, and R's own checks
+get stricter between versions — so a check CI fails can be one your R *does not
+run at all*, which no amount of local strictness will surface. Measured
+2026-08-25: two literal `·` characters in R code (R code must be ASCII;
+comments are exempt) gave `checking code files for non-ASCII characters ... OK`
+under **R 4.5.2** locally and `... WARNING` under **R 4.6.1** on CI. Neither
+`--as-cran` nor `error_on = "warning"` would have caught it here, because
+locally there was no warning to escalate. When a local run is the evidence you
+are about to merge on, compare `R.version.string` against the CI log first.
 
 Add a `NEWS.md` entry for any observable behaviour change. `knowledge/`,
 `notes/` (now only `notes/evidence/theme-a/`, which is CI/test-wired), and

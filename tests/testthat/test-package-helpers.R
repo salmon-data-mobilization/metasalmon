@@ -634,18 +634,24 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
 
   review_lines <- readLines(file.path(pkg_path, "README-review.txt"), warn = FALSE)
   expect_true(any(grepl("Salmon Data Package Review Checklist", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("Review the package in Excel", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("[ ] 1. Start in metadata/*.csv", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("metadata/column_dictionary.csv and metadata/tables.csv first", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("Use semantic_suggestions.csv only as a fallback shortlist", review_lines, fixed = TRUE)))
+  # Stream S5 milestone M5: the checklist hands the user the R path. It used to
+  # open with "Review the package in Excel", which was the stream's subject.
+  expect_true(any(grepl("Do this review in R", review_lines, fixed = TRUE)))
+  expect_false(any(grepl("Review the package in Excel", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("review <- review_semantics(pkg_path)", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("apply_sdp_semantics(pkg_path, review)", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("review_metadata(pkg_path)", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("set_sdp_*() call that fills each one", review_lines, fixed = TRUE)))
+  # The spreadsheet stays supported, and stays named as the fallback.
+  expect_true(any(grepl("still works and is still supported", review_lines, fixed = TRUE)))
   expect_true(any(grepl("salmon-domain-ontology/issues/new/choose", review_lines, fixed = TRUE)))
   expect_true(any(grepl("dfo-salmon-ontology/issues/new/choose", review_lines, fixed = TRUE)))
   expect_true(any(grepl("Share the whole package folder", review_lines, fixed = TRUE)))
-  expect_true(any(grepl("read_salmon_datapackage(pkg_path)", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("validate_salmon_datapackage(pkg_path, require_iris = TRUE)", review_lines, fixed = TRUE)))
   if (file.exists(file.path(pkg_path, "metadata", "codes.csv"))) {
     expect_true(any(grepl("If metadata/codes.csv exists", review_lines, fixed = TRUE)))
   }
-  expect_true(any(grepl("already lives there", review_lines, fixed = TRUE)))
+  expect_true(any(grepl("a draft this package wrote for you", review_lines, fixed = TRUE)))
 
   suggestions_written <- readr::read_csv(file.path(pkg_path, "semantic_suggestions.csv"), show_col_types = FALSE)
   expect_setequal(unique(suggestions_written$target_scope), c("column", "table"))

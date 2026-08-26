@@ -59,21 +59,24 @@ pkg_path <- create_sdp(
 #> Semantic suggestions stored in attr('semantic_suggestions') for downstream
 #> review.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpfA1J52/demo-1-sdp
+#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
 #>   be auto-applied using observation-unit/description first and otherwise table
 #>   label/id fallback. Any "REVIEW:" entries already live in the metadata CSVs
 #>   and must be confirmed or edited there.
-#> ℹ Open README-review.txt, then review metadata/column_dictionary.csv and
-#>   metadata/tables.csv in Excel first. Use semantic_suggestions.csv only if you
-#>   want more context or a better match.
-#> ℹ Next: replace placeholders, remove any "REVIEW:" markers once final, rebuild
-#>   EDH XML if needed, then run `validate_salmon_datapackage(pkg_path,
-#>   require_iris = TRUE)`.
+#> ℹ Review the seeded IRIs with `review <- review_semantics(pkg_path)`, then
+#>   paste the printed decision calls and finish with
+#>   `apply_sdp_semantics(pkg_path, review)`.
+#> ℹ Then run `review_metadata(pkg_path)` for the free-text fields and any
+#>   required IRI nothing was suggested for; it prints the `set_sdp_dataset()` /
+#>   `set_sdp_table()` / `set_sdp_column()` call that fills each one.
+#> ℹ Finish with `validate_salmon_datapackage(pkg_path, require_iris = TRUE)`,
+#>   rebuilding the EDH XML first if you need it. README-review.txt has the same
+#>   checklist.
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
-#> ✔ Loaded Salmon Data Package from /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpfA1J52/demo-1-sdp
+#> ✔ Loaded Salmon Data Package from /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//Rtmp70FjXF/demo-1-sdp
 #> Warning: 8 metadata fields still hold a placeholder.
 #> ✖ column_dictionary.csv$column_description, dataset.csv$contact_email,
 #>   dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,

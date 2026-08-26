@@ -170,20 +170,71 @@ Review With Context Files</a></li>
 </ul>
 </div>
 <div class="section level2">
-<h2 id="review-in-excel">Review In Excel<a class="anchor" aria-label="anchor" href="#review-in-excel"></a>
+<h2 id="review-in-r">Review In R<a class="anchor" aria-label="anchor" href="#review-in-r"></a>
 </h2>
-<p>Open <code>README-review.txt</code>, then review these files in this
-order:</p>
-<ol style="list-style-type: decimal">
-<li><code>metadata/column_dictionary.csv</code></li>
-<li><code>metadata/tables.csv</code></li>
-<li><code>metadata/dataset.csv</code></li>
-<li>
-<code>metadata/codes.csv</code> (when present)</li>
-<li>
-<code>semantic_suggestions.csv</code> (only if you want more context
-or a better match)</li>
-</ol>
+<p><code><a href="../reference/create_sdp.html">create_sdp()</a></code> gives you a package that is
+<strong>review-ready, not finished</strong>. Two calls take it the rest
+of the way, and both print the exact call for the next step — you paste
+it, and the script you end up with is the record of what you
+decided.</p>
+<p><strong>1. Decide the semantic IRIs.</strong>
+<code><a href="../reference/review_semantics.html">review_semantics()</a></code> queues every unfilled slot with its
+ranked candidates and their definitions:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/review_semantics.html">review_semantics</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
+<span><span class="va">review</span></span></code></pre></div>
+<pre><code>── escapement · spawner_count · variable ──────────────────────────
+   field:   column_dictionary.csv · term_iri
+   current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+
+   [1] Spawner Abundance   smn   score 4.9
+       The number of mature salmon returning to spawn in a stream.
+       https://w3id.org/smn/SpawnerAbundance
+       review &lt;- accept_suggestion(review, "spawner_count", "variable", rank = 1)</code></pre>
+<p>Paste the line for the candidate you want, or the printed
+<code>reject_suggestion(..., reason = "…")</code> when none fits — the
+reason is written into the package, so the next reader can see why. Then
+write the decisions back:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">review</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/accept_suggestion.html">accept_suggestion</a></span><span class="op">(</span><span class="va">review</span>, <span class="st">"spawner_count"</span>, <span class="st">"variable"</span>, rank <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="va">review</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> is surgical and safe to re-run: it
+strips the <code>REVIEW:</code> prefix from the fields you decided,
+leaves the ones you did not alone, and does not touch a single byte of
+your data CSVs. Decisions persist, so you can stop and pick the review
+up tomorrow without being asked the same questions again.</p>
+<p><strong>2. Fill in the free text and anything with no
+candidates.</strong> <code><a href="../reference/review_metadata.html">review_metadata()</a></code> reads the package
+against the rules that decide strict validation rather than against the
+shortlist, so it sees something the semantic review structurally cannot:
+a required field that <strong>no candidate was ever found
+for</strong>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/review_metadata.html">review_metadata</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
+<pre><code>── dataset.csv ────────────────────────────────────────────────────
+   creator: placeholder text, refused by strict validation
+      MISSING METADATA: add creator, team, or originating program.
+
+   set_sdp_dataset(pkg_path,
+     creator = "&lt;add creator, team, or originating program&gt;"
+   )</code></pre>
+<p>Replace each <code>&lt;…&gt;</code> with the real value and paste.
+(Pasting one unedited is refused — a package whose <code>creator</code>
+reads <code>&lt;add creator…&gt;</code> would pass validation while
+saying nothing.) The four setters are <code><a href="../reference/set_sdp_dataset.html">set_sdp_dataset()</a></code>,
+<code><a href="../reference/set_sdp_dataset.html">set_sdp_table()</a></code>, <code><a href="../reference/set_sdp_dataset.html">set_sdp_column()</a></code> and
+<code><a href="../reference/set_sdp_dataset.html">set_sdp_code()</a></code>; each keeps <code>datapackage.json</code> in
+step in the same write.</p>
+<p>When <code><a href="../reference/review_metadata.html">review_metadata()</a></code> reports nothing, strict
+validation passes:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>Editing <code>metadata/*.csv</code> in a spreadsheet still works and
+is still supported. It is the fallback rather than the recommended path,
+for one reason: a spreadsheet edit leaves no record of
+<strong>why</strong> a term was chosen, and that record is the most
+valuable thing the review produces. <code>README-review.txt</code> in
+the package folder carries the same checklist.</p>
 <p>The path to <code>metadata/column_dictionary.csv</code> is also a
 reasonable <code>llm_context_files</code> input when you want the LLM
 review step to reason from the package itself instead of a separate
@@ -216,9 +267,10 @@ it never substitutes or invents a term. Omit
 supplied vector is a strict allowlist through the single retry
 round.</p>
 <p>The inferred metadata includes <code>MISSING DESCRIPTION:</code> and
-<code>MISSING METADATA:</code> placeholders for required fields so the
-package is immediately reviewable in Excel. Replace those placeholders
-before publishing — and expect
+<code>MISSING METADATA:</code> placeholders for required fields, so the
+package tells you what it is still missing.
+<code><a href="../reference/review_metadata.html">review_metadata()</a></code> lists exactly those fields and prints the
+call that fills each one. Expect
 <code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> to <strong>warn about every
 placeholder it finds</strong> (since 0.2.6), including on a package you
 created seconds ago. That warning on a fresh package is normal: it is
@@ -243,9 +295,15 @@ population-level)?</li>
 <p>Keep the IRI only when all checks pass.</p>
 <p>Replace it when the term is close but not exact.</p>
 <p>Remove it (leave blank) when no candidate is reliable yet.</p>
-<p>When the top auto-applied suggestion is wrong, use
-<code>semantic_suggestions.csv</code> to pick a better alternative and
-copy that IRI into <code>metadata/column_dictionary.csv</code>.</p>
+<p>When the top auto-applied suggestion is wrong,
+<code><a href="../reference/review_semantics.html">review_semantics()</a></code> prints the whole shortlist with each
+candidate’s definition; accept a different one with the
+<code>rank =</code> it shows. When the right term exists but retrieval
+never surfaced it, pass it directly:
+<code>accept_suggestion(review, "spawner_count", "variable", iri = "…")</code>,
+or
+<code>set_sdp_column(pkg_path, "spawner_count", term_iri = "…")</code>
+for a slot with no shortlist at all.</p>
 <p>If no candidate fits, request a new term instead of forcing a bad
 match:</p>
 <ul>
@@ -258,9 +316,11 @@ match:</p>
 <div class="section level2">
 <h2 id="finalize">Finalize<a class="anchor" aria-label="anchor" href="#finalize"></a>
 </h2>
-<p>After Excel edits, save the metadata back to CSV and reload the
-package in R:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<p><code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> and the <code>set_sdp_*()</code>
+setters write straight into the package, so there is nothing to save or
+reload. If you did edit the CSVs in a spreadsheet, save them back as CSV
+and reload:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pkg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_salmon_datapackage.html">read_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>That review-state validation is the first follow-up check. For the

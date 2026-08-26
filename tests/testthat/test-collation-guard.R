@@ -95,7 +95,22 @@ collation_sensitive_fns <- c(
   ".ms_descriptor_sync_fields",
   "review_semantics",
   ".ms_review_object_name",
-  ".ms_review_render_lines"
+  ".ms_review_render_lines",
+  # Free-text editing (stream S5 milestone M4), registered on creation for the
+  # same reason. `.ms_set_sdp_metadata()` rewrites a metadata CSV and
+  # `datapackage.json`; the three descriptor builders decide the bytes BOTH it
+  # and `write_salmon_datapackage()` emit, so an ordering added to any of them
+  # reaches the descriptor from two directions. `review_metadata()` sorts the
+  # column names it offers after a failed match, and `.ms_binding_name_for()`
+  # sorts `ls()` to pick a name deterministically.
+  ".ms_set_sdp_metadata",
+  ".ms_descriptor_field_entry",
+  ".ms_descriptor_apply_resource_meta",
+  ".ms_descriptor_apply_dataset_meta",
+  ".ms_descriptor_sync_metadata_row",
+  "review_metadata",
+  ".ms_metadata_render_lines",
+  ".ms_binding_name_for"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.
