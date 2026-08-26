@@ -100,9 +100,14 @@ unresolved;</li>
 <li>decide whether each missing term belongs in the shared salmon-domain
 ontology or the DFO-specific bucket;</li>
 <li>produce a concrete list of term requests to file;</li>
-<li>rebuild EDH XML if needed; and</li>
-<li>run strict final validation before publishing.</li>
+<li>rebuild EDH XML if needed;</li>
+<li>run strict final validation; and</li>
+<li>assemble the <strong>reviewed closure</strong> the EML/KNB path
+needs before publishing.</li>
 </ol>
+<p>Step 9 is the one that surprises people. Strict validation is the
+last gate the <em>Salmon Data Package</em> has; it is not the last gate
+before a <strong>deposit</strong>.</p>
 <div class="section level3">
 <h3 id="reload-the-reviewed-package">1) Reload the reviewed package<a class="anchor" aria-label="anchor" href="#reload-the-reviewed-package"></a>
 </h3>
@@ -434,14 +439,108 @@ yet</strong>. Keep the term-request plan with the package, resolve the
 ontology decision, then run strict validation again.</p>
 </div>
 <div class="section level3">
-<h3 id="build-reviewed-eml-and-preview-knb-publication-when-needed">10) Build reviewed EML and preview KNB publication when needed<a class="anchor" aria-label="anchor" href="#build-reviewed-eml-and-preview-knb-publication-when-needed"></a>
+<h3 id="assemble-the-reviewed-closure">10) Assemble the reviewed closure<a class="anchor" aria-label="anchor" href="#assemble-the-reviewed-closure"></a>
+</h3>
+<p><strong>Strict validation is not the publication gate.</strong> A
+package that passes
+<code>validate_salmon_datapackage(require_iris = TRUE)</code> can still
+be refused by <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> and
+<code><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code>, because the EML/KNB path additionally
+requires a <strong>reviewed closure</strong>: a standing record of which
+vocabulary terms you accepted, on what evidence, and for which
+target.</p>
+<p>Three files carry it, and <strong>metasalmon validates all three but
+writes none of them</strong> (see the note at the end of this
+section):</p>
+<table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
+<thead><tr class="header">
+<th>File</th>
+<th>What it must contain</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>metadata/semantic_vocabulary.csv</code></td>
+<td>One evidence row per canonical measurement IRI — exactly that set,
+no more and no less</td>
+</tr>
+<tr class="even">
+<td><code>reviewed_semantic_selections.csv</code></td>
+<td>Exactly one <code>accepted</code> row per canonical review
+target</td>
+</tr>
+<tr class="odd">
+<td><code>metadata/eml-mapping.yml</code></td>
+<td>The reviewed EML facts, plus the SHA-256 of each of the two files
+above</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The canonical measurement IRI set</strong> is every non-empty
+value across <code>term_iri</code>, <code>property_iri</code>,
+<code>entity_iri</code>, <code>constraint_iri</code>,
+<code>statistical_modifier_iri</code> and <code>unit_iri</code> on your
+<code>measurement</code> dictionary rows, plus any
+<code>tables.csv</code> <code>method_iri</code> and any procedure IRIs
+reached through <code>codes.csv</code> from an observation-structures
+binding.</p>
+<p><strong>The canonical review target set</strong> is that same set
+<em>plus</em> each table’s <code>observation_unit_iri</code>. The two
+differ, deliberately: the observation unit is a reviewed selection but
+not a measurement term, so it belongs in the ledger and not in the
+vocabulary.</p>
+<p><code>semantic_vocabulary.csv</code> needs these columns, all
+non-empty except <code>type_iris</code> and
+<code>source_artifact_sha256</code>:</p>
+<pre><code>iri, label, definition, source, ontology, resource_kind, type_iris,
+native_type, source_url, source_artifact_sha256, reviewed_snapshot_sha256</code></pre>
+<p><code><a href="../reference/find_terms.html">find_terms()</a></code> returns <code>label</code>,
+<code>definition</code>, <code>source</code>, <code>ontology</code>,
+<code>resource_kind</code> and <code>type_iris</code> directly, so
+re-running the search that justified each accepted IRI is how you source
+that evidence rather than transcribing it. <code>native_type</code> and
+<code>source_url</code> are yours to supply.</p>
+<p><code>reviewed_semantic_selections.csv</code> needs:</p>
+<pre><code>dataset_id, table_id, column_name, target_scope, target_sdp_field,
+dictionary_role, decision, confidence, review_rationale, iri</code></pre>
+<p>Every <code>decision</code> must be <code>accepted</code> — a final
+ledger holds no open decisions — and <code>column_name</code> is empty
+only for table-scope rows.</p>
+<div class="alert alert-warning">
+<p><strong>Known gap.</strong> <code>reviewed_snapshot_sha256</code>
+binds each vocabulary row to its own evidence, and there is <strong>no
+exported function that computes it</strong>. Neither closure file has an
+exported producer at all; metasalmon only validates them. Until that is
+fixed, see <code>scripts/build-fraser-coho-knb-rehearsal.R</code> in the
+source repository, which builds both files end to end for the shipped
+Fraser coho example and takes it to a clean KNB test-node dry run.
+Tracked as backlog item #116.</p>
+</div>
+</div>
+<div class="section level3">
+<h3 id="build-reviewed-eml-and-preview-knb-publication-when-needed">11) Build reviewed EML and preview KNB publication when needed<a class="anchor" aria-label="anchor" href="#build-reviewed-eml-and-preview-knb-publication-when-needed"></a>
 </h3>
 <p>KNB publication requires EML-specific facts that the canonical SDP
 does not guess, including structured parties, rights, methods,
 measurement scales, missing-value meanings, and access intent. Record
 those reviewed decisions in <code>metadata/eml-mapping.yml</code>, then
-build and validate EML 2.2.0:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+build and validate EML 2.2.0.</p>
+<p>Three of its fields are cross-checked against the package and will
+abort the build if they drift, so set them from one source rather than
+retyping them: <code>source_provenance.source_citation</code> and
+<code>source_provenance.provenance_note</code> must byte-match
+<code>dataset.csv</code>, and <code>publication.public</code> must equal
+the <code>public</code> argument you pass to
+<code><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code>.</p>
+<p>A live deposit also requires the sidecar to name <strong>exactly
+one</strong> metadata-provider <code>orcid</code>, and it must be the
+ORCID behind the DataONE token you authenticate with. A dry run accepts
+any syntactically valid ORCID, so the placeholder in the shipped
+template will pass a rehearsal and be refused by the live call.</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Copy once, then replace every example value and checksum with reviewed facts.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -451,7 +550,7 @@ build and validate EML 2.2.0:</p>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"eml-mapping.yml"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
 <p>That standalone call creates valid reviewed EML for inspection. The
 later KNB dry run deterministically rebuilds it once more so the final
@@ -460,7 +559,7 @@ EML also describes each named canonical SDP artifact as an
 <p>Preview the exact immutable DataONE objects, identifiers, checksums,
 access decision, and OAI-ORE relationships without reading credentials
 or making a network request:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -487,7 +586,7 @@ DOI</li>
 <p>Test objects are never promoted to production: a production deposit
 is planned separately, with production credentials, and mints its own
 identifiers.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -515,7 +614,7 @@ redistribute the package.</p>
 <p>Keep the JWT out of scripts, YAML, manifests, and shell history.
 Enter it into the current R process only and clear it immediately after
 the live call:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># `dataone_token` is the production credential; the test node reads</span></span>
 <span><span class="co"># `dataone_test_token` instead.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
@@ -569,10 +668,10 @@ than overwriting bytes.</p>
 dry run to the verified manifest for the preceding version. Build the
 revision in a fresh versioned SDP directory; never reuse or overwrite
 the prior package directory:</p>
-<div class="sourceCode" id="cb19"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
-<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">revised_pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -610,7 +709,7 @@ record must separately pin the approved vocabulary release and verify
 its public term IRIs before the SDP is deposited.</p>
 </div>
 <div class="section level3">
-<h3 id="publish-or-share-the-finished-package">11) Publish or share the finished package<a class="anchor" aria-label="anchor" href="#publish-or-share-the-finished-package"></a>
+<h3 id="publish-or-share-the-finished-package">12) Publish or share the finished package<a class="anchor" aria-label="anchor" href="#publish-or-share-the-finished-package"></a>
 </h3>
 <p>Once strict validation passes:</p>
 <ul>

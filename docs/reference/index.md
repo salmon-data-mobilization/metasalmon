@@ -36,6 +36,23 @@ Infer, validate, and apply semantic data dictionaries
 - [`apply_semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_semantic_suggestions.md)
   : Apply semantic suggestions into a dictionary
 
+## Semantic Review (in R)
+
+Review the seeded IRIs in the console, decide them in a script, and
+write the decisions back
+
+- [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  : Review semantic suggestions in the console
+- [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+  [`reject_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+  : Decide a semantic review slot
+- [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+  : Write semantic review decisions into a package
+- [`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md)
+  : Semantic suggestions attached to a dictionary or package
+- [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
+  : Target-level LLM assessments attached to a dictionary
+
 ## Semantic Helpers
 
 Semantic suggestion, vocabulary search, and ranking benchmark

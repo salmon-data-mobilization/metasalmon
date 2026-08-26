@@ -81,7 +81,21 @@ collation_sensitive_fns <- c(
   # `collision_roles` is pasted from a sorted vector, and the suggestion row
   # order is part of the returned tibble.
   "suggest_semantics",
-  "apply_semantic_suggestions"
+  "apply_semantic_suggestions",
+  # The R-native review flow (stream S5). Registered ON CREATION, not on first
+  # sort -- `AGENTS.md` states the rule that way because the guard inspects
+  # only listed functions, so an unregistered writer that later gains an
+  # ordering is invisible to it (#63 bit within days of the guard landing).
+  # `apply_sdp_semantics()` rewrites the metadata CSVs, `datapackage.json` and
+  # `semantic_suggestions.csv`; `review_semantics()`'s slot and candidate order
+  # is displayed AND carried into the decisions those bytes record, so it is
+  # not display-only. `.ms_review_object_name()` sorts `ls()` to pick a name
+  # deterministically when more than one binding holds the same review.
+  "apply_sdp_semantics",
+  ".ms_descriptor_sync_fields",
+  "review_semantics",
+  ".ms_review_object_name",
+  ".ms_review_render_lines"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

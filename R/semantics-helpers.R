@@ -618,6 +618,60 @@ suggest_semantics <- function(df,
   dict
 }
 
+# The `term_type` that belongs with a `term_iri`, from one candidate row.
+#
+# Shared rather than duplicated: `apply_semantic_suggestions()` and
+# `apply_sdp_semantics()` (the R-native review write-back, stream S5) both
+# write `term_iri`, and a second copy of this inference would let the seeded
+# path and the reviewed path disagree about the same candidate -- silently,
+# because nothing compares the two.
+.ms_semantic_term_type <- function(suggestion_row) {
+  if ("term_type" %in% names(suggestion_row)) {
+    candidate <- as.character(suggestion_row$term_type[[1]] %||% "")
+    if (!is.na(candidate) && nzchar(trimws(candidate))) {
+      return(trimws(candidate))
+    }
+  }
+  if (identical(suggestion_row$dictionary_role[[1]], "variable")) {
+    type_iris <- if ("type_iris" %in% names(suggestion_row)) {
+      tolower(as.character(suggestion_row$type_iris[[1]] %||% ""))
+    } else {
+      ""
+    }
+    if (is.na(type_iris) || !nzchar(trimws(type_iris))) {
+      type_iris <- ""
+    }
+    resource_kind <- if ("resource_kind" %in% names(suggestion_row)) {
+      tolower(as.character(suggestion_row$resource_kind[[1]] %||% ""))
+    } else {
+      ""
+    }
+    if (is.na(resource_kind) || !nzchar(trimws(resource_kind))) {
+      resource_kind <- ""
+    }
+    if (
+      grepl("owl[#/]objectproperty", type_iris) ||
+        resource_kind %in% c("objectproperty", "owl_object_property")
+    ) {
+      return("owl_object_property")
+    }
+    if (
+      grepl("owl[#/]class", type_iris) ||
+        resource_kind %in% c("class", "owlclass", "owl_class")
+    ) {
+      return("owl_class")
+    }
+    if (
+      grepl("skos[/#]concept", type_iris) ||
+        resource_kind %in% c("concept", "skosconcept", "skos_concept")
+    ) {
+      return("skos_concept")
+    }
+    return("skos_concept")
+  }
+  NA_character_
+}
+
 #' Apply semantic suggestions into a dictionary
 #'
 #' Copies selected IRIs from a `semantic_suggestions` tibble into the matching
@@ -747,52 +801,7 @@ apply_semantic_suggestions <- function(dict,
     )
   }
 
-  infer_term_type <- function(suggestion_row) {
-    if ("term_type" %in% names(suggestion_row)) {
-      candidate <- as.character(suggestion_row$term_type[[1]] %||% "")
-      if (!is.na(candidate) && nzchar(trimws(candidate))) {
-        return(trimws(candidate))
-      }
-    }
-    if (identical(suggestion_row$dictionary_role[[1]], "variable")) {
-      type_iris <- if ("type_iris" %in% names(suggestion_row)) {
-        tolower(as.character(suggestion_row$type_iris[[1]] %||% ""))
-      } else {
-        ""
-      }
-      if (is.na(type_iris) || !nzchar(trimws(type_iris))) {
-        type_iris <- ""
-      }
-      resource_kind <- if ("resource_kind" %in% names(suggestion_row)) {
-        tolower(as.character(suggestion_row$resource_kind[[1]] %||% ""))
-      } else {
-        ""
-      }
-      if (is.na(resource_kind) || !nzchar(trimws(resource_kind))) {
-        resource_kind <- ""
-      }
-      if (
-        grepl("owl[#/]objectproperty", type_iris) ||
-          resource_kind %in% c("objectproperty", "owl_object_property")
-      ) {
-        return("owl_object_property")
-      }
-      if (
-        grepl("owl[#/]class", type_iris) ||
-          resource_kind %in% c("class", "owlclass", "owl_class")
-      ) {
-        return("owl_class")
-      }
-      if (
-        grepl("skos[/#]concept", type_iris) ||
-          resource_kind %in% c("concept", "skosconcept", "skos_concept")
-      ) {
-        return("skos_concept")
-      }
-      return("skos_concept")
-    }
-    NA_character_
-  }
+  infer_term_type <- .ms_semantic_term_type
 
   out <- dict
   for (field in unique(unname(role_to_field))) {
@@ -863,7 +872,20 @@ apply_semantic_suggestions <- function(dict,
     suggestions <- suggestions[!is.na(suggestions$llm_confidence) & suggestions$llm_confidence >= min_llm_confidence, , drop = FALSE]
   }
 
-  suggestions <- .ms_filter_auto_apply_suggestions(out, suggestions)
+  # `.ms_filter_auto_apply_suggestions()` is the *unattended* auto-apply gate:
+  # a lexical compatibility heuristic that decides whether a seeded top-1 hit is
+  # safe to write into a dictionary nobody has looked at. `strategy = "reviewed"`
+  # is the opposite situation — a human read the definition and said yes — so
+  # running the heuristic there means a regex silently overrules the decision,
+  # and the caller is told nothing beyond a count of rows that "did not meet the
+  # requested filters". Backlog #118, found while building `apply_sdp_semantics()`
+  # (S5): `review_semantics()` shows a candidate, the user accepts it, and the
+  # write-back drops it because the label does not lexically match the column
+  # name. Retires when: never — this is the intended split. If a future strategy
+  # also represents an explicit human decision, add it to this exemption.
+  if (!identical(strategy, "reviewed")) {
+    suggestions <- .ms_filter_auto_apply_suggestions(out, suggestions)
+  }
 
   unknown_roles <- unique(suggestions$dictionary_role[!is.na(suggestions$dictionary_role) &
     !suggestions$dictionary_role %in% names(role_to_field)])
@@ -1022,4 +1044,119 @@ apply_semantic_suggestions <- function(dict,
   }
 
   out
+}
+
+# ---------------------------------------------------------------------------
+# Accessors for the semantic-review attributes (backlog #60)
+#
+# `suggest_semantics()` and `infer_dictionary()` attach their output to the
+# returned dictionary as attributes. Every consumer inside the package reached
+# for `attr(dict, "semantic_suggestions")` directly, which is an unsupported
+# spelling of a public contract: the attribute name is frozen by `AGENTS.md`,
+# but nothing told a *caller* that, and nothing gave them a way to ask the same
+# question of a written package on disk. These accessors are that supported way,
+# and `review_semantics()` is their first in-package consumer.
+#
+# Deliberately NULL-on-absent rather than an empty tibble: these are drop-in
+# replacements for the `attr()` calls documented in `?suggest_semantics`, and a
+# reader testing `is.null()` must keep working.
+# ---------------------------------------------------------------------------
+
+# The one place that decides what an accessor accepts. `x` is a dictionary
+# carrying the attribute, an `infer_salmon_datapackage_artifacts()` /
+# `create_sdp()`-shaped list, or a path to a written package.
+.ms_semantic_attribute_from <- function(x, attribute, arg = "x", call = parent.frame()) {
+  if (is.character(x) && length(x) == 1L && !is.na(x)) {
+    return(list(kind = "path", value = NULL, path = x))
+  }
+  if (inherits(x, "data.frame")) {
+    return(list(kind = "object", value = attr(x, attribute, exact = TRUE), path = NA_character_))
+  }
+  if (is.list(x)) {
+    if (!is.null(x[[attribute]])) {
+      return(list(kind = "object", value = x[[attribute]], path = NA_character_))
+    }
+    if (inherits(x$dict, "data.frame")) {
+      return(list(
+        kind = "object",
+        value = attr(x$dict, attribute, exact = TRUE),
+        path = NA_character_
+      ))
+    }
+    return(list(kind = "object", value = NULL, path = NA_character_))
+  }
+  cli::cli_abort(
+    c(
+      "{.arg {arg}} must be a dictionary, an artifact list, or a package path.",
+      "i" = "Pass the tibble returned by {.fn suggest_semantics}, the list returned by {.fn create_sdp}-style inference, or the package directory."
+    ),
+    call = call
+  )
+}
+
+#' Semantic suggestions attached to a dictionary or package
+#'
+#' `suggest_semantics()` and `infer_dictionary()` attach their candidate
+#' shortlist to the returned dictionary as the `semantic_suggestions`
+#' attribute, and `create_sdp()` writes the same table to
+#' `semantic_suggestions.csv` inside the package. This is the supported way to
+#' read either, so review tooling never has to reach for `attr()`.
+#'
+#' @param x A dictionary carrying the attribute, a list in the shape returned
+#'   by `infer_salmon_datapackage_artifacts()` / `create_sdp()`-style inference,
+#'   or a length-one character path to a written Salmon Data Package.
+#'
+#' @return A tibble of candidate rows, or `NULL` when none are attached. The
+#'   `NULL` is deliberate: these accessors replace `attr(x, "semantic_suggestions")`
+#'   and must answer `is.null()` the same way it did.
+#' @export
+#'
+#' @examples
+#' dict <- tibble::tibble(column_name = "spawner_count")
+#' semantic_suggestions(dict)
+#'
+#' attr(dict, "semantic_suggestions") <- tibble::tibble(
+#'   column_name = "spawner_count",
+#'   dictionary_role = "variable",
+#'   iri = "https://w3id.org/smn/SpawnerAbundance"
+#' )
+#' semantic_suggestions(dict)
+semantic_suggestions <- function(x) {
+  found <- .ms_semantic_attribute_from(x, "semantic_suggestions", arg = "x")
+  if (identical(found$kind, "path")) {
+    suggestions_path <- file.path(found$path, "semantic_suggestions.csv")
+    if (!file.exists(suggestions_path) || dir.exists(suggestions_path)) {
+      return(NULL)
+    }
+    return(tibble::as_tibble(.ms_read_metadata_csv(suggestions_path)))
+  }
+  if (is.null(found$value)) {
+    return(NULL)
+  }
+  tibble::as_tibble(found$value)
+}
+
+#' Target-level LLM assessments attached to a dictionary
+#'
+#' The companion accessor to [semantic_suggestions()], for the
+#' `semantic_llm_assessments` attribute that `suggest_semantics(llm_assess = TRUE)`
+#' attaches. Reading LLM review is never itself an LLM call: this only reports
+#' assessments that already exist.
+#'
+#' @inheritParams semantic_suggestions
+#'
+#' @return A tibble of target-level assessment rows, or `NULL` when none are
+#'   attached. A package path always returns `NULL` — assessments are not
+#'   written into the package, so a package on disk cannot carry them.
+#' @export
+#'
+#' @examples
+#' dict <- tibble::tibble(column_name = "spawner_count")
+#' semantic_llm_assessments(dict)
+semantic_llm_assessments <- function(x) {
+  found <- .ms_semantic_attribute_from(x, "semantic_llm_assessments", arg = "x")
+  if (identical(found$kind, "path") || is.null(found$value)) {
+    return(NULL)
+  }
+  tibble::as_tibble(found$value)
 }

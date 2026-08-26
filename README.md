@@ -64,6 +64,61 @@ pkg_path <- create_sdp(
 
 `create_sdp()` is the main path. It writes the canonical `metadata/*.csv` files plus your `data/*.csv` tables, adds a short review checklist, writes prefilled semantic drafts directly into `metadata/column_dictionary.csv` and `metadata/tables.csv` only where target fields were blank, and keeps `semantic_suggestions.csv` as a fallback shortlist when you want more context or a better match. Code-level semantic seeding stays conservative by default for factor and low-cardinality character source columns. Before SPSR/EDH upload, run `validate_salmon_datapackage(pkg_path, require_iris = TRUE)` to catch package/data/codes mismatches in one pass. In interactive use `create_sdp()` can also mention an available package update; set `check_updates = FALSE` to skip that check.
 
+## Review the semantics in R, not in a spreadsheet
+
+`create_sdp()` seeds draft `REVIEW:`-prefixed IRIs. You can review them without
+leaving R, and — this is the point — the review becomes an ordinary script you
+can re-run, diff, and hand to someone else:
+
+```r
+review <- review_semantics(pkg_path)
+review
+#> ── spawners · spawner_count · variable ────────────────────────────────
+#>    field:   column_dictionary.csv · term_iri
+#>    current: REVIEW: https://w3id.org/smn/SpawnerAbundance
+#>
+#>   [1] Spawner Abundance   smn   score 4.9
+#>       The number of mature salmon returning to spawn in a stream.
+#>       https://w3id.org/smn/SpawnerAbundance
+#>       review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+#>
+#>   [2] Escapement   smn   score 3.2
+#>       Fish that escape the fishery and reach the spawning grounds.
+#>       https://w3id.org/smn/Escapement
+#>       review <- accept_suggestion(review, "spawner_count", "variable", rank = 2)
+```
+
+The console prints the **exact call that decides each candidate**. Paste it into
+your script — that paste *is* the audit trail. There is no interactive prompt,
+deliberately: a prompt would make the decision as unreproducible as the
+spreadsheet it replaces.
+
+```r
+review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+review <- reject_suggestion(review, "gear_code", "variable",
+                            reason = "no candidate describes gear type")
+
+apply_sdp_semantics(pkg_path, review)
+validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+```
+
+`apply_sdp_semantics()` strips the `REVIEW:` prefix from decided fields, clears
+rejected ones, leaves undecided slots untouched, records the decision in
+`semantic_suggestions.csv`, and **does not touch your data CSV bytes**. Running
+it twice produces identical bytes.
+
+Two limits worth knowing before you rely on it:
+
+- A slot with **no** candidate never appears in the queue. `review_semantics()`
+  shows shortlists, not gaps, so a package can be fully reviewed and still fail
+  `require_iris = TRUE`. Read the validation report, not just the queue.
+- Free-text fields (`description`, `creator`, `contact_email`, `license`, …)
+  are still edited in the CSVs. Named setters and a gaps report are the next
+  milestone.
+
+Reviewing in Excel still works and remains supported; the R path is now the
+recommended one because it leaves a record of *why* each IRI was chosen.
+
 ## Bundled NuSEDS Example
 
 The default quickstart and get-started flow use `nuseds-fraser-coho-2023-2024.csv`, a 173-row Fraser coho slice derived from the official Open Government Canada Fraser and BC Interior workbook.
@@ -181,7 +236,7 @@ For the current package-native review path, use this order:
 
 1. Run `create_sdp(...)` to create the Salmon Data Package.
 2. If you want semantic review, set `llm_assess = TRUE`.
-3. Open `README-review.txt`, then review `metadata/column_dictionary.csv` and `metadata/tables.csv` first. Those files already contain the prefilled semantic values you are actually finalizing.
+3. Review the seeded IRIs. Preferred: `review_semantics(pkg_path)` in the console, then paste the printed `accept_suggestion()` / `reject_suggestion()` calls into a script and finish with `apply_sdp_semantics(pkg_path, review)`. Alternative: open `README-review.txt` and edit `metadata/column_dictionary.csv` and `metadata/tables.csv` in a spreadsheet.
 4. For any prefilled or `REVIEW:`-prefixed IRI, click through and read the term definition before keeping it.
 5. Use `semantic_suggestions.csv` only as a fallback shortlist if you are unsure or want a better match.
 6. If no candidate fits, request a new term instead of forcing a bad match:
@@ -210,8 +265,9 @@ For the current package-native review path, use this order:
     overwriting immutable objects.
 11. Publish/share only after the `REVIEW:` markers are gone and validation passes; send the whole package folder, not individual files.
 
-In other words: **create -> review in Excel -> reload/check gaps -> remove
-`REVIEW:` markers -> validate -> build the required export -> dry-run -> publish**.
+In other words: **create -> review (in R, or in Excel) -> reload/check gaps ->
+remove `REVIEW:` markers -> validate -> build the required export -> dry-run ->
+publish**.
 
 ## Who Is This For?
 
