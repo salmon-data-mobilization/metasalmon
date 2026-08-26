@@ -32,7 +32,73 @@ Once the episodes execute against released packages, the workshop becomes an
 integration test of the public API — which is where stale-call bugs get caught
 for free. That is the strategic reason to finish it, beyond teaching.
 
+## The review episode now teaches S5, and it landed before the rebuild did
+
+**2026-08-25.** Brett committed `068dab3` and `24b9da3` straight to workshop
+`main` on the same day S5's M1–M3 merged here (`1ba5e1f`, PR #97), and the
+review episode was then rewritten against that merged API on branch
+`docs/2026-08-25-s5-review-chapter`. So a slice of S4 has moved **out of
+sequence and ahead of the rebuild**, which is worth recording as a fact about
+the rebuild rather than a deviation from it: the episode that most needed a
+released contract to teach is the one that got one first.
+
+What the rewritten episode teaches: `review_semantics()` prints the exact
+`accept_suggestion()` call, the learner pastes it into `scripts/build_sdp.R`,
+and `apply_sdp_semantics()` writes it — with every console block captured
+verbatim from a real run against this repo's bundled
+`nuseds-fraser-coho-sample.csv`. It also states, in the lesson, the two limits
+S5's card names: the queue shows **shortlists, not gaps**, and free-text
+placeholders are still hand-edited, so `require_iris = TRUE` still fails after
+a complete semantic review until M4's `review_metadata()` lands.
+
+**Three findings from that episode that belong here, because they are about the
+workshop rather than about S5.**
+
+**The lesson now has two different metasalmons, and they disagree.** Brett's
+commits removed the stale version pins the section below complains about — but
+they removed them by replacing named versions with *"install the latest from
+GitHub"* on both language lanes (`learners/setup.md:73` for R,
+`:115` for the metasalmonpy `main.tar.gz`). Meanwhile
+`renv/profiles/lesson-requirements/renv.lock` still pins metasalmon **0.3.0**,
+which is what the published site actually builds against. So the failure mode
+changed rather than closed: *"teaches a stale release"* became *"learners
+install an untagged moving branch while the site builds against a two-releases-old
+pin"*. **S4's "episodes must execute against released packages" requirement is
+now violated on the install side**, and the renv pin is the operational gate on
+teaching any newly-merged function. Session 4 writes a note to the build log
+when the pin is behind what it teaches; that note is a symptom marker, not a fix.
+*Retires when:* both lanes name a released version and the lockfile pins it.
+
+**The S10 dependency stopped being hypothetical.** The review episode has no
+Python lane to show, because metasalmonpy has none of M1–M3: no review queue,
+no `semantic_suggestions()` accessor, and nothing that reads
+`semantic_suggestions.csv` back. The episode says so plainly and shows a pandas
+read of the CSV instead. That is the first episode where the R-led/Python-visible
+format has an *empty* Python side, and it is exactly the "episodes must not demo
+Python behaviour that only exists in R" constraint biting. Note for the register:
+this is an unbuilt port, **not** a parity deviation — there is no
+`parity-deviations.md` row, and there should not be one.
+
+**Two of the gaps listed below are now closed and one is not.** Corrected
+2026-08-25 by reading the repository rather than this card: the `method_iri`
+teaching was fixed in the 2026-08-21 currency pass and again by Brett's
+commits, and tidy-shape content now exists (`episodes/session-3.Rmd:273`,
+`learners/setup.md:19`). **`primary_key` is still absent from the whole
+lesson** — zero occurrences in `episodes/`, `learners/` or `instructors/` —
+while it remains a real `tables.csv` column whose misuse aborts validation.
+That one is unchanged and still rebuild scope.
+
 ## What the current lesson is, today
+
+> **Read this section as dated evidence, not as current state.** It was written
+> 2026-08-21 and describes the repository at `b080fc9`/`ffcbfc3`. Four of its
+> findings have since closed — the `method_iri` teaching, the erroring session-6
+> chunks, the pre-rename `salmonpy 0.1.6` install, and the missing tidy-shape
+> content — and one of the closures introduced the new install-side problem
+> named above. **`primary_key` is the only item below still open as written.**
+> Verified against the repository 2026-08-25; the paragraphs are kept because
+> the reasoning is the useful part, and a finding whose closure is invisible is
+> how a card starts lying.
 
 **2026-08-21 currency pass landed** (workshop PR #4, merged; the post-merge
 site deploy is green). Fixed: metasalmon is in the lesson lockfile pinned to

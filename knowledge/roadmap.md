@@ -536,17 +536,32 @@ by the sequencing test, and this is now a member section. See
 A lesson has no versioning scheme for the same reason the commons has none:
 nobody has decided one. Do not invent one for this table. What a lesson pins
 *instead* of versioning itself is the software it teaches against, and those
-pins are the sequencing-relevant fact: `README.md` and `session-1.Rmd` target
-`metasalmon` **0.2.3 or later from GitHub `main`** (README adds "the latest
-tagged R release at the time of this update is 0.1.8", written before `v0.3.0`
-existed), and the Python companion is named as `salmonpy` **0.1.6** — a package
-name retired in the 2026-08-13 rename to `metasalmonpy`, at a version four
-releases behind. So the lesson currently teaches against an untagged moving
-branch on the R side and a renamed, stale package on the Python side, which is
-exactly the condition S4 exists to end: episodes must execute against *released*
-metasalmon and metasalmonpy. *Retires when:* the rebuild lands and the episodes
-name released versions, or the repository declares a versioning scheme — either
-one makes this paragraph a row in the table above instead of prose.
+pins are the sequencing-relevant fact.
+
+~~`README.md` and `session-1.Rmd` target `metasalmon` **0.2.3 or later from
+GitHub `main`**, and the Python companion is named as `salmonpy` **0.1.6** — a
+package name retired in the 2026-08-13 rename.~~ **Both pins are gone as of
+2026-08-25** (Brett's `068dab3` and `24b9da3`, committed directly to workshop
+`main`), and reading how they went is the point: they were removed rather than
+corrected. `learners/setup.md` now says *install the latest from GitHub* on
+both lanes — `remotes::install_github("salmon-data-mobilization/metasalmon")`
+and a metasalmonpy `main.tar.gz` — so **neither lane names a version at all**,
+and both install untagged moving branches.
+
+**That is a worse position than the stale pins, not a better one, and it is
+newly split.** `renv/profiles/lesson-requirements/renv.lock` still pins
+metasalmon **0.3.0**, which is what the published site builds against, while
+learners install `main`. The lesson therefore teaches against **two different
+metasalmons that disagree** — and session 4, rewritten 2026-08-25 to teach S5's
+just-merged review flow, sits exactly on that fault line: the functions it
+teaches exist on `main` and do not exist in the 0.3.0 the site builds with. The
+episode emits a build-log note when the lockfile is behind what it teaches,
+which marks the symptom without closing it.
+
+This is still exactly the condition S4 exists to end — episodes must execute
+against *released* metasalmon and metasalmonpy — but the failure has moved from
+*naming the wrong version* to *naming none*. *Retires when:* both lanes name a
+released version, the lockfile pins that same version, and the two agree.
 
 ---
 
@@ -801,7 +816,7 @@ release half of that gate is satisfied.
 - [S1 — One validation authority](sequences/s1-validation-authority.md) · #48, #49
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
-- [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md)
+- [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **the review episode moved ahead of the rebuild, 2026-08-25**: Brett committed `068dab3`/`24b9da3` to workshop `main`, and `episodes/session-4.Rmd` was then rewritten against S5's just-merged `review_semantics()` / `accept_suggestion()` / `apply_sdp_semantics()`, with every console block captured from a real run rather than composed. Three findings the episode surfaced, all workshop-side: the lesson now installs **untagged `main`** on both lanes while its renv lockfile still pins metasalmon **0.3.0**, so learners and the published site build against different packages and S4's "execute against *released* packages" requirement is violated on the install side; the review episode is the **first with an empty Python lane**, because metasalmonpy has none of M1–M3 (an unbuilt port, deliberately *not* a `parity-deviations.md` row); and of the gaps this card has been carrying, `method_iri` and tidy-shape are **closed**, while **`primary_key` remains absent from the entire lesson**. The install/lockfile split cannot be closed until S5 tags a release
 - [S5 — R-native review flow, ships as the next minor at ship time](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8) · **M1–M3 landed 2026-08-25**: `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` plus the #60 accessors, so the semantic review is scriptable and re-runnable and the write-back is surgical, idempotent and cross-file atomic. **#60 narrowed** (accessor clause closed), **#74 narrowed** to M4/M5, **#118** filed and fixed (the unattended auto-apply heuristic was silently overruling explicit review decisions). **Still open and load-bearing:** M4's `review_metadata()` / `set_sdp_*()` — until it lands, strict validation still fails after a complete semantic review, because free-text placeholders are spreadsheet-edited and the console shows *shortlists, not gaps*. **#58 judged separable from the PR** (a release-bundling argument, not a PR one) and **#116 assessed and ruled separate** from this write-back. **Mirror owed:** metasalmonpy needs the whole M1–M3 surface plus the #118 fix, unversioned until the parity claim is measured
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
