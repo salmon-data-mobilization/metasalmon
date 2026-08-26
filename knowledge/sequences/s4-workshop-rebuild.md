@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S4 — Workshop rebuild"
-description: "Rebuild the salmon-data-standards-workshop: nine episodes, R-led with Python equivalents, executing against released metasalmon and metasalmonpy. The current lesson is four releases behind and teaches a removed field."
+description: "Rebuild the salmon-data-standards-workshop: nine episodes, R-led with Python equivalents, executing against released metasalmon and metasalmonpy. The install/lockfile split closed 2026-08-25 (workshop PR #6, pinned to metasalmon v0.5.0 / metasalmonpy v0.4.0, open for Brett's review); primary_key is still absent from the whole lesson."
 status: draft
 tags: [workshop, teaching]
 psc:
@@ -54,20 +54,49 @@ a complete semantic review until M4's `review_metadata()` lands.
 **Three findings from that episode that belong here, because they are about the
 workshop rather than about S5.**
 
-**The lesson now has two different metasalmons, and they disagree.** Brett's
-commits removed the stale version pins the section below complains about — but
-they removed them by replacing named versions with *"install the latest from
-GitHub"* on both language lanes (`learners/setup.md:73` for R,
-`:115` for the metasalmonpy `main.tar.gz`). Meanwhile
-`renv/profiles/lesson-requirements/renv.lock` still pins metasalmon **0.3.0**,
-which is what the published site actually builds against. So the failure mode
+**~~The lesson now has two different metasalmons, and they disagree.~~ CLOSED
+2026-08-25** — see the paragraph below for what closed it and what it cost.
+Kept struck through rather than deleted, because the *shape* of the failure is
+the reusable part: Brett's commits removed the stale version pins the section
+below complains about, but removed them by replacing named versions with
+*"install the latest from GitHub"* on both language lanes
+(`learners/setup.md:73` for R, `:115` for the metasalmonpy `main.tar.gz`), while
+`renv/profiles/lesson-requirements/renv.lock` still pinned metasalmon **0.3.0**,
+which is what the published site actually builds against. The failure mode
 changed rather than closed: *"teaches a stale release"* became *"learners
-install an untagged moving branch while the site builds against a two-releases-old
-pin"*. **S4's "episodes must execute against released packages" requirement is
-now violated on the install side**, and the renv pin is the operational gate on
-teaching any newly-merged function. Session 4 writes a note to the build log
-when the pin is behind what it teaches; that note is a symptom marker, not a fix.
-*Retires when:* both lanes name a released version and the lockfile pins it.
+install an untagged moving branch while the site builds against a
+two-releases-old pin"*. **A currency fix that unpins is not a currency fix** —
+it converts one dated wrongness into a silent moving one, which is harder to
+notice and impossible to date.
+
+**What closed it.** metasalmon `v0.5.0` released S5 on 2026-08-25 — the tag
+this was waiting on — and workshop PR **#6** moves all three pieces in one
+change: `learners/setup.md` names `metasalmon@v0.5.0` on the R lane and the
+`metasalmonpy` **v0.4.0** tag tarball on the Python lane, and the lockfile is
+snapshotted to `v0.5.0` through `sandpaper::manage_deps()` from the
+lesson-requirements profile. **The two lanes deliberately name different
+numbers**, which is the honest state rather than a leftover: metasalmonpy has
+none of S5, so pinning it fixes reproducibility on that lane and closes nothing
+about the capability gap. *Retired condition met:* both lanes name a released
+version and the lockfile pins it.
+
+The pin and the caveat deletion had to be **one change**, and that is worth
+carrying. The rewritten review episode published a caveat that a fully-reviewed
+package still fails `require_iris = TRUE` with nowhere in R to go; `v0.5.0`'s
+`review_metadata()` and `set_sdp_*()` make that false. Deleting the caveat
+without moving the pin would have had the lesson claim a capability its build
+environment lacked; moving the pin without deleting the caveat would have had it
+disclaim a capability it now has. Three further published statements went false
+at the same instant — free-text fields still hand-edited, rejections not
+persisting into a fresh queue, and an empty queue under a mistyped `columns`
+filter reading as success — and were corrected in the same PR. **One release
+falsified four sentences in one episode**, which is the cost of teaching against
+an unreleased API and the reason S4 requires released packages in the first
+place.
+
+**PR #6 is open and needs Brett's review** (branch protection, `REVIEW_REQUIRED`).
+It conflicts with open PR **#5**, which pins the same two files to `v0.4.0` —
+correct when written, one release stale for the R lane now.
 
 **The S10 dependency stopped being hypothetical.** The review episode has no
 Python lane to show, because metasalmonpy has none of M1–M3: no review queue,
@@ -111,8 +140,9 @@ must not fabricate, an interactive upload), and making them genuinely execute
 IS the golden path, blocked on Q1/Q2; `method_iri` teaching corrected to the
 0.3.0 three-placement shape in session-4 and the learner reference;
 `setup.md`'s pre-rename metaSmnPy wheel replaced with the metasalmonpy v0.2.1
-tag tarball (releases carry no wheel assets) — **now itself stale: the mirror
-released `v0.4.0` on 2026-08-24, so the rebuild pins that tarball, not v0.2.1.**
+tag tarball (releases carry no wheel assets) — ~~now itself stale: the mirror
+released `v0.4.0` on 2026-08-24, so the rebuild pins that tarball, not
+v0.2.1~~ **done in workshop PR #6, 2026-08-25.**
 **Still absent, rebuild scope:**
 primary-key and tidy-shape content. One Q1-relevant observation: session-6's
 KNB text already describes the production private-review model, i.e. the
@@ -171,6 +201,33 @@ exists, now four parity milestones back.
 *None of the above is rebuild scope creep — it is the reason the rebuild is
 scoped as a rebuild.* Recorded here so that "S4 is blocked" stops being read as
 "S4 is fine where it is".
+
+## The workshop's CI has been red on every PR, and not for the reason it looks like
+
+**Measured 2026-08-25 from the failing run's log.** The `Receive Pull Request`
+check fails on every recent workshop PR — including `fix/2026-08-21-currency-pass`,
+which was **merged red** — reporting eleven packages `renv::restore` could not
+install, with `metasalmon` among them. That reads as the stale 0.3.0 pin's
+dependency tree, and the S4 story made it easy to believe.
+
+It is not. The runner is **R 4.6.1**, and the log's actual error is
+`base64enc.so: undefined symbol: SETLENGTH`, plus the same class of failure from
+`yaml`. Both pinned versions (`base64enc` 0.1-3, `yaml` 2.3.10) predate R 4.6
+withdrawing those non-API entry points; the other **nine are cascade failures**
+downstream of exactly those two, `metasalmon`'s own spelled out in the log as
+*"dependency failed (usethis, yaml)"*. So moving the metasalmon pin alone could
+not have fixed it — metasalmon's `Imports` are byte-identical between 0.3.0 and
+0.5.0. PR #6 bumps `base64enc` to 0.1-6 and `yaml` to 2.3.12, which is the
+minimal change addressing the measured cause.
+
+Two things worth carrying past this fix. **A package named in a failure list is
+not necessarily a package that failed**: nine of the eleven were named because
+something they depend on failed, and the one name that mattered was two lines
+further down. And **a red check that has been red long enough stops being read**
+— this one was merged through, which is what makes the next genuine failure
+invisible.
+*Retires when:* the check goes green on a workshop PR, or the failure changes
+cause and this paragraph is rewritten rather than trusted.
 
 ## The S3 dependency is real but conditional
 

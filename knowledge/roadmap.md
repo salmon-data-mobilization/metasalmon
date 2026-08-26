@@ -554,7 +554,7 @@ citation for anything it contains is a commit.
 
 | Version | Date | One line |
 |---|---|---|
-| *(none)* | — | A Carpentries-style lesson (sandpaper/`config.yaml`, six sessions plus a bonus). Zero tags, zero release objects, no declared content-versioning scheme. Last commit `b080fc9`, 2026-08-11 |
+| *(none)* | — | A Carpentries-style lesson (sandpaper/`config.yaml`, six sessions plus a bonus). Zero tags, zero release objects, no declared content-versioning scheme. Last commit on `main` `24b9da3`, 2026-08-25; **pins metasalmon `v0.5.0` and metasalmonpy `v0.4.0` once PR #6 merges** |
 
 **This repository was silently absent from the index while being sequenced as
 [S4](sequences/s4-workshop-rebuild.md)** — the hub was ordering a rebuild of a
@@ -580,20 +580,33 @@ both lanes — `remotes::install_github("salmon-data-mobilization/metasalmon")`
 and a metasalmonpy `main.tar.gz` — so **neither lane names a version at all**,
 and both install untagged moving branches.
 
-**That is a worse position than the stale pins, not a better one, and it is
-newly split.** `renv/profiles/lesson-requirements/renv.lock` still pins
+**That was a worse position than the stale pins, not a better one, and it was
+newly split.** `renv/profiles/lesson-requirements/renv.lock` still pinned
 metasalmon **0.3.0**, which is what the published site builds against, while
-learners install `main`. The lesson therefore teaches against **two different
+learners installed `main`. The lesson therefore taught against **two different
 metasalmons that disagree** — and session 4, rewritten 2026-08-25 to teach S5's
-just-merged review flow, sits exactly on that fault line: the functions it
-teaches exist on `main` and do not exist in the 0.3.0 the site builds with. The
-episode emits a build-log note when the lockfile is behind what it teaches,
-which marks the symptom without closing it.
+just-merged review flow, sat exactly on that fault line: the functions it
+teaches existed on `main` and did not exist in the 0.3.0 the site built with.
+The episode emitted a build-log note when the lockfile was behind what it
+taught, which marked the symptom without closing it.
 
-This is still exactly the condition S4 exists to end — episodes must execute
-against *released* metasalmon and metasalmonpy — but the failure has moved from
-*naming the wrong version* to *naming none*. *Retires when:* both lanes name a
-released version, the lockfile pins that same version, and the two agree.
+**CLOSED 2026-08-25 by workshop PR #6** (open for Brett's review; branch
+protection requires it). metasalmon `v0.5.0` shipped the release the split was
+waiting on, and one change moves all three pieces together: `learners/setup.md`
+pins `metasalmon@v0.5.0` and the `metasalmonpy` **v0.4.0** tag tarball, the
+lockfile is snapshotted to `v0.5.0` through `sandpaper::manage_deps()`, and the
+build-log note is deleted — its own comment named that lockfile bump as its
+retirement condition. **The two lanes name different numbers on purpose**: the
+mirror has none of S5, so a pin buys reproducibility there and not equivalence,
+and the lesson says so rather than implying lockstep it does not have.
+
+*Retired condition met:* both lanes name a released version and the lockfile
+pins the R one. **The lesson-level lesson, kept because it is the transferable
+part:** a currency fix that *unpins* is not a currency fix — it converts one
+dated wrongness into a silent moving one, which is harder to notice and
+impossible to date. And moving the pin was inseparable from deleting four
+now-false caveats in the episode, because a lesson that claims a capability its
+build environment lacks fails in exactly the direction a learner cannot debug.
 
 ---
 
@@ -865,7 +878,7 @@ release half of that gate is satisfied.
 - [S1 — One validation authority](sequences/s1-validation-authority.md) · #48, #49
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
-- [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **the review episode moved ahead of the rebuild, 2026-08-25**: Brett committed `068dab3`/`24b9da3` to workshop `main`, and `episodes/session-4.Rmd` was then rewritten against S5's just-merged `review_semantics()` / `accept_suggestion()` / `apply_sdp_semantics()`, with every console block captured from a real run rather than composed. Three findings the episode surfaced, all workshop-side: the lesson now installs **untagged `main`** on both lanes while its renv lockfile still pins metasalmon **0.3.0**, so learners and the published site build against different packages and S4's "execute against *released* packages" requirement is violated on the install side; the review episode is the **first with an empty Python lane**, because metasalmonpy has none of M1–M3 (an unbuilt port, deliberately *not* a `parity-deviations.md` row); and of the gaps this card has been carrying, `method_iri` and tidy-shape are **closed**, while **`primary_key` remains absent from the entire lesson**. The install/lockfile split cannot be closed until S5 tags a release
+- [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **the review episode moved ahead of the rebuild, 2026-08-25**: Brett committed `068dab3`/`24b9da3` to workshop `main`, and `episodes/session-4.Rmd` was then rewritten against S5's just-merged `review_semantics()` / `accept_suggestion()` / `apply_sdp_semantics()`, with every console block captured from a real run rather than composed. Three findings the episode surfaced, all workshop-side: the lesson installed **untagged `main`** on both lanes while its renv lockfile still pinned metasalmon **0.3.0**, so learners and the published site built against different packages; the review episode is the **first with an empty Python lane**, because metasalmonpy has none of M1–M3 (an unbuilt port, deliberately *not* a `parity-deviations.md` row); and of the gaps this card has been carrying, `method_iri` and tidy-shape are **closed**, while **`primary_key` remains absent from the entire lesson**. · **The install/lockfile split is CLOSED, 2026-08-25**, by workshop PR **#6**: metasalmon `v0.5.0` shipped the tag it was waiting on, and one change moves both install lanes (`metasalmon@v0.5.0`, `metasalmonpy` v0.4.0 tarball — **different numbers on purpose**, since the mirror has none of S5) and snapshots the lockfile through `sandpaper::manage_deps()`. The pin and the episode's now-false caveats had to move together, and the release falsified **four** published sentences in that one episode — the cost of teaching an unreleased API, and the reason this stream requires released packages. **PR #6 is open for Brett's review** (branch protection) and conflicts with open PR #5, which pins the same two files to the now-stale `v0.4.0`. · Separately measured while doing it: the workshop's **red `Receive Pull Request` check is not the stale pin** — it is `base64enc`/`yaml` predating R 4.6's withdrawal of `SETLENGTH`, with nine cascade failures behind them; see the S4 card
 - [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, and **#74 is closed** (#60's accessor clause with it; its other clauses stand). `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **What remains of this stream: #58 and #59 only.** **Mirror owed, and now actually due:** the release happened, so metasalmonpy is a version behind and the `0.4.0→0.5.0` window is open — it has none of the nine functions, no `decision_reason`, and no consumer of the schema's `constraints.required`; its `PARITY.md` **row 31** must be **amended in place**, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there will say so. The amendment text is drafted in [parity-deviations.md](parity-deviations.md)
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
