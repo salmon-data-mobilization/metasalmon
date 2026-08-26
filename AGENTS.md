@@ -225,7 +225,14 @@ Rscript scripts/build-pkgdown.R                          # after doc changes
 
 ```sh
 git diff --check
-R CMD build . && R CMD check <tarball>   # before merging
+R CMD build . && R CMD check <tarball>   # quick local pass
+
+# THE ACTUAL MERGE GATE — this is the line CI runs
+# (.github/workflows/R-CMD-check.yaml). It is STRICTER than the one above:
+# `error_on = "warning"` fails on warnings the plain invocation reports as
+# nothing at all. Measured 2026-08-25: a tree with a literal `·` in R code
+# (R must be ASCII, comments excepted) gave local `Status: OK` and failed CI.
+Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'
 ```
 
 Add a `NEWS.md` entry for any observable behaviour change. `knowledge/`,

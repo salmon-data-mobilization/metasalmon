@@ -603,6 +603,20 @@ of that shape. The address is resolved *before* the value is checked, so
 pasting an unedited call still proves the row exists, which is what the
 printed-call test asserts.
 
+**A local `R CMD check` "Status: OK" is not evidence that CI will pass.** The
+pre-merge gate `AGENTS.md` documents — `R CMD build . && R CMD check
+--no-manual <tarball>` — reported **Status: OK** on a tree that CI then failed:
+`R/sdp-field-setters.R` carried two literal `·` separators, and R code must be
+ASCII (comments excepted). CI runs
+`rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")`
+(`.github/workflows/R-CMD-check.yaml:102`), which turns that WARNING into a
+failure; the plain local invocation did not raise it at all. The two commands
+are not the same gate, and the documented one is the weaker. Run the CI line
+when a green local check is what you are about to merge on.
+*(`R/review-console.R` already escapes its separators as `·`, which is
+what made this a one-line fix and also what made it invisible — the correct
+pattern was one file away and reads identically on screen.)*
+
 **Four defects in the M1–M3 API, all found by teaching it.** Writing a lesson
 against a shipped API is a harsher usability test than reviewing it, and it
 found three round-trip failures plus one retrieval question. All three of the
