@@ -416,3 +416,42 @@ test_that("review_metadata() refuses a path that is not a package directory", {
   expect_error(review_metadata(tempfile()), "existing Salmon Data Package")
   expect_error(set_sdp_dataset(tempfile(), creator = "x"), "existing Salmon Data Package")
 })
+
+test_that("a codes.csv gap prints a set_sdp_code() call that fills it", {
+  # `codes.csv` is addressed by one more key than the others (`code_value`), so
+  # it is the case where the printed call is most likely to under-address a row
+  # and hit the wrong one -- or none.
+  path <- file.path(withr::local_tempdir(), "coded")
+  pkg <- suppressMessages(create_sdp(
+    list(spawners = data.frame(
+      stream_name = c("Bear Creek", "Elk River"),
+      species = factor(c("CO", "CK")),
+      spawner_count = c(120L, 340L),
+      stringsAsFactors = FALSE
+    )),
+    path = path, dataset_id = "demo-1", seed_semantics = FALSE,
+    check_updates = FALSE, overwrite = TRUE
+  ))
+
+  codes_path <- file.path(pkg, "metadata", "codes.csv")
+  codes <- read_meta(pkg, "codes.csv")
+  row <- which(codes$column_name == "species")[[1]]
+  codes$code_description[[row]] <- "MISSING DESCRIPTION: say what this code means."
+  readr::write_csv(codes, codes_path, na = "")
+
+  review <- review_metadata(pkg)
+  gap <- review[review$file == "codes.csv", , drop = FALSE]
+  expect_equal(nrow(gap), 1L)
+  expect_equal(gap$code_value[[1]], codes$code_value[[row]])
+
+  calls <- printed_setter_calls(review)
+  code_call <- calls[grepl("set_sdp_code(", calls, fixed = TRUE)]
+  expect_length(code_call, 1L)
+  suppressMessages(eval(
+    parse(text = gsub("\"<[^\"]*>\"", "\"Coho salmon.\"", code_call)),
+    envir = list2env(list(pkg = pkg))
+  ))
+
+  expect_equal(read_meta(pkg, "codes.csv")$code_description[[row]], "Coho salmon.")
+  expect_equal(sum(review_metadata(pkg)$file == "codes.csv"), 0L)
+})
