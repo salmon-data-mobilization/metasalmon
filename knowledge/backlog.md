@@ -2681,12 +2681,40 @@ new behaviour would not notice the gate being removed entirely.
 
 Nobody could have been relying on the old behaviour: nothing in the package
 wrote the `decision` column `strategy = "reviewed"` filters on, so the path was
-unreachable in practice. **Mirror:** metasalmonpy has the same
-apply/filter structure and needs the same check; not edited here, because a
-version bump there is a parity claim and both packages sit at 0.4.0.
+unreachable in practice.
 
-*Retires when:* fixed here (done) and the mirror is measured against the same
-two-halves test in its own stream.
+**The mirror has the identical defect, measured 2026-08-25 and not edited
+here.** `metasalmonpy/semantics.py:1294` calls
+`_filter_auto_apply_suggestions(out, suggestions_df)` unconditionally, with no
+strategy guard, against the same `{"top", "reviewed", "llm"}` set
+(`semantics.py:1214`) and the same lexical helper (`semantics.py:487-530`). It
+bites there for the same reason it bit here: the helper only early-returns for a
+row with no `target_sdp_field`, and every column-level target `suggest_semantics`
+emits sets one (`semantics.py:759`, `:814`).
+
+**Two things make this more than a straight port, and both are easy to miss.**
+(1) Python's docstring at `semantics.py:1196-1204` *documents the current
+behaviour as intended*, citing `PARITY.md` row 57 — so the fix is a guard **and**
+a docstring correction, not a guard alone. (2) **`PARITY.md` row 31
+(`PARITY.md:65`) claims the reviewed strategy is "verified identical to R's
+output for all three strategies".** That claim is true today, because both sides
+still have the defect at the 0.4.0 both packages claim. It becomes **false the
+moment metasalmon releases** this fix, and nothing will say so. Row 31 must be
+**amended** in the mirror stream, not merely supplemented with a new row — a
+stale "verified identical" is worse than a missing row, because it tells the
+next reader the question has already been asked and answered.
+
+Why the Python suite is green over it: the reviewed-strategy fixture
+(`tests/test_semantics.py:457-482`) is compatible-by-construction — its column
+description at `:448-451` lexically contains both accepted search queries, so
+the heuristic happens to pass every accepted row. It never exercises
+accept-then-drop.
+
+*Retires when:* fixed here (done); metasalmonpy adds the same guard, corrects
+the `semantics.py:1196-1204` docstring, amends `PARITY.md` row 31, and pins the
+accept-then-drop case with a fixture whose label does **not** lexically match
+the column. That fix is independently shippable ahead of the review-flow port —
+it depends on none of that surface existing.
 
 ### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
 

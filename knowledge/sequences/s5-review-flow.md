@@ -30,6 +30,19 @@ leaves the data CSV bytes untouched. One defect was found and fixed on the way �
 review decisions — which is why this could not have shipped by merely wiring up
 the existing `strategy = "reviewed"` seam.
 
+**Mirror state, measured 2026-08-25 (metasalmonpy not edited).** All four
+pieces are gaps there: no accessor for the suggestion attributes (Python's only
+path is the raw `df.attrs[...]`, and `read_salmon_datapackage` never reads
+`semantic_suggestions.csv` back at all), no review-flow surface of any kind
+(zero hits for the four function names), and the **#118 defect present in the
+same shape** at `semantics.py:1294`. Both packages claim 0.4.0 and this work is
+unreleased, so no `parity-deviations.md` row is owed yet — this is ordinary "R
+shipped first" state, not a deliberate difference at a claimed version. **What
+IS owed the moment this releases:** metasalmonpy's `PARITY.md` **row 31** claims
+the reviewed strategy is *"verified identical to R's output for all three
+strategies"*. That is true today and becomes false on release, and nothing will
+announce it — the row must be amended, not merely joined by a new one.
+
 **What remains, and it is what the stream still ships for.** M4 (free-text
 editing: `review_metadata()` and the `set_sdp_*()` setters) and M5 (the vignette
 and `README-review.txt` rewrite; `_pkgdown.yml` and the README already name the
