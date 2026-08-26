@@ -603,19 +603,31 @@ of that shape. The address is resolved *before* the value is checked, so
 pasting an unedited call still proves the row exists, which is what the
 printed-call test asserts.
 
-**A local `R CMD check` "Status: OK" is not evidence that CI will pass.** The
-pre-merge gate `AGENTS.md` documents — `R CMD build . && R CMD check
---no-manual <tarball>` — reported **Status: OK** on a tree that CI then failed:
-`R/sdp-field-setters.R` carried two literal `·` separators, and R code must be
-ASCII (comments excepted). CI runs
+**A local `R CMD check` "Status: OK" is evidence about your R, not about CI's —
+and the first explanation for the difference was wrong.**
+`R/sdp-field-setters.R` shipped with two literal `·` separators (R code must be
+ASCII; comments are exempt). Local `R CMD build . && R CMD check --no-manual`
+reported **Status: OK**; CI failed. The obvious reading — CI runs
 `rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")`
-(`.github/workflows/R-CMD-check.yaml:102`), which turns that WARNING into a
-failure; the plain local invocation did not raise it at all. The two commands
-are not the same gate, and the documented one is the weaker. Run the CI line
-when a green local check is what you are about to merge on.
-*(`R/review-console.R` already escapes its separators as `·`, which is
-what made this a one-line fix and also what made it invisible — the correct
-pattern was one file away and reads identically on screen.)*
+(`.github/workflows/R-CMD-check.yaml:102`), so it escalates a warning the plain
+invocation tolerates — **is not what happened**, and was written into
+`AGENTS.md` before being checked. The local log says
+`checking code files for non-ASCII characters ... OK`: there was no warning to
+escalate. The real difference is the **R version**: 4.5.2 locally, **4.6.1** on
+CI, and 4.6 tightened that check. Neither `--as-cran` nor `error_on` would have
+caught it on this machine.
+
+Two things worth keeping. **A stricter invocation cannot run a check your R does
+not have** — so "I ran the CI line locally and it passed" is still not the same
+claim as "CI will pass", and comparing `R.version.string` against the CI log is
+the cheap way to know. And this note itself is the example: a plausible causal
+story about a verification gate, written from one observation and one glance at
+the workflow file, that survived until someone re-read the log it claimed to
+explain.
+
+*(`R/review-console.R` already escapes its separators as `·`, which is what
+made this a one-line fix and also what made it invisible — the correct pattern
+was one file away and renders identically on screen.)*
 
 **Four defects in the M1–M3 API, all found by teaching it.** Writing a lesson
 against a shipped API is a harsher usability test than reviewing it, and it
