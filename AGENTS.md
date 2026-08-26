@@ -28,19 +28,31 @@ at `knowledge/roadmap.md`.
   in the same PR that introduces it. An undocumented difference is a
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
-  when the mirrored behaviour actually lands. Current state: **both packages are
-  at 0.4.0, and the mirror is at parity rather than chasing it.** metasalmon
-  released `v0.4.0` (`4e2bbb6`) on 2026-08-24; metasalmonpy claimed the same
-  number the same day — tagged `v0.4.0` at `3b587e6`, GitHub Release published —
-  which **closes the `0.2.2→0.4.0` catch-up window** that roadmap stream S10
-  existed to close. That claim was measured rather than asserted: all 25 of
-  metasalmon 0.4.0's NEWS entries were audited against the Python tree entry by
-  entry, the two found genuinely absent (`knb_environment` and the
-  `statistical_modifier` `role_boost`) were ported for the release, five
-  remaining differences were registered instead of ported, and both dependency
-  legs ran green. **Parity is the state that decays fastest**: the next
-  metasalmon change breaks it, silently, and nothing in this file will say so —
-  so read this sentence as a dated measurement, not as a standing property. The
+  when the mirrored behaviour actually lands. Current state: **metasalmon is at
+  0.5.0 and metasalmonpy at 0.4.0, so a `0.4.0→0.5.0` catch-up window is open.**
+  metasalmon released `v0.5.0` on 2026-08-25 — roadmap stream S5, nine new
+  exported functions (`review_semantics()`, `accept_suggestion()`,
+  `reject_suggestion()`, `apply_sdp_semantics()`, `review_metadata()` and the
+  four `set_sdp_*()` setters) — and **metasalmonpy has none of them**: measured
+  2026-08-25, zero hits for all nine names, zero for the `decision_reason`
+  column, no accessor for the suggestion attributes, and no consumer of the
+  schema's `constraints.required`, which `review_metadata()` is built on. The
+  #118 auto-apply defect is alive there in the same shape
+  (`semantics.py:1294`). That is ordinary "R shipped first" lag rather than a
+  set of deliberate differences, so it is owed as a **port** — tracked in
+  `knowledge/parity-deviations.md` and the roadmap's release index, and
+  deliberately **not** as new register rows.
+  **Parity is the state that decays fastest**, and the version of this
+  paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
+  decayed one release later, which is the argument for reading any parity
+  sentence here as a dated measurement and never as a standing property. The
+  0.4.0 measurement it replaced was honest and thorough — all 25 of metasalmon
+  0.4.0's NEWS entries audited against the Python tree entry by entry, the two
+  gaps found genuinely absent (`knb_environment` and the
+  `statistical_modifier` `role_boost`) ported, five remaining differences
+  registered instead of ported, both dependency legs green — which is the
+  point rather than a caveat to it: thoroughness bought one release of
+  accuracy. The
   same contract is stated in metasalmonpy's `AGENTS.md`; both files are
   git-tracked and must never be git-ignored. **When the two files disagree about
   that number, one of them is wrong about the single fact the mirror contract
@@ -52,7 +64,13 @@ at `knowledge/roadmap.md`.
   carried a stale `0.2.2→0.3.0` window after metasalmon tagged 0.4.0, corrected
   there 2026-08-24. Whenever either version moves, read the other file in the
   same change; the release index in `knowledge/roadmap.md` is the third copy
-  and must agree with both.
+  and must agree with both. **It is live for a third time as of 2026-08-25**:
+  this release moved metasalmon to 0.5.0, and metasalmonpy's `AGENTS.md` still
+  reads that both packages are at 0.4.0 with no window open. Editing the mirror
+  was out of scope for the release that opened the window, so the correction is
+  owed there — and until it lands, that file is the one that is wrong. Which is
+  the whole reason this rule says *read the other file* rather than *trust the
+  one in front of you*.
   **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"Don't just make things match metasalmon. If the Python implementation got
   it right, then update metasalmon."* Presumption of mirroring is about

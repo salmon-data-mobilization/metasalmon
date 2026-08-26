@@ -37,9 +37,12 @@ An **Ahead** row is marked *converged* once metasalmon ships the semantics.
 The row stays and keeps its number, and the reason has changed with the
 mirror's state. It used to be that metasalmonpy claimed an earlier parity
 milestone, so the row told a reader the difference was era lag rather than a
-standing choice. **Since 2026-08-24 both packages claim 0.4.0 and there is no
-era lag** — so a converged row is now kept for the *history*: it records that
-the two sides once differed here, which side was right, and which one moved.
+standing choice. **On 2026-08-24 both packages claimed 0.4.0 and there was no
+era lag**; on 2026-08-25 metasalmon released 0.5.0 and a one-release lag
+reopened (see *What metasalmon 0.5.0 owes the mirror*, below). Neither state
+changes what a converged row is for: it is kept for the *history*, recording
+that the two sides once differed here, which side was right, and which one
+moved.
 Delete it and the next divergence on the same surface looks like a first
 occurrence. Row numbers are permanent in both registers so the two can be
 cross-referenced by number.
@@ -116,6 +119,68 @@ also the only reason the twin has caught this one.
 | 59 | Idiom | A **non-character SSSOM mapping cell** is spelled by each language's native scalar-to-text conversion, and the two differ. metasalmon renders through `as.character()` (`.ms_canonical_character()`, `R/platform-time.R`), so a numeric `confidence` of `100000` emits `1e+05` and a `POSIXct` emits `0999-01-31 10:00:00.5`; metasalmonpy renders through `str()` (`sssom._cell()`), which emits `100000.0` and `0999-01-31 10:00:00.500000` | **Row 36's shape, applied to the SSSOM table instead of the data resource**: same values, different formatter, different bytes — and therefore a different `sha256` in `metadata/semantic/mapping-sets.json`. Added 2026-08-25 with metasalmon's fix for backlog #93 item 3, and it registers a difference that **pre-dates that fix and was never recorded**: R previously rendered these cells through `as.matrix()`/`format()` (`1.0e+05`, `1.5e+00`), so the two implementations already disagreed, differently and vector-wise. The fix moved R's spelling and did not remove the divergence, which is why the row is opened now rather than closed. **Narrow by construction:** a mapping set read from a `.sssom.tsv` is all character in both implementations, where every renderer agrees, so this is reachable only from an **in-memory** mapping set a caller builds with a typed column. Measured 2026-08-25, both sides, same fixture: for a typed `mapping_date` the two now emit byte-identical tables (`0999-01-01` before `1000-01-01`, padded, sorted by the spelling they emit), so the *date* half of this row is convergent and only the numeric and instant spellings differ. Neither spelling is more correct — `1e+05` and `100000.0` are the same double — but neither is the canonical value token either side already owns. **Retirement condition:** both implementations render a non-character SSSOM cell through their own canonical value renderer (`.ms_format_number_token()` in R, `format_number_token()` in Python), which row 36 records as agreeing, instead of the language's default scalar conversion. Nothing owns that today, and this row is deliberately not claiming a milestone it cannot name |
 | 60 | Ahead (R) — **direction not yet ruled** | `create_sdp()` refuses a doomed write **before inference** in metasalmon and **after** it in metasalmonpy. R re-tests the write directory early (`R/package-helpers.R`, just after `path` defaulting) so a call that will be refused never reaches `infer_salmon_datapackage_artifacts()`; metasalmonpy has no early guard at all and reaches the same decision inside `write_salmon_datapackage()`, having already run the full inference | **Previously unregistered in both registers**, and found by the Q15 work rather than by the audit that produced rows 54–58: R's early copy of the gate had to be moved along with `.ms_check_package_write_dir()` or the coarser guard would have silently won, and the mirror turned out to have no counterpart to move. Measured, not read (2026-08-24, against metasalmon `main` @ `1e473c6` post-fix and metasalmonpy `main` @ `b4323fb`): `create_sdp()` into an existing non-empty directory with `overwrite = FALSE` runs `infer_salmon_datapackage_artifacts()` **0 times in R and 1 time in Python**, and the mirror emits its "Seeding semantic suggestions…" notice before raising `FileExistsError`. **The outcome is identical on both sides — the same refusal, the same class of message — so this is a cost-and-side-effects difference, not an outcome one**, which is exactly why it survived: no assertion about the result can see it. It is not free, though. With `seed_semantics = TRUE` the wasted work is the whole retrieval pass, and with `llm_assess = TRUE` it is billable LLM requests spent on output that will be refused. R pins its half deliberately (`test-package-helpers.R` asserts the mocked `suggest_semantics()` was called **zero** times). **Direction deliberately not ruled here.** Under the 2026-08-17 amendment a divergence opens the question of which side is right rather than settling it, and this one has a real argument each way: an early guard duplicates a check and can drift from the authoritative one — which it just did, for the whole life of row 54 — while the mirror's single-check shape pays for that tidiness in wasted retrieval and possibly in money. Raised as [Q17](questions.md). **Retirement condition:** Brett rules whether `create_sdp()` should refuse before inference; the losing side adds or removes the early guard, both sides pin the number of inference passes a doomed call makes, and this row records the ruling rather than the divergence |
 | 61 | Idiom (byte-level; **unregistered until 2026-08-24**) | The `REVIEW:` marker is written with a trailing space in metasalmon (`.ms_review_iri_prefix()` returns `"REVIEW: "`, so a marked slot reads `REVIEW: https://…`) and without one in metasalmonpy (`package_io._mark_review_iri()` returns `f"REVIEW:{text}"`, so it reads `REVIEW:https://…`). Every **detector** on both sides tests the prefix `REVIEW:` with no space — `.ms_is_review_iri()`, `package_io._has_review_marker()`, the EML and KNB publication guards — so each side recognises the other's marker, and strict validation refuses both | Found by the Q16 differential (2026-08-24), which drove one column through both `create_sdp()` implementations and diffed the written `column_dictionary.csv`: the two agreed on which six slots to fill and on marking all six, and disagreed on one space per marked value. **Registered rather than converged, deliberately.** Brett's Q16 ruling was about *which slots a prefill may fill and that it must be marked*; the marker's exact bytes were not put to him, and changing them would move the four already-marked roles' output too — a wider user-visible change than the ruling authorises, against tests that pin the current spelling on both sides (`test_current_workflow.py`, `test_validation_hardening.py` here; `.ms_review_iri_prefix()` throughout the R suite). **The reason to record it rather than shrug is that it is invisible to every test either side has**: both suites build the expected string from their own prefix helper, so both stay green forever no matter which spelling they use, and the difference only appears when someone diffs the two packages' output bytes — which is how it appeared. The **observable marker** contract in both `AGENTS.md` files says "the `REVIEW:` IRI prefix", which is true of both spellings and settles neither. **Retirement condition:** the two sides adopt one spelling — most cheaply by metasalmonpy growing a `_review_iri_prefix()` helper and both registers recording which won — or the SDP profile specifies the marker's lexical form, at which point both adopt it and this row records the ruling. Until then, do not assume a byte differential over `column_dictionary.csv` is clean |
+
+## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
+
+**metasalmon released `v0.5.0` on 2026-08-25 (roadmap S5) and metasalmonpy is
+still 0.4.0, so a `0.4.0→0.5.0` catch-up window is open.** Read this section as
+the record of what that window owes, and note first what it does **not** owe:
+**no new numbered rows**. None of the nine functions the release adds is a
+deliberate difference — they are simply not built in Python yet — and filing
+absence as design is the one thing this register must not do. It would also
+break `tests/testthat/test-parity-register-guard.R`, which fails on a number
+present in one register and not the other, so a row added here without its twin
+turns CI red in both repositories. **A port is owed, not rows.**
+
+**What the port owes**, measured 2026-08-25 against the metasalmonpy tree:
+zero hits for all nine names (`review_semantics`, `accept_suggestion`,
+`reject_suggestion`, `apply_sdp_semantics`, `review_metadata`,
+`set_sdp_dataset`, `set_sdp_table`, `set_sdp_column`, `set_sdp_code`); zero
+hits for `decision_reason`; no accessor for the suggestion attributes, so the
+only Python path is the raw `df.attrs[...]` and `read_salmon_datapackage` never
+reads `semantic_suggestions.csv` back at all; no consumer or even parser of the
+schema's `constraints.required`, which `review_metadata()` is built on; and the
+descriptor's `contributors` / `licenses` blocks still inline in `package_io.py`
+rather than extracted. The **#118** defect is alive there in the same shape at
+`semantics.py:1294`.
+
+**The one register change that is owed is a correction, and it must be made in
+place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
+to R's output for all three strategies"*. That was true when written and went
+false at `v0.5.0`: R's `reviewed` path is now exempt from the unattended
+auto-apply gate, and R writes a `decision_reason` column Python does not have.
+**Nothing over there will announce it**, because the row still reads as a
+passing verification — which is the worst shape a stale register row can take.
+Amend row 31 rather than adding a row beneath it: a new row saying the two
+differ, sitting under an older row saying they were verified identical, leaves
+a reader to guess which sentence is current.
+
+The amendment replaces row 31's **final clause only** — everything from
+`— verified identical` to the end of the cell — leaving the Kind, the
+difference column and the rest of the rationale untouched:
+
+> — verified identical to R's output for all three strategies **against
+> metasalmon 0.4.0, and no longer identical as of metasalmon 0.5.0
+> (2026-08-25)**. Two R-side changes broke it and neither is ported yet.
+> **(1)** R's `reviewed` path is now **exempt from the unattended auto-apply
+> gate**: `apply_semantic_suggestions(strategy="reviewed")` no longer runs
+> accepted rows through `.ms_filter_auto_apply_suggestions()`, because on that
+> path a human has read the definition and said yes, so the lexical
+> compatibility regex was silently overruling an explicit decision (metasalmon
+> backlog #118). This package still applies that gate at `semantics.py:1294`,
+> so it can drop rows R now applies, and the caller is told only that some rows
+> "did not meet the requested filters". **(2)** R writes a **`decision_reason`**
+> column into `semantic_suggestions.csv` and reads it back on the next review;
+> this package has no such column, so a rejection's recorded reason does not
+> survive a round trip here. **Retirement condition:** the S5 port lands (the
+> nine review-and-edit functions, `decision_reason`, and `decision` replay on
+> queue rebuild), and the three strategies are re-verified against metasalmon
+> 0.5.0 or later — at which point this clause becomes a dated identity claim
+> again, naming that version.
+
+*Retires when:* metasalmonpy carries the S5 port and claims 0.5.0, at which
+point this whole section is replaced by whatever deliberate differences the
+port actually chose — which is the only thing that belongs in the table above.
 
 **Rows 54–58 were added 2026-08-24 by a hub-side pass, closing a one-sided
 window the checker had been reporting since metasalmonpy's 0.4.0 parity audit.**

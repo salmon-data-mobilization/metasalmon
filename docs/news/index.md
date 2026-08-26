@@ -1,6 +1,33 @@
 # Changelog
 
-## metasalmon (development version)
+## metasalmon 0.5.0
+
+Released 2026-08-25. Roadmap S5, and the one claim worth putting first:
+**a salmon data package can now be taken from
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+to `validate_salmon_datapackage(require_iris = TRUE)` without opening a
+single file in a spreadsheet.** Nine new exported functions —
+[`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md),
+[`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md),
+[`reject_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md),
+[`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md),
+[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+and the four `set_sdp_*()` setters — plus the
+[`semantic_suggestions()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_suggestions.md)
+/
+[`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
+accessors, make the most consequential decision in the pipeline
+scriptable, re-runnable and recorded. Backlog **\#74** is closed, with
+**\#118** and the accessor half of **\#60**.
+
+The release is a minor rather than a major:
+[\#58](https://github.com/salmon-data-mobilization/metasalmon/issues/58)
+(condition classes) wants a breaking bump and was deliberately **not**
+bundled into it, so nothing here renames an exported function, drops an
+argument, or changes a documented return shape. It does change bytes in
+two narrow places, both stated in full below — an in-memory SSSOM
+mapping set carrying a typed column, and `semantic_suggestions.csv`,
+which gains a `decision_reason` column.
 
 ### Added
 
