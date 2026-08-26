@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "R-native review and editing flow"
-description: "Execplan for the R-native semantic review and editing flow (stream S5); the 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
+description: "Execplan for the R-native semantic review and editing flow (stream S5); M1-M3 landed 2026-08-25, M4-M5 remain. The 0.3.0 target and the #75 slice-1 fix are both superseded by S8."
 status: draft
 tags: [execplan]
 psc:
@@ -104,7 +104,7 @@ validate_salmon_datapackage(pkg, require_iris = TRUE)
 - [x] 2026-08-11 — Review pass: slice-1 scope reversed for methods (see Decision
       Log), byte writers registered in the collation guard, cross-file atomicity
       contract added
-- [x] 2026-08-25 — M1–M3 implemented and merged. Full suite green (0 failures,
+- [x] 2026-08-25 — M1–M3 implemented (PR #97). Full suite green (0 failures,
       5 skips locally / 4 in CI), `R CMD check` Status OK, OKF bundle valid.
       #60's accessor clause closed; #74 narrowed to M4/M5; #118 filed and
       fixed. See Surprises & Discoveries below for the four things the plan got
@@ -479,4 +479,45 @@ half-updated.
 
 ## Outcomes & Retrospective
 
-_To be completed as milestones land._
+**M1–M3, 2026-08-25.** The feature works and the console is what the plan
+described. What is worth carrying forward is narrower than that.
+
+**The one thing that mattered most was the cheapest to build.** Almost all the
+value of this milestone is in a design decision — print the call, let the user
+paste it — that costs nothing to implement and that a reasonable implementer
+would have replaced with an interactive prompt, because a prompt *feels* more
+helpful. It is not: a prompt reproduces the spreadsheet's defect in a nicer
+font. The plan was right to write that down in a decision log rather than leave
+it to be re-derived, and this retrospective exists to say the same thing again.
+
+**The riskiest artefact in the feature was a string.** Everything else here is
+guarded by machinery that already existed: collation, atomic writes,
+containment, cli safety. The printed call had no guard at all, and it is the
+part a user actually executes. Writing a test that *evaluates every printed
+line and asserts the resulting decision* found two defects in the first working
+version, both from the same unguarded `==` against a legitimately-`NA` column.
+The generalisable rule: **if a program's output is meant to be run, run it in
+the tests.** Rendering assertions (`grepl` on the line) would have passed over
+both.
+
+**The plan's four wrong calls were all in the same direction.** Each assumed an
+existing mechanism could be reused as-is: the `strategy = "reviewed"` seam
+(which silently filtered), the descriptor rebuild (a refactor, not an
+extraction), cli escaping (wrong for a `cat()` path), and cli's hyperlink
+fallback (drops the URL). None was a design error; all four were *unverified
+assumptions about code the plan cited but did not run*. A plan that cites a
+line number has checked that the line exists, not that it does what its name
+says.
+
+**What this milestone did not deliver, restated because it is easy to overclaim
+from the NEWS entry.** The gate in backlog #74 is met for IRIs and only IRIs.
+`validate_salmon_datapackage(require_iris = TRUE)` still fails after a complete
+console review, and the plan's proofs 5 and 6 belong to M4. The round-trip test
+fills the free-text fields with a direct CSV edit precisely so that this stays
+visible in the test rather than being smoothed over.
+
+**Kept for M4.** `review_metadata()` is now the more important half of what
+remains, not the smaller one. It closes both open gaps at once — free-text
+placeholders *and* the shortlists-not-gaps blind spot — because it reads
+required-but-unfilled from the schema rather than from whatever retrieval
+happened to return.

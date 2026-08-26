@@ -334,3 +334,38 @@ test_that("a reviewed decision is not overruled by the unattended auto-apply heu
   )
   expect_true(is.na(seeded$term_iri))
 })
+
+test_that("an abort during the write leaves the package wholly unchanged", {
+  # The execplan's explicit acceptance criterion: interrupt between the CSV
+  # write and the descriptor step, and the package must be wholly old rather
+  # than half-updated. It is asserted directly rather than inherited from the
+  # atomic-write-set tests, because what is being pinned here is the ORDERING
+  # in `apply_sdp_semantics()` -- every file is rendered to bytes before any
+  # file is installed -- and that ordering lives in this function, not in the
+  # writer it delegates to.
+  path <- review_fixture_package()
+  review <- accept_suggestion(
+    suppressMessages(review_semantics(path)), "spawner_count", "variable", rank = 1
+  )
+
+  dictionary_path <- file.path(path, "metadata", "column_dictionary.csv")
+  descriptor_path <- file.path(path, "datapackage.json")
+  writeLines("{ this is not json", descriptor_path)
+
+  before <- vapply(
+    c(dictionary_path, descriptor_path, file.path(path, "data", "spawners.csv")),
+    function(p) digest::digest(p, file = TRUE),
+    character(1)
+  )
+
+  expect_error(apply_sdp_semantics(path, review), "datapackage.json")
+
+  after <- vapply(
+    c(dictionary_path, descriptor_path, file.path(path, "data", "spawners.csv")),
+    function(p) digest::digest(p, file = TRUE),
+    character(1)
+  )
+  # The dictionary is the one that matters: it was already mutated in memory
+  # and its bytes were already rendered when the descriptor step aborted.
+  expect_identical(after, before)
+})
