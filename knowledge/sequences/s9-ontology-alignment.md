@@ -71,7 +71,7 @@ iop-triples explainer.
    |---|---|---|
    | A — management geography | #67 DFO Management Area Name, #69 Lower Management Level, #75 Upper Management Level | Model the management-area *entity* once and reach names/levels through label and identifier properties, or mint a field concept per source column? |
    | B — sockeye life history | #68 Lake Type, #74 River Type | Split the mixed `LIFE_HISTORY_TYPE` source field into its own scheme, or reuse an existing smn/gcdfo term if one already covers the distinction? |
-   | C — pink dominant cycle | #70 Odd Year Dominant Cycle | Dedicated dominant-cycle scheme or not — and if retained, mint the complementary `EvenYearDominantCycle` that the current SPSR extract does not contain? |
+   | C — pink dominant cycle | #70 Odd Year Dominant Cycle | Dedicated dominant-cycle scheme or not — and if retained, mint the complementary `EvenYearDominantCycle` that the current SPSR extract does not contain? *2026-09-02:* the label itself is not a term of art anywhere — DFO's CU data dictionary glosses `PKO` as "Odd Year Pink Salmon" and lists `Odd Year` / `Even Year` as `LIFE_HISTORY_TYPE` values with no dominance component, so the SPSR value maps to the odd-year *line*, and dominance (Krkošek et al. 2011) is a time-scoped status of a system. Commons card `pink-salmon-line-definitions.md`. |
    | D — quality rating codes | #71/#72/#73 (codes 1/2/3) | Do `INFORMATION_QUALITY` and `INDEX_QUALITY` share one scheme, and should undocumented numeric codes become concepts at all rather than staying data until a published scheme exists? |
 
    **A 2026-08-16 evidence pass answered the factual half of all four groups**
@@ -108,10 +108,20 @@ iop-triples explainer.
      `Definitions` sheets. They never co-occur with values in any table, and
      codes 1 and 3 appear only in `INFORMATION_QUALITY`. So framework-neutral
      `QualityRatingCode1/2/3` shared across both fields would conflate two
-     distinct scales. Neither framework document is obtainable from these
-     repos, so **the meaning of the integers is not documented anywhere
-     readable**; gcdfo already carries an ordinal DFO quality vocabulary at
+     distinct scales. Neither framework document was obtainable from these
+     repos at the time; gcdfo already carries an ordinal DFO quality vocabulary at
      `gcdfo:EstimateTypeScheme` (Hyatt 1997, Type-1…Type-6).
+     **Superseded 2026-09-02 for one of the two:** a tool-checked source pass
+     located "Ogden 2015" — Ogden, Irvine, English, Grant, Hyatt, Godbout &
+     Holt 2015, *Can. Tech. Rep. Fish. Aquat. Sci.* 3130 (WAVES
+     `Library/359366.pdf`, HTTP 200, no DOI). Its §2.3 defines a five-point
+     scale **5 = Excellent … 1 = Poor**, separately for escapement, catch and
+     age composition — the *reverse* of the SPSR `codes.csv` gloss "1 =
+     highest", which is now a ruling of its own (decision 9 below). The "New
+     Zealand Quality Index" remains unlocated after 16 logged queries; the
+     nearest candidate is the NZ Research and Science Information Standard
+     (2011), a **1–3** ranking. Reasoning and the level paraphrases live in
+     commons card `spsr-data-quality-frameworks.md`.
 
    Group D still carries the sharpest risk: minting concepts for integers whose
    meaning no available document defines publishes IRIs asserting a distinction
@@ -138,7 +148,10 @@ iop-triples explainer.
    now has a **home for the reasoning** other than the issue thread, which is
    what the "its reasoning has to stand on its own" worry was really about —
    `evidence_needed` is precisely "Ogden 2015 §2.3 and the New Zealand Quality
-   Index, obtained". And if **PR #27's species scheme stays withdrawn**, that
+   Index, obtained" — since 2026-09-02 only the second half is still owed, and
+   the card states what would count (a title, author or URL for the "New Zealand
+   Quality Index", or confirmation it was adapted from the 1–3 RSIS ranking, in
+   which case the 1–5 extension itself needs a source). And if **PR #27's species scheme stays withdrawn**, that
    is a closed-unmerged proposal and the commons gaps it came from should move
    to `rejected` in the same change — not left `open`, which would read as
    nobody having tried and invite the next agent to re-propose it.
@@ -157,9 +170,9 @@ iop-triples explainer.
    | Group | Ruling |
    |---|---|
    | **A1** (#67) | **Mint the PFMAs as a controlled vocabulary** in gcdfo, sourced from DFO materials, then close #67. The alternative — a separate four-value "DFO salmon Area" entity, which is what the evidence pointed at — was **rejected**. |
-   | **A2** (#69, #75) | **Capture as an issue.** Filed as **#84**, posing the single question: quantitative abundance reference points, or a coded hierarchy? Needs a data-steward ruling; #69/#75 stay open behind it. |
+   | **A2** (#69, #75) | **Capture as an issue.** Filed as **#84**, posing the single question: quantitative abundance reference points, or a coded hierarchy? Needs a data-steward ruling; #69/#75 stay open behind it. *2026-09-02 source pass:* "management level" occurs in none of ~3 M characters of DFO text read (WSP, PA framework, Holt et al. 2009, SAR 2022/030, Chaput 2013, Fisheries Act ss. 6.1–6.3, FGR Sched. IX, PFMA Regs 2007, PSC FRP 2016, both 2024/25 IFMPs, Outlook, NuSEDS dictionary); the Glaser gloss matches the Southern BC IFMP's *Upper/Lower Fishery Reference Point* clause for clause, so the literature has precedent for reading (a) and none for (b). Still the steward's call — one populated `PFMA_METADATA` row would settle it. Commons card `fishery-reference-points-and-management-levels.md`. |
    | **B + C** (#68, #74, #70) | **Three separate schemes, in `smn:`, scoped "very broad"** — explicitly *not* the single merged CU species-code vocabulary recommended above. Broad means species-agnostic: a life-history-type scheme that contains lake- and river-type rather than a sockeye scheme. Brett's second constraint is that **PSC should be able to leverage them**, so they are designed for `psc-salmon-vocabularies` to map onto rather than mint parallels. Mint from the source code list, not observed values — `PKE` lands alongside `PKO`. |
-   | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. |
+   | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. *2026-09-02:* #85 is half-unblocked — Ogden 2015 §2.3 is located and an `INFORMATION_QUALITY` scheme is mintable as its own framework-named scheme (draft in `gcdfo_quality_and_refpoint_drafts.ttl`, Part A); `INDEX_QUALITY` stays blocked on the NZ document. |
 
    **B+C proposed, and contested — do not read the design as agreed.**
    salmon-domain-ontology
@@ -298,6 +311,28 @@ iop-triples explainer.
    neither rears in lakes — a grouping by nursery habitat that cuts across the
    duration axis, and *both* readings are in that one paper.
 
+   **Source pass, 2026-09-02 — what the literature actually holds.** The
+   special-case wording originates in Wood et al. 2008 (*Evol. Appl.* 1:207),
+   who chose to lump the two non-lake types as a "sea/river ecotype" because
+   neither rears in lakes; Beacham & Withler 2017 *report* that view citing
+   Wood 2008 and do not adopt it. Four structural positions occur across the
+   located passages: three peers (Wood, Riddell & Rutherford 1987; Gustafson et
+   al. 1997; Gustafson & Winans 1999; CSAS RD 2023/003), river-type as a
+   special case of sea-type (Wood et al. 2008), both as sub-kinds of a
+   "riverine" class (Pavey et al. 2011), and the two merged into one
+   river/ocean-type (Holtby & Ciruna 2007; CSAS RD 2017/074). Every grouping is
+   on shared riverine habitat, never on duration, and no source read makes
+   sea-type the genus of river-type. Two of the PR's attributions fail the
+   passage check: the river-type "one to two years" figure is Gustafson et al.
+   1997 p. 23 / Gustafson & Winans 1999 / RD 2023/003 p. 5, not Beacham &
+   Withler (who write "at least one year"); and Gilbert 1913 names *four*
+   species for "sea type", not five. Burgner 1991 and Wood 1995 remain unread
+   (lending-restricted scans). Recommendation, not ruling: **(a)**, with Wood
+   2008 carried as a `skos:historyNote`, and a riverine-rearing grouping
+   concept minted if DFO's `SER` code needs a target. Replacement literals are
+   in `smn_pr27_definition_amendments.ttl`; the evidence is commons card
+   `sockeye-life-history-type-definitions.md` and the 52-row citation ledger.
+
    The three scope notes on the PR's concepts are careful about other hazards
    (the `SEL`/`SER` code halves, the chinook `sea-type` homograph, the
    stream-type false friend) and **say nothing about this one**. So the artifact
@@ -317,6 +352,20 @@ iop-triples explainer.
    is the hold this concept exists to close — see the closes-by-reference
    inconsistency flagged above, which is about the same term. *Retires when:*
    Brett rules, and the commons gap moves off `contested` in the same change.
+
+   **Decision 9 — direction of the Ogden integers in SPSR data (new,
+   2026-09-02).** Not a PR #27 question but a ninth ruling the same source pass
+   surfaced, recorded here so the count stays honest. Ogden et al. 2015 §2.3
+   defines **5 = Excellent, 1 = Poor**; the generated SPSR `codes.csv` glosses
+   `information_quality` as "1 = highest, 5 = lowest". The single attested value
+   `{2}` is Fair under the report and second-best under the code list. The
+   five concepts can be minted now (they carry the report's labels and
+   `skos:notation` in the report's direction); the SPSR notation-to-concept
+   mapping cannot be fixed until the SPSR authors confirm which direction they
+   applied. **Owner:** the SPSR data steward, via gcdfo #85. *Retires when:* the
+   direction is confirmed and `codes.csv` or the scheme is corrected to match.
+   Not the same question as the "New Zealand Quality Index" retrieval, which is
+   still open and now has a specific `evidence_needed`.
 
    Questions 6 (*"cycle line" renames away from issue #70's wording*) and 7
    (*proposed straight into shared `smn:` rather than a
@@ -429,8 +478,8 @@ iop-triples explainer.
 
    | Holds | Blocked on | What unblocks it |
    |---|---|---|
-   | **#69, #75** (management levels) | A **data-steward ruling**, tracked as gcdfo **#84** | Whether `UPPER_`/`LOWER_MANAGEMENT_LEVEL` are quantitative abundance reference points or a coded hierarchy. The two source documents genuinely disagree, both fields have **zero observed values**, and the only unit-bearing definition gives them units of "Number of fish" — so more reading will not settle it. A person with authority over the SPSR data must rule |
-   | **#71, #72, #73** (quality codes) | **Sourcing two documents**, tracked as gcdfo **#85** | Ogden 2015 §2.3 and the New Zealand Quality Index — the two published 1–5 frameworks `INFORMATION_QUALITY` and `INDEX_QUALITY` cite by name. **Neither is obtainable from these repos**, so the meaning of the integers is documented nowhere readable. This is a *retrieval* task, and it is the whole blocker |
+   | **#69, #75** (management levels) | A **data-steward ruling**, tracked as gcdfo **#84** | Whether `UPPER_`/`LOWER_MANAGEMENT_LEVEL` are quantitative abundance reference points or a coded hierarchy. The two source documents genuinely disagree, both fields have **zero observed values**, and the only unit-bearing definition gives them units of "Number of fish" — so more reading will not settle it. A person with authority over the SPSR data must rule. (Reading did narrow it, 2026-09-02: the phrase has no published DFO counterpart and the gloss matches the IFMP upper/lower *fishery reference points* — precedent for (a), none for (b).) |
+   | **#71, #72, #73** (quality codes) | **Sourcing two documents**, tracked as gcdfo **#85** | Ogden 2015 §2.3 and the New Zealand Quality Index — the two published 1–5 frameworks `INFORMATION_QUALITY` and `INDEX_QUALITY` cite by name. **Neither was obtainable from these repos**; as of 2026-09-02 Ogden 2015 is retrieved (Tech. Rep. 3130, WAVES 359366) and its integers are documented — in the *opposite* direction to `codes.csv` (decision 9) — while the NZ index is a demonstrated negative. Half a retrieval task remains, plus one direction ruling |
    | **#68, #70, #74** (life history, cycle line) | **PR #27's six decisions** above | Brett's rulings on the modelling. #68 and #70 close by reference on acceptance; #74 is blocked twice over — by the closes-by-reference inconsistency flagged above and by decision 8, which is about the river-type concept itself |
 
    The distinction matters for sequencing: #71–#73 could be unblocked by
