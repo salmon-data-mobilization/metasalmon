@@ -29,6 +29,7 @@ and contains non-Markdown files a bundle cannot hold).
   open and answered. The ruling itself lives in the owning card; this file says
   which card that is.
 - [Orientation](orientation.md) — architecture and file→responsibility map.
+- [Workshop curriculum and SDO guidance findings](workshop-curriculum-and-sdo-guidance-2026-09-08.md) — the 2026-09-08 Day 1 baseline, authorized Day 2 expansion, pinned request-preview evidence, and unsubmitted ontology-guidance recommendations.
 - [Method model draft](method-model-draft.md) — the SDP methods/aggregation
   design record. **Normative since sdp-0.3.0**: ported to `smn-data-pkg`
   2026-08-14, so the spec is the authority and this card holds the reasoning.

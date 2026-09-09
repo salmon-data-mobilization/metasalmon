@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S4 — Workshop rebuild"
-description: "Rebuild the salmon-data-standards-workshop: nine episodes, R-led with Python equivalents, executing against released metasalmon and metasalmonpy. The install/lockfile split closed 2026-08-25 (workshop PR #6, pinned to metasalmon v0.5.0 / metasalmonpy v0.4.0, open for Brett's review); primary_key is still absent from the whole lesson."
+description: "The same-source, human-first workshop: seven-chapter Day 1 and implemented five-chapter Day 2, using released R 0.5.0 and Python 0.4.0 with review and publication limits explicit."
 status: draft
 tags: [workshop, teaching]
 psc:
@@ -10,6 +10,52 @@ psc:
 ---
 
 # S4 — Workshop rebuild · repo: `salmon-data-standards-workshop`
+
+## Current curriculum — 2026-09-08
+
+The published baseline at workshop commit
+[`190df307b4e486d97f9899fa26c4bdff376a66dd`](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/tree/190df307b4e486d97f9899fa26c4bdff376a66dd)
+has seven Day 1 chapters totaling 360 minutes. Every stage uses the unchanged
+173-row, 14-column NuSEDS Fraser Coho 2023–2024 source. Human graphing,
+dictionary/decomposition and actual peer review precede packaging and AI.
+R/ Python/Spreadsheet lanes, same-source checkpoints, recorded AI comparison,
+glossary, field reference, and optional extended practice are included.
+
+Brett authorized five Day 2 chapters (8–12), timed 60/75/90/75/60 minutes,
+for local semantic practice and contribution stewardship. The full curriculum
+was committed and pushed at [`27e0ced`](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/tree/27e0cede5709de4bfebb9894c45a038259305456).
+Local rendering, source/download/link checks, vocabulary checks, 15 model
+and 10 bridge checks, and R/Python request-preview exercises passed. Browser
+inspection confirmed navigation, diagrams, glossary anchors and contribution
+tabs. The [deployment workflow](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/actions/runs/34304171873) passed; the
+public homepage and five new chapters returned HTTP 200, the public ZIP
+matched the committed bytes, and the deployed contribution tab worked. Chapter 12 ends with an unsubmitted request or source
+question, not an automatically minted term. The actual Day 1 human checkpoint
+remains required. The earlier nine-episode rebuild description below is
+historical and does not define this curriculum.
+
+Both installs and the R lockfile use released packages: metasalmon **0.5.0**
+and metasalmonpy **0.4.0**. Native R review/setter gaps remain explicit in the
+Python lane. The earlier claim that `primary_key` is absent is superseded:
+the field reference now documents it, and the activities explain why the
+164 population–year pairs do not identify all 173 source records uniquely.
+
+The reference remains a technical draft pending Bruno and Tom's scientific
+review. Independent-validator mismatch, unsuccessful live free-provider
+rehearsal, and absent verified public KNB test record remain visible in the
+kit status. Local curriculum work can proceed with recorded/local artifacts;
+this does not declare S3's live rehearsal complete or alter general OD-2
+publication decisions. No production deposit or issue posting is required.
+
+See the [source-pinned curriculum and SDO guidance card](../workshop-curriculum-and-sdo-guidance-2026-09-08.md)
+for evidence, request-preview behavior, and proposed upstream documentation
+improvements. No SDO source is changed by that proposal.
+
+## Historical evidence through 2026-08-25
+
+The remainder records earlier observations and decisions. Its present-tense
+PR status, episode counts, and blocker language are dated evidence; the
+current section above governs the workshop state.
 
 **Q2 answered 2026-08-22 (Brett): currency pass first — landed 2026-08-21 as
 workshop PR #4 — then the golden-path/rebuild work after the KNB test

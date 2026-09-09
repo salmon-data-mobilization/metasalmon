@@ -434,6 +434,14 @@ every release — re-run the count rather than trusting these to the digit.
   lives here; ordering lives in the roadmap.
 - `knowledge/plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
   KNB staging target and the workshop rebuild (roadmap S3/S4).
+- `knowledge/sequences/s4-workshop-rebuild.md` — current workshop state; the
+  2026-09-08 human-first, same-source curriculum supersedes the older episode
+  sequence. R 0.5.0 and Python 0.4.0 are the workshop pins, with capability
+  gaps stated explicitly.
+- `knowledge/workshop-curriculum-and-sdo-guidance-2026-09-08.md` — source-pinned
+  curriculum evidence and draft guidance for local CV/OWL ownership, bridges,
+  contribution templates, and stewardship. Recommendations are not upstream
+  changes or human approval.
 - `knowledge/plans/2026-08-10-post-0.2.0-roadmap.md` — superseded by
   `knowledge/roadmap.md`; kept as the record of how 0.2.1–0.2.4 were sequenced.
 - `knowledge/plans/2026-08-10-comprehensive-ecosystem-review.md` — the 96
