@@ -174,9 +174,13 @@ yaml_flow_list() { # file key -> one element per line
 
 # The members block is the one nested structure the client reads, so it gets
 # its own reader rather than a general one. It accepts both shapes the design
-# has used: a mapping per member (repo, org, forge) and a bare `org/repo`
+# has used: a mapping per member (repo, org, forge, solo) and a bare `org/repo`
 # string, which is read as GitHub because that is what the string form meant.
-# One line out per member: repo, org, forge, tab separated.
+# One line out per member: repo, org, forge, solo, tab separated.
+#
+# `solo` is empty when the entry does not state it, and empty means unstated
+# rather than false: member_solo_for_repo is where an unstated value is
+# resolved, because that is the one place the answer has to be conservative.
 members_list() {
   [ -f "$CONFIG_FILE" ] || return 0
   awk -v sq="'" '
@@ -190,8 +194,8 @@ members_list() {
       return s
     }
     function flush() {
-      if (repo != "") printf "%s\t%s\t%s\n", repo, org, (forge == "" ? "github" : forge)
-      repo = ""; org = ""; forge = ""
+      if (repo != "") printf "%s\t%s\t%s\t%s\n", repo, org, (forge == "" ? "github" : forge), solo
+      repo = ""; org = ""; forge = ""; solo = ""
     }
     index($0, "members:") == 1 {
       rest = clean(substr($0, 9))
@@ -201,7 +205,7 @@ members_list() {
         for (i = 1; i <= n; i++) {
           p = clean(parts[i]); if (p == "") continue
           split(p, s, "/")
-          if (s[2] != "") printf "%s\t%s\t%s\n", substr(p, length(s[1]) + 2), s[1], "github"
+          if (s[2] != "") printf "%s\t%s\t%s\t%s\n", substr(p, length(s[1]) + 2), s[1], "github", ""
         }
         exit
       }
@@ -215,6 +219,7 @@ members_list() {
       if (line == "") next
       if (index(line, "repo:") == 1) { repo = clean(substr(line, 6)); next }
       if (index(line, "org:") == 1)  { org  = clean(substr(line, 5)); next }
+      if (index(line, "solo:") == 1) { solo = clean(substr(line, 6)); next }
       split(line, s, "/")                              # bare org/repo string
       if (s[2] != "") { org = s[1]; repo = substr(line, length(s[1]) + 2); forge = "github"; flush() }
       next
@@ -224,6 +229,7 @@ members_list() {
       if (index(line, "repo:") == 1)  { repo  = clean(substr(line, 6)); next }
       if (index(line, "org:") == 1)   { org   = clean(substr(line, 5)); next }
       if (index(line, "forge:") == 1) { forge = clean(substr(line, 7)); next }
+      if (index(line, "solo:") == 1)  { solo  = clean(substr(line, 6)); next }
     }
     END { flush() }
   ' "$CONFIG_FILE"
@@ -264,9 +270,29 @@ CLAIM_PREFIX=""
 # audit. So the override exists for exactly one window: the two-terminal race
 # test in migration step 1, before the real repository exists.
 #
-# Retires when: locks_repo names the real locks repository. From that commit
-# the override is inert, and once migration step 1 is signed off the branch
-# below can be deleted outright rather than left as a disabled path.
+# FIRST RETIREMENT CONDITION: MET. locks_repo named the real locks repository
+# on 2026-09-10, so against the real queue the placeholder branch below is
+# already unreachable and the refusal branch is the only one that runs. This
+# comment used to stop at "Retires when: locks_repo names the real locks
+# repository", which was the condition that had just been met, and a met
+# retirement condition left in place is exactly the decay the rule against it
+# exists to prevent: it reads as pending to anyone who does not go and check
+# the configuration.
+#
+# Why the code is still here anyway, stated rather than left to be inferred:
+# scripts/tests/test_hub_claim.sh builds its fixture queues with
+# `locks_repo: PLACEHOLDER-...` and aims them at a throwaway bare repository
+# with HUB_LOCKS_URL, because a fixture carrying a plausible remote could send
+# a stray push somewhere real. Deleting the placeholder branch today would
+# break every client assertion in that file. So the surviving reason is the
+# test fixture and not the migration.
+#
+# Retires when: the fixtures in scripts/tests/test_hub_claim.sh stop needing
+# the override -- they would point locks_repo at a `file://` URL, which
+# resolve_locks_url already accepts unchanged -- and migration step 1 is signed
+# off. At that point the PLACEHOLDER branch, the refusal branch, the two
+# doctor branches and the HUB_LOCKS_URL row in HUB.md's writes register are
+# deleted together, because none of them has a second reason to exist.
 resolve_locks_url() { # -> sets LOCKS_URL and LOCKS_URL_SOURCE, or exits 3
   local repo override
   override=${HUB_LOCKS_URL:-}
@@ -431,11 +457,28 @@ agent_token() {
       mkdir -p "$CACHE_DIR" 2>/dev/null || fail "cannot create the cache directory"
       tok="a-$(LC_ALL=C od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n')"
       [ "$tok" = "a-" ] && fail "cannot read /dev/urandom to mint an agent token"
-      printf '%s\n' "$tok" > "$file" || fail "cannot write the agent token cache"
-      case $key in
-        machine-default)
-          warn "no session identity was available, so this agent's token is keyed on the machine and the cache directory and is shared with every other agent running here. Set HUB_SESSION_KEY if more than one agent runs at a time" ;;
-      esac
+      # The create is exclusive, and that is the whole point of this branch. Two
+      # first calls in one session both find the cache empty, both mint, and a
+      # plain `>` lets the second overwrite the first: the loser's claim then
+      # names an identity that its own later beat, release and done calls cannot
+      # recover, so the item reads as held by a stranger who is itself. `set -C`
+      # opens with O_EXCL, so exactly one of them creates the file and every
+      # other one reads what the winner wrote.
+      # Retires when: the token stops being cached in a file, which is when a
+      # harness-independent session id exists and the ladder above collapses.
+      if ( set -C; printf '%s\n' "$tok" > "$file" ) 2>/dev/null; then
+        case $key in
+          machine-default)
+            warn "no session identity was available, so this agent's token is keyed on the machine and the cache directory and is shared with every other agent running here. Set HUB_SESSION_KEY if more than one agent runs at a time" ;;
+        esac
+      else
+        # Either another call in this session created it a moment ago, in which
+        # case its value is the session's answer and this one adopts it, or the
+        # file cannot be written at all, in which case there is nothing to read
+        # and a token this call invented would not survive to the next command.
+        tok=$(cat "$file" 2>/dev/null)
+        [ -n "$tok" ] || fail "cannot write the agent token cache at $file, and there is no token there to read"
+      fi
     fi
   fi
   case $tok in
@@ -502,15 +545,121 @@ lease_until_now() { # -> ISO-8601 UTC lease expiry for a fresh or renewed lease
 # The locks object cache, and the push classifier.
 # ---------------------------------------------------------------------------
 
+# Two hub processes in one session share this cache, so a cold start is raced
+# too. Measured 2026-09-10 with the cap race in
+# scripts/tests/test_hub_claim.sh: two `hub claim` calls against an empty cache
+# both ran `git init --bare` on the same path and one of them exited 3 with
+# "cannot initialise the local locks object cache", which reads like a broken
+# machine rather than a lost race. So the failure of init is not the answer
+# here; whether the directory is a usable repository afterwards is.
+# Retires when: the client stops keeping a local object cache.
 ensure_locks_cache() {
-  if [ ! -d "$LOCKS_DIR" ]; then
+  local tries=0
+  while [ "$tries" -lt 3 ]; do
+    lg rev-parse --git-dir >/dev/null 2>&1 && return 0
     mkdir -p "$CACHE_DIR" || fail "cannot create the cache directory"
-    git init --quiet --bare "$LOCKS_DIR" >/dev/null 2>&1 \
-      || fail "cannot initialise the local locks object cache"
-  fi
+    git init --quiet --bare "$LOCKS_DIR" >/dev/null 2>&1
+    tries=$((tries + 1))
+    lg rev-parse --git-dir >/dev/null 2>&1 && return 0
+    sleep 1
+  done
+  fail "cannot initialise the local locks object cache at $LOCKS_DIR"
 }
 
 lg() { git --git-dir="$LOCKS_DIR" "$@"; }
+
+# ---------------------------------------------------------------------------
+# The one lock git cannot provide: the concurrency cap.
+#
+# Every other rule in this protocol is a question about ONE ref, which is why
+# the compare-and-swap argument above settles them. max_concurrent_claims is
+# not: it counts this agent's live claims across every ref. Two `hub claim`
+# processes for one agent on two different items both read a count of zero,
+# both push, and each push is correct on its own, so the locks repository
+# cannot refuse either one. Measured 2026-09-10 against a fixture with the cap
+# set to 1: two claims, two refs, one agent, and nothing anywhere saying so
+# (assertion 19 in scripts/tests/test_hub_claim.sh).
+#
+# So the read-count-push window is serialized locally, with an atomic mkdir in
+# the cache directory. What that covers and what it does not, stated plainly,
+# because a lock whose reach is assumed is worse than no lock:
+#
+#   covered      two hub processes that share this cache directory. That is
+#                every pair that also shares an agent identity by the ladder
+#                above, because the identity is derived from the same session
+#                key and cached in that same directory. It is the case the
+#                finding describes and the case a harness actually produces.
+#   NOT covered  two processes carrying the same HUB_AGENT_TOKEN on two
+#                machines, or pointed at two cache directories. There the cap
+#                is still only a precheck and two claims can still land.
+#
+# The two constants below are mechanics of a local mutex, not queue policy:
+# nothing in HUB.md cites them, no agent's behaviour is described by them, and
+# changing either changes no rule. That is why they are here rather than in
+# queue/config.yaml, which owns the constants that ARE rules. If either ever
+# becomes something a person reads as a promise, it moves there with the rest.
+#
+# Retires when: the cap moves into the locks repository as a per-agent ref that
+# a claim has to fast-forward. Then git arbitrates the cap the same way it
+# already arbitrates the item, and this lock is deleted rather than tuned.
+# ---------------------------------------------------------------------------
+
+CAP_LOCK_DIR=""
+CAP_LOCK_HELD=0
+CAP_LOCK_WAIT_SECONDS=20
+CAP_LOCK_STALE_SECONDS=120
+
+path_age_seconds() { # path -> age in seconds, or non-zero when unmeasurable
+  local m now
+  m=$(stat -c %Y "$1" 2>/dev/null)          # GNU stat
+  case ${m:-} in ''|*[!0-9]*) m=$(stat -f %m "$1" 2>/dev/null) ;; esac   # BSD stat
+  case ${m:-} in ''|*[!0-9]*) return 1 ;; esac
+  now=$(now_epoch)
+  printf '%s' "$(( now - m ))"
+}
+
+# 0 held, 2 another process held it for longer than the wait, 1 the lock could
+# not be attempted at all. The caller turns 1 and 2 into a 3 with different
+# words, because "somebody else is claiming right now" and "this machine cannot
+# keep a lock" are different things to be told.
+cap_lock_acquire() { # token -> 0, 1 or 2
+  local token=$1 dg waited=0 age
+  # Per agent, not per machine: two different agents on one machine have
+  # separate caps and must not queue behind each other.
+  dg=$(key_digest "$token") || return 1
+  CAP_LOCK_DIR="$CACHE_DIR/cap-$dg.lock"
+  mkdir -p "$CACHE_DIR" 2>/dev/null || return 1
+  while :; do
+    if mkdir "$CAP_LOCK_DIR" 2>/dev/null; then
+      printf '%s\n' "$$" > "$CAP_LOCK_DIR/pid" 2>/dev/null
+      CAP_LOCK_HELD=1
+      # The trap is what makes this safe against the exits this script takes
+      # from inside a helper: `fail` exits the process, and a lock nobody
+      # releases would stop every later claim on this machine.
+      trap 'cap_lock_release' EXIT
+      return 0
+    fi
+    # A holder that was killed leaves the directory behind. Break one that is
+    # older than any claim can honestly take, and say so, because a broken lock
+    # is either a crash worth knowing about or a claim this one is racing.
+    age=$(path_age_seconds "$CAP_LOCK_DIR") || age=""
+    if [ -n "$age" ] && [ "$age" -gt "$CAP_LOCK_STALE_SECONDS" ]; then
+      warn "breaking a ${age} second old claim lock at $CAP_LOCK_DIR; whatever held it did not release it"
+      rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
+      continue
+    fi
+    [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || return 2
+    sleep 1
+    waited=$((waited + 1))
+  done
+}
+
+cap_lock_release() {
+  [ "$CAP_LOCK_HELD" -eq 1 ] || return 0
+  CAP_LOCK_HELD=0
+  rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
+  trap - EXIT
+}
 
 # Git's rejection vocabulary, in one place. Only these mean the ref moved.
 # Anything else, including every authentication and transport failure, is 3.
@@ -639,12 +788,51 @@ member_slug_for_repo() { # repo -> org/repo, or empty when it is not a member
   members_list | awk -F'\t' -v r="$1" '$1 == r { print $2 "/" $1; exit }'
 }
 
+# The member repositories nobody but Brett has ever contributed to.
+#
+# HUB.md's participation table under "The standing authorization" is the
+# authority for this fact, and this line is a copy of its `Grant applies: yes`
+# row, measured 2026-09-10. When the two disagree the table wins and this line
+# is the copy that is wrong. It is a copy at all only because
+# some member entry in queue/config.yaml does not state `solo:`. The reader
+# below prefers the configuration wherever it states the fact, so adding the
+# key there is what removes this list rather than adding a second home for it,
+# and this constant is consulted only for the members the key has not reached.
+#
+# The locks repository is solo too and is deliberately absent: an item's `repo`
+# field never names it, so a value here would be read by nothing.
+#
+# Retires when: every member entry in queue/config.yaml carries `solo:`. At
+# that point this constant and the fallback branch below are deleted together,
+# and a member whose entry omits the key is shared by the rule in HUB.md rather
+# than by an omission from this line. `hub doctor` counts how many members
+# state the key and says outright when that day has arrived, because a
+# retirement condition nothing announces is one that gets met and ignored.
+HUB_SOLO_REPOS_FALLBACK="metasalmon metasalmonpy smn-data-pkg salmon-domain-ontology salmon-knowledge-commons"
+
+member_solo_for_repo() { # repo -> yes when the repository is solo, otherwise no
+  local declared r
+  declared=$(members_list | awk -F'\t' -v r="$1" '$1 == r { print $4; exit }')
+  case $declared in
+    true|yes|True|TRUE|Yes|YES)   printf 'yes'; return 0 ;;
+    false|no|False|FALSE|No|NO)   printf 'no';  return 0 ;;
+  esac
+  for r in $HUB_SOLO_REPOS_FALLBACK; do
+    [ "$r" = "$1" ] || continue
+    printf 'yes'; return 0
+  done
+  # Not stated in the configuration and not on the list, which includes a repo
+  # that is not a member at all and an item with no repo field. HUB.md: a
+  # repository whose participation cannot be determined is shared.
+  printf 'no'
+}
+
 # ---------------------------------------------------------------------------
 # doctor
 # ---------------------------------------------------------------------------
 
 cmd_doctor() {
-  local ok=0 v url out rc token prefix probe sha
+  local ok=0 v url out rc token prefix probe sha declared
   say "$PROG doctor"
   say ""
 
@@ -712,6 +900,25 @@ cmd_doctor() {
     done
     v=$(members_list | grep -c .)
     say "ok    config members lists $v repositories"
+    # Whether the fallback participation list in this script is still load
+    # bearing. The constant is a copy of HUB.md's participation table, and a
+    # copy of a fact is a thing that drifts, so the only good outcome is its
+    # deletion. That happens when every member entry states `solo:` -- and
+    # nothing would otherwise announce the day that became true, which is how a
+    # retirement condition gets met and the code stays anyway. This line is the
+    # announcement.
+    # Retires when: HUB_SOLO_REPOS_FALLBACK is deleted, which is what it exists
+    # to ask for.
+    declared=$(members_list | awk -F'\t' '$4 != ""' | grep -c .)
+    if [ "$declared" -ge "$v" ] && [ "$v" -gt 0 ]; then
+      say "ok    config every member states solo:, so HUB_SOLO_REPOS_FALLBACK in this"
+      say "      script is now dead code and its retirement condition is met; delete the"
+      say "      constant and the fallback branch in member_solo_for_repo together"
+    else
+      say "ok    config $declared of $v members state solo:; the rest fall back to the"
+      say "      copy of HUB.md's participation table in this script, and a member that"
+      say "      is on neither is read as shared"
+    fi
   else
     say "FAIL  queue/config.yaml is not readable"; ok=1
   fi
@@ -805,27 +1012,85 @@ cmd_doctor() {
 # ---------------------------------------------------------------------------
 
 cmd_ready() {
-  local set_id="" id st cl bl held tmp out rc line
+  local set_id="" auth="" id st cl bl held ref hid hact grace now lu
   while [ $# -gt 0 ]; do
     case $1 in
       --set)   shift; [ $# -gt 0 ] || fail "--set needs an item id"; set_id=$1 ;;
       --set=*) set_id=${1#--set=} ;;
+      --authorization)   shift; [ $# -gt 0 ] || fail "--authorization needs the words Brett used"; auth=$1 ;;
+      --authorization=*) auth=${1#--authorization=} ;;
       *)       fail "ready: unknown argument '$1'" ;;
     esac
     shift
   done
 
+  # --set prints the promotion; it does not make it.
+  #
+  # It used to say the reason was that "agents are forbidden to push main", and
+  # both halves of that sentence were false from 2026-09-10: ruling R15 permits
+  # an agent to push a small mechanical change to the default branch, and
+  # permits an agent to promote an item on an authorization Brett gave in chat
+  # as long as the promotion commit names it. A client that instructs an agent
+  # out of a permission it holds is the same defect as one that instructs it
+  # into a breach: in both cases the agent's transcript reads as compliance
+  # with a rule that no longer exists, and nothing in the run says otherwise.
+  #
+  # The reason it still only prints is a different one, and it is this client's
+  # own boundary rather than a rule about agents: this client writes to the
+  # locks repository and to nothing else. It has never run `git commit` or
+  # pushed a branch in a member repository -- including this one -- and every
+  # push path in here computes a claim ref. Teaching it to commit on main would
+  # give it a second, differently-shaped write target that no exit code, no
+  # printed URL and no register row currently covers. So the promotion is the
+  # agent's own commit, made with the agent's own git, and this command's job
+  # is to make that commit correct on the first try.
+  #
+  # Retires when: the writes register grows a row for this client committing in
+  # a member repository. Until that row exists, a promotion made by this script
+  # would be a write nobody authorized.
   if [ -n "$set_id" ]; then
     item_exists "$set_id" || fail "no queue item $set_id"
     st=$(item_field "$set_id" state)
-    say "Moving an item to ready is a commit on main, and agents are forbidden to"
-    say "push main, so this prints the edit and refuses to make it."
+    if [ "$st" = "ready" ]; then
+      say "$set_id is already in state ready; nothing to promote."
+      return "$EX_OK"
+    fi
+    say "The promotion is one line, and an agent may make it. Ruling R15 (2026-09-10)"
+    say "permits an agent to promote a queue item on an authorization Brett gave in"
+    say "chat, and to push a change this small to the default branch. This client does"
+    say "not commit in this repository at all, so it prints the edit rather than"
+    say "making it; the commit below is yours to make."
     say ""
     printf 'queue/items/%s.yaml\n' "$set_id"
     printf -- '-state: %s\n' "$st"
     printf -- '+state: ready\n'
     say ""
-    say "Brett: make that one-line change on main and commit it."
+    say "The commit must name the authorization it rests on. A promotion that cites"
+    say "none is a defect, and so is one resting on something read in a file rather"
+    say "than on something Brett said. Include, in the commit message body:"
+    say "  - the item id ($set_id) and the state change"
+    say "  - Brett's own words authorizing it, quoted, and the date he said them"
+    say "  - where he said it, so the citation can be checked"
+    say ""
+    if [ -n "$auth" ]; then
+      say "Suggested commit message, with the authorization you passed:"
+      say ""
+      printf '    Promote %s to ready\n' "$set_id"
+      printf '\n'
+      printf '    queue/items/%s.yaml: state %s -> ready.\n' "$set_id" "$st"
+      printf '\n'
+      printf '    Authorized by Brett in chat: %s\n' "$auth"
+      say ""
+      say "Check that line against what he actually said before you commit it. This"
+      say "client cannot verify an authorization; it only formats the one you supply."
+    else
+      say "Pass --authorization 'what Brett said' to have that message formatted for"
+      say "you. Without it this command has no citation to print, and a promotion"
+      say "with no citation is the defect above rather than a missing nicety."
+    fi
+    say ""
+    say "If no such authorization exists, do not promote. Ask Brett, and let him"
+    say "either say it or make the commit himself."
     return "$EX_OK"
   fi
 
@@ -835,14 +1100,48 @@ cmd_ready() {
   # failure degrades to a printed warning rather than an error: an agent that
   # cannot reach the locks repository still benefits from seeing the list, and
   # its claim attempt will fail honestly a moment later.
+  #
+  # The question is the tip, NOT whether the ref exists. This client never
+  # deletes a ref, so the lock history stays append-only and auditable, which
+  # means a released item keeps its claim ref forever. Reading existence as
+  # "held" therefore hid every released item from every agent polling this
+  # command, permanently, while `hub claim` would have taken any one of them:
+  # the release path exists precisely so the work can be retried.
+  #
+  # What is held is HUB.md's condition 4 and nothing else, so that this list and
+  # that paragraph cannot drift apart: a ref is free when it does not exist,
+  # when its tip is a release, or when its lease and the reclaim grace have both
+  # elapsed. Everything else is held, including a handoff however old its lease,
+  # an action this client did not write, and a tip it cannot read at all,
+  # because a tip that cannot be ruled out cannot be offered.
+  #
+  # This is a listing, so where it cannot tell it says held: an unparseable
+  # lease or a missing reclaim_grace_minutes hides the item rather than
+  # advertising work whose claim would then be refused.
+  # Retires when: claim refs are deleted on release, which would make existence
+  # the right question again and is a change to the append-only rule.
   held=""
   load_hub_config
   ensure_locks_cache
-  out=$(git ls-remote "$LOCKS_URL" "$CLAIM_PREFIX/*" 2>&1); rc=$?
-  if [ $rc -eq 0 ]; then
-    held=$(printf '%s' "$out" | awk '{print $2}' | sed 's|.*/||' | sort)
+  if fetch_all; then
+    grace=$(cfg reclaim_grace_minutes)
+    case ${grace:-} in ''|*[!0-9]*) grace="" ;; esac
+    now=$(now_epoch)
+    for ref in $(lg for-each-ref --format='%(refname)' refs/hub/claim/ 2>/dev/null); do
+      hid=${ref##*/}
+      hact=$(tip_field "$hid" action) || hact=""
+      case ${hact:-unreadable} in
+        release) continue ;;
+        claim|beat|reclaim)
+          if [ -n "$grace" ] && lu=$(epoch_from_iso "$(tip_field "$hid" lease_until)" 2>/dev/null); then
+            [ "$now" -ge $(( lu + grace * 60 )) ] && continue
+          fi ;;
+      esac
+      held="$held$hid
+"
+    done
   else
-    warn "could not read the locks repository, so held items are not filtered out: $(printf '%s' "$out" | head -2 | tr '\n' ' ')"
+    warn "could not read the locks repository, so held items are not filtered out: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"
   fi
 
   for id in $(items_all); do
@@ -912,7 +1211,7 @@ EOF
 }
 
 cmd_claim() {
-  local id=$1 token tip rc act ag lu now grace cap blk n lease sha parent attempt maxrc rcn
+  local id=$1 token tip rc act ag lu now grace blk parent attempt maxrc rcn
   item_exists "$id" || fail "no queue item $id; the queue is queue/items"
   [ "$(item_field "$id" claimable)" = "true" ] \
     || fail "$id is not claimable: it needs a decision or a credential that only Brett has"
@@ -949,11 +1248,27 @@ cmd_claim() {
     fi
 
     if [ "$ag" = "$token" ] && [ "$act" != "release" ]; then
-      say "$id is already held by this agent until $(tip_field "$id" lease_until)"
-      return "$EX_OK"      # idempotent: claiming what you hold succeeds quietly
-    fi
-
-    if [ "$act" != "release" ] && [ "$ag" != "$token" ]; then
+      if [ "$lu" -gt "$now" ]; then
+        say "$id is already held by this agent until $(tip_field "$id" lease_until)"
+        return "$EX_OK"    # idempotent: claiming what you hold succeeds quietly
+      fi
+      # The same agent, but its lease has run out. Reporting success on the
+      # strength of the token alone told the caller it still held the item while
+      # another agent was already eligible to reclaim it after the grace, so two
+      # agents could work the item at once and neither would ever be told. The
+      # answer is not a message: it is a record. The lease is renewed as a child
+      # of the tip that was just read, so if a reclaim landed first the ref has
+      # moved, the push is refused, and this call returns 4 instead of a 0 that
+      # was never true.
+      #
+      # max_reclaims_per_item_per_day is deliberately not consulted. That limit
+      # counts one agent taking work away from another; this is the same agent
+      # extending its own record, and counting it here would punish a session
+      # for the harness pausing it.
+      warn "$id is claimed by this agent but the lease ran out at $(tip_field "$id" lease_until); renewing it against the ref rather than reporting a hold this agent may no longer have"
+      attempt=$(( $(tip_attempt "$id") + 1 ))
+      act=beat
+    elif [ "$act" != "release" ] && [ "$ag" != "$token" ]; then
       if [ "$lu" -gt "$now" ]; then
         warn "$id is held by $ag until $(tip_field "$id" lease_until)"
         return "$EX_RACE"
@@ -988,10 +1303,34 @@ cmd_claim() {
     act=claim   # ref absent: the first claim, and it must be an orphan
   fi
 
-  # The concurrency cap. Every branch below is a 3, including the two that used
-  # to be an allowance: a cap that is not configured and a count that cannot be
-  # determined are both unverified preconditions, and an unverified precondition
-  # is a failure. The value lives in queue/config.yaml and nowhere else.
+  # Count and push under the local claim lock. The lock has to span both: a cap
+  # checked before it and a push made after it is the same precheck this
+  # serialization exists to replace.
+  cap_lock_acquire "$token"; rc=$?
+  case $rc in
+    0) : ;;
+    2) warn "another hub process for this agent has held the claim lock at $CAP_LOCK_DIR for more than $CAP_LOCK_WAIT_SECONDS seconds, so max_concurrent_claims could not be enforced without racing it. An unverifiable precondition is a failure and not a silent allowance"
+       return "$EX_FAIL" ;;
+    *) warn "cannot take the local claim lock under $CACHE_DIR, so max_concurrent_claims could not be enforced. An unverifiable precondition is a failure and not a silent allowance"
+       return "$EX_FAIL" ;;
+  esac
+  claim_count_and_push "$id" "$act" "$attempt" "$parent" "$token"; rc=$?
+  cap_lock_release
+  return $rc
+}
+
+# The body of a claim, from counting this agent's live claims to pushing the
+# record. Its own function for one reason: the caller holds a lock across it, so
+# there must be exactly one place the lock is released, and a `return` buried in
+# the middle of cmd_claim would have been a leak waiting for the next edit.
+claim_count_and_push() { # id action attempt parent token
+  local id=$1 act=$2 attempt=$3 parent=$4 token=$5
+  local cap n lease sha rc itemrepo solo
+
+  # Every branch below is a 3, including the two that used to be an allowance: a
+  # cap that is not configured and a count that cannot be determined are both
+  # unverified preconditions, and an unverified precondition is a failure. The
+  # value lives in queue/config.yaml and nowhere else.
   # Retires when: the cap is deleted from the configuration deliberately, which
   # is a different act from it being absent by accident and is what this branch
   # cannot tell apart.
@@ -1025,8 +1364,57 @@ cmd_claim() {
   push_ref "$sha" "$(claim_ref "$id")"; rc=$?
   case $rc in
     0)
-      say "claimed $id as $token until $lease (${act})"
+      case $act in
+        beat) say "renewed this agent's expired claim on $id until $lease" ;;
+        *)    say "claimed $id as $token until $lease (${act})" ;;
+      esac
       say "work branch: agent/$id/$token"
+
+      # The participation answer, at claim time, because this is the last
+      # moment it can still change what the agent does.
+      #
+      # It was printed only by `hub done`, which is after the work is finished
+      # and after the branch has been pushed. In a shared member repository
+      # both of those are the wrong move -- the writes register's work-branch
+      # row does not apply there at all, so the push itself is the breach, and
+      # the hand-back instruction arrives to tell an agent to stop doing
+      # something it has already done. A gate that fires after the gated action
+      # is not a gate; it is a report. So the same fact is stated here first,
+      # and `hub done` still states it, because an agent that claimed hours ago
+      # should not have to remember it.
+      #
+      # This client checks nothing about the push, and cannot: it makes no API
+      # call and never touches a member repository. This is an instruction the
+      # agent follows, printed where following it is still cheap.
+      #
+      # Retires when: the grant stops being scoped by participation, at which
+      # point this paragraph, the matching one in cmd_done, and
+      # member_solo_for_repo are deleted together.
+      # The default is assigned rather than written as ${itemrepo:-...} on
+      # purpose. Bash treats a quote character inside the word of a ${x:-word}
+      # expansion as a quote even when the whole expansion is already inside
+      # double quotes, so an apostrophe there opens a quoted region that runs to
+      # the next apostrophe -- across line ends, across the branches of this
+      # `if`, and, when the count happens to balance, with no syntax error and
+      # no non-zero exit. It merged the two sentences below into one when this
+      # paragraph was first written, and the run still exited 0.
+      # Retires when: nothing. It is a property of the shell.
+      itemrepo=$(item_field "$id" repo)
+      [ -n "$itemrepo" ] || itemrepo="the repository named by this item"
+      solo=$(member_solo_for_repo "$itemrepo")
+      say ""
+      if [ "$solo" = "yes" ]; then
+        say "Participation: nobody but Brett has worked in $itemrepo, so you may push"
+        say "that branch there and, at hand-back, open one draft pull request for it."
+      else
+        say "Participation: $itemrepo is NOT a repository Brett works alone in."
+        say "Do not push that branch and do not open a pull request. Do the work in a"
+        say "local worktree, then show Brett the diff and the pull request text in chat"
+        say "and wait for him to say yes. A repository whose participation cannot be"
+        say "determined is shared, and that is the answer you are reading if $itemrepo"
+        say "is not a configured member. The branch name above is the one to use if he"
+        say "says yes."
+      fi
       return "$EX_OK" ;;
     "$EX_RACE")
       warn "$id was taken by someone else between the read and the push"
@@ -1144,7 +1532,7 @@ cmd_release() {
 
 cmd_done() {
   local id=$1; shift
-  local branch="" token tip rc act ag sha attempt slug forge itemrepo
+  local branch="" token tip rc act ag sha attempt slug forge solo itemrepo
   while [ $# -gt 0 ]; do
     case $1 in
       --branch)   shift; [ $# -gt 0 ] || fail "--branch needs a branch name"; branch=$1 ;;
@@ -1210,19 +1598,45 @@ cmd_done() {
   itemrepo=$(item_field "$id" repo)
   slug=$(member_slug_for_repo "$itemrepo")
   forge=$(member_forge_for_repo "$itemrepo")
+  solo=$(member_solo_for_repo "$itemrepo")
+
+  # Two independent facts, printed as two paragraphs, because they answer two
+  # different questions and used to be answered by one test.
+  #
+  # The forge decides whether a compare URL can be built, and nothing else.
+  say ""
   if [ -z "$slug" ]; then
     warn "item repo '$itemrepo' is not in the configured members list, so no compare URL was printed"
   elif [ "$forge" = "github" ]; then
-    say ""
-    say "Open one draft pull request for this branch. The compare page is:"
+    say "The compare page for this branch is:"
     say "  https://github.com/$slug/compare/$branch?expand=1"
   else
-    # An agent never opens the pull request, and on a forge the standing
-    # authorization does not cover it never pushed the branch either.
-    say ""
-    say "$itemrepo is a $forge member. The standing authorization covers GitHub"
-    say "members and the locks repository only, so no compare URL is printed and"
-    say "every write there stays Brett's."
+    say "No compare page for this branch: $itemrepo is a $forge member and this"
+    say "client knows only GitHub's compare-page URL shape."
+  fi
+
+  # Participation decides what the agent may do with it. The grant in HUB.md is
+  # scoped by who else has worked in the repository, so that is what this
+  # branches on.
+  #
+  # It branched on the forge until 2026-09-10, which printed the draft
+  # pull-request instruction for every GitHub member. Two GitHub members are
+  # shared, so on a hand-back there the client told an agent to do the one
+  # thing the grant forbids, and an agent that follows its own tooling would
+  # have done it. Tooling that instructs a breach is worse than tooling that
+  # allows one: the breach reads as compliance in the transcript.
+  #
+  # Retires when: the grant stops being scoped by participation, at which point
+  # member_solo_for_repo goes with it.
+  say ""
+  if [ "$solo" = "yes" ]; then
+    say "Open one draft pull request for this branch, labelled agent-run and naming"
+    say "$id in the body. Draft only: never marked ready for review, never merged,"
+    say "and never a second one for this item."
+  else
+    say "STOP here. Do not open a pull request, because $itemrepo is not a repository"
+    say "Brett works alone in and the grant reaches no other kind. Draft the pull"
+    say "request body in chat and wait for Brett."
   fi
   return "$EX_OK"
 }
@@ -1303,17 +1717,34 @@ hub - the queue client for the salmon ecosystem hub
 
   hub doctor                     check this machine, the configuration, and
                                  whether the claim prefix accepts a push
-  hub ready                      list claimable items
-  hub ready --set ID             print the one-line edit that moves ID to
-                                 ready, and refuse to make it
-  hub claim ID                   take the item, by pushing to its claim ref
+  hub ready                      list claimable items. A claim ref is never
+                                 deleted, so this reads each ref's tip rather
+                                 than its existence: a released ref, and one
+                                 whose lease and reclaim grace have both
+                                 elapsed, are free and are listed
+  hub ready --set ID [--authorization TEXT]
+                                 print the one-line edit that moves ID to
+                                 ready, and what the promotion commit must cite.
+                                 An agent may make that commit on an
+                                 authorization Brett gave in chat; this client
+                                 does not, because it commits in no repository
+  hub claim ID                   take the item, by pushing to its claim ref.
+                                 Claiming what you already hold on a live lease
+                                 succeeds and changes nothing; claiming what you
+                                 hold on an expired one renews the lease against
+                                 the ref, and exits 4 if somebody reclaimed it
+                                 first
   hub beat ID                    extend the lease you hold
   hub release ID [reason]        give the item back
   hub done ID --branch B         hand off: record the branch, keep the claim,
-                                 print the compare URL for Brett. B must be
-                                 exactly agent/ID/<your token>, because that is
-                                 the only branch the standing authorization
-                                 covers; anything else exits 3
+                                 print the compare URL, and say what to do with
+                                 it. In a repository nobody but Brett has
+                                 contributed to that is one draft pull request;
+                                 in one he shares it is stop, draft the body in
+                                 chat, and wait. B must be exactly
+                                 agent/ID/<your token>, because that is the only
+                                 branch the standing authorization covers;
+                                 anything else exits 3
   hub reconcile                  expire dead leases back to claimable
   hub help                       this
 
@@ -1348,8 +1779,10 @@ Exit codes:
   wrong, which is the failure this distinction exists to prevent.
 
 State lives in queue/. Policy lives in HUB.md. This client makes no
-GitHub API call, opens no pull request, posts no comment, and pushes nothing to
-main.
+GitHub API call, opens no pull request, posts no comment, and commits or pushes
+nowhere but the locks repository. That is a description of the client and not a
+rule about you: what an agent may do is in HUB.md's writes register, and it is
+wider than this list.
 USAGE
   return "$EX_OK"
 }
