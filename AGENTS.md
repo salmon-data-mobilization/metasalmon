@@ -10,9 +10,16 @@ file→responsibility map). This file is the short, must-know contract;
 **This repo is also the coordinating hub** for the salmon data ecosystem
 (metasalmonpy, `smn-data-pkg`, `salmon-domain-ontology`, `dfo-salmon-ontology`,
 `psc-salmon-vocabularies`, `salmon-knowledge-commons`,
-`salmon-data-standards-workshop`): sequencing, execplans,
-and the cross-repo release index live in the `knowledge/` OKF bundle, starting
-at `knowledge/roadmap.md`.
+`salmon-data-standards-workshop`, and `salmon-science-foundry`, the ninth
+member admitted 2026-09-05, whose repository does not exist yet): sequencing,
+execplans, and the cross-repo release index live in the `knowledge/` OKF
+bundle, starting at `knowledge/roadmap.md`.
+
+**Planning state does not live in that bundle any more.** It lives in `queue/`
+at the repository root, one file per work item, and the claim protocol is in
+`HUB.md`. A card that restates queue state is a defect, and the copy in the
+card is the one that is wrong. Read `queue/README.md` before editing anything
+under `queue/`.
 
 ## Non-negotiable contracts (do not break without a logged decision)
 

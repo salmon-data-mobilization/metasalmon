@@ -1,0 +1,12 @@
+id: S-15
+kind: stream
+title: Hub coordination on a git-native queue
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S15
+blocked_by: []
+legacy: 'S15'
+evidence: sequences/s15-hub-coordination.md
+retires_when: 'The locks repository exists, which is Brett''s action, and every state fact in the bundle is generated or deleted, so a claim is a real push rather than a local test, and the migration point of no return in plan section 9.7 has been passed; until then this stream is the queue describing its own construction.'

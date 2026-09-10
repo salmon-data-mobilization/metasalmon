@@ -401,12 +401,26 @@ into two different boundaries, and nothing in either copy would say which one an
 agent is operating under. The correction owed there is that section 9.5 quotes a
 short summary and points at this file. Until it lands, this file governs.
 
-Both `git push` targets are checked by the client rather than left to an agent's
-reading. The claim-ref target is printed before every push and cannot be
-redirected by an environment variable once the locks repository is configured;
-the branch target is matched exactly against `agent/<queue-id>/<token>` by
-`hub done`. A grant that only prose enforces is a grant that gets exceeded by
-accident, and the accident is silent because the push succeeds.
+Both `git push` targets are checked by the client rather than left to an
+agent's reading, **and the check is a seatbelt rather than a wall.** Say what
+it does and does not do, because a guard described as prevention is a guard
+people stop watching:
+
+- The claim-ref target is printed before every push, and once the locks
+  repository is configured an environment variable cannot redirect it. The
+  `GIT_CONFIG_*` family is stripped, because one `url.insteadOf` entry rewrites
+  a push target silently no matter what the client computed.
+- The branch target is matched exactly against `agent/<queue-id>/<token>` by
+  `hub done`.
+- **Neither check binds an agent that does not use the client.** Nothing stops
+  an agent running `git push` itself, and nothing here could: the grant is a
+  rule an agent follows, and the client is the easiest way to follow it
+  correctly rather than a mechanism that makes breaking it impossible. What
+  makes a breach visible is that every push leaves an authored commit.
+
+A grant that only prose enforces is a grant that gets exceeded by accident,
+and the accident is silent because the push succeeds. That is why the client
+checks. It is not why the grant holds.
 
 **A draft pull request was declined** (R13). The earlier draft of this design
 asked for one draft pull request per handed-back item and Brett said no, so an

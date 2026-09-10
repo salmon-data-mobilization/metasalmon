@@ -35,6 +35,12 @@ on:
       - "scripts/hub*"
       - "scripts/tests/**"
       - ".github/workflows/hub-queue.yml"
+      # The generated blocks live in the bundle, so a change there can make a
+      # block stale without touching a single path above. Omitting this meant
+      # the freshness check did not run on the one file it guards, which is a
+      # guard that is green because it never executed.
+      # Retires when: no generated block targets a file under knowledge/.
+      - "knowledge/**"
   push:
     branches:
       - main
@@ -44,6 +50,12 @@ on:
       - "scripts/hub*"
       - "scripts/tests/**"
       - ".github/workflows/hub-queue.yml"
+      # The generated blocks live in the bundle, so a change there can make a
+      # block stale without touching a single path above. Omitting this meant
+      # the freshness check did not run on the one file it guards, which is a
+      # guard that is green because it never executed.
+      # Retires when: no generated block targets a file under knowledge/.
+      - "knowledge/**"
 
 # This workflow must never gain a write permission of any kind.
 #

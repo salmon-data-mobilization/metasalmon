@@ -560,10 +560,12 @@ there, which is the failure this file exists to prevent, because a decision only
 Brett can make is worth nothing to the next agent if it is filed inside the
 document that asked for it. Every entry below is an index card: the full text,
 with its reasoning, is Appendix A of that plan, and each entry names its
-appendix question so the two cannot drift apart silently. **Four of the nineteen
-are withdrawn or moot rather than ruled** (Q31, Q32, Q33, Q36), because Brett
+appendix question so the two cannot drift apart silently. **Three of the nineteen
+are withdrawn or moot rather than ruled** (Q31, Q32, Q33), because Brett
 took the PSC ontology out of the hub on 2026-09-09 and the questions it had
-raised stopped existing. They keep their numbers and headings under this file's
+raised stopped existing. Q36 is a ruling and not a withdrawal: it asked whether
+to amend the membership test, Brett answered no, and a test that was examined
+and deliberately left alone is a different record from one nobody revisited. They keep their numbers and headings under this file's
 never-delete convention: a withdrawn question is a different thing from a
 decided one, and these four are the record of why this hub contains no PSC
 ontology.
@@ -785,9 +787,11 @@ in Stage A week 3, and nothing in Stage 0 depends on it.
 
 **Full text:** Appendix A Q35. **Owner:** Brett.
 
-### Q36 — Amend the membership test so a PSC-owned repository can be a member? — WITHDRAWN 2026-09-09 (Brett)
+### Q36 — Amend the membership test so a PSC-owned repository can be a member? — ANSWERED 2026-09-09 (Brett)
 
-**Withdrawn rather than adjudicated, and the distinction is the point.** No
+**Ruling: no.** Brett answered the question rather than letting it lapse, and
+the distinction matters: the test was *considered* and left alone, which is a
+stronger record than a question that stopped existing. No
 amendment was made and none was needed: with the PSC ontology out of the hub,
 nothing was asking the test to stretch, so the tension that produced the
 question disappeared instead of being resolved in either direction. The test
