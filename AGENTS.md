@@ -166,6 +166,20 @@ under `queue/`.
   hoisting it to a constant as metasalmonpy did; the reasoning, and the pin
   that keeps the enumerated table the one the scorer merges, are in the
   `SURFACE 7` header of the guard.
+- **A semantic choice made inside a code change is the one review misses.**
+  If a pull request chooses, changes, or removes an ontology term IRI, say so
+  in the pull request and say what justified it *other than* the validator
+  accepting it. This is not a style rule; it is the one failure class code
+  review structurally cannot catch, because the diff is correct and the tests
+  go green. A survey of 164 merged pull requests across the ecosystem in 2026
+  found the recurring shape: a term chosen as a by-product of a change whose
+  stated subject was something else, justified by nothing except that strict
+  validation then passed, with the appraisal arriving days later in a different
+  repository and never propagating back. "It was the IRI that made validation
+  pass" is an honest answer and means the choice still needs appraisal, so file
+  a queue item rather than letting it merge unexamined. The question is asked
+  by `.github/PULL_REQUEST_TEMPLATE.md`. *Retires when:* term selection is
+  covered by a competency-question test that fails on an unjustified choice.
 - **A guard must say what would retire it.** Every suppression, exclusion,
   allowlist entry, skip, or workaround records *the condition under which it
   stops being needed* — the defect it routes around, the version that fixes
