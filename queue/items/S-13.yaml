@@ -8,5 +8,5 @@ venue: claude-code
 stream: S13
 blocked_by: []
 legacy: 'S13'
-evidence: sequences/s13-fraser-recruits-case-study.md
+evidence: knowledge/sequences/s13-fraser-recruits-case-study.md
 retires_when: The eight internals the recipe reaches through the triple-colon operator have a supported API, a migration path off sdp-0.2.0 and metasalmon 0.1.8 exists, and IRI-dereference verification with bounded retry is implemented.

@@ -8,5 +8,5 @@ venue: claude-code
 stream: S7
 blocked_by: []
 legacy: 'S7'
-evidence: sequences/s7-architecture.md
+evidence: knowledge/sequences/s7-architecture.md
 retires_when: package-helpers.R is split, the curation session engine and shared chat request builder are in place, and the latent cleanups have been folded into the streams that touch those files.

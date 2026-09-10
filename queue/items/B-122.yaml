@@ -9,5 +9,5 @@ venue: claude-science
 stream: S9
 blocked_by: []
 legacy: ''
-evidence: sequences/s9-ontology-alignment.md
+evidence: knowledge/sequences/s9-ontology-alignment.md
 retires_when: 'Two commons cards stop contradicting each other about the same 1913 source: one says four types, the other says five and cross-checked two printings, and the four propagated into this hub twice. Both scans are open access, so one reading of the original settles it, and the losing card records that it was wrong rather than being quietly edited.'

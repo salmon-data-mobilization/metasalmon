@@ -9,5 +9,5 @@ stream: S7
 severity: P2
 blocked_by: []
 legacy: '#3'
-evidence: backlog.md
+evidence: knowledge/backlog.md
 retires_when: One shared chat request builder serves both `.ms_llm_chat_json_request()` and `.ms_chat_http_request()`, or a logged ruling keeps the two request shapes and states why the review adapter's dual-shape normalizer stays.

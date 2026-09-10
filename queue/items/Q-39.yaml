@@ -8,5 +8,5 @@ venue: claude-science
 stream: S6
 blocked_by: [Q-38, B-121]
 legacy: ''
-evidence: questions.md
+evidence: knowledge/questions.md
 retires_when: 'One card carries a real verified entry naming a human, chosen because it is load-bearing and small rather than because it is easy. The point is the measurement as much as the card: until one is done nobody knows whether verifying a card is twenty minutes or a day, and every plan that promises verification is costing it at zero.'

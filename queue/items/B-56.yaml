@@ -9,5 +9,5 @@ stream: S2
 severity: P2
 blocked_by: []
 legacy: '#56'
-evidence: sequences/s2-correctness-debt.md
+evidence: knowledge/sequences/s2-correctness-debt.md
 retires_when: Identical query, role and sources tuples are deduplicated before retrieval, the per-row map over targets no longer issues one call per row, and a test counts `search_fn` invocations for a duplicate-heavy target set.

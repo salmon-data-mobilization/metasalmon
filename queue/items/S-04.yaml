@@ -8,5 +8,5 @@ venue: claude-code
 stream: S4
 blocked_by: [S-03]
 legacy: 'S4'
-evidence: sequences/s4-workshop-rebuild.md
+evidence: knowledge/sequences/s4-workshop-rebuild.md
 retires_when: Bruno and Tom have reviewed the reference scientifically, the independent-validator mismatch is resolved, a live free-provider rehearsal succeeds, and a verified public KNB test record exists.

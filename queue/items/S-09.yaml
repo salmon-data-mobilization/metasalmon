@@ -8,5 +8,5 @@ venue: claude-science
 stream: S9
 blocked_by: []
 legacy: 'S9'
-evidence: sequences/s9-ontology-alignment.md
+evidence: knowledge/sequences/s9-ontology-alignment.md
 retires_when: Step 7 B and C are implemented, step 6 propagation is done, and the gcdfo term-review holds 68 to 75 are closed or superseded by their successors.

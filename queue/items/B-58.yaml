@@ -9,5 +9,5 @@ stream: S5
 severity: P3
 blocked_by: []
 legacy: '#58'
-evidence: sequences/s5-review-flow.md
+evidence: knowledge/sequences/s5-review-flow.md
 retires_when: Every `cli_abort`, `cli_warn` and `rlang::abort` raises a classed condition, a help topic documents the class hierarchy, and a test asserts selective `tryCatch` on at least one class per family. Breaking for anyone matching on message text, so it ships with a major bump.
