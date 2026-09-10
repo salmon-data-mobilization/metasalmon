@@ -154,6 +154,37 @@ writes:
         locks_repo names the real locks repository and migration step 1 is
         signed off. At that point the override branch is deleted from the
         client rather than left as a disabled path, and this row goes with it.
+    - operation: open one draft pull request for a handed-back item
+      target: the member repository named by the item's repo field
+      shape: >-
+        draft only, labelled agent-run, body naming the queue id, from the
+        agent/<queue-id>/<token> branch already pushed. Never marked ready for
+        review, never merged, never a second one for the same item, and never a
+        reply to a review comment on it.
+      max: 1 per handed-back item
+      enforced_by: >-
+        nothing mechanical. This is the one permitted operation with no client
+        check behind it, because the client makes no API call; it is a rule an
+        agent follows, and a breach is visible because the pull request carries
+        an author and a timestamp.
+      granted: >-
+        2026-09-10, reversing the 2026-09-09 refusal. Inside Brett's own
+        repositories a pull request is him talking to himself; the standing rule
+        exists to stop an agent addressing other people as him.
+    - operation: push a README to main in the locks repository
+      target: refs/heads/main in the repository named by locks_repo
+      shape: >-
+        a commit whose tree contains only README.md, explaining what the
+        repository is. Nothing else may be pushed to that branch.
+      max: as needed, and in practice once
+      enforced_by: >-
+        nothing mechanical, as above.
+      why_it_is_permitted: >-
+        A locks repository needs a default branch that is not a claim. GitHub
+        makes the first branch pushed to an empty repository the default, and a
+        default branch cannot be deleted, so without a main the first claim ever
+        taken would be permanent and would be the repository's HEAD. Learned by
+        running it on 2026-09-10, before any real claim existed.
   denied:
     - any issue, pull request, review, comment, release, label, or assignee
     - any push to main or to any default branch
@@ -371,9 +402,26 @@ Hand-back appends a `handoff` commit to the claim ref. **It does not release
 the claim.** The item stays unclaimable until Brett merges, so finished work
 never looks free again while he is away, and no second agent redoes it.
 
-Then push the branch, print the compare URL, and stop. Brett opens the pull
-request himself, at about thirty seconds each. An agent that opens one has
-written outside the register and has suspended the authorization for everyone.
+Then push the branch and open **one draft pull request** for it, in the member
+repository where the work happened, with the label `agent-run` and the queue id
+in the body. Draft, and draft only: never mark it ready for review, never merge
+it, never reply to a review comment on it, and never open a second one for the
+same item. Then stop.
+
+This was declined on 2026-09-09 and granted on 2026-09-10, and the reversal is
+worth recording rather than quietly replacing. The original reasoning was that a
+draft pull request is a pull request, which is one of the verbs Brett's standing
+rule names, so it should cost an explicit decision. The decision, once he made
+it, was that inside his own repositories a pull request is him talking to
+himself: the rule exists to stop an agent addressing *other people* as him, and
+a draft PR on metasalmon addresses nobody. It also starts continuous integration
+immediately rather than whenever he next sits down, which is the actual cost the
+old arrangement was paying.
+
+`gh pr create --draft` is the agent's own call, not a `hub` subcommand. The
+client makes no GitHub API call anywhere and that property is worth more than
+the convenience of folding this into `hub done`; the client still prints the
+compare URL, which is the fallback when a PR cannot be opened.
 
 `release` is the other ending, for work abandoned rather than finished: it
 appends a `release` commit, the item returns to `ready`, and the workpad says
@@ -381,17 +429,22 @@ what was left undone.
 
 ## The standing authorization
 
-Brett's global instruction is unchanged and is the ceiling. One paragraph sits
-beneath it, granted 2026-09-09 (ruling R13), and this file is its operative
-copy:
+Brett's global instruction is the ceiling. One paragraph sits beneath it,
+granted 2026-09-09 (ruling R13) and widened 2026-09-10 (ruling R15), and this
+file is its operative copy:
 
 > In the member repositories listed in the hub queue's configuration, and in
-> `hub-locks`, and only there, an agent executing the protocol in `HUB.md` may
-> push a claim record to a ref under the claim prefix, and push commits to a
-> branch named `agent/<queue-id>/<token>`, without asking each time.
+> the locks repository, and only there, an agent executing the protocol in
+> `HUB.md` may, without asking each time: push a claim record to a ref under
+> the claim prefix; push commits to a branch named
+> `agent/<queue-id>/<token>`; open exactly one **draft** pull request for a
+> handed-back item, labelled `agent-run`, never marked ready for review and
+> never merged; and push a README to `main` in the locks repository so that a
+> claim ref is never its default branch.
 
-That is the whole grant. Two `git push` targets, in named repositories, by an
-agent executing this protocol.
+That is the whole grant. Two `git push` targets, one draft pull request per
+item, and one README, in named repositories, by an agent executing this
+protocol.
 
 **This is the operative copy, and it is now the only one.** Section 9.5 of the
 Foundry plan carried the same paragraph verbatim until 2026-09-09, which is
@@ -423,14 +476,25 @@ A grant that only prose enforces is a grant that gets exceeded by accident,
 and the accident is silent because the push succeeds. That is why the client
 checks. It is not why the grant holds.
 
-**A draft pull request was declined** (R13). The earlier draft of this design
-asked for one draft pull request per handed-back item and Brett said no, so an
-agent pushes its branch, prints the compare URL, and stops. There is no Project
-sync paragraph, because there is no Project.
+**A draft pull request was declined on 2026-09-09 and granted on 2026-09-10**
+(R13, then R15). One draft pull request per handed-back item is now permitted,
+in a member repository, labelled `agent-run`, never marked ready and never
+merged. There is still no Project sync paragraph, because there is still no
+Project.
+
+The grant follows a distinction worth stating, because it is the one that makes
+the whole rule coherent: **what matters is not the verb, it is whether another
+person reads it as Brett.** A draft pull request on his own repository is him
+talking to himself. A comment on somebody else's repository is him talking to a
+colleague. The first is friction; the second is the thing the rule exists to
+prevent.
 
 **The closed exclusion list.** The authorization covers nothing else, and
-specifically not: any issue, pull request, review, comment, release, label, or
-assignee; any push to `main`; any move of an item to `ready`; any `--force`;
+specifically not: any issue, review, comment, release, or assignee; any pull
+request other than the one draft per handed-back item granted above, and in
+particular never marking one ready for review, merging one, or replying on one;
+any push to `main` other than the locks repository's README; any move of an
+item to `ready`; any `--force`;
 and anything at all on GitLab. The list is closed, meaning that an operation
 resembling a permitted one is denied unless it is named in `writes.permitted`.
 
