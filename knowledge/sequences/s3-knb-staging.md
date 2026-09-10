@@ -11,11 +11,13 @@ psc:
 
 # S3 — KNB staging environment
 
-**IMPLEMENTED IN R 2026-08-22; not yet released, not yet mirrored, and no
-deposit has been made in either environment.** Read the state table below
-before treating this stream as done — what shipped is the *switch*, and what
-S4 waits on is a *deposit*, which is a different thing and is still blocked on
-a credential only Brett can obtain.
+**IMPLEMENTED IN R 2026-08-22 and released since; no deposit has been made in
+either environment.** Read the state table below before treating this stream
+as done — what shipped is the *switch*, and what S4 waits on is a *deposit*,
+which is a different thing and is still blocked on a credential only Brett can
+obtain. **The release state is not restated here** (this header said "not yet
+released, not yet mirrored" for two releases after it shipped); the release
+index in the [roadmap](../roadmap.md) is the authority.
 
 **UNBLOCKED — Q1 answered 2026-08-22 (Brett), and the environment verified the
 same day.** The ruling: the golden path develops packages against the KNB
@@ -63,12 +65,14 @@ obtaining one is Brett's, because it is a credential. Everything verified for
 this work was a read-only node-capabilities GET. So the switch exists and is
 tested offline, and the *first actual rehearsal* has not happened.
 
-**The release is deliberately deferred.** `knb_environment` is additive, so
-sized against 0.3.0 this is **0.3.1** — but the mirror contract puts release
-numbers in lockstep with metasalmonpy, and the Python side has not started
-(below). `DESCRIPTION` therefore stays at 0.3.0 and `NEWS.md` records the work
-under *development version*; the version bump and the tagged GitHub Release
-belong to whoever lands the mirror.
+**The release was deliberately deferred, and then happened.** `knb_environment`
+is additive, so sized against the release current at the time it was a patch —
+but the mirror contract puts release numbers in lockstep with metasalmonpy, so
+the bump waited for the mirror rather than for this stream. That is the rule
+working as designed, and the paragraph is kept in the past tense rather than
+deleted because the *reason* a release waits is durable even after the wait
+ends. For what is released now, read the release index in the
+[roadmap](../roadmap.md).
 
 ## What the verified facts changed about the execplan
 

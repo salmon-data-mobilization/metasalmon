@@ -60,9 +60,12 @@ this package, and nothing in `R/` says so.
 
 `recipe.yml` pins engine `metasalmon` **0.1.8** at revision
 `886e01d60d45bc3e60d0906ee50e328ddde1a5bd`, and its published artifacts carry
-the **sdp-0.2.0** era. Current metasalmon is **0.3.0**, two breaking releases
-later (0.2.4's empty-field missing-value token; 0.3.0's dictionary contract and
-registry removal). So the migration crosses `migrate_sdp_methods()`, the
+the **sdp-0.2.0** era. Current metasalmon is **several breaking releases
+later** — read the number from the release index in the
+[roadmap](../roadmap.md) rather than from this line, which said "0.3.0" for
+long enough to be wrong by two releases. The breaks the migration crosses are
+0.2.4's empty-field missing-value token and 0.3.0's dictionary contract and
+registry removal. So the migration crosses `migrate_sdp_methods()`, the
 `method_iri` → `statistical_modifier_iri` flip, and a canonical-bytes change.
 
 `migrate_sdp_methods()` exists and is the tool; what does not exist is any

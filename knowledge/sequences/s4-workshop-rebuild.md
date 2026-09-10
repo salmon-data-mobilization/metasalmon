@@ -293,22 +293,28 @@ failure invisible; it is now green, so the next failure means something again.
 *Retires when:* the failure changes cause and this paragraph is rewritten rather
 than trusted.
 
-## The S3 dependency is real but conditional
+## The S3 dependency is real, and no longer conditional
 
-Hard-blocked by **S3** (a rehearsal target) — **if** OD-2 rules that "the KNB
-test environment" means a distinct DataONE test node. It does not hold under
-the other candidate ruling: if a restricted persistent version on production
-KNB is accepted as the rehearsal, that path already exists in shipped form and
-**S4 has no hard blockers left**. See
-[OD-2](../roadmap.md#od-2--what-does-the-knb-test-environment-mean) for the
-three candidates; this card takes no position.
+Hard-blocked by **S3** (a rehearsal target). **OD-2 was ruled A on 2026-08-22**
+(Brett, hub [Q1](../questions.md)): "the KNB test environment" means a distinct
+DataONE test node, so the block holds as drawn. The alternative — a restricted
+persistent version on production KNB as the rehearsal, which would have
+dissolved the block — is the production-side fallback rather than the taught
+path. See
+[OD-2](../roadmap.md#od-2--what-does-the-knb-test-environment-mean).
 
-Worth knowing while that is decided: **the current lesson already teaches the
-production-restricted model.** `episodes/session-6.Rmd:376` tells learners *"A
+*This section read "conditional … this card takes no position" for eighteen
+days after the ruling.* It is one of three renderings of this single
+dependency that each had to be corrected by hand on 2026-09-09, which is the
+argument for the coordination change.
+
+**A consequence the ruling creates for this card, and the reason it is stated
+here rather than left implicit:** the current lesson already teaches the
+production-restricted model. `episodes/session-6.Rmd:376` tells learners *"A
 live call creates persistent production KNB objects even when `public = FALSE`.
-Private access is a review posture, not a server-side draft."* That is evidence
-about what has been taught, not a ruling — and under a test-node ruling it is
-text S4 has to change rather than inherit.
+Private access is a review posture, not a server-side draft."* Under ruling A
+that is **text S4 has to change rather than inherit** — it was conditional
+work while OD-2 was open and it is committed work now.
 
 Reads better after **S1**: S4 teaches validation as the final gate before
 deposit, and S1 is what makes that claim true.
