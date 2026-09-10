@@ -330,8 +330,29 @@ iop-triples explainer.
    (lending-restricted scans). Recommendation, not ruling: **(a)**, with Wood
    2008 carried as a `skos:historyNote`, and a riverine-rearing grouping
    concept minted if DFO's `SER` code needs a target. Replacement literals are
-   in `smn_pr27_definition_amendments.ttl`; the evidence is commons card
-   `sockeye-life-history-type-definitions.md` and the 52-row citation ledger.
+   in **`smn_pr27_definition_amendments.ttl`, which does not exist** (see the
+   note below); the evidence is commons card
+   `sockeye-life-history-type-definitions.md` and the citation ledger, **which
+   does not exist either**.
+
+
+   **Three artifacts this card names as products of the 2026-09-02 pass were
+   never created** (measured 2026-09-10): `smn_pr27_definition_amendments.ttl`,
+   `gcdfo_quality_and_refpoint_drafts.ttl`, and the citation-verification
+   ledger. None exists anywhere on disk, and none appears in any branch of any
+   of the four repositories. The pass's *findings* are real and survive in the
+   four commons cards it wrote; what does not survive is the machine-readable
+   form of them. So a reader following this card to the TTL finds nothing, and
+   anything downstream that waits for that file waits forever.
+
+   **This is a worse failure than a wrong citation.** A wrong citation is
+   checkable by following it. A citation to a file that was planned, named in
+   three documents, and never written reads as completed work from every angle
+   except opening it, and the record gets more confident with each restatement:
+   the ledger's row count was quoted here as a fact about an artifact nobody
+   had. *Retires when:* the replacement literals are regenerated from the
+   commons cards, or this card states that they never existed and stops
+   promising them.
 
    The three scope notes on the PR's concepts are careful about other hazards
    (the `SEL`/`SER` code halves, the chinook `sea-type` homograph, the

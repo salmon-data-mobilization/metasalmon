@@ -1,0 +1,13 @@
+id: B-121
+kind: defect
+title: Regenerate the smn PR 27 replacement literals from the commons cards
+state: icebox
+claimable: true
+repo: metasalmon
+severity: P2
+venue: claude-science
+stream: S9
+blocked_by: [B-122]
+legacy: ''
+evidence: sequences/s9-ontology-alignment.md
+retires_when: 'A machine-readable amendment set exists carrying the replacement definitions the 2026-09-02 pass reached, regenerated from the four commons cards whose prose still holds them, and every document that cited the file that never existed either points at the new one or says plainly that the old one was never written.'

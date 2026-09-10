@@ -1,0 +1,13 @@
+id: B-123
+kind: defect
+title: Make non-self-verification enforceable in the commons rather than advisory
+state: needs_brett
+claimable: false
+repo: salmon-knowledge-commons
+severity: P3
+venue: claude-code
+stream: S6
+blocked_by: [Q-38]
+legacy: ''
+evidence: sequences/s6-ecosystem.md
+retires_when: 'A card cannot record that it was verified by whoever generated it. Today the rule is prose, the two fields share one schema pattern so a self-verifying card validates cleanly, and the repository has no CI at all, so nothing would catch it. Needs Q-38 first, because the check cannot be written until what verified means is ruled.'
