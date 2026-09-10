@@ -1,7 +1,7 @@
 ---
 type: Context
 title: "Hub coordination"
-description: "The standing coordination context: metasalmon's bundle is the sequencing and release-index authority for the eight-repo salmon data ecosystem, refreshed as work proceeds and as releases by other agents are discovered."
+description: "The standing coordination context: metasalmon's bundle is the sequencing and release-index authority for the nine-repo salmon data ecosystem, refreshed as work proceeds and as releases by other agents are discovered."
 status: draft
 tags: [coordination, roadmap]
 psc:
@@ -38,6 +38,22 @@ Brett's standing instructions (2026-08-12/13) that define this context:
   This is the first application of the rule in the
   [Foundry plan's §9](../plans/2026-09-04-salmon-science-foundry-concrete-plan.md):
   one fact, one home.
+- **Planning state lives in the hub queue, not in this bundle.** Ruled
+  2026-09-05 (Brett, R9) and simplified 2026-09-09 (R12): one YAML file per
+  work item under `queue/items/`, beside `queue/config.yaml` and
+  `queue/README.md` at the repository root. The queue sits outside the bundle
+  because the OKF validator fails closed on a non-Markdown file inside one, and
+  because operational state belongs with the system that owns it. A card that
+  restates queue state is a defect, and the copy in the card is the one that is
+  wrong. A claim on an item is a push to a git ref, not a row in a tracker:
+  there is no GitHub Project and no GitHub API call anywhere in this system.
+  **The rules themselves are not repeated here.** `HUB.md` at the repository
+  root is the single policy copy for the states, the claim protocol, and the
+  authorization register, and the [roadmap](../roadmap.md) states the same
+  division for the sequencing card. These paths are named in backticks rather
+  than linked, because a bundle card does not link to a file outside the
+  bundle. *Retires when:* the queue is replaced or its policy file moves, at
+  which point this bullet names the successor or goes.
 - **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"don't just make things match metasalmon; if the Python implementation got
   it right, then update metasalmon."* This coordination context therefore

@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "ROADMAP — salmon data ecosystem hub"
-description: "The single sequencing authority for metasalmon and the eight-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
+description: "The single sequencing authority for metasalmon and the nine-repo salmon data ecosystem: what next, in what order, blocked by what — plus the cross-repo release index."
 status: draft
 tags: [roadmap, sequencing, releases]
 psc:
@@ -13,12 +13,30 @@ psc:
 
 **This is the single sequencing document for metasalmon and the salmon-data
 ecosystem around it** — the coordinating hub for the repos in the
-[domain card](domains/salmon-data-ecosystem.md) (**eight**, ruled 2026-08-24 —
-the count was an open decision here until then). It answers *what order, what
-blocks what, and what is the current state*, and it carries the cross-repo
-**release index**. It deliberately does **not** carry design detail: every
-stream links to a sequence card under `sequences/` and every sequence card
-links to an execplan under `plans/` before implementation starts.
+[domain card](domains/salmon-data-ecosystem.md).
+
+<!-- hub:generated:member-count -->
+<!-- Generated from the hub queue. Edit the queue file, not this block; regenerate with `python3 scripts/hub_queue.py render`. -->
+
+The salmon data ecosystem has **nine** member repositories.
+<!-- /hub:generated:member-count -->
+
+The membership test was ruled 2026-08-24 (Brett) and the count was an open
+decision here until then; the ninth member, `salmon-science-foundry`, was
+admitted 2026-09-05 on Brett's Q19 ruling. **That is the one generated block in
+this card, and it is the proof of the mechanism rather than the whole of it.**
+The count is derived from the allowlist in the domain card, so a hand edit here
+fails the freshness check instead of waiting for a reader to notice, which is
+exactly how the count drifted before. The remaining restated state facts follow
+in a later change, one block at a time. *Retires when:* the membership count
+stops being restated in prose anywhere in this bundle, at which point the block
+and this paragraph go together.
+
+It answers *what order, what blocks what, and what is the current state*, and it
+carries the cross-repo **release index**. It deliberately does **not** carry
+design detail: every stream links to a sequence card under `sequences/` and
+every sequence card links to an execplan under `plans/` before implementation
+starts.
 
 Undated on purpose. Dated documents accumulate and then compete for authority.
 
@@ -56,7 +74,7 @@ Rules that keep this from decaying:
   is correct, so each divergence is a question about which side is right, and
   R changing is a normal answer rather than an exception. See
   [parity-deviations](parity-deviations.md) row 32 for the first application.
-- **Domain allowlist:** the **eight** rows in the
+- **Domain allowlist:** the **nine** rows in the
   [domain card](domains/salmon-data-ecosystem.md) are exhaustive. **The
   membership test, ruled 2026-08-24 (Brett): a repository is a member when this
   hub sequences that repository's work.** That is the domain card's test, and it
@@ -64,7 +82,9 @@ Rules that keep this from decaying:
   repository joins when its output is an input to this pipeline") is **deleted**,
   which is what [OD-1](#od-1--which-membership-test-governs-and-is-salmon-data-standards-workshop-the-eighth-member)'s
   retirement condition required. Under it, `salmon-data-standards-workshop` is
-  the eighth member (this hub sequences its rebuild as S4), and
+  the eighth member (this hub sequences its rebuild as S4),
+  `salmon-science-foundry` is the ninth (admitted 2026-09-05 on Brett's Q19
+  ruling, because this hub sequences its work as S14), and
   `salmon-knowledge-commons`'s 2026-08-17 admission is restated in sequencing
   terms in the domain card rather than re-opened. Shared tools, hyperlinks,
   consumed artifacts, transitive dependencies, and a shared GitHub organization
@@ -75,6 +95,32 @@ Rules that keep this from decaying:
   observation date. Its tasks, priorities, status, branches, approvals, and
   releases remain in its owning plan and never enter this roadmap or release
   index.
+
+### Planning state lives in the queue, not in this card
+
+Ruled 2026-09-05 (Brett, R9) and simplified 2026-09-09 (R12): planning state is
+one YAML file per work item, and those files live in `queue/` at the repository
+root, alongside `queue/config.yaml` and `queue/README.md`. They are deliberately
+outside this bundle, for two reasons that point the same way: the OKF validator
+fails closed on a non-Markdown file inside a bundle, and operational state
+belongs with the system that owns it rather than with the knowledge that
+describes it.
+
+What that means for this card. **A card restating queue state is a defect, and
+the card is the wrong copy.** Status, blocked-by, severity, claimed or not, and
+what is waiting on Brett all have one home in an item file; where this card
+still restates one of them, it is prose awaiting a generated block, not a second
+answer. The claim protocol, the states, and the authorization register are in
+`HUB.md` at the repository root, which is the single policy copy; `queue/README.md`
+explains what the queue is. Neither is linked from here: the bundle check reports
+a Markdown link whose target is not in the bundle, this bundle is held at zero
+warnings, so both are named in backticks as prose and found by path.
+
+An item may also carry a `venue` field saying whether the work is best done in
+Claude Science or in Claude Code. It is advice and never a gate: nothing reads
+it, and no check enforces it, because a field that blocks work is a field that
+gets faked. *Retires when:* a season passes in which the field stops changing a
+decision, at which point it is deleted rather than maintained.
 
 ### Cross-program authority boundary
 
@@ -87,7 +133,7 @@ Rules that keep this from decaying:
   released mapping products and decisions remain authoritative in their owning
   semantic-asset repository, not here.
 - This hub retains technical sequencing, mirror coordination, and the release
-  index for the eight-repository ecosystem. The bounded consumer plan is
+  index for the nine-repository ecosystem. The bounded consumer plan is
   [governed mapping products](plans/2026-08-14-governed-mapping-products.md).
 - Brett will coordinate identification of the competent CTC/domain and
   application authorities; that coordination is not their approval. Until
@@ -222,18 +268,21 @@ against their tags, `DESCRIPTION`/`pyproject.toml`, and their GitHub Release
 objects, when both reached **0.4.0**.
 
 **Read every row's tag line, not just its version heading.**
-**Five of the eight** members have `main` ahead of their newest tag
+**Five of the nine** members have `main` ahead of their newest tag
 (metasalmon, metasalmonpy, salmon-domain-ontology, dfo-salmon-ontology,
-smn-data-pkg), PSC's alpha.3 is merged and untagged, and neither the commons
-nor the workshop has a tag at all. Ahead-of-tag is the ecosystem's normal state
+smn-data-pkg), PSC's alpha.3 is merged and untagged, neither the commons nor
+the workshop has a tag at all, and the ninth member has no repository yet, so
+it cannot be ahead of anything. Ahead-of-tag is the ecosystem's normal state
 rather than an anomaly worth flagging per row, so **cite a commit unless you
 have checked that the thing you mean is inside the tag.**
 
-The index carries **eight sections for eight members** — the mismatch it used to
+The index carries **nine sections for nine members**. The mismatch it used to
 carry ("eight sections for seven members", the workshop recorded here while
 absent from the allowlist) was closed by the 2026-08-24 membership ruling, which
-made the workshop the eighth member. Its section is a member row now, not a
-courtesy record.
+made the workshop the eighth member, and its section is a member row now rather
+than a courtesy record. The ninth section was added 2026-09-09 in the same
+change as the domain-card row, on Brett's Q19 ruling of 2026-09-05, so the index
+never carried "nine sections for eight members" either.
 
 ### metasalmon (R) — current **0.5.0**
 
@@ -577,6 +626,26 @@ unresolved as recorded in the kit. A deployed teaching site is not a successful
 catalog deposit. Historical PR/CI details remain in S4, not as current release
 claims here. This update introduces no lesson release/versioning scheme.
 
+### salmon-science-foundry — **no releases, and no repository yet**
+
+| Version | Date | One line |
+|---|---|---|
+| *(none)* | — | The repository does not exist, and neither does the GitHub organization intended to hold it: the institute was renamed to Symecology Institute on 2026-09-09 and creating the organization is deferred, because a rename releases the old name for anyone to claim and nothing before Stage A week 3 needs it. The [Foundry execplan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md) proposes a Tier 0 runtime ladder v0.0.1 to v0.1.0, and a SalmonBench v0.1 that the plan put under `bench/` and Brett's Q26 ruling of 2026-09-05 moved into a separate institute repository; none of it has a commit, a tag, or a release object |
+
+Ninth member as of Brett's Q19 ruling of 2026-09-05, added here on 2026-09-09 in
+the same change as the domain-card row. **"No releases yet" is the finding, not a
+hole**, and the same reading applies here as in the commons section above: do not
+invent a versioning scheme on this table's behalf. **SalmonBench gets no
+section**, because Q19 admitted `salmon-science-foundry` alone and Q26 made
+SalmonBench a separate institute repository; it earns one if this hub comes to
+sequence its work directly, which is a question owed to S14, and not because it
+is mentioned here. Every release from the Foundry's first tag follows the
+0.3.0-forward policy, an annotated tag plus a GitHub Release, and gets a Zenodo
+DOI. What it pins instead of versioning itself: metasalmon (a release),
+metasalmonpy (a release), `sdp-` (a tag), smn (a release), gcdfo (a commit or
+tag), and a commons commit; add a row to the spec-version spread table above the
+moment the first pin exists. *Retires when:* the first tag exists.
+
 ---
 
 ## Open decisions
@@ -611,8 +680,11 @@ easy to skip: leaving both tests alive is how the pair regrew after 2026-08-17.
 
 Three consequences, all applied in the same change:
 
-- **`salmon-data-standards-workshop` is the eighth member.** The domain-card
-  allowlist is eight rows; its release-index section below is a member row.
+- **`salmon-data-standards-workshop` is the eighth member.** Its release-index
+  section below is a member row. The allowlist was eight rows when this was
+  ruled and is **nine** now, `salmon-science-foundry` having been admitted
+  2026-09-05 under this same test (Q19); the ordinal here is the workshop's
+  position, not a live count.
 - **`psc-data-transformations` stays external**, as a typed *requirements-driving
   consumer* edge. Its pin on metasalmon 0.1.8 at `886e01d` is a compatibility
   constraint this package should know about — **not an obligation on it** — and
@@ -623,9 +695,15 @@ Three consequences, all applied in the same change:
   Option B said that restatement would be required, and it is the weakest link
   in the ruling — the place to re-examine if any part of it is wrong.
 
-**And "seven repositories" is no longer a count anyone maintains** — it is eight,
-in the domain card, this card's frontmatter and body, the hub-coordination
-context, and the S6 card. The original four candidate rulings, and what each one
+**And "seven repositories" is no longer a count anyone maintains** — it is
+**nine** since 2026-09-05, in the domain card, this card's frontmatter and body,
+the hub-coordination context, and the S6 card. That list of places is itself the
+argument for the generated block at the top of this card: the count went seven
+to eight to nine between 2026-08-24 and 2026-09-05, and each move had to be made
+by hand in every one of those places. *Retires when:* those restatements are
+derived rather than written, and this sentence names one place instead of five.
+
+The original four candidate rulings, and what each one
 would have cost, are in this file's history; they are not reproduced here,
 because a menu of rejected options beside a ruling is what makes a ruled decision
 read as still-open.
@@ -808,6 +886,20 @@ S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
                                 methods vignette after S8
 
+S15 hub coordination ── blocked by nothing; it blocked only the paste half of
+                        S14, which is why S14 lands in this card on 2026-09-09
+                        and not on the day Q19 was ruled
+
+S14 Salmon Science Foundry ── admitted 2026-09-05 (Brett, Q19); owns C, D and H
+S1 validation authority ───────────────► S14 D (exact-validator-success metric)
+S5 mirror port (0.4.0→0.5.0 window) ───► S14 A1 is that port; S5 owns it
+S12 stage 1 (#90 spec change, #95) ────► S14 campaign 1 (coho gold standard)
+S3 test-node deposit (token: Brett) ───► S12 stage 2 ──► S14 H5 release of campaign 1
+S13 requirements 1 and 3 (after S5) ───► S14 issue 6
+S9 / Q6 rulings on PR #27 ─────────────► S14 E briefing target
+S7 §1.3 boundary amendment ─ ─ ─ ─ ─ ─ ─► S14 C (which side owns curation state)
+S4 rebuild (after S3 deposit) ─ ─ ─ ─ ─ ─► S14 G practicum
+
 PSC PLAN-0 + HQ activation ──► PSC-1 mapping-product contract ──┐
 S10 full Python parity through current released R baseline ─────┼─► S6 FAIR
 META-0 plan alignment (this bundle) ────────────────────────────┘   consumer
@@ -888,6 +980,14 @@ release half of that gate is satisfied.
 - [S11 — Vignettes and user-facing walkthroughs](sequences/s11-vignettes-and-walkthroughs.md) · #79; slices 1–2 have landed, 3–5 remain
 - [S12 — the Fraser coho gold-standard example](sequences/s12-fraser-coho-gold-standard.md) · **the artifact is ruled (Brett, 2026-08-24, [Q4](questions.md)): the 173-row `nuseds-fraser-coho-2023-2024.csv`**, with the 30-row sample demoted to the speed fixture it already claims to be. Its finish line is two-staged — clean through both validators, then deposited under S3's exit criteria — so S12 now depends on S3 for its second stage and on #90/#95 for its first
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
+- [S14 — Salmon Science Foundry and SalmonBench](sequences/s14-salmon-science-foundry.md) · **admitted 2026-09-05 (Brett, [Q19](questions.md))** as the ninth member, because this hub sequences its work · owns the Tier 0 runtime (C), SalmonBench (D, in its own institute repository since Brett's Q26 ruling of 2026-09-05; whether this hub comes to sequence that repository's work directly, and so whether it becomes a member under the ruled test, is a question owed to S14), the data-access verbs (H, or the packages per [Q27](questions.md)), and the Foundry-specific halves of E, G and I; it consumes S1, S3's deposit, S5's port, S12, S13's requirements, and S9's Q6 rulings as dependencies rather than re-owning them. Fraser Recruits is out of the Foundry (Brett, 2026-09-04) and stayed out when the PSC work was withdrawn on 2026-09-09; the gold standard stays in metasalmon ([Q25](questions.md)); no public commons subset without [Q24](questions.md). **No repository and no organization exist yet**: the institute was renamed to Symecology Institute on 2026-09-09 and creating the organization is deferred to Stage A week 3. Execplan: the [2026-09-04 Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md), reviewed and revised the same day
+- [S15 — Hub coordination: a git-native queue](sequences/s15-hub-coordination.md) · **ruled 2026-09-05 (Brett, R9), simplified 2026-09-09 (R12): no GitHub Project, the queue is git files alone** · planning state moves to one YAML file per item under `queue/` at the repository root, a claim is a plain `git push` of an orphan commit to a claim ref, `HUB.md` is the single policy file, and every prose restatement of a state fact becomes a generated block under a freshness check. It is blocked by nothing and blocked only the paste half of S14. **Landed 2026-09-09:** the queue files, `HUB.md`, the `hub` client, the render-and-check guard in `scripts/hub_queue.py` with its CI workflow, and the first generated block at the top of this card. **Outstanding:** the locks repository does not exist, so `queue/config.yaml` still carries a placeholder and no claim can be taken until Brett creates it and the two-terminal race test proves a first claim is atomic; the remaining restated state facts are still prose. Execplan: section 9 of the [2026-09-04 Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md)
+
+**S16 is deliberately free.** A PSC core-model ontology stream was drafted for
+that number on 2026-09-05 and withdrawn on 2026-09-09 (Brett, R11): *"I don't
+think I want the PSC Ontology as part of this hub anymore."* No repository was
+admitted, no card was written, and the number was not consumed, so the next
+stream this hub sequences takes it.
 
 **S12 and S13 are new streams for work that was already a stated top priority
 and had no card.** Before 2026-08-21 the phrase "gold standard" appeared
@@ -914,6 +1014,7 @@ finding it is.
 | Execplan | What it covers | Activation state |
 |---|---|---|
 | [governed mapping products](plans/2026-08-14-governed-mapping-products.md) | Reusable FAIR mapping-product verification contract, existing SSSOM reuse, immutable pins, provenance, and conditional compatibility/application/NuSEDS follow-ons | Before implementation, verify activation in Brett HQ, a released PSC-1 contract, and S10 full parity through the then-current released R baseline; META-1 remains independent of S8's method semantics |
+| [Salmon Science Foundry concrete plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md) | S14's design: the Tier 0 run ledger, tool receipts around metasalmon and metasalmonpy, the `salmon` data-access verbs, SalmonBench, and the campaign model. Its section 9 is separately the execplan for S15, the hub-coordination change | Activated in part. Q19 admitted the repository 2026-09-05 and section 9 was implemented 2026-09-09; the Foundry's own stages stay gated on S5's port, S1, S3's deposit, and the repository being created, and this plan activates no PSC implementation child and confers no scientific approval |
 
 ---
 

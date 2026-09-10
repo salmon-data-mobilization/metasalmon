@@ -41,6 +41,86 @@
   [Foundry plan's §9](plans/2026-09-04-salmon-science-foundry-concrete-plan.md),
   and it is worth doing on its own even if the rest never happens.
 
+- **The Foundry plan and its integration kit merged into `main` as pull request
+  104.** The plan landed as an *execplan candidate* and nothing was sequenced by
+  it. Merging a plan commits this repository to having considered a decision at
+  a point in time, which is what `plans/` is for; it does not commit anyone to
+  the work, and the distinction is the only thing that keeps a dated plan from
+  reading as a mandate a year later.
+
+- **Then Brett ruled that the integration should be completed rather than
+  held**, which is the reason this pass exists at all rather than only the
+  fixes. S14 and S15 entered the roadmap as streams, the domain card gained a
+  ninth member, and nineteen rulings that had been living inside a plan document
+  moved into [the questions index](questions.md), where someone who was not in
+  the conversation can find them. The Foundry repository **does not exist yet**,
+  and admitting it anyway is deliberate: the sequencing membership test asks
+  what a repository is *for*, not whether anyone has pushed to it, so a member
+  with no commits is a valid entry. Waiting for the first commit would only move
+  the ninth member from a decision into a surprise.
+
+- **The hub queue was built.** A single policy file (`HUB.md` at the repository
+  root), a client whose claim is a plain `git push` of an orphan commit and
+  nothing cleverer, one YAML file per item, a validator, a freshness check, and
+  a continuous-integration job whose permissions are read-only. It lives at
+  `queue/` in the repository root and deliberately **not** in this bundle, for
+  two reasons either of which is sufficient on its own: the OKF validator fails
+  closed on non-Markdown files inside a bundle, so a queue filed here would have
+  broken the bundle it was filed in; and operational state belongs with the
+  system that owns it rather than in a knowledge bundle, which is a standing
+  rule and not a rationalisation of the first reason. The same validator fails
+  closed on a Markdown link out of the bundle, so a card names `queue/README.md`
+  in backticks as prose and never as a link. There were sixty-three item files
+  when this was written; that is a dated observation and not a number this
+  bundle undertakes to maintain, for exactly the reason step 0 above deleted six
+  other restated counts. `queue/items/` is the authority and can be counted.
+
+- **What the review of that build found is the part worth keeping.** Four
+  blockers and about twenty majors, and two of the blockers are worth naming
+  because they are a shape this bundle already collects. A YAML value contained
+  an unquoted `#`, so every reader silently discarded most of the sentence after
+  it: the file parsed, the validator passed, and the text was simply gone, with
+  **no diagnostic anywhere**. And the freshness check reported success while
+  guarding nothing, because it skipped every file carrying no marker and no file
+  carried one. Both are the same defect as the gcdfo continuous-integration
+  exclusion that hid a crash and the `make` recipe that printed a success mark
+  over a failing script: **a green signal that means nothing**. The lesson these
+  keep re-teaching is that a guard's first test is that it can fail, and that a
+  guard which has never been shown failing is a claim rather than a check.
+
+- **The critic also found that the migration had not yet performed its own
+  point.** The queue was added while the prose that restates the same facts
+  stayed exactly where it was, so for the length of one pass the duplication
+  went **up** rather than down. Worth recording because it is the ordinary way a
+  deduplication ends: the new home is built, the old copies are left for later,
+  later never arrives, and the divergence starts in the gap.
+
+- **A venue field now marks which streams are best worked in Claude Science and
+  which in Claude Code**, at Brett's request. Reading, evidence synthesis,
+  semantic judgement, statistical analysis and scientific writing go to Claude
+  Science, which is to say anything whose output is an argument; work needing
+  the repository, the R or Python toolchain, a local credential, CI, a release
+  or a push goes to Claude Code; genuinely-both is `either`. Two constraints
+  keep it from becoming decoration. It is **advice and never a gate**, because
+  nothing reads it and no check enforces it, and a field that blocks work is a
+  field that gets faked. And it **retires when it stops changing a decision**:
+  if a season passes in which every item is `either`, delete the field rather
+  than maintain it.
+
+- **What is not done, stated plainly, because a partial migration reads from the
+  inside like a finished one.** The generated blocks cover **one** fact, the
+  member count; the thirteen stream statuses and the rest of the restated state
+  named in the plan's own measurement are still prose that can drift, which is
+  the same condition the previous bullet describes rather than a separate
+  shortfall. The locks repository does not exist, so the queue configuration
+  carries a placeholder and **no claim can actually be taken** until it does and
+  until a two-terminal race proves a first claim is atomic. And the point of no
+  return has not been passed: nothing yet depends on the queue, every fact still
+  has its old home, and the whole change could be abandoned today at the cost of
+  deleting one directory. That is a comfortable position and it is also the
+  trap, because a migration that can always be abandoned is one that is never
+  finished.
+
 ## 2026-08-25
 
 - **Q12 was ruled and implemented, and backlog #93 is fully retired.** Brett:

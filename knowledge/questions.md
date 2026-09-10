@@ -549,3 +549,270 @@ Python and is now false, corrected in the same change.
 registers. The differential also turned up one thing the ruling deliberately
 does **not** cover — the two sides spell the `REVIEW:` marker differently — now
 row 60 and [Q18](#q18--review--or-review--does-the-markers-exact-spelling-matter).
+
+---
+
+**Q19 to Q37 arrive from a plan rather than from this file.** They were drafted,
+put to Brett, and ruled inside the
+[Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md): Q19 to
+Q30 on 2026-09-05, Q31 to Q37 on 2026-09-09. Until 2026-09-09 they lived only
+there, which is the failure this file exists to prevent, because a decision only
+Brett can make is worth nothing to the next agent if it is filed inside the
+document that asked for it. Every entry below is an index card: the full text,
+with its reasoning, is Appendix A of that plan, and each entry names its
+appendix question so the two cannot drift apart silently. **Four of the nineteen
+are withdrawn or moot rather than ruled** (Q31, Q32, Q33, Q36), because Brett
+took the PSC ontology out of the hub on 2026-09-09 and the questions it had
+raised stopped existing. They keep their numbers and headings under this file's
+never-delete convention: a withdrawn question is a different thing from a
+decided one, and these four are the record of why this hub contains no PSC
+ontology.
+
+### Q19 — Is the Foundry the ninth member of the hub? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: yes.** `salmon-science-foundry` is a hub member and the hub sequences
+its work as S14.
+
+**The paste was then held, and the hold was lifted four days later.** On
+2026-09-05 the mechanics (the domain-card row, the release-index section, and
+the member count where it is restated) were deliberately deferred until the
+coordination change landed, on the grounds that the count was about to become
+derivable and pasting nine more copies of a number days before deleting them is
+the duplication that change exists to remove. **On 2026-09-09 Brett ruled that
+the integration be completed rather than held**, so the hold is over and the
+paste lands with the coordination change instead of behind it. The four-day gap
+is recorded here rather than smoothed over: a membership that is ruled but
+invisible in the bundle reads as an unruled question to every agent except the
+one who held the paste.
+
+**Full text:** Appendix A Q19, and the drafts in the
+[S14 hub-integration kit](plans/2026-09-04-s14-hub-integration-kit.md).
+**Owner:** the S14 card (`sequences/s14-salmon-science-foundry.md`).
+
+### Q20 — Do `sdp-example-data` and `salmon-ontology-hub` join the hub? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: neither joins.** Brett: *"The Salmon Ontology hub is mainly for
+updating the RDA community on what the Salmon Ontology Development Group is up
+to. That can be done separately."* The Hub site is a communications surface for
+the RDA working group, not hub-sequenced work, so it gets no stream, no
+release-index section, and no milestone ladder; `sdp-example-data` gets no
+hub-sequenced work either, and the three 2020 to 2021 prototypes are archived
+after the credential audit.
+
+**Full text:** Appendix A Q20. **Owner:** the
+[domain card](domains/salmon-data-ecosystem.md).
+
+### Q21 — Does the commercial boundary belong in this public bundle? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: the consultancy's products stay out of public documentation
+anywhere.** The boundary rules stay in the plan in anonymous form, the
+graph-design companion is not added to this bundle, and no product or company
+name appears in any public repository.
+
+Brett asked whether a hook could enforce it, and one is installed: a `PreToolUse`
+guard reading a denylist that lives outside every repository, so the terms it
+protects are never themselves committed. **Its retirement condition and its
+known blind spots are stated with it** in the plan's coordination section, which
+is where a guard's limits belong.
+
+**Full text:** Appendix A Q21. **Owner:** the plan; the guard is a
+machine-level control rather than a bundle rule.
+
+### Q22 — Which runtime tier does the Foundry start on? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: Tier 0, recorded as ADR-0001.** A content-addressed store, receipts,
+`approvals.jsonl`, and an idempotent driver. Tier 1 and Tier 2 are recorded with
+their entry triggers and are not funded in Stage A, so the runtime question is
+answered by a measured condition rather than by a preference.
+
+**Full text:** Appendix A Q22. **Owner:** the S14 card
+(`sequences/s14-salmon-science-foundry.md`).
+
+### Q23 — What is SalmonBench's scope? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: a 25-task pilot in Stage A and a 60-task v0.1 in Stage B**, with 75
+and 150 tasks as six- and twelve-month targets. The three Theme A captures
+finish as the pilot's regression anchor.
+
+**Full text:** Appendix A Q23. **Owner:** the S14 card
+(`sequences/s14-salmon-science-foundry.md`), with the captures under
+the [Theme A record](plans/2026-07-28-theme-a-semantic-review.md).
+
+### Q24 — May a subset of the private commons be published? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: not in Stage A or Stage B, and "stable" has a bar.** A card is stable
+when it carries a named human `verified` entry and passes its citation ledger.
+Publication of a subset that meets that bar, with a licence, is a separate
+ruling for the commons repository rather than something this plan can grant.
+
+**Full text:** Appendix A Q24. **Owner:** the S14 card
+(`sequences/s14-salmon-science-foundry.md`) for the compiler;
+`salmon-knowledge-commons` for publication.
+
+### Q25 — Does the 173-row gold standard move, copy, or get referenced? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: reference, never copy.** The Foundry's source receipt records the Open
+Government record, the derivation, and the SHA-256 at a metasalmon tag;
+consumers fetch by checksum; one derivation script, and it lives in metasalmon.
+That also settles the half of parity row 46 that asked which repository owns the
+derivation.
+
+**Full text:** Appendix A Q25. **Owner:**
+[S12](sequences/s12-fraser-coho-gold-standard.md) and
+[parity row 46](parity-deviations.md).
+
+### Q26 — Which repositories live under the institute now? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: two, the Foundry repository and SalmonBench.** Nothing else moves:
+`smn-sci-plgn` stays a personal repository and is repointed at metasalmon 0.5.0
+in place, and the eight existing hub members stay where they are. Naming
+SalmonBench as an institute repository from the start reverses the review's
+"keep it in `bench/` until extraction criteria are met", so the extraction
+happens at creation time and the plan records that cost.
+
+**Full text:** Appendix A Q26. **Owner:** the plan and the
+[domain card](domains/salmon-data-ecosystem.md).
+
+### Q27 — Where do the `salmon` data-access verbs live? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: inside metasalmon and metasalmonpy**, under the mirror rule, with the
+receipt schema shared. A sibling package pair only if a measured dependency or
+file-size cost appears, which makes the split a triggered decision rather than
+an open one.
+
+**Full text:** Appendix A Q27. **Owner:** the plan, and the mirror rule in
+`AGENTS.md` if it is extended.
+
+### Q28 — Licence and contributor terms? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: MIT for code, CC BY 4.0 for benchmark tasks and documentation,**
+per-asset licences for fixtures in the register, and a developer certificate of
+origin rather than a contributor licence agreement until counsel says otherwise.
+Incorporation-dependent choices still need professional review.
+
+**Full text:** Appendix A Q28. **Owner:** the institute; the plan records the
+choice.
+
+### Q29 — Backlog #95: fix `infer_column_role()` or the code-row seeder? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: fix role inference.** A column that has a code list is `categorical`
+by the specification's own definition, and the seeder is downstream of that
+decision. Pinned with a fixture on both sides, so the mirror obligation is
+discharged with the fix rather than after it.
+
+**Full text:** Appendix A Q29. **Owner:**
+[S12](sequences/s12-fraser-coho-gold-standard.md) and
+[S1](sequences/s1-validation-authority.md), with the defect in
+[backlog #95](backlog.md).
+
+### Q30 — Which OKF profile does the Foundry's bundle use? — ANSWERED 2026-09-05 (Brett)
+
+**Ruling: whichever is the better long-term design, and Brett is not tied to the
+PSC profile.** The answer taken is **upstream OKF v0.2** with the commons'
+strict closed schema and its `okf-check.py`: the PSC v0.4 profile rejects
+exactly the provenance fields the Foundry's claim contract needs, validating an
+institute bundle with a PSC-owned tool from a sibling checkout is the
+cross-boundary dependency the plan forbids everywhere else, and the commons'
+checker is already stricter than the profile check.
+
+**The cost is named rather than hidden:** the hub's own bundle still uses the
+PSC profile, so the ecosystem carries two validators until the hub migrates.
+That migration is Q34, deliberately kept separate because it is bundle-wide and
+follows the coordination change.
+
+**Full text:** Appendix A Q30. **Owner:** the S14 card
+(`sequences/s14-salmon-science-foundry.md`).
+
+### Q31 — Repository name and namespace for the PSC core model — WITHDRAWN 2026-09-09 (Brett)
+
+**Withdrawn, not decided.** Brett: *"I don't think I want the PSC Ontology as
+part of this hub anymore."* No repository is created by this plan, so it needs
+no name and no namespace, and the question has no answer because it no longer
+has a subject. The recommendation on the table when it was withdrawn stands as a
+starting point if the work is ever revived, and it belongs in a PSC record
+rather than in this bundle.
+
+**Full text:** Appendix A Q31. **Owner:** none; withdrawn with the PSC
+workstream.
+
+### Q32 — Does the Domain Vision Statement come before the first flagged term? — MOOT 2026-09-09 (Brett)
+
+**Moot, not decided.** Brett: *"irrelevant now."* It went with the PSC
+workstream. The underlying principle is worth keeping wherever that work lands:
+build the context map before the model, and mint no class that does not answer a
+numbered competency question.
+
+**Full text:** Appendix A Q32. **Owner:** none.
+
+### Q33 — Which PSC bounded contexts register first? — WITHDRAWN 2026-09-09 (Brett)
+
+**Withdrawn, not decided.** Brett: *"Let's leave PSC out for now."* None
+register. Fraser Recruits returns to out-of-scope, which restores the 2026-09-04
+position rather than creating a new one, and
+[S13](sequences/s13-fraser-recruits-case-study.md)'s three metasalmon-side
+requirements are unaffected: they are this package's compatibility obligations
+to a consumer that already exists, and were never PSC work.
+
+**Full text:** Appendix A Q33. **Owner:** none.
+
+### Q34 — Does the hub's own bundle migrate to upstream OKF v0.2? — ANSWERED 2026-09-09 (Brett)
+
+**Ruling: yes, and the withdrawal of the PSC work strengthens the case rather
+than weakening it.** Brett asked whether the migration still made sense once the
+PSC ontology left. It makes more sense: the argument was that a public,
+institute-adjacent bundle should not validate itself with a PSC-owned tool from
+a sibling checkout, and with no PSC work anywhere in this programme that
+dependency has nothing on the other end of it. `psc-salmon-vocabularies` keeps
+the PSC profile in its own repository, because profile follows ownership.
+
+**Sequenced after the coordination change, not before**, because the documented
+validation command is repeated in several cards and moving it is itself an
+instance of the duplication that change is fixing.
+
+**Full text:** Appendix A Q34. **Owner:** this bundle.
+
+### Q35 — The institute's GitHub organization slug — ANSWERED 2026-09-09 (Brett)
+
+**Ruling: the institute is renamed to Symecology Institute**, and the plan
+assumes the slug `Symecology-Institute`, which is still unconfirmed. No GitHub
+organization exists under this name or the previous two.
+
+**The name has moved twice in five days, which is why the organization is not
+created yet:** a rename redirects repository links but returns 404 for the
+organization profile and for old-name API calls, and it releases the old name
+for anyone to claim. So the organization is created when a repository needs it,
+in Stage A week 3, and nothing in Stage 0 depends on it.
+
+**Full text:** Appendix A Q35. **Owner:** Brett.
+
+### Q36 — Amend the membership test so a PSC-owned repository can be a member? — WITHDRAWN 2026-09-09 (Brett)
+
+**Withdrawn rather than adjudicated, and the distinction is the point.** No
+amendment was made and none was needed: with the PSC ontology out of the hub,
+nothing was asking the test to stretch, so the tension that produced the
+question disappeared instead of being resolved in either direction. The test
+ruled in [Q10](#q10--which-membership-test-governs-the-hub-and-is-the-workshop-the-eighth-member--answered-2026-08-24-brett)
+stands unamended: *a repository is a member when this hub sequences that
+repository's work.* The eight members are unchanged and the Foundry's admission
+under Q19 is the ninth.
+
+**Full text:** Appendix A Q36. **Owner:** the
+[domain card](domains/salmon-data-ecosystem.md); no change.
+
+### Q37 — Which authorization paragraphs does Brett grant? — ANSWERED 2026-09-09 (Brett)
+
+**Ruling: paragraph 1 only**, meaning git pushes to claim refs and `agent/`
+branches.
+Paragraph 2, the generated Project view and its sync, no longer exists because
+Brett dropped the GitHub Project the same day. Paragraph 3, one draft pull
+request per handed-back item, is **declined**: an agent pushes its branch,
+prints the compare URL, and stops, and Brett opens every pull request himself.
+
+So the standing authorization for the whole coordination system is a single
+paragraph covering two `git push` targets, with a closed exclusion list and a
+self-suspending clause. **The operative copy lives in `HUB.md` and nowhere
+else**, because the one text whose stale copy causes an unauthorized write is
+the last text that should be duplicated.
+
+**Full text:** Appendix A Q37. **Owner:** Brett's global instructions, with
+`HUB.md` as the operative copy.
