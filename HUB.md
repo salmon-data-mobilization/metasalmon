@@ -393,13 +393,14 @@ copy:
 That is the whole grant. Two `git push` targets, in named repositories, by an
 agent executing this protocol.
 
-**This is the operative copy, and it should be the only one.** Section 9.5 of
-the Foundry plan carried the same paragraph verbatim as of 2026-09-09, which is
+**This is the operative copy, and it is now the only one.** Section 9.5 of the
+Foundry plan carried the same paragraph verbatim until 2026-09-09, which is
 precisely the duplicated-fact defect this design was built to remove, and the
 worst possible fact to duplicate: two copies of a permission boundary can drift
 into two different boundaries, and nothing in either copy would say which one an
-agent is operating under. The correction owed there is that section 9.5 quotes a
-short summary and points at this file. Until it lands, this file governs.
+agent is operating under. Section 9.5 now carries a summary that says this file
+governs, and the review that found the duplicate found it by reading the two
+against each other rather than by reading either alone.
 
 Both `git push` targets are checked by the client rather than left to an
 agent's reading, **and the check is a seatbelt rather than a wall.** Say what
