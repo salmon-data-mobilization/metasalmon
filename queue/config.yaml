@@ -18,13 +18,17 @@
 # Where claims live
 # ---------------------------------------------------------------------------
 
-# PLACEHOLDER. The locks repository does not exist yet. Creating it is Brett's
-# action (step 1 of the migration table in section 9.7), together with the
-# two-terminal race test proving that a first claim is atomic. Until he
-# creates it and replaces this line with the real remote, `hub doctor` must
-# fail loudly on the placeholder rather than treat an unreachable remote as an
-# empty queue: an agent that reads "nobody holds it" from a missing repository
-# will claim work somebody else is already doing.
+# The locks repository, created by Brett 2026-09-10: public, empty of code, and
+# holding nothing but claim refs. Public because the queue it locks is already
+# public, because claim commits are authored as `hub-agent
+# <token@agents.invalid>` so no personal identity reaches the history, and
+# because on the Free plan branch protection is available for public
+# repositories and not for private ones, which is what lets the
+# compare-and-swap be enforced by the server rather than only by this client.
+#
+# `hub doctor` fails loudly on an unreachable remote rather than treating it as
+# an empty queue: an agent that reads "nobody holds it" from a missing
+# repository will claim work somebody else is already doing.
 #
 # An agent that finds this value stops and reports. It does not guess a
 # repository name, and it does not infer one from an organization in `members`
@@ -36,7 +40,17 @@
 # working.
 #
 # Retires when: the repository exists and this value is its push URL.
-locks_repo: PLACEHOLDER-hub-locks-repository-not-yet-created
+#
+# One thing that had to be learned by running it. GitHub makes the first branch
+# pushed to an empty repository the default branch, and a default branch cannot
+# be deleted. So in a fresh locks repository the very first claim ever made
+# becomes undeletable, and stays the repository's HEAD. `main` therefore holds
+# a README and exists precisely so that a claim ref never becomes the default.
+# Proved and fixed 2026-09-10, before any real claim was taken.
+#
+# Retires when: nothing. A locks repository always needs a default branch that
+# is not a claim.
+locks_repo: https://github.com/salmon-data-mobilization/hub-locks.git
 
 # The claim ref namespace inside `locks_repo`. An orphan commit can never
 # fast-forward an existing ref, so a first push here succeeds if and only if
