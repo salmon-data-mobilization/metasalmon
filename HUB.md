@@ -17,7 +17,14 @@ constants_live_in: >-
 queue:
   items_dir: queue/items/
   id_pattern: '^(B|S|Q)-[0-9]+$'
-  ready_is_set_by: a commit on the default branch of the repository holding the queue
+  ready_is_set_by: >-
+    a commit on the default branch, made by Brett or by an agent acting on an
+    authorization Brett gave in chat. An agent's promotion commit must name that
+    authorization; a promotion that cannot cite one is a defect.
+    Changed 2026-09-10: this used to be a wall an agent could not climb, because
+    it could not push to the default branch. It is now an audit trail. The
+    property that an agent cannot invent its own work is no longer structural,
+    and saying so is the point of this note.
 
 states:
   - name: icebox
@@ -187,7 +194,11 @@ writes:
         running it on 2026-09-10, before any real claim existed.
   denied:
     - any issue, pull request, review, comment, release, label, or assignee
-    - any push to main or to any default branch
+    - a push to a default branch that is not a small mechanical change:
+      queue state, a generated block, a typo, ignoring a stray file. Anything
+      substantive goes through a pull request, because that is what Codex
+      reviews, and losing the review costs more than the extra step.
+    - a promotion to ready that does not name the authorization it rests on
     - any change of an item to state ready
     - any --force, --force-with-lease, --delete, or non-fast-forward push
     - anything at all on GitLab
@@ -528,6 +539,24 @@ resembling a permitted one is denied unless it is named in `writes.permitted`.
 operative copy, and where the two differ the narrower governs. A wider reading
 of this file cannot enlarge the ceiling, and nothing in this file grants what
 the global instruction withholds.
+
+**This repository widens the global rule** (2026-09-10; the global file permits
+a repository Brett controls to widen it, explicitly and dated). What it grants
+beyond the default:
+
+- **Merging a pull request here needs no separate ask** once every check is
+  green. Nobody else works in this repository, so a merge reaches no one.
+- **Promoting a queue item to `ready`** is permitted on an authorization Brett
+  gave in chat, and the commit must name it.
+- **Pushing to `main`** is permitted for small mechanical changes only, meaning
+  queue state, a generated block, a typo, ignoring a stray file. Prefer a pull
+  request for anything else; that is what Codex reviews.
+
+**A Codex review is an opinion, not an instruction.** Weigh it against the
+evidence, and where it conflicts with something Brett has already decided, his
+decision wins and the reply says so rather than quietly complying. A wrong
+review that is followed is worse than no review, because it arrives wearing the
+authority of having been reviewed.
 
 **Self-suspending.** The whole authorization is suspended the moment an agent
 writes outside the permitted list, and stays suspended until Brett reinstates
