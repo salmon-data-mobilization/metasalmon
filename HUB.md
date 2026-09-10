@@ -433,18 +433,44 @@ Brett's global instruction is the ceiling. One paragraph sits beneath it,
 granted 2026-09-09 (ruling R13) and widened 2026-09-10 (ruling R15), and this
 file is its operative copy:
 
-> In the member repositories listed in the hub queue's configuration, and in
-> the locks repository, and only there, an agent executing the protocol in
-> `HUB.md` may, without asking each time: push a claim record to a ref under
-> the claim prefix; push commits to a branch named
-> `agent/<queue-id>/<token>`; open exactly one **draft** pull request for a
-> handed-back item, labelled `agent-run`, never marked ready for review and
-> never merged; and push a README to `main` in the locks repository so that a
-> claim ref is never its default branch.
+> In the member repositories listed in the hub queue's configuration **that
+> have no contributor other than me**, and in the locks repository, and only
+> there, an agent executing the protocol in `HUB.md` may, without asking each
+> time: push a claim record to a ref under the claim prefix; push commits to a
+> branch named `agent/<queue-id>/<token>`; open exactly one **draft** pull
+> request for a handed-back item, labelled `agent-run`, never marked ready for
+> review and never merged; and push a README to `main` in the locks repository
+> so that a claim ref is never its default branch.
+>
+> In a member repository where anyone else has contributed, the agent stops
+> after pushing the branch, drafts the pull request text in chat, and waits.
 
 That is the whole grant. Two `git push` targets, one draft pull request per
 item, and one README, in named repositories, by an agent executing this
 protocol.
+
+**Ownership is not the test; participation is** (Brett, 2026-09-10). Owning or
+administering a repository does not mean working alone in it, and the grant
+follows who else is there rather than whose name is on the organization.
+Measured the day the rule was written, by asking who has ever committed, opened
+an issue, or opened a pull request:
+
+| Repository | Others who have participated | Grant applies |
+|---|---|---|
+| `metasalmon`, `metasalmonpy`, `smn-data-pkg`, `salmon-domain-ontology`, `salmon-knowledge-commons`, the locks repository | none | yes |
+| `salmon-data-standards-workshop` | one collaborator, in commits and issues | **no** |
+| `dfo-salmon-ontology` | two, and it is another organization's | **no** |
+| `psc-salmon-vocabularies` | PSC, on GitLab | **no** |
+
+**Do not use the collaborator list for this test.** Every repository in the
+organization shows the same eight collaborators, because the organization's
+base permission is `write` and every member inherits access to everything. By
+that test nothing would ever be solo and the grant would be empty. Once base
+permission is set to Read the access list becomes meaningful again and is worth
+re-checking, which is one more reason to fix it.
+
+**When in doubt, it is shared.** An agent that cannot determine who has
+participated treats the repository as shared and asks.
 
 **This is the operative copy, and it is now the only one.** Section 9.5 of the
 Foundry plan carried the same paragraph verbatim until 2026-09-09, which is
