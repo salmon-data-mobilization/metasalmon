@@ -342,7 +342,8 @@ stale, the row says so.
   `scripts/theme-a-benchmark.R`, which are already a frozen-fixture retrieval
   benchmark with required, allowed, and forbidden oracles. SalmonBench wraps
   those first.
-- The **2026-09-02 source pass** (52-citation ledger, four commons cards)
+- The **2026-09-02 source pass** (four commons cards; its citation ledger was
+  named in three documents and never written, measured 2026-09-10)
   is the evidence base for PR #27 and the gcdfo holds #84/#85; Workstream E
   builds on it rather than restarting.
 - The KNB rehearsal script `scripts/build-fraser-coho-knb-rehearsal.R`
@@ -1426,7 +1427,10 @@ run, with agreement reported.
 
 - **PR #27 evidence briefing, not adjudication.** Three evidence roles
   (advocate, challenger, neutral adjudicator) run on a PR snapshot frozen
-  **after** `smn_pr27_definition_amendments.ttl` lands (so the two failed
+  **after** `smn_pr27_definition_amendments.ttl` lands — **and as of
+  2026-09-10 that file has never existed**, so this gate is currently
+  unsatisfiable and the workstream is blocked on regenerating it from the
+  commons cards rather than on the briefing itself (so the two failed
   attributions are fixed inputs, not findings), with the 52-row 2026-09-02
   ledger as the temporal holdout, and produce a decision matrix **for Q6**,
   whose eight rulings are Brett's. The workshop does not adjudicate shared terms;
