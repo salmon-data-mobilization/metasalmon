@@ -1,0 +1,12 @@
+id: Q-18
+kind: question
+title: Rule whether the REVIEW marker's trailing space is a byte contract or a display convention
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S10
+blocked_by: []
+legacy: 'Q18'
+evidence: questions.md
+retires_when: Brett rules one spelling and both parity registers record which side gave way, or he rules the marker a display convention and parity row 61 stands as a caution against reading a column_dictionary.csv byte differential as clean.

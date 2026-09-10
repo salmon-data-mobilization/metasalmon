@@ -1,0 +1,12 @@
+id: B-115
+kind: defect
+title: Rule one spelling for a descriptor POSIXct and emit it in both implementations
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#115'
+evidence: knowledge/backlog.md
+retires_when: 'One spelling is ruled for a descriptor instant, both implementations emit it, and a test in each asserts that datapackage.json and metadata/dataset.csv agree for a POSIXct, copying the shape the R half already has for Date in tests/testthat/test-canonical-date-render.R.'

@@ -1,0 +1,12 @@
+id: B-117
+kind: defect
+title: Make strict validation and EML export agree about term_type
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: '#117'
+evidence: knowledge/backlog.md
+retires_when: 'The two gates agree about term_type or the documentation states which gate covers what, and the mirror carries the same answer, since metasalmonpy''s CORE_SEMANTIC_FIELDS omits the field and its vendored schema allows an owl_object_property value the exporter rejects.'

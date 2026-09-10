@@ -1,0 +1,12 @@
+id: B-120
+kind: defect
+title: Surface crosswalk-filled code slots in the review queue
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#120'
+evidence: knowledge/backlog.md
+retires_when: 'A crosswalk-filled code slot appears in review_semantics() with its alternatives, or the decision is recorded that crosswalk prefills are authoritative and deliberately not reviewable.'

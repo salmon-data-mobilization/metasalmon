@@ -1713,7 +1713,7 @@ Brett promoting items cheaply, not for throughput once an item is claimable.
 
 ## 9.3 The design, in four sentences
 
-1. **The queue is one YAML file per work item** under `knowledge/queue/`,
+1. **The queue is one YAML file per work item** under `queue/`,
    holding the state that prose used to restate: stream status, blocked-by,
    severity, open or closed, what needs Brett.
 2. **A claim is a plain `git push`** of an orphan commit to
@@ -1760,12 +1760,17 @@ wrong.
 
 ## 9.5 The standing authorization, in one paragraph (R13)
 
-Brett's existing sentence is **not** changed. One paragraph goes beneath it:
+Brett's existing sentence is **not** changed. One paragraph goes beneath it,
+and **`HUB.md` carries the operative text**: a permission grant that exists in
+two places is a grant with two readings, and the one an agent obeys is
+whichever file it happened to open. What follows is a summary for a reader of
+this plan, not a second copy to be edited.
 
 > In the member repositories listed in the hub queue's configuration, and in
-> `hub-locks`, and only there, an agent executing the protocol in `HUB.md` may
-> push a claim record to a ref under the claim prefix, and push commits to a
-> branch named `agent/<queue-id>/<token>`, without asking each time.
+> the locks repository, and only there, an agent executing the protocol in
+> `HUB.md` may push a claim record to a ref under the claim prefix, and push
+> commits to a branch named `agent/<queue-id>/<token>`, without asking each
+> time.
 
 It authorizes nothing else, and the closed exclusion list says so explicitly:
 no issue, pull request, review, comment, release, label, or assignee; no push
@@ -1848,7 +1853,7 @@ secrets, a sync program, a second representation that can drift, and a write
 path invisible to the private-terms guard.
 
 **Reviving it is additive and cheap**: the queue files are the source, so a
-Project view is a read of `knowledge/queue/` plus one sync program, with no
+Project view is a read of `queue/` plus one sync program, with no
 change to the claim protocol, the authorization paragraph, or any queue file.
 The trigger to revive it is a second person needing to see the board — which
 is exactly the condition Brett's own constraint about competing planning

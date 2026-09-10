@@ -1,0 +1,13 @@
+id: B-113
+kind: defect
+title: Converge on one shared package-ownership sentinel in both implementations
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: []
+legacy: '#113'
+evidence: knowledge/backlog.md
+retires_when: 'Both implementations write and recognise one shared sentinel name, neither writes a per-language sentinel, and parity row 51 records the convergence in both registers.'

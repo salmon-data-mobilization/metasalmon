@@ -1,0 +1,12 @@
+id: B-114
+kind: defect
+title: Adopt the metadata/semantic directory into the SDP specification
+state: needs_brett
+claimable: false
+repo: smn-data-pkg
+venue: claude-science
+severity: P4
+blocked_by: []
+legacy: '#114'
+evidence: knowledge/backlog.md
+retires_when: 'SPECIFICATION.md describes the metadata/semantic tree and the profile and schema entries exist, and both implementations validate against them rather than against each other. Not claimable: the next concrete step the backlog names is filing an smn-data-pkg issue carrying the inventory and the proposed specification section, and an agent may not open an issue in any repository. An agent may draft that issue body for Brett to post, and the order matters, because the spec repo has to own the layout before metasalmonpy mirrors metasalmon''s shape and turns an adoption into a rename.'

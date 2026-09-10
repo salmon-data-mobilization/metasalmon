@@ -1,0 +1,13 @@
+id: B-48
+kind: defect
+title: Three error-severity sdp.rules.yaml rules are loaded and never executed
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S1
+severity: P1
+blocked_by: [B-106]
+legacy: '#48'
+evidence: backlog.md
+retires_when: 'The rule dispatch in R/schema-helpers.R drives its checks from the parsed rule ids, and a test fails when a rule id declared in sdp.rules.yaml has no executing check, so spec and implementation cannot diverge silently again. Claimable stays false until B-106 rules which reading of "typed as a SOSA Procedure" the methods_are_sosa_procedures rule means; the backlog entry for #106 says deciding that is a prerequisite for this item and that this item must not pick a reading by itself. It flips back to true on that ruling, whichever way it goes.'

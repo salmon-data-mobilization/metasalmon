@@ -1,0 +1,12 @@
+id: B-83
+kind: defect
+title: A stale definition fixture in test-term-search.R
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: '#83'
+evidence: knowledge/backlog.md
+retires_when: The fixture stops quoting the `gcdfo:ConservationUnit` definition verbatim, so no external definition string that nothing asserts is pinned in a test and able to drift again. Re-syncing the string is not the fix and would not retire this.

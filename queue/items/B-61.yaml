@@ -1,0 +1,13 @@
+id: B-61
+kind: defect
+title: Ecosystem findings spanning the sibling repositories
+state: icebox
+claimable: true
+repo: metasalmon
+venue: either
+stream: S6
+severity: P4
+blocked_by: []
+legacy: '#61'
+evidence: plans/2026-08-10-comprehensive-ecosystem-review.md
+retires_when: The 37 verified findings and the 27 finder-only ontology findings are each verified and refiled as their own queue item in the repository that owns them, leaving this umbrella with nothing left to track. It is a tracking record held here because the evidence plan lives here, not work that happens in metasalmon.

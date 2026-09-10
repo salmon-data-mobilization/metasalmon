@@ -1,0 +1,12 @@
+id: S-04
+kind: stream
+title: Workshop rebuild, two-day curriculum published with live rehearsal outstanding
+state: icebox
+claimable: true
+repo: salmon-data-standards-workshop
+venue: claude-code
+stream: S4
+blocked_by: [S-03]
+legacy: 'S4'
+evidence: sequences/s4-workshop-rebuild.md
+retires_when: Bruno and Tom have reviewed the reference scientifically, the independent-validator mismatch is resolved, a live free-provider rehearsal succeeds, and a verified public KNB test record exists.

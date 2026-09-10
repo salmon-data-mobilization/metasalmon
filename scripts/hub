@@ -1,0 +1,1403 @@
+#!/usr/bin/env bash
+#
+# hub - the queue client for the salmon ecosystem hub.
+#
+# Planning state lives in one YAML file per work item under
+# queue/items/. A claim is a plain `git push` of a commit to a ref
+# under the claim prefix in a separate small locks repository. There is no
+# GitHub Project here and no GitHub API call anywhere in this script. If you
+# find yourself adding one, the design changed, and this file is the wrong
+# place to record that.
+#
+# Design authority: knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md
+# section 9. HUB.md at the repository root carries the policy and the writes
+# register; this script implements the protocol and decides nothing.
+#
+# Retires when: claims stop living on git refs. At that point this script is
+# deleted rather than widened, because every line of it is an argument about
+# refs and none of it survives that change.
+#
+# EXIT CODES, and this is the single most important detail in the script:
+#
+#   0  the call did what it says it did
+#   4  lost the race: the push was rejected because the ref already exists or
+#      moved since it was read, or another agent demonstrably holds the item
+#   3  the call failed for any other reason: no network, no credential, the
+#      locks repository is missing, a bad ref, an ineligible item, or a
+#      precondition this script could not verify
+#
+# Folding an expired credential into "someone else got there first" makes an
+# agent spin silently through the whole queue reporting nothing wrong. So the
+# classifier reads git's stderr, returns 4 only on the specific rejection
+# strings that mean the ref moved, and DEFAULTS TO 3 WHEN UNSURE.
+#
+# THE COMPARE-AND-SWAP ARGUMENT, stated once so no later edit weakens it:
+# git's own ref update is the atomic primitive, and it is used two ways.
+#   * A first claim pushes an ORPHAN commit (no parent). An orphan can never
+#     fast-forward an existing ref, so the push succeeds if and only if the ref
+#     does not exist, which is to say if and only if nobody holds the item.
+#   * Every later action (beat, release, handoff, reclaim) pushes a CHILD of
+#     the tip that was just read. A child fast-forwards only that exact tip, so
+#     the push succeeds if and only if nobody appended since the read.
+# Race window zero, on both paths. This is why the script never passes --force
+# or --force-with-lease: a forced push would replace the primitive with a
+# last-writer-wins overwrite, silently, and nothing downstream would notice.
+# The script also never deletes a ref, so the lock history stays append-only
+# and auditable.
+
+# -u catches an unset variable, which in a script that builds ref names out of
+# configuration is the failure most likely to push to the wrong place.
+# Deliberately NOT -e: classifying the exit status of git is this script's
+# whole job, and -e would abort before the classification ran.
+set -u
+set -o pipefail
+
+# C collation for every sort and pattern match in here. Item ordering is read
+# by agents and compared between runs, so it must not depend on a locale.
+LC_ALL=C
+export LC_ALL
+
+# A missing credential must fail rather than block an unattended agent on a
+# prompt that nobody will ever answer.
+export GIT_TERMINAL_PROMPT=0
+: "${GIT_SSH_COMMAND:=ssh -o BatchMode=yes}"
+export GIT_SSH_COMMAND
+
+# An inherited git environment would silently redirect every plumbing call in
+# here at whatever repository the caller was standing in.
+# Strip every environment variable that can redirect a git operation. GIT_DIR,
+# GIT_WORK_TREE and GIT_INDEX_FILE move where we read and write. The GIT_CONFIG_*
+# family is the one that matters for the carve-out: GIT_CONFIG_COUNT plus
+# GIT_CONFIG_KEY_n / GIT_CONFIG_VALUE_n inject configuration into every git
+# invocation, and one `url.<other>.insteadOf` entry silently rewrites the push
+# target no matter what this script computed. GIT_ALTERNATE_OBJECT_DIRECTORIES
+# and GIT_NAMESPACE move objects and refs the same way. An environment that can
+# redirect a push is an environment that can defeat the register, so this is a
+# boundary and not a tidiness measure.
+# Retires when: the client stops shelling out to git.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE \
+      GIT_CONFIG_COUNT GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG \
+      GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE \
+      GIT_OBJECT_DIRECTORY GIT_COMMON_DIR 2>/dev/null || true
+# GIT_CONFIG_KEY_n / GIT_CONFIG_VALUE_n are numbered, so they are unset by scan.
+# Written with a case match rather than `sed -n 's/\(a\|b\)/'`, because BSD sed
+# has no alternation in a basic regular expression and silently matches nothing:
+# the first version of this loop stripped none of them and the test that proved
+# it was the only reason anyone found out.
+for __v in $(env | cut -d= -f1); do
+  case "$__v" in
+    GIT_CONFIG_KEY_*|GIT_CONFIG_VALUE_*) unset "$__v" 2>/dev/null || true ;;
+  esac
+done
+unset __v 2>/dev/null || true
+
+EX_OK=0
+EX_FAIL=3
+EX_RACE=4
+
+PROG="hub"
+
+# ---------------------------------------------------------------------------
+# Paths. Derived from the script's own location so the client works from any
+# working directory and never guesses at a checkout.
+# ---------------------------------------------------------------------------
+
+# BASH_SOURCE rather than $0, so the paths are right when the file is SOURCED
+# with HUB_LIB=1: sourcing leaves $0 as the calling shell's name, which resolved
+# the repository root to the parent of whatever directory the test ran in.
+script_path=${BASH_SOURCE[0]:-$0}
+case $script_path in
+  */*) script_dir=$(cd "${script_path%/*}" && pwd) ;;
+  *)   script_dir=$(pwd) ;;
+esac
+REPO_ROOT=$(cd "$script_dir/.." && pwd)
+# The queue is at the repository root and NOT inside knowledge/. The OKF
+# validator fails closed on a non-Markdown file inside a bundle, and operational
+# state stays with its owning system rather than in the knowledge bundle.
+# Retires when: the queue stops being a directory of files in this checkout.
+QUEUE_DIR="$REPO_ROOT/queue"
+CONFIG_FILE="$QUEUE_DIR/config.yaml"
+ITEMS_DIR="$QUEUE_DIR/items"
+
+# The object cache for the locks repository. Kept outside every checkout so a
+# claim can never dirty a working tree, and so `git status` in metasalmon is
+# never affected by hub traffic.
+CACHE_DIR="${HUB_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/metasalmon-hub}"
+LOCKS_DIR="$CACHE_DIR/locks.git"
+
+# ---------------------------------------------------------------------------
+# Output. Everything a human or a calling agent needs goes to stderr except the
+# listings, which go to stdout so `hub ready` can be piped.
+# ---------------------------------------------------------------------------
+
+say()  { printf '%s\n' "$*" >&2; }
+warn() { printf '%s: %s\n' "$PROG" "$*" >&2; }
+fail() { printf '%s: %s\n' "$PROG" "$*" >&2; exit "$EX_FAIL"; }
+
+# ---------------------------------------------------------------------------
+# The tiny YAML extractor.
+#
+# The queue schema is deliberately narrow so this can be exact rather than an
+# approximation: one document per file, one scalar per line at column 0, and
+# list values in inline flow style only. If a queue file ever needs nesting,
+# the fix is a real parser or a narrower schema, not a cleverer awk.
+# ---------------------------------------------------------------------------
+
+yaml_scalar() { # file key -> value on stdout, empty if absent
+  [ -f "$1" ] || return 0
+  awk -v k="$2" -v sq="'" '
+    index($0, k ":") == 1 {
+      v = substr($0, length(k) + 2)
+      sub(/^[ \t]+/, "", v)
+      sub(/[ \t]+#.*$/, "", v)     # a trailing comment needs whitespace before it,
+      sub(/[ \t]+$/, "", v)        # so a quoted legacy value such as #53 survives
+      n = length(v)
+      if (n > 1) {
+        a = substr(v, 1, 1); b = substr(v, n, 1)
+        if ((a == "\"" && b == "\"") || (a == sq && b == sq)) v = substr(v, 2, n - 2)
+      }
+      print v
+      exit
+    }
+  ' "$1"
+}
+
+yaml_flow_list() { # file key -> one element per line
+  local raw
+  raw=$(yaml_scalar "$1" "$2")
+  raw=${raw#\[}
+  raw=${raw%\]}
+  printf '%s' "$raw" | tr ',' '\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' \
+    -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'\$//" | grep -v '^$'
+  return 0
+}
+
+# The members block is the one nested structure the client reads, so it gets
+# its own reader rather than a general one. It accepts both shapes the design
+# has used: a mapping per member (repo, org, forge) and a bare `org/repo`
+# string, which is read as GitHub because that is what the string form meant.
+# One line out per member: repo, org, forge, tab separated.
+members_list() {
+  [ -f "$CONFIG_FILE" ] || return 0
+  awk -v sq="'" '
+    function clean(s) {
+      sub(/^[ \t]+/, "", s); sub(/[ \t]+#.*$/, "", s); sub(/[ \t]+$/, "", s)
+      n = length(s)
+      if (n > 1) {
+        a = substr(s, 1, 1); b = substr(s, n, 1)
+        if ((a == "\"" && b == "\"") || (a == sq && b == sq)) s = substr(s, 2, n - 2)
+      }
+      return s
+    }
+    function flush() {
+      if (repo != "") printf "%s\t%s\t%s\n", repo, org, (forge == "" ? "github" : forge)
+      repo = ""; org = ""; forge = ""
+    }
+    index($0, "members:") == 1 {
+      rest = clean(substr($0, 9))
+      if (index(rest, "[") == 1) {                     # inline flow of org/repo
+        sub(/^\[/, "", rest); sub(/\]$/, "", rest)
+        n = split(rest, parts, ",")
+        for (i = 1; i <= n; i++) {
+          p = clean(parts[i]); if (p == "") continue
+          split(p, s, "/")
+          if (s[2] != "") printf "%s\t%s\t%s\n", substr(p, length(s[1]) + 2), s[1], "github"
+        }
+        exit
+      }
+      inblock = 1; next
+    }
+    !inblock { next }
+    /^[^ \t#]/ { flush(); exit }                       # the next key at column 0
+    /^[ \t]*-/ {
+      flush()
+      line = $0; sub(/^[ \t]*-[ \t]*/, "", line); line = clean(line)
+      if (line == "") next
+      if (index(line, "repo:") == 1) { repo = clean(substr(line, 6)); next }
+      if (index(line, "org:") == 1)  { org  = clean(substr(line, 5)); next }
+      split(line, s, "/")                              # bare org/repo string
+      if (s[2] != "") { org = s[1]; repo = substr(line, length(s[1]) + 2); forge = "github"; flush() }
+      next
+    }
+    /^[ \t]+[A-Za-z_]+:/ {
+      line = clean($0)
+      if (index(line, "repo:") == 1)  { repo  = clean(substr(line, 6)); next }
+      if (index(line, "org:") == 1)   { org   = clean(substr(line, 5)); next }
+      if (index(line, "forge:") == 1) { forge = clean(substr(line, 7)); next }
+    }
+    END { flush() }
+  ' "$CONFIG_FILE"
+}
+
+cfg() { yaml_scalar "$CONFIG_FILE" "$1"; }
+
+cfg_required() { # key -> value, or exit 3 naming the key
+  local v
+  v=$(cfg "$1")
+  if [ -z "$v" ]; then
+    fail "configuration key '$1' is missing or empty in queue/config.yaml; this client hard-codes no value that the configuration carries"
+  fi
+  printf '%s' "$v"
+}
+
+# ---------------------------------------------------------------------------
+# Configuration into ref names and URLs.
+#
+# Resolved once into globals rather than through a function called inside a
+# command substitution. `fail` inside a substitution would only kill the
+# subshell, and the caller would carry on with an empty remote URL, which is
+# exactly the class of silent wrong-target failure the -u above guards against.
+# ---------------------------------------------------------------------------
+
+LOCKS_URL=""
+LOCKS_URL_SOURCE=""
+CLAIM_PREFIX=""
+
+# HUB_LOCKS_URL is honoured ONLY while locks_repo is still the placeholder.
+#
+# It used to win unconditionally, which meant an environment variable could
+# redirect every claim, heartbeat, release and handoff push at an arbitrary
+# remote while the configuration named a real locks repository, silently, with
+# nothing in the output saying where the pushes went. An override that can
+# outrank a configured target is not an override, it is a redirect, and the
+# whole value of this design is that the push target is the thing you can
+# audit. So the override exists for exactly one window: the two-terminal race
+# test in migration step 1, before the real repository exists.
+#
+# Retires when: locks_repo names the real locks repository. From that commit
+# the override is inert, and once migration step 1 is signed off the branch
+# below can be deleted outright rather than left as a disabled path.
+resolve_locks_url() { # -> sets LOCKS_URL and LOCKS_URL_SOURCE, or exits 3
+  local repo override
+  override=${HUB_LOCKS_URL:-}
+  repo=$(cfg locks_repo)
+  [ -n "$repo" ] || fail "configuration key 'locks_repo' is missing or empty; this client hard-codes no value that the configuration carries"
+
+  case $repo in
+    PLACEHOLDER*)
+      # The configured value is a placeholder until Brett creates the locks
+      # repository. Failing loudly here is the point: an agent that read
+      # "nobody holds it" from a repository that does not exist would claim
+      # work somebody else is already doing.
+      if [ -n "$override" ]; then
+        LOCKS_URL=$override
+        LOCKS_URL_SOURCE="HUB_LOCKS_URL, permitted only because locks_repo is still the placeholder '$repo'"
+        return 0
+      fi
+      fail "locks_repo is still the placeholder '$repo'. The locks repository does not exist yet; creating it and running the two-terminal race test is step 1 of the migration in section 9.7, and it is Brett's action. Set HUB_LOCKS_URL to test against a throwaway repository in the meantime" ;;
+  esac
+
+  if [ -n "$override" ]; then
+    fail "HUB_LOCKS_URL is set to '$override' but locks_repo is the real value '$repo'. The override is honoured only while locks_repo is still the placeholder, because an environment variable that outranks a configured push target can redirect every claim, heartbeat, release and handoff at an arbitrary remote. Unset HUB_LOCKS_URL, or change locks_repo if the target really did move"
+  fi
+
+  case $repo in
+    *://*|git@*) LOCKS_URL=$repo ;;
+    */*)         LOCKS_URL="https://github.com/$repo.git" ;;
+    *)           fail "locks_repo '$repo' is neither a URL nor an org/repo pair" ;;
+  esac
+  LOCKS_URL_SOURCE="queue/config.yaml locks_repo"
+}
+
+load_hub_config() {
+  [ -n "$LOCKS_URL" ] && return 0
+  [ -r "$CONFIG_FILE" ] || fail "queue/config.yaml is not readable"
+
+  local p
+  resolve_locks_url
+
+  p=$(cfg claim_ref_prefix)
+  [ -n "$p" ] || fail "configuration key 'claim_ref_prefix' is missing or empty"
+  p=${p%/}
+  case $p in
+    refs/*) : ;;
+    *) p="refs/heads/$p" ;;   # accept 'claim' as well as 'refs/heads/claim'
+  esac
+  CLAIM_PREFIX=$p
+}
+
+claim_ref() { printf '%s/%s' "$CLAIM_PREFIX" "$1"; }
+
+# Every command that pushes says where it is about to push, and where that URL
+# came from, before it pushes. A redirected push target is the one failure in
+# this client that produces no error at all: the pushes succeed, at the wrong
+# remote, and the queue looks healthy. Printing the effective URL first is what
+# makes that visible in a transcript rather than only in a network trace.
+#
+# Retires when: nothing. This line costs one row of output and is the only
+# evidence in the run of where the claim actually went.
+LOCKS_URL_ANNOUNCED=0
+announce_locks_url() {
+  [ "$LOCKS_URL_ANNOUNCED" -eq 1 ] && return 0
+  LOCKS_URL_ANNOUNCED=1
+  say "locks repository: $LOCKS_URL"
+  say "                  source: $LOCKS_URL_SOURCE"
+}
+
+# ---------------------------------------------------------------------------
+# The agent token, and what makes it stable.
+#
+# The lock history is readable by anyone who can read the locks repository, so
+# an internal machine name has no business in it. The token is an opaque random
+# id, minted once and cached, so that every call in one agent session agrees
+# about who this agent is.
+#
+# The token used to be keyed on $PPID, and that was wrong in a way that broke
+# the protocol rather than merely looking untidy. A harness that spawns a fresh
+# shell for every command gives each command a different parent, so each command
+# minted a NEW identity: the agent could not recognise its own claim (`hub beat`
+# reported the item held by somebody else), the concurrency cap counted zero
+# every time, and `hub done` could not match the branch the grant covers.
+#
+# The session key ladder, in order, with what makes each one durable:
+#
+#   1. HUB_AGENT_TOKEN         the token itself, set by the caller. Stable
+#                              because the caller says so.
+#   2. HUB_SESSION_KEY         an explicit session key. Use this when a harness
+#                              knows its own session identity and none of the
+#                              variables below carry it.
+#   3. a harness session id    CLAUDE_CODE_SESSION_ID, CODEX_SESSION_ID,
+#                              AGENT_SESSION_ID. Set once when the session
+#                              starts and inherited by every command in it,
+#                              including the fresh shells a per-command harness
+#                              spawns. This is the case the PPID key got wrong.
+#   4. the controlling tty     stable across every shell in one terminal.
+#                              Absent in a background or headless run, where
+#                              ps(1) prints '??', so it is skipped there.
+#   5. this machine and cache  the last resort. Stable forever, and therefore
+#                              SHARED: two concurrent agents on one machine with
+#                              none of 1-4 set would answer to the same identity,
+#                              and the second would read the first's claim as its
+#                              own. It warns for exactly that reason. Set
+#                              HUB_SESSION_KEY when running agents in parallel.
+#
+# The key never reaches the lock history. It only names a local cache file, and
+# it is digested first so the filename does not carry a session id either.
+#
+# Retires when: a harness-independent session id exists that every runner sets,
+# at which point the ladder collapses to that one variable.
+# ---------------------------------------------------------------------------
+
+AGENT_TOKEN_SOURCE=""
+SESSION_KEY=""
+
+# Sets the SESSION_KEY and AGENT_TOKEN_SOURCE globals rather than printing,
+# deliberately: a value read through a command substitution comes back from a
+# subshell, and the assignment to AGENT_TOKEN_SOURCE would be lost there, which
+# is exactly how doctor would end up reporting an empty token source.
+session_key() {
+  local v t
+  if [ -n "${HUB_SESSION_KEY:-}" ]; then
+    AGENT_TOKEN_SOURCE="HUB_SESSION_KEY"
+    SESSION_KEY=$HUB_SESSION_KEY; return 0
+  fi
+  for v in CLAUDE_CODE_SESSION_ID CODEX_SESSION_ID AGENT_SESSION_ID; do
+    eval "t=\${$v:-}"
+    if [ -n "$t" ]; then
+      AGENT_TOKEN_SOURCE="$v"
+      SESSION_KEY=$t; return 0
+    fi
+  done
+  t=$(ps -o tty= -p $$ 2>/dev/null | tr -d ' ')
+  case ${t:-} in
+    ''|'??'|'?') : ;;
+    *) AGENT_TOKEN_SOURCE="the controlling terminal"; SESSION_KEY="tty-$t"; return 0 ;;
+  esac
+  AGENT_TOKEN_SOURCE="this machine and cache directory, shared by every agent here"
+  SESSION_KEY="machine-default"
+}
+
+# A short digest of the key, so the cache filename carries no session id.
+key_digest() {
+  local d
+  d=$(printf '%s' "$1" | { shasum -a 256 2>/dev/null || sha256sum 2>/dev/null || cksum; } | awk '{print $1}')
+  [ -n "$d" ] || return 1
+  printf '%s' "$(printf '%s' "$d" | cut -c1-16)"
+}
+
+agent_token() {
+  local key file tok dg
+  if [ -n "${HUB_AGENT_TOKEN:-}" ]; then
+    AGENT_TOKEN_SOURCE="HUB_AGENT_TOKEN"
+    tok=$HUB_AGENT_TOKEN
+  else
+    session_key
+    key=$SESSION_KEY
+    dg=$(key_digest "$key") || fail "cannot digest the session key; no shasum, sha256sum or cksum on PATH"
+    file="$CACHE_DIR/session-$dg.token"
+    if [ -f "$file" ]; then
+      tok=$(cat "$file" 2>/dev/null)
+    else
+      mkdir -p "$CACHE_DIR" 2>/dev/null || fail "cannot create the cache directory"
+      tok="a-$(LC_ALL=C od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n')"
+      [ "$tok" = "a-" ] && fail "cannot read /dev/urandom to mint an agent token"
+      printf '%s\n' "$tok" > "$file" || fail "cannot write the agent token cache"
+      case $key in
+        machine-default)
+          warn "no session identity was available, so this agent's token is keyed on the machine and the cache directory and is shared with every other agent running here. Set HUB_SESSION_KEY if more than one agent runs at a time" ;;
+      esac
+    fi
+  fi
+  case $tok in
+    *[!A-Za-z0-9_-]*)
+      fail "agent token '$tok' contains something other than letters, digits, dash and underscore; a hostname or an address must never reach the lock history" ;;
+  esac
+  case $tok in
+    ????*) : ;;
+    *) fail "agent token '$tok' is too short to identify a session" ;;
+  esac
+  printf '%s' "$tok"
+}
+
+# ---------------------------------------------------------------------------
+# Time. ISO-8601 UTC in the record, epoch seconds for comparison. GNU and BSD
+# date disagree about both directions, so detect once.
+# ---------------------------------------------------------------------------
+
+DATE_FLAVOR=unknown
+if date -u -d '@0' +%s >/dev/null 2>&1; then
+  DATE_FLAVOR=gnu
+elif date -u -r 0 +%s >/dev/null 2>&1; then
+  DATE_FLAVOR=bsd
+fi
+
+now_epoch() { date -u +%s; }
+
+iso_from_epoch() {
+  case $DATE_FLAVOR in
+    gnu) date -u -d "@$1" +%Y-%m-%dT%H:%M:%SZ ;;
+    bsd) date -u -r "$1" +%Y-%m-%dT%H:%M:%SZ ;;
+    *)   return 1 ;;
+  esac
+}
+
+epoch_from_iso() { # prints epoch seconds; returns non-zero if it cannot parse
+  case $DATE_FLAVOR in
+    gnu) date -u -d "$1" +%s 2>/dev/null ;;
+    bsd) date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s 2>/dev/null ;;
+    *)   return 1 ;;
+  esac
+}
+
+lease_hours() { # honours --batch / HUB_MODE=batch; interactive is the default
+  local mode key v
+  mode=${HUB_MODE:-interactive}
+  [ "${HUB_BATCH:-0}" = "1" ] && mode=batch
+  if [ "$mode" = "batch" ]; then key=lease_hours_batch; else key=lease_hours_interactive; fi
+  v=$(cfg_required "$key") || exit $?
+  printf '%s' "$v"
+}
+
+lease_until_now() { # -> ISO-8601 UTC lease expiry for a fresh or renewed lease
+  local hours now until
+  hours=$(lease_hours) || exit $?
+  case $hours in *[!0-9.]*|'') fail "$hours is not a number of hours" ;; esac
+  now=$(now_epoch)
+  # Integer seconds only; a fractional lease hour is not a thing this needs.
+  until=$(( now + $(printf '%.0f' "$hours") * 3600 ))
+  iso_from_epoch "$until" || fail "this system's date(1) is neither GNU nor BSD flavoured, so a lease cannot be computed"
+}
+
+# ---------------------------------------------------------------------------
+# The locks object cache, and the push classifier.
+# ---------------------------------------------------------------------------
+
+ensure_locks_cache() {
+  if [ ! -d "$LOCKS_DIR" ]; then
+    mkdir -p "$CACHE_DIR" || fail "cannot create the cache directory"
+    git init --quiet --bare "$LOCKS_DIR" >/dev/null 2>&1 \
+      || fail "cannot initialise the local locks object cache"
+  fi
+}
+
+lg() { git --git-dir="$LOCKS_DIR" "$@"; }
+
+# Git's rejection vocabulary, in one place. Only these mean the ref moved.
+# Anything else, including every authentication and transport failure, is 3.
+is_race_output() {
+  printf '%s' "$1" | grep -Eq '\[rejected\]|\[remote rejected\]' || return 1
+  printf '%s' "$1" | grep -Eq 'non-fast-forward|fetch first|stale info|cannot lock ref|failed to update ref' || return 1
+  return 0
+}
+
+HUB_GIT_OUT=""
+
+push_ref() { # sha ref -> 0 pushed, 4 lost the race, 3 anything else
+  local out rc
+  out=$(lg push "$LOCKS_URL" "$1:$2" 2>&1); rc=$?
+  HUB_GIT_OUT=$out
+  [ $rc -eq 0 ] && return 0
+  is_race_output "$out" && return "$EX_RACE"
+  return "$EX_FAIL"
+}
+
+remote_tip() { # id -> prints sha; 0 present, 2 absent, 3 call failed
+  local out rc
+  out=$(git ls-remote --exit-code "$LOCKS_URL" "$(claim_ref "$1")" 2>&1); rc=$?
+  case $rc in
+    0) HUB_GIT_OUT=""; printf '%s\n' "$out" | awk 'NR==1{print $1}'; return 0 ;;
+    2) HUB_GIT_OUT=""; return 2 ;;
+    *) HUB_GIT_OUT=$out; return 3 ;;
+  esac
+}
+
+fetch_one() { # id -> local mirror at refs/hub/claim/<id>
+  local out rc
+  out=$(lg fetch --quiet --no-tags "$LOCKS_URL" \
+        "+$(claim_ref "$1"):refs/hub/claim/$1" 2>&1); rc=$?
+  HUB_GIT_OUT=$out
+  return $rc
+}
+
+fetch_all() { # every claim ref into refs/hub/claim/*, pruned
+  local out rc
+  out=$(lg fetch --quiet --prune --no-tags "$LOCKS_URL" \
+        "+$CLAIM_PREFIX/*:refs/hub/claim/*" 2>&1); rc=$?
+  HUB_GIT_OUT=$out
+  return $rc
+}
+
+tip_field() { # id key -> value from the mirrored tip's claim.yaml
+  local blob
+  blob=$(lg show "refs/hub/claim/$1:claim.yaml" 2>/dev/null) || return 1
+  printf '%s' "$blob" | awk -v k="$2" '
+    index($0, k ":") == 1 { v = substr($0, length(k) + 2); sub(/^[ \t]+/, "", v); sub(/[ \t]+$/, "", v); print v; exit }'
+}
+
+# The attempt counter, read defensively. A tip written by a future version of
+# this client, or by hand, must not put a non-numeric value into arithmetic.
+tip_attempt() { # id -> a non-negative integer, 0 when absent or unreadable
+  local v
+  v=$(tip_field "$1" attempt 2>/dev/null) || v=""
+  case ${v:-} in
+    ''|*[!0-9]*) printf '0' ;;
+    *)           printf '%s' "$v" ;;
+  esac
+}
+
+# The claim record. Exactly one file in the tree, exactly these five keys, in
+# this order, plus branch and reason only where the action has one.
+write_claim_commit() { # id action lease_until attempt [parent_sha] [branch] [reason] -> sha
+  local id=$1 action=$2 lease=$3 attempt=$4 parent=${5:-} branch=${6:-} reason=${7:-}
+  local body blob tree sha token
+  token=$(agent_token) || exit $?
+  body="id: $id
+agent: $token
+action: $action
+lease_until: $lease
+attempt: $attempt"
+  [ -n "$branch" ] && body="$body
+branch: $branch"
+  if [ -n "$reason" ]; then
+    reason=$(printf '%s' "$reason" | tr '\n\r' '  ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    body="$body
+reason: $reason"
+  fi
+  blob=$(printf '%s\n' "$body" | lg hash-object -w --stdin) || return 1
+  tree=$(printf '100644 blob %s\tclaim.yaml\n' "$blob" | lg mktree) || return 1
+  # The identity is the token, never the machine's git configuration: the lock
+  # history must not carry a personal address any more than a hostname.
+  GIT_AUTHOR_NAME="hub-agent" GIT_AUTHOR_EMAIL="$token@agents.invalid" \
+  GIT_COMMITTER_NAME="hub-agent" GIT_COMMITTER_EMAIL="$token@agents.invalid" \
+  lg commit-tree "$tree" ${parent:+-p "$parent"} -m "$action $id by $token" || return 1
+}
+
+# ---------------------------------------------------------------------------
+# Queue items.
+# ---------------------------------------------------------------------------
+
+item_file() { printf '%s/%s.yaml' "$ITEMS_DIR" "$1"; }
+
+item_exists() { [ -f "$(item_file "$1")" ]; }
+
+item_field() { yaml_scalar "$(item_file "$1")" "$2"; }
+
+items_all() { # ids, C-sorted
+  [ -d "$ITEMS_DIR" ] || return 0
+  ls "$ITEMS_DIR" 2>/dev/null | sed -n 's/\.yaml$//p' | sort
+}
+
+# An item blocks unless it is done. An id with no file also blocks, and says
+# so: a dangling blocked_by is a queue defect, not a green light.
+blockers_of() { # id -> one unresolved blocker per line, "<id> (<why>)"
+  local b st
+  for b in $(yaml_flow_list "$(item_file "$1")" blocked_by); do
+    if ! item_exists "$b"; then
+      printf '%s (no such queue item)\n' "$b"
+      continue
+    fi
+    st=$(item_field "$b" state)
+    [ "$st" = "done" ] || printf '%s (%s)\n' "$b" "${st:-no state}"
+  done
+}
+
+member_forge_for_repo() { # repo -> forge, or empty when it is not a member
+  members_list | awk -F'\t' -v r="$1" '$1 == r { print $3; exit }'
+}
+
+member_slug_for_repo() { # repo -> org/repo, or empty when it is not a member
+  members_list | awk -F'\t' -v r="$1" '$1 == r { print $2 "/" $1; exit }'
+}
+
+# ---------------------------------------------------------------------------
+# doctor
+# ---------------------------------------------------------------------------
+
+cmd_doctor() {
+  local ok=0 v url out rc token prefix probe sha
+  say "$PROG doctor"
+  say ""
+
+  v=${BASH_VERSION:-unknown}
+  case $v in
+    [12].*|unknown) say "FAIL  bash $v; this script needs 3.2 or newer"; ok=1 ;;
+    *)              say "ok    bash $v" ;;
+  esac
+
+  if command -v git >/dev/null 2>&1; then
+    say "ok    $(git --version)"
+  else
+    say "FAIL  git is not on PATH"; ok=1
+  fi
+
+  case $DATE_FLAVOR in
+    gnu|bsd) say "ok    date(1) is $DATE_FLAVOR flavoured" ;;
+    *)       say "FAIL  date(1) is neither GNU nor BSD flavoured; leases cannot be computed"; ok=1 ;;
+  esac
+
+  if [ -r "$CONFIG_FILE" ]; then
+    say "ok    queue/config.yaml is readable"
+    # Every operating constant the client reads. queue/config.yaml is the only
+    # home for all of them, so a key missing here is a cap or a lease that
+    # nothing enforces, and this loop is where that becomes visible.
+    # Retires when: the client stops reading a key, at which point it comes out
+    # of this list in the same change.
+    for v in locks_repo claim_ref_prefix lease_hours_interactive lease_hours_batch \
+             heartbeat_minutes reclaim_grace_minutes max_concurrent_claims \
+             max_reclaims_per_item_per_day; do
+      if [ -z "$(cfg "$v")" ]; then
+        say "FAIL  config $v is missing or empty, so the rule it carries is enforced nowhere"
+        case $v in
+          max_reclaims_per_item_per_day)
+            say "      HUB.md's writes register cites this limit and hub claim enforces it on the"
+            say "      reclaim path, so a reclaim exits 3 until queue/config.yaml carries the key."
+            say "      Add: max_reclaims_per_item_per_day: 1" ;;
+        esac
+        ok=1
+        continue
+      fi
+      # The placeholder is reported here rather than left to load_hub_config,
+      # so doctor states it as a finding instead of exiting mid-check.
+      case "$v=$(cfg "$v")" in
+        locks_repo=PLACEHOLDER*)
+          if [ -n "${HUB_LOCKS_URL:-}" ]; then
+            say "ok    config locks_repo is a placeholder, overridden by HUB_LOCKS_URL for this run only because it is a placeholder"
+          else
+            say "FAIL  config locks_repo is still a placeholder; the locks repository does not exist yet, and creating it is migration step 1 and Brett's action"
+            ok=1
+          fi
+          continue ;;
+      esac
+      # A real locks_repo makes the override inert, and a set-but-ignored
+      # variable is worth one line rather than a silent surprise later.
+      case "$v" in
+        locks_repo)
+          if [ -n "${HUB_LOCKS_URL:-}" ]; then
+            say "FAIL  HUB_LOCKS_URL is set but locks_repo is the real value '$(cfg locks_repo)'; the override is honoured only while locks_repo is a placeholder, and every push command will refuse until it is unset"
+            ok=1
+            continue
+          fi ;;
+      esac
+      say "ok    config $v = $(cfg "$v")"
+    done
+    v=$(members_list | grep -c .)
+    say "ok    config members lists $v repositories"
+  else
+    say "FAIL  queue/config.yaml is not readable"; ok=1
+  fi
+
+  if [ -d "$ITEMS_DIR" ]; then
+    v=$(items_all | wc -l | tr -d ' ')
+    say "ok    queue/items holds $v item files"
+  else
+    say "FAIL  queue/items does not exist"; ok=1
+  fi
+
+  if token=$(agent_token 2>/dev/null); then
+    say "ok    agent token $token, checked for the characters a hostname or an address would need"
+    # Which rung of the ladder produced it, because that is what decides whether
+    # this agent will still be the same agent on its next command. Recomputed in
+    # this shell: the call above ran in a subshell, so its assignment to the
+    # global did not survive.
+    if [ -n "${HUB_AGENT_TOKEN:-}" ]; then
+      AGENT_TOKEN_SOURCE="HUB_AGENT_TOKEN"
+    else
+      session_key
+    fi
+    say "ok    token keyed on $AGENT_TOKEN_SOURCE"
+    case $AGENT_TOKEN_SOURCE in
+      "this machine and cache directory"*)
+        say "      that key is shared with every agent running here; set HUB_SESSION_KEY before running two at once" ;;
+    esac
+  else
+    say "FAIL  no usable agent token; see the message from the next call for the reason"; ok=1
+  fi
+
+  if [ "$ok" -ne 0 ]; then
+    say ""
+    say "Stopping before the network checks: the local ones above have to pass first."
+    return "$EX_FAIL"
+  fi
+
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+  url=$LOCKS_URL
+  prefix=$CLAIM_PREFIX
+  out=$(git ls-remote --heads "$url" 2>&1); rc=$?
+  if [ $rc -eq 0 ]; then
+    v=$(printf '%s\n' "$out" | awk -v p="$prefix/" '$2 != "" && index($2, p) == 1' | grep -c . )
+    say "ok    locks repository reachable for reading; $(printf '%s\n' "$out" | grep -c .) refs, $v under the claim prefix"
+  else
+    say "FAIL  cannot read the locks repository: $(printf '%s' "$out" | head -3 | tr '\n' ' ')"
+    ok=1
+  fi
+
+  if [ "$ok" -eq 0 ]; then
+    # A dry-run push still negotiates with git-receive-pack, which is the
+    # endpoint that requires write permission, so this detects a read-only or
+    # expired credential without creating anything.
+    probe="${prefix}/_doctor-probe-$(agent_token)"
+    if sha=$(write_claim_commit "_doctor-probe" claim "$(iso_from_epoch "$(now_epoch)")" 0 2>/dev/null); then
+      out=$(lg push --dry-run "$url" "$sha:$probe" 2>&1); rc=$?
+      if [ $rc -eq 0 ]; then
+        say "ok    the claim prefix accepts a push (dry run; nothing was created)"
+      elif is_race_output "$out"; then
+        say "ok    the claim prefix accepts a push (the probe ref was rejected as non-fast-forward, which still proves write access)"
+      else
+        say "FAIL  a dry-run push under the claim prefix was refused: $(printf '%s' "$out" | head -3 | tr '\n' ' ')"
+        ok=1
+      fi
+    else
+      say "FAIL  cannot build a probe commit in the local object cache"; ok=1
+    fi
+  fi
+
+  say ""
+  say "Not verified by this run, and stated rather than assumed:"
+  say "  - that a real ref creation under the claim prefix is permitted. Only a"
+  say "    real push exercises a ruleset or branch protection; a dry run does not."
+  say "  - that the member repositories in the configuration are reachable or"
+  say "    writable. This client never pushes to them; the agent does that itself."
+  say "  - that this machine's clock agrees with anyone else's. Every lease"
+  say "    comparison in here trusts the local clock."
+  say "  - that any lease constant is calibrated. They are guesses until twenty"
+  say "    claims have been recorded and the result written down."
+
+  # 0 or 3, never 1: the exit codes of this client are a contract, and doctor
+  # is the command most likely to be read by a script rather than a person.
+  [ "$ok" -eq 0 ] || return "$EX_FAIL"
+  return "$EX_OK"
+}
+
+# ---------------------------------------------------------------------------
+# ready
+# ---------------------------------------------------------------------------
+
+cmd_ready() {
+  local set_id="" id st cl bl held tmp out rc line
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --set)   shift; [ $# -gt 0 ] || fail "--set needs an item id"; set_id=$1 ;;
+      --set=*) set_id=${1#--set=} ;;
+      *)       fail "ready: unknown argument '$1'" ;;
+    esac
+    shift
+  done
+
+  if [ -n "$set_id" ]; then
+    item_exists "$set_id" || fail "no queue item $set_id"
+    st=$(item_field "$set_id" state)
+    say "Moving an item to ready is a commit on main, and agents are forbidden to"
+    say "push main, so this prints the edit and refuses to make it."
+    say ""
+    printf 'queue/items/%s.yaml\n' "$set_id"
+    printf -- '-state: %s\n' "$st"
+    printf -- '+state: ready\n'
+    say ""
+    say "Brett: make that one-line change on main and commit it."
+    return "$EX_OK"
+  fi
+
+  [ -d "$ITEMS_DIR" ] || fail "queue/items does not exist"
+
+  # One network read tells us which items are already held. It is a read, so a
+  # failure degrades to a printed warning rather than an error: an agent that
+  # cannot reach the locks repository still benefits from seeing the list, and
+  # its claim attempt will fail honestly a moment later.
+  held=""
+  load_hub_config
+  ensure_locks_cache
+  out=$(git ls-remote "$LOCKS_URL" "$CLAIM_PREFIX/*" 2>&1); rc=$?
+  if [ $rc -eq 0 ]; then
+    held=$(printf '%s' "$out" | awk '{print $2}' | sed 's|.*/||' | sort)
+  else
+    warn "could not read the locks repository, so held items are not filtered out: $(printf '%s' "$out" | head -2 | tr '\n' ' ')"
+  fi
+
+  for id in $(items_all); do
+    st=$(item_field "$id" state)
+    [ "$st" = "ready" ] || continue
+    cl=$(item_field "$id" claimable)
+    [ "$cl" = "true" ] || continue
+    bl=$(blockers_of "$id" | tr '\n' ' ')
+    if [ -n "$(printf '%s' "$bl" | tr -d ' ')" ]; then continue; fi
+    if [ -n "$held" ] && printf '%s\n' "$held" | grep -qx "$id"; then continue; fi
+    printf '%-8s %-4s %-5s %s\n' \
+      "$id" "$(item_field "$id" severity)" "$(item_field "$id" stream)" "$(item_field "$id" title)"
+  done
+  return "$EX_OK"
+}
+
+# ---------------------------------------------------------------------------
+# claim
+# ---------------------------------------------------------------------------
+
+# Requires a fresh fetch_all. Prints a count on stdout and returns 0, or
+# returns non-zero when the count cannot be determined.
+#
+# Every path that used to shrug and `continue` now returns non-zero instead. A
+# tip this client cannot read is a tip it cannot rule out, and a cap computed
+# from a count that skipped the refs it could not parse is not a cap, it is a
+# number that happens to be small. The caller turns a non-zero return into a 3.
+count_my_live_claims() {
+  local ref id token now n=0 lu act ag refs
+  token=$(agent_token) || return 1
+  now=$(now_epoch)
+  refs=$(lg for-each-ref --format='%(refname)' refs/hub/claim/ 2>/dev/null) || return 1
+  for ref in $refs; do
+    id=${ref##*/}
+    ag=$(tip_field "$id" agent) || return 1
+    [ "$ag" = "$token" ] || continue
+    act=$(tip_field "$id" action) || return 1
+    case $act in claim|beat|reclaim) : ;; *) continue ;; esac
+    lu=$(epoch_from_iso "$(tip_field "$id" lease_until)" 2>/dev/null) || return 1
+    [ "$lu" -gt "$now" ] && n=$((n + 1))
+  done
+  printf '%s' "$n"
+}
+
+# How many reclaim records this item's history carries since a given epoch.
+# Requires a fresh fetch_one for the id. Prints a count and returns 0, or
+# returns non-zero when the history cannot be read, which the caller turns
+# into a 3 rather than a reclaim.
+#
+# The action is read from each commit's own claim.yaml rather than from its
+# message, because the message is a convenience and the record is the record.
+reclaims_since() { # id epoch -> count
+  local id=$1 since=$2 sha ct act n=0 log
+  log=$(lg log --format='%H %ct' "refs/hub/claim/$id" 2>/dev/null) || return 1
+  while IFS=' ' read -r sha ct; do
+    [ -n "$sha" ] || continue
+    case ${ct:-} in ''|*[!0-9]*) return 1 ;; esac
+    # The log is newest first, so the first commit older than the window ends it.
+    [ "$ct" -ge "$since" ] || break
+    act=$(lg show "$sha:claim.yaml" 2>/dev/null | awk '
+      index($0, "action:") == 1 { v = substr($0, 8); sub(/^[ \t]+/, "", v); sub(/[ \t]+$/, "", v); print v; exit }')
+    [ "$act" = "reclaim" ] && n=$((n + 1))
+  done <<EOF
+$log
+EOF
+  printf '%s' "$n"
+}
+
+cmd_claim() {
+  local id=$1 token tip rc act ag lu now grace cap blk n lease sha parent attempt maxrc rcn
+  item_exists "$id" || fail "no queue item $id; the queue is queue/items"
+  [ "$(item_field "$id" claimable)" = "true" ] \
+    || fail "$id is not claimable: it needs a decision or a credential that only Brett has"
+  [ "$(item_field "$id" state)" = "ready" ] \
+    || fail "$id is in state '$(item_field "$id" state)', and only a ready item can be claimed"
+  blk=$(blockers_of "$id" | tr "\n" ";")
+  [ -z "$(printf "%s" "$blk" | tr -d ";")" ] || fail "$id is blocked by ${blk%;}"
+
+  token=$(agent_token) || exit $?
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+  now=$(now_epoch)
+
+  tip=$(remote_tip "$id"); rc=$?
+  case $rc in
+    3) warn "cannot read the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+
+  attempt=1
+  parent=""
+  if [ $rc -eq 0 ]; then
+    fetch_one "$id" || { warn "cannot fetch the claim ref: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL"; }
+    parent=$tip
+    act=$(tip_field "$id" action)
+    ag=$(tip_field "$id" agent)
+    lu=$(epoch_from_iso "$(tip_field "$id" lease_until)" 2>/dev/null || printf '0')
+
+    if [ "$act" = "handoff" ]; then
+      # Finished work waits for Brett. A handoff tip is never claimable and is
+      # never reclaimed, so the item does not look free again while he is away.
+      warn "$id was handed off by $ag and is waiting for Brett to merge; a handoff is never reclaimed"
+      return "$EX_RACE"
+    fi
+
+    if [ "$ag" = "$token" ] && [ "$act" != "release" ]; then
+      say "$id is already held by this agent until $(tip_field "$id" lease_until)"
+      return "$EX_OK"      # idempotent: claiming what you hold succeeds quietly
+    fi
+
+    if [ "$act" != "release" ] && [ "$ag" != "$token" ]; then
+      if [ "$lu" -gt "$now" ]; then
+        warn "$id is held by $ag until $(tip_field "$id" lease_until)"
+        return "$EX_RACE"
+      fi
+      grace=$(cfg_required reclaim_grace_minutes) || return $?
+      if [ "$now" -lt $(( lu + grace * 60 )) ]; then
+        warn "$id has an expired lease from $ag, but the $grace minute reclaim grace has not passed yet"
+        return "$EX_RACE"
+      fi
+      # max_reclaims_per_item_per_day, enforced here and nowhere else, because
+      # this is the only place a reclaim is written. The register in HUB.md
+      # cites this limit, and a register that promises a limit nothing applies
+      # is worse than no limit: it reads as a guarantee to everyone who is not
+      # holding the source.
+      # Retires when: reclaims stop being written by this client.
+      maxrc=$(cfg_required max_reclaims_per_item_per_day) || return $?
+      case $maxrc in ''|*[!0-9]*) warn "max_reclaims_per_item_per_day is '$maxrc', which is not a whole number"; return "$EX_FAIL" ;; esac
+      rcn=$(reclaims_since "$id" $(( now - 86400 ))) || {
+        warn "cannot read the claim history of $id, so max_reclaims_per_item_per_day could not be verified; an unverifiable precondition is a failure and not a silent allowance"
+        return "$EX_FAIL"
+      }
+      if [ "$rcn" -ge "$maxrc" ]; then
+        warn "$id has been reclaimed $rcn times in the last 24 hours and max_reclaims_per_item_per_day is $maxrc. An item that keeps being reclaimed is an item that keeps defeating agents; report it rather than taking it again"
+        return "$EX_FAIL"
+      fi
+      attempt=$(( $(tip_attempt "$id") + 1 ))
+      act=reclaim
+    else
+      act=claim
+    fi
+  else
+    act=claim   # ref absent: the first claim, and it must be an orphan
+  fi
+
+  # The concurrency cap. Every branch below is a 3, including the two that used
+  # to be an allowance: a cap that is not configured and a count that cannot be
+  # determined are both unverified preconditions, and an unverified precondition
+  # is a failure. The value lives in queue/config.yaml and nowhere else.
+  # Retires when: the cap is deleted from the configuration deliberately, which
+  # is a different act from it being absent by accident and is what this branch
+  # cannot tell apart.
+  cap=$(cfg max_concurrent_claims)
+  case ${cap:-} in
+    '')
+      warn "max_concurrent_claims is missing or empty in queue/config.yaml, so the cap cannot be checked. An unverifiable precondition is a failure and not a silent allowance, so this claim stops here"
+      return "$EX_FAIL" ;;
+    *[!0-9]*)
+      warn "max_concurrent_claims is '$cap', which is not a whole number"
+      return "$EX_FAIL" ;;
+  esac
+  fetch_all || {
+    warn "cannot verify max_concurrent_claims against the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"
+    return "$EX_FAIL"
+  }
+  n=$(count_my_live_claims) || {
+    warn "cannot determine how many claims this agent already holds, so max_concurrent_claims could not be checked; a tip this client cannot read is a tip it cannot rule out"
+    return "$EX_FAIL"
+  }
+  case ${n:-} in ''|*[!0-9]*) warn "the live-claim count came back as '$n', which is not a whole number"; return "$EX_FAIL" ;; esac
+  if [ "$n" -ge "$cap" ]; then
+    warn "this agent already holds $n live claims and max_concurrent_claims is $cap"
+    return "$EX_FAIL"
+  fi
+
+  lease=$(lease_until_now) || return $?
+  sha=$(write_claim_commit "$id" "$act" "$lease" "$attempt" "$parent") \
+    || { warn "cannot build the claim commit"; return "$EX_FAIL"; }
+
+  push_ref "$sha" "$(claim_ref "$id")"; rc=$?
+  case $rc in
+    0)
+      say "claimed $id as $token until $lease (${act})"
+      say "work branch: agent/$id/$token"
+      return "$EX_OK" ;;
+    "$EX_RACE")
+      warn "$id was taken by someone else between the read and the push"
+      return "$EX_RACE" ;;
+    *)
+      warn "the claim push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"
+      return "$EX_FAIL" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# beat
+# ---------------------------------------------------------------------------
+
+cmd_beat() {
+  local id=$1 token tip rc act ag lease sha attempt hb
+  token=$(agent_token) || exit $?
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+
+  tip=$(remote_tip "$id"); rc=$?
+  case $rc in
+    2) warn "no claim ref for $id, so there is nothing to beat"; return "$EX_FAIL" ;;
+    3) warn "cannot read the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+  fetch_one "$id" || { warn "cannot fetch the claim ref: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL"; }
+
+  act=$(tip_field "$id" action)
+  ag=$(tip_field "$id" agent)
+  if [ "$ag" != "$token" ]; then
+    warn "$id is held by $ag, not by this agent; stop working on it"
+    return "$EX_RACE"
+  fi
+  case $act in
+    claim|beat|reclaim) : ;;
+    *) warn "the tip of $id is a $act by this agent, so there is no lease to extend"; return "$EX_FAIL" ;;
+  esac
+
+  attempt=$(( $(tip_attempt "$id") + 1 ))
+  lease=$(lease_until_now) || return $?
+  sha=$(write_claim_commit "$id" beat "$lease" "$attempt" "$tip") \
+    || { warn "cannot build the heartbeat commit"; return "$EX_FAIL"; }
+
+  push_ref "$sha" "$(claim_ref "$id")"; rc=$?
+  case $rc in
+    0)
+      hb=$(cfg heartbeat_minutes)
+      say "beat $id; lease now runs to $lease${hb:+ (next beat due within $hb minutes)}"
+      return "$EX_OK" ;;
+    "$EX_RACE")
+      warn "$id moved since it was read; another agent appended to the ref. Stop working on it"
+      return "$EX_RACE" ;;
+    *)
+      warn "the heartbeat push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"
+      return "$EX_FAIL" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# release
+# ---------------------------------------------------------------------------
+
+cmd_release() {
+  local id=$1; shift
+  local reason token tip rc act ag sha attempt
+  # Everything after the id is the reason, so it needs no quoting at the prompt.
+  reason=$*
+  [ -n "$reason" ] || reason="released by the agent"
+  token=$(agent_token) || exit $?
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+
+  tip=$(remote_tip "$id"); rc=$?
+  case $rc in
+    2) say "$id has no claim ref, so there was nothing to release"; return "$EX_OK" ;;
+    3) warn "cannot read the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+  fetch_one "$id" || { warn "cannot fetch the claim ref: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL"; }
+
+  act=$(tip_field "$id" action)
+  ag=$(tip_field "$id" agent)
+
+  # Releasing what you do not hold is not an error. Saying nothing about it
+  # would be, because an agent that thinks it holds an item is wrong.
+  if [ "$ag" != "$token" ]; then
+    say "$id is held by $ag, not by this agent; nothing released"
+    return "$EX_OK"
+  fi
+  if [ "$act" = "release" ]; then
+    say "$id was already released"
+    return "$EX_OK"
+  fi
+  if [ "$act" = "handoff" ]; then
+    say "$id was handed off and is waiting for Brett; a handoff is not released by an agent"
+    return "$EX_OK"
+  fi
+
+  attempt=$(tip_attempt "$id")
+  sha=$(write_claim_commit "$id" release "$(tip_field "$id" lease_until)" "$attempt" "$tip" "" "$reason") \
+    || { warn "cannot build the release commit"; return "$EX_FAIL"; }
+
+  push_ref "$sha" "$(claim_ref "$id")"; rc=$?
+  case $rc in
+    0)          say "released $id ($reason)"; return "$EX_OK" ;;
+    "$EX_RACE") warn "$id moved since it was read; the release was not recorded"; return "$EX_RACE" ;;
+    *)          warn "the release push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+}
+
+# ---------------------------------------------------------------------------
+# done
+# ---------------------------------------------------------------------------
+
+cmd_done() {
+  local id=$1; shift
+  local branch="" token tip rc act ag sha attempt slug forge itemrepo
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --branch)   shift; [ $# -gt 0 ] || fail "--branch needs a branch name"; branch=$1 ;;
+      --branch=*) branch=${1#--branch=} ;;
+      *)          fail "done: unknown argument '$1'" ;;
+    esac
+    shift
+  done
+  [ -n "$branch" ] || fail "done needs --branch, naming the branch you pushed"
+
+  token=$(agent_token) || exit $?
+
+  # The grant covers exactly one branch shape, so this client accepts exactly
+  # one branch name. It used to accept any string, which meant it would record
+  # and print a compare URL for a branch the register does not permit: a client
+  # that will hand off a push nobody authorized is a client that breaks the
+  # carve-out by accident, and the accident is invisible because the push
+  # succeeded.
+  #
+  # If the name looks right but the token does not, the claim is held by a
+  # different session and the holder check below would have said so anyway.
+  # Retires when: the authorization paragraph stops naming a branch pattern.
+  if [ "$branch" != "agent/$id/$token" ]; then
+    fail "done: --branch '$branch' is not a branch this grant covers. The standing authorization in HUB.md permits pushes to 'agent/<queue-id>/<token>' and to nothing else, so for $id held by this session that is exactly 'agent/$id/$token'"
+  fi
+
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+
+  tip=$(remote_tip "$id"); rc=$?
+  case $rc in
+    2) warn "no claim ref for $id, so there is no claim to hand off"; return "$EX_FAIL" ;;
+    3) warn "cannot read the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+  fetch_one "$id" || { warn "cannot fetch the claim ref: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL"; }
+
+  act=$(tip_field "$id" action)
+  ag=$(tip_field "$id" agent)
+  if [ "$ag" != "$token" ]; then
+    warn "$id is held by $ag, not by this agent"
+    return "$EX_RACE"
+  fi
+  if [ "$act" = "handoff" ]; then
+    say "$id was already handed off on branch $(tip_field "$id" branch)"
+    return "$EX_OK"
+  fi
+
+  attempt=$(tip_attempt "$id")
+  # A handoff keeps the claim. The item stays unclaimable until Brett merges,
+  # so finished work never looks free again while he is away.
+  sha=$(write_claim_commit "$id" handoff "$(tip_field "$id" lease_until)" "$attempt" "$tip" "$branch") \
+    || { warn "cannot build the handoff commit"; return "$EX_FAIL"; }
+
+  push_ref "$sha" "$(claim_ref "$id")"; rc=$?
+  case $rc in
+    0) : ;;
+    "$EX_RACE") warn "$id moved since it was read; the handoff was not recorded"; return "$EX_RACE" ;;
+    *) warn "the handoff push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"; return "$EX_FAIL" ;;
+  esac
+
+  say "handed off $id on branch $branch; the claim stays held until Brett merges"
+  itemrepo=$(item_field "$id" repo)
+  slug=$(member_slug_for_repo "$itemrepo")
+  forge=$(member_forge_for_repo "$itemrepo")
+  if [ -z "$slug" ]; then
+    warn "item repo '$itemrepo' is not in the configured members list, so no compare URL was printed"
+  elif [ "$forge" = "github" ]; then
+    say ""
+    say "Brett opens the pull request. The compare page is:"
+    say "  https://github.com/$slug/compare/$branch?expand=1"
+  else
+    # An agent never opens the pull request, and on a forge the standing
+    # authorization does not cover it never pushed the branch either.
+    say ""
+    say "$itemrepo is a $forge member. The standing authorization covers GitHub"
+    say "members and the locks repository only, so no compare URL is printed and"
+    say "every write there stays Brett's."
+  fi
+  return "$EX_OK"
+}
+
+# ---------------------------------------------------------------------------
+# reconcile
+# ---------------------------------------------------------------------------
+
+cmd_reconcile() {
+  local ref id act ag lu now grace sha rc problems=0 expired=0 skipped=0
+  load_hub_config
+  announce_locks_url
+  ensure_locks_cache
+  fetch_all || { warn "cannot read the locks repository: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"; return "$EX_FAIL"; }
+  grace=$(cfg_required reclaim_grace_minutes) || return $?
+  now=$(now_epoch)
+
+  for ref in $(lg for-each-ref --format='%(refname)' refs/hub/claim/ 2>/dev/null); do
+    id=${ref##*/}
+    act=$(tip_field "$id" action)
+    ag=$(tip_field "$id" agent)
+    case $act in
+      handoff)
+        # Never touched. Finished work waits for Brett, and a reconcile that
+        # freed it would put an agent back onto work that is already done.
+        say "skip    $id: handed off by $ag, waiting for Brett"
+        skipped=$((skipped + 1)); continue ;;
+      release)
+        skipped=$((skipped + 1)); continue ;;
+      claim|beat|reclaim) : ;;
+      *)
+        say "problem $id: tip action is '${act:-absent}', which this client did not write"
+        problems=$((problems + 1)); continue ;;
+    esac
+
+    if ! lu=$(epoch_from_iso "$(tip_field "$id" lease_until)" 2>/dev/null); then
+      say "problem $id: lease_until '$(tip_field "$id" lease_until)' cannot be parsed; left alone"
+      problems=$((problems + 1)); continue
+    fi
+    if [ "$now" -lt $(( lu + grace * 60 )) ]; then
+      continue
+    fi
+
+    sha=$(write_claim_commit "$id" release "$(tip_field "$id" lease_until)" \
+          "$(tip_attempt "$id")" "$(lg rev-parse "$ref")" "" \
+          "lease expired at $(tip_field "$id" lease_until), reconciled after the $grace minute grace") \
+      || { say "problem $id: cannot build the expiry commit"; problems=$((problems + 1)); continue; }
+
+    push_ref "$sha" "$(claim_ref "$id")"; rc=$?
+    case $rc in
+      0) say "expired $id: lease from $ag ran out at $(tip_field "$id" lease_until); the item is claimable again"
+         expired=$((expired + 1)) ;;
+      "$EX_RACE")
+         # Benign: the holder beat, released, or another reconcile got there
+         # first. Reconcile is not competing for the item.
+         say "moved   $id: the ref changed while reconciling; left as it now stands" ;;
+      *) say "problem $id: the expiry push failed: $(printf '%s' "$HUB_GIT_OUT" | head -2 | tr '\n' ' ')"
+         problems=$((problems + 1)) ;;
+    esac
+  done
+
+  say ""
+  say "reconciled: expired $expired, left alone $skipped, problems $problems"
+  say "Note that this never edits a queue item file. Item state is set by a"
+  say "commit on main, which agents may not push; expiring the lock is what"
+  say "makes a ready item claimable again."
+  [ "$problems" -eq 0 ] || return "$EX_FAIL"
+  return "$EX_OK"
+}
+
+# ---------------------------------------------------------------------------
+# help
+# ---------------------------------------------------------------------------
+
+cmd_help() {
+  cat >&2 <<'USAGE'
+hub - the queue client for the salmon ecosystem hub
+
+  hub doctor                     check this machine, the configuration, and
+                                 whether the claim prefix accepts a push
+  hub ready                      list claimable items
+  hub ready --set ID             print the one-line edit that moves ID to
+                                 ready, and refuse to make it
+  hub claim ID                   take the item, by pushing to its claim ref
+  hub beat ID                    extend the lease you hold
+  hub release ID [reason]        give the item back
+  hub done ID --branch B         hand off: record the branch, keep the claim,
+                                 print the compare URL for Brett. B must be
+                                 exactly agent/ID/<your token>, because that is
+                                 the only branch the standing authorization
+                                 covers; anything else exits 3
+  hub reconcile                  expire dead leases back to claimable
+  hub help                       this
+
+Options and environment:
+  --batch, HUB_MODE=batch        use lease_hours_batch instead of the
+                                 interactive lease
+  HUB_AGENT_TOKEN                override the per-session agent token; it must
+                                 be opaque, because the lock history is public
+                                 to everyone who can read the locks repository
+  HUB_SESSION_KEY                name this agent session explicitly. Set it when
+                                 more than one agent runs on one machine and no
+                                 harness session id is in the environment
+  HUB_LOCKS_URL                  point at a throwaway locks repository, for the
+                                 two-terminal race test. Honoured ONLY while
+                                 locks_repo is still the placeholder: once the
+                                 real repository is configured, setting this is
+                                 an error rather than a redirect
+  HUB_CACHE_DIR                  where the local locks object cache lives
+
+Every command that pushes prints the effective locks repository URL and where
+that URL came from, before it pushes. A push sent to the wrong remote is the
+one failure here that produces no error at all, so that line is the evidence.
+
+Exit codes:
+  0  success
+  4  lost the race, or the item is held by someone else
+  3  anything else, including no network, no credential, a missing repository,
+     an ineligible item, or a precondition that could not be verified
+
+  4 and 3 are different on purpose. An agent that reads an expired credential
+  as "someone else got there first" walks the whole queue reporting nothing
+  wrong, which is the failure this distinction exists to prevent.
+
+State lives in queue/. Policy lives in HUB.md. This client makes no
+GitHub API call, opens no pull request, posts no comment, and pushes nothing to
+main.
+USAGE
+  return "$EX_OK"
+}
+
+# ---------------------------------------------------------------------------
+# Dispatch
+# ---------------------------------------------------------------------------
+
+main() {
+  local cmd a n i
+  [ $# -gt 0 ] || { cmd_help; return "$EX_FAIL"; }
+
+  # A global --batch may appear anywhere, so strip it before the subcommand
+  # sees the arguments. Rotating the positional parameters rather than building
+  # a string keeps an argument with spaces, such as a release reason, intact.
+  n=$#
+  i=0
+  while [ "$i" -lt "$n" ]; do
+    a=$1; shift
+    if [ "$a" = "--batch" ]; then
+      HUB_BATCH=1
+    else
+      set -- "$@" "$a"
+    fi
+    i=$((i + 1))
+  done
+  : "${HUB_BATCH:=0}"
+  export HUB_BATCH
+
+  [ $# -gt 0 ] || { cmd_help; return "$EX_FAIL"; }
+  cmd=$1; shift
+
+  case $cmd in
+    doctor)    cmd_doctor "$@" ;;
+    ready)     cmd_ready "$@" ;;
+    claim)     [ $# -ge 1 ] || fail "claim needs an item id"; cmd_claim "$1" ;;
+    beat)      [ $# -ge 1 ] || fail "beat needs an item id"; cmd_beat "$1" ;;
+    release)   [ $# -ge 1 ] || fail "release needs an item id"; cmd_release "$@" ;;
+    done)      [ $# -ge 1 ] || fail "done needs an item id"; cmd_done "$@" ;;
+    reconcile) cmd_reconcile "$@" ;;
+    help|-h|--help) cmd_help ;;
+    *)         warn "unknown subcommand '$cmd'"; cmd_help; return "$EX_FAIL" ;;
+  esac
+}
+
+# Sourcing this file with HUB_LIB=1 loads the helpers without running a
+# subcommand, which is how the pure functions are exercised in a test without
+# touching a git object store or a remote.
+if [ "${HUB_LIB:-0}" != "1" ]; then
+  main "$@"
+fi

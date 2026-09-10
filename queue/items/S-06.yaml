@@ -1,0 +1,12 @@
+id: S-06
+kind: stream
+title: Ecosystem hardening and governed mapping products
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: either
+stream: S6
+blocked_by: []
+legacy: 'S6'
+evidence: sequences/s6-ecosystem.md
+retires_when: The gcdfo quality gates stop being placebos, vocabulary releases are pinned and resolvable, the three empty policy schemes are populated, and each member repo carries a machine-readable licence, a real CITATION.cff and one accurate entrypoints file.

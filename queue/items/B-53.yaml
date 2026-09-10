@@ -1,0 +1,13 @@
+id: B-53
+kind: defect
+title: infer_column_role() classifies 4-digit measurement columns as temporal
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: '#53'
+evidence: sequences/s2-correctness-debt.md
+retires_when: A year-shaped measurement column reaches the semantic pipeline with a measurement role rather than `temporal`, a test pins that case against `.ms_values_look_yearish()`, and metasalmonpy carries the same behaviour.

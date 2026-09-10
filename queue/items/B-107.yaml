@@ -1,0 +1,12 @@
+id: B-107
+kind: defect
+title: Declare or replace the undefined sosa:Property superclass in smn
+state: icebox
+claimable: true
+repo: salmon-domain-ontology
+venue: either
+severity: P4
+blocked_by: []
+legacy: '#107'
+evidence: knowledge/backlog.md
+retires_when: 'Every superclass IRI asserted in ontology/modules/ is either declared in the module or present in a vendored import, checked in that repository''s build rather than by inspection.'

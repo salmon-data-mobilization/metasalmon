@@ -1,0 +1,12 @@
+id: S-12
+kind: stream
+title: Fraser coho gold-standard example, the 173-row NuSEDS package
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S12
+blocked_by: [S-03, B-90, B-95]
+legacy: 'S12'
+evidence: sequences/s12-fraser-coho-gold-standard.md
+retires_when: The 173-row example is clean through both validators and then deposited under S-03 exit criteria, with the stage it reached stated rather than reported as simply finished.

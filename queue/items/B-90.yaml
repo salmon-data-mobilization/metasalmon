@@ -1,0 +1,12 @@
+id: B-90
+kind: defect
+title: Permit the I-ADOPT descriptor keys in smn-data-pkg's publication validator
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#90'
+evidence: knowledge/backlog.md
+retires_when: 'An SDP with a fully annotated measurement column passes scripts/validate_package.py under the 2026-08-24 permit-the-keys ruling, with SPECIFICATION.md saying descriptor schema.fields entries may carry the I-ADOPT keys and descriptor_field_from_column() deriving the allowlist from column_dictionary.schema.json rather than from a hand-written list.'

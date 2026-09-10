@@ -64,3 +64,7 @@ tmp/
 
 # Local scratch notes, never committed
 *.local.md
+
+# Python bytecode from the hub queue tooling
+__pycache__/
+*.pyc

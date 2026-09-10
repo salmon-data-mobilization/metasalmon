@@ -1,0 +1,12 @@
+id: B-89
+kind: defect
+title: Bind smn source prefixes so the flat-TTL generator is deterministic
+state: done
+claimable: false
+repo: salmon-domain-ontology
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#89'
+evidence: knowledge/backlog.md
+retires_when: 'Already met. Fixed 2026-08-21 in smn PR #29, measured 8 runs to 1 hash and byte-equal to the committed artifacts, so nothing is left to do here; the broader condition the original entry also named, smn carrying a determinism rule of its own or the hub adopting one across the ontology repos, is not met and is not tracked by this item.'

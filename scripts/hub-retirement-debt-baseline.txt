@@ -1,0 +1,31 @@
+0
+# The retirement-debt baseline for `scripts/hub_queue.py lint`.
+#
+# The number on the first line is how many `kind: defect` items in
+# `queue/items/` are allowed to carry no `retires_when`. Lint fails when the
+# real count rises above it. The first line that is neither blank nor a comment
+# is the number, so tightening the ratchet is a one-line commit.
+#
+# WHY IT IS A SEPARATE FILE. It used to be a constant inside the checker, set to
+# 85 because the backlog being migrated carried 34 retirement conditions across
+# 119 items on 2026-09-05. Measured on 2026-09-09, the real count in the queue
+# was 0 across 62 items, so the ratchet had 85 slack: 85 new defects could have
+# arrived with no `retires_when` and lint would still have printed OK. A number
+# compiled into a checker is a number nobody lowers, so it lives here instead.
+#
+# WHY 0. It is the measured count on 2026-09-09, and a baseline set anywhere
+# above the measured count is slack by exactly that difference. At 0 the ratchet
+# behaves the way a hard requirement behaves: the next defect that arrives with
+# no `retires_when` fails lint and names the file.
+#
+# RAISING IT IS A DELIBERATE ACT. If a migration needs to import defects that do
+# not yet have retirement conditions, write the new number here in its own
+# commit and say in the message what is being imported and when the number comes
+# back down. Raising it silently as part of a larger change is how the 85 got
+# there.
+#
+# RETIRES WHEN: the count has been 0 long enough that the migration is plainly
+# finished, at which point `retires_when` moves into `REQUIRED_KEYS` for
+# `kind: defect` in `scripts/hub_queue.py` and this file, the
+# `--retirement-debt-baseline` flag and the `retirement-debt` block are deleted
+# together. Until then this file is the one place the number lives.

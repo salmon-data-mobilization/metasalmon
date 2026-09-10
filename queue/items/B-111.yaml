@@ -1,0 +1,12 @@
+id: B-111
+kind: defect
+title: Make create_sdp()'s three create-owned sidecar writes atomic
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#111'
+evidence: knowledge/backlog.md
+retires_when: '.ms_replace_create_output() has no callers and a test injects an abort into each of the three rewrites and finds the prior file intact.'

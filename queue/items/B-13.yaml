@@ -1,0 +1,12 @@
+id: B-13
+kind: defect
+title: retry_search can re-issue the original failing query
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: '#13'
+evidence: backlog.md
+retires_when: The duplicate-query handling written on `feature/theme-a-semantic-review` is merged to `main`, or that branch is abandoned and the rejection recording is rewritten against `main`, with a test asserting no extra round-trip for an exact duplicate `retry_query`.

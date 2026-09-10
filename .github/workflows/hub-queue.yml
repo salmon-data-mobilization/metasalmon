@@ -1,0 +1,184 @@
+name: hub-queue
+
+# Why this workflow exists.
+#
+# The hub queue moves planning state out of prose and into one YAML file per
+# work item under `queue/items/`. Two failure modes come with that,
+# and neither is visible to a reader:
+#
+#   1. A queue file that does not parse, or that omits a required field, is
+#      still a plausible-looking file. `hub_queue.py lint` is what turns a
+#      malformed item into a failed check rather than a claim that silently
+#      cannot be made.
+#   2. A prose passage that restates a queue fact drifts the moment the queue
+#      changes, and nothing about the stale sentence says it is stale. That is
+#      the measured problem the design was written for: on 2026-09-05 the
+#      bundle carried five stale copies of metasalmon's current version across
+#      ten files. `hub_queue.py check` re-renders every generated block from
+#      the queue and fails when the committed text differs, so drift fails the
+#      build instead of waiting for someone to notice.
+#
+# The unit tests under `scripts/tests/` cover the client itself, because a
+# freshness guard whose renderer is wrong reports agreement between two wrong
+# things.
+#
+# RETIREMENT CONDITION: delete this workflow when the queue stops being a set
+# of hand-edited files -- if item state is ever generated from a single
+# upstream source, or if generated prose blocks are removed from the bundle
+# entirely, there is nothing here left to disagree.
+
+on:
+  pull_request:
+    paths:
+      - "HUB.md"
+      - "queue/**"
+      - "scripts/hub*"
+      - "scripts/tests/**"
+      - ".github/workflows/hub-queue.yml"
+      # The generated blocks live in the bundle, so a change there can make a
+      # block stale without touching a single path above. Omitting this meant
+      # the freshness check did not run on the one file it guards, which is a
+      # guard that is green because it never executed.
+      # Retires when: no generated block targets a file under knowledge/.
+      - "knowledge/**"
+  push:
+    branches:
+      - main
+    paths:
+      - "HUB.md"
+      - "queue/**"
+      - "scripts/hub*"
+      - "scripts/tests/**"
+      - ".github/workflows/hub-queue.yml"
+      # The generated blocks live in the bundle, so a change there can make a
+      # block stale without touching a single path above. Omitting this meant
+      # the freshness check did not run on the one file it guards, which is a
+      # guard that is green because it never executed.
+      # Retires when: no generated block targets a file under knowledge/.
+      - "knowledge/**"
+
+# This workflow must never gain a write permission of any kind.
+#
+# The whole coordination design rests on there being no automated GitHub write
+# anywhere in the system: a claim is a plain `git push` of an orphan commit to
+# a ref in the `hub-locks` repository, made by an agent under its own identity,
+# and every issue, pull request, comment, label and release stays a human
+# action. A workflow holding `contents: write`, `pull-requests: write` or
+# `issues: write` would be an automated write path that no local guard can see,
+# which is the exact hole the git-only design closes by construction (plan
+# section 9.4). It would also put a write-capable token in a job that reads
+# pull-request branch content.
+#
+# So: `contents: read` and nothing else. If a future job here needs to write
+# something, that is a design change to be argued in the plan first, not a line
+# added to this block.
+#
+# RETIREMENT CONDITION: this restriction stops applying only when claims stop
+# living on git refs -- at which point the authorization paragraph in HUB.md is
+# deleted rather than widened, and this workflow is revisited with it.
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-queue-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  queue-is-valid:
+    runs-on: ubuntu-latest
+    # What this job costs. The repository is public, so GitHub-hosted standard
+    # runners are not billed minutes -- but minutes are finite on a free plan
+    # for anyone who forks this into a private repository, and the shared
+    # concurrency limit and the wall-clock wait on every pull request are real
+    # costs here regardless of billing. The job is sized to stay small: a
+    # shallow checkout, a Python setup, and three steps of pure standard-library
+    # Python. No R, no package compilation, no sibling checkout. Expect well
+    # under two minutes, dominated by runner startup rather than by the checks.
+    # The timeout is a bound, not an estimate; if a run approaches it, something
+    # is wrong with the client rather than with the queue.
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # A cheap sanity step, kept because the path filters above are the only
+      # thing that routes queue commits here: if the client or the queue is
+      # missing, the checks below would otherwise fail with a bare traceback
+      # that reads like a bug in the queue rather than a missing file.
+      # `queue/config.yaml` is tested for here and not only inside the client
+      # because two checks in `hub_queue.py` turn themselves off when the
+      # configuration is absent -- the members cross-check and the
+      # configured-block presence check, both of which the unit-test fixtures
+      # need to be able to run without one. A configuration that vanished would
+      # therefore make those two checks pass quietly. This line is what stops
+      # that, so do not remove it without moving the assertion somewhere else.
+      #
+      # RETIREMENT CONDITION: drop this step's config assertion if
+      # `hub_queue.py` ever treats a missing configuration as an error in its
+      # own right, at which point the client says it better than this does.
+      - name: The client and the queue are present
+        run: |
+          set -euo pipefail
+          test -f scripts/hub_queue.py
+          test -f scripts/hub
+          test -f scripts/hub-retirement-debt-baseline.txt
+          test -d queue/items
+          test -f queue/config.yaml
+          test -f HUB.md
+          echo "queue items: $(find queue/items \( -name '*.yml' -o -name '*.yaml' \) | wc -l | tr -d ' ')"
+
+      - name: Queue items are well formed
+        run: python3 scripts/hub_queue.py lint
+
+      - name: Generated prose blocks match the queue
+        run: python3 scripts/hub_queue.py check
+
+      # pytest, rather than `python -m unittest discover`, because it runs both
+      # plain-function tests and `unittest.TestCase` subclasses, so the test
+      # author is not constrained by this line. It exits non-zero when it
+      # collects nothing, which is what keeps an empty `scripts/tests/` from
+      # passing this job vacuously -- do not add `--exitfirst`-style flags or an
+      # `|| true` that would restore that silence.
+      #
+      # RETIREMENT CONDITION: drop this install step if the repository ever
+      # grows a Python dependency manifest and a shared install step, so that
+      # pytest arrives with everything else instead of being fetched here.
+      - name: Install pytest
+        run: python3 -m pip install --disable-pip-version-check --quiet pytest
+
+      - name: Client unit tests
+        run: python3 -m pytest scripts/tests -q
+
+      # The race test is a bash script, and pytest collects `test_*.py` only, so
+      # the step above never ran it. That is worth stating plainly: from the day
+      # this workflow was written until 2026-09-09, the evidence the whole claim
+      # design rests on -- that an orphan commit cannot fast-forward an existing
+      # ref, so exactly one of two simultaneous claims wins -- was executed
+      # nowhere, while the job that was supposed to run it reported success.
+      # A test that no job runs is a test nobody has, and the green tick made it
+      # invisible. It runs here, by name, with bash.
+      #
+      # `HUB_TEST_REQUIRE_CLIENT=1` is the setting the script's own header names
+      # for continuous integration. Five of its sixteen assertions exercise
+      # `scripts/hub` rather than plain git, and they report SKIP when the client
+      # is absent. The client is committed, so a skip here is a real failure
+      # being reported as tolerance, and this variable turns it back into one.
+      #
+      # The script runs entirely offline: it builds a bare repository in a
+      # temporary directory as a stand-in for the locks repository, clones it
+      # twice and races them. No network, no GitHub API, no token, and its last
+      # assertion checks that the repository it lives in has the same HEAD,
+      # working tree and refs as before the run.
+      #
+      # RETIREMENT CONDITION: delete this step when claims stop living on git
+      # refs, which is the same condition that retires the claim design itself.
+      # Do not delete it because it is slow or because it skips: a skip is the
+      # signal it exists to raise.
+      - name: The claim race test
+        env:
+          HUB_TEST_REQUIRE_CLIENT: "1"
+        run: bash scripts/tests/test_hub_claim.sh

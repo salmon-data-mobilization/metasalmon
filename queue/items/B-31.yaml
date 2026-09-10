@@ -1,0 +1,13 @@
+id: B-31
+kind: defect
+title: Chat session-engine and request-builder convergence
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S7
+severity: P3
+blocked_by: []
+legacy: '#31'
+evidence: backlog.md
+retires_when: The decomposition path in `R/chat-decomposition.R` and the semantic path share one request builder and one session engine, or the roadmap logs a ruling that decomposition stays a separate engine and says what that costs.

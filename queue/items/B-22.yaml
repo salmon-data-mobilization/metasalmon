@@ -1,0 +1,13 @@
+id: B-22
+kind: defect
+title: Merge helper drops a .ms_bundle_key it never created
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S7
+severity: P4
+blocked_by: []
+legacy: '#22'
+evidence: backlog.md
+retires_when: The merge helper `.ms_semantic_merge_llm_assessments()` stops dropping a column it never creates, or a comment on the drop records it as deliberate and names what would make it load-bearing.

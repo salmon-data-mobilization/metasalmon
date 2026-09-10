@@ -1,0 +1,13 @@
+id: B-112
+kind: defect
+title: Make migrate_sdp_methods() return one report shape from both branches
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: []
+legacy: '#112'
+evidence: knowledge/backlog.md
+retires_when: 'The no-op branch returns the same three-column empty frame as the populated paths, or a logged ruling says the shapes deliberately differ, metasalmonpy mirrors the same shape in the same stream, and a test on each side pins the column set of both branches. Not claimable: the backlog records that this was deliberately left unfixed here, because under the amended mirror contract which side is right is Brett''s ruling and not an implementer''s call, and Python was already changed to mirror R once on that basis.'

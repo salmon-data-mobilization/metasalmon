@@ -1,0 +1,13 @@
+id: B-95
+kind: defect
+title: Stop create_sdp() emitting codes.csv rows for columns it typed attribute
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S12
+severity: P2
+blocked_by: []
+legacy: '#95'
+evidence: knowledge/backlog.md
+retires_when: 'create_sdp() on both bundled examples produces no targets a non-categorical or unknown column error, corrected in infer_column_role() rather than in the code-row seeder per the 2026-09-05 ruling on Q29, and pinned with a fixture on both sides.'

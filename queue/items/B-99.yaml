@@ -1,0 +1,12 @@
+id: B-99
+kind: defect
+title: Replace the two 404 example IRIs still shipped by metasalmonpy and smn-data-pkg
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: either
+severity: P2
+blocked_by: []
+legacy: '#99'
+evidence: knowledge/backlog.md
+retires_when: 'Every IRI in the three shipped example dictionaries resolves and a network-gated test asserts it. metasalmon''s own dictionary was fixed 2026-08-21, so what is left is metasalmonpy data/column_dictionary.csv and smn-data-pkg examples/minimal-example/metadata/column_dictionary.csv.'

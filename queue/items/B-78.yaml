@@ -1,0 +1,13 @@
+id: B-78
+kind: defect
+title: iop-triple emission from SDPs, explainer before decision
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-science
+stream: S9
+severity: P4
+blocked_by: []
+legacy: '#78'
+evidence: knowledge/backlog.md
+retires_when: The explainer lands covering when iop triples are useful and to whom, the pattern for emitting them from an SDP including where they live, what generates them and how they version, and whether triple emission is a general SDP capability, and Brett records a decision on the recommendation it carries. Deferred by Brett on 2026-08-13, so nothing is scheduled before he reviews it.

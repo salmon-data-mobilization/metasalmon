@@ -1,0 +1,12 @@
+id: B-108
+kind: defect
+title: Correct smn:observedTaxonSpecies so a coho observation does not entail chum
+state: icebox
+claimable: true
+repo: salmon-domain-ontology
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: '#108'
+evidence: knowledge/backlog.md
+retires_when: 'The range is obo:NCBITaxon_8015 or the property is dropped, and a competency query in that repository asserts that a coho observation does not entail chum.'

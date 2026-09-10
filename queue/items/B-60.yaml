@@ -1,0 +1,13 @@
+id: B-60
+kind: defect
+title: Example and API-surface gaps
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: '#60'
+evidence: sequences/s5-review-flow.md
+retires_when: Examples that run offline are unwrapped from `\dontrun{}` so `R CMD check` executes them, every export ships an example, the blanket `httr` import is dropped now that `httr2` is a hard Import, `DESCRIPTION` derives its author list from `Authors@R` alone, and a naming convention for the exported surface is written down. The accessor clause closed 2026-08-25 and is not part of this condition.

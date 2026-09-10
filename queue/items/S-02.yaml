@@ -1,0 +1,12 @@
+id: S-02
+kind: stream
+title: Correctness debt, starting with four-digit measurement columns typed as temporal
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+blocked_by: []
+legacy: 'S2'
+evidence: sequences/s2-correctness-debt.md
+retires_when: Backlog items 53, 55, 56 and 57 are fixed in metasalmon and mirrored in metasalmonpy.

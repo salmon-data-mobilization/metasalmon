@@ -1,0 +1,12 @@
+id: B-119
+kind: defect
+title: Stop variable and property retrieving the identical gcdfo ranked list
+state: icebox
+claimable: true
+repo: metasalmon
+venue: either
+severity: P2
+blocked_by: [Q-09]
+legacy: '#119'
+evidence: knowledge/backlog.md
+retires_when: 'The two roles return materially different candidate sets for a measurement query against gcdfo, or the overlap is ruled correct and this item closes as expected behaviour with that ruling recorded.'

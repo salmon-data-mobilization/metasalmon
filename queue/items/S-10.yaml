@@ -1,0 +1,12 @@
+id: S-10
+kind: stream
+title: metasalmonpy parity, closed 2026-08-24 at metasalmonpy 0.4.0
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+blocked_by: []
+legacy: 'S10'
+evidence: sequences/s10-metasalmonpy-parity.md
+retires_when: Already retired. Chunks A to H merged 2026-08-22 and the terminal bump released metasalmonpy 0.4.0 on 2026-08-24. What outlived it is tracked elsewhere as backlog items 87 and 113 and register row 53, and the 0.5.0 shortfall belongs to S-05 rather than reopening this stream.

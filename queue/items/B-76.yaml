@@ -1,0 +1,12 @@
+id: B-76
+kind: defect
+title: SMN and gcdfo model methods in different styles, and the crosswalk retarget is open
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-science
+severity: P2
+blocked_by: []
+legacy: '#76'
+evidence: knowledge/backlog.md
+retires_when: 'Brett rules whether `R/nuseds-method-crosswalk.R` retargets its 45 `gcdfo:` CURIEs onto the `smn:` method concepts that smn PR #22 created, and then either the retarget lands with a consistency check in both repositories or the ruling records gcdfo as the deliberate method source. The methods-as-SKOS half was decided 2026-08-13 and the smn side shipped; only the retarget question is open, and it is the same undecided reading as B-106.'
