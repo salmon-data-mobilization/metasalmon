@@ -1,0 +1,12 @@
+id: B-116
+kind: defect
+title: Ship a producer for the reviewed semantic closure
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P1
+blocked_by: []
+legacy: '#116'
+evidence: knowledge/backlog.md
+retires_when: 'A user can produce a publishable package without reaching past the package''s API boundary and without hand-writing a digest, and the rehearsal script''s two internal calls become calls to exported functions.'

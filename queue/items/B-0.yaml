@@ -1,0 +1,13 @@
+id: B-0
+kind: defect
+title: gcdfo docs-widoco seeds its own baseline, so a failed build goes green over raw output
+state: needs_brett
+claimable: false
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: 'item 0'
+evidence: knowledge/backlog.md
+retires_when: The self-seeding test passes, meaning the normalizer is broken deliberately, `make docs-widoco` fails and leaves raw WIDOCO output in the tree, the normalizer is then repaired with that dirty `docs/webvowl/data/ontology.json` left in place, and the re-run does not go green over the raw bytes. A clean run twice is necessary and not sufficient, and skipping the repair step proves nothing because it fails identically against the unfixed implementation.

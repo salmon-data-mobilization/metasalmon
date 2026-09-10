@@ -1,0 +1,13 @@
+id: B-49
+kind: defect
+title: validate_salmon_datapackage() checks far less than it claims
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S1
+severity: P1
+blocked_by: []
+legacy: '#49'
+evidence: backlog.md
+retires_when: 'The validator checks required-column nullability and schema-required metadata fields, refuses corrupt SSSOM and decomposition artifacts instead of reporting success, and a test asserts a failure for each of those three classes. The declared-primary-key clause closed in 0.2.6 under #77, which made a duplicate, missing, or absent key component a hard error, and is not part of this condition.'

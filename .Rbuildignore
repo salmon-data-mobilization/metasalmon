@@ -32,3 +32,5 @@ inst/extdata/\.gitkeep$
 ^artifacts(/|$)
 ^metasalmon_.*\.tar\.gz$
 .*\.local\.md$
+^HUB\.md$
+^queue(/|$)

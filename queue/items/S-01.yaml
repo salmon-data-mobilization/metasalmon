@@ -1,0 +1,12 @@
+id: S-01
+kind: stream
+title: One validation authority so the validator executes the rules the spec declares
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S1
+blocked_by: [B-90]
+legacy: 'S1'
+evidence: sequences/s1-validation-authority.md
+retires_when: A conformance test drives from the parsed sdp.rules.yaml rule ids and fails when the spec declares a rule the implementation does not execute, in both metasalmon and metasalmonpy.

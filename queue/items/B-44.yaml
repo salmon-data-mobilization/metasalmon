@@ -1,0 +1,13 @@
+id: B-44
+kind: defect
+title: The gcdfo validation layer is inert
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P1
+blocked_by: []
+legacy: '#44'
+evidence: plans/2026-08-10-gcdfo-validation-layer-verification.md
+retires_when: The SHACL shapes and example data bind their default prefix to the namespace gcdfo subjects actually use, each competency query declares its prefixes and is executed separately, `robot-profile.yaml` amends rather than replaces the default profile so the 16 ERROR-level checks run again, and a deliberately broken fixture makes the gate fail.

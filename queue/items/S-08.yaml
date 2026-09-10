@@ -1,0 +1,12 @@
+id: S-08
+kind: stream
+title: Method model and tidy foundations, shipped as metasalmon 0.3.0
+state: done
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S8
+blocked_by: []
+legacy: 'S8'
+evidence: sequences/s8-method-model.md
+retires_when: Already retired. The spec half shipped as sdp-0.3.0 on 2026-08-14 and the R half as metasalmon 0.3.0 on 2026-08-15. The one piece that did not ride it, the nuseds-method-crosswalk retarget, lives on as backlog item 76.

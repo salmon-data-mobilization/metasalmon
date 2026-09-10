@@ -1,0 +1,12 @@
+id: S-11
+kind: stream
+title: Vignettes and user-facing walkthroughs, slices 1 and 2 landed
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+blocked_by: []
+legacy: 'S11'
+evidence: sequences/s11-vignettes-and-walkthroughs.md
+retires_when: Slices 3 to 5 have landed, tidyr is declared in DESCRIPTION, the github-access guide has a runnable example against a public CSV repository Brett names, and the metasalmonpy guides move in lockstep.

@@ -1,0 +1,13 @@
+id: B-79
+kind: defect
+title: Vignettes lag the package, two findings remain
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P4
+blocked_by: [S-03]
+legacy: '#79'
+evidence: knowledge/sequences/s11-vignettes-and-walkthroughs.md
+retires_when: The KNB workflow is its own vignette with a `_pkgdown.yml` articles entry rather than section 10 of `post-review-package-publication.Rmd`, and the untaught-export figure is recounted against the current export list with the recount date recorded. Four of the six 2026-08-13 findings shipped with S11 slice 2 and are not part of this condition.

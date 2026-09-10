@@ -1,0 +1,12 @@
+id: Q-09
+kind: question
+title: Rule whether a spawner count's property_iri is smn:Abundance or gcdfo:SpawnerAbundance
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-science
+stream: S12
+blocked_by: []
+legacy: 'Q9'
+evidence: questions.md
+retires_when: Brett rules which slot each IRI fills, the ruling is recorded as an ecosystem I-ADOPT decision rather than a metasalmon fix, and the gold standard's annotated column teaches one answer instead of two.

@@ -1,0 +1,12 @@
+id: B-106
+kind: defect
+title: Rule which reading of typed as a SOSA Procedure sdp.rules.yaml means
+state: needs_brett
+claimable: false
+repo: smn-data-pkg
+venue: claude-science
+severity: P4
+blocked_by: []
+legacy: '#106'
+evidence: knowledge/backlog.md
+retires_when: 'The rule text says which of the two readings it means, direct typing or reachability by a skos:broader* path from a typed concept, and the implementation B-48 asks for checks that.'

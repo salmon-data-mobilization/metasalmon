@@ -1,0 +1,13 @@
+id: B-80
+kind: defect
+title: The Theme A exact-model live benchmark was never completed
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P1
+blocked_by: []
+legacy: '#80'
+evidence: knowledge/backlog.md
+retires_when: 'Three independent live captures of the Theme A exact-model cohort exist, run under the provider API credential Brett holds against the same openrouter provider and openai/gpt-5.4-mini model the cohort was specified for, with every critical case passing in at least two of the three, zero forbidden method or constraint acceptances, zero false prefills, and each capture sanitized and lineage-verified before promotion into notes/evidence/theme-a/. Ahead of that, the first deliverable is deciding whether the HTTP 401 the one live attempt returned for every benchmark target is a defect in the benchmark request-auth wiring or provider behaviour, given that a direct authenticated call to the same catalogue with the same credential returned 200, with the wiring answer pinned by a focused non-network regression test because a network-only reproduction cannot be re-run in CI. Substituting a different provider or model does not retire this: an exact-model benchmark that silently changed models attests to nothing. Not claimable: the credential is Brett''s and no agent holds it, which is the whole class this field exists to represent.'

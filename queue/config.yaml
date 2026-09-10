@@ -1,0 +1,207 @@
+# metasalmon hub queue configuration
+#
+# The values the `hub` client and the render-and-check guard read, and nothing
+# else. Anything describing one piece of work belongs in an item file under
+# `queue/items/`, not here. The protocol these values parameterise is
+# in `HUB.md` at the repository root; the reasoning is in section 9 of
+# `knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md`.
+#
+# There is no GitHub Project and no GitHub API call in this system. A claim is
+# a plain `git push` of an orphan commit to a ref under `claim_ref_prefix`.
+#
+# Item-file field conventions, including how an `evidence` pointer resolves and
+# what `venue` means, are documented once in `queue/README.md`. They are not
+# repeated here, because the client does not read them and a second copy of a
+# convention is the defect this queue exists to remove.
+
+# ---------------------------------------------------------------------------
+# Where claims live
+# ---------------------------------------------------------------------------
+
+# PLACEHOLDER. The locks repository does not exist yet. Creating it is Brett's
+# action (step 1 of the migration table in section 9.7), together with the
+# two-terminal race test proving that a first claim is atomic. Until he
+# creates it and replaces this line with the real remote, `hub doctor` must
+# fail loudly on the placeholder rather than treat an unreachable remote as an
+# empty queue: an agent that reads "nobody holds it" from a missing repository
+# will claim work somebody else is already doing.
+#
+# An agent that finds this value stops and reports. It does not guess a
+# repository name, and it does not infer one from an organization in `members`
+# below: a wrong guess pushes a claim record somewhere nobody is reading, which
+# looks exactly like a successful claim and grants exclusivity over nothing.
+# `HUB_LOCKS_URL` is the supported way to point a run at a throwaway remote.
+# The client detects the placeholder by the literal `PLACEHOLDER` prefix, so a
+# replacement placeholder must keep that prefix or the detection silently stops
+# working.
+#
+# Retires when: the repository exists and this value is its push URL.
+locks_repo: PLACEHOLDER-hub-locks-repository-not-yet-created
+
+# The claim ref namespace inside `locks_repo`. An orphan commit can never
+# fast-forward an existing ref, so a first push here succeeds if and only if
+# nobody holds the item; every later record (heartbeat, release, handoff,
+# reclaim) is a child of the tip that was read, so it succeeds if and only if
+# nobody appended in between.
+claim_ref_prefix: refs/heads/claim/
+
+# ---------------------------------------------------------------------------
+# Timing. Every value below is a guess. None of them was measured, because
+# nothing has been claimed yet. Each carries the observation that would set it
+# properly and the point at which to look. A constant whose retirement
+# condition is "never" is the anti-pattern this bundle names.
+# ---------------------------------------------------------------------------
+
+# How long an interactive claim (a session with Brett or another human in the
+# loop) stays valid without a heartbeat.
+# Calibrate on: the 90th percentile of elapsed time from claim to release over
+#   the first twenty recorded interactive claims, rounded up.
+# Revisit: at twenty recorded claims, or 2026-12-01, whichever comes first, and
+#   write the measured distribution into the S15 card rather than only changing
+#   the number.
+lease_hours_interactive: 4
+
+# How long an unattended batch claim stays valid without a heartbeat. Longer
+# than the interactive lease because nobody is watching to release it early.
+# Calibrate on: the longest run that finished successfully unattended, plus the
+#   margin needed so that no successful run was ever reclaimed under it.
+# Revisit: the same twenty-claim mark. If any successful unattended run has
+#   been reclaimed mid-flight, this number is already wrong and the evidence
+#   for raising it is that reclaim.
+lease_hours_batch: 12
+
+# How often a live holder appends a heartbeat commit.
+# Calibrate on: the longest gap between tool calls observed in a healthy run.
+#   This value has to exceed that comfortably, or a healthy agent looks dead.
+#   Too short is not free either: every heartbeat is a push, and a queue of
+#   chatty holders turns the locks repository into a busy one.
+# Revisit: on the first false reclaim, and otherwise at the twenty-claim mark.
+heartbeat_minutes: 30
+
+# How long after a missed heartbeat another agent may reclaim the item.
+# Calibrate on: the count of reclaims that turned out to have taken work away
+#   from a live holder. The target is zero. If it stays zero over twenty
+#   claims, this is a candidate to shorten, because the cost of it being too
+#   long is a queue that stalls silently on a crashed agent.
+# Revisit: at the twenty-claim mark, with the false-reclaim count recorded
+#   either way, including when it is zero.
+reclaim_grace_minutes: 60
+
+# How many times one item may be reclaimed from an abandoned lease in a rolling
+# 24 hours. The client enforces this on the reclaim path and reads it with no
+# default, because a default would be a second home for the constant.
+#
+# Calibration: a guess. An item reclaimed twice in a day is not a lease problem,
+# it is an item nobody can finish, and the right response is a human looking at
+# it rather than a third attempt. Revisit when any item hits the limit: the
+# first one that does is the evidence.
+# Retires when: reclaims stop happening, or the limit has been hit enough times
+# to be set from what was observed rather than from this reasoning.
+max_reclaims_per_item_per_day: 1
+
+# How many items one agent identity may hold at once.
+#
+# This file is the ONLY home of this number, as of 2026-09-09. `HUB.md` used to
+# carry a second copy and the client read this one, so the policy file's copy
+# was the stale one by construction; it was deleted rather than corrected.
+# `HUB.md` now cites the key by name and states no value.
+#
+# It is worth recording why, because it happened inside the fix for it: this
+# key read 2 while `HUB.md` read 1, for the length of the build, which is the
+# restatement failure the queue exists to remove, reproduced in the queue's own
+# configuration by two agents who could not see each other.
+# Retires when: nothing. One home is the end state, not a step toward one.
+#
+# Calibrate on: whether the ready queue is ever the thing waiting. Section 9.2
+#   measured the real bottleneck as the production of `ready`, which only Brett
+#   can do, so raising this before the ready queue backs up buys nothing and
+#   costs held items nobody is working.
+# Revisit: when more than five items sit in `ready` for a week with an idle
+#   agent, which is the first evidence that this cap rather than promotion is
+#   the constraint.
+max_concurrent_claims: 1
+
+# ---------------------------------------------------------------------------
+# Members. The eight hub member repositories, from the ruled allowlist in
+# `knowledge/domains/salmon-data-ecosystem.md`.
+#
+# That card is the home of this fact and this list is a machine-readable copy
+# of it, which is exactly the shape of restatement this design exists to
+# remove. It is here because the client needs the list without parsing prose,
+# and it is safe only because the render-and-check guard compares the two and
+# fails when they disagree. When they disagree, the card wins and this list is
+# the copy that is wrong. Membership follows from this hub sequencing that
+# repository's work (Brett, ruled 2026-08-24); it is not decided here.
+#
+# Retires when: the client reads the allowlist from the card directly and this
+# block can be deleted without the client losing anything.
+#
+# `forge` is load-bearing, not decoration. The standing authorization in
+# section 9.5 covers pushes to these repositories on GitHub and to the locks
+# repository. It covers nothing on GitLab, so the one GitLab member is a read
+# for agents and every write there stays Brett's.
+# ---------------------------------------------------------------------------
+members:
+  - repo: metasalmon
+    org: salmon-data-mobilization
+    forge: github
+  - repo: metasalmonpy
+    org: salmon-data-mobilization
+    forge: github
+  - repo: smn-data-pkg
+    org: salmon-data-mobilization
+    forge: github
+  - repo: salmon-domain-ontology
+    org: salmon-data-mobilization
+    forge: github
+  - repo: dfo-salmon-ontology
+    org: dfo-pacific-science
+    forge: github
+  - repo: psc-salmon-vocabularies
+    org: pacific-salmon-commission/psc-data-systems
+    forge: gitlab
+  - repo: salmon-knowledge-commons
+    org: salmon-data-mobilization
+    forge: github
+  - repo: salmon-data-standards-workshop
+    org: salmon-data-mobilization
+    forge: github
+  # The ninth member, admitted 2026-09-05 on Brett's Q19 ruling. The repository
+  # does not exist yet and neither does the organization that will hold it: the
+  # institute's GitHub organization is Q35, unresolved, and its working name
+  # moved twice in five days. So `org` carries a placeholder rather than a
+  # guess, and the client refuses to act on a PLACEHOLDER value.
+  # Retires when: Brett creates the organization and the repository, and this
+  # line carries their real names.
+  - repo: salmon-science-foundry
+    org: PLACEHOLDER-institute-organization-not-yet-created
+    forge: github
+
+# ---------------------------------------------------------------------------
+# Generated blocks. Each entry names a block the renderer writes into a target
+# file and the freshness check re-derives on every run. A block that no longer
+# matches its source fails the build instead of waiting for a reader to notice,
+# which is the whole point: the five stale copies measured in section 9.1 were
+# each readable for days without looking wrong.
+#
+# Every block listed here derives from the item files under
+# `queue/items/`. Facts that do not derive from an item file are
+# deliberately absent: the release index and the mirror window are not queue
+# state, they are release facts whose home is the roadmap, and inventing a
+# block for them would put a second answer where the design just removed one.
+# ---------------------------------------------------------------------------
+# Prose blocks regenerated from the queue, each guarded by `hub_queue.py check`
+# so a stale copy fails the build instead of waiting for a reader to notice.
+#
+# There is exactly ONE, on purpose. It is the proof that the mechanism works,
+# and the plan's section 9.7 makes replacing the remaining twelve state facts a
+# later step with its own review. Four blocks were declared here before any
+# marker existed, which made `check` pass while guarding nothing; declaring a
+# block whose markers are absent is now an error rather than a skip.
+#
+# Retires when: every state fact in the bundle is either generated or deleted,
+# at which point this list stops growing and the roadmap carries no
+# hand-maintained state.
+generated_blocks:
+  - block: member-count
+    target: knowledge/roadmap.md

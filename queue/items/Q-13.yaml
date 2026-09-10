@@ -1,0 +1,12 @@
+id: Q-13
+kind: question
+title: Send the outbound support request for the stuck production KNB deposit
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+stream: S13
+blocked_by: []
+legacy: 'Q13'
+evidence: questions.md
+retires_when: The support request is sent and the production series resolves with a receipt written, or Brett rules the series abandoned; either answer also releases the Fraser recipe's migration off metasalmon 0.1.8, which needs an owner and a date assigned at that moment.

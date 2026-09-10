@@ -1,0 +1,13 @@
+id: B-82
+kind: defect
+title: gcdfo's WSP review-artifact generator is nondeterministic
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: []
+legacy: '#82'
+evidence: knowledge/backlog.md
+retires_when: Two consecutive runs of the WSP composite-escapement review-artifact script on unchanged input produce byte-identical `.graphml`, which is the condition gcdfo states in its own `docs/tech-debt.md`. The open question of whether gcdfo should carry a collation rule of its own is tracked with the hub-wide contract, not here.

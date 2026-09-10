@@ -1,0 +1,12 @@
+id: B-87
+kind: defect
+title: Give metasalmonpy a ranking-profile system so its benchmark can compare profiles
+state: needs_brett
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: '#87'
+evidence: knowledge/backlog.md
+retires_when: '_score_and_rank_terms takes a profile merged over a Python .ranking_profile_defaults() read back from the claimed R release, benchmark_term_ranking_fixtures threads profiles through instead of binding and discarding them, and a differential fixture pins both rankers to the same order.'

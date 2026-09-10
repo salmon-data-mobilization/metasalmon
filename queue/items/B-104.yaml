@@ -1,0 +1,12 @@
+id: B-104
+kind: defect
+title: Make the template README file list checkable against the generated template
+state: done
+claimable: false
+repo: smn-data-pkg
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: '#104'
+evidence: knowledge/backlog.md
+retires_when: 'Already met. Fixed 2026-08-21 in smn-data-pkg PR #6 by the entry''s own alternative: the prose was corrected and generate_artifacts.py now fails --check and --write when the README source names a metadata CSV absent from the generated template, proven by reintroducing the stale sentence.'

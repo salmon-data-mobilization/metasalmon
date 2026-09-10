@@ -1,0 +1,12 @@
+id: B-103
+kind: defect
+title: Green the smn-data-pkg test suite and run it in CI
+state: done
+claimable: false
+repo: smn-data-pkg
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: '#103'
+evidence: knowledge/backlog.md
+retires_when: 'Already met. Fixed 2026-08-21 in smn-data-pkg PR #6, which rewrote the four stale method-registry tests to the 0.3.0 shape and added a workflow running the suite and generate_artifacts.py --check on every push and pull request.'

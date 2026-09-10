@@ -1,0 +1,13 @@
+id: B-86
+kind: defect
+title: Build metasalmonpy's SDP-extension IRI regexes from R_SPACE_CLASS
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: []
+legacy: '#86'
+evidence: knowledge/backlog.md
+retires_when: 'sdp_methods.py builds both whitespace regexes from metadata.R_SPACE_CLASS the way eml.py and sssom.py already do, tests/test_sdp_methods.py pins the membership of the eight codepoints the two sets disagree about, and parity-deviations row 33 gets its PARITY.md twin.'
