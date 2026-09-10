@@ -630,10 +630,30 @@ would have cost, are in this file's history; they are not reproduced here,
 because a menu of rejected options beside a ruling is what makes a ruled decision
 read as still-open.
 
-### OD-2 — What does "the KNB test environment" mean?
+### OD-2 — What does "the KNB test environment" mean? — RULED 2026-08-22 (Brett)
+
+**Ruling: A — a distinct DataONE test node.** Recorded as
+[Q1](questions.md) and in the [S3 card](sequences/s3-knb-staging.md), and
+restated here because this heading is the link target and the convention is
+that a ruled entry stays in place with its heading unchanged. Develop data
+packages against the test endpoint first, then post to production once they
+look good. Verified read-only the same day:
+`https://dev.nceas.ucsb.edu/knb/d1/mn/v2/node` answers 200 as
+`urn:node:mnTestKNB`, registered in the DataONE staging coordinating node;
+production is `urn:node:KNB`. So `S3 ──► S4` holds as drawn.
+
+**This entry read "unruled" for eighteen days after the ruling** (2026-08-22 to
+2026-09-09), while `questions.md` and the S3 card both carried the answer.
+That is the decay this bundle's own conventions exist to prevent, and it is
+the reason step 0 of the coordination change is to make every state fact live
+in one place. What remains open is not the ruling but two of Brett's own
+actions: obtaining a dev.nceas token, and one end-to-end test deposit.
+
+The original framing is kept below because the discarded options are the
+record of what was decided against.
 
 The [S3 execplan](plans/2026-08-11-knb-environments-and-workshop-rebuild.md) and
-`psc-data-transformations` describe incompatible things by the same name; the
+`psc-data-transformations` described incompatible things by the same name; the
 evidence for both sides is in the external-edge notes above.
 
 | # | Possible ruling | Consequence |
@@ -642,12 +662,10 @@ evidence for both sides is in the external-edge notes above.
 | B | A **restricted persistent version on production KNB** is the rehearsal, as `psc-data-transformations` asserts and has already implemented | **The `S3 ──► S4` arrow dissolves.** The rehearsal already exists in shipped form, so S4 stops being hard-blocked and instead needs the private-review path documented and taught |
 | C | **Both**, as two values of `knb_environment` | S3 grows rather than shrinks: it must build and distinguish both, and S4 must teach which one a first-time depositor should reach for |
 
-**Unblocks:** the hard `S3 ──► S4` arrow in the sequencing diagram below — S4's
-only remaining hard blocker — and therefore whether the workshop rebuild can
-start now. Under B it can. *Retires when:* Brett rules. Verifying directly
-against KNB whether `urn:node:mnTestKNB` accepts the deposits S3 describes would
-settle the *factual* half and still leave the "which one do we teach" half open,
-so that check is useful evidence and not a substitute for the ruling.
+**Unblocked:** the hard `S3 ──► S4` arrow in the sequencing diagram below —
+S4's only remaining hard blocker. Ruling A holds the arrow as drawn.
+*Retired 2026-09-09*, its condition ("Brett rules") having been met
+2026-08-22.
 
 ---
 
@@ -766,7 +784,7 @@ current plan of record, and it survives only under some rulings of
 [OD-2](#od-2--what-does-the-knb-test-environment-mean).
 
 ```
-                                          ▼ conditional — OD-2, not yet ruled
+                                          ▼ hard — OD-2 ruled A, 2026-08-22
 #73 redaction ✔ ──► S3 KNB environments ──► S4 workshop rebuild
                                               ▲   ▲   ▲   ▲
 S8 method model + tidy ──► S9.2 methods-as-SKOS ──┘   │   │   │
@@ -810,17 +828,24 @@ Python episodes execute against metasalmonpy). S4's **S8 blocker is discharged**
 — the method model shipped as 0.3.0, so S4's method-annotation content has a
 released contract to teach and S3 is its only remaining hard blocker.
 
-**That last clause is conditional, and the condition is unruled.** `S3 ──► S4`
-holds only if "the KNB test environment" means a *distinct DataONE test node*.
-If a **restricted persistent version on production KNB** is accepted as the
-rehearsal S4 should teach — the model `psc-data-transformations` asserts in
-`docs/architecture.md` and has already implemented in
-`profiles/knb-private-review.yml` — then the rehearsal S4 needs already exists,
-**the arrow dissolves, and S4 has no hard blockers left at all.** That is a live
-possibility, not a preference expressed here; see
-[OD-2](#od-2--what-does-the-knb-test-environment-mean) for the three candidate
-rulings and what each one costs. Read the arrow as the plan of record awaiting a
-ruling, and do not re-draw it in either direction before one exists.
+**That clause was conditional until 2026-08-22 and is not any more.**
+[OD-2](#od-2--what-does-the-knb-test-environment-mean) was ruled **A**: "the
+KNB test environment" means a *distinct DataONE test node*, so `S3 ──► S4`
+holds exactly as drawn and the arrow does not dissolve. The alternative that
+was live — a restricted persistent version on production KNB, which
+`psc-data-transformations` asserts and has implemented — remains the
+production-side fallback if the test path proves unworkable, and both
+statements can be true at once, because that repository's claim was about
+*production* exposing no server-side draft.
+
+**This paragraph told readers the condition was unruled for eighteen days
+after it was ruled**, which is worth leaving a scar for rather than silently
+overwriting: three renderings of one dependency (this prose, the diagram
+legend, and the S4 card) each had to be corrected by hand, and that is the
+argument for the coordination change in
+[the Foundry plan's §9](plans/2026-09-04-salmon-science-foundry-concrete-plan.md).
+What is genuinely outstanding is not the ruling but two of Brett's actions: a
+dev.nceas token, and one end-to-end test deposit.
 
 **S8 came first among the spec streams**: it decided what the SDP means, S1 then
 makes the validator enforce it, and S9 step 2's methods-as-SKOS migration

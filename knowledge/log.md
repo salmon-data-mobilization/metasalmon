@@ -1,5 +1,46 @@
 # Bundle log
 
+## 2026-09-09
+
+- **Step 0 of the coordination change: the bundle's stale state was deleted
+  rather than corrected.** Six passages were wrong on the day they were
+  measured, and each has now been changed so that it cannot go wrong the same
+  way again — by removing the restatement, not by refreshing it.
+
+  | Where | Was | Now |
+  |---|---|---|
+  | [orientation](orientation.md) | "Released 0.3.0", two releases stale | points at the release index |
+  | [hub-coordination context](contexts/hub-coordination.md) | "both are at 0.4.0, lockstep is the present state, S10 is done" | states the rule, not the numbers |
+  | [S3](sequences/s3-knb-staging.md) | "not yet released, not yet mirrored"; `DESCRIPTION` stays at 0.3.0 | release state points at the index; the *reason* a release waits is kept |
+  | [S8](sequences/s8-method-model.md) | mirror "is at 0.1.8 now" | past tense; the number points at the index |
+  | [S13](sequences/s13-fraser-recruits-case-study.md) | "Current metasalmon is 0.3.0" | "several breaking releases later", with the breaks named |
+  | [S4](sequences/s4-workshop-rebuild.md) | "conditional … this card takes no position" | records ruling A and the work it commits |
+
+- **OD-2 was ruled on 2026-08-22 and this bundle said otherwise for eighteen
+  days.** [Q1](questions.md) and the S3 card carried the ruling the whole time;
+  the roadmap's OD-2 entry, its sequencing prose, its diagram legend, and the
+  S4 card did not. The entry now states the ruling at its top with its heading
+  unchanged, per the open-decisions convention, and keeps the discarded options
+  because what was decided against is the part that stops the question
+  regrowing.
+
+- **The shape of the defect, which is the reason any of this matters.** One
+  dependency had *three* renderings inside one file plus a fourth in a card,
+  and correcting it meant four hand edits that nothing would have caught if one
+  had been missed. One version number had ten homes and five were wrong. The
+  bundle's own rule — *a count nobody maintains is decay* — was being broken by
+  the bundle. The rule applied here is **one fact, one home**: a card that
+  restates state now points at the authority instead, and where the
+  restatement was load-bearing prose it is rewritten in the past tense so the
+  reasoning survives without the number.
+
+- **Each correction leaves a scar on purpose.** Every rewritten passage says
+  how long it was wrong. A silent fix teaches nobody, and the next agent
+  reading a confident sentence has no way to know which confident sentences
+  have been wrong before. This is step 0 of the change described in the
+  [Foundry plan's §9](plans/2026-09-04-salmon-science-foundry-concrete-plan.md),
+  and it is worth doing on its own even if the rest never happens.
+
 ## 2026-08-25
 
 - **Q12 was ruled and implemented, and backlog #93 is fully retired.** Brett:

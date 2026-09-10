@@ -26,12 +26,15 @@ preservation, cli message safety, and C collation).
 
 `metasalmon` is an R package that scaffolds, standardizes, validates, transforms,
 and packages salmon datasets using the **DFO Salmon Ontology** and **Salmon Data
-Package (SDP)** conventions. Released 0.3.0. License MIT. R >= 4.1.0.
+Package (SDP)** conventions. License MIT. R >= 4.1.0. **For the current
+released version, read the release index in the
+[roadmap](roadmap.md)** — this card deliberately does not restate it, having
+carried "Released 0.3.0" for the fifteen days after 0.5.0 shipped.
 
-`main` carries unreleased changes under `NEWS.md`'s **"(development version)"**
-section, but **`DESCRIPTION` is still `Version: 0.3.0`** — there is no `.9000`
-bump, so the package self-reports the released number while carrying work past
-it. Cite the commit, not the version, for anything landed post-0.3.0: the
+`main` may carry unreleased changes under `NEWS.md`'s **"(development
+version)"** section without a `.9000` bump, so the package can self-report the
+released number while carrying work past it. Cite the commit, not the version,
+for anything landed after the current release, such as the
 `smn`-outranks-`gcdfo` ranking fix, the single-owner IRI whitespace predicate
 (backlog #85), dual-provenance manifest validation (backlog #88), the datetime
 observation-dimension fix, and S11 slice 2's vignettes are all in this state.

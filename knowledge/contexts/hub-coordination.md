@@ -18,22 +18,26 @@ Brett's standing instructions (2026-08-12/13) that define this context:
 - Every repo the work touches gets an OKF bundle (created if absent, updated
   as learned), git-tracked, containing **no absolute filesystem paths**.
 - metasalmonpy mirrors metasalmon: functionality and version numbers in
-  lockstep, with version bumps made only when parity actually lands. **As of
-  2026-08-24 lockstep is the present state, not just the target** — both are at
-  **0.4.0**, R tagged `v0.4.0` (`4e2bbb6`) and the mirror `v0.4.0` (`3b587e6`),
-  both with GitHub Releases — so [S10](../sequences/s10-metasalmonpy-parity.md),
-  the catch-up stream, is **done**. (This line read "0.1.8" until 2026-08-24,
-  having lagged the 2026-08-18 tags, and then "0.2.1" until the mirror bumped;
-  the release index in the [roadmap](../roadmap.md) is the authority for the
-  number, and this line has now been wrong twice by lagging it.) A Python
-  version number is a claim about behaviour delivered, so a gap is visible by
-  design rather than papered over with a matching number — and the corollary
-  now that there is no gap is that **the next divergence is created by the next
-  change**, with nothing in this bullet to announce it. **The order of the final
-  bump was ruled** (Brett, 2026-08-24, hub [Q7](../questions.md)): metasalmon
-  releases the tree carrying its post-0.3.0 fixes first, then metasalmonpy
-  claims that number and skips 0.3.0. Both steps happened that day; the rule
-  survives the stream and governs the next release pair.
+  lockstep, with version bumps made only when parity actually lands.
+  **This bullet no longer states the numbers.** The release index in the
+  [roadmap](../roadmap.md) is the single authority for them; read it there.
+  A Python version number is a claim about behaviour delivered, so a gap is
+  visible by design rather than papered over with a matching number.
+  **The order of a bump was ruled** (Brett, 2026-08-24, hub
+  [Q7](../questions.md)): metasalmon releases the tree carrying its fixes
+  first, then metasalmonpy claims that number. The rule outlives the stream
+  and governs the next release pair.
+  *Why the numbers were removed, 2026-09-09:* this line carried them three
+  times and was wrong three times — "0.1.8" until 2026-08-24, then "0.2.1",
+  then "both at 0.4.0, lockstep is the present state, S10 is done", which went
+  stale the next day when metasalmon released 0.5.0 and stayed wrong for
+  fifteen days. The bullet even predicted its own failure, in the sentence
+  saying the next divergence would be created by the next change with nothing
+  here to announce it. A fact restated in a place that cannot notice when it
+  changes is not documentation; it is a second answer waiting to be believed.
+  This is the first application of the rule in the
+  [Foundry plan's §9](../plans/2026-09-04-salmon-science-foundry-concrete-plan.md):
+  one fact, one home.
 - **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"don't just make things match metasalmon; if the Python implementation got
   it right, then update metasalmon."* This coordination context therefore

@@ -20,10 +20,11 @@ PR #4 — detail in that PR and the spec's own changelog/migration section).
 re-vendor, registry removal + `migrate_sdp_methods()` stop-and-report
 migration, `statistical_modifier_iri`, the logged frozen-contract role swap,
 and the spec-tag remote pin. Remaining S8-adjacent work lives elsewhere by
-design: the metasalmonpy mirror **rides the S10 replay** ("same version" is
-unsatisfiable while the mirror trails — it was at 0.1.6 when that was decided
-and is at 0.1.8 now, with 0.3.0 the ladder's last rung), and the methods
-vignette is S11 slice 5.
+design: the metasalmonpy mirror **rode the S10 replay** ("same version" was
+unsatisfiable while the mirror trailed; it was at 0.1.6 when that was decided).
+S10 closed 2026-08-24 and current versions live only in the release index in
+the [roadmap](../roadmap.md); the number this line used to carry was two
+releases stale. The methods vignette is S11 slice 5.
 
 Two coupled items that decide what the SDP *means* before S1 decides what it
 *checks*.
