@@ -581,8 +581,9 @@ lg() { git --git-dir="$LOCKS_DIR" "$@"; }
 # (assertion 19 in scripts/tests/test_hub_claim.sh).
 #
 # So the read-count-push window is serialized locally, with an atomic mkdir in
-# the cache directory. What that covers and what it does not, stated plainly,
-# because a lock whose reach is assumed is worse than no lock:
+# the cache directory that records the holder's pid. What that covers and what
+# it does not, stated plainly, because a lock whose reach is assumed is worse
+# than no lock:
 #
 #   covered      two hub processes that share this cache directory. That is
 #                every pair that also shares an agent identity by the ladder
@@ -606,7 +607,10 @@ lg() { git --git-dir="$LOCKS_DIR" "$@"; }
 
 CAP_LOCK_DIR=""
 CAP_LOCK_HELD=0
+CAP_BREAK_DIR=""
+CAP_BREAK_HELD=0
 CAP_LOCK_WAIT_SECONDS=20
+# Read only for a lock that records no holder; the no-pid branch below says why.
 CAP_LOCK_STALE_SECONDS=120
 
 path_age_seconds() { # path -> age in seconds, or non-zero when unmeasurable
@@ -618,47 +622,209 @@ path_age_seconds() { # path -> age in seconds, or non-zero when unmeasurable
   printf '%s' "$(( now - m ))"
 }
 
+# Whether a process id names a running process. kill -0 is the portable probe;
+# its one false negative is a process this user may not signal, which ps(1)
+# can still see. The cache directory is per user, so that case is rare here,
+# and the fallback costs one ps on a path that only runs while a lock is
+# contended. A recycled pid reads as alive, and the cost of that is a claim
+# that exits 3 naming the lock rather than a claim that races: remove the
+# directory by hand if the pid it names is not a hub process.
+pid_alive() { # pid -> 0 alive, 1 not
+  case ${1:-} in ''|*[!0-9]*) return 1 ;; esac
+  kill -0 "$1" 2>/dev/null && return 0
+  ps -p "$1" -o pid= 2>/dev/null | grep -q '[0-9]'
+}
+
+# The pid the lock records as its holder, or nothing when the file is absent
+# or does not hold a number.
+cap_lock_holder() { # -> pid on stdout, or nothing
+  local p
+  p=$(cat "$CAP_LOCK_DIR/pid" 2>/dev/null | tr -d ' \t\r\n')
+  case ${p:-} in ''|*[!0-9]*) : ;; *) printf '%s' "$p" ;; esac
+}
+
 # 0 held, 2 another process held it for longer than the wait, 1 the lock could
 # not be attempted at all. The caller turns 1 and 2 into a 3 with different
 # words, because "somebody else is claiming right now" and "this machine cannot
 # keep a lock" are different things to be told.
 cap_lock_acquire() { # token -> 0, 1 or 2
-  local token=$1 dg waited=0 age
+  local token=$1 dg waited=0 age holder rc
   # Per agent, not per machine: two different agents on one machine have
   # separate caps and must not queue behind each other.
   dg=$(key_digest "$token") || return 1
   CAP_LOCK_DIR="$CACHE_DIR/cap-$dg.lock"
+  CAP_BREAK_DIR="$CAP_LOCK_DIR.break"
   mkdir -p "$CACHE_DIR" 2>/dev/null || return 1
+  # The trap is set before either directory is, and covers both. `fail` exits
+  # the process from inside a helper, and a lock nobody releases would stop
+  # every later claim on this machine; a break lock nobody releases would stop
+  # every later break. Cleared again on every return that holds nothing.
+  trap 'cap_lock_release' EXIT
   while :; do
     if mkdir "$CAP_LOCK_DIR" 2>/dev/null; then
-      printf '%s\n' "$$" > "$CAP_LOCK_DIR/pid" 2>/dev/null
+      # The holder's pid goes in before the lock counts as held. It is what a
+      # waiter reads to tell an abandoned lock from a slow one, and what the
+      # release below reads to be sure the lock it removes is still its own. A
+      # lock with no holder recorded can be neither waited on correctly nor
+      # released safely, so failing to write it is failing to take the lock.
+      if ! printf '%s\n' "$$" > "$CAP_LOCK_DIR/pid" 2>/dev/null; then
+        # rm -rf and not rmdir: the shell creates the file for the redirection
+        # before anything is written, and a full disk fails the write and not
+        # the create (mkdir needs only an inode), so rmdir fails on the file
+        # it left behind and a lock with an empty pid survives, which every
+        # later process waits out and blames on a holder that does not exist.
+        # This process's mkdir created the directory a moment ago, so nobody
+        # else can hold it.
+        rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
+        trap - EXIT
+        return 1
+      fi
       CAP_LOCK_HELD=1
-      # The trap is what makes this safe against the exits this script takes
-      # from inside a helper: `fail` exits the process, and a lock nobody
-      # releases would stop every later claim on this machine.
-      trap 'cap_lock_release' EXIT
       return 0
     fi
-    # A holder that was killed leaves the directory behind. Break one that is
-    # older than any claim can honestly take, and say so, because a broken lock
-    # is either a crash worth knowing about or a claim this one is racing.
-    age=$(path_age_seconds "$CAP_LOCK_DIR") || age=""
-    if [ -n "$age" ] && [ "$age" -gt "$CAP_LOCK_STALE_SECONDS" ]; then
-      warn "breaking a ${age} second old claim lock at $CAP_LOCK_DIR; whatever held it did not release it"
-      rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
-      continue
+    # Somebody holds it. Whether they are still running is the question, and
+    # the recorded pid answers it; the age of the directory does not. Until
+    # 2026-09-10 age alone decided, at CAP_LOCK_STALE_SECONDS, and a holder
+    # whose fetch, count and push under the lock took longer than that -- the
+    # git calls in there have no timeout, so a slow remote is all it takes --
+    # was judged dead while alive: the waiter broke the lock, took its own, and
+    # both then pushed, which is the double claim this lock exists to stop. The
+    # first holder's release then deleted the second's lock, and a third walked
+    # in behind them. A live pid is now waited on for as long as the wait
+    # allows and then reported, and is never broken.
+    holder=$(cap_lock_holder)
+    if [ -n "$holder" ]; then
+      if pid_alive "$holder"; then
+        [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || { trap - EXIT; return 2; }
+        sleep 1; waited=$((waited + 1)); continue
+      fi
+      cap_lock_break "$holder" ""; rc=$?
+    else
+      # No pid recorded: the holder crashed between the mkdir and the write, or
+      # is between them right now. Age is the only evidence left and it is
+      # weak, so it is the secondary signal and applies only in this branch.
+      # Retires when: the pid is recorded atomically with the lock, which mkdir
+      # cannot do; a lock file created with O_EXCL and carrying the pid as its
+      # content would retire this branch and path_age_seconds with it.
+      age=$(path_age_seconds "$CAP_LOCK_DIR") || age=""
+      if [ -z "$age" ] || [ "$age" -le "$CAP_LOCK_STALE_SECONDS" ]; then
+        [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || { trap - EXIT; return 2; }
+        sleep 1; waited=$((waited + 1)); continue
+      fi
+      cap_lock_break "" "$age"; rc=$?
     fi
-    [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || return 2
-    sleep 1
-    waited=$((waited + 1))
+    case $rc in
+      0) continue ;;               # moved aside; the next mkdir is this one's to win or lose
+      1) trap - EXIT; return 1 ;;  # fail closed; cap_lock_break said why
+      *)
+        # The break lock was somebody else's, the lock changed under the
+        # re-read, or the rename was refused. All three mean read it again,
+        # and all three charge the wait. A refused rename used to fall straight
+        # back into the loop with no sleep and no count, which was a process
+        # printing the break message hundreds of times a second for as long as
+        # the cache directory stayed unwritable.
+        [ "$waited" -lt "$CAP_LOCK_WAIT_SECONDS" ] || { trap - EXIT; return 2; }
+        sleep 1; waited=$((waited + 1)) ;;
+    esac
   done
 }
 
+# Moves an abandoned lock aside. This is the one step in the mutex that has to
+# be a compare-and-swap and is not one by nature: deciding that the holder is
+# dead and renaming whatever sits at CAP_LOCK_DIR are two steps, and until
+# 2026-09-10 (fourth round) nothing joined them. Two waiters both read a dead
+# pid; the first moved the lock aside, re-took it and recorded itself; the
+# second, a few milliseconds behind, moved the first's live lock aside on the
+# strength of its stale read. Two holders, two pushes, two claims against a cap
+# of one. Measured at 2 of 30 rounds with nothing added and 10 of 10 with 20 ms
+# between the decision and the rename, which is about what the ps fork in
+# pid_alive costs for a dead pid; assertion 32 in scripts/tests/test_hub_claim.sh
+# keeps that measurement.
+#
+# So the break is serialized by a second exclusive mkdir, and the decision is
+# made again under it. The invariant is this: between that re-read and the
+# rename nothing can replace the lock, because a live holder only ever removes
+# its own lock and never replaces it, a new holder can appear only through
+# mkdir, which fails while the lock exists, and every other breaker is waiting
+# on this mkdir. The rename therefore moves exactly the lock that was re-read,
+# and the pid found in the grave afterwards is the proof. A different pid means
+# the invariant did not hold -- a client without this lock, a hand, a recycled
+# pid -- and this process may have moved a live holder's lock, so it stops
+# rather than claims, says where the lock went, and leaves it there.
+#
+# The break lock itself is never broken. It is held for a handful of syscalls
+# and no git call, so one left behind means a breaker was killed inside them;
+# every later waiter then runs out its budget and exits 3 naming it, and a
+# human removes it. Breaking it by age would put a stopped breaker back into
+# the middle of a rename it decided long ago, which is this defect again.
+#
+# 0 the lock was moved aside and the caller may try mkdir; 2 the break lock is
+# somebody else's, the lock changed under the re-read, or the rename was
+# refused, so wait and read again; 1 fail closed, the grave holds a pid this
+# process did not decide on.
+# Retires when: the cap leaves this directory mutex for a per-agent ref in the
+# locks repository, which retires the mutex, the break lock and this function.
+cap_lock_break() { # dead_pid age -> 0 moved aside, 1 fail closed, 2 read again
+  local dead=$1 age=$2 holder now_age grave gpid
+  mkdir "$CAP_BREAK_DIR" 2>/dev/null || return 2
+  CAP_BREAK_HELD=1
+  # Decide again, under the break lock, because the decision that brought this
+  # process here was made without it and may be stale by now.
+  holder=$(cap_lock_holder)
+  if [ -n "$dead" ]; then
+    if [ "$holder" != "$dead" ] || pid_alive "$holder"; then
+      cap_break_release; return 2
+    fi
+  else
+    now_age=$(path_age_seconds "$CAP_LOCK_DIR") || now_age=""
+    if [ -n "$holder" ] || [ -z "$now_age" ] || [ "$now_age" -le "$CAP_LOCK_STALE_SECONDS" ]; then
+      cap_break_release; return 2
+    fi
+  fi
+  grave="$CAP_LOCK_DIR.dead.$$.$RANDOM"
+  if ! mv "$CAP_LOCK_DIR" "$grave" 2>/dev/null; then
+    cap_break_release; return 2
+  fi
+  cap_break_release
+  # The proof that the rename moved the lock that was re-read and nothing else.
+  gpid=$(cat "$grave/pid" 2>/dev/null | tr -d ' \t\r\n')
+  if [ "$gpid" != "$dead" ]; then
+    warn "stopping: the claim lock moved aside to $grave records pid ${gpid:-none}, and this process had decided to break a lock recording ${dead:-no holder}. Something outside this client changed the lock between the two, so a live holder's lock may have been moved; it is left there as evidence and this claim is not made"
+    return 1
+  fi
+  if [ -n "$dead" ]; then
+    warn "breaking the claim lock at $CAP_LOCK_DIR: its holder, pid $dead, is no longer running and did not release it"
+  else
+    warn "breaking the claim lock at $CAP_LOCK_DIR: it records no holder and is $age seconds old, so whatever took it did not get as far as saying so"
+  fi
+  rm -rf "$grave" 2>/dev/null || true
+  return 0
+}
+
+cap_break_release() {
+  [ "$CAP_BREAK_HELD" -eq 1 ] || return 0
+  CAP_BREAK_HELD=0
+  rmdir "$CAP_BREAK_DIR" 2>/dev/null || true
+}
+
+# Removes the lock only while its recorded holder is this process. A lock whose
+# pid is somebody else's was broken and re-taken while this process held it,
+# which means the serialization it was counting on did not hold and its claim
+# may have raced; so it is left where it is and said out loud, because deleting
+# it would hand the same hole to a third process. Releases the break lock first
+# if this process died holding it, which is what the exit trap is for.
 cap_lock_release() {
-  [ "$CAP_LOCK_HELD" -eq 1 ] || return 0
+  local holder
+  cap_break_release
+  if [ "$CAP_LOCK_HELD" -ne 1 ]; then trap - EXIT; return 0; fi
   CAP_LOCK_HELD=0
-  rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
   trap - EXIT
+  holder=$(cap_lock_holder)
+  if [ "$holder" = "$$" ]; then
+    rm -rf "$CAP_LOCK_DIR" 2>/dev/null || true
+  else
+    warn "not releasing the claim lock at $CAP_LOCK_DIR: it records pid ${holder:-none} rather than this process ($$), so it was broken and re-taken while this process held it, and the cap check this process made may have raced the one that took it"
+  fi
 }
 
 # Git's rejection vocabulary, in one place. Only these mean the ref moved.
@@ -788,43 +954,41 @@ member_slug_for_repo() { # repo -> org/repo, or empty when it is not a member
   members_list | awk -F'\t' -v r="$1" '$1 == r { print $2 "/" $1; exit }'
 }
 
-# The member repositories nobody but Brett has ever contributed to.
+# Whether nobody but Brett has ever contributed to a member repository, read
+# from that member's `solo:` entry in queue/config.yaml and from nowhere else.
 #
 # HUB.md's participation table under "The standing authorization" is the
-# authority for this fact, and this line is a copy of its `Grant applies: yes`
-# row, measured 2026-09-10. When the two disagree the table wins and this line
-# is the copy that is wrong. It is a copy at all only because
-# some member entry in queue/config.yaml does not state `solo:`. The reader
-# below prefers the configuration wherever it states the fact, so adding the
-# key there is what removes this list rather than adding a second home for it,
-# and this constant is consulted only for the members the key has not reached.
+# authority for this fact and the configuration column is its machine-readable
+# copy; `hub_queue.py lint` fails when the two disagree, and fails again when
+# a member omits the key. This function used to hold a third copy: a
+# hard-coded list of the solo members, consulted for any entry the key had
+# not reached, which resolved an absent or unrecognised value to `yes` for
+# every repository on it. Its retirement condition was that every member
+# state `solo:`, and that was met one commit after the list was written
+# (ee5e0cc added the list, ae02441 the column, both 2026-09-10), so the list
+# outlived its reason by exactly one review round. It is deleted rather than
+# kept dormant, because dormant is the one thing it could not be: for an
+# entry the key was later dropped from, or mistyped, it would have told an
+# agent to push a branch and open a pull request on the strength of nothing
+# the configuration said, which is the opposite of the rule it stood in for.
 #
-# The locks repository is solo too and is deliberately absent: an item's `repo`
-# field never names it, so a value here would be read by nothing.
+# So the only source is the entry, and every answer the entry does not give
+# is `no`: an absent key, a value that is neither true nor false, a
+# repository that is not a member at all, and an item with no repo field.
+# HUB.md: when in doubt, it is shared. The two ways of being wrong do not
+# cost the same, and this is the cheap one.
 #
-# Retires when: every member entry in queue/config.yaml carries `solo:`. At
-# that point this constant and the fallback branch below are deleted together,
-# and a member whose entry omits the key is shared by the rule in HUB.md rather
-# than by an omission from this line. `hub doctor` counts how many members
-# state the key and says outright when that day has arrived, because a
-# retirement condition nothing announces is one that gets met and ignored.
-HUB_SOLO_REPOS_FALLBACK="metasalmon metasalmonpy smn-data-pkg salmon-domain-ontology salmon-knowledge-commons"
-
-member_solo_for_repo() { # repo -> yes when the repository is solo, otherwise no
-  local declared r
+# Retires when: the grant stops being scoped by participation, at which point
+# this function, the claim-time paragraph in claim_count_and_push, the
+# hand-back paragraph in cmd_done and the doctor line that counts the answers
+# are deleted together.
+member_solo_for_repo() { # repo -> yes only when the entry says so, otherwise no
+  local declared
   declared=$(members_list | awk -F'\t' -v r="$1" '$1 == r { print $4; exit }')
   case $declared in
-    true|yes|True|TRUE|Yes|YES)   printf 'yes'; return 0 ;;
-    false|no|False|FALSE|No|NO)   printf 'no';  return 0 ;;
+    true|yes|True|TRUE|Yes|YES) printf 'yes' ;;
+    *)                          printf 'no' ;;
   esac
-  for r in $HUB_SOLO_REPOS_FALLBACK; do
-    [ "$r" = "$1" ] || continue
-    printf 'yes'; return 0
-  done
-  # Not stated in the configuration and not on the list, which includes a repo
-  # that is not a member at all and an item with no repo field. HUB.md: a
-  # repository whose participation cannot be determined is shared.
-  printf 'no'
 }
 
 # ---------------------------------------------------------------------------
@@ -832,7 +996,7 @@ member_solo_for_repo() { # repo -> yes when the repository is solo, otherwise no
 # ---------------------------------------------------------------------------
 
 cmd_doctor() {
-  local ok=0 v url out rc token prefix probe sha declared
+  local ok=0 v url out rc token prefix probe sha declared solo_n r
   say "$PROG doctor"
   say ""
 
@@ -900,24 +1064,24 @@ cmd_doctor() {
     done
     v=$(members_list | grep -c .)
     say "ok    config members lists $v repositories"
-    # Whether the fallback participation list in this script is still load
-    # bearing. The constant is a copy of HUB.md's participation table, and a
-    # copy of a fact is a thing that drifts, so the only good outcome is its
-    # deletion. That happens when every member entry states `solo:` -- and
-    # nothing would otherwise announce the day that became true, which is how a
-    # retirement condition gets met and the code stays anyway. This line is the
-    # announcement.
-    # Retires when: HUB_SOLO_REPOS_FALLBACK is deleted, which is what it exists
-    # to ask for.
+    # The participation answer per member, counted through the same function
+    # every command uses, because it is the one fact the standing grant turns
+    # on and a doctor that computed it a second way would be a second copy.
+    # An entry that does not state `solo:` is counted as shared and named as
+    # unstated, so the omission is visible here as well as in the lint that
+    # fails on it. This line used to count down to the deletion of a fallback
+    # list in this script; the list is gone, and so is the countdown.
+    # Retires when: the grant stops being scoped by participation, which is
+    # what retires member_solo_for_repo.
+    solo_n=0
+    for r in $(members_list | cut -f1); do
+      [ "$(member_solo_for_repo "$r")" = "yes" ] && solo_n=$((solo_n + 1))
+    done
     declared=$(members_list | awk -F'\t' '$4 != ""' | grep -c .)
-    if [ "$declared" -ge "$v" ] && [ "$v" -gt 0 ]; then
-      say "ok    config every member states solo:, so HUB_SOLO_REPOS_FALLBACK in this"
-      say "      script is now dead code and its retirement condition is met; delete the"
-      say "      constant and the fallback branch in member_solo_for_repo together"
-    else
-      say "ok    config $declared of $v members state solo:; the rest fall back to the"
-      say "      copy of HUB.md's participation table in this script, and a member that"
-      say "      is on neither is read as shared"
+    say "ok    config $solo_n of $v members are solo; the other $((v - solo_n)) are read as shared"
+    if [ "$declared" -lt "$v" ]; then
+      say "      $((v - declared)) of those because the entry does not state solo: at all, which"
+      say "      is shared by HUB.md's rule and is a failure in hub_queue.py lint"
     fi
   else
     say "FAIL  queue/config.yaml is not readable"; ok=1
@@ -1111,13 +1275,25 @@ cmd_ready() {
   # What is held is HUB.md's condition 4 and nothing else, so that this list and
   # that paragraph cannot drift apart: a ref is free when it does not exist,
   # when its tip is a release, or when its lease and the reclaim grace have both
-  # elapsed. Everything else is held, including a handoff however old its lease,
-  # an action this client did not write, and a tip it cannot read at all,
-  # because a tip that cannot be ruled out cannot be offered.
+  # elapsed AND a reclaim is permitted under max_reclaims_per_item_per_day.
+  # Everything else is held, including a handoff however old its lease, an
+  # action this client did not write, a tip it cannot read at all, and an
+  # expired claim whose reclaim cap is already spent, because a tip that cannot
+  # be ruled out cannot be offered and a claim the client will refuse is not an
+  # offer either.
+  #
+  # The cap half was missing until 2026-09-10: this listed every expired claim
+  # once its grace had elapsed, while `hub claim` on the same item exited 3 at
+  # the cap, so a polling agent kept selecting work the client would not give
+  # it. Both commands now ask reclaim_cap_status, the one place the rule lives.
+  # The holder's own expired claim stays held here too, although `hub claim`
+  # would renew it: this listing has never asked who is asking, and an agent
+  # that holds an item does not need a list to tell it so.
   #
   # This is a listing, so where it cannot tell it says held: an unparseable
-  # lease or a missing reclaim_grace_minutes hides the item rather than
-  # advertising work whose claim would then be refused.
+  # lease, a missing reclaim_grace_minutes or max_reclaims_per_item_per_day, or
+  # a history that cannot be read hides the item rather than advertising work
+  # whose claim would then be refused.
   # Retires when: claim refs are deleted on release, which would make existence
   # the right question again and is a change to the append-only rule.
   held=""
@@ -1133,8 +1309,9 @@ cmd_ready() {
       case ${hact:-unreadable} in
         release) continue ;;
         claim|beat|reclaim)
-          if [ -n "$grace" ] && lu=$(epoch_from_iso "$(tip_field "$hid" lease_until)" 2>/dev/null); then
-            [ "$now" -ge $(( lu + grace * 60 )) ] && continue
+          if [ -n "$grace" ] && lu=$(epoch_from_iso "$(tip_field "$hid" lease_until)" 2>/dev/null) &&
+             [ "$now" -ge $(( lu + grace * 60 )) ] && reclaim_cap_status "$hid" "$now"; then
+            continue
           fi ;;
       esac
       held="$held$hid
@@ -1210,8 +1387,37 @@ EOF
   printf '%s' "$n"
 }
 
+# The reclaim cap, asked as one question in one place, because two commands
+# need the same answer and had two answers until 2026-09-10. `hub claim` asked
+# it before writing a reclaim; `hub ready` did not ask it at all and listed
+# every expired claim once its grace had elapsed, so a polling agent selected
+# an item the client then refused with an exit 3 at the cap. HUB.md's
+# condition 4 says free means "a reclaim is permitted under the cap", and a
+# listing that applies half of a condition lists the wrong set.
+#
+# Requires a fresh fetch of the id's ref. Returns 0 when a reclaim is under
+# the cap, 1 when it is at the cap, and 2 when the cap cannot be verified:
+# the key is missing or not a number, or the history cannot be read. Sets
+# RECLAIM_CAP and RECLAIM_COUNT for the caller's message, RECLAIM_COUNT empty
+# on a 2. The callers say different things about one answer -- claim exits 3
+# with the reason, ready silently keeps the item held -- which is why the
+# words are theirs and the rule is here.
+# Retires when: reclaims stop being written by this client, which retires the
+# cap with them.
+RECLAIM_CAP=""
+RECLAIM_COUNT=""
+reclaim_cap_status() { # id now -> 0 under the cap, 1 at the cap, 2 cannot tell
+  local id=$1 now=$2
+  RECLAIM_CAP=$(cfg max_reclaims_per_item_per_day)
+  RECLAIM_COUNT=""
+  case ${RECLAIM_CAP:-} in ''|*[!0-9]*) return 2 ;; esac
+  RECLAIM_COUNT=$(reclaims_since "$id" $(( now - 86400 ))) || { RECLAIM_COUNT=""; return 2; }
+  [ "$RECLAIM_COUNT" -lt "$RECLAIM_CAP" ] && return 0
+  return 1
+}
+
 cmd_claim() {
-  local id=$1 token tip rc act ag lu now grace blk parent attempt maxrc rcn
+  local id=$1 token tip rc act ag lu now grace blk parent attempt
   item_exists "$id" || fail "no queue item $id; the queue is queue/items"
   [ "$(item_field "$id" claimable)" = "true" ] \
     || fail "$id is not claimable: it needs a decision or a credential that only Brett has"
@@ -1278,22 +1484,25 @@ cmd_claim() {
         warn "$id has an expired lease from $ag, but the $grace minute reclaim grace has not passed yet"
         return "$EX_RACE"
       fi
-      # max_reclaims_per_item_per_day, enforced here and nowhere else, because
-      # this is the only place a reclaim is written. The register in HUB.md
-      # cites this limit, and a register that promises a limit nothing applies
-      # is worse than no limit: it reads as a guarantee to everyone who is not
-      # holding the source.
+      # max_reclaims_per_item_per_day, enforced here because this is the only
+      # place a reclaim is written, and asked through the same function that
+      # `hub ready` asks, so the two cannot disagree about which items are
+      # free. The register in HUB.md cites this limit, and a register that
+      # promises a limit nothing applies is worse than no limit: it reads as a
+      # guarantee to everyone who is not holding the source.
       # Retires when: reclaims stop being written by this client.
-      maxrc=$(cfg_required max_reclaims_per_item_per_day) || return $?
-      case $maxrc in ''|*[!0-9]*) warn "max_reclaims_per_item_per_day is '$maxrc', which is not a whole number"; return "$EX_FAIL" ;; esac
-      rcn=$(reclaims_since "$id" $(( now - 86400 ))) || {
-        warn "cannot read the claim history of $id, so max_reclaims_per_item_per_day could not be verified; an unverifiable precondition is a failure and not a silent allowance"
-        return "$EX_FAIL"
-      }
-      if [ "$rcn" -ge "$maxrc" ]; then
-        warn "$id has been reclaimed $rcn times in the last 24 hours and max_reclaims_per_item_per_day is $maxrc. An item that keeps being reclaimed is an item that keeps defeating agents; report it rather than taking it again"
-        return "$EX_FAIL"
-      fi
+      reclaim_cap_status "$id" "$now"; rc=$?
+      case $rc in
+        0) : ;;
+        1) warn "$id has been reclaimed $RECLAIM_COUNT times in the last 24 hours and max_reclaims_per_item_per_day is $RECLAIM_CAP. An item that keeps being reclaimed is an item that keeps defeating agents; report it rather than taking it again"
+           return "$EX_FAIL" ;;
+        *) case ${RECLAIM_CAP:-} in
+             '')       warn "configuration key 'max_reclaims_per_item_per_day' is missing or empty in queue/config.yaml; this client hard-codes no value that the configuration carries" ;;
+             *[!0-9]*) warn "max_reclaims_per_item_per_day is '$RECLAIM_CAP', which is not a whole number" ;;
+             *)        warn "cannot read the claim history of $id, so max_reclaims_per_item_per_day could not be verified; an unverifiable precondition is a failure and not a silent allowance" ;;
+           esac
+           return "$EX_FAIL" ;;
+      esac
       attempt=$(( $(tip_attempt "$id") + 1 ))
       act=reclaim
     else
@@ -1309,7 +1518,7 @@ cmd_claim() {
   cap_lock_acquire "$token"; rc=$?
   case $rc in
     0) : ;;
-    2) warn "another hub process for this agent has held the claim lock at $CAP_LOCK_DIR for more than $CAP_LOCK_WAIT_SECONDS seconds, so max_concurrent_claims could not be enforced without racing it. An unverifiable precondition is a failure and not a silent allowance"
+    2) warn "another hub process for this agent, pid $(h=$(cap_lock_holder); printf '%s' "${h:-unrecorded}"), has held the claim lock at $CAP_LOCK_DIR for more than $CAP_LOCK_WAIT_SECONDS seconds, or the lock could not be broken or taken over in that time, so max_concurrent_claims could not be enforced without racing it. An unverifiable precondition is a failure and not a silent allowance. If that pid is not a hub process the lock is a leftover, and if $CAP_BREAK_DIR exists with no hub process running a breaker died holding it; either can be removed by hand"
        return "$EX_FAIL" ;;
     *) warn "cannot take the local claim lock under $CACHE_DIR, so max_concurrent_claims could not be enforced. An unverifiable precondition is a failure and not a silent allowance"
        return "$EX_FAIL" ;;
@@ -1721,7 +1930,8 @@ hub - the queue client for the salmon ecosystem hub
                                  deleted, so this reads each ref's tip rather
                                  than its existence: a released ref, and one
                                  whose lease and reclaim grace have both
-                                 elapsed, are free and are listed
+                                 elapsed while its reclaim cap is not spent,
+                                 are free and are listed
   hub ready --set ID [--authorization TEXT]
                                  print the one-line edit that moves ID to
                                  ready, and what the promotion commit must cite.

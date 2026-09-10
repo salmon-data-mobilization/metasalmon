@@ -59,6 +59,28 @@
 #   command later, after the branch is pushed, which in a shared repository is
 #   after the breach.
 #
+#   27 to 30 came from the fourth round, also 2026-09-10, and each is a place
+#   the client disagreed with itself. 27 is the reclaim cap: `hub claim`
+#   refused at it and `hub ready` did not know it existed, so the list offered
+#   work the claim then refused. 28 to 30 are the local lock that serializes
+#   the concurrency cap, which judged a lock abandoned by its age alone: a
+#   holder still running was broken (28) and its own release then deleted the
+#   breaker's lock (30), while a holder that had died was waited on until the
+#   age said otherwise (29). Each was run RED against the client that carried
+#   the defect, with HUB_CLIENT pointing this file at that copy, before the
+#   fix that turns it green.
+#
+#   31 to 34 came from the review of that fix, the same day. 31 and 32 are
+#   the break itself: deciding a holder is dead and renaming the lock were two
+#   steps with nothing joining them, so two waiters reading one dead pid could
+#   both break, the second moving the first's live lock aside -- measured by
+#   the reviewer at 2 of 30 rounds, and at 10 of 10 with 20 ms between the
+#   two steps. 31 is the break lock that now serializes them, 32 is the race
+#   run for real. 33 is the pid write failing after the file was created, the
+#   shape a full disk gives, which left a lock with an empty pid that every
+#   later process waited out. 34 is a refused rename, which used to spin the
+#   waiter with no sleep and no count. Each was run RED the same way.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -146,17 +168,21 @@ EXPIRED_ID="B-55"     # claim tip is an ordinary claim, lease long expired
 RELEASED_ID="B-56"    # claim ref exists and its tip is a release
 SELF_ID="B-57"        # claim tip is this caller's own claim, lease long expired
 ABANDONED_ID="B-58"   # claim tip is another agent's claim, lease and grace both elapsed
+CAPPED_ID="B-59"      # as B-58, after one reclaim inside the rolling day: the cap of 1 is spent
+UNDERCAP_ID="B-60"    # as B-59, but the reclaim was 30 hours ago: outside the window
 
-# The three hand-back items of assertions 22 and 23. Each one is held by this
+# The four hand-back items of assertions 22 and 23. Each one is held by this
 # caller on a live lease, seeded straight into the locks repository rather than
 # claimed through the client, so the hand-back assertions do not spend the
 # fixture's concurrent-claim cap and do not depend on the claim path passing.
 # Their repositories differ on exactly one fact, which is the fact the hand-back
-# instruction has to turn on: who else has ever contributed to that repository.
-SOLO_ID="D-01"        # repo metasalmon: GitHub, and nobody but Brett works in it
-SHARED_ID="D-02"      # repo salmon-data-standards-workshop: GitHub, and shared
-OVERRIDE_ID="D-03"    # repo metasalmonpy: solo by the client's fallback list,
-                      # marked shared by the fixture configuration, which wins
+# instruction has to turn on: what the member's `solo:` entry says. One item
+# per way the entry can answer, because the client reads that entry and
+# nothing else, and every answer other than `true` has to come out as shared.
+SOLO_ID="D-01"        # repo metasalmon: solo: true
+SHARED_ID="D-02"      # repo salmon-data-standards-workshop: solo: false
+UNKEYED_ID="D-03"     # repo metasalmonpy: the entry omits solo: altogether
+UNREADABLE_ID="D-04"  # repo smn-data-pkg: solo: unknown, neither true nor false
 
 # The cap fixture is a second queue with max_concurrent_claims of 1, pointed at
 # the same locks repository. It is separate because assertion 19 is the only
@@ -305,6 +331,96 @@ is_transport_failure() {
   grep -Eq 'does not appear to be a git repository|Could not read from remote|Authentication failed|repository .* not found|unable to access' "$1"
 }
 
+# lock_scenario NAME HOLDER_PID OLD - one claim-lock scenario for assertions
+# 28 and 29. Stands up a lock directory that records HOLDER_PID as its holder,
+# dated to 2020 when OLD is yes, then runs the client's own cap_lock_acquire
+# against it with a two second wait. Writes "rc=N exists=yes|no holder=PID"
+# to $TMPROOT/lock.NAME.out, after whatever the client said on the way. Runs
+# in a subshell with the client sourced as a library, for the reasons stated
+# at the assertions; the lock the subshell may end up holding is released by
+# the client's own exit trap when the subshell ends.
+lock_scenario() {
+  local name="$1" holder="$2" old="$3"
+  ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-$name"
+    HUB_LIB=1
+    . "$SOURCE_CLIENT" || exit 99
+    CAP_LOCK_WAIT_SECONDS=2
+    mkdir -p "$CACHE_DIR"
+    dg=$(key_digest "lock-test-$name") || exit 99
+    d="$CACHE_DIR/cap-$dg.lock"
+    mkdir -p "$d"
+    [ -n "$holder" ] && printf '%s\n' "$holder" > "$d/pid"
+    [ "$old" = "yes" ] && touch -t 202001010000 "$d"
+    cap_lock_acquire "lock-test-$name"; rc=$?
+    printf 'rc=%s exists=%s holder=%s\n' "$rc" \
+      "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+  ) >"$TMPROOT/lock.$name.out" 2>&1
+}
+
+# lock_racer TAG ROUND_DIR - one of the two waiters of assertion 32. Sources
+# the client, says it is ready, waits on the gate, takes the lock, holds it for
+# 50 ms with a marker file down, and records whether the other waiter's marker
+# was there at any point while its own was: that is the overlap the assertion
+# counts, and it needs no clock. Writes "rc=N overlap=0|1" to ROUND_DIR/result.TAG.
+#
+# The 20 ms in waiter b's warn is the reviewer's hook, kept test-side so it
+# exists for the client that had the defect as well as the one that does not:
+# in that client the "breaking" message sat between deciding a holder was dead
+# and renaming the lock, and 20 ms there, in one waiter only, is the head
+# start the other needs to move the lock, re-take it and record itself before
+# the delayed one renames the live lock away. It is about what the ps fork in
+# pid_alive costs for a dead pid, and it took the race from 2 of 30 rounds to
+# every round. Delaying both waiters leaves their relative timing alone and
+# measures nothing, which is how the first version of this hook was found to
+# be wrong. In the fixed client nothing is decided outside the break lock, so
+# the delay changes nothing there. RETIRES WHEN: the break lock retires, with
+# the mutex.
+lock_racer() {
+  local tag="$1" round="$2"
+  ( export HUB_CACHE_DIR="$round/cache"
+    HUB_LIB=1
+    . "$SOURCE_CLIENT" || exit 99
+    CAP_LOCK_WAIT_SECONDS=5
+    warn() { [ "$tag" = "b" ] && sleep 0.02; command printf '%s: %s\n' "$PROG" "$*" >&2; }
+    : >"$round/cready.$tag"
+    deadline=$((SECONDS + GATE_WAIT_SECONDS))
+    while [ ! -e "$GATE" ] && [ "$SECONDS" -lt "$deadline" ]; do :; done
+    cap_lock_acquire "lock-race"; rc=$?
+    overlap=0
+    if [ "$rc" = "0" ]; then
+      : >"$round/inside.$tag"
+      [ "$(ls "$round" | grep -c '^inside\.')" -gt 1 ] && overlap=1
+      sleep 0.05
+      [ "$(ls "$round" | grep -c '^inside\.')" -gt 1 ] && overlap=1
+      rm -f "$round/inside.$tag"
+      cap_lock_release
+    fi
+    printf 'rc=%s overlap=%s\n' "$rc" "$overlap" >"$round/result.$tag"
+  ) >"$round/racer.$tag.out" 2>&1
+}
+
+# lock_refused_scenario - assertion 34's waiter: a dead-pid lock whose rename
+# the cache directory refuses, done by overriding mv rather than by chmod,
+# because chmod does nothing to root and this file runs as root in some
+# containers. Run under run_with_timeout by the caller, because the client
+# that had the defect never returns from this.
+lock_refused_scenario() {
+  ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-refused"
+    HUB_LIB=1
+    . "$SOURCE_CLIENT" || exit 99
+    CAP_LOCK_WAIT_SECONDS=2
+    mkdir -p "$CACHE_DIR"
+    dg=$(key_digest "lock-test-refused") || exit 99
+    d="$CACHE_DIR/cap-$dg.lock"
+    mkdir -p "$d"; printf '%s\n' "$dead_pid" > "$d/pid"
+    mv() { return 1; }
+    cap_lock_acquire "lock-test-refused"; rc=$?
+    unset -f mv
+    printf 'rc=%s exists=%s holder=%s\n' "$rc" \
+      "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+  )
+}
+
 # --------------------------------------------------------------- fixture ----
 
 REPO_ROOT=$(cd "$(dirname "$0")/../.." && pwd) || die "cannot locate the repository root"
@@ -403,32 +519,38 @@ heartbeat_minutes: 30
 reclaim_grace_minutes: 60
 max_concurrent_claims: 2
 max_reclaims_per_item_per_day: 1
-# Three members, because assertions 22 and 23 are about how the hand-back
-# instruction differs between them. metasalmon and salmon-data-standards-workshop
-# carry no `solo:` key on purpose: that is the real queue's shape today, so the
-# two assertions measure the answer the client gives against the configuration
-# that actually exists. metasalmonpy carries one, and carries the value that
-# contradicts the client's fallback list, so assertion 23 also measures which of
-# the two sources wins.
-# RETIRES WHEN: queue/config.yaml carries `solo:` on every member. Then the two
-# unkeyed entries here gain the key as well, and the fallback list they exercise
-# is deleted from the client.
+# Four members, because assertions 22 and 23 are about how the hand-back
+# instruction differs between them, and the only thing it may differ on is
+# the `solo:` entry. One member per answer that entry can give: true, false,
+# absent, and a value that is neither. The last two are deliberate defects of
+# the kind `hub_queue.py lint` fails on in the real queue, and they are here
+# because the client has to read them as shared without any lint having run.
+# Until 2026-09-10 the client answered an absent or unreadable entry from a
+# hard-coded list of the solo members, and metasalmonpy and smn-data-pkg were
+# both on it, which is why those two are the members that carry the defects.
+# RETIRES WHEN: the grant stops being scoped by participation, which retires
+# member_solo_for_repo in the client and assertions 22, 23 and 26 with it.
 members:
   - repo: metasalmon
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: salmon-data-standards-workshop
     org: salmon-data-mobilization
     forge: github
+    solo: false
   - repo: metasalmonpy
     org: salmon-data-mobilization
     forge: github
-    solo: false
+  - repo: smn-data-pkg
+    org: salmon-data-mobilization
+    forge: github
+    solo: unknown
 YAML
 
   local id
   for id in "$RACE_ID" "$HANDOFF_ID" "$EXPIRED_ID" "$RELEASED_ID" "$SELF_ID" \
-            "$ABANDONED_ID"; do
+            "$ABANDONED_ID" "$CAPPED_ID" "$UNDERCAP_ID"; do
     cat >"$items/$id.yaml" <<YAML
 id: $id
 kind: defect
@@ -447,7 +569,8 @@ YAML
   # whole variable under test.
   write_fixture_item "$items" "$SOLO_ID" metasalmon
   write_fixture_item "$items" "$SHARED_ID" salmon-data-standards-workshop
-  write_fixture_item "$items" "$OVERRIDE_ID" metasalmonpy
+  write_fixture_item "$items" "$UNKEYED_ID" metasalmonpy
+  write_fixture_item "$items" "$UNREADABLE_ID" smn-data-pkg
 }
 
 # write_fixture_item ITEMS_DIR ID REPO
@@ -581,9 +704,11 @@ write_participation_fixture() {
 # fixture: the test passes HUB_LOCKS_URL, and a plausible remote here could
 # send a stray push somewhere real if the override were ever dropped.
 #
-# Neither member states `solo:`, on purpose: that is the shape the real queue
-# had when this assertion was written, so it measures the answer the client
-# actually gives rather than one the fixture arranged.
+# Both members state `solo:`, which is the real queue's shape since
+# 2026-09-10 and the only source the client reads. Until that day neither
+# stated it and the client answered from a hard-coded list instead; that list
+# is gone, and an entry that omits the key now reads as shared, which
+# assertion 23 measures.
 locks_repo: PLACEHOLDER-participation-test-fixture
 claim_ref_prefix: refs/heads/claim/
 lease_hours_interactive: 4
@@ -596,9 +721,11 @@ members:
   - repo: metasalmon
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: salmon-data-standards-workshop
     org: salmon-data-mobilization
     forge: github
+    solo: false
 YAML
 
   write_fixture_item "$items" "$PART_SOLO_ID" metasalmon
@@ -1297,7 +1424,7 @@ main() {
   # RETIRES WHEN: the grant stops being scoped by participation, or hand-back
   # stops printing an instruction at all.
   if [ "$probe_ok" = "0" ]; then
-    local solo_out shared_out override_out solo_ok=0 shared_ok=0
+    local solo_out shared_out unkeyed_out unreadable_out solo_ok=0 shared_ok=0
 
     solo_out=$(handback_output "$SOLO_ID" "$future")
     printf '%s\n' "$solo_out" | grep -Fq \
@@ -1313,28 +1440,37 @@ main() {
       note "$(printf '%s' "$solo_out" | tail -n 6 | tr '\n' ' ')"
     fi
 
-    # Two shared repositories, because they reach the answer by different
-    # routes and both routes have to work. salmon-data-standards-workshop is
-    # GitHub and carries no `solo:` key, which is the real queue's shape and the
-    # exact case the forge branch got wrong. metasalmonpy carries `solo: false`
-    # in the fixture configuration while the client's fallback list calls it
-    # solo, so it says which source the client believes.
+    # Three shared repositories, because there are three ways for a member's
+    # entry to not say `true` and every one of them has to come out as shared.
+    # salmon-data-standards-workshop says `solo: false`. metasalmonpy omits
+    # the key. smn-data-pkg says `solo: unknown`, which is neither. The last
+    # two are the ones this measures: until 2026-09-10 the client answered an
+    # absent or unreadable entry from a hard-coded list of the solo members,
+    # both of those repositories were on it, and so an omitted or mistyped
+    # key produced the draft-pull-request instruction, the one thing a shared
+    # repository forbids. HUB.md's rule is that a participation nobody has
+    # stated is shared, and this is what fails if the client ever again
+    # answers that question from anywhere but the entry.
     shared_out=$(handback_output "$SHARED_ID" "$future")
-    override_out=$(handback_output "$OVERRIDE_ID" "$future")
+    unkeyed_out=$(handback_output "$UNKEYED_ID" "$future")
+    unreadable_out=$(handback_output "$UNREADABLE_ID" "$future")
     printf '%s\n' "$shared_out" | grep -Fq \
       "https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/compare/agent/$SHARED_ID/$HUB_AGENT_TOKEN?expand=1" ||
       shared_ok=1
     printf '%s\n' "$shared_out" | grep -Fq "STOP" || shared_ok=1
     printf '%s\n' "$shared_out" | grep -Fq "wait for Brett" || shared_ok=1
     printf '%s\n' "$shared_out" | grep -Fq "Open one draft pull request" && shared_ok=1
-    printf '%s\n' "$override_out" | grep -Fq "STOP" || shared_ok=1
-    printf '%s\n' "$override_out" | grep -Fq "Open one draft pull request" && shared_ok=1
+    printf '%s\n' "$unkeyed_out" | grep -Fq "STOP" || shared_ok=1
+    printf '%s\n' "$unkeyed_out" | grep -Fq "Open one draft pull request" && shared_ok=1
+    printf '%s\n' "$unreadable_out" | grep -Fq "STOP" || shared_ok=1
+    printf '%s\n' "$unreadable_out" | grep -Fq "Open one draft pull request" && shared_ok=1
     if [ "$shared_ok" = "0" ]; then
-      assert 23 "client: handing back an item in a repository someone else has contributed to prints the compare URL and instructs the agent to stop, draft the body in chat, and wait" 0
+      assert 23 "client: handing back an item in a repository someone else has contributed to prints the compare URL and instructs the agent to stop, draft the body in chat, and wait; so does one whose entry omits solo: or carries a value that is neither true nor false" 0
     else
-      assert 23 "client: hand-back in a shared repository instructs a stop rather than a draft pull request, by configuration and by the fallback list alike" 1
-      note "unkeyed member: $(printf '%s' "$shared_out" | tail -n 6 | tr '\n' ' ')"
-      note "solo: false member: $(printf '%s' "$override_out" | tail -n 6 | tr '\n' ' ')"
+      assert 23 "client: hand-back in a shared repository instructs a stop rather than a draft pull request, for solo: false, for an entry that omits the key, and for a value that is neither true nor false" 1
+      note "solo: false member: $(printf '%s' "$shared_out" | tail -n 6 | tr '\n' ' ')"
+      note "unkeyed member: $(printf '%s' "$unkeyed_out" | tail -n 6 | tr '\n' ' ')"
+      note "solo: unknown member: $(printf '%s' "$unreadable_out" | tail -n 6 | tr '\n' ' ')"
     fi
   else
     skip 22 "client: hand-back in a solo repository instructs one draft pull request"
@@ -1452,6 +1588,256 @@ main() {
     fi
   else
     skip 26 "client: a claim prints the participation answer at claim time"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 27 -------------------------------------------------------------------
+  # `hub ready` and `hub claim` agree about the reclaim cap.
+  #
+  # HUB.md's condition 4 has two halves for an expired claim: the lease and
+  # the grace have both elapsed, AND a reclaim is permitted under
+  # max_reclaims_per_item_per_day. Until 2026-09-10 `hub ready` applied the
+  # first half only while `hub claim` applied both, so an agent that selected
+  # from the list was handed an item the client then refused with an exit 3
+  # at the cap. Assertion 16's abandoned item is that item one reclaim later.
+  #
+  # Two refs of one shape, an expired claim followed by one reclaim whose
+  # lease is equally expired, differing in one thing: when the reclaim was
+  # made. Inside the rolling 24 hours it spends the fixture's cap of 1 and the
+  # item must stay off the list; 30 hours ago it is outside the window, the
+  # count in the window is one short of the cap, and the item must be listed.
+  # The claim half is measured too, so this is about agreement rather than
+  # about the list alone: the capped item's claim has to be refused for the
+  # cap, and it is checked by message rather than by exit code alone because
+  # this caller already holds the fixture's cap of live claims, and that
+  # refusal is an exit 3 as well.
+  #
+  # RETIRES WHEN: the cap moves into the locks repository or reclaims stop
+  # being written by the client, either of which retires the rule itself.
+  local cap_ref="refs/heads/claim/$CAPPED_ID" under_ref="refs/heads/claim/$UNDERCAP_ID" cp1 cp2 up1 up2
+  cp1=$(mk_commit "$CLONE_A" "claim $CAPPED_ID by agent-a" "$(claim_record "$CAPPED_ID" agent-a claim "$stale")")
+  cp2=$(mk_commit "$CLONE_A" "reclaim $CAPPED_ID by agent-b" "$(claim_record "$CAPPED_ID" agent-b reclaim "$stale")" "$cp1")
+  push_ref "$CLONE_A" "$cp2" "$cap_ref" "$TMPROOT/capped.out"
+  up1=$(mk_commit "$CLONE_A" "claim $UNDERCAP_ID by agent-a" "$(claim_record "$UNDERCAP_ID" agent-a claim "$stale")")
+  # The reclaim's commit time is what the client's window reads, so it is set
+  # to 30 hours ago in a subshell, where the export cannot leak into any later
+  # commit this file builds.
+  up2=$(export GIT_COMMITTER_DATE="$(( $(date -u +%s) - 30 * 3600 )) +0000"
+        mk_commit "$CLONE_A" "reclaim $UNDERCAP_ID by agent-b" "$(claim_record "$UNDERCAP_ID" agent-b reclaim "$stale")" "$up1")
+  push_ref "$CLONE_A" "$up2" "$under_ref" "$TMPROOT/undercap.out"
+
+  if [ "$probe_ok" = "0" ]; then
+    local cap_ready="$TMPROOT/client.ready.cap.out" cap_claim="$TMPROOT/client.capped.claim.out"
+    local cap_claim_rc=0 cap_ok=0
+    hub ready >"$cap_ready" 2>"$TMPROOT/client.ready.cap.err"
+    grep -q "^$CAPPED_ID " "$cap_ready"   && cap_ok=1   # cap spent: held
+    grep -q "^$UNDERCAP_ID " "$cap_ready" || cap_ok=1   # one short of the cap: free
+    hub claim "$CAPPED_ID" >"$cap_claim" 2>&1; cap_claim_rc=$?
+    [ "$cap_claim_rc" = "$EX_FAIL" ] || cap_ok=1
+    grep -Fq "max_reclaims_per_item_per_day" "$cap_claim" || cap_ok=1
+    if [ "$cap_ok" = "0" ]; then
+      assert 27 "client: ready keeps an expired claim off the list while its reclaim cap is spent, lists one whose reclaims in the window are one short of the cap, and claim refuses the capped one naming the cap" 0
+    else
+      assert 27 "client: ready and claim agree about the reclaim cap (capped listed $(grep -c "^$CAPPED_ID " "$cap_ready"), under-cap listed $(grep -c "^$UNDERCAP_ID " "$cap_ready"), claim rc $cap_claim_rc wanted $EX_FAIL)" 1
+      note "$(grep -v '^locks repository\|^ *source:' "$cap_claim" | head -n 2 | tr '\n' ' ')"
+    fi
+  else
+    skip 27 "client: ready and claim agree about the reclaim cap"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 28 to 30 -------------------------------------------------------------
+  # The local claim lock, which serializes one agent's read, count and push
+  # for the concurrency cap, and how it decides that a lock left behind is
+  # abandoned. Until 2026-09-10 it decided by age: older than the client's
+  # stale threshold meant dead, and a holder whose git calls under the lock
+  # took longer than that -- they have no timeout, and a slow remote is enough
+  # -- was broken while alive. Its own release then deleted the breaker's
+  # lock. Two claims landed against a cap of one, which is the thing assertion
+  # 19 says cannot happen, and a third process was let in behind them.
+  #
+  # Three scenarios, each run with the client sourced as a library inside a
+  # subshell, so the lock functions are exercised directly with a wait of two
+  # seconds rather than twenty, and so the client's own `fail`, `push_ref` and
+  # `main`, and the git-environment unsets it performs at load, reach nothing
+  # in this file. A live process is a sleep child of this script; a dead one
+  # is a child that has already been waited for.
+  #   28  a lock older than the stale threshold whose pid is alive is not
+  #       broken: the waiter waits out its allowance and reports it (2), and
+  #       the lock still names the holder afterwards
+  #   29  a lock whose pid is dead is broken however fresh it is, and the
+  #       waiter takes it (0) and records itself as the holder
+  #   30  release removes only a lock this process still holds: with the pid
+  #       file naming another live process, the lock is left in place
+  #
+  # RETIRES WHEN: the cap moves into the locks repository, which retires the
+  # lock, or the lock stops recording a pid, which is this fix being undone.
+  if [ "$CLIENT_PRESENT" = "1" ]; then
+    local live_pid dead_pid want got
+    sleep 300 & live_pid=$!
+    ( : ) & dead_pid=$!
+    wait "$dead_pid" 2>/dev/null
+
+    lock_scenario live "$live_pid" yes
+    want="rc=2 exists=yes holder=$live_pid"
+    got=$(grep '^rc=' "$TMPROOT/lock.live.out")
+    if [ "$got" = "$want" ]; then
+      assert 28 "client: a claim lock older than the stale threshold whose recorded pid is alive is waited on and reported, not broken" 0
+    else
+      assert 28 "client: a live holder's claim lock is not broken by age (wanted '$want', got '${got:-nothing}')" 1
+      note "$(grep -v '^rc=' "$TMPROOT/lock.live.out" | head -n 2 | tr '\n' ' ')"
+    fi
+
+    lock_scenario dead "$dead_pid" no
+    want="rc=0 exists=yes holder=$$"
+    got=$(grep '^rc=' "$TMPROOT/lock.dead.out")
+    if [ "$got" = "$want" ]; then
+      assert 29 "client: a fresh claim lock whose recorded pid is dead is broken and taken, and now records the taker" 0
+    else
+      assert 29 "client: a dead holder's claim lock is broken however fresh (wanted '$want', got '${got:-nothing}')" 1
+      note "$(grep -v '^rc=' "$TMPROOT/lock.dead.out" | head -n 2 | tr '\n' ' ')"
+    fi
+
+    ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-release"
+      HUB_LIB=1
+      . "$SOURCE_CLIENT" || exit 99
+      cap_lock_acquire "lock-test-release"; rc=$?
+      printf '%s\n' "$live_pid" > "$CAP_LOCK_DIR/pid"
+      cap_lock_release
+      printf 'rc=%s exists=%s holder=%s\n' "$rc" \
+        "$([ -d "$CAP_LOCK_DIR" ] && echo yes || echo no)" "$(cat "$CAP_LOCK_DIR/pid" 2>/dev/null)"
+    ) >"$TMPROOT/lock.release.out" 2>&1
+    want="rc=0 exists=yes holder=$live_pid"
+    got=$(grep '^rc=' "$TMPROOT/lock.release.out")
+    if [ "$got" = "$want" ]; then
+      assert 30 "client: releasing a claim lock that another process now holds leaves it in place rather than deleting it" 0
+    else
+      assert 30 "client: release removes only a lock this process still holds (wanted '$want', got '${got:-nothing}')" 1
+      note "$(grep -v '^rc=' "$TMPROOT/lock.release.out" | head -n 2 | tr '\n' ' ')"
+    fi
+
+    # -- 31 -----------------------------------------------------------------
+    # The break is serialized. A waiter that has decided a holder is dead must
+    # not act on that decision while another breaker holds the break lock: it
+    # waits out its budget and reports (2) with the lock untouched, and breaks
+    # once the break lock is gone. The break lock is a bare directory beside
+    # the lock, held for a few syscalls, so "held by a live process" here is
+    # simply that it exists.
+    ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-break"
+      HUB_LIB=1
+      . "$SOURCE_CLIENT" || exit 99
+      CAP_LOCK_WAIT_SECONDS=2
+      mkdir -p "$CACHE_DIR"
+      dg=$(key_digest "lock-test-break") || exit 99
+      d="$CACHE_DIR/cap-$dg.lock"
+      mkdir -p "$d"; printf '%s\n' "$dead_pid" > "$d/pid"
+      mkdir "$d.break"
+      cap_lock_acquire "lock-test-break"; rc=$?
+      printf 'held rc=%s exists=%s holder=%s\n' "$rc" \
+        "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+      rmdir "$d.break"
+      cap_lock_acquire "lock-test-break"; rc=$?
+      printf 'freed rc=%s exists=%s holder=%s\n' "$rc" \
+        "$([ -d "$d" ] && echo yes || echo no)" "$(cat "$d/pid" 2>/dev/null)"
+    ) >"$TMPROOT/lock.break.out" 2>&1
+    local held_got freed_got
+    held_got=$(sed -n 's/^held //p' "$TMPROOT/lock.break.out")
+    freed_got=$(sed -n 's/^freed //p' "$TMPROOT/lock.break.out")
+    if [ "$held_got" = "rc=2 exists=yes holder=$dead_pid" ] && [ "$freed_got" = "rc=0 exists=yes holder=$$" ]; then
+      assert 31 "client: a waiter facing a dead holder's lock leaves it alone while the break lock is held, and breaks it once the break lock is released" 0
+    else
+      assert 31 "client: the break is serialized by the break lock (held: '${held_got:-nothing}', freed: '${freed_got:-nothing}')" 1
+      note "$(grep -v '^held \|^freed ' "$TMPROOT/lock.break.out" | head -n 2 | tr '\n' ' ')"
+    fi
+
+    # -- 32 -----------------------------------------------------------------
+    # The race, run for real: two waiters, one dead-pid lock, thirty rounds,
+    # and the count of rounds in which both were inside the locked region at
+    # once has to be zero. Both must also get the lock in the end, one after
+    # the other, or a client that simply refused everything would pass.
+    local rounds=30 r=1 round overlaps=0 short=0 dg32 res_a res_b rpid_a rpid_b deadline
+    dg32=$( (HUB_LIB=1; . "$SOURCE_CLIENT" >/dev/null 2>&1; key_digest lock-race) )
+    while [ "$r" -le "$rounds" ]; do
+      round="$TMPROOT/lockrace-$r"
+      mkdir -p "$round/cache/cap-$dg32.lock"
+      printf '%s\n' "$dead_pid" >"$round/cache/cap-$dg32.lock/pid"
+      new_gate
+      lock_racer a "$round" & rpid_a=$!
+      lock_racer b "$round" & rpid_b=$!
+      deadline=$((SECONDS + GATE_WAIT_SECONDS))
+      while { [ ! -e "$round/cready.a" ] || [ ! -e "$round/cready.b" ]; } &&
+            [ "$SECONDS" -lt "$deadline" ]; do :; done
+      : >"$GATE"
+      wait "$rpid_a" >/dev/null 2>&1
+      wait "$rpid_b" >/dev/null 2>&1
+      res_a=$(cat "$round/result.a" 2>/dev/null); res_b=$(cat "$round/result.b" 2>/dev/null)
+      case "$res_a $res_b" in *overlap=1*) overlaps=$((overlaps + 1)) ;; esac
+      case "$res_a" in "rc=0 overlap="*) : ;; *) short=$((short + 1)) ;; esac
+      case "$res_b" in "rc=0 overlap="*) : ;; *) short=$((short + 1)) ;; esac
+      r=$((r + 1))
+    done
+    if [ "$overlaps" = "0" ] && [ "$short" = "0" ]; then
+      assert 32 "client: two waiters facing one dead holder's lock never hold it at once, over $rounds rounds, and both get it in turn" 0
+    else
+      assert 32 "client: two waiters facing one dead holder's lock never hold it at once ($overlaps of $rounds rounds overlapped; $short waiter runs did not get the lock)" 1
+      note "last round: a '$res_a' b '$res_b'"
+    fi
+
+    # -- 33 -----------------------------------------------------------------
+    # The pid write fails after the shell has created the file, which is what
+    # a full disk does: mkdir needs only an inode, the redirection creates the
+    # file, and the data write is what fails. Simulated by overriding printf
+    # for exactly the client's pid write, so it works the same as root and
+    # without a filesystem to fill. The lock this process just created must
+    # not survive its own failure to record itself.
+    ( export HUB_CACHE_DIR="$TMPROOT/lock-cache-nospace"
+      HUB_LIB=1
+      . "$SOURCE_CLIENT" || exit 99
+      printf() {
+        if [ "${1:-}" = '%s\n' ] && [ "${2:-}" = "$$" ]; then return 1; fi
+        command printf "$@"
+      }
+      cap_lock_acquire "lock-test-nospace"; rc=$?
+      unset -f printf
+      printf 'rc=%s exists=%s\n' "$rc" "$([ -d "$CAP_LOCK_DIR" ] && echo yes || echo no)"
+    ) >"$TMPROOT/lock.nospace.out" 2>&1
+    got=$(grep '^rc=' "$TMPROOT/lock.nospace.out")
+    if [ "$got" = "rc=1 exists=no" ]; then
+      assert 33 "client: a pid write that fails after creating the file leaves no lock directory behind, and the call reports it could not take the lock" 0
+    else
+      assert 33 "client: a failed pid write leaves no lock behind (wanted 'rc=1 exists=no', got '${got:-nothing}')" 1
+    fi
+
+    # -- 34 -----------------------------------------------------------------
+    # A refused rename charges the wait budget. The client that had the defect
+    # looped straight back with no sleep and no count, so this is run under
+    # the watchdog and a 124 is that spin.
+    local refused_rc=0
+    run_with_timeout 10 lock_refused_scenario >"$TMPROOT/lock.refused.out" 2>"$TMPROOT/lock.refused.err"
+    refused_rc=$?
+    got=$(grep '^rc=' "$TMPROOT/lock.refused.out")
+    if [ "$refused_rc" != "124" ] && [ "$got" = "rc=2 exists=yes holder=$dead_pid" ]; then
+      assert 34 "client: a dead holder's lock whose rename is refused is waited out and reported within the budget, with the lock untouched, rather than spun on" 0
+    else
+      assert 34 "client: a refused rename returns within the budget (watchdog rc $refused_rc, wanted 'rc=2 exists=yes holder=$dead_pid', got '${got:-nothing}'; $(grep -c breaking "$TMPROOT/lock.refused.err") break messages)" 1
+    fi
+
+    kill "$live_pid" >/dev/null 2>&1
+    wait "$live_pid" >/dev/null 2>&1
+  else
+    skip 28 "client: a live holder's claim lock is not broken by age"
+    note "$CLIENT_SKIP_REASON"
+    skip 29 "client: a dead holder's claim lock is broken however fresh"
+    note "$CLIENT_SKIP_REASON"
+    skip 30 "client: release removes only a lock this process still holds"
+    note "$CLIENT_SKIP_REASON"
+    skip 31 "client: the break is serialized by the break lock"
+    note "$CLIENT_SKIP_REASON"
+    skip 32 "client: two waiters facing one dead holder's lock never hold it at once"
+    note "$CLIENT_SKIP_REASON"
+    skip 33 "client: a failed pid write leaves no lock behind"
+    note "$CLIENT_SKIP_REASON"
+    skip 34 "client: a refused rename returns within the budget"
     note "$CLIENT_SKIP_REASON"
   fi
 
