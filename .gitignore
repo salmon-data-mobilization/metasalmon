@@ -68,3 +68,7 @@ tmp/
 # Python bytecode from the hub queue tooling
 __pycache__/
 *.pyc
+
+# A Cloudflare bot-check page that lands here when a fetch is blocked.
+# Not part of the package; it reappears whenever `git add .` is run.
+bhl.html
