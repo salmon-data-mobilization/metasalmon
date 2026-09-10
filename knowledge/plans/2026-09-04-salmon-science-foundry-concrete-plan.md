@@ -68,7 +68,7 @@ These were given during the review and supersede v1 wherever they conflict.
 |---|---|---|
 | R11 | **The PSC ontology is out of this hub.** Brett: *"I don't think I want the PSC Ontology as part of this hub anymore … Let's leave PSC out for now."* | **R7 and R8 are withdrawn.** Workstream J is deleted, S16 is withdrawn from the integration kit, and Fraser Recruits returns to out-of-scope. The design work is not lost: it is held as a session memo and can be revived as PSC-side work whenever Brett wants it, under PSC-DSC rather than here. |
 | R12 | **No GitHub Project.** Brett: *"Just do the git files, don't bother with the generated GitHub project view if that's only for me."* | §9 loses the Project, the sync program, and the second authorization paragraph. What remains is a git-native queue and a claim that is a `git push`. This is a **simplification**, not a compromise: the Project was the only part of the design that needed a token scope, an unattended credential, or a second representation to keep honest. |
-| R13 | **Authorization: paragraph 1 only.** Git pushes to claim refs and agent branches. Paragraph 3 (one draft pull request per handed-back item) is **declined**; paragraph 2 no longer exists under R12. | An agent pushes a branch, prints the compare URL, and stops. Brett opens every pull request, at about thirty seconds each. |
+| R13 **partly superseded 2026-09-10 (R15)** | **Authorization: paragraph 1 only.** Git pushes to claim refs and agent branches. Paragraph 3 (one draft pull request per handed-back item) is **declined**; paragraph 2 no longer exists under R12. | An agent pushed a branch, printed the compare URL, and stopped. R15 granted paragraph 3 the next day and widened the grant three further ways; see §0.1d. Paragraph 2 stays gone. |
 | R14 | **The hub's own bundle migrates to upstream OKF v0.2** (Q34), and the migration makes *more* sense under R11 than it did before. | With no PSC work anywhere in this ecosystem, a public hub validating itself with a PSC-owned tool from a sibling checkout is a dependency with nothing on the other end. |
 
 **What R11 does to the boundary, stated because it is now simpler than it has
@@ -79,7 +79,22 @@ PSC repository either. The one PSC-owned thing that remains is
 this and which R11 does not mention; it stays, and if Brett wants it
 reconsidered that is a separate ruling, not an implication of this one.
 
+### 0.1d Ruling of 2026-09-10 (Brett), which reverses part of R13
 
+| # | Ruling | What it changed |
+|---|---|---|
+| R15 | **The authorization widens, and one refusal is reversed.** One draft pull request per handed-back item is granted, in a repository nobody but Brett has ever contributed to. In such a repository an agent may also merge a green pull request; here it may promote a queue item to `ready` on an authorization Brett gave in chat, naming it in the commit, and may push a small mechanical change to `main`, a pull request being preferred otherwise because that is what Codex reviews. | §9.5 stops carrying a second copy of the boundary and points at `HUB.md`, which is the operative copy and the only enumeration that governs. Appendix A Q37 keeps its 2026-09-09 ruling and records the reversal beneath it. The scope test is **participation, not ownership**: three member repositories fail it, so the grant does not reach them. |
+
+**Why the reversal is worth a row of its own.** R13 refused paragraph 3 one day
+and R15 granted it the next, which is the kind of change that quietly rewrites
+a decision record instead of extending it. Both readings are kept: the refusal
+was that a draft pull request is a pull request, one of the verbs the global
+rule names; the grant was that inside Brett's own repositories a pull request
+is him talking to himself, and the rule exists to stop an agent addressing
+other people as him. R15 also states the property the earlier design leaned
+on and no longer has, which is that an agent could not reach `main` at all.
+That was structure; it is now an audit trail, and a promotion that cites no
+authorization is a defect rather than an impossibility.
 
 ### 0.2 Change record
 
@@ -155,6 +170,14 @@ place (**corrected**, with the finding ids from Appendix D), or replaced
 | Appendix A | **closed**: Q31 to Q37 ruled or withdrawn; no open questions remain in this plan | Brett's rulings |
 | 9 (again) | **replaced a second time**: a judged panel of three independent coordination designs reached a better answer than the first draft, and §9.8 states where it departs from the ruling | the design panel, 2026-09-05 |
 | 7-J (again) | strengthened by the ontology panel on 2026-09-05, then **withdrawn entirely on 2026-09-09** | the ontology panel; then R11 |
+
+**Fourth pass, 2026-09-10.**
+
+| Section | Change | Driven by |
+|---|---|---|
+| 0.1d | **new**: the ruling of 2026-09-10, which reverses part of R13 | R15 |
+| 9.5 | **reduced**: the quoted paragraph and the exclusion list are deleted rather than corrected, and the section now points at `HUB.md` and keeps only the design reasoning and the reversal | R15; the duplicated-boundary defect §9.1 measures |
+| Appendix A Q37 | the 2026-09-09 ruling is kept and a dated supersession note added beneath it | R15; this file's never-delete convention |
 
 ### 0.3 The verdict, in one paragraph
 
@@ -474,7 +497,7 @@ condition of the lighter thing, as `AGENTS.md` requires of any guard.
 
 v2 said: hub roadmap plus repository issues, and **no organization-level
 Project**. Brett ruled the opposite on 2026-09-05 (R9), so the design is
-[§9](#9-hub-coordination-replaced-2026-09-05--r9) and this section keeps only
+[§9](#9-hub-coordination-replaced-2026-09-05-simplified-2026-09-09--r9-r12) and this section keeps only
 what survived the ruling:
 
 - One planning surface per ecosystem, still. The Project replaces the
@@ -1412,10 +1435,12 @@ run, with agreement reported.
   semi-deterministic, 12 with held-out keys. The *confirmatory study set*
   is larger, because generated variants are cheap: at least 80 and ideally
   120 paired items — 60 to 80 perturbation-generated defects on the gold
-  package with exact scorers, the 2026-09-02 citation-verification ledger
-  (52 rows in the S9 card, 53 sources in the commons log; reconcile) as a
-  citation-support family with only post-freeze verifications as the
-  temporal holdout, the four subarea and one species
+  package with exact scorers, **no citation-support family and no temporal
+  holdout drawn from it** (the 2026-09-02 citation-verification ledger this
+  item was written around was never written, measured 2026-09-10, so the
+  family has no input; it returns only if a ledger is produced and a queue item
+  says so, and until then the 80-to-120 target rests on the perturbation
+  generator alone), the four subarea and one species
   gap cases, the six Theme A cases as the regression anchor, with the 14
   column and 23 code-value decisions of the gold standard as development
   data only. Five conditions; five epochs; two or three models including
@@ -1431,8 +1456,9 @@ run, with agreement reported.
   2026-09-10 that file has never existed**, so this gate is currently
   unsatisfiable and the workstream is blocked on regenerating it from the
   commons cards rather than on the briefing itself (so the two failed
-  attributions are fixed inputs, not findings), with the 52-row 2026-09-02
-  ledger as the temporal holdout, and produce a decision matrix **for Q6**,
+  attributions are fixed inputs, not findings). The 2026-09-02 ledger this
+  bullet once named as its temporal holdout was never written either, so the
+  briefing runs without one and produces a decision matrix **for Q6**,
   whose eight rulings are Brett's. The workshop does not adjudicate shared terms;
   it can discuss them. Any commons gap a withdrawn proposal came from moves
   to `rejected` with `rejected_because` and `evidence_needed` in the same
@@ -1736,8 +1762,10 @@ service to keep running.
 ## 9.4 Why the claim is a git push
 
 - **It needs no GitHub permission that Brett's rule protects.** A ref push is
-  not a comment, an issue, or a pull request. Under R13 that is the *entire*
-  standing authorization.
+  not a comment, an issue, or a pull request. Under R13 that was the *entire*
+  standing authorization; R15 added a draft pull request and three narrower
+  writes on 2026-09-10, and the reason the claim protocol itself needed none of
+  them is unchanged.
 - **It is the only atomic primitive available.** An orphan commit can never
   fast-forward an existing ref, so a first claim succeeds if and only if
   nobody holds it; a heartbeat, release, hand-back, or reclaim is a child of
@@ -1750,11 +1778,17 @@ service to keep running.
   guard's git layer sees every claim commit. This was a real hole in the
   Project-based drafts and R12 closes it by construction.
 
-**Two rules that are structure rather than policy.** `ready` is set by a
-commit on `main`, which the carve-out forbids agents to push, so **an agent
-cannot enlarge its own queue**. And **hand-back does not release the claim**:
-the agent appends a `handoff` commit and the item stays unclaimable until
-Brett merges, so finished work never looks free again while he is away.
+**One rule that is structure, and one that stopped being structure.**
+**Hand-back does not release the claim**: the agent appends a `handoff` commit
+and the item stays unclaimable until Brett merges, so finished work never looks
+free again while he is away. That is still structure. The other rule was that
+`ready` is set by a commit on `main` and an agent could not push there at all,
+so **an agent could not enlarge its own queue**. R15 ended that on 2026-09-10:
+an agent may promote an item on an authorization Brett gave in chat, and the
+promotion commit must name it. The property is now an audit trail rather than a
+wall, and a promotion citing nothing is a defect rather than an impossibility.
+`HUB.md` is where that rule is operative and is worth reading rather than this
+summary of it.
 
 **One thing the client must get right**, because it is the difference between
 a stalled queue and a silent one: *lost the race* and *the call failed* are
@@ -1762,29 +1796,41 @@ different exit codes. Folding an expired credential into "someone else got
 there first" makes an agent spin through the whole queue reporting nothing
 wrong.
 
-## 9.5 The standing authorization, in one paragraph (R13)
+## 9.5 The standing authorization (R13, widened 2026-09-10 by R15)
 
-Brett's existing sentence is **not** changed. One paragraph goes beneath it,
-and **`HUB.md` carries the operative text**: a permission grant that exists in
-two places is a grant with two readings, and the one an agent obeys is
-whichever file it happened to open. What follows is a summary for a reader of
-this plan, not a second copy to be edited.
+Brett's global sentence is **not** changed, and one paragraph sits beneath it.
+**`HUB.md` carries the operative text and this section deliberately does not.**
+A permission grant that exists in two places is a grant with two readings, and
+the one an agent obeys is whichever file it happened to open. So what follows
+is the design reasoning: what the grant is for, and what its shape is meant to
+buy. What it permits, and every exception carved out of it, is the `writes`
+register in `HUB.md`, which is the only enumeration that governs.
 
-> In the member repositories listed in the hub queue's configuration, and in
-> the locks repository, and only there, an agent executing the protocol in
-> `HUB.md` may push a claim record to a ref under the claim prefix, and push
-> commits to a branch named `agent/<queue-id>/<token>`, without asking each
-> time.
+The shape, in two sentences. Inside the member repositories nobody but Brett
+has ever contributed to, an agent running the `HUB.md` protocol writes to a
+small number of named targets without asking each time, under a closed
+exclusion list and a clause that suspends the whole grant the moment it writes
+outside that list. This repository widens the default further, on the global
+rule's own provision for a repository Brett controls widening it explicitly and
+with a date; read the register for what those widenings are, because a summary
+of a boundary is not a boundary.
 
-It authorizes nothing else, and the closed exclusion list says so explicitly:
-no issue, pull request, review, comment, release, label, or assignee; no push
-to `main`; no move to `ready`; no `--force`; nothing on GitLab. **A draft pull
-request is declined** (R13), so an agent pushes its branch, prints the compare
-URL, and stops; Brett opens the pull request, at about thirty seconds each.
+**One draft pull request per handed-back item was declined on 2026-09-09 (R13)
+and granted on 2026-09-10 (R15).** The reversal is recorded here rather than
+edited away, because the reasoning on both sides is the useful part. The
+refusal held that a draft pull request is a pull request, which is one of the
+verbs Brett's global rule names, so it should cost an explicit decision. The
+grant held that inside his own repositories a pull request is him talking to
+himself: the rule exists to stop an agent addressing *other people* as him, a
+draft pull request on `metasalmon` addresses nobody, and it starts continuous
+integration immediately rather than whenever he next sits down. The test that
+came with the grant is **participation, not ownership**, so it does not reach
+every member repository; `HUB.md` carries the measured table.
 
-The whole authorization **self-suspends** if an agent writes outside the list,
-until Brett reinstates it, and it *retires* when claims stop living on git
-refs — at which point the paragraph is deleted rather than widened.
+The whole authorization **self-suspends** if an agent writes outside the
+permitted list, until Brett reinstates it, and it *retires* when claims stop
+living on git refs, at which point the paragraph is deleted rather than
+widened.
 
 ## 9.6 The private-terms guard (Q21)
 
@@ -2434,9 +2480,21 @@ for.
 **Owner:** Brett's global instructions, with `HUB.md` as the operative copy.
 ```
 
+**Q37 was superseded in part on 2026-09-10 (R15), and the card above is kept
+exactly as it was ruled.** Paragraph 3 is **granted**: one draft pull request
+per handed-back item, in a repository nobody but Brett has ever contributed to.
+The same ruling widens the grant three further ways in this repository, which
+§0.1d summarises and `HUB.md` enumerates. Two things a reader of the 2026-09-09
+card would otherwise carry away wrong: the carve-out is no longer the narrowest
+of the three designs, and the claim that an agent cannot promote its own work is
+no longer structural. `HUB.md` remains the operative copy, and the questions
+index records the reversal as
+[Q38](../questions.md).
+
 **No open questions remain in this plan.** Q1 to Q18 are the hub's own, Q19 to
-Q30 were ruled 2026-09-05, and Q31 to Q37 were ruled or withdrawn 2026-09-09.
-What is left is execution, and §9.7 step 0 is the first item.
+Q30 were ruled 2026-09-05, and Q31 to Q37 were ruled or withdrawn 2026-09-09,
+with Q37 partly reversed on 2026-09-10. What is left is execution, and §9.7
+step 0 is the first item.
 
 # Appendix B — Hub integration kit (prepared, not applied)
 

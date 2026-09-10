@@ -34,10 +34,11 @@ carried "Released 0.3.0" for the fifteen days after 0.5.0 shipped.
 `main` may carry unreleased changes under `NEWS.md`'s **"(development
 version)"** section without a `.9000` bump, so the package can self-report the
 released number while carrying work past it. Cite the commit, not the version,
-for anything landed after the current release, such as the
-`smn`-outranks-`gcdfo` ranking fix, the single-owner IRI whitespace predicate
-(backlog #85), dual-provenance manifest validation (backlog #88), the datetime
-observation-dimension fix, and S11 slice 2's vignettes are all in this state.
+for anything in that section. **Which changes are in it is not restated here**:
+read `NEWS.md` for the development-version section and the roadmap's release
+index for what has shipped. This paragraph used to name five examples, and all
+five had been released by 0.4.0 while it still called them post-release work,
+which is the failure mode a list of examples has and a rule does not.
 
 - Maintainer: Brett Johnson. Author credit also to "Codex".
 - Canonical repository: https://github.com/salmon-data-mobilization/metasalmon
