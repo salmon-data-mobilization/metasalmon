@@ -4093,6 +4093,74 @@ test_that("a primary key with missing values is rejected", {
   )
 })
 
+test_that("a column declared required must not ship missing values", {
+  # #49 (hub B-49). `required` was inferred, written to column_dictionary.csv,
+  # parsed back to logical, exported as Frictionless `constraints.required` and
+  # read by nothing that compared it to the data -- so a package could state a
+  # column is required and ship blanks in it.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "b"), depth = c(1.5, NA), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "req", table_id = "obs", seed_semantics = FALSE
+  ))
+  dict <- .ms_read_metadata_csv(.ms_metadata_path(path, "column_dictionary.csv"))
+  dict$required[dict$column_name == "depth"] <- "TRUE"
+  readr::write_csv(dict, .ms_metadata_path(path, "column_dictionary.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "declared required"
+  )
+
+  # The same declaration over a complete column passes, and a column that is
+  # not declared required keeps its blanks: the check reads the declaration,
+  # not the data's opinion of itself.
+  dict$required[dict$column_name == "depth"] <- "FALSE"
+  dict$required[dict$column_name == "site"] <- "TRUE"
+  readr::write_csv(dict, .ms_metadata_path(path, "column_dictionary.csv"), na = "")
+  expect_no_error(suppressWarnings(suppressMessages(validate_salmon_datapackage(path))))
+})
+
+test_that("a blank schema-required metadata field warns by default and fails strict validation", {
+  # #49 (hub B-49). The Frictionless schema declares `constraints.required` on
+  # seven dataset.csv fields, five tables.csv fields and seven dictionary
+  # fields. `review_metadata()` has reported a blank one as blocking strict
+  # validation since 0.5.0, and strict validation let it through -- the
+  # placeholder scan only sees a field that *says* it is missing, not one that
+  # is. Same channel as the placeholders: warn in the default mode, error under
+  # `require_iris = TRUE`, so a freshly created package stays valid until the
+  # user asks for the strict answer.
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  dataset <- .ms_read_metadata_csv(.ms_metadata_path(pkg_path, "dataset.csv"))
+  dataset$contact_email <- ""
+  readr::write_csv(dataset, .ms_metadata_path(pkg_path, "dataset.csv"), na = "")
+
+  expect_warning(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
+    "schema-required"
+  )
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
+    "contact_email is required by the SDP schema and blank"
+  )
+})
+
+test_that("a blank metadata key field is a structural error in every mode", {
+  # #49 (hub B-49). `.ms_metadata_key_fields()` excludes the keys from what
+  # `review_metadata()` reports, on the stated ground that the validator is
+  # the channel for a blank key. It was not: a tables.csv row with no
+  # `table_id` was skipped by the per-table loop and never named.
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(pkg_path, "tables.csv"))
+  tables$table_id <- ""
+  readr::write_csv(tables, .ms_metadata_path(pkg_path, "tables.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE))),
+    "table_id is required by the SDP schema and blank"
+  )
+})
+
 test_that("a table or dataset placement that is not an absolute IRI is reported", {
   # sdp-0.3.0 moved methods and protocols onto tables.csv/dataset.csv. The
   # base schema accepts any string and the observation-structure validator

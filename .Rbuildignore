@@ -5,6 +5,7 @@
 ^docs$
 ^docs/entrypoints\.md$
 ^\.github$
+^\.hub$
 ^\.git$
 ^notes$
 ^knowledge$

@@ -1758,12 +1758,133 @@ read_salmon_datapackage <- function(path) {
   tibble::tibble(message = messages)
 }
 
+# The four metadata frames a loaded package carries, keyed by schema file
+# name, with the issue category, the source name validation messages use, and
+# the fields that identify a row in that file. One spelling, shared by the #49
+# collectors, so a message and its issue row cannot name different files.
+.ms_package_metadata_frames <- function(pkg) {
+  list(
+    "dataset.csv" = list(
+      frame = pkg$dataset, issue_type = "dataset",
+      source = "metadata/dataset.csv", id_fields = "dataset_id"
+    ),
+    "tables.csv" = list(
+      frame = pkg$tables, issue_type = "tables",
+      source = "metadata/tables.csv", id_fields = c("table_id", "file_name")
+    ),
+    "column_dictionary.csv" = list(
+      frame = pkg$dictionary, issue_type = "dictionary",
+      source = "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")
+    ),
+    "codes.csv" = list(
+      frame = pkg$codes, issue_type = "codes",
+      source = "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value")
+    )
+  )
+}
+
+# Rows whose schema-required fields are blank (#49). `keys = TRUE` scans the
+# fields that address a row (`.ms_metadata_key_fields()`); `FALSE` scans the
+# other `constraints.required` fields -- the same set `review_metadata()`
+# reports, read from the same schema parse, so the two cannot disagree about
+# which fields block. Blank means NA or whitespace: a `MISSING ...:`
+# placeholder is not blank and has its own collector, so no field is reported
+# twice. Rows come back in schema order, then file order; nothing here sorts.
+.ms_collect_blank_required_metadata_fields <- function(pkg, keys = FALSE) {
+  found <- list()
+  frames <- .ms_package_metadata_frames(pkg)
+  for (file_name in names(frames)) {
+    spec <- frames[[file_name]]
+    df <- spec$frame
+    if (!is.data.frame(df) || nrow(df) == 0L) {
+      next
+    }
+    row_text <- function(field, row) {
+      if (!field %in% names(df)) {
+        return(NA_character_)
+      }
+      text <- .ms_scalar_text(df[[field]][[row]])
+      if (nzchar(text)) text else NA_character_
+    }
+    key_fields <- .ms_metadata_key_fields(file_name)
+    required <- .ms_schema_required_metadata_fields(file_name)
+    fields <- if (isTRUE(keys)) {
+      intersect(required, key_fields)
+    } else {
+      setdiff(required, key_fields)
+    }
+    for (field in intersect(fields, names(df))) {
+      vals <- as.character(df[[field]])
+      for (row in which(is.na(vals) | !nzchar(trimws(vals)))) {
+        found[[length(found) + 1L]] <- tibble::tibble(
+          file = file_name,
+          issue_type = spec$issue_type,
+          field = field,
+          table_id = row_text("table_id", row),
+          column_name = row_text("column_name", row),
+          message = sprintf(
+            "%s %s field %s is required by the SDP schema and blank. %s",
+            spec$source,
+            .ms_validation_row_context(df, row, id_fields = spec$id_fields),
+            field,
+            if (isTRUE(keys)) {
+              "A row without its key cannot be addressed."
+            } else {
+              "Fill it before final validation."
+            }
+          )
+        )
+      }
+    }
+  }
+  if (length(found) == 0L) {
+    return(tibble::tibble(
+      file = character(), issue_type = character(), field = character(),
+      table_id = character(), column_name = character(), message = character()
+    ))
+  }
+  dplyr::bind_rows(found)
+}
+
+# The optional artifacts under metadata/semantic/: SSSOM mapping sets and
+# ordered measurement decompositions. Each has had its own validator since it
+# shipped, and until #49 only the KNB publication and archive paths called
+# them -- the end-to-end validator reported success over a manifest whose
+# SHA-256 no longer matched its bytes. Presence is detected as those two paths
+# detect it, by the managed file names and never by scanning the directory,
+# so an editor backup or an unapproved draft there stays local and unread. A
+# dangling symlink counts as present, as it does for observation structures:
+# a package that points at an artifact it cannot read is refused, not passed.
+.ms_validate_optional_sdp_semantic_artifacts <- function(path) {
+  present <- function(relative) {
+    candidate <- file.path(path, relative)
+    file.exists(candidate) || .ms_sdp_extension_is_symlink(candidate)
+  }
+  if (present("metadata/semantic/mapping-sets.json")) {
+    validate_sdp_sssom(path)
+  }
+  if (present(.ms_sdp_decomposition_manifest_path) ||
+      present(.ms_sdp_decomposition_csv_path)) {
+    validate_sdp_measurement_decompositions(path)
+  }
+  invisible(TRUE)
+}
+
 #' Validate a Salmon Data Package end to end
 #'
-#' Reads a package from disk, checks that metadata/data files stay aligned,
-#' verifies coded values against `codes.csv` when present, and then runs
-#' [validate_dictionary()] plus [validate_semantics()]. This is the quickest
-#' pre-flight check before sharing a package-first submission.
+#' Reads a package from disk and checks, in order: that `dataset.csv`,
+#' `tables.csv`, `column_dictionary.csv` and `codes.csv` stay aligned with each
+#' other and with the data files, and that no schema-required key field is
+#' blank; that a declared primary key identifies each row and that a column
+#' the dictionary declares `required` has no missing values; that coded values
+#' appear in `codes.csv` when present; that the optional observation-structure,
+#' SSSOM mapping-set and measurement-decomposition artifacts validate when
+#' present; and then runs [validate_dictionary()] plus [validate_semantics()].
+#' Under `require_iris = TRUE` it additionally refuses `REVIEW:` markers,
+#' unresolved `MISSING ...:` placeholders, blank schema-required metadata
+#' fields and blank table `observation_unit_iri` values; in the default mode
+#' those are reported as warnings. This is the pre-flight check before sharing
+#' a package-first submission.
 #'
 #' @param path Character; directory containing the Salmon Data Package.
 #' @param require_iris Logical; if `TRUE`, require non-empty semantic IRIs for
@@ -1808,6 +1929,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   # absence preserves the historic validation path; when present, validate the
   # canonical files and their data-level bindings before semantic checks.
   .ms_validate_optional_sdp_observation_metadata(path)
+  .ms_validate_optional_sdp_semantic_artifacts(path)
 
   final_review_issues <- if (isTRUE(require_iris)) {
     dplyr::bind_rows(
@@ -1815,7 +1937,10 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       .ms_collect_review_placeholder_issues(pkg$tables, "metadata/tables.csv", id_fields = c("table_id", "file_name")),
       .ms_collect_missing_table_observation_unit_iri_issues(pkg$tables),
       .ms_collect_review_placeholder_issues(pkg$dictionary, "metadata/column_dictionary.csv", id_fields = c("table_id", "column_name")),
-      .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value"))
+      .ms_collect_review_placeholder_issues(pkg$codes, "metadata/codes.csv", id_fields = c("table_id", "column_name", "code_value")),
+      # #49: a blank schema-required field is the placeholder state minus the
+      # marker, so it is refused here and only here; keys are structural above.
+      .ms_collect_blank_required_metadata_fields(pkg)["message"]
     )
   } else {
     tibble::tibble()
@@ -1865,7 +1990,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         ifelse(nrow(final_review_issues) == 1, "", "s")
       ),
       .ms_cli_bullets(preview, "x"),
-      "i" = "Resolve placeholder metadata, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
+      "i" = "Resolve placeholder metadata, blank schema-required fields, blank table observation-unit IRIs, and any REVIEW-prefixed IRIs before strict validation."
     )
     if (nrow(final_review_issues) > length(preview)) {
       abort_lines <- c(
@@ -2213,6 +2338,36 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       ))
     }
   }
+  # #49: schema-required metadata fields. A blank *key* field is structural in
+  # every mode -- the row cannot be addressed, and the per-table loop below
+  # skipped a tables.csv row with no `table_id` rather than naming it. A blank
+  # *non-key* required field is the same state as a `MISSING ...:` placeholder
+  # minus the marker, so it takes the placeholder channel above: a warning
+  # here, an error under `require_iris = TRUE`, and a freshly created package
+  # stays valid until the user asks for the strict answer.
+  blank_keys <- .ms_collect_blank_required_metadata_fields(pkg, keys = TRUE)
+  for (row in seq_len(nrow(blank_keys))) {
+    add_issue(
+      blank_keys$issue_type[[row]],
+      blank_keys$message[[row]],
+      table_id = blank_keys$table_id[[row]],
+      column_name = blank_keys$column_name[[row]]
+    )
+  }
+  if (!isTRUE(require_iris)) {
+    blank_required <- .ms_collect_blank_required_metadata_fields(pkg)
+    if (nrow(blank_required) > 0L) {
+      field_refs <- sort(
+        unique(paste0(blank_required$file, "$", blank_required$field)),
+        method = "radix"
+      )
+      cli::cli_warn(c(
+        "{nrow(blank_required)} schema-required metadata field{?s} {?is/are} blank.",
+        "x" = paste(utils::head(.ms_cli_escape(field_refs), 6L), collapse = ", "),
+        "i" = "Fill {cli::qty(nrow(blank_required))}{?it/them} before publication; {.code require_iris = TRUE} reports {?it/these} as {?an error/errors}."
+      ))
+    }
+  }
   if (nrow(pkg$dictionary) == 0) {
     add_issue("dictionary", "No rows found in column_dictionary.csv.")
   }
@@ -2400,6 +2555,39 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         table_id = table_id,
         column_name = paste(extra_in_data, collapse = ", ")
       )
+    }
+
+    # Tidy check 4 (#49): a column the dictionary declares `required` must not
+    # ship missing values. The flag was inferred, written, parsed back to
+    # logical and exported as Frictionless `constraints.required`, and read by
+    # nothing that compared it to the data. Only columns present in the data
+    # are checked; an absent one is already reported above. Blank means NA or
+    # whitespace, exactly as the primary-key check reads it.
+    required_flags <- if ("required" %in% names(table_dict)) {
+      .ms_parse_logical(table_dict$required)
+    } else {
+      rep(NA, nrow(table_dict))
+    }
+    required_cols <- trimws(as.character(table_dict$column_name))[
+      !is.na(required_flags) & required_flags
+    ]
+    for (column_name in intersect(unique(required_cols), data_cols)) {
+      column <- data_df[[column_name]]
+      missing_n <- sum(is.na(column) | !nzchar(trimws(as.character(column))))
+      if (missing_n > 0L) {
+        add_issue(
+          "columns",
+          sprintf(
+            "Table '%s' column '%s' is declared required in column_dictionary.csv but %d row%s missing a value.",
+            table_id,
+            column_name,
+            missing_n,
+            ifelse(missing_n == 1, " is", "s are")
+          ),
+          table_id = table_id,
+          column_name = column_name
+        )
+      }
     }
 
     primary_key <- .ms_scalar_text(table_row$primary_key)

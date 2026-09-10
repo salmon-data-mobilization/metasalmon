@@ -798,3 +798,34 @@ test_that("the validator accepts a metasalmonpy-written manifest provenance", {
     "provenance is incomplete"
   )
 })
+
+test_that("validate_salmon_datapackage refuses a corrupt decomposition artifact", {
+  # #49 (hub B-49). As with SSSOM: the artifact had a validator, and the
+  # end-to-end validator never called it, so a CSV whose bytes had drifted
+  # from its manifest validated clean. Either managed file triggers the check,
+  # so a CSV whose manifest has gone is refused rather than silently unbound.
+  root <- withr::local_tempdir()
+  make_measurement_decomposition_test_sdp(root)
+  write_sdp_measurement_decompositions(
+    root,
+    measurement_decomposition_test_rows()
+  )
+  expect_no_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root)))
+  )
+
+  csv_path <- measurement_decomposition_test_csv_path(root)
+  text <- rawToChar(measurement_decomposition_test_read_raw(csv_path))
+  text <- sub("Female sex constraint", "Female sex", text, fixed = TRUE)
+  writeBin(charToRaw(enc2utf8(text)), csv_path)
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
+    "SHA-256"
+  )
+
+  unlink(measurement_decomposition_test_manifest_path(root))
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
+    "manifest"
+  )
+})

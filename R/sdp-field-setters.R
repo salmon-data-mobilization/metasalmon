@@ -108,9 +108,19 @@
 # `field$requirement`, which `.ms_field_from_frictionless()` has parsed since
 # the schema bundle landed and which nothing outside that file ever read.
 .ms_required_metadata_fields <- function(file_name) {
+  setdiff(
+    .ms_schema_required_metadata_fields(file_name),
+    .ms_metadata_key_fields(file_name)
+  )
+}
+
+# The same set with the keys still in it. `validate_salmon_datapackage()`
+# reads this one (#49): a blank key is a structural defect it reports in every
+# mode, where a blank non-key field is incomplete metadata a setter can fill.
+.ms_schema_required_metadata_fields <- function(file_name) {
   fields <- .ms_metadata_schema_fields(file_name)
   required <- purrr::keep(fields, ~ identical(.x$requirement, "required"))
-  setdiff(purrr::map_chr(required, "name"), .ms_metadata_key_fields(file_name))
+  purrr::map_chr(required, "name")
 }
 
 .ms_metadata_field_description <- function(file_name, field) {

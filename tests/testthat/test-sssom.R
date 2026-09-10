@@ -453,3 +453,31 @@ test_that("the validator accepts a metasalmonpy-written manifest provenance", {
   )
   expect_error(validate_sdp_sssom(sdp), "provenance is incomplete")
 })
+
+test_that("validate_salmon_datapackage refuses a corrupt SSSOM artifact", {
+  # #49 (hub B-49). The end-to-end validator reported success over a
+  # mapping-set manifest whose SHA-256 no longer matched its bytes; only the
+  # KNB publication and archive paths ran validate_sdp_sssom(). Presence is
+  # detected the way those two paths detect it -- by the manifest, never by
+  # scanning metadata/semantic -- so an unapproved draft there stays local.
+  root <- withr::local_tempdir()
+  make_eml_test_sdp(root)
+  source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
+  sssom_test_write_raw(source, sssom_test_text())
+  manifest_path <- write_sdp_sssom(root, mapping_sets = source)
+  expect_no_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root)))
+  )
+
+  manifest <- sssom_test_manifest(manifest_path)
+  manifest$mapping_sets[[1]]$sha256 <- paste(rep("0", 64L), collapse = "")
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE),
+    manifest_path,
+    useBytes = TRUE
+  )
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
+    "SHA-256|hash"
+  )
+})
