@@ -1,7 +1,7 @@
 id: B-90
 kind: defect
 title: Permit the I-ADOPT descriptor keys in smn-data-pkg's publication validator
-state: icebox
+state: ready
 claimable: true
 repo: smn-data-pkg
 venue: claude-code
