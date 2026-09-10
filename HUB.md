@@ -572,8 +572,19 @@ is deleted rather than widened, and this section goes with it.
 
 - Never open, close, comment on, label, assign, or review an issue or a pull
   request, and never publish a release, from Brett's account or any other.
-- Never push to `main` or any default branch, in any repository.
-- Never set an item to `ready`. Promotion is Brett's, by a commit on `main`.
+- Never push to `main` or any default branch **except** the small mechanical
+  changes this repository's widening names: queue state, a generated block, a
+  typo, ignoring a stray file. Anything substantive goes through a pull
+  request.
+- Never set an item to `ready` **except** on an authorization Brett gave in
+  chat, and then the commit must name it. A promotion commit that cannot cite
+  one is a defect.
+  *(These two read as flat prohibitions until 2026-09-10 and contradicted the
+  widening three paragraphs above, which was written the same hour. A policy
+  file that says both answers is worse than one that says the wrong answer,
+  because an agent obeys whichever half it read; this is the disease the queue
+  exists to cure, caught in the queue's own rulebook by a review that read the
+  file against itself.)*
 - Never `--force`, `--force-with-lease`, or delete a remote ref.
 - Never write anything on GitLab.
 - Never call the GitHub API to write, including through `gh`. Read-only `gh` is

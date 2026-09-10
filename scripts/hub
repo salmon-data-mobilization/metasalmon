@@ -1214,7 +1214,7 @@ cmd_done() {
     warn "item repo '$itemrepo' is not in the configured members list, so no compare URL was printed"
   elif [ "$forge" = "github" ]; then
     say ""
-    say "Brett opens the pull request. The compare page is:"
+    say "Open one draft pull request for this branch. The compare page is:"
     say "  https://github.com/$slug/compare/$branch?expand=1"
   else
     # An agent never opens the pull request, and on a forge the standing
@@ -1287,7 +1287,7 @@ cmd_reconcile() {
   say ""
   say "reconciled: expired $expired, left alone $skipped, problems $problems"
   say "Note that this never edits a queue item file. Item state is set by a"
-  say "commit on main, which agents may not push; expiring the lock is what"
+  say "commit on main; expiring the lock is what"
   say "makes a ready item claimable again."
   [ "$problems" -eq 0 ] || return "$EX_FAIL"
   return "$EX_OK"
