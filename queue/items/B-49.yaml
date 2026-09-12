@@ -1,8 +1,8 @@
 id: B-49
 kind: defect
 title: validate_salmon_datapackage() checks far less than it claims
-state: review
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S1

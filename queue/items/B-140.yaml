@@ -1,0 +1,13 @@
+id: B-140
+kind: defect
+title: The workpad's fixed path means each merged handback overwrites the last on main
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: HUB.md
+retires_when: 'HUB.md places the workpad at a per-item path (for example .hub/workpads/<queue-id>.md) or excludes it from the merge, hub done accepts that path, and merging two handbacks in sequence leaves both reports on main; found when #111 (B-49) and #112 (B-95) both added .hub/workpad.md and the second merge had to resolve an add/add conflict by discarding one, so main now carries only the report of whichever handback merged last.'

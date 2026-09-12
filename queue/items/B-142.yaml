@@ -1,0 +1,12 @@
+id: B-142
+kind: defect
+title: Five yaml reads outside the SSSOM path still parse without eval.expr = FALSE
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: R/eml-export.R
+retires_when: 'Every yaml::yaml.load(), yaml::read_yaml() and yaml::yaml.load_file() call in R/ passes eval.expr = FALSE explicitly (the SSSOM reader does since #111; the remaining sites on 2026-09-12 were in R/eml-export.R, R/knb-publication.R twice, and R/schema-helpers.R twice), each with a test that an !expr tag in the input is never evaluated, and the mirror is checked for the same class of read.'
