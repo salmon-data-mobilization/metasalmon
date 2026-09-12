@@ -521,8 +521,10 @@ class TestEvidenceExists(QueueTestCase):
     human reading the files. That is the cheapest possible defect to check for
     and the most expensive one to find by reading.
 
-    RETIRES WHEN: `evidence` stops naming a filesystem path. A URL, an item id
-    or a bundle anchor needs its own check rather than the deletion of this one.
+    RETIRES WHEN: `evidence` stops naming a filesystem path or a URL. An item
+    id or a bundle anchor needs its own check rather than the deletion of this
+    one. The URL cases below are the check a URL got on 2026-09-10, after the
+    documented `https://` form was found to fail as a missing local path.
     """
 
     def test_a_pointer_at_nothing_is_rejected(self):
@@ -573,6 +575,52 @@ class TestEvidenceExists(QueueTestCase):
         self.write_item(BASE_DEFECT, evidence="/srv/notes/backlog.md")
         output = self.assert_rejects("absolute-path")
         self.assertNotIn("evidence-missing", output)
+
+    def test_a_url_into_another_repository_is_accepted_without_touching_the_disk(self):
+        # `queue/README.md` allows a full `https://` URL for evidence that lives
+        # in another repository. Until 2026-09-10 this resolved as
+        # `<root>/https:/github.com/...` and failed as missing, so the documented
+        # form could never pass lint (Codex, pull request #110). Nothing under
+        # the root matches this URL, which is the point: acceptance has to come
+        # from the URL's shape alone, and nothing is fetched.
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo/blob/main/x.md")
+        output = self.assert_accepts()
+        self.assertNotIn("evidence-missing", output)
+        self.assertFalse((self.root / "https:").exists())
+
+    def test_a_plain_http_url_is_refused_and_the_message_names_the_scheme(self):
+        self.write_item(BASE_DEFECT, evidence="http://github.com/org/repo/blob/main/x.md")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("'http'", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo/blob/main/x.md")
+        self.assert_accepts()
+
+    def test_a_url_with_no_host_is_refused(self):
+        for bare in ("https://", "https:///org/repo"):
+            with self.subTest(evidence=bare):
+                self.write_item(BASE_DEFECT, evidence=bare)
+                output = self.assert_rejects("evidence-url")
+                self.assertIn("no host", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo")
+        self.assert_accepts()
+
+    def test_a_url_with_no_path_is_refused(self):
+        # A pointer at a whole host names nothing an item can be checked
+        # against; evidence in another repository is at least `host/org/repo`.
+        self.write_item(BASE_DEFECT, evidence="https://github.com")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("no path", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo")
+        self.assert_accepts()
+
+    def test_a_url_containing_whitespace_is_refused(self):
+        # Quoted so the space survives the scalar parser, which only strips a
+        # ` #` comment and would otherwise pass the space through unchanged.
+        self.write_item(BASE_DEFECT, evidence="'https://github.com/org/my repo'")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("whitespace", output)
+        self.write_item(BASE_DEFECT, evidence="'https://github.com/org/my-repo'")
+        self.assert_accepts()
 
 
 class TestRetirementRatchet(QueueTestCase):
@@ -1117,6 +1165,181 @@ class TestSoloCrossCheck(QueueTestCase):
     def test_no_configuration_means_no_cross_check(self):
         self.write_item(BASE_DEFECT)
         self.assert_accepts()
+
+
+class TestMemberDuplicateFields(QueueTestCase):
+    """A key stated twice in one member entry is an error, and no value is read.
+
+    THE DEFECT THIS PINS, reported by Codex on pull request #110 on 2026-09-10.
+    `queue/config.yaml` has two readers written apart: this linter and
+    `members_list()` in the `hub` client. On a member reading `solo: false`
+    then `solo: true`, the linter kept the first (`setdefault`) and the client
+    keeps the last (its awk reassigns on every match), so lint compared `false`
+    against `HUB.md`, agreed, and printed OK, while `hub claim` read `true` and
+    would push a branch and open a draft pull request into a shared repository.
+    The file that passed review was not the file the client ran.
+
+    These tests do not run the client; nothing in this file runs a shell. The
+    disagreement was reproduced on 2026-09-10 by feeding the fixture below to
+    both parsers, and what is pinned here is that this program refuses to
+    choose, which is what makes the disagreement impossible rather than merely
+    unlikely.
+
+    RETIRES WHEN: the client and the linter share one parser of the members
+    block, or the block moves to a format with exactly one reader.
+    """
+
+    def write_world(self, member_lines, grants=None):
+        """Write one member entry from raw lines, plus its card row and policy row.
+
+        `member_lines` are the lines under `- repo: metasalmon`, verbatim, so a
+        test controls exactly which line a duplicate lands on: the entry starts
+        at line 3 of the file and its first field is line 4.
+        """
+        lines = ["# configuration", "members:", "  - repo: metasalmon", *member_lines]
+        path = self.root / "queue" / "config.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        card = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
+        card.parent.mkdir(parents=True, exist_ok=True)
+        card.write_text(
+            "# The salmon data ecosystem\n\n| Repo | Role |\n|---|---|\n"
+            "| `metasalmon` | The hub |\n",
+            encoding="utf-8",
+        )
+        self.write_policy(grants if grants is not None else {"metasalmon": True})
+        self.write_item(BASE_DEFECT)
+        return path
+
+    def test_a_duplicated_solo_is_an_error_naming_member_key_and_both_lines(self):
+        # The Codex scenario verbatim: the table says the repository is shared,
+        # `solo: false` is line 6 and `solo: true` is line 7. A linter keeping
+        # the first agrees with the table and prints OK -- which is the RED
+        # half of this test against the old code -- while the client keeps the
+        # last and would push. Either choice is a claim about which line the
+        # client reads, so the rule is to make neither.
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ], grants={"metasalmon": False})
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'metasalmon'", output)
+        self.assertIn("'solo'", output)
+        self.assertIn("lines 6 and 7", output)
+        # One fault, one report: the dropped key must not also read as missing
+        # or as drifting from the table.
+        self.assertNotIn("solo-missing", output)
+        self.assertNotIn("solo-drift", output)
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+        ], grants={"metasalmon": False})
+        self.assert_accepts()
+
+    def test_neither_occurrence_is_read(self):
+        path = self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ])
+        (row,) = hub_queue.read_config_member_rows(path)
+        self.assertNotIn("solo", row.fields)
+        self.assertEqual(row.duplicates, {"solo": [6, 7]})
+
+    def test_a_duplicate_of_any_other_key_is_an_error_too(self):
+        # `forge` gates the GitLab member the way `solo` gates the shared ones,
+        # and the client reassigns it on every match exactly as it does `solo`.
+        # The rule is about repeated keys, not about one key.
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: gitlab",
+            "    solo: true",
+            "    forge: github",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'forge'", output)
+        self.assertIn("lines 5 and 7", output)
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: true",
+        ])
+        self.assert_accepts()
+
+    def test_a_restated_repo_is_a_duplicate_not_a_rename(self):
+        # The client would rename the row to the later value; this program
+        # keeps the entry under the `- repo:` line it started on and reports
+        # the restatement, so the members cross-check does not see a phantom.
+        self.write_world([
+            "    repo: metasalmonpy",
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: true",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'repo'", output)
+        self.assertIn("lines 3 and 4", output)
+        self.assertNotIn("members-drift", output)
+
+    def test_a_key_stated_three_times_names_every_line(self):
+        self.write_world([
+            "    solo: true",
+            "    org: salmon-data-mobilization",
+            "    solo: false",
+            "    forge: github",
+            "    solo: true",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("lines 4, 6 and 8", output)
+
+    def test_a_value_less_repeat_is_still_a_duplicate(self):
+        # Found in review of the first version of this check, 2026-09-10. The
+        # client's awk matches a field line on its key alone and reassigns the
+        # value to whatever follows the colon, so a bare `solo:` after
+        # `solo: true` makes the client read `solo` as the empty string and
+        # `member_solo_for_repo` answer no. The first version counted only
+        # lines with a value, saw one `solo`, and printed OK. Both orders are
+        # pinned because the client keeps the last line whichever it is.
+        for lines in (["    solo: true", "    solo:"], ["    solo:", "    solo: true"]):
+            with self.subTest(order=lines):
+                self.write_world(["    org: salmon-data-mobilization", "    forge: github", *lines])
+                output = self.assert_rejects("members-duplicate-field")
+                self.assertIn("'solo'", output)
+                self.assertIn("lines 6 and 7", output)
+                self.assertNotIn("solo-missing", output)
+
+    def test_a_single_value_less_solo_is_unstated_not_a_type_error(self):
+        # A bare `solo:` on its own. The bash reader yields the empty string for
+        # it (`clean(substr("solo:", 6))` is ""), and the client answers no from
+        # that, so nothing is granted; lint reports the key as unstated on the
+        # line that states it, so the file gets fixed rather than being read as
+        # "no key" by one reader and "empty value" by the other. `solo: # later`
+        # is the same case: the client strips the comment and reads "".
+        for bare in ("    solo:", "    solo: # to be measured"):
+            with self.subTest(line=bare):
+                self.write_world(["    org: salmon-data-mobilization", "    forge: github", bare])
+                output = self.assert_rejects("solo-missing")
+                self.assertIn("queue/config.yaml:6: [solo-missing]", output)
+                self.assertIn("no value", output)
+                self.assertNotIn("solo-type", output)
+                self.assertNotIn("members-duplicate-field", output)
+        self.write_world(["    org: salmon-data-mobilization", "    forge: github", "    solo: true"])
+        self.assert_accepts()
+
+    def test_check_reports_a_duplicate_field_too(self):
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ], grants={"metasalmon": False})
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 1, output)
+        self.assertIn("members-duplicate-field", output)
 
 
 class TestMemberCountBlock(QueueTestCase):
