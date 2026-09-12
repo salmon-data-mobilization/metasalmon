@@ -187,7 +187,7 @@ the distinction contested.
 **Options.** Rule all eight now on the 2026-08-24 briefing: fastest, but two
 of its literals are known to be misattributed. Add `blocked_by [B-121]` and
 rule after regeneration: the recorded sequencing, at the cost of waiting on
-B-122, which is itself entangled with Q-38 and needs commons access. Split:
+B-122, which is itself entangled with Q-39 and needs commons access. Split:
 rule decision 1 now, because B-108 hangs on it and it does not depend on the
 failed attributions, and rule 2 to 8 after B-121.
 
@@ -394,7 +394,7 @@ parallel, land additively on `main`, mirror in Python in the same stream.
   (after #112 and a ruling), B-23 (after #112, citations corrected), S7-b and
   S7-c slices.
 - **Waits on a ruling above:** B-48 and S-01 (B-106), B-119 (Q-09), B-121
-  and B-123 and Q-39 (Q-38), B-107 and B-108 (their own rulings and Q-06),
+  and B-123 and Q-40 (Q-39), B-107 and B-108 (their own rulings and Q-06),
   B-3 and S-07 (B-31), B-0, B-76, B-87, B-112, B-115, B-78.
 - **Waits on Brett's action:** S-03 (token and deposit), Q-13 (a human
   email to the KNB support desk, or abandoning the series), B-80 (one live
