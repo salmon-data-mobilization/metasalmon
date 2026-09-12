@@ -2,7 +2,7 @@ id: S-04
 kind: stream
 title: Workshop rebuild, two-day curriculum published with live rehearsal outstanding
 state: icebox
-claimable: true
+claimable: false
 repo: salmon-data-standards-workshop
 venue: claude-code
 stream: S4
