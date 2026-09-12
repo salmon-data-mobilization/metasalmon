@@ -50,7 +50,8 @@ What it reports:
 - unresolved `MISSING DESCRIPTION:` / `MISSING METADATA:` /
   `REVIEW REQUIRED:` placeholders in any metadata field;
 
-- schema-required fields (`constraints.required`) that are blank;
+- schema-required fields (`constraints.required`) that are blank – a
+  column the file does not have counts as blank in every row;
 
 - measurement columns missing `term_iri`, `property_iri`, `entity_iri`
   or `unit_iri`;

@@ -373,10 +373,13 @@ register)". Nothing else.
 
 ### 4. P2 -- rebuild pkgdown after changing public documentation (real)
 
-`Rscript scripts/build-pkgdown.R` was run (pkgdown 2.2.1 installed, pandoc
-3.1.3; the checked-in site was built with pkgdown 2.2.0 and pandoc 3.8.3).
-**It fails before it reaches the reference pages, and not because of this
-change**: pkgdown's home build renders every root Markdown file, and pandoc
+Run twice, because `origin/main` moved between the two runs. pkgdown 2.2.1
+and pandoc 3.1.3 are installed; the checked-in site was built with pkgdown
+2.2.0 and pandoc 3.8.3.
+
+**On the pre-merge tree (`ad8d974`)** `Rscript scripts/build-pkgdown.R`
+fails before it reaches the reference pages, and not because of this
+change: pkgdown's home build renders every root Markdown file, and pandoc
 rejects `HUB.md`, whose first 213 lines are a YAML front-matter block:
 
 ```
@@ -387,33 +390,55 @@ could not find expected ':'
 Error: pandoc document conversion failed with error 64
 ```
 
-Line 198 of `HUB.md` is a list item ending in an unquoted colon (`... that is
-not a small mechanical change:`) continued on the next line, which YAML reads
-as a key without a value. `HUB.md` landed on `main` on 2026-09-10, after the
-last site build (2026-08-26), so the documented rebuild is broken for
-everyone, on any pandoc -- and `scripts/build-pkgdown.R` deletes only
-`AGENTS.html` / `CLAUDE.html` afterwards, so a `HUB.md` pandoc *could* parse
-would become a public `HUB.html`. Both halves are one **candidate item**
-(metasalmon, docs). The failed run's side effects under `docs/` (favicons
-fetched from realfavicongenerator.net, `deps/bootstrap-5.3.8/`,
-`authors.html`, `pkgdown.yml`, and the ignored `AGENTS.html` / `CLAUDE.html`)
-were reverted or deleted.
+Line 198 of that `HUB.md` is a list item ending in an unquoted colon (`...
+that is not a small mechanical change:`) continued on the next line, which
+YAML reads as a key without a value. The failed run's side effects under
+`docs/` (favicons fetched from realfavicongenerator.net,
+`deps/bootstrap-5.3.8/`, `authors.html`, `pkgdown.yml`, and the ignored
+`AGENTS.html` / `CLAUDE.html`) were reverted or deleted. **Fixed on `main`
+in the meantime**: the `HUB.md` that `9d5434e` (pull request #110) brought
+in parses (`pandoc HUB.md -t html` exits 0, where the `ad8d974` copy still
+fails at line 198), so no item is owed for the parse failure.
 
-What was committed instead, produced with the same pkgdown from the
-regenerated man pages: `pkgdown::build_reference(".", topics =
+**On the merged tree (`c9a54a8`)** the same script exits 0 -- and modifies
+107 tracked files under `docs/` plus 5 new ones: every page's `<head>` is
+rewritten to reference `deps/bootstrap-5.3.8/` (pkgdown 2.2.1 ships a newer
+Bootstrap than the 5.3.1 the checked-in site uses), favicons are re-fetched,
+`pkgdown.yml` records the new pandoc and pkgdown versions, and the markdown
+companions of every article and reference page are re-rendered by pandoc
+3.1.3 with whitespace and table differences. That is the version churn the
+coordinator said not to commit, and none of it was. The script also writes
+**`docs/HUB.html` and `docs/PULL_REQUEST_TEMPLATE.html`** (with `.md`
+companions, both indexed in `search.json`): pkgdown renders every root
+Markdown file, and the script's `internal_pages` list deletes only `AGENTS`
+and `CLAUDE`, so the hub protocol and the pull-request template become
+public pages on the next real site build, and the forbidden-text check at
+the end of the script does not see them. **Candidate item** (metasalmon,
+docs): extend the list or exclude the files in `_pkgdown.yml`.
+
+What was committed, produced from the regenerated man pages with the same
+pkgdown: `pkgdown::build_reference(".", topics =
 c("validate_salmon_datapackage", "review_metadata"), lazy = FALSE)`,
-`pkgdown::build_news(".")`, `pkgdown::build_search(".")` (exit 0).
-Committed: `docs/reference/validate_salmon_datapackage.html` (the new
-description in the body and the `<meta>` tags; the example ran, so its temp
-path changed from the maintainer's `/var/folders/...` to `/tmp/...`; footer
-2.2.0 -> 2.2.1), `docs/reference/review_metadata.html` (the one bullet;
-footer), `docs/news/index.html` (the development-version section, plus
+`pkgdown::build_news(".")`, `pkgdown::build_search(".")` (exit 0) -- the
+targeted builds keep the site's existing `deps/bootstrap-5.3.1` references
+and do not index the two stray pages. Committed:
+`docs/reference/validate_salmon_datapackage.html` (the new description in
+the body and the `<meta>` tags; the example ran, so its temp path changed
+from the maintainer's `/var/folders/...` to `/tmp/...`; footer 2.2.0 ->
+2.2.1), `docs/reference/review_metadata.html` (the one bullet; footer),
+`docs/news/index.html` (the development-version section, plus
 pkgdown/downlit rendering differences on *old* entries that the maintainers
 should expect to flip back on their next full build: `<tr class="header|odd|
 even">` on the 0.4.0 environment table, and three autolinks dropped --
 `tidyr::pivot_longer()` twice and `read_csv()` once -- because those resolve
-differently in this library; footer), and `docs/search.json`. Not committed:
-`docs/reference/index.html`, whose only change was the footer version.
+differently in this library; footer), `docs/search.json`, and, from the full
+build, the two churn-free markdown companions
+`docs/reference/validate_salmon_datapackage.md` and
+`docs/reference/review_metadata.md` (the same description text and temp
+path, nothing else). Not committed: `docs/reference/index.html` (footer
+only) and `docs/news/index.md` (its regenerated form re-renders the 0.4.0
+environment table and drops the tidyr links on old entries, so it is left
+for the maintainers' next full build; the HTML changelog page is current).
 
 ### 5. P1 advisory, security -- `!expr` in SSSOM metadata (real)
 
