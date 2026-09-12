@@ -144,6 +144,18 @@ descriptor's `contributors` / `licenses` blocks still inline in `package_io.py`
 rather than extracted. The **#118** defect is alive there in the same shape at
 `semantics.py:1294`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-12):
+role inference.** `infer_column_role()` now types an enumerable string column
+(character or factor with 1–30 distinct non-missing values, the seeder's own
+criterion) `categorical` in the three places it answered `attribute`, per the
+Q29 ruling of 2026-09-05 (backlog #95, pull request #112). The Python
+counterpart is `infer_column_role()` in `dictionary.py`, which answers
+`attribute` at the same three branches, and its seeder
+`infer_codes_from_resources()` in `metadata.py`, which already applies it.
+Queued as **B-125**, blocked by B-95. It did not land in the same stream
+because the hub claim that produced #112 covers one branch in the item's
+repository, so the port is a separate queue item rather than a deviation row.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
