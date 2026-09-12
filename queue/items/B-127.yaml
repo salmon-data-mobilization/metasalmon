@@ -1,0 +1,13 @@
+id: B-127
+kind: defect
+title: Converge on one shared package-ownership sentinel, the metasalmonpy half
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: [B-113]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'package_io.py''s PACKAGE_SENTINEL and _package_managed_paths() write and recognise the sentinel file name and content line B-113 pinned and recorded in parity-deviations row 51, in place of .metasalmonpy-package holding metasalmonpy-owned; no per-language sentinel is written; tests pin both bytes and that a package written by metasalmon is recognised as owned; and PARITY.md row 51 receives the Q14 twin text it never got (Brett, 2026-08-24: one shared sentinel name, compatibility break accepted, neither side removes the other''s file) together with the convergence record, so the two registers say the same thing about row 51 rather than merely carrying the same number.'

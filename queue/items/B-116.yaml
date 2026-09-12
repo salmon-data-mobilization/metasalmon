@@ -1,7 +1,7 @@
 id: B-116
 kind: defect
 title: Ship a producer for the reviewed semantic closure
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
@@ -9,4 +9,4 @@ severity: P1
 blocked_by: []
 legacy: '#116'
 evidence: knowledge/backlog.md
-retires_when: 'A user can produce a publishable package without reaching past the package''s API boundary and without hand-writing a digest, and the rehearsal script''s two internal calls become calls to exported functions.'
+retires_when: 'One exported write_sdp_semantic_closure(path, evidence = NULL) reads the package, derives both canonical sets (the measurement IRI set behind metadata/semantic_vocabulary.csv and the review-target set behind reviewed_semantic_selections.csv, which legitimately differ), resolves smn and gcdfo evidence for each IRI through the existing search path, accepts hand-supplied rows for QUDT and the other evidence fields find_terms() cannot fill, writes both files plus the reviewed_snapshot_sha256 sidecar hashes, and reports every IRI it cannot resolve as a gap for the term-request pipeline rather than aborting (the shape ruled by Brett on 2026-09-12); so a user can produce a publishable package without reaching past the package''s API boundary and without hand-writing a digest, and the rehearsal script''s three internal calls (scripts/build-fraser-coho-knb-rehearsal.R: .ms_eml_canonical_measurement_iris(), .ms_eml_vocabulary_snapshot_sha256() and .ms_eml_canonical_review_targets(); the earlier wording said two) become calls to exported functions. The same ruling fixes the export set for the internals this item shares with S-13 requirement 1: they are reached through that one export rather than exported under their own names.'

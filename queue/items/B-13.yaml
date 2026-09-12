@@ -1,8 +1,8 @@
 id: B-13
 kind: defect
 title: retry_search can re-issue the original failing query
-state: icebox
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3

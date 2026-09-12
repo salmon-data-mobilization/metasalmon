@@ -9,4 +9,4 @@ stream: S15
 blocked_by: []
 legacy: 'S15'
 evidence: knowledge/sequences/s15-hub-coordination.md
-retires_when: 'The locks repository exists, which is Brett''s action, and every state fact in the bundle is generated or deleted, so a claim is a real push rather than a local test, and the migration point of no return in plan section 9.7 has been passed; until then this stream is the queue describing its own construction.'
+retires_when: 'Every state fact in the bundle is generated or deleted, and the migration point of no return in plan section 9.7 has been passed; until then this stream is the queue describing its own construction.'

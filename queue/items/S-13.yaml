@@ -2,7 +2,7 @@ id: S-13
 kind: stream
 title: Fraser Recruits case-study requirements driven into metasalmon
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S13

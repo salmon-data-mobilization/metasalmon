@@ -76,13 +76,18 @@ bundle is held at zero warnings.
 
 **Outstanding, in order:**
 
-- **The locks repository does not exist.** `queue/config.yaml` carries a
-  placeholder, and a client that finds it stops and reports rather than
-  guessing a repository name, so no claim can be taken yet. Creating it is
-  Brett's, and it is the whole of migration step 1 together with a
-  two-terminal race test proving a first claim is atomic. That step is ten
-  minutes now rather than an hour: four of the five experiments the Project
-  design needed are moot without a Project or an API call.
+- **The step-1 race test against the real locks repository is not
+  recorded.** The repository itself exists: `salmon-data-mobilization/hub-locks`,
+  created by Brett on 2026-09-10 and named by `queue/config.yaml`, with a
+  `main` that holds only a README so a claim ref is never the default branch.
+  The first real claims were taken the same day (B-44, B-49, B-90, B-95);
+  three were handed back (B-49, B-90, B-95) and two of those had merged by
+  2026-09-12 (B-90 as smn-data-pkg #7, B-95 as metasalmon #112), with
+  B-49's metasalmon #111 still open. What step 1 also asked for, a
+  two-terminal race test proving a first claim is atomic, has a record only
+  offline: `scripts/tests/test_hub_claim.sh` races two clones of a throwaway
+  bare repository by design, and neither it nor section 9.7 of the execplan
+  records a run against `hub-locks`.
 - **The generated blocks beyond the first.** The remaining restated state
   facts are still prose, so a card can still disagree with the queue.
 - **The point of no return**, migration step 5, where the roadmap and the

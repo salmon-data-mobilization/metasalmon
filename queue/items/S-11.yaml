@@ -2,7 +2,7 @@ id: S-11
 kind: stream
 title: Vignettes and user-facing walkthroughs, slices 1 and 2 landed
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S11

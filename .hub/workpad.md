@@ -208,6 +208,13 @@ Not fixed here: a locale-dependent test is a separate finding (see below).
 
 ## Belongs to another item
 
+- **Workpad path collision (candidate queue item, hub protocol; not filed
+  here -- the coordinator will):** merging `origin/main` (`9361e3b`) into this
+  branch on 2026-09-12 conflicted add/add on `.hub/workpad.md`, because `main`
+  carries B-95's workpad at the same path (merged with #112). Resolved by
+  keeping this branch's file; B-95's stays in history through #112. The
+  protocol's fixed workpad path means each merged handback overwrites the last
+  on `main`, so `main`'s copy is only ever the most recently merged item's.
 - **Mirror port owed (candidate new queue item, repo `metasalmonpy`, stream
   S10):** the three checks above in `package_io.py`
   (`_collect_package_validation_issues()` / `validate_salmon_datapackage()`,

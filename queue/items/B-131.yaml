@@ -1,0 +1,13 @@
+id: B-131
+kind: defect
+title: Guard the eight internals the Fraser Recruits recipe reaches through the triple-colon operator
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S13
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/sequences/s13-fraser-recruits-case-study.md
+retires_when: 'A test under tests/testthat pins the existence and the formal arguments of the eight internals S-13 requirement 1 lists (.smn_module_urls, .smn_cache_slug, .ms_eml_canonical_measurement_iris, .ms_eml_vocabulary_snapshot_sha256, .ms_sdp_profile_version, .ms_eml_validate_mapping, .ms_eml_read_semantic_review, .ms_eml_read_vocabulary), so a rename or signature change fails here before it breaks the live consumer that has already published with them, and the test header says per name that it retires when that name is exported under a supported API or its retirement is recorded. scripts/build-fraser-coho-knb-rehearsal.R reaches two of the eight (plus .ms_eml_canonical_review_targets, which B-116 covers), so this guard is the compatibility obligation nothing in R/ states today.'

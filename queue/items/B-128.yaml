@@ -1,0 +1,13 @@
+id: B-128
+kind: defect
+title: Route .ms_chat_http_request() through the shared chat body builder so GPT-5 chat calls omit temperature
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S7
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: '.ms_chat_http_request() (R/chat-decomposition.R) builds its request body through .ms_llm_build_chat_request_body() (R/llm-semantic-helpers.R), with a temperature argument added to that builder so the chat path keeps its own default, the list(content, data, raw) response shape and the review adapter''s dual-shape normalizer are untouched, and a test shows that an openai configuration naming a gpt-5 model omits temperature on the chat path, which fixes the live GPT-5 failure in chat_decomposition() where the hardcoded temperature is rejected. This is the narrow slice of backlog #3 filed ahead of S7 on 2026-09-12; full convergence of the two builders stays with B-3 and the B-31 engine ruling.'

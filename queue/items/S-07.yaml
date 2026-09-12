@@ -2,7 +2,7 @@ id: S-07
 kind: stream
 title: Architecture and curation engine, the largest stream and deliberately last
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S7

@@ -1,0 +1,12 @@
+id: Q-41
+kind: question
+title: Which licence smn-data-pkg carries, MIT or CC BY 4.0, for a spec repository whose schemas MIT libraries vendor
+state: needs_brett
+claimable: false
+repo: smn-data-pkg
+venue: either
+stream: S6
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules the licence for smn-data-pkg and a LICENSE file lands: README.md line 144 links a LICENSE that does not exist, and PR #6 (2026-08-21) deliberately left that link while repointing the other dead references. Q28 (2026-09-05) ruled MIT for code and CC BY 4.0 for documentation for the Foundry and did not reach a specification repository whose JSON schemas MIT-licensed libraries vendor (metasalmon and metasalmonpy both ship the sdp bundle), so the ruling says which applies, or whether the schemas and the prose carry different licences; it is appended to knowledge/questions.md as Q40, and B-105''s link check then has a real target.'

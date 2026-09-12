@@ -9,4 +9,4 @@ severity: P4
 blocked_by: []
 legacy: '#83'
 evidence: knowledge/backlog.md
-retires_when: The fixture stops quoting the `gcdfo:ConservationUnit` definition verbatim, so no external definition string that nothing asserts is pinned in a test and able to drift again. Re-syncing the string is not the fix and would not retire this.
+retires_when: The fixture at tests/testthat/test-term-search.R line 614 stops quoting the `gcdfo:ConservationUnit` definition verbatim, so that external definition string, which nothing asserts, is no longer pinned in a test and able to drift again. Re-syncing the string is not the fix and would not retire this. The smn:Population quote at line 577, the same class, is B-138 and is not part of this condition.

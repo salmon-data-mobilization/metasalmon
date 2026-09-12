@@ -1,12 +1,12 @@
 id: B-99
 kind: defect
-title: Replace the two 404 example IRIs still shipped by metasalmonpy and smn-data-pkg
+title: Replace the two 404 example IRIs still shipped in smn-data-pkg's minimal example
 state: icebox
 claimable: true
-repo: metasalmonpy
+repo: smn-data-pkg
 venue: either
 severity: P2
 blocked_by: []
 legacy: '#99'
 evidence: knowledge/backlog.md
-retires_when: 'Every IRI in the three shipped example dictionaries resolves and a network-gated test asserts it. metasalmon''s own dictionary was fixed 2026-08-21, so what is left is metasalmonpy data/column_dictionary.csv and smn-data-pkg examples/minimal-example/metadata/column_dictionary.csv.'
+retires_when: 'The two w3id.org/example/salmon 404 IRIs in smn-data-pkg examples/minimal-example/metadata/column_dictionary.csv are replaced by released terms (metasalmon''s own dictionary took gcdfo:SpawnerAbundance and smn:NaturalOrigin on 2026-08-21, leaving property_iri as smn:Abundance so Q9 is not prejudged), pinned by a skip-if-offline pytest that fetches each IRI''s document and asserts the term appears in the returned Turtle, because gcdfo resolves any fragment with 200 so a status check alone proves nothing. metasalmonpy''s data/column_dictionary.csv is not part of this item: it was discharged at S10 chunk A (metasalmonpy PR #14 byte-copied the fixed dictionary from metasalmon e02111a), confirmed by a live fetch on 2026-09-12, so of the backlog entry''s "other two repos" one remains.'

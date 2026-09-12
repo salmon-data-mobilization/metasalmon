@@ -2,7 +2,7 @@ id: S-02
 kind: stream
 title: Correctness debt, starting with four-digit measurement columns typed as temporal
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S2

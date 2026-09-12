@@ -1,6 +1,6 @@
 id: B-113
 kind: defect
-title: Converge on one shared package-ownership sentinel in both implementations
+title: Converge on one shared package-ownership sentinel, the metasalmon half
 state: icebox
 claimable: true
 repo: metasalmon
@@ -10,4 +10,4 @@ severity: P2
 blocked_by: []
 legacy: '#113'
 evidence: knowledge/backlog.md
-retires_when: 'Both implementations write and recognise one shared sentinel name, neither writes a per-language sentinel, and parity row 51 records the convergence in both registers.'
+retires_when: 'metasalmon writes and recognises one shared sentinel file name and content line in place of .metasalmon-package holding metasalmon-owned, per Q14 (Brett, 2026-08-24: one shared name, compatibility break accepted, neither side removes the other''s file): the sentinel path and byte helpers and .ms_package_managed_paths() in R/package-helpers.R name only the shared file, no per-language sentinel is written, a test pins both bytes and that a package carrying only the shared sentinel is recognised as owned, and parity-deviations row 51 records the R half as landed. Q14 ruled one shared name but chose none, so the file name and content line are pinned by the first claimant and recorded in row 51; the metasalmonpy half is B-127, which takes both from that row.'

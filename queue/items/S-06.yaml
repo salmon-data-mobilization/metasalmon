@@ -2,7 +2,7 @@ id: S-06
 kind: stream
 title: Ecosystem hardening and governed mapping products
 state: icebox
-claimable: true
+claimable: false
 repo: dfo-salmon-ontology
 venue: either
 stream: S6

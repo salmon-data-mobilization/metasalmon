@@ -1,0 +1,12 @@
+id: B-133
+kind: defect
+title: Two vignettes tangle to scripts that fail at their first statement under R CMD check
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: vignettes/migrating-to-sdp-0-3-0.Rmd
+retires_when: 'vignettes/migrating-to-sdp-0-3-0.Rmd and vignettes/tidy-data-for-sdp.Rmd tangle cleanly under R CMD check''s "running R code from vignettes" step on both R versions. Today each sets eval = FALSE globally from a setup chunk marked purl = FALSE, so knitr::purl() drops that chunk and tangles every illustrative chunk as live code, and the first statement, readr::read_csv() of a metadata/tables.csv nothing created, fails; the fix is to purl the setup chunk or to mark the illustrative chunks eval = FALSE or purl = FALSE individually. Measured locally on R 4.3.3 by B-49 and B-95 on 2026-09-10 and not reproduced on CI, whose newer R passed, so the condition is "measured locally, not reproduced on CI" until a run on both shows the step passing.'

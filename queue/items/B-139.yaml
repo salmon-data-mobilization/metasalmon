@@ -1,0 +1,13 @@
+id: B-139
+kind: defect
+title: Split package-helpers.R and move the resource inference helpers out of dictionary-helpers.R
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S7
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'R/package-helpers.R no longer owns writing, reading, validation, create_sdp() and EDH post-processing in one file (backlog #29, partially addressed when R5 moved artifact inference into R/artifact-inference.R; 3786 lines on 2026-08-21, recount before citing), and the infer_*_from_resources() helpers that infer_salmon_datapackage_artifacts() consumes live with the artifact-inference code rather than in R/dictionary-helpers.R (backlog #30, partially addressed the same way); exported signatures and return-value attributes are unchanged, and the split is sequenced after metasalmon pull request #111 merges, since it rewrites the validator inside package-helpers.R (S-07 slices b and c).'

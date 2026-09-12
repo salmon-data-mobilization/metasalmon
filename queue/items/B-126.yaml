@@ -1,0 +1,13 @@
+id: B-126
+kind: defect
+title: 'Port metasalmon 0.5.0 to metasalmonpy: the nine review functions, decision_reason, and the constraints.required consumer'
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P1
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'metasalmonpy carries the nine functions metasalmon 0.5.0 added (review_semantics, accept_suggestion, reject_suggestion, apply_sdp_semantics, review_metadata, set_sdp_dataset, set_sdp_table, set_sdp_column, set_sdp_code) with behavioural parity, writes the decision_reason column into semantic_suggestions.csv and reads it back on the next review with decision replayed on queue rebuild, has an accessor for the suggestion attributes and reads semantic_suggestions.csv back in read_salmon_datapackage, consumes the schema''s constraints.required the way review_metadata() is built on it, exempts the reviewed strategy from the unattended auto-apply gate at semantics.py:1294 (the #118 fix), amends PARITY.md row 31 in place with the clause drafted under "What metasalmon 0.5.0 owes the mirror" in the parity register, corrects the parity paragraph in metasalmonpy''s AGENTS.md (it still reads 0.4.0/0.4.0 with no window open), and moves metasalmonpy''s version to 0.5.0 only when the mirrored behaviour lands, since release numbers stay in lockstep. If this is too large for one claim, the first sub-slice is the row-31 amendment plus the #118 fix plus decision_reason, and the item stays open until the rest lands.'

@@ -1,0 +1,13 @@
+id: B-135
+kind: defect
+title: gcdfo CONVENTIONS section 2.5 teaches the contradictory SHACL idiom, and five WARN rows survive the restored ROBOT profile
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-44]
+legacy: ''
+evidence: knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md
+retires_when: 'docs/CONVENTIONS.md section 2.5 shows a conditional shape (sh:or over the method, as ontology/shapes/dfo-salmon-shapes.ttl does after B-44) under the gcdfo: prefix instead of the sh:targetClass plus sh:hasValue idiom with a dfo: prefix, docs/ADR.md ADR-005 no longer describes SHACL as being for automated classification, and the five WARN rows the restored ROBOT profile reports (annotation_whitespace on the skos:definition of gcdfo:AmberZone and the iao:0000115 of gcdfo:UpperStockReferencePoint; missing_obsolete_label on the deprecated gcdfo:IntegratedStatusBinary, gcdfo:IntegratedStatusFiveCategoryAlias and gcdfo:IntegratedStatusThreeCategory, as listed in docs/ROBOT_SETUP.md) are cleared by editing those definitions and labels, each named in the pull request as the term edit it is, or kept at WARN with the reason recorded in robot-profile.yaml, scripts/validation-selftest.sh and docs/ROBOT_SETUP.md in one change. Shared repository: the patch is shown in chat, never pushed.'
