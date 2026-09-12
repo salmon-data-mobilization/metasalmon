@@ -2,11 +2,11 @@ id: S-05
 kind: stream
 title: R-native review flow and API hygiene, shipped as metasalmon 0.5.0
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S5
-blocked_by: []
+blocked_by: [B-58, B-59, B-126]
 legacy: 'S5'
 evidence: knowledge/sequences/s5-review-flow.md
 retires_when: Backlog items 58 and 59 are done and the nine 0.5.0 review and editing functions are ported to metasalmonpy with PARITY.md row 31 amended in place.

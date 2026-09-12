@@ -1,7 +1,7 @@
 id: B-111
 kind: defect
 title: Make create_sdp()'s three create-owned sidecar writes atomic
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
