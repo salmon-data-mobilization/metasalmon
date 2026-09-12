@@ -55,7 +55,7 @@ authorization (`HUB.md`, `ready_is_set_by`):
 | "fix B99's repo to SMN data package" | B-99 `repo: smn-data-pkg`, retirement condition narrowed to the one example that still 404s |
 | "split B113 into a per repository pair" | B-113 kept as the metasalmon half; B-127 filed as the metasalmonpy twin, blocked by B-113 |
 | "correct the S15 card and item" | The sentence saying the locks repository does not exist removed from the S-15 item, the S15 card and the roadmap |
-| "file the missing items the analysis found" | B-128 to B-139 and Q-40 filed (section 7) |
+| "file the missing items the analysis found" | B-128 to B-139 and Q-41 filed (section 7) |
 
 Rulings Brett asked to have explained before deciding are in section 4, each
 with its options and implications, and stay open until he answers.
@@ -130,8 +130,10 @@ validator never reads the rules file, only the artifact generator bundles it,
 which is why the wording and the modelling drifted apart unnoticed (#48).
 smn types only its broad method concepts as `sosa:Procedure`; the ten
 narrower enumeration methods that metasalmon's NuSEDS crosswalk targets
-exist only in gcdfo, as SKOS concepts under typed parents. The crosswalk
-carries 55 gcdfo CURIEs today, up from the 45 the backlog counted.
+exist only in gcdfo, as SKOS concepts under typed parents. The two method
+crosswalks carry 45 non-missing gcdfo targets (23 enumeration, 22
+estimate), the count the backlog recorded; the estimate-classification
+crosswalk's eight concepts are not method IRIs and sit outside this ruling.
 
 **Option (a), direct typing.** Every method IRI must itself carry
 `rdf:type sosa:Procedure`. Every current crosswalk target becomes
@@ -192,7 +194,7 @@ failed attributions, and rule 2 to 8 after B-121.
 **Recommendation.** Split. Decision 1 per PR #27's own ADR-0003: species
 reference by `dwc:scientificName` literal plus a WoRMS identifier.
 
-### 4.3 Q-38, what a verified entry on a commons card means
+### 4.3 Q-39, what a verified entry on a commons card means
 
 **Context.** Every commons card carries `generated` (who wrote it) and
 `verified` (who independently checked it), and the rule that a writer never
@@ -238,8 +240,10 @@ and a ledger path for `checked`, and one CI workflow. Q-39 becomes
 measurable in the shape Brett wanted: an agent prepares the `checked` tier,
 a human does the `verified` step, and the cost measured is the human step
 net of agent preparation. B-122 and B-121 stop being blocked on the meaning
-of overruling a cross-checked card. The Q38 and Q39 entries still need to be
-appended to `knowledge/questions.md`, whose index stops at Q37.
+of overruling a cross-checked card. The two questions still need entries in
+`knowledge/questions.md`, whose last entry is the Q38 of 2026-09-10 on the
+draft-pull-request ruling; the queue items were renumbered to Q-39 and Q-40
+on this review so they do not collide with it.
 
 ### 4.4 Q-09, the property slot for a spawner count
 
@@ -378,10 +382,10 @@ parallel, land additively on `main`, mirror in Python in the same stream.
 | B-82 | Collides with B-44's prepared patch in three files and hides the dead ONTO fallback decision | B-44's patch applied, `blocked_by [B-44]`, and the fallback ruled |
 | B-83 | Fixing line 614 alone leaves its clause false, because line 577 quotes `smn:Population` verbatim and has also drifted | Narrowed to line 614 with the sibling filed (B-138) |
 | B-99 | `repo` named metasalmonpy, whose half was discharged at S10 chunk A; only smn-data-pkg's minimal example still 404s | Repo and condition corrected on this review |
-| B-105 | The dead LICENSE link was left deliberately and no licence decision exists, so every exit rules on it | Q-40 filed and added to `blocked_by`; a citation grammar and a failing fixture named |
+| B-105 | The dead LICENSE link was left deliberately and no licence decision exists, so every exit rules on it | Q-41 filed and added to `blocked_by`; a citation grammar and a failing fixture named |
 | B-108 | Its pinned NCBI range is itself the taxonomy-authority ruling that Q-06 decision 1 points away from | Q-06 decision 1 ruled, or `blocked_by [Q-06]` added, and the competency-query clause restated |
 | B-113 | One `repo` field for writes in two repositories | Split on this review: B-113 (metasalmon) and B-127 (metasalmonpy) |
-| B-122 | Gilbert 1913 supports both counts, so "the losing card" is a judgement; the cards are in a private repository this session cannot read | Re-posed so no losing card is named, Q-38 ruled or bypassed, commons access provisioned |
+| B-122 | Gilbert 1913 supports both counts, so "the losing card" is a judgement; the cards are in a private repository this session cannot read | Re-posed so no losing card is named, Q-39 ruled or bypassed, commons access provisioned |
 
 ## 6. Everything else, in one line each
 
@@ -422,14 +426,15 @@ parallel, land additively on `main`, mirror in Python in the same stream.
 | B-137 | metasalmon | Six locale-dependent tests that fail in a C locale |
 | B-138 | metasalmon | B-83's sibling at line 577, the `smn:Population` quote |
 | B-139 | metasalmon | Backlog #29 and #30, the S7 file splits, which the backlog marks partially addressed |
-| Q-40 | smn-data-pkg | The licence: MIT or CC BY 4.0 for a specification repository whose schemas MIT libraries vendor |
+| Q-41 | smn-data-pkg | The licence: MIT or CC BY 4.0 for a specification repository whose schemas MIT libraries vendor |
 
 Also on this review: B-49 moved to `review`, the state HUB.md names for a
 handback whose claim is still held, which the promotion commits of
 2026-09-10 had left at `ready`.
 
-Left for the next pass, deliberately: the Q38 and Q39 entries in
-`knowledge/questions.md`, whose index stops at Q37; question entries for the
+Left for the next pass, deliberately: the Q39 and Q40 entries in
+`knowledge/questions.md` (the commons questions, renumbered on this review
+past the Q38 that PR #110 appended); question entries for the
 rulings parked without one (B-106 with B-76, B-0, B-112, B-115, B-116's
 shape, B-31); and the backlog's own status lines for #13, #86 and #99, which
 restate queue state and are now the copies that are wrong.
