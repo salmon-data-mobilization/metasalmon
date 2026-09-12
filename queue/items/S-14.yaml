@@ -8,5 +8,5 @@ venue: either
 stream: S14
 blocked_by: [S-01, S-05, S-12]
 legacy: 'S14'
-evidence: sequences/s14-salmon-science-foundry.md
+evidence: knowledge/sequences/s14-salmon-science-foundry.md
 retires_when: 'The Foundry repository exists with its bundle, contracts and Tier 0 ledger, one real create_sdp() call has written a receipt, and the 25-task SalmonBench pilot has run; at that point this stream splits into the workstreams its execplan names rather than staying one item.'

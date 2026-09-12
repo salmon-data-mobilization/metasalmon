@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S3 — KNB staging environment"
-description: "A guarded rehearsal target so deposits can be practised without writing to production KNB. Steps 0-4 have shipped in R and the docs half of step 5; what remains is a test-node token, one end-to-end deposit, the release, and the metasalmonpy mirror."
+description: "A guarded rehearsal target so deposits can be practised without writing to production KNB. Steps 0-4 have shipped in R and the docs half of step 5; what remains is a test-node token and one end-to-end deposit. Release and mirror state are not restated here; the release index in the roadmap is the authority."
 status: draft
 tags: [knb, publication]
 psc:

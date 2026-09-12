@@ -9,5 +9,5 @@ stream: S2
 severity: P2
 blocked_by: []
 legacy: '#55'
-evidence: sequences/s2-correctness-debt.md
+evidence: knowledge/sequences/s2-correctness-debt.md
 retires_when: The coerce-type block carries a `warning =` handler so a value that warns and returns `NA` aborts under `strict = TRUE`, the codes step reports rather than silently blanking unlisted values, and a test covers both paths in metasalmon and metasalmonpy.

@@ -9,5 +9,5 @@ stream: S7
 severity: P3
 blocked_by: []
 legacy: '#23'
-evidence: backlog.md
+evidence: knowledge/backlog.md
 retires_when: The child call in `R/dictionary-helpers.R` forwards `semantic_seed_max_per_role`, or a test pins that semantic seeding cannot reach child recursion so the latent trap cannot fire.

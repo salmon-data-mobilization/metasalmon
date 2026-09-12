@@ -9,5 +9,5 @@ stream: S2
 severity: P2
 blocked_by: []
 legacy: '#57'
-evidence: sequences/s2-correctness-debt.md
+evidence: knowledge/sequences/s2-correctness-debt.md
 retires_when: Every named item is fixed or refiled as its own queue item, covering `dwc_dp_build_descriptor(validate = TRUE)` acting on its validation result and declaring its Python toolchain in `SystemRequirements`, `llm_top_n` widening the shortlist on the direct `suggest_semantics()` path, `find_terms()` checking `parallel::mclapply` worker failure, the ICES helpers degrading rather than erroring on a missing column, and the composite-intent gate reading `optional_hint_fields`.

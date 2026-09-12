@@ -570,6 +570,13 @@ never-delete convention: a withdrawn question is a different thing from a
 decided one, and these four are the record of why this hub contains no PSC
 ontology.
 
+**Q38 is the exception to that paragraph and the first entry to break the
+pattern.** It did not arrive from the plan and it has no appendix question: it
+came from Brett in chat on 2026-09-10, reversing part of Q37 a day after it was
+ruled, and its full text is `HUB.md` rather than Appendix A. A question that
+reopens gets a new entry rather than an edit to the old one, which is why the
+run of appendix-backed cards stops here.
+
 ### Q19 — Is the Foundry the ninth member of the hub? — ANSWERED 2026-09-05 (Brett)
 
 **Ruling: yes.** `salmon-science-foundry` is a hub member and the hub sequences
@@ -820,3 +827,47 @@ the last text that should be duplicated.
 
 **Full text:** Appendix A Q37. **Owner:** Brett's global instructions, with
 `HUB.md` as the operative copy.
+
+**Reopened and partly reversed on 2026-09-10. See
+[Q38](#q38--does-the-draft-pull-request-refusal-stand--answered-2026-09-10-brett).**
+The ruling above is left exactly as it was made, per this file's never-delete
+convention. Read it as a dated decision and not as the current boundary; the
+current boundary is `HUB.md`.
+
+### Q38 — Does the draft-pull-request refusal stand? — ANSWERED 2026-09-10 (Brett)
+
+**Ruling: no, it is reversed, and the grant is widened.** One draft pull
+request per handed-back item is permitted, in a repository nobody other than
+Brett has ever contributed to. In such a repository an agent may also merge a
+pull request whose checks are all green. In this repository it may additionally
+promote a queue item to `ready` on an authorization Brett gave in chat, naming
+that authorization in the commit, and push a small mechanical change to `main`,
+with a pull request preferred for anything substantive because that is what
+Codex reviews.
+
+**This entry exists because [Q37](#q37--which-authorization-paragraphs-does-brett-grant--answered-2026-09-09-brett)
+was answered one way on 2026-09-09 and the other way on 2026-09-10.** Under
+this file's convention an answered question that reopens gets a new entry
+pointing at the old one, and a reversal one day later is exactly the case that
+convention was written for: the tempting move is to edit the old card, and then
+nobody can see that the question was ever decided twice or why. Both readings
+are worth keeping. The refusal held that a draft pull request is a pull
+request, one of the verbs Brett's global rule names, so it should cost an
+explicit decision. The grant held that inside his own repositories a pull
+request is him talking to himself, the rule exists to stop an agent addressing
+other people as him, and the delay was costing a continuous-integration run
+each time.
+
+**Two consequences a reader of Q37 would otherwise carry away wrong.** The
+scope test is **participation, not ownership**: three member repositories have
+had other contributors and the grant does not reach them, so an agent working
+there pushes its branch, drafts the pull request text in chat, and waits. And
+the claim that an agent cannot enlarge its own queue is **no longer
+structural**: it was true because an agent could not reach `main` at all, and
+it is now an audit trail resting on a cited authorization.
+
+**Full text:** `HUB.md`, which is the operative copy of the whole boundary and
+the only enumeration that governs; this card is an index to it and grants
+nothing. The plan records the ruling as R15 in §0.1d and the reversal beneath
+Appendix A Q37. **Owner:** Brett's global instructions, with `HUB.md` as the
+operative copy.

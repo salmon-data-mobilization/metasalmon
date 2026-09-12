@@ -1,0 +1,13 @@
+id: B-125
+kind: defect
+title: Port the categorical inference of #95 to metasalmonpy
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: [B-95]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'metasalmonpy infer_column_role() types an enumerable string column categorical wherever R does after metasalmon pull request #112 (B-95), and create_sdp() on both bundled examples seeds no codes.csv row for a column typed attribute, pinned with the same two-example fixture; until then this is R-shipped-first lag recorded in the parity register, not a deviation row.'

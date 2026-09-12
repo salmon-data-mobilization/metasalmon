@@ -8,5 +8,5 @@ venue: claude-code
 stream: S3
 blocked_by: []
 legacy: 'S3'
-evidence: sequences/s3-knb-staging.md
+evidence: knowledge/sequences/s3-knb-staging.md
 retires_when: A dev.nceas token exists and one end-to-end deposit has been made against the KNB Test Node, so the rehearsal half is real and not only the switch.

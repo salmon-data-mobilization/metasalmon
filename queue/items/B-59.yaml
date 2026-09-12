@@ -9,5 +9,5 @@ stream: S5
 severity: P3
 blocked_by: []
 legacy: '#59'
-evidence: sequences/s5-review-flow.md
+evidence: knowledge/sequences/s5-review-flow.md
 retires_when: The nine `metasalmon.*` options and fourteen environment variables have a registry, `.onLoad` defaults and a help topic, `.search_bioportal()` no longer writes a flag into the user's `options()`, `.ms_chat_new_session_id()` no longer advances the user's RNG stream, and a test asserts both global states are unchanged across a call.

@@ -42,10 +42,34 @@ conceals the failure it was never written for.
 ## Mirror
 
 <!--
-metasalmonpy mirrors this package. A behavioural change here is presumed to
-need the same change there, in the same stream, or a recorded reason why not.
+metasalmonpy mirrors this package. The mirror is behavioural rather than
+literal, and a behavioural change here is presumed to need the same change
+there. Three outcomes satisfy the contract, and they are not interchangeable:
+
+  1. It lands in metasalmonpy in the same stream.
+  2. It is a difference the ecosystem wants. A deliberate difference is
+     recorded as a register row in BOTH `knowledge/parity-deviations.md` here
+     and `PARITY.md` there, in this pull request. An undocumented difference is
+     a contract violation even when the difference itself is fine.
+  3. It is a port that is owed: ordinary "R shipped first" lag rather than a
+     chosen difference. The reason it is deferred is logged in the roadmap
+     card, and the port is tracked in the port section of
+     `knowledge/parity-deviations.md` and in the roadmap's release index,
+     deliberately not as a new register row.
+
+Recording a port as a deviation is the failure this section exists to prevent.
+It tells the next reader the difference was wanted, so nobody goes looking for
+the missing work and the mirror quietly stops being one. Recording a deviation
+as a port is the same mistake backwards: it leaves a standing choice sitting in
+a catch-up window that will never close it.
+
+Name the pull request, the row, or the card. A tick with nothing after it is
+not an answer to any of these three.
 -->
 
 - [ ] Not a behavioural change.
-- [ ] Mirrored, or the deviation is recorded in `knowledge/parity-deviations.md`
-      and `PARITY.md`.
+- [ ] Mirrored in metasalmonpy in this stream. The pull request there:
+- [ ] A deliberate difference, with the register row added to
+      `knowledge/parity-deviations.md` and `PARITY.md` here. Row number:
+- [ ] A port that is owed, not a deliberate difference. The roadmap card
+      logging why it is deferred:

@@ -172,7 +172,7 @@ iop-triples explainer.
    | **A1** (#67) | **Mint the PFMAs as a controlled vocabulary** in gcdfo, sourced from DFO materials, then close #67. The alternative — a separate four-value "DFO salmon Area" entity, which is what the evidence pointed at — was **rejected**. |
    | **A2** (#69, #75) | **Capture as an issue.** Filed as **#84**, posing the single question: quantitative abundance reference points, or a coded hierarchy? Needs a data-steward ruling; #69/#75 stay open behind it. *2026-09-02 source pass:* "management level" occurs in none of ~3 M characters of DFO text read (WSP, PA framework, Holt et al. 2009, SAR 2022/030, Chaput 2013, Fisheries Act ss. 6.1–6.3, FGR Sched. IX, PFMA Regs 2007, PSC FRP 2016, both 2024/25 IFMPs, Outlook, NuSEDS dictionary); the Glaser gloss matches the Southern BC IFMP's *Upper/Lower Fishery Reference Point* clause for clause, so the literature has precedent for reading (a) and none for (b). Still the steward's call — one populated `PFMA_METADATA` row would settle it. Commons card `fishery-reference-points-and-management-levels.md`. |
    | **B + C** (#68, #74, #70) | **Three separate schemes, in `smn:`, scoped "very broad"** — explicitly *not* the single merged CU species-code vocabulary recommended above. Broad means species-agnostic: a life-history-type scheme that contains lake- and river-type rather than a sockeye scheme. Brett's second constraint is that **PSC should be able to leverage them**, so they are designed for `psc-salmon-vocabularies` to map onto rather than mint parallels. Mint from the source code list, not observed values — `PKE` lands alongside `PKO`. |
-   | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. *2026-09-02:* #85 is half-unblocked — Ogden 2015 §2.3 is located and an `INFORMATION_QUALITY` scheme is mintable as its own framework-named scheme (draft in `gcdfo_quality_and_refpoint_drafts.ttl`, Part A); `INDEX_QUALITY` stays blocked on the NZ document. |
+   | **D** (#71–#73) | **Capture as an issue.** Filed as **#85**. Brett's constraint closes an option the evidence had left open: **`gcdfo:EstimateTypeScheme` (Hyatt 1997) is specifically only for escapement measurements**, so it must not be the mapping target for general data-quality codes. *2026-09-02:* #85 is half-unblocked — Ogden 2015 §2.3 is located and an `INFORMATION_QUALITY` scheme is mintable as its own framework-named scheme (a Part A draft was named as `gcdfo_quality_and_refpoint_drafts.ttl` and never written; see the artifact note below, and treat the mintability finding as prose in the commons card rather than as a file you can open); `INDEX_QUALITY` stays blocked on the NZ document. |
 
    **B+C proposed, and contested — do not read the design as agreed.**
    salmon-domain-ontology
@@ -350,9 +350,12 @@ iop-triples explainer.
    three documents, and never written reads as completed work from every angle
    except opening it, and the record gets more confident with each restatement:
    the ledger's row count was quoted here as a fact about an artifact nobody
-   had. *Retires when:* the replacement literals are regenerated from the
-   commons cards, or this card states that they never existed and stops
-   promising them.
+   had. So this card now says the three were never written and promises nothing
+   further about them. **What happens next is queue state, not card state:**
+   queue item `B-121` owns the smn amendment set and carries the retirement
+   condition, which is deliberately not restated here. Neither the gcdfo scheme
+   draft nor the ledger is claimed here as owed work; if either is wanted, it
+   becomes a queue item rather than a line in this card.
 
    The three scope notes on the PR's concepts are careful about other hazards
    (the `SEL`/`SER` code halves, the chinook `sea-type` homograph, the
