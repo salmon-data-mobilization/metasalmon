@@ -6,7 +6,7 @@ claimable: true
 repo: smn-data-pkg
 venue: claude-code
 severity: P4
-blocked_by: [Q-40]
+blocked_by: [Q-41]
 legacy: '#105'
 evidence: knowledge/backlog.md
 retires_when: 'A link check runs in smn-data-pkg''s continuous integration and walks every relative path cited in README.md and docs/entrypoints.md, so a dead reference fails the build instead of surviving until some test happens to walk it. The narrow condition, that the five dead references resolve today, was met 2026-08-21 in smn-data-pkg PR #6. The link check the backlog entry also names is not met, and B-103''s workflow does not supply it, so this item stays open rather than closing and taking the residual with it.'

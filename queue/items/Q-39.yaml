@@ -1,12 +1,12 @@
 id: Q-39
 kind: question
-title: Verify one commons card end to end, to find out what verification costs
+title: What does a verified entry on a commons card mean, and may an agent ever write one
 state: needs_brett
 claimable: false
 repo: salmon-knowledge-commons
 venue: claude-science
 stream: S6
-blocked_by: [Q-38, B-121]
+blocked_by: []
 legacy: ''
 evidence: knowledge/questions.md
-retires_when: 'One card carries a real verified entry naming a human, chosen because it is load-bearing and small rather than because it is easy. The point is the measurement as much as the card: until one is done nobody knows whether verifying a card is twenty minutes or a day, and every plan that promises verification is costing it at zero.'
+retires_when: 'Brett rules what verification requires and who may assert it. Twenty-six cards carry 250 sources and 623 citations and not one has ever been verified, in any commit on any branch. The rule that the writer cannot be the checker is stated but unenforceable, and whether an agent re-reading a source counts as independent checking is genuinely undecided in the documentation rather than merely unwritten.'
