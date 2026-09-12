@@ -1,0 +1,13 @@
+id: B-124
+kind: defect
+title: Port the validator checks of #49 to metasalmonpy
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P1
+blocked_by: [B-49]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'metasalmonpy validate_salmon_datapackage() rejects a required column with a missing value, a blank schema-required metadata field, and a corrupt SSSOM or decomposition artifact, with one failing test per class, matching metasalmon pull request #111 (B-49); until then this is R-shipped-first lag recorded in the parity register, not a deviation row.'
