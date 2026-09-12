@@ -1,0 +1,12 @@
+id: B-132
+kind: defect
+title: The live upstream SDP bundle test errors instead of skipping when the fetch is slow or offline
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: tests/testthat/test-schema-helpers.R
+retires_when: 'tests/testthat/test-schema-helpers.R "the live upstream SDP bundle loads" skips rather than fails when raw.githubusercontent.com cannot be fetched or the fetch exceeds its timeout (skip_if_offline() only proves the host resolves, not that the fetch completes), and the timeout it runs under is not the hard-coded 2 s default of .ms_fetch_remote_sdp_schema() in R/schema-helpers.R but a value the test sets generously or reads from an option. It failed CI on metasalmon pull request #112 on 2026-09-12 and passed on re-run, which is the flake this retires.'

@@ -1,0 +1,13 @@
+id: B-130
+kind: defect
+title: Add a bounded IRI-dereference verifier for the exact HTTP semantic IRIs a package carries
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S13
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/sequences/s13-fraser-recruits-case-study.md
+retires_when: 'An exported function dereferences every exact HTTP semantic IRI a package carries, walking the IRI set in C collation, retrying only a classified set of transient transport failures on a bounded schedule of at most three attempts (the shape the Fraser Recruits recipe built in its own src/extended-sdp.R because this package had none), writing a per-IRI result table with each status so the publication path can bind it by checksum, and naming every IRI that failed rather than stopping at the first; a test drives it over a stubbed transport with one transient and one permanent failure and asserts the attempt counts, the report rows, and that the retry never exceeds the bound. S-13 requirement 3, filed 2026-09-12; the two 404 example IRIs such a check would have caught are B-99.'

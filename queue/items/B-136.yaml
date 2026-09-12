@@ -1,0 +1,13 @@
+id: B-136
+kind: defect
+title: gcdfo:WildSalmonPolicy and gcdfo:WildSalmonPolicyTheme share the label Wild Salmon Policy
+state: needs_brett
+claimable: false
+repo: dfo-salmon-ontology
+venue: either
+stream: S6
+severity: P2
+blocked_by: [B-44]
+legacy: ''
+evidence: knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md
+retires_when: 'Brett rules which of the two labels changes (a theme concept and a policy instrument sharing a name is a modelling question, not a typo), or rules that duplicate_label should not gate the repository, in which case the downgrade lands in robot-profile.yaml, in the expected diff in scripts/validation-selftest.sh and in the table in docs/ROBOT_SETUP.md in one change with the reason; the ruling is applied and make quality-check passes with duplicate_label still at ERROR, so make ci is green on the B-44 patch, which the re-enabled check keeps red until then.'

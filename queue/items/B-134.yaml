@@ -1,0 +1,13 @@
+id: B-134
+kind: defect
+title: The gcdfo shapes, example data and competency queries name IRIs the ontology does not declare
+state: needs_brett
+claimable: false
+repo: dfo-salmon-ontology
+venue: either
+stream: S6
+severity: P2
+blocked_by: [B-44]
+legacy: ''
+evidence: knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md
+retires_when: 'For each of the 13 + 3 + 4 undeclared gcdfo: IRIs the B-44 patch lists in dfo-salmon-ontology docs/tech-debt.md (two classes and eleven properties in ontology/shapes/dfo-salmon-shapes.ttl; three more in ontology/examples/sample-survey-data.ttl; gcdfo:StockStatusZone, gcdfo:SurveyEvent, gcdfo:ManagementUnit and gcdfo:hasMember in the competency queries) Brett rules per term whether it is retargeted to the term that now exists (smn:EscapementSurveyEvent, gcdfo:StockManagementUnit, skos:inScheme gcdfo:WSPBiologicalStatusZoneScheme), minted in gcdfo:, or deleted with its constraint or query, since each is a term IRI choice and not a bulk swap; the rulings are applied, every competency query returns at least one row against the example data, scripts/run-competency-questions.sh is flipped to fail on zero rows, and scripts/validation-selftest.sh asserts every sh:targetClass and sh:path in the shapes is declared by the import closure. Until then the SHACL gate is a consistency check between two files and the competency gate proves parse-and-run only.'

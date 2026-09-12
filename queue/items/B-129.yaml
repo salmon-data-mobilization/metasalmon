@@ -1,0 +1,13 @@
+id: B-129
+kind: defect
+title: Write the R semantic-review vignette for the 0.5.0 flow and declare tidyr in Suggests
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/sequences/s11-vignettes-and-walkthroughs.md
+retires_when: 'vignettes/ carries an R semantic-review walkthrough of the 0.5.0 flow, the R twin of metasalmonpy''s guides/semantic-review.qmd, covering review_semantics(), accept_suggestion(), reject_suggestion(), apply_sdp_semantics(), review_metadata() and the four set_sdp_*() setters plus chat_decomposition(), reachable from the pkgdown articles index; and tidyr is declared in DESCRIPTION Suggests, so tidy-data-for-sdp.Rmd no longer teaches pivot_longer() from a package the installed package does not declare. This is S-11 slice 4 together with the slice-2 remainder, authorized as one item on 2026-09-12; slice 3, the KNB golden path, stays behind S-03.'

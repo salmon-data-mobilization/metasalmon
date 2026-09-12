@@ -1,0 +1,12 @@
+id: B-137
+kind: defect
+title: Six tests depend on a UTF-8 locale and fail under the C locale
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: tests/testthat/test-dictionary-helpers.R
+retires_when: 'The six expectations that fail under a C (non-UTF-8) locale on R 4.3.3 and pass under C.UTF-8 either declare the locale they need or skip when l10n_info() reports no UTF-8, or the code stops depending on the locale: tests/testthat/test-dictionary-helpers.R "infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields" (the accented Discharge / Debit (cms) column name is not matched), the four Unicode-whitespace cases of tests/testthat/test-iri-predicates.R (an ideographic space passes .ms_absolute_iri_shape() under C because TRE resolves [[:space:]] against the locale, which is a validator answer changing with the locale and not only a test artefact), and tests/testthat/test-review-console.R "print() emits exactly the rendered lines" (box-drawing characters rendered as <U+2500>). Measured by B-49 and B-95 on 2026-09-10 against origin/main, so the suite is green on CI''s UTF-8 runner and red on any container without LANG set.'

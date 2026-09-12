@@ -1,0 +1,12 @@
+id: B-138
+kind: defect
+title: The smn:Population definition quoted verbatim in test-term-search.R has drifted
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: tests/testthat/test-term-search.R
+retires_when: 'The species_df fixture in tests/testthat/test-term-search.R (line 577 today) stops quoting the smn:Population definition verbatim, so no external definition string that nothing asserts is pinned in a test and able to drift again; re-syncing the string is not the fix. The live smn definition already carries a second sentence the fixture lacks (checked 2026-09-12). Same class as B-83''s gcdfo:ConservationUnit quote at line 614, split out on 2026-09-12 so each item retires on one line.'
