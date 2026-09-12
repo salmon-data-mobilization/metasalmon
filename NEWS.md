@@ -28,7 +28,16 @@ metasalmon (development version)
      `tables.csv` row with no `table_id` used to be skipped by the per-table
      loop rather than named. Both read the same schema parse
      `review_metadata()` reads, so the two cannot disagree about which fields
-     block.
+     block. A column the file does not have counts as blank in every row, in
+     the validator and in `review_metadata()` alike -- the canonical reader
+     normalises only the dictionary and codes, so an absent required column
+     was reported in those two files and passed in `dataset.csv` and
+     `tables.csv` (raised in review of #111; the same rule now covers a
+     `tables.csv` with no `observation_unit_iri` column under
+     `require_iris = TRUE`). A blank `dataset_id` in `dataset.csv` used to
+     stop the validator with R's `missing value where TRUE/FALSE needed` from
+     the id-alignment check before the key collector ran; it is now reported
+     as the structural issue it is.
   3. **Corrupt SSSOM and decomposition artifacts.** `validate_sdp_sssom()` and
      `validate_sdp_measurement_decompositions()` existed, and only the KNB
      publication and archive paths called them: the end-to-end validator
@@ -37,6 +46,14 @@ metasalmon (development version)
      Both validators now run when their managed files are present, detected
      exactly as those two paths detect them -- by file name, never by scanning
      `metadata/semantic/`, so an unapproved draft there stays local and unread.
+     Because routine validation now reaches the SSSOM reader, its
+     `yaml::yaml.load()` on the embedded metadata block passes
+     `eval.expr = FALSE` explicitly: yaml's default follows
+     `getOption("yaml.eval.expr")`, so a session that had turned the option on
+     would have executed a `!expr` tag in a collaborator's file before any
+     hash or field check ran (raised in the security review of #111).
+     `yaml (>= 2.2.0)`, the version that introduced the argument, is now the
+     declared minimum.
 
   One test asserts a failure for each class (`tests/testthat/test-package-helpers.R`,
   `test-sssom.R`, `test-measurement-decompositions.R`), each shown failing
@@ -45,8 +62,8 @@ metasalmon (development version)
   title said was wrong. The declared-primary-key clause of #49 closed in 0.2.6
   under #77 and is untouched. **Mirror:** metasalmonpy's
   `validate_salmon_datapackage()` (`package_io.py`) has none of the three
-  checks; the port is owed under the S10 parity stream, not registered as a
-  deviation.
+  checks; the port is owed under the S10 parity stream (queue item B-124; see
+  the parity register), not registered as a deviation.
 
 metasalmon 0.5.0
 ----------------

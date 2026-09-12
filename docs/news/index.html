@@ -46,6 +46,22 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="development version" id="metasalmon-development-version">metasalmon (development version)<a class="anchor" aria-label="anchor" href="#metasalmon-development-version"></a></h2>
+<div class="section level3">
+<h3 id="fixed-development-version">Fixed<a class="anchor" aria-label="anchor" href="#fixed-development-version"></a></h3>
+<ul><li>
+<p><strong><code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> now checks the three things backlog <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/49" class="external-link">#49</a> (hub item B-49) measured it claiming and not doing.</strong> Each was a contract the package already wrote and nothing read back:</p>
+<ol style="list-style-type: decimal"><li>
+<strong>Required-column nullability.</strong> The dictionary’s <code>required</code> flag was inferred, written to <code>column_dictionary.csv</code>, parsed back to logical and exported as Frictionless <code>constraints.required</code>, and compared to the data by nothing – a package could declare a column required and ship blanks in it. A <code>required = TRUE</code> column with an NA or whitespace value is now a structural <code>columns</code> issue in every mode, read the way the primary-key check reads a missing key component. Only columns present in the data are checked; an absent one was already reported.</li>
+<li>
+<strong>Schema-required metadata fields.</strong> The Frictionless schema declares <code>constraints.required</code> on seven <code>dataset.csv</code> fields, five <code>tables.csv</code> fields and seven dictionary fields, and <code><a href="../reference/review_metadata.html">review_metadata()</a></code> has reported a blank one as <em>blocking strict validation</em> since 0.5.0 – while strict validation let it through, because the placeholder scan only sees a field that says it is missing, not one that is. A blank non-key required field now takes the placeholder channel: a warning in the default mode, an error under <code>require_iris = TRUE</code>, so a freshly created package stays valid until the strict answer is asked for. A blank <strong>key</strong> field (<code>dataset_id</code>, <code>table_id</code>, <code>file_name</code>, <code>column_name</code>) is structural in every mode: a <code>tables.csv</code> row with no <code>table_id</code> used to be skipped by the per-table loop rather than named. Both read the same schema parse <code><a href="../reference/review_metadata.html">review_metadata()</a></code> reads, so the two cannot disagree about which fields block. A column the file does not have counts as blank in every row, in the validator and in <code><a href="../reference/review_metadata.html">review_metadata()</a></code> alike – the canonical reader normalises only the dictionary and codes, so an absent required column was reported in those two files and passed in <code>dataset.csv</code> and <code>tables.csv</code> (raised in review of <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/111" class="external-link">#111</a>; the same rule now covers a <code>tables.csv</code> with no <code>observation_unit_iri</code> column under <code>require_iris = TRUE</code>). A blank <code>dataset_id</code> in <code>dataset.csv</code> used to stop the validator with R’s <code>missing value where TRUE/FALSE needed</code> from the id-alignment check before the key collector ran; it is now reported as the structural issue it is.</li>
+<li>
+<strong>Corrupt SSSOM and decomposition artifacts.</strong> <code><a href="../reference/validate_sdp_sssom.html">validate_sdp_sssom()</a></code> and <code><a href="../reference/validate_sdp_measurement_decompositions.html">validate_sdp_measurement_decompositions()</a></code> existed, and only the KNB publication and archive paths called them: the end-to-end validator reported success over a <code>mapping-sets.json</code> whose SHA-256 no longer matched its bytes, and over a decomposition CSV whose manifest had been deleted. Both validators now run when their managed files are present, detected exactly as those two paths detect them – by file name, never by scanning <code>metadata/semantic/</code>, so an unapproved draft there stays local and unread. Because routine validation now reaches the SSSOM reader, its <code><a href="https://yaml.r-lib.org/reference/yaml.load.html" class="external-link">yaml::yaml.load()</a></code> on the embedded metadata block passes <code>eval.expr = FALSE</code> explicitly: yaml’s default follows <code>getOption("yaml.eval.expr")</code>, so a session that had turned the option on would have executed a <code>!expr</code> tag in a collaborator’s file before any hash or field check ran (raised in the security review of <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/111" class="external-link">#111</a>). <code>yaml (&gt;= 2.2.0)</code>, the version that introduced the argument, is now the declared minimum.</li>
+</ol><p>One test asserts a failure for each class (<code>tests/testthat/test-package-helpers.R</code>, <code>test-sssom.R</code>, <code>test-measurement-decompositions.R</code>), each shown failing against the previous validator before the check landed. The roxygen description now lists what the function checks, which is the claim the item title said was wrong. The declared-primary-key clause of <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/49" class="external-link">#49</a> closed in 0.2.6 under <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/77" class="external-link">#77</a> and is untouched. <strong>Mirror:</strong> metasalmonpy’s <code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> (<code>package_io.py</code>) has none of the three checks; the port is owed under the S10 parity stream (queue item B-124; see the parity register), not registered as a deviation.</p>
+</li>
+</ul></div>
+</div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.5.0" id="metasalmon-050">metasalmon 0.5.0<a class="anchor" aria-label="anchor" href="#metasalmon-050"></a></h2>
 <p>Released 2026-08-25. Roadmap S5, and the one claim worth putting first: <strong>a salmon data package can now be taken from <code><a href="../reference/create_sdp.html">create_sdp()</a></code> to <code>validate_salmon_datapackage(require_iris = TRUE)</code> without opening a single file in a spreadsheet.</strong> Nine new exported functions — <code><a href="../reference/review_semantics.html">review_semantics()</a></code>, <code><a href="../reference/accept_suggestion.html">accept_suggestion()</a></code>, <code><a href="../reference/accept_suggestion.html">reject_suggestion()</a></code>, <code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code>, <code><a href="../reference/review_metadata.html">review_metadata()</a></code> and the four <code>set_sdp_*()</code> setters — plus the <code><a href="../reference/semantic_suggestions.html">semantic_suggestions()</a></code> / <code><a href="../reference/semantic_llm_assessments.html">semantic_llm_assessments()</a></code> accessors, make the most consequential decision in the pipeline scriptable, re-runnable and recorded. Backlog <strong>#74</strong> is closed, with <strong>#118</strong> and the accessor half of <strong>#60</strong>.</p>
 <p>The release is a minor rather than a major: <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/58" class="external-link">#58</a> (condition classes) wants a breaking bump and was deliberately <strong>not</strong> bundled into it, so nothing here renames an exported function, drops an argument, or changes a documented return shape. It does change bytes in two narrow places, both stated in full below — an in-memory SSSOM mapping set carrying a typed column, and <code>semantic_suggestions.csv</code>, which gains a <code>decision_reason</code> column.</p>
@@ -169,17 +185,17 @@
 <h3 id="new-0-4-0">New<a class="anchor" aria-label="anchor" href="#new-0-4-0"></a></h3>
 <ul><li>
 <p><strong><code><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code> and <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> take a <code>knb_environment</code>, so a deposit can finally be rehearsed</strong> (roadmap S3). Both functions hardcoded production, and the member node, coordinating node, resolver, and Solr endpoints were module-level constants — this is the first state those modules have ever had to vary. Two environments, matched exactly, with no partial matching, no custom endpoints, and no fallback between them:</p>
-<table class="table"><colgroup><col width="25%"><col width="25%"><col width="25%"><col width="25%"></colgroup><thead><tr><th>Environment</th>
+<table class="table"><colgroup><col width="25%"><col width="25%"><col width="25%"><col width="25%"></colgroup><thead><tr class="header"><th>Environment</th>
 <th>DataONE network</th>
 <th>Member node</th>
 <th>Credential</th>
-</tr></thead><tbody><tr><td><code>"test"</code></td>
+</tr></thead><tbody><tr class="odd"><td><code>"test"</code></td>
 <td><code>STAGING</code></td>
 <td>
 <code>urn:node:mnTestKNB</code> at <code>dev.nceas.ucsb.edu</code>
 </td>
 <td><code>dataone_test_token</code></td>
-</tr><tr><td><code>"production"</code></td>
+</tr><tr class="even"><td><code>"production"</code></td>
 <td><code>PROD</code></td>
 <td>
 <code>urn:node:KNB</code> at <code>knb.ecoinformatics.org</code>
@@ -237,7 +253,7 @@
 </ul></div>
 <div class="section level3">
 <h3 id="documentation-0-4-0">Documentation<a class="anchor" aria-label="anchor" href="#documentation-0-4-0"></a></h3>
-<ul><li><p>Two new vignettes, roadmap stream S11 slice 2. <strong>Migrating to SDP 0.3.0</strong> (<code>vignettes/migrating-to-sdp-0-3-0.Rmd</code>) is the user-facing guide to the 0.3.0 breaking change that until now existed only as a NEWS entry: why a method is not part of what a value <em>is</em>, the three exact placements with a worked example of each, the new <code>statistical_modifier_iri</code> slot and when it applies, a complete offline <code><a href="../reference/migrate_sdp_methods.html">migrate_sdp_methods()</a></code> walkthrough, every stop-and-report case with how to resolve it, and where each column of the removed <code>metadata/methods.csv</code> registry now belongs. <strong>Tidy Data for Salmon Data Packages</strong> (<code>vignettes/tidy-data-for-sdp.Rmd</code>) documents the 0.2.6 enforcement: declared-primary-key uniqueness, the value-like column-name warning and the heuristic behind it, and the <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code> reshape, with the validator’s actual messages.</p></li>
+<ul><li><p>Two new vignettes, roadmap stream S11 slice 2. <strong>Migrating to SDP 0.3.0</strong> (<code>vignettes/migrating-to-sdp-0-3-0.Rmd</code>) is the user-facing guide to the 0.3.0 breaking change that until now existed only as a NEWS entry: why a method is not part of what a value <em>is</em>, the three exact placements with a worked example of each, the new <code>statistical_modifier_iri</code> slot and when it applies, a complete offline <code><a href="../reference/migrate_sdp_methods.html">migrate_sdp_methods()</a></code> walkthrough, every stop-and-report case with how to resolve it, and where each column of the removed <code>metadata/methods.csv</code> registry now belongs. <strong>Tidy Data for Salmon Data Packages</strong> (<code>vignettes/tidy-data-for-sdp.Rmd</code>) documents the 0.2.6 enforcement: declared-primary-key uniqueness, the value-like column-name warning and the heuristic behind it, and the <code>tidyr::pivot_longer()</code> reshape, with the validator’s actual messages.</p></li>
 <li><p>Vignette corrections found auditing the set against 0.3.0. The quickstart and the FAQ both still named a dictionary <em>method</em> slot that 0.3.0 removed, and the quickstart’s “never auto-filled” claim was also wrong on the deterministic path, where a constraint or statistical modifier is applied when the column text carries the evidence. The publication guide listed a blank <code>observation_unit_iri</code> as an EDH rebuild refusal (only a <code>REVIEW:</code> value is) and listed “methods” in the closed KNB inventory (the artifact is gone; a package carrying one is refused). The vocabulary guide’s <code>property</code> source row omitted QUDT, and the glossary’s quick-reference row still named four I-ADOPT components instead of five.</p></li>
 </ul></div>
 </div>
@@ -268,7 +284,7 @@
 <div class="section level3">
 <h3 id="new-0-2-6">New<a class="anchor" aria-label="anchor" href="#new-0-2-6"></a></h3>
 <ul><li><p><code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> checks that a declared <code>primary_key</code> actually identifies a row. The field was declared in <code>tables.csv</code> and read by nothing that tested it, so a table could claim a key and ship duplicates — the tidy principle “each observation forms a row” going unverified. Now an error.</p></li>
-<li><p>Column names that look like data values are reported. Bare year-like names, or a shared stem with numeric suffixes, across three or more columns. A <strong>warning, never an error</strong>: the SDP may accept untidy data, it should simply stop implying it checked. The message points at <code><a href="https://tidyr.tidyverse.org/reference/pivot_longer.html" class="external-link">tidyr::pivot_longer()</a></code>.</p></li>
+<li><p>Column names that look like data values are reported. Bare year-like names, or a shared stem with numeric suffixes, across three or more columns. A <strong>warning, never an error</strong>: the SDP may accept untidy data, it should simply stop implying it checked. The message points at <code>tidyr::pivot_longer()</code>.</p></li>
 <li><p>Unresolved <code>MISSING METADATA:</code> placeholders are surfaced in the default validation mode. They were already errors under <code>require_iris = TRUE</code>; an ordinary call returned zero issues and said nothing, so a package could look clean while stating in its own metadata that its metadata was missing.</p></li>
 </ul></div>
 </div>
@@ -647,7 +663,7 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.0.6" id="metasalmon-006">metasalmon 0.0.6<a class="anchor" aria-label="anchor" href="#metasalmon-006"></a></h2>
 <ul><li>Added <code><a href="../reference/read_github_csv_dir.html">read_github_csv_dir()</a></code> to read all CSV files from a GitHub directory into a named list, similar to using <code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">dir()</a></code> with <code><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply()</a></code> for local files.</li>
-<li>Supports pattern matching, version pinning, and passes options to <code><a href="https://readr.tidyverse.org/reference/read_delim.html" class="external-link">read_csv()</a></code> for all files.</li>
+<li>Supports pattern matching, version pinning, and passes options to <code>read_csv()</code> for all files.</li>
 <li>Added comprehensive test coverage for the new function.</li>
 </ul></div>
     <div class="section level2">
@@ -693,7 +709,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

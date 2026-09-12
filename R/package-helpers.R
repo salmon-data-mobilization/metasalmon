@@ -1695,11 +1695,20 @@ read_salmon_datapackage <- function(path) {
 }
 
 .ms_collect_missing_table_observation_unit_iri_issues <- function(table_meta, source_name = "metadata/tables.csv") {
-  if (!is.data.frame(table_meta) || nrow(table_meta) == 0 || !"observation_unit_iri" %in% names(table_meta)) {
+  if (!is.data.frame(table_meta) || nrow(table_meta) == 0) {
     return(tibble::tibble())
   }
 
-  vals <- as.character(table_meta$observation_unit_iri)
+  # A tables.csv without the column is blank in every row, the rule
+  # `.ms_collect_blank_required_metadata_fields()` applies to the
+  # schema-required fields: this used to return nothing for an absent column,
+  # so strict validation refused a blank IRI and passed a file that never
+  # declared the field (found making that rule one rule, Codex review of #111).
+  vals <- if ("observation_unit_iri" %in% names(table_meta)) {
+    as.character(table_meta$observation_unit_iri)
+  } else {
+    rep(NA_character_, nrow(table_meta))
+  }
   rows <- which(is.na(vals) | !nzchar(trimws(vals)))
   if (length(rows) == 0) {
     return(tibble::tibble())
@@ -1813,8 +1822,19 @@ read_salmon_datapackage <- function(path) {
     } else {
       setdiff(required, key_fields)
     }
-    for (field in intersect(fields, names(df))) {
-      vals <- as.character(df[[field]])
+    for (field in fields) {
+      # A column the file does not have is blank in every row. The canonical
+      # reader adds a missing column as NA for the dictionary and codes
+      # (`.ms_align_cols()`) and reads dataset.csv and tables.csv as written,
+      # so scanning `intersect(fields, names(df))` reported an absent required
+      # column in two files and passed it in the other two (Codex review of
+      # #111). One rule for all four, and the same rule `review_metadata()`
+      # applies by aligning each frame before it scans.
+      vals <- if (field %in% names(df)) {
+        as.character(df[[field]])
+      } else {
+        rep(NA_character_, nrow(df))
+      }
       for (row in which(is.na(vals) | !nzchar(trimws(vals)))) {
         found[[length(found) + 1L]] <- tibble::tibble(
           file = file_name,
@@ -1882,7 +1902,8 @@ read_salmon_datapackage <- function(path) {
 #' present; and then runs [validate_dictionary()] plus [validate_semantics()].
 #' Under `require_iris = TRUE` it additionally refuses `REVIEW:` markers,
 #' unresolved `MISSING ...:` placeholders, blank schema-required metadata
-#' fields and blank table `observation_unit_iri` values; in the default mode
+#' fields and blank table `observation_unit_iri` values (a column a metadata
+#' file does not have counts as blank in every row); in the default mode
 #' those are reported as warnings. This is the pre-flight check before sharing
 #' a package-first submission.
 #'
@@ -2262,6 +2283,16 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 
 .ms_validate_dataset_id_alignment <- function(dataset_meta, table_meta, dict, codes = NULL) {
   dataset_id <- dataset_meta$dataset_id[1]
+  # A blank root id has nothing to align against. Comparing the other files'
+  # ids with an NA root made `all()` return NA and this check die with
+  # "missing value where TRUE/FALSE needed" before
+  # `.ms_collect_blank_required_metadata_fields(keys = TRUE)` could name the
+  # blank key (Codex review of #111). It stands aside here so that structural
+  # issue is the diagnostic the user sees; an absent `dataset_id` column
+  # (NULL) is the same case.
+  if (is.null(dataset_id) || is.na(dataset_id) || !nzchar(trimws(dataset_id))) {
+    return(invisible(NULL))
+  }
 
   check_ids <- function(values, source_name) {
     values <- unique(values[!is.na(values) & values != ""])

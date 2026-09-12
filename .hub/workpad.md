@@ -255,3 +255,240 @@ Not fixed here: a locale-dependent test is a separate finding (see below).
   by managed file name" rule in `.ms_validate_optional_sdp_semantic_artifacts()`
   is a design choice inherited from the two existing consumers, not a guard,
   and its comment says why.
+
+## Codex round (2026-09-12, on PR #111 head `cb03cf4` + `ad8d974`)
+
+Four findings from the Codex review of #111 and one from its security review,
+relayed by the coordinator. Each treated as a bug report: reproduced against
+`ad8d974` (the head after the parity paragraph landed), then fixed with a test
+that fails without the fix. None was refuted. Runner for every RED/GREEN
+below: `pkgload::load_all()` + `testthat::test_file(<file>, desc = <name>,
+reporter = "check")`, `LC_ALL=C.UTF-8`, R 4.3.3; RED is the run against the
+unmodified `R/`, GREEN the same run after the fix.
+
+### 1. P1 -- absent required metadata columns (real)
+
+Finding: `.ms_collect_blank_required_metadata_fields()` scanned
+`intersect(fields, names(df))`, so a required column missing from the header
+was skipped rather than reported. Reproduced with `create_sdp()` output,
+`contact_email` dropped from `dataset.csv` and `table_label` from `tables.csv`:
+the collector returned zero rows, the default mode gave no schema-required
+warning, strict validation passed, and `review_metadata()` (the same
+`intersect` at `sdp-field-setters.R:268`) listed nothing. Why the four files
+disagreed: the canonical reader normalises the dictionary and codes through
+`.ms_align_cols()` (a missing column becomes NA and was therefore reported)
+and reads `dataset.csv` / `tables.csv` as written.
+
+Fix, one rule -- **a column the file does not have is blank in every row**:
+
+- `R/package-helpers.R`, `.ms_collect_blank_required_metadata_fields()`:
+  iterates every required field; an absent one scans as
+  `rep(NA_character_, nrow(df))`. Same message, same channel as a blank value
+  (placeholder warning / strict error for non-key fields, structural for
+  keys), for all four files regardless of what the reader did.
+- `R/package-helpers.R`, `.ms_collect_missing_table_observation_unit_iri_issues()`:
+  the same rule. It returned nothing for a `tables.csv` with no
+  `observation_unit_iri` column, so strict validation refused a blank IRI and
+  passed a file that never declared the field. Found while making the rule
+  one rule; included because leaving it would have been the next report of
+  the same shape, one function above the one just fixed.
+- `R/sdp-field-setters.R`, `review_metadata()`: aligns each frame to its
+  schema fields (`.ms_align_cols()`, as the reader already does for the
+  dictionary and codes) before the gap scan. It now reports the absent column
+  and the printed `set_sdp_*()` call fills it -- `.ms_set_sdp_metadata()`
+  already adds a column it is asked to write (line 802). Without this the
+  NEWS claim that the validator and `review_metadata()` "cannot disagree
+  about which fields block" would have become false the moment the validator
+  learned to see absent columns.
+- Roxygen of both functions says so; `man/validate_salmon_datapackage.Rd` and
+  `man/review_metadata.Rd` regenerated with `devtools::document()`. roxygen2
+  8.1.0 again rewrote `Config/roxygen2/version` and reflowed `NAMESPACE`; both
+  reverted (DESCRIPTION keeps the yaml minimum from finding 5).
+
+Tests:
+
+- `test-package-helpers.R` "an absent schema-required metadata column is
+  reported like a blank one" -- `create_sdp()` fixture with attribute-only
+  columns, filled through `set_sdp_dataset()` / `set_sdp_table()` /
+  `set_sdp_column()`, strict pass asserted first so the dropped column is the
+  only defect in play. Then `contact_email` and `table_label` dropped: the
+  default mode warns once, naming `dataset.csv$contact_email` and
+  `tables.csv$table_label`; the strict verdict names
+  `metadata/dataset.csv row 1 (dataset_id=absent-1) field contact_email is
+  required by the SDP schema and blank` and `metadata/tables.csv row 1
+  (table_id=obs, file_name=data/obs.csv) field table_label ...`; then
+  `dataset_id` dropped: structural in the default mode.
+  RED: `Expected blank_warning to have length 1. Actual length: 0.` and
+  `Expected strict to be an S3 object. Actual OO type: none.` (strict
+  validation returned its result list). GREEN: failed=0 passed=8.
+- `test-package-helpers.R` "an absent observation_unit_iri column is refused
+  like a blank one" -- semantic fixture with the column removed; default mode
+  still passes, strict refuses. RED: `Expected suppressWarnings(...) to throw
+  a error.` GREEN: failed=0 passed=2.
+- `test-sdp-field-setters.R` "review_metadata() reports a required column the
+  file does not have, and its call fills it" -- setter fixture brought to
+  zero gaps, then `contact_email`, `table_label` and `observation_unit_iri`
+  dropped; asserts exactly those three gaps by file / field / reason, that
+  strict validation refuses, then executes the printed calls (this file's
+  standard) and asserts the columns are back, zero gaps, strict passes.
+  RED: `Actual:` (empty) versus `Expected: "dataset.csv contact_email
+  required", "tables.csv table_label required", "tables.csv
+  observation_unit_iri iri"`, and strict did not throw. GREEN: failed=0
+  passed=9.
+
+Not done: normalising `dataset.csv` / `tables.csv` inside
+`read_salmon_datapackage()`. It would enforce the rule at one point, but it
+changes the return value of an exported function (columns added and
+reordered) that the writers, EML export and KNB publication consume; the
+collector-level rule leaves the reader alone. Recorded so the next person does
+not re-derive it.
+
+### 2. P2 -- blank `dataset_id` crashes the alignment check (real)
+
+Reproduced: `dataset.csv$dataset_id <- ""` with the tables and dictionary ids
+intact gives `simpleError: missing value where TRUE/FALSE needed` in both
+modes (`check_ids()`: `all(values == NA)` is NA). Fix:
+`.ms_validate_dataset_id_alignment()` returns early when the root id is NULL,
+NA or whitespace -- a blank root has nothing to align against, and
+`.ms_collect_blank_required_metadata_fields(keys = TRUE)` then reports
+`metadata/dataset.csv row 1 field dataset_id is required by the SDP schema and
+blank` as the structural issue. Chosen over moving the key collector ahead of
+alignment because it also covers an absent `dataset_id` column (NULL root)
+and keeps the validator's order of checks. The validator is the only caller.
+
+Test: `test-package-helpers.R` "a blank dataset_id is a structural issue, not
+an R error" -- both modes; asserts an `rlang_error`, the structural message,
+and that "missing value where TRUE/FALSE needed" is absent. RED: `Expected
+caught to inherit from "rlang_error". Actual class:
+"simpleError"/"error"/"condition".` and `Actual text: missing value where
+TRUE/FALSE needed` (in both modes). GREEN: failed=0 passed=8.
+
+### 3. P1 -- mirror the behaviour or log the exception (coordinator's)
+
+The parity paragraph landed in `ad8d974` (`knowledge/parity-deviations.md`,
+the concurrent agent) and `queue/items/B-124.yaml` is on `main` (`0a04524`).
+The NEWS mirror sentence said the port is "owed under the S10 parity stream"
+without pointing anywhere; it now reads "(queue item B-124; see the parity
+register)". Nothing else.
+
+### 4. P2 -- rebuild pkgdown after changing public documentation (real)
+
+`Rscript scripts/build-pkgdown.R` was run (pkgdown 2.2.1 installed, pandoc
+3.1.3; the checked-in site was built with pkgdown 2.2.0 and pandoc 3.8.3).
+**It fails before it reaches the reference pages, and not because of this
+change**: pkgdown's home build renders every root Markdown file, and pandoc
+rejects `HUB.md`, whose first 213 lines are a YAML front-matter block:
+
+```
+Reading HUB.md
+YAML parse exception at line 198, column 6,
+while scanning a simple key:
+could not find expected ':'
+Error: pandoc document conversion failed with error 64
+```
+
+Line 198 of `HUB.md` is a list item ending in an unquoted colon (`... that is
+not a small mechanical change:`) continued on the next line, which YAML reads
+as a key without a value. `HUB.md` landed on `main` on 2026-09-10, after the
+last site build (2026-08-26), so the documented rebuild is broken for
+everyone, on any pandoc -- and `scripts/build-pkgdown.R` deletes only
+`AGENTS.html` / `CLAUDE.html` afterwards, so a `HUB.md` pandoc *could* parse
+would become a public `HUB.html`. Both halves are one **candidate item**
+(metasalmon, docs). The failed run's side effects under `docs/` (favicons
+fetched from realfavicongenerator.net, `deps/bootstrap-5.3.8/`,
+`authors.html`, `pkgdown.yml`, and the ignored `AGENTS.html` / `CLAUDE.html`)
+were reverted or deleted.
+
+What was committed instead, produced with the same pkgdown from the
+regenerated man pages: `pkgdown::build_reference(".", topics =
+c("validate_salmon_datapackage", "review_metadata"), lazy = FALSE)`,
+`pkgdown::build_news(".")`, `pkgdown::build_search(".")` (exit 0).
+Committed: `docs/reference/validate_salmon_datapackage.html` (the new
+description in the body and the `<meta>` tags; the example ran, so its temp
+path changed from the maintainer's `/var/folders/...` to `/tmp/...`; footer
+2.2.0 -> 2.2.1), `docs/reference/review_metadata.html` (the one bullet;
+footer), `docs/news/index.html` (the development-version section, plus
+pkgdown/downlit rendering differences on *old* entries that the maintainers
+should expect to flip back on their next full build: `<tr class="header|odd|
+even">` on the 0.4.0 environment table, and three autolinks dropped --
+`tidyr::pivot_longer()` twice and `read_csv()` once -- because those resolve
+differently in this library; footer), and `docs/search.json`. Not committed:
+`docs/reference/index.html`, whose only change was the footer version.
+
+### 5. P1 advisory, security -- `!expr` in SSSOM metadata (real)
+
+Every `yaml::` read in `R/`, and which the validator reaches through #111:
+
+- `R/sssom.R:241`, `.ms_sssom_parse_metadata()` --
+  `yaml::yaml.load(yaml_text)` on the `#`-prefixed metadata block of every
+  `.sssom.tsv` the manifest names. Reached by the validator through
+  `.ms_validate_optional_sdp_semantic_artifacts()` -> `validate_sdp_sssom()`
+  -> `read_sssom_mapping_set()`, and directly by `write_sdp_sssom()` and
+  `read_sssom_mapping_set()`. **Fixed**: `eval.expr = FALSE`, with a one-line
+  comment naming the finding. `DESCRIPTION` now declares `yaml (>= 2.2.0)`,
+  the version that introduced the argument, so the call cannot become an
+  "unused argument" error on an older yaml.
+- Not reachable through this PR, listed here as a **candidate item**
+  (metasalmon, S2): `R/eml-export.R:2920` `yaml::read_yaml(mapping_path)` and
+  `R/knb-publication.R:297` / `:1572`
+  `yaml::read_yaml(file.path(path, "metadata", "eml-mapping.yml"))` -- three
+  reads of a collaborator-authored `eml-mapping.yml` on the EML-export and
+  publication paths, all at yaml's default. `R/schema-helpers.R:168`
+  (`yaml.load` on `sdp.rules.yaml` fetched from the spec repository) and
+  `:199` (`read_yaml` on the vendored copy) read the package's own schema
+  bundle rather than a collaborator's file; the same one-argument fix applies
+  for defence in depth, but the trust boundary is different, so they are
+  listed rather than changed here.
+- Installed yaml is **2.3.12**. Its default is
+  `eval.expr = getOption("yaml.eval.expr", FALSE)`, so a session option flips
+  it on; with `eval.expr = FALSE` it returns the unevaluated expression as
+  text and emits **no warning** on this version (verified:
+  `yaml.load("a: !expr 1 + 1", eval.expr = FALSE)` gives `"1 + 1"` with no
+  condition; with the option set and no argument it gives `2`). The test
+  tolerates a warning anyway, for versions that emit one.
+
+Test: `test-sssom.R` "validate_salmon_datapackage never evaluates an !expr
+tag in SSSOM metadata" -- installs a benign mapping set through
+`write_sdp_sssom()`, then patches the installed bytes to
+`# mapping_set_title: !expr file.create("<sentinel>")` and the manifest
+SHA-256 to match, so the validator's read is the only reader that meets the
+tag (the writer re-renders metadata it parses, so a tag in the *source* never
+reaches the installed file). Sets `withr::local_options(yaml.eval.expr =
+TRUE)` as the worst case and runs `validate_salmon_datapackage()`. Asserts the
+sentinel is absent, the verdict is not an error, and `read_sssom_mapping_set()`
+returns the title as the literal text. RED (unpatched reader): `Expected
+file.exists(sentinel) to be FALSE. actual: TRUE` and the title read back as
+`"TRUE"` -- the validator executed the expression and then **passed**. GREEN:
+failed=0 passed=5.
+
+### Verification (all `LC_ALL=C.UTF-8`, R 4.3.3)
+
+- Touched files in full (`testthat::test_file`): `test-package-helpers.R`
+  failed=0 passed=425 (407 before this round); `test-sssom.R` failed=0
+  passed=54 (49); `test-sdp-field-setters.R` failed=0 passed=89.
+- `devtools::document()`: only `man/validate_salmon_datapackage.Rd` and
+  `man/review_metadata.Rd` kept.
+- `git diff --check`: clean.
+- testthat 3.3.2 writes `tests/testthat/_problems/` on a failing run (the RED
+  runs above); it is untracked and not ignored, and was deleted before
+  committing. Candidate: add it to `.gitignore`.
+- Full suite, `devtools::test(".", reporter = "summary")`, 13:30-13:34 UTC,
+  2026-09-12, all Suggests installed: **failed=0, errors=2, skipped=7,
+  passed=3852, warnings=38.** The two errors are `test-github-helpers.R`
+  "read_github_csv can read remote content with a token" and
+  "read_github_csv_dir can fetch when a token is configured" -- the HTTP 404
+  through the session proxy, already on the pre-existing list above. The six
+  locale-dependent failures of the earlier run did not occur: that run was
+  under the container's C locale and this one under `C.UTF-8`, which is the
+  evidence for the locale candidate item above (they pass once the locale is
+  UTF-8). Skips fell from 103 to 7 because the second install phase has
+  finished. No new failure.
+
+### Not done, and why
+
+- Did not normalise `pkg$dataset` / `pkg$tables` on read (finding 1).
+- Did not change the five other yaml reads (finding 5, candidate item).
+- Did not make an `!expr` tag a validation *failure*. With `eval.expr =
+  FALSE` it is text, which is what the argument means; whether SSSOM metadata
+  should refuse a tag outright is a spec question for #90.
+- Did not open, edit, comment on or resolve anything on GitHub.

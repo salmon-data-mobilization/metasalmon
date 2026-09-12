@@ -32,7 +32,8 @@ SSSOM mapping-set and measurement-decomposition artifacts validate when
 present; and then runs \code{\link[=validate_dictionary]{validate_dictionary()}} plus \code{\link[=validate_semantics]{validate_semantics()}}.
 Under \code{require_iris = TRUE} it additionally refuses \verb{REVIEW:} markers,
 unresolved \verb{MISSING ...:} placeholders, blank schema-required metadata
-fields and blank table \code{observation_unit_iri} values; in the default mode
+fields and blank table \code{observation_unit_iri} values (a column a metadata
+file does not have counts as blank in every row); in the default mode
 those are reported as warnings. This is the pre-flight check before sharing
 a package-first submission.
 }

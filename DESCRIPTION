@@ -31,7 +31,7 @@ Imports:
     methods,
     usethis,
     xml2,
-    yaml,
+    yaml (>= 2.2.0),
     zip (>= 3.0.1)
 Suggests:
     testthat (>= 3.2.1),

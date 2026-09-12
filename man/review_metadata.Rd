@@ -34,7 +34,8 @@ What it reports:
 \itemize{
 \item unresolved \verb{MISSING DESCRIPTION:} / \verb{MISSING METADATA:} / \verb{REVIEW REQUIRED:}
 placeholders in any metadata field;
-\item schema-required fields (\code{constraints.required}) that are blank;
+\item schema-required fields (\code{constraints.required}) that are blank -- a
+column the file does not have counts as blank in every row;
 \item measurement columns missing \code{term_iri}, \code{property_iri}, \code{entity_iri} or
 \code{unit_iri};
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
