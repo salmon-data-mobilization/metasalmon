@@ -9,5 +9,5 @@ stream: S7
 severity: P4
 blocked_by: []
 legacy: '#22'
-evidence: backlog.md
+evidence: knowledge/backlog.md
 retires_when: The merge helper `.ms_semantic_merge_llm_assessments()` stops dropping a column it never creates, or a comment on the drop records it as deliberate and names what would make it load-bearing.

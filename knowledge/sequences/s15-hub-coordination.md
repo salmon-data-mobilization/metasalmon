@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S15 — Hub coordination: a git-native queue"
-description: "Move planning state out of prose and into a git-native queue whose claims are ordinary git pushes, with a root-level policy file and a small client. No GitHub Project and no GitHub API call. Ruled 2026-09-05 (Brett, R9), simplified 2026-09-09 (R12), and largely built the same day."
+description: "Move planning state out of prose and into a git-native queue whose claims are ordinary git pushes, with a root-level policy file and a small client. No GitHub Project, and a client that makes no GitHub API call at all. Ruled 2026-09-05 (Brett, R9), simplified 2026-09-09 (R12), largely built the same day, and its authorization widened 2026-09-10 (R15)."
 status: draft
 tags: [coordination, queue, agents, migration]
 psc:
@@ -53,14 +53,15 @@ the supply of `ready`, which only Brett produces.
    Project would have given and that reviving it is additive, because the queue
    files are the source.
 7. **Backlog identifiers are preserved** in a `legacy` field, so the 191 bare
-   citations already written elsewhere never have to be rewritten. `ready` is
-   set by a commit on the default branch, which the authorization forbids
-   agents to push, so an agent cannot enlarge its own queue.
-8. **The standing authorization is one paragraph** covering two `git push`
-   targets, a claim ref and an `agent/` branch, with a closed exclusion list
-   and a self-suspending clause. The draft-pull-request paragraph was declined
-   ([Q37](../questions.md)): an agent pushes its branch, prints the compare
-   URL, and stops.
+   citations already written elsewhere never have to be rewritten.
+8. **The standing authorization lives in `HUB.md` and only there**, as a
+   `writes` register with a closed exclusion list and a clause suspending the
+   whole grant on the first write outside it. This card does not restate what
+   it permits, because a boundary with two copies has two readings and the one
+   an agent obeys is whichever file it opened. The grant was ruled on
+   2026-09-09 and widened on 2026-09-10, including a reversal of the refusal of
+   the draft pull request ([Q37 and Q38](../questions.md)), so any sentence
+   here enumerating it would already have been wrong once.
 
 ## What exists, and what remains
 

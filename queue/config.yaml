@@ -30,16 +30,25 @@
 # an empty queue: an agent that reads "nobody holds it" from a missing
 # repository will claim work somebody else is already doing.
 #
-# An agent that finds this value stops and reports. It does not guess a
-# repository name, and it does not infer one from an organization in `members`
-# below: a wrong guess pushes a claim record somewhere nobody is reading, which
-# looks exactly like a successful claim and grants exclusivity over nothing.
-# `HUB_LOCKS_URL` is the supported way to point a run at a throwaway remote.
-# The client detects the placeholder by the literal `PLACEHOLDER` prefix, so a
-# replacement placeholder must keep that prefix or the detection silently stops
-# working.
+# This value was a `PLACEHOLDER` until 2026-09-10, and the instruction here was
+# to stop and report rather than use the queue. That instruction is gone
+# because its retirement condition was met: the repository exists and this is
+# its push URL. An agent reads this value and uses it.
 #
-# Retires when: the repository exists and this value is its push URL.
+# The client still detects a placeholder by the literal `PLACEHOLDER` prefix,
+# and that detection now serves one caller: the race test in
+# `scripts/tests/test_hub_claim.sh`, whose fixture sets a placeholder
+# `locks_repo` and points the run at a throwaway remote with `HUB_LOCKS_URL`.
+# Against a real value that override is not a convenience, it is refused:
+# `hub doctor` fails when it is set and every push command refuses, because an
+# environment variable that outranks a configured push target can redirect
+# every claim, heartbeat, release and handoff at an arbitrary remote. So do not
+# reach for `HUB_LOCKS_URL` here; change this line if the target really moved.
+#
+# Retires when: the client stops honouring `HUB_LOCKS_URL`, which needs the
+# race test to build its throwaway remote some other way. Until then a
+# replacement placeholder must keep the `PLACEHOLDER` prefix or the detection
+# silently stops working.
 #
 # One thing that had to be learned by running it. GitHub makes the first branch
 # pushed to an empty repository the default branch, and a default branch cannot
@@ -154,32 +163,80 @@ max_concurrent_claims: 1
 # section 9.5 covers pushes to these repositories on GitHub and to the locks
 # repository. It covers nothing on GitLab, so the one GitLab member is a read
 # for agents and every write there stays Brett's.
+#
+# `solo` is load-bearing in exactly the same way, and it is the one fact the
+# whole standing grant turns on. It answers a single question: has anybody
+# other than Brett ever contributed to this repository, by commit, by issue, or
+# by pull request? `true` means nobody has.
+#
+# It is participation, NOT access, and NOT ownership. Every repository in the
+# organization shows the same eight collaborators, because the organization's
+# base permission is `write` and every member inherits access to everything, so
+# the collaborator list would say `true` nowhere and make this field empty. Ask
+# who has ever participated instead. Ownership fails the other way: Brett owns
+# or administers all nine, and three of them still read `false` here.
+#
+# What it gates: the standing authorization in `HUB.md` covers pushing a work
+# branch and opening one draft pull request only where this reads `true`. Where
+# it reads `false`, an agent prepares the work in its worktree, shows Brett the
+# diff and the pull request text in chat, and waits for him to say yes before
+# anything leaves the machine.
+#
+# When participation cannot be determined the answer is `false`. That is why
+# `salmon-science-foundry` reads `false` while nobody at all has contributed to
+# it: the repository does not exist yet, so there is nothing to measure and
+# nobody can say who will be there first. The two ways of being wrong do not
+# cost the same. Reading `false` too readily costs a question Brett answers in
+# a sentence; reading `true` wrongly costs a push into somebody else's
+# repository that cannot be taken back.
+#
+# `HUB.md` governs. Its participation table under the standing authorization is
+# the measured record, dated 2026-09-10, and this column is the machine-readable
+# copy of it, exactly as the repository list above is a copy of the domain card.
+# `hub_queue.py lint` compares the two and fails when they disagree; when they
+# disagree the table is right and this file is the copy that is wrong. A
+# repository reading `true` here and absent from that table fails too, because
+# a grant that nothing measured is a grant nobody made.
+#
+# Retires when: the participation test stops gating writes, or a client that can
+# ask the forge who has contributed replaces this recorded answer with a measured
+# one. Re-measure whenever a collaborator lands a first commit, issue or pull
+# request in any of these, and whenever the organization's base permission drops
+# to Read, which makes the access list meaningful again and worth re-reading.
 # ---------------------------------------------------------------------------
 members:
   - repo: metasalmon
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: metasalmonpy
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: smn-data-pkg
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: salmon-domain-ontology
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: dfo-salmon-ontology
     org: dfo-pacific-science
     forge: github
+    solo: false
   - repo: psc-salmon-vocabularies
     org: pacific-salmon-commission/psc-data-systems
     forge: gitlab
+    solo: false
   - repo: salmon-knowledge-commons
     org: salmon-data-mobilization
     forge: github
+    solo: true
   - repo: salmon-data-standards-workshop
     org: salmon-data-mobilization
     forge: github
+    solo: false
   # The ninth member, admitted 2026-09-05 on Brett's Q19 ruling. The repository
   # does not exist yet and neither does the organization that will hold it: the
   # institute's GitHub organization is Q35, unresolved, and its working name
@@ -190,6 +247,7 @@ members:
   - repo: salmon-science-foundry
     org: PLACEHOLDER-institute-organization-not-yet-created
     forge: github
+    solo: false
 
 # ---------------------------------------------------------------------------
 # Generated blocks. Each entry names a block the renderer writes into a target

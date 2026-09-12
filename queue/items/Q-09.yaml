@@ -8,5 +8,5 @@ venue: claude-science
 stream: S12
 blocked_by: []
 legacy: 'Q9'
-evidence: questions.md
+evidence: knowledge/questions.md
 retires_when: Brett rules which slot each IRI fills, the ruling is recorded as an ecosystem I-ADOPT decision rather than a metasalmon fix, and the gold standard's annotated column teaches one answer instead of two.

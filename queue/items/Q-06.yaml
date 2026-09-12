@@ -8,5 +8,5 @@ venue: claude-science
 stream: S9
 blocked_by: []
 legacy: 'Q6'
-evidence: questions.md
+evidence: knowledge/questions.md
 retires_when: Brett rules the eight modelling questions and the S9 card records each ruling, after which the 22 smn terms and the gcdfo holds proceed with no further decision from him.

@@ -57,7 +57,7 @@ is a file that has outgrown the queue.
     severity: P2                  # defects only: P0 P1 P2 P3 P4
     blocked_by: [B-90, S-12]      # inline flow only; [] when none
     legacy: '#53'                 # the bare citation this item preserves
-    evidence: backlog.md          # repo-relative pointer to where the detail lives
+    evidence: knowledge/backlog.md # path from the REPOSITORY ROOT (must exist), or an https:// URL
     retires_when: Sentence saying what makes this item stop existing
     venue: claude-code            # claude-science | claude-code | either, or omit
 
@@ -105,12 +105,24 @@ Ordering is by id -- prefix then integer -- and every other sort is a plain
 codepoint sort, never a locale-dependent one, so the rendered bytes are the same
 on every machine.
 
-TWO CROSS-CHECKS BEYOND THE ITEMS
----------------------------------
+THREE CROSS-CHECKS BEYOND THE ITEMS
+-----------------------------------
 `lint` and `check` compare the `members:` list in `queue/config.yaml` against
 the allowlist table in `knowledge/domains/salmon-data-ecosystem.md`. The
 configuration says in its own comment that its copy is safe only because this
 guard compares the two, and a claim like that has to be true or deleted.
+
+`lint` and `check` also compare each member's `solo:` flag against the
+participation table in `HUB.md`. `solo` is the one fact the standing write
+authorization turns on, so it gets the same treatment as the membership list:
+`HUB.md` governs, the configuration is the machine-readable copy, and a
+disagreement fails.
+
+A key stated twice inside one member entry, with or without a value the second
+time, fails before that comparison runs,
+because the `hub` client's own reader of the same block keeps the last
+occurrence, and a linter that quietly kept a different one would approve a file
+the client does not run. Neither value is read; see `validate_member_fields`.
 
 `check` also reads `generated_blocks:` from the same configuration and fails
 when a declared block has no marker pair in its target file. That one is here
@@ -488,6 +500,152 @@ def check_absolute_paths(item: Item) -> list[Problem]:
     return problems
 
 
+# An `evidence` value that names a URL rather than a path. Only the shape is
+# checked and nothing is fetched: this program makes no network call, and a
+# lint that needs the network fails offline for reasons that have nothing to do
+# with the queue. `EVIDENCE_SCHEME_RE` recognises any `scheme://` so that a
+# `http://` or `file://` pointer is refused by name rather than resolved as the
+# local path `<root>/http:/...` and reported as missing, which is what happened
+# to the documented `https://` form until 2026-09-10.
+EVIDENCE_SCHEME_RE = re.compile(r"^([A-Za-z][A-Za-z0-9+.\-]*)://")
+EVIDENCE_WHITESPACE_RE = re.compile(r"\s")
+
+
+def evidence_url_problem(value: str) -> str | None:
+    """Why `value` is not an acceptable evidence URL, or None when it is one.
+
+    Called only for a value `EVIDENCE_SCHEME_RE` matched. Accepts `https://`, a
+    non-empty host, and a path naming something on that host, with no
+    whitespace anywhere. That is the whole check: it kills the malformed
+    pointer, not the dangling one, because finding out whether the page is
+    still there would take a network call and lint stays offline.
+    """
+    scheme = EVIDENCE_SCHEME_RE.match(value).group(1)
+    if scheme.lower() != "https":
+        return (
+            f"uses the scheme {scheme!r}; evidence in another repository is written "
+            "as a full https:// URL, and no other scheme is accepted"
+        )
+    if EVIDENCE_WHITESPACE_RE.search(value):
+        return "contains whitespace, so it is not one URL"
+    host, _, path = value[len(scheme) + len("://") :].partition("/")
+    if not host:
+        return "has no host after https://"
+    if not path:
+        return (
+            "has no path; a pointer at a whole host names nothing an item can be "
+            "checked against"
+        )
+    return None
+
+
+def check_evidence_exists(item: Item, root: Path) -> list[Problem]:
+    """`evidence` must name something that is really there, from the repo root.
+
+    WHY THIS RULE EXISTS. Every item carries one pointer to where its detail
+    lives, and that pointer is the only thing standing between a queue entry and
+    a sentence nobody can check. Nothing verified it until 2026-09-10. On
+    2026-09-09 all 55 item files were rewritten from bundle-relative
+    (`backlog.md`) to repository-root-relative (`knowledge/backlog.md`) pointers,
+    and the inconsistency that made that rewrite necessary was caught by a human
+    reading the files. A rule that only a careful reader enforces is a rule that
+    holds until the first tired reader, and a broken pointer is invisible: the
+    item still parses, still renders, still shows up in the ready queue, and only
+    fails when somebody follows it.
+
+    WHAT IT CHECKS: for a path, that `root / evidence` exists. A directory
+    counts, because a pointer at a directory of evidence is a legitimate pointer.
+    For a URL, only its shape; see below.
+
+    WHAT IT DOES NOT CHECK, said plainly: whether the file says anything about
+    this item. `evidence: knowledge/backlog.md` passes for an item the backlog
+    never mentions, and nothing here can see that. This rule kills the dangling
+    pointer, not the irrelevant one.
+
+    A `#fragment` is trimmed before resolving, so `knowledge/backlog.md#B-53`
+    resolves to the file. The scalar parser strips a ` #` comment (space then
+    hash), so a fragment with no space in front of it survives to here.
+
+    An absolute path is left alone: `check_absolute_paths` already reports it,
+    and a second problem on the same line tells the reader nothing new.
+
+    A path that resolves outside the repository root fails under its own rule
+    name. `../psc-data-systems/...` is a real sibling checkout on Brett's
+    machine and nowhere else, so a pointer that leaves the repository is a
+    pointer that resolves for exactly one person, which is the same defect as an
+    absolute path wearing relative clothes.
+
+    A `https://` URL is the one form that is not a path. `queue/README.md`
+    allows it for evidence that genuinely lives in another repository, and
+    until 2026-09-10 this rule resolved it anyway, as `<root>/https:/...`, and
+    reported the documented form as missing, so the allowance existed on paper
+    and no item could have used it (Codex, pull request #110). A URL is
+    accepted on its shape alone, checked by `evidence_url_problem`: `https://`,
+    a host, a path naming something on that host, no whitespace. `http://` and
+    every other scheme are refused by name, under `evidence-url`. Nothing is
+    fetched, because this program makes no network call, so for a URL this rule
+    kills the malformed pointer and not the dangling one: a well-shaped URL at a
+    page that has been deleted passes, and only a reader following it finds out.
+
+    RETIRES WHEN: `evidence` stops being a filesystem path or a URL. If it
+    becomes an item id or a bundle-internal anchor, this rule is replaced by
+    whatever checks that instead, and is not merely deleted: the dangling
+    pointer it catches does not go away with the change of notation. The URL
+    branch retires on its own if lint is ever allowed on the network, at which
+    point the shape check becomes a fetch and a dangling URL fails like a
+    dangling path.
+    """
+    value = item.raw.get("evidence")
+    if not isinstance(value, str) or not value:
+        return []
+    if ABS_PATH_RE.search(" " + value):
+        return []
+    line = item.lines.get("evidence", 0)
+
+    if EVIDENCE_SCHEME_RE.match(value):
+        reason = evidence_url_problem(value)
+        if reason is None:
+            return []
+        return [Problem(item.path, line, "evidence-url", f"evidence {value!r} {reason}")]
+
+    target = value.split("#", 1)[0].strip()
+    if not target:
+        return [
+            Problem(
+                item.path,
+                line,
+                "evidence-missing",
+                f"evidence {value!r} is only a fragment; it must name a file or "
+                "directory relative to the repository root",
+            )
+        ]
+
+    resolved = (root / target).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        return [
+            Problem(
+                item.path,
+                line,
+                "evidence-escapes-root",
+                f"evidence {target!r} resolves outside the repository root; a "
+                "pointer that leaves the repository resolves on one machine only",
+            )
+        ]
+    if not resolved.exists():
+        return [
+            Problem(
+                item.path,
+                line,
+                "evidence-missing",
+                f"evidence {target!r} does not exist; the pointer is resolved from "
+                "the repository root, not from the item file and not from knowledge/",
+            )
+        ]
+    return []
+
+
 def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
     """Return (problems, retirement_debt).
 
@@ -513,6 +671,7 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
                 problems.append(Problem(path, 0, "missing-key", f"required key {key!r} is missing"))
 
         problems.extend(check_absolute_paths(item))
+        problems.extend(check_evidence_exists(item, root))
 
         item_id = item.raw.get("id")
         prefix = None
@@ -990,23 +1149,84 @@ QUEUE_CONFIG_FILE = "queue/config.yaml"
 DOMAIN_CARD_FILE = "knowledge/domains/salmon-data-ecosystem.md"
 
 CONFIG_MEMBER_RE = re.compile(r"^\s*-\s*repo:\s*(\S+)\s*$")
+# A field line is any indented `key:` line, WITH OR WITHOUT a value. The value
+# is optional because the `hub` client's reader matches on the key alone
+# (`/^[ \t]+[A-Za-z_]+:/`) and reassigns the value to whatever follows the
+# colon, which for a bare `solo:` is the empty string. The first version of
+# the duplicate check below required a value, so `solo: true` followed by a
+# bare `solo:` was one sighting to this program and two to the client, and
+# lint printed OK on a file the client read as `solo` empty (found in review
+# of pull request #110, 2026-09-10). A value-less line has to count.
+CONFIG_FIELD_RE = re.compile(r"^\s+([A-Za-z_][A-Za-z0-9_]*):(.*)$")
 CARD_ROW_RE = re.compile(r"^\|\s*`([^`]+)`[^|]*\|")
 
 
-def read_config_members(path: Path) -> list[str]:
-    members: list[str] = []
+@dataclass
+class MemberRow:
+    """One `- repo:` entry from the queue configuration, with its line number.
+
+    `fields` maps a key to `(value, line)` for every key the entry states
+    exactly once. `duplicates` maps a key the entry states more than once to
+    every line it appears on, and such a key is absent from `fields`: neither
+    occurrence is the value, because the two readers of this file would pick
+    different ones. See `validate_member_fields` for why that is the rule.
+    """
+
+    repo: str
+    line: int
+    fields: dict = field(default_factory=dict)
+    duplicates: dict = field(default_factory=dict)
+
+
+def read_config_member_rows(path: Path) -> list[MemberRow]:
+    """Parse the `members:` block into rows.
+
+    ONE parser, read by both the membership cross-check and the `solo`
+    cross-check. A second parser of the same block would be a second reading of
+    the same bytes, which is the shape of defect this whole program exists to
+    remove, reproduced inside the program that removes it.
+    """
+    rows: list[MemberRow] = []
     inside = False
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
         if line.startswith("members:"):
             inside = True
             continue
-        if inside:
-            if line and not line[0].isspace() and not line.lstrip().startswith("#"):
-                break
-            match = CONFIG_MEMBER_RE.match(line)
-            if match:
-                members.append(match.group(1))
-    return members
+        if not inside:
+            continue
+        if line and not line[0].isspace() and not line.lstrip().startswith("#"):
+            break
+        match = CONFIG_MEMBER_RE.match(line)
+        if match:
+            row = MemberRow(repo=match.group(1), line=number)
+            # `repo` is a field like any other to the client, which reassigns it
+            # on a later `repo:` line inside the entry, so it is seeded here and
+            # a restatement counts as a duplicate rather than as a new member.
+            row.fields["repo"] = (row.repo, number)
+            rows.append(row)
+            continue
+        if not rows:
+            continue
+        field_match = CONFIG_FIELD_RE.match(line)
+        if field_match and not line.lstrip().startswith("#"):
+            key, value = field_match.group(1), strip_comment(field_match.group(2))
+            row = rows[-1]
+            if key in row.fields or key in row.duplicates:
+                # A second sighting. Record every line and keep NO value: the
+                # `hub` client keeps the last and this program used to keep the
+                # first, and whichever one is chosen here is a claim about which
+                # one the client runs. `validate_member_fields` reports it.
+                seen = row.duplicates.setdefault(key, [])
+                if key in row.fields:
+                    seen.append(row.fields.pop(key)[1])
+                seen.append(number)
+                continue
+            row.fields[key] = (value, number)
+    return rows
+
+
+def read_config_members(path: Path) -> list[str]:
+    return [row.repo for row in read_config_member_rows(path)]
 
 
 def read_card_allowlist(path: Path) -> list[str]:
@@ -1091,6 +1311,281 @@ def validate_members(root: Path) -> list[Problem]:
                 "the configuration copy; the card governs, so add it here",
             )
         )
+    return problems
+
+
+# --------------------------------------------------------------------------
+# The duplicate-field check on one member entry
+# --------------------------------------------------------------------------
+#
+# WHAT THIS GUARDS: two readers of one file disagreeing about the single fact
+# the standing grant turns on. `queue/config.yaml` is read by this program and,
+# separately, by `members_list()` in the `hub` client, and the two parsers were
+# written apart. Until 2026-09-10 this one kept the FIRST occurrence of a
+# repeated key (`setdefault`) while the client's awk keeps the LAST, because it
+# reassigns on every match. So a member reading
+#
+#     solo: false
+#     solo: true
+#
+# was `false` to lint, which compared it against `HUB.md`, found the two
+# agreed, and printed OK -- and `true` to `hub claim`, which would then push a
+# work branch and open a draft pull request into a repository the policy file
+# says is shared. The file that passed review was not the file the client ran.
+# Reported by Codex on pull request #110; the disagreement was reproduced by
+# feeding one fixture to both parsers.
+#
+# The first version of this check counted only lines that carried a value, so
+# `solo: true` followed by a bare `solo:` was one sighting here and two to the
+# client, whose reader matches on the key alone and reassigns `solo` to the
+# empty string. Lint printed OK; the client answered no. Found in review the
+# same day, and it is the same defect one layer down: a reader that agrees
+# with the client about the lines it sees, and does not see the same lines.
+# `CONFIG_FIELD_RE` now matches a key with or without a value, and a single
+# value-less `solo:` is reported by `validate_solo` as unstated.
+#
+# So a key stated twice in one entry is an error naming the member, the key and
+# every line it appears on, and NEITHER value is used: the parser drops the key
+# rather than choosing, because whichever occurrence this program chose would
+# be a claim about which one the client chooses, and that is the claim that
+# was wrong.
+#
+# WHAT IT DOES NOT CHECK: that the two parsers agree about anything else. A key
+# the client reads and this program does not, or a layout one parser accepts
+# and the other mis-reads, is not seen here. This is one reader refusing to
+# guess, not proof that the readers agree.
+#
+# RETIRES WHEN: the client and this program share one parser of the members
+# block, or the block moves to a format that has exactly one reader. Either
+# removes the second reading. Until then a duplicate is the cheapest way for
+# the two readers to differ and the most expensive to find, because the file
+# looks right to both of them.
+
+
+def validate_member_fields(root: Path) -> list[Problem]:
+    config_path = root / QUEUE_CONFIG_FILE
+    if not config_path.is_file():
+        return []
+    problems: list[Problem] = []
+    for row in read_config_member_rows(config_path):
+        for key in sorted(row.duplicates):
+            lines = [str(number) for number in row.duplicates[key]]
+            where = ", ".join(lines[:-1]) + " and " + lines[-1]
+            problems.append(
+                Problem(
+                    QUEUE_CONFIG_FILE,
+                    row.duplicates[key][-1],
+                    "members-duplicate-field",
+                    f"member {row.repo!r} (line {row.line}) sets {key!r} "
+                    f"{len(lines)} times, at lines {where}; the `hub` client reads "
+                    "the last occurrence and this program refuses to read either, "
+                    "so lint cannot approve a file the client would run "
+                    "differently. Keep exactly one",
+                )
+            )
+    return problems
+
+
+# --------------------------------------------------------------------------
+# The solo-participation cross-check
+# --------------------------------------------------------------------------
+#
+# `solo` is the single fact the standing write authorization turns on: whether
+# anybody other than Brett has ever contributed to a member repository. Where it
+# is true an agent may push a work branch and open one draft pull request
+# without asking; where it is false the agent prepares the diff and waits. So it
+# is worth more than the membership list it sits beside, and until 2026-09-10 it
+# was stated in prose in two places and in the queue configuration in none,
+# which meant the client's own configuration could not answer the question the
+# client's protocol is scoped by.
+#
+# `HUB.md` GOVERNS. Its participation table under the standing authorization is
+# the measured record and says so in its own text ("this is the operative copy,
+# and it is now the only one"). The `solo:` column in the configuration is the
+# machine-readable copy, exactly as `members:` is a copy of the domain card, and
+# it is safe only because this comparison exists. When the two disagree the
+# table is right and the configuration is wrong.
+#
+# THE ASYMMETRY IS DELIBERATE. A repository marked `solo: true` that the table
+# does not list fails, because a grant nothing measured is a grant nobody made.
+# A repository marked `solo: false` that the table does not list passes, because
+# `HUB.md` says in as many words that a repository whose participation cannot be
+# determined is shared. That is why `salmon-science-foundry`, whose repository
+# does not exist yet, sits outside the table and reads false.
+#
+# WHAT IT DOES NOT CHECK, and this is the important half: whether the table is
+# TRUE. Nothing here asks GitHub who has contributed. The table is a measurement
+# somebody took by hand on 2026-09-10 and the check only keeps the copy honest,
+# so a collaborator who lands their first commit tomorrow makes both the table
+# and this column wrong together and no test will notice. Re-measuring is a
+# human job with a date on it. A table row naming a repository that is not a
+# member is also ignored rather than reported: membership is the domain card's
+# ruling and the members cross-check above owns that disagreement.
+#
+# RETIRES WHEN: the participation test stops gating writes, or a client that can
+# ask the forge who has contributed replaces the recorded answer with a measured
+# one. At that point the `solo:` column and this check are deleted together.
+
+HUB_POLICY_FILE = "HUB.md"
+
+PARTICIPATION_HEADER_RE = re.compile(r"^\|\s*Repository\s*\|.*\bGrant applies\b")
+BACKTICKED_RE = re.compile(r"`([^`]+)`")
+
+
+def read_hub_participation(path: Path) -> dict:
+    """Return {repo: grant} from the participation table, or {} if unreadable.
+
+    `grant` is True for a `yes` cell and False for a `no` cell, bold markers and
+    surrounding whitespace stripped. A cell that is neither maps to None, which
+    the caller reports rather than guessing at.
+    """
+    grants: dict = {}
+    inside = False
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if PARTICIPATION_HEADER_RE.match(line):
+            inside = True
+            continue
+        if not inside:
+            continue
+        if not line.startswith("|"):
+            break
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        if set("".join(cells)) <= set("-: "):
+            continue
+        verdict = cells[-1].replace("*", "").replace("`", "").strip().lower()
+        value = True if verdict == "yes" else False if verdict == "no" else None
+        for repo in BACKTICKED_RE.findall(cells[0]):
+            grants[repo] = value
+    return grants
+
+
+def validate_solo(root: Path) -> list[Problem]:
+    config_path = root / QUEUE_CONFIG_FILE
+    if not config_path.is_file():
+        return []
+    rows = read_config_member_rows(config_path)
+    if not rows:
+        # The members cross-check already reports an unreadable `members:`
+        # block under `members-unreadable`. Reporting it twice under two rule
+        # names tells a reader there are two faults when there is one.
+        return []
+
+    policy_path = root / HUB_POLICY_FILE
+    if not policy_path.is_file():
+        return [
+            Problem(
+                QUEUE_CONFIG_FILE,
+                0,
+                "solo-source-missing",
+                f"the `solo:` column copies the participation table in {HUB_POLICY_FILE}, "
+                "which is not present, so the copy cannot be checked against its source "
+                "and the write authorization it gates cannot be trusted",
+            )
+        ]
+
+    grants = read_hub_participation(policy_path)
+    if not grants:
+        return [
+            Problem(
+                HUB_POLICY_FILE,
+                0,
+                "solo-unreadable",
+                "the participation table could not be read, so the `solo:` column in "
+                f"{QUEUE_CONFIG_FILE} cannot be checked against it; a cross-check that "
+                "silently finds nothing to compare is worse than no cross-check",
+            )
+        ]
+
+    problems: list[Problem] = []
+    for repo, value in sorted(grants.items()):
+        if value is None:
+            problems.append(
+                Problem(
+                    HUB_POLICY_FILE,
+                    0,
+                    "solo-unreadable",
+                    f"the participation table's verdict for {repo!r} is neither yes nor "
+                    "no, so what it grants cannot be read",
+                )
+            )
+    if problems:
+        return problems
+
+    for row in rows:
+        if "solo" in row.duplicates:
+            # Stated more than once, so no value was read. That is reported by
+            # `validate_member_fields` under its own rule; a `solo-missing` on
+            # top of it would tell the reader there are two faults when there
+            # is one.
+            continue
+        raw = row.fields.get("solo")
+        if raw is None or raw[0] == "":
+            # A bare `solo:` is the key with nothing after it. The `hub` client
+            # reads that as the empty string and `member_solo_for_repo` answers
+            # no, so nothing is granted either way; it is reported here, on the
+            # line that states it, so the file is fixed rather than read as "no
+            # key" by this program and "empty value" by the client.
+            if raw is None:
+                where, detail = row.line, "has no `solo:` key"
+            else:
+                where, detail = raw[1], (
+                    "has a `solo:` key with no value, which the `hub` client reads "
+                    "as an empty string and answers no from"
+                )
+            problems.append(
+                Problem(
+                    QUEUE_CONFIG_FILE,
+                    where,
+                    "solo-missing",
+                    f"member {row.repo!r} {detail}; every member states whether "
+                    "anybody other than Brett has ever contributed to it, because the "
+                    "standing write authorization is scoped by that answer and an absent "
+                    "answer reads as no scope at all",
+                )
+            )
+            continue
+        text, line = raw
+        if text not in ("true", "false"):
+            problems.append(
+                Problem(
+                    QUEUE_CONFIG_FILE,
+                    line,
+                    "solo-type",
+                    f"member {row.repo!r} has solo: {text!r}; it must be lowercase true or "
+                    "false, because a value that is neither is read by nobody as either",
+                )
+            )
+            continue
+        solo = text == "true"
+        granted = grants.get(row.repo)
+        if granted is None:
+            if solo:
+                problems.append(
+                    Problem(
+                        QUEUE_CONFIG_FILE,
+                        line,
+                        "solo-unsourced",
+                        f"member {row.repo!r} claims solo: true but {HUB_POLICY_FILE}'s "
+                        "participation table does not list it; a grant that nothing "
+                        "measured is a grant nobody made, so measure who has participated, "
+                        "add the row there, and only then set this to true",
+                    )
+                )
+            continue
+        if solo != granted:
+            problems.append(
+                Problem(
+                    QUEUE_CONFIG_FILE,
+                    line,
+                    "solo-drift",
+                    f"member {row.repo!r} reads solo: {text} here and "
+                    f"{'yes' if granted else 'no'} in {HUB_POLICY_FILE}'s participation "
+                    "table; the table governs, so correct this line, or re-measure "
+                    "participation and change the table first",
+                )
+            )
     return problems
 
 
@@ -1299,7 +1794,13 @@ def render_text(
 def command_lint(args, root: Path, queue_dir: Path, out) -> int:
     items, parse_problems = load_queue(root, queue_dir)
     problems, debt = validate(items, root)
-    problems = parse_problems + problems + validate_members(root)
+    problems = (
+        parse_problems
+        + problems
+        + validate_members(root)
+        + validate_member_fields(root)
+        + validate_solo(root)
+    )
 
     baseline: int | None = None
     source = ""
@@ -1401,10 +1902,10 @@ def command_check(args, root: Path, queue_dir: Path, out) -> int:
         missing += 1
 
     drift = 0
-    # The configuration's copy of the allowlist is checked here as well as in
-    # `lint`, because the configuration comment names *this* guard as the reason
-    # the copy is safe to keep.
-    for problem in validate_members(root):
+    # The configuration's copies of the allowlist and of the participation
+    # verdicts are checked here as well as in `lint`, because the configuration
+    # comment names *this* guard as the reason those copies are safe to keep.
+    for problem in validate_members(root) + validate_member_fields(root) + validate_solo(root):
         print(f"DRIFT: {problem.render()}", file=out)
         drift += 1
     for path, display, text, new_text, changed in _rendered_files(args, root, queue_dir):

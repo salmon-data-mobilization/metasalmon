@@ -35,12 +35,33 @@ on:
       - "scripts/hub*"
       - "scripts/tests/**"
       - ".github/workflows/hub-queue.yml"
-      # The generated blocks live in the bundle, so a change there can make a
-      # block stale without touching a single path above. Omitting this meant
-      # the freshness check did not run on the one file it guards, which is a
-      # guard that is green because it never executed.
-      # Retires when: no generated block targets a file under knowledge/.
+      # Every file the freshness check reads has to be able to start it.
+      #
+      # `hub_queue.py check` scans four prose roots for generated blocks, its
+      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md` and
+      # `knowledge/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
+      # for the members cross-check, and re-renders the one configured target,
+      # `knowledge/roadmap.md`. An input the client reads that no filter here
+      # names is a guard that is green because it never executed: a pull request
+      # touching only that file can commit a stale block, and the job is skipped
+      # rather than failed.
+      #
+      # `knowledge/**` was added 2026-09-09, for the bundle. `AGENTS.md` and
+      # `README.md` were added 2026-09-10 for the same reason, measured rather
+      # than assumed: on a scratch copy of this tree, a stale `member-count`
+      # block appended to `AGENTS.md` makes `hub_queue.py check` exit 1, and no
+      # path filter here would have started the job that runs it.
+      #
+      # Keep this list a superset of the client's prose roots, in both the
+      # `pull_request` and the `push` copy of it. Nothing mechanical checks that
+      # today, so when `DEFAULT_PROSE_ROOTS` gains an entry, it is added here by
+      # hand or it is unguarded.
+      #
+      # Retires when: `hub_queue.py` stops scanning prose for generated blocks,
+      # which is the same condition that retires the `check` step below.
       - "knowledge/**"
+      - "AGENTS.md"
+      - "README.md"
   push:
     branches:
       - main
@@ -50,12 +71,33 @@ on:
       - "scripts/hub*"
       - "scripts/tests/**"
       - ".github/workflows/hub-queue.yml"
-      # The generated blocks live in the bundle, so a change there can make a
-      # block stale without touching a single path above. Omitting this meant
-      # the freshness check did not run on the one file it guards, which is a
-      # guard that is green because it never executed.
-      # Retires when: no generated block targets a file under knowledge/.
+      # Every file the freshness check reads has to be able to start it.
+      #
+      # `hub_queue.py check` scans four prose roots for generated blocks, its
+      # `DEFAULT_PROSE_ROOTS`: `HUB.md`, `AGENTS.md`, `README.md` and
+      # `knowledge/`. It also reads `knowledge/domains/salmon-data-ecosystem.md`
+      # for the members cross-check, and re-renders the one configured target,
+      # `knowledge/roadmap.md`. An input the client reads that no filter here
+      # names is a guard that is green because it never executed: a pull request
+      # touching only that file can commit a stale block, and the job is skipped
+      # rather than failed.
+      #
+      # `knowledge/**` was added 2026-09-09, for the bundle. `AGENTS.md` and
+      # `README.md` were added 2026-09-10 for the same reason, measured rather
+      # than assumed: on a scratch copy of this tree, a stale `member-count`
+      # block appended to `AGENTS.md` makes `hub_queue.py check` exit 1, and no
+      # path filter here would have started the job that runs it.
+      #
+      # Keep this list a superset of the client's prose roots, in both the
+      # `pull_request` and the `push` copy of it. Nothing mechanical checks that
+      # today, so when `DEFAULT_PROSE_ROOTS` gains an entry, it is added here by
+      # hand or it is unguarded.
+      #
+      # Retires when: `hub_queue.py` stops scanning prose for generated blocks,
+      # which is the same condition that retires the `check` step below.
       - "knowledge/**"
+      - "AGENTS.md"
+      - "README.md"
 
 # This workflow must never gain a write permission of any kind.
 #

@@ -8,5 +8,5 @@ venue: claude-code
 stream: S10
 blocked_by: []
 legacy: 'Q17'
-evidence: questions.md
+evidence: knowledge/questions.md
 retires_when: Brett rules the direction, the losing side adds or removes the early guard, both sides pin the number of inference passes a doomed call makes, and parity row 60 records the ruling instead of the divergence.

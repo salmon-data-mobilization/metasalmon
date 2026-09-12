@@ -13,7 +13,12 @@ constants_live_in: >-
   there while the client read only the configuration. A policy file holding a
   second copy of a constant nothing reads is the exact defect this design was
   built to remove, so the copies were deleted rather than corrected. Cite a
-  constant by its configuration key; never restate its value here.
+  constant by its configuration key; never restate its value here. The literal
+  value of claim_ref_prefix was found in nine places in this file on 2026-09-10,
+  while this key said not to restate one, and eight of them were replaced by the
+  key name. The ninth is the fetch refspec under "Claiming", which a reader has
+  to be able to run and which cannot cite a key; it is labelled an example on
+  the spot and says the configuration wins.
 queue:
   items_dir: queue/items/
   id_pattern: '^(B|S|Q)-[0-9]+$'
@@ -75,12 +80,23 @@ claim:
 
 writes:
   scope_note: >-
-    This register is the only enumeration of what an agent may write without
-    asking. An operation that is not listed is not permitted, whatever its
-    resemblance to one that is.
+    What this register governs: writes made by an agent executing the hub
+    protocol in this file against a claimed queue item. Inside that scope it is
+    the only enumeration of what such an agent may write without asking, and an
+    operation it does not list is not permitted there, whatever its resemblance
+    to one that is. Outside that scope it governs nothing. Ordinary repository
+    work, meaning everything an agent does that is not the hub protocol acting
+    on a claim, is governed by Brett's global agent instructions and by the
+    repository it happens in; this register neither widens nor narrows that.
+    Scoped 2026-09-10, because the unscoped wording read literally forbade every
+    write an agent makes anywhere unless a hub row named it, which is not what
+    the register was built to say and is not a rule anyone agreed to. Retires
+    with the register.
   permitted:
     - operation: push a first claim commit
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: orphan commit, no parent
       max: 1 per item, and never more than max_concurrent_claims held at once
       enforced_by: >-
@@ -88,19 +104,27 @@ writes:
         from the configuration or the live-claim count cannot be determined.
         An unverified precondition is a failure, not an allowance.
     - operation: push a heartbeat commit
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: child of the tip you just read
       max: 1 per heartbeat_minutes per held claim
     - operation: push a release commit
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: child of the tip you just read
       max: 1 per claim
     - operation: push a handoff commit
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: child of the tip you just read
       max: 1 per claim
     - operation: push a reclaim commit
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: child of the tip you just read, only after the lease and the reclaim grace have both elapsed
       max: max_reclaims_per_item_per_day, per item, over a rolling 24 hours
       enforced_by: >-
@@ -109,7 +133,9 @@ writes:
         when the history cannot be read or the key is absent from the
         configuration.
     - operation: push an expiry release commit for an abandoned claim
-      target: refs/heads/claim/<queue-id> in the repository named by locks_repo in queue/config.yaml
+      target: >-
+        the item's claim ref, under claim_ref_prefix in the repository named by
+        locks_repo, both keys in queue/config.yaml
       shape: >-
         child of the tip you just read, and only for a claim whose lease and
         reclaim grace have both elapsed. Never for a live claim, never for a
@@ -128,7 +154,23 @@ writes:
         the register alone. A register is only a boundary if the code is
         checked against it in both directions.
     - operation: push commits to a work branch
-      target: agent/<queue-id>/<token> in the member repository named by the item's repo field
+      target: >-
+        agent/<queue-id>/<token> in the member repository named by the item's
+        repo field, and only when nobody other than Brett has ever contributed
+        to that repository.
+      condition: >-
+        Solo participation, the same test the draft pull request row applies and
+        applied the same way, by asking who has ever participated rather than by
+        reading the collaborator list. The repositories that passed on
+        2026-09-10 are in the table under the standing authorization, and three
+        named members failed it. In a member repository anyone else has worked
+        in this row does not apply at all: prepare the work in the worktree,
+        show Brett the diff and the pull request text in chat, and wait for him
+        to say yes before pushing anything. When participation cannot be
+        determined the repository is shared. Added 2026-09-10, resolving a
+        contradiction inside the standing authorization about whether a branch
+        push into a shared repository needed an ask; the note under that
+        authorization says why it resolved against the push.
       shape: ordinary commits, fast-forward only
       max: 1 branch per claim, no limit on commits on it, never --force
       enforced_by: >-
@@ -162,7 +204,18 @@ writes:
         signed off. At that point the override branch is deleted from the
         client rather than left as a disabled path, and this row goes with it.
     - operation: open one draft pull request for a handed-back item
-      target: the member repository named by the item's repo field
+      target: >-
+        the member repository named by the item's repo field, and only when
+        nobody other than Brett has ever contributed to it.
+      condition: >-
+        Solo participation, tested as the standing authorization below tests it
+        and not by the collaborator list. The repositories that passed on
+        2026-09-10 are in the table there, and three named members failed it.
+        In a repository anyone else has worked in this row does not apply at
+        all, and neither does the work-branch row above: prepare the diff, show
+        Brett that diff and the pull request text in chat, and wait for him to
+        say yes before anything is pushed. When participation cannot be
+        determined the repository is shared.
       shape: >-
         draft only, labelled agent-run, body naming the queue id, from the
         agent/<queue-id>/<token> branch already pushed. Never marked ready for
@@ -192,20 +245,155 @@ writes:
         default branch cannot be deleted, so without a main the first claim ever
         taken would be permanent and would be the repository's HEAD. Learned by
         running it on 2026-09-10, before any real claim existed.
+      why_it_is_not_a_local_grant: >-
+        Asked and answered 2026-09-10, because this row is the one permitted
+        operation that writes to a default branch in a repository other than
+        this one, and that shape looks like this file granting itself authority
+        over a different repository. It does not. Brett's own standing
+        authorization, quoted below in his words, names this push explicitly, so
+        it rests on nothing this file added; and the global rule's
+        small-mechanical carve-out for a default branch covers it independently,
+        in a repository that is his alone. A pull request is not an alternative
+        here, because an empty repository has no base branch to open one
+        against. Nothing in this file widens the global rule, so there is also
+        no widening list for this row to be misfiled into; the section below
+        says why the three operations that once sat in one were never widenings
+        either.
+    - operation: merge a pull request in this repository
+      target: >-
+        a pull request in this repository (metasalmon), and only one whose
+        checks have all finished green.
+      shape: >-
+        an ordinary merge. Never a merge over a failing, pending or skipped
+        required check, never an administrative override of one, and never in
+        any other member repository.
+      excludes: >-
+        the agent's own hand-back draft pull request, which stays draft and
+        unmerged by the row above. Hand-back is the point where Brett looks, so
+        an agent merging its own hand-back would remove the only review the
+        arrangement has.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical. Green is read off the checks before the merge, not
+        assumed from a clean local run, and the distinction matters here because
+        CI runs a different R than this machine does.
+      granted: >-
+        2026-09-10 (ruling R15), under the global rule that an agent may merge a
+        green pull request where Brett works alone. Nobody else works in this
+        repository, so a merge here reaches no one.
+    - operation: promote a queue item to state ready
+      target: the item file under queue/items/ on this repository's default branch
+      shape: >-
+        a commit that names the authorization Brett gave in chat. A promotion
+        that cannot cite one is a defect, and so is a promotion resting on
+        something an agent read in a file rather than on something Brett said.
+      max: no limit, and one authorization per promotion
+      enforced_by: >-
+        nothing mechanical. This was structural until 2026-09-10 because an
+        agent could not push to the default branch at all; it is now an audit
+        trail, which the ready_is_set_by note in this front matter says in the
+        one place a reader of the queue will look.
+      granted: 2026-09-10 (ruling R15).
+    - operation: push a small mechanical change to this repository's default branch
+      target: refs/heads/main in this repository (metasalmon)
+      shape: >-
+        queue state, a generated block, a typo, ignoring a stray file. Anything
+        substantive goes through a pull request, because that is what Codex
+        reviews and losing the review costs more than the extra step.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical. Whether a change is small and mechanical is a
+        judgement, and the commit message is where the judgement is recorded so
+        that a wrong one is legible afterwards.
+      granted: 2026-09-10 (ruling R15).
+  permitted_note: >-
+    The last three rows were granted on 2026-09-10 and reached this register on
+    2026-09-10, in a later change, after a review pointed out that they had been
+    written into the prose below and into Brett's global instruction but not
+    into the only enumeration scope_note says is operative. Until they landed
+    here, an agent that merged, promoted or pushed a typo was writing outside
+    the permitted list and had therefore suspended the whole authorization by
+    doing exactly what it had just been told it could do. Add the row in the
+    same change as the grant; a grant that lives only in prose is not a grant an
+    agent can act on.
+  reinstated: >-
+    2026-09-10, for the three operations permitted_note describes and for
+    nothing else. Read against itself, that note plus self_suspends below say
+    the standing authorization is currently dead: merges, promotions and small
+    mechanical pushes to main happened while they were outside the permitted
+    list, and self_suspends says any such write suspends the whole grant until
+    Brett reinstates it. It is not dead, and the reason is a matter of order.
+    Brett granted those same three operations on 2026-09-10 (ruling R15), after
+    the writes rather than before them, knowing they had already been made. An
+    authorization given for exactly the operations that triggered a suspension,
+    given after they happened, is a reinstatement in substance whatever word he
+    used, so it is recorded here as one rather than left to be inferred by a
+    reader comparing two other keys. Recorded alongside permitted_note rather
+    than by deleting it, because that note is the evidence of how the gap opened
+    and the lesson is the reason the rule exists. This clears the suspension
+    arising from those three operations. It clears nothing else: a later write
+    outside the permitted list suspends the grant again, and needs its own dated
+    entry here from Brett before the protocol resumes.
   denied:
-    - any issue, pull request, review, comment, release, label, or assignee
-    - a push to a default branch that is not a small mechanical change:
-      queue state, a generated block, a typo, ignoring a stray file. Anything
-      substantive goes through a pull request, because that is what Codex
-      reviews, and losing the review costs more than the extra step.
+    - any issue, review, comment, release, or assignee
+    - >-
+      any pull request operation other than the two the permitted list names,
+      which are opening the one draft per handed-back item and merging a green
+      pull request in this repository under the row below. On the draft itself:
+      never marked ready for review, never merged, never replied to on a review
+      comment, and never a second one for the same item. Carved out 2026-09-10:
+      this entry read "any pull request other than the one draft", which by its
+      own words denied the merge the permitted list grants three rows later and
+      the next denial below scopes, leaving an agent no valid reading of the
+      register. Narrowing a denial is part of granting a permission, not a
+      follow-up to it.
+    - >-
+      any label other than agent-run, and that one only on the draft pull
+      request the permitted list names
+    - >-
+      any merge outside this repository, and here any merge of a pull request
+      whose checks are not all green
+    - >-
+      a push to a default branch other than the two the permitted list names,
+      which are a small mechanical change here (queue state, a generated block,
+      a typo, ignoring a stray file) and the locks repository's README.
+      Anything substantive goes through a pull request, because that is what
+      Codex reviews, and losing the review costs more than the extra step.
+    - >-
+      a push of the work branch into a member repository anyone other than
+      Brett has ever contributed to, where it is ask-first like every other
+      write and the work stops at a diff shown in chat
     - a promotion to ready that does not name the authorization it rests on
-    - any change of an item to state ready
+    - >-
+      a promotion to ready resting on anything other than an authorization
+      Brett gave in chat
     - any --force, --force-with-lease, --delete, or non-fast-forward push
     - anything at all on GitLab
-    - any GitHub API call that writes, including through gh
+    - >-
+      any GitHub API call that writes, including through gh, other than the two
+      the permitted list names, which are opening the one labelled draft pull
+      request for a handed-back item and merging a green pull request in this
+      repository
+  denied_note: >-
+    This list is closed and it is the operative one, so an exception granted
+    anywhere else has to be carved out of it here in the same change. Four of
+    these entries read as flat prohibitions of operations the permitted list had
+    already been given, from 2026-09-10 until later the same day, which left an
+    agent no valid reading of the file at all: obey the grant and self-suspend,
+    or obey the denial and ignore an instruction Brett had just given. Narrowing
+    a denial is part of granting a permission, not a follow-up to it.
   self_suspends: >-
-    The whole standing authorization is suspended the moment an agent writes
-    outside the permitted list, and stays suspended until Brett reinstates it.
+    The whole standing authorization is suspended the moment an agent executing
+    this protocol writes outside the permitted list, and stays suspended until
+    Brett reinstates it. The trigger is scoped the way scope_note scopes the
+    register: a write made under the protocol against a claimed item, not any
+    write an agent makes anywhere. Ordinary repository work outside the protocol
+    is governed by Brett's global agent instructions and suspends itself under
+    that file's own clause, which is a separate rule with a separate scope and
+    is not narrowed by this one. Neither the scoping nor the reinstatement above
+    weakens what this clause does inside its scope: one write outside the
+    permitted list stops the protocol for every agent, not only the one that
+    made it.
   retires_when: >-
     Claims stop living on git refs. At that point the authorization paragraph
     in Brett's global instructions is deleted rather than widened, and this
@@ -217,11 +405,13 @@ writes:
 The client is dumb and this file is the brain. A `hub` client (`doctor`,
 `ready`, `claim`, `beat`, `release`, `done`, `reconcile`) does the mechanics;
 every rule it enforces is written here, once, and nowhere else. **Every number
-those rules use lives in `queue/config.yaml`, once, and nowhere else** —
+those rules use lives in `queue/config.yaml`, once, and nowhere else**,
 including here. Cite a constant by its key; do not restate its value in prose,
 because a restated value is a second answer waiting to go stale, and on
 2026-09-09 the concurrency cap was found saying one in this file and two in the
-configuration while the client read only the configuration.
+configuration while the client read only the configuration. The one deliberate
+exception is the fetch refspec under "Claiming", which cannot cite a key and
+says on the spot that it is an example.
 
 The design this file implements is section 9 of the Salmon Science Foundry plan
 (`knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md`). **The
@@ -231,9 +421,18 @@ dropped. This file is the operative copy of the standing authorization and of
 the `writes` register, so where section 9 restates either of those it is a
 summary and this file governs.
 
-There is no GitHub Project in this system and no GitHub API call anywhere in
-it. Planning state is one YAML file per work item under
+There is no GitHub Project in this system, and **the client makes no GitHub API
+call at all**. Planning state is one YAML file per work item under
 `queue/items/`. A claim is a plain `git push`.
+
+That sentence used to read "no GitHub API call anywhere in it", which stopped
+being true on 2026-09-10, when the register gained two permitted API writes:
+opening the one labelled draft pull request for a handed-back item, and merging
+a green pull request in this repository. **Both are the agent's own call, and
+neither is ever folded into a `hub` subcommand.** A client that makes no API
+call is the property this design is buying, because it means the client needs no
+GitHub permission beyond `git push` and cannot exceed the grant on an agent's
+behalf. That is worth more than the convenience of one fewer command to run.
 
 ## The queue and the states
 
@@ -259,11 +458,14 @@ them are worth saying in prose because they are the ones people get wrong.
 purpose, so finished work never looks free again while Brett is away. `done`
 means Brett merged it, and it stays as a record.
 
-**`ready` is set by a commit on `main`, which the carve-out forbids agents to
-push, so an agent cannot enlarge its own queue.** That is structure, not
-policy. Nothing an agent is allowed to do can promote an item, so the supply of
-claimable work is produced entirely by Brett and the protocol below is sized
-for that rather than for throughput.
+**`ready` is set by a commit on `main`, and until 2026-09-10 that was a wall an
+agent could not climb, because it could not push there at all.** It is now an
+audit trail instead: an agent may promote an item on an authorization Brett
+gave in chat, and the promotion commit must name that authorization. So the
+property that an agent cannot enlarge its own queue is no longer structural,
+and a promotion citing no authorization is a defect rather than an impossibility.
+The supply of claimable work still originates with Brett, and the protocol below
+is still sized for that rather than for throughput.
 
 ## What claimable means, exactly
 
@@ -276,7 +478,8 @@ any one of them failing is a skip, not a judgement call.
    for every `kind: question` item.
 3. `blocked_by` is `[]`, or every id it lists is an item whose `state` is
    `done`.
-4. No live claim ref: `refs/heads/claim/<id>` either does not exist, or its tip
+4. No live claim ref: the item's ref under `claim_ref_prefix`
+   (`queue/config.yaml`) either does not exist, or its tip
    is a `release` commit, or its lease and reclaim grace have both elapsed and
    a reclaim is permitted under the cap.
 5. You hold fewer than `max_concurrent_claims` (`queue/config.yaml`) claims
@@ -310,7 +513,10 @@ every primary checkout.
 
 **6. Report.** Into `.hub/workpad.md` on your branch.
 
-**7. Hand back.** Append a `handoff` commit, print the compare URL, stop. Pass
+**7. Hand back.** Append a `handoff` commit, print the compare URL, stop. In a
+member repository somebody other than Brett has contributed to, the branch is
+never pushed at all and the hand-back is a diff plus a pull request draft shown
+in chat; the Hand back section says how to tell which case you are in. Pass
 `hub done` the branch you actually pushed, and it will be
 `agent/<queue-id>/<token>` because that is the only branch you were allowed to
 push. The client checks the name against the grant and exits 3 on anything
@@ -320,7 +526,8 @@ your agent token is not the one holding the claim. Both are worth stopping for.
 ## Claiming, and what to do when the push is rejected
 
 A claim is git's own compare-and-swap. A first claim is an **orphan** commit,
-with no parent, pushed to `refs/heads/claim/<id>`. An orphan commit can never
+with no parent, pushed to the item's ref under `claim_ref_prefix`
+(`queue/config.yaml`). An orphan commit can never
 fast-forward an existing ref, so the push succeeds if and only if nobody holds
 the claim. Every later commit on that ref, heartbeat, release, handoff, and
 reclaim alike, is a **child of the tip you just read**, so it succeeds if and
@@ -336,6 +543,13 @@ the tip you compared against:
 git -C "$LOCKS" fetch --prune origin \
   '+refs/heads/claim/*:refs/remotes/origin/claim/*'
 ```
+
+**That refspec is an example, and it is the one place in this file where the
+value of `claim_ref_prefix` is written out.** A fetch refspec cannot cite a
+configuration key, so an example has to carry a literal. `queue/config.yaml`
+holds the value; if this example and that key ever disagree, the configuration
+is right and the example is the stale copy. Everywhere else in this file the
+claim ref is named by the key.
 
 **A rejected push has two meanings and they are different exit codes.** This is
 the difference between a stalled queue and a silent one. If a non-fast-forward
@@ -419,6 +633,15 @@ in the body. Draft, and draft only: never mark it ready for review, never merge
 it, never reply to a review comment on it, and never open a second one for the
 same item. Then stop.
 
+**Only in a repository nobody but Brett has ever contributed to, and that covers
+the branch push as well as the pull request.** The grant is scoped by
+participation, not by ownership, and three of the member repositories fail that
+test; the table in the standing authorization below says which and how to test
+it. In a shared member repository the hand-back ends before the push, not after
+it: the work stays in the worktree, and Brett sees the diff and the pull request
+text in chat and says yes before anything leaves the machine. That is the whole
+point of the scope, so read the table before reaching for `git push` or `gh`.
+
 This was declined on 2026-09-09 and granted on 2026-09-10, and the reversal is
 worth recording rather than quietly replacing. The original reasoning was that a
 draft pull request is a pull request, which is one of the verbs Brett's standing
@@ -430,9 +653,9 @@ immediately rather than whenever he next sits down, which is the actual cost the
 old arrangement was paying.
 
 `gh pr create --draft` is the agent's own call, not a `hub` subcommand. The
-client makes no GitHub API call anywhere and that property is worth more than
-the convenience of folding this into `hub done`; the client still prints the
-compare URL, which is the fallback when a PR cannot be opened.
+client makes no GitHub API call at all and that property is worth more than the
+convenience of folding this into `hub done`; the client still prints the compare
+URL, which is the fallback when a PR cannot be opened.
 
 `release` is the other ending, for work abandoned rather than finished: it
 appends a `release` commit, the item returns to `ready`, and the workpad says
@@ -453,12 +676,32 @@ file is its operative copy:
 > review and never merged; and push a README to `main` in the locks repository
 > so that a claim ref is never its default branch.
 >
-> In a member repository where anyone else has contributed, the agent stops
-> after pushing the branch, drafts the pull request text in chat, and waits.
+> In a member repository where anyone else has contributed, none of this
+> applies. The agent prepares the work in its worktree, shows me the diff and
+> the pull request text in chat, and waits for me to say yes before it pushes
+> anything.
 
 That is the whole grant. Two `git push` targets, one draft pull request per
 item, and one README, in named repositories, by an agent executing this
 protocol.
+
+**The shared-repository case was settled conservatively, on purpose, and this
+paragraph records that it was settled rather than always having read this way.**
+Until 2026-09-10 the block quote answered its own question twice: the first
+paragraph scoped every listed operation to repositories with no other
+contributor, and the second said the agent stops *after* pushing the branch,
+which reads as a branch push into a shared repository needing no ask. It was
+resolved against the push, for two reasons that agree. Brett's global agent
+instructions permit writing without asking only in a repository that is his
+alone and require asking every time everywhere else, so the narrower reading is
+the one his text supports and the wider one had no source. And the two ways of
+being wrong do not cost the same: reading it too narrowly costs a question he
+answers in a sentence, while reading it too widely costs a write into somebody
+else's repository that cannot be taken back. Three further operations reach
+this repository from Brett's global rule rather than from this block quote, and
+the section below says how each applies here and how this file narrows it.
+`writes.permitted` in the front matter is the union of the two sources and is
+the list that governs.
 
 **Ownership is not the test; participation is** (Brett, 2026-09-10). Owning or
 administering a repository does not mean working alone in it, and the grant
@@ -502,7 +745,12 @@ people stop watching:
   `GIT_CONFIG_*` family is stripped, because one `url.insteadOf` entry rewrites
   a push target silently no matter what the client computed.
 - The branch target is matched exactly against `agent/<queue-id>/<token>` by
-  `hub done`.
+  `hub done`. **The participation half of that target is not checked by
+  anything**: the client matches the branch name and knows nothing about who
+  has contributed to the repository it lives in, so whether a push into a shared
+  member repository was allowed is a question only the agent asks. Retires when
+  the client learns the participation test, which it cannot while it makes no
+  API call.
 - **Neither check binds an agent that does not use the client.** Nothing stops
   an agent running `git push` itself, and nothing here could: the grant is a
   rule an agent follows, and the client is the easiest way to follow it
@@ -515,9 +763,9 @@ checks. It is not why the grant holds.
 
 **A draft pull request was declined on 2026-09-09 and granted on 2026-09-10**
 (R13, then R15). One draft pull request per handed-back item is now permitted,
-in a member repository, labelled `agent-run`, never marked ready and never
-merged. There is still no Project sync paragraph, because there is still no
-Project.
+in a member repository **nobody else has contributed to**, labelled `agent-run`,
+never marked ready and never merged. There is still no Project sync paragraph,
+because there is still no Project.
 
 The grant follows a distinction worth stating, because it is the one that makes
 the whole rule coherent: **what matters is not the verb, it is whether another
@@ -528,29 +776,72 @@ prevent.
 
 **The closed exclusion list.** The authorization covers nothing else, and
 specifically not: any issue, review, comment, release, or assignee; any pull
-request other than the one draft per handed-back item granted above, and in
-particular never marking one ready for review, merging one, or replying on one;
-any push to `main` other than the locks repository's README; any move of an
-item to `ready`; any `--force`;
-and anything at all on GitLab. The list is closed, meaning that an operation
-resembling a permitted one is denied unless it is named in `writes.permitted`.
+request operation other than the two granted above, which are the one draft per
+handed-back item and a merge in this repository of a pull request whose checks
+are all green, and on that draft never marking it ready for review, merging it,
+or replying on it; any push of the work branch into a member repository
+somebody else has contributed to, where it is ask-first; any merge outside this
+repository, and here any merge of a pull request
+that is not green; any push to `main` other than this repository's small
+mechanical changes and the locks repository's README; any move of an item to
+`ready` that does not rest on an authorization Brett gave in chat and name it in
+the commit; any `--force`; and anything at all on GitLab. The list is closed,
+meaning that an operation resembling a permitted one is denied unless it is
+named in `writes.permitted`.
 
 **Precedence.** Brett's global instruction is the ceiling, this register is the
 operative copy, and where the two differ the narrower governs. A wider reading
 of this file cannot enlarge the ceiling, and nothing in this file grants what
 the global instruction withholds.
 
-**This repository widens the global rule** (2026-09-10; the global file permits
-a repository Brett controls to widen it, explicitly and dated). What it grants
-beyond the default:
+**Three more operations reach this repository from Brett's global rule, and
+this file narrows each of them rather than widening anything** (checked
+2026-09-10). The global rule already lets an agent merge a green pull request
+in a repository he works alone in, promote a queue item to `ready` on an
+authorization he gave in chat with the commit naming it, and push a small
+mechanical change to a default branch preferring a pull request otherwise.
+Nobody else has ever worked here, so all three arrive on their own. What
+follows is how each applies in this repository, and each statement is narrower
+than the global one it comes from:
 
-- **Merging a pull request here needs no separate ask** once every check is
-  green. Nobody else works in this repository, so a merge reaches no one.
-- **Promoting a queue item to `ready`** is permitted on an authorization Brett
-  gave in chat, and the commit must name it.
-- **Pushing to `main`** is permitted for small mechanical changes only, meaning
-  queue state, a generated block, a typo, ignoring a stray file. Prefer a pull
-  request for anything else; that is what Codex reviews.
+- **Merging a pull request here needs no separate ask** once every check has
+  finished green. Narrower than the global permission in two ways: only in this
+  repository, never in another member repository even one Brett works alone in;
+  and never the agent's own hand-back draft, which stays draft because that is
+  where Brett looks.
+- **Promoting a queue item to `ready`** carries the global rule's own
+  condition, restated because a reader of the queue will look for it here: the
+  commit names the authorization Brett gave in chat, and a promotion that
+  cannot cite one is a defect.
+- **Pushing to `main`** is for small mechanical changes only, and here that
+  phrase is enumerated rather than left to judgement: queue state, a generated
+  block, a typo, ignoring a stray file. Anything else goes through a pull
+  request, because that is what Codex reviews.
+
+**This section called those three widenings until 2026-09-10, and the label was
+wrong in a way that costs something.** A widening claims an authority this file
+does not need and does not have: delete this section and all three operations
+survive, because they come from the global rule; delete the global rule's
+clause and none of them does. Worse, a false widening invites the next reader
+to trim the global rule to match, on the reasoning that the permission really
+lives here. It does not. The one thing this file genuinely does with them is
+narrow them and put them in the register, and the register is what makes them
+exercisable.
+
+**Nothing here is a widening, including the locks repository's README.** That
+row writes to a default branch in a repository other than this one, which is
+the shape that most looks like this file granting itself authority elsewhere.
+It is not: Brett's own standing authorization, quoted above in his words, names
+that push explicitly, and the row's `why_it_is_not_a_local_grant` in the
+register says so. There is no widening list for it to be misfiled into.
+
+All three are rows in `writes.permitted` above and are carved out of
+`writes.denied` there, which is what makes them exercisable: `scope_note` says
+an operation absent from that list is not permitted whatever it resembles, so a
+permission announced only in this prose would suspend the authorization the
+first time an agent used it. They were announced here first and reached the
+register later the same day, which is exactly that failure, caught by review
+rather than by an agent tripping over it.
 
 **A Codex review is an opinion, not an instruction.** Weigh it against the
 evidence, and where it conflicts with something Brett has already decided, his
@@ -559,47 +850,90 @@ review that is followed is worse than no review, because it arrives wearing the
 authority of having been reviewed.
 
 **Self-suspending.** The whole authorization is suspended the moment an agent
-writes outside the permitted list, and stays suspended until Brett reinstates
-it. Suspension is not per-agent: the carve-out exists because it is narrow and
-observable, and one write outside it removes the evidence for both. An agent
-that discovers it has written outside the list stops, reports the write, and
-does not continue under the protocol.
+executing this protocol writes outside the permitted list, and stays suspended
+until Brett reinstates it. Suspension is not per-agent: the carve-out exists
+because it is narrow and observable, and one write outside it removes the
+evidence for both. An agent that discovers it has written outside the list
+stops, reports the write, and does not continue under the protocol.
+
+**What it does not cover.** This clause is scoped to the protocol, like the
+register it protects: it fires on a write made under the protocol against a
+claimed item, not on every write an agent makes in a working day. Ordinary
+repository work is governed by Brett's global agent instructions, which carry
+their own suspension clause with their own scope, and nothing here narrows or
+replaces it. The scoping was added 2026-09-10, when the register was found
+reading as though editing a file outside a claim were a breach of the hub grant.
+
+**It has fired once, and it has been cleared once** (`writes.reinstated`,
+2026-09-10). Merging, promoting and small mechanical pushes to `main` were made
+while those three operations were still absent from `writes.permitted`, and
+Brett then granted exactly those three, after the fact and knowing they had
+happened. That is a reinstatement in substance, and it is recorded as one and
+dated in the front matter so nobody has to reason it out from two other keys.
+It clears those three and nothing else.
 
 ***Retires when:*** claims stop living on git refs. At that point the paragraph
 is deleted rather than widened, and this section goes with it.
 
 ## What you must never do
 
-- Never open, close, comment on, label, assign, or review an issue or a pull
-  request, and never publish a release, from Brett's account or any other.
+- Never open, close, comment on, assign, or review an issue, and never publish
+  a release, from Brett's account or any other.
+- Never open, label, comment on, or review a pull request **except** the single
+  draft the register permits for a handed-back item, in a member repository
+  nobody but Brett has ever contributed to, labelled `agent-run` and carrying
+  the queue id. That draft is never marked ready for review, never merged by
+  the agent that opened it, and never replied to on a review comment.
+- Never merge a pull request **except** in this repository, and there only when
+  every check has finished green, and never the hand-back draft itself. A merge
+  in any other member repository is outside the grant even when the repository
+  is one Brett works alone in.
 - Never push to `main` or any default branch **except** the small mechanical
-  changes this repository's widening names: queue state, a generated block, a
-  typo, ignoring a stray file. Anything substantive goes through a pull
-  request.
+  changes enumerated for this repository above (queue state, a generated block,
+  a typo, ignoring a stray file) and the locks repository's README, which exists
+  so that a claim ref is never that repository's default branch. Anything
+  substantive goes through a pull request.
 - Never set an item to `ready` **except** on an authorization Brett gave in
   chat, and then the commit must name it. A promotion commit that cannot cite
   one is a defect.
-  *(These two read as flat prohibitions until 2026-09-10 and contradicted the
-  widening three paragraphs above, which was written the same hour. A policy
+  *(These read as flat prohibitions until 2026-09-10 and contradicted the
+  three permissions described above, written the same hour. A policy
   file that says both answers is worse than one that says the wrong answer,
   because an agent obeys whichever half it read; this is the disease the queue
   exists to cure, caught in the queue's own rulebook by a review that read the
-  file against itself.)*
+  file against itself. It was caught twice. The first pass fixed the two
+  bullets in this list and left `writes.denied` above still forbidding the same
+  operations, which is the half that actually governs, so the second pass had
+  to do the register, the closed exclusion list, the pull-request bullets and
+  the locks README. Fixing the copy a reader happens to be looking at is not
+  fixing the contradiction; the way to know it is fixed is to grep every
+  prohibition for the verb you just permitted.)*
 - Never `--force`, `--force-with-lease`, or delete a remote ref.
 - Never write anything on GitLab.
-- Never call the GitHub API to write, including through `gh`. Read-only `gh` is
-  fine.
+- Never call the GitHub API to write, including through `gh`, **except** the
+  two writes the register permits: `gh pr create --draft` with the `agent-run`
+  label for a handed-back item, and merging a green pull request in this
+  repository. Read-only `gh` is fine. The `hub` client itself makes no API call
+  at all, deliberately, so both of these are the agent's own call and neither
+  is ever folded into a `hub` subcommand.
 - Never start an item whose claim push was rejected, for any reason.
 - Never work outside your worktree, or on more than
   `max_concurrent_claims` (`queue/config.yaml`) items at once.
-- Never push a branch other than `agent/<queue-id>/<token>`. That name is the
-  whole of the grant's second target, so a branch with any other name is a
-  write outside the register even when the commits on it are exactly right.
+- Never push a branch other than `agent/<queue-id>/<token>`, and never push even
+  that one into a member repository somebody other than Brett has contributed
+  to. The name is the whole of the grant's second target, so a branch with any
+  other name is a write outside the register even when the commits on it are
+  exactly right; and the grant's first line scopes every target it lists to
+  repositories with no other contributor, so in a shared member repository the
+  push is ask-first like any other write and the work stops at a diff Brett
+  reads in chat.
 - Never set `HUB_LOCKS_URL` against a configured locks repository. It exists
   for the migration's race test against a throwaway repository, and the client
   refuses it once `locks_repo` is real.
 - Never restate an operating constant's value outside `queue/config.yaml`,
-  including in this file. Cite the key.
+  including in this file. Cite the key. The one exception is the fetch refspec
+  under "Claiming", which cannot cite a key and says on the spot that it is an
+  example and that the configuration wins.
 - Never remove a worktree that fails any of the three cleanliness checks, and
   never delete a branch.
 - Never widen the scope of a claimed item. Finding a second problem is a new

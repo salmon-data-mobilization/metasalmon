@@ -8,5 +8,5 @@ venue: claude-code
 stream: S5
 blocked_by: []
 legacy: 'S5'
-evidence: sequences/s5-review-flow.md
+evidence: knowledge/sequences/s5-review-flow.md
 retires_when: Backlog items 58 and 59 are done and the nine 0.5.0 review and editing functions are ported to metasalmonpy with PARITY.md row 31 amended in place.

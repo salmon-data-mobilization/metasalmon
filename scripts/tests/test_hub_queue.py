@@ -49,7 +49,7 @@ BASE_DEFECT = [
     ("severity", "P2"),
     ("blocked_by", "[]"),
     ("legacy", "'#53'"),
-    ("evidence", "backlog.md"),
+    ("evidence", "knowledge/backlog.md"),
     ("retires_when", "The thing is fixed and a regression test pins it"),
 ]
 
@@ -61,7 +61,7 @@ BASE_STREAM = [
     ("claimable", "true"),
     ("repo", "metasalmon"),
     ("blocked_by", "[]"),
-    ("evidence", "roadmap.md"),
+    ("evidence", "knowledge/roadmap.md"),
 ]
 
 BASE_QUESTION = [
@@ -72,8 +72,30 @@ BASE_QUESTION = [
     ("claimable", "false"),
     ("repo", "metasalmon"),
     ("blocked_by", "[]"),
-    ("evidence", "questions.md"),
+    ("evidence", "knowledge/questions.md"),
 ]
+
+
+def participation_table(grants) -> str:
+    """Render `HUB.md`'s participation table for a fixture.
+
+    `grants` maps a repository name to whether the standing write authorization
+    reaches it. The real table groups several repositories into one cell and
+    marks the verdict in bold, so one fixture row does both to keep the parser
+    honest about the shape it actually meets.
+    """
+    rows = [
+        "| Repository | Others who have participated | Grant applies |",
+        "|---|---|---|",
+    ]
+    solo = sorted(repo for repo, granted in grants.items() if granted)
+    shared = sorted(repo for repo, granted in grants.items() if not granted)
+    if solo:
+        cell = ", ".join(f"`{repo}`" for repo in solo)
+        rows.append(f"| {cell}, the locks repository | none | yes |")
+    for repo in shared:
+        rows.append(f"| `{repo}` | one collaborator | **no** |")
+    return "## The standing authorization\n\n" + "\n".join(rows) + "\n"
 
 
 def item_text(base, **overrides) -> str:
@@ -104,8 +126,21 @@ class QueueTestCase(unittest.TestCase):
     RED assertion then passes for the wrong reason.
 
     Every fixture also gets a retirement-debt baseline file, because the client
-    has no built-in default and refuses to guess one.
+    has no built-in default and refuses to guess one, and the evidence files the
+    base fixtures point at, because `evidence` must resolve from the repository
+    root. Creating them here rather than inside `write_item` is deliberate: a
+    fixture that conjured its own evidence file would make the dangling-pointer
+    rule impossible to demonstrate RED.
     """
+
+    #: Evidence targets the base fixtures name. Kept as a list rather than
+    #: written inline so that adding a base fixture with a new pointer fails
+    #: here, in one place, instead of in every test that uses it.
+    BASE_EVIDENCE = (
+        "knowledge/backlog.md",
+        "knowledge/roadmap.md",
+        "knowledge/questions.md",
+    )
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -114,6 +149,8 @@ class QueueTestCase(unittest.TestCase):
         self.queue.mkdir(parents=True)
         self.baseline_path = self.root / hub_queue.RETIREMENT_DEBT_BASELINE_FILE
         self.write_baseline(0)
+        for relpath in self.BASE_EVIDENCE:
+            self.write_evidence(relpath)
         self.addCleanup(self._tmp.cleanup)
 
     # -- fixtures ---------------------------------------------------------
@@ -128,6 +165,26 @@ class QueueTestCase(unittest.TestCase):
         name = filename or (overrides.get("id") or dict(base)["id"]) + ".yaml"
         path = self.queue / name
         path.write_text(text, encoding="utf-8")
+        return path
+
+    def write_evidence(self, relpath: str) -> Path:
+        """Create the file an item's `evidence` points at."""
+        path = self.root / relpath
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {relpath}\n", encoding="utf-8")
+        return path
+
+    def write_policy(self, grants, body: str = "") -> Path:
+        """Write `HUB.md` with the participation table `validate_solo` reads.
+
+        Any fixture that writes a queue configuration must write this too: the
+        `solo:` column is a copy of that table and the cross-check fails loudly
+        rather than quietly when the source is absent, which is the behaviour
+        `TestSoloCrossCheck` pins.
+        """
+        path = self.root / hub_queue.HUB_POLICY_FILE
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(participation_table(grants) + body, encoding="utf-8")
         return path
 
     def write_raw(self, name: str, text: str) -> Path:
@@ -444,11 +501,125 @@ class TestAbsolutePaths(QueueTestCase):
     def test_relative_paths_and_slashes_are_not_flagged(self):
         # `refs/heads/claim/<id>` is in the design's own prose; flagging it would
         # make the rule unusable.
+        self.write_evidence("knowledge/sequences/s14.md")
         self.write_item(
             BASE_DEFECT,
             evidence="knowledge/sequences/s14.md",
             retires_when="The claim lands on refs/heads/claim/B-53 and the ref is released",
         )
+        self.assert_accepts()
+
+
+class TestEvidenceExists(QueueTestCase):
+    """`evidence` must resolve from the repository root to something real.
+
+    THE DEFECT THIS PINS, measured 2026-09-09. Every item file carried a pointer
+    that was bundle-relative (`backlog.md`) where the reader resolved it from
+    the repository root, and all 55 of them were rewritten in one pass. Nothing
+    in the build noticed: a dangling pointer parses, renders, and appears in the
+    ready queue exactly like a good one, and the inconsistency was caught by a
+    human reading the files. That is the cheapest possible defect to check for
+    and the most expensive one to find by reading.
+
+    RETIRES WHEN: `evidence` stops naming a filesystem path or a URL. An item
+    id or a bundle anchor needs its own check rather than the deletion of this
+    one. The URL cases below are the check a URL got on 2026-09-10, after the
+    documented `https://` form was found to fail as a missing local path.
+    """
+
+    def test_a_pointer_at_nothing_is_rejected(self):
+        self.write_item(BASE_DEFECT, evidence="knowledge/nowhere.md")
+        output = self.assert_rejects("evidence-missing")
+        self.assertIn("knowledge/nowhere.md", output)
+        self.write_evidence("knowledge/nowhere.md")
+        self.assert_accepts()
+
+    def test_the_bundle_relative_pointer_that_was_actually_written(self):
+        # The RED half is the 2026-09-09 state verbatim: the file exists at
+        # `knowledge/backlog.md` and the item says `backlog.md`, which resolves
+        # from the repository root to nothing at all.
+        self.write_item(BASE_DEFECT, evidence="backlog.md")
+        output = self.assert_rejects("evidence-missing")
+        self.assertIn("not from the item file and not from knowledge/", output)
+        self.write_item(BASE_DEFECT, evidence="knowledge/backlog.md")
+        self.assert_accepts()
+
+    def test_a_pointer_that_leaves_the_repository_is_rejected(self):
+        # `../psc-data-systems` is a real sibling checkout on one machine, which
+        # is the same defect as an absolute path in relative clothing.
+        (self.root.parent / "sibling-checkout").mkdir(exist_ok=True)
+        (self.root.parent / "sibling-checkout" / "README.md").write_text("x", encoding="utf-8")
+        self.write_item(BASE_DEFECT, evidence="../sibling-checkout/README.md")
+        self.assert_rejects("evidence-escapes-root")
+        self.write_item(BASE_DEFECT, evidence="knowledge/backlog.md")
+        self.assert_accepts()
+
+    def test_a_bare_fragment_points_at_no_file(self):
+        self.write_item(BASE_DEFECT, evidence="'#B-53'")
+        self.assert_rejects("evidence-missing")
+        self.write_item(BASE_DEFECT, evidence="'knowledge/backlog.md#B-53'")
+        self.assert_accepts()
+
+    def test_a_directory_counts_as_evidence(self):
+        # GREEN, and it has to be: a pointer at a directory of evidence is a
+        # legitimate pointer, and rejecting it would push items into naming an
+        # arbitrary file inside it.
+        (self.root / "knowledge" / "sequences").mkdir(parents=True, exist_ok=True)
+        self.write_item(BASE_DEFECT, evidence="knowledge/sequences")
+        self.assert_accepts()
+
+    def test_an_absolute_path_is_reported_once_and_under_its_own_rule(self):
+        # Two problems on one line tells the reader there are two faults. The
+        # absolute-path rule already names this one, so the existence rule
+        # stands aside.
+        self.write_item(BASE_DEFECT, evidence="/srv/notes/backlog.md")
+        output = self.assert_rejects("absolute-path")
+        self.assertNotIn("evidence-missing", output)
+
+    def test_a_url_into_another_repository_is_accepted_without_touching_the_disk(self):
+        # `queue/README.md` allows a full `https://` URL for evidence that lives
+        # in another repository. Until 2026-09-10 this resolved as
+        # `<root>/https:/github.com/...` and failed as missing, so the documented
+        # form could never pass lint (Codex, pull request #110). Nothing under
+        # the root matches this URL, which is the point: acceptance has to come
+        # from the URL's shape alone, and nothing is fetched.
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo/blob/main/x.md")
+        output = self.assert_accepts()
+        self.assertNotIn("evidence-missing", output)
+        self.assertFalse((self.root / "https:").exists())
+
+    def test_a_plain_http_url_is_refused_and_the_message_names_the_scheme(self):
+        self.write_item(BASE_DEFECT, evidence="http://github.com/org/repo/blob/main/x.md")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("'http'", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo/blob/main/x.md")
+        self.assert_accepts()
+
+    def test_a_url_with_no_host_is_refused(self):
+        for bare in ("https://", "https:///org/repo"):
+            with self.subTest(evidence=bare):
+                self.write_item(BASE_DEFECT, evidence=bare)
+                output = self.assert_rejects("evidence-url")
+                self.assertIn("no host", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo")
+        self.assert_accepts()
+
+    def test_a_url_with_no_path_is_refused(self):
+        # A pointer at a whole host names nothing an item can be checked
+        # against; evidence in another repository is at least `host/org/repo`.
+        self.write_item(BASE_DEFECT, evidence="https://github.com")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("no path", output)
+        self.write_item(BASE_DEFECT, evidence="https://github.com/org/repo")
+        self.assert_accepts()
+
+    def test_a_url_containing_whitespace_is_refused(self):
+        # Quoted so the space survives the scalar parser, which only strips a
+        # ` #` comment and would otherwise pass the space through unchanged.
+        self.write_item(BASE_DEFECT, evidence="'https://github.com/org/my repo'")
+        output = self.assert_rejects("evidence-url")
+        self.assertIn("whitespace", output)
+        self.write_item(BASE_DEFECT, evidence="'https://github.com/org/my-repo'")
         self.assert_accepts()
 
 
@@ -785,14 +956,22 @@ class TestMembersCrossCheck(QueueTestCase):
     )
 
     def write_config(self, repos):
+        """Write the members block, and the participation table it copies.
+
+        The `solo:` verdicts are written to agree with the table so that these
+        tests fail for membership drift and nothing else. `TestSoloCrossCheck`
+        owns the RED demonstrations for the solo column itself.
+        """
         lines = ["# configuration", "members:"]
         for repo in repos:
             lines.append(f"  - repo: {repo}")
             lines.append("    org: salmon-data-mobilization")
             lines.append("    forge: github")
+            lines.append("    solo: true")
         path = self.root / "queue" / "config.yaml"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        self.write_policy({repo: True for repo in repos})
 
     def write_card(self, text=None):
         path = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
@@ -848,6 +1027,319 @@ class TestMembersCrossCheck(QueueTestCase):
     def test_no_configuration_means_no_cross_check(self):
         self.write_item(BASE_DEFECT)
         self.assert_accepts()
+
+
+class TestSoloCrossCheck(QueueTestCase):
+    """`solo:` is the one fact the standing write authorization turns on.
+
+    Where it is true an agent may push a work branch and open one draft pull
+    request without asking; where it is false it prepares the diff and waits for
+    Brett. Until 2026-09-10 that fact was stated in prose in two places and in
+    the queue configuration in none, so the client's own configuration could not
+    answer the question the client's protocol is scoped by.
+
+    `HUB.md` governs. These are the RED demonstrations that keep the
+    configuration's copy honest, and the asymmetry is the part worth reading:
+    an unmeasured `true` fails and an unmeasured `false` passes, because
+    `HUB.md` says a repository whose participation cannot be determined is
+    shared.
+
+    RETIRES WHEN: the participation test stops gating writes, or a client that
+    can ask the forge who has contributed replaces the recorded answer with a
+    measured one.
+    """
+
+    def write_card(self, repos):
+        rows = "".join(f"| `{repo}` | A role |\n" for repo in repos)
+        path = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "# The salmon data ecosystem\n\n| Repo | Role |\n|---|---|\n" + rows,
+            encoding="utf-8",
+        )
+
+    def write_world(self, members, grants=None, card=True, policy=True):
+        """`members` maps repo -> the literal `solo:` text, or None to omit it."""
+        lines = ["# configuration", "members:"]
+        for repo, solo in members.items():
+            lines.append(f"  - repo: {repo}")
+            lines.append("    org: salmon-data-mobilization")
+            lines.append("    forge: github")
+            if solo is not None:
+                lines.append(f"    solo: {solo}")
+        path = self.root / "queue" / "config.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        if card:
+            self.write_card(list(members))
+        if policy:
+            self.write_policy(grants if grants is not None else {})
+        self.write_item(BASE_DEFECT)
+
+    def test_a_verdict_that_disagrees_with_the_table(self):
+        self.write_world({"metasalmon": "true"}, {"metasalmon": False})
+        output = self.assert_rejects("solo-drift")
+        self.assertIn("the table governs", output)
+        self.write_world({"metasalmon": "false"}, {"metasalmon": False})
+        self.assert_accepts()
+
+    def test_the_drift_is_caught_in_the_other_direction_too(self):
+        # A repository the table says is solo, recorded here as shared, is not a
+        # safety problem but it is still a wrong copy, and a cross-check that
+        # only fires one way teaches readers to trust the file in front of them.
+        self.write_world({"metasalmon": "false"}, {"metasalmon": True})
+        self.assert_rejects("solo-drift")
+        self.write_world({"metasalmon": "true"}, {"metasalmon": True})
+        self.assert_accepts()
+
+    def test_a_member_with_no_verdict_at_all(self):
+        self.write_world({"metasalmon": None}, {"metasalmon": True})
+        output = self.assert_rejects("solo-missing")
+        self.assertIn("metasalmon", output)
+        self.write_world({"metasalmon": "true"}, {"metasalmon": True})
+        self.assert_accepts()
+
+    def test_a_verdict_that_is_not_a_lowercase_boolean(self):
+        self.write_world({"metasalmon": "yes"}, {"metasalmon": True})
+        self.assert_rejects("solo-type")
+        self.write_world({"metasalmon": "true"}, {"metasalmon": True})
+        self.assert_accepts()
+
+    def test_claiming_solo_with_nothing_measured_fails(self):
+        # The asymmetry, RED half. `salmon-science-foundry` is the live case:
+        # its repository does not exist, so nobody has measured who works in it.
+        self.write_world(
+            {"metasalmon": "true", "salmon-science-foundry": "true"},
+            {"metasalmon": True},
+        )
+        output = self.assert_rejects("solo-unsourced")
+        self.assertIn("salmon-science-foundry", output)
+        self.assertIn("a grant that nothing measured", output)
+
+    def test_recording_shared_with_nothing_measured_passes(self):
+        # The asymmetry, GREEN half, and it is the live configuration's shape.
+        # `HUB.md` says a repository whose participation cannot be determined is
+        # shared, so an unmeasured `false` is the correct answer rather than a
+        # gap to be filled.
+        self.write_world(
+            {"metasalmon": "true", "salmon-science-foundry": "false"},
+            {"metasalmon": True},
+        )
+        self.assert_accepts()
+
+    def test_a_missing_policy_file_fails(self):
+        self.write_world({"metasalmon": "true"}, policy=False)
+        self.assert_rejects("solo-source-missing")
+        self.write_policy({"metasalmon": True})
+        self.assert_accepts()
+
+    def test_a_policy_file_with_no_table_fails_rather_than_passing_quietly(self):
+        self.write_world({"metasalmon": "true"}, policy=False)
+        (self.root / hub_queue.HUB_POLICY_FILE).write_text(
+            "# Hub\n\nNo participation table at all.\n", encoding="utf-8"
+        )
+        self.assert_rejects("solo-unreadable")
+        self.write_policy({"metasalmon": True})
+        self.assert_accepts()
+
+    def test_a_verdict_cell_that_is_neither_yes_nor_no_fails(self):
+        self.write_world({"metasalmon": "true"}, policy=False)
+        (self.root / hub_queue.HUB_POLICY_FILE).write_text(
+            "## The standing authorization\n\n"
+            "| Repository | Others who have participated | Grant applies |\n"
+            "|---|---|---|\n"
+            "| `metasalmon` | none | probably |\n",
+            encoding="utf-8",
+        )
+        output = self.assert_rejects("solo-unreadable")
+        self.assertIn("neither yes nor no", output)
+        self.write_policy({"metasalmon": True})
+        self.assert_accepts()
+
+    def test_check_reports_solo_drift_too(self):
+        self.write_world({"metasalmon": "true"}, {"metasalmon": False})
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 1, output)
+        self.assertIn("solo-drift", output)
+
+    def test_no_configuration_means_no_cross_check(self):
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+
+
+class TestMemberDuplicateFields(QueueTestCase):
+    """A key stated twice in one member entry is an error, and no value is read.
+
+    THE DEFECT THIS PINS, reported by Codex on pull request #110 on 2026-09-10.
+    `queue/config.yaml` has two readers written apart: this linter and
+    `members_list()` in the `hub` client. On a member reading `solo: false`
+    then `solo: true`, the linter kept the first (`setdefault`) and the client
+    keeps the last (its awk reassigns on every match), so lint compared `false`
+    against `HUB.md`, agreed, and printed OK, while `hub claim` read `true` and
+    would push a branch and open a draft pull request into a shared repository.
+    The file that passed review was not the file the client ran.
+
+    These tests do not run the client; nothing in this file runs a shell. The
+    disagreement was reproduced on 2026-09-10 by feeding the fixture below to
+    both parsers, and what is pinned here is that this program refuses to
+    choose, which is what makes the disagreement impossible rather than merely
+    unlikely.
+
+    RETIRES WHEN: the client and the linter share one parser of the members
+    block, or the block moves to a format with exactly one reader.
+    """
+
+    def write_world(self, member_lines, grants=None):
+        """Write one member entry from raw lines, plus its card row and policy row.
+
+        `member_lines` are the lines under `- repo: metasalmon`, verbatim, so a
+        test controls exactly which line a duplicate lands on: the entry starts
+        at line 3 of the file and its first field is line 4.
+        """
+        lines = ["# configuration", "members:", "  - repo: metasalmon", *member_lines]
+        path = self.root / "queue" / "config.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        card = self.root / "knowledge" / "domains" / "salmon-data-ecosystem.md"
+        card.parent.mkdir(parents=True, exist_ok=True)
+        card.write_text(
+            "# The salmon data ecosystem\n\n| Repo | Role |\n|---|---|\n"
+            "| `metasalmon` | The hub |\n",
+            encoding="utf-8",
+        )
+        self.write_policy(grants if grants is not None else {"metasalmon": True})
+        self.write_item(BASE_DEFECT)
+        return path
+
+    def test_a_duplicated_solo_is_an_error_naming_member_key_and_both_lines(self):
+        # The Codex scenario verbatim: the table says the repository is shared,
+        # `solo: false` is line 6 and `solo: true` is line 7. A linter keeping
+        # the first agrees with the table and prints OK -- which is the RED
+        # half of this test against the old code -- while the client keeps the
+        # last and would push. Either choice is a claim about which line the
+        # client reads, so the rule is to make neither.
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ], grants={"metasalmon": False})
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'metasalmon'", output)
+        self.assertIn("'solo'", output)
+        self.assertIn("lines 6 and 7", output)
+        # One fault, one report: the dropped key must not also read as missing
+        # or as drifting from the table.
+        self.assertNotIn("solo-missing", output)
+        self.assertNotIn("solo-drift", output)
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+        ], grants={"metasalmon": False})
+        self.assert_accepts()
+
+    def test_neither_occurrence_is_read(self):
+        path = self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ])
+        (row,) = hub_queue.read_config_member_rows(path)
+        self.assertNotIn("solo", row.fields)
+        self.assertEqual(row.duplicates, {"solo": [6, 7]})
+
+    def test_a_duplicate_of_any_other_key_is_an_error_too(self):
+        # `forge` gates the GitLab member the way `solo` gates the shared ones,
+        # and the client reassigns it on every match exactly as it does `solo`.
+        # The rule is about repeated keys, not about one key.
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: gitlab",
+            "    solo: true",
+            "    forge: github",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'forge'", output)
+        self.assertIn("lines 5 and 7", output)
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: true",
+        ])
+        self.assert_accepts()
+
+    def test_a_restated_repo_is_a_duplicate_not_a_rename(self):
+        # The client would rename the row to the later value; this program
+        # keeps the entry under the `- repo:` line it started on and reports
+        # the restatement, so the members cross-check does not see a phantom.
+        self.write_world([
+            "    repo: metasalmonpy",
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: true",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("'repo'", output)
+        self.assertIn("lines 3 and 4", output)
+        self.assertNotIn("members-drift", output)
+
+    def test_a_key_stated_three_times_names_every_line(self):
+        self.write_world([
+            "    solo: true",
+            "    org: salmon-data-mobilization",
+            "    solo: false",
+            "    forge: github",
+            "    solo: true",
+        ])
+        output = self.assert_rejects("members-duplicate-field")
+        self.assertIn("lines 4, 6 and 8", output)
+
+    def test_a_value_less_repeat_is_still_a_duplicate(self):
+        # Found in review of the first version of this check, 2026-09-10. The
+        # client's awk matches a field line on its key alone and reassigns the
+        # value to whatever follows the colon, so a bare `solo:` after
+        # `solo: true` makes the client read `solo` as the empty string and
+        # `member_solo_for_repo` answer no. The first version counted only
+        # lines with a value, saw one `solo`, and printed OK. Both orders are
+        # pinned because the client keeps the last line whichever it is.
+        for lines in (["    solo: true", "    solo:"], ["    solo:", "    solo: true"]):
+            with self.subTest(order=lines):
+                self.write_world(["    org: salmon-data-mobilization", "    forge: github", *lines])
+                output = self.assert_rejects("members-duplicate-field")
+                self.assertIn("'solo'", output)
+                self.assertIn("lines 6 and 7", output)
+                self.assertNotIn("solo-missing", output)
+
+    def test_a_single_value_less_solo_is_unstated_not_a_type_error(self):
+        # A bare `solo:` on its own. The bash reader yields the empty string for
+        # it (`clean(substr("solo:", 6))` is ""), and the client answers no from
+        # that, so nothing is granted; lint reports the key as unstated on the
+        # line that states it, so the file gets fixed rather than being read as
+        # "no key" by one reader and "empty value" by the other. `solo: # later`
+        # is the same case: the client strips the comment and reads "".
+        for bare in ("    solo:", "    solo: # to be measured"):
+            with self.subTest(line=bare):
+                self.write_world(["    org: salmon-data-mobilization", "    forge: github", bare])
+                output = self.assert_rejects("solo-missing")
+                self.assertIn("queue/config.yaml:6: [solo-missing]", output)
+                self.assertIn("no value", output)
+                self.assertNotIn("solo-type", output)
+                self.assertNotIn("members-duplicate-field", output)
+        self.write_world(["    org: salmon-data-mobilization", "    forge: github", "    solo: true"])
+        self.assert_accepts()
+
+    def test_check_reports_a_duplicate_field_too(self):
+        self.write_world([
+            "    org: salmon-data-mobilization",
+            "    forge: github",
+            "    solo: false",
+            "    solo: true",
+        ], grants={"metasalmon": False})
+        code, output = self.run_hub("check")
+        self.assertEqual(code, 1, output)
+        self.assertIn("members-duplicate-field", output)
 
 
 class TestMemberCountBlock(QueueTestCase):
@@ -952,6 +1444,7 @@ class TestConfiguredBlocksExist(QueueTestCase):
             "  - repo: metasalmon",
             "    org: salmon-data-mobilization",
             "    forge: github",
+            "    solo: true",
             "",
             "generated_blocks:",
         ]
@@ -963,8 +1456,17 @@ class TestConfiguredBlocksExist(QueueTestCase):
         config.parent.mkdir(parents=True, exist_ok=True)
         config.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+        # A fixture that writes a configuration must also write the
+        # participation table the `solo:` column copies, and here the file that
+        # carries that table is also the block target, so the two are composed
+        # rather than one overwriting the other.
         for relpath, text in targets.items():
-            self.write_prose(relpath, text)
+            if relpath == hub_queue.HUB_POLICY_FILE:
+                self.write_policy({"metasalmon": True}, body="\n" + text)
+            else:
+                self.write_prose(relpath, text)
+        if hub_queue.HUB_POLICY_FILE not in targets:
+            self.write_policy({"metasalmon": True})
 
     @staticmethod
     def markers(name):
@@ -984,7 +1486,7 @@ class TestConfiguredBlocksExist(QueueTestCase):
         self.assertIn("not a skip", output)
 
         # GREEN: adding the marker pair and rendering it satisfies the check.
-        self.write_prose("HUB.md", "# Hub\n\n" + self.markers("queue-summary"))
+        self.write_policy({"metasalmon": True}, body="\n" + self.markers("queue-summary"))
         self.assertEqual(self.run_hub("render")[0], 0)
         code, output = self.run_hub("check")
         self.assertEqual(code, 0, output)
@@ -1019,8 +1521,12 @@ class TestConfiguredBlocksExist(QueueTestCase):
         self.assertIn("do not pair up", output)
 
     def test_a_configured_target_that_does_not_exist_fails(self):
+        # The target is deliberately not `HUB.md`: every fixture that writes a
+        # configuration also writes `HUB.md`, because the `solo:` cross-check
+        # reads the participation table there, so `HUB.md` can no longer stand
+        # in for a file that is absent.
         self.write_item(BASE_DEFECT)
-        self.write_world([("queue-summary", "HUB.md")], {})
+        self.write_world([("queue-summary", "knowledge/absent.md")], {})
         code, output = self.run_hub("check")
         self.assertEqual(code, 1, output)
         self.assertIn("does not exist", output)

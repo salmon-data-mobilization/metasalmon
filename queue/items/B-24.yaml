@@ -9,5 +9,5 @@ stream: S7
 severity: P4
 blocked_by: []
 legacy: '#24'
-evidence: backlog.md
+evidence: knowledge/backlog.md
 retires_when: The per-target fallback emits a debug message naming the group it degraded, so the performance cliff is observable instead of silent, or a logged ruling says the cliff needs no signal.

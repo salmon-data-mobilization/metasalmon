@@ -164,6 +164,17 @@ scheme for `bench/`. *Retires when:* the first tag exists.
 
 ## 3b. `knowledge/sequences/s15-hub-coordination.md` (new, 2026-09-05)
 
+**This one was pasted, and the card has moved on since.** Unlike the rest of
+the kit, `knowledge/sequences/s15-hub-coordination.md` exists and has been
+revised more than once. **That card governs, and for anything about the
+authorization, the states, or how an item reaches `ready`, `HUB.md` governs
+both of them.** The block below is the 2026-09-05 draft the card was pasted
+from, kept as provenance rather than resynchronised: a second maintained copy
+of a card is the defect S15 exists to remove, and synchronising it would create
+exactly that. Read it for what was proposed on 2026-09-05, never for what is
+true now. *Retires when:* the kit's remaining pastes land and the whole file
+becomes provenance.
+
 ```markdown
 ---
 type: InformationObject
@@ -209,8 +220,13 @@ already states the rule this violates — *a count nobody maintains is decay*.
    plan's §9.8 records what the Project would have given, and that reviving it
    later is additive because the queue files are the source.
 6. Backlog identifiers preserved, so the 191 bare citations are never
-   rewritten; `ready` is human-only and set by a commit on `main`, which the
-   carve-out forbids agents to push.
+   rewritten. How an item reaches `ready`, and who may set it: see `HUB.md`.
+   *(This bullet read "`ready` is human-only and set by a commit on `main`,
+   which the carve-out forbids agents to push" until 2026-09-10, when a ruling
+   made it false. It was the fourth copy of that sentence in the bundle and the
+   last to be corrected; it is replaced by a pointer rather than by a corrected
+   sentence, because a fourth copy that is right today is a fourth copy that
+   goes wrong on the next ruling.)*
 
 ## Dependencies and order
 

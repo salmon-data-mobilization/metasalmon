@@ -110,10 +110,14 @@ Evidence that genuinely lives in another repository is written as a full
 first one that does has an answer rather than a precedent to invent.
 
 `state` moves through `icebox`, `ready`, `claimed`, `needs_brett`, `review`,
-`done`. Only the move into `ready` is special: it is set by a commit on `main`,
-which agents may not push, so **an agent cannot enlarge its own queue.** That is
-structure rather than policy, and it is the reason the design does not need a
-rule telling agents not to promote their own work.
+`done`. Only the move into `ready` is special: it is a commit on `main`, made by
+Brett or by an agent acting on an authorization he gave in chat, and an agent's
+promotion commit has to name that authorization. **Until 2026-09-10 this was a
+wall an agent could not climb, because it could not push to `main` at all; it is
+now an audit trail.** So the property that an agent cannot invent its own work
+is no longer structural, and a promotion citing nothing is a defect rather than
+an impossibility. `HUB.md` is the operative copy of that rule and of every other
+write an agent may make; this file describes the queue and grants nothing.
 
 ## Which venue an item wants
 
@@ -167,8 +171,12 @@ table, creating a reference through an API and reading an error status as
 plausible statuses and does not say which one means the reference exists.
 
 **It needs no permission that Brett's standing rule protects.** A ref push is
-not an issue, a comment, a review, or a pull request. Agents never post any of
-those from his account, and nothing in this design asks them to.
+not an issue, a comment, a review, or a pull request, so the claim protocol
+itself asks for nothing his rule guards. That is a property of the claim, not a
+claim about everything an agent does: since 2026-09-10 an agent may also open
+one draft pull request per handed-back item, and may merge, promote, or push a
+small mechanical change under conditions `HUB.md` sets out. Read the register
+there for what is permitted; nothing in this section widens or narrows it.
 
 **Git is the only write path, so nothing here is invisible to the
 private-terms guard by virtue of being an API call.** That much is true and it
