@@ -1,3 +1,38 @@
+metasalmon (development version)
+--------------------------------
+
+### Fixed
+
+* **`infer_column_role()` now types an enumerable string column
+  `categorical`, so `create_sdp()` stops writing `codes.csv` rows for columns
+  its own dictionary typed `attribute`** (backlog **#95**, queue **B-95**).
+  The code-row seeder writes one `codes.csv` row per distinct value of every
+  character or factor column with at most 30 distinct values, and the
+  specification's `codes_required_for_categorical_columns` rule binds a code
+  list to `column_role = "categorical"` -- so `scripts/validate_package.py`
+  in `smn-data-pkg` rejected every one of those rows as targeting "a
+  non-categorical or unknown column": 22 rows across six columns on the
+  173-row gold standard (`AREA`, `SPECIES`, `RUN_TYPE`, `ESTIMATE_METHOD`,
+  `ESTIMATE_CLASSIFICATION`, `ESTIMATE_STAGE`), and every code-bearing column
+  of the 30-row sample, all written by the same call that printed
+  "Dictionary validation passed" between them.
+
+  Ruled Q29 (Brett, 2026-09-05): the correction belongs in role inference,
+  and the seeder is downstream of that decision. Both now read one internal
+  predicate, `.ms_code_list_values()`, which carries the seeder's original
+  criterion unchanged, so the two cannot drift; the seeder's output is
+  byte-for-byte what it was. Identifier, temporal and measurement verdicts
+  still run first, so a key, a date, or a unit-bearing or percent-like text
+  column keeps its role even when its values repeat. A method-named column
+  whose values enumerate (`ESTIMATE_METHOD`, `ENUMERATION_METHODS`) is now
+  `categorical` rather than `attribute`, which is also where its procedures
+  resolve (`codes.csv$term_iri`).
+
+  Pinned on the R side by `tests/testthat/test-codes-target-categorical.R`,
+  which applies the validator's rule to `create_sdp()`'s output on both
+  bundled examples. The metasalmonpy fixture is owed as a port, and the
+  item's retirement condition is met only on the R side until it lands.
+
 metasalmon 0.5.0
 ----------------
 

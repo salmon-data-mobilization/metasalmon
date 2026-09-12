@@ -435,8 +435,6 @@ infer_table_metadata_from_resources <- function(resources, dataset_id = "dataset
 }
 
 infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
-  code_limits <- 30L
-
   code_tables <- purrr::map_dfr(names(resources), function(tab_id) {
     df <- resources[[tab_id]]
     col_names <- names(df)
@@ -450,8 +448,11 @@ infer_codes_from_resources <- function(resources, dataset_id = "dataset-1") {
     }
 
     codes <- purrr::map_dfr(cols, function(col_name) {
-      vals <- unique(stats::na.omit(as.character(df[[col_name]])))
-      if (length(vals) == 0 || length(vals) > code_limits) {
+      # The one code-list decision this package makes; `infer_column_role()`
+      # reads the same helper so the dictionary row it types and the code rows
+      # seeded here cannot disagree (backlog #95).
+      vals <- .ms_code_list_values(df[[col_name]])
+      if (length(vals) == 0) {
         return(tibble::tibble())
       }
 
@@ -1080,6 +1081,42 @@ infer_value_type <- function(col) {
   mean(!is.na(parsed)) >= min_fraction
 }
 
+# One decision, two consumers (backlog #95; ruled Q29, 2026-09-05).
+#
+# `infer_codes_from_resources()` seeds one `codes.csv` row per distinct value
+# of every column this returns values for, and the specification's
+# `codes_required_for_categorical_columns` rule binds a code list to
+# `column_role = "categorical"`: `scripts/validate_package.py` in
+# `smn-data-pkg` rejects every code row whose column is anything else.
+# `infer_column_role()` therefore reads the SAME predicate instead of
+# re-deriving "enumerable" on its own. The ruling put the correction in role
+# inference with the seeder downstream of it, so the seeder's criterion is the
+# definition and this helper is its only home: the two cannot drift unless one
+# of them stops calling it.
+#
+# The threshold is the seeder's original `code_limits`, unchanged, and the
+# values come back exactly as the seeder has always written them -- the
+# `as.character()` of the non-missing cells, in first-occurrence order --
+# because the `code_value` bytes of shipped packages depend on them.
+.ms_code_list_limit <- function() {
+  30L
+}
+
+.ms_code_list_values <- function(col, code_limit = .ms_code_list_limit()) {
+  if (!(inherits(col, "factor") || inherits(col, "character"))) {
+    return(character())
+  }
+  vals <- unique(stats::na.omit(as.character(col)))
+  if (length(vals) == 0 || length(vals) > code_limit) {
+    return(character())
+  }
+  vals
+}
+
+.ms_values_form_code_list <- function(col, code_limit = .ms_code_list_limit()) {
+  length(.ms_code_list_values(col, code_limit = code_limit)) > 0
+}
+
 .ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
   measurement_tokens <- c(
     "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
@@ -1144,7 +1181,10 @@ infer_column_role <- function(col_name, col) {
     length(qualifier_positions) > 0L &&
     max(qualifier_positions) > max(identifier_positions)
   if (identifier_is_qualified) {
-    return(if (inherits(col, "factor")) "categorical" else "attribute")
+    if (inherits(col, "factor") || .ms_values_form_code_list(col)) {
+      return("categorical")
+    }
+    return("attribute")
   }
 
   # Check for common identifier patterns
@@ -1179,7 +1219,10 @@ infer_column_role <- function(col_name, col) {
     "technique", "techniques", "gear", "enumeration"
   )
   if (any(name_tokens %in% method_tokens)) {
-    return("attribute")
+    # A method column whose values enumerate (ESTIMATE_METHOD,
+    # ENUMERATION_METHODS) is a code list, and its procedures resolve through
+    # `codes.csv$term_iri`; a free-text method note stays an attribute.
+    return(if (.ms_values_form_code_list(col)) "categorical" else "attribute")
   }
 
   # Explicit sample-size / partition-size count fields should stay in the
@@ -1192,6 +1235,16 @@ infer_column_role <- function(col_name, col) {
   # measurements behind unit-bearing headers or percent-like strings.
   if (.ms_name_has_measurement_hint(name_lower, name_tokens) && .ms_values_look_numericish(col)) {
     return("measurement")
+  }
+
+  # A string column whose non-missing values enumerate is a code list: the
+  # seeder writes one `codes.csv` row per value, and the specification then
+  # requires the column to be categorical (backlog #95). The identifier,
+  # temporal and measurement checks above deliberately run first, so a key, a
+  # date, or a unit-bearing or percent-like text column keeps its role even
+  # when its values happen to repeat.
+  if (.ms_values_form_code_list(col)) {
+    return("categorical")
   }
 
   # Default to attribute

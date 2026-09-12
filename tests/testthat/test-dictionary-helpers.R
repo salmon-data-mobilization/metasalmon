@@ -157,8 +157,11 @@ test_that("infer_dictionary keeps method-like count fields out of measurement ro
 
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
 
-  expect_equal(dict$column_role[dict$column_name == "counting_method"], "attribute")
-  expect_equal(dict$column_role[dict$column_name == "measurement_method"], "attribute")
+  # A method column whose values enumerate is a code list, so it is categorical
+  # rather than attribute (backlog #95); the point of this test is that it is
+  # never measurement.
+  expect_equal(dict$column_role[dict$column_name == "counting_method"], "categorical")
+  expect_equal(dict$column_role[dict$column_name == "measurement_method"], "categorical")
   expect_equal(dict$column_role[dict$column_name == "cwt_1st_mark_count"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "avg_weight"], "measurement")
 })
@@ -176,7 +179,8 @@ test_that("infer_dictionary promotes explicit sample-size and partition-size cou
 
   expect_equal(dict$column_role[dict$column_name == "mr_1st_sample_size"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "mr_1st_partition_size"], "measurement")
-  expect_equal(dict$column_role[dict$column_name == "sample_type"], "attribute")
+  # Two repeating text values form a code list (backlog #95): categorical.
+  expect_equal(dict$column_role[dict$column_name == "sample_type"], "categorical")
   expect_equal(dict$column_role[dict$column_name == "sample_reference_number"], "identifier")
   expect_equal(dict$column_role[dict$column_name == "sample_date"], "temporal")
 })
@@ -193,8 +197,10 @@ test_that("infer_dictionary promotes paired value/unit numeric columns into meas
   dict <- infer_dictionary(df, dataset_id = "test-1", table_id = "table-1")
 
   expect_equal(dict$column_role[dict$column_name == "sampleSizeValue"], "measurement")
-  expect_equal(dict$column_role[dict$column_name == "sampleSizeUnit"], "attribute")
-  expect_equal(dict$column_role[dict$column_name == "commentValue"], "attribute")
+  # Both are low-cardinality text, so both are code lists (backlog #95). The
+  # assertion that matters here is that neither is promoted to measurement.
+  expect_equal(dict$column_role[dict$column_name == "sampleSizeUnit"], "categorical")
+  expect_equal(dict$column_role[dict$column_name == "commentValue"], "categorical")
 })
 
 test_that("infer_dictionary recognizes wide numeric and percent metrics without promoting QA or reference fields", {
@@ -220,7 +226,8 @@ test_that("infer_dictionary recognizes wide numeric and percent metrics without 
   expect_equal(dict$column_role[dict$column_name == "width_middle"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "depth_1_lower"], "measurement")
   expect_equal(dict$column_role[dict$column_name == "Grade...4"], "attribute")
-  expect_equal(dict$column_role[dict$column_name == "QA/QC...6"], "attribute")
+  # A repeating text flag is a code list (backlog #95): categorical, not measurement.
+  expect_equal(dict$column_role[dict$column_name == "QA/QC...6"], "categorical")
 })
 
 test_that("infer_dictionary can seed semantic suggestions", {
