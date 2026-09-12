@@ -3,6 +3,68 @@ metasalmon (development version)
 
 ### Fixed
 
+* **`validate_salmon_datapackage()` now checks the three things backlog #49
+  (hub item B-49) measured it claiming and not doing.** Each was a contract
+  the package already wrote and nothing read back:
+
+  1. **Required-column nullability.** The dictionary's `required` flag was
+     inferred, written to `column_dictionary.csv`, parsed back to logical and
+     exported as Frictionless `constraints.required`, and compared to the data
+     by nothing -- a package could declare a column required and ship blanks in
+     it. A `required = TRUE` column with an NA or whitespace value is now a
+     structural `columns` issue in every mode, read the way the primary-key
+     check reads a missing key component. Only columns present in the data are
+     checked; an absent one was already reported.
+  2. **Schema-required metadata fields.** The Frictionless schema declares
+     `constraints.required` on seven `dataset.csv` fields, five `tables.csv`
+     fields and seven dictionary fields, and `review_metadata()` has reported a
+     blank one as *blocking strict validation* since 0.5.0 -- while strict
+     validation let it through, because the placeholder scan only sees a field
+     that says it is missing, not one that is. A blank non-key required field
+     now takes the placeholder channel: a warning in the default mode, an error
+     under `require_iris = TRUE`, so a freshly created package stays valid until
+     the strict answer is asked for. A blank **key** field (`dataset_id`,
+     `table_id`, `file_name`, `column_name`) is structural in every mode: a
+     `tables.csv` row with no `table_id` used to be skipped by the per-table
+     loop rather than named. Both read the same schema parse
+     `review_metadata()` reads, so the two cannot disagree about which fields
+     block. A column the file does not have counts as blank in every row, in
+     the validator and in `review_metadata()` alike -- the canonical reader
+     normalises only the dictionary and codes, so an absent required column
+     was reported in those two files and passed in `dataset.csv` and
+     `tables.csv` (raised in review of #111; the same rule now covers a
+     `tables.csv` with no `observation_unit_iri` column under
+     `require_iris = TRUE`). A blank `dataset_id` in `dataset.csv` used to
+     stop the validator with R's `missing value where TRUE/FALSE needed` from
+     the id-alignment check before the key collector ran; it is now reported
+     as the structural issue it is.
+  3. **Corrupt SSSOM and decomposition artifacts.** `validate_sdp_sssom()` and
+     `validate_sdp_measurement_decompositions()` existed, and only the KNB
+     publication and archive paths called them: the end-to-end validator
+     reported success over a `mapping-sets.json` whose SHA-256 no longer matched
+     its bytes, and over a decomposition CSV whose manifest had been deleted.
+     Both validators now run when their managed files are present, detected
+     exactly as those two paths detect them -- by file name, never by scanning
+     `metadata/semantic/`, so an unapproved draft there stays local and unread.
+     Because routine validation now reaches the SSSOM reader, its
+     `yaml::yaml.load()` on the embedded metadata block passes
+     `eval.expr = FALSE` explicitly: yaml's default follows
+     `getOption("yaml.eval.expr")`, so a session that had turned the option on
+     would have executed a `!expr` tag in a collaborator's file before any
+     hash or field check ran (raised in the security review of #111).
+     `yaml (>= 2.2.0)`, the version that introduced the argument, is now the
+     declared minimum.
+
+  One test asserts a failure for each class (`tests/testthat/test-package-helpers.R`,
+  `test-sssom.R`, `test-measurement-decompositions.R`), each shown failing
+  against the previous validator before the check landed. The roxygen
+  description now lists what the function checks, which is the claim the item
+  title said was wrong. The declared-primary-key clause of #49 closed in 0.2.6
+  under #77 and is untouched. **Mirror:** metasalmonpy's
+  `validate_salmon_datapackage()` (`package_io.py`) has none of the three
+  checks; the port is owed under the S10 parity stream (queue item B-124; see
+  the parity register), not registered as a deviation.
+
 * **`infer_column_role()` now types an enumerable string column
   `categorical`, so `create_sdp()` stops writing `codes.csv` rows for columns
   its own dictionary typed `attribute`** (backlog **#95**, queue **B-95**).

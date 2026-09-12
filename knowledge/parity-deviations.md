@@ -145,6 +145,19 @@ rather than extracted. The **#118** defect is alive there in the same shape at
 `semantics.py:1294`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
+validation.** `validate_salmon_datapackage()` now checks required-column
+nullability, blank schema-required metadata fields (through the same schema
+parse `review_metadata()` reads), and refuses corrupt SSSOM and
+measurement-decomposition artifacts, gated on manifest presence (backlog #49,
+pull request #111). The Python counterpart is `package_io.py`'s
+`_collect_package_validation_issues()` / `validate_salmon_datapackage()`, which
+the port wires to `sssom.py`'s and `measurement_decompositions.py`'s validators;
+`package_io.py` imports neither today. Queued as **B-124**, blocked by B-49. It
+did not land in the same stream because the hub claim that produced #111 covers
+one branch in the item's repository, so the port is a separate queue item
+rather than a deviation row.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-12):
 role inference.** `infer_column_role()` now types an enumerable string column
 (character or factor with 1–30 distinct non-missing values, the seeder's own
 criterion) `categorical` in the three places it answered `attribute`, per the

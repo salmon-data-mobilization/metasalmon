@@ -412,6 +412,52 @@ test_that("review_metadata() reports a fully filled package as finished", {
   expect_true(any(grepl("No outstanding metadata.", lines, fixed = TRUE)))
 })
 
+test_that("review_metadata() reports a required column the file does not have, and its call fills it", {
+  # Codex review of #111. The gap scan ran over `intersect(required,
+  # names(frame))`, so a schema-required column missing from the file was not
+  # a gap -- while the validator, after the same review, refuses it. The two
+  # read one schema parse precisely so they cannot disagree about what blocks;
+  # a column the file does not have is blank in every row for both. The
+  # printed call is executed, as this file's header demands: `set_sdp_*()`
+  # adds the column it is asked to write.
+  pkg <- setter_fixture_package()
+  for (call_text in fill_templates(printed_setter_calls(review_metadata(pkg)))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+
+  drop_column <- function(file_name, column) {
+    meta <- read_meta(pkg, file_name)
+    meta[[column]] <- NULL
+    readr::write_csv(meta, file.path(pkg, "metadata", file_name), na = "")
+  }
+  drop_column("dataset.csv", "contact_email")
+  drop_column("tables.csv", "table_label")
+  drop_column("tables.csv", "observation_unit_iri")
+
+  review <- review_metadata(pkg)
+  expect_setequal(
+    paste(review$file, review$field, review$reason),
+    c(
+      "dataset.csv contact_email required",
+      "tables.csv table_label required",
+      "tables.csv observation_unit_iri iri"
+    )
+  )
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg, require_iris = TRUE))),
+    "contact_email"
+  )
+
+  for (call_text in fill_templates(printed_setter_calls(review))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_true(all(c("contact_email") %in% names(read_meta(pkg, "dataset.csv"))))
+  expect_true(all(c("table_label", "observation_unit_iri") %in% names(read_meta(pkg, "tables.csv"))))
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_no_error(suppressMessages(validate_salmon_datapackage(pkg, require_iris = TRUE)))
+})
+
 test_that("review_metadata() refuses a path that is not a package directory", {
   expect_error(review_metadata(tempfile()), "existing Salmon Data Package")
   expect_error(set_sdp_dataset(tempfile(), creator = "x"), "existing Salmon Data Package")

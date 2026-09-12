@@ -22,10 +22,20 @@ Invisibly returns a list with components:
 }
 }
 \description{
-Reads a package from disk, checks that metadata/data files stay aligned,
-verifies coded values against \code{codes.csv} when present, and then runs
-\code{\link[=validate_dictionary]{validate_dictionary()}} plus \code{\link[=validate_semantics]{validate_semantics()}}. This is the quickest
-pre-flight check before sharing a package-first submission.
+Reads a package from disk and checks, in order: that \code{dataset.csv},
+\code{tables.csv}, \code{column_dictionary.csv} and \code{codes.csv} stay aligned with each
+other and with the data files, and that no schema-required key field is
+blank; that a declared primary key identifies each row and that a column
+the dictionary declares \code{required} has no missing values; that coded values
+appear in \code{codes.csv} when present; that the optional observation-structure,
+SSSOM mapping-set and measurement-decomposition artifacts validate when
+present; and then runs \code{\link[=validate_dictionary]{validate_dictionary()}} plus \code{\link[=validate_semantics]{validate_semantics()}}.
+Under \code{require_iris = TRUE} it additionally refuses \verb{REVIEW:} markers,
+unresolved \verb{MISSING ...:} placeholders, blank schema-required metadata
+fields and blank table \code{observation_unit_iri} values (a column a metadata
+file does not have counts as blank in every row); in the default mode
+those are reported as warnings. This is the pre-flight check before sharing
+a package-first submission.
 }
 \examples{
 \donttest{

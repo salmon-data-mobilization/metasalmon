@@ -1,12 +1,22 @@
 # Validate a Salmon Data Package end to end
 
-Reads a package from disk, checks that metadata/data files stay aligned,
-verifies coded values against `codes.csv` when present, and then runs
+Reads a package from disk and checks, in order: that `dataset.csv`,
+`tables.csv`, `column_dictionary.csv` and `codes.csv` stay aligned with
+each other and with the data files, and that no schema-required key
+field is blank; that a declared primary key identifies each row and that
+a column the dictionary declares `required` has no missing values; that
+coded values appear in `codes.csv` when present; that the optional
+observation-structure, SSSOM mapping-set and measurement-decomposition
+artifacts validate when present; and then runs
 [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
 plus
 [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md).
-This is the quickest pre-flight check before sharing a package-first
-submission.
+Under `require_iris = TRUE` it additionally refuses `REVIEW:` markers,
+unresolved `MISSING ...:` placeholders, blank schema-required metadata
+fields and blank table `observation_unit_iri` values (a column a
+metadata file does not have counts as blank in every row); in the
+default mode those are reported as warnings. This is the pre-flight
+check before sharing a package-first submission.
 
 ## Usage
 
@@ -59,7 +69,7 @@ pkg_path <- create_sdp(
 #> Semantic suggestions stored in attr('semantic_suggestions') for downstream
 #> review.
 #> ✔ Dictionary validation passed
-#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpGfPTxr/demo-1-sdp
+#> ✔ Created Salmon Data Package at /tmp/RtmplIFRCa/demo-1-sdp
 #> Created review-ready one-shot package with `create_sdp()`.
 #> ℹ Prefilled semantic values were written directly into the metadata CSVs only
 #>   where target fields were blank. Compatible table observation-unit drafts can
@@ -76,7 +86,7 @@ pkg_path <- create_sdp(
 #>   rebuilding the EDH XML first if you need it. README-review.txt has the same
 #>   checklist.
 validate_salmon_datapackage(pkg_path, require_iris = FALSE)
-#> ✔ Loaded Salmon Data Package from /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpGfPTxr/demo-1-sdp
+#> ✔ Loaded Salmon Data Package from /tmp/RtmplIFRCa/demo-1-sdp
 #> Warning: 8 metadata fields still hold a placeholder.
 #> ✖ column_dictionary.csv$column_description, dataset.csv$contact_email,
 #>   dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,

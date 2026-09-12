@@ -94,7 +94,8 @@ list from the package's own required-field rules, so an empty shortlist and
 a full one look the same to it.</p>
 <p>What it reports:</p><ul><li><p>unresolved <code>MISSING DESCRIPTION:</code> / <code>MISSING METADATA:</code> / <code>REVIEW REQUIRED:</code>
 placeholders in any metadata field;</p></li>
-<li><p>schema-required fields (<code>constraints.required</code>) that are blank;</p></li>
+<li><p>schema-required fields (<code>constraints.required</code>) that are blank – a
+column the file does not have counts as blank in every row;</p></li>
 <li><p>measurement columns missing <code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code> or
 <code>unit_iri</code>;</p></li>
 <li><p><code>tables.csv</code> rows with a blank <code>observation_unit_iri</code>.</p></li>
@@ -124,7 +125,7 @@ placeholders in any metadata field;</p></li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

@@ -4093,6 +4093,209 @@ test_that("a primary key with missing values is rejected", {
   )
 })
 
+test_that("a column declared required must not ship missing values", {
+  # #49 (hub B-49). `required` was inferred, written to column_dictionary.csv,
+  # parsed back to logical, exported as Frictionless `constraints.required` and
+  # read by nothing that compared it to the data -- so a package could state a
+  # column is required and ship blanks in it.
+  path <- file.path(withr::local_tempdir(), "pkg")
+  data <- data.frame(site = c("a", "b"), depth = c(1.5, NA), stringsAsFactors = FALSE)
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "req", table_id = "obs", seed_semantics = FALSE
+  ))
+  dict <- .ms_read_metadata_csv(.ms_metadata_path(path, "column_dictionary.csv"))
+  dict$required[dict$column_name == "depth"] <- "TRUE"
+  readr::write_csv(dict, .ms_metadata_path(path, "column_dictionary.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "declared required"
+  )
+
+  # The same declaration over a complete column passes, and a column that is
+  # not declared required keeps its blanks: the check reads the declaration,
+  # not the data's opinion of itself.
+  dict$required[dict$column_name == "depth"] <- "FALSE"
+  dict$required[dict$column_name == "site"] <- "TRUE"
+  readr::write_csv(dict, .ms_metadata_path(path, "column_dictionary.csv"), na = "")
+  expect_no_error(suppressWarnings(suppressMessages(validate_salmon_datapackage(path))))
+})
+
+test_that("a blank schema-required metadata field warns by default and fails strict validation", {
+  # #49 (hub B-49). The Frictionless schema declares `constraints.required` on
+  # seven dataset.csv fields, five tables.csv fields and seven dictionary
+  # fields. `review_metadata()` has reported a blank one as blocking strict
+  # validation since 0.5.0, and strict validation let it through -- the
+  # placeholder scan only sees a field that *says* it is missing, not one that
+  # is. Same channel as the placeholders: warn in the default mode, error under
+  # `require_iris = TRUE`, so a freshly created package stays valid until the
+  # user asks for the strict answer.
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  dataset <- .ms_read_metadata_csv(.ms_metadata_path(pkg_path, "dataset.csv"))
+  dataset$contact_email <- ""
+  readr::write_csv(dataset, .ms_metadata_path(pkg_path, "dataset.csv"), na = "")
+
+  expect_warning(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE)),
+    "schema-required"
+  )
+  expect_error(
+    suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE)),
+    "contact_email is required by the SDP schema and blank"
+  )
+})
+
+test_that("a blank metadata key field is a structural error in every mode", {
+  # #49 (hub B-49). `.ms_metadata_key_fields()` excludes the keys from what
+  # `review_metadata()` reports, on the stated ground that the validator is
+  # the channel for a blank key. It was not: a tables.csv row with no
+  # `table_id` was skipped by the per-table loop and never named.
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(pkg_path, "tables.csv"))
+  tables$table_id <- ""
+  readr::write_csv(tables, .ms_metadata_path(pkg_path, "tables.csv"), na = "")
+
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = FALSE))),
+    "table_id is required by the SDP schema and blank"
+  )
+})
+
+test_that("an absent schema-required metadata column is reported like a blank one", {
+  # Codex review of #111 (P1). `.ms_collect_blank_required_metadata_fields()`
+  # scanned `intersect(fields, names(df))`, so a required column the file did
+  # not have was skipped rather than reported. The canonical reader normalises
+  # the dictionary and codes (`.ms_align_cols()` adds a missing column as NA)
+  # and reads dataset.csv and tables.csv as written, so the same defect was
+  # reported in two files and passed in the other two. One rule now, for all
+  # four: a column the file does not have is blank in every row.
+  #
+  # Built from create_sdp() and filled through the setters so the only defect
+  # in play is the one this test injects; the strict pass is asserted first to
+  # prove that.
+  path <- file.path(withr::local_tempdir(), "absent")
+  data <- data.frame(
+    site = c("a", "b"), stream = c("Bear Creek", "Elk River"),
+    stringsAsFactors = FALSE
+  )
+  suppressMessages(create_sdp(
+    data, path = path, dataset_id = "absent-1", table_id = "obs",
+    seed_semantics = FALSE, check_updates = FALSE
+  ))
+  suppressMessages(set_sdp_dataset(
+    path, description = "Two sites.", creator = "Test", contact_name = "Test Contact",
+    contact_email = "test@example.org", license = "CC-BY-4.0"
+  ))
+  suppressMessages(set_sdp_table(
+    path, "obs", description = "One row per site.", observation_unit = "site",
+    observation_unit_iri = "https://w3id.org/smn/Site"
+  ))
+  suppressMessages(set_sdp_column(path, "site", table = "obs", column_description = "Site code."))
+  suppressMessages(set_sdp_column(path, "stream", table = "obs", column_description = "Stream name."))
+  expect_no_error(suppressMessages(validate_salmon_datapackage(path, require_iris = TRUE)))
+
+  drop_column <- function(file_name, column) {
+    meta <- .ms_read_metadata_csv(.ms_metadata_path(path, file_name))
+    meta[[column]] <- NULL
+    readr::write_csv(meta, .ms_metadata_path(path, file_name), na = "")
+  }
+  drop_column("dataset.csv", "contact_email")
+  drop_column("tables.csv", "table_label")
+
+  # Default mode: the placeholder channel, one warning naming both fields.
+  warnings <- testthat::capture_warnings(suppressMessages(validate_salmon_datapackage(path)))
+  blank_warning <- gsub("\\s+", " ", grep("schema-required", warnings, value = TRUE))
+  expect_length(blank_warning, 1L)
+  expect_match(blank_warning, "dataset.csv$contact_email", fixed = TRUE)
+  expect_match(blank_warning, "tables.csv$table_label", fixed = TRUE)
+
+  # Strict mode: refused, naming the file and the field, exactly as a blank
+  # value in the same column is.
+  strict <- tryCatch(
+    suppressMessages(validate_salmon_datapackage(path, require_iris = TRUE)),
+    error = identity
+  )
+  expect_s3_class(strict, "rlang_error")
+  strict_message <- gsub("\\s+", " ", conditionMessage(strict))
+  expect_match(
+    strict_message,
+    "metadata/dataset.csv row 1 (dataset_id=absent-1) field contact_email is required by the SDP schema and blank",
+    fixed = TRUE
+  )
+  expect_match(
+    strict_message,
+    "metadata/tables.csv row 1 (table_id=obs, file_name=data/obs.csv) field table_label is required by the SDP schema and blank",
+    fixed = TRUE
+  )
+
+  # An absent key column is structural in every mode, exactly as a blank key is.
+  drop_column("dataset.csv", "dataset_id")
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(path))),
+    "metadata/dataset.csv row 1 field dataset_id is required by the SDP schema and blank",
+    fixed = TRUE
+  )
+})
+
+test_that("an absent observation_unit_iri column is refused like a blank one", {
+  # The same rule one collector up. `.ms_collect_missing_table_observation_unit_iri_issues()`
+  # returned nothing when tables.csv had no observation_unit_iri column, so
+  # strict validation refused a blank IRI and passed a file that never
+  # declared the field. Found while making the schema-required rule one rule
+  # (Codex review of #111); left in place it would have been the next report.
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  tables <- .ms_read_metadata_csv(.ms_metadata_path(pkg_path, "tables.csv"))
+  tables$observation_unit_iri <- NULL
+  readr::write_csv(tables, .ms_metadata_path(pkg_path, "tables.csv"), na = "")
+
+  expect_no_error(suppressWarnings(suppressMessages(
+    validate_salmon_datapackage(pkg_path, require_iris = FALSE)
+  )))
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    "field observation_unit_iri is blank"
+  )
+})
+
+test_that("a blank dataset_id is a structural issue, not an R error", {
+  # Codex review of #111 (P2). `.ms_validate_dataset_id_alignment()` ran before
+  # the #49 key collector and compared every table and dictionary id with a
+  # root id the reader had turned into NA: `all(NA)` is NA, and the validator
+  # died with "missing value where TRUE/FALSE needed" instead of naming the
+  # blank key. A blank root id has nothing to align against, so alignment now
+  # stands aside and the schema-required diagnostic is what the user sees.
+  path <- file.path(withr::local_tempdir(), "blank-root")
+  suppressMessages(create_sdp(
+    data.frame(site = c("a", "b"), stringsAsFactors = FALSE),
+    path = path, dataset_id = "root-1", table_id = "obs",
+    seed_semantics = FALSE, check_updates = FALSE
+  ))
+  dataset <- .ms_read_metadata_csv(.ms_metadata_path(path, "dataset.csv"))
+  dataset$dataset_id <- ""
+  readr::write_csv(dataset, .ms_metadata_path(path, "dataset.csv"), na = "")
+  # The other files keep the id, which is what made the comparison NA.
+  expect_equal(.ms_read_metadata_csv(.ms_metadata_path(path, "tables.csv"))$dataset_id, "root-1")
+  expect_equal(
+    unique(.ms_read_metadata_csv(.ms_metadata_path(path, "column_dictionary.csv"))$dataset_id),
+    "root-1"
+  )
+
+  for (strict in c(FALSE, TRUE)) {
+    caught <- tryCatch(
+      suppressWarnings(suppressMessages(validate_salmon_datapackage(path, require_iris = strict))),
+      error = identity
+    )
+    expect_s3_class(caught, "rlang_error")
+    message <- gsub("\\s+", " ", conditionMessage(caught))
+    expect_match(
+      message,
+      "metadata/dataset.csv row 1 field dataset_id is required by the SDP schema and blank",
+      fixed = TRUE
+    )
+    expect_no_match(message, "missing value where TRUE/FALSE needed", fixed = TRUE)
+  }
+})
+
 test_that("a table or dataset placement that is not an absolute IRI is reported", {
   # sdp-0.3.0 moved methods and protocols onto tables.csv/dataset.csv. The
   # base schema accepts any string and the observation-structure validator

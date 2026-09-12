@@ -238,7 +238,10 @@
   yaml_lines <- sub("^# ?", "", comment_lines)
   yaml_text <- paste(yaml_lines, collapse = "\n")
   metadata <- tryCatch(
-    yaml::yaml.load(yaml_text),
+    # Never evaluate `!expr`: this block is collaborator-authored and reached
+    # by routine validation, and yaml's default follows `getOption("yaml.eval.expr")`
+    # (Codex security review of #111).
+    yaml::yaml.load(yaml_text, eval.expr = FALSE),
     error = function(error) {
       .ms_sssom_abort(
         "Embedded SSSOM metadata in {.file {path}} is not valid YAML: {conditionMessage(error)}"

@@ -453,3 +453,97 @@ test_that("the validator accepts a metasalmonpy-written manifest provenance", {
   )
   expect_error(validate_sdp_sssom(sdp), "provenance is incomplete")
 })
+
+test_that("validate_salmon_datapackage refuses a corrupt SSSOM artifact", {
+  # #49 (hub B-49). The end-to-end validator reported success over a
+  # mapping-set manifest whose SHA-256 no longer matched its bytes; only the
+  # KNB publication and archive paths ran validate_sdp_sssom(). Presence is
+  # detected the way those two paths detect it -- by the manifest, never by
+  # scanning metadata/semantic -- so an unapproved draft there stays local.
+  root <- withr::local_tempdir()
+  make_eml_test_sdp(root)
+  source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
+  sssom_test_write_raw(source, sssom_test_text())
+  manifest_path <- write_sdp_sssom(root, mapping_sets = source)
+  expect_no_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root)))
+  )
+
+  manifest <- sssom_test_manifest(manifest_path)
+  manifest$mapping_sets[[1]]$sha256 <- paste(rep("0", 64L), collapse = "")
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE),
+    manifest_path,
+    useBytes = TRUE
+  )
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
+    "SHA-256|hash"
+  )
+})
+
+test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM metadata", {
+  # Codex security review of #111 (P1 advisory). Because the validator now
+  # reaches the SSSOM reader during routine validation of a collaborator's
+  # package, the reader's `yaml::yaml.load()` on the embedded metadata block
+  # must never evaluate R: `mapping_set_title: !expr system("...")` would run
+  # before any field or hash check, and none of those checks authenticates
+  # the file's author. yaml's own default is `getOption("yaml.eval.expr",
+  # FALSE)`, so the worst case is a session that turned the option on; the
+  # reader passes `eval.expr = FALSE` explicitly so that option cannot reach
+  # it. The tag is installed by patching the bytes the manifest already
+  # binds (and its SHA-256) so the only reader that meets it is the
+  # validator's. yaml 2.3.12 returns the unevaluated expression as text with
+  # no warning; newer versions may warn, which is tolerated here.
+  root <- withr::local_tempdir()
+  make_eml_test_sdp(root)
+  source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
+  sssom_test_write_raw(
+    source,
+    sssom_test_text(extra_metadata = "# mapping_set_title: Approved mappings")
+  )
+  manifest_path <- write_sdp_sssom(root, mapping_sets = source)
+  manifest <- sssom_test_manifest(manifest_path)
+  installed <- file.path(root, manifest$mapping_sets[[1]]$path)
+
+  sentinel <- file.path(withr::local_tempdir(), "evaluated")
+  expression_title <- sprintf("file.create(\"%s\")", sentinel)
+  # The writer renders scalars double-quoted; the patch replaces that line.
+  text <- rawToChar(readBin(installed, "raw", file.info(installed)$size))
+  benign_line <- "# mapping_set_title: \"Approved mappings\""
+  expect_match(text, benign_line, fixed = TRUE)
+  text <- sub(
+    benign_line,
+    paste0("# mapping_set_title: !expr ", expression_title),
+    text,
+    fixed = TRUE
+  )
+  sssom_test_write_raw(installed, text)
+  manifest$mapping_sets[[1]]$sha256 <- digest::digest(
+    charToRaw(enc2utf8(text)),
+    algo = "sha256",
+    serialize = FALSE
+  )
+  writeLines(
+    jsonlite::toJSON(manifest, auto_unbox = TRUE, pretty = TRUE),
+    manifest_path,
+    useBytes = TRUE
+  )
+
+  withr::local_options(yaml.eval.expr = TRUE)
+  verdict <- tryCatch(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(root))),
+    error = identity
+  )
+  expect_false(file.exists(sentinel))
+  expect_false(
+    inherits(verdict, "error"),
+    info = if (inherits(verdict, "error")) conditionMessage(verdict)
+  )
+  # The tag reaches the package as the text it is, not as its value.
+  expect_identical(
+    suppressWarnings(read_sssom_mapping_set(installed))$metadata$mapping_set_title,
+    expression_title
+  )
+  expect_false(file.exists(sentinel))
+})

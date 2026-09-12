@@ -108,9 +108,19 @@
 # `field$requirement`, which `.ms_field_from_frictionless()` has parsed since
 # the schema bundle landed and which nothing outside that file ever read.
 .ms_required_metadata_fields <- function(file_name) {
+  setdiff(
+    .ms_schema_required_metadata_fields(file_name),
+    .ms_metadata_key_fields(file_name)
+  )
+}
+
+# The same set with the keys still in it. `validate_salmon_datapackage()`
+# reads this one (#49): a blank key is a structural defect it reports in every
+# mode, where a blank non-key field is incomplete metadata a setter can fill.
+.ms_schema_required_metadata_fields <- function(file_name) {
   fields <- .ms_metadata_schema_fields(file_name)
   required <- purrr::keep(fields, ~ identical(.x$requirement, "required"))
-  setdiff(purrr::map_chr(required, "name"), .ms_metadata_key_fields(file_name))
+  purrr::map_chr(required, "name")
 }
 
 .ms_metadata_field_description <- function(file_name, field) {
@@ -321,7 +331,8 @@
 #'
 #' * unresolved `MISSING DESCRIPTION:` / `MISSING METADATA:` / `REVIEW REQUIRED:`
 #'   placeholders in any metadata field;
-#' * schema-required fields (`constraints.required`) that are blank;
+#' * schema-required fields (`constraints.required`) that are blank -- a
+#'   column the file does not have counts as blank in every row;
 #' * measurement columns missing `term_iri`, `property_iri`, `entity_iri` or
 #'   `unit_iri`;
 #' * `tables.csv` rows with a blank `observation_unit_iri`.
@@ -355,6 +366,19 @@ review_metadata <- function(path) {
       next
     }
     frame <- tibble::as_tibble(.ms_read_metadata_csv(located))
+    # A column the file does not have is blank in every row -- the rule the
+    # validator applies (`.ms_collect_blank_required_metadata_fields()`), so
+    # the two keep agreeing about what blocks. Aligned to the schema here, as
+    # the canonical reader already does for the dictionary and codes, so the
+    # scan below sees one shape per file and an absent required column is a
+    # gap whose printed call fills it: `.ms_set_sdp_metadata()` adds the column
+    # it is asked to write. Before this the scan ran over
+    # `intersect(required, names(frame))` and the gap was invisible (Codex
+    # review of #111).
+    frame <- .ms_align_cols(
+      frame,
+      purrr::map_chr(.ms_metadata_schema_fields(file_name), "name")
+    )
     gaps <- c(gaps, .ms_metadata_gaps_for_file(frame, file_name))
   }
 
