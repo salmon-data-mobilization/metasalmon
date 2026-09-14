@@ -1,0 +1,13 @@
+id: B-147
+kind: defect
+title: smn alignment-main.ttl asserts SKOS semantic relations on OWL classes in 17 rows
+state: icebox
+claimable: true
+repo: salmon-domain-ontology
+stream: S6
+venue: either
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/main/ontology/modules/alignment-main.ttl
+retires_when: 'Each of the 17 rows in ontology/modules/alignment-main.ttl with at least one side declared owl:Class in the build closure -- lines 20, 21, 22, 24, 25, 26, 28, 32, 34, 35, 90, 91 (two objects), 92, 93, 99 and 101, of 42 mapping rows -- carries an OWL form where a class-level commitment is intended (rdfs:subClassOf or owl:equivalentClass) or an annotation property with no logical force where it is not (rdfs:seeAlso, or a locally minted smn:candidateAlignment), leaving SKOS mapping predicates for concept-to-concept rows only, which the other 25 rows already are; CONVENTIONS.md section 5, which files skos:closeMatch and skos:broadMatch as Tier 3 advisory beneath the OWL predicates, is corrected to say that a SKOS mapping predicate adds a metamodelling commitment rather than weakening a logical one, since the 2026-08-13 demotion from owl:equivalentClass recorded at lines 95-98 increased the commitment it was meant to reduce; and a pun detector over all twelve skos:semanticRelation sub-properties runs in that repository''s validation self-test, demonstrated red on these rows before the fix and green after. Two of the rows are skos:broadMatch, which SKOS S41 makes a sub-property of skos:broader, so smn already asserts the exact shape Brett''s 2026-09-14 B-106 ruling forbids, and line 93 asserts one on sosa:Procedure itself, entailing that W3C''s class is a skos:Concept in smn''s published graph. It violates smn''s own CONVENTIONS.md section 3, which says the IRI is never both an owl:Class and a skos:Concept, and section 4 item 5. ELK reports nothing because the result is useless rather than contradictory, so a green build is not evidence. Line 100 is an eighteenth row of the same shape, excluded from the count only because neither side is declared anywhere, and it joins the 17 when B-107 lands.'

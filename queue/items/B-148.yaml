@@ -1,0 +1,13 @@
+id: B-148
+kind: defect
+title: The gcdfo estimate-method branch has no sosa:Procedure ancestor, so 22 of 45 crosswalk targets fail
+state: needs_brett
+claimable: false
+repo: dfo-salmon-ontology
+stream: S6
+venue: either
+severity: P2
+blocked_by: [B-76]
+legacy: ''
+evidence: https://github.com/dfo-pacific-science/dfo-salmon-ontology/blob/main/ontology/dfo-salmon.ttl
+retires_when: 'Every concept in gcdfo''s estimate-method branch reaches a resource typed sosa:Procedure, by whichever of B-76''s two options Brett rules -- typing the :EstimateMethod top concept at ontology/dfo-salmon.ttl:1227, or promoting the branch into smn:MethodScheme -- which is why this item is blocked on B-76 rather than carrying the choice itself. Measured 2026-09-14 against gcdfo at 26d7c38 merged with smn and the official SOSA ontology, over the 45 non-missing gcdfo: targets in metasalmon''s R/nuseds-method-crosswalk.R: 22 pass the zero-or-more-step skos:broader reachability test, 22 fail, and 1 is an IRI no gcdfo release declares, which B-76 fixes separately. The 22 failures are the whole estimate branch, where :EstimateMethod is a bare skos:Concept with neither sosa:Procedure typing nor a skos:broader edge, so no path from any of its ten narrower concepts reaches a typed resource; they fail the direct-typing reading too, so the number is not an artefact of which reading was ruled. dfo-salmon-ontology has contributors other than Brett and is another organisation''s repository, so it is not solo under HUB.md and the deliverable is a patch with its pull-request text shown to him, never a push. The typing is a term-modelling choice and is disclosed as one in that text rather than justified by the validator then passing.'
