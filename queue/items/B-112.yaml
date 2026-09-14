@@ -1,8 +1,8 @@
 id: B-112
 kind: defect
-title: Make migrate_sdp_methods() return one report shape from both branches
-state: needs_brett
-claimable: false
+title: Return the three-column report frame from migrate_sdp_methods()'s no-op branch
+state: ready
+claimable: true
 repo: metasalmon
 venue: claude-code
 stream: S10
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: []
 legacy: '#112'
 evidence: knowledge/backlog.md
-retires_when: 'The no-op branch returns the same three-column empty frame as the populated paths, or a logged ruling says the shapes deliberately differ, metasalmonpy mirrors the same shape in the same stream, and a test on each side pins the column set of both branches. Not claimable: the backlog records that this was deliberately left unfixed here, because under the amended mirror contract which side is right is Brett''s ruling and not an implementer''s call, and Python was already changed to mirror R once on that basis.'
+retires_when: 'The nothing-to-migrate early return at R/sdp-methods.R:299 builds the same three-column empty frame -- table_id, method_iri, columns -- that the populated build at R/sdp-methods.R:336-338 and the no-placement return at R/sdp-methods.R:358 already carry, and a test pins the column set of BOTH branches, so a caller reading report$tables$columns gets a column rather than NULL in exactly the case where the package was already clean and the branch was least likely to be tested. Brett ruled the three-column shape on 2026-09-14, for both implementations, so the shape is not an implementer''s choice and the alternative -- a logged ruling that the shapes deliberately differ -- is closed. The mirror half is B-144, where Python moves back to the shape it had first.'

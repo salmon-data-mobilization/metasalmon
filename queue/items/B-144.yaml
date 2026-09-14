@@ -1,0 +1,13 @@
+id: B-144
+kind: defect
+title: Move metasalmonpy's migrate_sdp_methods no-op branch back to the three-column report frame
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: [B-112]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'metasalmonpy''s nothing-to-migrate branch returns the same three columns as its populated path -- table_id, method_iri, columns -- with a test pinning the column set of both branches, matching the shape Brett ruled on 2026-09-14 for both implementations. This is Python moving BACK rather than a new divergence: it had the internally consistent three-column shape first, and S10 chunk A (metasalmonpy pull request 14, 2026-08-22) changed it to mirror R''s inconsistency because under the amended mirror contract which side is right is a ruling and not an implementer''s call. The parity register records that the ruling moved both sides, in the pull request that implements this half rather than ahead of it, so the register never claims a state the code has not reached.'
