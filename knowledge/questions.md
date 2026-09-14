@@ -58,6 +58,15 @@ prose immediately beneath it, which are open but change nothing that gets
 minted. **Still open.** A briefing is not a ruling, and this entry does not move
 until the eight are ruled.
 
+*Split, 2026-09-14: **six** remain here.* The taxonomic-assignment pattern left
+as its own question, taking decisions **1** and **2** with it, because those two
+are not neighbours of the taxonomy question — they are that question asked from
+two sides, and neither can be ruled without it. Nothing among the six turns on
+the answer: 3, 4 and 8 are independent; 6 and 7 inherit it without their own
+questions changing; 5 has a merge-order coupling only. The count above is left
+as written because it records what was asked on 2026-08-24; the live count is
+queue item `Q-06`, and the split is `Q-48`.
+
 ### Q9 — For a spawner count, is `property_iri` `smn:Abundance` or `gcdfo:SpawnerAbundance`?
 **Unblocks:** the gold standard's single annotated column, which currently
 teaches two contradictory answers (shipped dictionary vs seeder output).
@@ -1043,3 +1052,55 @@ waits.
 [2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
 section 4.6. **Owner:** queue items `B-146` (the card) and `B-78` (the decision
 it still needs), with the defect in [backlog #78](backlog.md).
+
+### Q47 — May a SKOS method concept have `skos:broader` to an OWL class? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"In terms of SOSA procedures, I just want to make sure that it's
+okay for a SKOS concept like the DFO methods to have a broader relationship with
+an OWL class. If so, that's fine. Let's do that if you think it's reasonable. I
+guess that's basically option B."* His conditional is answered **no** for the
+literal shape and **yes** for the reading he intends, and both halves are the
+ruling — recording only the second would license the first.
+
+**The reading: option (b), as a validator reachability condition.** A method or
+protocol IRI satisfies `methods_are_sosa_procedures` when some resource on a
+zero-or-more-step `skos:broader` path from it carries `rdf:type sosa:Procedure`.
+Direct typing is the zero-length case, so reading (a) is subsumed rather than
+overruled, which is why (b) is the right ruling and not merely the lenient one.
+It is also the shape smn's own `method-shapes.ttl` already uses
+(`sh:zeroOrMorePath skos:broader`), so the spec and the shipped shape now agree
+by construction instead of by coincidence.
+
+**What is refused: the asserted edge.** `<method> skos:broader sosa:Procedure`
+is **not** permitted, and neither is any other sub-property of
+`skos:semanticRelation` — `skos:broadMatch` included, which SKOS **S41** makes a
+sub-property of `skos:broader` — pointed at an `owl:Class`. `skos:semanticRelation`
+has `rdfs:domain` and `rdfs:range` `skos:Concept` (**S19–S22**), so such an edge
+entails `sosa:Procedure rdf:type skos:Concept`: it re-types W3C's class as an
+individual, and it entails **nothing** about the method, or anything else, being
+a Procedure. Measured, not reasoned: under OWL 2 RL closure the punned graph
+gives `sosa:Procedure rdf:type skos:Concept` **true** and
+`<method> rdf:type sosa:Procedure` **false**. It costs a metamodelling
+commitment and buys nothing. Reachability is likewise not an entailment — no
+reasoner will tell you a narrower concept is a Procedure — which is exactly why
+the condition belongs in a validator and is phrased as a check.
+
+**What it unblocks, and what it does not.** It unblocks the rule text: `B-106`
+is ruled, retitled to the work, and promoted. It does **not** unblock
+[`B-48`](backlog.md), the P1 where three error-severity rules are loaded and
+never executed. Of metasalmon's 45 non-missing `gcdfo:` method targets, **22
+pass, 22 fail and 1 is an undeclared IRI**: gcdfo's estimate branch terminates
+in an untyped `:EstimateMethod`, so it fails under *either* reading, and wiring
+the dispatch up today would turn the bundled NuSEDS example red. That is `B-148`,
+and which way to fix it is `B-76`'s remaining choice — the one half of B-76 this
+ruling deliberately leaves open. The ruling also exposed `B-147`: smn's
+`alignment-main.ttl` already asserts the forbidden shape in 17 rows, two of them
+`skos:broadMatch` and one of them on `sosa:Procedure` itself, against smn's own
+`CONVENTIONS.md` §3.
+
+**Full text:** the 2026-09-14 SKOS/OWL analysis prepared for this ruling, whose
+measured findings are carried in the retirement conditions of `B-106`, `B-76`,
+`B-147` and `B-148` rather than in a card of its own. **Owner:** queue item
+`B-106` (the rule text in `smn-data-pkg`'s `schema/sdp.rules.yaml` and
+metasalmon's vendored copy), with `B-48` waiting behind `B-148`, and the defect
+in [backlog #106](backlog.md).
