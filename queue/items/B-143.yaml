@@ -1,0 +1,12 @@
+id: B-143
+kind: defect
+title: The smn build does not check that an asserted superclass IRI is declared or vendored
+state: ready
+claimable: true
+repo: salmon-domain-ontology
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The salmon-domain-ontology build fails when a superclass IRI asserted in ontology/modules/ is neither declared in those modules nor present in a vendored import under ontology/imports/, and a deliberately broken fixture demonstrates the failure: a module asserting a superclass in a foreign namespace that nothing declares turns the gate red, and removing it turns the gate green. Reasoning is not that check and must not be offered as one -- ELK treats an un-axiomatised IRI as a class about which nothing is known, so the ontology stays consistent and the build stays green, which is how the sosa:Property case (B-107) survived from 2026-08-10 to 2026-09-14 with the whole smn:Characteristic hierarchy hanging off an undefined IRI. The gate must also be green over the modules as they stand when it lands, which means the B-107 replacement has already landed or every IRI the first run reports has been resolved; a check that arrives red teaches its first reader to weaken it. Structural only, with no term ruling in it, which is why it is separable from B-107.'

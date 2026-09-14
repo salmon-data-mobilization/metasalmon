@@ -1,6 +1,6 @@
 id: B-107
 kind: defect
-title: Declare or replace the undefined sosa:Property superclass in smn
+title: Replace smn's undeclared sosa:Property superclass with sosa:ObservableProperty
 state: icebox
 claimable: true
 repo: salmon-domain-ontology
@@ -9,4 +9,4 @@ severity: P4
 blocked_by: []
 legacy: '#107'
 evidence: knowledge/backlog.md
-retires_when: 'Every superclass IRI asserted in ontology/modules/ is either declared in the module or present in a vendored import, checked in that repository''s build rather than by inspection.'
+retires_when: 'Both assertions naming the undeclared sosa:Property in ontology/modules/02-observation-measurement.ttl -- the rdfs:subClassOf on smn:Characteristic at line 28 and the rdfs:domain on smn:characteristicFor at line 282 -- name sosa:ObservableProperty instead, and the ontology loads with that IRI resolved from the vendored SOSA import rather than standing as a class about which nothing is known. Brett ruled the replacement term on 2026-09-14, so no implementer chooses it here: sosa:ObservableProperty is already in ontology/imports/sosa.ttl and smn already maps iadopt:Variable close to it, while ssn:Property was considered and rejected as broader (it also covers actuatable properties) and as needing SSN vendored for one class. A green reasoner does not demonstrate this, because ELK stays consistent over an un-axiomatised IRI and that is exactly why the defect survived every build; the check is that the superclass chain of smn:Abundance terminates in a term the import closure declares. The structural half, a build check that every asserted superclass IRI is declared or vendored, is B-143 and needs no ruling. Promotion waits on smn pull request 27, which was open and unmerged when this was measured on 2026-09-14 (its head commit was not an ancestor of main) and which edits this same module and regenerates docs/smn.ttl, docs/smn.owl, docs/smn.jsonld, docs/index.html, docs/index-en.html and salmon-domain-ontology.ttl, so the fix would conflict with its generated artifacts; promote when that pull request lands or closes.'
