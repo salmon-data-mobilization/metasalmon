@@ -1,6 +1,6 @@
 id: Q-06
 kind: question
-title: 'Rule the eight smn PR #27 modelling questions as one pass, including sockeye river-type peerhood'
+title: 'Rule the six remaining smn PR #27 modelling questions as one pass, including sockeye river-type peerhood'
 state: needs_brett
 claimable: false
 repo: metasalmon
@@ -9,4 +9,4 @@ stream: S9
 blocked_by: []
 legacy: 'Q6'
 evidence: knowledge/questions.md
-retires_when: Brett rules the eight modelling questions and the S9 card records each ruling, after which the 22 smn terms and the gcdfo holds proceed with no further decision from him.
+retires_when: 'Brett rules the six modelling questions that remain and the S9 card records each ruling, after which the 22 smn terms and the gcdfo holds proceed with no further decision from him. Two of the original eight left on 2026-09-14 with the taxonomic-assignment pattern, as Q-48: decisions 1 and 2 are that one question asked from two sides rather than independent decisions, so the separable unit is a three-part bundle and this item keeps the six that do not turn on it. Nothing left here is blocked on Q-48 -- decisions 6 and 7 inherit its answer without their own questions changing, and decision 5 has a merge-order coupling only -- so blocked_by stays empty. One discrepancy is flagged and not settled: the S9 card records Gilbert 1913 as naming four species for the sea-type usage while the PR 27 branch text says five, Gilbert 1913 was not read on 2026-09-14, and whoever next edits smn:SockeyeSeaTypeLifeHistory resolves the count rather than preserving either figure.'

@@ -1,0 +1,12 @@
+id: Q-48
+kind: question
+title: How taxonomic assignment is modelled in smn and gcdfo, split out of Q-06 as a three-part bundle
+state: needs_brett
+claimable: false
+repo: salmon-domain-ontology
+venue: claude-science
+stream: S9
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules the taxonomic-assignment bundle, which is three parts and not one: the pattern itself, plus Q-06 decisions 1 (whether a gcdfo vocabulary may carry a species assertion) and 2 (whether a bare dwc:scientificName literal is acceptable on a life-history concept), which are the same question asked from two sides and cannot be ruled without the pattern. Ruling it leaves Q-06 with six decisions, none of which turn on the answer. The 2026-09-14 evidence briefing, landing at knowledge/plans/2026-09-14-taxonomic-assignment-briefing.md with metasalmon pull request 115 and the pointer above moving to it when that merges, recommends the Darwin Core Conceptual Model pattern ratified 2026-05-26 -- an organism or defined group, an identification, and a taxon carrying the authority identifiers -- with taxon-reference individuals rather than minted classes, and argues and rejects the alternative of leaving smn pull request 27 literals as they are. One consequence goes to Brett with the bundle rather than being assumed: the recommendation creates smn: IRIs typed dwc:Taxon, so it reopens Q8 (2026-08-24), whose species half ruled that species go to an external taxonomy and that no internal home is created or pointed at. Whether a reference node is an internal home is his call and not the briefing''s, so the ruling either amends Q8 or rejects that part of the recommendation.'
