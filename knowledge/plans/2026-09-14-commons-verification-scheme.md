@@ -93,7 +93,17 @@ it earned. Names are proposals; the shapes are the point.
 | `generated` | agent or human | who wrote the card |
 | `citations_checked` | agent or human | every citation resolved and its passage located, with a ledger |
 | `corroboration` | agent or human | how many *independent* sources support the claim, with the provenance chains |
-| `verified` | **human only** | the substantive claim has been independently affirmed |
+| `verified` | **a named human, evidenced** — a resolving ORCID plus the commit attribution in §9 check 2, not a name-shaped string | the substantive claim has been independently affirmed |
+
+**"Human only" is a rule, and a schema cannot enforce it by shape.** A name and
+an optional identifier are both just strings, so any automated writer using a
+person-like label satisfies a shape test. What the schema can require is an
+identifier that *resolves to a public record about a person* and a commit that
+is *attributable to that person*, which is what the `verified` row asks for and
+what §9 check 2 enforces. The difference between that and "human only" is the
+difference between making a false entry impossible and making it visible, and
+only the second is on offer; §9 says so where the check is defined, and names
+the residual it leaves.
 
 `status` then takes one of `draft`, `checked`, `verified`, `stable`,
 `disputed`, and is derived from the fields rather than typed by hand.
@@ -169,11 +179,32 @@ outlives its evidence and then conceals what it was never written for.
 Nine checks, each mechanical:
 
 1. `verified.by` is never equal to `generated.by`.
-2. `verified` accepts only a human-shaped identity (a name, and an ORCID where
-   available). An agent identity in `verified` is a schema error; agent
-   identities are valid only in `citations_checked`. **This is the check that
-   makes the whole scheme real, because it is the one the shared schema
-   pattern currently prevents.**
+2. `verified` carries a **resolving ORCID, required rather than optional**, and
+   the entry is rejected unless that ORCID resolves to a public record whose
+   name matches the entry's. Alongside it, the commit that introduced the entry
+   must be attributable to the same identity: authored by it, and carrying no
+   agent co-author or agent session trailer. Where the commons enables commit
+   signature verification, a signature the forge reports as verified for that
+   account is the stronger form of the same evidence and should be preferred;
+   where it does not, author attribution is what is actually enforceable and
+   the check says so rather than assuming more. An agent identity in `verified`
+   is a schema error; agent identities are valid only in `citations_checked`.
+
+   **What this check buys is auditability, not impossibility, and the earlier
+   draft of it overclaimed.** It read "a human-shaped identity (a name, and an
+   ORCID where available)" and called itself *"the check that makes the whole
+   scheme real"*. A schema cannot tell a human from an agent using a
+   name-shaped string and an optional identifier, so an automated writer with a
+   person-like label would have passed the check described as making the scheme
+   real — a guard whose claimed scope exceeds its real scope, which is the
+   failure this ecosystem's own contract names. What the corrected check does is
+   make self-verification and casual agent-verification **visible and
+   auditable**: every `verified` entry resolves to a person who can be asked
+   what they read, and every one is tied to a commit with an author. The
+   schema split still matters and is still load-bearing — `generated` and
+   `verified` sharing one pattern is why a self-verifying card validates
+   cleanly today — but splitting them is what makes check 1 expressible, not
+   what makes the scheme real.
 3. Every `citations_checked` entry names a ledger that exists and whose rows
    all resolve, with zero unresolved rows.
 4. Two `citations_checked` entries carry distinct session identifiers, and
@@ -187,6 +218,21 @@ Nine checks, each mechanical:
 8. `status` is derived, and a hand-typed value that disagrees with the fields
    fails.
 9. A `disputed` card carries at least two readings, each with a passage.
+
+**What none of these checks can stop.** A person's own tooling, running on
+their machine, under their git identity and their own ORCID, can write a
+`verified` entry that no check above will refuse — and it will be refusing
+nothing, because every one of them passes correctly: the identity is real, it
+resolves, and the commit is attributable to the person who is accountable for
+what it says. This residual is stated on its own rather than folded into check
+2, because it is what the scheme carries rather than a gap someone should try
+to close by tightening a shape test. The answer it offers is accountability,
+not prevention: a `verified` entry names someone who can be asked what they
+read and who owns the answer. *Retires when:* the commons adopts an attestation
+a person signs separately from the commit — a per-card signature over the
+located passages, rather than a signature over a diff — which narrows the
+residual to a deliberate act rather than a default one, and still does not
+close it.
 
 The repository has no continuous integration today, so B-123 is one workflow
 plus a schema split, and the schema split is the load-bearing half.
