@@ -10,4 +10,4 @@ severity: P4
 blocked_by: []
 legacy: '#78'
 evidence: knowledge/backlog.md
-retires_when: The explainer lands covering when iop triples are useful and to whom, the pattern for emitting them from an SDP including where they live, what generates them and how they version, and whether triple emission is a general SDP capability, and Brett records a decision on the recommendation it carries. Deferred by Brett on 2026-08-13, so nothing is scheduled before he reviews it.
+retires_when: 'Brett records a decision on the recommendation the explainer carries. This item is now the decision half ONLY: the explainer is no longer parked here, because he allowed it on 2026-09-14 as its own claude-science item, B-146, which is where the three questions it answers and the recommendation it must carry are written. What is still his and nobody else''s is the answer -- whether an SDP emits iop: triples, on what B-146 recommends -- and the 2026-08-13 deferral stands to that extent: no implementation is scheduled before he decides.'

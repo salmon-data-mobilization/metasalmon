@@ -1,0 +1,13 @@
+id: B-146
+kind: defect
+title: Write the iop-triple explainer for SDPs, a knowledge card with a recommendation and no code
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-science
+stream: S9
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A knowledge card lands covering the three things backlog #78 says the explainer has to answer: (a) when iop: triples are actually useful and to whom, given that metasalmon consumes I-ADOPT terminologies but never emits triples stating that a column''s component IRIs form an I-ADOPT Variable, so an RDF consumer has to infer the decomposition from column names; (b) the pattern for emitting them from an SDP -- where the triples live, what generates them, and how they version; and (c) whether triple emission is a capability SDPs should support generally rather than only for I-ADOPT, and what that would cost. The card carries a recommendation. The deliverable is the card and the recommendation and NOT an implementation, which is the whole point of the split: Brett allowed the explainer on 2026-09-14 and kept the decision on what it recommends for himself, and that decision half is B-78.'
