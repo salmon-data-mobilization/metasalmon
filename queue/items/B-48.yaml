@@ -7,7 +7,7 @@ repo: metasalmon
 venue: claude-code
 stream: S1
 severity: P1
-blocked_by: [B-106]
+blocked_by: [B-106, B-148]
 legacy: '#48'
 evidence: knowledge/backlog.md
-retires_when: 'The rule dispatch in R/schema-helpers.R drives its checks from the parsed rule ids, and a test fails when a rule id declared in sdp.rules.yaml has no executing check, so spec and implementation cannot diverge silently again. Claimable stays false until B-106 rules which reading of "typed as a SOSA Procedure" the methods_are_sosa_procedures rule means; the backlog entry for #106 says deciding that is a prerequisite for this item and that this item must not pick a reading by itself. It flips back to true on that ruling, whichever way it goes.'
+retires_when: 'The rule dispatch in R/schema-helpers.R drives its checks from the parsed rule ids, and a test fails when a rule id declared in sdp.rules.yaml has no executing check, so spec and implementation cannot diverge silently again. B-106 was the first prerequisite and Brett ruled it on 2026-09-14 -- reachability by a zero-or-more-step skos:broader path to a resource typed sosa:Procedure -- so this item no longer picks a reading by itself, and the rule text it dispatches on lands with B-106. Claimable stays false for the second prerequisite, B-148: executing the two reworded rules while 22 of the 45 gcdfo: method targets reach no typed ancestor would turn the bundled NuSEDS gold-standard example red the day the check is wired up, so this P1 must not unblock into a failing check. It flips to true when both are done, whichever way the gcdfo estimate branch is ruled.'
