@@ -2179,10 +2179,35 @@ seductive:
   (`R/sdp-methods.R:444-483`) checks only that `method_iri` is an absolute IRI
   and is registered in `methods.csv`. It performs **no RDF typing check** — a
   gcdfo IRI satisfies the implemented rule.
-- *No consumer breaks.* `sosa:usedProcedure` has `rdfs:range sosa:Procedure`, so
-  RDFS entailment **infers** its object to be a `sosa:Procedure`. Being
-  simultaneously a `skos:Concept` is not inconsistent — there is no disjointness
-  axiom between them. A reasoner gets a procedure.
+- *No consumer breaks.* **True, and the reason originally given for it was false
+  — corrected 2026-09-14.** The bullet read: *"`sosa:usedProcedure` has
+  `rdfs:range sosa:Procedure`, so RDFS entailment **infers** its object to be a
+  `sosa:Procedure`. Being simultaneously a `skos:Concept` is not inconsistent —
+  there is no disjointness axiom between them. A reasoner gets a procedure."*
+  **There is no such range, and therefore no such entailment.** Official SOSA
+  declares `sosa:usedProcedure a owl:ObjectProperty` with
+  `schema:rangeIncludes sosa:Procedure` — an annotation property carrying no
+  inferential force, and chosen that way deliberately. The SSN specification's
+  §3 lists it among the notable differences from SSN: *"the usage of the
+  Schema.org `domainIncludes` and `rangeIncludes` annotation properties that
+  provide an **informal semantics** compared to the inferential semantics of
+  their OWL 2 counterparts."* Verified 2026-09-14 against the official ontology
+  at `http://www.w3.org/ns/sosa/` and against smn's vendored copy at
+  `ontology/imports/sosa.ttl`, which is byte-identical to it once sorted.
+
+  What survives is the middle sentence, not the first or the last. Being both a
+  `skos:Concept` and a `sosa:Procedure` really is consistent. But *"a reasoner
+  gets a procedure"* is wrong: a reasoner gets nothing, because nothing types
+  the object and nothing asks. **No consumer breaks because no consumer
+  checks** — `methods_are_sosa_procedures` is one of **#48**'s three rules that
+  are loaded and never executed. The conclusion is therefore correct and its
+  support is the opposite of what was claimed, which is why this is corrected
+  rather than left standing on a true answer: the premise is the part a future
+  reader reuses, and reused it would argue that some *other* untyped method IRI
+  is safe, which it is not. The ruling that governs this is **Q47** in
+  [`knowledge/questions.md`](questions.md) (2026-09-14, Brett), which settles
+  what **#106**'s rule text means and makes the reachability something a
+  validator checks — precisely because no entailment supplies it.
 
 What is actually true, and still worth a decision:
 

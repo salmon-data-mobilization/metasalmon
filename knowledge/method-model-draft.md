@@ -455,6 +455,23 @@ It is **more technically correct** for this use:
 > belongs — OWL 2 punning. A `skos:Concept` is an individual and slots in
 > directly.
 
+**The premise in that quote is false, and the conclusion survives without it —
+corrected 2026-09-14.** `sosa:usedProcedure` has **no** `rdfs:range`. Official
+SOSA declares it `a owl:ObjectProperty` with `schema:rangeIncludes
+sosa:Procedure`, an annotation property with no inferential force, which the SSN
+specification's §3 names as deliberate: those Schema.org properties *"provide an
+**informal semantics** compared to the inferential semantics of their OWL 2
+counterparts."* Verified against the official ontology at
+`http://www.w3.org/ns/sosa/` and against smn's vendored `ontology/imports/sosa.ttl`,
+byte-identical to it once sorted. The punning argument never needed the range
+and is unaffected: `usedProcedure` is an `owl:ObjectProperty`, so its object
+position is an individual position under the OWL 2 Direct Semantics whatever is
+or is not said about its range, and an `owl:Class` IRI there is a pun. What the
+correction removes is the idea that a reasoner would *notice* — it would not,
+which is exactly why the SDP rule's Procedure condition is checked by a
+validator rather than entailed (**Q47**, [`knowledge/questions.md`](questions.md),
+2026-09-14).
+
 So the recommendation is to **change SMN**, not gcdfo: move method concepts from
 OWL classes to SKOS concepts in a scheme, typed additionally as
 `sosa:Procedure`, and let `skos:broader` carry the Protocol > Method > subtype
