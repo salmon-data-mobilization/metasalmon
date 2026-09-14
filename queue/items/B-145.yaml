@@ -1,0 +1,12 @@
+id: B-145
+kind: defect
+title: Render a descriptor instant in metasalmonpy as the ruled ISO spelling and pin it against dataset.csv
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P2
+blocked_by: [B-115]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'metasalmonpy renders a descriptor instant in the spelling Brett ruled on 2026-09-14 -- readr''s ISO form with the T separator and the Z zone marker -- and its own test asserts that datapackage.json and metadata/dataset.csv agree for a datetime, the twin of the assertion B-115 adds on the R side. Reaching agreement means fixing the CSV half too, which is why it is named here rather than left to be discovered: measured 2026-08-25 on pandas 3.0.5, the descriptor emitted 0999-06-05T13:45:30 with no Z while metadata/dataset.csv emitted 999-06-05 13:45:30, so Python disagrees with itself on the separator AND on the year padding. A column built from datetime.datetime objects becomes datetime64[us] and to_csv renders it with an unpadded year, while str() of the same value and an object-dtype column both pad; resource_types.py''s header claims the padded form is what the module converges on, which is true of every path it renders itself and not of the one pandas renders for it. Route the metadata frame through render_resource_frame()''s datetime64 branch, which already emits _iso_seconds(...) + "Z", or add an equivalent, and extend tests/test_platform_determinism_guard.py, which is the guard this slipped past. The parity register records the ruling and which side moved, in the pull request that implements this half rather than ahead of it.'
