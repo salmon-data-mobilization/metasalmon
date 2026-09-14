@@ -496,20 +496,64 @@ written into the term's comment so the next reader does not "fix" it by adding
 one. Enforcement, if wanted, goes in SHACL — gcdfo already ships
 `ontology/shapes/dfo-salmon-shapes.ttl`.
 
-**R2 — Mint five `smn:` taxon-reference individuals, not classes.** One per
-Pacific salmon species, plus *O. mykiss* — `smn:TaxonOncorhynchusNerka` and
-siblings — each `a dwc:Taxon`, each carrying `dwc:scientificName`,
-`dwc:taxonRank "species"`, `dwc:vernacularName` (which is where **steelhead**
-lives, on the *O. mykiss* node, exactly as ITIS and WoRMS already record it),
-`dwc:taxonID` with the WoRMS AphiaID, `dwc:scientificNameID` with the WoRMS
-LSID if the nomenclatural reading is intended, and `skos:exactMatch` /
-`rdfs:seeAlso` to the OBO, GBIF, ITIS and COL IRIs in §3.4. Record the authority
-release each identifier was read against. **These are not species *concepts* and
-they are not classes** — they are reference nodes, which keeps them inside the
-2026-08-24 ruling ("species go to an external taxonomy") rather than reopening
-it: pointing at an authority is not minting a taxonomy. It also stays inside
-smn's own `CONVENTIONS.md` §3 instance-typing rule, whose whole point is that
-"the IRI is never both an `owl:Class` and a `skos:Concept`."
+**R2 — Mint six `smn:` taxon-reference individuals, not classes.** One per
+Pacific salmon species — sockeye, coho, chinook, chum, pink — **plus one for
+*O. mykiss*, which makes six and not five**; an earlier draft of this heading
+said five while the set named beneath it came to six, and the set the rest of
+the card uses is §3.4's table minus its genus and family rows, which R3 supplies
+as classes instead. So `smn:TaxonOncorhynchusNerka` and five siblings, each
+`a dwc:Taxon`, each carrying `dwc:scientificName`, `dwc:taxonRank "species"`,
+`dwc:vernacularName` (which is where **steelhead** lives, on the *O. mykiss*
+node, exactly as ITIS and WoRMS already record it), `dwc:taxonID` with the WoRMS
+AphiaID, and `dwc:scientificNameID` with the WoRMS LSID if the nomenclatural
+reading is intended. Record the authority release each identifier was read
+against.
+
+**Link the OBO, GBIF, ITIS and COL IRIs of §3.4 with `rdfs:seeAlso`, or with a
+locally minted `smn:` annotation property — never with `skos:exactMatch` or any
+other SKOS mapping predicate.** An earlier draft of this paragraph offered
+`skos:exactMatch` / `rdfs:seeAlso`, and the SKOS half would have committed the
+very error this briefing warns about. Read off the normative SKOS RDF schema
+(`https://www.w3.org/2009/08/skos-reference/skos.rdf`, fetched 2026-09-14, HTTP
+200, 28 966 B): `skos:exactMatch` is a sub-property of `skos:closeMatch`, which
+is a sub-property of `skos:mappingRelation`, which is a sub-property of
+`skos:semanticRelation`, and `skos:semanticRelation` is the only one of the four
+that carries `rdfs:domain` and `rdfs:range`, both `skos:Concept`. The targets in
+§3.4 are `owl:Class` IRIs, so a `skos:exactMatch` to one entails that *both*
+endpoints are `skos:Concept` — re-typing an upstream OBO class as an individual
+and introducing precisely the class/concept punning R2 exists to avoid. It is
+the same defect found in smn's own `alignment-main.ttl`, filed as queue item
+`B-147`, so recommending it here would have shipped the error one repository
+over. `rdfs:seeAlso` takes `rdfs:Resource` on both sides and imposes nothing; an
+`owl:AnnotationProperty` minted for the job — say `smn:taxonAuthorityRecord` —
+does the same while being typed and queryable, and is the same remedy the
+alignment defect takes. This is also what the
+[workshop curriculum and SDO guidance of 2026-09-08](../workshop-curriculum-and-sdo-guidance-2026-09-08.md)
+already instructs, at its line 117: *"Do not encourage class/concept cross-role
+SKOS mappings."*
+
+**These are not species *concepts* and they are not classes** — they are
+reference nodes, and with the linking corrected above they stay inside smn's own
+`CONVENTIONS.md` §3 instance-typing rule, whose whole point is that "the IRI is
+never both an `owl:Class` and a `skos:Concept`."
+
+**They do, however, reopen Q8, and that goes to Brett with the bundle rather
+than being argued away here.** An earlier draft claimed these nodes keep the
+recommendation "inside the 2026-08-24 ruling ... rather than reopening it", on
+the ground that pointing at an authority is not minting a taxonomy. That is a
+real argument and it is not what the ruling says.
+[Q8](../questions.md) (2026-08-24) ruled the species half in these words:
+*"smn deliberately withdrew its species scheme in PR #27, and species concepts
+are never minted in `gcdfo` (Brett, 2026-08-17), so there is **no internal home
+to point at and none is being created**."* R2 creates six `smn:` IRIs typed
+`dwc:Taxon`. Whether a reference node is an "internal home" is exactly the
+question Q8 answered in the negative for the shape it had in view, and whether
+that answer reaches this shape is Brett's call and not this card's. So: adopting
+the recommendation **amends Q8**; rejecting this part of it leaves Q8 standing
+and sends the authority identifiers onto the external IRIs directly, with no
+`smn:` node in between, which costs the recommendation its single shared place
+to hang a rank and an authority release and is otherwise workable. §6.1 is
+corrected to match.
 
 **R3 — Add an ENVO-style generated NCBITaxon import module.** A seed list of the
 eight IRIs in §3.6 and a `robot extract -m BOT` step against `taxslim`, mirroring
@@ -550,7 +594,7 @@ consumers end up with five parsers and two of them disagree. The second reason i
 smaller but not cosmetic: P2 attaches a *taxonomic* assertion to a subject that
 is not a taxon, and because Darwin Core declares no domains, nothing will ever
 tell anyone. The one-line fix — move the same three literals onto a taxon node
-and point at it — costs one property and five nodes, and it is P7.
+and point at it — costs one property and six nodes, and it is P7.
 
 A second alternative, **P5 alone** (type an organism with the NCBITaxon class and
 be done), is rejected because the data has no individual organisms to type and
@@ -563,26 +607,37 @@ keeps P5 available for the day that changes without requiring it now.
 
 ### 6.1 Decision 1 — does "species go in `smn`, never `gcdfo`" survive a `gcdfo` vocabulary carrying `dwc:scientificName` + a WoRMS `dwc:scientificNameID`?
 
-**The recommendation dissolves the question rather than answering it, and the
-standing ruling survives untouched.**
+**The recommendation changes the shape of the question rather than answering it
+as put — and it reopens Q8, which has to be said before anything else in this
+section.** An earlier draft of this paragraph read "the standing ruling survives
+untouched", which assumed the answer to the question it should have raised.
 
-The ruling (2026-08-17) forbids *minting* species terms under `gcdfo:`. Under the
-recommendation nothing about a taxon is minted in either namespace — R2's nodes
-are references to WoRMS/NCBI/GBIF/ITIS/COL, and a reference is not a term. So a
-gcdfo code vocabulary that carries a taxon reference is not a species vocabulary
-and never becomes one, whichever namespace it sits in. The boundary question
-Brett identified as "not a preference" turns out not to be a boundary question at
-all once the thing being placed stops being a term.
+**The half that reopens.** [Q8](../questions.md) (2026-08-24) ruled that *"there
+is no internal home to point at and none is being created"* for species. R2 mints
+six `smn:` IRIs typed `dwc:Taxon`. The argument that a reference node is not a
+term is a real one and is made in R2; it is not what Q8 says. So adopting the
+recommendation **amends Q8**, and this briefing puts that to Brett as part of
+the bundle instead of settling it on his behalf.
+
+**The half that holds either way.** The 2026-08-17 ruling forbids *minting*
+species terms under `gcdfo:`, and nothing in the recommendation puts a taxon
+term in `gcdfo:`. So the gcdfo-facing half of decision 1 is answered whichever
+way Q8 goes: a gcdfo code vocabulary that carries a taxon *reference* is not a
+species vocabulary and never becomes one. What Q8 decides is only what that
+reference points at — an `smn:` node, or the external authority IRI directly.
 
 Two changes follow. First, **the shape does not exist in gcdfo today** — zero
 `scientificName` assertions anywhere in `ontology/`, `mappings/` or `draft/` —
 so decision 1 is about a hypothetical, and ruling on it now is cheap.
-Second, gcdfo should reference **R2's smn nodes**, not duplicate the literals:
-`gcdfo:Species`'s scope note already asks for exactly this ("Use taxonomic IRIs
-(for example DwC/GBIF/ITIS) where available"), and pointing it at a shared node
-satisfies its own note, keeps one copy of each AphiaID in the ecosystem, and
-gives `mappings/gcdfo-to-smn.sssom.tsv` — which today has no taxon row — its
-first one.
+Second, gcdfo should not duplicate the literals in either case. If Q8 is amended,
+gcdfo references **R2's smn nodes**: `gcdfo:Species`'s scope note already asks
+for exactly this ("Use taxonomic IRIs (for example DwC/GBIF/ITIS) where
+available"), and pointing it at a shared node satisfies its own note, keeps one
+copy of each AphiaID in the ecosystem, and gives
+`mappings/gcdfo-to-smn.sssom.tsv` — which today has no taxon row — its first
+one. If Q8 stands, gcdfo references the external authority IRIs directly, which
+satisfies the scope note just as well and gives up only the shared place to
+record a rank and an authority release.
 
 ### 6.2 Decision 2 — is a bare `dwc:scientificName` literal acceptable on a life-history concept?
 
@@ -695,11 +750,37 @@ value into an entailment target rather than checking it, so the property still
 relabels bad data instead of rejecting it, and the class-as-value ambiguity in
 (d) survives untouched. **What replaces it: delete the `rdfs:range` from both
 `smn:observedTaxonSpecies` and `smn:observedTaxonFamily`**, state the intended
-value in the definition, and put enforcement in SHACL if it is wanted. If a
-class-level commitment is genuinely needed, express it as an OWL restriction on
-the observation class (`smn:Observation rdfs:subClassOf ObjectSomeValuesFrom(p,
-obo:NCBITaxon_8015)`) — scoped to smn's own class, entailing nothing about other
-publishers' values — which is exactly the ENVO axiom style in §3.5 item 4.
+value in the definition, and put enforcement in SHACL if it is wanted.
+
+**If a class-level commitment is genuinely needed it is an all-values-from
+restriction, and an earlier draft of this paragraph named the wrong one.** It
+offered `smn:Observation rdfs:subClassOf ObjectSomeValuesFrom(p,
+obo:NCBITaxon_8015)`, which does not restrict what may be supplied through `p`
+at all. Some-values-from says every observation has *at least one* `p`-filler
+that is a Salmonidae, and under the open-world assumption it **entails** such a
+filler into existence — possibly anonymous, and not necessarily the one the
+publisher wrote — while saying nothing about any other filler. A wrong value
+sits undisturbed beside the entailed one. The axiom that says "every value of
+`p` on one of my observations is a Salmonidae" is
+`ObjectAllValuesFrom(p, obo:NCBITaxon_8015)`.
+
+**And even the right axiom is not a substitute for SHACL, which is why the
+recommendation keeps both.** All-values-from still entails rather than checks:
+OWL is open-world, so a coho supplied through `p` is *inferred* to be a
+Salmonidae, not rejected, and with taxslim asserting zero disjointness — (b)
+above — nothing contradicts and nothing is reported. SHACL evaluates the
+asserted data graph under a closed-world reading and reports a violation on the
+value that is actually there. So the division of labour is: all-values-from when
+smn wants to state a commitment scoped to its own class, SHACL when smn wants a
+publisher's file to fail. Neither instrument does the other's job, and choosing
+between them is not a matter of taste.
+
+*The ENVO comparison in §3.5 item 4 does not transfer here.* ENVO's
+`ObjectSomeValuesFrom(RO_0002507, NCBITaxon_33090)` sits inside an
+`EquivalentClasses` axiom doing **definitional** work — this environment is one
+determined by at least one diatom — where some-values-from is exactly the right
+operator. That is a class definition, not a range commitment, and it should not
+be read as a model for one.
 
 **(d) Both properties are salvageable and should be kept, renamed.** The general
 idea — an object property from the observation to a taxon reference — is right,
@@ -865,6 +946,8 @@ Every row was retrieved during this pass. "Status" is the HTTP status observed.
 | ICES Vocabulary Server (`SpecWoRMS`, `SpecHelcom`) | `https://vocab.ices.dk/` | 200 |
 | OWL 2 Structural Specification §5.8.1 Typing Constraints | `https://www.w3.org/TR/owl2-syntax/` | 200 |
 | OWL 2 New Features and Rationale §2.4.1 F12 Punning | `https://www.w3.org/TR/owl2-new-features/` | 200 |
+| SKOS RDF schema (normative), fetched 2026-09-14 in the review pass — the `exactMatch → closeMatch → mappingRelation → semanticRelation` chain and `semanticRelation`'s `skos:Concept` domain and range | `https://www.w3.org/2009/08/skos-reference/skos.rdf` (28 966 B) | 200 |
+| metasalmon `knowledge/workshop-curriculum-and-sdo-guidance-2026-09-08.md` line 117, "Do not encourage class/concept cross-role SKOS mappings" | read locally | — |
 | smn `02-observation-measurement.ttl`, `main` | `https://raw.githubusercontent.com/salmon-data-mobilization/salmon-domain-ontology/main/ontology/modules/02-observation-measurement.ttl` (14 948 B) | 200 |
 | smn `07-controlled-vocabularies.ttl`, branch `feat/spsr-shared-life-history-schemes` | same host, that branch (67 032 B) | 200 |
 | smn `01-entity-systematics.ttl`, same branch (no taxon content) | same host, that branch (9 958 B) | 200 |
@@ -938,6 +1021,11 @@ them:
 
 - Brett rules on the bundle {pattern, decision 1, decision 2}, and the ruling is
   recorded in `knowledge/questions.md` Q6 and the S9 decision table.
+- **The ruling also disposes of Q8 explicitly, either way.** R2 mints six `smn:`
+  IRIs typed `dwc:Taxon`, and Q8 (2026-08-24) ruled that no internal home for
+  species is created or pointed at, so adopting R2 amends Q8 and rejecting it
+  confirms Q8 — and a ruling that records neither leaves a settled question
+  silently contradicted. See [§6.1](#61-decision-1--does-species-go-in-smn-never-gcdfo-survive-a-gcdfo-vocabulary-carrying-dwcscientificname--a-worms-dwcscientificnameid).
 - If the recommendation is adopted: B-108's `retires_when` gains the clause in
   [§6.5(g)](#65-b-108), and a competency query in the smn repository asserts both
   that a coho reference does not entail chum **and** that no smn-namespace class
