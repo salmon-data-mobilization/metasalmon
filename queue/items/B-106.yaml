@@ -1,12 +1,12 @@
 id: B-106
 kind: defect
-title: Rule which reading of typed as a SOSA Procedure sdp.rules.yaml means
-state: needs_brett
-claimable: false
+title: Reword the two sdp.rules.yaml SOSA Procedure rules to the ruled reachability reading
+state: ready
+claimable: true
 repo: smn-data-pkg
 venue: claude-science
 severity: P4
 blocked_by: []
 legacy: '#106'
 evidence: knowledge/backlog.md
-retires_when: 'The rule text says which of the two readings it means, direct typing or reachability by a skos:broader* path from a typed concept, and the implementation B-48 asks for checks that.'
+retires_when: 'Both rules in smn-data-pkg schema/sdp.rules.yaml carry the reading Brett ruled on 2026-09-14, and metasalmon''s vendored copy at inst/extdata/schema/sdp.rules.yaml is re-vendored in the same change: a method or protocol IRI, and every codes.csv term_iri on a component bound with sosa:usedProcedure, is declared by a shared vocabulary and reaches a resource carrying rdf:type sosa:Procedure by a zero-or-more-step skos:broader path, so a directly typed IRI passes as the zero-length case; an asserted skos:broader, skos:broadMatch or any other sub-property of skos:semanticRelation whose other side is an owl:Class is refused by name, since SKOS S19-S22 make it entail that the class is a skos:Concept while entailing nothing about anything being a Procedure; estimate-type and data-quality vocabularies are named as never being method vocabularies; and the phrase resolves to is dropped, because it reads as a per-IRI HTTP dereference neither vocabulary is served for. The validator B-48 builds on the reworded text reports three outcomes with three distinct messages and never passes silently: the IRI is absent from the vocabulary declaring its namespace, or it is declared and nothing on any skos:broader path is typed, or the namespace could not be resolved. The third is a skipped outcome and not a pass; it does not satisfy B-48''s test that every rule id has an executing check, it escalates to an error under require_iris = TRUE, and it carries its own retirement condition naming the pinned smn and gcdfo snapshot in inst/extdata that makes it unnecessary.'
