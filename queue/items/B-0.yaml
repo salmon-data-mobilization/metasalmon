@@ -1,8 +1,8 @@
 id: B-0
 kind: defect
 title: gcdfo docs-widoco seeds its own baseline, so a failed build goes green over raw output
-state: needs_brett
-claimable: false
+state: ready
+claimable: true
 repo: dfo-salmon-ontology
 venue: claude-code
 stream: S6
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: []
 legacy: 'item 0'
 evidence: knowledge/backlog.md
-retires_when: The self-seeding test passes, meaning the normalizer is broken deliberately, `make docs-widoco` fails and leaves raw WIDOCO output in the tree, the normalizer is then repaired with that dirty `docs/webvowl/data/ontology.json` left in place, and the re-run does not go green over the raw bytes. A clean run twice is necessary and not sufficient, and skipping the repair step proves nothing because it fails identically against the unfixed implementation.
+retires_when: 'Option (b), which Brett ruled on 2026-09-14: docs-widoco KEEPS the working-tree baseline, so repeated local refreshes still compare against the previous local run -- the property docs/tech-debt.md records as deliberate and the reason option (a), sourcing the baseline from git HEAD, was rejected -- and the recipe restores the pre-run bytes of docs/webvowl/data/ontology.json on failure, with a shell trap rather than by leaving the raw output in the tree. The verification keeps its own trap: break the normalizer deliberately, run make docs-widoco and see it fail, confirm the trap put the pre-run ontology.json back instead of raw WIDOCO output, then REPAIR the normalizer with whatever the failed run left in place and re-run, and the re-run must not go green over raw bytes. A clean run twice is necessary and not sufficient, and skipping the repair step proves nothing, because it fails identically against the unfixed implementation. The matching docs/tech-debt.md entry dated 2026-08-16 retires in the same change, and it needs more than deletion: its stated Intended fix is the git-HEAD baseline the ruling rejects, so leaving it would have the repository teaching the discarded option. dfo-salmon-ontology is a shared repository, so the deliverable is a patch and its pull-request text shown in chat and never a push, and the claimant needs a local WIDOCO and Java toolchain to run the verification at all.'
