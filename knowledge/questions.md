@@ -21,6 +21,14 @@ itself lives in the owning card or execplan; this file is the index, not the
 authority. An entry is never deleted: an answered question that later reopens
 gets a new entry pointing at the old one.
 
+**Q42 to Q46 were answered without ever having been asked here**, and saying so
+is part of the record: they were put to Brett through the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+whose section 4.6 carried each with its options and a recommendation, and he
+ruled all five in chat on 2026-09-14. They are written up below as answered
+entries anyway, so a reader looking for where the question was asked finds it
+named rather than missing.
+
 Detail for most entries lives in the recon record
 ([backlog](backlog.md), the sequence cards, and the
 [S10 execplan](plans/2026-08-15-s10-metasalmonpy-parity-replay.md)); each
@@ -106,6 +114,67 @@ nothing changes.
 it is what both sides' detectors already encode and what the two `AGENTS.md`
 files name; but the honest answer may be that this is not worth a change.
 **Owner:** [parity row 61](parity-deviations.md).
+
+### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one?
+**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
+verification, each of which is currently costing it at zero.
+Every card in the commons carries `generated` (who wrote it) and `verified`
+(who independently checked it), and the rule that the writer cannot be the
+checker is **prose only**: the two fields share one schema pattern, a
+self-verifying card validates, and that repository has no CI. Twenty-six cards
+carry 250 sources and 623 citations and **not one has ever been verified, in
+any commit on any branch.**
+[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
+ruled the who-half for publication — a card is *stable* when it carries a named
+human `verified` entry and passes its citation ledger — so what is open is the
+what-half: whether an agent re-reading a source counts as independent checking.
+That is genuinely undecided in the documentation rather than merely unwritten,
+which is why it is a question and not a defect.
+**Recommendation:** two tiers with distinct field values, so no card can claim
+more than it earned. `checked` is agent-eligible and never spelled "verified":
+an agent that is not the generator re-resolves every citation by the
+citation-ledger procedure, re-derives each claim from the located passages
+without reading the card's own argument, and records the ledger, its identity
+and the date, with any disagreement moving the card to `disputed` rather than
+leaving a partial check. `verified` stays human-only — a named person who is
+not the generator has read the located passages rather than the summary. Then
+grade the bar to the consequence: one human makes a card verified, *stable*
+needs two humans or one human plus two agreeing `checked` entries, and a card
+that mints, retargets or defines a term wants three.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
+it is what makes B-123's schema split writable.
+
+### Q40 — Verify one commons card end to end, to find out what verification costs
+**Unblocks:** every estimate that currently assumes verification is free.
+Follows Q39 and B-121. **The point is the measurement as much as the card:**
+until one card has been carried all the way to a real `verified` entry naming a
+human, nobody knows whether verifying a card is twenty minutes or a day, and
+every plan that promises verification has been priced at zero. Choose the card
+because it is load-bearing and small, not because it is easy — an easy card
+measures the easy case and the number is then useless.
+**Recommendation:** run it in the shape Q39's two tiers produce, with an agent
+preparing the `checked` tier and a human doing the `verified` step, and record
+the human cost *net of* the agent preparation. That net number is the one every
+downstream estimate actually needs.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-40`.
+
+### Q41 — Which licence does `smn-data-pkg` carry, MIT or CC BY 4.0?
+**Unblocks:** B-105's link check, which has no real target until a LICENSE file
+exists.
+`README.md` line 144 links a LICENSE that is not in the repository, and PR #6
+(2026-08-21) deliberately left that link while repointing the other dead
+references, so the gap is known rather than accidental.
+[Q28](#q28--licence-and-contributor-terms--answered-2026-09-05-brett) ruled MIT
+for code and CC BY 4.0 for documentation for the Foundry, and **did not reach a
+specification repository whose JSON schemas MIT-licensed libraries vendor** —
+metasalmon and metasalmonpy both ship the sdp bundle. So the ruling has to say
+which of the two applies here, or whether the schemas and the prose carry
+different licences.
+**Recommendation:** none is on the table from the review that filed this. The
+fact that decides it is the vendoring: whatever the prose carries, the schemas
+travel inside MIT-licensed libraries, so the live option is the same code/docs
+split Q28 already made rather than one licence for the whole repository.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-41`.
 
 ## Notes on framing
 
@@ -871,3 +940,106 @@ the only enumeration that governs; this card is an index to it and grants
 nothing. The plan records the ruling as R15 in §0.1d and the reversal beneath
 Appendix A Q37. **Owner:** Brett's global instructions, with `HUB.md` as the
 operative copy.
+
+### Q42 — Which term replaces smn's undeclared `sosa:Property`? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"B107, I accept your recommendation."* So `sosa:ObservableProperty`,
+which smn's vendored SOSA import already declares and which smn already maps
+`iadopt:Variable` close to; `ssn:Property` is rejected as broader — it also
+covers actuatable properties — and as needing SSN vendored for one class. The
+structural half, a build check that every asserted superclass IRI is declared or
+vendored, was split out as its own item on the same ruling because it needs no
+term decision.
+
+**What it unblocks:** the whole `smn:Characteristic` hierarchy, which has hung
+off an undefined IRI in W3C's namespace since 2026-08-10 with every build green,
+and `smn:Abundance` with it — the term the bundled example dictionary uses.
+**The fix is not yet scheduled:** smn pull request 27 was open and unmerged on
+the day of the ruling and regenerates the same module and the same artifacts, so
+it lands after that pull request lands or closes.
+
+**Full text:** the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+section 4.6. **Owner:** queue items `B-107` (the replacement) and `B-143` (the
+build check), with the defect in [backlog #107](backlog.md).
+
+### Q43 — Which report shape does `migrate_sdp_methods()`'s no-op branch return? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"B112. Take your recommendation."* Both branches return the same
+three-column empty frame — `table_id`, `method_iri`, `columns` — in both
+implementations, so a caller reading `report$tables$columns` gets a column
+rather than `NULL` in exactly the case where the package was already clean,
+which is the branch least likely to be tested.
+
+**What it unblocks:** the divergence S10 chunk A logged rather than fixed.
+Python had the internally consistent three-column shape *first* and was changed
+to mirror R's inconsistency, because under the amended mirror contract which
+side is right is a ruling and not an implementer's call. This is the ruling, and
+it moves Python back.
+
+**Full text:** the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+section 4.6. **Owner:** queue items `B-112` (R) and `B-144` (the mirror), with
+the defect in [backlog #112](backlog.md).
+
+### Q44 — Which spelling does a descriptor `POSIXct` take? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"B115, I'll take your recommendation."* readr's ISO instant form,
+with the `T` separator and the `Z` zone marker, which `metadata/dataset.csv`
+already writes — ruled once for both implementations. The two rejected
+candidates stay rejected: `.ms_iso_character()`'s space-separated form is not
+valid `xs:dateTime`, and coercing `POSIXct` inside `.ms_align_cols()` is the one
+move [#93 item 1](backlog.md) explicitly ruled out. Descriptor bytes change only
+for a package carrying a typed instant, which neither implementation produces on
+its own.
+
+**What it unblocks:** four spellings of one instant across two packages. **This
+is the question [Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
+left open** rather than a new one: "per type" fixed `Date` and named the
+`POSIXct` shape as needing its own ruling, and this is it.
+
+**Full text:** the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+section 4.6. **Owner:** queue items `B-115` (R) and `B-145` (the mirror), with
+the defect in [backlog #115](backlog.md).
+
+### Q45 — The gcdfo WIDOCO baseline: source it from git HEAD, or keep it and restore on failure? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"B0. Zero, let's go B, patch only. But if there's a broader issue
+there, you need to let me know about it."* Option (b): `docs-widoco` keeps the
+working-tree baseline, so repeated local refreshes still compare against the
+previous local run, and the recipe restores the pre-run bytes on failure with a
+trap. Option (a) would have given that property away; it is also what that
+repository's own `docs/tech-debt.md` still names as the intended fix, so the
+change has to correct that entry rather than merely retire it.
+
+**What it unblocks:** a failed docs build that re-baselines to raw generator
+bytes and goes green over them on the next run. **Patch only:** the repository is
+shared, so the deliverable is a patch and its pull-request text, never a push.
+The second half of the ruling — report any broader issue — was answered in chat
+the same day with a scan of that repository for the same two shapes; nothing was
+filed from it.
+
+**Full text:** the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+section 4.6. **Owner:** queue item `B-0`, with the defect in
+[backlog item 0](backlog.md).
+
+### Q46 — Is the iop-triple explainer allowed before the decision? — ANSWERED 2026-09-14 (Brett)
+
+**Ruling:** *"For B78, let's allow the explainer now as its own quad science
+item."* (reading "quad science" as *Claude Science*, which the queue spells
+`claude-science`.) So yes: the explainer becomes its own item — a knowledge card
+covering when iop triples help and to whom, the emission pattern, and whether
+triple emission is a general SDP capability, carrying a recommendation and no
+code — and the decision on what it recommends stays with Brett.
+
+**What it unblocks:** the 2026-08-13 deferral, whose wording left it unclear
+whether the explainer itself was deferred along with the decision. It was not,
+and now it says so: the two halves are separate items, and only the second one
+waits.
+
+**Full text:** the
+[2026-09-12 promotion review](plans/2026-09-12-queue-promotion-review.md),
+section 4.6. **Owner:** queue items `B-146` (the card) and `B-78` (the decision
+it still needs), with the defect in [backlog #78](backlog.md).
