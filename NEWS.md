@@ -101,11 +101,24 @@ metasalmon (development version)
   Procedure rules** (backlog #106, hub item B-106; ruled by Brett 2026-09-14,
   `knowledge/questions.md` Q47). `inst/extdata/schema/sdp.rules.yaml` is a
   byte-for-byte copy of `smn-data-pkg`'s `schema/sdp.rules.yaml`, and this is
-  the copy half of that change -- paired with smn-data-pkg PR #8, which must
-  merge first. Nothing was hand-edited on this side; the copies were identical
-  before (md5 `3c702a37...`) and are identical after, which is the property
+  the copy half of that change -- paired with smn-data-pkg PR #8, which merged
+  first as `bb71c8b`. Nothing was hand-edited on this side; the copies were
+  identical before (md5 `3c702a37...`) and are identical after (md5
+  `f94d6c8f...`, git blob `489d46a0`), which is the property
   `knowledge/orientation.md` asks for when it says to keep them in step by
   re-vendoring from upstream rather than hand-editing either side.
+
+  **The rationale is no longer in the file, and the pointer it leaves behind is
+  an upstream path.** Brett asked on 2026-09-15 that the reasoning not clutter
+  the rules, so upstream moved it to `docs/adr/0002-sosa-procedure-reachability.md`
+  and left a two-line comment naming that file and the unresolved outcome's
+  retirement condition. metasalmon vendors the schema and not upstream's `docs/`,
+  so a reader of `inst/extdata` who follows that pointer will not find the file
+  here; it resolves in `smn-data-pkg`. Vendoring the ADR too, or rewriting the
+  comment, would both break the byte-identity this entry rests on, so neither was
+  done. *Retires when:* the vendored bundle carries its own rationale pointer
+  that resolves inside this package, or `knowledge/orientation.md` records that a
+  vendored file's internal paths are upstream's and are expected not to resolve.
 
   What the upstream rewording says, because the package ships the text and a
   reader of `inst/extdata` will not have the upstream changelog:
