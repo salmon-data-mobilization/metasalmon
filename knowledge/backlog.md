@@ -1110,7 +1110,9 @@ sidecars (`README-review.txt`, `semantic_suggestions.csv`,
 `metadata/metadata-edh-hnap.xml`) still go through
 `.ms_replace_create_output()` — unlink-then-rewrite with abort points between
 — which is the same defect shape at single-file blast radius; filed as **#111**
-rather than stretched into this item's scope.
+rather than stretched into this item's scope. (True as measured on 2026-08-22.
+#111 closed 2026-09-14 and that helper is deleted; the sentence is kept in its
+dated form because the point it makes is about scope, not about today's code.)
 
 **Mirror measurement, 2026-08-22 (measured, not assumed).** PR #75's exposure
 table (s10 replay plan) marked metasalmonpy `#96` "clean" because `_has_value`
@@ -1371,6 +1373,38 @@ retire `.ms_replace_create_output()` — its hard-link rationale is subsumed,
 since staged-sibling rename never writes through an existing inode. *Retires
 when:* `.ms_replace_create_output()` has no callers and a test injects an
 abort into each of the three rewrites and finds the prior file intact.
+
+**Both halves of that condition are met as of 2026-09-14** (queue B-111; the
+queue item file holds the state, this paragraph holds the evidence). All three
+sidecars render to bytes and install through `.ms_sdp_extension_atomic_write()`,
+and `.ms_replace_create_output()` is **deleted** rather than left callerless —
+its comment reads as a live hard-link protection that "belongs next to each
+write", which is precisely the invitation `AGENTS.md` warns about, and the
+protection is genuinely subsumed (the note now sits on the atomic writer's own
+symlink refusal, where someone looking for it will be). Two things the fix
+measured that the paragraph above only predicted. **The prescription was right
+about the mechanism and understated the damage**: an abort injected at each of
+the three render steps left the prior file not truncated but *absent*, all
+three times — `tests/testthat/test-create-sdp-sidecar-atomicity.R` records the
+run. And **the bytes are unchanged**, verified by md5 against this entry's own
+pre-fix code on all three files, which is why each bytes renderer goes through
+the writer the file already used rather than through a re-implementation of it.
+The three stay **three transactions rather than one set**: they are independent
+files written at different points in `create_sdp()`, the harm is a destroyed
+file rather than a partially-updated group, and the suggestions branch can also
+*delete*, which an atomic write set has no operation for.
+
+**What the fix did not buy, and it is worth naming because the word "atomic"
+implies it:** `.ms_sdp_extension_atomic_write_set()` stages in the target's own
+directory, so the rename is atomic on one filesystem, but `writeBin()` is never
+followed by an `fsync`. That is sufficient against a **process** abort, which is
+every abort point this item enumerated, and insufficient against a machine
+crash or power loss, where a visible rename can outrun the staged data blocks.
+Base R exposes no fsync, so closing it means a compiled call or an external
+dependency, and the writer is shared with observation structures, KNB
+publication and reproducibility manifests — so it is a decision about that
+writer rather than about `create_sdp()`. **Filed as a candidate item rather than
+absorbed here** (see the B-111 hand-back workpad).
 
 **#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
 `metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring

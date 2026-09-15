@@ -95,6 +95,42 @@ metasalmon (development version)
   bundled examples. The metasalmonpy fixture is owed as a port, and the
   item's retirement condition is met only on the R side until it lands.
 
+* **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
+  (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
+  after the package writer has finished -- `README-review.txt`,
+  `semantic_suggestions.csv` and, with `include_edh_xml = TRUE`,
+  `metadata/metadata-edh-hnap.xml`. Each unlinked the existing file first and
+  then rendered its replacement, so any abort in between left nothing at all
+  where the file had been. Measured, not inferred: an abort injected at each of
+  the three render steps removed the previous file all three times.
+
+  All three now render to bytes and install by staged-sibling rename through
+  `.ms_sdp_extension_atomic_write()`, the same writer
+  `write_salmon_datapackage()` uses, so a failure during the render leaves the
+  previous file byte-for-byte as it was. The bytes a successful call writes are
+  unchanged: each renderer goes through the writer the file already used
+  (`writeLines()`, `readr::write_csv(na = "")`, `edh_build_hnap_xml()`) rather
+  than through a re-implementation of it.
+
+  This matters for a file you have changed since. Re-running `create_sdp()`
+  regenerates all three, so the loss only bit an annotated `README-review.txt`,
+  a `semantic_suggestions.csv` carrying review decisions, or the EDH XML of a
+  package whose metadata has moved on. Pinned by
+  `tests/testthat/test-create-sdp-sidecar-atomicity.R`, three abort injections
+  asserting byte-identity. `.ms_replace_create_output()` is deleted; its
+  hard-link rationale is subsumed, because a staged-sibling rename never writes
+  through an existing inode.
+
+  **Scope, since the word "atomic" promises more than this delivers:** the
+  staging file sits in the target's own directory, so the rename is atomic, but
+  it is not `fsync`ed before the rename. That is sufficient against an aborted
+  call and insufficient against a machine crash or power loss. Unchanged by
+  this release, and true of every caller of that writer, not just
+  `create_sdp()`.
+
+  The same three writes have the same shape in metasalmonpy, where the EDH
+  window is wider still; that is recorded as parity row 53 and owed as a port.
+
 metasalmon 0.5.0
 ----------------
 
