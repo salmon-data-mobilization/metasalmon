@@ -2695,6 +2695,484 @@ previously unregistered wired-nothing divergence is now **parity-deviations /
 `PARITY.md` row 47**, a permanent record with no retirement condition. Both
 halves closed.
 
+### Open — the 2026-09-15 fleet findings
+
+**Eleven findings from a night of parallel agent runs on 2026-09-15, each
+reproduced rather than read.** They are headed by their **queue id** rather than
+by a `#N`, because they are new items and carry no legacy backlog number:
+`#120` is the last number this file issued, and inventing `#121` upward would
+create a second numbering nobody reconciles. **State is not here.** Whether one
+of these is icebox, ready, claimed or done lives in `queue/items/`, which is the
+only home for that fact; this section is the evidence each item's `evidence:`
+pointer resolves to. A twelfth finding from the same night is a question rather
+than a defect and lives in [`questions.md`](questions.md) as `Q49`.
+
+**Four of the eleven are the guard rule failing in `AGENTS.md`'s own words, and
+none of them was looked for.** Three are one defect in three costumes — *a step
+that reports success over a failed write* — found in two repositories and two
+toolchains by two agents who could not see each other: `B-149` and `B-150` in
+gcdfo's `Makefile` and its `pre-commit` hook, and `B-155` in this repository's
+CI toolchain install, where `install.packages()` reports a failed download as a
+warning and the step goes green. The fourth, `B-159`, is the adjacent shape —
+*an instruction that reads as enforced and is not* — and it is in `AGENTS.md`
+itself, which is where the rule is written. `AGENTS.md` names the class from a
+single 2026-08-16 observation; four more in one night is the measurement that
+says it is endemic rather than anecdotal, and that is worth more than any one of
+the four on its own.
+
+**`B-149` gcdfo's `prepare-import-catalog` prints a success mark over a failed
+catalog write.** The recipe has no `set -e` and both of its branches end in
+`echo "✅ ROBOT catalog maps smn import to …"`, so the mark prints whatever the
+redirection did. Reproduced 2026-09-15 by making the write target a directory so
+the real `printf > $(ROBOT_CATALOG)` fails: the sibling-present branch printed
+one `cannot create … Is a directory`, the pinned-commit branch printed two (it
+redirects twice), both then printed the success mark, and `make` exited **0**
+both times.
+
+Every ROBOT target consumes `ROBOT_CATALOG` — `quality-check`, `reason`,
+`convert`, the SPARQL lint, the module check — so a truncated or absent catalog
+silently changes how the `smn` import resolves, and the build that follows is
+reasoning over a different graph than the one the author thinks. Nothing says
+so. The recipe is one of **21** `echo "✅` sites in that Makefile against **2**
+`set -e`, which is why the retirement condition asks for a sweep and not for the
+one recipe: fixing the instance and leaving the pattern is how this class
+survives.
+
+This is exactly the defect class `AGENTS.md` records against 2026-08-16 — *"a
+`make` recipe whose missing `set -e` printed a success mark over a crashing
+script"* — in the same repository, thirteen months of commits later.
+
+*Retires when:* the recipe fails the build when any command in it fails, its
+success mark prints only after the catalog file exists and is non-empty, a
+deliberately broken write makes `make` exit non-zero, and a sweep confirms no
+other recipe in that Makefile prints an unconditional success mark.
+`dfo-salmon-ontology` is not solo under `HUB.md`, so the deliverable is a patch
+and its pull-request text shown to Brett in chat, never a push.
+
+**`B-150` the gcdfo `pre-push` hook cannot fail, and throws away the artifact
+`make ci` just rebuilt.** Two defects in one four-hundred-character line, and
+naming only the first would leave the second looking like the fix.
+
+The `ontology-ci` hook in `.pre-commit-config.yaml` runs a `bash -lc` chain that
+ends `…; make ci; git checkout -- docs/webvowl/data/ontology.json || true`. The
+chain's exit status is the status of its **last** command, and that command is
+guarded by `|| true`.
+
+1. **The gate is inert.** Demonstrated 2026-09-15 with the same shape: `bash -lc
+   'make definitely-not-a-target; git checkout -- README.md || true'` exits
+   **0**. So a failing `make ci` does not fail the push, and never has. This is
+   the P1 half.
+2. **The `git checkout --` discards a real result.** It fires on success exactly
+   as it fires on failure, and the hook's `files: ^ontology/dfo-salmon\.ttl$`
+   restricts it to pushes that changed the canonical ontology — precisely when
+   `make ci` *should* have regenerated `docs/webvowl/data/ontology.json`, since
+   `ci` runs `docs-refresh` which runs `docs-widoco`. That repository's own
+   `ci.yml` then rejects **any** uncommitted change left after `make ci` across
+   the worktree, so the hook locally destroys the regeneration CI is about to
+   demand.
+
+Half 2 is a churn suppressor that outlived its cause and carries no retirement
+condition — the failure `AGENTS.md`'s guard rule names. Its rationale is the
+2026-08-16 entry in that repository's `docs/tech-debt.md`, which says to run
+`git checkout -- docs/webvowl/data/ontology.json` **before retrying a failed
+docs build** — a manual recovery step, not an unconditional one on every push.
+`B-0`'s trap restores the pre-run bytes on failure, so when it lands the
+remaining rationale is gone.
+
+Same shape as **`B-44`** ("the gcdfo validation layer is inert") one layer up:
+there the SHACL shapes and competency queries are loaded and bind nothing, here
+the gate is wired and can only pass. In both, green means nothing and reading
+the configuration alone tells you nothing is wrong.
+
+*Retires when:* a failing `make ci` turns the push red, demonstrated with a
+deliberately broken ontology; and the trailing `git checkout --` stops
+discarding the artifact, landed after `B-0` or with a recorded reason it is safe
+without it. Not solo: patch and pull-request text in chat, and a local ROBOT and
+Java toolchain to demonstrate either half.
+
+**`B-151` the printed `accept_suggestion()` call is ambiguous for a measurement
+column with a code list.** The console prints the exact call the user pastes,
+and `R/review-console.R`'s own header says why that makes the printed call
+load-bearing: *"A printed call that does not parse, or that names a column that
+does not exist, is the defect this feature could most easily ship with."* This
+is that defect, in the one shape the design's resolution step does not catch.
+
+`.ms_review_call_args()` computes the minimal argument set *by resolving it*,
+escalating from `(column, role)` to `table` and then to `code_value` while the
+match is ambiguous. The escalation cannot rescue a column-level slot, because it
+appends `code_value` **only when the row it is printing has one** — and
+`.ms_review_match_slot_rows()` leaves `code_value` unconstrained when it is not
+passed, so the absent value matches every code row rather than only the rows
+with no code.
+
+A **measurement** column carrying a code list produces exactly that collision: a
+column-level `entity_iri` target (role `entity`, no code value) from
+`.ms_semantic_discover_targets()`'s role map, and a `codes.csv` `term_iri`
+target per code (role `entity`, with one) from the
+`c("constraint", "entity", "method")` role set a measurement parent gives its
+codes.
+
+Reproduced 2026-09-15 on a three-slot review — one column-level `entity` slot
+and two code-level `entity` slots on the same column and table:
+
+```
+printed for the column-level slot:
+  accept_suggestion(review, "gear", "entity", rank = 1, table = "t")
+that call resolves to: 3 slots
+```
+
+```
+That column and role match more than one review slot.
+i Add one of these arguments to say which:
+* table = "t"
+* table = "t", code_value = "SEINE"
+* table = "t", code_value = "TRAP"
+```
+
+**The abort's own disambiguation list is no help**, which is the part that makes
+this worse than a bad error message: every option it offers either repeats the
+`table` the call already carries or names a code value, so *none of the three
+selects the column-level slot*. A user who does what the message says cannot
+reach the slot at all.
+
+Reachable from the real pipeline rather than only from a hand-built frame, and
+metasalmon 0.5.0's own tests miss it. **It affects both implementations** — the
+Python spelling is `_review_call_args()` / `_match_slot_rows()` — so the mirror
+half is owed in metasalmonpy in the same shape rather than as a parity row. It
+is one line on each side. metasalmonpy PR #28 pinned it as
+`test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous`,
+with its retirement condition in the docstring, so it is visible rather than
+latent; that pin is the evidence trail and it un-pins when this lands.
+
+*Retires when:* the printed call for a column-level slot constrains `code_value`
+explicitly (or the matcher reads an absent `code_value` as "no code value"
+rather than as unconstrained) so it resolves to exactly one slot; a test covers
+a measurement column with a code list in both implementations; and the
+metasalmonpy pin is removed in the same change.
+
+**`B-152` the network guards in `test-github-helpers.R` probe a host and a
+credential path the code under test never uses.** The guards at
+`tests/testthat/test-github-helpers.R:143-159` and `:231-259` reach
+`api.github.com` through `gh::gh()` and skip when it errors. The code under test
+goes somewhere else: `read_github_csv()` builds a `raw.githubusercontent.com`
+URL at `R/github-helpers.R:593` and fetches it at `:227` through `:618`.
+`read_github_csv_dir()` lists through the API and then calls `read_github_csv()`
+per file at `:446`, so its guard covers its listing half and not the fetches
+that follow it.
+
+So the guard can pass while the fetch fails, and then the tests at `:161` and
+`:264` **error instead of skipping**.
+
+Measured on this machine 2026-09-15 with a token configured, which is what the
+tests require: both `gh::gh()` guards return successfully — repository metadata
+and the file's contents entry, 6085 bytes — and the two fetches immediately
+after raise `HTTP 404 Not Found`. Both tests error.
+
+**The cause is narrower than host reachability, and it changes the fix.** An
+unauthenticated request for that same raw file returns **200**; the identical
+request carrying the configured token returns **404**. So the guard is wrong
+about the *credential path* as well as about the host: `gh::gh()` and
+`ms_github_get()` do not send the same thing to the same place, and only one of
+them is being proved to work. A guard rebuilt around "does `api.github.com`
+answer" would still pass here and the tests would still error.
+
+Same shape as **`B-132`** in a different test file, and `B-132`'s fix should be
+applied here in the same pass while it is still open — a guard that proves some
+other host resolves is the defect in both.
+
+*Retires when:* both tests skip rather than error when the host the code under
+test actually fetches is unreachable or refuses the configured token, because
+the guard exercises that host and that credential path; demonstrated by making
+that fetch fail and seeing a skip.
+
+**`B-153` metasalmonpy's 0.5.0 documentation half, and the version bump that
+closes the window.** metasalmonpy PR #28 lands the whole S5 **behaviour** port —
+the nine functions, the two accessors, `decision_reason` with decision replay,
+the first consumer of the schema's `constraints.required`, and the `#118`
+auto-apply exemption — and **deliberately leaves the version at 0.4.0**. That is
+the right call and it is why this is a separate item: a version is a parity
+claim, and bumping it with the documentation half missing would put a false
+claim in the tree.
+
+**This is the item that actually closes the `0.4.0 → 0.5.0` catch-up window**,
+which is the single fact the mirror contract in `AGENTS.md` turns on. Three
+files carry that fact — metasalmon's `AGENTS.md`, metasalmonpy's `AGENTS.md`,
+and the release index in `knowledge/roadmap.md` — and all three must be read
+against each other and moved in the same change, because the whole reason the
+contract says *read the other file* is that a stale copy looks exactly like a
+current one.
+
+Where the three stand on 2026-09-15: metasalmon's `AGENTS.md` and the roadmap
+release index both read 0.5.0 / 0.4.0 with the window open, which is correct.
+metasalmonpy's `AGENTS.md` read 0.4.0 / 0.4.0 with no window on `main` — the
+copy that was wrong — and **is corrected on the PR #28 branch**, so that
+correction lands with that merge and is not owed here.
+
+What the guide still lacks, measured against the PR #28 branch:
+`guides/semantic-review.qmd` presents `suggest_semantics()` → the
+`semantic_suggestions` attribute → `apply_semantic_suggestions()` as the whole
+workflow, and names **none** of the nine functions or the two accessors.
+`_quarto.yml` gained an API-reference section for them in that PR; the narrative
+guide did not. So the in-Python review path the version number would be claiming
+is reachable from the reference and from nothing a reader follows.
+
+*(One correction to how this was first written down, because the file does not
+say what the report said it says: the word "spreadsheet" appears nowhere in
+`guides/semantic-review.qmd`, and nowhere in metasalmonpy's guides at all. The
+guide does not present the spreadsheet as the workflow; it offers no review path
+at all. What leads with the spreadsheet is metasalmon 0.5.0's own NEWS entry —
+"a salmon data package can now be taken from `create_sdp()` to
+`validate_salmon_datapackage(require_iris = TRUE)` without opening a single file
+in a spreadsheet" — which is the claim the guide has to be able to support
+before the number can be claimed.)*
+
+*Retires when:* `guides/semantic-review.qmd` documents the nine review functions
+as the workflow, metasalmonpy's version moves to 0.5.0, and all three copies of
+the version fact agree in that same change.
+
+**`B-154` the SDP cannot express two I-ADOPT relations, and both are format gaps
+rather than ontology gaps.** Both surfaced while writing the iop-triple
+explainer (metasalmon PR #116, candidates 1 and 2 of its workpad), and both were
+deliberately left as findings rather than absorbed into that claim.
+
+1. **`hasObjectOfInterest` is indistinguishable from
+   `hasContextObject`/`hasMatrix`.** I-ADOPT separates the entity whose property
+   is observed from a background-context entity and from the containing matrix,
+   with `hasMatrix rdfs:subPropertyOf hasContextObject`. The SDP has one
+   `entity_iri`, whose field reference reads *"I-ADOPT entity IRI, meaning what
+   the measurement is about"*, and the decomposition artifact has one `entity`
+   role. An emitter must map everything to `hasObjectOfInterest` or refuse to
+   guess.
+2. **`constrains` cannot be expressed at all.** `constrains` names *which
+   component* a constraint confines — range a union of `Entity`, `Property` and
+   `StatisticalModifier`. `constraint_iri` is a flat semicolon-separated bag.
+   `measurement-decompositions.csv` does carry `component_relation` and
+   `related_component_order`, but `R/measurement-decompositions.R:194` permits
+   the single value `value_of_dimension` and `:234` further requires it to
+   connect **two matched `constraint` components**. That is not `constrains` and
+   cannot be widened into it without changing what the existing value means.
+
+**Both are format-expressivity gaps and neither is an ontology gap.** Every
+predicate already exists in I-ADOPT 1.1, nothing needs minting, and filing
+either through `detect_semantic_term_gaps()` → `render_ontology_term_request()`
+would be wrong. This is stated explicitly because routing it into the
+term-request pipeline is the plausible mistake, and it is the same distinction
+PR #116's own "Ontology gaps" section drew when it reported **none to file** and
+called that a finding rather than a blank.
+
+Affects both mirrors. The decomposition artifact is not yet in the
+specification, which is **`#114`** / `B-114`, so a ruling here either waits on
+that adoption or says how the two relate.
+
+*Retires when:* the SDP schema can express both relations, or a logged ruling
+records that it deliberately will not and says what a consumer should do
+instead; and metasalmon and metasalmonpy both read and write whatever lands.
+
+**`B-155` CI's `pak` install has no retry, so a transient SSL error fails
+`check` before a single test runs.** Observed 2026-09-15 on metasalmon PR #118,
+run `34912254547` attempt 1. `.github/workflows/R-CMD-check.yaml`'s
+`r-lib/actions/setup-r-dependencies@v2` step died fetching
+`pak_0.11.1_R-4-6_x86_64-linux-gnu.tar.gz` from `r-lib.github.io`:
+
+```
+URL 'https://r-lib.github.io/p/pak/stable/…/pak_0.11.1_R-4-6_x86_64-linux-gnu.tar.gz':
+  status was 'SSL connect error'
+Warning in download.packages(…) : download of package ‘pak’ failed
+…
+##[error]Error in loadNamespace(x) : there is no package called ‘pak’
+Execution halted
+```
+
+Whole job red **71 seconds** after it started, with "Replay Theme A evidence",
+the test suite and `R CMD check` all skipped.
+
+**Transient, not systemic**, and the evidence is unusually clean: the same job
+passed on PRs #119, #120 and #121 within twenty minutes on the same base, and
+attempt 2 of *this very run* passed two hours later on the **identical head
+commit**. Nothing about the diff was implicated at any point.
+
+The cost is that a red `check` on this repository does not distinguish "your
+diff is broken" from "a CDN blinked" — the same legibility problem as
+**`B-132`**, where a two-second hard-coded fetch timeout turns a slow network
+into a test failure.
+
+One detail found while confirming it, which belongs in the fix rather than in
+the diagnosis: **the "Install pak" sub-step reported `outcome=success`**
+(592 ms) while the download was failing, because `install.packages()` reports a
+failed download as a *warning*; only the next sub-step turned red, and it turned
+red on a symptom (`there is no package called 'pak'`) rather than on the cause.
+So this is the same success-over-a-failed-write family as `B-149` and `B-150`,
+one layer further out, and not only a missing retry.
+
+*Retires when:* a transient failure to install the CI toolchain retries before
+failing the job, or fails with a message that names it as an infrastructure
+failure rather than a check failure; demonstrated against a simulated download
+failure.
+
+**`B-156` `datapackage.json` declares a Frictionless v1 `profile` where v2 uses
+`$schema`.** Recorded as an **open question, not an established defect**: it was
+noticed in passing while writing PR #116, while checking whether a JSON-LD
+`@context` could live in the descriptor, and it was **not investigated**. It may
+be a deliberate pin.
+
+What is known, and it is the whole of what is known.
+`R/package-helpers.R:243` writes a top-level `profile` from the loaded schema's
+profile URI, and `:219` writes `profile = "tabular-data-resource"` on every
+resource entry. The vendored SDP profile requires both — `profile` and
+`resources` in its `required` array, and a `const` of `tabular-data-resource` on
+each metadata resource. `smn-data-pkg`'s `SPECIFICATION.md:77` requires setting
+`profile`. The retrieved Data Package **v2** standard lists `$schema` among
+descriptor properties and no `profile` at all.
+
+The pin is therefore not metasalmon's alone to change: it is mandated by a
+specification file this package only vendors, it is written the same way by
+metasalmonpy, and whether the SDP targets v1 or v2 is a ruling rather than an
+implementer's call.
+
+*Retires when:* either the descriptor declares the Frictionless version the
+package actually targets, or a logged decision records the v1 `profile` as a
+deliberate pin with the condition that would retire it.
+
+**`B-157` two 2026-09-14 knowledge cards are reachable from nothing inside the
+bundle.** There is a convention and no enumeration: `AGENTS.md` says a sequence
+card links to its execplan before implementation starts, and `knowledge/index.md`
+names the `plans/` directory as a whole without listing a single card. So
+nothing enumerates the set, and nothing notices a card that joins it unlinked.
+
+Measured on `main` at `4cd085c`, 2026-09-15, by searching the sequence cards,
+the roadmap, the index, this file, `questions.md` and `orientation.md` for each
+of the **21** plan-card filenames. Exactly two have zero inbound references;
+every other card has at least one.
+
+- `knowledge/plans/2026-09-14-commons-verification-scheme.md` — reachable from
+  **nothing at all**, including `Q39` and `Q40`, the two open commons questions
+  it was written to answer. That is the case that shows the cost: a proposal
+  that answers an open question without being linked from it leaves the question
+  looking unanswered, and the next agent re-derives the scheme.
+- `knowledge/plans/2026-09-14-taxonomic-assignment-briefing.md` — **reachable
+  from the queue but not from the bundle.** `queue/items/Q-48.yaml` names its
+  path.
+
+*(The second bullet is a correction. This was first reported as "both cards are
+linked from no file but themselves", which is true of the first and false of the
+second. The weaker claim is the true one and it is still a defect — a bundle
+card whose only inbound link is from outside the bundle is unreachable to anyone
+reading the bundle — but it is a smaller defect than the one reported, and the
+difference is exactly the kind a reader cannot check without redoing the search.)*
+
+*Retires when:* every card in `knowledge/plans/` is reachable from
+`knowledge/index.md` or from the sequence card it serves, and a check or a
+documented convention keeps that true.
+
+**`B-158` eight foreign superclass IRIs in smn are declared nowhere, and
+vendor-or-stub is one decision applied eight times.** `B-143` landed on
+2026-09-15 as salmon-domain-ontology **PR #30** — open and draft, not merged — a
+referential-integrity gate that fails when a superclass IRI asserted in
+`ontology/modules/` is declared neither there nor in a vendored file under
+`ontology/imports/`. Its first run reports **nine** undeclared IRIs. One is
+`sosa:Property`, which is `#107` / `B-107`. **The other eight are vendoring
+omissions, and they are this item.**
+
+Measured by running that gate in staged mode on 2026-09-15 against the modules
+at `d45f8f7`, rather than taken from the report that filed it:
+
+| IRI | Asserted at | Subjects |
+|---|---|---|
+| `obo:BFO_0000015` | `02-observation-measurement.ttl:216`, `03-assessment-benchmarks.ttl:53` | `smn:Escapement`, `smn:StockAssessment` |
+| `obo:IAO_0000030` | `01-entity-systematics.ttl:69`, `03-…:65,82`, `05-provenance-quality.ttl:13,19` | five |
+| `obo:IAO_0000109` | `02-…:241`, `03-…:18,45` | three |
+| `obo:NCBITaxon_8015` | `02-…:202` | the MIREOT mirror |
+| `obo:NCBITaxon_8018` | `02-…:206` | `smn:NCBITaxon_8018` |
+| `dwc:Event` | `02-…:224` | `smn:SurveyEvent` |
+| `dwc:Organism` | `01-…:86,94` | `smn:Deme`, `smn:Population` |
+| `geosparql:Feature` | `01-…:59` | `smn:GeographicFeature` |
+
+**They are omissions rather than typos, and that is measured rather than
+judged:** smn declares **13** IRIs in the `sosa:` namespace and **zero** in each
+of `obo:`, `dwc:` and `geosparql:`. A typo needs a correct neighbour to be a
+typo of, and these three namespaces have none.
+
+Two things decide how this is worked, and both are easy to get wrong.
+
+**`CONVENTIONS.md` 5b rule 2 already permits a bare declaration stub
+(`ex:Term a owl:Class .`) anywhere**, so the cheap remedy exists and nothing has
+to be vendored to clear the gate. The decision is therefore
+**vendor-the-namespace versus stub-the-IRI**, taken once and applied eight
+times, not eight independent calls. That is why these are one item and not
+eight, and it is also why the item is not claimable: it is a modelling call.
+
+**This is the item that gates `B-143`'s switch-on, not `B-107`.** `B-107` clears
+one of the nine; the other eight are these, and until all nine clear the gate
+stays staged and `make test` keeps running
+`verify-superclass-declarations-staged` rather than the real target. Stated
+plainly because the chain is easy to describe as a single hop and it is not
+one.
+
+**Cross-reference `Q-48`.** `dwc:Organism` carries `smn:Deme` and
+`smn:Population`, and `obo:NCBITaxon_8015`/`8018` are the MIREOT mirror — the
+same terms the 2026-09-14 taxonomic-assignment briefing is about. The vendoring
+decision and the taxonomy-pattern ruling are one decision surface, so whoever
+rules `Q-48` should see this at the same time rather than after.
+
+*Retires when:* each of the eight is either declared by a vendored import under
+`ontology/imports/` or carries a stub per 5b rule 2,
+`make verify-superclass-declarations` exits 0 over the modules as they stand,
+and `KNOWN_UNDECLARED` in `scripts/verify_superclass_declarations.py` is empty
+so the staged target and its `--staged` mode can be deleted and `make test`
+swapped to the full gate.
+
+**`B-159` the knowledge-bundle validator `AGENTS.md` instructs cannot be run by
+any agent, so every agent-written card is unvalidated.** `AGENTS.md:326-331`
+says to keep the bundle valid with
+`uv run --project ../psc-data-systems psc-okf check knowledge --tier capture`.
+It is unexecutable in this environment on **four independent legs**, each
+verified 2026-09-15:
+
+1. **No checkout.** There is no `psc-data-systems` directory anywhere on this
+   machine.
+2. **Not installed.** `psc-okf` is not on `PATH`. `uv` itself is present, so
+   this is not a missing-runtime problem.
+3. **Not obtainable as a package.** PyPI returns **404** for both `psc-okf` and
+   `psc_okf`.
+4. **CI never runs it.** There is no reference to `psc-okf` or
+   `psc-data-systems` anywhere under `.github/`.
+
+`queue/config.yaml:228-231` records `psc-data-systems` only as a **GitLab**
+path. `HUB.md` permits an agent to read there and forbids every write, and no
+agent here holds a credential for it, so leg 1 is not one an agent can clear on
+its own either.
+
+**The consequence is the item.** Every `knowledge/` card written by an agent has
+gone in **bundle-unvalidated**. Two agents hit this independently on the same
+night and each recorded the skip in its own pull request — metasalmon **#116**
+for the iop-triple card, salmon-domain-ontology **#30** for two cards there —
+and neither could substitute for it; hand-checking front matter against
+neighbouring cards is a *different* check that happens to be available. By legs
+1 to 3 the same is true of every card before them, including the taxonomy
+briefing, the commons verification scheme, and the 2026-09-12 promotion-review
+record.
+
+This is the class `AGENTS.md`'s own guard rule names, arriving in `AGENTS.md`
+itself: **an instruction that reads as enforced, is not, and whose absence is
+invisible to someone reading the instruction.** A green pull request on this
+repository is currently silent about bundle validity and looks like it is not.
+
+Three remedies, in the filing review's stated order and recorded as its own:
+
+1. **Publish or mirror `psc-okf`** somewhere agents can reach it.
+2. **Reimplement the `--tier capture` checks** as a script in this repository,
+   wired into CI beside the `queue-is-valid` job — which already triggers on
+   `knowledge/**`, so this needs no new trigger.
+3. **Record in `AGENTS.md` that the check is human-only**, with the condition
+   that would retire that.
+
+The third is the honest minimum and costs nothing. All three are choices rather
+than work, which is why the item is not claimable.
+
+*Retires when:* either an agent in this environment can run the bundle check and
+CI runs it on every pull request touching `knowledge/`, or `AGENTS.md` states
+that the check is human-only and names what would change that.
+
 ### Open — P3 (R-package and API hygiene)
 
 **#58 No condition classes anywhere.** 415 `cli_abort` + 38 `cli_warn` + 3

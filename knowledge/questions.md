@@ -185,6 +185,32 @@ travel inside MIT-licensed libraries, so the live option is the same code/docs
 split Q28 already made rather than one licence for the whole repository.
 **Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-41`.
 
+### Q49 — Does B-126's read-back clause name the wrong thing, or does R owe the key too?
+**Unblocks:** the last open clause of `B-126`, which otherwise cannot be
+discharged either way without someone deciding what it meant.
+`B-126`'s retirement condition asks metasalmonpy to "read
+`semantic_suggestions.csv` back in `read_salmon_datapackage`". metasalmonpy
+PR #28 implemented an **accessor**, `semantic_suggestions(path)`, instead, and
+flagged the divergence rather than deciding it.
+The fact that decides it is on the R side: `read_salmon_datapackage()` returns
+only `dataset` / `tables` / `dictionary` / `codes` / `resources`
+(`R/package-helpers.R:1602`) and carries no suggestions, so **in R the read-back
+is the accessor**. Adding a Python-only key would be an undocumented divergence,
+which the mirror contract calls a violation even when the difference itself is
+fine. The clause therefore looks as though it was written from the roadmap text
+rather than from the R code.
+**Recommendation, and it is the filing review's own:** amend the clause to name
+the accessor, because the current wording asks Python to do something R does not
+do. The alternative is real and is why this is a ruling rather than a correction
+— adding the key to **both** implementations would be a behaviour change in R,
+to an exported return shape, in a package whose next breaking bump is already
+spoken for by [#58](backlog.md). Either answer closes it; only the second
+creates work, and it would create it on the R side first.
+**Owner:** [S5](sequences/s5-review-flow.md), with the queue item `Q-49`.
+*(`Q-48` is also owed an entry in this file and does not have one yet. That is
+its own item's to write, not this one's; it is named here so the gap between
+`Q47` and `Q49` reads as known rather than as a slip.)*
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible

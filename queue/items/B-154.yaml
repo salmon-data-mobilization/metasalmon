@@ -1,0 +1,13 @@
+id: B-154
+kind: defect
+title: The SDP cannot express two I-ADOPT relations, and both are format gaps rather than ontology gaps
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: claude-science
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The SDP schema can express both relations, or a logged ruling records that it deliberately will not and says what a consumer should do instead; and metasalmon and metasalmonpy both read and write whatever lands. Two clauses, both found while writing the iop-triple explainer (metasalmon pull request 116, candidate items 1 and 2 of its workpad). (a) The SDP cannot distinguish iop:hasObjectOfInterest from iop:hasContextObject and iop:hasMatrix, which I-ADOPT separates and where hasMatrix is a sub-property of hasContextObject: the dictionary has one entity_iri, described in the spec''s field reference as "what the measurement is about", and the decomposition artifact has one entity role, so an emitter must map everything to hasObjectOfInterest or refuse to guess. (b) The SDP cannot express I-ADOPT''s constrains target at all. constrains names WHICH component a constraint confines, with range a union of Entity, Property and StatisticalModifier; constraint_iri is a flat semicolon-separated bag, and the decomposition artifact''s component_relation does carry a related_component_order but permits only the single value value_of_dimension, which R/measurement-decompositions.R further requires to join two MATCHED CONSTRAINT components, so it is not constrains and cannot be made into it. BOTH ARE FORMAT-EXPRESSIVITY GAPS AND NEITHER IS AN ONTOLOGY GAP: every predicate already exists in I-ADOPT 1.1, nothing needs minting, and filing either as a term request through detect_semantic_term_gaps() and render_ontology_term_request() would be wrong. That distinction is stated here rather than left implied because routing this into the term-request pipeline is the plausible mistake. It affects both mirrors, and the decomposition artifact itself is not yet in the specification, which is B-114, so a ruling here either waits on that adoption or says how the two relate.'

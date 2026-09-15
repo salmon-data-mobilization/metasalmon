@@ -1,0 +1,12 @@
+id: B-159
+kind: defect
+title: The knowledge-bundle validator AGENTS.md instructs cannot be run by any agent, so every agent-written card is unvalidated
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Either an agent in this environment can run the bundle check and CI runs it on every pull request touching knowledge/, or AGENTS.md states that the check is human-only and names what would change that. AGENTS.md lines 326 to 331 instruct keeping the bundle valid with uv run --project ../psc-data-systems psc-okf check knowledge --tier capture, and that is unexecutable here on four independent legs, each verified 2026-09-15: no psc-data-systems checkout exists anywhere on this machine; psc-okf is not installed and not on PATH, though uv itself is; it is not on PyPI, HTTP 404 for both the psc-okf and psc_okf spellings; and CI never runs it, with no reference to it anywhere under .github/. queue/config.yaml lines 228 to 231 record psc-data-systems only as a GitLab path, where HUB.md permits an agent to read and forbids every write, and no agent here has a credential for it. THE CONSEQUENCE IS THE ITEM: every knowledge/ card written by an agent has gone in bundle-unvalidated, and two agents hit this independently on 2026-09-15 and recorded the skip in their own pull requests -- metasalmon 116 for the iop-triple card and salmon-domain-ontology 30 for two cards there -- while the taxonomy briefing, the commons verification scheme and the 2026-09-12 promotion-review record went in the same way before them. Neither agent could substitute for it, and hand-checking front matter against neighbouring cards is a different check that happens to be available. This is the class AGENTS.md''s own guard rule names: an instruction that reads as enforced, is not, and whose absence is invisible to someone reading the instruction -- a green pull request is currently silent about bundle validity and looks like it is not. Three remedies, in the orchestrator''s stated order and recorded as his: publish or mirror psc-okf somewhere agents can reach it; reimplement the tier-capture checks as a script in this repository wired into CI beside the queue-is-valid job, which already triggers on knowledge/ and so needs no new trigger; or record in AGENTS.md that the check is human-only, with the condition that would retire that. The third is the honest minimum and costs nothing. claimable: false because all three are choices rather than work.'
