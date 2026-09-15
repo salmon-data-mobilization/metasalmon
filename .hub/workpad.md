@@ -270,6 +270,33 @@ this R may not run at all. So the new R file and the new test file were checked
 for non-ASCII characters directly rather than inferred from the check being
 quiet.
 
+### CI, which is the check that counts
+
+All three checks on pull request #121 are **green**, `check` included:
+
+```
+registers-agree: success
+queue-is-valid:  success
+check:           success        # rcmdcheck, error_on = "warning", CI's R
+```
+
+`registers-agree` passing is the specific confirmation that the port was
+recorded correctly: that guard fails on a `parity-deviations.md` row number with
+no twin in metasalmonpy's `PARITY.md`, so a numbered row here would have turned
+CI red in both repositories. It is green because no row was added.
+
+**And `check` being green is a finding, not just a relief.** The 8 test failures
+and the 2 vignette errors that this machine reports do not reproduce on CI at
+all. `AGENTS.md` warns that a green local check is evidence about local R and not
+about CI's, with a measured case where **local was greener than CI**. This is the
+same warning running the other way: **CI is greener than local**, on R 4.3.3
+here against CI's newer R. Both directions have now been observed, so the rule to
+draw is the symmetric one — a local check result and a CI check result are two
+measurements of different things, and neither substitutes for the other. The
+baseline comparison above is what makes this branch's local result readable at
+all; without it, 8 local failures would have looked like something this change
+did.
+
 ## What I did not do, and why
 
 - **The metasalmonpy half.** The mirror contract presumes it and backlog #116
