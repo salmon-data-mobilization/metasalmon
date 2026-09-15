@@ -3244,9 +3244,10 @@ Parked under S9 step 6; do not schedule before Brett reviews the explainer.
 
 **Twelve findings recovered from four hub agents' workpads and pull requests
 after the fact, plus a thirteenth found while filing them** — the four items
-worked on the night of 2026-09-15 were `B-116`, `B-111`, `B-115` and `B-106`. Each agent named what it had found and deliberately
-did not absorb; none of it was a queue item, and a finding that lives only in a
-workpad is a finding the next reader re-derives. They are headed by their
+worked on the night of 2026-09-15 were `B-116`, `B-111`, `B-115` and `B-106`.
+Each agent named what it had found and deliberately did not absorb; none of it
+was a queue item, and a finding that lives only in a workpad is a finding the
+next reader re-derives. They are headed by their
 **queue id** for the reason the *Open — the 2026-09-15 fleet findings* section
 gives: `#120` is the last number this file issued and inventing `#121` upward
 would create a second numbering nobody reconciles. **State is not here** —
