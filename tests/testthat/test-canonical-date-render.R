@@ -299,3 +299,130 @@ test_that("datapackage.json and dataset.csv spell a Date identically", {
   expect_identical(descriptor$temporal$start[[1]], dataset_csv$temporal_start[[1]])
   expect_identical(descriptor$temporal$end[[1]], dataset_csv$temporal_end[[1]])
 })
+
+test_that("datapackage.json and dataset.csv spell a POSIXct identically", {
+  # BACKLOG #115 / hub item B-115, and it is the Date test above under a type
+  # that genuinely reaches both writers. `.ms_align_cols()` converts a `Date` to
+  # text and deliberately leaves a `POSIXct` typed (#93 item 1, which this does
+  # not reopen), so an instant arrives at the descriptor builder AND at
+  # `readr::write_csv()`, and each rendered it its own way:
+  #
+  #   datapackage.json      "0999-06-05 13:45:30"    <- as.character()
+  #   metadata/dataset.csv  "0999-06-05T13:45:30Z"   <- write_csv()
+  #
+  # Brett ruled the spelling on 2026-09-14, once for both implementations:
+  # readr's ISO instant form, the `T` separator and the `Z` zone marker. So the
+  # descriptor moved onto readr's baseline and this asserts the AGREEMENT rather
+  # than a literal, for the reason the next paragraph gives.
+  #
+  # WHAT THIS DELIBERATELY DOES NOT PIN: the year's zero padding. readr hands
+  # `%Y` to the platform's strftime, so `write_csv()` writes
+  # `0999-06-05T13:45:30Z` on macOS and `999-06-05T13:45:30Z` on Linux -- the
+  # split documented at the top of `R/platform-time.R`, reaching readr's own
+  # instant path. The descriptor now emits whichever one readr emits, so the two
+  # files agree on both platforms; pinning the padded literal here would pass on
+  # macOS and fail on CI, and padding only the descriptor to satisfy it would
+  # reopen #115 on Linux. The residual unpadded year is readr's own defect on the
+  # CSV side and is reported separately, not patched in one of the two files.
+  #
+  # FAILING-BEFORE, measured 2026-09-14 on the pre-fix tree (Linux, R 4.3.3,
+  # readr 2.2.0): descriptor `0999-06-05 13:45:30`, CSV `999-06-05T13:45:30Z`.
+  # So all three of separator, zone marker and padding disagreed here, where the
+  # backlog's macOS measurement saw only the first two.
+  #
+  # *Retires when:* nothing. It is the standing check that the descriptor and the
+  # CSV keep one spelling of one instant, whichever writer moves next.
+  skip_if_not_installed("readr")
+
+  path <- withr::local_tempdir()
+  suppressMessages(write_salmon_datapackage(
+    resources = list(obs = data.frame(site_id = c("s1", "s2"), stringsAsFactors = FALSE)),
+    dataset_meta = tibble::tibble(
+      dataset_id = "d1",
+      title = "T",
+      description = "D",
+      creator = "metasalmon tests",
+      # The backlog's fixture, and a midnight instant: `as.character()` drops
+      # the time from an all-midnight instant entirely, so the descriptor used
+      # to answer "2024-12-31" where the CSV answered "2024-12-31T00:00:00Z".
+      temporal_start = as.POSIXct("0999-06-05 13:45:30", tz = "UTC"),
+      temporal_end = as.POSIXct("2024-12-31 00:00:00", tz = "UTC")
+    ),
+    table_meta = tibble::tibble(
+      dataset_id = "d1", table_id = "obs", file_name = "data/obs.csv",
+      table_label = "Observations", description = "One site column"
+    ),
+    dict = tibble::tibble(
+      dataset_id = "d1", table_id = "obs", column_name = "site_id",
+      column_label = "Site", column_description = "Site identifier",
+      column_role = "identifier", value_type = "string", required = FALSE
+    ),
+    path = path,
+    overwrite = TRUE
+  ))
+
+  descriptor <- jsonlite::read_json(file.path(path, "datapackage.json"))
+  dataset_csv <- readr::read_csv(
+    file.path(path, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = readr::col_character())
+  )
+
+  # The condition B-115 retires on.
+  expect_identical(descriptor$temporal$start[[1]], dataset_csv$temporal_start[[1]])
+  expect_identical(descriptor$temporal$end[[1]], dataset_csv$temporal_end[[1]])
+
+  # The ruled form, asserted on the part that is platform-independent.
+  expect_match(descriptor$temporal$start[[1]], "^[0-9]+-06-05T13:45:30Z$")
+  # The midnight half: the time survives rather than being dropped.
+  expect_identical(descriptor$temporal$end[[1]], "2024-12-31T00:00:00Z")
+})
+
+test_that("the descriptor instant renderer is readr's, by construction", {
+  # The unit-level statement of the same contract, and the reason the renderer
+  # asks readr instead of reproducing it. A hand-rolled
+  # `format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")` was measured equal to readr on
+  # every case below, and would still be a SECOND rendering of one value -- the
+  # defect "one value, one rendering" names rather than a way to fix it. These
+  # cases are the three behaviours a hand renderer has to get right and can get
+  # wrong silently: conversion to UTC, truncation of a fractional second, and
+  # the year.
+  #
+  # *Retires when:* `metadata/dataset.csv` stops being written by
+  # `readr::write_csv()`, at which point the descriptor follows its new writer.
+  skip_if_not_installed("readr")
+
+  readr_cell <- function(value) {
+    sub("\n$", "", readr::format_csv(data.frame(x = value), col_names = FALSE))
+  }
+  cases <- list(
+    as.POSIXct("0999-06-05 13:45:30", tz = "UTC"),
+    as.POSIXct("0001-02-03 04:05:06", tz = "UTC"),
+    as.POSIXct("2024-01-31 10:00:00.5", tz = "UTC"),
+    as.POSIXct("2024-01-31 00:00:00", tz = "UTC"),
+    as.POSIXct("2024-01-31 10:00:00", tz = "America/Vancouver")
+  )
+  for (value in cases) {
+    expect_identical(
+      metasalmon:::.ms_descriptor_temporal_text(value),
+      readr_cell(value)
+    )
+  }
+
+  # NA stays NA, and a vector keeps its positions -- the descriptor passes a
+  # scalar, but a renderer that silently drops NAs would misalign any caller.
+  expect_identical(
+    metasalmon:::.ms_readr_instant_character(
+      as.POSIXct(c("0999-06-05 13:45:30", NA), tz = "UTC")
+    ),
+    c(readr_cell(as.POSIXct("0999-06-05 13:45:30", tz = "UTC")), NA_character_)
+  )
+
+  # UNCHANGED FOR EVERY OTHER TYPE, which is what keeps this narrow. A character
+  # cell and a Date both keep the `.ms_iso_character()` spelling they have always
+  # had; only the instant branch moved.
+  expect_identical(metasalmon:::.ms_descriptor_temporal_text("2024-01-01"), "2024-01-01")
+  expect_identical(
+    metasalmon:::.ms_descriptor_temporal_text(as.Date("0999-01-01")),
+    "0999-01-01"
+  )
+})

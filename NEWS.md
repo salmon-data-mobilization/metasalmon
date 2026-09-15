@@ -95,6 +95,45 @@ metasalmon (development version)
   bundled examples. The metasalmonpy fixture is owed as a port, and the
   item's retirement condition is met only on the R side until it lands.
 
+* **`datapackage.json` and `metadata/dataset.csv` no longer spell the same
+  instant two different ways** (backlog **#115**, queue **B-115**). A
+  `dataset_meta$temporal_start`/`temporal_end` supplied as a typed `POSIXct`
+  reached both writers -- `.ms_align_cols()` renders a `Date` to text and
+  deliberately leaves an instant typed (backlog #93 item 1, unchanged here) --
+  and each rendered it its own way: the descriptor through `as.character()`
+  (`0999-06-05 13:45:30`, and a midnight instant lost its time entirely) and
+  the CSV through `readr::write_csv()` (`0999-06-05T13:45:30Z`). Two spellings
+  of one value, in two files a consumer is entitled to read either of.
+
+  Brett ruled the spelling on 2026-09-14, once for both implementations so that
+  no implementer picks one: a typed instant reaching the descriptor takes
+  readr's ISO instant form, the `T` separator and the `Z` zone marker. The
+  descriptor's temporal writer therefore moves onto the `readr::write_csv()`
+  baseline, and it does so by **asking readr for the bytes** rather than
+  reproducing them -- a hand-rolled format string was measured equal to readr
+  on every case tried and would still be a second rendering of one value, which
+  is the defect `AGENTS.md`'s "one value, one rendering" contract names rather
+  than a way of fixing it. `.ms_iso_date_columns()` is untouched, and its
+  deliberate disagreement with `.ms_canonical_character()` about a `POSIXct`
+  survives, asserted on purpose by `test-canonical-date-render.R`.
+
+  **This is not a wire-format break for any package in the wild.** The bytes
+  change only for a package whose caller supplied a typed instant, and neither
+  implementation produces one itself -- both write character metadata -- so no
+  package either of them has written is affected.
+
+  Two things worth carrying forward. `readr::write_csv()`'s instant year is
+  **not** padded on every platform: it writes `999-06-05T13:45:30Z` on Linux
+  (R 4.3.3, readr 2.2.0) where macOS wrote `0999-06-05T13:45:30Z`, which is the
+  `%Y` platform split already documented in `R/platform-time.R` reaching readr's
+  own instant path, and it retires the standing comment that "readr's instant
+  path is correct already" as a macOS-only measurement. The descriptor now emits
+  whichever year readr emits, so the two files agree on both platforms; padding
+  only the descriptor would have re-opened this defect on the platform CI runs
+  on. **Mirror:** metasalmonpy owes the same ruling (queue **B-145**);
+  parity-deviations row 56 carries the ruling, which side moved, and the
+  year-padding residual B-145 has to measure.
+
 metasalmon 0.5.0
 ----------------
 
