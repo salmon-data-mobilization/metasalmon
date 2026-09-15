@@ -3346,10 +3346,10 @@ writers — so the cheap close is the test.
 **`B-163` The SDP atomic write set renames a staging file it never flushed.**
 `.ms_sdp_extension_atomic_write_set()` (`R/sdp-extension-helpers.R:133`) stages
 each replacement with `writeBin()` at `:186` and installs it with
-`file.rename()` at `:240`, with no flush between; the rollback path has the same
-shape. It is **atomic against an aborted call and not durable against a crash**:
-a power loss after the rename can leave a renamed empty file where the previous
-bytes were.
+`file.rename()` at `:240`, with no flush between; the rollback path — the
+rename-aside at `:234` and the restore at `:206` — has the same shape. It is
+**atomic against an aborted call and not durable against a crash**: a power loss
+after a rename can leave a renamed empty file where the previous bytes were.
 
 **The blast radius as reported was wrong in two directions and the corrected one
 is the point of the item.** On `main`, what reaches the write set is
