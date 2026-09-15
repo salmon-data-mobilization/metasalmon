@@ -2801,6 +2801,302 @@ accept-then-drop case with a fixture whose label does **not** lexically match
 the column. That fix is independently shippable ahead of the review-flow port —
 it depends on none of that surface existing.
 
+### Open — the R halves of the 2026-09-15 Codex findings on metasalmonpy PR #28
+
+**Five findings from fixing three Codex P2 findings on metasalmonpy PR #28
+(queue item `B-126`), each re-measured here rather than taken from the report
+that surfaced it.** `B-174`, `B-175` and `B-176` are the **R halves** of those
+three: the same defects exist in metasalmon 0.5.0 in the same shape, so they are
+owed as **ports and not deviations** — a shared defect is not a chosen
+difference, so no `PARITY.md` row is owed for any of the three. `B-177` is a
+question the first finding opened and did not close. `B-178` is an
+evidence-hygiene item in metasalmonpy and it **records a negative result**: the
+finding as reported does not hold, and the measurement that shows why is the
+entry.
+
+They are headed by their **queue id**, because they are new items with no legacy
+backlog number. **State is not here.** Whether one is icebox, ready, claimed or
+done lives in `queue/items/`; this section is what each item's `evidence:`
+pointer resolves to.
+
+Everything below was measured on 2026-09-15 under **R 4.3.3** against
+metasalmon **0.5.0 loaded from source at `main` `4cd085c`** (`DESCRIPTION`
+reads 0.5.0). The report these came from said "installed metasalmon 0.5.0";
+the package is installed in no library on this machine, so that phrase
+described a `pkgload::load_all()` tree. Two measurement traps bit during the
+re-check and are worth carrying forward: `pkgload::load_all()` sources
+`tests/testthat/helper-*.R` by default, so a dev console silently inherits
+`options(metasalmon.sdp_schema_source = "vendored")` and **cannot see `B-175`
+at all**; and a fixture's candidate count is a property of the fixture, which
+is why the `not_selected` row count in `B-176` is two here and one in the
+report.
+
+**`B-174` `review_metadata()` reports a clean package that strict validation
+refuses.** **A user-facing defect in released 0.5.0**, not a latent one: it is
+the state a user reaches by leaving any part of the semantic review queue
+undecided, which is the ordinary path rather than an edge case.
+
+`.ms_is_unfilled_metadata()` (`R/sdp-field-setters.R:50-55`) answers `FALSE`
+for `REVIEW:https://example.org/Thing` and `TRUE` for the three prose
+placeholder spellings (`MISSING METADATA:`, `MISSING DESCRIPTION:`,
+`REVIEW REQUIRED:`), for blank and for `NA`. End to end, on a package filled by
+executing `review_metadata()`'s own printed calls until
+`validate_salmon_datapackage(pkg, require_iris = TRUE)` passed, and then given
+one `REVIEW:` marker:
+
+```
+review_metadata(pkg)                -> "No outstanding metadata."
+                                       "Every required field is filled and
+                                        no placeholders remain."
+validate_salmon_datapackage(pkg, require_iris = TRUE)
+                                    -> Error: Validation cannot pass while
+                                       REVIEW-prefixed IRI values remain.
+                                       x constraint_iri: spawner_count (rows 2)
+```
+
+**The defect is the predicate, not the field list, and that changes the fix.**
+It was reported as a coverage gap that needed to reach `constraint_iri`,
+`statistical_modifier_iri` and a code's `term_iri` "not only measurement and
+table IRIs" — implying the measurement and table IRIs were already handled.
+They are not. A `REVIEW:` marker on `term_iri`, `property_iri`, `entity_iri` or
+`unit_iri` of a measurement column is missed although all four are enumerated
+in `.ms_measurement_iri_fields()` and visited on every row, and one on
+`tables.csv$observation_unit_iri` is missed although that field has its own
+dedicated branch. Every one of those was measured refused by strict validation
+and reported as **0 rows** by the scan. `constraint_iri` and
+`statistical_modifier_iri` fail for the same reason plus a second: neither is
+schema-`required` nor in the measurement enumeration, so only the
+prose-placeholder branch ever looks at them.
+
+Two parts of the fix shape are load-bearing.
+
+1. **Keep `.ms_is_review_placeholder()` narrow and add a second predicate.**
+   Its narrowness is deliberate and depended on by **12 call sites across four
+   files** (`R/package-helpers.R`, `R/sdp-field-setters.R`,
+   `R/edh-xml-export.R`, `R/metadata-write.R`), several of which exclude the
+   marker *on purpose* — the placement sweep at `R/package-helpers.R:1748-1751`
+   says so in a comment ("`REVIEW:` markers have their own dedicated reporting
+   path"), and `.ms_metadata_gap_row()` uses it to decide whether a value's own
+   text is a usable hint, which an IRI's is not. *(The report said five
+   callers; five is the Python count for `_is_review_placeholder` in
+   metasalmonpy's `semantics.py`. R has 12.)*
+2. **`.ms_review_is_unfilled()` (`R/review-console.R:133`) is IRI-aware and is
+   not a drop-in replacement.** Measured, it answers `FALSE` for all three
+   prose placeholder spellings, so swapping it onto this path trades one half
+   of the defect for the other. What is needed is the union of the two, or a
+   second predicate as metasalmonpy PR #28 added (`_is_unresolved_iri()`, kept
+   separate for exactly this reason and carrying "*Retires when:* nothing" in
+   its docstring).
+
+The scan's **file** scope must follow what strict validation actually sweeps
+rather than what looks symmetric: `tables.csv` and `column_dictionary.csv` are
+refused, `dataset.csv` and `codes.csv` are not (`B-177`), so reporting a marker
+there would make the scan claim a block that does not exist — the same class of
+error as missing one, pointing the other way. `B-177` is **not** a blocker: the
+two swept files can be fixed first.
+
+*Retires when:* `review_metadata()` reports every field whose `REVIEW:` IRI
+blocks `validate_salmon_datapackage(require_iris = TRUE)`, so the scan's own
+stated contract holds again — when the last row it prints is gone, strict
+validation passes — demonstrated red on a package whose only remaining gap is a
+`REVIEW:` marker, and pinned by a test that drives the validator rather than
+asserting on the printed text.
+
+**`B-175` `review_metadata()` contacts the network although its documentation
+says it never does.** The roxygen sentence is at `R/sdp-field-setters.R:340` —
+*"It never contacts a network or an LLM."* — and it is rendered into
+`man/review_metadata.Rd:44`, so it is a published guarantee and not only a code
+comment. *(The report placed it at line 339.)*
+
+Path measured: `.ms_metadata_schema_fields()` (`R/sdp-field-setters.R:101-105`)
+→ `.ms_load_sdp_schema(quiet = TRUE)` (`R/schema-helpers.R:103-151`), whose
+default source is `getOption("metasalmon.sdp_schema_source", "auto")`, and
+`"auto"` calls `.ms_fetch_remote_sdp_schema()` (`R/schema-helpers.R:153-175`)
+**before** falling back to the bundled copy.
+
+Cost, measured with a counting wrapper around `httr2::req_perform` and the
+schema cache cleared: **eight** requests to `raw.githubusercontent.com` per
+cold schema load — six Frictionless metadata schemas from
+`.ms_sdp_metadata_schema_paths()`, plus the profile and `sdp.rules.yaml` — each
+carrying the 2-second timeout that is `.ms_fetch_remote_sdp_schema()`'s default,
+1.08s of wall clock with the host reachable and up to 16s when it hangs. *(The
+report said six requests at 2.0s each.)* The bundle is cached in
+`.ms_schema_env` per cache key, so it is eight requests on the first call in a
+session and **zero** on the second; a scripted review that starts a fresh R
+process per package pays it every time. `set_sdp_dataset()` measured the same
+eight on the same path. `review_semantics()` measured **zero**, so its
+identically worded claim (`man/review_semantics.Rd:40`) holds — which is what
+makes this a defect in one function rather than a house style.
+
+**This is the trap, and it is why the retirement condition names the
+sentinel.** `.ms_load_sdp_schema()` wraps the fetch in
+`tryCatch(..., error = function(e) e)` (`R/schema-helpers.R:114-117`), so an R
+sentinel that signals an **error** is swallowed and the test passes either way.
+Measured: a mocked `req_perform` that calls `stop()` was reached once and the
+call still returned all 24 `dataset.csv` field definitions with nothing
+escaping — the R spelling of the same trap that swallowed a Python `Exception`
+on the other side. A sentinel that works either records its firing outside the
+call (a counter incremented before the `stop()`) or signals a **non-error**
+condition; both were demonstrated firing.
+
+**Nothing in the suite can see this.** `tests/testthat/helper-validation.R:3`
+sets `options(metasalmon.sdp_schema_source = "vendored")` for the whole run, so
+the shipped default is exercised nowhere — and metasalmonpy's
+`tests/conftest.py` pins the same value for the same stated reason, which is
+why the defect survived on both sides.
+
+This is the same contract shape as `AGENTS.md`'s **LLM-opt-in** rule: supplying
+`llm_context_files` must *never* trigger a network or LLM call, and options that
+will be ignored should warn rather than silently no-op. A function documented as
+local has to be local, and a documented guarantee that is only usually true is
+the failure that rule exists to name. metasalmonpy PR #28's fix is a module
+constant reading the bundled bundle on this path (`_SCHEMA_SOURCE = "vendored"`,
+with its own retirement condition), with the setters reading the same source so
+the gap scan and the printed call cannot disagree about which fields exist.
+
+*Retires when:* `review_metadata()` and the four `set_sdp_*()` setters make no
+network request under the shipped default options, **and a sentinel proves it**
+— a counter or a non-error condition, never a `stop()`.
+
+**`B-176` `apply_sdp_semantics()` loses a hand-picked accept.** On a
+`create_sdp()` package seeded through a mocked `find_terms`:
+
+```
+accept_suggestion(review, "spawner_count", "variable",
+                  iri = "https://example.org/Handpicked")
+apply_sdp_semantics(path, review)
+
+column_dictionary.csv$term_iri  -> https://example.org/Handpicked
+semantic_suggestions.csv        -> 2 rows decision=not_selected
+                                   0 rows decision=accepted
+                                   0 rows whose iri is the accepted one
+review_semantics(path)          -> 0 decisions replayed
+  (same with include_filled = TRUE)
+```
+
+The mask is `R/metadata-write.R:445-449`: `accepted` is `in_slot` **and** the
+row's stripped `iri` equalling the decision IRI, so when the accepted IRI is not
+one of the slot's candidates the vector is all `FALSE`, line 447 sets every row
+in the slot to `not_selected`, and line 448 sets nothing to `accepted`.
+`not_selected` is absent from `.ms_review_recorded_decisions()` (the map is
+`accepted`, `accept`, `rejected`), so the replay helper skips those rows and the
+decision is unrecoverable from the package. The slot then drops out of the next
+queue only because the dictionary field is now filled, not because the answer
+was remembered. *(The report said one `not_selected` row; the count is a
+property of the fixture's slot, which carries two candidates.)*
+
+**Two things the Python fix established that the R fix must not lose.**
+
+1. **The accepted IRI needs its own row**, not an existing candidate
+   relabelled. Relabelling would make the file say a term the reviewer never
+   chose is the one they chose, and that row's `label`, `source`, `ontology`,
+   `definition` and `score` would all describe a different term.
+2. **The new row goes at the head of its slot, not the tail.**
+   `review_semantics()` derives `rank` from file position
+   (`R/review-console.R:316-323`, deliberately not a sort, so the ranked order
+   and the seeded auto-apply cannot disagree) and then drops everything past
+   `max_candidates`, default `5` (`R/review-console.R:398-399`). Demonstrated on
+   a slot padded to six candidates: appended, the hand-picked row ranks 7 and is
+   filtered straight back out of the rebuilt review; inserted at the head, it
+   ranks 1 and survives.
+
+*Retires when:* `accept_suggestion(..., iri = )` followed by
+`apply_sdp_semantics()` leaves `semantic_suggestions.csv` carrying a row whose
+`iri` is the accepted IRI with `decision` `accepted`, and the next
+`review_semantics()` replays it; demonstrated red on an IRI that is not among
+the slot's existing candidates, and pinned by a test that reads the file back
+rather than asserting only on the dictionary.
+
+**`B-177` two code paths in the same package disagree about whether
+`dataset.csv` and `codes.csv` are swept for `REVIEW:` IRIs.** **Latent today**,
+and say so, so nobody reads it as live breakage: `.ms_review_iri_prefix()` has
+exactly two call sites — `R/package-helpers.R:3848`, which writes into
+`column_dictionary.csv`, and `R/package-helpers.R:4166`, which writes
+`tables.csv$observation_unit_iri` — so no producer in the package writes a
+marker into either file, and only a hand-edited or third-party package can be in
+this state.
+
+The sharper question is inside it. `R/edh-xml-export.R:1175-1178` calls
+`.ms_collect_review_iri_issues()` on **all four** frames; the strict validation
+path calls it on `tables` alone (`R/package-helpers.R:1972`) and reaches the
+dictionary only through `validate_dictionary()` / `validate_semantics()`.
+Measured on a package filled until strict validation passed:
+
+| marker on | EDH gate | `validate_salmon_datapackage(require_iris = TRUE)` |
+|---|---|---|
+| `column_dictionary.csv$term_iri`, `constraint_iri`, `statistical_modifier_iri` | reports | **refuses** |
+| `tables.csv$observation_unit_iri`, `method_iri`, `protocol_iri` | reports | **refuses** |
+| `dataset.csv$protocol_iri` | reports | **passes** |
+| `codes.csv$term_iri`, `vocabulary_iri` | reports | **passes** |
+
+`codes.csv` was not in the report and is the same defect as `dataset.csv`: two
+files, not one. It escapes the unconditional placement check too, which excludes
+anything matching `^REVIEW:` on purpose (`R/package-helpers.R:1748-1751`)
+because the marker has its own reporting path — and on
+`dataset.csv$protocol_iri` that path is the one that is missing.
+
+**The same question is open on the Python side, and the two implementations
+already differ on one half of it**, so this is not purely an R item.
+metasalmonpy's `_collect_review_issues()` (`package_io.py:2284-2315`) sweeps
+tables, dictionary and codes for `REVIEW:` IRIs but **not** dataset, where R's
+EDH path does — so the two EDH gates disagree about `dataset.csv$protocol_iri`.
+PR #28 froze the scan-side answer as
+`_REVIEW_IRI_FILES = ("tables.csv", "column_dictionary.csv", "codes.csv")` with
+a retirement condition tying that tuple to whatever `_collect_review_issues()`
+sweeps.
+
+*Retires when:* strict validation and the EDH rebuild gate sweep the same set of
+files, **or** a logged decision names which set is right and why, with the loser
+changed to match in the same change. Whichever way it is ruled, the ruling has
+to reach four places — R strict validation, the R EDH gate, the Python
+equivalents of both, and `B-174`'s scan list — and any deliberate difference
+that survives needs a parity register row. That row is the **only** one anything
+in this filing run could owe.
+
+**`B-178` metasalmonpy PR #28's body records suite counts measured at its first
+commit, not at its head.** **The finding this item was filed to record does not
+hold, and the negative result is the point.** It was reported as "the body
+records test counts that do not reproduce, with a two-test difference that was
+not chased". The body's counts reproduce exactly.
+
+Measured from a throwaway clone of the branch, with metasalmonpy installed
+editable into two purpose-built virtual environments:
+
+| commit | leg | `Rscript` absent | `Rscript` present |
+|---|---|---|---|
+| `05be2a1` | `[test,eml,context]` | **896 / 3** | 898 / 1 |
+| `05be2a1` | core deps only | **783 / 116** | 785 / 114 |
+| `ead77a3` (head) | `[test,eml,context]` | — | **904 / 1** |
+| `ead77a3` (head) | core deps only | — | **791 / 114** |
+
+The two bold figures are byte-for-byte the ones in the PR body. **The whole
+difference is the two R round-trip tests, and the body already says so:**
+`tests/test_roundtrip.py` gates its two tests on `HAVE_R`
+(`shutil.which("Rscript")` and `os.path.isdir()` of the `R_LIB_PATH` constant at
+`:19`), and the body records *"With R plus metasalmon installed: 898 / 1"* as a
+separate line. Two tests move from skipped to passed in both legs, the totals
+are 899 either way, and the same pair explains the core leg's 783/116 against
+785/114 — which the body does not state but which follows from the identical
+gate. So there is no unchased two-test difference and nothing measured here
+contradicts the body.
+
+**What is actually stale is smaller and real.** The branch has two commits and
+the body's evidence table was measured at the first. At the head — `ead77a3`,
+*"Fix the three Codex P2 findings on the S5 port"* — the same two legs give
+**six more** passing tests each, because that commit added tests to
+`tests/test_review_console.py` and `tests/test_sdp_field_setters.py`. A reader
+checking the body against the head finds four numbers all wrong by six, with
+nothing in the body saying which commit it describes. That is evidence hygiene
+rather than a code defect, which is why it is P4: a PR body's evidence should
+reproduce, and when it does not, the first question is whether the measurement
+or the environment differs — here it was neither, it was the commit.
+
+*Retires when:* the evidence table names the commit each count was measured at,
+or is re-measured at the head; and the convention that a suite count in a PR
+body carries its commit is written into wherever that repository records its
+release and review procedure. No code change is owed in either repository and no
+`PARITY.md` row is owed.
+
 ### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
 
 **#61 Ecosystem findings.** 37 verified findings across `smn-data-pkg`,
