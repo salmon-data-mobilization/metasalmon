@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "Emitting I-ADOPT triples from a Salmon Data Package — explainer and recommendation"
-description: "Explainer for backlog #78: who needs iop: triples from an SDP and what they cannot do today, the pattern for emitting them (where they live, what generates them, how they version), and whether triple emission should be a general SDP capability rather than an I-ADOPT-only one, with the costs of each. Written 2026-09-14 by an agent on Brett's Q46 allowance; it carries a recommendation, and the recommendation is a proposal awaiting his ruling on B-78. No code, by design."
+description: "Explainer for backlog #78: who needs iop: triples from an SDP and what they cannot do today, the pattern for emitting them (where they live, what generates them, how they version), and whether triple emission should be a general SDP capability rather than an I-ADOPT-only one, with the costs of each. Written 2026-09-14 by an agent on Brett's Q46 allowance and substantively revised 2026-09-15, when DataONE's indexer configuration was read and refuted the card's discoverability argument while leaving its conclusion standing: the recommendation is unchanged and deliberately weaker. It is a proposal awaiting Brett's ruling on B-78. No code, by design."
 status: draft
 tags: [i-adopt, rdf, sdp, semantics, s9, b-78, b-146, proposal]
 psc:
@@ -21,6 +21,19 @@ is a **proposal and nothing more**: no implementation is scheduled, and the
 below were resolved with tools during the pass and the resolution is recorded
 in [section 9](#9-source-register), but **nothing here has been independently
 checked** and the card asserts no verification of its own.
+
+**Revised 2026-09-15, and the revision is substantive.** The 2026-09-14 draft
+named one load-bearing uncertainty — whether DataONE's index would query the
+extra predicates — and marked it unchecked. It was then settled, and it
+**refuted the card's strongest argument while leaving its conclusion
+standing**. [Section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)
+and [section 6](#6-recommendation-awaiting-b-78) are rewritten rather than
+patched: the discoverability claim is deleted because it is false, three
+narrower justifications replace it, and §6 now says plainly that the
+recommendation is **weaker** than it was, not merely differently worded. The
+history is kept in place because "the argument was wrong and the answer was
+not" is the useful thing to know, and deleting it would leave the next reader
+wondering why the case is so thin.
 
 Owning stream: [S9 — ontology conventions and alignment pass](../sequences/s9-ontology-alignment.md),
 step 6. Defect of record: [backlog #78](../backlog.md).
@@ -191,32 +204,91 @@ and they belong in the queue rather than in this card's recommendation; see
 A card that says "triples help interoperability" has answered nothing. So:
 three named consumers, what each can do today, and what it cannot.
 
-### Consumer 1 — KNB / DataONE search, the one that already exists
+### Consumer 1: KNB and DataONE, the one that already exists
 
 This is the only consumer metasalmon actually publishes to today
 (`R/knb-publication.R`), and the only one whose behaviour is not hypothetical.
 
-*Today:* each measurement column reaches DataONE as two annotations,
-`dcterms:subject → term_iri` and `qudt:hasUnit → unit_iri`. A search for
-datasets about a concept can match the compound term; a search can filter by
-unit.
+**This section carried a discoverability argument until 2026-09-15, and that
+argument was wrong.** The card originally said the strongest case for emission
+was that a DataONE user could then find datasets by a component of the
+variable, and flagged as its load-bearing uncertainty that the index had not
+been checked. It has now been checked, and it refutes the argument. The
+conclusion survives on other grounds; the reasoning is replaced rather than
+patched, because a recommendation resting on a false premise is worth less
+than one resting on a narrower true one.
 
-*Cannot:* find a dataset by any component of the variable that the compound
-term does not itself expose. Ask *"which packages measure anything at all
-whose property is a count, about an entity that is a salmon population?"* and
-there is nothing to match on. The `property_iri` and `entity_iri` exist in the
-package, travel to the repository inside `datapackage.json`, and are invisible
-to the index because nothing states them as properties of the variable. This
-is the concrete, present-tense loss, and it is the strongest argument in
-favour of emission — the consumer exists, the data is already shipped, and
-only the assertion is missing.
+**What the index actually does.** DataONE's indexer registers
+`EmlAnnotationSubprocessor` for exactly one format,
+`https://eml.ecoinformatics.org/eml-2.2.0`, and imports it into the standard
+build (one of 35 `<import>` lines in `index-context-file-includes.xml`, not a
+prototype branch). Its entire field configuration is a single bean:
 
-*Honest limit on this claim:* whether DataONE's production index would
-actually query the extra predicates is a property of that deployment, not of
-EML, and **I did not check it**. The safe form of the claim is that the
-annotations are the interface DataONE takes semantic queries through, so
-emitting them is a precondition for such a query rather than a guarantee of
-one.
+```xml
+<constructor-arg name="name"  value="sem_annotation" />
+<constructor-arg name="xpath" value="//annotation/propertyURI/text() | //annotation/valueURI/text()" />
+<constructor-arg name="multivalue" value="true" />
+```
+
+That XPath is a **union**. Predicate and object are *both* indexed — into the
+**same flat multivalued string field**, with no pairing between them and no
+record of the subject. The failure is not that the predicate is discarded; it
+is more specific than that and worse. You can ask *does this dataset mention
+`hasObjectOfInterest` anywhere*. You can never ask *what is the object of
+interest of this variable*. **To that index, an I-ADOPT decomposition is
+exactly a flat bag of terms** — which is what the SDP already ships.
+
+Two further findings close the discoverability case:
+
+- **The search interface cannot reach arbitrary IRIs even so.** MetacatUI's
+  `AnnotationFilterView.js` is a BioPortal tree picker with
+  `defaultOntology: "ECSO"` (line 74), and KNB's deployed configuration does
+  not override it. DataONE's own documentation says annotation search "only
+  supports searching for ECSO MeasurementType annotations at this time".
+- **Non-whitelisted IRIs are indexed rather than dropped**, so I-ADOPT IRIs
+  would land and be exact-IRI queryable through the Solr API by a client that
+  already knows the IRI. That is an API affordance, not discovery: it answers
+  a question only someone who could already answer it would ask.
+
+*So: emitting improves discoverability for a DataONE or KNB user by nothing at
+all.* Any version of this card that says otherwise is wrong.
+
+**What survives, and it is enough.** Three justifications, none of which
+depends on the index:
+
+1. **The landing page renders the full triple.** MetacatUI's `AnnotationView.js`
+   and `EMLAnnotation.js` read `propertyURI`/`propertyLabel` and
+   `valueURI`/`valueLabel` **from the EML document itself, not from Solr**. So
+   a human reading the KNB dataset page sees the decomposition intact, with
+   the predicate attached to its object, even though the index has flattened
+   it. This is a real present-tense gain for the consumer that exists, and it
+   is the one that replaces the deleted argument.
+2. **Direct consumers get the real structure.** Anyone reading the EML, or the
+   manifest-bound sidecar of [section 4](#where-the-triples-live), gets
+   subject, predicate and object as written. **The sidecar's value never
+   depended on the index at all** — which is why the finding costs the
+   recommendation less than it might have.
+3. **Exact-IRI API queries work** for a client that knows what to ask for.
+   Narrow, but real, and it is the seam through which a future federated query
+   would reach these packages.
+
+*Limits, stated rather than left silent.* **No I-ADOPT annotation has actually
+been deposited and indexed** — that needs a write to a Metacat test node,
+which this pass did not do. "I-ADOPT IRIs would be indexed literally" is
+therefore an **inference**, resting on the fact that the XPath filters nothing
+and on the observed indexing of other non-whitelisted IRIs. It is a strong
+inference and it is not a measurement. What would settle it: deposit an
+I-ADOPT-annotated EML 2.2.0 record to a test node and query
+`sem_annotation:"https://w3id.org/iadopt/ont/hasObjectOfInterest"` against it.
+
+**Do not cite the indexer's readthedocs page for any of this.** Its
+`emlAnnotationSubprocessor` page documents the XPath as
+`//annotation/valueURI/text()` alone — the string `propertyURI` does not
+appear on the page — and lists the field as `Multi: False` where the bean sets
+`multivalue="true"`. Two errors on one row, and a reader of that page alone
+concludes the predicate is discarded, which is the opposite of what both the
+current and the legacy source do. Sourced to the configuration, not the prose
+about it.
 
 ### Consumer 2 — cross-terminology variable matching
 
@@ -325,6 +397,20 @@ found above:
    strict validation *refuses to ship*, not a thing to serialize.
 3. **Emit `rdf:type iop:Variable` explicitly**, redundant though it is under
    the equivalence axiom, for the consumers that do not reason.
+4. **On the EML side, every annotation carries a `label` attribute on both
+   `propertyURI` and `valueURI`.** This is not style. MetacatUI's
+   `EMLAnnotation.js` `parse()` returns early — dropping the annotation
+   **entirely** — if either `label` is missing, so an unlabelled annotation
+   vanishes from the landing page with no error and no warning anywhere. That
+   landing page is justification 1 in
+   [section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists), so
+   losing the label loses the only present-tense gain the recommendation
+   claims. `.ms_eml_add_annotation()` (`R/eml-export.R`) already emits both,
+   via its `predicate_label` and `value_label` arguments, so **metasalmon is
+   compliant today** — the risk is a new I-ADOPT annotation being added
+   without them. *Retires when:* an export-side test asserts that every
+   emitted annotation carries both `label` attributes, at which point the
+   compliance is enforced rather than merely true.
 
 The variable subject needs an IRI, and the SDP has no natural one for "the
 variable this column measures" — `term_iri` is the *concept*, not this
@@ -468,30 +554,59 @@ is cheap but not built for one.** Concretely, and in this order:
    `measurement-decompositions.csv` with a dictionary fallback, pinning
    `https://w3id.org/iadopt/ont/1.1.0` by version IRI, hashed, and published
    only through its manifest.
-3. **Extend the EML annotations in the same decision**, because Consumer 1 is
-   the only consumer that exists and the sidecar does not reach it. This is
-   the part that requires answering the existing exporter's stated reason for
-   declining, and the answer is available: the reason given is *incomplete*
-   I-ADOPT roles, and rule 1 of the generator is exactly a completeness gate.
-   A column that satisfies the class axiom is not incomplete. The exporter's
-   caution about `dcterms:subject` and unsupported ranges was about asserting a
-   range the term does not support; `iop:hasProperty` has
-   `rdfs:range iop:Property` and asserting it for a reviewed property IRI is
-   the supported case. **This is my reading of the exporter's intent, not a
-   ruling recorded anywhere**, and it is the point in this card I would most
-   want contradicted.
-4. **Take the three costs as requirements, not caveats.** The
-   plural-component refusal, the `gap`-row exclusion, and a `SURFACE 8`
-   section in the role-contract guard if a predicate map is introduced.
+3. **Extend the EML annotations in the same decision** — but **for the landing
+   page, not for search.** The index flattens predicate and object into one
+   unpaired bag, so emission buys no discoverability
+   ([section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)); what
+   it buys is that a human reading the KNB dataset page sees the decomposition
+   with each predicate attached to its object, because MetacatUI renders the
+   annotation from the EML document rather than from Solr. That is a smaller
+   claim than the one this card made on 2026-09-14 and it is a true one.
+   It still requires answering the exporter's stated reason for declining, and
+   the answer is available: the reason given is *incomplete* I-ADOPT roles,
+   and rule 1 of the generator is exactly a completeness gate — a column that
+   satisfies the class axiom is not incomplete. The exporter's caution about
+   `dcterms:subject` and unsupported ranges was about asserting a range the
+   term does not support; `iop:hasProperty` has `rdfs:range iop:Property`, so
+   asserting it for a reviewed property IRI is the supported case. **This is
+   my reading of the exporter's intent, not a ruling recorded anywhere**, and
+   it is now the point in this card I would most want contradicted.
+4. **Take the four costs as requirements, not caveats.** The
+   plural-component refusal, the `gap`-row exclusion, the `label`-attribute
+   rule on every EML annotation, and a `SURFACE 8` section in the
+   role-contract guard if a predicate map is introduced.
 5. **Put the predicate map and the subject-IRI scheme in the pull request
    text**, with justification other than "validation passed".
 
-**What would change my recommendation.** If Brett's answer to Consumer 1 is
-that DataONE will not query the extra predicates, then the only consumer that
-exists today is unaffected, the remaining arguments are prospective, and the
-right recommendation becomes *wait*. I could not check that, and I have marked
-it unchecked rather than assumed it favourably. It is the load-bearing
-uncertainty in the card.
+**Did the finding change the recommendation? No — it changed the argument, and
+the recommendation is weaker for it.** Both halves matter and neither should
+be reported without the other.
+
+*Why it survives.* The sidecar is the larger half of the recommendation and
+**its value never depended on the index**; it is read directly or not at all.
+Justification 3 in [section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)
+— the ecosystem's own tools, which currently re-derive the decomposition from
+the dictionary's column layout in two implementations and no artifact — never
+depended on RDF at all, let alone on DataONE. Neither is touched by what the
+indexer does.
+
+*Why it is weaker.* The deleted argument was the only one that was concrete,
+present-tense and about a consumer that already exists, and I called it "the
+strongest argument in favour of emission". Its replacement — the landing page
+renders the full triple — is real and checkable but smaller: it serves a human
+reading one page, not a query across a corpus. So the case now rests mainly on
+prospective and internal benefits, which is a genuinely weaker footing than
+the card claimed a day earlier.
+
+**What would change the recommendation now.** Not the index question; that is
+settled and already priced in. The remaining load-bearing uncertainty is
+**whether the landing-page rendering is worth the format commitment of
+[section 5](#5-what-it-would-cost)** — published triples outlive the package
+that made them, and the exactly-1 axiom makes a plural component a silent
+falsehood. If Brett reads that trade as not worth it for a rendering benefit,
+*wait* becomes the right answer and the sidecar could still proceed alone.
+That split — sidecar yes, EML annotations later — is a coherent third option
+and this card does not argue against it.
 
 ---
 
@@ -529,6 +644,25 @@ not a reason against the design.
 - **Any implementation.** No code, by design — an implementation would
   pre-empt the ruling.
 
+### What was not established, stated as limits rather than as silence
+
+The 2026-09-15 indexer pass settled more than it left open, but not
+everything, and the gaps are named here so nobody infers them closed:
+
+- **No I-ADOPT annotation was deposited and indexed.** That needs a write to a
+  Metacat test node, which this pass did not do. "I-ADOPT IRIs would be
+  indexed literally" is an inference from the XPath filtering nothing and from
+  other non-whitelisted IRIs being indexed. *What would settle it:* deposit an
+  I-ADOPT-annotated EML 2.2.0 record to a test node and query
+  `sem_annotation:"https://w3id.org/iadopt/ont/hasObjectOfInterest"` against
+  it.
+- **No claim is made about any DataONE member node other than KNB.** The
+  configuration read is the indexer's and MetacatUI's; a different node could
+  deploy a different search interface.
+- **The exporter's reason for declining the I-ADOPT projection** is read from
+  its own documentation, not from a ruling. §6 item 3 marks that as my reading
+  and it remains the part of the card most in need of contradiction.
+
 There is **no `NEWS.md` entry** for this card, deliberately: `knowledge/` is
 excluded from `R CMD build` and nothing observable changes.
 
@@ -536,10 +670,11 @@ excluded from `R CMD build` and nothing observable changes.
 
 ## 9. Source register
 
-Every identifier below was resolved with a tool during the 2026-09-14 pass.
-**Tool-resolved, not human-verified.** A fuller ledger, including the
-negatives, was produced alongside this card; the negatives worth carrying here
-are in the notes column.
+Every identifier below was resolved with a tool during the 2026-09-14 pass, or
+the 2026-09-15 indexer pass where the row says so. **Tool-resolved, not
+human-verified.** A fuller ledger, including the negatives, was produced
+alongside this card; the negatives worth carrying here are in the notes
+column.
 
 | id | source | resolved | passage located |
 |---|---|---|---|
@@ -550,6 +685,11 @@ are in the notes column.
 | `w3c-data-cube-2014` | Cyganiak R., Reynolds D. (eds). *The RDF Data Cube Vocabulary*. W3C Recommendation, 16 January 2014 — [`https://www.w3.org/TR/vocab-data-cube/`](https://www.w3.org/TR/vocab-data-cube/) | HTTP 200, 174074 bytes | Yes — masthead date and `REC-vocab-data-cube-20140116`; vocabulary index listing `qb:DataStructureDefinition`, `qb:Observation`, `qb:DimensionProperty`, `qb:MeasureProperty`, `qb:AttributeProperty` |
 | `w3c-ogc-ssn-2017` | Haller A., Janowicz K., Cox S. et al. (eds). *Semantic Sensor Network Ontology*. W3C Recommendation, 19 October 2017; OGC 16-079 — [`https://www.w3.org/TR/vocab-ssn/`](https://www.w3.org/TR/vocab-ssn/) | HTTP 200, 673275 bytes | Yes — masthead: W3C Recommendation 19 October 2017 (link errors corrected 08 December 2017), joint W3C/OGC, OGC Document Number OGC 16-079 |
 | `frictionless-data-package-v2` | Pollock R., Walsh P., Kariv A., Karev E., Desmet P., Data Package Working Group. *Data Package Standard*, v2 — [`https://datapackage.org/standard/data-package/`](https://datapackage.org/standard/data-package/) | HTTP 200, 83822 bytes | Yes — Descriptor Properties section. **Negative recorded:** case-insensitive counts on the retrieved page are `@context` 0, `json-ld` 0, `jsonld` 0, `rdf` 0, `linked data` 0. Absence on one page is weaker than a normative statement, so the claim in [section 4](#where-the-triples-live) is scoped to what was retrieved |
+| `dataone-indexer-eml-annotation` **(2026-09-15)** | `DataONEorg/dataone-indexer`, `src/main/resources/application-context-eml-annotation.xml` on `main` — [raw](https://raw.githubusercontent.com/DataONEorg/dataone-indexer/main/src/main/resources/application-context-eml-annotation.xml) | HTTP 200, read in full | Yes — `EmlAnnotationSubprocessor`; `matchDocuments` is the single value `https://eml.ecoinformatics.org/eml-2.2.0`; one `SolrField` bean, `name` `sem_annotation`, `xpath` `//annotation/propertyURI/text() \| //annotation/valueURI/text()`, `multivalue` `true`. **The XPath is a union**, so predicate and object both land in one unpaired multivalued field and the subject is not recorded |
+| `dataone-indexer-legacy` **(2026-09-15)** | `DataONEorg/d1_cn_index_processor`, same filename on `master` — [raw](https://raw.githubusercontent.com/DataONEorg/d1_cn_index_processor/master/src/main/resources/application-context-eml-annotation.xml) | HTTP 200 | Yes — byte-identical XPath and `matchDocuments`. Cited to show the behaviour is **long-standing rather than recent**, so it is not a transient state to wait out |
+| `dataone-indexer-wiring` **(2026-09-15)** | `DataONEorg/dataone-indexer`, `src/main/resources/index-context-file-includes.xml` on `main` | HTTP 200 | Yes — `<import resource="application-context-eml-annotation.xml" />` at line 51, one of 35 imports alongside the EML, FGDC and Dryad contexts. Establishes it is **in the standard build**, not a prototype |
+| `metacatui-eml-annotation` **(2026-09-15)** | `NCEAS/metacatui`, `src/js/models/metadata/eml211/EMLAnnotation.js` and `src/js/views/searchSelect/AnnotationFilterView.js` on `main` | HTTP 200, both | Yes — `parse()` reads `propertyURI`/`valueURI` from the EML `objectDOM` and **returns early, dropping the annotation, if either `label` attribute is absent**; the landing page therefore renders from the document rather than from Solr. `AnnotationFilterView.js` line 74 sets `defaultOntology: "ECSO"` |
+| `dataone-indexer-docs-stale` **(2026-09-15)** | *DataONE Content Indexer 2.3.3*, `emlAnnotationSubprocessor` page — [`https://indexer-documentation.readthedocs.io/en/latest/generated/proc_emlAnnotationSubprocessor.html`](https://indexer-documentation.readthedocs.io/en/latest/generated/proc_emlAnnotationSubprocessor.html) | HTTP 200 | Yes, **and it is wrong twice.** Documents the XPath as `//annotation/valueURI/text()` alone — the string `propertyURI` does not occur anywhere on the page — and lists the field as `Multi: False` where the bean sets `multivalue="true"`. **Cited only as a warning not to cite it**; the configuration is the authority |
 
 **Negatives worth carrying.** No peer-reviewed I-ADOPT framework *journal*
 article was found in CrossRef across four query formulations — only EGU

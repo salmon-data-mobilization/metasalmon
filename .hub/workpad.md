@@ -102,6 +102,9 @@ Failing-before / passing-after does not apply: B-146 is a writing item, not a
 defect with a reproduction. What is verifiable is that the card is valid in the
 bundle's shape and that the shipped package is unchanged.
 
+*(The 2026-09-15 revision below re-ran all of these; they are still green, and
+the diff is still `knowledge/` plus this workpad and nothing else.)*
+
 ```
 $ python3 scripts/hub_queue.py lint
 97 item(s) in queue/items.
@@ -253,6 +256,73 @@ not an oversight.
 4. **Dated proposal cards in `knowledge/plans/` are reachable from nothing.**
    Both 2026-09-14 neighbours are linked from no file but themselves. Possibly
    fine, possibly a discoverability defect in the bundle. Named, not fixed.
+
+## 2026-09-15 revision: the load-bearing uncertainty was settled, against me
+
+The 2026-09-14 draft named one uncertainty and marked it unchecked — whether
+DataONE's production index would query the extra predicates. It was settled on
+2026-09-15 and it **refuted the card's strongest argument while leaving its
+conclusion standing**. I re-verified every claim from primary sources rather
+than taking any of it second-hand; all held, and one was worse than reported.
+
+**What the index does.** `DataONEorg/dataone-indexer`,
+`src/main/resources/application-context-eml-annotation.xml` on `main` (fetched,
+HTTP 200, read in full): `EmlAnnotationSubprocessor`, `matchDocuments` a single
+`https://eml.ecoinformatics.org/eml-2.2.0`, and one `SolrField` bean —
+`sem_annotation`, `multivalue="true"`, xpath
+`//annotation/propertyURI/text() | //annotation/valueURI/text()`. **That XPath
+is a union**, so predicate and object both land in one flat multivalued field
+with no pairing and no subject. Not "the predicate is discarded" — worse and
+more specific: to that index an I-ADOPT decomposition is exactly the flat bag
+of terms the SDP already ships. The legacy `d1_cn_index_processor` copy carries
+a byte-identical XPath, so the behaviour is long-standing rather than recent,
+and `index-context-file-includes.xml` imports it at line 51, one of 35 imports,
+so it is the standard build rather than a prototype.
+
+**The documentation is wrong, twice.** The indexer's readthedocs page for
+`emlAnnotationSubprocessor` documents the XPath as `//annotation/valueURI/text()`
+alone — the string `propertyURI` does not occur anywhere on that page — *and*
+lists the field as `Multi: False` where the bean sets `multivalue="true"`. I
+was told about the first error; the second I found while checking. A reader of
+that page alone concludes the predicate is discarded, which is the opposite of
+what both the current and the legacy source do. The card now cites that page
+only as a warning not to cite it.
+
+**What changed in the card.** §3 Consumer 1 and §6 are rewritten, not patched.
+The discoverability claim is deleted because it is false. Three sourced
+justifications replace it: the landing page renders the full triple (MetacatUI
+reads `propertyURI`/`propertyLabel`/`valueURI`/`valueLabel` from the EML
+document, not from Solr); direct consumers of the EML or the sidecar get the
+real structure, and **the sidecar's value never depended on the index at all**;
+and exact-IRI API queries work for a client that already knows the IRI. Added
+generator rule 4, the `label`-attribute rule — `EMLAnnotation.js` `parse()`
+returns early and **drops the annotation entirely** if either `label` is
+missing, verified in source; `.ms_eml_add_annotation()` already emits both, so
+metasalmon is compliant today and the risk is losing it silently. Added a "what
+was not established" block to §8 and six rows to the §9 register.
+
+**Did the recommendation change? No. Is it weaker? Yes, and the card says so
+in those words.** The sidecar survives untouched because it never depended on
+the index, and the internal-consumer argument never depended on RDF. But the
+deleted argument was the only one that was concrete, present-tense and about an
+existing consumer, and the 2026-09-14 draft called it "the strongest argument
+in favour of emission". Its replacement serves a human reading one page rather
+than a query across a corpus. §6 states this plainly rather than letting a
+reader infer the rewrite was cosmetic, and names the new load-bearing
+uncertainty: whether landing-page rendering is worth the format commitment of
+§5. It also names the coherent third option — sidecar yes, EML annotations
+later — and does not argue against it.
+
+**Not added, on instruction:** the ontology-whitelist finding, which is being
+filed as its own queue item and is a different subject.
+
+### Guard added in this revision, with its retirement condition
+
+Generator rule 4 (`label` on every EML annotation) is guard-shaped, so it
+states what retires it: **an export-side test asserting that every emitted
+annotation carries both `label` attributes**, at which point the compliance is
+enforced rather than merely true. It is a recommendation in a card, not code on
+this branch — nothing here implements or suppresses anything.
 
 ## Ontology gaps
 
