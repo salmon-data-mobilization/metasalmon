@@ -2740,7 +2740,11 @@ survives.
 
 This is exactly the defect class `AGENTS.md` records against 2026-08-16 — *"a
 `make` recipe whose missing `set -e` printed a success mark over a crashing
-script"* — in the same repository, thirteen months of commits later.
+script"* — in the same repository, a month later, in a recipe the earlier fix
+did not reach. The Makefile even carries the lesson in a comment on
+`ci-sync-artifacts`: *"No `|| true` here: a `git add` that fails must not print
+a success mark over the failure, which is the same fault this target's own
+`make ci` dependency was fixed for."* One recipe learned it; twenty did not.
 
 *Retires when:* the recipe fails the build when any command in it fails, its
 success mark prints only after the catalog file exists and is non-empty, a
@@ -2750,7 +2754,7 @@ other recipe in that Makefile prints an unconditional success mark.
 and its pull-request text shown to Brett in chat, never a push.
 
 **`B-150` the gcdfo `pre-push` hook cannot fail, and throws away the artifact
-`make ci` just rebuilt.** Two defects in one four-hundred-character line, and
+`make ci` just rebuilt.** Two defects in one 589-character `entry:` line, and
 naming only the first would leave the second looking like the fix.
 
 The `ontology-ci` hook in `.pre-commit-config.yaml` runs a `bash -lc` chain that
