@@ -214,14 +214,62 @@ to `NEWS.md` is ASCII too.
 
 ## What I did not do, and why
 
-**`knowledge/parity-deviations.md` is untouched, and it carries a row this fix
-makes stale.** Reported as a finding rather than fixed, for three reasons: the
-item's `retires_when` does not mention the register; the shared brief says to
-land a parity row in this pull request only *"if your item says the row lands
-with each half"*, and this item does not say that; and B-111 is in flight in
-this repository and has its own paragraph in that file, so editing it would risk
-a conflict over a file I do not own. Specifics under new-item candidates, so
-whoever takes B-144 can act on them.
+**`knowledge/parity-deviations.md` was deferred at first and then landed here,
+on a ruling.** The first hand-back left it untouched and reported the staleness
+instead, because this item's `retires_when` does not mention the register, the
+dispatch scoped the mirror half to B-144, and B-111 is in flight with its own
+paragraph in that file. The coordinator ruled on 2026-09-15 that the row lands
+in this pull request rather than with B-144, citing B-115's item text — *"the
+parity register row lands in the pull request that implements each half"* — so
+the R half carries its own row when the R half lands, and the register is never
+left claiming a verification that has stopped being true, not even for the
+length of one pull request. Done in a second commit, `knowledge/parity-deviations.md`
+only; `R/`, `tests/` and `NEWS.md` were not reopened. `origin/main` was still at
+this branch's base commit and the file was unchanged there, so there was no
+conflict with B-111.
+
+What landed, in one file and with no new numbered row:
+
+1. **Row 9 (`:60`) amended in place**, not extended and not deleted. Its
+   "mirrored 1:1 against metasalmon `main` (`e02111a`)" now carries a dated
+   qualifier and an explanation of what stopped being 1:1, in the shape the file
+   itself prescribes for `PARITY.md` row 31 — keep the original claim, date it,
+   say what broke it — because a new row saying the two differ, sitting under an
+   older row saying they were verified identical, leaves a reader to guess which
+   sentence is current.
+2. **A port paragraph** in the "what the port owes" section, after B-124's and
+   B-125's and in their shape, naming **B-144** as the item that closes it.
+
+**No new numbered row, deliberately.** The port is catch-up rather than a chosen
+difference, and the file's own rule is that filing absence as design is the one
+thing this register must not do. Row count is unchanged at **61**, and
+`test-parity-register-guard.R` **passes against the real metasalmonpy tree**
+(`METASALMONPY_PATH=/home/user/metasalmonpy`) rather than skipping, which is what
+it does by default here — its skip message says "a missing twin is not
+agreement", so the default green would not have been evidence.
+
+**Two things the port paragraph records that reading only the R side would
+miss**, both found by reading the Python tree, which was read and never written:
+
+- **It runs backwards.** metasalmonpy carried the three-column frame *first* and
+  gave it up at S10 chunk A to match R, so B-144 restores what it originally
+  had. This is the amended mirror contract's own case (Brett, 2026-08-17).
+- **The Python code documents the defect as intended**, so B-144 is a comment
+  correction as well as a code change. `sdp_methods.py:1083-1085` reads *"Two
+  columns, not three: R's nothing-to-migrate report frame has no ``columns``
+  column (unlike the empty placements frame the stop-free path returns), and the
+  differential run showed it."* Accurate about what the differential saw, wrong
+  about what the shape should be. Same shape as the **#118** port, where a
+  docstring documents the current behaviour as intended and the fix is the guard
+  **and** the docstring. A port that fixed the frame and left that comment
+  standing would leave an explanation for a behaviour that no longer exists.
+
+`python3 scripts/hub_queue.py check` — `OK: every generated block matches the hub
+queue.` The OKF bundle validator (`psc-okf check knowledge --tier capture`) could
+**not** be run: it needs a sibling `psc-data-systems` checkout and there is none
+on this machine. Front matter is untouched, no absolute filesystem path was
+introduced (checked; AGENTS.md forbids them in bundle cards) and row 9 is still a
+single table line — but those are hand checks, not the validator.
 
 **No `devtools::document()` run and no `man/` change.** The `@return` block for
 `migrate_sdp_methods()` describes the three report parts without enumerating
@@ -280,30 +328,27 @@ one."* Nothing to fix and no new item needed.
 
 ## New-item candidates
 
-### 1. `parity-deviations.md` row 9 claims the migration is "mirrored 1:1", and this fix makes that false
+### 1. `parity-deviations.md` row 9 — RESOLVED IN THIS PULL REQUEST, not a candidate
 
-Row 9 (`knowledge/parity-deviations.md:60`) reads: *"The migration itself is
-mirrored 1:1 against metasalmon `main` (`e02111a`) — nine-case differential,
-identical stop taxonomy, byte-identical rewrites."* The report shape is exactly
-what changed, so from this merge until B-144 lands, R returns three columns from
-the no-op exit and Python two.
+Kept here as the record of how it was found rather than deleted, because the
+finding is the reason the second commit exists. Row 9 claimed *"The migration
+itself is mirrored 1:1 against metasalmon `main` (`e02111a`)"*, and the report
+shape is exactly what this branch changes, so from merge until B-144 lands R
+returns three columns from the no-op exit and Python two. That is the shape the
+file already documents at length for `PARITY.md` row 31: *"Nothing over there
+will announce it, because the row still reads as a passing verification — which
+is the worst shape a stale register row can take."*
 
-This is the shape that file already documents at length for `PARITY.md` row 31:
-*"Nothing over there will announce it, because the row still reads as a passing
-verification — which is the worst shape a stale register row can take."* Row 9's
-claim is at least pinned to a named commit, which is honest dating, but a reader
-asking "is the migration mirrored?" reads "mirrored 1:1" and stops.
-
-The file has an established pattern for exactly this, in its "what the port owes"
-section (`knowledge/parity-deviations.md:150-171`): a dated paragraph naming the
-queue item and stating outright that the port is a separate queue item **rather
-than a deviation row**. Two paragraphs already follow it, for B-124 (#111) and
-B-125 (#95). Recommendation: a third paragraph in the same shape naming
-**B-144**, landed by B-144 itself or as a small follow-up, plus an amendment to
-row 9's "mirrored 1:1" clause **in place** rather than a new row beneath it —
-which is that file's own stated reasoning for row 31.
+It was reported as a candidate at the first hand-back and **ruled into this pull
+request** on 2026-09-15 under B-115's rule that the register row lands in the
+pull request implementing each half. Row 9 is now amended in place and a port
+paragraph naming **B-144** sits with B-124's and B-125's. See "What I did not do"
+above for what landed and what was checked.
 
 ### 2. Two `test-github-helpers.R` tests error instead of skipping when the raw host is unreachable but the API host is
+
+**Being filed by the coordinator as a sibling of B-132; not carried by this
+item.** Recorded here because the evidence was measured on this branch.
 
 `test-github-helpers.R:161:3` and `:264:3` fail with
 `Error in httr2::req_perform(req): HTTP 404 Not Found`. The cause is a mismatch
