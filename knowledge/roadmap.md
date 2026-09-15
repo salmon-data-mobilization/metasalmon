@@ -388,6 +388,21 @@ exempt from the unattended auto-apply gate (#118) and R writes a
 `decision_reason` column Python does not have. It must be **amended in place,
 not joined by a new row**; see `parity-deviations.md` for the drafted text.
 
+**The window has since grown three times, and this index was not the copy that
+recorded it.** Each addition is R work merged after 0.5.0 under the mirror rule,
+each is owed as a port rather than a register row, and each is specified in full
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`:
+validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
+B-95), and the reviewed semantic closure producer
+(`write_sdp_semantic_closure()`, backlog #116 / B-116, 2026-09-15) — the last of
+which **has no queue item yet** and needs one beside the other two. All three
+were deferred for the same structural reason rather than a judgement: a hub claim
+covers one branch in one repository, so the mirror half is a separate item. The
+first two reached `parity-deviations.md` and not this index, which is the drift
+the release index exists to catch, so the rule is stated here rather than only
+the instance: **an addition to a catch-up window is recorded in both places in
+the same change.**
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |

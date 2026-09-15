@@ -105,6 +105,10 @@ block above them, with the reason each needs C collation.
   of the four numbered findings, and the two things that are **not** closed.
 - `knowledge/parity-deviations.md` — the owed port, under *What metasalmon 0.5.0
   owes the mirror*, following the B-124 / B-125 precedent: **not** a numbered row.
+- `knowledge/roadmap.md` — the same port in the release index's metasalmonpy
+  entry, which the pull-request template names as the second home for a port and
+  which B-124 and B-125 never reached. That omission is recorded there as the
+  drift it is, with the rule stated rather than just this instance.
 - `queue/items/B-116.yaml` — `state: review`, `claimable: false`.
 - `NAMESPACE` / `man/write_sdp_semantic_closure.Rd` — regenerated.
 
