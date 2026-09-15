@@ -110,7 +110,19 @@ collation_sensitive_fns <- c(
   ".ms_descriptor_sync_metadata_row",
   "review_metadata",
   ".ms_metadata_render_lines",
-  ".ms_binding_name_for"
+  ".ms_binding_name_for",
+  # The reviewed semantic closure producer (backlog #116, hub item B-116).
+  # Registered ON CREATION, for the reason the S5 block above states.
+  # `write_sdp_semantic_closure()` decides the row order of
+  # `metadata/semantic_vocabulary.csv` and `reviewed_semantic_selections.csv`,
+  # hashes each vocabulary row into `reviewed_snapshot_sha256`, and hashes both
+  # whole files into `metadata/eml-mapping.yml`, so an ordering it performs
+  # reaches bytes twice over. `.ms_closure_iri_roles()` orders the roles an IRI
+  # is searched under, and role selects the sources, so it decides WHICH
+  # candidate becomes the written evidence -- not display-only. Neither name
+  # matches the heuristic below.
+  "write_sdp_semantic_closure",
+  ".ms_closure_iri_roles"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

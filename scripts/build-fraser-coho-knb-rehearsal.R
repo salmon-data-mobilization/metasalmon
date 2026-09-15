@@ -7,11 +7,18 @@
 # dictionary is the package's realistic worked example. Taking it all the way to
 # a publishable Salmon Data Package -- one that gets a clean
 # `publish_sdp_to_knb(dry_run = TRUE)` plan -- requires reviewed decisions that
-# `create_sdp()` deliberately does not guess, and three publication artifacts
-# that **no exported metasalmon function writes** (see STAGE 5 and STAGE 6).
+# `create_sdp()` deliberately does not guess.
 #
 # This script is the executable record of those decisions, so the workshop can
 # teach the golden path instead of reconstructing it from a transcript.
+#
+# EVERY CALL IT MAKES IS AN EXPORTED ONE. Until 2026-09-14 it reached into
+# `metasalmon:::` at three sites, because the reviewed semantic closure had no
+# exported producer; STAGE 6 now goes through `write_sdp_semantic_closure()`
+# instead (backlog #116, hub item B-116). The reviewed EML sidecar assembled in
+# STAGE 5 is the one publication artifact still built here by hand, and that is
+# a documented step rather than a gap: a template ships for it and the
+# post-review vignette says to copy and edit it.
 #
 # It never contacts KNB with credentials and never performs a live deposit. It
 # does reach the network to read the `smn`/`gcdfo` ontologies (deterministic
@@ -214,181 +221,24 @@ validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 pkg <- read_salmon_datapackage(pkg_path)
 
 # ---------------------------------------------------------------------------
-# STAGE 5 -- the reviewed closure: semantic vocabulary + review ledger
+# STAGE 5 -- the reviewed EML sidecar
 # ---------------------------------------------------------------------------
-# !! GOLDEN-PATH GAP !!
+# `metadata/eml-mapping.yml` has no exported producer either, but unlike the two
+# closure files it is documented: `inst/extdata/eml-mapping-template.yml` ships
+# for exactly this, and the post-review vignette tells you to copy and edit it.
 #
-# `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require a "reviewed
-# closure": `metadata/semantic_vocabulary.csv` (one evidence row per canonical
-# measurement IRI) and `reviewed_semantic_selections.csv` (exactly one
-# `accepted` row per canonical review target).
-#
-# NEITHER FILE HAS AN EXPORTED PRODUCER. metasalmon only validates them. The
-# only code that builds them lives in `tests/testthat/helper-eml.R`, and no
-# vignette mentions either filename. That is why the two blocks below reach into
-# `metasalmon:::` for the canonical target set and the row digest -- a user
-# following the published docs cannot do this at all. See backlog #116.
-#
-# Everything that CAN come from the real pipeline does: the term evidence below
-# is read back out of the ontologies with the exported `find_terms()`, not
-# transcribed.
+# THE SIDECAR IS NOW WRITTEN BEFORE THE CLOSURE, and the ordering is the point.
+# The sidecar declares where both closure files live and pins their bytes; since
+# 2026-09-14 `write_sdp_semantic_closure()` reads those declared paths and writes
+# the two digests back into this file in place, so the placeholders below are
+# filled by STAGE 6 and this script computes no file digest of its own. That is
+# also the order a user follows: copy the template, fill in the reviewed values,
+# then produce the closure.
 
-say("STAGE 5: build the reviewed closure (vocabulary + ledger)")
+say("STAGE 5: write the reviewed EML sidecar")
 
-# The search a reviewer ran to select each accepted IRI. Re-running it is what
-# supplies label/definition/source/ontology/resource_kind/type_iris evidence.
-review_searches <- tibble::tribble(
-  ~iri, ~role, ~query,
-  "https://w3id.org/gcdfo/salmon#SpawnerAbundance", "variable", "spawner abundance",
-  "https://w3id.org/smn/Abundance", "property", "abundance",
-  "https://w3id.org/smn/Population", "entity", "population"
-)
-
-# `native_type` and `source_url` are the two evidence fields `find_terms()` does
-# NOT return, so they are supplied per source. `source_artifact_sha256` is
-# optional and left empty: these are live w3id resolutions, not pinned release
-# artifacts.
-source_urls <- c(
-  smn = "https://w3id.org/smn/",
-  gcdfo = "https://w3id.org/gcdfo/salmon",
-  qudt = "https://qudt.org/vocab/unit/"
-)
-native_type_for <- function(resource_kind) {
-  switch(
-    tolower(resource_kind),
-    class = "owl:Class",
-    namedindividual = "owl:NamedIndividual",
-    concept = "skos:Concept",
-    paste0("owl:", resource_kind)
-  )
-}
-
-resolve_term <- function(iri, role, query) {
-  hits <- find_terms(query, role = role, sources = c("smn", "gcdfo"))
-  hit <- hits[hits$iri == iri, , drop = FALSE]
-  if (nrow(hit) != 1L) {
-    stop(
-      "Reviewed IRI ", iri, " was not returned by find_terms(\"", query,
-      "\", role = \"", role, "\"). The reviewed evidence cannot be rebuilt.",
-      call. = FALSE
-    )
-  }
-  hit <- hit[1, , drop = FALSE]
-  stopifnot(nzchar(as.character(hit$definition[[1]] %||% "")))
-  tibble::tibble(
-    iri = iri,
-    label = as.character(hit$label[[1]]),
-    definition = as.character(hit$definition[[1]]),
-    source = as.character(hit$source[[1]]),
-    ontology = as.character(hit$ontology[[1]]),
-    resource_kind = as.character(hit$resource_kind[[1]]),
-    type_iris = as.character(hit$type_iris[[1]] %||% ""),
-    native_type = native_type_for(as.character(hit$resource_kind[[1]])),
-    source_url = unname(source_urls[[as.character(hit$source[[1]])]]),
-    source_artifact_sha256 = ""
-  )
-}
-
-vocabulary <- purrr::pmap_dfr(review_searches, function(iri, role, query) {
-  message("  resolving ", iri)
-  resolve_term(iri, role, query)
-})
-
-# QUDT is not one of `find_terms()`'s searchable sources, so the unit's evidence
-# is supplied from the reviewed dictionary row plus the QUDT vocabulary itself.
-# This is a second, narrower gap: the closure demands provenance evidence for
-# vocabularies the package cannot search. See backlog #116.
-vocabulary <- dplyr::bind_rows(
-  vocabulary,
-  tibble::tibble(
-    iri = "https://qudt.org/vocab/unit/INDIV",
-    label = "Individual",
-    definition = paste(
-      "A counting unit denoting one organism, used to express abundance as a",
-      "number of individuals."
-    ),
-    source = "qudt",
-    ontology = "qudt",
-    resource_kind = "Unit",
-    type_iris = "http://qudt.org/schema/qudt/Unit",
-    native_type = "qudt:Unit",
-    source_url = "https://qudt.org/vocab/unit/",
-    source_artifact_sha256 = ""
-  )
-)
-
-# The closure must describe EXACTLY the canonical measurement IRI set: no more,
-# no less. Check that before writing, so a mismatch is a clear failure here
-# rather than an abort three stages later.
-canonical_iris <- metasalmon:::.ms_eml_canonical_measurement_iris(pkg_path, pkg)
-stopifnot(setequal(canonical_iris, vocabulary$iri))
-
-# `reviewed_snapshot_sha256` binds each row to its own evidence. There is no
-# exported way to compute it, and hand-writing a SHA-256 into a CSV is not a
-# workflow -- that is the core of the gap.
-vocabulary$reviewed_snapshot_sha256 <- vapply(
-  seq_len(nrow(vocabulary)),
-  function(i) {
-    metasalmon:::.ms_eml_vocabulary_snapshot_sha256(
-      vocabulary[i, , drop = FALSE]
-    )
-  },
-  character(1)
-)
-
-vocabulary_path <- file.path(pkg_path, "metadata", "semantic_vocabulary.csv")
-readr::write_csv(vocabulary, vocabulary_path, na = "")
-
-# The ledger records one accepted decision per canonical review target. The
-# target set (which includes the table-scope `observation_unit_iri` that the
-# vocabulary does not) is derived, not transcribed, so it cannot drift from the
-# dictionary.
-targets <- metasalmon:::.ms_eml_canonical_review_targets(pkg)
-
-rationales <- c(
-  "https://w3id.org/gcdfo/salmon#SpawnerAbundance" =
-    "The column is an escapement estimate of adult spawners, which is what the released gcdfo class denotes.",
-  "https://w3id.org/smn/Abundance" =
-    "The measured characteristic is abundance; the unit carries the counting representation separately.",
-  "https://w3id.org/smn/Population" =
-    "Rows key on POP_ID, a population, which is a finer grain than a Conservation Unit.",
-  "https://qudt.org/vocab/unit/INDIV" =
-    "Values are whole counts of organisms, expressed in QUDT Individual.",
-  "https://w3id.org/smn/Observation" =
-    "Each row is one population-year escapement observation."
-)
-
-review <- targets |>
-  dplyr::mutate(
-    decision = "accepted",
-    confidence = "high",
-    review_rationale = unname(rationales[.data$iri])
-  ) |>
-  dplyr::select(
-    dataset_id, table_id, column_name, target_scope, target_sdp_field,
-    dictionary_role, decision, confidence, review_rationale, iri
-  )
-
-stopifnot(!anyNA(review$review_rationale))
-
-review_path <- file.path(pkg_path, "reviewed_semantic_selections.csv")
-readr::write_csv(review, review_path, na = "")
-
-# ---------------------------------------------------------------------------
-# STAGE 6 -- the reviewed EML sidecar
-# ---------------------------------------------------------------------------
-# `metadata/eml-mapping.yml` also has no exported producer, but unlike the two
-# files above it is documented: `inst/extdata/eml-mapping-template.yml` ships for
-# exactly this, and the post-review vignette tells you to copy and edit it.
-#
-# The two SHA-256 values must be recomputed by hand every time either closure
-# file changes. Doing that in a script is the only way to keep them honest.
-
-say("STAGE 6: write the reviewed EML sidecar")
-
-file_sha256 <- function(p) {
-  digest::digest(file = p, algo = "sha256", serialize = FALSE)
-}
+# The digest placeholder the shipped template carries. STAGE 6 replaces both.
+unpinned_sha256 <- paste(rep("0", 64), collapse = "")
 
 # `source_provenance.supporting_document` is mandatory in the sidecar schema,
 # and its `sha256` is mandatory too: the reviewed sidecar pins the exact bytes
@@ -415,7 +265,10 @@ readme_url <- paste0(
 if (nzchar(Sys.getenv("MS_VERIFY_SUPPORTING_DOCUMENT"))) {
   fetched <- tempfile(fileext = ".md")
   utils::download.file(readme_url, fetched, quiet = TRUE, mode = "wb")
-  if (!identical(file_sha256(fetched), readme_sha256)) {
+  fetched_sha256 <- digest::digest(
+    file = fetched, algo = "sha256", serialize = FALSE
+  )
+  if (!identical(fetched_sha256, readme_sha256)) {
     stop(
       "The pinned supporting document at ", readme_url,
       " no longer hashes to ", readme_sha256, ".",
@@ -444,11 +297,11 @@ mapping <- list(
   publication_date = format(Sys.Date()),
   semantic_vocabulary = list(
     path = "metadata/semantic_vocabulary.csv",
-    sha256 = file_sha256(vocabulary_path)
+    sha256 = unpinned_sha256
   ),
   semantic_review = list(
     path = "reviewed_semantic_selections.csv",
-    sha256 = file_sha256(review_path)
+    sha256 = unpinned_sha256
   ),
   publication = list(public = FALSE),
   rights_authorization = list(
@@ -550,6 +403,132 @@ mapping$tables[[table_id]]$attributes <- stats::setNames(
 )
 
 yaml::write_yaml(mapping, file.path(pkg_path, "metadata", "eml-mapping.yml"))
+
+# ---------------------------------------------------------------------------
+# STAGE 6 -- the reviewed closure: semantic vocabulary + review ledger
+# ---------------------------------------------------------------------------
+# `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require a "reviewed
+# closure": `metadata/semantic_vocabulary.csv` (one evidence row per canonical
+# measurement IRI) and `reviewed_semantic_selections.csv` (exactly one
+# `accepted` row per canonical review target).
+#
+# THIS STAGE USED TO BE THE GOLDEN-PATH GAP. Until 2026-09-14 neither file had
+# an exported producer, and this script reached into `metasalmon:::` at three
+# sites to build them: for the canonical measurement IRI set, for the canonical
+# review-target set, and for each vocabulary row's snapshot digest. All three now
+# come back from the one exported `write_sdp_semantic_closure()` (backlog #116,
+# hub item B-116), so nothing this script does is out of reach of a user
+# following the published documentation.
+#
+# What still has to be supplied by hand, and why each one genuinely cannot be
+# derived:
+#
+#   * the QUDT unit row in full, because QUDT is not one of `find_terms()`'s
+#     searchable sources at all;
+#   * `confidence` and `review_rationale` for every target, because they are the
+#     reviewer's judgement and no search produces one. Omitting them is not an
+#     error -- the producer writes a `REVIEW REQUIRED:` marker and warns -- but a
+#     rehearsal that shipped a marker would be rehearsing the wrong thing.
+#
+# Everything else -- label, definition, source, ontology, resource_kind,
+# type_iris -- the producer reads back out of smn/gcdfo with `find_terms()`, so
+# the evidence is resolved rather than transcribed. `llm_assess` is not involved:
+# there is no such argument on this path.
+
+say("STAGE 6: build the reviewed closure (vocabulary + ledger)")
+
+# The reviewer's judgement, one row per accepted IRI. `smn:Observation` is here
+# because it is the table's `observation_unit_iri`: a canonical REVIEW TARGET
+# that is deliberately NOT a measurement vocabulary term, which is why the ledger
+# has five rows and the vocabulary four.
+closure_evidence <- tibble::tribble(
+  ~iri, ~confidence, ~review_rationale,
+  "https://w3id.org/gcdfo/salmon#SpawnerAbundance", "high",
+  "The column is an escapement estimate of adult spawners, which is what the released gcdfo class denotes.",
+  "https://w3id.org/smn/Abundance", "high",
+  "The measured characteristic is abundance; the unit carries the counting representation separately.",
+  "https://w3id.org/smn/Population", "high",
+  "Rows key on POP_ID, a population, which is a finer grain than a Conservation Unit.",
+  "https://w3id.org/smn/Observation", "high",
+  "Each row is one population-year escapement observation."
+)
+
+# The QUDT row: hand-authored end to end, because `find_terms()` cannot search
+# QUDT. `source_artifact_sha256` is left empty on purpose -- these are live w3id
+# and QUDT resolutions, not pinned release artifacts.
+closure_evidence <- dplyr::bind_rows(
+  closure_evidence,
+  tibble::tibble(
+    iri = "https://qudt.org/vocab/unit/INDIV",
+    label = "Individual",
+    definition = paste(
+      "A counting unit denoting one organism, used to express abundance as a",
+      "number of individuals."
+    ),
+    source = "qudt",
+    ontology = "qudt",
+    resource_kind = "Unit",
+    type_iris = "http://qudt.org/schema/qudt/Unit",
+    native_type = "qudt:Unit",
+    source_url = "https://qudt.org/vocab/unit/",
+    confidence = "high",
+    review_rationale =
+      "Values are whole counts of organisms, expressed in QUDT Individual."
+  )
+)
+
+closure <- write_sdp_semantic_closure(pkg_path, evidence = closure_evidence)
+
+# The producer reports an IRI it cannot resolve as a term-request gap and writes
+# the files anyway, which is right for a user and wrong for a rehearsal: every
+# IRI in this example is a released term, so a gap here means something regressed
+# in the ontologies or in retrieval. Fail loudly rather than deposit a short
+# vocabulary.
+if (nrow(closure$gaps) > 0L) {
+  stop(
+    "The reviewed closure could not resolve ",
+    paste(closure$gaps$unresolved_iri, collapse = ", "),
+    ". Every IRI in this example is a released term, so this is a regression ",
+    "rather than an ontology gap; inspect closure$gaps.",
+    call. = FALSE
+  )
+}
+if (nrow(closure$placeholders) > 0L) {
+  stop(
+    "The reviewed closure left a REVIEW REQUIRED: rationale on ",
+    nrow(closure$placeholders),
+    " target(s); add them to `closure_evidence` above.",
+    call. = FALSE
+  )
+}
+
+# Each file must describe EXACTLY its canonical set: no more, no less. Both sets
+# now come back from the exported producer, so these are checks on the rehearsal
+# rather than a reconstruction of the package's internals.
+stopifnot(setequal(closure$measurement_iris, closure$vocabulary$iri))
+stopifnot(nrow(closure$review) == nrow(closure$review_targets))
+stopifnot(
+  identical(
+    setdiff(closure$review_targets$iri, closure$measurement_iris),
+    "https://w3id.org/smn/Observation"
+  )
+)
+
+# And the producer pinned both digests into the sidecar STAGE 5 left unpinned, so
+# no SHA-256 in this package was written by hand.
+pinned <- yaml::read_yaml(file.path(pkg_path, "metadata", "eml-mapping.yml"))
+stopifnot(
+  !identical(pinned$semantic_vocabulary$sha256, unpinned_sha256),
+  !identical(pinned$semantic_review$sha256, unpinned_sha256)
+)
+
+vocabulary_path <- closure$files[["vocabulary"]]
+review_path <- closure$files[["review"]]
+
+message(
+  "  ", nrow(closure$vocabulary), " vocabulary rows, ",
+  nrow(closure$review), " ledger rows, sidecar digests pinned"
+)
 
 # ---------------------------------------------------------------------------
 # STAGE 7 -- build reviewed EML, then rehearse the test-node plan

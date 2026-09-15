@@ -2818,11 +2818,52 @@ Pages configuration.
 #### smn-data-pkg (verified on `main`, 2026-08-21)
 
 **#116 The reviewed closure has no producer and no documentation, so the
-publication path is unreachable from the published docs.** Found 2026-08-25
+publication path is unreachable from the published docs. FIXED IN R
+2026-09-15 (hub item B-116); the mirror half is still owed.** Found 2026-08-25
 while taking the Fraser coho example to a KNB test-node dry run. Severity:
 **high** — it is not a defect in any one function, it is a hole in the golden
 path, and the symptom is that a user who does everything the vignette says gets
 `metadata/semantic_vocabulary.csv does not exist` with nowhere to go.
+
+**What landed, against the four numbered findings below.** One exported
+`write_sdp_semantic_closure(path, evidence = NULL, search_fn = find_terms,
+sources = c("smn", "gcdfo"), quiet = FALSE)` in `R/semantic-closure.R`,
+following the shape Brett approved on 2026-09-12. It derives both canonical sets
+(finding 3) and returns them as `measurement_iris` and `review_targets`, so a
+user never reasons one from the other; resolves each IRI's evidence by re-running
+`find_terms()` with the query recorded in `semantic_suggestions.csv` or, failing
+that, the IRI's own local name split back into words (finding 4's searchable
+half); takes hand-supplied rows through `evidence`, overlaid field by field, for
+QUDT and for `native_type` / `source_url` (finding 4's unsearchable half);
+computes every `reviewed_snapshot_sha256` and both file digests in
+`metadata/eml-mapping.yml` (finding 2); and reports an IRI it cannot resolve as a
+row of `gaps` in `detect_semantic_term_gaps()` shape, writing both files without
+it, rather than aborting. The post-review vignette's "Known gap" callout is
+replaced by the producer and its gap path (finding 1's R half).
+
+**The rehearsal script's three `metasalmon:::` calls are gone, and the script
+ran end to end to a clean `publish_sdp_to_knb(dry_run = TRUE)` plan on
+2026-09-15** — 4 vocabulary rows, 5 ledger rows, both sidecar digests pinned by
+the producer, 10 objects in the manifest. Its STAGE 5 and STAGE 6 are swapped so
+the EML sidecar is written first and the producer pins its digests, which also
+removed the script's last hand-computed file digest. So the measure this item
+chose for itself — *"those two calls are the precise measure of this gap"* — now
+reads zero.
+
+**Two things this did not close, and they are not oversights.** The **workshop**
+surface named in finding 1 lives in `salmon-data-standards-workshop`, which is a
+shared repository an agent may not push to, so session 6's callout and its four
+`eval = FALSE` publication chunks still describe an unreachable deposit and need
+revisiting. And the **mirror half is owed as a port**, not as a deviation row;
+the detail is under *What metasalmon 0.5.0 owes the mirror* in
+[`knowledge/parity-deviations.md`](parity-deviations.md), and it has no queue item
+yet.
+
+**Everything from here down is the diagnosis as found on 2026-08-25, kept
+because it is what the fix had to answer.** Read its present tense as of that
+date: two of the three files below now have a producer, and findings 2, 3 and 4
+are discharged in R. The four findings are numbered, and the "What landed" block
+above answers them by number.
 
 `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require a reviewed
 closure. Three files carry it, and **metasalmon validates all three and writes
@@ -2852,13 +2893,16 @@ Four separate things are wrong, in descending order of how badly they block:
    reachable unaided, which is why its four publication chunks stay
    `eval = FALSE`. **Documentation is not a producer**, so the item stays
    open — and it now has two downstream surfaces that must be revisited when
-   a producer ships.
+   a producer ships. *2026-09-15: the vignette surface is revisited (the callout
+   is replaced by the producer and its gap path). The workshop surface is not,
+   and cannot be from here: that repository is shared.*
 2. **`reviewed_snapshot_sha256` cannot be computed by any exported function.**
    `.ms_eml_vocabulary_snapshot_sha256()` (`R/eml-export.R:1182`) is a verifier
    only. Its sole producing caller in the whole repo is
    `tests/testthat/helper-eml.R:134`. A user's only options are to hand-write a
    SHA-256 into a CSV or to reach into `metasalmon:::`, and the first of those
-   is not a workflow.
+   is not a workflow. *Discharged 2026-09-15: `write_sdp_semantic_closure()`
+   computes it for every row, and pins both file digests in the sidecar too.*
 3. **The two canonical sets are derivable only from internals.** The vocabulary
    must equal `.ms_eml_canonical_measurement_iris()` exactly and the ledger must
    equal `.ms_eml_canonical_review_targets()` exactly, both internal. The sets
@@ -2871,17 +2915,24 @@ Four separate things are wrong, in descending order of how badly they block:
    and QUDT — which the shipped examples annotate against for units — is not a
    searchable source at all, so a QUDT row is 100% hand-authored.
 
-**Proposed shape (not a decision):** one exported `write_sdp_semantic_closure()`
-that reads the package, derives both canonical sets, resolves evidence for each
-IRI through the existing search path, computes the snapshot digests, and writes
-both files plus the two hashes into an existing sidecar — with any IRI it cannot
-resolve reported as a gap rather than guessed at. That would make the closure a
-product of the review pipeline instead of a thing reviewers reconstruct.
+**Proposed shape, ruled and shipped.** One exported
+`write_sdp_semantic_closure()` that reads the package, derives both canonical
+sets, resolves evidence for each IRI through the existing search path, computes
+the snapshot digests, and writes both files plus the two hashes into an existing
+sidecar — with any IRI it cannot resolve reported as a gap rather than guessed
+at. Approved by Brett on 2026-09-12 (`knowledge/plans/2026-09-12-queue-promotion-review.md`
+§3), including the part that is easy to get backwards: **the gap is reported
+because a gap is what the term-request pipeline consumes**, so the producer must
+not abort. The same ruling fixed the export set — the internals shared with S-13
+requirement 1 are reached *through* the one export and stay unexported. Landed
+2026-09-15.
 
-**Worked reference in the meantime:** `scripts/build-fraser-coho-knb-rehearsal.R`
-takes the shipped 173-row example from `create_sdp()` to a clean KNB test-node
-dry run. It reaches into `metasalmon:::` in exactly two places, both marked, and
-those two calls are the precise measure of this gap.
+**Worked reference:** `scripts/build-fraser-coho-knb-rehearsal.R` takes the
+shipped 173-row example from `create_sdp()` to a clean KNB test-node dry run.
+Until 2026-09-15 it reached into `metasalmon:::` at **three** sites (the earlier
+wording here said two, corrected by the 2026-09-12 review), and those calls were
+the precise measure of this gap. It now reaches into none, which is the measure
+reading zero.
 
 **The mirror has the identical gap, measured rather than presumed
 (2026-08-25).** metasalmonpy requires both files on the same path
@@ -2928,11 +2979,25 @@ column (`accepted` / `not_selected` / `rejected`) back into
 candidate was chosen and which were passed over, and it is evidence a future
 closure producer can read instead of asking the user to restate it. It narrows
 the *evidence* available to the fix; it does not narrow this item, which stays
-open at its full scope.
+open at its full scope. **Used as predicted (2026-09-15):**
+`write_sdp_semantic_closure()` reads a recorded `decision_reason` for an accepted
+IRI and writes it as that target's `review_rationale`, so a reviewer who
+recorded a reason once is not asked for it again. Where none was recorded it
+writes a `REVIEW REQUIRED:` marker and warns, naming each target — a producer
+that invented a confident-sounding rationale would be fabricating the one thing
+in the ledger that is purely human.
 
 *Retires when:* a user can produce a publishable package without `:::` and
-without hand-writing a digest, and the rehearsal script's two internal calls
+without hand-writing a digest, and the rehearsal script's three internal calls
 become calls to exported functions.
+
+**R half discharged 2026-09-15** on both counts: the rehearsal runs to a clean
+dry run with zero `:::` calls, and no SHA-256 in the resulting package was
+written by hand. **Retained open for the mirror**, which still has every part of
+this hole; the port is specified under *What metasalmon 0.5.0 owes the mirror* in
+[`knowledge/parity-deviations.md`](parity-deviations.md) and has no queue item
+yet. The workshop surface in finding 1 also still needs revisiting, in a
+repository an agent may not push to.
 
 **#117 `term_type` is required by EML export but not by strict validation, so
 the SDP gate does not gate publication.** Found 2026-08-25, same session. The

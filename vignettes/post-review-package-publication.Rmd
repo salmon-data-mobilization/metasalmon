@@ -370,14 +370,15 @@ the package, resolve the ontology decision, then run strict validation again.
 additionally requires a **reviewed closure**: a standing record of which
 vocabulary terms you accepted, on what evidence, and for which target.
 
-Three files carry it, and **metasalmon validates all three but writes none of
-them** (see the note at the end of this section):
+Three files carry it. **`write_sdp_semantic_closure()` writes the first two and
+pins the digests the third one carries**; the reviewed EML facts in the third
+are yours (step 11):
 
-| File | What it must contain |
-| --- | --- |
-| `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less |
-| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target |
-| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above |
+| File | What it must contain | Written by |
+| --- | --- | --- |
+| `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less | `write_sdp_semantic_closure()` |
+| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target | `write_sdp_semantic_closure()` |
+| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above | you, except the two SHA-256 values |
 
 **The canonical measurement IRI set** is every non-empty value across
 `term_iri`, `property_iri`, `entity_iri`, `constraint_iri`,
@@ -398,11 +399,6 @@ iri, label, definition, source, ontology, resource_kind, type_iris,
 native_type, source_url, source_artifact_sha256, reviewed_snapshot_sha256
 ```
 
-`find_terms()` returns `label`, `definition`, `source`, `ontology`,
-`resource_kind` and `type_iris` directly, so re-running the search that
-justified each accepted IRI is how you source that evidence rather than
-transcribing it. `native_type` and `source_url` are yours to supply.
-
 `reviewed_semantic_selections.csv` needs:
 
 ```
@@ -413,15 +409,82 @@ dictionary_role, decision, confidence, review_rationale, iri
 Every `decision` must be `accepted` — a final ledger holds no open decisions —
 and `column_name` is empty only for table-scope rows.
 
-<div class="alert alert-warning">
-**Known gap.** `reviewed_snapshot_sha256` binds each vocabulary row to its own
-evidence, and there is **no exported function that computes it**. Neither
-closure file has an exported producer at all; metasalmon only validates them.
-Until that is fixed, see `scripts/build-fraser-coho-knb-rehearsal.R` in the
-source repository, which builds both files end to end for the shipped Fraser
-coho example and takes it to a clean KNB test-node dry run. Tracked as backlog
-item #116.
-</div>
+### Produce both files
+
+`write_sdp_semantic_closure()` derives both canonical sets from the package,
+re-runs `find_terms()` for each IRI to resolve its evidence, computes every
+`reviewed_snapshot_sha256`, writes both files, and rewrites the two file digests
+in `metadata/eml-mapping.yml`. **No SHA-256 in a reviewed package is ever
+hand-written.**
+
+Two kinds of value it cannot derive, and both go in `evidence`:
+
+* **Vocabularies `find_terms()` cannot search.** It resolves `smn` and `gcdfo`.
+  A QUDT unit row is hand-authored in full. It also cannot fill `native_type` or
+  `source_url`, which describe the ontology *artifact* rather than the term;
+  those are derived from the resolved source and can be overridden.
+* **`confidence` and `review_rationale`**, which are your judgement. They are
+  read from `semantic_suggestions.csv` where `apply_sdp_semantics()` recorded a
+  decision reason, and otherwise written as a `REVIEW REQUIRED:` marker with a
+  warning naming each target that got one. Replace those before publishing.
+
+```{r, purl = FALSE}
+# Your judgement on each accepted IRI. The term evidence is resolved for you.
+judgements <- tibble::tribble(
+  ~iri, ~confidence, ~review_rationale,
+  "https://w3id.org/gcdfo/salmon#SpawnerAbundance", "high",
+  "The column is an escapement estimate of adult spawners.",
+  "https://w3id.org/smn/Abundance", "high",
+  "The measured characteristic is abundance.",
+  "https://w3id.org/smn/Observation", "high",
+  "Each row is one population-year observation."
+)
+
+# A QUDT row is hand-authored end to end: the search cannot reach QUDT.
+qudt <- tibble::tibble(
+  iri = "https://qudt.org/vocab/unit/INDIV",
+  label = "Individual",
+  definition = "A counting unit denoting one organism.",
+  source = "qudt",
+  ontology = "qudt",
+  resource_kind = "Unit",
+  type_iris = "http://qudt.org/schema/qudt/Unit",
+  native_type = "qudt:Unit",
+  source_url = "https://qudt.org/vocab/unit/",
+  confidence = "high",
+  review_rationale = "Values are whole counts of organisms."
+)
+
+closure <- write_sdp_semantic_closure(
+  "path/to/package",
+  evidence = dplyr::bind_rows(judgements, qudt)
+)
+```
+
+Copy the sidecar template (step 11) **before** running this, so the two digests
+are pinned in the same pass. If you produce the closure first, run it again once
+the sidecar exists.
+
+**An IRI it cannot resolve is reported, not guessed at, and not fatal.**
+`closure$gaps` is a term-gap table in the same shape
+`detect_semantic_term_gaps()` returns, so it feeds the request pipeline
+directly:
+
+```{r, purl = FALSE}
+if (nrow(closure$gaps) > 0) {
+  requests <- render_ontology_term_request(closure$gaps, ask = FALSE)
+  submit_term_request_issues(requests, dry_run = TRUE)
+}
+```
+
+The unresolved row is left out of the vocabulary rather than invented, so
+`write_eml_from_sdp()` will still refuse the package and will name the same IRI.
+That is the intended sequence: the gap is a term to mint or an IRI to correct,
+and the package is not publishable until it is one or the other.
+
+A worked end-to-end example is `scripts/build-fraser-coho-knb-rehearsal.R` in
+the source repository, which takes the shipped Fraser coho data from
+`create_sdp()` to a clean KNB test-node dry run using only exported functions.
 
 ## 11) Build reviewed EML and preview KNB publication when needed
 

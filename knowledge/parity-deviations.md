@@ -169,6 +169,45 @@ Queued as **B-125**, blocked by B-95. It did not land in the same stream
 because the hub claim that produced #112 covers one branch in the item's
 repository, so the port is a separate queue item rather than a deviation row.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-15):
+the reviewed semantic closure producer.** `write_sdp_semantic_closure()` now
+derives both canonical sets, resolves `smn`/`gcdfo` evidence through
+`find_terms()`, accepts hand-supplied rows for QUDT and the fields the search
+cannot fill, computes every `reviewed_snapshot_sha256` and both sidecar file
+digests, and reports an unresolvable IRI as a term-request gap rather than
+aborting (backlog #116, hub item B-116, Brett's ruling of 2026-09-12).
+
+**This is not a new numbered row, for the reason this section already gives:**
+absence in Python is lag, not design. But it is the one entry here whose R half
+closes a defect the register describes as *shared*, so the asymmetry has to be
+said plainly. Backlog #116 measured the mirror on 2026-08-25 and found the
+identical hole: `eml.py:1654` `_read_vocabulary()` raises `FileNotFoundError` for
+the same file, `knb_publication.py:82-89` lists it in `_REQUIRED_SDP_ARTIFACTS`,
+none of the nine `write_*` entries in `__init__.py:78-140` writes either closure
+file, `package_io.py` contains zero occurrences of either filename, and the
+digest helper is private at `eml.py:1636 _vocabulary_snapshot_sha256`, reached in
+tests only by importing past the API boundary at `tests/test_eml.py:901`. Neither
+file is mentioned in any user-facing Python doc, `guides/semantic-review.qmd`
+included. So until the port lands, metasalmonpy's golden path has a hole
+metasalmon no longer has, and **that is the state of the mirror rather than a
+difference either side chose**.
+
+**What the port owes, specifically**, so the claiming session need not re-derive
+it: one public `write_sdp_semantic_closure(path, evidence=None)`; both canonical
+sets derived rather than reasoned from each other, since they legitimately
+differ; evidence resolved through Python's own `find_terms()` rather than a new
+retrieval path; a hand-supplied `evidence` frame with the same field-by-field
+overlay, including the QUDT case and the `native_type` / `source_url` fields no
+search fills; the per-row digest and both sidecar digests written, with the
+sidecar edited line-wise rather than round-tripped through a YAML dump, because
+the shipped template's own instructions are comments a dump deletes; and an
+unresolvable IRI returned in `detect_semantic_term_gaps()` shape so the
+term-request pipeline consumes it. **The gap-not-abort shape is the ruled part**
+and must not be softened into an exception on the Python side. **No queue item
+exists for this yet** — it is the mirror half of B-116 and needs filing beside
+B-124 and B-125; it is recorded here rather than left in a pull request
+description precisely because those evaporate.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

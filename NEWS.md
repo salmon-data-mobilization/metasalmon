@@ -1,6 +1,55 @@
 metasalmon (development version)
 --------------------------------
 
+### Added
+
+* **`write_sdp_semantic_closure()` produces the reviewed semantic closure, which
+  metasalmon has validated in three places and written in none** (backlog #116,
+  hub item B-116). `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require
+  `metadata/semantic_vocabulary.csv` and `reviewed_semantic_selections.csv`, and
+  the symptom of the hole was that a user who did everything the vignette said
+  got *"metadata/semantic_vocabulary.csv does not exist"* with nowhere to go.
+  One exported call now reads the package and writes both files:
+
+  - **Both canonical sets are derived, not transcribed.** The two legitimately
+    differ -- a table's `observation_unit_iri` is a review target and not a
+    measurement vocabulary term, and a code-resolved `sosa:usedProcedure` is a
+    measurement term and not a review target -- so neither can be reasoned from
+    the other, and both come back on the result as `measurement_iris` and
+    `review_targets`. In the shipped Fraser coho example the ledger has five
+    rows and the vocabulary four.
+  - **Evidence is resolved through the existing search path.** Each IRI's
+    `label`, `definition`, `source`, `ontology`, `resource_kind` and `type_iris`
+    come from `find_terms()`, re-running the query recorded in
+    `semantic_suggestions.csv` or, failing that, the IRI's own local name split
+    back into words (`SpawnerAbundance` -> `"spawner abundance"`). No LLM is
+    involved and there is no argument that would enable one.
+  - **`evidence` accepts the rows no search can fill.** QUDT is not a searchable
+    source, so a unit row is hand-authored; `native_type` and `source_url`
+    describe the ontology artifact rather than the term and are derived from the
+    resolved source; `confidence` and `review_rationale` are human judgements,
+    read from a recorded `decision_reason` where `apply_sdp_semantics()` left
+    one and otherwise written as a `REVIEW REQUIRED:` marker with a warning
+    naming each target. Supplied values win field by field, so one row may
+    correct one field.
+  - **Every digest is computed.** Each row's `reviewed_snapshot_sha256`, and both
+    file digests in `metadata/eml-mapping.yml` -- edited in place, line by line,
+    so the sidecar's own instructions are not deleted by a YAML round trip. A
+    user never hand-writes a SHA-256 into a CSV again.
+  - **An unresolvable IRI is a gap, not an abort** (ruled 2026-09-12). It is
+    returned as `gaps`, in the shape `detect_semantic_term_gaps()` returns plus
+    an `unresolved_iri` column, so it feeds
+    `render_ontology_term_request()` and `submit_term_request_issues()`
+    directly; both files are still written without that row. The omission is not
+    silent, because `write_eml_from_sdp()` then names the same IRI as missing
+    from the vocabulary.
+
+  `scripts/build-fraser-coho-knb-rehearsal.R` reached into `metasalmon:::` at
+  three sites for exactly the things this function now returns, and reaches into
+  none. The two stages are swapped so the EML sidecar is written first and the
+  producer pins its digests, which removes the script's last hand-computed file
+  digest as well.
+
 ### Fixed
 
 * **`validate_salmon_datapackage()` now checks the three things backlog #49
