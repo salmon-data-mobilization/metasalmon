@@ -1,0 +1,12 @@
+id: B-172
+kind: defect
+title: Metasalmon pull request 121 claims four guards state their retirement condition in the source, and one does not
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: [B-116]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The REVIEW REQUIRED: rationale placeholder in R/semantic-closure.R carries its retirement condition as a source comment where it is built, so the Guards claim in metasalmon pull request 121 is true of all four. One comment line. Measured 2026-09-15 against that branch: the file contains exactly two Retires when: comments, at line 117 for .ms_closure_source_url() and line 573 for .ms_closure_set_mapping_digest(), and the placeholder is constructed at line 923 with no retirement condition anywhere near it. The condition exists and is a good one -- the review API records a rationale for every accepted slot, or a publication gate refuses the marker, which is a decision nobody has made -- but it lives only in the pull-request body and in .hub/workpad.md item 4, and a pull-request body evaporates, which is the reason this repository writes such things into files. The fourth guard, the two collation_sensitive_fns entries, carries the rest of that list''s condition rather than one of its own, which the workpad says outright and which is a defensible reading of an enumerated list; it is not what this item is about. Filed at P4 because it is one comment line, and filed at all because this repository''s own rule is that a claimed scope exceeding real scope is worse than a missing guard, and the claim being checked here is a claim about retirement conditions.'

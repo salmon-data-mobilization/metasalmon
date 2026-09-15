@@ -1,0 +1,12 @@
+id: B-168
+kind: defect
+title: No ignore file in the ecosystem names .pytest_cache, and only pytest's own self-written gitignore keeps it out
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'smn-data-pkg .gitignore names .pytest_cache/ next to the __pycache__/ entry it already carries, and the same line is added in metasalmonpy, which runs pytest and has the same omission. THE REPORT THAT PRODUCED THIS ITEM WAS WRONG IN BOTH HALVES AND THE CORRECTION IS THE ITEM. It said the directory was git-ignored but missing from .Rbuildignore. smn-data-pkg has no .Rbuildignore at all and is not an R package -- no DESCRIPTION and no NAMESPACE -- so that half is void; metasalmon has one and does not list .pytest_cache either, but nothing there generates one. And the other half: git check-ignore -v .pytest_cache exits 1 in smn-data-pkg, so the directory is NOT ignored by the repository''s own rules, whose Python block is __pycache__/, *.py[cod], *$py.class, *.so, .Python and four virtualenv entries with no pytest line. What actually keeps it out of git status is that pytest writes .pytest_cache/.gitignore containing a single asterisk when it creates the directory, so every file inside ignores itself -- git check-ignore -v .pytest_cache/CACHEDIR.TAG reports .pytest_cache/.gitignore:2 as the matching rule. That is the guard shape AGENTS.md warns about seen from the far side: the protection is a third-party artifact nobody in the repository knows about, it stops working silently if pytest changes it, and reading the repository alone tells you nothing is wrong. Severity is P4 because nothing is committed today and the fix is one line per repository; it is filed rather than dropped because the next person to check will re-derive the same wrong answer the report did.'

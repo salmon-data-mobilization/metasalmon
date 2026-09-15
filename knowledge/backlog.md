@@ -3240,6 +3240,358 @@ is a capability SDPs should support *generally* rather than just for I-ADOPT.
 Deliverable is the explainer plus a recommendation — not an implementation.
 Parked under S9 step 6; do not schedule before Brett reviews the explainer.
 
+### Open — the 2026-09-15 recovered findings
+
+**Twelve findings recovered from four hub agents' workpads and pull requests
+after the fact** — `B-116`, `B-111`, `B-115` and `B-106`, the four items worked
+on the night of 2026-09-15. Each agent named what it had found and deliberately
+did not absorb; none of it was a queue item, and a finding that lives only in a
+workpad is a finding the next reader re-derives. They are headed by their
+**queue id** for the reason the *Open — the 2026-09-15 fleet findings* section
+gives: `#120` is the last number this file issued and inventing `#121` upward
+would create a second numbering nobody reconciles. **State is not here** —
+whether one of these is icebox, ready, claimed or done lives in `queue/items/`,
+and this section is what each item's `evidence:` pointer resolves to. That fleet
+section, `B-149`–`B-160` and `Q49`, is the sibling of this one: same night,
+different agents, filed separately.
+
+**Every description was re-verified before it was filed, and four of the twelve
+moved when checked.** That is the measurement worth keeping, because all twelve
+arrived as confident prose and none of the four looked wrong. `B-163`'s blast
+radius named files that are not on the atomic path and asserted a
+durability divergence with the mirror that does not exist. `B-164` arrived as
+"two vignettes fail" and is in fact invisible to CI, on a step the CI's R no
+longer runs. `B-168` was wrong in both halves at once. `B-170` overstated the
+churn by a factor. Three more gained precision that changes the work rather than
+the claim (`B-161`, `B-166`, `B-167`), and **one could not be verified at all**
+(`B-169`) and says so in its own entry rather than being filed as though it had
+been.
+
+**`B-161` `readr::write_csv()` writes an unpadded, invalid `xs:dateTime` year
+for a pre-1000 instant on Linux.** Reproduced 2026-09-15 on R 4.3.3 with readr
+2.2.0:
+
+```r
+readr::write_csv(data.frame(t = as.POSIXct("0001-02-03 04:05:06", tz = "UTC")), f)
+#> t
+#> 1-02-03T04:05:06Z          <- not a valid xs:dateTime
+readr::write_csv(data.frame(t = as.POSIXct("0999-12-31 23:59:59", tz = "UTC")), f)
+#> 999-12-31T23:59:59Z        <- nor is this
+```
+
+So `metadata/dataset.csv` carries bytes this package cannot parse back. It is
+**#93's `as.character` Date defect in the same shape on readr's *instant*
+path**, and unlike #93 it **is** platform-dependent — which this file already
+records without having noticed: #115's measurement table, taken on macOS R
+4.5.2, gives `0001-01-01T00:00:00Z` for a year-1 instant and calls readr's
+instant path *"already correct"*. True there, false here, and CI runs Linux.
+
+**B-115 and PR #118 deliberately did not absorb it**, and say so in
+`R/platform-time.R` on that branch, which is the right call and worth stating so
+nobody folds them: B-115's condition is *agreement* between `datapackage.json`
+and `metadata/dataset.csv`, agreement now holds on both platforms, and this is
+the separate question of whether the agreed-on bytes are *valid*. Reachable only
+from a caller-supplied typed instant, which neither implementation produces on
+its own.
+
+*Retires when:* one spelling is ruled for a pre-1000 instant in
+`metadata/dataset.csv` and both implementations emit it, with a test pinning
+write → read for a `POSIXct` below year 1000. **A ruling, not a substitution**,
+which is why the item is not claimable: padding the CSV side means reopening #93
+item 1 deliberately — it ruled that `.ms_iso_date_columns()` leaves `POSIXct`
+alone, *correctly*, because coercing an instant changes the separator, the zone
+marker and whether a fractional second survives — and the only alternative is
+accepting a platform-dependent instant year ecosystem-wide. Cross-references
+B-115, B-145, #93 item 1; like B-115 it has to be ruled for both
+implementations at once or it creates a parity row instead of closing one.
+
+**`B-162` EML `calendarDate` renders `temporal_start` through a third
+renderer.** `R/eml-export.R:1661` and `:1663` read
+`as.character(temporal_start)` and `as.character(temporal_end)` inside
+`.ms_eml_add_coverage()` (`:1603`) — a third rendering of one value in a package
+whose contract is *one value, one rendering*.
+
+**Filed as an observation and not a verified defect**, which is the strength it
+was reported at and the strength it was confirmed at. On today's only path it
+cannot diverge: the frame arrives as `pkg$dataset` from
+`validate_salmon_datapackage()` (`R/eml-export.R:2915`), which reads
+`metadata/dataset.csv` through `.ms_read_metadata_csv()`
+(`R/package-helpers.R:2814`) with `col_types = cols(.default = col_character())`,
+so every cell is character and `as.character()` is the identity. A typed instant
+has never been driven through it.
+
+*Retires when:* both lines render through the same renderer the two writers use,
+**or** a test pins that all three agree for a typed `POSIXct`, **or** the
+question is answered by-design and this closes with no code change. It becomes
+real the moment any caller hands the EML builder a typed metadata frame — which
+is exactly the situation B-115 established is reachable for the other two
+writers — so the cheap close is the test.
+
+**`B-163` The SDP atomic write set renames a staging file it never flushed.**
+`.ms_sdp_extension_atomic_write_set()` (`R/sdp-extension-helpers.R:133`) stages
+each replacement with `writeBin()` at `:186` and installs it with
+`file.rename()` at `:240`, with no flush between; the rollback path has the same
+shape. It is **atomic against an aborted call and not durable against a crash**:
+a power loss after the rename can leave a renamed empty file where the previous
+bytes were.
+
+**The blast radius as reported was wrong in two directions and the corrected one
+is the point of the item.** On `main`, what reaches the write set is
+`write_salmon_datapackage()` through `.ms_commit_package_write()`
+(`R/package-helpers.R:718`), the `set_sdp_*()` setters through
+`.ms_set_sdp_metadata()` (`R/sdp-field-setters.R:850`), `apply_sdp_semantics()`
+(`R/metadata-write.R:463`), `migrate_sdp_methods()` (`R/sdp-methods.R:560`) and
+`write_sdp_observation_structures()` (`R/observation-structures.R:946`).
+`create_sdp()`'s three sidecars are **not** on it today — they arrive with B-111
+and PR #119, which is what that item does. And KNB publication, the
+reproducibility manifest and measurement decompositions do **not** go through
+the set at all: each has **its own** `tempfile` → `writeBin` → `file.rename`
+helper with the identical gap (`R/knb-publication.R:865`,
+`R/reproducibility-manifest.R:220`, `R/measurement-decompositions.R:537`), and
+so do SSSOM (`R/sssom.R:870`), EML export (`R/eml-export.R:3007`) and ontology
+fetch (`R/ontology_fetch.R:90`). Six private copies of one pattern, six copies
+of one gap.
+
+**The mirror half is not a divergence today, which corrects the report
+directly.** metasalmonpy has **zero** occurrences of `fsync`; `atomic_io.py`'s
+`atomic_write()` writes through `os.fdopen`, chmods, and calls `os.replace` with
+no flush. The two implementations are therefore **identical in durability** and
+no register row is owed. What differs is the *cost of closing it*: Python has
+`os.fsync` in the standard library and base R exposes nothing, so R needs
+compiled code, a new dependency, or an external `sync`. That asymmetry is an
+argument for ruling once for both rather than letting Python close it quietly
+and open a register row.
+
+*Retires when:* Brett rules whether metasalmon takes on compiled code, a
+dependency, or an external call to make an SDP write durable, and — if he rules
+for durability — the staging file and its directory are flushed before the
+rename with a test pinning the call, naming the six independent writers or
+deliberately leaving them out.
+
+**`B-164` #32's fix has no guard, and two vignettes written after it carry the
+shape it closed.** #32 was closed 2026-07-21 under roadmap E5 by adding
+per-chunk `purl = FALSE` to six vignettes and adding **nothing that would notice
+a seventh**. Its entry already states the rule the two later vignettes break: *a
+global runtime `knitr::opts_chunk$set(eval = FALSE, purl = FALSE)` is
+insufficient because the check's tangle phase does not execute the setup chunk.*
+
+`vignettes/migrating-to-sdp-0-3-0.Rmd` and `vignettes/tidy-data-for-sdp.Rmd`
+each open with an `include = FALSE, purl = FALSE` setup chunk setting only
+`collapse`, `comment` and `eval = FALSE`, then use bare ```` ```{r} ```` headers
+for 18 and 7 content chunks. Reproduced 2026-09-15, in the built tarball rather
+than by reading:
+
+```
+R CMD build          -> inst/doc/migrating-to-sdp-0-3-0.R   (209 lines)
+                        inst/doc/tidy-data-for-sdp.R        (86 lines)
+                        and NO .R file for the other nine vignettes
+R CMD check (R 4.3.3) -> * checking running R code from vignettes ... ERROR
+                         'migrating-to-sdp-0-3-0.Rmd' ... failed
+                         'tidy-data-for-sdp.Rmd' ... failed
+                         Status: 1 ERROR
+```
+
+**Framing it as "two vignettes fail" is what the re-check corrected, and the
+correction makes the guard mandatory rather than merely desirable.** The check
+step that catches this **does not exist on the R that CI runs**: the
+`R-CMD-check` job on **R 4.6.1** prints `checking package vignettes` then
+`checking re-building of vignette outputs` with no `checking running R code from
+vignettes` between them. CI is green, and would stay green through any number of
+further regressions. (Which R release dropped the step was not determined —
+present on 4.3.3, absent on 4.6.1.) That **inverts** the warning in `AGENTS.md`
+rather than repeating it: there a green local check hid a CI failure; here a
+green CI hides a failure any user on an older R hits.
+
+*Retires when:* a test fails when a vignette relies on the global
+`opts_chunk$set()` form instead of per-chunk `purl = FALSE`, demonstrated RED
+against both files before either is fixed. The two fixes are not the item; the
+guard is.
+
+**`B-165` The metasalmonpy port of `write_sdp_semantic_closure()`.** The
+producer shipped in PR #121 (B-116, #116) and has **no queue item**, unlike its
+two siblings B-124 and B-125. **The specification is already written and is
+deliberately not restated here**: *What metasalmon 0.5.0 owes the mirror* in
+[`parity-deviations.md`](parity-deviations.md) gives it field by field, and the
+release index in [`roadmap.md`](roadmap.md) carries the same addition to the
+catch-up window. Both were written by PR #121, and both say in their own words
+that the item is missing.
+
+**It is not B-153 and it is not B-126**, which is worth stating because all
+three are metasalmonpy and all three are 0.5.0-shaped: B-126 is the S5
+*behaviour* port of the nine review functions; B-153 is the S5 *documentation*
+half plus the version bump that closes the 0.4.0 → 0.5.0 window; this is a third
+thing. Owed as a **port** and not a register row, because absence in Python is
+lag rather than design.
+
+*Retires when:* metasalmonpy exports one `write_sdp_semantic_closure(path,
+evidence=None)` doing what the R producer does and `guides/semantic-review.qmd`
+documents it. **The gap-not-abort shape is the part Brett ruled** (2026-09-12)
+and must not become an exception on the Python side.
+
+**`B-166` Re-vendor `sdp.rules.yaml` into metasalmonpy.** Measured 2026-09-15 —
+metasalmon `main`, metasalmonpy `data/schema/` and smn-data-pkg `main` all carry
+md5 `3c702a373409b23f9c58cb1e1a702c06`, and the reworded file on metasalmon's
+B-106 branch is `2f6126c241ce637955604b75e48b9265`. So all three copies sit at
+the pre-change bytes today; metasalmon's re-vendor has PR #120 open and
+metasalmonpy's has nothing. A **port, not a deviation** — the file is vendored
+spec text rather than an implementation choice, so no register row, and a stale
+vendored copy is a third answer to a question smn-data-pkg owns.
+
+*Retires when:* metasalmonpy's copy matches smn-data-pkg's once smn-data-pkg #8
+merges.
+
+**`B-167` `SPECIFICATION.md` and three other documents still carry the reading
+the reworded rules drop.** Six sites carry *"resolves to a shared vocabulary
+concept typed as a `sosa:Procedure`"* or its twin. **Which are generated was
+established rather than assumed**, because regenerating and hand-editing are
+different work and the report did not distinguish them:
+
+| Site | How it is maintained |
+|---|---|
+| `SPECIFICATION.md:237-238`, `:265` | hand-edited |
+| `template-source/salmon-data-package-template/README.md:15-17` | hand-edited |
+| `examples/mixed-grain-example/README.md:15-16` | hand-edited |
+| `docs/field-reference.md:64` | **generated** from `schema/frictionless/metadata/tables.schema.json:76` by `scripts/generate_artifacts.py`; carries a do-not-edit banner |
+| `templates/salmon-data-package-template/README.md` | **generated** — copied verbatim from the `template-source` file and byte-identical to it |
+
+Three source edits plus one regeneration therefore reach all six.
+
+*Retires when:* every copy carries the reachability reading Brett ruled
+2026-09-14, in wording that agrees with the rules file. **Rewording normative
+spec prose is itself a semantic choice**, so the pull request has to say what
+justified the new wording *other than* the rules file already carrying it — the
+failure class `AGENTS.md` says code review structurally cannot catch — rather
+than inheriting B-106's justification. `SPECIFICATION.md` calls itself the
+human-readable validity specification and `docs/field-reference.md` defers to
+it, so a spec disagreeing with the rules file is the spec being **wrong**, not
+merely stale.
+
+**`B-168` No ignore file names `.pytest_cache`, and only pytest's own
+self-written `.gitignore` keeps it out.** Filed because the report was **wrong
+in both halves** and the correction is the finding.
+
+It said the directory was git-ignored but missing from `.Rbuildignore`.
+smn-data-pkg has **no `.Rbuildignore` at all** and is not an R package — no
+`DESCRIPTION`, no `NAMESPACE` — so that half is void. (metasalmon has one and
+does not list `.pytest_cache` either, but nothing there generates one.) And
+`git check-ignore -v .pytest_cache` **exits 1** in smn-data-pkg: the directory
+is *not* ignored by the repository's rules, whose Python block is
+`__pycache__/`, `*.py[cod]`, `*$py.class`, `*.so`, `.Python` and four
+virtualenv entries, with no pytest line.
+
+What actually keeps it out of `git status` is that **pytest writes
+`.pytest_cache/.gitignore` containing a single `*`** when it creates the
+directory, so every file inside ignores itself —
+`git check-ignore -v .pytest_cache/CACHEDIR.TAG` reports
+`.pytest_cache/.gitignore:2:*` as the matching rule. That is the guard shape
+`AGENTS.md` warns about seen from the far side: the protection is a third-party
+artifact nobody in the repository knows about, it stops working silently if
+pytest changes it, and reading the repository alone tells you nothing is wrong.
+
+*Retires when:* smn-data-pkg's `.gitignore` names `.pytest_cache/` beside the
+`__pycache__/` entry it already has, and metasalmonpy — which runs pytest and
+has the same omission — gains the same line. P4: nothing is committed today and
+the fix is one line per repository. Filed rather than dropped because the next
+person to check re-derives the same wrong answer.
+
+**`B-169` Workshop session 6's gap callout goes stale and its publication chunks
+become runnable when the closure producer ships.** #116 finding 1 names two
+downstream surfaces to revisit when a producer ships; the post-review vignette
+is the other and is already revisited on PR #121's branch, so this is the
+remaining one.
+
+**Not verified against the repository, and this entry says so rather than being
+filed as though it had been.** `salmon-data-standards-workshop` is neither
+checked out on the machine that filed this nor readable from the session, so the
+callout and the count of four `eval = FALSE` publication chunks come from **#116
+finding 1 as recorded 2026-08-25** (workshop PR #5: session 6 states the gap in
+a callout and tells learners plainly that a complete deposit is not reachable
+unaided, which is why its four publication chunks stay `eval = FALSE`) and from
+PR #121, which names the same surface as not done for the same reason. Whoever
+claims it reads session 6 first and corrects the count if it has moved.
+
+**The deliverable is a patch and its pull-request text shown to Brett in chat,
+never a push.** `salmon-data-standards-workshop` is the member repository
+`HUB.md`'s participation table records as having one collaborator other than
+Brett, in commits and issues, so the standing authorization does not reach it —
+neither the work-branch push nor the draft pull request.
+
+*Retires when:* session 6 no longer tells learners a complete deposit is
+unreachable unaided, and its publication chunks run.
+
+**`B-170` The roxygen2 version pin is a release behind the toolchain.**
+`DESCRIPTION` records `Config/roxygen2/version: 8.0.0`; the installed toolchain
+is roxygen2 **8.1.0**. Running the namespace roclet produces a 20-line
+`NAMESPACE` diff plus the version bump, so any agent running
+`devtools::document()` must carry that churn into an unrelated diff or revert it
+by hand — which is what PR #121 did, and recorded.
+
+**The churn is narrower than reported, and the correction changes how the cost
+is judged.** 8.1.0 does not rewrite *every* `importFrom` directive; it collapses
+the directives of a package with more than one imported name into one multi-line
+directive. So the five `dplyr` lines and three `rlang` lines become two blocks,
+while `importFrom(tools,toTitleCase)` and `importFrom(utils,askYesNo)` come out
+byte-identical:
+
+```
+-importFrom(dplyr,"%>%")          +importFrom(dplyr,
+-importFrom(dplyr,coalesce)       +  "%>%",
+-importFrom(dplyr,filter)         +  coalesce,
+ ...                              ...
+ importFrom(tools,toTitleCase)     importFrom(tools,toTitleCase)   <- unchanged
+```
+
+*Retires when:* Brett rules which version metasalmon pins, `DESCRIPTION` carries
+it, and `NAMESPACE` is regenerated under it in the same commit so the next
+`document()` run produces no diff. Not claimable: a pin is a statement about the
+toolchain the project supports, so an agent choosing one would be inventing a
+policy rather than doing work.
+
+**`B-171` The code-resolved `sosa:usedProcedure` direction of B-116's two
+canonical sets is held by construction and no fixture.** B-116's central claim
+is that the two canonical sets *legitimately differ and neither can be reasoned
+from the other* — and only one direction of it has a fixture. In both
+`make_eml_test_sdp()` and the shipped Fraser coho example the difference is
+exactly one row, `smn:Observation`, a review target and not a vocabulary term
+because it is the table's `observation_unit_iri`.
+
+The other direction — an IRI reached through a code value, which is a
+vocabulary term and not a review target — is held by construction in
+`.ms_closure_iri_roles()` (`R/semantic-closure.R:351` on PR #121's branch),
+whose fallback returns role `method` for an IRI in the measurement set carrying
+no `dictionary_role` row. **Nothing reaches that fallback**: the only matches for
+`method` in the new test file are `sort(..., method = "radix")`. The branch's
+workpad names it as a testing gap rather than leaving it implied, which is why
+this is a fixture item and not a defect report against the producer.
+
+*Retires when:* a fixture binds a column with `component_relation_iri` =
+`sosa:usedProcedure` whose `codes.csv` `term_iri` lands in the measurement set
+and in no review target, and a test asserts it reaches
+`metadata/semantic_vocabulary.csv` and not `reviewed_semantic_selections.csv`.
+
+**`B-172` PR #121 claims four guards state their retirement condition in the
+source, and one does not.** Its Guards section reads *"Four, all with retirement
+conditions in the source and restated in the workpad."* `R/semantic-closure.R`
+on that branch contains **exactly two** `Retires when:` comments — `:117` for
+`.ms_closure_source_url()` and `:573` for `.ms_closure_set_mapping_digest()` —
+and the `REVIEW REQUIRED:` rationale placeholder is constructed at `:923` with
+no retirement condition anywhere near it.
+
+The condition exists and is a good one (*the review API records a rationale for
+every accepted slot, or a publication gate refuses the marker, which is a
+decision nobody has made*), but it lives only in the pull-request body and in
+`.hub/workpad.md` item 4 — and a pull-request body evaporates, which is why this
+repository writes such things into files. The fourth guard, the two
+`collation_sensitive_fns` entries, carries the rest of that list's condition
+rather than one of its own; the workpad says so outright and that is a
+defensible reading of an enumerated list, so it is not what this item is about.
+
+*Retires when:* the placeholder carries its retirement condition as a source
+comment where it is built, so the claim is true of all four. One comment line —
+filed at P4 for that reason, and filed at all because this repository's own rule
+is that **a claimed scope exceeding real scope is worse than a missing guard**,
+and the claim being checked here is a claim about retirement conditions.
+
 ---
 
 ## Code review of the implementation (2026-06-25)
