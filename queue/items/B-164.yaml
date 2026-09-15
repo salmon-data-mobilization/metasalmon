@@ -1,6 +1,6 @@
 id: B-164
 kind: defect
-title: Backlog #32's fix has no guard, and two vignettes written after it carry the shape it closed
+title: 'Backlog #32''s fix has no guard, and two vignettes written after it carry the shape it closed'
 state: icebox
 claimable: true
 repo: metasalmon

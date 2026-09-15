@@ -3243,8 +3243,8 @@ Parked under S9 step 6; do not schedule before Brett reviews the explainer.
 ### Open — the 2026-09-15 recovered findings
 
 **Twelve findings recovered from four hub agents' workpads and pull requests
-after the fact** — `B-116`, `B-111`, `B-115` and `B-106`, the four items worked
-on the night of 2026-09-15. Each agent named what it had found and deliberately
+after the fact, plus a thirteenth found while filing them** — the four items
+worked on the night of 2026-09-15 were `B-116`, `B-111`, `B-115` and `B-106`. Each agent named what it had found and deliberately
 did not absorb; none of it was a queue item, and a finding that lives only in a
 workpad is a finding the next reader re-derives. They are headed by their
 **queue id** for the reason the *Open — the 2026-09-15 fleet findings* section
@@ -3261,6 +3261,7 @@ different agents, filed separately.
 | **B-115** (PR #118, the descriptor instant) | `B-161`, `B-162` |
 | **B-111** (PR #119, the create-path sidecars) | `B-163` |
 | **B-106** (PR #120 and smn-data-pkg PR #8, the reworded rules) | `B-166`, `B-167`, `B-168` |
+| *nobody* — found by tripping over it while filing `B-164` | `B-173` |
 
 **Every description was re-verified before it was filed, and four of the twelve
 moved when checked.** That is the measurement worth keeping, because all twelve
@@ -3455,9 +3456,9 @@ vendored copy is a third answer to a question smn-data-pkg owns.
 *Retires when:* metasalmonpy's copy matches smn-data-pkg's once smn-data-pkg #8
 merges.
 
-**`B-167` `SPECIFICATION.md` and three other documents still carry the reading
-the reworded rules drop.** Six sites carry *"resolves to a shared vocabulary
-concept typed as a `sosa:Procedure`"* or its twin. **Which are generated was
+**`B-167` `SPECIFICATION.md` and four other documents still carry the reading
+the reworded rules drop.** Five documents, six passages, carry *"resolves to a
+shared vocabulary concept typed as a `sosa:Procedure`"* or its twin. **Which are generated was
 established rather than assumed**, because regenerating and hand-editing are
 different work and the report did not distinguish them:
 
@@ -3619,6 +3620,44 @@ comment where it is built, so the claim is true of all four. One comment line �
 filed at P4 for that reason, and filed at all because this repository's own rule
 is that **a claimed scope exceeding real scope is worse than a missing guard**,
 and the claim being checked here is a claim about retirement conditions.
+
+**`B-173` `hub_queue.py` silently truncates an unquoted value at the first
+` #`, and `lint` reports OK.** A thirteenth finding, and the only one here that
+was **not** recovered from a workpad: it was found by tripping over it while
+filing `B-164` above.
+
+That item's file said:
+
+```yaml
+title: Backlog #32's fix has no guard, and two vignettes written after it carry the shape it closed
+```
+
+`hub_queue.py list` rendered the title as the single word **`Backlog`**, and
+`lint` printed `OK`.
+
+`strip_comment()` (`scripts/hub_queue.py:302`) cuts an unquoted value at the
+first ` #`. That is correct YAML and the schema block at the top of that same
+file documents it — *"A value that contains `#` must therefore be quoted, which
+is why `legacy` is written `'#53'`"*. **The defect is not the rule; it is that
+breaking the rule is silent and the guard says OK.** A truncated title is still
+a valid title, so every existing check passes, and the only signal is a human
+reading a rendered block weeks later and finding a sentence that stops
+mid-thought. That is the failure this queue was built to remove, occurring
+inside the queue's own validator: the file on disk and the fact the client reads
+have quietly become two different things.
+
+The exposure is one-directional and worth naming. A backlog citation of the form
+`#N` is the **single most likely** thing to appear in `title` and
+`retires_when`, because every item migrated from this file cites one — so the
+one construction the stripper eats is the one the fields are full of.
+
+*Retires when:* `lint` refuses, or warns by name, when `strip_comment()` removes
+text from a value that is not a comment — at minimum for `title` and
+`retires_when` — demonstrated RED against a title reading `Backlog #32's fix has
+no guard`. A complete fix compares the stripped value against the raw one and
+refuses when the removed text does not look like a comment; a cheaper partial
+one refuses any unquoted value containing `#`, which also catches the case where
+the truncation happens to leave a plausible sentence behind.
 
 ---
 
