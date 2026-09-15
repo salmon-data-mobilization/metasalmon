@@ -3299,9 +3299,11 @@ readr::write_csv(data.frame(t = as.POSIXct("0999-12-31 23:59:59", tz = "UTC")), 
 So `metadata/dataset.csv` carries bytes this package cannot parse back. It is
 **#93's `as.character` Date defect in the same shape on readr's *instant*
 path**, and unlike #93 it **is** platform-dependent — which this file already
-records without having noticed: #115's measurement table, taken on macOS R
-4.5.2, gives `0001-01-01T00:00:00Z` for a year-1 instant and calls readr's
-instant path *"already correct"*. True there, false here, and CI runs Linux.
+records without having noticed. **#93 item 1's** own comparison table, measured
+on macOS R 4.5.2, has the row `POSIXct, year 1 → 0001-01-01T00:00:00Z —
+*already correct*`, and **#115**'s entry rests on it in prose: *"`readr::write_csv()`'s
+instant output is already ISO-correct"*. True on macOS, false on Linux, and CI
+runs Linux.
 
 **B-115 and PR #118 deliberately did not absorb it**, and say so in
 `R/platform-time.R` on that branch, which is the right call and worth stating so
