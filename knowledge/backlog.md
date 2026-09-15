@@ -3667,6 +3667,20 @@ The exposure is one-directional and worth naming. A backlog citation of the form
 `retires_when`, because every item migrated from this file cites one — so the
 one construction the stripper eats is the one the fields are full of.
 
+**It was already live on `main`, in two items, and had been for weeks.** A sweep
+of all 110 item files for an unquoted value containing ` #` found exactly two,
+and they are `B-124` and `B-125` — the pair `B-165` above is filed beside:
+
+```
+$ python3 scripts/hub_queue.py list        # before
+  B-124    Port the validator checks of        [P1; blocked by B-49]
+  B-125    Port the categorical inference of   [P2; blocked by B-95]
+```
+
+Both titles end mid-phrase, because both cite `#49` and `#95`. Both are quoted
+now, in the same change as this entry, and the sweep is the thing to re-run
+rather than the fix to remember. `lint` reported `OK` on them throughout.
+
 *Retires when:* `lint` refuses, or warns by name, when `strip_comment()` removes
 text from a value that is not a comment — at minimum for `title` and
 `retires_when` — demonstrated RED against a title reading `Backlog #32's fix has
