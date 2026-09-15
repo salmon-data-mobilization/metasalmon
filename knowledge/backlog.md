@@ -3255,17 +3255,32 @@ and this section is what each item's `evidence:` pointer resolves to. That fleet
 section, `B-149`–`B-160` and `Q49`, is the sibling of this one: same night,
 different agents, filed separately.
 
+| Found by | Items |
+|---|---|
+| **B-116** (PR #121, the closure producer) | `B-164`, `B-165`, `B-169`, `B-170`, `B-171`, `B-172` |
+| **B-115** (PR #118, the descriptor instant) | `B-161`, `B-162` |
+| **B-111** (PR #119, the create-path sidecars) | `B-163` |
+| **B-106** (PR #120 and smn-data-pkg PR #8, the reworded rules) | `B-166`, `B-167`, `B-168` |
+
 **Every description was re-verified before it was filed, and four of the twelve
 moved when checked.** That is the measurement worth keeping, because all twelve
 arrived as confident prose and none of the four looked wrong. `B-163`'s blast
-radius named files that are not on the atomic path and asserted a
-durability divergence with the mirror that does not exist. `B-164` arrived as
-"two vignettes fail" and is in fact invisible to CI, on a step the CI's R no
-longer runs. `B-168` was wrong in both halves at once. `B-170` overstated the
-churn by a factor. Three more gained precision that changes the work rather than
-the claim (`B-161`, `B-166`, `B-167`), and **one could not be verified at all**
-(`B-169`) and says so in its own entry rather than being filed as though it had
-been.
+radius named files that are not on the atomic path, and asserted a durability
+divergence with the mirror that does not exist. `B-164` arrived as "two
+vignettes fail" and is in fact invisible to CI, on a step the CI's R no longer
+runs. `B-168`'s git half is false in all three repositories, and the half that
+*is* true belongs to a different repository than the one it was reported
+against — so it is filed against metasalmon. `B-170` overstated the churn.
+Three more gained precision that changes the work rather than the claim
+(`B-161`, `B-166`, `B-167`), and **one could not be verified at all** (`B-169`),
+which its entry says rather than asserting what it could not check.
+
+**A note on that rate, since it is the second night running.** The fleet
+findings above were filed by an agent that was told six of its handed-down
+descriptions were wrong and found them; this pass was told to assume the same
+rate and found four plus one unverifiable. Two passes is not a trend, but it is
+enough to stop treating a workpad sentence as a finding: it is a **lead**, and
+the distance between the two is a third of them.
 
 **`B-161` `readr::write_csv()` writes an unpadded, invalid `xs:dateTime` year
 for a pre-1000 instant on Linux.** Reproduced 2026-09-15 on R 4.3.3 with readr
@@ -3466,33 +3481,46 @@ human-readable validity specification and `docs/field-reference.md` defers to
 it, so a spec disagreeing with the rules file is the spec being **wrong**, not
 merely stale.
 
-**`B-168` No ignore file names `.pytest_cache`, and only pytest's own
-self-written `.gitignore` keeps it out.** Filed because the report was **wrong
-in both halves** and the correction is the finding.
+**`B-168` `.pytest_cache` is in no ignore file in the ecosystem, and a stray one
+adds an `R CMD check` NOTE that muddies a baseline.** The report was **half
+right, and the half it got wrong is why this is filed rather than fixed in
+passing**. It read: *".pytest_cache is git-ignored but not in metasalmon's
+`.Rbuildignore`"*.
 
-It said the directory was git-ignored but missing from `.Rbuildignore`.
-smn-data-pkg has **no `.Rbuildignore` at all** and is not an R package — no
-`DESCRIPTION`, no `NAMESPACE` — so that half is void. (metasalmon has one and
-does not list `.pytest_cache` either, but nothing there generates one.) And
-`git check-ignore -v .pytest_cache` **exits 1** in smn-data-pkg: the directory
-is *not* ignored by the repository's rules, whose Python block is
-`__pycache__/`, `*.py[cod]`, `*$py.class`, `*.so`, `.Python` and four
-virtualenv entries, with no pytest line.
+**The `.Rbuildignore` half is true and has a measured consequence**, recorded
+twice on 2026-09-15 by two agents who could not see each other. The B-106 run
+found `checking for hidden files and directories ... NOTE / Found ...
+.pytest_cache` on its *baseline* worktree and not on its own, and the B-116 run
+recorded the same note as a baseline-only difference. Nothing excludes the
+directory, so `R CMD build` packages it: a worktree where pytest has been run
+and a fresh one produce different check output. In a fleet whose agents read
+their result against a baseline run, that is noise in the one measurement the
+baseline exists to provide.
 
-What actually keeps it out of `git status` is that **pytest writes
-`.pytest_cache/.gitignore` containing a single `*`** when it creates the
-directory, so every file inside ignores itself —
+**The git half is false in all three repositories.** `git check-ignore -v
+.pytest_cache` **exits 1** in smn-data-pkg, and the Python block of every
+`.gitignore` here is `__pycache__/`, `*.py[cod]`, `*$py.class`, `*.so`,
+`.Python` and virtualenv entries with no pytest line — metasalmon line 69,
+metasalmonpy line 79, smn-data-pkg the same. What actually keeps it out of `git
+status` is that **pytest writes `.pytest_cache/.gitignore` containing a single
+`*`** when it creates the directory, so every file inside ignores itself:
 `git check-ignore -v .pytest_cache/CACHEDIR.TAG` reports
 `.pytest_cache/.gitignore:2:*` as the matching rule. That is the guard shape
-`AGENTS.md` warns about seen from the far side: the protection is a third-party
-artifact nobody in the repository knows about, it stops working silently if
+`AGENTS.md` warns about seen from the far side — the protection is a
+third-party artifact nobody in the repository knows about, it stops silently if
 pytest changes it, and reading the repository alone tells you nothing is wrong.
 
-*Retires when:* smn-data-pkg's `.gitignore` names `.pytest_cache/` beside the
-`__pycache__/` entry it already has, and metasalmonpy — which runs pytest and
-has the same omission — gains the same line. P4: nothing is committed today and
-the fix is one line per repository. Filed rather than dropped because the next
-person to check re-derives the same wrong answer.
+**The item is filed against metasalmon and not smn-data-pkg**, deliberately:
+smn-data-pkg has **no `.Rbuildignore` at all** and is not an R package (no
+`DESCRIPTION`, no `NAMESPACE`), so the half with a consequence exists only
+here.
+
+*Retires when:* metasalmon's `.Rbuildignore` excludes `.pytest_cache`, so a
+checkout where pytest has been run builds the same tarball as a fresh one; and
+`.gitignore` names `.pytest_cache/` beside the `__pycache__/` entry it already
+carries, here and in the two siblings that run pytest. P4 — nothing is
+committed today and it is one line per repository — and filed rather than
+dropped because the next person to check re-derives the same wrong answer.
 
 **`B-169` Workshop session 6's gap callout goes stale and its publication chunks
 become runnable when the closure producer ships.** #116 finding 1 names two
