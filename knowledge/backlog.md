@@ -2697,17 +2697,17 @@ halves closed.
 
 ### Open — the 2026-09-15 fleet findings
 
-**Eleven findings from a night of parallel agent runs on 2026-09-15, each
+**Twelve findings from a night of parallel agent runs on 2026-09-15, each
 reproduced rather than read.** They are headed by their **queue id** rather than
 by a `#N`, because they are new items and carry no legacy backlog number:
 `#120` is the last number this file issued, and inventing `#121` upward would
 create a second numbering nobody reconciles. **State is not here.** Whether one
 of these is icebox, ready, claimed or done lives in `queue/items/`, which is the
 only home for that fact; this section is the evidence each item's `evidence:`
-pointer resolves to. A twelfth finding from the same night is a question rather
-than a defect and lives in [`questions.md`](questions.md) as `Q49`.
+pointer resolves to. A thirteenth finding from the same night is a question
+rather than a defect and lives in [`questions.md`](questions.md) as `Q49`.
 
-**Four of the eleven are the guard rule failing in `AGENTS.md`'s own words, and
+**Four of the twelve are the guard rule failing in `AGENTS.md`'s own words, and
 none of them was looked for.** Three are one defect in three costumes — *a step
 that reports success over a failed write* — found in two repositories and two
 toolchains by two agents who could not see each other: `B-149` and `B-150` in
@@ -2991,9 +2991,10 @@ Whole job red **71 seconds** after it started, with "Replay Theme A evidence",
 the test suite and `R CMD check` all skipped.
 
 **Transient, not systemic**, and the evidence is unusually clean: the same job
-passed on PRs #119, #120 and #121 within twenty minutes on the same base, and
-attempt 2 of *this very run* passed two hours later on the **identical head
-commit**. Nothing about the diff was implicated at any point.
+passed on PRs #119, #120 and #121 within twenty minutes, all four against the
+same base `4cd085c`, and attempt 2 of *this very run* passed under two hours
+later on the **identical head commit**. Nothing about the diff was implicated at
+any point.
 
 The cost is that a red `check` on this repository does not distinguish "your
 diff is broken" from "a CDN blinked" — the same legibility problem as
@@ -3176,6 +3177,77 @@ than work, which is why the item is not claimable.
 *Retires when:* either an agent in this environment can run the bundle check and
 CI runs it on every pull request touching `knowledge/`, or `AGENTS.md` states
 that the check is human-only and names what would change that.
+
+**`B-160` ask DataONE to give `smn` and `gcdfo` ontology expansion in the
+indexer, where salmon namespaces are already accepted.** DataONE's production
+indexer applies superclass and subproperty **query expansion** only to
+ontologies named in `ontologyList` in
+`src/main/resources/application-context-ontology-model-service.xml` in
+`DataONEorg/dataone-indexer`. Read on `main`, 2026-09-15, that list carries
+ECSO, ProvONE, ENVO, eleven OBOE modules, `MOSAIC_`, `ARCRC`, `ADCAD_`,
+`SENSO_`, and **three salmon namespaces** — `purl.dataone.org/odo/SALMON_`,
+`SALMON_alignment_` and `SASAP_`. It carries **zero** occurrences of `w3id`,
+`iadopt`, `smn` or `gcdfo`.
+
+**Why this is P2 rather than a nicety.** An annotation whose IRI is outside the
+list is still indexed — it lands in the flat `sem_annotation` field and is
+exact-IRI queryable — but it gets **no expansion**, so a search for a parent
+concept does not match a dataset annotated with a child of it. For a package
+built on an ontology whose whole value proposition is a subclass hierarchy,
+that is the difference between the hierarchy doing retrieval work at DataONE and
+being inert there.
+
+**It is in use, not theoretical.** Re-measured against the production endpoints
+on 2026-09-15: `sem_annotation:*` matches **13,040** of **3,376,880** CN
+documents and **2,485** of **286,653** KNB documents.
+
+**Two things checking it turned up, and both change what the ask is.**
+
+1. **The list is not a namespace filter — it is a set of ontologies DataONE
+   vendors.** Every `ontologyList` entry is paired in `altEntryList` with a
+   **bundled local OWL file** under `src/main/resources/ontologies/`:
+   `SALMON_` → `ontologies/SALMON.owl`, `SASAP_` → `ontologies/SASAP.owl`, and
+   both files are really there. So inclusion is a release-and-versioning
+   commitment on smn's side — which file, pinned how, refreshed how — rather
+   than a one-line configuration edit, and the ask has to arrive with an answer
+   to that.
+2. **The two fields the list feeds are undefined on the public CN endpoint
+   today.** `annotation_property_uri` and `annotation_value_uri` both return
+   **HTTP 400, `undefined field`**, while `sem_annotation` resolves. Either the
+   expansion fields exist internally and are not exposed through the public
+   query schema, or that path is not wired into production at all. **The ask has
+   to carry that question** rather than assume inclusion alone buys anything.
+
+The retirement condition below survives both readings, which is why it is
+phrased as a retrieval demonstration and not as "the configuration changed".
+Keep it that way.
+
+**The strategic point, stated plainly because it is why the item exists: this is
+a better discoverability lever than emitting I-ADOPT triples** — the subject of
+`#78` / `B-78` and `B-146`. The index cannot represent an I-ADOPT decomposition
+**at all**: it flattens predicate and object into one unordered multivalued
+field, with no pairing and no subject. Expansion, by contrast, makes smn's
+existing hierarchy do real retrieval work. The two are not alternatives in
+principle, but if effort is scarce this one buys more.
+
+**The precedent is the strongest argument available.** DataONE has already
+accepted salmon-domain namespaces under `purl.dataone.org/odo/`, so this is
+*extension of an existing arrangement* rather than a novel request. Part of the
+item is working out the relationship between those `SALMON_`/`SASAP_`
+namespaces and `smn`/`gcdfo` — whether smn seeks its own entry, mints under
+`purl.dataone.org/odo/`, or aligns to what is already there. That is a real
+modelling question, and it is why this is not claimable alongside its being an
+outward-facing request to another organisation.
+
+Venue for the ask: an issue on `DataONEorg/dataone-indexer`, which is also where
+roadmap intent on per-predicate indexing would be answered. `S-03`'s KNB deposit
+is the same destination and the natural occasion to raise it.
+
+*Retires when:* either `smn` and `gcdfo` IRIs receive superclass expansion in
+DataONE's production index — demonstrated by a query for a parent concept
+matching a record annotated only with a child — or a logged decision records
+that smn will instead mint or align under an already-accepted namespace, or that
+the ask was made and declined, with what was said.
 
 ### Open — P3 (R-package and API hygiene)
 
