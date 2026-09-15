@@ -3399,14 +3399,26 @@ for 18 and 7 content chunks. Reproduced 2026-09-15, in the built tarball rather
 than by reading:
 
 ```
-R CMD build          -> inst/doc/migrating-to-sdp-0-3-0.R   (209 lines)
-                        inst/doc/tidy-data-for-sdp.R        (86 lines)
-                        and NO .R file for the other nine vignettes
-R CMD check (R 4.3.3) -> * checking running R code from vignettes ... ERROR
-                         'migrating-to-sdp-0-3-0.Rmd' ... failed
-                         'tidy-data-for-sdp.Rmd' ... failed
-                         Status: 1 ERROR
+$ R CMD build .
+  -> inst/doc/migrating-to-sdp-0-3-0.R   (209 lines)
+     inst/doc/tidy-data-for-sdp.R        (86 lines)
+     and NO .R file at all for the other nine vignettes
+
+$ R CMD check --no-manual --no-tests --no-examples metasalmon_0.5.0.tar.gz   # R 4.3.3
+  * checking running R code from vignettes ...
+    'migrating-to-sdp-0-3-0.Rmd' using 'UTF-8'... failed
+    'tidy-data-for-sdp.Rmd' using 'UTF-8'... failed
+   ERROR
+  * checking re-building of vignette outputs ... OK
+  Status: 1 ERROR, 1 WARNING
 ```
+
+`--no-tests --no-examples` narrows the run to the vignette steps, so the one
+ERROR is this and nothing else; the WARNING is the container's `en_US.UTF-8`
+locale and is not the package's. Both failures are the **first line** of each
+tangled file — `readr::read_csv()` on a package directory the setup chunk would
+have created had it run — so the re-tangle plainly happens in a session where it
+did not.
 
 **Framing it as "two vignettes fail" is what the re-check corrected, and the
 correction makes the guard mandatory rather than merely desirable.** The check
