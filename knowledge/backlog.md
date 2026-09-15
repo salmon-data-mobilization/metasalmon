@@ -3463,8 +3463,9 @@ and must not become an exception on the Python side.
 metasalmon `main`, metasalmonpy `data/schema/` and smn-data-pkg `main` all carry
 md5 `3c702a373409b23f9c58cb1e1a702c06`, and the reworded file on metasalmon's
 B-106 branch is `2f6126c241ce637955604b75e48b9265`. So all three copies sit at
-the pre-change bytes today; metasalmon's re-vendor has PR #120 open and
-metasalmonpy's has nothing. A **port, not a deviation** — the file is vendored
+the pre-change bytes today, with the source change open as smn-data-pkg #8 and
+metasalmon's re-vendor open as PR #120 — and metasalmonpy's with nothing open
+for it at all. A **port, not a deviation** — the file is vendored
 spec text rather than an implementation choice, so no register row, and a stale
 vendored copy is a third answer to a question smn-data-pkg owns.
 
