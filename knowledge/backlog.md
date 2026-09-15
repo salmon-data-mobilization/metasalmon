@@ -3183,11 +3183,14 @@ indexer, where salmon namespaces are already accepted.** DataONE's production
 indexer applies superclass and subproperty **query expansion** only to
 ontologies named in `ontologyList` in
 `src/main/resources/application-context-ontology-model-service.xml` in
-`DataONEorg/dataone-indexer`. Read on `main`, 2026-09-15, that list carries
-ECSO, ProvONE, ENVO, eleven OBOE modules, `MOSAIC_`, `ARCRC`, `ADCAD_`,
-`SENSO_`, and **three salmon namespaces** — `purl.dataone.org/odo/SALMON_`,
+`DataONEorg/dataone-indexer`. Read on `main`, 2026-09-15: **23 entries** — ECSO,
+ProvONE, ENVO, **13** OBOE modules, `MOSAIC_`, `ARCRC`, `ADCAD_`, `SENSO_`, and
+**three salmon namespaces**, `purl.dataone.org/odo/SALMON_`,
 `SALMON_alignment_` and `SASAP_`. It carries **zero** occurrences of `w3id`,
-`iadopt`, `smn` or `gcdfo`.
+`iadopt`, `smn` or `gcdfo`. Two shapes of entry share that one list — a full
+ontology document URL (ECSO, ENVO, ProvONE, the OBOE modules) and a namespace
+prefix (all five `odo/` entries) — which is what says which shape smn's own
+entry would take.
 
 **Why this is P2 rather than a nicety.** An annotation whose IRI is outside the
 list is still indexed — it lands in the flat `sem_annotation` field and is
