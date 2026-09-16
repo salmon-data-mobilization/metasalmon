@@ -5809,3 +5809,111 @@ four-digit pattern, so both get redone, and `B-145` becomes work in the opposite
 direction. None of that decides the item, which is Brett's; it is recorded so the
 ruling is made against measurements rather than against the card's earlier
 framing of two comparable options.
+
+### The 2026-09-16 post-#141 sweep: one fact with two homes, and an exemption read three times as a gap
+
+Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
+share a section because they share a lesson, and it is the one #137 and #141
+were both about: *every claim here was produced by an instrument, and three of
+the instruments were wrong the first time in a way that looked like a clean
+answer.*
+
+**Severity has two homes, they are differently shaped, and they have diverged
+once.** Five readings, each taken from the file named:
+
+| What | Where | What it says |
+| --- | --- | --- |
+| The contract sentence | `AGENTS.md:358` | "Severity lives here" — of `knowledge/backlog.md` |
+| The queue's founding rationale | `queue/README.md:22` | lists `severity` among the facts that lived in prose *before* the queue, which exists "so that a state fact has one home" |
+| The field | `queue/items/*.yaml` | every `kind: defect` item carries `severity:`; no `question` or `stream` item does. Stated as an invariant, not a count: the count in the first draft of this row was already stale when it was written, because filing `Q-52` and `B-210` changed it |
+| The protocol that acts on it | `HUB.md:617`, step 2 *Select* | "Prefer the item with the lowest `severity` number among defects" — read out of the item file; step 1 of the same list says "Read item files, not prose" |
+| The second copy | `knowledge/backlog.md` | carries severity by **position**: four sections, `### Open — P1` (1015), `### P2 — correctness and conformance debt` (1309), `### Open — P3` (3312), `### Open — P4` (3719) |
+
+So four of the five behave as though the item file is the home, and the
+contract sentence is the outlier — in the file an agent reads first and without
+choosing to, which is what makes being wrong there expensive rather than untidy.
+
+**The positional copy is partial, and that is not a detail.** Measured
+2026-09-16: of 119 backlog entries, 26 sit under one of the four P-sections. The
+rest sit under none, because severity sections are at the same heading level as
+entries, so a section is in
+force only until the next `###` heading — and every entry filed in the dated
+2026-09 round sections at the end of this file is outside all four. Those
+entries carry severity in prose if at all (`**P3**, as B-200`; `**P2 on
+both:**`). A reader who follows `AGENTS.md:358` to find a recent item's severity
+therefore finds nothing — and per B-161's rule, an empty result states the
+instrument's reach, not the target's contents, so that reader concludes "no
+severity recorded" rather than "wrong file."
+
+**One divergence, verified two ways.** Measured 2026-09-16: of the 44 items
+carrying a `legacy: '#NN'` pointer, 16 resolve to an entry under a P-section, 15
+of those agree with the item file, and one does not. `queue/items/B-83.yaml`
+reads `severity: P4`; entry #83 at `knowledge/backlog.md:2116` sits inside
+`### P2 — correctness and conformance debt` (1309, running to 2270). The entry's
+own prose settles which copy is wrong: *"Cosmetic — the value is a ranking
+input, never asserted — so nothing fails."* That is P4 reasoning under a P2
+heading, so the positional copy is the wrong one under either ruling, which is
+why Q-52's condition has to dispose of it rather than leave it to whichever side
+wins.
+
+**Two wrong readings before that one, both from instruments, both looking
+clean.** Recorded because the first would have closed the question with the
+opposite answer, and neither looked like an error while it was being read.
+
+1. The cross-check script first read entries as `### N. title` headings only. It
+   reported 34 entries, **zero** under any P-section, zero agreements and zero
+   disagreements — which reads as "the backlog does not record severity at all,"
+   a tidy finding that would have retired Q-52 before it was filed. The
+   P-sections do not use headings for entries at all: they use bold-lead
+   paragraphs, of the form `**#96 A Date in dataset_meta destroys the
+   package...**`. Reading both forms gives 119 entries and 26 under a section.
+   The fixed script now prints its counts **per entry form**, so a form it
+   cannot see shows up as a zero beside a non-zero rather than as a clean total.
+2. Checking which heading precedes entry #83, `awk 'NR<=2116 && /^#{2,} /'`
+   returned line 757, a `##` section — which would have put #83 under no
+   P-section and made the single divergence disappear. Over the lines it
+   actually read — those at or before 2116 — that pattern matches 8 lines where
+   `/^##/` matches 54, so the interval expression is not doing what it reads as
+   doing. `grep -n "^#\+ "` gives 1309, agreeing with the
+   Python instrument. The rule is the same one both times, and it is B-161's: a
+   result that makes a finding vanish is the one to re-measure with a second
+   instrument.
+
+**The exemption that was read three times as a gap.** `CHECK_ONLY_RULES` in
+`scripts/tests/test_hub_queue.py:2004` exempts `generated-block-missing`,
+`generated-block-no-target`, `generated-block-target-missing` and
+`generated-blocks-unreadable` from the coverage guard that #141 added, and gives
+a correct reason: they are emitted by `validate_generated_blocks`, which
+`command_check` calls and `command_lint` does not, so they are outside a claim
+about lint rules rather than gaps in it. What it does not say is where they *are*
+demonstrated, and the reading that followed went wrong three times in one sweep:
+
+- A grep for the four **rule names** in the test file found one hit outside the
+  set itself. Conclusion drawn: four rules never shown to fire. Filed as a draft
+  queue item asking for four tests.
+- The one hit turned out to be a real demonstration
+  (`test_a_configuration_declaring_no_blocks_fails`). Conclusion narrowed to
+  three. Still wrong, and now wrong *with* a correction attached, which is the
+  more convincing state to be wrong in.
+- A grep for the rules' **message text** — which is what those tests assert on,
+  and the reason the name grep saw nothing — found
+  `test_a_configured_block_with_no_target_fails` ("declares no `target:`") and
+  `test_half_a_marker_pair_is_reported_as_missing` ("delimits nothing"). That is
+  the remaining two, so the demonstrated count is four: all of them.
+
+All four are demonstrated, by six tests in `TestConfiguredBlocksExist`
+(`scripts/tests/test_hub_queue.py:1592`), and
+`test_a_configured_block_with_no_marker_anywhere_fails` carries an explicit
+RED/GREEN pair whose comment names the blocker verbatim: *"RED, and this is the
+blocker verbatim: the configuration declares a block, the repository carries no
+markers at all, and the old `check` printed OK."* The draft item was deleted and
+B-210 filed in its place, for the omission rather than the imagined gap.
+
+The generalisation is B-210's subject and is worth stating on its own, because
+the same shape will recur wherever a guard states a scope: **membership in an
+exemption set is evidence about the guard, never about the test suite.** An
+exemption that explains why something is outside one claim, without naming what
+is inside another, reads as absence of coverage — and the reader most likely to
+misread it is the one who wrote the exemption, because they are reading their own
+sentence for confirmation rather than for content. Three readings, one reader,
+ten minutes.

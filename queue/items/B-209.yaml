@@ -5,7 +5,7 @@ state: icebox
 claimable: true
 repo: metasalmon
 venue: claude-code
-stream: S6
+stream: S15
 severity: P3
 blocked_by: []
 legacy: ''
