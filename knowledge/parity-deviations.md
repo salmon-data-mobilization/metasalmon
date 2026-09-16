@@ -401,8 +401,12 @@ first lag being closed, so it mints no numbered row.
 notes above name — this passage and the release index went on reading *"queued"*
 for the twelve hours between #31 merging and this correction, while
 `queue/items/B-165.yaml` read `done`. Five instances with the rule written down
-at the third is why `B-202` exists: the rule is now something a check enforces,
-not something another paragraph asks for.)*
+at the third is why `B-202` exists: it specifies a check that would enforce the
+rule instead of another paragraph asking for it. **That check does not exist
+yet** — `B-202` is `icebox` on 2026-09-16 and nothing in `hub_queue.py` or
+`check-parity-registers.py` reads this section — so the only thing holding this
+register and the release index together today is still a person reading both,
+which is exactly how the five instances happened.)*
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-14):
 the descriptor's instant spelling.** A typed `POSIXct` reaching the descriptor
