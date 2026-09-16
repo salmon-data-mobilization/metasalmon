@@ -1,6 +1,80 @@
 metasalmon (development version)
 --------------------------------
 
+### Added
+
+* **`write_sdp_semantic_closure()` produces the reviewed semantic closure, which
+  metasalmon has validated in three places and written in none** (backlog #116,
+  hub item B-116). `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require
+  `metadata/semantic_vocabulary.csv` and `reviewed_semantic_selections.csv`, and
+  the symptom of the hole was that a user who did everything the vignette said
+  got *"metadata/semantic_vocabulary.csv does not exist"* with nowhere to go.
+  One exported call now reads the package and writes both files:
+
+  - **Both canonical sets are derived, not transcribed.** The two legitimately
+    differ -- a table's `observation_unit_iri` is a review target and not a
+    measurement vocabulary term, and a code-resolved `sosa:usedProcedure` is a
+    measurement term and not a review target -- so neither can be reasoned from
+    the other, and both come back on the result as `measurement_iris` and
+    `review_targets`. In the shipped Fraser coho example the ledger has five
+    rows and the vocabulary four.
+  - **Evidence is resolved through the existing search path.** Each IRI's
+    `label`, `definition`, `source`, `ontology`, `resource_kind` and `type_iris`
+    come from `find_terms()`, re-running the query recorded in
+    `semantic_suggestions.csv` or, failing that, the IRI's own local name split
+    back into words (`SpawnerAbundance` -> `"spawner abundance"`). No LLM is
+    involved and there is no argument that would enable one.
+  - **`evidence` accepts the rows no search can fill.** QUDT is not a searchable
+    source, so a unit row is hand-authored; `native_type` and `source_url`
+    describe the ontology artifact rather than the term and are derived from the
+    resolved source; `confidence` and `review_rationale` are human judgements,
+    read from a recorded `decision_reason` where `apply_sdp_semantics()` left
+    one and otherwise written as a `REVIEW REQUIRED:` marker with a warning
+    naming each target. Supplied values win field by field, so one row may
+    correct one field.
+  - **Every digest is computed.** Each row's `reviewed_snapshot_sha256`, and both
+    file digests in `metadata/eml-mapping.yml` -- edited in place, line by line,
+    so the sidecar's own instructions are not deleted by a YAML round trip. A
+    user never hand-writes a SHA-256 into a CSV again.
+  - **An unresolvable IRI is a gap, not an abort** (ruled 2026-09-12). It is
+    returned as `gaps`, in the shape `detect_semantic_term_gaps()` returns plus
+    an `unresolved_iri` column, so it feeds
+    `render_ontology_term_request()` and `submit_term_request_issues()`
+    directly; both files are still written without that row. The omission is not
+    silent, because `write_eml_from_sdp()` then names the same IRI as missing
+    from the vocabulary.
+  - **And a gap is a claim, so only one of the three ways a row can go unwritten
+    makes one.** A gap row asserts that a term is absent from the searched
+    vocabularies, which is what the term-request pipeline acts on, so the two
+    outcomes that do not establish absence are reported separately. A **lookup
+    that did not answer** -- a search that threw, or a `find_terms()` result whose
+    `"diagnostics"` attribute names a failed source -- **aborts before anything is
+    written**, naming each IRI and the sources that were silent; `find_terms()`
+    already warns that such a result is unknown rather than an ontology gap, and
+    this obeys it. A **term that was found with a required field blank**, such as
+    a class with no definition, comes back in a new `incomplete` element naming
+    the field and the slot, with a warning that says it is not a gap; the
+    remaining rows are still written.
+  - **The two files and the sidecar digest install as one set, and no write
+    follows a link.** All three are rendered to bytes and installed through the
+    package's existing `.ms_sdp_extension_atomic_write_set()`, which stages each
+    as a sibling, renames them in, and rolls all three back if any install fails
+    -- so a failure can no longer leave a replaced CSV beside its previous
+    `sha256`. The package root, every intermediate directory component and each
+    final entry are refused when they are a symlink, which matters because an SDP
+    received from a collaborator can point any of the three names at a file
+    outside the package and have this function truncate it. Hard links are not
+    detected, because base R exposes no link count, and are closed by the same
+    install path rather than by a check: the bytes go to a fresh inode and a
+    rename replaces the directory entry, so nothing here ever opens the
+    destination.
+
+  `scripts/build-fraser-coho-knb-rehearsal.R` reached into `metasalmon:::` at
+  three sites for exactly the things this function now returns, and reaches into
+  none. The two stages are swapped so the EML sidecar is written first and the
+  producer pins its digests, which removes the script's last hand-computed file
+  digest as well.
+
 ### Fixed
 
 * **`validate_salmon_datapackage()` now checks the three things backlog #49
@@ -133,6 +207,122 @@ metasalmon (development version)
   on. **Mirror:** metasalmonpy owes the same ruling (queue **B-145**);
   parity-deviations row 56 carries the ruling, which side moved, and the
   year-padding residual B-145 has to measure.
+
+* **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
+  (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
+  after the package writer has finished -- `README-review.txt`,
+  `semantic_suggestions.csv` and, with `include_edh_xml = TRUE`,
+  `metadata/metadata-edh-hnap.xml`. Each unlinked the existing file first and
+  then rendered its replacement, so any abort in between left nothing at all
+  where the file had been. Measured, not inferred: an abort injected at each of
+  the three render steps removed the previous file all three times.
+
+  All three now render to bytes and install by staged-sibling rename through
+  `.ms_sdp_extension_atomic_write()`, the same writer
+  `write_salmon_datapackage()` uses, so a failure during the render leaves the
+  previous file byte-for-byte as it was. The bytes a successful call writes are
+  unchanged: each renderer goes through the writer the file already used
+  (`writeLines()`, `readr::write_csv(na = "")`, `edh_build_hnap_xml()`) rather
+  than through a re-implementation of it.
+
+  This matters for a file you have changed since. Re-running `create_sdp()`
+  regenerates all three, so the loss only bit an annotated `README-review.txt`,
+  a `semantic_suggestions.csv` carrying review decisions, or the EDH XML of a
+  package whose metadata has moved on. Pinned by
+  `tests/testthat/test-create-sdp-sidecar-atomicity.R`, three abort injections
+  asserting byte-identity. `.ms_replace_create_output()` is deleted; its
+  hard-link rationale is subsumed, because a staged-sibling rename never writes
+  through an existing inode.
+
+  **Scope, since the word "atomic" promises more than this delivers:** the
+  staging file sits in the target's own directory, so the rename is atomic, but
+  it is not `fsync`ed before the rename. That is sufficient against an aborted
+  call and insufficient against a machine crash or power loss. Unchanged by
+  this release, and true of every caller of that writer, not just
+  `create_sdp()`.
+
+  The same three writes have the same shape in metasalmonpy, where the EDH
+  window is wider still; that is recorded as parity row 53 and owed as a port.
+
+* **`migrate_sdp_methods()` now returns the same three-column `report$tables`
+  frame from every exit** (backlog #112, hub item B-112). The
+  nothing-to-migrate early return built two columns, `table_id` and
+  `method_iri`, while the populated build and the no-placement empty frame
+  both build three by adding `columns`. A caller reading
+  `report$tables$columns` therefore got `NULL` -- with tibble's "Unknown or
+  uninitialised column" warning -- in exactly the case where the package was
+  already clean, which is the branch least likely to be exercised and the
+  reason it survived. The empty `columns` is `character()`, matching the type
+  the populated build renders with `paste(collapse = ", ")`, so binding the
+  reports of two runs together no longer coerces the column. The frame is
+  empty either way, so nothing that read `nrow()` changes; only the column set
+  does. The three-column shape is the one the migration vignette already
+  documents.
+
+  Ruled by Brett on 2026-09-14 for both implementations, so the shape is not
+  an implementer's choice: the alternative -- a logged ruling that the shapes
+  deliberately differ -- is closed. Found 2026-08-22 by stream S10 chunk A's
+  migration differential, where Python carried the internally consistent
+  three-column frame first and was changed to mirror R; under the amended
+  mirror contract which side is right is a ruling rather than an implementer's
+  call, so this is the side that moves. The mirror half is hub item B-144,
+  where metasalmonpy returns to the shape it had originally, and #112's
+  retirement condition is met only on the R side until it lands. All three
+  exits are pinned by `tests/testthat/test-sdp-methods.R`, not only the branch
+  that was wrong, because pinning one leaves the other two free to drift away
+  from it and the failure would look identical.
+
+### Changed
+
+* **The vendored SDP rules bundle is re-vendored for the reworded SOSA
+  Procedure rules** (backlog #106, hub item B-106; ruled by Brett 2026-09-14,
+  `knowledge/questions.md` Q47). `inst/extdata/schema/sdp.rules.yaml` is a
+  byte-for-byte copy of `smn-data-pkg`'s `schema/sdp.rules.yaml`, and this is
+  the copy half of that change -- paired with smn-data-pkg PR #8, which merged
+  first as `bb71c8b`. Nothing was hand-edited on this side; the copies were
+  identical before (md5 `3c702a37...`) and are identical after (md5
+  `f94d6c8f...`, git blob `489d46a0`), which is the property
+  `knowledge/orientation.md` asks for when it says to keep them in step by
+  re-vendoring from upstream rather than hand-editing either side.
+
+  **The rationale is no longer in the file, and the pointer it leaves behind is
+  an upstream path.** Brett asked on 2026-09-15 that the reasoning not clutter
+  the rules, so upstream moved it to `docs/adr/0002-sosa-procedure-reachability.md`
+  and left a two-line comment naming that file and the unresolved outcome's
+  retirement condition. metasalmon vendors the schema and not upstream's `docs/`,
+  so a reader of `inst/extdata` who follows that pointer will not find the file
+  here; it resolves in `smn-data-pkg`. Vendoring the ADR too, or rewriting the
+  comment, would both break the byte-identity this entry rests on, so neither was
+  done. *Retires when:* the vendored bundle carries its own rationale pointer
+  that resolves inside this package, or `knowledge/orientation.md` records that a
+  vendored file's internal paths are upstream's and are expected not to resolve.
+
+  What the upstream rewording says, because the package ships the text and a
+  reader of `inst/extdata` will not have the upstream changelog:
+  `methods_are_sosa_procedures` and `row_varying_procedures_use_codes` now
+  state **reachability**. A method or protocol IRI, and every `codes.csv`
+  `term_iri` on a component bound with `sosa:usedProcedure`, is **declared by**
+  a shared vocabulary and **reaches** a resource carrying
+  `rdf:type sosa:Procedure` by a `skos:broader` path of **zero or more steps**
+  -- so a directly typed IRI passes as the zero-length case. The phrase
+  "resolves to" is gone, because it read as a per-IRI HTTP dereference and
+  neither `smn` nor `gcdfo` is served for one. An asserted `skos:broader`,
+  `skos:broadMatch` or any other sub-property of `skos:semanticRelation` whose
+  other side is an `owl:Class` is refused by name: SKOS S19-S22 give every such
+  property `rdfs:domain` and `rdfs:range` `skos:Concept`, so the edge entails
+  that the OWL class is a `skos:Concept` and entails nothing about anything
+  being a Procedure. Estimate-type and data-quality vocabularies are named as
+  never being method vocabularies -- a Hyatt (1997) estimate type
+  (`gcdfo:Type1`-`gcdfo:Type6`) or an ordinal quality or reliability rating says
+  how good a value is, not how it was produced.
+
+  **No observable behaviour changes in this package, and that is the defect
+  rather than a reassurance.** Nothing in `R/` reads a rule `description`:
+  `.ms_load_sdp_schema()` uses the document's `version` and `profile` and no
+  rule text, and both reworded rules are among the three that backlog #48 (hub
+  item B-48) measured as loaded and never executed. B-48 builds its dispatch on
+  this text; no rule `id`, `severity`, `version` or `profile` changed, because
+  that test keys on rule ids.
 
 metasalmon 0.5.0
 ----------------

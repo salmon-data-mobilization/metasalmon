@@ -34,6 +34,15 @@ on:
       - "queue/**"
       - "scripts/hub*"
       - "scripts/tests/**"
+      # `.hub/**` is here for the workpad rule, added 2026-09-16 (B-140). The
+      # rule reads `.hub/workpads/` and refuses the old shared `.hub/workpad.md`,
+      # so a change that adds a bad workpad and touches nothing else would skip
+      # this job entirely --- the guard green because it never ran, which is
+      # exactly the failure the paragraph above describes, arriving one input
+      # later. Found by review rather than by the rule firing, which is the
+      # point: a path filter is the one part of a guard its own tests cannot
+      # reach.
+      - ".hub/**"
       - ".github/workflows/hub-queue.yml"
       # Every file the freshness check reads has to be able to start it.
       #
@@ -70,6 +79,15 @@ on:
       - "queue/**"
       - "scripts/hub*"
       - "scripts/tests/**"
+      # `.hub/**` is here for the workpad rule, added 2026-09-16 (B-140). The
+      # rule reads `.hub/workpads/` and refuses the old shared `.hub/workpad.md`,
+      # so a change that adds a bad workpad and touches nothing else would skip
+      # this job entirely --- the guard green because it never ran, which is
+      # exactly the failure the paragraph above describes, arriving one input
+      # later. Found by review rather than by the rule firing, which is the
+      # point: a path filter is the one part of a guard its own tests cannot
+      # reach.
+      - ".hub/**"
       - ".github/workflows/hub-queue.yml"
       # Every file the freshness check reads has to be able to start it.
       #

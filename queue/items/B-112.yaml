@@ -1,8 +1,8 @@
 id: B-112
 kind: defect
 title: Return the three-column report frame from migrate_sdp_methods()'s no-op branch
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S10

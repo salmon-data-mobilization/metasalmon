@@ -1,0 +1,13 @@
+id: B-194
+kind: defect
+title: 'A sidecar declaring one output path twice silently loses a file, identically in both implementations'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S10
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A semantic sidecar that names the same output path for two different closure outputs is refused, or the collision is reported, rather than one file being written over the other -- pinned by a test in each implementation. Measured by the B-165 run 2026-09-16 as present and identical in metasalmon and metasalmonpy, so it is a shared residual rather than a divergence and no parity-deviations row is owed. Low severity because a sidecar is hand-edited and the duplicate has to be written deliberately, but the failure is silent: the second write wins, the first output is simply absent, and the digests recorded in the sidecar are consistent with the file that survived -- so nothing downstream reports a problem. Fix both sides in one change, for the reason B-193 gives about this same helper family.'

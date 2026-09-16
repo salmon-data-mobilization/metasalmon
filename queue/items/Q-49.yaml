@@ -1,0 +1,12 @@
+id: Q-49
+kind: question
+title: Should B-126's read-back clause be amended to name the accessor, or should both implementations gain the key
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-science
+stream: S5
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules whether B-126''s retirement clause "reads semantic_suggestions.csv back in read_salmon_datapackage" is amended to name the accessor instead, or whether both implementations gain the key. metasalmonpy pull request 28 implemented an accessor, semantic_suggestions(path), rather than adding a key to the reader''s return value, and flagged the divergence from the clause rather than deciding it. The fact that decides it: R''s own read_salmon_datapackage() returns only dataset, tables, dictionary, codes and resources (R/package-helpers.R line 1602) and carries no suggestions, so in R the read-back IS the accessor -- and adding a Python-only key would be an undocumented divergence, which the mirror contract calls a violation even when the difference itself is fine. The clause therefore appears to have been written from the roadmap text rather than from the R code. THE RECOMMENDATION IS THE ORCHESTRATOR''S AND IS RECORDED AS HIS: amend the clause to name the accessor, because the current wording asks Python to do something R does not do. The alternative is real and is why this is a ruling rather than a correction -- adding the key to both implementations would be a behaviour change in R, to an exported return shape, in a package whose next breaking bump is already spoken for by backlog 58. Either answer closes this; only the second creates work, and it would create it on the R side first.'

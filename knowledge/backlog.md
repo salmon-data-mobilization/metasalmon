@@ -1110,7 +1110,9 @@ sidecars (`README-review.txt`, `semantic_suggestions.csv`,
 `metadata/metadata-edh-hnap.xml`) still go through
 `.ms_replace_create_output()` — unlink-then-rewrite with abort points between
 — which is the same defect shape at single-file blast radius; filed as **#111**
-rather than stretched into this item's scope.
+rather than stretched into this item's scope. (True as measured on 2026-08-22.
+#111 closed 2026-09-14 and that helper is deleted; the sentence is kept in its
+dated form because the point it makes is about scope, not about today's code.)
 
 **Mirror measurement, 2026-08-22 (measured, not assumed).** PR #75's exposure
 table (s10 replay plan) marked metasalmonpy `#96` "clean" because `_has_value`
@@ -1371,6 +1373,38 @@ retire `.ms_replace_create_output()` — its hard-link rationale is subsumed,
 since staged-sibling rename never writes through an existing inode. *Retires
 when:* `.ms_replace_create_output()` has no callers and a test injects an
 abort into each of the three rewrites and finds the prior file intact.
+
+**Both halves of that condition are met as of 2026-09-14** (queue B-111; the
+queue item file holds the state, this paragraph holds the evidence). All three
+sidecars render to bytes and install through `.ms_sdp_extension_atomic_write()`,
+and `.ms_replace_create_output()` is **deleted** rather than left callerless —
+its comment reads as a live hard-link protection that "belongs next to each
+write", which is precisely the invitation `AGENTS.md` warns about, and the
+protection is genuinely subsumed (the note now sits on the atomic writer's own
+symlink refusal, where someone looking for it will be). Two things the fix
+measured that the paragraph above only predicted. **The prescription was right
+about the mechanism and understated the damage**: an abort injected at each of
+the three render steps left the prior file not truncated but *absent*, all
+three times — `tests/testthat/test-create-sdp-sidecar-atomicity.R` records the
+run. And **the bytes are unchanged**, verified by md5 against this entry's own
+pre-fix code on all three files, which is why each bytes renderer goes through
+the writer the file already used rather than through a re-implementation of it.
+The three stay **three transactions rather than one set**: they are independent
+files written at different points in `create_sdp()`, the harm is a destroyed
+file rather than a partially-updated group, and the suggestions branch can also
+*delete*, which an atomic write set has no operation for.
+
+**What the fix did not buy, and it is worth naming because the word "atomic"
+implies it:** `.ms_sdp_extension_atomic_write_set()` stages in the target's own
+directory, so the rename is atomic on one filesystem, but `writeBin()` is never
+followed by an `fsync`. That is sufficient against a **process** abort, which is
+every abort point this item enumerated, and insufficient against a machine
+crash or power loss, where a visible rename can outrun the staged data blocks.
+Base R exposes no fsync, so closing it means a compiled call or an external
+dependency, and the writer is shared with observation structures, KNB
+publication and reproducibility manifests — so it is a decision about that
+writer rather than about `create_sdp()`. **Filed as a candidate item rather than
+absorbed here** (see the B-111 hand-back workpad).
 
 **#86 metasalmonpy's SDP-extension IRI validator never imported `R_SPACE_CLASS`.**
 `metasalmonpy/sdp_methods.py:95` `_is_absolute_iri()` says in its own docstring
@@ -2695,6 +2729,581 @@ previously unregistered wired-nothing divergence is now **parity-deviations /
 `PARITY.md` row 47**, a permanent record with no retirement condition. Both
 halves closed.
 
+### The 2026-09-15 fleet findings
+
+**Thirteen findings from a night of parallel agent runs on 2026-09-15, each
+reproduced rather than read.** Eleven are defects and are below; **two are
+questions and live in [`questions.md`](questions.md)** as `Q49` and `Q50`, which
+is the only file that indexes a decision only Brett can make. They are headed by
+their **queue id** rather than by a `#N`, because they are new items and carry no
+legacy backlog number: `#120` is the last number this file issued, and inventing
+`#121` upward would create a second numbering nobody reconciles. **State is not
+here.** Whether one of these is icebox, ready, claimed or done lives in
+`queue/items/`, which is the only home for that fact; this section is the
+evidence each item's `evidence:` pointer resolves to. **The heading above says
+nothing about state on purpose**, and the older `Open — …` headings further up
+this file are the pre-queue convention rather than the one to copy: a heading
+reading `Open` is a second copy of eleven items' state, it goes stale the moment
+any one of them moves, and nothing checks it. *Retires when:* those older
+headings are relabelled too, at which point this note is no longer telling a
+reader why the neighbours differ.
+
+**Four of the eleven are the guard rule failing in `AGENTS.md`'s own words, and
+none of them was looked for.** Three are one defect in three costumes — *a step
+that reports success over a failed write* — found in two repositories and two
+toolchains by two agents who could not see each other: `B-149` and `B-150` in
+gcdfo's `Makefile` and its `pre-commit` hook, and `B-155` in this repository's
+CI toolchain install, where `install.packages()` reports a failed download as a
+warning and the step goes green. The fourth, `B-159`, is the adjacent shape —
+*an instruction that reads as enforced and is not* — and it is in `AGENTS.md`
+itself, which is where the rule is written. `AGENTS.md` names the class from a
+single 2026-08-16 observation; four more in one night is the measurement that
+says it is endemic rather than anecdotal, and that is worth more than any one of
+the four on its own.
+
+**`B-149` gcdfo's `prepare-import-catalog` prints a success mark over a failed
+catalog write.** The recipe has no `set -e` and both of its branches end in
+`echo "✅ ROBOT catalog maps smn import to …"`, so the mark prints whatever the
+redirection did. Reproduced 2026-09-15 by making the write target a directory so
+the real `printf > $(ROBOT_CATALOG)` fails: the sibling-present branch printed
+one `cannot create … Is a directory`, the pinned-commit branch printed two (it
+redirects twice), both then printed the success mark, and `make` exited **0**
+both times.
+
+Every ROBOT target consumes `ROBOT_CATALOG` — `quality-check`, `reason`,
+`convert`, the SPARQL lint, the module check — so a truncated or absent catalog
+silently changes how the `smn` import resolves, and the build that follows is
+reasoning over a different graph than the one the author thinks. Nothing says
+so. The recipe is one of **21** `echo "✅` sites in that Makefile against **2**
+`set -e`, which is why the retirement condition asks for a sweep and not for the
+one recipe: fixing the instance and leaving the pattern is how this class
+survives.
+
+This is exactly the defect class `AGENTS.md` records against 2026-08-16 — *"a
+`make` recipe whose missing `set -e` printed a success mark over a crashing
+script"* — in the same repository, a month later, in a recipe the earlier fix
+did not reach. The Makefile even carries the lesson in a comment on
+`ci-sync-artifacts`: *"No `|| true` here: a `git add` that fails must not print
+a success mark over the failure, which is the same fault this target's own
+`make ci` dependency was fixed for."* One recipe learned it; twenty did not.
+
+*Retires when:* the recipe fails the build when any command in it fails, its
+success mark prints only after the catalog file exists and is non-empty, a
+deliberately broken write makes `make` exit non-zero, and a sweep confirms no
+other recipe in that Makefile prints an unconditional success mark.
+`dfo-salmon-ontology` is not solo under `HUB.md`, so the deliverable is a patch
+and its pull-request text shown to Brett in chat, never a push.
+
+**`B-150` the gcdfo `pre-push` hook cannot fail, and throws away the artifact
+`make ci` just rebuilt.** Two defects in one 589-character `entry:` line, and
+naming only the first would leave the second looking like the fix.
+
+The `ontology-ci` hook in `.pre-commit-config.yaml` runs a `bash -lc` chain that
+ends `…; make ci; git checkout -- docs/webvowl/data/ontology.json || true`. The
+chain's exit status is the status of its **last** command, and that command is
+guarded by `|| true`.
+
+1. **The gate is inert.** Demonstrated 2026-09-15 with the same shape: `bash -lc
+   'make definitely-not-a-target; git checkout -- README.md || true'` exits
+   **0**. So a failing `make ci` does not fail the push, and never has. This is
+   the P1 half.
+2. **The `git checkout --` discards a real result.** It fires on success exactly
+   as it fires on failure, and the hook's `files: ^ontology/dfo-salmon\.ttl$`
+   restricts it to pushes that changed the canonical ontology — precisely when
+   `make ci` *should* have regenerated `docs/webvowl/data/ontology.json`, since
+   `ci` runs `docs-refresh` which runs `docs-widoco`. That repository's own
+   `ci.yml` then rejects **any** uncommitted change left after `make ci` across
+   the worktree, so the hook locally destroys the regeneration CI is about to
+   demand.
+
+Half 2 is a churn suppressor that outlived its cause and carries no retirement
+condition — the failure `AGENTS.md`'s guard rule names. Its rationale is the
+2026-08-16 entry in that repository's `docs/tech-debt.md`, which says to run
+`git checkout -- docs/webvowl/data/ontology.json` **before retrying a failed
+docs build** — a manual recovery step, not an unconditional one on every push.
+`B-0`'s trap restores the pre-run bytes on failure, so when it lands the
+remaining rationale is gone.
+
+Same shape as **`B-44`** ("the gcdfo validation layer is inert") one layer up:
+there the SHACL shapes and competency queries are loaded and bind nothing, here
+the gate is wired and can only pass. In both, green means nothing and reading
+the configuration alone tells you nothing is wrong.
+
+*Retires when:* a failing `make ci` turns the push red, demonstrated with a
+deliberately broken ontology; and the trailing `git checkout --` stops
+discarding the artifact, landed after `B-0` or with a recorded reason it is safe
+without it. Not solo: patch and pull-request text in chat, and a local ROBOT and
+Java toolchain to demonstrate either half.
+
+**`B-151` the printed `accept_suggestion()` call is ambiguous for a measurement
+column with a code list.** The console prints the exact call the user pastes,
+and `R/review-console.R`'s own header says why that makes the printed call
+load-bearing: *"A printed call that does not parse, or that names a column that
+does not exist, is the defect this feature could most easily ship with."* This
+is that defect, in the one shape the design's resolution step does not catch.
+
+`.ms_review_call_args()` computes the minimal argument set *by resolving it*,
+escalating from `(column, role)` to `table` and then to `code_value` while the
+match is ambiguous. The escalation cannot rescue a column-level slot, because it
+appends `code_value` **only when the row it is printing has one** — and
+`.ms_review_match_slot_rows()` leaves `code_value` unconstrained when it is not
+passed, so the absent value matches every code row rather than only the rows
+with no code.
+
+A **measurement** column carrying a code list produces exactly that collision: a
+column-level `entity_iri` target (role `entity`, no code value) from
+`.ms_semantic_discover_targets()`'s role map, and a `codes.csv` `term_iri`
+target per code (role `entity`, with one) from the
+`c("constraint", "entity", "method")` role set a measurement parent gives its
+codes.
+
+Reproduced 2026-09-15 on a three-slot review — one column-level `entity` slot
+and two code-level `entity` slots on the same column and table:
+
+```
+printed for the column-level slot:
+  accept_suggestion(review, "gear", "entity", rank = 1, table = "t")
+that call resolves to: 3 slots
+```
+
+```
+That column and role match more than one review slot.
+i Add one of these arguments to say which:
+* table = "t"
+* table = "t", code_value = "SEINE"
+* table = "t", code_value = "TRAP"
+```
+
+**The abort's own disambiguation list is no help**, which is the part that makes
+this worse than a bad error message: every option it offers either repeats the
+`table` the call already carries or names a code value, so *none of the three
+selects the column-level slot*. A user who does what the message says cannot
+reach the slot at all.
+
+Reachable from the real pipeline rather than only from a hand-built frame, and
+metasalmon 0.5.0's own tests miss it. **It affects both implementations** — the
+Python spelling is `_review_call_args()` / `_match_slot_rows()` — so the mirror
+half is owed in metasalmonpy in the same shape rather than as a parity row. It
+is one line on each side. metasalmonpy PR #28 pinned it as
+`test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous`,
+with its retirement condition in the docstring, so it is visible rather than
+latent; that pin is the evidence trail and it un-pins when this lands.
+
+*Retires when:* the printed call for a column-level slot constrains `code_value`
+explicitly (or the matcher reads an absent `code_value` as "no code value"
+rather than as unconstrained) so it resolves to exactly one slot; a test covers
+a measurement column with a code list in both implementations; and the
+metasalmonpy pin is removed in the same change.
+
+**`B-152` the network guards in `test-github-helpers.R` probe a host and a
+credential path the code under test never uses.** The guards at
+`tests/testthat/test-github-helpers.R:143-159` and `:231-259` reach
+`api.github.com` through `gh::gh()` and skip when it errors. The code under test
+goes somewhere else: `read_github_csv()` builds a `raw.githubusercontent.com`
+URL at `R/github-helpers.R:593` and fetches it at `:227` through `:618`.
+`read_github_csv_dir()` lists through the API and then calls `read_github_csv()`
+per file at `:446`, so its guard covers its listing half and not the fetches
+that follow it.
+
+So the guard can pass while the fetch fails, and then the tests at `:161` and
+`:264` **error instead of skipping**.
+
+Measured on this machine 2026-09-15 with a token configured, which is what the
+tests require: both `gh::gh()` guards return successfully — repository metadata
+and the file's contents entry, 6085 bytes — and the two fetches immediately
+after raise `HTTP 404 Not Found`. Both tests error.
+
+**The cause is narrower than host reachability, and it changes the fix.** An
+unauthenticated request for that same raw file returns **200**; the identical
+request carrying the configured token returns **404**. So the guard is wrong
+about the *credential path* as well as about the host: `gh::gh()` and
+`ms_github_get()` do not send the same thing to the same place, and only one of
+them is being proved to work. A guard rebuilt around "does `api.github.com`
+answer" would still pass here and the tests would still error.
+
+Same shape as **`B-132`** in a different test file, and `B-132`'s fix should be
+applied here in the same pass while it is still open — a guard that proves some
+other host resolves is the defect in both.
+
+*Retires when:* both tests skip rather than error when the host the code under
+test actually fetches is unreachable or refuses the configured token, because
+the guard exercises that host and that credential path; demonstrated by making
+that fetch fail and seeing a skip.
+
+**`B-153` metasalmonpy's 0.5.0 documentation half, and the version bump that
+closes the window.** metasalmonpy PR #28 lands the whole S5 **behaviour** port —
+the nine functions, the two accessors, `decision_reason` with decision replay,
+the first consumer of the schema's `constraints.required`, and the `#118`
+auto-apply exemption — and **deliberately leaves the version at 0.4.0**. That is
+the right call and it is why this is a separate item: a version is a parity
+claim, and bumping it with the documentation half missing would put a false
+claim in the tree.
+
+**This is the item that actually closes the `0.4.0 → 0.5.0` catch-up window**,
+which is the single fact the mirror contract in `AGENTS.md` turns on. Three
+files carry that fact — metasalmon's `AGENTS.md`, metasalmonpy's `AGENTS.md`,
+and the release index in `knowledge/roadmap.md` — and all three must be read
+against each other and moved in the same change, because the whole reason the
+contract says *read the other file* is that a stale copy looks exactly like a
+current one.
+
+Where the three stand on 2026-09-15: metasalmon's `AGENTS.md` and the roadmap
+release index both read 0.5.0 / 0.4.0 with the window open, which is correct.
+metasalmonpy's `AGENTS.md` read 0.4.0 / 0.4.0 with no window on `main` — the
+copy that was wrong — and **is corrected on the PR #28 branch**, so that
+correction lands with that merge and is not owed here.
+
+What the guide still lacks, measured against the PR #28 branch:
+`guides/semantic-review.qmd` presents `suggest_semantics()` → the
+`semantic_suggestions` attribute → `apply_semantic_suggestions()` as the whole
+workflow, and names **none** of the nine functions or the two accessors.
+`_quarto.yml` gained an API-reference section for them in that PR; the narrative
+guide did not. So the in-Python review path the version number would be claiming
+is reachable from the reference and from nothing a reader follows.
+
+*(One correction to how this was first written down, because the file does not
+say what the report said it says: the word "spreadsheet" appears nowhere in
+`guides/semantic-review.qmd`, and nowhere in metasalmonpy's guides at all. The
+guide does not present the spreadsheet as the workflow; it offers no review path
+at all. What leads with the spreadsheet is metasalmon 0.5.0's own NEWS entry —
+"a salmon data package can now be taken from `create_sdp()` to
+`validate_salmon_datapackage(require_iris = TRUE)` without opening a single file
+in a spreadsheet" — which is the claim the guide has to be able to support
+before the number can be claimed.)*
+
+**The split left a deadlock behind it, and it was a real one rather than a
+tidiness point.** `B-153` is `blocked_by: [B-126]`, and `B-126`'s retirement
+condition *also* required the 0.5.0 bump. The queue only lets a blocked item be
+claimed once its blocker is `done`, so there were exactly two outcomes: `B-126`
+closes without satisfying its own recorded condition, or `B-153` is never
+claimable and can never do the work that would close it. Neither is a schedule.
+
+**It was broken on `B-126`'s side, on 2026-09-16.** The blocker is a genuine
+dependency — a guide cannot document nine functions that are not in the tree, and
+a version number cannot claim behaviour that has not landed — so dropping it
+would have bought a claimable item that could not be worked. `B-126`'s clause was
+written on 2026-09-12, three days before `B-153` existed, and the 2026-09-15
+split is what made the bump a separate item; the clause is simply the half that
+did not move with the split. So it now ends at the behavioural port and assigns
+the bump here by name, and `blocked_by` stands. Found by a Codex review of
+pull request 122.
+
+*Retires when:* `guides/semantic-review.qmd` documents the nine review functions
+as the workflow, metasalmonpy's version moves to 0.5.0, and all three copies of
+the version fact agree in that same change.
+
+**`B-154` the SDP cannot express two I-ADOPT relations, and both are format gaps
+rather than ontology gaps.** Both surfaced while writing the iop-triple
+explainer (metasalmon PR #116, candidates 1 and 2 of its workpad), and both were
+deliberately left as findings rather than absorbed into that claim.
+
+1. **`hasObjectOfInterest` is indistinguishable from
+   `hasContextObject`/`hasMatrix`.** I-ADOPT separates the entity whose property
+   is observed from a background-context entity and from the containing matrix,
+   with `hasMatrix rdfs:subPropertyOf hasContextObject`. The SDP has one
+   `entity_iri`, whose field reference reads *"I-ADOPT entity IRI, meaning what
+   the measurement is about"*, and the decomposition artifact has one `entity`
+   role. An emitter must map everything to `hasObjectOfInterest` or refuse to
+   guess.
+2. **`constrains` cannot be expressed at all.** `constrains` names *which
+   component* a constraint confines — range a union of `Entity`, `Property` and
+   `StatisticalModifier`. `constraint_iri` is a flat semicolon-separated bag.
+   `measurement-decompositions.csv` does carry `component_relation` and
+   `related_component_order`, but `R/measurement-decompositions.R:194` permits
+   the single value `value_of_dimension` and `:234` further requires it to
+   connect **two matched `constraint` components**. That is not `constrains` and
+   cannot be widened into it without changing what the existing value means.
+
+**Both are format-expressivity gaps and neither is an ontology gap.** Every
+predicate already exists in I-ADOPT 1.1, nothing needs minting, and filing
+either through `detect_semantic_term_gaps()` → `render_ontology_term_request()`
+would be wrong. This is stated explicitly because routing it into the
+term-request pipeline is the plausible mistake, and it is the same distinction
+PR #116's own "Ontology gaps" section drew when it reported **none to file** and
+called that a finding rather than a blank.
+
+Affects both mirrors. The decomposition artifact is not yet in the
+specification, which is **`#114`** / `B-114`, so a ruling here either waits on
+that adoption or says how the two relate.
+
+*Retires when:* the SDP schema can express both relations, or a logged ruling
+records that it deliberately will not and says what a consumer should do
+instead; and metasalmon and metasalmonpy both read and write whatever lands.
+
+**`B-155` CI's `pak` install has no retry, so a transient SSL error fails
+`check` before a single test runs.** Observed 2026-09-15 on metasalmon PR #118,
+run `34912254547` attempt 1. `.github/workflows/R-CMD-check.yaml`'s
+`r-lib/actions/setup-r-dependencies@v2` step died fetching
+`pak_0.11.1_R-4-6_x86_64-linux-gnu.tar.gz` from `r-lib.github.io`:
+
+```
+URL 'https://r-lib.github.io/p/pak/stable/…/pak_0.11.1_R-4-6_x86_64-linux-gnu.tar.gz':
+  status was 'SSL connect error'
+Warning in download.packages(…) : download of package ‘pak’ failed
+…
+##[error]Error in loadNamespace(x) : there is no package called ‘pak’
+Execution halted
+```
+
+Whole job red **71 seconds** after it started, with "Replay Theme A evidence",
+the test suite and `R CMD check` all skipped.
+
+**Transient, not systemic**, and the evidence is unusually clean: the same job
+passed on PRs #119, #120 and #121 within twenty minutes, all four against the
+same base `4cd085c`, and attempt 2 of *this very run* passed under two hours
+later on the **identical head commit**. Nothing about the diff was implicated at
+any point.
+
+The cost is that a red `check` on this repository does not distinguish "your
+diff is broken" from "a CDN blinked" — the same legibility problem as
+**`B-132`**, where a two-second hard-coded fetch timeout turns a slow network
+into a test failure.
+
+One detail found while confirming it, which belongs in the fix rather than in
+the diagnosis: **the "Install pak" sub-step reported `outcome=success`**
+(592 ms) while the download was failing, because `install.packages()` reports a
+failed download as a *warning*; only the next sub-step turned red, and it turned
+red on a symptom (`there is no package called 'pak'`) rather than on the cause.
+So this is the same success-over-a-failed-write family as `B-149` and `B-150`,
+one layer further out, and not only a missing retry.
+
+*Retires when:* a transient failure to install the CI toolchain retries before
+failing the job, or fails with a message that names it as an infrastructure
+failure rather than a check failure; demonstrated against a simulated download
+failure.
+
+***`B-156` was reassigned to `Q50` on 2026-09-16 and the `B-156` id is retired
+unused.*** The Frictionless `profile`-versus-`$schema` finding is a question and
+its entry is in [`questions.md`](questions.md) as
+[Q50](questions.md#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema);
+the item file is `queue/items/Q-50.yaml`. **Nothing vanished and `B-156` is not
+reused for anything else** — the gap between `B-155` and `B-157` is the record of
+the reassignment, and this note is here so that a reader counting the sequence
+does not go looking for a deleted item.
+
+Why it moved, recorded because the misfiling is the lesson: the entry said of
+itself that it was *"an open question, not an established defect"*, that it was
+noticed in passing while writing PR #116 and **not investigated**, and that
+whether the SDP targets v1 or v2 is a ruling rather than an implementer's call —
+and it was filed `kind: defect` anyway. That made the queue count and prioritise
+it as a P4 defect and kept it out of `questions.md`, which is the one file that
+indexes a decision only Brett can make, so the effect of writing it down was to
+hide it. Found by a Codex review of pull request 122.
+
+**`B-157` two 2026-09-14 knowledge cards are reachable from nothing inside the
+bundle.** There is a convention and no enumeration: `AGENTS.md` says a sequence
+card links to its execplan before implementation starts, and `knowledge/index.md`
+names the `plans/` directory as a whole without listing a single card. So
+nothing enumerates the set, and nothing notices a card that joins it unlinked.
+
+Measured on `main` at `4cd085c`, 2026-09-15, by searching the sequence cards,
+the roadmap, the index, this file, `questions.md` and `orientation.md` for each
+of the **21** plan-card filenames. Exactly two have zero inbound references;
+every other card has at least one.
+
+- `knowledge/plans/2026-09-14-commons-verification-scheme.md` — reachable from
+  **nothing at all**, including `Q39` and `Q40`, the two open commons questions
+  it was written to answer. That is the case that shows the cost: a proposal
+  that answers an open question without being linked from it leaves the question
+  looking unanswered, and the next agent re-derives the scheme.
+- `knowledge/plans/2026-09-14-taxonomic-assignment-briefing.md` — **reachable
+  from the queue but not from the bundle.** `queue/items/Q-48.yaml` names its
+  path.
+
+*(The second bullet is a correction. This was first reported as "both cards are
+linked from no file but themselves", which is true of the first and false of the
+second. The weaker claim is the true one and it is still a defect — a bundle
+card whose only inbound link is from outside the bundle is unreachable to anyone
+reading the bundle — but it is a smaller defect than the one reported, and the
+difference is exactly the kind a reader cannot check without redoing the search.)*
+
+*Retires when:* every card in `knowledge/plans/` is reachable from
+`knowledge/index.md` or from the sequence card it serves, and a check or a
+documented convention keeps that true.
+
+**`B-158` eight foreign superclass IRIs in smn are declared nowhere, and
+vendor-or-stub is one decision applied eight times.** `B-143` landed on
+2026-09-15 as salmon-domain-ontology **PR #30** — open and draft, not merged — a
+referential-integrity gate that fails when a superclass IRI asserted in
+`ontology/modules/` is declared neither there nor in a vendored file under
+`ontology/imports/`. Its first run reports **nine** undeclared IRIs. One is
+`sosa:Property`, which is `#107` / `B-107`. **The other eight are vendoring
+omissions, and they are this item.**
+
+Measured by running that gate in staged mode on 2026-09-15 against the modules
+at `d45f8f7`, rather than taken from the report that filed it:
+
+| IRI | Asserted at | Subjects |
+|---|---|---|
+| `obo:BFO_0000015` | `02-observation-measurement.ttl:216`, `03-assessment-benchmarks.ttl:53` | `smn:Escapement`, `smn:StockAssessment` |
+| `obo:IAO_0000030` | `01-entity-systematics.ttl:69`, `03-…:65,82`, `05-provenance-quality.ttl:13,19` | five |
+| `obo:IAO_0000109` | `02-…:241`, `03-…:18,45` | three |
+| `obo:NCBITaxon_8015` | `02-…:202` | the MIREOT mirror |
+| `obo:NCBITaxon_8018` | `02-…:206` | `smn:NCBITaxon_8018` |
+| `dwc:Event` | `02-…:224` | `smn:SurveyEvent` |
+| `dwc:Organism` | `01-…:86,94` | `smn:Deme`, `smn:Population` |
+| `geosparql:Feature` | `01-…:59` | `smn:GeographicFeature` |
+
+**They are omissions rather than typos, and that is measured rather than
+judged:** smn declares **13** IRIs in the `sosa:` namespace and **zero** in each
+of `obo:`, `dwc:` and `geosparql:`. A typo needs a correct neighbour to be a
+typo of, and these three namespaces have none.
+
+Two things decide how this is worked, and both are easy to get wrong.
+
+**`CONVENTIONS.md` 5b rule 2 already permits a bare declaration stub
+(`ex:Term a owl:Class .`) anywhere**, so the cheap remedy exists and nothing has
+to be vendored to clear the gate. The decision is therefore
+**vendor-the-namespace versus stub-the-IRI**, taken once and applied eight
+times, not eight independent calls. That is why these are one item and not
+eight, and it is also why the item is not claimable: it is a modelling call.
+
+**This is the item that gates `B-143`'s switch-on, not `B-107`.** `B-107` clears
+one of the nine; the other eight are these, and until all nine clear the gate
+stays staged and `make test` keeps running
+`verify-superclass-declarations-staged` rather than the real target. Stated
+plainly because the chain is easy to describe as a single hop and it is not
+one.
+
+**Cross-reference `Q-48`.** `dwc:Organism` carries `smn:Deme` and
+`smn:Population`, and `obo:NCBITaxon_8015`/`8018` are the MIREOT mirror — the
+same terms the 2026-09-14 taxonomic-assignment briefing is about. The vendoring
+decision and the taxonomy-pattern ruling are one decision surface, so whoever
+rules `Q-48` should see this at the same time rather than after.
+
+*Retires when:* each of the eight is either declared by a vendored import under
+`ontology/imports/` or carries a stub per 5b rule 2,
+`make verify-superclass-declarations` exits 0 over the modules as they stand,
+and `KNOWN_UNDECLARED` in `scripts/verify_superclass_declarations.py` is empty
+so the staged target and its `--staged` mode can be deleted and `make test`
+swapped to the full gate.
+
+**`B-159` the knowledge-bundle validator `AGENTS.md` instructs cannot be run by
+any agent, so every agent-written card is unvalidated.** `AGENTS.md:326-331`
+says to keep the bundle valid with
+`uv run --project ../psc-data-systems psc-okf check knowledge --tier capture`.
+It is unexecutable in this environment on **four independent legs**, each
+verified 2026-09-15:
+
+1. **No checkout.** There is no `psc-data-systems` directory anywhere on this
+   machine.
+2. **Not installed.** `psc-okf` is not on `PATH`. `uv` itself is present, so
+   this is not a missing-runtime problem.
+3. **Not obtainable as a package.** PyPI returns **404** for both `psc-okf` and
+   `psc_okf`.
+4. **CI never runs it.** There is no reference to `psc-okf` or
+   `psc-data-systems` anywhere under `.github/`.
+
+`queue/config.yaml:228-231` records `psc-data-systems` only as a **GitLab**
+path. `HUB.md` permits an agent to read there and forbids every write, and no
+agent here holds a credential for it, so leg 1 is not one an agent can clear on
+its own either.
+
+**The consequence is the item.** Every `knowledge/` card written by an agent has
+gone in **bundle-unvalidated**. Two agents hit this independently on the same
+night and each recorded the skip in its own pull request — metasalmon **#116**
+for the iop-triple card, salmon-domain-ontology **#30** for two cards there —
+and neither could substitute for it; hand-checking front matter against
+neighbouring cards is a *different* check that happens to be available. By legs
+1 to 3 the same is true of every card before them, including the taxonomy
+briefing, the commons verification scheme, and the 2026-09-12 promotion-review
+record.
+
+This is the class `AGENTS.md`'s own guard rule names, arriving in `AGENTS.md`
+itself: **an instruction that reads as enforced, is not, and whose absence is
+invisible to someone reading the instruction.** A green pull request on this
+repository is currently silent about bundle validity and looks like it is not.
+
+Three remedies, in the filing review's stated order and recorded as its own:
+
+1. **Publish or mirror `psc-okf`** somewhere agents can reach it.
+2. **Reimplement the `--tier capture` checks** as a script in this repository,
+   wired into CI beside the `queue-is-valid` job — which already triggers on
+   `knowledge/**`, so this needs no new trigger.
+3. **Record in `AGENTS.md` that the check is human-only**, with the condition
+   that would retire that.
+
+The third is the honest minimum and costs nothing. All three are choices rather
+than work, which is why the item is not claimable.
+
+*Retires when:* either an agent in this environment can run the bundle check and
+CI runs it on every pull request touching `knowledge/`, or `AGENTS.md` states
+that the check is human-only and names what would change that.
+
+**`B-160` ask DataONE to give `smn` and `gcdfo` ontology expansion in the
+indexer, where salmon namespaces are already accepted.** DataONE's production
+indexer applies superclass and subproperty **query expansion** only to
+ontologies named in `ontologyList` in
+`src/main/resources/application-context-ontology-model-service.xml` in
+`DataONEorg/dataone-indexer`. Read on `main`, 2026-09-15: **23 entries** — ECSO,
+ProvONE, ENVO, **13** OBOE modules, `MOSAIC_`, `ARCRC`, `ADCAD_`, `SENSO_`, and
+**three salmon namespaces**, `purl.dataone.org/odo/SALMON_`,
+`SALMON_alignment_` and `SASAP_`. It carries **zero** occurrences of `w3id`,
+`iadopt`, `smn` or `gcdfo`. Two shapes of entry share that one list — a full
+ontology document URL (ECSO, ENVO, ProvONE, the OBOE modules) and a namespace
+prefix (all five `odo/` entries) — which is what says which shape smn's own
+entry would take.
+
+**Why this is P2 rather than a nicety.** An annotation whose IRI is outside the
+list is still indexed — it lands in the flat `sem_annotation` field and is
+exact-IRI queryable — but it gets **no expansion**, so a search for a parent
+concept does not match a dataset annotated with a child of it. For a package
+built on an ontology whose whole value proposition is a subclass hierarchy,
+that is the difference between the hierarchy doing retrieval work at DataONE and
+being inert there.
+
+**It is in use, not theoretical.** Re-measured against the production endpoints
+on 2026-09-15: `sem_annotation:*` matches **13,040** of **3,376,880** CN
+documents and **2,485** of **286,653** KNB documents.
+
+**Two things checking it turned up, and both change what the ask is.**
+
+1. **The list is not a namespace filter — it is a set of ontologies DataONE
+   vendors.** Every `ontologyList` entry is paired in `altEntryList` with a
+   **bundled local OWL file** under `src/main/resources/ontologies/`:
+   `SALMON_` → `ontologies/SALMON.owl`, `SASAP_` → `ontologies/SASAP.owl`, and
+   both files are really there. So inclusion is a release-and-versioning
+   commitment on smn's side — which file, pinned how, refreshed how — rather
+   than a one-line configuration edit, and the ask has to arrive with an answer
+   to that.
+2. **The two fields the list feeds are undefined on the public CN endpoint
+   today.** `annotation_property_uri` and `annotation_value_uri` both return
+   **HTTP 400, `undefined field`**, while `sem_annotation` resolves. Either the
+   expansion fields exist internally and are not exposed through the public
+   query schema, or that path is not wired into production at all. **The ask has
+   to carry that question** rather than assume inclusion alone buys anything.
+
+The retirement condition below survives both readings, which is why it is
+phrased as a retrieval demonstration and not as "the configuration changed".
+Keep it that way.
+
+**The strategic point, stated plainly because it is why the item exists: this is
+a better discoverability lever than emitting I-ADOPT triples** — the subject of
+`#78` / `B-78` and `B-146`. The index cannot represent an I-ADOPT decomposition
+**at all**: it flattens predicate and object into one unordered multivalued
+field, with no pairing and no subject. Expansion, by contrast, makes smn's
+existing hierarchy do real retrieval work. The two are not alternatives in
+principle, but if effort is scarce this one buys more.
+
+**The precedent is the strongest argument available.** DataONE has already
+accepted salmon-domain namespaces under `purl.dataone.org/odo/`, so this is
+*extension of an existing arrangement* rather than a novel request. Part of the
+item is working out the relationship between those `SALMON_`/`SASAP_`
+namespaces and `smn`/`gcdfo` — whether smn seeks its own entry, mints under
+`purl.dataone.org/odo/`, or aligns to what is already there. That is a real
+modelling question, and it is why this is not claimable alongside its being an
+outward-facing request to another organisation.
+
+Venue for the ask: an issue on `DataONEorg/dataone-indexer`, which is also where
+roadmap intent on per-predicate indexing would be answered. `S-03`'s KNB deposit
+is the same destination and the natural occasion to raise it.
+
+*Retires when:* either `smn` and `gcdfo` IRIs receive superclass expansion in
+DataONE's production index — demonstrated by a query for a parent concept
+matching a record annotated only with a child — or a logged decision records
+that smn will instead mint or align under an already-accepted namespace, or that
+the ask was made and declined, with what was said.
+
 ### Open — P3 (R-package and API hygiene)
 
 **#58 No condition classes anywhere.** 415 `cli_abort` + 38 `cli_warn` + 3
@@ -2801,6 +3410,307 @@ accept-then-drop case with a fixture whose label does **not** lexically match
 the column. That fix is independently shippable ahead of the review-flow port —
 it depends on none of that surface existing.
 
+### The R halves of the 2026-09-15 Codex findings on metasalmonpy PR #28
+
+**Five findings from fixing three Codex P2 findings on metasalmonpy PR #28
+(queue item `B-126`), each re-measured here rather than taken from the report
+that surfaced it.** `B-174`, `B-175` and `B-176` are the **R halves** of those
+three: the same defects exist in metasalmon 0.5.0 in the same shape, so they are
+owed as **ports and not deviations** — a shared defect is not a chosen
+difference, so no `PARITY.md` row is owed for any of the three. `B-177` is a
+question the first finding opened and did not close. `B-178` is an
+evidence-hygiene item in metasalmonpy and it **records a negative result**: the
+finding as reported does not hold, and the measurement that shows why is the
+entry.
+
+They are headed by their **queue id**, because they are new items with no legacy
+backlog number. **State is not here.** Whether one is icebox, ready, claimed or
+done lives in `queue/items/`; this section is what each item's `evidence:`
+pointer resolves to. **The heading above says nothing about state on purpose**,
+and the older `Open — …` headings further up this file are the pre-queue
+convention rather than the one to copy: a heading reading `Open` is a second
+copy of five items' state, it goes stale the moment any one of them moves, and
+nothing checks it. *Retires when:* those older headings are relabelled too, at
+which point this note is no longer telling a reader why the neighbours differ.
+
+Everything below was measured on 2026-09-15 under **R 4.3.3** against
+metasalmon **0.5.0 loaded from source at `main` `4cd085c`** (`DESCRIPTION`
+reads 0.5.0). The report these came from said "installed metasalmon 0.5.0";
+the package is installed in no library on this machine, so that phrase
+described a `pkgload::load_all()` tree. Two measurement traps bit during the
+re-check and are worth carrying forward: `pkgload::load_all()` sources
+`tests/testthat/helper-*.R` by default, so a dev console silently inherits
+`options(metasalmon.sdp_schema_source = "vendored")` and **cannot see `B-175`
+at all**; and a fixture's candidate count is a property of the fixture, which
+is why the `not_selected` row count in `B-176` is two here and one in the
+report.
+
+**`B-174` `review_metadata()` reports a clean package that strict validation
+refuses.** **A user-facing defect in released 0.5.0**, not a latent one: it is
+the state a user reaches by leaving any part of the semantic review queue
+undecided, which is the ordinary path rather than an edge case.
+
+`.ms_is_unfilled_metadata()` (`R/sdp-field-setters.R:50-55`) answers `FALSE`
+for `REVIEW:https://example.org/Thing` and `TRUE` for the three prose
+placeholder spellings (`MISSING METADATA:`, `MISSING DESCRIPTION:`,
+`REVIEW REQUIRED:`), for blank and for `NA`. End to end, on a package filled by
+executing `review_metadata()`'s own printed calls until
+`validate_salmon_datapackage(pkg, require_iris = TRUE)` passed, and then given
+one `REVIEW:` marker:
+
+```
+review_metadata(pkg)                -> "No outstanding metadata."
+                                       "Every required field is filled and
+                                        no placeholders remain."
+validate_salmon_datapackage(pkg, require_iris = TRUE)
+                                    -> Error: Validation cannot pass while
+                                       REVIEW-prefixed IRI values remain.
+                                       x constraint_iri: spawner_count (rows 2)
+```
+
+**The defect is the predicate, not the field list, and that changes the fix.**
+It was reported as a coverage gap that needed to reach `constraint_iri`,
+`statistical_modifier_iri` and a code's `term_iri` "not only measurement and
+table IRIs" — implying the measurement and table IRIs were already handled.
+They are not. A `REVIEW:` marker on `term_iri`, `property_iri`, `entity_iri` or
+`unit_iri` of a measurement column is missed although all four are enumerated
+in `.ms_measurement_iri_fields()` and visited on every row, and one on
+`tables.csv$observation_unit_iri` is missed although that field has its own
+dedicated branch. Every one of those was measured refused by strict validation
+and reported as **0 rows** by the scan. `constraint_iri` and
+`statistical_modifier_iri` fail for the same reason plus a second: neither is
+schema-`required` nor in the measurement enumeration, so only the
+prose-placeholder branch ever looks at them.
+
+Two parts of the fix shape are load-bearing.
+
+1. **Keep `.ms_is_review_placeholder()` narrow and add a second predicate.**
+   Its narrowness is deliberate and depended on by **12 call sites across four
+   files** (`R/package-helpers.R`, `R/sdp-field-setters.R`,
+   `R/edh-xml-export.R`, `R/metadata-write.R`), several of which exclude the
+   marker *on purpose* — the placement sweep at `R/package-helpers.R:1748-1751`
+   says so in a comment ("`REVIEW:` markers have their own dedicated reporting
+   path"), and `.ms_metadata_gap_row()` uses it to decide whether a value's own
+   text is a usable hint, which an IRI's is not. *(The report said five
+   callers; five is the Python count for `_is_review_placeholder` in
+   metasalmonpy's `semantics.py`. R has 12.)*
+2. **`.ms_review_is_unfilled()` (`R/review-console.R:133`) is IRI-aware and is
+   not a drop-in replacement.** Measured, it answers `FALSE` for all three
+   prose placeholder spellings, so swapping it onto this path trades one half
+   of the defect for the other. What is needed is the union of the two, or a
+   second predicate as metasalmonpy PR #28 added (`_is_unresolved_iri()`, kept
+   separate for exactly this reason and carrying "*Retires when:* nothing" in
+   its docstring).
+
+The scan's **file** scope must follow what strict validation actually sweeps
+rather than what looks symmetric: `tables.csv` and `column_dictionary.csv` are
+refused, `dataset.csv` and `codes.csv` are not (`B-177`), so reporting a marker
+there would make the scan claim a block that does not exist — the same class of
+error as missing one, pointing the other way. `B-177` is **not** a blocker: the
+two swept files can be fixed first.
+
+*Retires when:* `review_metadata()` reports every field whose `REVIEW:` IRI
+blocks `validate_salmon_datapackage(require_iris = TRUE)`, so the scan's own
+stated contract holds again — when the last row it prints is gone, strict
+validation passes — demonstrated red on a package whose only remaining gap is a
+`REVIEW:` marker, and pinned by a test that drives the validator rather than
+asserting on the printed text.
+
+**`B-175` `review_metadata()` contacts the network although its documentation
+says it never does.** The roxygen sentence is at `R/sdp-field-setters.R:340` —
+*"It never contacts a network or an LLM."* — and it is rendered into
+`man/review_metadata.Rd:44`, so it is a published guarantee and not only a code
+comment. *(The report placed it at line 339.)*
+
+Path measured: `.ms_metadata_schema_fields()` (`R/sdp-field-setters.R:101-105`)
+→ `.ms_load_sdp_schema(quiet = TRUE)` (`R/schema-helpers.R:103-151`), whose
+default source is `getOption("metasalmon.sdp_schema_source", "auto")`, and
+`"auto"` calls `.ms_fetch_remote_sdp_schema()` (`R/schema-helpers.R:153-175`)
+**before** falling back to the bundled copy.
+
+Cost, measured with a counting wrapper around `httr2::req_perform` and the
+schema cache cleared: **eight** requests to `raw.githubusercontent.com` per
+cold schema load — six Frictionless metadata schemas from
+`.ms_sdp_metadata_schema_paths()`, plus the profile and `sdp.rules.yaml` — each
+carrying the 2-second timeout that is `.ms_fetch_remote_sdp_schema()`'s default,
+1.08s of wall clock with the host reachable and up to 16s when it hangs. *(The
+report said six requests at 2.0s each.)* The bundle is cached in
+`.ms_schema_env` per cache key, so it is eight requests on the first call in a
+session and **zero** on the second; a scripted review that starts a fresh R
+process per package pays it every time. `set_sdp_dataset()` measured the same
+eight on the same path. `review_semantics()` measured **zero**, so its
+identically worded claim (`man/review_semantics.Rd:40`) holds — which is what
+makes this a defect in one function rather than a house style.
+
+**This is the trap, and it is why the retirement condition names the
+sentinel.** `.ms_load_sdp_schema()` wraps the fetch in
+`tryCatch(..., error = function(e) e)` (`R/schema-helpers.R:114-117`), so an R
+sentinel that signals an **error** is swallowed and the test passes either way.
+Measured: a mocked `req_perform` that calls `stop()` was reached once and the
+call still returned all 24 `dataset.csv` field definitions with nothing
+escaping — the R spelling of the same trap that swallowed a Python `Exception`
+on the other side. A sentinel that works either records its firing outside the
+call (a counter incremented before the `stop()`) or signals a **non-error**
+condition; both were demonstrated firing.
+
+**Nothing in the suite can see this.** `tests/testthat/helper-validation.R:3`
+sets `options(metasalmon.sdp_schema_source = "vendored")` for the whole run, so
+the shipped default is exercised nowhere — and metasalmonpy's
+`tests/conftest.py` pins the same value for the same stated reason, which is
+why the defect survived on both sides.
+
+This is the same contract shape as `AGENTS.md`'s **LLM-opt-in** rule: supplying
+`llm_context_files` must *never* trigger a network or LLM call, and options that
+will be ignored should warn rather than silently no-op. A function documented as
+local has to be local, and a documented guarantee that is only usually true is
+the failure that rule exists to name. metasalmonpy PR #28's fix is a module
+constant reading the bundled bundle on this path (`_SCHEMA_SOURCE = "vendored"`,
+with its own retirement condition), with the setters reading the same source so
+the gap scan and the printed call cannot disagree about which fields exist.
+
+*Retires when:* `review_metadata()` and the four `set_sdp_*()` setters make no
+network request under the shipped default options, **and a sentinel proves it**
+— a counter or a non-error condition, never a `stop()`.
+
+**`B-176` `apply_sdp_semantics()` loses a hand-picked accept.** On a
+`create_sdp()` package seeded through a mocked `find_terms`:
+
+```
+accept_suggestion(review, "spawner_count", "variable",
+                  iri = "https://example.org/Handpicked")
+apply_sdp_semantics(path, review)
+
+column_dictionary.csv$term_iri  -> https://example.org/Handpicked
+semantic_suggestions.csv        -> 2 rows decision=not_selected
+                                   0 rows decision=accepted
+                                   0 rows whose iri is the accepted one
+review_semantics(path)          -> 0 decisions replayed
+  (same with include_filled = TRUE)
+```
+
+The mask is `R/metadata-write.R:445-449`: `accepted` is `in_slot` **and** the
+row's stripped `iri` equalling the decision IRI, so when the accepted IRI is not
+one of the slot's candidates the vector is all `FALSE`, line 447 sets every row
+in the slot to `not_selected`, and line 448 sets nothing to `accepted`.
+`not_selected` is absent from `.ms_review_recorded_decisions()` (the map is
+`accepted`, `accept`, `rejected`), so the replay helper skips those rows and the
+decision is unrecoverable from the package. The slot then drops out of the next
+queue only because the dictionary field is now filled, not because the answer
+was remembered. *(The report said one `not_selected` row; the count is a
+property of the fixture's slot, which carries two candidates.)*
+
+**Two things the Python fix established that the R fix must not lose.**
+
+1. **The accepted IRI needs its own row**, not an existing candidate
+   relabelled. Relabelling would make the file say a term the reviewer never
+   chose is the one they chose, and that row's `label`, `source`, `ontology`,
+   `definition` and `score` would all describe a different term.
+2. **The new row goes at the head of its slot, not the tail.**
+   `review_semantics()` derives `rank` from file position
+   (`R/review-console.R:316-323`, deliberately not a sort, so the ranked order
+   and the seeded auto-apply cannot disagree) and then drops everything past
+   `max_candidates`, default `5` (`R/review-console.R:398-399`). Demonstrated on
+   a slot padded to six candidates: appended, the hand-picked row ranks 7 and is
+   filtered straight back out of the rebuilt review; inserted at the head, it
+   ranks 1 and survives.
+
+*Retires when:* `accept_suggestion(..., iri = )` followed by
+`apply_sdp_semantics()` leaves `semantic_suggestions.csv` carrying a row whose
+`iri` is the accepted IRI with `decision` `accepted`, and the next
+`review_semantics()` replays it; demonstrated red on an IRI that is not among
+the slot's existing candidates, and pinned by a test that reads the file back
+rather than asserting only on the dictionary.
+
+**`B-177` two code paths in the same package disagree about whether
+`dataset.csv` and `codes.csv` are swept for `REVIEW:` IRIs.** **Latent today**,
+and say so, so nobody reads it as live breakage: `.ms_review_iri_prefix()` has
+exactly two call sites — `R/package-helpers.R:3848`, which writes into
+`column_dictionary.csv`, and `R/package-helpers.R:4166`, which writes
+`tables.csv$observation_unit_iri` — so no producer in the package writes a
+marker into either file, and only a hand-edited or third-party package can be in
+this state.
+
+The sharper question is inside it. `R/edh-xml-export.R:1175-1178` calls
+`.ms_collect_review_iri_issues()` on **all four** frames; the strict validation
+path calls it on `tables` alone (`R/package-helpers.R:1972`) and reaches the
+dictionary only through `validate_dictionary()` / `validate_semantics()`.
+Measured on a package filled until strict validation passed:
+
+| marker on | EDH gate | `validate_salmon_datapackage(require_iris = TRUE)` |
+|---|---|---|
+| `column_dictionary.csv$term_iri`, `constraint_iri`, `statistical_modifier_iri` | reports | **refuses** |
+| `tables.csv$observation_unit_iri`, `method_iri`, `protocol_iri` | reports | **refuses** |
+| `dataset.csv$protocol_iri` | reports | **passes** |
+| `codes.csv$term_iri`, `vocabulary_iri` | reports | **passes** |
+
+`codes.csv` was not in the report and is the same defect as `dataset.csv`: two
+files, not one. It escapes the unconditional placement check too, which excludes
+anything matching `^REVIEW:` on purpose (`R/package-helpers.R:1748-1751`)
+because the marker has its own reporting path — and on
+`dataset.csv$protocol_iri` that path is the one that is missing.
+
+**The same question is open on the Python side, and the two implementations
+already differ on one half of it**, so this is not purely an R item.
+metasalmonpy's `_collect_review_issues()` (`package_io.py:2284-2315`) sweeps
+tables, dictionary and codes for `REVIEW:` IRIs but **not** dataset, where R's
+EDH path does — so the two EDH gates disagree about `dataset.csv$protocol_iri`.
+PR #28 froze the scan-side answer as
+`_REVIEW_IRI_FILES = ("tables.csv", "column_dictionary.csv", "codes.csv")` with
+a retirement condition tying that tuple to whatever `_collect_review_issues()`
+sweeps.
+
+*Retires when:* strict validation and the EDH rebuild gate sweep the same set of
+files, **or** a logged decision names which set is right and why, with the loser
+changed to match in the same change. Whichever way it is ruled, the ruling has
+to reach four places — R strict validation, the R EDH gate, the Python
+equivalents of both, and `B-174`'s scan list — and any deliberate difference
+that survives needs a parity register row. That row is the **only** one anything
+in this filing run could owe.
+
+**`B-178` metasalmonpy PR #28's body records suite counts measured at its first
+commit, not at its head.** **The finding this item was filed to record does not
+hold, and the negative result is the point.** It was reported as "the body
+records test counts that do not reproduce, with a two-test difference that was
+not chased". The body's counts reproduce exactly.
+
+Measured from a throwaway clone of the branch, with metasalmonpy installed
+editable into two purpose-built virtual environments:
+
+| commit | leg | `Rscript` absent | `Rscript` present |
+|---|---|---|---|
+| `05be2a1` | `[test,eml,context]` | **896 / 3** | 898 / 1 |
+| `05be2a1` | core deps only | **783 / 116** | 785 / 114 |
+| `ead77a3` (head) | `[test,eml,context]` | — | **904 / 1** |
+| `ead77a3` (head) | core deps only | — | **791 / 114** |
+
+The two bold figures are byte-for-byte the ones in the PR body. **The whole
+difference is the two R round-trip tests, and the body already says so:**
+`tests/test_roundtrip.py` gates its two tests on `HAVE_R`
+(`shutil.which("Rscript")` and `os.path.isdir()` of the `R_LIB_PATH` constant at
+`:19`), and the body records *"With R plus metasalmon installed: 898 / 1"* as a
+separate line. Two tests move from skipped to passed in both legs, the totals
+are 899 either way, and the same pair explains the core leg's 783/116 against
+785/114 — which the body does not state but which follows from the identical
+gate. So there is no unchased two-test difference and nothing measured here
+contradicts the body.
+
+**What is actually stale is smaller and real.** The branch has two commits and
+the body's evidence table was measured at the first. At the head — `ead77a3`,
+*"Fix the three Codex P2 findings on the S5 port"* — the same two legs give
+**six more** passing tests each, because that commit added tests to
+`tests/test_review_console.py` and `tests/test_sdp_field_setters.py`. A reader
+checking the body against the head finds four numbers all wrong by six, with
+nothing in the body saying which commit it describes. That is evidence hygiene
+rather than a code defect, which is why it is P4: a PR body's evidence should
+reproduce, and when it does not, the first question is whether the measurement
+or the environment differs — here it was neither, it was the commit.
+
+*Retires when:* the evidence table names the commit each count was measured at,
+or is re-measured at the head; and the convention that a suite count in a PR
+body carries its commit is written into wherever that repository records its
+release and review procedure. No code change is owed in either repository and no
+`PARITY.md` row is owed.
+
 ### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
 
 **#61 Ecosystem findings.** 37 verified findings across `smn-data-pkg`,
@@ -2818,11 +3728,52 @@ Pages configuration.
 #### smn-data-pkg (verified on `main`, 2026-08-21)
 
 **#116 The reviewed closure has no producer and no documentation, so the
-publication path is unreachable from the published docs.** Found 2026-08-25
+publication path is unreachable from the published docs. FIXED IN R
+2026-09-15 (hub item B-116); the mirror half is still owed.** Found 2026-08-25
 while taking the Fraser coho example to a KNB test-node dry run. Severity:
 **high** — it is not a defect in any one function, it is a hole in the golden
 path, and the symptom is that a user who does everything the vignette says gets
 `metadata/semantic_vocabulary.csv does not exist` with nowhere to go.
+
+**What landed, against the four numbered findings below.** One exported
+`write_sdp_semantic_closure(path, evidence = NULL, search_fn = find_terms,
+sources = c("smn", "gcdfo"), quiet = FALSE)` in `R/semantic-closure.R`,
+following the shape Brett approved on 2026-09-12. It derives both canonical sets
+(finding 3) and returns them as `measurement_iris` and `review_targets`, so a
+user never reasons one from the other; resolves each IRI's evidence by re-running
+`find_terms()` with the query recorded in `semantic_suggestions.csv` or, failing
+that, the IRI's own local name split back into words (finding 4's searchable
+half); takes hand-supplied rows through `evidence`, overlaid field by field, for
+QUDT and for `native_type` / `source_url` (finding 4's unsearchable half);
+computes every `reviewed_snapshot_sha256` and both file digests in
+`metadata/eml-mapping.yml` (finding 2); and reports an IRI it cannot resolve as a
+row of `gaps` in `detect_semantic_term_gaps()` shape, writing both files without
+it, rather than aborting. The post-review vignette's "Known gap" callout is
+replaced by the producer and its gap path (finding 1's R half).
+
+**The rehearsal script's three `metasalmon:::` calls are gone, and the script
+ran end to end to a clean `publish_sdp_to_knb(dry_run = TRUE)` plan on
+2026-09-15** — 4 vocabulary rows, 5 ledger rows, both sidecar digests pinned by
+the producer, 10 objects in the manifest. Its STAGE 5 and STAGE 6 are swapped so
+the EML sidecar is written first and the producer pins its digests, which also
+removed the script's last hand-computed file digest. So the measure this item
+chose for itself — *"those two calls are the precise measure of this gap"* — now
+reads zero.
+
+**Two things this did not close, and they are not oversights.** The **workshop**
+surface named in finding 1 lives in `salmon-data-standards-workshop`, which is a
+shared repository an agent may not push to, so session 6's callout and its four
+`eval = FALSE` publication chunks still describe an unreachable deposit and need
+revisiting. And the **mirror half is owed as a port**, not as a deviation row;
+the detail is under *What metasalmon 0.5.0 owes the mirror* in
+[`knowledge/parity-deviations.md`](parity-deviations.md), and it has no queue item
+yet.
+
+**Everything from here down is the diagnosis as found on 2026-08-25, kept
+because it is what the fix had to answer.** Read its present tense as of that
+date: two of the three files below now have a producer, and findings 2, 3 and 4
+are discharged in R. The four findings are numbered, and the "What landed" block
+above answers them by number.
 
 `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require a reviewed
 closure. Three files carry it, and **metasalmon validates all three and writes
@@ -2852,13 +3803,16 @@ Four separate things are wrong, in descending order of how badly they block:
    reachable unaided, which is why its four publication chunks stay
    `eval = FALSE`. **Documentation is not a producer**, so the item stays
    open — and it now has two downstream surfaces that must be revisited when
-   a producer ships.
+   a producer ships. *2026-09-15: the vignette surface is revisited (the callout
+   is replaced by the producer and its gap path). The workshop surface is not,
+   and cannot be from here: that repository is shared.*
 2. **`reviewed_snapshot_sha256` cannot be computed by any exported function.**
    `.ms_eml_vocabulary_snapshot_sha256()` (`R/eml-export.R:1182`) is a verifier
    only. Its sole producing caller in the whole repo is
    `tests/testthat/helper-eml.R:134`. A user's only options are to hand-write a
    SHA-256 into a CSV or to reach into `metasalmon:::`, and the first of those
-   is not a workflow.
+   is not a workflow. *Discharged 2026-09-15: `write_sdp_semantic_closure()`
+   computes it for every row, and pins both file digests in the sidecar too.*
 3. **The two canonical sets are derivable only from internals.** The vocabulary
    must equal `.ms_eml_canonical_measurement_iris()` exactly and the ledger must
    equal `.ms_eml_canonical_review_targets()` exactly, both internal. The sets
@@ -2871,17 +3825,24 @@ Four separate things are wrong, in descending order of how badly they block:
    and QUDT — which the shipped examples annotate against for units — is not a
    searchable source at all, so a QUDT row is 100% hand-authored.
 
-**Proposed shape (not a decision):** one exported `write_sdp_semantic_closure()`
-that reads the package, derives both canonical sets, resolves evidence for each
-IRI through the existing search path, computes the snapshot digests, and writes
-both files plus the two hashes into an existing sidecar — with any IRI it cannot
-resolve reported as a gap rather than guessed at. That would make the closure a
-product of the review pipeline instead of a thing reviewers reconstruct.
+**Proposed shape, ruled and shipped.** One exported
+`write_sdp_semantic_closure()` that reads the package, derives both canonical
+sets, resolves evidence for each IRI through the existing search path, computes
+the snapshot digests, and writes both files plus the two hashes into an existing
+sidecar — with any IRI it cannot resolve reported as a gap rather than guessed
+at. Approved by Brett on 2026-09-12 (`knowledge/plans/2026-09-12-queue-promotion-review.md`
+§3), including the part that is easy to get backwards: **the gap is reported
+because a gap is what the term-request pipeline consumes**, so the producer must
+not abort. The same ruling fixed the export set — the internals shared with S-13
+requirement 1 are reached *through* the one export and stay unexported. Landed
+2026-09-15.
 
-**Worked reference in the meantime:** `scripts/build-fraser-coho-knb-rehearsal.R`
-takes the shipped 173-row example from `create_sdp()` to a clean KNB test-node
-dry run. It reaches into `metasalmon:::` in exactly two places, both marked, and
-those two calls are the precise measure of this gap.
+**Worked reference:** `scripts/build-fraser-coho-knb-rehearsal.R` takes the
+shipped 173-row example from `create_sdp()` to a clean KNB test-node dry run.
+Until 2026-09-15 it reached into `metasalmon:::` at **three** sites (the earlier
+wording here said two, corrected by the 2026-09-12 review), and those calls were
+the precise measure of this gap. It now reaches into none, which is the measure
+reading zero.
 
 **The mirror has the identical gap, measured rather than presumed
 (2026-08-25).** metasalmonpy requires both files on the same path
@@ -2928,11 +3889,25 @@ column (`accepted` / `not_selected` / `rejected`) back into
 candidate was chosen and which were passed over, and it is evidence a future
 closure producer can read instead of asking the user to restate it. It narrows
 the *evidence* available to the fix; it does not narrow this item, which stays
-open at its full scope.
+open at its full scope. **Used as predicted (2026-09-15):**
+`write_sdp_semantic_closure()` reads a recorded `decision_reason` for an accepted
+IRI and writes it as that target's `review_rationale`, so a reviewer who
+recorded a reason once is not asked for it again. Where none was recorded it
+writes a `REVIEW REQUIRED:` marker and warns, naming each target — a producer
+that invented a confident-sounding rationale would be fabricating the one thing
+in the ledger that is purely human.
 
 *Retires when:* a user can produce a publishable package without `:::` and
-without hand-writing a digest, and the rehearsal script's two internal calls
+without hand-writing a digest, and the rehearsal script's three internal calls
 become calls to exported functions.
+
+**R half discharged 2026-09-15** on both counts: the rehearsal runs to a clean
+dry run with zero `:::` calls, and no SHA-256 in the resulting package was
+written by hand. **Retained open for the mirror**, which still has every part of
+this hole; the port is specified under *What metasalmon 0.5.0 owes the mirror* in
+[`knowledge/parity-deviations.md`](parity-deviations.md) and has no queue item
+yet. The workshop surface in finding 1 also still needs revisiting, in a
+repository an agent may not push to.
 
 **#117 `term_type` is required by EML export but not by strict validation, so
 the SDP gate does not gate publication.** Found 2026-08-25, same session. The
@@ -3239,6 +4214,867 @@ live, what generates them, how they version); and (c) whether triple emission
 is a capability SDPs should support *generally* rather than just for I-ADOPT.
 Deliverable is the explainer plus a recommendation — not an implementation.
 Parked under S9 step 6; do not schedule before Brett reviews the explainer.
+
+**The explainer for this entry is the
+[iop-triple card, 2026-09-14](plans/2026-09-14-iop-triple-explainer.md)**,
+allowed under Q46. It corrects this entry's own premise, and the correction is
+why the card has the shape it does: metasalmon **does** already emit triples.
+EML 2.2 semantic annotations are RDF triples by EML's own account, and
+`R/eml-export.R` writes exactly two per measurement attribute
+(`dcterms:subject` → `term_iri`, `qudt:hasUnit` → `unit_iri`) while documenting
+that it "deliberately does not project incomplete I-ADOPT roles". So the gap is
+narrower and sharper than "no triples": the package states the components and
+never states the relation between them. Two findings from that pass are **not**
+part of #78 and belong to separate items rather than to this one — the SDP
+cannot distinguish `hasObjectOfInterest` from `hasContextObject`/`hasMatrix`,
+and cannot express I-ADOPT's `constrains` target at all.
+
+### The 2026-09-15 recovered findings
+
+**Twelve findings recovered from four hub agents' workpads and pull requests
+after the fact, plus a thirteenth found while filing them** — the four items
+worked on the night of 2026-09-15 were `B-116`, `B-111`, `B-115` and `B-106`.
+Each agent named what it had found and deliberately did not absorb; none of it
+was a queue item, and a finding that lives only in a workpad is a finding the
+next reader re-derives. They are headed by their
+**queue id** for the reason the *2026-09-15 fleet findings* section
+gives: `#120` is the last number this file issued and inventing `#121` upward
+would create a second numbering nobody reconciles. **State is not here** —
+whether one of these is icebox, ready, claimed or done lives in `queue/items/`,
+and this section is what each item's `evidence:` pointer resolves to. **The
+heading above says nothing about state on purpose**, and the older `Open — …`
+headings further up this file are the pre-queue convention rather than the one to
+copy: a heading reading `Open` is a second copy of a dozen items' state, it goes
+stale the moment any one of them moves, and nothing checks it. *Retires when:*
+those older headings are relabelled too, at which point this note is no longer
+telling a reader why the neighbours differ. That fleet section — the defects from
+`B-149` up, and its questions in [`questions.md`](questions.md) — is the sibling
+of this one: same night, different agents, filed separately.
+
+**Twelve recovered findings, eleven items** (twelve counting `B-173`, which was
+not recovered from anything). One of the twelve, `B-172`, has **no item file**:
+the one-line fix was folded into the change that produced the finding before it
+could be scheduled, and its entry below is the record. A finding and a queue item
+are not the same thing, so the count of findings above stays what it was.
+
+| Found by | Items |
+|---|---|
+| **B-116** (PR #121, the closure producer) | `B-164`, `B-165`, `B-169`, `B-170`, `B-171`, and `B-172` (absorbed, no item) |
+| **B-115** (PR #118, the descriptor instant) | `B-161`, `B-162` |
+| **B-111** (PR #119, the create-path sidecars) | `B-163` |
+| **B-106** (PR #120 and smn-data-pkg PR #8, the reworded rules) | `B-166`, `B-167`, `B-168` |
+| *nobody* — found by tripping over it while filing `B-164` | `B-173` |
+
+**Every description was re-verified before it was filed, and four of the twelve
+moved when checked.** That is the measurement worth keeping, because all twelve
+arrived as confident prose and none of the four looked wrong. `B-163`'s blast
+radius named files that are not on the atomic path, and asserted a durability
+divergence with the mirror that does not exist. `B-164` arrived as "two
+vignettes fail" and is in fact invisible to CI, on a step the CI's R no longer
+runs. `B-168`'s git half is false in all three repositories, and the half that
+*is* true belongs to a different repository than the one it was reported
+against — so it is filed against metasalmon. `B-170` overstated the churn.
+Three more gained precision that changes the work rather than the claim
+(`B-161`, `B-166`, `B-167`), and **one could not be verified at all** (`B-169`),
+which its entry says rather than asserting what it could not check.
+
+**A note on that rate, since it is the second night running.** The fleet
+findings above were filed by an agent that was told six of its handed-down
+descriptions were wrong and found them; this pass was told to assume the same
+rate and found four plus one unverifiable. Two passes is not a trend, but it is
+enough to stop treating a workpad sentence as a finding: it is a **lead**, and
+the distance between the two is a third of them.
+
+**`B-161` `readr::write_csv()` writes an unpadded, invalid `xs:dateTime` year
+for a pre-1000 instant on Linux.** Reproduced 2026-09-15 on R 4.3.3 with readr
+2.2.0:
+
+```r
+readr::write_csv(data.frame(t = as.POSIXct("0001-02-03 04:05:06", tz = "UTC")), f)
+#> t
+#> 1-02-03T04:05:06Z          <- not a valid xs:dateTime
+readr::write_csv(data.frame(t = as.POSIXct("0999-12-31 23:59:59", tz = "UTC")), f)
+#> 999-12-31T23:59:59Z        <- nor is this
+```
+
+So `metadata/dataset.csv` carries bytes this package cannot parse back. It is
+**#93's `as.character` Date defect in the same shape on readr's *instant*
+path**, and unlike #93 it **is** platform-dependent — which this file already
+records without having noticed. **#93 item 1's** own comparison table, measured
+on macOS R 4.5.2, has the row `POSIXct, year 1 → 0001-01-01T00:00:00Z —
+*already correct*`, and **#115**'s entry rests on it in prose: *"`readr::write_csv()`'s
+instant output is already ISO-correct"*. True on macOS, false on Linux, and CI
+runs Linux.
+
+**B-115 and PR #118 deliberately did not absorb it**, and say so in
+`R/platform-time.R` on that branch, which is the right call and worth stating so
+nobody folds them: what B-115's branch *achieves* is **agreement** between
+`datapackage.json` and `metadata/dataset.csv`, agreement now holds on both
+platforms, and this is the separate question of whether the agreed-on bytes are
+*valid*. Reachable only from a caller-supplied typed instant, which neither
+implementation produces on its own.
+
+**B-115's recorded condition asks for more than agreement, and on Linux the two
+halves of it cannot both hold. This entry is where that is written down, because
+the fix is not this item's to make.** `queue/items/B-115.yaml` reads:
+
+> A typed `POSIXct` reaching the descriptor renders as readr's ISO instant form,
+> with the `T` separator and the `Z` zone marker (`0999-06-05T13:45:30Z` for the
+> backlog's fixture), **which is what `metadata/dataset.csv` already writes**
+
+The parenthetical literal and the closing clause name **the same bytes on macOS**,
+where #115's comparison table was measured, and **different bytes on Linux**,
+where `readr::write_csv()` writes `999-06-05T13:45:30Z` for that same fixture —
+the measurement at the top of this entry. So on the platform CI runs, an
+implementation can satisfy the agreement half or the padded-literal half, and no
+Linux implementation can satisfy both **unless the CSV path is padded**, which is
+precisely the decision this item defers: padding it reopens #93 item 1, which
+ruled that `.ms_iso_date_columns()` leaves `POSIXct` alone and ruled it
+*correctly*. B-115's branch satisfies the agreement half. The padded literal is
+not reachable from it at all.
+
+**The consequence, stated plainly because it is the reason this paragraph exists:
+B-115 can be merged and marked `done` while violating its own recorded retirement
+condition, and nothing in either item file would say so.** This entry does not
+rewrite B-115's clause and nobody else should either before the ruling — Brett
+approved PR #118 without ruling the byte, and the spelling is his. **What the
+ruling now has to settle is two things rather than one:** which spelling a
+pre-1000 instant takes in `metadata/dataset.csv`, and whether B-115's condition is
+restated to name the ruled bytes at the same time. Found by a Codex review of
+pull request 123 and escalated to Brett on 2026-09-16; it is deliberately left as
+a stated conflict rather than a quiet edit, because the quiet edit would be an
+agent choosing the byte.
+
+*Retires when:* one spelling is ruled for a pre-1000 instant in
+`metadata/dataset.csv` and both implementations emit it, with a test pinning
+write → read for a `POSIXct` below year 1000. **A ruling, not a substitution**,
+which is why the item is not claimable: padding the CSV side means reopening #93
+item 1 deliberately — it ruled that `.ms_iso_date_columns()` leaves `POSIXct`
+alone, *correctly*, because coercing an instant changes the separator, the zone
+marker and whether a fractional second survives — and the only alternative is
+accepting a platform-dependent instant year ecosystem-wide. Cross-references
+B-115, B-145, #93 item 1; like B-115 it has to be ruled for both
+implementations at once or it creates a parity row instead of closing one.
+
+**`B-162` EML `calendarDate` renders `temporal_start` through a third
+renderer.** `R/eml-export.R:1661` and `:1663` read
+`as.character(temporal_start)` and `as.character(temporal_end)` inside
+`.ms_eml_add_coverage()` (`:1603`) — a third rendering of one value in a package
+whose contract is *one value, one rendering*.
+
+**Filed as an observation and not a verified defect**, which is the strength it
+was reported at and the strength it was confirmed at. On today's only path it
+cannot diverge: the frame arrives as `pkg$dataset` from
+`validate_salmon_datapackage()` (`R/eml-export.R:2915`), which reads
+`metadata/dataset.csv` through `.ms_read_metadata_csv()`
+(`R/package-helpers.R:2814`) with `col_types = cols(.default = col_character())`,
+so every cell is character and `as.character()` is the identity. A typed instant
+has never been driven through it.
+
+*Retires when:* both lines render through the same renderer the two writers use,
+**or** a test pins that all three agree for a typed `POSIXct`, **or** the
+question is answered by-design and this closes with no code change. It becomes
+real the moment any caller hands the EML builder a typed metadata frame — which
+is exactly the situation B-115 established is reachable for the other two
+writers — so the cheap close is the test.
+
+**`B-163` The SDP atomic write set renames a staging file it never flushed.**
+`.ms_sdp_extension_atomic_write_set()` (`R/sdp-extension-helpers.R:133`) stages
+each replacement with `writeBin()` at `:186` and installs it with
+`file.rename()` at `:240`, with no flush between; the rollback path — the
+rename-aside at `:234` and the restore at `:206` — has the same shape. It is
+**atomic against an aborted call and not durable against a crash**: a power loss
+after a rename can leave a renamed empty file where the previous bytes were.
+
+**The blast radius as reported was wrong in two directions and the corrected one
+is the point of the item.** On `main`, what reaches the write set is
+`write_salmon_datapackage()` through `.ms_commit_package_write()`
+(`R/package-helpers.R:718`), the `set_sdp_*()` setters through
+`.ms_set_sdp_metadata()` (`R/sdp-field-setters.R:850`), `apply_sdp_semantics()`
+(`R/metadata-write.R:463`), `migrate_sdp_methods()` (`R/sdp-methods.R:560`) and
+`write_sdp_observation_structures()` (`R/observation-structures.R:946`).
+`create_sdp()`'s three sidecars are **not** on it today — they arrive with B-111
+and PR #119, which is what that item does. And KNB publication, the
+reproducibility manifest and measurement decompositions do **not** go through
+the set at all: each has **its own** `tempfile` → `writeBin` → `file.rename`
+helper with the identical gap (`R/knb-publication.R:865`,
+`R/reproducibility-manifest.R:220`, `R/measurement-decompositions.R:537`), and
+so do SSSOM (`R/sssom.R:870`), EML export (`R/eml-export.R:3007`) and ontology
+fetch (`R/ontology_fetch.R:90`). Six private copies of one pattern, six copies
+of one gap.
+
+**The mirror half is not a divergence today, which corrects the report
+directly.** metasalmonpy has **zero** occurrences of `fsync`; `atomic_io.py`'s
+`atomic_write()` writes through `os.fdopen`, chmods, and calls `os.replace` with
+no flush. The two implementations are therefore **identical in durability** and
+no register row is owed. What differs is the *cost of closing it*: Python has
+`os.fsync` in the standard library and base R exposes nothing, so R needs
+compiled code, a new dependency, or an external `sync`. That asymmetry is an
+argument for ruling once for both rather than letting Python close it quietly
+and open a register row.
+
+*Retires when:* Brett rules whether metasalmon takes on compiled code, a
+dependency, or an external call to make an SDP write durable, and — if he rules
+for durability — the staging file and its directory are flushed before the
+rename with a test pinning the call, naming the six independent writers or
+deliberately leaving them out.
+
+**`B-164` #32's fix has no guard, and two vignettes written after it carry the
+shape it closed.** #32 was closed 2026-07-21 under roadmap E5 by adding
+per-chunk `purl = FALSE` to six vignettes and adding **nothing that would notice
+a seventh**. Its entry already states the rule the two later vignettes break: *a
+global runtime `knitr::opts_chunk$set(eval = FALSE, purl = FALSE)` is
+insufficient because the check's tangle phase does not execute the setup chunk.*
+
+`vignettes/migrating-to-sdp-0-3-0.Rmd` and `vignettes/tidy-data-for-sdp.Rmd`
+each open with an `include = FALSE, purl = FALSE` setup chunk setting only
+`collapse`, `comment` and `eval = FALSE`, then use bare ```` ```{r} ```` headers
+for 18 and 7 content chunks. Reproduced 2026-09-15, in the built tarball rather
+than by reading:
+
+```
+$ R CMD build .
+  -> inst/doc/migrating-to-sdp-0-3-0.R   (209 lines)
+     inst/doc/tidy-data-for-sdp.R        (86 lines)
+     and NO .R file at all for the other nine vignettes
+
+$ R CMD check --no-manual --no-tests --no-examples metasalmon_0.5.0.tar.gz   # R 4.3.3
+  * checking running R code from vignettes ...
+    'migrating-to-sdp-0-3-0.Rmd' using 'UTF-8'... failed
+    'tidy-data-for-sdp.Rmd' using 'UTF-8'... failed
+   ERROR
+  * checking re-building of vignette outputs ... OK
+  Status: 1 ERROR, 1 WARNING
+```
+
+`--no-tests --no-examples` narrows the run to the vignette steps, so the one
+ERROR is this and nothing else; the WARNING is the container's `en_US.UTF-8`
+locale and is not the package's. Both failures are the **first line** of each
+tangled file — `readr::read_csv()` on a package directory the setup chunk would
+have created had it run — so the re-tangle plainly happens in a session where it
+did not.
+
+**Framing it as "two vignettes fail" is what the re-check corrected, and the
+correction makes the guard mandatory rather than merely desirable.** The check
+step that catches this **does not exist on the R that CI runs**: the
+`R-CMD-check` job on **R 4.6.1** prints `checking package vignettes` then
+`checking re-building of vignette outputs` with no `checking running R code from
+vignettes` between them. CI is green, and would stay green through any number of
+further regressions. (Which R release dropped the step was not determined —
+present on 4.3.3, absent on 4.6.1.) That **inverts** the warning in `AGENTS.md`
+rather than repeating it: there a green local check hid a CI failure; here a
+green CI hides a failure any user on an older R hits.
+
+*Retires when:* a test fails when a vignette relies on the global
+`opts_chunk$set()` form instead of per-chunk `purl = FALSE`, demonstrated RED
+against both files before either is fixed. The two fixes are not the item; the
+guard is.
+
+**`B-165` The metasalmonpy port of `write_sdp_semantic_closure()`.** The R
+producer is **proposed in PR #121** (B-116, #116) and the port has **no queue
+item**, unlike its two siblings B-124 and B-125. *Proposed* and not *shipped*:
+that pull request is open as this is written, and its state lives in
+`queue/items/B-116.yaml` and in the pull request itself rather than here — this
+section's own preamble says state is not recorded in this file, and a sentence
+calling an open change shipped is exactly the second copy that rule exists to
+stop. It also mislabels the port's baseline, which is the reader-visible cost:
+the Python side would be following an R behaviour that can still change in
+review. **The specification is already written and is
+deliberately not restated here**: *What metasalmon 0.5.0 owes the mirror* in
+[`parity-deviations.md`](parity-deviations.md) gives it field by field, and the
+release index in [`roadmap.md`](roadmap.md) carries the same addition to the
+catch-up window. Both were written by PR #121, and both say in their own words
+that the item is missing.
+
+**It is not B-153 and it is not B-126**, which is worth stating because all
+three are metasalmonpy and all three are 0.5.0-shaped: B-126 is the S5
+*behaviour* port of the nine review functions; B-153 is the S5 *documentation*
+half plus the version bump that closes the 0.4.0 → 0.5.0 window; this is a third
+thing. Owed as a **port** and not a register row, because absence in Python is
+lag rather than design.
+
+*Retires when:* metasalmonpy exports one `write_sdp_semantic_closure(path,
+evidence=None)` doing what the R producer does and `guides/semantic-review.qmd`
+documents it. **The gap-not-abort shape is the part Brett ruled** (2026-09-12)
+and must not become an exception on the Python side.
+
+**`B-166` Re-vendor `sdp.rules.yaml` into metasalmonpy.** Measured 2026-09-15 —
+metasalmon `main`, metasalmonpy `data/schema/` and smn-data-pkg `main` all carry
+md5 `3c702a373409b23f9c58cb1e1a702c06`, and the reworded file on metasalmon's
+B-106 branch is `2f6126c241ce637955604b75e48b9265`. So all three copies sit at
+the pre-change bytes today, with the source change open as smn-data-pkg #8 and
+metasalmon's re-vendor open as PR #120 — and metasalmonpy's with nothing open
+for it at all. A **port, not a deviation** — the file is vendored
+spec text rather than an implementation choice, so no register row, and a stale
+vendored copy is a third answer to a question smn-data-pkg owns.
+
+*Retires when:* metasalmonpy's copy matches smn-data-pkg's once smn-data-pkg #8
+merges.
+
+**`B-167` `SPECIFICATION.md` and four other documents still carry the reading
+the reworded rules drop.** Five documents, six passages, carry *"resolves to a
+shared vocabulary concept typed as a `sosa:Procedure`"* or its twin. **Which are generated was
+established rather than assumed**, because regenerating and hand-editing are
+different work and the report did not distinguish them:
+
+| Site | How it is maintained |
+|---|---|
+| `SPECIFICATION.md:237-238`, `:265` | hand-edited |
+| `template-source/salmon-data-package-template/README.md:15-17` | hand-edited |
+| `examples/mixed-grain-example/README.md:15-16` | hand-edited |
+| `docs/field-reference.md:64` | **generated** from `schema/frictionless/metadata/tables.schema.json:76` by `scripts/generate_artifacts.py`; carries a do-not-edit banner |
+| `templates/salmon-data-package-template/README.md` | **generated** — copied verbatim from the `template-source` file and byte-identical to it |
+
+Three source edits plus one regeneration therefore reach all six.
+
+*Retires when:* every copy carries the reachability reading Brett ruled
+2026-09-14, in wording that agrees with the rules file. **Rewording normative
+spec prose is itself a semantic choice**, so the pull request has to say what
+justified the new wording *other than* the rules file already carrying it — the
+failure class `AGENTS.md` says code review structurally cannot catch — rather
+than inheriting B-106's justification. `SPECIFICATION.md` calls itself the
+human-readable validity specification and `docs/field-reference.md` defers to
+it, so a spec disagreeing with the rules file is the spec being **wrong**, not
+merely stale.
+
+**`B-168` `.pytest_cache` is in no ignore file in the ecosystem, and a stray one
+adds an `R CMD check` NOTE that muddies a baseline.** The report was **half
+right, and the half it got wrong is why this is filed rather than fixed in
+passing**. It read: *".pytest_cache is git-ignored but not in metasalmon's
+`.Rbuildignore`"*.
+
+**The `.Rbuildignore` half is true and has a measured consequence**, recorded
+twice on 2026-09-15 by two agents who could not see each other. The B-106 run
+found `checking for hidden files and directories ... NOTE / Found ...
+.pytest_cache` on its *baseline* worktree and not on its own, and the B-116 run
+recorded the same note as a baseline-only difference. Nothing excludes the
+directory, so `R CMD build` packages it: a worktree where pytest has been run
+and a fresh one produce different check output. In a fleet whose agents read
+their result against a baseline run, that is noise in the one measurement the
+baseline exists to provide.
+
+**The git half is false in all three repositories.** `git check-ignore -v
+.pytest_cache` **exits 1** in smn-data-pkg, and the Python block of every
+`.gitignore` here is `__pycache__/`, `*.py[cod]`, `*$py.class`, `*.so`,
+`.Python` and virtualenv entries with no pytest line — metasalmon line 69,
+metasalmonpy line 79, smn-data-pkg the same. What actually keeps it out of `git
+status` is that **pytest writes `.pytest_cache/.gitignore` containing a single
+`*`** when it creates the directory, so every file inside ignores itself:
+`git check-ignore -v .pytest_cache/CACHEDIR.TAG` reports
+`.pytest_cache/.gitignore:2:*` as the matching rule. That is the guard shape
+`AGENTS.md` warns about seen from the far side — the protection is a
+third-party artifact nobody in the repository knows about, it stops silently if
+pytest changes it, and reading the repository alone tells you nothing is wrong.
+
+**The item is filed against metasalmon and not smn-data-pkg**, deliberately:
+smn-data-pkg has **no `.Rbuildignore` at all** and is not an R package (no
+`DESCRIPTION`, no `NAMESPACE`), so the half with a consequence exists only
+here.
+
+*Retires when:* metasalmon's `.Rbuildignore` excludes `.pytest_cache`, so a
+checkout where pytest has been run builds the same tarball as a fresh one; and
+`.gitignore` names `.pytest_cache/` beside the `__pycache__/` entry it already
+carries, here and in the two siblings that run pytest. P4 — nothing is
+committed today and it is one line per repository — and filed rather than
+dropped because the next person to check re-derives the same wrong answer.
+
+**`B-169` Workshop session 6's gap callout goes stale and its publication chunks
+become runnable when the closure producer ships.** #116 finding 1 names two
+downstream surfaces to revisit when a producer ships; the post-review vignette
+is the other and is already revisited on PR #121's branch, so this is the
+remaining one.
+
+**Not verified against the repository, and this entry says so rather than being
+filed as though it had been.** `salmon-data-standards-workshop` is neither
+checked out on the machine that filed this nor readable from the session, so the
+callout and the count of four `eval = FALSE` publication chunks come from **#116
+finding 1 as recorded 2026-08-25** (workshop PR #5: session 6 states the gap in
+a callout and tells learners plainly that a complete deposit is not reachable
+unaided, which is why its four publication chunks stay `eval = FALSE`) and from
+PR #121, which names the same surface as not done for the same reason. Whoever
+claims it reads session 6 first and corrects the count if it has moved.
+
+**The deliverable is a patch and its pull-request text shown to Brett in chat,
+never a push.** `salmon-data-standards-workshop` is the member repository
+`HUB.md`'s participation table records as having one collaborator other than
+Brett, in commits and issues, so the standing authorization does not reach it —
+neither the work-branch push nor the draft pull request.
+
+*Retires when:* session 6 no longer tells learners a complete deposit is
+unreachable unaided, and its publication chunks run.
+
+**`B-170` The roxygen2 version pin is a release behind the toolchain.**
+`DESCRIPTION` records `Config/roxygen2/version: 8.0.0`; the installed toolchain
+is roxygen2 **8.1.0**. Running the namespace roclet produces a 20-line
+`NAMESPACE` diff plus the version bump, so any agent running
+`devtools::document()` must carry that churn into an unrelated diff or revert it
+by hand — which is what PR #121 did, and recorded.
+
+**The churn is narrower than reported, and the correction changes how the cost
+is judged.** 8.1.0 does not rewrite *every* `importFrom` directive; it collapses
+the directives of a package with more than one imported name into one multi-line
+directive. So the five `dplyr` lines and three `rlang` lines become two blocks,
+while `importFrom(tools,toTitleCase)` and `importFrom(utils,askYesNo)` come out
+byte-identical:
+
+```
+-importFrom(dplyr,"%>%")          +importFrom(dplyr,
+-importFrom(dplyr,coalesce)       +  "%>%",
+-importFrom(dplyr,filter)         +  coalesce,
+ ...                              ...
+ importFrom(tools,toTitleCase)     importFrom(tools,toTitleCase)   <- unchanged
+```
+
+*Retires when:* Brett rules which version metasalmon pins, `DESCRIPTION` carries
+it, and `NAMESPACE` is regenerated under it in the same commit so the next
+`document()` run produces no diff. Not claimable: a pin is a statement about the
+toolchain the project supports, so an agent choosing one would be inventing a
+policy rather than doing work.
+
+**`B-171` The code-resolved `sosa:usedProcedure` direction of B-116's two
+canonical sets is held by construction and no fixture.** B-116's central claim
+is that the two canonical sets *legitimately differ and neither can be reasoned
+from the other* — and only one direction of it has a fixture. In both
+`make_eml_test_sdp()` and the shipped Fraser coho example the difference is
+exactly one row, `smn:Observation`, a review target and not a vocabulary term
+because it is the table's `observation_unit_iri`.
+
+The other direction — an IRI reached through a code value, which is a
+vocabulary term and not a review target — is held by construction in
+`.ms_closure_iri_roles()` (`R/semantic-closure.R:351` on PR #121's branch),
+whose fallback returns role `method` for an IRI in the measurement set carrying
+no `dictionary_role` row. **Nothing reaches that fallback**: the only matches for
+`method` in the new test file are `sort(..., method = "radix")`. The branch's
+workpad names it as a testing gap rather than leaving it implied, which is why
+this is a fixture item and not a defect report against the producer.
+
+*Retires when:* a fixture binds a column with `component_relation_iri` =
+`sosa:usedProcedure` whose `codes.csv` `term_iri` lands in the measurement set
+and in no review target, and a test asserts it reaches
+`metadata/semantic_vocabulary.csv` and not `reviewed_semantic_selections.csv`.
+
+***`B-172` PR #121 claims four guards state their retirement condition in the
+source, and one does not — absorbed into PR #121, no item file.*** Its Guards
+section reads *"Four, all with retirement conditions in the source and restated
+in the workpad."* `R/semantic-closure.R` as first pushed on that branch contains
+**exactly two** `Retires when:` comments — `:117` for `.ms_closure_source_url()`
+and `:573` for `.ms_closure_set_mapping_digest()` — and the `REVIEW REQUIRED:`
+rationale placeholder is constructed at `:923` with no retirement condition
+anywhere near it.
+
+The condition exists and is a good one (*the review API records a rationale for
+every accepted slot, or a publication gate refuses the marker, which is a
+decision nobody has made*), but it lived only in the pull-request body and in
+`.hub/workpad.md` item 4 — and a pull-request body evaporates, which is why this
+repository writes such things into files. The fourth guard, the two
+`collation_sensitive_fns` entries, carries the rest of that list's condition
+rather than one of its own; the workpad says so outright and that is a
+defensible reading of an enumerated list, so it was never part of the finding.
+
+**Why there is no `B-172.yaml`, and it is the scheduling rather than the
+evidence.** The item was filed `blocked_by: [B-116]`, which is the worst possible
+ordering for it: the queue lets a blocked item be claimed only once its blocker is
+`done`, so a contract violation would have merged with PR #121 and its one-line
+fix would have arrived after it, in a separate pull request, for a comment the
+author was standing next to. The fix belongs in the change that introduced the
+gap. **PR #121 now carries the comment**, at the placeholder's construction site
+rather than near it, ending:
+
+> *Retires when:* every accepted slot has a recorded rationale to read, so a
+> target without one is a defect rather than a row to mark. Concretely: when
+> `accept_suggestion()` requires a `decision_reason` and `apply_sdp_semantics()`
+> carries it through to `semantic_suggestions.csv` for every accepted row, this
+> branch becomes unreachable and the marker, the `placeholders` return value and
+> the warning all go together, replaced by an abort naming the slot.
+
+That is the whole of what the item asked for, so nothing is left to narrow it to
+and the item was deleted rather than left as work that is already done. The
+`B-172` id is retired unused and the gap between `B-171` and `B-173` is the record
+of it. **Re-file if PR #121 merges without that comment** — this entry is written
+on the state of that pull request on 2026-09-16, not on a merge, and the absorbing
+change had not yet been pushed when this was written. Found by a Codex review of
+pull request 123, which read the `blocked_by` rather than the evidence and was
+right to.
+
+**`B-173` `hub_queue.py` silently truncates an unquoted value at the first
+` #`, and `lint` reports OK.** A thirteenth finding, and the only one here that
+was **not** recovered from a workpad: it was found by tripping over it while
+filing `B-164` above.
+
+That item's file said:
+
+```yaml
+title: Backlog #32's fix has no guard, and two vignettes written after it carry the shape it closed
+```
+
+`hub_queue.py list` rendered the title as the single word **`Backlog`**, and
+`lint` printed `OK`.
+
+`strip_comment()` (`scripts/hub_queue.py:302`) cuts an unquoted value at the
+first ` #`. That is correct YAML and the schema block at the top of that same
+file documents it — *"A value that contains `#` must therefore be quoted, which
+is why `legacy` is written `'#53'`"*. **The defect is not the rule; it is that
+breaking the rule is silent and the guard says OK.** A truncated title is still
+a valid title, so every existing check passes, and the only signal is a human
+reading a rendered block weeks later and finding a sentence that stops
+mid-thought. That is the failure this queue was built to remove, occurring
+inside the queue's own validator: the file on disk and the fact the client reads
+have quietly become two different things.
+
+The exposure is one-directional and worth naming. A backlog citation of the form
+`#N` is the **single most likely** thing to appear in `title` and
+`retires_when`, because every item migrated from this file cites one — so the
+one construction the stripper eats is the one the fields are full of.
+
+**It was already live on `main`, in two items, and had been for weeks.** A sweep
+of all 110 item files for an unquoted value containing ` #` found exactly two,
+and they are `B-124` and `B-125` — the pair `B-165` above is filed beside:
+
+```
+$ python3 scripts/hub_queue.py list        # before
+  B-124    Port the validator checks of        [P1; blocked by B-49]
+  B-125    Port the categorical inference of   [P2; blocked by B-95]
+```
+
+Both titles end mid-phrase, because both cite `#49` and `#95`. Both are quoted
+now, in the same change as this entry, and the sweep is the thing to re-run
+rather than the fix to remember. `lint` reported `OK` on them throughout.
+
+*Retires when:* `lint` refuses, or warns by name, when `strip_comment()` removes
+text from a value that is not a comment — at minimum for `title` and
+`retires_when` — demonstrated RED against a title reading `Backlog #32's fix has
+no guard`. A complete fix compares the stripped value against the raw one and
+refuses when the removed text does not look like a comment; a cheaper partial
+one refuses any unquoted value containing `#`, which also catches the case where
+the truncation happens to leave a plausible sentence behind.
+
+### The 2026-09-16 filing of #111's mirror half
+
+**One item, and the only new thing about it is the queue file** — the evidence
+was written by the change that created the gap. metasalmon PR **#119** closed
+**#111** (queue `B-111`) and, on the same branch, recorded in
+[`roadmap.md`](roadmap.md)'s metasalmonpy release index and in register
+[row 53](parity-deviations.md) that the Python half was not done, that it would
+**not** retire with the R half, and that **nothing in the queue covered it**.
+`B-179` is that item, and each of those two records now names it. Headed by its
+**queue id** for the reason the two sections above give, and **state is not
+here**: whether it is icebox, ready, claimed or done lives in `queue/items/`,
+and this section is what its `evidence:` pointer resolves to.
+
+**`B-179` metasalmonpy's three `create_sdp()` sidecars are still
+unlink-then-rewrite, and its widest window is wider than R's ever was.** Read
+2026-09-16 against metasalmonpy `main` `1f510c9`, at the call sites rather than
+from the register:
+
+| Site | Shape |
+|---|---|
+| `package_io.py:388` | `_replace_create_output(path)` — `path.unlink()`, and the caller renders the replacement afterwards |
+| `package_io.py:1545` | `README-review.txt`: unlink, then `readme_path.write_text(...)` |
+| `package_io.py:1820` | `semantic_suggestions.csv`: unlink, then `suggestions.to_csv(...)` |
+| `package_io.py:1838` | `metadata/metadata-edh-hnap.xml`: unlink, then **`read_salmon_datapackage(pkg_path)` at `:1839`**, then `edh_build_hnap_xml(...)` |
+
+The last row is the difference from R and it is not a detail: the whole package
+is read and parsed from disk **after** the previous EDH file has been destroyed,
+so every read and parse failure of every file in the package sits inside the
+destroyed-file window too. R built from the in-memory `artifacts$dataset_meta`
+and never had that. Register row 53 measured the consequence during S10 chunk H
+on 2026-08-22 rather than inferring it — 5479 bytes of previously written XML
+deleted with nothing in their place — and said in advance that closing R's half
+would leave this standing. It has.
+
+**This is a live data-loss path, not a missing feature**, which is the reason it
+is owed as work rather than as bookkeeping. Re-running `create_sdp()` regenerates
+all three files, so the loss only bites a copy the user has changed — and all
+three are exactly that kind of copy: an annotated `README-review.txt`, a
+`semantic_suggestions.csv` carrying review decisions, or the EDH XML of a
+package whose metadata has since moved on. The three files a re-run cannot
+reproduce are the three files at risk.
+
+**The port uses `atomic_io.py`, and the one thing it must get right is where the
+abort goes in.** metasalmon's `tests/testthat/test-create-sdp-sidecar-atomicity.R`
+is the model: three abort injections at the three **render** steps, each
+asserting the prior file is byte-identical afterwards, plus a happy-path
+round-trip and a direct-filesystem-call guard. **Injecting at the install instead
+proves nothing** — a staged-sibling rename leaves the prior bytes in place by
+construction, so such a test passes on the unfixed code. The R run learned a
+second lesson by hitting it, and it transfers directly: **key each hook on
+content, never on the destination path**, because the post-fix render writes into
+a staging file and a path-keyed hook silently stops injecting while the test
+still goes green (R's suggestions hook is keyed on the frozen 19-column target
+row for exactly this reason). In Python, `edh_build_hnap_xml` is already
+render-level and survives the fix; a hook on `Path.write_text`, or a `to_csv`
+hook keyed by its path argument, does not.
+
+**A second record is owed with or before the port, and it is a correction rather
+than a new row.** metasalmonpy's `PARITY.md` copy of row 53 still describes the
+sidecars as unlink-then-rewrite *"on both sides"* and cites
+`R/package-helpers.R:1387-1392` for a `.ms_replace_create_output()` call PR #119
+deletes. Once #119 merges, the two registers disagree about which side is
+defective, with nothing in either file saying which is right — the failure mode
+both `AGENTS.md` files name when they say to read the other file rather than
+trust the one in front of you. Every one of that row's **Python** line citations
+has drifted too, measured the same day: `:1506` → `:1545`, `:1738` → `:1820`,
+`:1755-1760` → `:1838-1841`, and the `write_salmon_datapackage()` call it credits
+at `:1706` is at `:1788`. The correction is the row's claim, not its line
+numbers; the drift is worth recording only because re-reading the call sites is
+what a corrector has to do anyway. The correction reaches one more place, found
+while checking those call sites: the docstring of
+`test_create_sdp_inherits_the_transactional_package_write` in
+`tests/test_write_datapackage_abort_safety.py` states that the three sidecars
+"are still unlink-then-rewrite and are NOT covered here" — true today, and the
+sentence the port falsifies.
+
+**One thing for the porter to settle rather than discover, because the two
+registers already name different writers.** Row 53 here says the port goes
+through `atomic_io.py`; the twin's retirement clause says `_atomic_write_set()`.
+Both exist in metasalmonpy — `atomic_io.atomic_write(data, path)` is the
+single-file staged-sibling rename, and `sdp_methods._atomic_write_set()` is the
+rollback-capable set that mirrors `.ms_sdp_extension_atomic_write_set()`, so a
+one-entry call to it is the literal analogue of R's
+`.ms_sdp_extension_atomic_write()` wrapper. Either satisfies *render to bytes,
+then install by rename*. **What must not happen is a third mechanism**, and the
+R half's reasoning for keeping the three as three transactions rather than one
+set transfers unchanged: they are independent files written at different points
+in `create_sdp()`, the harm is a destroyed file rather than a partly-updated
+group, and the suggestions branch can also *delete*, which a write set has no
+operation for.
+
+**A port and not a deviation**, so no numbered row is added to
+[`parity-deviations.md`](parity-deviations.md) and row 53 is neither renumbered
+nor duplicated: absence in Python here is ordinary "R shipped first" lag, not a
+chosen difference, and a shared defect one side has fixed is not a design
+decision to register.
+
+**It is not `B-163` and it is not `B-165`**, which is worth stating because all
+three touch the same writers. `B-163` is the `fsync` durability gap in the atomic
+write **set**, and its own text records that the mirror half is *not* a
+divergence today, because metasalmonpy has zero occurrences of `fsync` and
+`atomic_io.atomic_write()` calls `os.replace` with no flush either — that item is
+the write set never flushing, and this one is Python never reaching the writer at
+all. `B-165` is `B-116`'s mirror half, `write_sdp_semantic_closure()`.
+
+*Retires when:* metasalmonpy's three create-owned sidecar writes render to bytes
+and install through the `atomic_io.py` writer, `_replace_create_output()` has no
+callers, and the EDH path either builds in memory the way R does or brings its
+whole read inside the transaction — pinned by three abort injections at the
+render steps, each demonstrated RED against the pre-fix code, with the
+`PARITY.md` correction landing in the same change.
+### The 2026-09-16 orchestrator filings
+
+**Four items filed by the orchestrator on 2026-09-16, none of which had a
+backlog entry until Codex asked where the evidence was.** Each carried
+`evidence: knowledge/backlog.md` and appeared in that file nowhere — the exact
+shape the agent brief had been rewritten to warn about hours earlier: *"a
+dangling pointer is quieter than a stale copy, because nothing contradicts
+anything and the reader simply finds nothing."* Written four times in one
+sitting by the author of that sentence, which is the useful part of the record.
+Items filed by agents the same night (`B-161`, `B-173`) carry entries; the
+difference is that an agent follows a written protocol and the orchestrator was
+working from memory.
+
+**`B-180` `AGENTS.md`'s no-absolute-paths rule for bundle cards is enforced
+nowhere in bundle prose.** Three live violations on `main`, measured
+2026-09-16: `knowledge/plans/2026-08-12-ontology-alignment-pass.md:58` and
+`knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md:1958`, each
+a tilde-rooted path inside a command, and
+`knowledge/plans/2026-06-24-alice-assmar-metasalmon-report.md:236`, a literal
+temporary-directory path in a `--body-file` argument.
+
+`scripts/hub_queue.py` already owns the regex and an `absolute-path` problem
+class and applies it to queue item fields only, so the guard stops at the queue
+boundary while the rule is written about `knowledge/`. **Two things have to be
+settled before the guard is written, and a naive regex gets both wrong.** What
+counts: a tilde is not literally absolute, and two of the three sit inside
+commands rather than naming repository files, so only the third is plainly the
+case the rule is about. And citation: **the item was itself refused by `lint`
+on first write, for quoting the third violation's path verbatim in the field
+describing it.** A rule over prose that cannot tell a cited path from a used one
+turns every card documenting a violation into one.
+
+*Retires when:* `lint` scans `knowledge/` prose with the same regex, red against
+the case the rule names rather than against every tilde.
+
+**`B-185` an undeclared `*_iri` column is swept by the validator and missed by
+the metadata review, in both implementations.** Measured 2026-09-16 on the
+metasalmonpy branch: an `*_iri` column hand-added to `tables.csv` is collected by
+the review-marker sweep and **not** by `review_metadata()`'s scan, which reaches
+schema-declared fields only — because every row it prints has to be a runnable
+`set_sdp_*()` call. Scan empty, validator refuses.
+
+**This is B-174's residual, not its sibling**, which is why it is
+`blocked_by: [B-174]`: B-174 closes the declared-field case, and this is what is
+left over — a field the scan cannot reach **by design** rather than by oversight.
+Whoever takes B-174 meets the fork and must not quietly widen the scan through
+it; metasalmonpy hit it and pinned the residual in
+`test_an_undeclared_iri_column_is_still_missed` rather than closing it. Closing
+it means printing a call that cannot be run, or letting a setter write an
+undeclared field — a decision about the printed-call contract, which is why the
+item is `needs_brett` rather than claimable. Both languages are identical here,
+so it is a port and not a `parity-deviations.md` row.
+
+**`B-186` `lint` accepts any `stream` value, so a padded `S05` omits an item
+from its own stream view.** Measured 2026-09-16: `lint` lists `stream` among the
+known keys and validates only that it is **present**, never what it holds. Five
+items were filed with `S01` and `S05`, `lint` reported `OK` on all five, and the
+queue's convention is unpadded — `S6`×18, `S5`×14, `S10`×12, down to `S8`×1 —
+with the `items:` block filter matching the string exactly. So a padded value
+silently omits the item from its own stream view while every check passes.
+
+Same shape as `B-173` and the third of that family in one day: a field wrong in
+a way no check can see, whose only symptom is an absence somebody has to notice.
+**Found by Codex review, not by the queue** — the five bad values were written,
+linted clean, and would have merged.
+
+*Retires when:* `lint` refuses a `stream` value naming no `S-` item, red against
+a padded `S05`. Enumerate from the `S-` item files rather than a hard-coded
+list, which would be a fourth copy of a fact `queue/items/` already holds.
+
+**`B-187` `hub` reads the queue from whatever checkout it is run in, and says an
+item does not exist when the tree is stale.** Found 2026-09-16 by dispatching
+four agents at a checkout nobody had noticed was **67 commits behind**: a session
+branch at the tip `origin/main` had when the night began, carrying a
+`scripts/hub` 19 lines old and a `queue/items/` missing everything filed since.
+`HUB.md` and the dispatch brief both send agents there for read-only commands,
+so four claim commands went to it and **for two the item file did not exist in
+that tree at all**.
+
+**The defect is the message, not the refusal.** `hub claim B-165` answers *"no
+such queue item"* for an item that does exist: true about the working tree, false
+about the queue, and an agent that believes it reports the item missing rather
+than the checkout stale. `list` is worse, because it **succeeds** — it renders a
+stale queue with nothing saying so.
+
+Two things the item records that are easy to get wrong. Sending agents to a
+worktree off `origin/main` is **already** the rule (`HUB.md` § *Isolation*) and
+one of the four did exactly that unprompted, so the gap is not the instruction;
+it is that the client cannot tell a reader when the tree it read is not the
+queue. And **the fix cannot live only in the client**: a checkout stale enough to
+show the defect has a `scripts/hub` too old to contain the check, so a
+client-side comparison protects only checkouts that already have it. Closing the
+observed bootstrap failure needs something independently current — a dispatch-time
+check, or a refresh enforced before the checkout-local client is invoked.
+
+*Retires when:* an invocation against a stale tree names staleness, the distance
+and the branch rather than reporting absence — demonstrated RED from a checkout
+that predates the fix, which is the case that matters.
+### The 2026-09-16 review-coverage asymmetry
+
+**`B-190` Codex runs a security review on every metasalmon pull request and none
+on any metasalmonpy one.** Measured 2026-09-16 over every pull request either
+repository has had under Codex, by counting Security Review rows in the review
+summary comment:
+
+```
+metasalmon     #121 #126 #127 #128 #129 #130 #131   ->  7 of 7 have one
+metasalmonpy   #28  #29  #30                        ->  0 of 3 have one
+```
+
+It is a per-repository Codex setting; nothing in either tree selects it.
+
+**The mirror contract is what turns a settings difference into a defect.** The
+same behaviour lands in both repositories by design, so a class of defect caught
+on the R side is a class *not looked for* on the Python side — and the asymmetry
+is invisible from inside either pull request, because a Python review that found
+nothing reads exactly like an R review that found nothing.
+
+**Measured consequence, the same night.** metasalmon pull request 121's
+**security** review raised the symlinked-output finding at
+`R/semantic-closure.R:642`, which its code review had reached only in part: the
+security review named `metadata/eml-mapping.yml`, which the code review missed
+entirely; it covered linked roots and intermediate components rather than final
+entries alone; and it forced the hard-link question to be answered explicitly
+rather than left implied. **`B-165` ports that exact producer into
+metasalmonpy**, so the Python half of a fix that a security review found will not
+get a security review.
+
+*Retires when:* Brett enables the security review for metasalmonpy and a later
+metasalmonpy pull request shows a Security Review row — **or** records the
+decision not to, with its reason, in `knowledge/questions.md`, at which point the
+mirror contract should say that review coverage is deliberately asymmetric, so
+nobody reads a clean Python review as the same assurance an R one gives.
+### The 2026-09-16 closure-port findings
+
+**Four findings the B-165 run named and deliberately did not absorb**, filed as
+`B-191` to `B-194`. Two are shared residuals present identically in both
+implementations, one is the source of a defect already fixed in the mirror, and
+one is a coordinating-system defect that three separate agents worked around in
+a single night without knowing about each other.
+
+**`B-191` the metasalmonpy suite only collects when its checkout directory is
+named `metasalmonpy`.** Measured on clean `main` under pytest 8: **908
+collection errors against 907 passes**, flipping on the directory name alone.
+
+**The hub protocol guarantees the breaking name.** `HUB.md` keys an agent
+worktree as `<owner>-<repo>-<item>`, so every metasalmonpy worktree is named
+`salmon-data-mobilization-metasalmonpy-B-nnn` — and none of them collects.
+**B-124, B-125 and B-165 each nested a second directory named `metasalmonpy`
+inside their worktree to get a suite to run, none knowing the others had.** A
+workaround rediscovered three times in one night is a defect with an interest
+rate.
+
+**CI is green only by coincidence**, because `actions/checkout` happens to check
+out into a directory named for the repository, so nothing in the pipeline will
+ever report this.
+
+*Not reproduced independently:* this container has no pandas, so the import fails
+before collection is reached. The 908/907 figures are the B-165 run's
+measurement. Either side may be the right fix — the import route in
+metasalmonpy, or the worktree key in `HUB.md` — and whoever takes it should say
+which and why rather than patching the symptom in a third place.
+
+**`B-192` the publication vignette's description of the review-target set makes a
+reader break their own package.** `vignettes/post-review-package-publication.Rmd`
+calls it the measurement set *"plus each table's `observation_unit_iri`"*. Both
+halves measured 2026-09-16: neither implementation's canonical-review-target
+builder references the used-procedure resolver at all — **zero occurrences** of
+`used_procedures` in `.ms_eml_canonical_review_targets()` or Python's
+`_canonical_review_targets`, while the canonical *measurement* set does call it —
+and the ledger reader enforces an **exact** set, collecting any key outside the
+canonical targets as `unexpected` and refusing the ledger.
+
+So the sentence does not describe a redundant row. A reader who follows it adds a
+target for a code-resolved procedure and **their package stops validating**,
+which is the opposite of what the vignette is for. Both directions need saying:
+an `observation_unit_iri` is a review target and not a vocabulary term; a
+code-resolved `sosa:usedProcedure` is a vocabulary term and not a review target,
+because it comes from the data rather than from a metadata field.
+
+**The Python twin is already fixed**, in metasalmonpy pull request 31 — whose
+prose was transcribed *from* this vignette. So this is the **source** of that
+defect rather than its mirror, which is the unusual direction and the reason it
+is filed against metasalmon.
+
+**`B-193` both sidecar spellings present: the writer refuses, the producers
+proceed.** `write_eml_from_sdp()` aborts when a package carries both
+`eml-mapping.yml` and `eml-mapping.yaml` — the conflict its default-path helper
+exists to detect — while the closure producer hard-codes the `.yml` path instead
+of routing through that helper, and writes happily to the file the writer would
+have refused the package over. Measured identical on both sides, with
+byte-identical producer output, so the two implementations agree; what they agree
+on is answering one question two ways inside one package.
+
+**Brett's, and that is why it was filed rather than fixed.** Making the Python
+producer raise where the R producer does not would be a deliberate divergence
+requiring a `parity-deviations.md` row, and a port may not open one. The B-165
+agent measured it, declined, and filed it. *Recommended shape:* one cross-repo
+change routing **both** producers through the shared helper, so the conflict is
+detected once and in one place.
+
+**`B-194` a sidecar declaring one output path twice silently loses a file.**
+Present and identical in both implementations, so a shared residual rather than a
+divergence. Low severity — a sidecar is hand-edited and the duplicate has to be
+written deliberately — but the failure is **silent**: the second write wins, the
+first output is simply absent, and the digests recorded in the sidecar are
+consistent with the file that survived, so nothing downstream reports anything.
+
+---
+
+
+---
+
+
+---
+
 
 ---
 

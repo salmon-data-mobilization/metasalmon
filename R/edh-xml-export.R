@@ -1111,6 +1111,24 @@ edh_build_hnap_xml <- function(dataset_meta,
   invisible(list(xml = xml_text, path = output_path))
 }
 
+# Render the EDH XML to the exact bytes `edh_build_hnap_xml(output_path = ...)`
+# writes, without touching the destination. `create_sdp()` installs them
+# through `.ms_sdp_extension_atomic_write()` (backlog #111): this builder
+# renders from dataset metadata at write time, so it is the widest of the three
+# create-owned sidecars for abort points, and it used to run AFTER the existing
+# file had been unlinked.
+#
+# Through the real builder into a staging file rather than off the returned
+# `xml` string: `as.character(root)` is not `write_xml(root, options =
+# "format")`, and changing these bytes is an observable behaviour change this
+# fix must not smuggle in.
+.ms_edh_hnap_xml_bytes <- function(dataset_meta, ...) {
+  temporary <- tempfile(fileext = ".xml")
+  on.exit(unlink(temporary), add = TRUE)
+  edh_build_hnap_xml(dataset_meta, output_path = temporary, ...)
+  readBin(temporary, what = "raw", n = file.info(temporary)$size)
+}
+
 #' Deprecated alias for [edh_build_hnap_xml()]
 #'
 #' @inheritParams edh_build_hnap_xml

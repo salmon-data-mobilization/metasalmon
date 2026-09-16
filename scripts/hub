@@ -1835,13 +1835,30 @@ cmd_done() {
   # have done it. Tooling that instructs a breach is worse than tooling that
   # allows one: the breach reads as compliance in the transcript.
   #
+  # The same rule caught this function again on 2026-09-16, in the opposite
+  # direction. Ruling R16 granted marking ready, answering a Codex review and
+  # merging an approved pull request for the delegated classes, and this text
+  # still read "Draft only: never marked ready for review, never merged" -- so
+  # the client now forbade what the grant permitted, an agent following its own
+  # tooling would have stopped at the draft, Codex would never have run, and the
+  # delegated merge path would have been unreachable. A policy the tooling
+  # contradicts is a dead letter whichever way the contradiction points, which is
+  # the general form of the lesson above.
+  #
   # Retires when: the grant stops being scoped by participation, at which point
   # member_solo_for_repo goes with it.
   say ""
   if [ "$solo" = "yes" ]; then
     say "Open one draft pull request for this branch, labelled agent-run and naming"
-    say "$id in the body. Draft only: never marked ready for review, never merged,"
-    say "and never a second one for this item."
+    say "$id in the body, and never a second one for this item."
+    say ""
+    say "Then read \"Which pull requests need Brett\" in HUB.md and decide which"
+    say "list this change is in. If it is one of his ten classes, leave it a draft"
+    say "and stop. Otherwise mark it ready to start the Codex review, answer every"
+    say "finding, and merge it once CI is green on the head, the review has"
+    say "completed with nothing unaddressed, no person's thread is waiting, and you"
+    say "are not unsure. If you cannot tell which list it is in, leave it a draft"
+    say "and say so."
   else
     say "STOP here. Do not open a pull request, because $itemrepo is not a repository"
     say "Brett works alone in and the grant reaches no other kind. Draft the pull"

@@ -178,6 +178,23 @@
         "Expected SDP metadata file but found a directory at {.file {path}}."
       )
     }
+    # `tmpdir = dirname(path)`: the stage is a SIBLING of the target, so the
+    # install below is a rename within one filesystem rather than a cross-device
+    # copy. It is also why HARD links need no separate guard here, and why
+    # `create_sdp()` could retire `.ms_replace_create_output()` -- that helper
+    # unlinked first because `Sys.readlink()` does not see a hard link and
+    # writing through one truncates a shared inode outside the package (backlog
+    # #111). Nothing on this path ever opens the destination: the bytes go to a
+    # fresh inode, and the install replaces a directory entry. An external hard
+    # link keeps the original inode, with its original content.
+    #
+    # What the rename does NOT buy: `writeBin()` is not followed by an fsync,
+    # because base R exposes none. This is atomic against an aborted call, which
+    # is every abort point #111 and #96 enumerated, and not durable against a
+    # machine crash, where a visible rename can outrun the staged data blocks.
+    # Stated here rather than left implied by the word "atomic".
+    # *Retires when:* the package can fsync a file, at which point the stage is
+    # synced before the rename and this paragraph loses its second half.
     stages[[index]] <- tempfile(
       pattern = paste0(".", basename(path), "-stage-"),
       tmpdir = dirname(path)
@@ -274,6 +291,22 @@
   temporary <- tempfile(fileext = ".csv")
   on.exit(unlink(temporary), add = TRUE)
   readr::write_csv(rows, temporary, na = na)
+  readBin(temporary, what = "raw", n = file.info(temporary)$size)
+}
+
+# Render a character vector to the bytes `writeLines(useBytes = TRUE)` would
+# have written. Through the real writer into a staging file rather than
+# `charToRaw(paste(...))`, because the caller's lines can interpolate user text
+# of unknown encoding and `paste()` would re-encode it: the guarantee wanted
+# here is byte-identity with the writer these files used before the rewrite
+# became atomic, and the only way to guarantee that is to use the writer.
+# (`.ms_package_ownership_bytes()` in `R/package-helpers.R` can assert
+# byte-identity in a comment instead, because its content is a fixed ASCII
+# literal.)
+.ms_sdp_extension_text_bytes <- function(lines) {
+  temporary <- tempfile(fileext = ".txt")
+  on.exit(unlink(temporary), add = TRUE)
+  writeLines(lines, con = temporary, useBytes = TRUE)
   readBin(temporary, what = "raw", n = file.info(temporary)$size)
 }
 

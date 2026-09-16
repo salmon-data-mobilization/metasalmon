@@ -1,0 +1,13 @@
+id: B-165
+kind: defect
+title: Port write_sdp_semantic_closure() to metasalmonpy, the mirror half of B-116
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P1
+blocked_by: [B-116]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy exports one write_sdp_semantic_closure(path, evidence=None) doing what the R producer does, and guides/semantic-review.qmd documents it, so a Python user reaches a publishable package without reaching past the API boundary and without hand-writing a digest. THE SPECIFICATION IS ALREADY WRITTEN AND IS DELIBERATELY NOT RESTATED HERE: the section What metasalmon 0.5.0 owes the mirror in knowledge/parity-deviations.md, added by metasalmon pull request 121, gives the list field by field -- both canonical sets derived rather than reasoned from each other, evidence resolved through Python''s own find_terms() rather than a new retrieval path, a hand-supplied evidence frame with the same field-by-field overlay including the QUDT case and the native_type and source_url fields no search fills, the per-row digest and both sidecar digests written with the sidecar edited line-wise rather than round-tripped through a YAML dump, and an unresolvable IRI returned in detect_semantic_term_gaps() shape. The same addition to the catch-up window is in the release index in knowledge/roadmap.md. THE GAP-NOT-ABORT SHAPE IS THE PART BRETT RULED, on 2026-09-12, and must not be softened into an exception on the Python side. THIS IS NOT B-153 AND NOT B-126: B-126 is the S5 behaviour port of the nine review functions, B-153 is the S5 documentation half plus the version bump that closes the 0.4.0 to 0.5.0 window, and this is a third thing. Owed as a port and not as a register row, because absence in Python is lag rather than design; filed beside B-124 and B-125 because metasalmon pull request 121 says in two places that it has no queue item and needs one.'

@@ -1,0 +1,13 @@
+id: B-191
+kind: defect
+title: 'The metasalmonpy suite only collects when its checkout directory is named metasalmonpy, which the hub worktree key never is'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S15
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy''s tests import the package by a route that does not depend on the checkout directory''s NAME, so a clone or worktree at any path collects and passes -- demonstrated RED from a directory deliberately named something else. MEASURED BY THE B-165 RUN 2026-09-16 on clean main under pytest 8: 908 collection errors against 907 passes, flipping on the directory name alone. THE HUB PROTOCOL GUARANTEES THE BREAKING NAME: HUB.md keys an agent worktree as <owner>-<repo>-<item>, so every metasalmonpy worktree is named salmon-data-mobilization- metasalmonpy-B-nnn and none of them collects. THREE AGENTS HIT IT INDEPENDENTLY IN ONE NIGHT -- B-124, B-125 and B-165 each nested a second directory named metasalmonpy inside their worktree to get a suite to run, none of them knowing the others had. That is the measure of the cost: a workaround rediscovered three times is a defect with an interest rate. CI IS GREEN ONLY BY COINCIDENCE, because actions/checkout happens to check out into a directory named for the repository, so nothing in the pipeline will ever report this. NOT REPRODUCED BY THE ORCHESTRATOR: this container has no pandas, so the import fails before collection is reached, and the 908/907 figures are the B-165 run''''s measurement rather than an independent one -- re-measure before fixing. Either side may be the right fix: the import route in metasalmonpy, or the worktree key in HUB.md, and whoever takes it should say which and why rather than patching the symptom in a third place.'

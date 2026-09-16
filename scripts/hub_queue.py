@@ -64,7 +64,18 @@ is a file that has outgrown the queue.
 Trailing comments are stripped from *unquoted* values at the first ` #`. A value
 that contains `#` must therefore be quoted, which is why `legacy` is written
 `'#53'`. An unquoted value beginning with `#` is rejected rather than silently
-read as an empty string. Inside a quoted value, YAML's own escapes are honoured:
+read as an empty string.
+
+**And so is one whose ` #` tail is not a comment**, which is the only part of
+this paragraph the reader has to act on. A comment is `#` followed by a space,
+as in `severity: P2  # defects only`; `#` welded to anything else is a citation
+or a fragment, and cutting the value there would throw away text the author
+meant to keep. `title: Backlog #32's fix has no guard` used to parse as the
+single word `Backlog` with `lint` printing `OK`; it is now refused under
+`truncated-value`, naming what was cut and what survived. See
+`comment_loss_problem` for the evidence, the scope, and the case it still misses.
+
+Inside a quoted value, YAML's own escapes are honoured:
 `''` for an apostrophe in a single-quoted scalar, a backslash escape in a
 double-quoted one. A `retires_when` sentence reaches for a possessive apostrophe
 almost immediately, so this is the common case rather than the exotic one.
@@ -299,29 +310,123 @@ class BlockError(Exception):
     """
 
 
+def split_comment(value: str) -> tuple[str, str | None]:
+    """Split an unquoted scalar at the first ` #` into (kept, removed).
+
+    `removed` is None when nothing was cut, and otherwise the text from the `#`
+    onward, so a caller can ask what the parser is about to throw away. This is
+    the one place the parser is lossy, and `comment_loss_problem` below is what
+    stops the loss being silent.
+    """
+    idx = value.find(" #")
+    if idx < 0:
+        return value.strip(), None
+    return value[:idx].strip(), value[idx + 1 :]
+
+
 def strip_comment(value: str) -> str:
     """Strip a trailing ` #` comment from an unquoted scalar.
 
-    Quoted scalars are returned untouched so `legacy: '#53'` survives. This is
-    the one place the parser is lossy, which is why an unquoted value beginning
-    with `#` is rejected upstream rather than silently becoming empty.
+    Quoted scalars are returned untouched so `legacy: '#53'` survives, and an
+    unquoted value beginning with `#` is rejected upstream rather than silently
+    becoming empty.
     """
-    idx = value.find(" #")
-    if idx >= 0:
-        value = value[:idx]
-    return value.strip()
+    return split_comment(value)[0]
+
+
+def looks_like_a_comment(removed: str) -> bool:
+    """Is `removed` (the ` #` tail `split_comment` cut) really a comment?
+
+    One discriminator, and it is the character straight after the hash: a person
+    writing a comment types `# ` and a person writing a citation types `#125`.
+    So `#` followed by whitespace, or a bare `#` at end of line, is a comment,
+    and `#` welded to anything else is content that belongs inside quotes.
+
+    This is not a new judgement. `parse_scalar` already refuses an unquoted
+    value that *begins* `#`, telling the author to write `legacy: '#53'`; this
+    is the same rule with the position restriction removed, which is why the two
+    messages point at the same remedy.
+    """
+    body = removed[1:]  # `removed` always starts at the `#` split_comment found
+    return body == "" or body[0].isspace()
+
+
+def comment_loss_problem(kept: str, removed: str) -> str | None:
+    """Why this ` #` cut is a truncation rather than a comment, or None.
+
+    WHY THIS RULE EXISTS. Cutting an unquoted value at the first ` #` is correct
+    YAML and the schema block above documents it. The defect was never the rule:
+    it was that breaking the rule was **silent and every check still said OK**.
+    `B-173`, found 2026-09-15 by tripping over it. An item filed with
+
+        title: Backlog #32's fix has no guard, and two vignettes carry the shape
+
+    was read as the single word `Backlog`, `list` rendered that, `render` wrote
+    it into prose, and `lint` printed `OK` — because a truncated title is still a
+    perfectly valid title and nothing compared it against the bytes on disk. Two
+    items had been live on `main` in that state for weeks (`B-124`, `B-125`,
+    titles ending "Port the validator checks of" and "Port the categorical
+    inference of", because they cite `#49` and `#95`). The file on disk and the
+    fact the client reads had quietly become two different things, which is the
+    failure this whole program exists to remove, occurring inside it.
+
+    The exposure is one-directional, which is why this is worth a rule rather
+    than a convention: a citation of the form `#N` is the single most likely
+    thing to appear in `title` and `retires_when`, because every item migrated
+    from `knowledge/backlog.md` carries one. The one construction the stripper
+    eats is the one those fields are full of.
+
+    WHAT IT CHECKS: every key, not only the two the item named. Restricting it to
+    `title` and `retires_when` would leave a rule whose scope a reader has to
+    take on trust, and it costs nothing: swept 2026-09-16, all 131 item files
+    carry zero unquoted values containing a hash of any kind, and zero trailing
+    comments.
+
+    WHAT IT DOES NOT CATCH, said plainly, because a guard whose claimed scope
+    exceeds its real scope is worse than no guard. A tail that is shaped like a
+    comment but was meant as content still disappears silently:
+
+        title: Fix the renderer # 32 of these were wrong
+
+    `looks_like_a_comment` says yes — hash, then a space — and the title becomes
+    "Fix the renderer". Closing that hole means refusing *every* ` #` cut in an
+    unquoted value, which deletes the trailing-comment form the schema documents
+    and `test_trailing_comment_is_stripped_from_unquoted_values` pins. Removing a
+    documented capability and its test is a decision for Brett under `HUB.md`
+    § "Which pull requests need Brett", not one to take inside a defect fix, and
+    the measured exposure is `#N` with no space rather than this. Recorded so the
+    choice is visible rather than discovered later as a gap.
+
+    RETIRES WHEN: `split_comment` stops being able to lose anything — either
+    because the schema requires `title` and `retires_when` to be quoted outright,
+    or because the reader stops honouring a trailing comment on an unquoted value
+    at all. Either change means no value can be truncated, at which point this
+    rule and `looks_like_a_comment` are deleted rather than kept as a check that
+    can no longer fire.
+    """
+    if looks_like_a_comment(removed):
+        return None
+    return (
+        f"{removed!r} was cut from this value as a trailing comment, leaving "
+        f"{kept!r}. A ` #` ends an unquoted value, so a citation such as `#125` "
+        "truncates it silently. Quote the whole value to keep the hash "
+        "(single quotes, doubling an apostrophe: 'Backlog #32''s fix'), or write "
+        "a real trailing comment as `#` followed by a space"
+    )
 
 
 def parse_scalar(raw: str):
-    """Return (value, error) for the text to the right of a `key:`.
+    """Return (value, error, rule) for the text to the right of a `key:`.
 
     `value` is a str, a bool, a list of str for flow style, or None on error.
+    `rule` names the lint rule an error is reported under, so a caller does not
+    have to match on the message text; it is `""` when there is no error.
     """
     text = raw.strip()
     if text == "":
-        return None, "empty value"
+        return None, "empty value", "value"
     if text.startswith("#"):
-        return None, "value begins with '#'; quote it (for example legacy: '#53')"
+        return None, "value begins with '#'; quote it (for example legacy: '#53')", "value"
 
     if text[0] in "'\"":
         quote = text[0]
@@ -349,33 +454,42 @@ def parse_scalar(raw: str):
             chars.append(char)
             index += 1
         if end < 0:
-            return None, "unterminated quoted value"
+            return None, "unterminated quoted value", "value"
         rest = text[end + 1 :].strip()
         if rest and not rest.startswith("#"):
-            return None, f"trailing text after quoted value: {rest!r}"
-        return "".join(chars), None
+            return None, f"trailing text after quoted value: {rest!r}", "value"
+        return "".join(chars), None, ""
 
-    flow = FLOW_RE.match(strip_comment(text))
+    # Everything below this line reads the value through `split_comment`, so the
+    # truncation check belongs here, once, rather than beside each branch. Put it
+    # on the plain-scalar branch alone and `blocked_by: [B-90] #124 next` still
+    # loses its tail on the flow branch, which never reaches that check.
+    stripped, removed = split_comment(text)
+    if removed is not None:
+        loss = comment_loss_problem(stripped, removed)
+        if loss:
+            return None, loss, "truncated-value"
+
+    flow = FLOW_RE.match(stripped)
     if flow:
         inner = flow.group(1).strip()
         if inner == "":
-            return [], None
+            return [], None, ""
         parts = [part.strip() for part in inner.split(",")]
         if any(part == "" for part in parts):
-            return None, "empty entry in inline list"
-        return parts, None
+            return None, "empty entry in inline list", "value"
+        return parts, None, ""
 
     if text.lstrip().startswith("-"):
-        return None, "block-style list; use inline flow style, for example [B-90, S-12]"
+        return None, "block-style list; use inline flow style, for example [B-90, S-12]", "value"
 
-    stripped = strip_comment(text)
     if stripped == "":
-        return None, "value is only a comment"
+        return None, "value is only a comment", "value"
     if stripped in ("true", "false"):
-        return stripped == "true", None
+        return stripped == "true", None, ""
     if stripped in ("True", "False", "yes", "no", "on", "off"):
-        return None, f"use lowercase true/false, not {stripped!r}"
-    return stripped, None
+        return None, f"use lowercase true/false, not {stripped!r}", "value"
+    return stripped, None, ""
 
 
 def parse_item_file(path: Path, display: str) -> tuple[Item, list[Problem]]:
@@ -421,7 +535,7 @@ def parse_item_file(path: Path, display: str) -> tuple[Item, list[Problem]]:
         if key in item.raw:
             problems.append(Problem(display, number, "duplicate-key", f"key {key!r} appears twice"))
             continue
-        value, error = parse_scalar(rest)
+        value, error, rule = parse_scalar(rest)
         if error == "empty value":
             # A bare `key:` followed by indented `- item` lines is YAML block
             # style. The schema is inline flow only, so say that rather than
@@ -439,7 +553,7 @@ def parse_item_file(path: Path, display: str) -> tuple[Item, list[Problem]]:
                 index += consumed
                 error = "block-style list; use inline flow style, for example [B-90, S-12]"
         if error:
-            problems.append(Problem(display, number, "value", f"{key}: {error}"))
+            problems.append(Problem(display, number, rule or "value", f"{key}: {error}"))
             continue
         item.raw[key] = value
         item.lines[key] = number
@@ -1461,6 +1575,72 @@ def read_hub_participation(path: Path) -> dict:
     return grants
 
 
+WORKPAD_DIR = ".hub/workpads"
+WORKPAD_LEGACY_FILE = ".hub/workpad.md"
+
+
+def validate_workpads(root: Path, items: list[Item]) -> list[Problem]:
+    """One workpad per item, named for the item. This is hub item B-140's guard.
+
+    Until 2026-09-16 every hand-back wrote `.hub/workpad.md`, one path for the
+    whole repository. Two branches that each carried a report collided on it, and
+    the resolution was always to discard one, so `main` held only the report of
+    whichever hand-back merged last. On 2026-09-15 six branches carried a report
+    and four had to be resolved by hand, each resolution costing a CI cycle for a
+    file whose two versions were never in conflict about anything --- they were
+    reports of different items.
+
+    The failure this checks for is silent: the old path merges, resolves, and
+    leaves a plausible file behind, so nothing downstream can tell that a report
+    was lost. It is only visible by asking whether the name is the item's.
+
+    *Retires when:* the workpad stops being a file in the work branch --- if a
+    hand-back ever records its report somewhere that cannot collide by
+    construction, this rule has nothing left to protect.
+    """
+    problems: list[Problem] = []
+
+    if (root / WORKPAD_LEGACY_FILE).exists():
+        problems.append(
+            Problem(
+                WORKPAD_LEGACY_FILE,
+                0,
+                "workpad-shared-path",
+                "the single shared workpad path is back; HUB.md places the report "
+                f"at {WORKPAD_DIR}/<queue-id>.md, one file per item, because two "
+                "hand-backs on one path destroy one report per merge (B-140)",
+            )
+        )
+
+    workpad_dir = root / WORKPAD_DIR
+    if not workpad_dir.is_dir():
+        return problems
+
+    known = {item.id for item in items}
+    for path in sorted(workpad_dir.iterdir(), key=lambda p: p.name):
+        if path.name.startswith(".") or not path.is_file():
+            continue
+        display = f"{WORKPAD_DIR}/{path.name}"
+        if path.suffix != ".md":
+            problems.append(
+                Problem(display, 0, "workpad-name", "not a .md file")
+            )
+            continue
+        if path.stem not in known:
+            problems.append(
+                Problem(
+                    display,
+                    0,
+                    "workpad-name",
+                    f"{path.stem!r} is not an item in {DEFAULT_QUEUE_DIR}/; a workpad is "
+                    "named for the item it reports on, so a name that is not an id "
+                    "is either a typo or a second report sharing one file",
+                )
+            )
+
+    return problems
+
+
 def validate_solo(root: Path) -> list[Problem]:
     config_path = root / QUEUE_CONFIG_FILE
     if not config_path.is_file():
@@ -1800,6 +1980,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_members(root)
         + validate_member_fields(root)
         + validate_solo(root)
+        + validate_workpads(root, items)
     )
 
     baseline: int | None = None

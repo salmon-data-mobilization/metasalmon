@@ -1,8 +1,8 @@
 id: B-111
 kind: defect
 title: Make create_sdp()'s three create-owned sidecar writes atomic
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P2

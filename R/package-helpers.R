@@ -341,20 +341,6 @@ write_salmon_datapackage <- function(
   readBin(temporary, what = "raw", n = file.info(temporary)$size)
 }
 
-# Remove a create-owned output before recreating it. The containment check
-# catches symbolic links, but `Sys.readlink()` does not see HARD links, and
-# writing through one truncates the shared inode outside the package. The
-# pre-0.2.0 full-directory wipe unlinked these entries first; preserving the
-# directory removed that protection, so it has to be explicit -- and it belongs
-# next to each write, not in one caller, so it holds however the writer is
-# reached.
-.ms_replace_create_output <- function(path) {
-  if (file.exists(path)) {
-    unlink(path, force = TRUE)
-  }
-  invisible(path)
-}
-
 .ms_dir_entries <- function(path) {
   list.files(path, all.files = TRUE, no.. = TRUE, full.names = TRUE)
 }
@@ -1332,6 +1318,15 @@ create_sdp <- function(
   # are deliberately absent from `managed_paths` (that is what preserves them on
   # a rewrite). They still need the same containment check: without it a
   # symlinked `README-review.txt` is followed and an external file is truncated.
+  #
+  # Each of the three is rendered to bytes and then installed by
+  # `.ms_sdp_extension_atomic_write()`, so an abort during a render leaves the
+  # previous file byte-intact (backlog #111). They are three separate
+  # transactions rather than one set: they are independent files written at
+  # different points in this function, the harm the fix removes is a DESTROYED
+  # file rather than a partially-updated group, and the suggestions branch below
+  # can also delete rather than write, which an atomic write set cannot express.
+  # Pinned by tests/testthat/test-create-sdp-sidecar-atomicity.R.
   .ms_assert_managed_path_contained(
     pkg_path,
     file.path(pkg_path, c(
@@ -1367,23 +1362,31 @@ create_sdp <- function(
     ))
   )
 
-  # `create_sdp()` owns this file, so it clears its own stale copy. The generic
-  # writer's managed-path inventory deliberately does not know about it.
+  # `create_sdp()` owns this file, so it replaces its own stale copy. The
+  # generic writer's managed-path inventory deliberately does not know about it.
+  #
+  # `na = ""` matches the `readr::write_csv()` call this replaced, so the bytes
+  # are unchanged (backlog #111). The removal branch stays a plain `unlink()`:
+  # deleting a file is already atomic, and the atomic write set has no delete.
   suggestions_path <- file.path(pkg_path, "semantic_suggestions.csv")
   if (!is.null(review_suggestions) && nrow(review_suggestions) > 0) {
-    .ms_replace_create_output(suggestions_path)
-    readr::write_csv(review_suggestions, suggestions_path, na = "")
+    .ms_sdp_extension_atomic_write(
+      .ms_sdp_extension_csv_bytes(review_suggestions, na = ""),
+      suggestions_path
+    )
   } else if (file.exists(suggestions_path)) {
     unlink(suggestions_path, force = TRUE)
   }
 
   if (isTRUE(include_edh_xml)) {
     edh_xml_path <- .ms_metadata_path(pkg_path, "metadata-edh-hnap.xml")
-    .ms_replace_create_output(edh_xml_path)
-
-    edh_build_hnap_xml(
-      artifacts$dataset_meta,
-      output_path = edh_xml_path
+    # `edh_build_hnap_xml()` created this directory itself when it wrote here
+    # directly; the render now goes to a staging file, so the target directory
+    # has to exist before the atomic install, which refuses to create one.
+    dir.create(dirname(edh_xml_path), recursive = TRUE, showWarnings = FALSE)
+    .ms_sdp_extension_atomic_write(
+      .ms_edh_hnap_xml_bytes(artifacts$dataset_meta),
+      edh_xml_path
     )
 
     # create_sdp() emits review-ready metadata, so this create-time XML is often
@@ -3925,8 +3928,14 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     "If you do use one, save the files back as CSV before re-validating in R.",
     "Guide: https://salmon-data-mobilization.github.io/metasalmon/articles/post-review-package-publication.html"
   )
-  readme_path <- .ms_replace_create_output(file.path(pkg_path, "README-review.txt"))
-  writeLines(lines, con = readme_path, useBytes = TRUE)
+  # Rendered to bytes before anything on disk is touched, then installed by
+  # staged-sibling rename (backlog #111). An annotated copy of this file is not
+  # reproducible by re-running `create_sdp()`, so an abort mid-rewrite used to
+  # destroy the one artifact here a user can have edited.
+  .ms_sdp_extension_atomic_write(
+    .ms_sdp_extension_text_bytes(lines),
+    file.path(pkg_path, "README-review.txt")
+  )
 }
 
 # Metadata fields still holding a `MISSING METADATA:` / `MISSING DESCRIPTION:`

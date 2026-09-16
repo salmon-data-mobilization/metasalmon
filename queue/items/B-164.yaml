@@ -1,0 +1,13 @@
+id: B-164
+kind: defect
+title: 'Backlog #32''s fix has no guard, and two vignettes written after it carry the shape it closed'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A test fails when a vignette relies on a global knitr::opts_chunk$set() for purl suppression instead of declaring purl = FALSE per chunk, demonstrated red against vignettes/migrating-to-sdp-0-3-0.Rmd and vignettes/tidy-data-for-sdp.Rmd before either is fixed. THE GUARD IS THE ITEM AND THE TWO FIXES ARE NOT. Backlog #32 was closed on 2026-07-21 under roadmap E5 by adding per-chunk purl = FALSE to six vignettes and adding nothing that would notice a seventh, and its entry already states the rule the two later vignettes break: a global runtime knitr::opts_chunk$set(eval = FALSE, purl = FALSE) is insufficient because the check''s tangle phase does not execute the setup chunk. Both files open with an include = FALSE, purl = FALSE setup chunk that sets only collapse, comment and eval = FALSE, then use bare r chunk headers for 18 and 7 content chunks. Reproduced 2026-09-15: R CMD build emits inst/doc/migrating-to-sdp-0-3-0.R and inst/doc/tidy-data-for-sdp.R and no .R file at all for the other nine vignettes, and R CMD check on that tarball under R 4.3.3 fails with 1 ERROR at checking running R code from vignettes, naming both files, because the re-tangle happens in a fresh session where the setup chunk has not run. A GUARD IS REQUIRED RATHER THAN MERELY DESIRABLE, because the check step that catches this does not exist on the R that CI runs: the R-CMD-check job on R 4.6.1 prints checking package vignettes then checking re-building of vignette outputs with no checking running R code from vignettes between them, so CI is green and would stay green. Which R release removed that step was not determined -- present on 4.3.3, absent on 4.6.1. That inverts the warning in AGENTS.md rather than repeating it: there a green local check hid a CI failure, here a green CI hides a failure a user on an older R hits.'
