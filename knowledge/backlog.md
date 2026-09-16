@@ -4748,6 +4748,118 @@ refuses when the removed text does not look like a comment; a cheaper partial
 one refuses any unquoted value containing `#`, which also catches the case where
 the truncation happens to leave a plausible sentence behind.
 
+### The 2026-09-16 filing of #111's mirror half
+
+**One item, and the only new thing about it is the queue file** — the evidence
+was written by the change that created the gap. metasalmon PR **#119** closed
+**#111** (queue `B-111`) and, on the same branch, recorded in
+[`roadmap.md`](roadmap.md)'s metasalmonpy release index and in register
+[row 53](parity-deviations.md) that the Python half was not done, that it would
+**not** retire with the R half, and that **nothing in the queue covered it**.
+`B-179` is that item, and each of those two records now names it. Headed by its
+**queue id** for the reason the two sections above give, and **state is not
+here**: whether it is icebox, ready, claimed or done lives in `queue/items/`,
+and this section is what its `evidence:` pointer resolves to.
+
+**`B-179` metasalmonpy's three `create_sdp()` sidecars are still
+unlink-then-rewrite, and its widest window is wider than R's ever was.** Read
+2026-09-16 against metasalmonpy `main` `1f510c9`, at the call sites rather than
+from the register:
+
+| Site | Shape |
+|---|---|
+| `package_io.py:388` | `_replace_create_output(path)` — `path.unlink()`, and the caller renders the replacement afterwards |
+| `package_io.py:1545` | `README-review.txt`: unlink, then `readme_path.write_text(...)` |
+| `package_io.py:1820` | `semantic_suggestions.csv`: unlink, then `suggestions.to_csv(...)` |
+| `package_io.py:1838` | `metadata/metadata-edh-hnap.xml`: unlink, then **`read_salmon_datapackage(pkg_path)` at `:1839`**, then `edh_build_hnap_xml(...)` |
+
+The last row is the difference from R and it is not a detail: the whole package
+is read and parsed from disk **after** the previous EDH file has been destroyed,
+so every read and parse failure of every file in the package sits inside the
+destroyed-file window too. R built from the in-memory `artifacts$dataset_meta`
+and never had that. Register row 53 measured the consequence during S10 chunk H
+on 2026-08-22 rather than inferring it — 5479 bytes of previously written XML
+deleted with nothing in their place — and said in advance that closing R's half
+would leave this standing. It has.
+
+**This is a live data-loss path, not a missing feature**, which is the reason it
+is owed as work rather than as bookkeeping. Re-running `create_sdp()` regenerates
+all three files, so the loss only bites a copy the user has changed — and all
+three are exactly that kind of copy: an annotated `README-review.txt`, a
+`semantic_suggestions.csv` carrying review decisions, or the EDH XML of a
+package whose metadata has since moved on. The three files a re-run cannot
+reproduce are the three files at risk.
+
+**The port uses `atomic_io.py`, and the one thing it must get right is where the
+abort goes in.** metasalmon's `tests/testthat/test-create-sdp-sidecar-atomicity.R`
+is the model: three abort injections at the three **render** steps, each
+asserting the prior file is byte-identical afterwards, plus a happy-path
+round-trip and a direct-filesystem-call guard. **Injecting at the install instead
+proves nothing** — a staged-sibling rename leaves the prior bytes in place by
+construction, so such a test passes on the unfixed code. The R run learned a
+second lesson by hitting it, and it transfers directly: **key each hook on
+content, never on the destination path**, because the post-fix render writes into
+a staging file and a path-keyed hook silently stops injecting while the test
+still goes green (R's suggestions hook is keyed on the frozen 19-column target
+row for exactly this reason). In Python, `edh_build_hnap_xml` is already
+render-level and survives the fix; a hook on `Path.write_text`, or a `to_csv`
+hook keyed by its path argument, does not.
+
+**A second record is owed with or before the port, and it is a correction rather
+than a new row.** metasalmonpy's `PARITY.md` copy of row 53 still describes the
+sidecars as unlink-then-rewrite *"on both sides"* and cites
+`R/package-helpers.R:1387-1392` for a `.ms_replace_create_output()` call PR #119
+deletes. Once #119 merges, the two registers disagree about which side is
+defective, with nothing in either file saying which is right — the failure mode
+both `AGENTS.md` files name when they say to read the other file rather than
+trust the one in front of you. Every one of that row's **Python** line citations
+has drifted too, measured the same day: `:1506` → `:1545`, `:1738` → `:1820`,
+`:1755-1760` → `:1838-1841`, and the `write_salmon_datapackage()` call it credits
+at `:1706` is at `:1788`. The correction is the row's claim, not its line
+numbers; the drift is worth recording only because re-reading the call sites is
+what a corrector has to do anyway. The correction reaches one more place, found
+while checking those call sites: the docstring of
+`test_create_sdp_inherits_the_transactional_package_write` in
+`tests/test_write_datapackage_abort_safety.py` states that the three sidecars
+"are still unlink-then-rewrite and are NOT covered here" — true today, and the
+sentence the port falsifies.
+
+**One thing for the porter to settle rather than discover, because the two
+registers already name different writers.** Row 53 here says the port goes
+through `atomic_io.py`; the twin's retirement clause says `_atomic_write_set()`.
+Both exist in metasalmonpy — `atomic_io.atomic_write(data, path)` is the
+single-file staged-sibling rename, and `sdp_methods._atomic_write_set()` is the
+rollback-capable set that mirrors `.ms_sdp_extension_atomic_write_set()`, so a
+one-entry call to it is the literal analogue of R's
+`.ms_sdp_extension_atomic_write()` wrapper. Either satisfies *render to bytes,
+then install by rename*. **What must not happen is a third mechanism**, and the
+R half's reasoning for keeping the three as three transactions rather than one
+set transfers unchanged: they are independent files written at different points
+in `create_sdp()`, the harm is a destroyed file rather than a partly-updated
+group, and the suggestions branch can also *delete*, which a write set has no
+operation for.
+
+**A port and not a deviation**, so no numbered row is added to
+[`parity-deviations.md`](parity-deviations.md) and row 53 is neither renumbered
+nor duplicated: absence in Python here is ordinary "R shipped first" lag, not a
+chosen difference, and a shared defect one side has fixed is not a design
+decision to register.
+
+**It is not `B-163` and it is not `B-165`**, which is worth stating because all
+three touch the same writers. `B-163` is the `fsync` durability gap in the atomic
+write **set**, and its own text records that the mirror half is *not* a
+divergence today, because metasalmonpy has zero occurrences of `fsync` and
+`atomic_io.atomic_write()` calls `os.replace` with no flush either — that item is
+the write set never flushing, and this one is Python never reaching the writer at
+all. `B-165` is `B-116`'s mirror half, `write_sdp_semantic_closure()`.
+
+*Retires when:* metasalmonpy's three create-owned sidecar writes render to bytes
+and install through the `atomic_io.py` writer, `_replace_create_output()` has no
+callers, and the EDH path either builds in memory the way R does or brings its
+whole read inside the transaction — pinned by three abort injections at the
+render steps, each demonstrated RED against the pre-fix code, with the
+`PARITY.md` correction landing in the same change.
+
 ---
 
 ## Code review of the implementation (2026-06-25)

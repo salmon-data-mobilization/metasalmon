@@ -411,18 +411,23 @@ land in the same stream because the hub claim that produced #119 covers one
 branch in one repository and B-111 names metasalmon**, which is the same reason
 B-124 and B-125 are separate items.
 
-**Unlike those two, this one has no queue item yet, and that is the gap to close
-first.** Nothing in the queue covers it as of 2026-09-16: **B-163 is not it** —
+**Like those two, it is now a queue item of its own: `B-179`**, filed 2026-09-16,
+whose evidence is the `B-179` entry in [`backlog.md`](backlog.md). That closes
+the gap this paragraph opened with, which was that nothing in the queue covered
+the port at all; the item file holds its state and its ordering constraints, and
+this paragraph deliberately does not repeat them. **B-163 is still not it** —
 that item is the `fsync` durability gap in the atomic write *set*, and it
 records in its own text that the mirror half is not a divergence today, because
-neither implementation flushes before renaming. **A second record is owed with
-or before the port, and it is a correction rather than a new row:**
-metasalmonpy's `PARITY.md` copy of row 53 still describes the defect as present
-"on both sides" and cites an `R/package-helpers.R` line range for a
-`.ms_replace_create_output()` call pull request #119 deletes. On merge the two
-registers therefore disagree about which side is defective, with nothing in
-either file saying which is right — the failure mode both `AGENTS.md` files name
-when they say to read the other file rather than trust the one in front of you.
+neither implementation flushes before renaming; B-179 is Python not reaching the
+write path at all. **A second record is owed with or before the port, and it is
+a correction rather than a new row** — `B-179` names it in its own retirement
+condition: metasalmonpy's `PARITY.md` copy of row 53 still describes the defect
+as present "on both sides" and cites an `R/package-helpers.R` line range for a
+`.ms_replace_create_output()` call pull request #119 deletes. Now that #119 has
+merged, the two registers therefore disagree about which side is defective, with
+nothing in either file saying which is right — the failure mode both `AGENTS.md`
+files name when they say to read the other file rather than trust the one in
+front of you.
 
 **The window has since grown four times, and this index was not the copy that
 recorded it.** Each addition is R work merged after 0.5.0 under the mirror rule,
