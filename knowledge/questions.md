@@ -282,11 +282,17 @@ it should be answerable.)*
 gives about itself. The profile is mandated by a specification file this package
 only vendors and is consumed the same way by metasalmonpy, so whether the SDP
 admits an instant is a specification ruling and not an implementation choice.
-What an agent may do is put (a) and (b) in front of Brett with their costs, which
-is what this entry does; it may not pick between them. If the ruling goes to (a)
-or (b), the implementing change should also add the check that was missing — a
-package's temporal fields validated against the profile's own pattern — because
-nothing on either side compares them today.
+What an agent may do is put **(a)**, **(b1)**, **(b2)** and **(c)** in front of
+Brett with their costs, which is what this entry does; it may not pick between
+them. **Each ruling implies different work**, and `B-198` / `B-199` spell it out
+so a ruling is directly actionable: under **(a)** the vendored dataset schema is
+re-fetched and the writers are left alone; under **(b1)** and **(b2)** the schema
+is left alone and the writers change, erroring for b1 and truncating for b2;
+under **(c)** both implementation items retire as no-ops and what is recorded
+instead is the accepted mismatch. Under **(a)**, **(b1)** and **(b2)** alike, the
+implementing change should also add the check that was missing — a package's
+temporal fields validated against the profile's own pattern — because nothing on
+either side compares them today, and that absence is why this went unseen.
 **Severity is bounded and that does not settle it:** neither implementation
 produces a typed instant on its own, so this reaches a user only through a caller
 who supplies one.
