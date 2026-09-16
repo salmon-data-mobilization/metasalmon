@@ -415,18 +415,19 @@ B-124 and B-125 are separate items.
 whose evidence is the `B-179` entry in [`backlog.md`](backlog.md). That closes
 the gap this paragraph opened with, which was that nothing in the queue covered
 the port at all; the item file holds its state and its ordering constraints, and
-this paragraph deliberately does not repeat them. **B-163 is still not it** — that item is the `fsync` durability gap in the
-atomic write *set*, and it records in its own text that the mirror half is not a
-divergence today, because neither implementation flushes before renaming; B-179
-is Python not reaching the write path at all. **A second record is owed with
-or before the port, and it is a correction rather than a new row** — `B-179`
-names it in its own retirement condition:
-metasalmonpy's `PARITY.md` copy of row 53 still describes the defect as present
-"on both sides" and cites an `R/package-helpers.R` line range for a
-`.ms_replace_create_output()` call pull request #119 deletes. On merge the two
-registers therefore disagree about which side is defective, with nothing in
-either file saying which is right — the failure mode both `AGENTS.md` files name
-when they say to read the other file rather than trust the one in front of you.
+this paragraph deliberately does not repeat them. **B-163 is still not it** —
+that item is the `fsync` durability gap in the atomic write *set*, and it
+records in its own text that the mirror half is not a divergence today, because
+neither implementation flushes before renaming; B-179 is Python not reaching the
+write path at all. **A second record is owed with or before the port, and it is
+a correction rather than a new row** — `B-179` names it in its own retirement
+condition: metasalmonpy's `PARITY.md` copy of row 53 still describes the defect
+as present "on both sides" and cites an `R/package-helpers.R` line range for a
+`.ms_replace_create_output()` call pull request #119 deletes. Now that #119 has
+merged, the two registers therefore disagree about which side is defective, with
+nothing in either file saying which is right — the failure mode both `AGENTS.md`
+files name when they say to read the other file rather than trust the one in
+front of you.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
