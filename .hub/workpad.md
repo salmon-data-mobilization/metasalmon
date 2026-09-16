@@ -647,3 +647,17 @@ qualify: each ordering is read back by something other than a human. The
 the failed-source vector reaches an abort message and is compared by the caller
 that decides whether any file is written. `.ms_closure_bytes_sha256()` needs no
 entry: `byte_producing_pattern` matches `_sha256` and catches it by name.
+
+### Mirror: what this round added to the owed port
+
+The port of `write_sdp_semantic_closure()` to metasalmonpy was already specified
+under *What metasalmon 0.5.0 owes the mirror* in `knowledge/parity-deviations.md`
+and in the roadmap release index, and it was specified against the behaviour these
+findings changed. Both copies now carry the three additions, in the same change,
+which is the rule the release index states: a degraded lookup aborts rather than
+becoming a gap; incomplete evidence is not a missing term; the three writes
+install as one link-refusing set. Each is a way of getting the *ruled* gap-not-
+abort shape wrong while appearing to implement it, which is exactly why it is
+written down rather than left to be re-derived.
+
+Still no queue item for the port. It is a new-item candidate above, unchanged.

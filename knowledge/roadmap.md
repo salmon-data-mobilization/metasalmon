@@ -394,7 +394,11 @@ each is owed as a port rather than a register row, and each is specified in full
 under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`:
 validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
 B-95), and the reviewed semantic closure producer
-(`write_sdp_semantic_closure()`, backlog #116 / B-116, 2026-09-15) — the last of
+(`write_sdp_semantic_closure()`, backlog #116 / B-116, 2026-09-15; **widened
+2026-09-16** by the Codex review of pull request #121, which added three things
+the port owes — a degraded lookup must abort rather than become a gap, incomplete
+evidence is not a missing term, and the three writes install as one link-refusing
+set) — the last of
 which **has no queue item yet** and needs one beside the other two. All three
 were deferred for the same structural reason rather than a judgement: a hub claim
 covers one branch in one repository, so the mirror half is a separate item. The

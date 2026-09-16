@@ -208,6 +208,33 @@ exists for this yet** — it is the mirror half of B-116 and needs filing beside
 B-124 and B-125; it is recorded here rather than left in a pull request
 description precisely because those evaporate.
 
+**Three more things the port owes, added 2026-09-16 after Codex reviewed the R
+half** (pull request #121, five findings, all valid). They are listed here rather
+than left to be re-derived because each is a way of getting the *ruled* shape
+wrong while appearing to implement it:
+
+1. **A gap is a claim, so only one of three outcomes may make one.** A lookup
+   that did not answer — a search that raised, or a result whose failed-source
+   diagnostics name a source that did not reply — **aborts before anything is
+   written**; a term that was found with a required evidence field blank is
+   reported separately as `incomplete`, not as a gap; only "every source answered
+   and none has the term" is a gap. R's fix collapsed a swallowed exception and
+   an ignored diagnostics attribute, both of which had been producing
+   `no_candidates` gap rows — that is the ruled shape turned into a defect, since
+   it asks an ontology to mint a term nobody established was missing. Python's
+   `find_terms()` must expose the same degraded-source signal, in one place, read
+   both by its own warning and by this producer.
+2. **The two closure files and the sidecar digest install as one set**, staged and
+   renamed with rollback, because a failure between them leaves a replaced CSV
+   beside its previous `sha256` — a package that fails its own digest check even
+   though the call raised. Python needs whatever its equivalent of the hardened
+   SDP writer is; if it has none, that is the first half of the port.
+3. **No write follows a link.** Root, every intermediate directory component and
+   each final entry are refused when symlinked, because an SDP received from a
+   collaborator can point any of the three names at a file outside the package.
+   Hard links are closed by the staged rename rather than by detection, and the
+   Python half should say so in the same place rather than implying coverage.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
