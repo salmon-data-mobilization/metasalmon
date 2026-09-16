@@ -467,6 +467,12 @@ lists five costs-as-requirements, not four) without changing the answer.
 - Every relative link and every in-card anchor resolves (checked by slugging all
   headings in the three files and matching each `](#...)` and `](path)` target;
   0 dead).
+- **§8's deposit test was brought into line with §3's**, in a third commit.
+  §6 now points at §8 for the test that would settle the retrieval affordance,
+  so the two statements of that test have to agree; §8's version queried only
+  the predicate. It now also queries a component IRI and says which of the two
+  queries bears on the recommendation's strength. Small, and worth doing rather
+  than leaving two versions of one test in one card.
 - **The OKF bundle validator was not run and could not be.** The documented
   command needs a sibling `psc-data-systems` checkout
   (`uv run --project ../psc-data-systems psc-okf check knowledge --tier
