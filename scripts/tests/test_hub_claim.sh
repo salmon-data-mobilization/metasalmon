@@ -1433,6 +1433,21 @@ main() {
     printf '%s\n' "$solo_out" | grep -Fq "Open one draft pull request" || solo_ok=1
     printf '%s\n' "$solo_out" | grep -Fq "agent-run" || solo_ok=1
     printf '%s\n' "$solo_out" | grep -Fq "STOP" && solo_ok=1
+    # Added 2026-09-16 with ruling R16. This instruction used to end "Draft only:
+    # never marked ready for review, never merged", which R16 made false for the
+    # delegated classes: the client then forbade what the grant permitted, an
+    # agent following its own tooling would have stopped at the draft, and Codex
+    # would never have run. That is the same failure 22 and 23 already exist to
+    # catch, pointing the other way, so it is measured the same way -- on the
+    # sentence, not on the URL.
+    #
+    # Both greps are about the DECISION rather than the permission. The client
+    # has to send the agent to the boundary, and it has to say what to do when
+    # the agent cannot tell which side of it a change is on, because an
+    # instruction naming only the permissive path is how a change that was
+    # Brett's gets merged by delegation.
+    printf '%s\n' "$solo_out" | grep -Fq "Which pull requests need Brett" || solo_ok=1
+    printf '%s\n' "$solo_out" | grep -Fq "cannot tell which list" || solo_ok=1
     if [ "$solo_ok" = "0" ]; then
       assert 22 "client: handing back an item in a repository nobody but Brett has contributed to prints the compare URL and instructs one draft pull request" 0
     else

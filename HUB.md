@@ -222,10 +222,15 @@ writes:
         say yes before anything is pushed. When participation cannot be
         determined the repository is shared.
       shape: >-
-        draft only, labelled agent-run, body naming the queue id, from the
-        agent/<queue-id>/<token> branch already pushed. Never marked ready for
-        review, never merged, never a second one for the same item, and never a
-        reply to a review comment on it.
+        labelled agent-run, body naming the queue id, from the
+        agent/<queue-id>/<token> branch already pushed. Opened as a draft, and
+        never a second one for the same item. Narrowed 2026-09-16: this read
+        "draft only ... Never marked ready for review, never merged, ... and
+        never a reply to a review comment on it", and the rows below now grant
+        all three for the delegated classes. It stays a draft, unmerged and
+        unanswered, when the change falls in a class "Which pull requests need
+        Brett" reserves to him, which is what still makes a draft the
+        conservative default rather than a formality.
       max: 1 per handed-back item
       enforced_by: >-
         nothing mechanical. This is the one permitted operation with no client
@@ -891,6 +896,16 @@ That is the whole grant. Two `git push` targets, one draft pull request per
 item, and one README, in named repositories, by an agent executing this
 protocol.
 
+**The block quote is reproduced as Brett wrote it and is not edited when he
+widens it.** Its "never marked ready for review and never merged" was accurate
+when he wrote it and stopped being the whole rule on 2026-09-16, when ruling R16
+granted marking ready, answering a Codex review, and merging an approved pull
+request in a repository whose `solo` key is true. The quote stays verbatim
+because a record of what he said is worth more than a record kept tidy; the
+widening is recorded in `writes.permitted`, which the paragraph below already
+names as the list that governs. Anyone reconciling the two reads the register,
+not the quote.
+
 **The shared-repository case was settled conservatively, on purpose, and this
 paragraph records that it was settled rather than always having read this way.**
 Until 2026-09-10 the block quote answered its own question twice: the first
@@ -969,9 +984,12 @@ checks. It is not why the grant holds.
 
 **A draft pull request was declined on 2026-09-09 and granted on 2026-09-10**
 (R13, then R15). One draft pull request per handed-back item is now permitted,
-in a member repository **nobody else has contributed to**, labelled `agent-run`,
-never marked ready and never merged. There is still no Project sync paragraph,
-because there is still no Project.
+in a member repository **nobody else has contributed to**, labelled `agent-run`.
+It was also "never marked ready and never merged" until 2026-09-16, when R16
+granted both for the delegated classes and left them forbidden for Brett's;
+"Which pull requests need Brett" is the operative boundary and this sentence
+defers to it. There is still no Project sync paragraph, because there is still
+no Project.
 
 The grant follows a distinction worth stating, because it is the one that makes
 the whole rule coherent: **what matters is not the verb, it is whether another
