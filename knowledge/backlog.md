@@ -5299,18 +5299,21 @@ first message is Q-51's ruling, deliberately **not** recorded here: `Q-51`'s car
 is being written on pull request 137 (open when this was written, 2026-09-16),
 that pull request is the record of the ruling, and a record that gets ahead of
 the card it describes is the defect `queue/README.md` names. The smn pull
-request 27 half is a merge in another repository, authorized by that ruling
-(*"you can merge it"*) and carried out there; it is not recorded here.
+request 27 half is a merge to be carried out in that repository, authorized by
+that ruling (*"you can merge it"*); when this was written on 2026-09-16 it was
+still open, a draft at `949ed95` on `d45f8f7`, and it is not recorded here
+either way.
 
-**`B-197` and `B-158` were promoted on those rulings**, each in a commit naming
-the sentence it rests on, as `HUB.md`'s promotion row requires. The two
-sentences differ in kind, and the record says so: *"Regarding B197, promote it"*
-is a promotion instruction; *"let's stub … and vendor DWC"* rules the modelling
-call and does not say promote, so `B-158` is promoted on the reading that the
-ruling is the go-ahead for the work — the only thing holding it in icebox was
-the call that sentence makes — and its card says that reading is Brett's to
-correct. `B-158`'s promotion carried the modelling call its card had said only
-Brett could make, now made: the six `obo:`/`geosparql:` superclass IRIs get
+**`B-197` was promoted; `B-158` was not, and the difference is the point.**
+The promotion commit names the sentence it rests on, as `HUB.md`'s promotion row
+requires — and the two sentences differ in kind. *"Regarding B197, promote it"*
+is a promotion instruction. *"Let's stub … and vendor DWC"* rules a modelling
+call and says nothing about promotion, so reading it as a go-ahead would be an
+agent's inference standing where `HUB.md` requires an authorization; `B-158`
+therefore keeps `state: icebox` and waits for the word. Nothing is lost by
+waiting, because its two blockers prevent a claim in any case. **What the ruling
+did settle is recorded on the card**: the modelling call it had said only Brett
+could make is now made — the six `obo:`/`geosparql:` superclass IRIs get
 bare declaration stubs under `CONVENTIONS.md` 5b rule 2, and the two `dwc:`
 IRIs (`dwc:Event`,
 `dwc:Organism`) are vendored into `ontology/imports/`. **The trade-off the ruling
@@ -5325,12 +5328,13 @@ settles the vendor-or-stub half of the decision surface `B-158`'s card joined
 to `Q-48`; the taxonomic-assignment pattern bundle itself is still Q-48's, and
 `knowledge/questions.md` still owes it an entry. `B-107` was not promoted: its
 card carries its own promotion condition, which had not been met when this was
-written (2026-09-16). `B-158` is promoted but blocked, by `B-107` because both
-edit `ontology/modules/02-observation-measurement.ttl`, and by `B-143` because
-the gate its condition names exists only on salmon-domain-ontology pull request
-30's branch — a `ready` item whose end condition needs a script `main` does not
-carry is claimable and unfinishable at once, and `blocked_by` is what keeps
-`hub ready` from offering it. Nothing in `HUB.md` serialises claims within a
+written (2026-09-16). `B-158` gained `blocked_by: [B-107, B-143]` on 2026-09-16, whatever
+its state: `B-107` because both edit
+`ontology/modules/02-observation-measurement.ttl`, and `B-143` because the gate
+its condition names exists only on salmon-domain-ontology pull request 30's
+branch — an item whose end condition needs a script `main` does not carry would
+be claimable and unfinishable at once the moment it were promoted, and
+`blocked_by` is what keeps `hub ready` from offering it. Nothing in `HUB.md` serialises claims within a
 repository (`solo` is a participation fact, and the only concurrency cap is
 per agent), so the order is carried by `blocked_by` and the S6 card, not by any
 rule. The third ruling, where a changelog entry goes between a bump and its
@@ -5403,7 +5407,8 @@ matches the bump merge. The `v0.5.0` tag goes on `67fb486` and is Brett's to
 make. **P3**, as B-200.
 
 **`B-202`: a port item can reach `done` while the register still says the port
-is owed, and it did four times in one day.** The dated record, from the queue's
+is owed, and it did five times in one day — the fifth on this pull request's own
+branch.** The dated record, from the queue's
 own history. `B-115` was written `review` on pull request 135's branch
 (`85eccc5`, 04:51Z); metasalmon #118 merged while that branch was open; it was
 corrected to `done` on the same branch (`690d53c`) before the branch merged.
@@ -5417,7 +5422,15 @@ request 138's branch while `knowledge/parity-deviations.md:190` still read
 *"Queued as B-124, blocked by B-49"* and `knowledge/roadmap.md:466` still listed
 validation without the landed marker its neighbours carried; a Codex review of
 #138 caught it, and `e9d7dc4`'s message records it as the fourth time a sentence
-about owed work outlived the work. **The register's own rule was written at the
+about owed work outlived the work. **`B-165` is the fifth, and it was live on
+`main` while this very item was being drafted**: metasalmonpy #31 merged at
+04:18Z (`999fa19`), the card was set `done` at 04:21Z, and
+`parity-deviations.md` went on reading *"Queued as B-165, blocked by B-116"*
+with `roadmap.md` reading *"queued as B-165"* until the branch carrying this
+section wrote the closure paragraph and the landed marker. The adversarial
+review of that branch found it. An item about stale port records whose own
+branch carried a live stale port record is not an irony worth enjoying; it is
+the measurement that settles whether prose can hold this. **The register's own rule was written at the
 third and broken at the fourth by an agent who had read it** — *"a catch-up
 window changes in both places in the same change"*, stated under B-125's closure
 (`parity-deviations.md:237-238`) and restated under B-124's (`:211-212`). That is
@@ -5426,15 +5439,23 @@ that moves. The item is a rule in `scripts/hub_queue.py lint`, which already
 reads the queue — or in `scripts/check-parity-registers.py` if it learns to —
 that fails when an id named in the register's port section or the roadmap's
 mirror-debt passage is `done` without a closure paragraph and a landed marker, or
-not `done` with either. **RED demonstration** on a replay of the B-124 shape: the
-queue as it stands against the register and roadmap as they stood at `a592c23`
-(register line 190, roadmap line 466) must fail; `main` must pass. Like
+not `done` with either. **RED demonstration**, two of them, because one is a replay and
+one is real: the queue as it stands against the register and roadmap as they
+stood at `a592c23` (register line 190, roadmap line 466) must fail, and so must
+the queue against those two files as they stood at `e9d7dc4`, where `B-165` was
+`done` and both passages read *"queued"*. `main` must pass once this pull
+request lands — and it passes only because this pull request closes that fifth
+instance, which is the distinction between a check that arrives green and one
+that arrives green *honestly*. The rule reads only ids named **as owed ports**,
+not ids named as blockers or as R halves (six of those are `done` and owed no
+closure paragraph), and looks for the bold *"landed … as metasalmonpy #N"* form
+rather than the bare word. Like
 `check-parity-registers.py`, it catches the shape and not the substance — whether
 a closure paragraph is true is still a reading. **P2:** the register is one of the
 three copies of the single fact the mirror contract turns on, a stale "owed"
 sends the next agent to port work that has landed or to claim a window is open,
-and four instances in a day with the rule written is the argument that the fix
-is mechanical or nothing.
+and five instances in a day with the rule written down at the third is the
+argument that the fix is mechanical or nothing.
 
 **`B-203`: `HUB.md`'s worktree-removal check is silently wrong in a
 single-branch clone.** `HUB.md:711-716` requires

@@ -477,8 +477,11 @@ reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 / B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
 #121, which added three things the port owes — a degraded lookup must abort
 rather than become a gap, incomplete evidence is not a missing term, and the
-three writes install as one link-refusing set), queued as **B-165**, blocked by
-B-116. Every one of them was deferred for the same structural reason rather than
+three writes install as one link-refusing set), **B-165**, blocked by
+B-116 — **landed 2026-09-16 as metasalmonpy #31**, `999fa19`, the fourth to
+close, and the only one of the four whose changelog entry belongs under
+`## 0.5.0` rather than `## Unreleased`, because it merged at 04:18Z and the bump
+at 12:55Z. Every one of them was deferred for the same structural reason rather than
 a judgement: a hub claim covers one branch in one repository, so the mirror half
 is a separate item. The first two reached `parity-deviations.md` and not this index,
 which is the drift the release index exists to catch, so the rule is stated here
