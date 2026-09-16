@@ -463,7 +463,8 @@ the copy that recorded them.** Each is R work merged **after** 0.5.0 under the
 mirror rule, each is owed as a port rather than a register row, and each is
 specified in full under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`:
-validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
+validation (**B-124**, blocked by B-49 — **landed 2026-09-16 as metasalmonpy
+#29**, `1e9245c`, the third to close), role inference (**B-125**, blocked by
 B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first to
 close), the migration report's no-op shape (**B-144**, blocked by
 B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second to
