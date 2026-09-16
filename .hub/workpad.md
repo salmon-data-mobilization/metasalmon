@@ -661,3 +661,34 @@ abort shape wrong while appearing to implement it, which is exactly why it is
 written down rather than left to be re-derived.
 
 Still no queue item for the port. It is a new-item candidate above, unchanged.
+
+### CI state at the end of this round, and what it is not
+
+**No workflow run exists for any of this round's commits, and that is not a
+failure — it is an absence of evidence, which is a different thing and has to be
+reported as one.** The three pushes here are authored and pushed by the `claude`
+app identity; every earlier run on this branch has `triggering_actor:
+Br-Johnson`, and GitHub does not start `pull_request` workflows for a push made
+with an app installation token. `total_count` for this branch stayed at 6 across
+three pushes and forty minutes.
+
+So the last CI data point on pull request #121 is the previous head, `5ad5c09`,
+where all three checks were green. **That says nothing about `fe0fcfb`.** The
+two checks that could plausibly have moved were run by hand instead, and both
+are the real CI invocation rather than a proxy for it:
+
+    python3 scripts/check-parity-registers.py knowledge/parity-deviations.md \
+      ../../metasalmonpy/PARITY.md
+      -> parity registers agree: 61 rows, 1-61 with no gaps
+      (the exact command `parity-registers.yaml` runs; this round added prose to
+       that file and no numbered rows, which is why it still agrees)
+
+    METASALMONPY_PATH=<sibling> Rscript -e '... test-parity-register-guard.R'
+      -> failed 0, error 0, skipped 0, passed 1
+      (live rather than skipping, which is the state R-CMD-check.yaml arranges)
+
+`R-CMD-check` itself cannot be reproduced here: CI runs a newer R, and on this
+machine's R 4.3.3 the suite reports 8 failures and 2 vignette errors that CI's R
+does not. Re-running it on a push CI has not seen would prove nothing about CI.
+**Someone with push rights that trigger Actions should re-run the checks on
+`fe0fcfb` before this merges.**
