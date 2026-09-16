@@ -3156,7 +3156,13 @@ Two things decide how this is worked, and both are easy to get wrong.
 to be vendored to clear the gate. The decision is therefore
 **vendor-the-namespace versus stub-the-IRI**, taken once and applied eight
 times, not eight independent calls. That is why these are one item and not
-eight, and it is also why the item is not claimable: it is a modelling call.
+eight, and it is why the item was filed `claimable: false` when this section
+was written: a modelling call is not an agent's to make. *(Brett made it on
+2026-09-16 — stubs for the `obo:` and `geosparql:` IRIs, a vendored import for
+the `dwc:` ones — which is what that clause was waiting for. The ruling and its
+justification are recorded in* The 2026-09-16 rulings round *below; what the
+item's fields say now is `queue/items/B-158.yaml`'s to answer, not this
+section's.)*
 
 **This is the item that gates `B-143`'s switch-on, not `B-107`.** `B-107` clears
 one of the nine; the other eight are these, and until all nine clear the gate
