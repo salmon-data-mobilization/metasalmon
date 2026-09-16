@@ -245,68 +245,6 @@ and not the blast radius.
 the item said of itself that it was an open question and that only Brett can
 choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
 
-### Q51 — Does the SDP profile admit a typed instant in `temporal_start` and `temporal_end`?
-**Unblocks:** the spelling already ruled in
-[Q44](#q44--which-spelling-does-a-descriptor-posixct-take--answered-2026-09-14-brett),
-which as things stand is legal nowhere. Q44 chose *which* ISO form a descriptor
-`POSIXct` takes; this asks whether the profile admits any instant at all, and
-today it does not — so `B-115` and `B-145` implement, correctly, a spelling the
-shipped profile rejects. **This is the question Q44 left open** rather than a new
-one, exactly as Q44 was the one
-[Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
-left open.
-**The evidence lives in [`backlog.md`](backlog.md)** under *The 2026-09-16
-temporal-profile finding*, and is deliberately not restated here: both fields
-carry a `constraints.pattern` that admits a four-digit year or a full date and
-nothing else, with `sdp:examples` to match. This file is the index, not the
-authority.
-**The options are not equivalent, and there are four of them rather than three.**
-**(a) Widen the pattern** to admit an `xs:dateTime` — the smallest change, and it
-makes the ruled spelling legal, but it commits the profile to instants in a field
-whose name *and* description both say "date or year". **(b1) Refuse a typed
-instant** at the descriptor boundary — the writer errors and the caller is told,
-so no information is lost and no invalid package is written, at the cost of
-failing a call that works today. **(b2) Coerce it to a date** — the writer accepts
-the instant and truncates the time and the zone, so every call keeps working and
-the data the caller supplied is silently discarded. **(c) Leave it** — the status
-quo, and the only one nobody has chosen on purpose.
-
-*(b1 and b2 were written as a single option "(b) refuse, coercing to a date"
-until a Codex review of pull request 137 pointed out that refusing and coercing
-are different contracts with opposite failure modes — one tells the caller, the
-other does not — so an implementer handed "(b)" could not tell which was ruled.
-Splitting them is the fix; the entry is the durable record of what was asked, so
-it should be answerable.)*
-**Recommendation:** none, for the reason
-[Q50](#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema)
-gives about itself. The profile is mandated by a specification file this package
-only vendors and is consumed the same way by metasalmonpy, so whether the SDP
-admits an instant is a specification ruling and not an implementation choice.
-What an agent may do is put **(a)**, **(b1)**, **(b2)** and **(c)** in front of
-Brett with their costs, which is what this entry does; it may not pick between
-them. **Each ruling implies different work**, and `B-198` / `B-199` spell it out
-so a ruling is directly actionable: under **(a)** the vendored dataset schema is
-re-fetched and the writers are left alone; under **(b1)** and **(b2)** the schema
-is left alone and the writers change, erroring for b1 and truncating for b2;
-under **(c)** both implementation items retire as no-ops and what is recorded
-instead is the accepted mismatch. Under **(a)**, **(b1)** and **(b2)** alike, the
-implementing change should also add the check that was missing — a package's
-temporal fields validated against the profile's own pattern — because nothing on
-either side compares them today, and that absence is why this went unseen.
-**Severity is bounded and that does not settle it:** neither implementation
-produces a typed instant on its own, so this reaches a user only through a caller
-who supplies one.
-**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-51` — S6 for
-the reason Q50's owner line already gives, because the ruling reaches the vendored
-profile and both writers rather than any one package. Q50 is adjacent, about the
-same descriptor profile, and whoever rules this should see both.
-**What the ruling unblocks, by id:** `Q-51` retires on the ruling being *recorded
-in `smn-data-pkg`* and nothing more, because a retirement condition has to be
-satisfiable inside the repository its `repo` field names. The two implementation
-halves are `B-198` (metasalmon) and `B-199` (metasalmonpy), both blocked on
-`Q-51` and both written ruling-agnostic; read those files for their state rather
-than assuming it from here.
-
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
@@ -1226,3 +1164,98 @@ measured findings are carried in the retirement conditions of `B-106`, `B-76`,
 `B-106` (the rule text in `smn-data-pkg`'s `schema/sdp.rules.yaml` and
 metasalmon's vendored copy), with `B-48` waiting behind `B-148`, and the defect
 in [backlog #106](backlog.md).
+
+
+### Q51 — Does the SDP profile admit a typed instant in `temporal_start` and `temporal_end`? — ANSWERED 2026-09-16 (Brett)
+
+**Ruling: (a), widen the pattern.** *"Regarding question 51, I rule that we go with
+A."* — Brett, 2026-09-16, in chat.
+
+**Where the ruling is recorded, which is the authority rather than this entry.**
+`smn-data-pkg` pull request **#9**, *"Admit an ISO instant in `temporal_start` and
+`temporal_end` (Q-51, option A)"*, merged 2026-09-16 as **`f86d9b4`**. Both fields'
+`constraints.pattern` is now
+`^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$`, the
+`sdp:examples` gain `1996-01-01T00:00:00Z` and `2024-12-31T23:59:59Z`, and
+`validate_temporal_value()`'s calendar layer is widened to match, with tests,
+`SPECIFICATION.md` and the changelog moving in the same pull request.
+
+**Two things the record deliberately leaves open, named here as open rather than
+read as settled.** The year is still `\d{4}`, so a pre-1000 instant remains
+invalid — that is **`B-161`**, which is Brett's and unruled, and `smn-data-pkg`'s
+own tests pin the pre-1000 form as rejected until it is. And no fractional second
+is admitted, because neither writer can emit one; if one ever can, that is a new
+question rather than something this ruling covered.
+
+**The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
+each re-vendoring the ruled schema and adding the test that was missing. `B-204`
+(R) and `B-205` (Python), filed the same day, are the general half of the same
+gap: the validators consume `constraints.required` and `enum` and never
+`constraints.pattern`, so a widened pattern is still not *checked* by either
+package.
+
+---
+
+**What was asked, kept as the history of the question rather than trimmed to the
+answer.**
+
+**Unblocked:** the spelling already ruled in
+[Q44](#q44--which-spelling-does-a-descriptor-posixct-take--answered-2026-09-14-brett),
+which at the time of asking was legal nowhere. Q44 chose *which* ISO form a
+descriptor `POSIXct` takes; this asked whether the profile admitted any instant at
+all, and it did not — so `B-115` and `B-145` implemented, correctly, a spelling
+the shipped profile rejected. **This is the question Q44 left open** rather than a new
+one, exactly as Q44 was the one
+[Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
+left open.
+**The evidence lives in [`backlog.md`](backlog.md)** under *The 2026-09-16
+temporal-profile finding*, and was deliberately not restated here: both fields
+carried a `constraints.pattern` admitting a four-digit year or a full date and
+nothing else, with `sdp:examples` to match. This file is the index, not the
+authority.
+**The options were not equivalent, and there were four of them rather than three.**
+**(a) Widen the pattern** to admit an `xs:dateTime` — the smallest change, and it
+makes the ruled spelling legal, but it commits the profile to instants in a field
+whose name *and* description both say "date or year". **(b1) Refuse a typed
+instant** at the descriptor boundary — the writer errors and the caller is told,
+so no information is lost and no invalid package is written, at the cost of
+failing a call that works today. **(b2) Coerce it to a date** — the writer accepts
+the instant and truncates the time and the zone, so every call keeps working and
+the data the caller supplied is silently discarded. **(c) Leave it** — the status
+quo, and the only one nobody has chosen on purpose.
+
+*(b1 and b2 were written as a single option "(b) refuse, coercing to a date"
+until a Codex review of pull request 137 pointed out that refusing and coercing
+are different contracts with opposite failure modes — one tells the caller, the
+other does not — so an implementer handed "(b)" could not tell which was ruled.
+Splitting them is the fix; the entry is the durable record of what was asked, so
+it should be answerable.)*
+**Recommendation given:** none, for the reason
+[Q50](#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema)
+gives about itself. The profile is mandated by a specification file this package
+only vendors and is consumed the same way by metasalmonpy, so whether the SDP
+admits an instant was a specification ruling and not an implementation choice.
+What an agent could do was put **(a)**, **(b1)**, **(b2)** and **(c)** in front of
+Brett with their costs, which is what this entry did; it could not pick between
+them. **Each ruling implied different work**, and `B-198` / `B-199` spelled it out
+so the ruling would be directly actionable: under **(a)** the vendored dataset
+schema is re-fetched and the writers are left alone; under **(b1)** and **(b2)**
+the schema is left alone and the writers change, erroring for b1 and truncating
+for b2; under **(c)** both implementation items retire as no-ops and what is
+recorded instead is the accepted mismatch. Under **(a)**, **(b1)** and **(b2)**
+alike, the implementing change should also add the check that was missing — a
+package's temporal fields validated against the profile's own pattern — because
+nothing on either side compared them, and that absence is why this went unseen.
+**Severity is bounded and that does not settle it:** neither implementation
+produces a typed instant on its own, so this reaches a user only through a caller
+who supplies one.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-51` — S6 for
+the reason Q50's owner line already gives, because the ruling reaches the vendored
+profile and both writers rather than any one package. Q50 is adjacent, about the
+same descriptor profile, and whoever rules this should see both.
+**How the filing was scoped, by id:** `Q-51` retired on the ruling being
+*recorded in `smn-data-pkg`* and nothing more, because a retirement condition has
+to be satisfiable inside the repository its `repo` field names — `f86d9b4`
+satisfied it. The two implementation halves are `B-198` (metasalmon) and `B-199`
+(metasalmonpy); read those files for their state rather than assuming it from
+here.

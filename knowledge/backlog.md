@@ -5324,30 +5324,36 @@ divergence was visible and an invalidity was not. That is the same shape as the
 thought to look at, where green means only that the layers anyone did look at
 agree.
 
-Found by the `B-145` run and deliberately not absorbed — it is a specification
-question in `smn-data-pkg`, a third repository. **There are four options, not
-three,** and the same rendering of them is used in all three places that carry
-them: **(a)** widen the pattern to admit an `xs:dateTime`; **(b1)** refuse — the
-writer errors on a typed instant, so the caller is told; **(b2)** coerce — the
-writer truncates the instant to a date, so the call keeps working and the time
-and zone are silently discarded; **(c)** leave it. b1 and b2 were one option until
-a Codex review of pull request 137: refusing and coercing are opposite failure
-modes, and a ruling of "(b)" would not have been implementable. `Q-50` about the
-Frictionless profile key is adjacent.
+Found by the `B-145` run and deliberately not absorbed — it was a specification
+question in `smn-data-pkg`, a third repository. Four options were put to Brett,
+not three: **(a)** widen the pattern; **(b1)** refuse — the writer errors, so the
+caller is told; **(b2)** coerce — the writer truncates, so the call keeps working
+and the time and zone are silently discarded; **(c)** leave it. b1 and b2 were one
+option until a Codex review of pull request 137 observed that refusing and
+coercing are opposite failure modes, so a ruling of "(b)" would not have been
+implementable. `Q-50`, about the Frictionless profile key, is adjacent.
 
-**The decision itself is indexed in [`questions.md`](questions.md) as `Q51`**,
-with the four options and the reason no recommendation is on the table. That
-file is where a ruling only Brett can make is supposed to be listed; this section
-is the evidence it points back to.
+**Ruled (a) on 2026-09-16 and recorded the same day.** `smn-data-pkg` pull
+request **#9**, merged as **`f86d9b4`**, widened `constraints.pattern` on both
+fields to
+`^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$`, added
+`1996-01-01T00:00:00Z` and `2024-12-31T23:59:59Z` to `sdp:examples`, and widened
+`validate_temporal_value()`'s calendar layer to match. The ruling and its full
+options analysis are indexed in [`questions.md`](questions.md) as `Q51`, now
+ANSWERED; that file is the index and `f86d9b4` is the authority.
 
-**The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy),
-both blocked on `Q-51`.** The question item retires on the ruling being recorded
-in `smn-data-pkg` and nothing more, because `queue/README.md` requires a
-retirement condition to be satisfiable inside the repository its `repo` field
-names and a cross-repository obligation to be split into a pair with an id each.
-Both halves are written ruling-agnostic — they say what to do under (a) and what
-to do under (b1)/(b2) — and both carry the part that was actually missing: a test
-comparing a written package's temporal fields to the profile's own pattern.
-Nothing on either side does that today, which is why this went unseen, so a fix
-that changes behaviour without adding that comparison leaves the hole it came
-through.
+**Two things the ruling deliberately did not settle.** The year stays `\d{4}`, so
+a **pre-1000 instant remains invalid** — that is `B-161`, Brett's and unruled, and
+`smn-data-pkg`'s own tests pin the pre-1000 form as rejected until it is. And no
+fractional second is admitted, because neither writer emits one.
+
+**The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
+each re-vendoring the ruled schema from `f86d9b4` into its own copy and adding the
+test that was actually missing: a comparison of a written package's temporal
+fields to the profile's own pattern, with a four-digit-year fixture. Nothing on
+either side does that, which is why this went unseen, so re-vendoring without the
+comparison would leave the hole it came through. `B-199` is blocked on `B-145`,
+because the instant the Python descriptor writes is `B-145`'s output and widening
+the pattern does not by itself make it legal. `B-204` (R) and `B-205` (Python),
+filed the same day, are the general half of the same gap — the validators consume
+`constraints.required` and `enum` and never `constraints.pattern`.
