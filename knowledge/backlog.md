@@ -5810,16 +5810,15 @@ direction. None of that decides the item, which is Brett's; it is recorded so th
 ruling is made against measurements rather than against the card's earlier
 framing of two comparable options.
 
-### The 2026-09-16 post-#141 sweep: one fact with two homes, and an exemption read three times as a gap
+### The 2026-09-16 post-#141 sweep: one fact with two homes, an omitted field, and an exemption read three times as a gap
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and three of
-the instruments were wrong the first time in a way that looked like a clean
-answer.*
+were both about: *every claim here was produced by an instrument, and four of
+them were wrong the first time in a way that looked like a clean answer.*
 
 **Severity has two homes, they are differently shaped, and they have diverged
-once.** Five readings, each taken from the file named:
+once.** Six readings, each taken from the file named:
 
 | What | Where | What it says |
 | --- | --- | --- |
@@ -5827,11 +5826,34 @@ once.** Five readings, each taken from the file named:
 | The queue's founding rationale | `queue/README.md:22` | lists `severity` among the facts that lived in prose *before* the queue, which exists "so that a state fact has one home" |
 | The field | `queue/items/*.yaml` | every `kind: defect` item carries `severity:`; no `question` or `stream` item does. Stated as an invariant, not a count: the count in the first draft of this row was already stale when it was written, because filing `Q-52` and `B-210` changed it |
 | The protocol that acts on it | `HUB.md:617`, step 2 *Select* | "Prefer the item with the lowest `severity` number among defects" — read out of the item file; step 1 of the same list says "Read item files, not prose" |
+| The normative field list | `HUB.md:551` | names `id`, `kind`, `title`, `state`, `claimable`, `repo`, `blocked_by`, `legacy`, `evidence`, `venue` and, for a defect, `retires_when` — and **stops there**. Neither `severity` nor `stream` is in it |
 | The second copy | `knowledge/backlog.md` | carries severity by **position**: four sections, `### Open — P1` (1015), `### P2 — correctness and conformance debt` (1309), `### Open — P3` (3312), `### Open — P4` (3719) |
 
-So four of the five behave as though the item file is the home, and the
-contract sentence is the outlier — in the file an agent reads first and without
-choosing to, which is what makes being wrong there expensive rather than untidy.
+So four of the six behave as though the item file is the home, and the contract
+sentence is the outlier — in the file an agent reads first and without choosing
+to, which is what makes being wrong there expensive rather than untidy.
+
+**The sixth reading is the one that enlarges the question**, and it was found
+only because the first draft of `Q-52` asserted the opposite. `HUB.md`'s
+normative field list omits `severity` — and omits `stream` with it — while the
+*Select* step twenty lines below orders the queue by `severity`.
+`queue/README.md:44` shows both fields in its illustrative block, and
+`queue/README.md:59` says of that block: *"`HUB.md` carries the normative field
+list … if the two ever differ, `HUB.md` is right and this one is the copy that
+is wrong."* So by the queue's own precedence rule, the field the queue is
+ordered by is not one of the fields an item carries, and 129 cards carry it
+anyway (117 carry `stream`). **Nothing checks either list**: `hub_queue.py` has
+no field-set validation at all — its checks are doubled apostrophes, absolute
+paths, evidence existence, members, member fields, workpads, `solo`, and
+generated blocks. So the ruling has to name the field in `HUB.md` too, or say
+why a field the protocol depends on is not one an item declares.
+
+The draft of this row said the list *included* `severity` — a claim taken from
+`queue/README.md`'s illustrative block plus that sentence about precedence,
+without opening `HUB.md` at the line the sentence points to. Third instrument
+failure of the same sweep, and the first one that was not even an instrument:
+reading a file that says another file is authoritative, and then not reading the
+authoritative file.
 
 **The positional copy is partial, and that is not a detail.** Measured
 2026-09-16: of 119 backlog entries, 26 sit under one of the four P-sections. The
