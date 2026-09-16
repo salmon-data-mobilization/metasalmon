@@ -1,0 +1,12 @@
+id: B-171
+kind: defect
+title: The code-resolved sosa:usedProcedure direction of B-116's two canonical sets is held by construction and no fixture
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: [B-116]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A fixture binds a data column whose component_relation_iri is sosa:usedProcedure and whose codes.csv term_iri lands in the measurement set and in no review target, and a test asserts that write_sdp_semantic_closure() puts that IRI in metadata/semantic_vocabulary.csv and not in reviewed_semantic_selections.csv. B-116''s central claim is that the two canonical sets legitimately differ and neither can be reasoned from the other, and only one direction of it has a fixture: in both the make_eml_test_sdp() fixture and the shipped Fraser coho example the difference is exactly one row, smn:Observation, which is a review target and not a vocabulary term because it is the table''s observation_unit_iri. The other direction is held by construction in .ms_closure_iri_roles() (R/semantic-closure.R:351 on metasalmon pull request 121''s branch), which falls back to role method for an IRI that is in the measurement set and carries no dictionary_role row, and nothing reaches that fallback: the only matches for method in the new test file are sort(..., method = "radix"). The branch''s workpad names this a testing gap rather than leaving it implied, which is why it is filed as a fixture item and not as a defect report against the producer. Depends on B-116 landing, because the function under test does not exist on main.'

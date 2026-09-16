@@ -34,8 +34,11 @@ broadMatch rows publishing as `psc-to-smn.sssom.tsv` in v0.1.0-alpha.3 (the
 tenth, `PSC-CV-000017`, visibly deferred), and
 the alignment-gap objection retired (remaining gap documented: nine analysis
 concepts need a shared smn analytical-method concept). Remaining in S9: **step
-7's B+C implementation** (below), step 6 (propagation), and the parked #78
-iop-triples explainer.
+7's B+C implementation** (below), step 6 (propagation), and the #78
+iop-triples *decision*, for which the
+[explainer card](../plans/2026-09-14-iop-triple-explainer.md) sets out the
+options and recommends one. That decision is Brett's; its lifecycle state is in
+`queue/items/` and is deliberately not restated here.
 
 1. *(done)* Step 0 — recon + decisions.
 2. **Step 1 — smn conventions + metamodel split.** CONVENTIONS.md hardening,
@@ -57,7 +60,10 @@ iop-triples explainer.
    or alongside S8's breaking change (otherwise S8→S9.2→S9.5→S8 would be
    circular).
 7. **Step 6 — propagation** to workshop, hub docs, and guides; also hosts the
-   parked #78 iop-triple-emission explainer (deferred by Brett 2026-08-13).
+   #78 iop-triple-emission question. Brett allowed an explainer for it under
+   Q46 and kept the decision for himself; the
+   [2026-09-14 card](../plans/2026-09-14-iop-triple-explainer.md) answers #78's
+   three questions and recommends one option, with no code by design.
 8. **Step 7 — clear the nine SPSR term-review holds** (gcdfo issues #67–#75,
    open since 2026-03-30 and untracked in this bundle until 2026-08-16;
    **#67 is now closed, eight remain**). Each

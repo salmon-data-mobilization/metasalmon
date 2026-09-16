@@ -774,24 +774,6 @@
   digest::digest(bytes, algo = "sha256", serialize = FALSE)
 }
 
-# The bytes `writeLines()` would have written for these lines. Rendered through
-# the real writer into a staging file rather than assembled with `paste()`: the
-# sidecar is hand-edited and may carry non-ASCII text, `paste()` would re-encode
-# it, and what is wanted here is byte-identity with the writer this file used
-# before the install became atomic.
-#
-# *Retires when:* `.ms_sdp_extension_text_bytes()` lands. PR #119 (hub item
-# B-111) adds exactly this renderer, with exactly this reasoning, to
-# `R/sdp-extension-helpers.R`; this becomes a call to it and the duplicate goes.
-# It is written here rather than imported because #119 is unmerged, and duplicated
-# rather than added to that file so the two changes cannot collide there.
-.ms_closure_text_bytes <- function(lines) {
-  temporary <- tempfile(fileext = ".yml")
-  on.exit(unlink(temporary), add = TRUE)
-  writeLines(lines, con = temporary, useBytes = TRUE)
-  readBin(temporary, what = "raw", n = file.info(temporary)$size)
-}
-
 # Replace one block-mapping `sha256:` value in the sidecar's TEXT rather than by
 # round-tripping the parsed YAML.
 #
@@ -866,7 +848,7 @@
     }
     lines <- result$lines
   }
-  list(bytes = .ms_closure_text_bytes(lines), refused = refused)
+  list(bytes = .ms_sdp_extension_text_bytes(lines), refused = refused)
 }
 
 #' Write the reviewed semantic closure for a Salmon Data Package
