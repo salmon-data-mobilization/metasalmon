@@ -441,13 +441,29 @@ lists five costs-as-requirements, not four) without changing the answer.
 - `python3 scripts/hub_queue.py check` → `OK: every generated block matches the
   hub queue.`
 - `git diff --check` → clean.
-- Front matter of the card byte-unchanged (verified by diffing the front-matter
-  keys). **One residual is reported rather than fixed:** the front-matter
-  `description` still says the 2026-09-15 pass "refuted the card's
-  discoverability argument ... the recommendation is unchanged and deliberately
-  weaker", which this pass narrows, so that field is now the copy that is wrong.
-  It was left untouched because the run's scope pinned the front matter as
-  unchanged; it wants one sentence from whoever next touches the card.
+- **The front-matter `description` was corrected too, and that was a second
+  pass.** The first pass left it alone, read "front matter unchanged" in the run
+  brief as a scope boundary, and reported the stale field as a residual. It was a
+  verification instruction about the front matter's *shape* — the bundle cards
+  have one shape and a malformed one fails lint — not a bar on correcting its
+  content, so leaving it produced exactly the defect this repo names first: a
+  description asserting the 2026-09-15 refutation that §3 now narrows, where a
+  reader who sees only the description gets the refuted claim. The description
+  now carries the three-way distinction (pairing unrecoverable, term-level
+  retrieval real, KNB's UI unable to reach an arbitrary IRI), the withdrawn
+  artifact-hash claim, and the recommendation's strength in both directions. All
+  five other front-matter keys are byte-unchanged in the same order (`type`,
+  `title`, `status`, `tags`, `psc.id`, `psc.contexts`), the document still parses
+  as YAML with the same key set, and `lint` and `check` were re-run after the
+  edit. The lesson worth keeping: a conservative reading of an ambiguous
+  instruction is the right default, but reporting the consequence is what makes
+  it safe — a silent conservative reading here would have shipped the stale copy.
+- **No other file links to the retired §6 anchor.** `#6-recommendation-awaiting-b-78`
+  was searched for across the whole worktree, case-insensitively, including
+  `knowledge/` and `queue/items/`: no matches. The three external references to
+  this card (`knowledge/backlog.md`, and two in
+  `knowledge/sequences/s9-ontology-alignment.md`) are plain file links with no
+  fragment, so the heading rename broke nothing outside the card.
 - Every relative link and every in-card anchor resolves (checked by slugging all
   headings in the three files and matching each `](#...)` and `](path)` target;
   0 dead).
