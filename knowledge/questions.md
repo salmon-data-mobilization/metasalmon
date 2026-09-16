@@ -1241,12 +1241,24 @@ retirement condition required *both* implementations to emit the ruled
 spelling. That is the claimable-and-unfinishable case `queue/README.md`
 forbids, and it had gone unnoticed because `claimable: false` meant no agent
 could take it and find out. It became reachable the moment a validator item was
-blocked on it. `B-161` is now the **ruling alone**, and the emission halves are
-`B-206` (metasalmon) and `B-207` (metasalmonpy), each blocked on the ruling and
-each naming the other — the README's own prescription for a cross-repository
-obligation. The ruling still covers both implementations at once, which is why
-they share one blocker rather than getting a ruling each: ruling them separately
-would create a parity row instead of closing one.
+blocked on it. The emission work moved out to `B-206` (metasalmon) and `B-207`
+(metasalmonpy), each blocked on `B-161` and each naming the other — the README's
+own prescription for a cross-repository obligation. The ruling still covers both
+implementations at once, which is why they share one blocker rather than getting
+a ruling each: ruling them separately would create a parity row instead of
+closing one. **What `B-161` now requires is `queue/items/B-161.yaml`'s to say
+and this entry does not restate it** — read it there before treating the ruling
+as finished.
+
+*(This said `B-161` "is now the **ruling alone**" until the Codex review of pull
+request 137 on `54b9299`. It was accurate for about an hour and then became an
+**under**-statement, because the card's condition grew into an invariant: the
+ruling must also leave a queue that can be walked from it to a state where
+emission, profile admission and validation agree. The fifth copy of that
+under-statement, and the one the previous sweep missed — because that sweep
+grepped for the phrasings of the **recipe**, and this copy carries the phrasing
+of the **split**. A sweep that searches for sentences you remember writing only
+finds the copies that share your wording.)*
 
 **And then the correction introduced the older defect.** The commit that fixed
 the sequencing claim wrote *"The dependency is now in `B-204`'s and `B-205`'s
