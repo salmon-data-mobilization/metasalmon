@@ -1,0 +1,13 @@
+id: B-196
+kind: defect
+title: 'A green check run measures the base as it stood at the last push, so a rule added afterwards is invisible'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'An agent following the delegated merge rule in HUB.md cannot merge a pull request whose green checks predate a rule its base has since gained. Two remedies and they are not alternatives at the same level. THE STRUCTURAL ONE IS BRETT''S AND CLOSES IT: enable Require branches to be up to date before merging in branch protection on metasalmon and on every solo member repository, which makes GitHub refuse the merge until the branch is rebuilt on current main and CI has re-run there. THE PROSE ONE IS A FALLBACK, not a fix: a sentence in the delegated conditions saying a check run is a measurement against the base as it stood when the branch was last pushed, so an agent must confirm the head is not behind main before reading its checks as evidence. claimable: false because the settings change is his and the HUB.md edit is his by class 7, so nothing here can be finished unattended. MEASURED 2026-09-16 ON PULL REQUEST 118: all three checks green on head b38e824 at 01:35, and merging it would have turned main red, because B-140''s validate_workpads() rule landed in pull request 127 afterwards and 118''s head still carries the .hub/workpad.md that rule forbids. The delegated conditions already name two ways a check reading goes wrong -- inferred from a local run rather than read off the checks, and no checks at all, which is the shape a merge conflict takes -- and this is a THIRD that neither covers, because here the checks exist, were read off GitHub, and are green. WHY NO LINT RULE IS PROPOSED, recorded so nobody spends the afternoon again: the same review round suggested generalising the sibling finding about cross-repository retirement conditions into a hub_queue.py check, and it was measured unmechanizable. Matching member repository names in retires_when flagged 29 of about 80 claimable items, almost all of them legitimately naming another repository as evidence or as a mirror pointer. Narrowing it to a both-sides requirement phrase with no mirror item id named flagged 4 and passed 10 -- and passed BOTH items the rule was written to catch, B-191 and B-194, because each names related items for other reasons. A guard whose real scope is narrower than its claimed scope is the failure AGENTS.md calls worse than a missing guard, so the check stays human and lives in queue/README.md as a filing rule.'

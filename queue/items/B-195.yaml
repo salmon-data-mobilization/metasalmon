@@ -1,0 +1,13 @@
+id: B-195
+kind: defect
+title: 'A sidecar declaring one output path twice silently loses a file, the metasalmonpy half'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, a semantic sidecar that names the same output path for two different closure outputs is refused, or the collision is reported, rather than one file being written over the other -- pinned by one test in this package. THE MIRROR HALF IS B-194 and carries the measurement: the B-165 run on 2026-09-16 found the defect present and IDENTICAL in both implementations, so this is a shared residual rather than a divergence and NO PARITY-DEVIATIONS ROW IS OWED by either half. Low severity because a sidecar is hand-edited and the duplicate has to be written deliberately, but the failure is silent: the second write wins, the first output is simply absent, and the digests recorded in the sidecar are consistent with the file that survived, so nothing downstream reports a problem. Split out of B-194 on 2026-09-16 rather than filed fresh: B-194 required a test in each implementation while naming metasalmon in its repo field, so it was claimable and unfinishable at once -- found by a Codex review of metasalmon pull request 134. Whoever takes this should check whether B-194 has landed and match its refusal or reporting behaviour, because behavioural parity is the contract and two different answers to the same collision would be a divergence this pair exists to avoid. The reason B-193 gives about this helper family is why the two halves should land close together.'

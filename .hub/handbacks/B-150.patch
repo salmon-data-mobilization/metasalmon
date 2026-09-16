@@ -1,0 +1,120 @@
+From 0cdd58549405cde1ef4a686b02e97425b533eb57 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 16 Sep 2026 03:45:41 +0000
+Subject: [PATCH] Make the ontology-ci pre-push hook able to fail, and stop it
+ discarding the artifact make ci rebuilt
+
+The `ontology-ci` hook had two defects that both presented as a green run.
+
+It could not fail. The `entry` chain ended `git checkout --
+docs/webvowl/data/ontology.json || true`, and a shell returns the status of
+the last command in the list, so the hook returned that trailing `|| true`
+and exited 0 for every build. Measured against a deliberately broken
+ontology (a `gcdfo:` class with no `gcdfo:theme`, which trips
+`theme-coverage`): `make ci` exits 2 and the hook reported `Passed`, exit 0.
+The gate had never failed for anybody since it was introduced.
+
+It discarded a build product. `make ci` regenerates
+`docs/webvowl/data/ontology.json` -- the path is inside `CI_ARTIFACT_PATHS`
+-- and `.github/workflows/ci.yml` rejects any uncommitted change left after
+`make ci`. The hook's `files` pattern restricts it to changes to
+`ontology/dfo-salmon.ttl`, which is exactly when that artifact is expected
+to change, so the hook threw away locally what CI then demanded and left the
+tree with three regenerated docs artifacts and one reset to HEAD.
+
+The fix captures the build's status in `ci_status`, runs the restore only on
+the failure path, and exits with `ci_status`. The failure-path restore is
+kept deliberately: `docs-widoco` rsyncs raw WIDOCO output over that path
+before the normalizer runs, so a build that dies in between leaves raw
+generator bytes a later run would adopt as its normalizer baseline and go
+green over. Restoring on failure is the remedy `docs/tech-debt.md`
+prescribes under its 2026-08-16 entry, which says to run it before retrying
+a FAILED docs build rather than after every push -- so this half needed no
+wait on that entry's own fix.
+
+The comment block on the hook carries both rules and the retirement
+condition for the failure branch: it goes when the 2026-08-16 tech-debt
+entry retires, because that fix makes `docs-widoco` restore the pre-run
+bytes itself and leaves nothing for the branch to do.
+
+Evidence, all against the same deliberately broken ontology or the same
+label edit:
+  - broken ontology, before: `Passed`, pre-commit exit 0
+  - broken ontology, after:  `Failed`, `exit code: 2`, pre-commit exit 1
+  - valid ontology edit, before: `docs/webvowl/data/ontology.json` absent
+    from the post-hook tree
+  - valid ontology edit, after:  present, and `make ci-sync-artifacts`
+    stages all four artifacts
+  - clean valid tree, after: `Passed`, exit 0, tree untouched
+  - dirtied `ontology.json` plus a failing build, after: restored, and the
+    hook still exits 2
+
+Refs hub queue item B-150.
+---
+ .pre-commit-config.yaml | 46 ++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 39 insertions(+), 7 deletions(-)
+
+diff --git a/.pre-commit-config.yaml b/.pre-commit-config.yaml
+index e0acbc7..85cd3a1 100644
+--- a/.pre-commit-config.yaml
++++ b/.pre-commit-config.yaml
+@@ -1,17 +1,49 @@
+ repos:
+   - repo: local
+     hooks:
++      # Runs the full CI bundle before a push that touches the canonical
++      # ontology, so a push cannot introduce what `.github/workflows/ci.yml`
++      # would reject anyway.
++      #
++      # Two properties of the `entry` below are load-bearing. Both were absent
++      # until 2026-09-16 and neither failure was visible from reading a green
++      # run, so change the chain only with the reasoning here in hand.
++      #
++      # 1. THE BUILD'S EXIT STATUS IS THE HOOK'S EXIT STATUS. The chain used to
++      #    end `git checkout -- docs/webvowl/data/ontology.json || true`, and a
++      #    shell returns the status of the last command in the list, so the hook
++      #    returned that `|| true` and exited 0 for every build — including
++      #    failing ones. The gate had therefore never failed for anybody since
++      #    it was introduced. `ci_status` is captured immediately after the
++      #    build and is what this entry exits with; do not end the chain with a
++      #    command whose status is not the build's. The same fault, and the same
++      #    rule, are recorded on `ci-sync-artifacts` in the Makefile.
++      #
++      # 2. THE `git checkout` RUNS ONLY WHEN THE BUILD FAILED. `make ci`
++      #    regenerates `docs/webvowl/data/ontology.json` (it is inside
++      #    `CI_ARTIFACT_PATHS`), and CI rejects any uncommitted change left
++      #    after `make ci` across the whole worktree. Discarding that file after
++      #    a SUCCESSFUL build threw away the very artifact CI then demanded, and
++      #    left the tree holding three regenerated docs artifacts and one reset
++      #    to HEAD. After a FAILED build the restore is still wanted, for a
++      #    different reason: `docs-widoco` rsyncs raw WIDOCO output over that
++      #    path before the normalizer runs, so a build that dies in between
++      #    leaves raw generator bytes that the next run would adopt as its
++      #    normalizer baseline and go green over. Restoring on failure is
++      #    exactly the remedy `docs/tech-debt.md` prescribes under
++      #    "2026-08-16 — A failed `make docs-widoco` can re-baseline WebVOWL
++      #    output to raw generator bytes", which says to run it before retrying
++      #    a FAILED docs build — not after every push.
++      #
++      # Retires when: that 2026-08-16 tech-debt entry retires. Its fix makes
++      #    `docs-widoco` restore the pre-run bytes itself on failure, at which
++      #    point the failure branch below has nothing left to do and it, and
++      #    this note, are deleted rather than left as a second restorer.
+       - id: ontology-ci
+         name: Run full ontology CI bundle (make ci)
+-        entry: bash -lc 'if [ -z "${JAVA_HOME:-}" ]; then if [ -d /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home; export PATH="$JAVA_HOME/bin:$PATH"; elif command -v /usr/libexec/java_home >/dev/null 2>&1; then export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || true); [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"; fi; fi; if command -v devenv >/dev/null 2>&1; then devenv shell make ci; else make ci; fi; git checkout -- docs/webvowl/data/ontology.json || true'
++        entry: bash -lc 'if [ -z "${JAVA_HOME:-}" ]; then if [ -d /usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home ]; then export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home; export PATH="$JAVA_HOME/bin:$PATH"; elif command -v /usr/libexec/java_home >/dev/null 2>&1; then export JAVA_HOME=$(/usr/libexec/java_home -v 17 2>/dev/null || true); [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"; fi; fi; if command -v devenv >/dev/null 2>&1; then devenv shell make ci; else make ci; fi; ci_status=$?; if [ "$ci_status" -ne 0 ]; then git checkout -- docs/webvowl/data/ontology.json; fi; exit "$ci_status"'
+         language: system
+         files: ^ontology/dfo-salmon\.ttl$
+         pass_filenames: false
+         always_run: false
+         stages: [pre-push, manual]
+-
+-
+-
+-
+-
+-
+-- 
+2.43.0
+

@@ -1,7 +1,7 @@
 id: B-143
 kind: defect
 title: The smn build does not check that an asserted superclass IRI is declared or vendored
-state: ready
+state: review
 claimable: true
 repo: salmon-domain-ontology
 venue: claude-code
