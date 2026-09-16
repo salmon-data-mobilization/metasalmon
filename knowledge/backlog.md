@@ -4992,6 +4992,83 @@ metasalmonpy pull request shows a Security Review row — **or** records the
 decision not to, with its reason, in `knowledge/questions.md`, at which point the
 mirror contract should say that review coverage is deliberately asymmetric, so
 nobody reads a clean Python review as the same assurance an R one gives.
+### The 2026-09-16 closure-port findings
+
+**Four findings the B-165 run named and deliberately did not absorb**, filed as
+`B-191` to `B-194`. Two are shared residuals present identically in both
+implementations, one is the source of a defect already fixed in the mirror, and
+one is a coordinating-system defect that three separate agents worked around in
+a single night without knowing about each other.
+
+**`B-191` the metasalmonpy suite only collects when its checkout directory is
+named `metasalmonpy`.** Measured on clean `main` under pytest 8: **908
+collection errors against 907 passes**, flipping on the directory name alone.
+
+**The hub protocol guarantees the breaking name.** `HUB.md` keys an agent
+worktree as `<owner>-<repo>-<item>`, so every metasalmonpy worktree is named
+`salmon-data-mobilization-metasalmonpy-B-nnn` — and none of them collects.
+**B-124, B-125 and B-165 each nested a second directory named `metasalmonpy`
+inside their worktree to get a suite to run, none knowing the others had.** A
+workaround rediscovered three times in one night is a defect with an interest
+rate.
+
+**CI is green only by coincidence**, because `actions/checkout` happens to check
+out into a directory named for the repository, so nothing in the pipeline will
+ever report this.
+
+*Not reproduced independently:* this container has no pandas, so the import fails
+before collection is reached. The 908/907 figures are the B-165 run's
+measurement. Either side may be the right fix — the import route in
+metasalmonpy, or the worktree key in `HUB.md` — and whoever takes it should say
+which and why rather than patching the symptom in a third place.
+
+**`B-192` the publication vignette's description of the review-target set makes a
+reader break their own package.** `vignettes/post-review-package-publication.Rmd`
+calls it the measurement set *"plus each table's `observation_unit_iri`"*. Both
+halves measured 2026-09-16: neither implementation's canonical-review-target
+builder references the used-procedure resolver at all — **zero occurrences** of
+`used_procedures` in `.ms_eml_canonical_review_targets()` or Python's
+`_canonical_review_targets`, while the canonical *measurement* set does call it —
+and the ledger reader enforces an **exact** set, collecting any key outside the
+canonical targets as `unexpected` and refusing the ledger.
+
+So the sentence does not describe a redundant row. A reader who follows it adds a
+target for a code-resolved procedure and **their package stops validating**,
+which is the opposite of what the vignette is for. Both directions need saying:
+an `observation_unit_iri` is a review target and not a vocabulary term; a
+code-resolved `sosa:usedProcedure` is a vocabulary term and not a review target,
+because it comes from the data rather than from a metadata field.
+
+**The Python twin is already fixed**, in metasalmonpy pull request 31 — whose
+prose was transcribed *from* this vignette. So this is the **source** of that
+defect rather than its mirror, which is the unusual direction and the reason it
+is filed against metasalmon.
+
+**`B-193` both sidecar spellings present: the writer refuses, the producers
+proceed.** `write_eml_from_sdp()` aborts when a package carries both
+`eml-mapping.yml` and `eml-mapping.yaml` — the conflict its default-path helper
+exists to detect — while the closure producer hard-codes the `.yml` path instead
+of routing through that helper, and writes happily to the file the writer would
+have refused the package over. Measured identical on both sides, with
+byte-identical producer output, so the two implementations agree; what they agree
+on is answering one question two ways inside one package.
+
+**Brett's, and that is why it was filed rather than fixed.** Making the Python
+producer raise where the R producer does not would be a deliberate divergence
+requiring a `parity-deviations.md` row, and a port may not open one. The B-165
+agent measured it, declined, and filed it. *Recommended shape:* one cross-repo
+change routing **both** producers through the shared helper, so the conflict is
+detected once and in one place.
+
+**`B-194` a sidecar declaring one output path twice silently loses a file.**
+Present and identical in both implementations, so a shared residual rather than a
+divergence. Low severity — a sidecar is hand-edited and the duplicate has to be
+written deliberately — but the failure is **silent**: the second write wins, the
+first output is simply absent, and the digests recorded in the sidecar are
+consistent with the file that survived, so nothing downstream reports anything.
+
+---
+
 
 ---
 
