@@ -1,0 +1,13 @@
+id: B-189
+kind: defect
+title: Pin that metasalmonpy's SSSOM reader never evaluates an !expr tag, the twin of #111's security fix
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'tests/test_sssom.py carries a test that installs a YAML !expr tag in the embedded metadata block of an SSSOM mapping set inside a package, rehashes the manifest so the validator is the only reader that meets it, drives validate_salmon_datapackage() over that package, and asserts BOTH that no side effect occurred AND that read_sssom_mapping_set() returns the tag as the text it is rather than as its value -- the twin of metasalmon tests/testthat/test-sssom.R "validate_salmon_datapackage never evaluates an !expr tag in SSSOM metadata". THIS IS A GUARD, NOT A FIX, and saying so is the point: measured 2026-09-16, sssom.py parses the embedded block with its own _parse_yaml_subset() at sssom.py:380, which evaluates nothing and never calls PyYAML, so there is no code path today that could execute a tag and NOTHING IS CURRENTLY BROKEN. R needed an explicit eval.expr = FALSE because yaml::yaml.load() follows getOption("yaml.eval.expr") and a session that turned that option on would execute collaborator-authored bytes during routine validation. The reason to hold the property under test anyway is the one #49 established: hub B-124 made validate_salmon_datapackage() reach the SSSOM reader during ORDINARY validation of a package somebody else wrote, which it did not do before, so the blast radius of a future reader change grew without the reader changing. A later swap of _parse_yaml_subset() for PyYAML -- yaml.load with a permissive Loader, or any "just use the real parser" simplification -- would reopen R''s hole silently and no existing test would fail. So this item exists to make that change fail a test rather than ship. If the guard is written, it must drive the VALIDATOR rather than call the reader directly, because the reader being safe in isolation is not the property that matters.'

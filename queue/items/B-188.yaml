@@ -1,0 +1,13 @@
+id: B-188
+kind: defect
+title: metasalmonpy's code-row seeder accepts a date-like object column, where R's cannot
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'create_sdp() on every bundled metasalmonpy example seeds NO codes.csv row targeting a non-categorical column, so tests/test_codes_target_categorical.py can assert the plain condition R asserts and its test_the_only_seeded_non_categorical_columns_are_the_known_date_residual -- which pins the current wrong answer and names this item -- is deleted rather than edited. MEASURED 2026-09-16 on metasalmonpy main, both before and after the B-125 port, so this is neither caused nor widened by it: create_sdp() on data/nuseds-fraser-coho-sample.csv read with pandas.read_csv leaves START_DTT and END_DTT typed temporal in column_dictionary.csv AND carrying seeded codes.csv rows, which smn-data-pkg scripts/validate_package.py reports as "targets a non-categorical or unknown column". THE CAUSE IS THE SEEDER''S DTYPE TEST, NOT THE ROLE HEURISTIC, and that is the thing to get right: metadata.code_list_values() accepts is_object_dtype or is_string_dtype or CategoricalDtype, and a pandas column of dates is OBJECT dtype whether it arrives as strings from pandas.read_csv or as datetime.date after parsing -- so parsing the column does not help and is not the fix. R cannot reach this state at all because its seeder selects on inherits(v, "factor") || inherits(v, "character") and readr::read_csv parses those two columns to Date, which that test excludes. The temporal branch of infer_column_role() runs ahead of the code-list check in BOTH implementations and is correct as it stands; do not reorder it. IT IS DELIBERATELY NOT B-125: that item''s retires_when names a column typed ATTRIBUTE and these are typed TEMPORAL, and Q29 (2026-09-05) put the #95 correction in role inference while leaving the seeder''s selection criterion alone, so narrowing that criterion is a separate decision. Whoever takes this must say what the narrowed test is -- excluding object columns whose non-missing cells are all datetime.date is the obvious candidate and is NOT obviously right, because an all-string date column read straight from CSV is indistinguishable from a genuine low-cardinality code list by dtype alone. Owed as a PORT of R''s effective behaviour rather than a deviation row, so knowledge/parity-deviations.md gains no numbered row. A user meets this on the documented Python path -- pandas.read_csv then create_sdp() -- so the shipped package of anyone following the getting-started guide carries the offending rows.'
