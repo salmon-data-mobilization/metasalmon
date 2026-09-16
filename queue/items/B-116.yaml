@@ -1,7 +1,7 @@
 id: B-116
 kind: defect
 title: Ship a producer for the reviewed semantic closure
-state: review
+state: done
 claimable: false
 repo: metasalmon
 venue: claude-code

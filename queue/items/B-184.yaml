@@ -1,0 +1,13 @@
+id: B-184
+kind: defect
+title: review_metadata() contacts the network although its own documentation says it never does
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S05
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'review_metadata() and the setters read the vendored schema rather than the configured source, so a fresh process on a local package opens no socket; pinned by a test that fails if one is opened. MEASURED 2026-09-16: R/sdp-field-setters.R:340 documents ''It never contacts a network or an LLM'', and .ms_metadata_schema_fields() (:101-105) calls .ms_load_sdp_schema(quiet = TRUE) with no source, so it takes getOption(''metasalmon.sdp_schema_source'', ''auto'') and R/schema-helpers.R:113 fetches remote first -- the returned schema$source came back ''remote''. This is the R half of Codex finding 3 on metasalmonpy pull request 28, fixed there in ead77a3. TWO THINGS THE PYTHON ROUND LEARNED AND THIS ONE INHERITS: the guard must be at the socket rather than at today''s HTTP call, because a move to another client leaves an injected-fetch sentinel green while every call reaches the network; and .ms_load_sdp_schema() wraps its fetch in tryCatch(error = ), so an R sentinel has to signal a NON-ERROR condition or it is swallowed exactly as a Python Exception is. Read the scan and the setters together: a call review_metadata() prints must be one the setter accepts, so both must read the same schema. Owed as a PORT and not a register row.'

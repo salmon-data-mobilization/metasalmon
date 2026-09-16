@@ -1,0 +1,13 @@
+id: B-181
+kind: defect
+title: Strict validation does not sweep the REVIEW marker from codes.csv or dataset.csv, in either implementation
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S01
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'THIS IS A RULING AND NOT AN IMPLEMENTATION. AGENTS.md states as an observable contract that strict validation fails if any REVIEW: marker remains. Measured 2026-09-16, one marked field per file: validate_salmon_datapackage(require_iris = TRUE) refuses tables.csv and column_dictionary.csv and PASSES codes.csv and dataset.csv; the EDH XML gate refuses those three and passes dataset.csv. The sweep is package_io.py:3132 and R/package-helpers.R:1972 and covers tables.csv plus the dictionary only. So the contract sentence describes something neither implementation does, and the question is which moves: the code, to match the sentence, or the sentence, to match a deliberate narrower scope. Brett rules; the item retires when the ruling is recorded in knowledge/questions.md and whichever side moved has landed. BOTH LANGUAGES MOVE TOGETHER, so this is a port and not a parity-deviations row -- do not open one. Found by the metasalmonpy #28 Codex round while verifying finding 1, which is a narrower case of the same gap.'

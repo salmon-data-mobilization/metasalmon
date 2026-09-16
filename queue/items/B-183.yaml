@@ -1,0 +1,13 @@
+id: B-183
+kind: defect
+title: accept_suggestion() with a hand-supplied IRI outside the shortlist records no accepted row
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S05
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'An accept_suggestion(..., iri = ) naming an IRI absent from the shortlist writes an accepted row to semantic_suggestions.csv as well as the metadata CSV, so review_semantics(include_filled = TRUE) can replay and display the decision; pinned by a test that accepts an outside IRI and reads the decision back. R/metadata-write.R:445-448 builds accepted <- in_slot & strip(iri) == decision_iri, marks in_slot not_selected, then marks an all-FALSE mask accepted -- so the durable audit trail loses the one decision a user made by hand. This is the R half of Codex finding 2 on metasalmonpy pull request 28, fixed there in ead77a3; read rather than executed on the R side, so REPRODUCE IT BEFORE FIXING IT. Two edges the Python fix settled and this one should match: the accepted IRI gets its OWN row rather than an existing candidate being relabelled, since none of the shortlist rows was selected and they are accurate as they stand; and it is inserted at the HEAD of its slot rather than appended, because rank is derived from file position and then truncated at max_candidates, so an appended row ranks past the cut and the decision is lost one layer on. Owed as a PORT and not a register row.'

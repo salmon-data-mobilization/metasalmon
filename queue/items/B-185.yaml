@@ -1,0 +1,13 @@
+id: B-185
+kind: defect
+title: An undeclared IRI column is swept by the validator and missed by the metadata review, in both implementations
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S05
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'THIS IS A RULING AND NOT AN IMPLEMENTATION. An *_iri column hand-added to tables.csv is swept by the review-marker collector and NOT by review_metadata()''s scan, which reaches schema-declared fields only, because every row it prints has to be a runnable set_sdp_*() call. Measured 2026-09-16 on the metasalmonpy branch: scan empty, validator refuses -- the same shape as B-182 one case narrower, and pinned there by test_an_undeclared_iri_column_is_still_missed rather than closed. Closing it means either printing a call that cannot be run or letting a setter write an undeclared field, so it is a decision about the printed-call contract rather than about any predicate. Brett rules; the item retires when the ruling is in knowledge/questions.md and both implementations match it. BOTH LANGUAGES ARE IDENTICAL HERE, so this is a port and not a parity-deviations row.'

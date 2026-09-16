@@ -1,0 +1,13 @@
+id: B-182
+kind: defect
+title: review_metadata() reports nothing outstanding for a REVIEW-prefixed IRI that strict validation then refuses
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S05
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'review_metadata() reports a measurement or table IRI holding the normal seeded REVIEW:https://... value as outstanding, so the advertised review-to-validation handoff cannot end with the review saying nothing remains and validate_salmon_datapackage(require_iris = TRUE) then refusing the same package; pinned by a test asserting both answers agree on one package. MEASURED LIVE 2026-09-16 in metasalmon 0.5.0, not read: review_metadata() returned 0 rows for a REVIEW-marked property_iri while strict validation refused that package. R/sdp-field-setters.R:49 and :279, R/package-helpers.R:3997. This is the R half of Codex finding 1 on metasalmonpy pull request 28, fixed there in ead77a3 -- so Python shipped first and R follows, which is the direction the mirror contract says is a per-divergence question rather than a default. DO NOT WIDEN is_review_placeholder()/.ms_is_review_placeholder(): the Python fix deliberately left it narrow because five other callers depend on that narrowness, above all the license gate, and added a second predicate instead. Owed as a PORT and not a register row. The undeclared-*_iri case is B-185 and is not part of this.'

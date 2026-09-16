@@ -1,8 +1,8 @@
 id: B-106
 kind: defect
 title: Reword the two sdp.rules.yaml SOSA Procedure rules to the ruled reachability reading
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: smn-data-pkg
 venue: claude-science
 severity: P4
