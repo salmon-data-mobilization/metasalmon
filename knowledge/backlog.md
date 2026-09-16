@@ -5235,7 +5235,13 @@ not load-bearing: the test already builds `member_node` locally with
 used for precisely two things — the `cn` slot of the `D1Client` and
 `coordinating_node@identifier` in the closing `expect_identical` — so a `CNode`
 built the same local way serves both. `skip_if_offline()` is for the tests where
-the live service genuinely *is* the thing under test.
+the live service genuinely *is* the thing under test — **and even there it is
+not enough on its own**, which `B-132`'s card already measured: it proves the
+host *resolves*, not that the request completes, and the outage that produced
+this item was a 503 from a host that resolved. Those tests need a
+skip-on-failure guard — attempt the request, skip on a transport error or a
+non-success status, and put the status in the skip message so a real regression
+is not swallowed.
 
 **The blast radius is narrower than this section first claimed, and the
 correction matters because the claim is what prioritises the item.**
