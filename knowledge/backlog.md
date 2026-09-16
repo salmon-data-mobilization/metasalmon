@@ -2695,19 +2695,26 @@ previously unregistered wired-nothing divergence is now **parity-deviations /
 `PARITY.md` row 47**, a permanent record with no retirement condition. Both
 halves closed.
 
-### Open — the 2026-09-15 fleet findings
+### The 2026-09-15 fleet findings
 
-**Twelve findings from a night of parallel agent runs on 2026-09-15, each
-reproduced rather than read.** They are headed by their **queue id** rather than
-by a `#N`, because they are new items and carry no legacy backlog number:
-`#120` is the last number this file issued, and inventing `#121` upward would
-create a second numbering nobody reconciles. **State is not here.** Whether one
-of these is icebox, ready, claimed or done lives in `queue/items/`, which is the
-only home for that fact; this section is the evidence each item's `evidence:`
-pointer resolves to. A thirteenth finding from the same night is a question
-rather than a defect and lives in [`questions.md`](questions.md) as `Q49`.
+**Thirteen findings from a night of parallel agent runs on 2026-09-15, each
+reproduced rather than read.** Eleven are defects and are below; **two are
+questions and live in [`questions.md`](questions.md)** as `Q49` and `Q50`, which
+is the only file that indexes a decision only Brett can make. They are headed by
+their **queue id** rather than by a `#N`, because they are new items and carry no
+legacy backlog number: `#120` is the last number this file issued, and inventing
+`#121` upward would create a second numbering nobody reconciles. **State is not
+here.** Whether one of these is icebox, ready, claimed or done lives in
+`queue/items/`, which is the only home for that fact; this section is the
+evidence each item's `evidence:` pointer resolves to. **The heading above says
+nothing about state on purpose**, and the older `Open — …` headings further up
+this file are the pre-queue convention rather than the one to copy: a heading
+reading `Open` is a second copy of eleven items' state, it goes stale the moment
+any one of them moves, and nothing checks it. *Retires when:* those older
+headings are relabelled too, at which point this note is no longer telling a
+reader why the neighbours differ.
 
-**Four of the twelve are the guard rule failing in `AGENTS.md`'s own words, and
+**Four of the eleven are the guard rule failing in `AGENTS.md`'s own words, and
 none of them was looked for.** Three are one defect in three costumes — *a step
 that reports success over a failed write* — found in two repositories and two
 toolchains by two agents who could not see each other: `B-149` and `B-150` in
@@ -2930,6 +2937,23 @@ at all. What leads with the spreadsheet is metasalmon 0.5.0's own NEWS entry —
 in a spreadsheet" — which is the claim the guide has to be able to support
 before the number can be claimed.)*
 
+**The split left a deadlock behind it, and it was a real one rather than a
+tidiness point.** `B-153` is `blocked_by: [B-126]`, and `B-126`'s retirement
+condition *also* required the 0.5.0 bump. The queue only lets a blocked item be
+claimed once its blocker is `done`, so there were exactly two outcomes: `B-126`
+closes without satisfying its own recorded condition, or `B-153` is never
+claimable and can never do the work that would close it. Neither is a schedule.
+
+**It was broken on `B-126`'s side, on 2026-09-16.** The blocker is a genuine
+dependency — a guide cannot document nine functions that are not in the tree, and
+a version number cannot claim behaviour that has not landed — so dropping it
+would have bought a claimable item that could not be worked. `B-126`'s clause was
+written on 2026-09-12, three days before `B-153` existed, and the 2026-09-15
+split is what made the bump a separate item; the clause is simply the half that
+did not move with the split. So it now ends at the behavioural port and assigns
+the bump here by name, and `blocked_by` stands. Found by a Codex review of
+pull request 122.
+
 *Retires when:* `guides/semantic-review.qmd` documents the nine review functions
 as the workflow, metasalmonpy's version moves to 0.5.0, and all three copies of
 the version fact agree in that same change.
@@ -3014,29 +3038,23 @@ failing the job, or fails with a message that names it as an infrastructure
 failure rather than a check failure; demonstrated against a simulated download
 failure.
 
-**`B-156` `datapackage.json` declares a Frictionless v1 `profile` where v2 uses
-`$schema`.** Recorded as an **open question, not an established defect**: it was
-noticed in passing while writing PR #116, while checking whether a JSON-LD
-`@context` could live in the descriptor, and it was **not investigated**. It may
-be a deliberate pin.
+***`B-156` was reassigned to `Q50` on 2026-09-16 and the `B-156` id is retired
+unused.*** The Frictionless `profile`-versus-`$schema` finding is a question and
+its entry is in [`questions.md`](questions.md) as
+[Q50](questions.md#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema);
+the item file is `queue/items/Q-50.yaml`. **Nothing vanished and `B-156` is not
+reused for anything else** — the gap between `B-155` and `B-157` is the record of
+the reassignment, and this note is here so that a reader counting the sequence
+does not go looking for a deleted item.
 
-What is known, and it is the whole of what is known.
-`R/package-helpers.R:243` writes a top-level `profile` from the loaded schema's
-profile URI, and `:219` writes `profile = "tabular-data-resource"` on every
-resource entry. The vendored SDP profile requires both — `profile` and
-`resources` in its `required` array, and a `const` of `tabular-data-resource` on
-each metadata resource. `smn-data-pkg`'s `SPECIFICATION.md:77` requires setting
-`profile`. The retrieved Data Package **v2** standard lists `$schema` among
-descriptor properties and no `profile` at all.
-
-The pin is therefore not metasalmon's alone to change: it is mandated by a
-specification file this package only vendors, it is written the same way by
-metasalmonpy, and whether the SDP targets v1 or v2 is a ruling rather than an
-implementer's call.
-
-*Retires when:* either the descriptor declares the Frictionless version the
-package actually targets, or a logged decision records the v1 `profile` as a
-deliberate pin with the condition that would retire it.
+Why it moved, recorded because the misfiling is the lesson: the entry said of
+itself that it was *"an open question, not an established defect"*, that it was
+noticed in passing while writing PR #116 and **not investigated**, and that
+whether the SDP targets v1 or v2 is a ruling rather than an implementer's call —
+and it was filed `kind: defect` anyway. That made the queue count and prioritise
+it as a P4 defect and kept it out of `questions.md`, which is the one file that
+indexes a decision only Brett can make, so the effect of writing it down was to
+hide it. Found by a Codex review of pull request 122.
 
 **`B-157` two 2026-09-14 knowledge cards are reachable from nothing inside the
 bundle.** There is a convention and no enumeration: `AGENTS.md` says a sequence

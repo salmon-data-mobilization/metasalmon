@@ -211,6 +211,40 @@ creates work, and it would create it on the R side first.
 its own item's to write, not this one's; it is named here so the gap between
 `Q47` and `Q49` reads as known rather than as a slip.)*
 
+### Q50 — Does the SDP deliberately pin Frictionless v1's `profile`, or move to v2's `$schema`?
+**Unblocks:** nothing yet, and saying so is the point — this is the entry that
+stops the question being counted as a P4 defect nobody will ever fix. What it
+blocks is any change to `datapackage.json`'s version declaration, in either
+mirror, because neither may choose.
+`R/package-helpers.R:243` writes a top-level `profile` from the loaded schema's
+profile URI, and `:219` writes `profile = "tabular-data-resource"` on every
+resource entry. The vendored SDP profile **requires** both — `profile` and
+`resources` in its `required` array, and a `const` of `tabular-data-resource` on
+each metadata resource — and `smn-data-pkg`'s `SPECIFICATION.md:77` requires
+setting `profile`. The retrieved Data Package **v2** standard lists `$schema`
+among descriptor properties and **no `profile` at all**.
+**This was not investigated.** It was noticed in passing while writing
+[PR #116](https://github.com/salmon-data-mobilization/metasalmon/pull/116), while
+checking whether a JSON-LD `@context` could live in the descriptor, and the four
+facts above are the whole of what is known. It may well be a deliberate pin.
+**Recommendation:** none is on the table, and inventing one here would be the
+error this entry exists to correct. The pin is not metasalmon's to change — it is
+mandated by a specification file this package only vendors, it is written the same
+way by metasalmonpy, and whether the SDP targets v1 or v2 is a ruling. An agent
+may do the investigation the filing admits was skipped and bring Brett the two
+options; it may not choose between them.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-50` — S6
+because the ruling reaches `smn-data-pkg`'s `SPECIFICATION.md`, the vendored
+profile and both writers rather than any one package, which is the cross-repo
+spec-and-governance work S6 holds, and because
+[Q41](#q41--which-licence-does-smn-data-pkg-carry-mit-or-cc-by-40) is the
+precedent for an `smn-data-pkg` governance question landing there. The queue item
+reads `repo: metasalmon`, which names where the descriptor writer was measured
+and not the blast radius.
+*(Filed as `B-156` on 2026-09-15 and reassigned to this id on 2026-09-16, because
+the item said of itself that it was an open question and that only Brett can
+choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
