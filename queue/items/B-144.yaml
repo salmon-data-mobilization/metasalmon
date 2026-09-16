@@ -1,8 +1,8 @@
 id: B-144
 kind: defect
 title: Move metasalmonpy's migrate_sdp_methods no-op branch back to the three-column report frame
-state: review
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10
