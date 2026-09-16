@@ -1,0 +1,13 @@
+id: B-150
+kind: defect
+title: The gcdfo pre-push hook cannot fail, and discards the artifact make ci just rebuilt
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P1
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Two defects close, and naming only the first would leave the second looking like the fix. (a) The ontology-ci hook in .pre-commit-config.yaml fails the push when make ci fails: its entry is a bash -lc chain ending make ci; git checkout -- docs/webvowl/data/ontology.json || true, so the chain''s exit status is the trailing || true and is always 0. Demonstrated 2026-09-15 with the same shape against a target that does not exist -- bash -lc with a bogus make target followed by a git checkout guarded by || true exits 0 -- so a failing make ci does not fail the gate and the gate has never failed for anyone. A deliberately broken ontology must turn the push red before this half retires. (b) The trailing git checkout -- stops discarding docs/webvowl/data/ontology.json, because it fires on success exactly as it fires on failure, and the hook''s files pattern restricts it to changes to ontology/dfo-salmon.ttl, which is precisely when make ci SHOULD have regenerated that artifact. The repository''s own CI rejects any uncommitted change left after make ci across the whole worktree, so the hook locally throws away the regeneration that CI then demands. It is a churn suppressor that outlived its cause and carries no retirement condition of its own, which is the failure AGENTS.md''s guard rule names; the 2026-08-16 entry in that repository''s tech-debt file is its rationale and says to run the checkout by hand after a FAILED docs build, not after every push. Sequencing, stated here rather than as a blocked_by because half (a) is the P1 and must not wait: B-0''s trap restores the pre-run bytes on failure and so removes (b)''s remaining rationale, so land (b) after B-0 or record why it is safe without it. Same shape as B-44, the gcdfo validation layer being inert, one layer up: there the shapes and queries are loaded and never bind, here the gate is wired and can only pass. dfo-salmon-ontology is not solo under HUB.md, so the deliverable is a patch and its pull-request text shown in chat and never a push, and running make ci to demonstrate either half needs a local ROBOT and Java toolchain.'

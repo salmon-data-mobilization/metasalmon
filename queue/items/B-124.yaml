@@ -1,6 +1,6 @@
 id: B-124
 kind: defect
-title: Port the validator checks of #49 to metasalmonpy
+title: 'Port the validator checks of #49 to metasalmonpy'
 state: icebox
 claimable: true
 repo: metasalmonpy

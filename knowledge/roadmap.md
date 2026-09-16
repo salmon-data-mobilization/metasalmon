@@ -388,6 +388,42 @@ exempt from the unattended auto-apply gate (#118) and R writes a
 `decision_reason` column Python does not have. It must be **amended in place,
 not joined by a new row**; see `parity-deviations.md` for the drafted text.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-14):
+`create_sdp()`'s three create-owned sidecar writes are atomic in R and are
+still unlink-then-rewrite in Python.** metasalmon closed backlog **#111** (queue
+**B-111**, pull request **#119**): `README-review.txt`,
+`semantic_suggestions.csv` and `metadata/metadata-edh-hnap.xml` now render to
+bytes and install by staged-sibling rename through
+`.ms_sdp_extension_atomic_write()`, and `.ms_replace_create_output()` is
+deleted. The Python counterpart is `package_io.py`'s `_replace_create_output()`
+and the three `create_sdp()` call sites that follow it, with `atomic_io.py` as
+the writer the port uses; the EDH path is the wider of the two, because it runs
+a full `read_salmon_datapackage()` from disk *after* destroying the previous
+file, so every read and parse failure of the whole package sits inside the
+window too. **The user-visible consequence is the reason this is not
+bookkeeping:** a Python caller re-running `create_sdp()` can still lose an
+annotated `README-review.txt`, a `semantic_suggestions.csv` carrying review
+decisions, or the EDH XML of a package whose metadata has moved on — the three
+files a re-run cannot reproduce. Owed as a **port, not a register row**; the
+divergence is already recorded as register **row 53**, which said in advance
+that it would *not* retire when #111's R half closed, and has not. **It did not
+land in the same stream because the hub claim that produced #119 covers one
+branch in one repository and B-111 names metasalmon**, which is the same reason
+B-124 and B-125 are separate items.
+
+**Unlike those two, this one has no queue item yet, and that is the gap to close
+first.** Nothing in the queue covers it as of 2026-09-16: **B-163 is not it** —
+that item is the `fsync` durability gap in the atomic write *set*, and it
+records in its own text that the mirror half is not a divergence today, because
+neither implementation flushes before renaming. **A second record is owed with
+or before the port, and it is a correction rather than a new row:**
+metasalmonpy's `PARITY.md` copy of row 53 still describes the defect as present
+"on both sides" and cites an `R/package-helpers.R` line range for a
+`.ms_replace_create_output()` call pull request #119 deletes. On merge the two
+registers therefore disagree about which side is defective, with nothing in
+either file saying which is right — the failure mode both `AGENTS.md` files name
+when they say to read the other file rather than trust the one in front of you.
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |
@@ -493,9 +529,45 @@ see this table, which is the reason the hub carries it.
 | Consumer | Declares or pins | Current? |
 |---|---|---|
 | `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, byte-identical to metasalmon's vendored bundle, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. **The "byte-identical to metasalmon's vendored bundle" clause this cell carried goes false when the B-106 re-vendor merges** — `sdp.rules.yaml` only, and the spec version does not move; see the paragraph below | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
+
+**The re-vendored `sdp.rules.yaml` reaches two of the four consumers and not
+the third, and the deferral is deliberate (2026-09-16).** Brett's Q47 ruling of
+2026-09-14 reworded the two SOSA `Procedure` rules to the reachability reading;
+smn-data-pkg landed the text in **PR #8** (merged as `bb71c8b`) and metasalmon
+re-vendored it in **PR #120**, so both copies are the same git blob,
+`489d46a0b43c07a5979ba53891e1918e384e3378`. **metasalmonpy's
+`data/schema/sdp.rules.yaml` is still at the pre-change bytes**, md5
+`3c702a373409b23f9c58cb1e1a702c06` (measured 2026-09-16), so until it is copied
+a Python consumer reads the old *"resolves to"* rule text where an R consumer
+reads the reachability contract — one shipped answer to a question the spec
+repository owns, given two ways.
+
+**Queued as `B-166`**, blocked by B-106 (`repo: metasalmonpy`);
+`queue/items/B-166.yaml` is the authority for its state, and this paragraph
+deliberately does not copy it. The sentence here previously said the item was
+filed on a branch and "not yet on `main`" — true when written on 2026-09-16 and
+false within the hour, when PR #123 merged. That is the whole argument for a card
+naming the item and not its state.
+**It did not land in the same stream because a hub claim covers one branch in one
+repository and B-106 names smn-data-pkg and metasalmon**, which is the same
+reason B-124 and B-125 are separate items. Owed as a **port, not a register
+row**: the file is vendored spec text rather than an implementation choice, so a
+`parity-deviations.md` entry would tell the next reader the difference was
+wanted and nobody would go looking for the missing copy. **No behaviour moves on
+either side while it is open**, and that is a measured fact rather than a
+comfort (measured 2026-09-16): nothing in `R/` reads a rule `description`, and
+metasalmonpy's `sdp_schema.py` reads only the document's top-level `version:`
+and `profile:` scalars — it never parses the rules list at all, by design, to
+keep PyYAML out of the core dependencies. Both reworded rules are also among
+the three B-48 measured as loaded and never executed, which is how the shipped
+text and the shipped modelling drifted apart unnoticed in the first place.
+
+*Closes when:* metasalmonpy's copy is the same blob as smn-data-pkg's, at which
+point this paragraph and the clause added to the `metasalmonpy` row above are
+both deleted.
 
 Two things the spread made visible, one of them now resolved. First —
 resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry

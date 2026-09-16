@@ -1,0 +1,13 @@
+id: B-149
+kind: defect
+title: gcdfo prepare-import-catalog prints a success mark over a failed catalog write
+state: icebox
+claimable: true
+repo: dfo-salmon-ontology
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The prepare-import-catalog recipe fails the build when any command in it fails, its success mark prints only after the catalog file exists and is non-empty, a deliberately broken write makes make exit non-zero, and a sweep confirms no other recipe in the Makefile prints an unconditional success mark -- there are 21 success marks and 2 set -e in that file on 2026-09-15, so the sweep is the larger half of this item and not a formality. Reproduced 2026-09-15 by making the write target a directory so the real printf redirection fails: the sibling-present branch printed one cannot create ... Is a directory and the else branch printed two, both branches then printed the success mark, and make exited 0 in both. Every ROBOT target consumes ROBOT_CATALOG, so a half-written catalog silently changes how the smn import resolves and nothing downstream says so. This is the same defect class AGENTS.md records against 2026-08-16, a make recipe whose missing set -e printed a success mark over a crashing script, which is why the retirement condition asks for the sweep rather than only the one recipe. dfo-salmon-ontology has contributors other than Brett and is another organisation''s repository, so it is not solo under HUB.md: the deliverable is a patch with its pull-request text shown to him in chat, never a push.'
