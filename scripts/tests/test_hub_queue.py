@@ -62,7 +62,8 @@ QUOTE = "'"
 # tearDownModule. A registry rather than a source scan, because a demonstration
 # that does not execute is not a demonstration.
 DEMONSTRATED_RED: dict = {}
-DEMONSTRATED_GREEN: set = set()
+DEMONSTRATED_GREEN: dict = {}
+RAN_CLASSES: set = set()
 
 import hub_queue  # noqa: E402
 
@@ -238,31 +239,42 @@ class QueueTestCase(unittest.TestCase):
     def assert_rejects(self, rule: str, *argv):
         """RED: lint must fail, and must name the rule that caught it.
 
-        Records the rule against this test's CLASS, because a demonstration
-        only counts if it RAN. Two reviews established that reading the test
+        Records the rule against this test METHOD, because a demonstration
+        only counts if it RAN. Three reviews established that reading the test
         source cannot tell: a commented-out call, the string inside a
         docstring, and a call under `if False` all look like demonstrations to
         a parser, and any of them would let a rule lose its real assertion
         while the coverage guard stayed green.
         """
-        DEMONSTRATED_RED.setdefault(type(self).__name__, set()).add(rule)
+        RAN_CLASSES.add(type(self).__name__)
+        DEMONSTRATED_RED.setdefault(self.id().rpartition(".")[2], set()).add(rule)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 1, f"expected lint to FAIL for rule {rule}; output:\n{output}")
         self.assertIn(f"[{rule}]", output, f"lint failed but not for {rule}; output:\n{output}")
         return output
 
-    def assert_accepts(self, *argv):
+    def assert_accepts(self, *argv, for_rules=()):
         """GREEN: lint must pass. A checker that rejects everything is unusable.
 
-        Recorded per CLASS and not per method, because a pair may legitimately
-        span two methods: `TestSoloCrossCheck` documents an ASYMMETRY, where an
-        unsourced `true` is a defect and an unsourced `false` is the correct
-        answer, and splitting those into two named methods is clearer than
-        cramming them into one. Measured 2026-09-16: all 43 rules pair at class
-        granularity and none needs an exemption, so the claim is enforced with
-        no allowlist at all.
+        PAIRED WITH A RULE, NOT WITH A CLASS, and the difference is a review
+        finding rather than a refinement. Recording GREEN per class meant any
+        unrelated passing fixture in the class covered every rule the class
+        demonstrated -- so adding an overbroad rule to an existing test class
+        recreated the exact gap the GREEN check was added to close. Measuring
+        had shown class granularity needed no exemptions, and I took that as
+        evidence it was RIGHT; it was evidence it was PERMISSIVE.
+
+        By default a GREEN pairs with the rules its OWN METHOD asserted RED,
+        which is the shape of 63 of the 71 demonstration methods. Where a pair
+        legitimately spans two methods -- `TestSoloCrossCheck` documents an
+        ASYMMETRY, an unsourced `true` being a defect and an unsourced `false`
+        the correct answer -- the GREEN method NAMES the rules it is the other
+        half of, with `for_rules=`. Naming them is the point: it is the
+        association the audit could not otherwise see.
         """
-        DEMONSTRATED_GREEN.add(type(self).__name__)
+        RAN_CLASSES.add(type(self).__name__)
+        method = self.id().rpartition(".")[2]
+        DEMONSTRATED_GREEN.setdefault(method, set()).update(for_rules)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 0, f"expected lint to pass; output:\n{output}")
         return output
@@ -1286,11 +1298,17 @@ class TestSoloCrossCheck(QueueTestCase):
         # `HUB.md` says a repository whose participation cannot be determined is
         # shared, so an unmeasured `false` is the correct answer rather than a
         # gap to be filled.
+        #
+        # NAMES ITS RULE, because this is the one pair in the file that spans
+        # two methods: the RED half is the method above, and without `for_rules`
+        # the coverage audit cannot see that these two belong together. Keeping
+        # them as two named methods is clearer than cramming an asymmetry into
+        # one, so the association is declared instead of inferred.
         self.write_world(
             {"metasalmon": "true", "salmon-science-foundry": "false"},
             {"metasalmon": True},
         )
-        self.assert_accepts()
+        self.assert_accepts(for_rules=("solo-unsourced",))
 
     def test_a_missing_policy_file_fails(self):
         self.write_world({"metasalmon": "true"}, policy=False)
@@ -1878,7 +1896,28 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         "an SQL empty string is VALUES('') and is not a possessive",
         "the token \"''\" is two apostrophes and means nothing else",
         "a scalar may end with the escape ''",
+        "an escaped embedded quote is written O''Brien in SQL",
     )
+
+    # The two false negatives, named so the limit is documented rather than
+    # rediscovered. Neither is distinguishable BY SHAPE from O''Brien, and shape
+    # is all a parsed value offers; blocking a legitimate literal is the worse
+    # failure, because an unwriteable rule gets removed rather than narrowed.
+    ACCEPTED_FALSE_NEGATIVES = (
+        "won''t is a doubled contraction and is not caught",
+        "`implementation`'' is a plural possessive on a formatted noun",
+    )
+
+    def test_the_accepted_false_negatives_are_still_accepted(self):
+        """Not a gap being hidden -- a limit being pinned.
+
+        If a later change makes either of these fire, this test fails and the
+        comment above has to be revisited rather than quietly becoming wrong.
+        """
+        for missed in self.ACCEPTED_FALSE_NEGATIVES:
+            with self.subTest(missed=missed):
+                self.write_item(BASE_DEFECT, retires_when=QUOTE + missed.replace(DOUBLE, DOUBLE * 2) + QUOTE)
+                self.assert_accepts()
 
     def test_every_row_of_both_tables_really_holds_a_doubled_apostrophe(self):
         """The positive control for the tables above, and it caught a live bug.
@@ -2028,8 +2067,8 @@ def _returned_rule_names(tree, function: str):
 
 def audit_lint_rule_coverage(
     hub_source: str,
-    red_by_class: dict,
-    green_classes: set,
+    red_by_method: dict,
+    green_by_method: dict,
     check_only=CHECK_ONLY_RULES,
     suppliers=INDIRECT_RULE_SUPPLIERS,
 ) -> dict:
@@ -2110,16 +2149,23 @@ def audit_lint_rule_coverage(
             )
         emitted |= resolved
 
-    demonstrated_red = {rule for rules in red_by_class.values() for rule in rules}
+    demonstrated_red = {rule for rules in red_by_method.values() for rule in rules}
     findings["undemonstrated"] = sorted(emitted - demonstrated_red - set(check_only))
 
-    # THE GREEN HALF, WHICH THIS GUARD DID NOT CHECK AT ALL UNTIL NOW. The
-    # header promises a rejecting fixture AND a corrected one that passes, and
-    # a RED-only pair passes for an overbroad checker that rejects everything.
-    # Tracked per CLASS because a pair may legitimately span two methods (see
-    # assert_accepts); measured 2026-09-16, all 43 rules pair at that
-    # granularity, so no rule needs an exemption.
-    paired = {rule for cls, rules in red_by_class.items() if cls in green_classes for rule in rules}
+    # THE GREEN HALF, PAIRED PER RULE. The header promises a rejecting fixture
+    # AND a corrected one that passes, and a RED-only pair passes for an
+    # overbroad checker that rejects everything. A rule is paired when SOME
+    # method both asserted it RED and called assert_accepts -- or when some
+    # method's assert_accepts NAMED it, which is how a pair that legitimately
+    # spans two methods declares itself. Keying this to the CLASS, as the first
+    # version did, let any unrelated passing fixture in the class cover every
+    # rule the class touched.
+    paired = set()
+    for method, rules in red_by_method.items():
+        if method in green_by_method:
+            paired |= rules
+    for named in green_by_method.values():
+        paired |= named
     findings["red_only"] = sorted((demonstrated_red & emitted) - paired - set(check_only))
     return {key: value for key, value in findings.items() if value}
 
@@ -2152,7 +2198,7 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
         """
         findings = audit_lint_rule_coverage(
             (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
-            red_by_class={}, green_classes=set(),
+            red_by_method={}, green_by_method={},
         )
         structural = {k: v for k, v in findings.items() if k not in ("undemonstrated", "red_only")}
         self.assertEqual(structural, {}, f"the reader cannot see every rule: {structural}")
@@ -2185,14 +2231,14 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         "def check_one(item):\n"
         "    problems.append(Problem(item.path, 0, 'a-literal-rule', 'x'))\n"
     )
-    RED_CLEAN = {"SomeCase": {"value", "a-literal-rule"}}
-    GREEN_CLEAN = {"SomeCase"}
+    RED_CLEAN = {"test_some_case": {"value", "a-literal-rule"}}
+    GREEN_CLEAN = {"test_some_case": set()}
 
     def audit(self, hub=None, red=None, green=None):
         return audit_lint_rule_coverage(
             hub or self.HUB_CLEAN,
-            red_by_class=self.RED_CLEAN if red is None else red,
-            green_classes=self.GREEN_CLEAN if green is None else green,
+            red_by_method=self.RED_CLEAN if red is None else red,
+            green_by_method=self.GREEN_CLEAN if green is None else green,
         )
 
     def test_the_constructed_clean_pair_has_no_findings(self):
@@ -2203,9 +2249,30 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'undemonstrated-rule'")
         self.assertEqual(self.audit(hub=hub).get("undemonstrated"), ["undemonstrated-rule"])
 
-    def test_a_rule_demonstrated_red_with_no_green_in_its_class_is_reported(self):
+    def test_a_rule_demonstrated_red_with_no_green_is_reported(self):
         """The half this guard did not check at all until the seventh round."""
-        self.assertEqual(self.audit(green=set()).get("red_only"), ["a-literal-rule", "value"])
+        self.assertEqual(self.audit(green={}).get("red_only"), ["a-literal-rule", "value"])
+
+    def test_an_unrelated_green_elsewhere_does_not_pair_a_rule(self):
+        """The hole that pairing GREEN to the CLASS left open.
+
+        A new rule recorded by a method with no GREEN of its own is NOT paired
+        by some other method's passing fixture. Under the per-class version it
+        was, so adding an overbroad rule to an existing test class recreated
+        the gap the GREEN check had just been added to close.
+        """
+        red = {"test_some_case": {"value", "a-literal-rule"}, "test_new_rule": {"a-literal-rule"}}
+        hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'new-rule'")
+        red["test_new_rule"] = {"new-rule"}
+        findings = self.audit(hub=hub, red=red, green={"test_some_case": set()})
+        self.assertEqual(findings.get("red_only"), ["new-rule"])
+
+    def test_a_green_that_names_its_rule_pairs_across_methods(self):
+        """And the declared cross-method pair still works, which is the point of
+        `for_rules`: the asymmetry in `TestSoloCrossCheck` must stay expressible."""
+        red = {"test_red_half": {"value", "a-literal-rule"}}
+        green = {"test_green_half": {"value", "a-literal-rule"}}
+        self.assertEqual(self.audit(red=red, green=green), {})
 
     def test_a_rule_named_by_keyword_is_read_not_skipped(self):
         hub = self.HUB_CLEAN.replace(
@@ -2286,6 +2353,28 @@ def rule_bearing_classes() -> set:
     return names
 
 
+def skipped_rule_bearing_classes() -> set:
+    """Rule-bearing classes carrying a skip or expectedFailure decorator.
+
+    Static, and it has to be: a skipped class never runs, so the runtime
+    registries cannot tell it apart from one that was filtered out -- and the
+    two must be treated differently. A filter is a developer selecting a
+    subset; a decorator is a decision committed to the repository, and it
+    reaches continuous integration.
+    """
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    bearing = rule_bearing_classes()
+    skipped = set()
+    for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:
+        if cls.name not in bearing:
+            continue
+        for decorator in cls.decorator_list:
+            rendered = ast.unparse(decorator)
+            if "skip" in rendered or "expectedFailure" in rendered:
+                skipped.add(cls.name)
+    return skipped
+
+
 def tearDownModule():
     """Enforce the header's claim against what the suite ACTUALLY demonstrated.
 
@@ -2305,8 +2394,21 @@ def tearDownModule():
     not-enforced PATH only -- when the whole module runs, the check raises, and
     a raise is never captured away.
     """
-    ran = set(DEMONSTRATED_RED) | DEMONSTRATED_GREEN
-    missing = sorted(rule_bearing_classes() - ran)
+    # A COMMITTED SKIP MUST FAIL, NOT DISABLE. A review verified the hole:
+    # marking one rule-bearing class `@unittest.skip` left all tests passing
+    # with the teardown merely printing that coverage was not enforced, so
+    # continuous integration could go green with every demonstration for
+    # several rules absent -- the same claimed-scope failure this guard exists
+    # to prevent, reached by a decorator someone committed on purpose.
+    skipped = sorted(skipped_rule_bearing_classes())
+    if skipped:
+        raise AssertionError(
+            "a rule-bearing class carries a skip decorator, which would disable this "
+            f"check rather than fail it: {', '.join(skipped)}. Remove the skip, or move "
+            "its rules into CHECK_ONLY_RULES with a reason."
+        )
+
+    missing = sorted(rule_bearing_classes() - RAN_CLASSES)
     if missing:
         print(
             "\n[coverage] not enforced: these rule-bearing classes did not run "
@@ -2316,8 +2418,8 @@ def tearDownModule():
         return
     findings = audit_lint_rule_coverage(
         (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
-        red_by_class=DEMONSTRATED_RED,
-        green_classes=DEMONSTRATED_GREEN,
+        red_by_method=DEMONSTRATED_RED,
+        green_by_method=DEMONSTRATED_GREEN,
     )
     if findings:
         raise AssertionError(f"the header's claim is false: {findings}")

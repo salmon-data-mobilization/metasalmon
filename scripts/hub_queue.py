@@ -611,44 +611,44 @@ def relative(path: Path, root: Path) -> str:
 # that writer is itself tested for this. Until one of those, this check is the
 # only thing between a doubled apostrophe and a reader.
 #
-# THE CHECK DISCRIMINATES RATHER THAN BANS, because a card may legitimately need
-# two adjacent apostrophes -- one documenting this very escape, or an SQL
-# empty-string literal -- and a guard nobody can write around gets deleted
-# rather than narrowed.
+# THE CHECK LOOKS FOR A POSSESSIVE, NOT FOR THE CHARACTER PAIR, and that is the
+# third and narrowest version of it. A card may legitimately hold two adjacent
+# apostrophes: one documenting this escape, an SQL empty string VALUES(''), or an
+# escaped embedded quote such as O''Brien. A guard nobody can write around gets
+# deleted rather than narrowed, so the signal has to be the DEFECT and not the
+# characters.
 #
-# THE DISCRIMINATION IS DELIMITATION, NOT A LOOKBEHIND ON \w, and the difference
-# is a review finding rather than a refinement. A lookbehind on a word character
-# misses a possessive whose noun is formatted -- `readr`''s parses with a
-# BACKTICK before the doubling -- and queue prose formats identifiers that way
-# constantly, so the invisible defect walks straight through. What actually
-# separates the two forms is that a DELIBERATE mention is delimited on both
-# sides (whitespace, a bracket, a backtick, a quote, or the end of the value)
-# while a POSSESSIVE abuts text on at least one side:
+# Every instance the escaping defect actually produced was a POSSESSIVE -- item''s,
+# readr''s, `readr`''s, producers'', BRETT''S, AGENTS.md''s -- so the signal is
 #
-#   fires        item''s   readr''s   producers''   BRETT''S   `readr`''s
-#   allowed      `''`      the '' escape      VALUES('')      "''"
+#     '' followed by s or S and then a non-word character        (singular)
+#     '' followed by a non-word character, preceded by a word    (plural)
 #
-# The pairs are pinned as a table in tests/test_hub_queue.py rather than left to
-# the regex, because the two versions of this check that a review rejected were
-# both patterns that looked right read forwards.
+# Measured against all 15 doublings this pull request fixed: all 15 fire, and the
+# legitimate forms above produce NO false positive.
+#
+# TWO FALSE NEGATIVES, ACCEPTED DELIBERATELY AND NAMED SO THEY ARE NOT
+# DISCOVERED. A doubled contraction (won''t) and a plural possessive on a
+# formatted noun (`implementation`'') both slip through, because neither is
+# distinguishable BY SHAPE from O''Brien -- and shape is all a parsed value
+# offers. Blocking a legitimate literal is the worse failure of the two: it makes
+# a card unwriteable, and an unwriteable rule gets removed. Both cases are pinned
+# as rows in tests/test_hub_queue.py so the limit is documented rather than
+# rediscovered.
 #
 # Retires when: no producer writes an item file through a YAML dumper, or the
-# queue gains one canonical item writer that every producer goes through and
-# that writer is itself tested for this. Until one of those, this check is the
-# only thing between a doubled apostrophe and a reader.
+# queue gains one canonical item writer that every producer goes through and that
+# writer is itself tested for this. Until one of those, this check is the only
+# thing between a doubled apostrophe and a reader.
 DOUBLED_APOSTROPHE = "''"
-DELIBERATE_DOUBLING_RE = re.compile(
-    r"(?:^|[\s(\[{`\"])" + DOUBLED_APOSTROPHE + r"(?:[\s)\]}`\",.;:!?]|$)"
+POSSESSIVE_DOUBLING_RE = re.compile(
+    DOUBLED_APOSTROPHE + r"[sS](?!\w)|(?<=\w)" + DOUBLED_APOSTROPHE + r"(?!\w)"
 )
 
 
 def accidental_doubling(text: str) -> bool:
-    """Does `text` hold a doubled apostrophe that is NOT a deliberate mention?"""
-    for hit in re.finditer(DOUBLED_APOSTROPHE, text):
-        window = max(0, hit.start() - 1)
-        if not DELIBERATE_DOUBLING_RE.match(text, window):
-            return True
-    return False
+    """Does `text` hold a doubled apostrophe that reads as a twice-escaped possessive?"""
+    return POSSESSIVE_DOUBLING_RE.search(text) is not None
 
 
 def check_doubled_apostrophes(item: Item) -> list[Problem]:
@@ -665,12 +665,12 @@ def check_doubled_apostrophes(item: Item) -> list[Problem]:
                         item.path,
                         item.lines.get(key, 0),
                         "doubled-apostrophe",
-                        f"{key} reads back with a doubled apostrophe abutting text, so "
-                        "a possessive was escaped twice. A value handed to a YAML "
-                        "dumper carries one apostrophe and the dumper escapes it. Two "
-                        "adjacent apostrophes meant literally are allowed when "
-                        "delimited on both sides -- in backticks, in quotes, between "
-                        "spaces, or inside brackets",
+                        f"{key} reads back as a twice-escaped possessive, so a value "
+                        "was escaped before being handed to a YAML dumper that escapes "
+                        "it again. A value given to a dumper carries ONE apostrophe. "
+                        "Two adjacent apostrophes that are not a possessive are fine: "
+                        "an escape written in backticks, an SQL empty string, an "
+                        "embedded quote such as O" + DOUBLED_APOSTROPHE + "Brien",
                     )
                 )
     return problems
