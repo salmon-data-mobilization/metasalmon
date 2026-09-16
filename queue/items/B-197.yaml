@@ -1,0 +1,13 @@
+id: B-197
+kind: defect
+title: 'A DataONE outage turns check red on every open metasalmon pull request at once, because one test has no network guard'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The test at tests/testthat/test-knb-publication.R:1124 skips rather than errors when DataONE is unreachable, demonstrated by making the call fail and seeing a skip, and every other test in that file that reaches a network service carries the same guard -- the sweep is part of the condition, because fixing the one instance that fired is not a fix for the class. MEASURED 2026-09-16 on metasalmon pull request 137, whose whole diff was one queue item and one backlog section, both build-excluded by .Rbuildignore and reachable by no test: `check` went RED with `Error accessing https://cn.dataone.org/cn: Server error: (503) Service Unavailable` from `dataone::CNode("PROD")`. CONFIRMED NOT THE PULL REQUEST''S three ways: the diff touches nothing R runs, `check` was green on the base commit a592c23, and a re-run of the identical commit went green minutes later when the service recovered -- same code, same sha, different third party. THE GUARD THAT IS MISSING IS SPECIFIC: the test calls skip_if_not_installed("dataone"), which checks that the PACKAGE is present and never that the SERVICE is reachable, and no test in that file calls skip_if_offline(). THE BLAST RADIUS IS THE POINT AND IS NOT LOCAL: this is not one flaky test costing one pull request a cycle. While DataONE is down, every open pull request in this repository goes red simultaneously and each one looks like its author''s fault until somebody reads the log -- and the natural response, re-run it, is the habit that makes a real failure invisible. AGENTS.md already warns that a green OFFLINE run is not full coverage; this is the inverse and more expensive, a test that errors instead of skipping when a third party is down. B-132 records the same shape for the live upstream SDP bundle fetch, so this is a second instance in a different file and the sweep clause above exists because there may be a third.'

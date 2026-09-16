@@ -5193,3 +5193,53 @@ exported to `.hub/handbacks/<id>.patch` as `git format-patch` output, which
 `.Rbuildignore` keeps out of the tarball. The remaining question is Brett's: a
 patch to a shared member repository has no durable home that is not this
 repository.
+
+### The 2026-09-16 network-guard finding, and the changelog window
+
+**`B-197`: one test with no network guard reds every open pull request at once.**
+Measured on pull request 137, whose entire diff was one queue item and one
+backlog section — both excluded by `.Rbuildignore` and reachable by no test.
+`check` went red with `Error accessing https://cn.dataone.org/cn: Server error:
+(503) Service Unavailable`, from `dataone::CNode("PROD")` at
+`test-knb-publication.R:1129`.
+
+**Ruled out as the pull request's three ways**, which is the part worth copying:
+the diff touches nothing R runs; `check` was green on the base commit `a592c23`;
+and **a re-run of the identical commit went green** minutes later — same code,
+same sha, different third party. That third check is what turns a plausible story
+into a demonstration, and it is the one re-run the drive-to-green rule allows for
+exactly this case.
+
+The missing guard is specific. The test calls `skip_if_not_installed("dataone")`,
+which checks that the **package** is present and never that the **service** is
+reachable, and no test in that file calls `skip_if_offline()`. `AGENTS.md`
+already warns that a green *offline* run is not full coverage; this is the
+inverse and more expensive — a test that errors instead of skipping when a third
+party is down. `B-132` is the same shape for the live SDP bundle fetch, which is
+why `B-197`'s retirement condition requires sweeping the file rather than fixing
+the one instance that happened to fire.
+
+**A changelog entry written between a version bump and its tag has no home, and
+that gap produced two instances in one day.** `AGENTS.md`'s *Releases* section
+says to tag the commit that made the version current, not a later docs-only
+merge. It says nothing about where a CHANGELOG entry goes for work that merges
+*after* the bump and *before* the tag — and metasalmonpy sat in exactly that
+window all day, at `0.5.0` in-tree with `v0.4.0` still its newest tag.
+
+The two instances were resolved in **opposite directions**, and both are
+defensible only together:
+
+- **B-144** (metasalmonpy #32) merged after the bump and its entry went **under
+  `## 0.5.0`**. That is what decided the tag: tagging the bump commit `67fb486`
+  would have published a release whose own changelog claimed a fix the tag did
+  not contain, so `main` is the commit to tag.
+- **B-124** (metasalmonpy #29) merged later still and its entry went under a
+  **restored `## Unreleased`**, above `## 0.5.0`, mirroring `NEWS.md`'s
+  *(development version)* heading here.
+
+Both hold **if and only if** the tag lands at `b939fd9`. Tagging `19f467b`
+instead would make B-144's entry false. So a tag choice and a changelog
+convention are now coupled, silently, with nothing written down that says so.
+The durable fix is a sentence in the *Releases* section naming where an entry
+goes inside that window, plus something that checks it; it is a specification
+change and Brett's.

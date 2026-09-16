@@ -1,8 +1,8 @@
 id: B-124
 kind: defect
 title: 'Port the validator checks of #49 to metasalmonpy'
-state: review
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10
