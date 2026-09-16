@@ -162,12 +162,26 @@ role inference.** `infer_column_role()` now types an enumerable string column
 (character or factor with 1–30 distinct non-missing values, the seeder's own
 criterion) `categorical` in the three places it answered `attribute`, per the
 Q29 ruling of 2026-09-05 (backlog #95, pull request #112). The Python
-counterpart is `infer_column_role()` in `dictionary.py`, which answers
-`attribute` at the same three branches, and its seeder
-`infer_codes_from_resources()` in `metadata.py`, which already applies it.
-Queued as **B-125**, blocked by B-95. It did not land in the same stream
-because the hub claim that produced #112 covers one branch in the item's
-repository, so the port is a separate queue item rather than a deviation row.
+counterpart is `infer_column_role()` in `dictionary.py`, and its seeder
+`infer_codes_from_resources()` in `metadata.py`, which applies it. It did not
+land in the same stream because the hub claim that produced #112 covers one
+branch in the item's repository, so the port was a separate queue item rather
+than a deviation row.
+
+**This one is closed.** `B-125` landed as metasalmonpy pull request **#30**
+(`786b3cb`) on 2026-09-16, changing `dictionary.py` and `metadata.py` — the two
+files this paragraph named as still answering `attribute` — with
+`tests/test_dictionary.py` and `tests/test_codes_target_categorical.py` pinning
+it. The paragraph is kept rather than deleted because it is the record of what
+was owed and why it was owed separately; what changed is the tense.
+
+*(Corrected 2026-09-16, on a Codex finding against the state transition that
+closed it: setting the item `done` left this passage and the release index still
+advertising the gap. That is the drift the release index exists to catch,
+arriving in the register instead — and the third time in one night that a
+sentence about owed work outlived the work. The rule the roadmap states for
+additions holds for closures too: **a catch-up window changes in both places in
+the same change.**)*
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-15):
 the migration report's no-op shape.** `migrate_sdp_methods()`'s
