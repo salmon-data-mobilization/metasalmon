@@ -5257,6 +5257,49 @@ request, every push to an open one, every re-run. On a busy merge day that still
 reaches most of them, and the diff-independence is what makes it expensive —
 each failure looks like its author's fault until somebody reads the log.
 
+**FIXED 2026-09-16** (branch `agent/B-197/a-d592f9a0947ebb37`).
+`dataone::CNode("PROD")` is gone; the node is built with `methods::new("CNode")`
+and a locally set `@identifier`, the way the test already builds `member_node`
+two lines above. Checked rather than assumed to be safe:
+`.ms_knb_lookup_pid_default()` passes `client@cn` straight into the mocked
+`.ms_knb_lookup_node_system_metadata()`, so `@identifier` is the only slot
+anything reads, and the closing assertion compares against
+`coordinating_node@identifier` rather than a repeated literal — so the test
+still pins what it always pinned, that the lookup visits the client's `mn` and
+then its `cn`.
+
+**Both clauses fall out of one measurement**, with every proxy variable pointed
+at a dead local port and the block proved first by a probe that reports
+`Couldn't connect to server [cn.dataone.org]`. `dataone::CNode("PROD")` errors
+under that block and the replacement builds offline — the RED and the GREEN for
+the removed line. Then the whole file runs with **zero failures and exactly one
+skip**, the collation-locale one, which is the same single skip the online run
+produces. A test that *passes* rather than skips is clause 1; a file with no
+other network skip is clause 2. The file is clean.
+
+**The sweep does not extend past that file, and three findings from trying are
+filed against the items that own them** — `B-132` confirmed at
+`test-schema-helpers.R:172`, `B-152` given two more measured instances — its file holds
+**four** defective tests carrying **three different wrong guards**, none of them
+a missing one — and `B-137` confirmed as six failures on a `C` locale. The B-197 workpad carries them; they are named rather than absorbed
+because this claim covers one branch and those tests belong to other items.
+
+**One of those findings is worth reading even if the others are not, because it
+is why all four of these were cheap to miss: a re-run erases the flake it
+fixes.** Across 484 `R-CMD-check` runs the API reports 10 that ever finished
+failed and **none at all since 2026-09-01** — while four runs carry
+`run_attempt > 1`, three of them in the five days to 2026-09-16 (runs 337, 360,
+449). A re-run overwrites the run's conclusion, so a flake that was re-run into
+green is indistinguishable from a run that never failed. It is worse than
+invisible at the log layer: `get_job_logs(failed_only)` reads the *latest*
+attempt and answers "no failed jobs" for a run whose first attempt died, and
+attempt 1's log is reachable only by following the API's redirect to blob
+storage with the `Authorization` header stripped, or it 401s. So the honest
+reading of "no failed checks this month" is **not** that nothing failed; it is
+that nothing failed *and stayed failed*, which is a different and much weaker
+claim. This has no queue item and is not one of `B-132`/`B-152`/`B-155`/`B-197`
+— it is the measurement layer under all of them.
+
 **A changelog entry written between a version bump and its tag has no home, and
 that gap produced two instances in one day.** `AGENTS.md`'s *Releases* section
 says to tag the commit that made the version current, not a later docs-only

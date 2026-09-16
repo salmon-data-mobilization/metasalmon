@@ -516,6 +516,34 @@ B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
 mirror repository carries the fix already and owes only the written rule and
 its check.
 
+**`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
+a deferral — which is why it is recorded here at all.** Every other entry on
+this list is a port that exists and is waiting; this is the other outcome the
+mirror contract admits, and the outcome nobody writes down, because "no port
+owed" feels like the absence of work rather than a claim. It is a claim, it can
+be wrong, and it decays the moment either package's dependencies move. The R
+defect is that `dataone::CNode("PROD")` **performs I/O in a constructor**: a
+test that only needs a node object with an `@identifier` reaches the production
+Coordinating Node to get one. metasalmonpy has no counterpart because it has no
+DataONE client library at all — `pyproject.toml` declares exactly two runtime
+dependencies, `pandas` and `requests`, so there is no constructor there to do
+I/O, and `knb_publication.py` speaks to the service through `requests` directly.
+Measured 2026-09-16 against metasalmonpy `main`: `cn.dataone.org` appears
+**four** times across `tests/test_knb_publication.py` and
+`tests/test_knb_environments.py`, and none of the four is a call — three are
+operands of an `assertEqual`/`assertNotIn` (`test_knb_publication.py:591`,
+`test_knb_environments.py:140` and `:274`) and the fourth is an element of the
+module-level `PRODUCTION_MARKERS` tuple (`test_knb_environments.py:46`). The
+count and that split are given rather than "they are all assertions" because
+the first draft of this paragraph said three and said they were all assertion
+operands, and both halves were wrong — a grep total is not a reading of the
+lines, and this is the second time in two days that a number written into prose
+here was a copy of something nobody had counted. **What this does not say**, and the
+distinction is the whole value of writing it down: it is not a finding that
+metasalmonpy's suite makes no unnecessary live call anywhere. That is a wider
+question about a different repository, it was not asked here, and if it is worth
+answering it is worth its own item rather than an inference from this one.
+
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
 window" until 2026-09-16, when closing that window made the wording
