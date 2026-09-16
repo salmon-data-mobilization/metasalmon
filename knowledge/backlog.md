@@ -5239,9 +5239,13 @@ the live service genuinely *is* the thing under test — **and even there it is
 not enough on its own**, which `B-132`'s card already measured: it proves the
 host *resolves*, not that the request completes, and the outage that produced
 this item was a 503 from a host that resolved. Those tests need a
-skip-on-failure guard — attempt the request, skip on a transport error or a
-non-success status, and put the status in the skip message so a real regression
-is not swallowed.
+**skip-on-outage** guard, and the word matters: attempt the request, skip on a
+transport error, a 5xx or a named throttling status, and **fail on everything
+else**. A 400, 401, 403 or 404 is this package regressing, not DataONE being
+down, and a guard that skips those is how an outage workaround quietly becomes
+a way to not notice defects. The status goes in the skip message, which makes
+the skip legible without preserving the assertion — which is exactly why the
+4xx side fails instead.
 
 **The blast radius is narrower than this section first claimed, and the
 correction matters because the claim is what prioritises the item.**
