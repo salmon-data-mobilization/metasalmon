@@ -57,7 +57,7 @@ cross-referenced by number.
 | 6 | Ahead | A failed or empty ontology fetch raises in Python; 0.1.6-era R returned an empty index | Failed lookup ≠ empty lookup; R adopted the same principle at 0.2.2 |
 | 7 | Ahead | `is_statistical_modifier` is a real column in both Python term-index frames; R's TTL path carries it only inside `role_hints` | Saves the 0.3.0 milestone a retrofit; hint strings match R exactly |
 | 8 | Inapplicable | No interactive term-request console in Python, so R 0.2.0's cancel-must-not-submit semantics have no counterpart | Submission is a single explicit function call with confirmation |
-| 9 | Ahead — reversed at chunk A (metasalmonpy keeps registry *read* surface metasalmon removed) | metasalmon 0.3.0 removed `write_sdp_methods()`, `read_sdp_methods()` and `validate_sdp_methods()` outright with the registry. In metasalmonpy **the reader and validator survive** as legacy read support, and the writer stub survives with its message moved to the past tense ("SDP 0.3.0 removed the registry", pointing at `migrate_sdp_methods()`) | The original row (written 2026-08-17 as a writer-only skip at 0.1.8 parity) predicted exactly this shape, and S10 chunk A landed it (metasalmonpy PR #14, 2026-08-22). metasalmonpy receives packages written by metasalmon 0.2.x that carry a registry, and 0.1.8-era EML documents quote procedures out of one, so the read surface is a real data-compatibility capability — its `SDP_METHODS_COLUMNS` is now a frozen legacy contract rather than a read of the vendored bundle, which no longer defines a `methods` table. Every *current-package* surface treats a lingering `metadata/methods.csv` exactly as R does: an error pointing at the migration (`validate_salmon_datapackage`, EML export, KNB publication). The migration itself is mirrored 1:1 against metasalmon `main` (`e02111a`) **as measured 2026-08-22, and no longer 1:1 as of metasalmon's B-112 fix (pull request #117, 2026-09-15)** — nine-case differential, identical stop taxonomy, byte-identical rewrites — with row-1-family idioms only: the report is a dict of DataFrames instead of an invisible list, informational messages print to stdout instead of cli conditions, stops raise `SdpExtensionError`, and `dry_run` must be a real `bool` (mirroring R's `is.logical()` check). **What stopped being 1:1:** R's nothing-to-migrate early return now builds the same three-column `report$tables` frame — `table_id`, `method_iri`, `columns` — that its populated and no-placement exits already built, while this package's no-op exit still returns the two-column frame it took on at chunk A (`sdp_methods.py:1086-1088`, against the three-column placements frame at `:1141`). **Which side moved is the substance of this one and not a detail:** metasalmonpy carried the internally consistent three-column frame *first*, and chunk A changed it to mirror R's two-column one; Brett ruled the three-column shape on 2026-09-14, for both implementations, so R is the side that moved and Python reverts to what it originally had. That makes it ordinary catch-up rather than a chosen difference, so it is tracked as a port — **B-144**, in the port section below — and deliberately not as a new row here. Nothing else in the nine-case differential is affected. **Retirement condition:** the reader, validator and stub go together at a rung permitted to break metasalmonpy's own callers, once legacy 0.2.x packages stop circulating; the stub goes first if the ecosystem ever reinstates per-package registries, because it is the place the writer would return to |
+| 9 | Ahead — reversed at chunk A (metasalmonpy keeps registry *read* surface metasalmon removed) | metasalmon 0.3.0 removed `write_sdp_methods()`, `read_sdp_methods()` and `validate_sdp_methods()` outright with the registry. In metasalmonpy **the reader and validator survive** as legacy read support, and the writer stub survives with its message moved to the past tense ("SDP 0.3.0 removed the registry", pointing at `migrate_sdp_methods()`) | The original row (written 2026-08-17 as a writer-only skip at 0.1.8 parity) predicted exactly this shape, and S10 chunk A landed it (metasalmonpy PR #14, 2026-08-22). metasalmonpy receives packages written by metasalmon 0.2.x that carry a registry, and 0.1.8-era EML documents quote procedures out of one, so the read surface is a real data-compatibility capability — its `SDP_METHODS_COLUMNS` is now a frozen legacy contract rather than a read of the vendored bundle, which no longer defines a `methods` table. Every *current-package* surface treats a lingering `metadata/methods.csv` exactly as R does: an error pointing at the migration (`validate_salmon_datapackage`, EML export, KNB publication). The migration itself is mirrored 1:1 against metasalmon `main` (`e02111a`) **as measured 2026-08-22, and no longer 1:1 as of metasalmon's B-112 fix (pull request #117, 2026-09-15)** — nine-case differential, identical stop taxonomy, byte-identical rewrites — with row-1-family idioms only: the report is a dict of DataFrames instead of an invisible list, informational messages print to stdout instead of cli conditions, stops raise `SdpExtensionError`, and `dry_run` must be a real `bool` (mirroring R's `is.logical()` check). **What stopped being 1:1, and is 1:1 again:** R's nothing-to-migrate early return now builds the same three-column `report$tables` frame — `table_id`, `method_iri`, `columns` — that its populated and no-placement exits already built, while metasalmonpy's no-op exit returned the two-column frame it took on at chunk A (`sdp_methods.py:1086-1088`, against the three-column placements frame at `:1141`) **until B-144 restored the three-column one (metasalmonpy pull request #32, 2026-09-16)** — so the divergence opened at #117, closed at #32, and the migration is mirrored 1:1 again. **Which side moved is the substance of this one and not a detail:** metasalmonpy carried the internally consistent three-column frame *first*, and chunk A changed it to mirror R's two-column one; Brett ruled the three-column shape on 2026-09-14, for both implementations, so R is the side that moved and Python reverts to what it originally had. That makes it ordinary catch-up rather than a chosen difference, so it is tracked as a port — **B-144**, in the port section below, where its closure is recorded — and deliberately not as a new row here. Nothing else in the nine-case differential is affected. **Retirement condition:** the reader, validator and stub go together at a rung permitted to break metasalmonpy's own callers, once legacy 0.2.x packages stop circulating; the stub goes first if the ecosystem ever reinstates per-package registries, because it is the place the writer would return to |
 | 10 | Idiom | The SSSOM header is parsed with a restricted YAML-subset parser, not a YAML library (R uses `yaml::yaml.load`) | pandas+requests dependency policy; out-of-subset YAML raises the same "not valid YAML" report, and duplicate-key/quoting/comment behaviours are differentially tested against R |
 | 11 | Idiom | The SSSOM manifest provenance block names `metasalmonpy.write_sdp_sssom` + `metasalmonpy_version`; R names its own. Each validator accepts either implementation's provenance, and metasalmon has accepted metasalmonpy's since PR #43 | Provenance should be honest about which implementation wrote the artifact; the TSV mapping-set bytes stay byte-identical across languages, as do the manifest's entry fields, its sha256 binding and its radix `mapping_set_id` ordering. **Since metasalmonpy's 0.4.0 port the accepted writer set has one owner on each side** — `R/provenance.R` here, `provenance.py` in the mirror — rather than the same pair of literals re-typed once per validator; row 29 records what that re-typing cost. **One weakness is shared deliberately, and is not an oversight:** both SSSOM validators ask only that the version field be *present*, where their four siblings demand one non-blank string. `.ms_sssom_validate_manifest()` therefore does **not** call `.ms_manifest_provenance_version_ok()`, because metasalmonpy's `sssom.py` asks exactly `provenance.get(version_key) is None` and the two readers of one artifact must accept the same manifests — a unilateral tightening on either side would reject a manifest the other still writes. *Retires when:* both SSSOM validators tighten to the non-blank shape, in the same stream |
 | 12 | Idiom | The `measurement-decompositions.json` provenance block names `metasalmonpy.write_sdp_measurement_decompositions` + `metasalmonpy_version`; each validator accepts either implementation's provenance | The row-11 honest-provenance ruling applied to the 0.1.7 decomposition artifact (metasalmon's half landed in PR #44); the artifact binding (path, sha256, row_count) and the decomposition CSV bytes stay byte-identical across languages — **pinned** in the mirror against R-generated fixtures in `tests/data/decompositions/` rather than asserted. **Both sides resolve their accepted writers through one owner since metasalmonpy's 0.4.0 port** (`R/provenance.R` / `provenance.py`), and both demand one non-blank string for the version — the tighter of the two shapes row 11 describes, and the shape this artifact has always had on the R side |
@@ -122,17 +122,42 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
-**metasalmon released `v0.5.0` on 2026-08-25 (roadmap S5) and metasalmonpy is
-still 0.4.0, so a `0.4.0→0.5.0` catch-up window is open.** Read this section as
-the record of what that window owes, and note first what it does **not** owe:
-**no new numbered rows**. None of the nine functions the release adds is a
-deliberate difference — they are simply not built in Python yet — and filing
-absence as design is the one thing this register must not do. It would also
-break `tests/testthat/test-parity-register-guard.R`, which fails on a number
-present in one register and not the other, so a row added here without its twin
-turns CI red in both repositories. **A port is owed, not rows.**
+*(The heading keeps its wording deliberately. It is a citation target: this file,
+the release index in [`roadmap.md`](roadmap.md), and the retirement conditions of
+queue items **B-126** and **B-165** all cite this section by name, and renaming
+it to match the tense below would break four references to buy nothing. The
+window's state is in the first paragraph, which is where a reader looks.)*
 
-**What the port owes**, measured 2026-08-25 against the metasalmonpy tree:
+**The `0.4.0→0.5.0` window is CLOSED as of 2026-09-16.** metasalmon released
+`v0.5.0` on 2026-08-25 (roadmap S5) while metasalmonpy was still 0.4.0, and the
+window closed in two halves: **B-126** ported the behaviour as metasalmonpy pull
+request **#28**, and **B-153** wrote the documentation half and moved the number
+to 0.5.0. Both `AGENTS.md` files and the release index in
+[`roadmap.md`](roadmap.md) read 0.5.0 with no window open. This section is kept
+in the past tense rather than deleted, exactly as the role-inference paragraph
+below is, because it is the record of what was owed and why it was owed as a
+port; delete it and the next window's first reader re-derives the rule.
+
+Read the rest as that record, and note first what the window did **not** owe:
+**no new numbered rows**, and none was added. None of the nine functions the
+release adds was a deliberate difference — they were simply not built in Python
+yet — and filing absence as design is the one thing this register must not do. It
+would also break `tests/testthat/test-parity-register-guard.R`, which fails on a
+number present in one register and not the other, so a row added here without its
+twin turns CI red in both repositories. **A port was owed, not rows.** The one
+amendment that *was* owed, to row 31, was made in place by #28.
+
+**One thing the closure found that this section did not predict**, recorded
+because it is the shape the next window will take too: the behavioural port was
+not enough to make the number true. metasalmon 0.5.0's own NEWS entry leads with
+a *documentation* claim — a package reaching
+`validate_salmon_datapackage(require_iris = TRUE)` "without opening a single file
+in a spreadsheet" — and for twenty-two days metasalmonpy exported all eleven
+calls, listed all eleven in its API reference, and named **none of them** in
+`guides/semantic-review.qmd`. **A window that ships a workflow owes its
+documentation half, and the split is worth planning rather than discovering.**
+
+**What the port owed**, measured 2026-08-25 against the metasalmonpy tree:
 zero hits for all nine names (`review_semantics`, `accept_suggestion`,
 `reject_suggestion`, `apply_sdp_semantics`, `review_metadata`,
 `set_sdp_dataset`, `set_sdp_table`, `set_sdp_column`, `set_sdp_code`); zero
@@ -143,6 +168,16 @@ schema's `constraints.required`, which `review_metadata()` is built on; and the
 descriptor's `contributors` / `licenses` blocks still inline in `package_io.py`
 rather than extracted. The **#118** defect is alive there in the same shape at
 `semantics.py:1294`.
+
+**All of that is closed.** `B-126` landed as metasalmonpy pull request **#28** on
+2026-09-16: all nine functions and both accessors, `decision_reason` with
+decision replay on queue rebuild, `read_salmon_datapackage()` reading
+`semantic_suggestions.csv` back, the first consumer of the schema's
+`constraints.required`, and the #118 exemption at the line this paragraph names.
+`B-153` then closed the documentation half and moved the number, 2026-09-16. The
+measurement above is kept as the dated measurement it was, not corrected in
+place: it is the evidence the port was owed, and rewriting it would leave the
+section asserting a gap with nothing showing there had been one.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
@@ -217,6 +252,45 @@ the frame while leaving the comment standing would leave the next reader an
 explanation for a behaviour that no longer exists. Same shape as the **#118**
 port, where `semantics.py`'s docstring documents the current behaviour as
 intended and the fix is the guard **and** the docstring.
+
+**This one is closed.** `B-144` landed as metasalmonpy pull request **#32** on
+2026-09-16, changing `sdp_methods.py` — the no-op exit these paragraphs named,
+which now builds
+`pd.DataFrame(columns=["table_id", "method_iri", "columns"], dtype=object)` —
+and replacing the comment above it, which is the second half of what the
+paragraph above named as owed: the lines that explained the two-column frame as
+R's shape now state the invariant, and keep the old text and why it was wrong.
+`test_every_migration_exit_reports_the_same_three_table_columns`
+(`tests/test_sdp_methods_migration.py`) pins **all three** exits rather than the
+one that was wrong, because pinning only that one leaves the other two free to
+drift away from it and the drift would look identical from the outside. Both
+sides were measured rather than read: R's three exits each report `table_id`,
+`method_iri`, `columns`, every one `character`, and hand a caller
+`character(0)`; Python's no-op exit reported `['table_id', 'method_iri']` and
+raised `KeyError 'columns'` before the fix and reports all three after it,
+`object` dtype throughout — one notch worse than R's `NULL`, which is why the
+port was owed rather than optional. **No number was spent:** row 9 above was
+amended in place, its twin in `PARITY.md` likewise, and the two registers still
+agree at 61 rows, 1–61 with no gaps. **The two paragraphs above are kept
+unaltered rather than re-tensed in place**, which is where this closure differs
+from B-125's one entry up: they are the dated record of what Python's frame and
+comment said while the port was owed, and this section already treats a
+measurement that way in its own closure of the `0.4.0→0.5.0` port above —
+rewriting one would leave the section asserting a gap with nothing showing there
+had been one. Read them as of 2026-09-15 and this paragraph as what changed.
+
+*(The two halves were meant to land in one change and structurally could not.
+`HUB.md` scopes a work branch to the repository the item's `repo` field names,
+which for B-144 is metasalmonpy, so the pull request that fixed the code could
+not also amend this register; and a parity-register amendment is Brett's under
+"Which pull requests need Brett", so neither half self-merges. The contrast with
+B-125 one entry above is the part worth keeping: **there, two documents
+advertised a closed gap until a later review caught them; here Codex raised it
+as a P1 before the landing**, and the hub-side edit was written and verified
+against this file while metasalmonpy #32 was still open. The rule is the one
+B-125's note states — a catch-up window changes in both places in the same
+change — and where one change is impossible, the two are opened together and
+merged in order: metasalmonpy #32 first, then the hub edit that says so.)*
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-15):
 the reviewed semantic closure producer.** `write_sdp_semantic_closure()` now
