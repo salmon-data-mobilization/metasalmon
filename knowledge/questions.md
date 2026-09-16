@@ -1186,7 +1186,10 @@ limit**: the ruled pattern's `\d{4}` branch **accepts** the padded form
 `0999-06-05T13:45:30Z`, and what fails it is the **unpadded** bytes `readr` writes
 on Linux, `999-06-05T13:45:30Z` — which `smn-data-pkg`'s own tests pin as rejected
 under the fixture name *unpadded year*. So what **`B-161`** holds, unruled and
-Brett's, is **which bytes R should write**, not whether the profile admits a
+Brett's, is **which bytes the ecosystem writes — R and Python both** (it read
+*"which bytes R should write"* until 2026-09-16; pandas `to_csv` renders an
+unpadded year too, measured on pandas 3.5 and recorded in `B-145`, so the R-only
+scope could have yielded a ruling that omitted Python), not whether the profile admits a
 pre-1000 instant; it does. The second is that no fractional second is admitted,
 because neither writer can emit one; if one ever can, that is a new question
 rather than something this ruling covered.

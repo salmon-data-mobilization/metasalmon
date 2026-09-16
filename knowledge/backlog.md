@@ -5436,7 +5436,10 @@ ANSWERED; that file is the index and `f86d9b4` is the authority.
 branch **accepts** the padded `0999-06-05T13:45:30Z`, and what fails it is the
 **unpadded** bytes `readr` writes on Linux, `999-06-05T13:45:30Z`, which
 `smn-data-pkg`'s own tests pin as rejected under the fixture name *unpadded year*.
-So `B-161`, Brett's and unruled, holds **which bytes R should write** — not
+So `B-161`, Brett's and unruled, holds **which bytes the ecosystem writes — R and
+Python both** (it read *"which bytes R should write"* until 2026-09-16; `B-145` had
+measured pandas `to_csv` emitting an unpadded year since 2026-08-25, so the R-only
+scope could have produced a ruling that omitted Python) — not
 whether the profile admits a pre-1000 instant, which it does. The second is that
 no fractional second is admitted, because neither writer emits one.
 
