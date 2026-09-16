@@ -5824,9 +5824,18 @@ round of this pull request — as was the heading above it, which said the
 exemption had been read as a gap *three times*. Both are now claims about kind
 rather than number, for the reason the enumeration itself establishes further
 down: **a summary is a second copy of what it summarises, and a correction to
-the thing summarised does not reach it.** Every count in this section that is
-load-bearing sits next to the measurement that produced it; no count sits in a
-sentence whose job is to introduce one.
+the thing summarised does not reach it.** The first version of this paragraph
+then over-claimed, in the sentence right after asserting the rule: it said *no
+count sits in a sentence whose job is to introduce one*, which was not true of
+the section even as it was written — the exemption lede still said *three
+times*, and a review found it one round later.
+
+**The accurate rule, which is narrower.** A count appears here only where the
+material that verifies it is immediately adjacent, and only where the number is
+itself the finding. *"Diverged twice"* stays, because two rather than one is the
+correction, and the two-row table is directly beneath it. The reading lede and
+the exemption lede carry no counts, because there the number only characterised
+a list and a reader gained nothing from it that the list did not already say.
 
 **Severity has two homes, they are differently shaped, and they have diverged
 once.** Six readings, each taken from the file named:
@@ -5850,7 +5859,7 @@ already wrong by one before the sixth row existed. Adding a row and changing the
 denominator without re-deriving the numerator is the same failure as every other
 one in this section, in the one paragraph that was supposed to summarise them.
 
-**What does bear on the ruling is not a vote count.** Of the six, exactly one
+**What does bear on the ruling is not a vote count.** Of those readings, exactly one
 *acts* on the value — the `Select` step, which orders the queue by it, and which
 reads the item file. And exactly one makes a *normative claim* about where the
 fact lives, rather than carrying it, acting on it, or recording history: the
@@ -6000,7 +6009,7 @@ result that agrees with what you were hoping for**, which is worse, because the
 watcher's false "clean" was the answer that ended the work rather than
 continuing it. An instrument that reports success is the one to check twice.
 
-**The exemption that was read three times as a gap.** `CHECK_ONLY_RULES` in
+**The exemption that was repeatedly misread as a gap.** `CHECK_ONLY_RULES` in
 `scripts/tests/test_hub_queue.py:2004` exempts `generated-block-missing`,
 `generated-block-no-target`, `generated-block-target-missing` and
 `generated-blocks-unreadable` from the coverage guard that #141 added, and gives
