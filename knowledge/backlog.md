@@ -5196,8 +5196,8 @@ repository.
 
 ### The 2026-09-16 temporal-profile finding
 
-**Both implementations now agree on a string the SDP profile forbids**, filed as
-`Q-51`. Verified at `inst/extdata/schema/frictionless/metadata/dataset.schema.json`
+**The string both implementations are converging on is one the SDP profile
+forbids**, filed as `Q-51`. Verified at `inst/extdata/schema/frictionless/metadata/dataset.schema.json`
 lines 77–98: `temporal_start` and `temporal_end` each carry
 `constraints.pattern` of `^(\d{4}|\d{4}-\d{2}-\d{2})$` — a year or a date, never
 an instant — with `sdp:examples` of `1996` / `1996-01-01` and `2024` /
@@ -5207,9 +5207,19 @@ so does `2024-12-31T00:00:00Z`.
 **It is not a regression, and the distinction is the whole point.** It was true
 before `B-115` and `B-145` and it is true after them. Those two items owed one
 thing — that `datapackage.json` and `metadata/dataset.csv` spell the same instant
-the same way — and they delivered it. What they could not deliver is a *legal*
-string, because the profile admits no instant at all. The work changed **which**
-invalid string is written, not whether one is.
+the same way. What they could not deliver is a *legal* string, because the profile
+admits no instant at all. The work changes **which** invalid string is written, not
+whether one is.
+
+**The agreement itself is not landed on both sides yet, and nothing here should be
+read as saying it is.** Measured 2026-09-16: `B-115` is `state: done` and merged
+here, while `B-145` is `state: ready` and `claimable: true` with its work in
+metasalmonpy [#34](https://github.com/salmon-data-mobilization/metasalmonpy/pull/34),
+**unmerged** — so Python's descriptor and CSV still disagree with each other today.
+That does not soften the question, and it does change what is being asked: the
+invalidity above is true of both implementations now and stays true after `#34`
+merges, because no instant is legal either way. It is only the *agreement* that is
+pending.
 
 **Why it went unseen through two implementations and four reviews.** Every check
 either side runs compares the two files against each other, or against the ruled
