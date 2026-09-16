@@ -32,8 +32,26 @@ Two files.
   `cp` and verified with `cmp -s` plus matching md5. Nothing was typed on this
   side.
   - Before: md5 `3c702a373409b23f9c58cb1e1a702c06`
-  - After: md5 `2f6126c241ce637955604b75e48b9265`, identical to the upstream
-    branch's file.
+  - After: md5 `f94d6c8fecb8de72846c8dfecd2adf9f`, git blob
+    `489d46a0b43c07a5979ba53891e1918e384e3378`, identical to smn-data-pkg's
+    `schema/sdp.rules.yaml` at `main` (`bb71c8b`, the merge of PR #8).
+  - **Corrected 2026-09-16, on a Codex P2 finding on pull request #120.** This
+    line read `2f6126c241ce637955604b75e48b9265`, which is the checksum of the
+    **superseded draft** copy: the branch was re-vendored a second time from the
+    merged upstream tip after review moved the rationale out of the rules file
+    into `docs/adr/0002-sosa-procedure-reachability.md` upstream, and `NEWS.md`
+    was updated for that second copy while this line was not. So the verification
+    evidence stopped describing the file actually committed — which is the whole
+    value of a recorded checksum, and the reason this is a defect and not a typo.
+  - **Blob equality re-verified 2026-09-16, after PR #8 merged**, by hashing the
+    git objects rather than working-tree files: this branch's
+    `inst/extdata/schema/sdp.rules.yaml` and smn-data-pkg `main`'s
+    `schema/sdp.rules.yaml` are **the same git blob**,
+    `489d46a0b43c07a5979ba53891e1918e384e3378`, 8506 bytes, md5
+    `f94d6c8fecb8de72846c8dfecd2adf9f` on both sides. `bb71c8b` is the merge
+    commit of PR #8 and is `origin/main`'s tip upstream, so the merge-order
+    constraint this branch carried is now satisfied and the two copies have not
+    diverged.
 - **`NEWS.md`** — one `### Changed` entry in the development version. It states
   what the upstream rewording says, because the package *ships* the text and a
   reader of `inst/extdata` will not have smn-data-pkg's changelog; it names PR
@@ -132,10 +150,24 @@ as "no new note or warning under 4.3.3", not as "CI will be clean".
 - **Did not touch metasalmonpy.** See the mirror note below: it is owed, and it
   is not in this item's `retires_when`.
 - **Did not edit `knowledge/backlog.md` #106, `knowledge/parity-deviations.md`,
-  `knowledge/roadmap.md`, or `queue/items/B-106.yaml`.** Item state and the
-  ecosystem indices are Brett's, `hub done` deliberately leaves the claim held,
-  and four other agents are working this queue in parallel right now — editing
-  shared index files would manufacture conflicts across the fleet.
+  or `queue/items/B-106.yaml`.** Item state and the ecosystem indices are Brett's,
+  `hub done` deliberately leaves the claim held, and four other agents are working
+  this queue in parallel right now — editing shared index files would manufacture
+  conflicts across the fleet.
+- **`knowledge/roadmap.md` is now edited, and the reasoning above is why it was
+  not** (changed 2026-09-16, on a Codex P1 finding on this pull request). The
+  finding is right and the reasoning above was wrong on this one point: leaving
+  the deferral in the workpad and the candidate list does not satisfy the mirror
+  contract, which offers exactly two ways out — the port in the same stream, or
+  the reason for deferral logged in the roadmap card. A workpad is neither. The
+  record went into the release index's smn-data-pkg section rather than the
+  metasalmonpy one, deliberately: the spec-version spread table there **asserts**
+  that metasalmonpy's vendored bundle is byte-identical to metasalmon's, and this
+  re-vendor makes that sentence false, so the correction and the deferral belong
+  in the same place. The conflict risk the bullet above worries about is real and
+  is the reason this record sits at that anchor rather than beside pull request
+  #119's, which lands its own deferral in the metasalmonpy section; the two
+  paragraphs can merge in either order.
 - **Did not change any R code, test, or exported signature.** This branch is a
   data-file copy plus a NEWS entry.
 
@@ -155,10 +187,37 @@ written up as a `knowledge/parity-deviations.md` register row. B-106's
 `retires_when` names smn-data-pkg's file and metasalmon's vendored copy and stops
 there, so it is reported rather than absorbed.
 
+**It has an id now: `B-166`, and the deferral is logged in the roadmap** (added
+2026-09-16). B-166 is `state: icebox`, `claimable: true`, `repo: metasalmonpy`,
+severity P3, `blocked_by: [B-106]`, and its `retires_when` is metasalmonpy's copy
+carrying the same bytes as smn-data-pkg's. It was filed on the
+`queue/2026-09-15-recovered-findings` branch and is not on `main` yet, which the
+roadmap paragraph says on the spot so a reader in a fresh clone is not sent
+looking for a file that is not there. **Its own measurement is now one generation
+stale and the roadmap record carries the current one**: B-166 records the
+reworded file at md5 `2f6126c2…`, the superseded draft copy, because it was
+filed before the second re-vendor; the merged bytes are `f94d6c8f…`, git blob
+`489d46a0…`. That does not change what B-166 asks for — its condition is blob
+equality with smn-data-pkg, not a literal checksum — but it is the same class of
+staleness as the P2 finding on this branch, arrived at independently, which is an
+argument for stating a vendored copy's identity as *"the same blob as upstream"*
+rather than as a hash wherever the condition allows it.
+
+**Re-measured 2026-09-16, after PR #8 merged:** metasalmonpy's copy is still md5
+`3c702a373409b23f9c58cb1e1a702c06`, so nothing has moved there and B-166's
+premise holds. The claim that no behaviour moves while it is open was checked on
+the Python side too rather than inferred from the R side: `sdp_schema.py` reads
+only the rules document's top-level `version:` and `profile:` scalars and never
+parses the rules list at all — a deliberate choice to keep PyYAML out of the
+core dependencies — so a Python consumer cannot read a rule `description` even
+in principle. What it *does* get is the stale shipped text, which is the harm.
+
 ## Candidate new items (no id yet)
 
-1. **Re-vendor `sdp.rules.yaml` into metasalmonpy** (`data/schema/`), a plain
-   copy once smn-data-pkg #8 merges. Port, not a deviation. Suggested P4.
+1. ~~**Re-vendor `sdp.rules.yaml` into metasalmonpy** (`data/schema/`), a plain
+   copy once smn-data-pkg #8 merges. Port, not a deviation. Suggested P4.~~
+   **Filed as `B-166` (P3, not P4) — no longer a candidate.** See the mirror
+   section above; the deferral is logged in `knowledge/roadmap.md`.
 2. **`SPECIFICATION.md` and four other smn-data-pkg documents restate the two
    rules' old wording** and now contradict the rules file. Evidence and the
    file/line table are in the smn-data-pkg workpad and in PR #8. Suggested P3.
