@@ -9,6 +9,18 @@ and this repository has shipped that failure before -- sdp-0.3.0's
 with 100% of its correct accepts silently downgraded, because every test used a
 hand-written fixture that routed around the layer that was broken.
 
+THAT SENTENCE WAS AN UNENFORCED CLAIM UNTIL 2026-09-16, and for four rules it
+was false. A review of pull request 141 found that adding a new lint rule with
+no pair left every test here green; measuring then showed the new rule was one
+of FOUR with no demonstration -- `doubled-apostrophe`, `encoding`,
+`workpad-name` and `workpad-shared-path`. That is the same failure the
+paragraph above describes, one level up: a file claiming a scope wider than it
+has, where green reads as "all of them verified".
+`TestEveryLintRuleIsDemonstrated` at the end of this file now reads the rule
+names out of `hub_queue.py` and fails when one has no pair, so the claim is
+checked rather than asserted. Rules that only `check` emits are excluded there
+by name, and the exclusion states its own maintenance rule.
+
 The GREEN half of each pair is not decoration. A RED-only test passes when the
 checker rejects everything, which is a checker nobody can use.
 
@@ -26,13 +38,19 @@ same change, or this file starts asserting behaviour that no longer exists.
 
 from __future__ import annotations
 
+import ast
 import io
+import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Used by TestEveryLintRuleIsDemonstrated, which reads the two source files
+# rather than taking a list of rule names on trust.
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 import hub_queue  # noqa: E402
 
@@ -1766,6 +1784,144 @@ class TestOrdering(QueueTestCase):
         )
         self.run_hub("render")
         self.assertIn("B-53, S-12, Q-21", path.read_text(encoding="utf-8"))
+
+
+# --------------------------------------------------------------------------
+# The four pairs this file's own header had been claiming since it was written
+# --------------------------------------------------------------------------
+
+
+class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
+    """RED/GREEN for the lint rules that had no demonstration until 2026-09-16.
+
+    THE HEADER OF THIS FILE ASSERTED A PROPERTY NOTHING ENFORCED. It says every
+    rule the linter enforces has a RED demonstration here, and on 2026-09-16 a
+    review of pull request 141 found that adding a new rule with no pair left
+    all 129 tests green. Measuring then showed the new rule was one of FOUR
+    lint rules with no demonstration -- `doubled-apostrophe`, `encoding`,
+    `workpad-name` and `workpad-shared-path`.
+
+    That is the failure the header itself cites: a guard whose claimed scope
+    exceeds its real scope is worse than a missing guard, because green reads
+    as "all of them verified". `TestEveryLintRuleIsDemonstrated` below now
+    makes the claim enforceable; these are the four pairs that let it pass.
+    """
+
+    def test_doubled_apostrophe(self):
+        # A value escaped twice: the writer doubled the apostrophes and the
+        # dumper doubled them again, so the reader gets `metasalmonpy''s`.
+        # The GREEN half is the correctly escaped form that
+        # `TestPossessiveInAQuotedScalar` above already relies on, which is
+        # what makes this pair a discrimination and not just a rejection.
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="'metasalmonpy''''s dictionary is replaced and a test pins it'",
+        )
+        output = self.assert_rejects("doubled-apostrophe")
+        self.assertIn("retires_when", output)
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="'metasalmonpy''s dictionary is replaced and a test pins it'",
+        )
+        self.assert_accepts()
+
+    def test_file_that_is_not_utf8(self):
+        path = self.queue / "B-53.yaml"
+        path.write_bytes(item_text(BASE_DEFECT).encode("utf-8") + b"\xff\xfe")
+        self.assert_rejects("encoding")
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+
+    def test_workpad_named_for_something_that_is_not_an_item(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpads/notes.md", "a report under a name no item has\n")
+        self.assert_rejects("workpad-name")
+        (self.root / ".hub/workpads/notes.md").unlink()
+        self.write_prose(".hub/workpads/B-53.md", "a report named for its item\n")
+        self.assert_accepts()
+
+    def test_workpad_that_is_not_markdown(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpads/B-53.txt", "a report that is not markdown\n")
+        self.assert_rejects("workpad-name")
+        (self.root / ".hub/workpads/B-53.txt").unlink()
+        self.write_prose(".hub/workpads/B-53.md", "a report named for its item\n")
+        self.assert_accepts()
+
+    def test_the_single_shared_workpad_path_is_back(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpad.md", "the pre-B-140 shared path\n")
+        self.assert_rejects("workpad-shared-path")
+        (self.root / ".hub/workpad.md").unlink()
+        self.assert_accepts()
+
+
+# --------------------------------------------------------------------------
+# The claim in this file's header, made enforceable
+# --------------------------------------------------------------------------
+
+
+class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
+    """Every rule `lint` can emit is demonstrated RED somewhere in this file.
+
+    THIS IS THE GUARD FOR THE HEADER'S CLAIM, and it exists because the claim
+    was false for four rules and nothing said so. It reads the rule names out
+    of `hub_queue.py` rather than taking a list on trust: a rule added without
+    a pair fails here, which is exactly what did not happen on 2026-09-16.
+
+    `CHECK_ONLY_RULES` is the one deliberate exclusion and names its own
+    maintenance rule, in the manner AGENTS.md asks of every allowlist: these
+    rules are emitted by `validate_generated_blocks`, which `command_check`
+    calls and `command_lint` does not, so they are outside the header's claim
+    rather than gaps in it. MOVE A RULE OUT OF THIS SET THE MOMENT `lint`
+    STARTS EMITTING IT, or this guard quietly shrinks to fit.
+
+    *Retires when:* nothing. This is the check that keeps the header honest,
+    and it retires with the header or with `hub_queue.py` itself.
+    """
+
+    CHECK_ONLY_RULES = {
+        "generated-block-missing",
+        "generated-block-no-target",
+        "generated-block-target-missing",
+        "generated-blocks-unreadable",
+    }
+
+    def test_no_lint_rule_lacks_a_red_demonstration(self):
+        source = (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8")
+        emitted, indirect = set(), []
+        for node in ast.walk(ast.parse(source)):
+            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+                continue
+            if node.func.id != "Problem" or len(node.args) < 3:
+                continue
+            rule = node.args[2]
+            if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
+                emitted.add(rule.value)
+            else:
+                indirect.append(node.lineno)
+
+        tests = set(
+            re.findall(
+                r"assert_rejects\(\s*[" + chr(34) + chr(39) + r"]([^" + chr(34) + chr(39) + r"]+)",
+                (REPO_ROOT / "scripts" / "tests" / "test_hub_queue.py").read_text(encoding="utf-8"),
+            )
+        )
+        undemonstrated = sorted(emitted - tests - self.CHECK_ONLY_RULES)
+        self.assertEqual(
+            undemonstrated,
+            [],
+            "these lint rules can fire and have no RED demonstration in this file, "
+            "which makes the header's claim false: " + ", ".join(undemonstrated),
+        )
+
+        # The exclusion must stay a statement about `lint`, not a place to hide
+        # a rule. Every excluded name has to still exist, or it is stale.
+        self.assertEqual(
+            sorted(self.CHECK_ONLY_RULES - emitted),
+            [],
+            "CHECK_ONLY_RULES names a rule hub_queue.py no longer emits; drop it",
+        )
 
 
 if __name__ == "__main__":
