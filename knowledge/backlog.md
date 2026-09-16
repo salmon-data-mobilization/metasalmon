@@ -5226,20 +5226,40 @@ merge. It says nothing about where a CHANGELOG entry goes for work that merges
 *after* the bump and *before* the tag — and metasalmonpy sat in exactly that
 window all day, at `0.5.0` in-tree with `v0.4.0` still its newest tag.
 
-The two instances were resolved in **opposite directions**, and both are
-defensible only together:
+The two instances were resolved in **opposite directions**, and only one of them
+was right:
 
-- **B-144** (metasalmonpy #32) merged after the bump and its entry went **under
-  `## 0.5.0`**. That is what decided the tag: tagging the bump commit `67fb486`
-  would have published a release whose own changelog claimed a fix the tag did
-  not contain, so `main` is the commit to tag.
-- **B-124** (metasalmonpy #29) merged later still and its entry went under a
+- **B-124** (metasalmonpy #29) merged after the bump and its entry went under a
   **restored `## Unreleased`**, above `## 0.5.0`, mirroring `NEWS.md`'s
-  *(development version)* heading here.
+  *(development version)* heading here. That heading's own preamble gives the
+  reason: filing it under `## 0.5.0` "would make this file say a version
+  contains a change that the commit making the version current does not."
+- **B-144** (metasalmonpy #32) merged in the same window and its entry went
+  **under `## 0.5.0`** — the placement B-124's resolution avoided, and by
+  B-124's own stated reason simply misplaced.
 
-Both hold **if and only if** the tag lands at `b939fd9`. Tagging `19f467b`
-instead would make B-144's entry false. So a tag choice and a changelog
-convention are now coupled, silently, with nothing written down that says so.
-The durable fix is a sentence in the *Releases* section naming where an entry
-goes inside that window, plus something that checks it; it is a specification
-change and Brett's.
+**An earlier revision of this section had that backwards, and recording the
+correction is the point.** It reasoned *from* B-144's placement *to* the tag:
+since `## 0.5.0` now claimed a fix the bump commit does not contain, `main` had
+to be the commit to tag. That inverts the two. `AGENTS.md`'s *Releases* section
+names the tag target — *"Tag the commit that made the version current"* — and
+the changelog is the mutable thing, so letting a misplaced entry choose the tag
+lets the mutable copy overrule the rule. It is wrong on scope as well:
+`roadmap.md:497` says of the list that names **B-144** at `:468` that "**these
+are *not* part of the `0.4.0→0.5.0` window**", so B-144 is post-`0.5.0` work
+whose entry does not belong under `## 0.5.0` at all, and tagging `main` to
+accommodate it would bake a next-window port into the release.
+
+**So the tag belongs on the bump.** `19f467b` set the version to `0.5.0` and
+reached `main` as merge `67fb486`; `b939fd9` (B-144) and `1e9245c` (B-124) are
+both later. Moving B-144's entry to `## Unreleased` is the owed follow-up and is
+deliberately **not** done here — a different repository, a different pull
+request, and it touches a release act Brett owns.
+
+**The gap itself stands, and is why this section exists.** `AGENTS.md` says
+nothing about where a CHANGELOG entry goes for work that merges after a bump and
+before its tag, and two agents read that silence in opposite directions inside
+one day. The durable fix is a sentence in the *Releases* section naming where an
+entry goes inside that window, plus something that checks it; that is a
+specification change and Brett's, which is why it is recorded here rather than
+patched into `AGENTS.md`.
