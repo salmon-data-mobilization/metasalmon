@@ -1200,9 +1200,31 @@ still not *checked* by either package — is **`B-204`** (metasalmon) and
 pull request 139. **The boundary, because the two pairs look alike:** this pair
 pins what the *writer* emits against the vendored pattern, one value checked by
 a test; that pair makes the *validator read* `constraints.pattern` at all, for
-every metadata field carrying one. Either can land without the other, and each
-leaves a different hole — a writer pinned against a pattern nothing enforces, or
-an enforcer with nothing pinning the writer.
+every metadata field carrying one.
+
+**The order between them is not free, and this entry said it was.** It read
+*"Either can land without the other, and each leaves a different hole — a writer
+pinned against a pattern nothing enforces, or an enforcer with nothing pinning
+the writer."* The first of those is a hole; **the second is a regression**, and
+the difference matters because it decides whether a claim is safe to take.
+Raised by the Codex review of pull request 137 on `9b625a2`, and verified:
+
+- **Schema first, then validator** — harmless. A widened pattern that nothing
+  reads changes nothing.
+- **Validator first, then schema** — `B-204`/`B-205` would begin enforcing
+  whatever pattern the vendored copy holds *at that moment*, which on
+  2026-09-16 is still the pre-ruling `^(\d{4}|\d{4}-\d{2}-\d{2})$` — while
+  `B-115` has already landed the instant spelling on the descriptor path. So
+  `validate_salmon_datapackage()` would refuse a package metasalmon itself just
+  wrote, for carrying the instant this very question ruled legal.
+
+The dependency is now in `B-204`'s and `B-205`'s `blocked_by`, where a claim can
+act on it. **What this adds to the round:** every earlier finding here was a
+*description* drifting from a field, or a tense standing in for one. This was a
+sequencing claim that was simply **wrong on the merits** — symmetrical in shape,
+asymmetric in fact — and no amount of keeping prose and fields in agreement
+would have caught it, because there was no field to disagree with until one was
+added.
 
 ---
 

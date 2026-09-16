@@ -5441,7 +5441,12 @@ package — is **`B-204`** (metasalmon) and **`B-205`**
 (metasalmonpy), filed 2026-09-16 and on `main` since metasalmon pull request 139.
 **The boundary:** this pair pins what the *writer* emits against the vendored
 pattern; that pair makes the *validator read* `constraints.pattern` at all.
-Either can land without the other, and each leaves a different hole.
+**They are not order-free, and this section said they were.** Schema-then-validator
+is harmless; **validator-then-schema is a regression**, because `B-204`/`B-205`
+would enforce the pre-ruling pattern still sitting in the vendored copy against
+a descriptor `B-115` already taught to write instants. The dependency lives in
+`B-204`'s and `B-205`'s `blocked_by`; `knowledge/questions.md` carries the
+reasoning under Q-51.
 
 ### The 2026-09-16 rulings round
 
