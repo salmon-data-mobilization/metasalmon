@@ -592,6 +592,49 @@ def relative(path: Path, root: Path) -> str:
         return str(path)
 
 
+# A parsed value that still carries a doubled apostrophe. `parse_scalar` decodes
+# a single-quoted scalar's `''` to one `'`, so a doubled apostrophe in the
+# PARSED value means the writer escaped text that was already going to be
+# escaped for it, and the reader then sees `item''s`. It is invisible in the
+# file, because `item''''s` in a single-quoted scalar looks like ordinary
+# escaping, and invisible in a diff for the same reason; it shows up only when
+# something reads the value back, which nothing did until a review on pull
+# request 141 read four cards and found it in all four.
+#
+# Two of those four (B-192, B-193) predated that pull request and had been on
+# `main` for days, which is why this is a check and not four edits. The cause is
+# a writer that hand-doubles apostrophes and then hands the string to a YAML
+# dumper that doubles them again; the correct input to a dumper carries one.
+#
+# Retires when: no producer writes an item file through a YAML dumper, or the
+# queue gains one canonical item writer that every producer goes through and
+# that writer is itself tested for this. Until one of those, this check is the
+# only thing between a doubled apostrophe and a reader.
+DOUBLED_APOSTROPHE_RE = re.compile(r"''")
+
+
+def check_doubled_apostrophes(item: Item) -> list[Problem]:
+    problems = []
+    for key in sorted(item.raw):
+        value = item.raw[key]
+        values = value if isinstance(value, list) else [value]
+        for element in values:
+            if not isinstance(element, str):
+                continue
+            if DOUBLED_APOSTROPHE_RE.search(element):
+                problems.append(
+                    Problem(
+                        item.path,
+                        item.lines.get(key, 0),
+                        "doubled-apostrophe",
+                        f"{key} reads back with a doubled apostrophe, so it was escaped "
+                        "twice. A value handed to a YAML dumper carries one apostrophe "
+                        "and the dumper escapes it",
+                    )
+                )
+    return problems
+
+
 def check_absolute_paths(item: Item) -> list[Problem]:
     problems = []
     for key in sorted(item.raw):
@@ -785,6 +828,7 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
                 problems.append(Problem(path, 0, "missing-key", f"required key {key!r} is missing"))
 
         problems.extend(check_absolute_paths(item))
+        problems.extend(check_doubled_apostrophes(item))
         problems.extend(check_evidence_exists(item, root))
 
         item_id = item.raw.get("id")
