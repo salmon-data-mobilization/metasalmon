@@ -1,0 +1,12 @@
+id: B-162
+kind: defect
+title: EML calendarDate renders temporal_start through a third renderer, which on today's path cannot disagree
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'R/eml-export.R lines 1661 and 1663 render dataset_meta$temporal_start and $temporal_end through the same renderer metadata/dataset.csv and datapackage.json use, or a test pins that all three agree for a typed POSIXct, or the question is answered by-design and this item closes with no code change. FILED AS AN OBSERVATION AND NOT A VERIFIED DEFECT, which is the strength it was reported at and the strength it was confirmed at on 2026-09-15. The two lines read as.character(temporal_start) and as.character(temporal_end) inside .ms_eml_add_coverage() (R/eml-export.R:1603), a third rendering of one value in a package whose contract is one value, one rendering. On today''s only path it cannot diverge: the frame arrives as pkg$dataset from validate_salmon_datapackage() at R/eml-export.R:2915, which reads metadata/dataset.csv through .ms_read_metadata_csv() (R/package-helpers.R:2814) with col_types = cols(.default = col_character()), so every cell is character and as.character() is the identity. A typed instant has never been driven through it. It becomes a real divergence the moment any caller hands the EML builder a typed metadata frame, which is exactly the situation B-115 established is reachable for the descriptor and CSV writers, so the cheap close is a test rather than a rewrite.'

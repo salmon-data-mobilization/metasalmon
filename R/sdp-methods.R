@@ -296,7 +296,15 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
       is.null(registry) && !dictionary_has_method_column) {
     cli::cli_inform("Nothing to migrate: no method bindings and no {.file metadata/methods.csv}.")
     return(invisible(list(
-      tables = tibble::tibble(table_id = character(), method_iri = character()),
+      # Same three columns as every other exit, so `report$tables$columns` is a
+      # column rather than NULL in exactly the case where the package was
+      # already clean. `columns` is character because the populated build
+      # renders it with `paste(collapse = ", ")`.
+      tables = tibble::tibble(
+        table_id = character(),
+        method_iri = character(),
+        columns = character()
+      ),
       dropped_review = dropped_review,
       registry = NULL
     )))

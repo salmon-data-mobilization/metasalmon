@@ -95,6 +95,70 @@ metasalmon (development version)
   bundled examples. The metasalmonpy fixture is owed as a port, and the
   item's retirement condition is met only on the R side until it lands.
 
+* **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
+  (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
+  after the package writer has finished -- `README-review.txt`,
+  `semantic_suggestions.csv` and, with `include_edh_xml = TRUE`,
+  `metadata/metadata-edh-hnap.xml`. Each unlinked the existing file first and
+  then rendered its replacement, so any abort in between left nothing at all
+  where the file had been. Measured, not inferred: an abort injected at each of
+  the three render steps removed the previous file all three times.
+
+  All three now render to bytes and install by staged-sibling rename through
+  `.ms_sdp_extension_atomic_write()`, the same writer
+  `write_salmon_datapackage()` uses, so a failure during the render leaves the
+  previous file byte-for-byte as it was. The bytes a successful call writes are
+  unchanged: each renderer goes through the writer the file already used
+  (`writeLines()`, `readr::write_csv(na = "")`, `edh_build_hnap_xml()`) rather
+  than through a re-implementation of it.
+
+  This matters for a file you have changed since. Re-running `create_sdp()`
+  regenerates all three, so the loss only bit an annotated `README-review.txt`,
+  a `semantic_suggestions.csv` carrying review decisions, or the EDH XML of a
+  package whose metadata has moved on. Pinned by
+  `tests/testthat/test-create-sdp-sidecar-atomicity.R`, three abort injections
+  asserting byte-identity. `.ms_replace_create_output()` is deleted; its
+  hard-link rationale is subsumed, because a staged-sibling rename never writes
+  through an existing inode.
+
+  **Scope, since the word "atomic" promises more than this delivers:** the
+  staging file sits in the target's own directory, so the rename is atomic, but
+  it is not `fsync`ed before the rename. That is sufficient against an aborted
+  call and insufficient against a machine crash or power loss. Unchanged by
+  this release, and true of every caller of that writer, not just
+  `create_sdp()`.
+
+  The same three writes have the same shape in metasalmonpy, where the EDH
+  window is wider still; that is recorded as parity row 53 and owed as a port.
+
+* **`migrate_sdp_methods()` now returns the same three-column `report$tables`
+  frame from every exit** (backlog #112, hub item B-112). The
+  nothing-to-migrate early return built two columns, `table_id` and
+  `method_iri`, while the populated build and the no-placement empty frame
+  both build three by adding `columns`. A caller reading
+  `report$tables$columns` therefore got `NULL` -- with tibble's "Unknown or
+  uninitialised column" warning -- in exactly the case where the package was
+  already clean, which is the branch least likely to be exercised and the
+  reason it survived. The empty `columns` is `character()`, matching the type
+  the populated build renders with `paste(collapse = ", ")`, so binding the
+  reports of two runs together no longer coerces the column. The frame is
+  empty either way, so nothing that read `nrow()` changes; only the column set
+  does. The three-column shape is the one the migration vignette already
+  documents.
+
+  Ruled by Brett on 2026-09-14 for both implementations, so the shape is not
+  an implementer's choice: the alternative -- a logged ruling that the shapes
+  deliberately differ -- is closed. Found 2026-08-22 by stream S10 chunk A's
+  migration differential, where Python carried the internally consistent
+  three-column frame first and was changed to mirror R; under the amended
+  mirror contract which side is right is a ruling rather than an implementer's
+  call, so this is the side that moves. The mirror half is hub item B-144,
+  where metasalmonpy returns to the shape it had originally, and #112's
+  retirement condition is met only on the R side until it lands. All three
+  exits are pinned by `tests/testthat/test-sdp-methods.R`, not only the branch
+  that was wrong, because pinning one leaves the other two free to drift away
+  from it and the failure would look identical.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

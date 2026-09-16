@@ -388,6 +388,42 @@ exempt from the unattended auto-apply gate (#118) and R writes a
 `decision_reason` column Python does not have. It must be **amended in place,
 not joined by a new row**; see `parity-deviations.md` for the drafted text.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-14):
+`create_sdp()`'s three create-owned sidecar writes are atomic in R and are
+still unlink-then-rewrite in Python.** metasalmon closed backlog **#111** (queue
+**B-111**, pull request **#119**): `README-review.txt`,
+`semantic_suggestions.csv` and `metadata/metadata-edh-hnap.xml` now render to
+bytes and install by staged-sibling rename through
+`.ms_sdp_extension_atomic_write()`, and `.ms_replace_create_output()` is
+deleted. The Python counterpart is `package_io.py`'s `_replace_create_output()`
+and the three `create_sdp()` call sites that follow it, with `atomic_io.py` as
+the writer the port uses; the EDH path is the wider of the two, because it runs
+a full `read_salmon_datapackage()` from disk *after* destroying the previous
+file, so every read and parse failure of the whole package sits inside the
+window too. **The user-visible consequence is the reason this is not
+bookkeeping:** a Python caller re-running `create_sdp()` can still lose an
+annotated `README-review.txt`, a `semantic_suggestions.csv` carrying review
+decisions, or the EDH XML of a package whose metadata has moved on — the three
+files a re-run cannot reproduce. Owed as a **port, not a register row**; the
+divergence is already recorded as register **row 53**, which said in advance
+that it would *not* retire when #111's R half closed, and has not. **It did not
+land in the same stream because the hub claim that produced #119 covers one
+branch in one repository and B-111 names metasalmon**, which is the same reason
+B-124 and B-125 are separate items.
+
+**Unlike those two, this one has no queue item yet, and that is the gap to close
+first.** Nothing in the queue covers it as of 2026-09-16: **B-163 is not it** —
+that item is the `fsync` durability gap in the atomic write *set*, and it
+records in its own text that the mirror half is not a divergence today, because
+neither implementation flushes before renaming. **A second record is owed with
+or before the port, and it is a correction rather than a new row:**
+metasalmonpy's `PARITY.md` copy of row 53 still describes the defect as present
+"on both sides" and cites an `R/package-helpers.R` line range for a
+`.ms_replace_create_output()` call pull request #119 deletes. On merge the two
+registers therefore disagree about which side is defective, with nothing in
+either file saying which is right — the failure mode both `AGENTS.md` files name
+when they say to read the other file rather than trust the one in front of you.
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |
@@ -509,10 +545,12 @@ a Python consumer reads the old *"resolves to"* rule text where an R consumer
 reads the reachability contract — one shipped answer to a question the spec
 repository owns, given two ways.
 
-**Queued as `B-166`**, blocked by B-106 (`state: icebox`, `repo: metasalmonpy`,
-severity P3; filed on the `queue/2026-09-15-recovered-findings` branch and not
-yet on `main`, so `queue/items/B-166.yaml` resolves there rather than in a fresh
-clone).
+**Queued as `B-166`**, blocked by B-106 (`repo: metasalmonpy`);
+`queue/items/B-166.yaml` is the authority for its state, and this paragraph
+deliberately does not copy it. The sentence here previously said the item was
+filed on a branch and "not yet on `main`" — true when written on 2026-09-16 and
+false within the hour, when PR #123 merged. That is the whole argument for a card
+naming the item and not its state.
 **It did not land in the same stream because a hub claim covers one branch in one
 repository and B-106 names smn-data-pkg and metasalmon**, which is the same
 reason B-124 and B-125 are separate items. Owed as a **port, not a register

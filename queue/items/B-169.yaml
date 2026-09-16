@@ -1,0 +1,13 @@
+id: B-169
+kind: defect
+title: Workshop session 6's gap callout goes stale and its publication chunks become runnable when the closure producer ships
+state: icebox
+claimable: true
+repo: salmon-data-standards-workshop
+venue: claude-code
+stream: S4
+severity: P3
+blocked_by: [B-116]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Session 6 of salmon-data-standards-workshop no longer tells learners a complete deposit is unreachable unaided, and its publication chunks run rather than sitting at eval = FALSE, because write_sdp_semantic_closure() exists. THE DELIVERABLE IS A PATCH AND ITS PULL-REQUEST TEXT SHOWN TO BRETT IN CHAT, NEVER A PUSH: salmon-data-standards-workshop is the member repository HUB.md''s participation table records as having one collaborator other than Brett, in commits and issues, so the standing authorization does not reach it and neither the work-branch push nor the draft pull request is permitted there. NOT VERIFIED AGAINST THE REPOSITORY, which is this item''s one weakness and is stated rather than hidden: that repository is neither checked out on this machine nor readable from the session that filed this, so the callout and the count of four eval = FALSE publication chunks are taken from backlog #116 finding 1 as recorded on 2026-08-25 (salmon-data-standards-workshop pull request 5 -- session 6 states the gap in a callout and tells learners plainly that a complete deposit is not reachable unaided, which is why its four publication chunks stay eval = FALSE) and from metasalmon pull request 121, which names the same surface as not done for the same reason. Whoever claims this reads session 6 first and corrects the count if it has moved. Backlog #116 finding 1 names two downstream surfaces to revisit when a producer ships; the post-review vignette is the other and is already revisited on that branch, so this is the remaining one.'
