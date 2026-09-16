@@ -52,9 +52,14 @@ that card and in the backlog's *2026-09-16 rulings round* — and the order in
 this stream is `B-107`, then **`B-143`'s staged gate landing**, then `B-158`,
 which is what empties `KNOWN_UNDECLARED` and swaps `make test` to the full
 target, then `B-147`. **There is no separate `B-143` switch-on step after
-`B-158`**: the gate arrives staged, `B-143` retires on it being green over the
-modules as they stand, and switching it on is `B-158`'s own retirement
-condition. The reasons are on each card, and `B-158`'s `blocked_by` carries the
+`B-158`**: the gate arrives staged and switching it on is `B-158`'s own
+retirement condition. **What is open is whether `B-143` may reach `done` on
+that staged landing** — its card asks for a gate green *"over the modules as
+they stand"* and also that *"every IRI the first run reports has been
+resolved"*, and allowlisting nine IRIs satisfies the first reading but not the
+second. Under the second the two items block each other. `B-158`'s card carries
+the measurement, both readings and the two ways out; the choice is Brett's,
+because either way amends a guard. The reasons are on each card, and `B-158`'s `blocked_by` carries the
 order rather than this sentence.
 
 ## gcdfo docs-pipeline gate substream
