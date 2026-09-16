@@ -49,9 +49,13 @@ Highest strategic value, least code. Run alongside S1–S5. Ordered:
 **Superclass declarations, ordered 2026-09-16:** Brett ruled `B-158`'s
 vendor-or-stub call that day — the ruling and the trade-off it settled are on
 that card and in the backlog's *2026-09-16 rulings round* — and the order in
-this stream is `B-107` → `B-158` → `B-143`'s switch-on of the full superclass
-gate → `B-147`. The reasons are on each card, and `B-158`'s `blocked_by`
-carries the order rather than this sentence.
+this stream is `B-107`, then **`B-143`'s staged gate landing**, then `B-158`,
+which is what empties `KNOWN_UNDECLARED` and swaps `make test` to the full
+target, then `B-147`. **There is no separate `B-143` switch-on step after
+`B-158`**: the gate arrives staged, `B-143` retires on it being green over the
+modules as they stand, and switching it on is `B-158`'s own retirement
+condition. The reasons are on each card, and `B-158`'s `blocked_by` carries the
+order rather than this sentence.
 
 ## gcdfo docs-pipeline gate substream
 
