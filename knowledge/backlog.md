@@ -5153,8 +5153,9 @@ reading goes wrong — inferred from a local run, and no checks at all, which is
 the shape a merge conflict takes — and this is a third that neither covers,
 because the checks exist, were read off GitHub, and are green.
 
-**Five items were in `ready` with their work delivered.** `B-0`, `B-44`, `B-115`,
-`B-143` and `B-150`, all moved to `review`. None had landed: `B-115` is pull
+**Five items were in `ready` with their work delivered.** `B-0`, `B-115`,
+`B-143` and `B-150` moved to `review`; `B-44` moved to `needs_brett`, for the
+reason in the next paragraph. None had landed: `B-115` is pull
 request 118, open and conflicted; `B-143` is salmon-domain-ontology pull request
 30, a draft whose own body says not to merge it before `B-107`; `B-0`, `B-44` and
 `B-150` are patches to a shared repository that correctly were never pushed.
@@ -5167,6 +5168,19 @@ therefore what step 2's selection rule picks first — pointing the next agent a
 103 KB patch with a four-gate self-test that already exists. The item's `state`
 field was the only thing protecting it, which is the reverse of the design: the
 lock is meant to be the atomic protection and the state the readable copy of it.
+
+**It went to `needs_brett` rather than `review`, and the first answer was
+wrong.** `review` was the obvious move and a Codex review of pull request 135
+caught what it claimed: `review` means the hand-back protocol completed, and for
+`B-44` it did not. The handoff could not simply be appended either — `hub done`
+refuses a claim held by another agent (`scripts/hub:1782-1785`), and forging that
+agent's token on the claim ref is the only way past it. `needs_brett` is also the
+honest state on the merits twice over: the deliverable is a patch to a **shared**
+repository, so landing it needs the push credential Brett holds, and the restored
+`duplicate_label` check is red on `main` because `gcdfo:WildSalmonPolicy` and
+`gcdfo:WildSalmonPolicyTheme` share an `rdfs:label`, which is the term decision
+filed as `B-136`. The claim ref is still inconsistent and wants a `hub reconcile`
+expiry release or a hand repair.
 
 **Three finished hand-backs existed only in places that die with the container.**
 `B-0`, `B-44` and `B-150` — **161 KB** of verified work with recorded
