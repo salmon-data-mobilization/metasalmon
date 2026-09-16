@@ -4959,7 +4959,7 @@ and the branch rather than reporting absence — demonstrated RED from a checkou
 that predates the fix, which is the case that matters.
 ### The 2026-09-16 review-coverage asymmetry
 
-**`B-188` Codex runs a security review on every metasalmon pull request and none
+**`B-190` Codex runs a security review on every metasalmon pull request and none
 on any metasalmonpy one.** Measured 2026-09-16 over every pull request either
 repository has had under Codex, by counting Security Review rows in the review
 summary comment:
