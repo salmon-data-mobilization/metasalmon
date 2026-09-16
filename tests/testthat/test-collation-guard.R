@@ -122,7 +122,16 @@ collation_sensitive_fns <- c(
   # candidate becomes the written evidence -- not display-only. Neither name
   # matches the heuristic below.
   "write_sdp_semantic_closure",
-  ".ms_closure_iri_roles"
+  ".ms_closure_iri_roles",
+  # Added with the Codex review fixes on pull request #121, by the same rule:
+  # both orderings are read back by something other than a human.
+  # `.ms_closure_incomplete_row()` joins the missing evidence fields into a cell
+  # of `closure$incomplete`, which an EXPORTED function returns and a test
+  # compares. `.ms_search_failed_sources()` orders the sources a degraded lookup
+  # names, which reaches an abort message and is compared by the caller deciding
+  # whether any file is written at all. Neither name matches the heuristic below.
+  ".ms_closure_incomplete_row",
+  ".ms_search_failed_sources"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

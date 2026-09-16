@@ -636,3 +636,14 @@ tip from agent `a-2da3cb6cd51c4da7`, and hand-back deliberately does not release
 the claim, so the item is still held and still unclaimable. This round was run
 under a different session key and did not claim, beat, release or hand off; a
 beat from a token that does not hold the claim would be a false record.
+
+### Collation guard, updated with this round
+
+`collation_sensitive_fns` in `tests/testthat/test-collation-guard.R` gained
+`.ms_closure_incomplete_row` and `.ms_search_failed_sources`. That list is what
+keeps the guard from decaying, and the rule for adding to it is the reason both
+qualify: each ordering is read back by something other than a human. The
+`missing_fields` cell is returned by an exported function and compared by a test;
+the failed-source vector reaches an abort message and is compared by the caller
+that decides whether any file is written. `.ms_closure_bytes_sha256()` needs no
+entry: `byte_producing_pattern` matches `_sha256` and catches it by name.
