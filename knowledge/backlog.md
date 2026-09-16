@@ -5381,9 +5381,10 @@ each re-vendoring the ruled schema from `f86d9b4` into its own copy and adding t
 test that was actually missing: a comparison of a written package's temporal
 fields to the profile's own pattern, with a four-digit-year fixture. Nothing on
 either side does that, which is why this went unseen, so re-vendoring without the
-comparison would leave the hole it came through. `B-199` is blocked on `B-145`,
-because the instant the Python descriptor writes is `B-145`'s output and widening
-the pattern does not by itself make it legal. **The general half of the same
+comparison would leave the hole it came through. `B-199` was filed depending on `B-145`, and
+the reason is durable whatever the field says later: the instant the Python
+descriptor writes is `B-145`'s output, so widening the pattern does not by itself
+make it legal. `queue/items/B-199.yaml` carries its blockers. **The general half of the same
 gap** — both validators consume `constraints.required` and `constraints.enum` and
 never `constraints.pattern`, so a widened pattern is still not *checked* by either
 package — is **`B-204`** (metasalmon) and **`B-205`**

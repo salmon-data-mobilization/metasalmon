@@ -1,6 +1,6 @@
 id: Q-51
 kind: question
-title: 'A typed instant cannot satisfy the SDP profile, so the string both implementations are converging on is one the spec forbids'
+title: 'Whether the SDP profile should admit a typed instant in temporal_start and temporal_end, which at the time of asking it did not'
 state: done
 claimable: false
 repo: smn-data-pkg

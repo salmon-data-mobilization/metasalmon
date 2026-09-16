@@ -1213,8 +1213,10 @@ answer.**
 [Q44](#q44--which-spelling-does-a-descriptor-posixct-take--answered-2026-09-14-brett),
 which at the time of asking was legal nowhere. Q44 chose *which* ISO form a
 descriptor `POSIXct` takes; this asked whether the profile admitted any instant at
-all, and it did not — so `B-115` and `B-145` implemented, correctly, a spelling
-the shipped profile rejected. **This is the question Q44 left open** rather than a new
+all, and it did not — so `B-115` landed, correctly, a spelling the shipped
+profile rejected, and `B-145` is specified to land the same one on the Python
+side. Whether it has is `queue/items/B-145.yaml`'s to say; on 2026-09-16 the
+work sat in metasalmonpy pull request 34. **This is the question Q44 left open** rather than a new
 one, exactly as Q44 was the one
 [Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
 left open.
