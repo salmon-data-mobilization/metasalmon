@@ -3240,7 +3240,7 @@ is a capability SDPs should support *generally* rather than just for I-ADOPT.
 Deliverable is the explainer plus a recommendation — not an implementation.
 Parked under S9 step 6; do not schedule before Brett reviews the explainer.
 
-### Open — the 2026-09-15 recovered findings
+### The 2026-09-15 recovered findings
 
 **Twelve findings recovered from four hub agents' workpads and pull requests
 after the fact, plus a thirteenth found while filing them** — the four items
@@ -3248,17 +3248,29 @@ worked on the night of 2026-09-15 were `B-116`, `B-111`, `B-115` and `B-106`.
 Each agent named what it had found and deliberately did not absorb; none of it
 was a queue item, and a finding that lives only in a workpad is a finding the
 next reader re-derives. They are headed by their
-**queue id** for the reason the *Open — the 2026-09-15 fleet findings* section
+**queue id** for the reason the *2026-09-15 fleet findings* section
 gives: `#120` is the last number this file issued and inventing `#121` upward
 would create a second numbering nobody reconciles. **State is not here** —
 whether one of these is icebox, ready, claimed or done lives in `queue/items/`,
-and this section is what each item's `evidence:` pointer resolves to. That fleet
-section, `B-149`–`B-160` and `Q49`, is the sibling of this one: same night,
-different agents, filed separately.
+and this section is what each item's `evidence:` pointer resolves to. **The
+heading above says nothing about state on purpose**, and the older `Open — …`
+headings further up this file are the pre-queue convention rather than the one to
+copy: a heading reading `Open` is a second copy of a dozen items' state, it goes
+stale the moment any one of them moves, and nothing checks it. *Retires when:*
+those older headings are relabelled too, at which point this note is no longer
+telling a reader why the neighbours differ. That fleet section — the defects from
+`B-149` up, and its questions in [`questions.md`](questions.md) — is the sibling
+of this one: same night, different agents, filed separately.
+
+**Twelve findings, eleven items.** One of the twelve, `B-172`, has **no item
+file**: the one-line fix was folded into the change that produced the finding
+before it could be scheduled, and its entry below is the record. A finding and a
+queue item are not the same thing, so the count of findings above stays what it
+was.
 
 | Found by | Items |
 |---|---|
-| **B-116** (PR #121, the closure producer) | `B-164`, `B-165`, `B-169`, `B-170`, `B-171`, `B-172` |
+| **B-116** (PR #121, the closure producer) | `B-164`, `B-165`, `B-169`, `B-170`, `B-171`, and `B-172` (absorbed, no item) |
 | **B-115** (PR #118, the descriptor instant) | `B-161`, `B-162` |
 | **B-111** (PR #119, the create-path sidecars) | `B-163` |
 | **B-106** (PR #120 and smn-data-pkg PR #8, the reworded rules) | `B-166`, `B-167`, `B-168` |
@@ -3307,11 +3319,42 @@ runs Linux.
 
 **B-115 and PR #118 deliberately did not absorb it**, and say so in
 `R/platform-time.R` on that branch, which is the right call and worth stating so
-nobody folds them: B-115's condition is *agreement* between `datapackage.json`
-and `metadata/dataset.csv`, agreement now holds on both platforms, and this is
-the separate question of whether the agreed-on bytes are *valid*. Reachable only
-from a caller-supplied typed instant, which neither implementation produces on
-its own.
+nobody folds them: what B-115's branch *achieves* is **agreement** between
+`datapackage.json` and `metadata/dataset.csv`, agreement now holds on both
+platforms, and this is the separate question of whether the agreed-on bytes are
+*valid*. Reachable only from a caller-supplied typed instant, which neither
+implementation produces on its own.
+
+**B-115's recorded condition asks for more than agreement, and on Linux the two
+halves of it cannot both hold. This entry is where that is written down, because
+the fix is not this item's to make.** `queue/items/B-115.yaml` reads:
+
+> A typed `POSIXct` reaching the descriptor renders as readr's ISO instant form,
+> with the `T` separator and the `Z` zone marker (`0999-06-05T13:45:30Z` for the
+> backlog's fixture), **which is what `metadata/dataset.csv` already writes**
+
+The parenthetical literal and the closing clause name **the same bytes on macOS**,
+where #115's comparison table was measured, and **different bytes on Linux**,
+where `readr::write_csv()` writes `999-06-05T13:45:30Z` for that same fixture —
+the measurement at the top of this entry. So on the platform CI runs, an
+implementation can satisfy the agreement half or the padded-literal half, and no
+Linux implementation can satisfy both **unless the CSV path is padded**, which is
+precisely the decision this item defers: padding it reopens #93 item 1, which
+ruled that `.ms_iso_date_columns()` leaves `POSIXct` alone and ruled it
+*correctly*. B-115's branch satisfies the agreement half. The padded literal is
+not reachable from it at all.
+
+**The consequence, stated plainly because it is the reason this paragraph exists:
+B-115 can be merged and marked `done` while violating its own recorded retirement
+condition, and nothing in either item file would say so.** This entry does not
+rewrite B-115's clause and nobody else should either before the ruling — Brett
+approved PR #118 without ruling the byte, and the spelling is his. **What the
+ruling now has to settle is two things rather than one:** which spelling a
+pre-1000 instant takes in `metadata/dataset.csv`, and whether B-115's condition is
+restated to name the ruled bytes at the same time. Found by a Codex review of
+pull request 123 and escalated to Brett on 2026-09-16; it is deliberately left as
+a stated conflict rather than a quiet edit, because the quiet edit would be an
+agent choosing the byte.
 
 *Retires when:* one spelling is ruled for a pre-1000 instant in
 `metadata/dataset.csv` and both implementations emit it, with a test pinning
@@ -3438,9 +3481,16 @@ green CI hides a failure any user on an older R hits.
 against both files before either is fixed. The two fixes are not the item; the
 guard is.
 
-**`B-165` The metasalmonpy port of `write_sdp_semantic_closure()`.** The
-producer shipped in PR #121 (B-116, #116) and has **no queue item**, unlike its
-two siblings B-124 and B-125. **The specification is already written and is
+**`B-165` The metasalmonpy port of `write_sdp_semantic_closure()`.** The R
+producer is **proposed in PR #121** (B-116, #116) and the port has **no queue
+item**, unlike its two siblings B-124 and B-125. *Proposed* and not *shipped*:
+that pull request is open as this is written, and its state lives in
+`queue/items/B-116.yaml` and in the pull request itself rather than here — this
+section's own preamble says state is not recorded in this file, and a sentence
+calling an open change shipped is exactly the second copy that rule exists to
+stop. It also mislabels the port's baseline, which is the reader-visible cost:
+the Python side would be following an R behaviour that can still change in
+review. **The specification is already written and is
 deliberately not restated here**: *What metasalmon 0.5.0 owes the mirror* in
 [`parity-deviations.md`](parity-deviations.md) gives it field by field, and the
 release index in [`roadmap.md`](roadmap.md) carries the same addition to the
@@ -3614,28 +3664,48 @@ this is a fixture item and not a defect report against the producer.
 and in no review target, and a test asserts it reaches
 `metadata/semantic_vocabulary.csv` and not `reviewed_semantic_selections.csv`.
 
-**`B-172` PR #121 claims four guards state their retirement condition in the
-source, and one does not.** Its Guards section reads *"Four, all with retirement
-conditions in the source and restated in the workpad."* `R/semantic-closure.R`
-on that branch contains **exactly two** `Retires when:` comments — `:117` for
-`.ms_closure_source_url()` and `:573` for `.ms_closure_set_mapping_digest()` —
-and the `REVIEW REQUIRED:` rationale placeholder is constructed at `:923` with
-no retirement condition anywhere near it.
+***`B-172` PR #121 claims four guards state their retirement condition in the
+source, and one does not — absorbed into PR #121, no item file.*** Its Guards
+section reads *"Four, all with retirement conditions in the source and restated
+in the workpad."* `R/semantic-closure.R` as first pushed on that branch contains
+**exactly two** `Retires when:` comments — `:117` for `.ms_closure_source_url()`
+and `:573` for `.ms_closure_set_mapping_digest()` — and the `REVIEW REQUIRED:`
+rationale placeholder is constructed at `:923` with no retirement condition
+anywhere near it.
 
 The condition exists and is a good one (*the review API records a rationale for
 every accepted slot, or a publication gate refuses the marker, which is a
-decision nobody has made*), but it lives only in the pull-request body and in
+decision nobody has made*), but it lived only in the pull-request body and in
 `.hub/workpad.md` item 4 — and a pull-request body evaporates, which is why this
 repository writes such things into files. The fourth guard, the two
 `collation_sensitive_fns` entries, carries the rest of that list's condition
 rather than one of its own; the workpad says so outright and that is a
-defensible reading of an enumerated list, so it is not what this item is about.
+defensible reading of an enumerated list, so it was never part of the finding.
 
-*Retires when:* the placeholder carries its retirement condition as a source
-comment where it is built, so the claim is true of all four. One comment line —
-filed at P4 for that reason, and filed at all because this repository's own rule
-is that **a claimed scope exceeding real scope is worse than a missing guard**,
-and the claim being checked here is a claim about retirement conditions.
+**Why there is no `B-172.yaml`, and it is the scheduling rather than the
+evidence.** The item was filed `blocked_by: [B-116]`, which is the worst possible
+ordering for it: the queue lets a blocked item be claimed only once its blocker is
+`done`, so a contract violation would have merged with PR #121 and its one-line
+fix would have arrived after it, in a separate pull request, for a comment the
+author was standing next to. The fix belongs in the change that introduced the
+gap. **PR #121 now carries the comment**, at the placeholder's construction site
+rather than near it, ending:
+
+> *Retires when:* every accepted slot has a recorded rationale to read, so a
+> target without one is a defect rather than a row to mark. Concretely: when
+> `accept_suggestion()` requires a `decision_reason` and `apply_sdp_semantics()`
+> carries it through to `semantic_suggestions.csv` for every accepted row, this
+> branch becomes unreachable and the marker, the `placeholders` return value and
+> the warning all go together, replaced by an abort naming the slot.
+
+That is the whole of what the item asked for, so nothing is left to narrow it to
+and the item was deleted rather than left as work that is already done. The
+`B-172` id is retired unused and the gap between `B-171` and `B-173` is the record
+of it. **Re-file if PR #121 merges without that comment** — this entry is written
+on the state of that pull request on 2026-09-16, not on a merge, and the absorbing
+change had not yet been pushed when this was written. Found by a Codex review of
+pull request 123, which read the `blocked_by` rather than the evidence and was
+right to.
 
 **`B-173` `hub_queue.py` silently truncates an unquoted value at the first
 ` #`, and `lint` reports OK.** A thirteenth finding, and the only one here that
