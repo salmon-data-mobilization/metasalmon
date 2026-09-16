@@ -167,15 +167,46 @@
     datapackage$licenses <- list(.ms_license_descriptor(license_value))
   }
   if (.ms_meta_scalar_present(dataset_meta$temporal_start)) {
-    # `.ms_iso_character()` renders a typed value as the ISO text the CSV side
-    # writes (identity for character), so the descriptor and
-    # `metadata/dataset.csv` cannot disagree about the same field.
-    datapackage$temporal <- list(start = .ms_iso_character(dataset_meta$temporal_start[1]))
+    # One value, one rendering: `.ms_descriptor_temporal_text()` spells this
+    # field the way `metadata/dataset.csv` spells it, so the two files cannot
+    # disagree about it. That claim used to be made of `.ms_iso_character()`
+    # alone, and it held only for the types that never reach here still typed;
+    # see the dispatcher below for the one that broke it.
+    datapackage$temporal <- list(
+      start = .ms_descriptor_temporal_text(dataset_meta$temporal_start[1])
+    )
     if (.ms_meta_scalar_present(dataset_meta$temporal_end)) {
-      datapackage$temporal$end <- .ms_iso_character(dataset_meta$temporal_end[1])
+      datapackage$temporal$end <-
+        .ms_descriptor_temporal_text(dataset_meta$temporal_end[1])
     }
   }
   datapackage
+}
+
+# The descriptor's spelling of one `dataset.csv` temporal cell.
+#
+# THE RENDERER IS CHOSEN BY TYPE because two baselines meet at this field, and
+# which one applies depends on what upstream has already done to the value:
+#
+#   Date     never arrives typed. `.ms_align_cols()` renders every metadata
+#            frame's Date columns to padded ISO text (backlog #93 item 2), so
+#            both writers receive that one text and already agree.
+#   POSIXct  arrives typed, deliberately: #93 item 1 ruled that
+#            `.ms_iso_date_columns()` leaves instants alone, and that ruling
+#            stands. So it reaches both writers, and each rendered it its own
+#            way -- backlog #115. Brett ruled on 2026-09-14 that the descriptor
+#            takes readr's ISO instant form, so this branch asks readr for the
+#            very bytes `metadata/dataset.csv` will carry.
+#
+# Everything else stays on `.ms_iso_character()`, unchanged and deliberately so.
+# A character cell in particular keeps today's behaviour exactly: widening this
+# to "whatever readr would write" would move the descriptor for text input too,
+# which is a different question from the one that was ruled.
+.ms_descriptor_temporal_text <- function(value) {
+  if (inherits(value, "POSIXt")) {
+    return(.ms_readr_instant_character(value))
+  }
+  .ms_iso_character(value)
 }
 
 # Update one resource's schema fields from the (already updated) dictionary.

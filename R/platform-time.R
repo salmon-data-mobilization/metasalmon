@@ -138,14 +138,25 @@
 # POSIXct is deliberately NOT touched, and this is the part that would be easy
 # to get wrong by symmetry:
 #
-#   write_csv  POSIXct year 1  #> "0001-01-01T00:00:00Z"   <- ALREADY padded
+#   write_csv  POSIXct year 1  #> "0001-01-01T00:00:00Z"   <- padded on macOS ONLY
 #   write_csv  POSIXct 10:00.5 #> "2024-01-31T10:00:00Z"   <- fractional dropped
 #   as.character(same)         #> "2024-01-31 10:00:00.5"  <- space, no Z, kept
 #
-# readr's instant path is correct already, and coercing it would change bytes
-# twice over -- the separator and the zone marker, and whether a fractional
-# second survives. A "fix" applied to both types would corrupt the one that was
-# never broken.
+# Coercing an instant here would change bytes twice over -- the separator and
+# the zone marker, and whether a fractional second survives -- so a "fix"
+# applied to both types would corrupt the one this function was never about.
+# THAT REASONING IS UNCHANGED. What changed is the sentence that used to follow
+# it: "readr's instant path is correct already" was measured on macOS and is
+# FALSE ON LINUX, where `write_csv()` writes `999-06-05T13:45:30Z` for a
+# pre-1000 instant (R 4.3.3 / readr 2.2.0, 2026-09-14) -- the `%Y` split at the
+# top of this file, reaching readr. So readr's instant path has the year defect
+# too, on the platform CI runs on.
+#
+# IT IS STILL NOT THIS FUNCTION'S DEFECT TO FIX, and the first thing to know
+# about it is that padding it here is the move backlog #93 item 1 ruled out.
+# Recorded so the ruling rests on the measurement it actually has rather than on
+# a stronger one: this function is narrow because coercing an instant changes
+# three fields, not because readr had nothing wrong with instants.
 #
 # *Retires when:* R's `as.character.Date` fast path zero-pads, at which point
 # this collapses to the identity.
@@ -156,6 +167,81 @@
   }
   df[is_date] <- lapply(df[is_date], .ms_iso_character)
   df
+}
+
+# The bytes `readr::write_csv()` writes for an instant, obtained by asking it.
+#
+# WHY THIS EXISTS. One value, `dataset_meta$temporal_start`, lands in two files.
+# `metadata/dataset.csv` is written by `readr::write_csv()`; `datapackage.json`
+# rendered the same cell through `as.character()`, so one package carried two
+# spellings of one instant, and a consumer reading either is entitled to treat
+# it as the package's answer:
+#
+#   datapackage.json      "0999-06-05 13:45:30"    <- as.character(): space, no Z
+#   metadata/dataset.csv  "0999-06-05T13:45:30Z"   <- write_csv(): ISO instant
+#
+# and a midnight instant additionally lost its time in the descriptor, because
+# `as.character()` drops it. Backlog #115 / hub item B-115.
+#
+# THE BASELINE DECIDES, AND HERE IT IS `readr::write_csv()`. Brett ruled the
+# spelling on 2026-09-14, once for both implementations so that no implementer
+# picks one: a typed instant reaching the descriptor takes readr's ISO instant
+# form, the `T` separator and the `Z` zone marker. The CSV's baseline is the one
+# that cannot move -- #93 item 1 ruled that `.ms_iso_date_columns()` leaves
+# `POSIXct` alone, and this change does not reopen it -- so the descriptor is
+# the side that moves onto readr.
+#
+# THIS ASKS READR RATHER THAN REPRODUCING IT, and that is the whole point.
+# Reproducing readr's instant text by hand means reproducing three behaviours,
+# each silent when wrong: its conversion to UTC (a `tzone` of
+# "America/Vancouver" shifts the clock, not merely the marker), its truncation
+# of a fractional second, and its year. A hand renderer,
+# `format(x, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")`, was measured equal to readr on
+# every case tried -- years 1 and 999, a fractional second, midnight, three
+# zones -- and it is still two renderings of one value, which is the defect the
+# "one value, one rendering" contract names rather than a way of fixing it.
+# Sharing readr makes the two files agree BY CONSTRUCTION instead of by an
+# agreement nothing rechecks.
+#
+# MEASURED, NOT ASSUMED, and it corrects the comment above this one:
+# `readr::write_csv()`'s instant year is NOT padded on every platform. Linux
+# R 4.3.3 / readr 2.2.0 writes `999-06-05T13:45:30Z` where macOS R 4.5.2 /
+# readr 2.2.0 wrote `0999-06-05T13:45:30Z`, which is the `%Y` split at the top
+# of this file reaching readr's own output. Each is readr's answer on its
+# platform and this helper emits whichever applies, so the descriptor agrees
+# with the CSV on both. The residual unpadded year is readr's defect on the CSV
+# side, is not reachable from here, and is reported rather than patched: padding
+# only the descriptor would reopen #115 on Linux, which is worse than the byte
+# it fixes.
+#
+# Parsing the cell back out is safe because a rendered instant is a fixed-width
+# ASCII token containing no comma, quote, or newline, so readr's default
+# `quote = "needed"` never quotes one and one row is always one line. That
+# guarantee is why this takes `POSIXt` and nothing else.
+#
+# *Retires when:* readr exposes a documented scalar formatter this can call
+# instead of formatting a one-column frame, or `metadata/dataset.csv` stops
+# being written by readr -- at which point the descriptor follows the CSV's new
+# writer, because the baseline is what this helper tracks.
+.ms_readr_instant_character <- function(x) {
+  out <- rep(NA_character_, length(x))
+  present <- !is.na(x)
+  if (!any(present)) {
+    return(out)
+  }
+  text <- readr::format_csv(
+    data.frame(value = x[present]),
+    col_names = FALSE,
+    na = ""
+  )
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  if (length(lines) != sum(present)) {
+    # One row per line is the contract that makes the parse above safe. Fail
+    # loudly rather than emit a misaligned rendering, which would be silent.
+    stop("internal: readr rendered an unexpected number of instant rows")
+  }
+  out[present] <- lines
+  out
 }
 
 # THE THIRD DEFECT, and it is neither of the two above: the same value rendered
