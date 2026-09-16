@@ -708,25 +708,43 @@ task-scoped rather than a parallel authority over it.
 checks, and both have to be clean:
 
 ```sh
-git -C "$WT" status --porcelain            # empty
-git -C "$WT" log --branches --not --remotes --oneline   # empty
+git -C "$WT" status --porcelain                  # empty
+git -C "$WT" log HEAD --not --remotes --oneline  # empty
 ```
 
 If either prints anything, leave the worktree in place and say so in the
 report. Never remove a dirty worktree, and never delete its branch: branch
 deletion is Brett's call, and `--delete` is in the denied list above.
 
-**`git stash list` was a third check here until 2026-09-16, and it could never
-have done anything but block.** A stash is a repository-level ref: `git stash
-list` returns the same entries from inside every worktree, so it says nothing
-about *this* one. This repository has carried one deliberately-kept stash since
-2026-09-10 (the evidence-pointer edits superseded by pull request #110), which
-under the old wording made **every** worktree permanently unremovable — measured
-2026-09-16, with twenty-odd accumulated and a throwaway detached one refused by
-it. A rule that refuses everything is indistinguishable from a rule nobody reads,
-and it hid the two checks that do the real work. The first two are genuinely
-per-worktree and are what the rule was always about. *Retires when:* git gives a
-stash a worktree of record, at which point the check can come back scoped to it.
+**Both of those were repository-wide until 2026-09-16, and the correction to the
+second is the one worth reading, because the first correction missed it.**
+
+`git stash list` was a third check here and could never have done anything but
+block. A stash is a repository-level ref: it returns the same entries from inside
+every worktree, so it says nothing about *this* one. This repository has carried
+one deliberately-kept stash since 2026-09-10 (the evidence-pointer edits
+superseded by pull request #110), which made **every** worktree permanently
+unremovable — measured with twenty-odd accumulated and a clean throwaway one
+refused by it. *Retires when:* git gives a stash a worktree of record, at which
+point the check can come back scoped to it.
+
+**The revision walk had the identical defect and survived the edit that removed
+the stash clause**, which claimed in as many words that the two remaining checks
+were "genuinely per-worktree". That was true of `status --porcelain` and false of
+the other: `--branches` means *all* of `refs/heads`, so
+`git log --branches --not --remotes` run inside a worktree reports unpushed
+commits from **every** branch in the repository, including branches checked out
+in other worktrees. Measured 2026-09-16 in a scratch repository — a clean
+worktree detached at a fully pushed commit, refused because an unrelated branch
+in another worktree had one unpushed commit; scoping the walk to `HEAD` permits
+it. Caught in review, not by the rule firing.
+
+The lesson is the one this file keeps relearning and it is worth stating where it
+happened: **a fix that removes one instance of a defect is not a fix for the
+defect.** The stash clause and the revision walk were the same mistake written
+twice, three lines apart, and removing one of them produced a paragraph asserting
+the other was sound. Ask of any such correction what *else* is in the same
+family, before writing the sentence that says the rest is fine.
 
 ## Reporting
 
