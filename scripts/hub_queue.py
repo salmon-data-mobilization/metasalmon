@@ -420,7 +420,7 @@ def parse_scalar(raw: str):
 
     `value` is a str, a bool, a list of str for flow style, or None on error.
     `rule` names the lint rule an error is reported under, so a caller does not
-    have to match on the message text.
+    have to match on the message text; it is `""` when there is no error.
     """
     text = raw.strip()
     if text == "":
