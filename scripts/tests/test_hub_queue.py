@@ -1897,6 +1897,8 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         "the token \"''\" is two apostrophes and means nothing else",
         "a scalar may end with the escape ''",
         "an escaped embedded quote is written O''Brien in SQL",
+        "a marked literal passes whatever it holds: `James''s boat` in SQL",
+        "and in double quotes too: \"James''s boat\" is a literal",
     )
 
     # The two false negatives, named so the limit is documented rather than
@@ -2354,24 +2356,33 @@ def rule_bearing_classes() -> set:
 
 
 def skipped_rule_bearing_classes() -> set:
-    """Rule-bearing classes carrying a skip or expectedFailure decorator.
+    """Rule-bearing classes that `unittest` will not run.
 
-    Static, and it has to be: a skipped class never runs, so the runtime
-    registries cannot tell it apart from one that was filtered out -- and the
-    two must be treated differently. A filter is a developer selecting a
-    subset; a decorator is a decision committed to the repository, and it
-    reaches continuous integration.
+    READ FROM THE CLASS OBJECT AND NOT FROM THE DECORATOR TEXT. `unittest.skip`
+    sets `__unittest_skip__` on the class, and a class INHERITS that flag from a
+    skipped base -- so a rule-bearing class with no decorator of its own can
+    still never run, be absent from `RAN_CLASSES`, and take the non-failing
+    "not enforced" path. A review found that; reading the effective attribute
+    covers the direct case and the inherited one with one check instead of two,
+    which is why this replaced the scan rather than being added beside it.
+
+    It must still be answerable WITHOUT running the class -- a skipped class
+    produces no runtime record at all, and that is exactly what has to be told
+    apart from a class the developer filtered out.
     """
-    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
     bearing = rule_bearing_classes()
     skipped = set()
-    for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:
-        if cls.name not in bearing:
+    for name in bearing:
+        cls = globals().get(name)
+        if cls is None:
             continue
-        for decorator in cls.decorator_list:
-            rendered = ast.unparse(decorator)
-            if "skip" in rendered or "expectedFailure" in rendered:
-                skipped.add(cls.name)
+        if getattr(cls, "__unittest_skip__", False):
+            skipped.add(name)
+            continue
+        for attr in vars(cls).values():
+            if getattr(attr, "__unittest_expecting_failure__", False):
+                skipped.add(name)
+                break
     return skipped
 
 
@@ -2399,7 +2410,9 @@ def tearDownModule():
     # with the teardown merely printing that coverage was not enforced, so
     # continuous integration could go green with every demonstration for
     # several rules absent -- the same claimed-scope failure this guard exists
-    # to prevent, reached by a decorator someone committed on purpose.
+    # to prevent, reached by a decorator someone committed on purpose. A second
+    # review then found the inherited case, which is why the detector reads the
+    # class's effective `__unittest_skip__` rather than its decorator text.
     skipped = sorted(skipped_rule_bearing_classes())
     if skipped:
         raise AssertionError(

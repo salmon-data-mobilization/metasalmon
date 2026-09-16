@@ -611,30 +611,39 @@ def relative(path: Path, root: Path) -> str:
 # that writer is itself tested for this. Until one of those, this check is the
 # only thing between a doubled apostrophe and a reader.
 #
-# THE CHECK LOOKS FOR A POSSESSIVE, NOT FOR THE CHARACTER PAIR, and that is the
-# third and narrowest version of it. A card may legitimately hold two adjacent
-# apostrophes: one documenting this escape, an SQL empty string VALUES(''), or an
-# escaped embedded quote such as O''Brien. A guard nobody can write around gets
-# deleted rather than narrowed, so the signal has to be the DEFECT and not the
-# characters.
+# TWO RULES, AND THE SECOND IS AN AUTHOR'S ESCAPE HATCH BY DESIGN. Four earlier
+# versions of this check were rejected by review, each one a shape that looked
+# right read forwards, and the last two were rejected for the same reason: a card
+# may legitimately hold two adjacent apostrophes, and a guard nobody can write
+# around gets deleted rather than narrowed.
 #
-# Every instance the escaping defect actually produced was a POSSESSIVE -- item''s,
-# readr''s, `readr`''s, producers'', BRETT''S, AGENTS.md''s -- so the signal is
+# (1) THE SIGNAL IS A POSSESSIVE, not the character pair. Every doubling the
+#     escaping defect actually produced was one -- item''s, readr''s, `readr`''s,
+#     producers'', BRETT''S, AGENTS.md''s -- so:
 #
-#     '' followed by s or S and then a non-word character        (singular)
-#     '' followed by a non-word character, preceded by a word    (plural)
+#         '' followed by s or S and then a non-word character     (singular)
+#         '' followed by a non-word character, preceded by a word (plural)
 #
-# Measured against all 15 doublings this pull request fixed: all 15 fire, and the
-# legitimate forms above produce NO false positive.
+# (2) A DOUBLING INSIDE A BACKTICKED OR DOUBLE-QUOTED SPAN IS EXEMPT, because
+#     quoting it is the author saying "this is a literal". That is what makes the
+#     rule writeable around: O''Brien and James''s boat are both real SQL escapes
+#     and neither is distinguishable from the defect BY SHAPE, so the author needs
+#     a way to declare intent, and the way is the one they would reach for anyway.
+#     `readr`''s still fires -- the doubling is OUTSIDE the span, which is
+#     precisely the difference between quoting the noun and quoting the literal.
 #
-# TWO FALSE NEGATIVES, ACCEPTED DELIBERATELY AND NAMED SO THEY ARE NOT
-# DISCOVERED. A doubled contraction (won''t) and a plural possessive on a
-# formatted noun (`implementation`'') both slip through, because neither is
-# distinguishable BY SHAPE from O''Brien -- and shape is all a parsed value
-# offers. Blocking a legitimate literal is the worse failure of the two: it makes
-# a card unwriteable, and an unwriteable rule gets removed. Both cases are pinned
-# as rows in tests/test_hub_queue.py so the limit is documented rather than
-# rediscovered.
+# Measured 2026-09-16 against all 15 doublings this pull request fixed and 10
+# legitimate forms: 15 fire, 0 false positives.
+#
+# TWO FALSE NEGATIVES REMAIN AND ARE NAMED SO THEY ARE NOT DISCOVERED: a doubled
+# contraction (won''t) and a plural possessive on a formatted noun
+# (`implementation`'', where the doubling follows a backtick rather than a word
+# character). Neither is a singular possessive and neither can be told from
+# O''Brien by shape. Both are pinned as rows, so a later change that makes either
+# fire fails the suite and this comment gets revisited rather than quietly
+# becoming wrong. I removed the second from that list while writing this
+# paragraph, on the assumption the new span rule had caught it; it had not, and
+# the check that they are still missed is what said so.
 #
 # Retires when: no producer writes an item file through a YAML dumper, or the
 # queue gains one canonical item writer that every producer goes through and that
@@ -644,11 +653,20 @@ DOUBLED_APOSTROPHE = "''"
 POSSESSIVE_DOUBLING_RE = re.compile(
     DOUBLED_APOSTROPHE + r"[sS](?!\w)|(?<=\w)" + DOUBLED_APOSTROPHE + r"(?!\w)"
 )
+MARKED_LITERAL_RE = re.compile(r"`[^`]*`|\"[^\"]*\"")
 
 
 def accidental_doubling(text: str) -> bool:
-    """Does `text` hold a doubled apostrophe that reads as a twice-escaped possessive?"""
-    return POSSESSIVE_DOUBLING_RE.search(text) is not None
+    """Does `text` hold a doubled apostrophe that reads as a twice-escaped possessive?
+
+    A doubling inside a backticked or double-quoted span is the author marking a
+    literal and is not reported; see the two rules above.
+    """
+    marked = [(m.start(), m.end()) for m in MARKED_LITERAL_RE.finditer(text)]
+    for hit in POSSESSIVE_DOUBLING_RE.finditer(text):
+        if not any(start <= hit.start() and hit.end() <= end for start, end in marked):
+            return True
+    return False
 
 
 def check_doubled_apostrophes(item: Item) -> list[Problem]:
