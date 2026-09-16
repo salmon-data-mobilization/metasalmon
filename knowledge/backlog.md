@@ -4350,9 +4350,23 @@ pull request 123 and escalated to Brett on 2026-09-16; it is deliberately left a
 a stated conflict rather than a quiet edit, because the quiet edit would be an
 agent choosing the byte.
 
-*Retires when:* one spelling is ruled for a pre-1000 instant in
-`metadata/dataset.csv` and both implementations emit it, with a test pinning
-write → read for a `POSIXct` below year 1000. **A ruling, not a substitution**,
+*Retires when:* **the ruling alone** — one spelling is ruled for a pre-1000
+instant in `metadata/dataset.csv`, recorded in `knowledge/questions.md` together
+with whether B-115's condition is restated to name the ruled bytes.
+`queue/items/B-161.yaml` is the authority for the condition; this passage is its
+evidence, not a second definition of it.
+
+**It said "and both implementations emit it, with a test pinning write → read
+for a `POSIXct` below year 1000" until 2026-09-16, and that clause is now the
+emission halves** — `B-206` (metasalmon) and `B-207` (metasalmonpy), each blocked
+on the ruling and each naming the other. The split is a fix rather than a
+rescoping: the old wording could not be satisfied inside the item's declared
+`repo: metasalmon` at all, which is the claimable-and-unfinishable case
+`queue/README.md` forbids and whose prescription is exactly this pair. It went
+unseen because `claimable: false` meant nobody could take the item and discover
+it. Caught twice by the Codex review of pull request 137 — once on the card, and
+again here, on the `evidence` pointer, which is the copy the first fix left
+behind. **A ruling, not a substitution**,
 which is why the item is not claimable: padding the CSV side means reopening #93
 item 1 deliberately — it ruled that `.ms_iso_date_columns()` leaves `POSIXct`
 alone, *correctly*, because coercing an instant changes the separator, the zone
