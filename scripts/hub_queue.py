@@ -610,7 +610,15 @@ def relative(path: Path, root: Path) -> str:
 # queue gains one canonical item writer that every producer goes through and
 # that writer is itself tested for this. Until one of those, this check is the
 # only thing between a doubled apostrophe and a reader.
-DOUBLED_APOSTROPHE_RE = re.compile(r"''")
+#
+# THE PATTERN DISCRIMINATES RATHER THAN BANS, because a card may legitimately
+# need two adjacent apostrophes -- one documenting this very escape, or an SQL
+# empty-string literal. The accidental form is always a POSSESSIVE, so the
+# doubling is preceded by a word character: item''s, readr''s, producers''. A
+# deliberate mention is not: `''` in backticks, "the '' escape" after a space,
+# VALUES('') after a bracket. So the lookbehind is the whole check, and
+# removing it turns a discrimination back into a ban.
+DOUBLED_APOSTROPHE_RE = re.compile(r"(?<=\w)''")
 
 
 def check_doubled_apostrophes(item: Item) -> list[Problem]:
@@ -627,9 +635,11 @@ def check_doubled_apostrophes(item: Item) -> list[Problem]:
                         item.path,
                         item.lines.get(key, 0),
                         "doubled-apostrophe",
-                        f"{key} reads back with a doubled apostrophe, so it was escaped "
-                        "twice. A value handed to a YAML dumper carries one apostrophe "
-                        "and the dumper escapes it",
+                        f"{key} reads back with a doubled apostrophe after a word "
+                        "character, so a possessive was escaped twice. A value handed "
+                        "to a YAML dumper carries one apostrophe and the dumper escapes "
+                        "it. Two adjacent apostrophes that are not a possessive are "
+                        "allowed: put a space, a bracket or a backtick before them",
                     )
                 )
     return problems

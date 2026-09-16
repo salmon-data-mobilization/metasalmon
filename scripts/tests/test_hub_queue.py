@@ -1825,6 +1825,30 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         )
         self.assert_accepts()
 
+    def test_two_adjacent_apostrophes_that_are_not_a_possessive_are_allowed(self):
+        """The rule discriminates; it does not ban the character pair.
+
+        A card may legitimately need two adjacent apostrophes -- one describing
+        this very escape, or an SQL empty-string literal. Banning every pair
+        makes the rule unwriteable in a card, and a guard nobody can write
+        around gets deleted rather than narrowed.
+
+        THE FIXTURES NEED FOUR APOSTROPHES IN THE FILE TO PUT TWO IN THE VALUE,
+        and the first version of this test did not, which made it vacuous: with
+        only '' in the file the parsed value holds ONE apostrophe, so nothing
+        could ever have fired and the test passed with the discriminating
+        lookbehind removed. It was caught by demonstrating RED on that removal,
+        which is the only thing that could have caught it.
+        """
+        for legitimate in (
+            "a card may write the YAML escape as `''''` and pass",
+            "the '''' escape doubles an apostrophe in a single-quoted scalar",
+            "an SQL empty string is VALUES('''') and is not a possessive",
+        ):
+            with self.subTest(legitimate=legitimate):
+                self.write_item(BASE_DEFECT, retires_when="'" + legitimate + "'")
+                self.assert_accepts()
+
     def test_file_that_is_not_utf8(self):
         path = self.queue / "B-53.yaml"
         path.write_bytes(item_text(BASE_DEFECT).encode("utf-8") + b"\xff\xfe")
@@ -1887,10 +1911,54 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
         "generated-blocks-unreadable",
     }
 
+    # An emission whose rule name is a variable rather than a literal. Reading
+    # only literals would let a rule reach `lint` with no pair and this guard
+    # stay green -- the hole in exactly the place the guard claims to cover,
+    # which is the failure AGENTS.md's dead-guard rule is about. So each such
+    # site is named here with the FUNCTION whose return values supply the name,
+    # those returns are read out of the source, and an unlisted site fails.
+    #
+    # There is one today: `parse_item_file` reports `rule or "value"`, where
+    # `rule` is `parse_scalar`'s third return value. ADD A SITE HERE THE MOMENT
+    # ONE APPEARS, naming its supplier, or this guard shrinks to fit the code.
+    INDIRECT_RULE_SUPPLIERS = {"parse_item_file": "parse_scalar"}
+
+    @staticmethod
+    def _enclosing_function(tree, target) -> str:
+        """The name of the INNERMOST function whose body contains `target`.
+
+        Innermost rather than first: `ast.walk` yields outer definitions before
+        inner ones, so taking the first match would name an enclosing function
+        for a rule emitted inside a nested one, and the site would then look
+        listed when it is not.
+        """
+        enclosing = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and any(n is target for n in ast.walk(node))
+        ]
+        return max(enclosing, key=lambda n: n.lineno).name if enclosing else "<module>"
+
+    @staticmethod
+    def _rules_returned_by(tree, function: str) -> set[str]:
+        """Every string literal a function returns in a 3-tuple's last slot."""
+        found = set()
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.FunctionDef) and node.name == function):
+                continue
+            for inner in ast.walk(node):
+                if not (isinstance(inner, ast.Return) and isinstance(inner.value, ast.Tuple)):
+                    continue
+                last = inner.value.elts[-1] if inner.value.elts else None
+                if isinstance(last, ast.Constant) and isinstance(last.value, str) and last.value:
+                    found.add(last.value)
+        return found
+
     def test_no_lint_rule_lacks_a_red_demonstration(self):
         source = (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8")
-        emitted, indirect = set(), []
-        for node in ast.walk(ast.parse(source)):
+        tree = ast.parse(source)
+        emitted, indirect_in = set(), {}
+        for node in ast.walk(tree):
             if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
                 continue
             if node.func.id != "Problem" or len(node.args) < 3:
@@ -1899,7 +1967,26 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
             if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
                 emitted.add(rule.value)
             else:
-                indirect.append(node.lineno)
+                indirect_in.setdefault(self._enclosing_function(tree, node), []).append(node.lineno)
+
+        # Every indirect site must be listed, and its supplier's rule names are
+        # then held to the same standard as a literal.
+        self.assertEqual(
+            sorted(set(indirect_in) - set(self.INDIRECT_RULE_SUPPLIERS)),
+            [],
+            "a rule is emitted through a variable in a function this guard does not "
+            "know about, so its rule names bypass the check: "
+            + ", ".join(f"{fn} (line {indirect_in[fn]})" for fn in sorted(indirect_in)),
+        )
+        for function, supplier in self.INDIRECT_RULE_SUPPLIERS.items():
+            supplied = self._rules_returned_by(tree, supplier)
+            self.assertNotEqual(
+                supplied,
+                set(),
+                f"{supplier} supplies {function}'s rule names and none were found; "
+                "the reader is broken, not the code",
+            )
+            emitted |= supplied
 
         tests = set(
             re.findall(
