@@ -1,0 +1,13 @@
+id: B-166
+kind: defect
+title: Re-vendor sdp.rules.yaml into metasalmonpy once the reworded SOSA Procedure rules merge
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: [B-106]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy data/schema/sdp.rules.yaml carries the same bytes as smn-data-pkg schema/sdp.rules.yaml once smn-data-pkg pull request 8 merges, the way metasalmon pull request 120 re-vendors inst/extdata/schema/sdp.rules.yaml for the same change. A PORT AND NOT A DEVIATION, so no parity register row is added; the file is vendored spec text rather than an implementation choice, and a stale vendored copy is a third answer to a question the spec repository owns. Measured 2026-09-15: metasalmon main, metasalmonpy and smn-data-pkg main all carry md5 3c702a373409b23f9c58cb1e1a702c06, while the reworded file on metasalmon''s B-106 branch is 2f6126c241ce637955604b75e48b9265. So all three copies sit at the pre-change bytes today, the R re-vendor already has a pull request open, and metasalmonpy is the copy with none.'
