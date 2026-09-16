@@ -1,0 +1,579 @@
+From 195739f45ab1bf5f61ce786212ce89e2e2cf1e64 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 14 Sep 2026 23:45:08 +0000
+Subject: [PATCH] Restore pre-run WebVOWL bytes when docs-widoco fails
+
+docs-widoco snapshots the working-tree docs/webvowl/data/ontology.json as the
+normalizer baseline, then rsync overwrites that same path with fresh WIDOCO
+output. A failure between the two left raw generator bytes in the tree. The
+next run adopted those raw bytes as its baseline, found the fresh raw output
+semantically equal to them, restored them, and exited 0 -- a failed docs build
+turning itself into a green build over un-normalized output.
+
+The recipe now arms a shell trap on EXIT that puts the pre-run bytes back on
+any non-zero exit, and disarms it once the normalizer has succeeded, past which
+the file holds normalized output and the rest of the recipe is cleanup. The
+restore is byte-exact and free, because the baseline copy the recipe already
+takes is a copy of those bytes.
+
+The working-tree baseline is kept deliberately: it is what makes repeated local
+refreshes compare against the previous local run rather than against the last
+commit. Sourcing the baseline from git HEAD instead was considered and rejected
+for that reason (Brett, 2026-09-14). That rejected option was the Intended fix
+stated in the tech-debt entry, so it is recorded as rejected in ADR-010 and in
+the resolved entry rather than deleted, to avoid leaving the repository
+teaching it.
+
+Verified by reproduction, not by a clean run, since a clean run never enters
+the failure path. With an injected normalizer abort the unfixed recipe leaves
+raw bytes and the repaired re-run exits 0 over them (8219 lines changed against
+the committed artifact); with the trap the failed run restores the pre-run
+bytes and the repaired re-run is green on a clean tree. Both versions fail
+identically at the break step, so breaking the build proves nothing by itself.
+
+Queue item B-0.
+---
+ .hub/workpad.md                               | 177 ++++++++++++++++++
+ CHANGELOG.md                                  |  27 +++
+ Makefile                                      |  35 +++-
+ ...widoco-restores-prerun-webvowl-baseline.md | 135 +++++++++++++
+ docs/context/widoco.md                        |   3 +-
+ docs/entrypoints.md                           |   3 +-
+ docs/tech-debt.md                             |  58 +++---
+ 7 files changed, 411 insertions(+), 27 deletions(-)
+ create mode 100644 .hub/workpad.md
+ create mode 100644 docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md
+
+diff --git a/.hub/workpad.md b/.hub/workpad.md
+new file mode 100644
+index 0000000..d4f07c4
+--- /dev/null
++++ b/.hub/workpad.md
+@@ -0,0 +1,177 @@
++# B-0 — gcdfo docs-widoco seeds its own baseline, so a failed build goes green over raw output
++
++Queue item: `B-0` (defect, P3, stream S6, repo `dfo-salmon-ontology`, legacy "item 0").
++Evidence pointer: `knowledge/backlog.md` in the metasalmon hub; the repository-local
++record was the 2026-08-16 entry in `docs/tech-debt.md`.
++Claim token `a-1bb40ea5848c7e06`, branch `agent/B-0/a-1bb40ea5848c7e06`.
++
++Implements option **(b)**, ruled by Brett 2026-09-14. Option (a) — sourcing the
++baseline from git HEAD — is rejected and is recorded as rejected rather than
++silently dropped, because it was the *stated* intended fix in `docs/tech-debt.md`
++and deleting it would have left the repository teaching a discarded option.
++
++## What changed and where
++
++- **`Makefile`**, `docs-widoco` recipe. The recipe keeps the working-tree baseline
++  (that is the deliberate property, and the reason option (a) was rejected) and now
++  arms a shell `trap … EXIT` that restores the pre-run bytes of
++  `docs/webvowl/data/ontology.json` on any non-zero exit. Mechanics:
++  - a `WEBVOWL_JSON` variable replaces three literal repetitions of that path;
++  - `PRERUN` records whether the file existed before the run, and holds the restore
++    source when it did. It is the copy the recipe already takes for the normalizer,
++    so the restore is byte-exact and free;
++  - on failure the trap announces itself on stderr, then copies the pre-run bytes
++    back, or removes the file if there was none before the run;
++  - `trap - EXIT` disarms it as soon as the normalizer succeeds — past that point the
++    file holds normalized output and every remaining command is cleanup, so leaving
++    the trap armed would let a failure in the trailing `rm`s restore from a baseline
++    the success path has already deleted;
++  - the normalizer branch now keys off `PRERUN` rather than re-testing `BASELINE`, so
++    one variable decides both the baseline argument and the restore source. Two tests
++    of the same condition was how the fix could have been made to look correct while
++    disagreeing with itself.
++  - A comment above the recipe carries the reasoning, what the trap does **not**
++    cover, and its retirement condition.
++- **`docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md`** (new). The
++  repository's AGENTS.md requires an ADR when choosing between competing approaches,
++  and ADR-007 is where the previous decision on this same artifact lives, so this is
++  where the repo keeps rejected-option history. Records the decision, the rejected
++  git-HEAD alternative and why it was rejected, the consequences (including that
++  nothing automated checks the trap still works), and the reproduction table.
++- **`docs/tech-debt.md`**. The 2026-08-16 entry moved from *Active* to *Resolved*
++  with a resolution, an explicit paragraph recording that its own stated **Intended
++  fix** was the rejected option, and a lesson. Deleting it was not enough and leaving
++  it was worse.
++- **`docs/entrypoints.md`**, **`docs/context/widoco.md`**. Both described the recipe's
++  failure behaviour and both are now complete. Both also said the normalizer compares
++  against "the prior tracked baseline" / "the previously tracked copy", which is the
++  one distinction this whole item turns on — the baseline is the **working-tree** copy,
++  which is why a failed run can poison it. Corrected in place.
++- **`CHANGELOG.md`**, a new `### Fixed` block under `[Unreleased]`.
++
++No regeneration of `docs/webvowl/data/ontology.json` is part of this change; it is
++byte-identical to `main`, which the runs below confirm.
++
++## Commands and results
++
++Toolchain, checked before claiming because the item says the verification cannot run
++without it: `java` 21.0.10 present; `tools/widoco.jar` (1.4.25) and `tools/robot.jar`
++(1.9.8) absent and fetched with the repo's own `make install-widoco` /
++`make install-robot`; `rsync` absent and installed (the recipe needs it); no sibling
++`salmon-domain-ontology` checkout, so `prepare-import-catalog` took its documented
++`SMN_PIN` fallback (`f7205ee`).
++
++**Control, before any change** — unmodified recipe, `make docs-widoco`: exit 0, and
++`docs/webvowl/data/ontology.json` byte-identical to the committed file. So a green run
++was green here for the right reason before the change, and the induced failures below
++are the change under test rather than the environment.
++
++**The four required steps.** Run against both variants, because the item is explicit
++that a clean run twice is necessary and not sufficient, and that breaking the build
++proves nothing on its own — the unfixed recipe fails identically at that step. The
++injected failure is `raise ValueError(...)` at the top of `Normalizer.normalize()`,
++the same shape as the abort ADR-007 repaired: it crashes after `rsync` has already
++overwritten the artifact.
++
++| step | unfixed recipe (`main`) | with the trap |
++|---|---|---|
++| 1–2. break normalizer, `make docs-widoco` | FAILS — `ValueError`, `make: *** [Makefile:259: docs-widoco] Error 1`, exit 2 | FAILS — `ValueError`, trap prints `↩️  docs-widoco failed (status 1); restoring the pre-run docs/webvowl/data/ontology.json …`, `make: *** [Makefile:283: docs-widoco] Error 1`, exit 2 |
++| 3. state of the artifact | `sha256 3201d305a07959e1…` — **raw WIDOCO output**; `git status` ` M docs/webvowl/data/ontology.json` | `sha256 baa1dc69ba550c2d…` — **pre-run bytes**; `git status` clean |
++| 4. repair normalizer, re-run | exit **0** — `sha256 567a9dcb290a0352…`, still dirty, **8219 lines changed** against the committed artifact: green over raw bytes | exit **0** — `sha256 baa1dc69ba550c2d…`, `git status` clean: green on correctly normalized bytes |
++
++Step 4's unfixed hash is neither the committed file nor step 3's raw bytes but the raw
++bytes of the *second* generation: the poisoned baseline was raw, the fresh raw output
++was semantically equal to it, so the normalizer restored the fresh raw ids. Every
++later run repeats that, each exiting 0, which is why this was only ever going to be
++found by inspection.
++
++**Clean double-run with the final recipe**, the necessary-but-not-sufficient half:
++`make docs-widoco` twice, exit 0 both times, `docs/webvowl/data/ontology.json`
++`baa1dc69ba550c2d…` after each and `git status` clean for it, so the trap has not
++disturbed byte-stability.
++
++`make -n docs-widoco` output was extracted and `sh -n`-checked before the first run —
++the trap body is one physical line on purpose, because a backslash-continued make line
++inside single quotes is not a shell line continuation.
++
++Running `docs-widoco` alone also rewrites `docs/index.html` and `docs/index-en.html`,
++because `docs-skos` and `docs-postprocess` (the rest of `docs-refresh`) are what put
++the repo's own post-processing back. That is pre-existing and unrelated; those two
++paths were reset between runs so they could not be mistaken for a result.
++
++## What I did not do, and why
++
++- **Nothing was pushed, and no pull request was opened.** `dfo-salmon-ontology` is a
++  shared member repository — two other participants, another organization — so the
++  grant in `HUB.md` does not cover a branch push or a draft PR here. The work ends at
++  this branch in the worktree plus the PR text handed to Brett in chat.
++- **No CI regression test for the trap.** Making CI prove the trap still works means
++  injecting a normalizer failure into a `make ci` run, which is a new gate rather than
++  this fix. ADR-010 records the gap under *Consequences → Negative* instead of
++  implying coverage that does not exist, and the reproduction above is the manual
++  check. New-item candidate below.
++- **Only `docs/webvowl/data/ontology.json` is restored**, not the other files `rsync`
++  copies into `docs/`. Brett's ruling names that path, and it is the only one that is
++  its own baseline; the others cannot poison a later comparison and the CI drift check
++  covers them.
++- **`docs/webvowl/data/ontology.json` was not regenerated or re-baselined.**
++- **No commit attribution trailers.** This repository's `AGENTS.md` says, as a
++  non-negotiable: "Do NOT add 'Co-authored-by …' lines or any hidden authorship
++  markers unless the user explicitly requests it." That is a project instruction in
++  the repository the commit lands in, so it wins over the session default. Flagged for
++  Brett; `git commit --amend` reverses it in one command if he wants them.
++
++## Belongs to another item / new-item candidates
++
++- **New-item candidate: `prepare-import-catalog` is a live instance of the fault class
++  AGENTS.md records, and it is a dependency of `docs-widoco`.** The fault AGENTS.md
++  names ("a `make` recipe whose missing `set -e` printed a success mark over a
++  crashing script") is *this* recipe's own history, fixed 2026-08-16 along with
++  `release-snapshot` (ADR-007, *More Information*). Both still carry `set -e`; that is
++  not regressed. But `prepare-import-catalog` has the identical shape and no `set -e`:
++  a `;`-chained block whose every branch ends in `echo "✅ ROBOT catalog maps smn
++  import to …"`, so make takes the `echo`'s status. Demonstrated by making the real
++  recipe's real `printf > $(ROBOT_CATALOG)` fail — the write fails, the success mark
++  prints, and `make` exits **0**. The consequence is worse than a wrong mark, because
++  every ROBOT target and `docs-widoco` itself consume that catalog: a half-written or
++  unwritten catalog changes how the `smn` import resolves, which changes the published
++  artifacts. Nine further recipes lack `set -e` but are single logical commands split
++  across continuations, or `if`-blocks whose status does propagate; this one is the
++  instance worth an item. Not fixed here — out of this item's `retires_when`.
++- **New-item candidate, and the more serious of the two: the `pre-push` hook in
++  `.pre-commit-config.yaml` cannot fail, and it discards this very artifact.** Its
++  `entry` is one `bash -lc` chain with no `set -e` that ends
++  `…; make ci; git checkout -- docs/webvowl/data/ontology.json || true`. Two
++  consequences, both verified:
++  - **The hook's exit status is always 0**, because it is the status of the trailing
++    `|| true`. A failing `make ci` therefore does not fail the pre-push gate.
++    Reproduced with the same tail shape: `bash -lc 'make definitely-not-a-target;
++    git checkout -- README.md || true'` prints make's error and exits **0**. This is
++    the fault class AGENTS.md names, in a live guard rather than in history.
++  - **The `git checkout --` unconditionally throws away whatever `make ci` produced
++    for `docs/webvowl/data/ontology.json`**, on success as much as on failure. The
++    hook fires only when `ontology/dfo-salmon.ttl` changed (`files:`,
++    `stages: [pre-push, manual]`) — precisely when that artifact most likely *should*
++    change. It is a no-op in the intended flow, where the regeneration is already
++    committed, and it silently drops a legitimate regeneration when it is not, after
++    which CI's drift check fails for a reason the hook has erased the evidence of.
++  - It reads as a pre-normalizer churn suppressor that outlived its cause — the same
++    shape as the CI exclusion that AGENTS.md records as having been added five weeks
++    before the normalizer whose crash it went on to hide — and it states no
++    retirement condition. The trap landed here removes the failed-build rationale for
++    the `git checkout --` line, which is what makes it worth an item now.
++- No other queue item's scope was entered.
++
++## Retirement conditions of what I added
++
++- **The trap in `docs-widoco`** retires when the recipe stops overwriting the file it
++  uses as its own baseline — for instance normalizing inside `release/tmp/widoco` and
++  copying only normalized bytes into `docs/`, which removes the window instead of
++  repairing it afterwards. It does **not** retire by adopting the rejected `git show
++  HEAD:` baseline. Written above the recipe and repeated in ADR-010, and ADR-010 also
++  states what the trap does not cover: a shell killed by a signal, where no `EXIT`
++  trap runs and `git checkout -- docs/webvowl/data/ontology.json` is still the repair.
++- **ADR-010** retires with the trap, as a superseded ADR, if a later decision removes
++  the window; it is the record of a rejected option, so it is not deleted when that
++  happens.
++- No suppression, exclusion, allowlist entry or skip was added.
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3ab904d..cbfcae6 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -214,6 +214,33 @@
+   code, so a reader could not tell which of the two scripts in `scripts/` was
+   live.
+ 
++### Fixed
++- **A failed `make docs-widoco` no longer re-baselines WebVOWL output to raw
++  generator bytes.** The recipe snapshots the working-tree
++  `docs/webvowl/data/ontology.json` as the normalizer baseline and then `rsync`
++  overwrites that same path with fresh WIDOCO output, so a failure between the
++  two left raw generator bytes in the tree. The *next* run adopted those raw
++  bytes as its baseline, found the fresh raw output semantically equal to them,
++  restored them, and exited 0 — a failed docs build turning itself into a green
++  build over un-normalized output. The recipe now arms a shell `trap … EXIT` that
++  puts the pre-run bytes back on any non-zero exit, and disarms it once the
++  normalizer has succeeded. Local only; CI checks out clean, so its baseline was
++  always the committed file.
++  - **The working-tree baseline is kept deliberately**, because it is what makes
++    repeated local refreshes compare against the previous local run rather than
++    against the last commit. Sourcing the baseline from
++    `git show HEAD:docs/webvowl/data/ontology.json` instead was considered and
++    rejected for that reason; the comparison is recorded in
++    [ADR-010](docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md) so the
++    discarded option is not re-proposed as an improvement.
++  - Verified by reproduction rather than by a clean run, because a clean run never
++    enters the failure path: with an injected normalizer abort, the unfixed recipe
++    leaves raw bytes and the repaired re-run exits 0 over them (8219 lines changed
++    against the committed artifact, `git status` dirty, and a different hash again
++    on each run); with the trap, the failed run restores the pre-run bytes and the
++    repaired re-run is green on a clean tree. Breaking the build proves nothing on
++    its own here — both versions fail identically at that step.
++
+ ## [0.0.9] - 2026-08-16
+ 
+ First release cut after the S9 step-3 shared-layer boundary work (PR #78). This
+diff --git a/Makefile b/Makefile
+index 19d96b8..14a01b0 100644
+--- a/Makefile
++++ b/Makefile
+@@ -254,14 +254,40 @@ docs-widoco-input: check-robot prepare-import-catalog
+ 		--output $(WIDOCO_ONTOLOGY_INPUT)
+ 	@echo "✅ Wrote $(WIDOCO_ONTOLOGY_INPUT)"
+ 
++# The normalizer's baseline is the WORKING-TREE copy of
++# docs/webvowl/data/ontology.json, deliberately: repeated local refreshes then
++# compare against the previous local run rather than against the last commit.
++# The cost of that choice is that one file is both the baseline source and the
++# rsync target, so a failure anywhere between the rsync and a successful
++# normalize would leave raw generator bytes sitting exactly where the next run
++# reads its baseline — and that next run finds the raw output semantically equal
++# to its (raw) baseline, restores it, and goes green over un-normalized output.
++#
++# The trap closes that window by putting the pre-run bytes back on failure. It
++# can do so exactly, because $$BASELINE already IS a copy of those bytes; the
++# property that makes the defect possible is the one that makes the repair free.
++# It is disarmed the moment the normalizer succeeds: from there the file holds
++# normalized output and every remaining command is cleanup.
++#
++# What it covers: any non-zero exit under `set -e`. What it does not: the shell
++# being killed by a signal, where no EXIT trap runs at all and
++# `git checkout -- docs/webvowl/data/ontology.json` is still the repair.
++#
++# Retires when: docs-widoco stops overwriting the file it uses as its own
++# baseline — e.g. if the normalizer runs inside $$OUT and only normalized bytes
++# are ever copied into docs/. It does NOT retire by taking the baseline from
++# `git show HEAD:`: that was considered and rejected, because it discards the
++# local-refresh comparison above (ADR-010, ruled 2026-09-14).
+ docs-widoco: check-widoco docs-widoco-input
+ 	@echo "🧙 Regenerating WIDOCO docs..."
+ 	@set -e; \
+ 	OUT="release/tmp/widoco"; \
+ 	BASELINE="release/tmp/webvowl-baseline.json"; \
++	WEBVOWL_JSON="docs/webvowl/data/ontology.json"; \
+ 	rm -rf "$$OUT"; \
+ 	mkdir -p "$$OUT"; \
+-	if [ -f docs/webvowl/data/ontology.json ]; then cp docs/webvowl/data/ontology.json "$$BASELINE"; else rm -f "$$BASELINE"; fi; \
++	if [ -f "$$WEBVOWL_JSON" ]; then cp "$$WEBVOWL_JSON" "$$BASELINE"; PRERUN="$$BASELINE"; else rm -f "$$BASELINE"; PRERUN=""; fi; \
++	trap 'st=$$?; [ "$$st" -eq 0 ] || { echo "↩️  docs-widoco failed (status $$st); restoring the pre-run $$WEBVOWL_JSON rather than leaving raw WIDOCO output in the tree" >&2; if [ -n "$$PRERUN" ]; then cp "$$PRERUN" "$$WEBVOWL_JSON"; else rm -f "$$WEBVOWL_JSON"; fi; }; exit $$st' EXIT; \
+ 		java -jar $(WIDOCO_JAR) \
+ 			-ontFile $(WIDOCO_ONTOLOGY_INPUT) \
+ 			-outFolder "$$OUT" \
+@@ -274,11 +300,12 @@ docs-widoco: check-widoco docs-widoco-input
+ 		cp "$$OUT/index-en.html" "$$OUT/index.html"; \
+ 	fi; \
+ 	rsync -a --exclude "/ontology.*" --exclude "/readme.md" "$$OUT/" docs/; \
+-	if [ -f "$$BASELINE" ]; then \
+-		python3 scripts/normalize_webvowl_json.py docs/webvowl/data/ontology.json --baseline "$$BASELINE" --ontology $(WIDOCO_ONTOLOGY_INPUT); \
++	if [ -n "$$PRERUN" ]; then \
++		python3 scripts/normalize_webvowl_json.py "$$WEBVOWL_JSON" --baseline "$$PRERUN" --ontology $(WIDOCO_ONTOLOGY_INPUT); \
+ 	else \
+-		python3 scripts/normalize_webvowl_json.py docs/webvowl/data/ontology.json --ontology $(WIDOCO_ONTOLOGY_INPUT); \
++		python3 scripts/normalize_webvowl_json.py "$$WEBVOWL_JSON" --ontology $(WIDOCO_ONTOLOGY_INPUT); \
+ 	fi; \
++	trap - EXIT; \
+ 	rm -f docs/ontology.jsonld docs/ontology.nt docs/ontology.owl docs/ontology.ttl; \
+ 	rm -f "$$BASELINE"; \
+ 	rm -rf "$$OUT"; \
+diff --git a/docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md b/docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md
+new file mode 100644
+index 0000000..7fec73f
+--- /dev/null
++++ b/docs/adr/010-docs-widoco-restores-prerun-webvowl-baseline.md
+@@ -0,0 +1,135 @@
++# ADR-010: Keep the working-tree WebVOWL baseline and restore it on failure, rather than baselining from git HEAD
++
++## Status
++
++Accepted
++
++## Context
++
++`make docs-widoco` regenerates the WIDOCO documentation and then runs
++`scripts/normalize_webvowl_json.py` over `docs/webvowl/data/ontology.json` to stabilize the
++nondeterministic ids and array ordering that WIDOCO's bundled OWL2VOWL step emits
++([ADR-007](007-webvowl-duplicate-node-disambiguation.md)). The normalizer needs a *baseline* —
++a previous copy of that file — so it can keep ids stable and byte-restore the previous bytes
++when nothing has changed semantically.
++
++The recipe takes that baseline from the **working-tree** copy of the file. One file therefore
++plays two roles in one recipe: it is the baseline source, copied aside before WIDOCO runs, and
++it is an rsync target, overwritten with raw generator output a few commands later. A failure
++anywhere between the rsync and a successful normalize left the working tree holding raw
++generator bytes.
++
++That by itself is a visible failure, and since 2026-08-16 the recipe runs under `set -e` so it
++reports one. The damage was done by the *next* run. It snapshotted the raw bytes as its
++baseline, generated fresh raw output, found the two semantically equal, restored the raw
++bytes — and exited 0. So a failed docs build did not stay failed: it turned into a green build
++over un-normalized output, with the only visible symptom being a whole-file reformat bundled
++into whatever real diff came next.
++
++The window is local-only. CI checks out clean, so its baseline is always the committed file,
++and the post-`make ci` drift check covers this path, so raw bytes pushed from a poisoned local
++baseline fail there.
++
++Two competing repairs were available.
++
++## Decision
++
++**Keep the working-tree baseline, and restore the pre-run bytes on failure with a shell trap.**
++
++1. `docs-widoco` records whether `docs/webvowl/data/ontology.json` existed before the run and,
++   if it did, keeps the copy it already makes as the restore source.
++2. A `trap … EXIT` fires on any non-zero exit: it announces itself on stderr and either copies
++   the pre-run bytes back, or removes the file if there was none before the run.
++3. The trap is disarmed (`trap - EXIT`) as soon as the normalizer succeeds. From that point the
++   file holds normalized output and every remaining command in the recipe is cleanup, so there
++   is nothing left for the trap to protect.
++
++**The rejected alternative was to take the baseline from `git show HEAD:docs/webvowl/data/ontology.json`**
++— which `scripts/normalize_webvowl_json.py` already implements as its fallback in
++`load_git_head_text`, so it would have been a smaller diff than the trap. It was rejected
++because it pays for the fix with a property the recipe is deliberately built around: a
++working-tree baseline is what makes repeated local refreshes compare against *the previous
++local run* rather than against the last commit. An author iterating on the ontology between
++commits would have every intermediate refresh compared against stale committed bytes, so the
++ids would churn against HEAD on each run instead of holding steady across the session.
++
++The deciding observation is that the two options are not symmetric in what they cost. Sourcing
++from HEAD closes the failure window by removing a wanted behaviour. The trap closes the same
++window and keeps it, and it can restore the pre-run bytes *exactly*, because the baseline copy
++the recipe already takes is a byte copy of them — the property that makes the defect possible
++is the property that makes the repair free. Ruled by Brett, 2026-09-14.
++
++## Consequences
++
++### Positive
++
++- A failed `make docs-widoco` now leaves the tree as it found it, so re-running it after fixing
++  the cause compares against a clean baseline. A failure stays a failure.
++- No behaviour is traded away: repeated local refreshes still compare against the previous local
++  run, which is the whole reason the baseline comes from the working tree.
++- The restore is exact rather than approximate — byte-for-byte, from a copy taken in the same
++  recipe — and it is idempotent, so it is harmless when WIDOCO fails before the rsync has
++  overwritten anything.
++
++### Negative
++
++- The recipe now carries shell control flow (a trap, and one variable recording whether the file
++  pre-existed) that a reader has to follow to see why it is correct. The comment above the recipe
++  carries that reasoning, including what the trap does not cover.
++- The guard is invisible in normal operation. Nothing in a green run says the trap is armed, and
++  nothing would fail if a later edit dropped it; the only check that it still works is the
++  reproduction recorded under **More Information**, which is a manual procedure. A CI regression
++  test would need to inject a normalizer failure into a `make ci` run, which is not wired up.
++
++### Neutral
++
++- Scope is deliberately one path: `docs/webvowl/data/ontology.json`. The other files `rsync`
++  copies into `docs/` are not their own baselines, so a failed run leaving them updated cannot
++  poison a later comparison, and the CI drift check catches them.
++- The normalizer's `--baseline` argument and its `load_git_head_text` fallback are untouched. The
++  fallback still applies when the recipe finds no working-tree copy to snapshot.
++
++## More Information
++
++**Reproduction, run 2026-09-14 against WIDOCO 1.4.25 / ROBOT 1.9.8, with the injected failure
++`raise ValueError` at the top of `Normalizer.normalize()`** — the same shape as the abort ADR-007
++repaired, which crashes after `rsync` has overwritten the artifact and before anything is
++written back:
++
++| step | unfixed recipe | with the trap |
++|---|---|---|
++| 1–2. break the normalizer, `make docs-widoco` | fails, `make: *** [docs-widoco] Error 1`, exit 2 | fails, `make: *** [docs-widoco] Error 1`, exit 2 |
++| 3. state of `docs/webvowl/data/ontology.json` | **raw WIDOCO output** (`sha256 3201d305a07959e1…`), `git status` shows ` M` | **pre-run bytes** (`sha256 baa1dc69ba550c2d…`), `git status` clean |
++| 4. repair the normalizer, re-run | **exits 0 over raw bytes** — now `567a9dcb290a0352…`, 8219 lines changed against the committed file, `git status` still ` M` | exits 0 on normalized bytes — `baa1dc69ba550c2d…`, `git status` clean |
++
++Step 1–2 is identical in both columns, which is the point: *seeing the build fail proves nothing
++about this defect*, because the unfixed recipe fails in exactly the same way. The divergence is
++at step 3, and the consequence only becomes visible at step 4, where the unfixed recipe reports
++success over output it never normalized. A clean run twice is likewise necessary and not
++sufficient — a clean run never enters the failure path at all.
++
++Step 4's unfixed hash is worth reading closely: it is neither the committed file nor the raw bytes
++from step 3, but the raw bytes of the *second* generation. The poisoned baseline was raw, the fresh
++raw output was semantically equal to it, so the normalizer restored the fresh raw ids. Every
++subsequent run does the same, so the artifact keeps churning while each build exits 0 — which is
++why this was found by inspection rather than by a failure.
++
++`baa1dc69ba550c2d…` is the committed artifact, unchanged by this ADR: no regeneration of
++`docs/webvowl/data/ontology.json` is part of this decision.
++
++**What would retire the trap**: `docs-widoco` no longer overwriting the file it uses as its own
++baseline — for instance normalizing inside `release/tmp/widoco` and copying only normalized bytes
++into `docs/`, which removes the window rather than repairing it afterwards. It does **not** retire
++by adopting the rejected `git show HEAD:` baseline; that option is recorded above so it is not
++re-proposed as an improvement. The retirement condition is repeated in the Makefile comment, next
++to the trap it governs.
++
++## Related
++
++- [ADR-007](007-webvowl-duplicate-node-disambiguation.md) — the normalizer and the
++  stabilization gate this recipe wraps; its **More Information** records the `set -e` fix that
++  made this failure visible, which is the precondition for the defect this ADR closes
++- [ADR-004](004-robot-toolchain-selection.md) — the ROBOT/WIDOCO toolchain
++- `docs/tech-debt.md` — the 2026-08-16 entry that recorded this window, resolved 2026-09-14,
++  where the rejected option is also kept as history rather than deleted
++- `docs/entrypoints.md` — where the normalizer sits in the `make docs-widoco` wiring
+diff --git a/docs/context/widoco.md b/docs/context/widoco.md
+index b770c16..ac67499 100644
+--- a/docs/context/widoco.md
++++ b/docs/context/widoco.md
+@@ -18,8 +18,9 @@ This file is **repo-specific** guidance for using WIDOCO here. Upstream/referenc
+   - `docs/` HTML via WIDOCO (`make docs-widoco`, uses `tools/widoco.jar`; runs with `-ignoreIndividuals` so SKOS concepts are not duplicated as “Named Individuals”, and `-webVowl` so a WebVOWL diagram is published under `docs/webvowl/`)
+     - `make docs-widoco` first builds `release/tmp/dfo-salmon-docs-input.ttl` via ROBOT `merge --collapse-import-closure true`
+     - import resolution is driven by `release/tmp/robot-catalog.xml`, which maps `https://w3id.org/smn` to `SMN_FLAT_TTL` (default: `../salmon-domain-ontology/salmon-domain-ontology.ttl`) when present
+-    - after export, `scripts/normalize_webvowl_json.py` — the one thing that touches `docs/webvowl/data/ontology.json` after WIDOCO writes it — compares the generated file against the prior tracked baseline semantically; if nothing meaningful changed it restores the exact baseline bytes, otherwise it normalizes ids/order to keep the diff deterministic and reviewer-friendly. See [ADR-007](../adr/007-webvowl-duplicate-node-disambiguation.md) for how it keys nodes, and `docs/entrypoints.md` for where it sits in the recipe
++    - after export, `scripts/normalize_webvowl_json.py` — the one thing that touches `docs/webvowl/data/ontology.json` after WIDOCO writes it — compares the generated file semantically against the baseline the recipe passes it, which is the **working-tree** copy of that same file taken before WIDOCO ran (so a local refresh compares against the previous local run, not against the last commit); if nothing meaningful changed it restores the exact baseline bytes, otherwise it normalizes ids/order to keep the diff deterministic and reviewer-friendly. See [ADR-007](../adr/007-webvowl-duplicate-node-disambiguation.md) for how it keys nodes, and `docs/entrypoints.md` for where it sits in the recipe
+     - the recipe runs under `set -e`, so a normalizer failure fails the build; CI's post-`make ci` clean-tree check covers `docs/webvowl/`, so a run that leaves the artifact changed fails the PR
++    - and because that one file is both the baseline source and the `rsync` target, the recipe arms a shell trap that restores its pre-run bytes on failure — otherwise a failed run leaves raw generator output exactly where the next run reads its baseline, and that next run goes green over it. See [ADR-010](../adr/010-docs-widoco-restores-prerun-webvowl-baseline.md)
+   - `docs/gcdfo.ttl` + `docs/gcdfo.owl` (ROBOT convert)
+   - `docs/gcdfo.jsonld` (Python `rdflib` conversion)
+   - SKOS blocks inside `docs/index.html` (via `scripts/generate_skos_section.py`)
+diff --git a/docs/entrypoints.md b/docs/entrypoints.md
+index 0b0fc13..7fee258 100644
+--- a/docs/entrypoints.md
++++ b/docs/entrypoints.md
+@@ -26,8 +26,9 @@ Purpose: one short, reliable map of what is canonical vs optional/deprecated.
+   - that list is what CI's post-`make ci` clean-tree check enforces, so the two must not diverge; the CI failure message points here rather than repeating the paths
+ - WIDOCO only: `make docs-widoco`
+   - internally builds `release/tmp/dfo-salmon-docs-input.ttl` via `make docs-widoco-input` (collapsed import closure for deterministic docs rendering)
+-  - then runs `scripts/normalize_webvowl_json.py` over `docs/webvowl/data/ontology.json` to stabilize OWL2VOWL's nondeterministic ids/ordering against the previously tracked copy; see [ADR-007](adr/007-webvowl-duplicate-node-disambiguation.md)
++  - then runs `scripts/normalize_webvowl_json.py` over `docs/webvowl/data/ontology.json` to stabilize OWL2VOWL's nondeterministic ids/ordering against the **working-tree** copy of that file — the previous local run, not necessarily the last commit; see [ADR-007](adr/007-webvowl-duplicate-node-disambiguation.md)
+   - the recipe runs under `set -e`, so a normalizer or WIDOCO failure fails the build instead of printing success
++  - and on failure a shell trap puts the pre-run bytes of `docs/webvowl/data/ontology.json` back, so a failed run cannot leave raw generator output sitting where the next run reads its baseline; see [ADR-010](adr/010-docs-widoco-restores-prerun-webvowl-baseline.md)
+ - Release snapshot (immutable docs version): `make release-snapshot VERSION=X.Y.Z`
+ 
+ ### Deprecated optional utility flow (non-canonical)
+diff --git a/docs/tech-debt.md b/docs/tech-debt.md
+index cf372bd..d4f3d36 100644
+--- a/docs/tech-debt.md
++++ b/docs/tech-debt.md
+@@ -114,27 +114,6 @@ It does not catch a restatement that is merely looser than upstream, like the
+ all. Rows that only echo `smn` belong upstream; the overlays should carry what DFO adds. Do
+ this with a domain reviewer, not as a cleanup pass.
+ 
+-### 2026-08-16 — A failed `make docs-widoco` can re-baseline WebVOWL output to raw generator bytes
+-
+-**What**: `docs-widoco` snapshots the working-tree `docs/webvowl/data/ontology.json` as the
+-normalizer baseline, then `rsync` overwrites that path with fresh WIDOCO output before the
+-normalizer runs. If the recipe fails after the rsync — which it now does loudly — the working
+-tree is left holding raw generator bytes. Re-running `make docs-widoco` adopts those raw bytes
+-as the baseline, the normalizer finds the new raw output semantically equal to them, restores
+-them, and the build goes green over un-normalized output.
+-
+-**Why it exists**: the baseline is taken from the working tree so that repeated local refreshes
+-compare against the previous local run rather than against the last commit.
+-
+-**Impact**: local only. CI checks out clean, so its baseline is always the committed file, and
+-the drift check now covers `docs/webvowl/data/ontology.json`, so raw output pushed from a
+-poisoned local baseline fails CI. Locally, run
+-`git checkout -- docs/webvowl/data/ontology.json` before retrying a failed docs build.
+-
+-**Intended fix**: take the baseline from `git show HEAD:docs/webvowl/data/ontology.json` —
+-which `scripts/normalize_webvowl_json.py` already implements as its fallback in
+-`load_git_head_text` — instead of from the working-tree copy.
+-
+ ### 2026-08-25 — Regulation-derived value lists are hand-committed, and nothing re-checks them against the source
+ 
+ **What**: the repo now carries 652 SKOS concepts transcribed from one external
+@@ -250,6 +229,43 @@ the repository.
+ 
+ ## Resolved Technical Debt
+ 
++### 2026-09-14 — A failed `make docs-widoco` could re-baseline WebVOWL output to raw generator bytes
++
++**Resolved Date**: 2026-09-14
++
++**What it was**: `docs-widoco` snapshots the working-tree `docs/webvowl/data/ontology.json` as the
++normalizer baseline, then `rsync` overwrites that same path with fresh WIDOCO output before the
++normalizer runs. A failure after the rsync — which since 2026-08-16 fails loudly rather than
++silently — left the working tree holding raw generator bytes. The next `make docs-widoco` then
++adopted those raw bytes as its baseline, found the fresh raw output semantically equal to them,
++restored them, and went green over un-normalized output. Local only: CI checks out clean, so its
++baseline is always the committed file.
++
++**Resolution**: the recipe keeps the working-tree baseline and arms a shell `trap … EXIT` that puts
++the pre-run bytes of `docs/webvowl/data/ontology.json` back on any non-zero exit. It can restore them
++exactly, because the baseline copy the recipe already takes *is* those bytes — the property that made
++the defect possible is the one that makes the repair free. The trap is disarmed as soon as the
++normalizer succeeds, since from that point the file holds normalized output and every remaining
++command is cleanup. It does not cover a shell killed by a signal, where no `EXIT` trap runs at all and
++`git checkout -- docs/webvowl/data/ontology.json` is still the repair. Decision, alternative and
++verification: [ADR-010](adr/010-docs-widoco-restores-prerun-webvowl-baseline.md).
++
++**The `Intended fix` this entry used to carry was rejected, and is recorded here rather than
++deleted** so that the repository is not left teaching a discarded option. That intended fix was to
++take the baseline from `git show HEAD:docs/webvowl/data/ontology.json` — the fallback
++`scripts/normalize_webvowl_json.py` already implements in `load_git_head_text` — instead of from the
++working-tree copy. Brett ruled against it on 2026-09-14. The working-tree baseline is deliberate: it
++is what makes repeated local refreshes compare against the previous local run rather than against the
++last commit, and closing a failure window by discarding a wanted property is the wrong trade when a
++trap closes the same window and keeps it. ADR-010 has the full comparison.
++
++**Lessons Learned**: when one file is both the baseline a later step compares against and the target
++an earlier step overwrites, a failure between the two does not merely fail — it silently changes what
++"unchanged" means for the next run, so the second run is the one that reports success. The repair
++belongs in the failure path rather than in the comparison. Note also which half of this the
++2026-08-16 `set -e` fix bought: it made the failure visible, and a visible failure that still leaves
++its output in the tree is exactly what this entry then described.
++
+ ### 2026-08-16 — WebVOWL output-stabilization gate was reporting success while doing nothing
+ 
+ **Resolved Date**: 2026-08-16
+-- 
+2.43.0
+

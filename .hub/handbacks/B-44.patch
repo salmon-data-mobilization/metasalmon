@@ -1,0 +1,1966 @@
+From bcf99f7664663d562ff47d991985b4609e50cd7d Mon Sep 17 00:00:00 2001
+From: hub-agent <a-71a6d7c9eefb16bc@agents.invalid>
+Date: Thu, 10 Sep 2026 22:05:47 +0000
+Subject: [PATCH 1/2] Make the validation layer run, and prove each gate can
+ fail (B-44)
+
+Three quality gates this repo documents had never executed: the SHACL
+shapes were never run (and, once run, rejected the repo's own example
+data with 7 violations because the snorkel and aerial shapes both
+targeted every survey event), the competency file held three queries
+in one .rq that no engine parses, and robot-profile.yaml replaced
+ROBOT's default report profile with two INFO rules so --fail-on ERROR
+had run nothing that could fail since 2025.
+
+- SHACL: the two method-specific shapes use a SHACL-core implication
+  so their constraints apply only to events of their method; the
+  countUnitIRI constraint accepts an IRI node or an xsd:anyURI literal
+  until the property is declared with a range. `make shacl-validate`
+  runs the shapes over the example data under pyshacl (pinned to
+  0.31.0, the newest that resolves against the rdflib pin CI relies
+  on). No SHACL-AF on purpose: an engine without it ignores a SPARQL
+  target silently and reports a vacuous pass.
+- Competency questions: split one per file under
+  ontology/sparql/competency/, bodies unchanged; `make
+  competency-questions` executes each separately and fails on a parse
+  error. All three return zero rows because they name terms the
+  ontology does not declare; that is reported, not failed, and recorded
+  as a term decision in docs/tech-debt.md.
+- ROBOT: robot-profile.yaml is now the default profile from the pinned
+  jar with exactly missing_label and missing_definition at INFO. The
+  re-enabled duplicate_label check finds gcdfo:WildSalmonPolicy and
+  gcdfo:WildSalmonPolicyTheme sharing a label, so `make quality-check`
+  fails on main until a label changes; deliberately not silenced.
+  scripts/robot-quality-check.sh could not report a failure (set -e
+  killed it before its ERROR branch); fixed, and it prints the rows.
+- Self-test: `make validation-selftest` (inside `make test`) points
+  each gate at a fixture under tests/fixtures/ broken on purpose and
+  asserts it fails for the documented reason, including that the
+  profile equals the jar's default modulo the two downgrades. Shown to
+  go red against the pre-fix shapes and the pre-fix profile.
+
+No ontology term IRI, label or definition is chosen, changed or removed.
+ADR-010, CHANGELOG, entrypoints, ROBOT_SETUP and tech-debt updated.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GvKPd1YpcrUYP6D4eMUPvD
+---
+ .github/workflows/ci.yml                      |   3 +-
+ AGENTS.md                                     |   4 +-
+ CHANGELOG.md                                  |  57 ++++++
+ Makefile                                      |  27 ++-
+ README.md                                     |   4 +-
+ docs/ROBOT_SETUP.md                           |  86 +++++++--
+ docs/adr/010-validation-gates.md              | 114 ++++++++++++
+ docs/entrypoints.md                           |  10 +-
+ docs/tech-debt.md                             |  70 ++++++++
+ ontology/shapes/dfo-salmon-shapes.ttl         | 110 +++++++++---
+ .../competency/cq-01-stock-status-zones.rq    |  16 ++
+ .../cq-02-survey-events-with-protocols.rq     |  16 ++
+ ...management-units-and-conservation-units.rq |  16 ++
+ .../sparql/example-competency-questions.rq    |  32 ----
+ robot-profile.yaml                            |  32 +++-
+ scripts/requirements.txt                      |  25 ++-
+ scripts/robot-quality-check.sh                |  56 ++++--
+ scripts/run-competency-questions.sh           | 128 +++++++++++++
+ scripts/shacl-validate.sh                     |  77 ++++++++
+ scripts/validation-selftest.sh                | 168 ++++++++++++++++++
+ tests/fixtures/robot/duplicate-label.ttl      |  42 +++++
+ tests/fixtures/shacl/invalid-survey-data.ttl  |  85 +++++++++
+ tests/fixtures/sparql/undeclared-prefix.rq    |  18 ++
+ 23 files changed, 1094 insertions(+), 102 deletions(-)
+ create mode 100644 docs/adr/010-validation-gates.md
+ create mode 100644 ontology/sparql/competency/cq-01-stock-status-zones.rq
+ create mode 100644 ontology/sparql/competency/cq-02-survey-events-with-protocols.rq
+ create mode 100644 ontology/sparql/competency/cq-03-management-units-and-conservation-units.rq
+ delete mode 100644 ontology/sparql/example-competency-questions.rq
+ create mode 100755 scripts/run-competency-questions.sh
+ create mode 100755 scripts/shacl-validate.sh
+ create mode 100755 scripts/validation-selftest.sh
+ create mode 100644 tests/fixtures/robot/duplicate-label.ttl
+ create mode 100644 tests/fixtures/shacl/invalid-survey-data.ttl
+ create mode 100644 tests/fixtures/sparql/undeclared-prefix.rq
+
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index eba402a..287cb8f 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -35,7 +35,7 @@ jobs:
+       - name: Install Python dependencies
+         run: |
+           python -m pip install --upgrade pip
+-          python -m pip install rdflib==7.2.1
++          python -m pip install -r scripts/requirements.txt
+ 
+       - name: Cache ROBOT jar
+         id: cache-robot
+@@ -82,4 +82,5 @@ jobs:
+           name: robot-quality-report
+           path: |
+             release/artifacts/robot-quality-report.html
++            release/artifacts/robot-quality-report.tsv
+             release/artifacts/robot-quality-check.log
+diff --git a/AGENTS.md b/AGENTS.md
+index 6a59876..61cebee 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -138,7 +138,7 @@ stack:
+   - OWL
+   - SKOS
+   - ROBOT
+-  - Python (rdflib helper scripts)
++  - Python (rdflib helper scripts; pyshacl for the SHACL gate)
+ entrypoints:
+   - ontology/dfo-salmon.ttl
+   - README.md
+@@ -155,7 +155,7 @@ autonomy:
+     - bulk replacing overlapping gcdfo terms with smn terms without term-by-term review
+     - changing W3ID/publication contract without explicit instruction
+     - deleting historical DFO policy/process concepts just because a shared term has a similar label
+-last_updated: 2026-03-13
++last_updated: 2026-09-10
+ ```
+ 
+ ### Before changing ontology / docs / build outputs
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 3ab904d..291041c 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -10,6 +10,63 @@
+ 
+ ## [Unreleased]
+ 
++### Fixed
++- **The validation layer was inert; it now runs, and can be shown to fail.**
++  Three quality gates this repo documented (ADR-005, ADR-009, ADR-010 in
++  `docs/ADR.md`) had never executed. Verified 2026-08-10 in the metasalmon
++  hub (queue item B-44), fixed here.
++  - **SHACL.** Nothing ran `ontology/shapes/dfo-salmon-shapes.ttl`. The first
++    run, over the repo's own `ontology/examples/sample-survey-data.ttl`, found
++    7 violations: the snorkel-specific and aerial-specific shapes both used
++    `sh:targetClass` on every escapement survey event, so every event had to
++    be a snorkel survey *and* an aerial survey, and `countUnitIRI` demanded an
++    `xsd:anyURI` literal where the data gives an IRI node. The two
++    method-specific shapes now use a SHACL-core implication (`sh:or` of
++    "not that method" and the method's constraints) so they apply only to
++    events of their method; the unit constraint accepts an IRI node or an
++    `xsd:anyURI` literal until the ontology declares a range for the
++    property. `make shacl-validate` (`scripts/shacl-validate.sh`, pyshacl,
++    pinned in `scripts/requirements.txt`) runs the shapes over the example
++    data inside `make test`. The shapes deliberately use no SHACL-AF
++    construct: an engine without SHACL-AF ignores one silently and reports a
++    vacuous pass. [ADR-010](docs/adr/010-validation-gates.md).
++  - **Competency questions.** `ontology/sparql/example-competency-questions.rq`
++    held three `SELECT`s in one file, which no SPARQL engine parses
++    (`Encountered "PREFIX" ... Was expecting <EOF>`), so none of the three had
++    ever run. Split into `ontology/sparql/competency/cq-0{1,2,3}-*.rq`, each
++    declaring its prefixes and unchanged in what it asks;
++    `make competency-questions` (`scripts/run-competency-questions.sh`)
++    executes each separately against the ontology merged with the example
++    data and fails on any parse error. All three return zero rows today
++    because they name `gcdfo:StockStatusZone`, `gcdfo:SurveyEvent`,
++    `gcdfo:ManagementUnit` and `gcdfo:hasMember`, none of which the ontology
++    declares; the runner prints the count rather than failing, and
++    `docs/tech-debt.md` records the term decision that would change that.
++  - **ROBOT report.** `robot report --profile` *replaces* the default
++    profile, and `robot-profile.yaml` listed two INFO rules, so
++    `--fail-on ERROR` had run two checks that cannot fail since 2025 and
++    dropped the sixteen ERROR-level checks in ROBOT's default profile. The
++    file is now the default profile from the pinned ROBOT 1.9.8 jar with
++    exactly `missing_label` and `missing_definition` downgraded to INFO, and
++    `make validation-selftest` fails if it ever differs from the default by
++    more than those two lines. **The re-enabled checks find a real defect:**
++    `gcdfo:WildSalmonPolicy` and `gcdfo:WildSalmonPolicyTheme` share
++    `rdfs:label "Wild Salmon Policy"@en` (`duplicate_label`, ERROR), so
++    `make quality-check` fails until one label changes — a term decision
++    left open on purpose rather than silenced in the profile.
++  - **`scripts/robot-quality-check.sh` could not report a failure.** Under
++    `set -e` a ROBOT exit of 1 killed the script before its ERROR branch, so
++    a failing gate printed nothing. The call is now wrapped so the branch is
++    reachable, and it prints the failing rows.
++  - **A self-test proves each gate can fail.** `make validation-selftest`
++    (`scripts/validation-selftest.sh`, inside `make test`) points each gate
++    at a fixture under `tests/fixtures/` that is broken on purpose and
++    asserts it fails for the documented reason: every listed SHACL message
++    present and the aerial control node absent, the undeclared-prefix query
++    rejected, and `duplicate_label` the only ERROR the profile raises on the
++    duplicate-label fixture. Shown to go red against the pre-fix shapes and
++    the pre-fix profile before it was wired in.
++
+ ### Added
+ - `gcdfo:PacificFisheryManagementSubarea`, an `owl:Class`, and
+   `gcdfo:PacificFisheryManagementSubareaScheme`, a SKOS controlled vocabulary of
+diff --git a/Makefile b/Makefile
+index 19d96b8..f996ea3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -18,7 +18,7 @@ SMN_PIN ?= f7205eea45817cc6a58e4f15b4f31f344da8434f
+ ROBOT_CATALOG := release/tmp/robot-catalog.xml
+ WIDOCO_ONTOLOGY_INPUT := release/tmp/dfo-salmon-docs-input.ttl
+ 
+-.PHONY: help quality-check reason convert clean install-robot install-widoco theme-coverage alpha-lint check-modules test ci-sync-artifacts docs-refresh docs-widoco docs-widoco-input docs-serializations docs-skos docs-postprocess prepare-import-catalog release-snapshot
++.PHONY: help quality-check reason convert clean install-robot install-widoco theme-coverage alpha-lint check-modules shacl-validate competency-questions validation-selftest test ci-sync-artifacts docs-refresh docs-widoco docs-widoco-input docs-serializations docs-skos docs-postprocess prepare-import-catalog release-snapshot
+ 
+ # Default target
+ help:
+@@ -31,7 +31,10 @@ help:
+ 	@echo "  theme-coverage  Run gcdfo:theme coverage SPARQL check (writes release/tmp/theme-coverage.tsv)"
+ 	@echo "  alpha-lint      Run alpha migration SPARQL lints (year-basis scheme, variable decomposition, skos:*Match property lint)"
+ 	@echo "  check-modules   Merge each ontology/modules/ overlay with core and check the result"
+-	@echo "  test            Run fast validation bundle: theme-coverage + alpha-lint + ELK reasoning + check-modules"
++	@echo "  shacl-validate  Run the SHACL shapes over ontology/examples/sample-survey-data.ttl (pyshacl)"
++	@echo "  competency-questions  Execute each ontology/sparql/competency/*.rq separately; fail on a parse error"
++	@echo "  validation-selftest   Prove every gate fails on its broken fixture under tests/fixtures/"
++	@echo "  test            Run fast validation bundle: theme-coverage + alpha-lint + ELK reasoning + check-modules + shacl-validate + competency-questions + validation-selftest"
+ 	@echo "  ci-sync-artifacts Run make ci, then stage every docs/ artifact it regenerates"
+ 	@echo ""
+ 	@echo "Format Conversion:"
+@@ -160,8 +163,24 @@ verify-mappings:
+ check-modules: check-robot prepare-import-catalog
+ 	@ROBOT_JAR=$(ROBOT_JAR) ROBOT_CATALOG=$(ROBOT_CATALOG) ./scripts/check-modules.sh
+ 
+-test: verify-mappings theme-coverage alpha-lint reason check-modules
+-	@echo "✅ Test bundle completed (mapping-set structure + theme coverage + alpha-lint + ELK reasoning + module overlays)."
++# The SHACL shapes, the competency queries and the self-test that proves both
++# (and the ROBOT gate) can fail. Until 2026-09-10 none of the three ran
++# anywhere: the shapes were never executed (and, once executed, rejected the
++# repo's own example data), the competency file held three queries in one
++# .rq so no engine could parse it, and robot-profile.yaml replaced ROBOT's
++# default profile with two INFO rules. They are part of `test` on purpose;
++# a gate outside `make ci` is a gate nothing runs.
++shacl-validate:
++	@./scripts/shacl-validate.sh
++
++competency-questions: check-robot prepare-import-catalog
++	@ROBOT_JAR=$(ROBOT_JAR) ROBOT_CATALOG=$(ROBOT_CATALOG) ./scripts/run-competency-questions.sh
++
++validation-selftest: check-robot prepare-import-catalog
++	@ROBOT_JAR=$(ROBOT_JAR) ROBOT_CATALOG=$(ROBOT_CATALOG) ./scripts/validation-selftest.sh
++
++test: verify-mappings theme-coverage alpha-lint reason check-modules shacl-validate competency-questions validation-selftest
++	@echo "✅ Test bundle completed (mapping-set structure + theme coverage + alpha-lint + ELK reasoning + module overlays + SHACL + competency questions + validation self-test)."
+ 
+ ci:
+ 	@echo "🔁 Running full CI bundle (tests, quality, docs)..."
+diff --git a/README.md b/README.md
+index dea8cf9..f745247 100644
+--- a/README.md
++++ b/README.md
+@@ -97,7 +97,7 @@ If a term is clearly **cross-organization, policy-neutral, and reusable**, it pr
+ 5. **Use Protégé Desktop** to edit `ontology/dfo-salmon.ttl` with OntoGraf for visualization.
+ 6. **Use project targets for quality control**: `make reason` (or `make quality-check` for the full ROBOT report).
+ 7. **Discuss changes** in GitHub Issues before creating PRs.
+-8. **Run validations**: run `make theme-coverage` (smoke), `make alpha-lint` (alpha migration lints), or `make test` (mapping-set structure + theme coverage + alpha-lint + ELK reasoning); use `make quality-check` for the full ROBOT report. Note: if using `devenv`/`nix` (optional), prefix commands with `devenv shell`.
++8. **Run validations**: run `make theme-coverage` (smoke), `make alpha-lint` (alpha migration lints), or `make test` (mapping-set structure + theme coverage + alpha-lint + ELK reasoning + module overlays + SHACL shapes over the example data + competency questions + a self-test that proves each gate can fail); use `make quality-check` for the full ROBOT report. Note: if using `devenv`/`nix` (optional), prefix commands with `devenv shell`.
+ 9. **Single local+CI entrypoint**: `make ci` (runs tests, ROBOT quality-check, and `make docs-refresh` so that ontology + docs + serializations stay in sync).
+ 
+ ### For Users
+@@ -118,7 +118,7 @@ If a term is clearly **cross-organization, policy-neutral, and reusable**, it pr
+ - **Release paths**: root-level `release/` is for transient local/CI build outputs; canonical published artifacts and immutable version snapshots live under `docs/` and `docs/releases/X.Y.Z/`.
+ - **OBO-style workflow**: use ROBOT for quality control and release management.
+ - **Pre-commit validation**: install pre-commit hooks (`pre-commit install`) to validate ontology before commit.
+-- **CI validation**: pull requests to `main` and pushes to `main` run ROBOT ELK reasoning + ROBOT report (with custom profile); CI runs `make ci` and fails if it produces uncommitted diffs.
++- **CI validation**: pull requests to `main` and pushes to `main` run `make ci` — the `make test` bundle (including SHACL validation of the example data, the competency queries, and the validation self-test), ROBOT report with `robot-profile.yaml` (ROBOT's default profile amended, not replaced), and `make docs-refresh` — and fail if it produces uncommitted diffs.
+ - **Windows**: use WSL2 + `nix`/`direnv` (optional) or Git Bash; `make install-robot` fetches the pinned ROBOT jar used by CI/pre-commit.
+ - **GitHub-based collaboration**: all changes via Pull Requests with Issues for discussion.
+ - **Quality first**: use competency questions and design patterns to guide development.
+diff --git a/docs/ROBOT_SETUP.md b/docs/ROBOT_SETUP.md
+index 2555c8f..2810f3e 100644
+--- a/docs/ROBOT_SETUP.md
++++ b/docs/ROBOT_SETUP.md
+@@ -80,10 +80,57 @@ java -jar tools/robot.jar report \
+ 
+ **Key Configuration Options:**
+ 
+-1. **Custom Profile (`robot-profile.yaml`):** Downgrades violation severity for known acceptable issues
++1. **Custom Profile (`robot-profile.yaml`):** ROBOT's default report profile with two rules downgraded — see the next section for why it has to carry the whole default and not only the two lines
+ 2. **`--fail-on ERROR`:** Still fails on genuine ERROR-level issues, but expected violations are downgraded to INFO level
+ 3. **Quality Check Script:** Handles all configuration automatically
+ 
++### The profile amends the default; it does not replace it
++
++`robot report --profile FILE` **replaces** ROBOT's built-in profile with the
++rules listed in `FILE`. It does not merge them. From 2025 until 2026-09-10
++`robot-profile.yaml` was two lines —
++
++```
++INFO	missing_label
++INFO	missing_definition
++```
++
++— so the report ran exactly two checks, both at a level `--fail-on ERROR`
++cannot fail on, and the sixteen ERROR-level checks in the default profile
++(`duplicate_label`, `illegal_use_of_built_in_vocabulary`,
++`label_whitespace`, `deprecated_class_reference`, `multiple_labels`,
++`missing_ontology_license`, …) never ran at all. The gate was green for
++every commit in that window and could not have been anything else.
++Verified 2026-08-10 (metasalmon hub, queue item B-44), fixed 2026-09-10.
++
++`robot-profile.yaml` is now `report_profile.txt` copied out of the pinned
++`tools/robot.jar` (ROBOT 1.9.8, 32 rules) with exactly two changes:
++
++| rule | default | here | why |
++|---|---|---|---|
++| `missing_label` | ERROR | INFO | this ontology labels SKOS concepts with `skos:prefLabel`, which ROBOT does not read as a label; every `gcdfo:` subject carries one |
++| `missing_definition` | WARN | INFO | definitions live in `iao:0000115` / `skos:definition`, which ROBOT does not read; WARN would not fail the build either, INFO is the level the repo had already chosen |
++
++Nothing else differs, and that is enforced: `scripts/validation-selftest.sh`
++(inside `make test`) extracts the default profile from the jar and fails if
++`robot-profile.yaml` differs from it by anything other than those two
++lines — including after a ROBOT upgrade that changes the default, which is
++the signal to re-derive the file. ROBOT rejects comment lines in a profile
++(`REPORT LEVEL ERROR '# …' is not a valid reporting level`), so the file
++itself cannot say any of this; this section and the header of
++`scripts/robot-quality-check.sh` are where it is said.
++
++To re-derive after a ROBOT bump:
++
++```bash
++python3 -c 'import zipfile; print(zipfile.ZipFile("tools/robot.jar").read("report_profile.txt").decode())' \
++  | sed -e 's/^ERROR\tmissing_label/INFO\tmissing_label/' -e 's/^WARN\tmissing_definition/INFO\tmissing_definition/' \
++  > robot-profile.yaml
++```
++
++The self-test also proves the gate can fail: `tests/fixtures/robot/duplicate-label.ttl`
++must exit 1 under this profile with `duplicate_label` as its only ERROR rule.
++
+ ### Multi-Reasoner Analysis
+ 
+ ```bash
+@@ -126,25 +173,34 @@ robot reason --input ontology/dfo-salmon.ttl --reasoner JFact --output release/a
+ 
+ ## Expected Baseline Violations
+ 
+-When running ROBOT report, expect these violations as acceptable:
++Measured 2026-09-10 with the amended profile over `ontology/dfo-salmon.ttl`
++(import closure resolved through the catalog). The counts before that date
++in this section described the two-line profile and are gone; treat these as
++historical context too, not as a contract.
+ 
+-### ERROR Level (39 total)
++### ERROR Level (2) — these fail the build
+ 
+-- **31 SKOS concepts:** Missing `rdfs:label` (have `skos:prefLabel` - acceptable per W3C SKOS)
+-- **8 Darwin Core terms:** Missing `rdfs:label` (external imports - acceptable)
++- **2 `duplicate_label`:** `gcdfo:WildSalmonPolicy` and `gcdfo:WildSalmonPolicyTheme`
++  both carry `rdfs:label "Wild Salmon Policy"@en`. Found the moment the check
++  ran again. Which label changes is a term decision, not a build fix; until it
++  is made, `make quality-check` (and therefore `make ci`) fails here, which is
++  the gate doing its job. Do not silence it by editing the profile.
+ 
+-### WARN Level (159 total) - Updated after whitespace fix
++### WARN Level (5) — reported, never fail the build
+ 
+-- **147 missing definitions:**
+-  - 3 BFO MIREOT terms (expected - have `oboInOwl:hasDefinition`)
+-  - 8 Darwin Core terms (expected - external imports)
+-  - 7 hybrid OWL+SKOS concepts (ROBOT limitation - have `skos:definition`)
+-  - 129 DFO terms (ROBOT limitation - have `rdfs:comment` but not recognized)
+-- **1 other minor annotation issue**
++- **2 `annotation_whitespace`:** trailing space in the `skos:definition` of
++  `gcdfo:AmberZone` and the `iao:0000115` of `gcdfo:UpperStockReferencePoint`
++- **3 `missing_obsolete_label`:** the deprecated `gcdfo:IntegratedStatusBinary`,
++  `gcdfo:IntegratedStatusFiveCategoryAlias` and
++  `gcdfo:IntegratedStatusThreeCategory` lack the OBO `obsolete ` label prefix;
++  an OBO convention this repo has not adopted, kept at WARN rather than
++  downgraded so the choice stays visible
+ 
+-### INFO Level (52 total)
++### INFO Level (54)
+ 
+-- **52 missing superclasses:** To be analyzed for appropriateness (see superclass-analysis.md)
++- **25 `missing_label`** (SKOS concepts with `skos:prefLabel` only) and
++  **20 `missing_definition`** — the two downgraded rules
++- **7 `missing_superclass`**, **2 `lowercase_definition`** — default INFO rules
+ 
+ ## 3. Definition Property Recognition Issues
+ 
+@@ -219,5 +275,5 @@ Before submitting changes:
+ 
+ ---
+ 
+-_Last updated: 2026-02-25_
++_Last updated: 2026-09-10_
+ _ROBOT version: 1.9.8_
+diff --git a/docs/adr/010-validation-gates.md b/docs/adr/010-validation-gates.md
+new file mode 100644
+index 0000000..9ebb004
+--- /dev/null
++++ b/docs/adr/010-validation-gates.md
+@@ -0,0 +1,114 @@
++# ADR-010: Validation gates run in CI, use SHACL core only, and amend rather than replace the ROBOT profile
++
++## Status
++
++Accepted (2026-09-10)
++
++## Context
++
++`docs/ADR.md` (ADR-005, ADR-009, ADR-010 there) describes a quality-assurance
++framework of ROBOT report, SHACL validation and SPARQL competency-question
++tests. On 2026-08-10 a read-only verification in the metasalmon hub (queue
++item B-44) found all three inert: the SHACL shapes had never been executed
++and, once executed, rejected the repo's own example data; the competency
++file held three queries in one `.rq`, which no engine parses; and
++`robot-profile.yaml` replaced ROBOT's default report profile with two INFO
++rules, so `--fail-on ERROR` had nothing it could fail on. Each had been green
++for months.
++
++Three choices had to be made to make the gates real, and each had a
++competing option worth recording.
++
++## Decision
++
++1. **SHACL runs under pyshacl, pinned, inside `make test`.** ROBOT 1.9.8
++   bundles Jena ARQ but not Jena SHACL (checked by listing the jar), so no
++   Java-only path existed. pyshacl is pinned to `0.31.0` in
++   `scripts/requirements.txt`, the newest release that resolves against the
++   `rdflib==7.2.1` pin CI already relies on for the bytes of
++   `docs/gcdfo.jsonld`; CI now installs from that file so there is one copy
++   of the pins. The alternative — keeping SHACL out of `make ci` and
++   documenting how to run it by hand — is what the repo had, in effect, and
++   it is a gate nothing runs.
++
++2. **The shapes use SHACL core only.** The two method-specific shapes need
++   conditional targeting (constraints that apply only to snorkel surveys, or
++   only to aerial ones). A SHACL-AF SPARQL-based target (`sh:target [ a
++   sh:SPARQLTarget ]`) expresses that directly and keeps per-property
++   messages, and pyshacl supports it under `--advanced`. It was rejected
++   because an engine that does not implement SHACL-AF, or a pyshacl run
++   without `--advanced`, ignores such a target **silently** and reports a
++   vacuous pass — measured: the same shapes, same data, `Conforms: True`
++   without the flag and `Conforms: False` with it. A silently vacuous shape
++   is the defect being fixed. The core idiom used instead is an implication:
++   `sh:or ( [ not this method ] [ this method's constraints ] )`. Its cost is
++   a coarser report — engines report an `sh:or` failure at the shape, not
++   the property — mitigated by a shape-level `sh:message` that names every
++   constraint the branch holds.
++
++3. **`robot-profile.yaml` carries the whole default profile with two rules
++   changed, and a test pins that.** ROBOT offers no way to amend the default
++   profile; `--profile` replaces it. So the file is `report_profile.txt` from
++   the pinned jar with `missing_label` and `missing_definition` at INFO, and
++   `scripts/validation-selftest.sh` fails if it differs from the jar's
++   default by anything else — including after a ROBOT upgrade, which is the
++   moment the file must be re-derived. The alternative of listing only the
++   overrides is not available in ROBOT, and the alternative of a longer
++   hand-curated list is how the two-line file came to be.
++
++4. **Every gate has a fixture that makes it fail, and the self-test runs in
++   `make test`.** `tests/fixtures/{shacl,sparql,robot}/` hold data broken on
++   purpose; the self-test asserts each gate fails on its fixture *for the
++   documented reason* (message present, control node absent, exact ERROR
++   rule), not merely that it exits non-zero. The self-test was shown to go
++   red against the pre-fix shapes and the pre-fix profile before it was
++   wired in.
++
++5. **A zero-row competency query is reported, not failed — for now.** All
++   three shipped queries return zero rows because they name terms the
++   ontology does not declare. Failing on zero rows today would fail CI on a
++   term decision this change does not make; hiding the count would be the
++   old vacuity in a new place. The runner prints the count, and
++   `docs/tech-debt.md` records the retirement condition under which zero
++   rows becomes a failure.
++
++## Consequences
++
++### Positive
++
++- `make ci` now executes the shapes, the queries and all 32 default ROBOT
++  rules, and fails if any of the three gates stops being able to fail.
++- The first run of the re-enabled ROBOT checks found a genuine defect
++  (`duplicate_label` on `gcdfo:WildSalmonPolicy` / `gcdfo:WildSalmonPolicyTheme`).
++
++### Negative
++
++- `make ci` is red on `main` until that duplicate label is resolved — by a
++  label change, which is a term decision, not by editing the profile.
++- One Python gate in an otherwise Java toolchain; contributors need
++  `pip install -r scripts/requirements.txt`.
++- SHACL reports for the conditional shapes name the shape, not the failing
++  property.
++
++### Neutral
++
++- `ontology/sparql/example-competency-questions.rq` is gone; its three
++  queries live one per file under `ontology/sparql/competency/`, unchanged
++  in what they ask.
++
++## More Information
++
++- The verification that found the gates inert:
++  metasalmon `knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md`.
++- The before/after evidence for each gate is in the pull request that landed
++  this ADR and in `CHANGELOG.md` (Unreleased).
++- `docs/ROBOT_SETUP.md` carries the profile's provenance and the current
++  baseline; `docs/tech-debt.md` carries what the running gates found.
++
++## Related
++
++- [ADR-007](007-webvowl-duplicate-node-disambiguation.md) — the previous
++  placebo gate in this repo, and the lesson that a gate needs a test it can
++  fail.
++- `docs/ADR.md` ADR-005, ADR-009, ADR-010 — the framework these gates
++  implement.
+diff --git a/docs/entrypoints.md b/docs/entrypoints.md
+index 0b0fc13..c2ed165 100644
+--- a/docs/entrypoints.md
++++ b/docs/entrypoints.md
+@@ -40,8 +40,15 @@ Purpose: one short, reliable map of what is canonical vs optional/deprecated.
+ 
+ ## Test
+ 
+-- Test command(s): `make test` (mapping-set structure + theme coverage + alpha-lint + ELK reasoning + module overlays)
++- Test command(s): `make test` (mapping-set structure + theme coverage + alpha-lint + ELK reasoning + module overlays + SHACL + competency questions + validation self-test)
+ - Fast smoke: `make theme-coverage` or `make alpha-lint`
++- SHACL: `make shacl-validate` — `scripts/shacl-validate.sh` runs `ontology/shapes/dfo-salmon-shapes.ttl` over `ontology/examples/sample-survey-data.ttl` with pyshacl (pinned in `scripts/requirements.txt`; ROBOT bundles no SHACL engine, see [ADR-010](adr/010-validation-gates.md))
++  - the shapes are SHACL core only, on purpose: a SHACL-AF construct is ignored silently by an engine that lacks it, and a silently vacuous shape is what this gate replaced
++- Competency questions: `make competency-questions` — `scripts/run-competency-questions.sh` merges the ontology with the example data and executes each `ontology/sparql/competency/*.rq` **separately**, failing on any parse error (an undeclared prefix is one); one `SELECT` per file, every prefix declared in the file
++  - it prints a row count per query and does not fail on zero rows; all three shipped queries return zero today because they name terms the ontology does not declare — a term decision, tracked in `docs/tech-debt.md`
++- Validation self-test: `make validation-selftest` — `scripts/validation-selftest.sh` points each gate at a fixture under `tests/fixtures/` that is broken on purpose and asserts the gate fails **for the documented reason**: the SHACL gate on `tests/fixtures/shacl/invalid-survey-data.ttl` (every listed message present, the aerial control node absent), the competency runner on `tests/fixtures/sparql/undeclared-prefix.rq`, and `robot report --profile robot-profile.yaml --fail-on ERROR` on `tests/fixtures/robot/duplicate-label.ttl` (exit 1, `duplicate_label` the only ERROR rule); it also asserts `robot-profile.yaml` is ROBOT's own default profile with exactly `missing_label` and `missing_definition` downgraded to INFO
++  - runs inside `make test`, so a gate that becomes vacuous again fails CI rather than waiting for a reader; the fixtures are not example data and must not be "fixed"
++- ROBOT report: `make quality-check` — `scripts/robot-quality-check.sh` with `robot-profile.yaml`, which **amends** ROBOT's default profile (`--profile` replaces it, so the file carries all 32 default rules with two downgraded); see `docs/ROBOT_SETUP.md`
+ - Optional modules: `make check-modules`
+   - the only path that validates `ontology/modules/*.ttl`; every other target loads `ontology/dfo-salmon.ttl`, which does not import them
+   - merges each module with core — the documented contributor path, see [`ontology/modules/README.md`](../ontology/modules/README.md) — then runs five checks on the merge: no minted `gcdfo:`/`smn:` class or property, minted individuals only as members of a scheme the module declares, no conflicting `skos:*Match` strengths, ELK consistency, and `gcdfo:theme` coverage
+@@ -89,3 +96,4 @@ See `README.md` § CI + Release Workflow for the full command sequence.
+ - Canonical published outputs: `docs/`, `docs/releases/X.Y.Z/`
+ - Non-canonical transient build outputs: `release/`
+ - Deprecated local-only term-table outputs: `release/artifacts/term-tables/`, `scripts/sparql/*-terms.rq`
++- Deliberately broken fixtures, read only by `scripts/validation-selftest.sh`: `tests/fixtures/{shacl,sparql,robot}/`
+diff --git a/docs/tech-debt.md b/docs/tech-debt.md
+index cf372bd..7604291 100644
+--- a/docs/tech-debt.md
++++ b/docs/tech-debt.md
+@@ -5,6 +5,76 @@ Keep it short, specific, and tied to real boundary/publishing risks.
+ 
+ ## Active Technical Debt
+ 
++### 2026-09-10 — The shapes, the example data and the competency queries name terms the ontology does not declare
++
++**What**: now that the SHACL shapes and the competency queries actually run
++(see `CHANGELOG.md`, Unreleased), what they run *against* is visible.
++`ontology/shapes/dfo-salmon-shapes.ttl` targets two classes and eleven
++properties in the `gcdfo:` namespace that `ontology/dfo-salmon.ttl` does not
++declare: `gcdfo:EscapementSurveyEvent`, `gcdfo:EscapementMeasurement`,
++`gcdfo:usesEnumerationMethod`, `gcdfo:usesEstimateMethod`,
++`gcdfo:measuredVisits`, `gcdfo:measuredReachCoverage`,
++`gcdfo:measuredVisibility`, `gcdfo:measuredObserverEfficiency`,
++`gcdfo:percentRiverSwam`, `gcdfo:aboutStock`, `gcdfo:observedDuring`,
++`gcdfo:countValue`, `gcdfo:countUnitIRI`. `ontology/examples/sample-survey-data.ttl`
++types its instances with the same two classes (plus `gcdfo:taxonIRI`,
++`gcdfo:hasDocumentation`, `gcdfo:hasQAReport`, also undeclared). The three
++competency queries name `gcdfo:StockStatusZone`, `gcdfo:SurveyEvent`,
++`gcdfo:ManagementUnit` and `gcdfo:hasMember`, none declared, and so return
++zero rows against the example data.
++
++**Why it happened**: the shapes, data and queries were written against an
++early draft vocabulary and never executed, so they never had to track the
++ontology. The two event classes moved to `smn:` on 2026-08-13
++(`smn:SurveyEvent`, `smn:EscapementSurveyEvent`; `smn:EscapementEstimate`
++was `gcdfo:EscapementMeasurement`); `gcdfo:StockStatusZoneScheme` is a legacy
++alias whose canonical scheme is `gcdfo:WSPBiologicalStatusZoneScheme`;
++`gcdfo:StockManagementUnit` exists where the query says
++`gcdfo:ManagementUnit`. The eleven survey/measurement properties have never
++existed in any namespace.
++
++**Impact**: the SHACL gate validates the example data against shapes whose
++vocabulary the ontology does not own, so it is a consistency check between
++two files rather than against the ontology; the competency gate proves the
++queries parse and run, and nothing more. Both are honest about this — the
++runner prints the zero row counts — but neither is yet the gate ADR-009 in
++`docs/ADR.md` describes.
++
++**Intended fix path**: a term-by-term decision, not a bulk retarget (the
++same rule as `AGENTS.md`'s red list). For each undeclared IRI: retarget the
++shape/data/query to the term that now exists (`smn:EscapementSurveyEvent`,
++`gcdfo:StockManagementUnit`, `skos:inScheme gcdfo:WSPBiologicalStatusZoneScheme`,
++…), mint the term in `gcdfo:` if it is DFO-specific survey metadata, or
++delete the constraint/query. Then flip `scripts/run-competency-questions.sh`
++to fail on zero rows (its header says where), and widen
++`scripts/validation-selftest.sh` to assert every `sh:targetClass` and
++`sh:path` in the shapes is declared by the import closure.
++
++**Retires when**: every IRI the shapes, the example data and the competency
++queries use is declared by `ontology/dfo-salmon.ttl` or its import closure,
++each competency query returns at least one row against the example data, and
++the runner fails on zero rows.
++
++### 2026-09-10 — `duplicate_label`: `gcdfo:WildSalmonPolicy` and `gcdfo:WildSalmonPolicyTheme` share a label
++
++**What**: both carry `rdfs:label "Wild Salmon Policy"@en`. ROBOT's
++`duplicate_label` check is ERROR-level in the default profile and ran for the
++first time on 2026-09-10 when `robot-profile.yaml` stopped replacing that
++profile; it fails `make quality-check`, and therefore `make ci`, on `main`.
++
++**Why it is listed here and not fixed**: which label changes is a term
++decision (a theme concept and a policy instrument sharing a name is a
++modelling question, not a typo), and the fix that landed the check
++deliberately did not make it. Downgrading the rule in the profile would
++silence the first real finding the re-enabled gate produced, which is the
++failure mode the fix exists to end.
++
++**Retires when**: the two labels differ and `make quality-check` passes with
++`duplicate_label` still at ERROR. If a maintainer decides the check should
++not gate this repo, the downgrade goes in `robot-profile.yaml` **and** in
++the expected diff in `scripts/validation-selftest.sh` **and** in the table
++in `docs/ROBOT_SETUP.md`, in one change, with the reason.
++
+ ### 2026-08-16 — Nothing checks that `docs/releases/<version>/` still matches `docs/`
+ 
+ **What**: `make release-snapshot` copies `docs/gcdfo.{ttl,owl,jsonld}` into
+diff --git a/ontology/shapes/dfo-salmon-shapes.ttl b/ontology/shapes/dfo-salmon-shapes.ttl
+index 8090108..0b05904 100644
+--- a/ontology/shapes/dfo-salmon-shapes.ttl
++++ b/ontology/shapes/dfo-salmon-shapes.ttl
+@@ -12,6 +12,21 @@
+ #
+ # Note: Estimate types are manually assigned based on Hyatt 1997 criteria
+ # Note: No instance data in main ontology file; instances go in examples/
++#
++# Executed by `make shacl-validate` (scripts/shacl-validate.sh) over
++# ontology/examples/sample-survey-data.ttl; `make validation-selftest`
++# proves these shapes still reject tests/fixtures/shacl/invalid-survey-data.ttl.
++#
++# Before 2026-09-10 nothing ran this file. The first run found that the
++# two method-specific shapes below contradicted each other: both used
++# sh:targetClass on every escapement survey event, so every event was
++# required to be a snorkel survey AND an aerial survey at once, and the
++# repo's own example data could not conform. They now use a conditional
++# idiom that is SHACL core only. A SPARQL-based target (SHACL-AF) reads
++# more directly, but an engine that does not implement SHACL-AF -- or a
++# pyshacl run without --advanced -- ignores such a target silently and
++# reports a vacuous pass, which is the failure class this file has already
++# exhibited once. See docs/adr/010-validation-gates.md.
+ #################################################################
+ 
+ <https://w3id.org/gcdfo/salmon/shapes> a owl:Ontology ;
+@@ -56,41 +71,77 @@
+ 
+ #################################################################
+ # Snorkel Survey Specific Validation
++#
++# Applies only to survey events whose enumeration method is
++# gcdfo:VisualSnorkelCount. Written as an implication in SHACL core: a
++# focus node conforms if it is NOT a snorkel survey (first sh:or branch)
++# OR it meets every snorkel-specific constraint (second branch). Engines
++# report an sh:or failure at the shape level, so the message names every
++# constraint the second branch holds. The constraints themselves are the
++# ones this shape has always carried.
+ #################################################################
+ 
+ :SnorkelSurveyShape a sh:NodeShape ;
+     sh:targetClass gcdfo:EscapementSurveyEvent ;
+-    sh:property [
+-        sh:path gcdfo:usesEnumerationMethod ;
+-        sh:hasValue :VisualSnorkelCount ;
+-        sh:message "Snorkel surveys must use VisualSnorkelCount method"
+-    ] ;
+-    sh:property [
+-        sh:path gcdfo:measuredObserverEfficiency ;
+-        sh:datatype xsd:decimal ;
+-        sh:minInclusive 0.0 ;
+-        sh:maxInclusive 1.0 ;
+-        sh:message "Observer efficiency must be between 0.0 and 1.0"
+-    ] ;
+-    sh:property [
+-        sh:path gcdfo:percentRiverSwam ;
+-        sh:datatype xsd:decimal ;
+-        sh:minInclusive 0.0 ;
+-        sh:maxInclusive 100.0 ;
+-        sh:message "Percent river swam must be between 0.0 and 100.0"
+-    ] .
++    sh:message "Snorkel survey (usesEnumerationMethod = VisualSnorkelCount) violates a snorkel-specific constraint: observer efficiency must be a decimal between 0.0 and 1.0, and percent river swam a decimal between 0.0 and 100.0" ;
++    sh:or (
++        [
++            sh:property [
++                sh:path gcdfo:usesEnumerationMethod ;
++                sh:not [ sh:hasValue :VisualSnorkelCount ]
++            ]
++        ]
++        [
++            sh:property [
++                sh:path gcdfo:usesEnumerationMethod ;
++                sh:hasValue :VisualSnorkelCount ;
++                sh:message "Snorkel surveys must use VisualSnorkelCount method"
++            ] ;
++            sh:property [
++                sh:path gcdfo:measuredObserverEfficiency ;
++                sh:datatype xsd:decimal ;
++                sh:minInclusive 0.0 ;
++                sh:maxInclusive 1.0 ;
++                sh:message "Observer efficiency must be between 0.0 and 1.0"
++            ] ;
++            sh:property [
++                sh:path gcdfo:percentRiverSwam ;
++                sh:datatype xsd:decimal ;
++                sh:minInclusive 0.0 ;
++                sh:maxInclusive 100.0 ;
++                sh:message "Percent river swam must be between 0.0 and 100.0"
++            ]
++        ]
++    ) .
+ 
+ #################################################################
+ # Aerial Survey Specific Validation
++#
++# Same implication: conforms if the event is not an aerial survey, or if
++# it meets the aerial-specific constraints. The only aerial-specific
++# constraint on record is the method itself, so today this shape cannot
++# fail on well-formed data; it is kept so aerial-specific constraints
++# have a home when they are written.
+ #################################################################
+ 
+ :AerialSurveyShape a sh:NodeShape ;
+     sh:targetClass gcdfo:EscapementSurveyEvent ;
+-    sh:property [
+-        sh:path gcdfo:usesEnumerationMethod ;
+-        sh:hasValue :AerialSurveyCount ;
+-        sh:message "Aerial surveys must use AerialSurveyCount method"
+-    ] .
++    sh:message "Aerial survey (usesEnumerationMethod = AerialSurveyCount) violates an aerial-specific constraint" ;
++    sh:or (
++        [
++            sh:property [
++                sh:path gcdfo:usesEnumerationMethod ;
++                sh:not [ sh:hasValue :AerialSurveyCount ]
++            ]
++        ]
++        [
++            sh:property [
++                sh:path gcdfo:usesEnumerationMethod ;
++                sh:hasValue :AerialSurveyCount ;
++                sh:message "Aerial surveys must use AerialSurveyCount method"
++            ]
++        ]
++    ) .
+ 
+ #################################################################
+ # Measurement Validation
+@@ -114,8 +165,15 @@
+         sh:minInclusive 0 ;
+         sh:message "Count value must be a non-negative integer"
+     ] ;
++    # This constraint read `sh:datatype xsd:anyURI` (an IRI as a typed
++    # literal) while ontology/examples/sample-survey-data.ttl gives an IRI
++    # node, and the ontology declares no range for gcdfo:countUnitIRI that
++    # would say which is right. Until it does, either rendering of an IRI
++    # is accepted and anything else (a bare string, a number) is rejected.
++    # Retires when: gcdfo:countUnitIRI is declared with a range, at which
++    # point this narrows to the one branch that matches the declaration.
+     sh:property [
+         sh:path gcdfo:countUnitIRI ;
+-        sh:datatype xsd:anyURI ;
++        sh:or ( [ sh:nodeKind sh:IRI ] [ sh:datatype xsd:anyURI ] ) ;
+         sh:message "Count unit must be a valid IRI"
+-    ] .
+\ No newline at end of file
++    ] .
+diff --git a/ontology/sparql/competency/cq-01-stock-status-zones.rq b/ontology/sparql/competency/cq-01-stock-status-zones.rq
+new file mode 100644
+index 0000000..64d2622
+--- /dev/null
++++ b/ontology/sparql/competency/cq-01-stock-status-zones.rq
+@@ -0,0 +1,16 @@
++# Competency question 1: Find all stock status zones.
++#
++# One query per file: a .rq file is a single SPARQL request, and every prefix
++# it uses is declared here. Executed by scripts/run-competency-questions.sh
++# (`make competency-questions`) against ontology/dfo-salmon.ttl merged with
++# ontology/examples/sample-survey-data.ttl. Placeholder query carried over
++# from the original example file, unchanged in what it asks.
++
++PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
++PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
++
++SELECT ?statusZone ?label ?definition WHERE {
++  ?statusZone a gcdfo:StockStatusZone ;
++              rdfs:label ?label ;
++              rdfs:comment ?definition .
++}
+diff --git a/ontology/sparql/competency/cq-02-survey-events-with-protocols.rq b/ontology/sparql/competency/cq-02-survey-events-with-protocols.rq
+new file mode 100644
+index 0000000..1b9b786
+--- /dev/null
++++ b/ontology/sparql/competency/cq-02-survey-events-with-protocols.rq
+@@ -0,0 +1,16 @@
++# Competency question 2: Find all survey events with their protocols.
++#
++# One query per file: a .rq file is a single SPARQL request, and every prefix
++# it uses is declared here. Executed by scripts/run-competency-questions.sh
++# (`make competency-questions`) against ontology/dfo-salmon.ttl merged with
++# ontology/examples/sample-survey-data.ttl. Placeholder query carried over
++# from the original example file, unchanged in what it asks.
++
++PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
++PREFIX dwc: <http://rs.tdwg.org/dwc/terms/>
++
++SELECT ?event ?protocol ?date WHERE {
++  ?event a gcdfo:SurveyEvent ;
++         dwc:samplingProtocol ?protocol ;
++         dwc:eventDate ?date .
++}
+diff --git a/ontology/sparql/competency/cq-03-management-units-and-conservation-units.rq b/ontology/sparql/competency/cq-03-management-units-and-conservation-units.rq
+new file mode 100644
+index 0000000..955ce67
+--- /dev/null
++++ b/ontology/sparql/competency/cq-03-management-units-and-conservation-units.rq
+@@ -0,0 +1,16 @@
++# Competency question 3: Find management units and their conservation units.
++#
++# One query per file: a .rq file is a single SPARQL request, and every prefix
++# it uses is declared here. Executed by scripts/run-competency-questions.sh
++# (`make competency-questions`) against ontology/dfo-salmon.ttl merged with
++# ontology/examples/sample-survey-data.ttl. Placeholder query carried over
++# from the original example file, unchanged in what it asks.
++
++PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
++PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
++
++SELECT ?managementUnit ?conservationUnit WHERE {
++  ?managementUnit a gcdfo:ManagementUnit ;
++                  gcdfo:hasMember ?conservationUnit .
++  ?conservationUnit a gcdfo:ConservationUnit .
++}
+diff --git a/ontology/sparql/example-competency-questions.rq b/ontology/sparql/example-competency-questions.rq
+deleted file mode 100644
+index 9191891..0000000
+--- a/ontology/sparql/example-competency-questions.rq
++++ /dev/null
+@@ -1,32 +0,0 @@
+-# Example SPARQL queries for DFO Salmon Ontology competency questions
+-# These are placeholder queries to demonstrate the structure
+-
+-# Query 1: Find all stock status zones
+-PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
+-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+-
+-SELECT ?statusZone ?label ?definition WHERE {
+-  ?statusZone a gcdfo:StockStatusZone ;
+-              rdfs:label ?label ;
+-              rdfs:comment ?definition .
+-}
+-
+-# Query 2: Find all survey events with their protocols
+-PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
+-PREFIX dwc: <http://rs.tdwg.org/dwc/terms/>
+-
+-SELECT ?event ?protocol ?date WHERE {
+-  ?event a gcdfo:SurveyEvent ;
+-         dwc:samplingProtocol ?protocol ;
+-         dwc:eventDate ?date .
+-}
+-
+-# Query 3: Find management units and their conservation units
+-PREFIX gcdfo: <https://w3id.org/gcdfo/salmon#>
+-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+-
+-SELECT ?managementUnit ?conservationUnit WHERE {
+-  ?managementUnit a gcdfo:ManagementUnit ;
+-                  gcdfo:hasMember ?conservationUnit .
+-  ?conservationUnit a gcdfo:ConservationUnit .
+-}
+diff --git a/robot-profile.yaml b/robot-profile.yaml
+index 2701cc1..406b087 100644
+--- a/robot-profile.yaml
++++ b/robot-profile.yaml
+@@ -1,2 +1,32 @@
+-INFO	missing_label
++WARN	annotation_whitespace
++ERROR	deprecated_boolean_datatype
++ERROR	deprecated_class_reference
++ERROR	deprecated_property_reference
++ERROR	duplicate_definition
++WARN	duplicate_exact_synonym
++WARN	duplicate_label_synonym
++ERROR	duplicate_label
++WARN	duplicate_scoped_synonym
++WARN	equivalent_pair
++WARN	equivalent_class_axiom_no_genus
++ERROR	illegal_use_of_built_in_vocabulary
++WARN	invalid_xref
++ERROR	label_formatting
++ERROR	label_whitespace
++INFO	lowercase_definition
+ INFO	missing_definition
++INFO	missing_label
++WARN	missing_obsolete_label
++ERROR	missing_ontology_description
++ERROR	missing_ontology_license
++ERROR	missing_ontology_title
++WARN	missing_subset_declaration
++INFO	missing_superclass
++WARN	missing_synonymtype_declaration
++ERROR	misused_obsolete_label
++ERROR	misused_replaced_by
++ERROR	multiple_definitions
++WARN	multiple_equivalent_classes
++ERROR	multiple_equivalent_class_definitions
++ERROR	multiple_labels
++WARN	invalid_entity_uri
+diff --git a/scripts/requirements.txt b/scripts/requirements.txt
+index 92012b4..f4e7f63 100644
+--- a/scripts/requirements.txt
++++ b/scripts/requirements.txt
+@@ -1,12 +1,23 @@
+-# Pinned to the version CI installs (.github/workflows/ci.yml). Not a taste
+-# preference: rdflib decides the bytes of docs/gcdfo.jsonld, which CI's
+-# post-`make ci` clean-tree check enforces. Under the previous `>=6.2,<7`
+-# range, rdflib 6.3.2 drops `"@type": "xsd:integer"` from 20 skos:notation
+-# values that 7.2.1 keeps, so a contributor following this file could not
+-# produce a tree CI accepts, no matter what they committed. Bump this and
+-# the CI pin together, and regenerate docs/gcdfo.jsonld in the same commit.
++# CI installs this file (.github/workflows/ci.yml), so the pins here are the
++# pins CI runs under; there is no second copy to keep in step.
++#
++# rdflib is pinned exactly, and not as a taste preference: it decides the
++# bytes of docs/gcdfo.jsonld, which CI's post-`make ci` clean-tree check
++# enforces. Under the previous `>=6.2,<7` range, rdflib 6.3.2 drops
++# `"@type": "xsd:integer"` from 20 skos:notation values that 7.2.1 keeps, so a
++# contributor following this file could not produce a tree CI accepts, no
++# matter what they committed. Bump it and regenerate docs/gcdfo.jsonld in the
++# same commit.
+ rdflib==7.2.1
+ 
++# The SHACL engine behind `make shacl-validate` (scripts/shacl-validate.sh).
++# ROBOT bundles no SHACL engine, so this is the one Python gate. Pinned to the
++# newest pyshacl that resolves against the rdflib pin above (pyshacl 0.40.x
++# requires a newer rdflib, and floating rdflib would change the JSON-LD bytes
++# the pin above protects). Bump the two together, and only after confirming
++# `make docs-serializations` still leaves docs/gcdfo.jsonld unchanged.
++pyshacl==0.31.0
++
+ # Only scripts/extract-term-tables.py needs this, and that flow is the
+ # deprecated local-only utility documented in docs/entrypoints.md — it is not
+ # part of `make ci`, so it does not constrain any committed artifact and stays
+diff --git a/scripts/robot-quality-check.sh b/scripts/robot-quality-check.sh
+index 48fa9fa..026197b 100755
+--- a/scripts/robot-quality-check.sh
++++ b/scripts/robot-quality-check.sh
+@@ -1,6 +1,21 @@
+ #!/bin/bash
+ # ROBOT Quality Check Script for DFO Salmon Ontology
+ # This script runs ROBOT with appropriate configuration for our hybrid OWL+SKOS ontology
++#
++# The profile. ROBOT's `--profile` REPLACES its default report profile; it
++# does not amend it. From 2025 until 2026-09-10 robot-profile.yaml held two
++# lines (INFO missing_label, INFO missing_definition), so `--fail-on ERROR`
++# ran exactly two checks, both at a level that cannot fail, and the sixteen
++# ERROR-level checks in the default profile (duplicate_label,
++# illegal_use_of_built_in_vocabulary, label_whitespace, ...) never ran.
++# robot-profile.yaml is now the default profile copied out of the pinned
++# ROBOT jar with only those two rules downgraded -- missing_label because
++# this ontology labels SKOS concepts with skos:prefLabel, which ROBOT does
++# not read as a label, and missing_definition because it is WARN by default
++# and the repo had already chosen INFO. ROBOT rejects comment lines in a
++# profile, so that provenance lives here and in docs/ROBOT_SETUP.md, and
++# scripts/validation-selftest.sh (inside `make test`) fails if the file
++# ever differs from the default by more than those two lines.
+ 
+ set -e  # Exit on any error
+ 
+@@ -61,6 +76,13 @@ fi
+ # - ERROR-level violations will still fail the build (genuine issues)
+ # - INFO-level violations won't fail the build (expected violations)
+ 
++# `set -e` is suspended around the ROBOT call on purpose. Under `set -e` a
++# ROBOT exit of 1 (ERROR-level violations found) killed this script on the
++# spot, so the ERROR branch below -- the one that prints which violations
++# failed the build -- was unreachable, and a failing gate printed nothing.
++# Unnoticed until 2026-09-10 because the two-line profile could never
++# produce an ERROR.
++set +e
+ if [ -f "$PROFILE_FILE" ]; then
+     echo "📋 Using custom profile: $PROFILE_FILE"
+     java -jar tools/robot.jar report \
+@@ -70,6 +92,7 @@ if [ -f "$PROFILE_FILE" ]; then
+         --fail-on ERROR \
+         --output "$REPORT_FILE" \
+         > "$LOG_FILE" 2>&1
++    EXIT_CODE=$?
+ else
+     echo "⚠️  Custom profile not found, using default settings"
+     java -jar tools/robot.jar report \
+@@ -78,10 +101,9 @@ else
+         --fail-on ERROR \
+         --output "$REPORT_FILE" \
+         > "$LOG_FILE" 2>&1
++    EXIT_CODE=$?
+ fi
+-
+-# Check exit code
+-EXIT_CODE=$?
++set -e
+ 
+ if [ $EXIT_CODE -eq 0 ]; then
+     echo -e "${GREEN}✅ ROBOT quality check completed successfully${NC}"
+@@ -102,11 +124,25 @@ elif [ $EXIT_CODE -eq 1 ]; then
+     echo ""
+     echo "🔍 Check the report for details. ERROR-level violations need attention."
+     
+-    # Show ERROR violations
++    # Show ERROR violations. The HTML report is for reading; the log only
++    # carries counts, so re-run the report as TSV to print the failing rows.
+     if [ -f "$LOG_FILE" ]; then
+         echo "❌ ERROR violations found:"
+         grep "ERROR" "$LOG_FILE" || echo "No ERROR violations in log"
+     fi
++    TSV_FILE="${REPORT_FILE%.html}.tsv"
++    java -jar tools/robot.jar report \
++        "${CATALOG_ARGS[@]}" \
++        --input "$ONTOLOGY_FILE" \
++        --profile "$PROFILE_FILE" \
++        --fail-on none \
++        --format TSV \
++        --output "$TSV_FILE" > /dev/null 2>&1 || true
++    if [ -f "$TSV_FILE" ]; then
++        echo ""
++        echo "   Failing rows ($TSV_FILE):"
++        awk -F'\t' 'NR > 1 && $1 == "ERROR"' "$TSV_FILE" | sed 's/^/   /'
++    fi
+     
+     # Fail the build for ERROR-level violations
+     exit 1
+@@ -124,11 +160,9 @@ else
+ fi
+ 
+ echo ""
+-echo "🎯 Expected violations (acceptable):"
+-echo "   • 31 SKOS label 'errors' (W3C SKOS compliant)"
+-echo "   • 8 Darwin Core label 'errors' (external imports)"
+-echo "   • 7 hybrid OWL+SKOS definition 'warnings' (ROBOT limitation)"
+-echo "   • 3 BFO definition 'warnings' (MIREOT approach)"
+-echo "   • 8 Darwin Core definition 'warnings' (external imports)"
++echo "🎯 Expected non-failing rows (INFO/WARN never fail the build):"
++echo "   • missing_label at INFO: SKOS concepts labelled with skos:prefLabel, which ROBOT does not read"
++echo "   • missing_definition at INFO: definitions carried in properties ROBOT does not read"
++echo "   • annotation_whitespace, missing_obsolete_label at WARN: see docs/ROBOT_SETUP.md"
+ echo ""
+-echo "📚 See docs/ROBOT_SETUP.md for detailed explanation of expected violations"
++echo "📚 See docs/ROBOT_SETUP.md for the profile's provenance and the current baseline"
+diff --git a/scripts/run-competency-questions.sh b/scripts/run-competency-questions.sh
+new file mode 100755
+index 0000000..8a90a7f
+--- /dev/null
++++ b/scripts/run-competency-questions.sh
+@@ -0,0 +1,128 @@
++#!/usr/bin/env bash
++# Execute every competency-question query, one file at a time, and fail on
++# any query that does not parse or does not run.
++#
++# Usage: scripts/run-competency-questions.sh [QUERY_DIR]
++#   QUERY_DIR     default ontology/sparql/competency (one SELECT per .rq file,
++#                 every prefix declared in the file)
++#   ONTOLOGY_FILE default ontology/dfo-salmon.ttl
++#   DATA_FILE     default ontology/examples/sample-survey-data.ttl
++#   ROBOT_JAR, ROBOT_CATALOG as in the other ROBOT scripts
++#
++# Why one file per query: a .rq file is a single SPARQL request. The shipped
++# ontology/sparql/example-competency-questions.rq held three SELECTs, so
++# ROBOT (and every other engine) rejected it with a parse error, and the
++# competency questions that docs/ADR.md presents as a quality gate had never
++# once been executed. This runner executes each query separately against
++# the ontology merged with the example data and reports a row count per
++# query. A parse error, an undeclared prefix or a ROBOT failure fails the
++# run. `make validation-selftest` proves that by pointing this script at
++# tests/fixtures/sparql/.
++#
++# Deliberately NOT a failure: a query that returns zero rows. Three of the
++# three shipped queries do today, because they name gcdfo:StockStatusZone,
++# gcdfo:SurveyEvent, gcdfo:ManagementUnit and gcdfo:hasMember, none of which
++# ontology/dfo-salmon.ttl declares. Deciding what each query should name is
++# a term decision, recorded in docs/tech-debt.md; this runner prints the
++# count so the emptiness is visible rather than hidden. Retires when: every
++# query in QUERY_DIR returns at least one row against the example data, at
++# which point `rows == 0` should become a failure here.
++
++set -euo pipefail
++
++QUERY_DIR="${1:-ontology/sparql/competency}"
++ONTOLOGY_FILE="${ONTOLOGY_FILE:-ontology/dfo-salmon.ttl}"
++DATA_FILE="${DATA_FILE:-ontology/examples/sample-survey-data.ttl}"
++ROBOT_JAR="${ROBOT_JAR:-tools/robot.jar}"
++ROBOT_CATALOG="${ROBOT_CATALOG:-release/tmp/robot-catalog.xml}"
++OUT_DIR="${OUT_DIR:-release/tmp/competency}"
++
++if ! command -v java >/dev/null 2>&1 || ! java -version >/dev/null 2>&1; then
++  echo "❌ Java is required to run ROBOT SPARQL queries." >&2
++  exit 1
++fi
++
++if [ ! -f "$ROBOT_JAR" ]; then
++  echo "❌ ROBOT JAR not found at $ROBOT_JAR (run 'make install-robot')." >&2
++  exit 1
++fi
++
++for f in "$ONTOLOGY_FILE" "$DATA_FILE"; do
++  if [ ! -f "$f" ]; then
++    echo "❌ File not found: $f" >&2
++    exit 1
++  fi
++done
++
++if [ ! -d "$QUERY_DIR" ]; then
++  echo "❌ Query directory not found: $QUERY_DIR" >&2
++  exit 1
++fi
++
++shopt -s nullglob
++queries=("$QUERY_DIR"/*.rq)
++shopt -u nullglob
++
++if [ "${#queries[@]}" -eq 0 ]; then
++  echo "❌ No .rq files in $QUERY_DIR. This runner exists to execute them; an" >&2
++  echo "   empty directory means either the queries moved or the path is wrong." >&2
++  exit 1
++fi
++
++ROBOT_CATALOG_ARGS=()
++if [ -n "$ROBOT_CATALOG" ] && [ -f "$ROBOT_CATALOG" ]; then
++  ROBOT_CATALOG_ARGS=(--catalog "$ROBOT_CATALOG")
++  echo "📚 Using ROBOT catalog for import resolution: $ROBOT_CATALOG"
++fi
++
++mkdir -p "$OUT_DIR"
++
++# Merge once, with the import closure collapsed so the merged file stands on
++# its own and each query below loads it without the catalog.
++MERGED="$OUT_DIR/ontology-with-examples.ttl"
++java -jar "$ROBOT_JAR" merge \
++  "${ROBOT_CATALOG_ARGS[@]}" \
++  --input "$ONTOLOGY_FILE" \
++  --input "$DATA_FILE" \
++  --collapse-import-closure true \
++  --output "$MERGED"
++
++echo "🔎 Running ${#queries[@]} competency question(s) from $QUERY_DIR"
++failures=0
++
++for query in "${queries[@]}"; do
++  name="$(basename "$query" .rq)"
++  out="$OUT_DIR/$name.tsv"
++  rm -f "$out"
++
++  # ROBOT exits non-zero on a parse error (which is what an undeclared
++  # prefix is) and on any load or execution failure. Do not swallow it.
++  if ! java -jar "$ROBOT_JAR" query \
++      --input "$MERGED" \
++      --query "$query" "$out" > "$OUT_DIR/$name.log" 2>&1; then
++    echo "❌ $name: query failed (see $OUT_DIR/$name.log)"
++    grep -v 'JAVA_TOOL_OPTIONS' "$OUT_DIR/$name.log" | head -n 5 | sed 's/^/     /'
++    failures=$((failures + 1))
++    continue
++  fi
++
++  # ROBOT writes no file, or an empty one, when a SELECT has no bindings;
++  # otherwise the first line is the header.
++  rows=0
++  if [ -s "$out" ]; then
++    rows=$(( $(wc -l < "$out") - 1 ))
++  fi
++
++  if [ "$rows" -gt 0 ]; then
++    echo "✅ $name: executed, $rows row(s) (see $out)"
++  else
++    echo "✅ $name: executed, 0 rows -- the query parses and runs but matches nothing in the example data; see the header of this script"
++  fi
++done
++
++if [ "$failures" -gt 0 ]; then
++  echo "❌ $failures competency question(s) failed to execute."
++  exit 1
++fi
++
++echo "✅ All competency questions executed."
+diff --git a/scripts/shacl-validate.sh b/scripts/shacl-validate.sh
+new file mode 100755
+index 0000000..a9dba70
+--- /dev/null
++++ b/scripts/shacl-validate.sh
+@@ -0,0 +1,77 @@
++#!/usr/bin/env bash
++# Run the SHACL shapes over instance data and fail on any violation.
++#
++# Usage: scripts/shacl-validate.sh [DATA_FILE]
++#   SHAPES_FILE   default ontology/shapes/dfo-salmon-shapes.ttl
++#   ONTOLOGY_FILE default ontology/dfo-salmon.ttl (added to the data graph so
++#                 that sh:targetClass sees rdfs:subClassOf declared by the
++#                 ontology; owl:imports are NOT followed, so no network)
++#   DATA_FILE     default ontology/examples/sample-survey-data.ttl
++#   REPORT_FILE   default release/tmp/shacl-report.txt
++#
++# Engine: pyshacl, pinned in scripts/requirements.txt to the newest release
++# that resolves against the rdflib pin CI installs (rdflib decides the bytes
++# of docs/gcdfo.jsonld, so it cannot float). ROBOT bundles no SHACL engine
++# (its jar carries jena-arq, not jena-shacl -- checked 2026-09-10 against
++# ROBOT 1.9.8), which is why this gate is Python where every other gate in
++# this repo is Java. See docs/adr/010.
++#
++# No --advanced flag on purpose: the shapes are SHACL core only. A
++# SHACL-AF feature (a SPARQL-based target, a rule) is ignored silently by an
++# engine that does not implement it, so a shape relying on one can report a
++# vacuous pass; the shapes file explains the core-only idiom it uses instead.
++# `make validation-selftest` proves this gate rejects
++# tests/fixtures/shacl/invalid-survey-data.ttl.
++
++set -euo pipefail
++
++SHAPES_FILE="${SHAPES_FILE:-ontology/shapes/dfo-salmon-shapes.ttl}"
++ONTOLOGY_FILE="${ONTOLOGY_FILE:-ontology/dfo-salmon.ttl}"
++DATA_FILE="${1:-${DATA_FILE:-ontology/examples/sample-survey-data.ttl}}"
++REPORT_FILE="${REPORT_FILE:-release/tmp/shacl-report.txt}"
++PYTHON="${PYTHON:-python3}"
++
++for f in "$SHAPES_FILE" "$ONTOLOGY_FILE" "$DATA_FILE"; do
++  if [ ! -f "$f" ]; then
++    echo "❌ File not found: $f" >&2
++    exit 1
++  fi
++done
++
++if ! "$PYTHON" -c 'import pyshacl' >/dev/null 2>&1; then
++  echo "❌ pyshacl is not importable by $PYTHON. Install the pinned deps:" >&2
++  echo "   $PYTHON -m pip install -r scripts/requirements.txt" >&2
++  exit 1
++fi
++
++mkdir -p "$(dirname "$REPORT_FILE")"
++
++echo "🔎 SHACL: $SHAPES_FILE over $DATA_FILE (+ $ONTOLOGY_FILE)"
++
++# pyshacl exits 0 when the data conforms and 1 when it does not; anything
++# else is a tool failure. Capture the report either way so a failure is
++# readable from the file CI uploads, then re-raise the exit code.
++set +e
++"$PYTHON" -m pyshacl \
++  --shacl "$SHAPES_FILE" \
++  --ont-graph "$ONTOLOGY_FILE" \
++  --format human \
++  "$DATA_FILE" > "$REPORT_FILE" 2>&1
++STATUS=$?
++set -e
++
++case "$STATUS" in
++  0)
++    echo "✅ SHACL: data conforms (report: $REPORT_FILE)"
++    ;;
++  1)
++    echo "❌ SHACL: data does not conform (report: $REPORT_FILE)"
++    sed 's/^/     /' "$REPORT_FILE"
++    exit 1
++    ;;
++  *)
++    echo "❌ SHACL: pyshacl failed with exit code $STATUS (see $REPORT_FILE)"
++    tail -n 20 "$REPORT_FILE" | sed 's/^/     /'
++    exit "$STATUS"
++    ;;
++esac
+diff --git a/scripts/validation-selftest.sh b/scripts/validation-selftest.sh
+new file mode 100755
+index 0000000..2ad939a
+--- /dev/null
++++ b/scripts/validation-selftest.sh
+@@ -0,0 +1,168 @@
++#!/usr/bin/env bash
++# Prove that each validation gate can still fail.
++#
++# A gate that has never been shown to fail is indistinguishable from one
++# that cannot. This repo shipped three such gates (docs/tech-debt.md,
++# 2026-08-16, records a fourth): SHACL shapes bound to a namespace no
++# subject used, a competency-question file no engine could parse, and a
++# ROBOT profile that replaced the default profile with two INFO rules so
++# `--fail-on ERROR` had nothing to fail on. Each passed for months.
++#
++# This script points each gate at a fixture under tests/fixtures/ that is
++# broken on purpose, and asserts (a) the gate exits non-zero and (b) the
++# failure is the one the fixture was written to provoke -- not an
++# incidental one. It runs inside `make test`, so a change that makes a
++# gate vacuous again fails CI instead of waiting for a reader to notice.
++#
++# Four checks. Each states what would retire it.
++#
++#   1. SHACL. scripts/shacl-validate.sh over tests/fixtures/shacl/
++#      invalid-survey-data.ttl must fail, must report every message that
++#      fixture documents, and must NOT report the control node whose
++#      violation is snorkel-specific but whose method is aerial. That last
++#      assertion is what proves the conditional shapes are conditional and
++#      not merely non-contradictory. Retires with the shapes file.
++#   2. Competency queries. scripts/run-competency-questions.sh over
++#      tests/fixtures/sparql/ must fail (the fixture uses an undeclared
++#      prefix, which is a parse error). Retires with the runner.
++#   3. ROBOT report. `robot report --profile robot-profile.yaml --fail-on
++#      ERROR` over tests/fixtures/robot/duplicate-label.ttl must exit 1 with
++#      duplicate_label as its only ERROR rule -- a rule the pre-2026-09-10
++#      profile did not run at all. Retires if ROBOT gains a native way to
++#      amend the default profile.
++#   4. Profile provenance. robot-profile.yaml must be ROBOT's own default
++#      profile (report_profile.txt inside tools/robot.jar) with exactly two
++#      rules downgraded: missing_label and missing_definition, both to INFO.
++#      Any other difference -- a rule dropped, a level changed, a ROBOT
++#      upgrade that changed the default -- fails here with the diff, so the
++#      profile cannot quietly become a replacement again. Retires with
++#      check 3; the same ROBOT feature would make both moot.
++
++set -euo pipefail
++
++ROBOT_JAR="${ROBOT_JAR:-tools/robot.jar}"
++ROBOT_CATALOG="${ROBOT_CATALOG:-release/tmp/robot-catalog.xml}"
++PROFILE_FILE="${PROFILE_FILE:-robot-profile.yaml}"
++PYTHON="${PYTHON:-python3}"
++FIXTURES="${FIXTURES:-tests/fixtures}"
++OUT_DIR="release/tmp/selftest"
++
++if [ ! -f "$ROBOT_JAR" ]; then
++  echo "❌ ROBOT JAR not found at $ROBOT_JAR (run 'make install-robot')." >&2
++  exit 1
++fi
++
++mkdir -p "$OUT_DIR"
++failures=0
++
++fail() {
++  echo "❌ $1"
++  failures=$((failures + 1))
++}
++
++echo "🧪 Validation self-test: every gate must fail on its broken fixture"
++
++# ---------------------------------------------------------------- 1. SHACL
++echo ""
++echo "── SHACL gate vs $FIXTURES/shacl/invalid-survey-data.ttl"
++shacl_report="$OUT_DIR/shacl-invalid-report.txt"
++if REPORT_FILE="$shacl_report" ./scripts/shacl-validate.sh "$FIXTURES/shacl/invalid-survey-data.ttl" > "$OUT_DIR/shacl-invalid.log" 2>&1; then
++  fail "SHACL gate PASSED the invalid fixture (see $OUT_DIR/shacl-invalid.log). The shapes are vacuous."
++else
++  echo "✅ SHACL gate rejected the invalid fixture"
++  # Every message the fixture documents must be present, and the aerial
++  # control node must be absent.
++  expected_messages=(
++    "Measurement must be about a stock"
++    "Measurement must be observed during a survey event"
++    "Count value must be a non-negative integer"
++    "Count unit must be a valid IRI"
++    "violates a snorkel-specific constraint"
++    "Survey must specify an enumeration method"
++    "Visibility must be one of: Excellent, Good, Fair, Poor"
++  )
++  for msg in "${expected_messages[@]}"; do
++    if grep -qF -- "$msg" "$shacl_report"; then
++      echo "   ✅ reported: $msg"
++    else
++      fail "SHACL report is missing the expected violation: $msg (see $shacl_report)"
++    fi
++  done
++  if grep -qF -- "ControlAerial" "$shacl_report"; then
++    fail "SHACL report names the ControlAerial node: the snorkel-specific constraint fired on an aerial survey, so the conditional shape is not conditional (see $shacl_report)"
++  else
++    echo "   ✅ not reported: ControlAerial (snorkel-specific constraint stayed snorkel-specific)"
++  fi
++fi
++
++# --------------------------------------------------- 2. Competency queries
++echo ""
++echo "── Competency-question runner vs $FIXTURES/sparql/"
++if OUT_DIR="$OUT_DIR/competency" ./scripts/run-competency-questions.sh "$FIXTURES/sparql" > "$OUT_DIR/competency-invalid.log" 2>&1; then
++  fail "Competency runner PASSED a query with an undeclared prefix (see $OUT_DIR/competency-invalid.log). Parse errors are being swallowed."
++else
++  if grep -q "undeclared-prefix: query failed" "$OUT_DIR/competency-invalid.log"; then
++    echo "✅ Competency runner rejected the unparseable query"
++  else
++    fail "Competency runner failed, but not on the fixture query (see $OUT_DIR/competency-invalid.log)"
++  fi
++fi
++
++# ------------------------------------------------------ 3. ROBOT report
++echo ""
++echo "── ROBOT report gate vs $FIXTURES/robot/duplicate-label.ttl"
++robot_tsv="$OUT_DIR/robot-duplicate-label.tsv"
++rm -f "$robot_tsv"
++set +e
++java -jar "$ROBOT_JAR" report \
++  --input "$FIXTURES/robot/duplicate-label.ttl" \
++  --profile "$PROFILE_FILE" \
++  --fail-on ERROR \
++  --format TSV \
++  --output "$robot_tsv" > "$OUT_DIR/robot-duplicate-label.log" 2>&1
++robot_status=$?
++set -e
++if [ "$robot_status" -eq 0 ]; then
++  fail "ROBOT report PASSED the duplicate-label fixture with $PROFILE_FILE. The profile is not running duplicate_label at ERROR."
++elif [ "$robot_status" -ne 1 ]; then
++  fail "ROBOT report exited $robot_status on the fixture, which is a tool failure rather than a report failure (see $OUT_DIR/robot-duplicate-label.log)"
++else
++  error_rules="$(awk -F'\t' 'NR > 1 && $1 == "ERROR" { print $2 }' "$robot_tsv" | sort -u | tr '\n' ' ')"
++  if [ "$error_rules" = "duplicate_label " ]; then
++    echo "✅ ROBOT report failed the fixture, and only on duplicate_label (a rule the two-line profile never ran)"
++  else
++    fail "ROBOT report failed the fixture, but the ERROR rules were '${error_rules:-none}' rather than exactly duplicate_label (see $robot_tsv)"
++  fi
++fi
++
++# ------------------------------------------------- 4. Profile provenance
++echo ""
++echo "── $PROFILE_FILE is ROBOT's default profile with two documented downgrades"
++default_profile="$OUT_DIR/robot-default-profile.txt"
++"$PYTHON" - "$ROBOT_JAR" "$default_profile" <<'PY'
++import sys, zipfile
++jar, out = sys.argv[1], sys.argv[2]
++text = zipfile.ZipFile(jar).read("report_profile.txt").decode()
++with open(out, "w") as fh:
++    fh.write(text if text.endswith("\n") else text + "\n")
++PY
++# Line-number-independent diff: one line per removed (-) or added (+) rule.
++actual_diff="$(diff --unchanged-line-format= --old-line-format='-%L' --new-line-format='+%L' "$default_profile" "$PROFILE_FILE" | LC_ALL=C sort || true)"
++expected_diff="$(printf '%s\n' \
++  $'+INFO\tmissing_definition' \
++  $'+INFO\tmissing_label' \
++  $'-ERROR\tmissing_label' \
++  $'-WARN\tmissing_definition' | LC_ALL=C sort)"
++if [ "$actual_diff" = "$expected_diff" ]; then
++  echo "✅ $PROFILE_FILE = default profile ($(wc -l < "$default_profile" | tr -d ' ') rules) with missing_label and missing_definition at INFO; nothing else differs"
++else
++  fail "$PROFILE_FILE differs from ROBOT's default profile in more than the two documented downgrades. Re-derive it from the default (see docs/ROBOT_SETUP.md). Diff (- default, + ours):"
++  printf '%s\n' "$actual_diff" | sed 's/^/     /'
++fi
++
++echo ""
++if [ "$failures" -gt 0 ]; then
++  echo "❌ Validation self-test found $failures problem(s): at least one gate cannot fail, or fails for the wrong reason."
++  exit 1
++fi
++echo "✅ Validation self-test passed: every gate fails on its broken fixture, for the documented reason."
+diff --git a/tests/fixtures/robot/duplicate-label.ttl b/tests/fixtures/robot/duplicate-label.ttl
+new file mode 100644
+index 0000000..a3acc8a
+--- /dev/null
++++ b/tests/fixtures/robot/duplicate-label.ttl
+@@ -0,0 +1,42 @@
++@prefix owl:     <http://www.w3.org/2002/07/owl#> .
++@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
++@prefix dcterms: <http://purl.org/dc/terms/> .
++@prefix iao:     <http://purl.obolibrary.org/obo/IAO_> .
++@prefix :        <https://example.invalid/selftest#> .
++
++#################################################################
++# Deliberately BROKEN ontology fixture for the ROBOT report gate.
++#
++# Two classes share one rdfs:label. `duplicate_label` is one of the sixteen
++# ERROR-level checks in ROBOT's default report profile that robot-profile.yaml
++# silently dropped from 2025 until 2026-09-10, when it listed only two rules
++# (`--profile` REPLACES the default profile rather than amending it).
++# scripts/validation-selftest.sh runs `robot report --profile
++# robot-profile.yaml --fail-on ERROR` over this file and asserts that the
++# gate exits 1 and that the only ERROR rows are `duplicate_label` -- i.e.
++# the failure comes from a re-enabled check, not from the two rules the old
++# profile already ran.
++#
++# The ontology header carries a title, description and licence on purpose,
++# so that the three `missing_ontology_*` checks do not fire and the failure
++# is attributable to exactly one rule. Both classes carry a definition so
++# `missing_definition` (INFO) does not muddy the report either.
++#
++# Do not fix this ontology. Retires when: ROBOT gains a way to amend rather
++# than replace the default profile (robot-profile.yaml then holds only the
++# two overrides and this fixture proves nothing the default does not), or
++# the ROBOT gate is removed.
++#################################################################
++
++<https://example.invalid/selftest> a owl:Ontology ;
++  dcterms:title "Self-test fixture: duplicate label"@en ;
++  dcterms:description "A minimal ontology whose only defect is two classes sharing one label."@en ;
++  dcterms:license <https://creativecommons.org/licenses/by/4.0/> .
++
++:FirstThing a owl:Class ;
++  rdfs:label "Duplicated label"@en ;
++  iao:0000115 "The first of two classes that share a label."@en .
++
++:SecondThing a owl:Class ;
++  rdfs:label "Duplicated label"@en ;
++  iao:0000115 "The second of two classes that share a label."@en .
+diff --git a/tests/fixtures/shacl/invalid-survey-data.ttl b/tests/fixtures/shacl/invalid-survey-data.ttl
+new file mode 100644
+index 0000000..c6047df
+--- /dev/null
++++ b/tests/fixtures/shacl/invalid-survey-data.ttl
+@@ -0,0 +1,85 @@
++@prefix gcdfo:     <https://w3id.org/gcdfo/salmon#> .
++@prefix smn:       <https://w3id.org/smn/> .
++@prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> .
++@prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
++@prefix dwc:     <http://rs.tdwg.org/dwc/terms/> .
++@prefix :        <https://w3id.org/gcdfo/salmon#> .
++
++#################################################################
++# Deliberately INVALID survey data.
++#
++# This is not example data. It exists so that `make validation-selftest`
++# (scripts/validation-selftest.sh) can prove the SHACL gate still fails:
++# ontology/shapes/dfo-salmon-shapes.ttl must report every violation listed
++# below, and the self-test asserts on the messages, not only on the exit
++# code. A gate that cannot be shown to fail is the defect this file
++# guards against (queue item B-44 in the metasalmon hub).
++#
++# Do not "fix" this data. Retires when: the shapes file is deleted, or a
++# different mechanism proves the SHACL gate can fail.
++#################################################################
++
++# Violation 1 and 2: a measurement with no stock and no survey event.
++# Violation 3: a negative count.
++# (MeasurementShape: "Measurement must be about a stock",
++#  "Measurement must be observed during a survey event",
++#  "Count value must be a non-negative integer")
++:BrokenCount a gcdfo:EscapementMeasurement ;
++    rdfs:label "Broken count"@en ;
++    gcdfo:countValue -5 ;
++    gcdfo:countUnitIRI <http://qudt.org/vocab/unit/Each> .
++
++# Violation 4: a count unit that is a plain string, not an IRI.
++# (MeasurementShape: "Count unit must be a valid IRI")
++:BrokenUnit a gcdfo:EscapementMeasurement ;
++    rdfs:label "Broken unit"@en ;
++    gcdfo:aboutStock :SomeStock ;
++    gcdfo:observedDuring :BrokenSnorkel ;
++    gcdfo:countValue 10 ;
++    gcdfo:countUnitIRI "Each" .
++
++# Violation 5: a snorkel survey whose observer efficiency is above 1.0.
++# This one fires ONLY if the conditional (method-specific) targeting in
++# SnorkelSurveyShape is honoured by the engine. An engine that ignored the
++# conditional shapes would pass this node, so its presence here is what
++# keeps a silently-vacuous snorkel shape from going unnoticed.
++# (SnorkelSurveyShape: "Snorkel survey ... violates a snorkel-specific
++#  constraint")
++:BrokenSnorkel a gcdfo:EscapementSurveyEvent ;
++    rdfs:label "Broken snorkel survey"@en ;
++    gcdfo:usesEnumerationMethod :VisualSnorkelCount ;
++    gcdfo:usesEstimateMethod :PeakCountAnalysis ;
++    gcdfo:measuredVisits 3 ;
++    gcdfo:measuredReachCoverage 0.5 ;
++    gcdfo:measuredVisibility "Good" ;
++    gcdfo:measuredObserverEfficiency 1.5 ;
++    gcdfo:percentRiverSwam 50.0 ;
++    dwc:eventDate "2022-08-15"^^xsd:date .
++
++# Violation 6: a survey with no enumeration method and an unknown visibility.
++# (SurveyEventShape: "Survey must specify an enumeration method",
++#  "Visibility must be one of: Excellent, Good, Fair, Poor")
++:BrokenSurvey a gcdfo:EscapementSurveyEvent ;
++    rdfs:label "Broken survey"@en ;
++    gcdfo:usesEstimateMethod :PeakCountAnalysis ;
++    gcdfo:measuredVisits 2 ;
++    gcdfo:measuredVisibility "Great" ;
++    dwc:eventDate "2022-08-16"^^xsd:date .
++
++# Control: an aerial survey with an out-of-range observer efficiency must
++# NOT be reported by SnorkelSurveyShape (the constraint is snorkel-specific),
++# and there is no aerial-specific range rule. The self-test asserts this
++# node is absent from the report so the implication is known to be
++# conditional in both directions, not merely non-contradictory.
++:ControlAerial a gcdfo:EscapementSurveyEvent ;
++    rdfs:label "Control aerial survey"@en ;
++    gcdfo:usesEnumerationMethod :AerialSurveyCount ;
++    gcdfo:usesEstimateMethod :PeakCountAnalysis ;
++    gcdfo:measuredVisits 3 ;
++    gcdfo:measuredReachCoverage 0.9 ;
++    gcdfo:measuredVisibility "Excellent" ;
++    gcdfo:measuredObserverEfficiency 1.5 ;
++    dwc:eventDate "2022-08-25"^^xsd:date .
++
++:SomeStock a smn:Stock ;
++    rdfs:label "Some stock"@en .
+diff --git a/tests/fixtures/sparql/undeclared-prefix.rq b/tests/fixtures/sparql/undeclared-prefix.rq
+new file mode 100644
+index 0000000..c77a46b
+--- /dev/null
++++ b/tests/fixtures/sparql/undeclared-prefix.rq
+@@ -0,0 +1,18 @@
++# Deliberately BROKEN competency query.
++#
++# It uses the prefix `dfo:` without declaring it, which is the exact defect
++# the shipped competency file carried until 2026-09-10 (three queries in one
++# .rq, and at one point an undeclared prefix). scripts/validation-selftest.sh
++# runs scripts/run-competency-questions.sh over this directory and asserts
++# that the runner exits non-zero. A runner that executed this "successfully"
++# would be reporting a parse error as a pass.
++#
++# Do not fix this query. Retires when: the competency runner is deleted, or a
++# different mechanism proves it fails on an unparseable query.
++
++PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
++
++SELECT ?statusZone ?label WHERE {
++  ?statusZone a dfo:StockStatusZone ;
++              rdfs:label ?label .
++}
+-- 
+2.43.0
+
+
+From ce8af2d1d6aa994274ec15ef88eb4fc68da9b5f0 Mon Sep 17 00:00:00 2001
+From: hub-agent <a-71a6d7c9eefb16bc@agents.invalid>
+Date: Thu, 10 Sep 2026 22:05:47 +0000
+Subject: [PATCH 2/2] hub: B-44 workpad
+
+Report for queue item B-44, per HUB.md step 6: what changed, the
+failing-before and passing-after evidence per clause, what was not
+done, decisions left for Brett, candidate items, and the retirement
+condition of every guard added. Safe to drop before merge.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01GvKPd1YpcrUYP6D4eMUPvD
+---
+ .hub/workpad.md | 342 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 342 insertions(+)
+ create mode 100644 .hub/workpad.md
+
+diff --git a/.hub/workpad.md b/.hub/workpad.md
+new file mode 100644
+index 0000000..a296683
+--- /dev/null
++++ b/.hub/workpad.md
+@@ -0,0 +1,342 @@
++# Workpad: B-44
++
++## Queue item
++
++**B-44 — The gcdfo validation layer is inert** (P1, stream S6, repo
++`dfo-salmon-ontology`). Claimed 2026-09-10T21:40Z by `a-71a6d7c9eefb16bc`
++under the batch lease. Evidence:
++`knowledge/plans/2026-08-10-gcdfo-validation-layer-verification.md` and
++backlog `#44` in the metasalmon hub.
++
++Retirement condition, verbatim: *The SHACL shapes and example data bind their
++default prefix to the namespace gcdfo subjects actually use, each competency
++query declares its prefixes and is executed separately, `robot-profile.yaml`
++amends rather than replaces the default profile so the 16 ERROR-level checks
++run again, and a deliberately broken fixture makes the gate fail.*
++
++**One finding up front.** Clause 1's literal condition was already met on
++`origin/main` (`26d7c38`): both `ontology/shapes/dfo-salmon-shapes.ttl` and
++`ontology/examples/sample-survey-data.ttl` bind `@prefix : <https://w3id.org/gcdfo/salmon#>`,
++and no file in the tree names `w3id.org/dfo/salmon#` any more. The 2026-08-10
++evidence is stale on that one point. What that rebinding exposed — and what
++nothing had ever run to see — is that the shapes, once live, **reject the
++repo's own example data** (7 violations). So clause 1's real work turned out
++to be making the shapes satisfiable and running them, not the prefix.
++
++## What changed, and where
++
++All inside the worktree `/home/user/hub-worktrees/dfo-pacific-science-dfo-salmon-ontology-B-44`
++on branch `agent/B-44/a-71a6d7c9eefb16bc`, from `origin/main` = `26d7c38`.
++No ontology term IRI, label or definition was chosen, changed or removed.
++
++| Clause | File | Change |
++|---|---|---|
++| 1 SHACL | `ontology/shapes/dfo-salmon-shapes.ttl` | `SnorkelSurveyShape` and `AerialSurveyShape` both targeted every `EscapementSurveyEvent` with contradictory `sh:hasValue`s. Each now uses a SHACL-core implication: `sh:or ( [not this method] [this method's constraints] )`, so its constraints apply only to events of its method; inner constraints unchanged. `countUnitIRI` accepted only an `xsd:anyURI` literal while the data gives an IRI node and the ontology declares no range: now `sh:or ( [sh:nodeKind sh:IRI] [sh:datatype xsd:anyURI] )`, retirement condition in the file. No SHACL-AF (SPARQL target) on purpose: measured that pyshacl without `--advanced` silently ignores one and reports `Conforms: True`. |
++| 1 SHACL | `scripts/shacl-validate.sh` (new), `Makefile` `shacl-validate` | pyshacl over shapes + example data + ontology (no `owl:imports` fetched, no network), fails on non-conformance, report to `release/tmp/shacl-report.txt`. |
++| 1 SHACL | `scripts/requirements.txt`, `.github/workflows/ci.yml` | `pyshacl==0.31.0` — the newest that resolves against the `rdflib==7.2.1` pin CI relies on for `docs/gcdfo.jsonld` bytes (0.40.x needs a newer rdflib). CI now installs `-r scripts/requirements.txt` so the pins have one home; the `.tsv` report is added to the uploaded artifacts. |
++| 2 SPARQL | `ontology/sparql/competency/cq-01-stock-status-zones.rq`, `cq-02-survey-events-with-protocols.rq`, `cq-03-management-units-and-conservation-units.rq` (new); `ontology/sparql/example-competency-questions.rq` (deleted) | One query per file, prefixes declared in each. Query bodies are byte-identical to the originals (verified by diff after stripping comments). |
++| 2 SPARQL | `scripts/run-competency-questions.sh` (new), `Makefile` `competency-questions` | ROBOT `merge` (ontology + example data, import closure collapsed via the catalog) then `query` per file; a parse error, an undeclared prefix or a ROBOT failure fails the run; prints a row count per query; **zero rows is reported, not failed** (see "guards" below). |
++| 3 ROBOT | `robot-profile.yaml` | Was 2 lines (`INFO missing_label`, `INFO missing_definition`). Now ROBOT 1.9.8's own `report_profile.txt` (32 rules, extracted from `tools/robot.jar`) with exactly those two rules at INFO; 16 rules at ERROR. ROBOT rejects `#` comment lines in a profile (tested: `REPORT LEVEL ERROR '# …' is not a valid reporting level`), so provenance is in `scripts/robot-quality-check.sh`'s header and `docs/ROBOT_SETUP.md`, and enforced by the self-test. |
++| 3 ROBOT | `scripts/robot-quality-check.sh` | Found while running it: under `set -e`, a ROBOT exit of 1 killed the script before its own "ERROR-level violations" branch, so a failing gate printed nothing (unreachable since the day it was written; never mattered because the 2-line profile could not produce an ERROR). The call is now wrapped in `set +e`/`set -e`, the branch is reachable, and it re-runs the report as TSV to print the failing rows. The stale "expected violations" echo block (31 SKOS label errors, etc.) replaced with the current baseline. |
++| 4 fixture | `tests/fixtures/shacl/invalid-survey-data.ttl`, `tests/fixtures/sparql/undeclared-prefix.rq`, `tests/fixtures/robot/duplicate-label.ttl` (new) | Deliberately broken inputs, one per gate, each header saying what it provokes and what retires it. |
++| 4 fixture | `scripts/validation-selftest.sh` (new), `Makefile` `validation-selftest`, `test` | Four checks: SHACL gate fails on its fixture with every documented message present **and** the aerial control node absent (proves the conditional shapes are conditional); competency runner fails on the undeclared-prefix query; `robot report --profile robot-profile.yaml --fail-on ERROR` exits 1 on the duplicate-label fixture with `duplicate_label` as the **only** ERROR rule; `robot-profile.yaml` equals the jar's default profile modulo exactly the two documented downgrades. Wired into `make test`, hence `make ci`. |
++| docs | `docs/entrypoints.md`, `docs/ROBOT_SETUP.md`, `docs/tech-debt.md` (2 new entries), `docs/adr/010-validation-gates.md` (new), `CHANGELOG.md` (Unreleased / Fixed), `README.md` (2 lines), `AGENTS.md` (agent-context: stack + `last_updated`) | Per the target repo's `AGENTS.md`: entrypoints on wiring change, tech-debt on debt introduced, ADR on a choice between approaches (pyshacl vs nothing; SHACL core vs SHACL-AF; whole-profile-plus-pin vs overrides). |
++
++## Commands run and results
++
++Toolchain on this machine: OpenJDK 21.0.10; ROBOT 1.9.8 fetched to
++`tools/robot.jar` exactly as `make install-robot` does (git-ignored);
++Python 3.11.15; pyshacl 0.31.0 + rdflib 7.2.1 in a throwaway venv matching
++the CI pins (the system Python has 0.40.1/7.6.0 — every SHACL result below
++was produced with the pinned pair, and the SPARQL-target probe with both);
++`make prepare-import-catalog` fetched the pinned smn commit `f7205ee` from
++GitHub (no sibling checkout here). WIDOCO was not fetched: nothing here
++touches the ontology, so `make docs-refresh` regenerates nothing — not run,
++and not claimed.
++
++### Clause 1 — SHACL
++
++**Failing before** (shapes as on `origin/main` over the repo's own example data;
++`pyshacl -s <old shapes> -e ontology/dfo-salmon.ttl ontology/examples/sample-survey-data.ttl`, exit 1):
++
++```
++Validation Report
++Conforms: False
++Results (7):
++Constraint Violation in DatatypeConstraintComponent (http://www.w3.org/ns/shacl#DatatypeConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:datatype xsd:anyURI ; sh:message Literal("Count unit must be a valid IRI") ; sh:path :countUnitIRI ]
++	Focus Node: :SkeenaCount2022_001
++	Value Node: qudtunit:Each
++	Result Path: :countUnitIRI
++	Message: Count unit must be a valid IRI
++Constraint Violation in DatatypeConstraintComponent (http://www.w3.org/ns/shacl#DatatypeConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:datatype xsd:anyURI ; sh:message Literal("Count unit must be a valid IRI") ; sh:path :countUnitIRI ]
++	Focus Node: :SkeenaCount2022_002
++	Value Node: qudtunit:Each
++	Result Path: :countUnitIRI
++	Message: Count unit must be a valid IRI
++Constraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:hasValue :AerialSurveyCount ; sh:message Literal("Aerial surveys must use AerialSurveyCount method") ; sh:path :usesEnumerationMethod ]
++	Focus Node: :SkeenaSnorkel2022_001
++	Result Path: :usesEnumerationMethod
++	Message: Aerial surveys must use AerialSurveyCount method
++Constraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:hasValue :AerialSurveyCount ; sh:message Literal("Aerial surveys must use AerialSurveyCount method") ; sh:path :usesEnumerationMethod ]
++	Focus Node: :SkeenaSnorkel2022_002
++	Result Path: :usesEnumerationMethod
++	Message: Aerial surveys must use AerialSurveyCount method
++Constraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:hasValue :AerialSurveyCount ; sh:message Literal("Aerial surveys must use AerialSurveyCount method") ; sh:path :usesEnumerationMethod ]
++	Focus Node: :SkeenaSnorkel2022_003
++	Result Path: :usesEnumerationMethod
++	Message: Aerial surveys must use AerialSurveyCount method
++Constraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:hasValue :AerialSurveyCount ; sh:message Literal("Aerial surveys must use AerialSurveyCount method") ; sh:path :usesEnumerationMethod ]
++	Focus Node: :SkeenaSnorkel2022_004
++	Result Path: :usesEnumerationMethod
++	Message: Aerial surveys must use AerialSurveyCount method
++Constraint Violation in HasValueConstraintComponent (http://www.w3.org/ns/shacl#HasValueConstraintComponent):
++	Severity: sh:Violation
++	Source Shape: [ sh:hasValue :VisualSnorkelCount ; sh:message Literal("Snorkel surveys must use VisualSnorkelCount method") ; sh:path :usesEnumerationMethod ]
++	Focus Node: :SkeenaAerial2022_001
++	Result Path: :usesEnumerationMethod
++	Message: Snorkel surveys must use VisualSnorkelCount method
++```
++
++The 7: `countUnitIRI` × 2 (IRI node vs `xsd:anyURI` literal), `AerialSurveyShape`
++firing on all four snorkel events, `SnorkelSurveyShape` firing on the aerial
++event. Every event was required to be both.
++
++**Passing after** (`make shacl-validate`, exit 0):
++
++```
++🔎 SHACL: ontology/shapes/dfo-salmon-shapes.ttl over ontology/examples/sample-survey-data.ttl (+ ontology/dfo-salmon.ttl)
++✅ SHACL: data conforms (report: release/tmp/shacl-report.txt)
++```
++
++### Clause 2 — competency queries
++
++**Failing before** (the combined file as on `origin/main`, through the new
++runner, exit 1 — this is the state the file had shipped in):
++
++```
++📚 Using ROBOT catalog for import resolution: release/tmp/robot-catalog.xml
++🔎 Running 1 competency question(s) from /tmp/claude-0/-home-user-metasalmon/c65e9c22-7ec7-5a53-8177-deda0f189418/scratchpad/B-44/evidence/old-cq
++❌ example-competency-questions: query failed (see release/tmp/competency-before/example-competency-questions.log)
++     QUERY PARSE ERROR query cannot be parsed:
++     Encountered " "prefix" "PREFIX "" at line 15, column 1.
++     Was expecting one of:
++         <EOF> 
++         "limit" ...
++❌ 1 competency question(s) failed to execute.
++```
++
++**Passing after** (`make competency-questions`, exit 0):
++
++```
++📚 Using ROBOT catalog for import resolution: release/tmp/robot-catalog.xml
++🔎 Running 3 competency question(s) from ontology/sparql/competency
++✅ cq-01-stock-status-zones: executed, 0 rows -- the query parses and runs but matches nothing in the example data; see the header of this script
++✅ cq-02-survey-events-with-protocols: executed, 0 rows -- the query parses and runs but matches nothing in the example data; see the header of this script
++✅ cq-03-management-units-and-conservation-units: executed, 0 rows -- the query parses and runs but matches nothing in the example data; see the header of this script
++✅ All competency questions executed.
++```
++
++All three execute and all three return zero rows — see "belongs elsewhere".
++
++### Clause 3 — ROBOT profile
++
++**Failing before** (old 2-line profile over the real ontology: the gate cannot
++fail; and over the duplicate-label fixture: it does not):
++
++```
++$ robot report --profile <old robot-profile.yaml> --fail-on ERROR --input ontology/dfo-salmon.ttl
++Violations: 45
++-----------------
++ERROR:      0
++WARN:       0
++INFO:       45
++exit=0     (45 = 25 missing_label + 20 missing_definition; those were the only two checks run)
++
++$ robot report --profile <old robot-profile.yaml> --fail-on ERROR --input tests/fixtures/robot/duplicate-label.ttl
++No violations found.
++exit=0
++```
++
++**After** (amended profile; 32 rules, 16 at ERROR):
++
++```
++$ robot report --profile robot-profile.yaml --fail-on ERROR --input tests/fixtures/robot/duplicate-label.ttl
++Violations: 4
++-----------------
++ERROR:      2
++WARN:       0
++INFO:       2
++2026-09-10 21:57:04,417 ERROR org.obolibrary.robot.ReportCommand - Report failed!
++exit=1   (ERROR rows: duplicate_label × 2, nothing else at ERROR)
++
++$ make quality-check        # the real ontology
++🔍 Check the report for details. ERROR-level violations need attention.
++❌ ERROR violations found:
++ERROR:      2
++2026-09-10 22:01:37,823 ERROR org.obolibrary.robot.ReportCommand - Report failed!
++
++   Failing rows (release/artifacts/robot-quality-report.tsv):
++   ERROR	duplicate_label	https://w3id.org/gcdfo/salmon#WildSalmonPolicy	rdfs:label	Wild Salmon Policy@en
++   ERROR	duplicate_label	https://w3id.org/gcdfo/salmon#WildSalmonPolicyTheme	rdfs:label	Wild Salmon Policy@en
++make: *** [Makefile:92: quality-check] Error 1
++```
++
++**That last result is the gate working, and it is red on `main`.** The
++re-enabled `duplicate_label` check finds `gcdfo:WildSalmonPolicy` and
++`gcdfo:WildSalmonPolicyTheme` both labelled `"Wild Salmon Policy"@en`. Fixing
++it is a label change — a term decision — so it is not made here; see
++"decisions for Brett". Until it is made, `make quality-check` and therefore
++`make ci` fail on this branch. The other re-enabled rows are WARN
++(`annotation_whitespace` × 2, `missing_obsolete_label` × 3) and do not fail
++the build; they are recorded in `docs/ROBOT_SETUP.md`.
++
++### Clause 4 — the broken fixtures make the gate fail
++
++`make validation-selftest` (exit 0):
++
++```
++🧪 Validation self-test: every gate must fail on its broken fixture
++
++── SHACL gate vs tests/fixtures/shacl/invalid-survey-data.ttl
++✅ SHACL gate rejected the invalid fixture
++   ✅ reported: Measurement must be about a stock
++   ✅ reported: Measurement must be observed during a survey event
++   ✅ reported: Count value must be a non-negative integer
++   ✅ reported: Count unit must be a valid IRI
++   ✅ reported: violates a snorkel-specific constraint
++   ✅ reported: Survey must specify an enumeration method
++   ✅ reported: Visibility must be one of: Excellent, Good, Fair, Poor
++   ✅ not reported: ControlAerial (snorkel-specific constraint stayed snorkel-specific)
++
++── Competency-question runner vs tests/fixtures/sparql/
++✅ Competency runner rejected the unparseable query
++
++── ROBOT report gate vs tests/fixtures/robot/duplicate-label.ttl
++✅ ROBOT report failed the fixture, and only on duplicate_label (a rule the two-line profile never ran)
++
++── robot-profile.yaml is ROBOT's default profile with two documented downgrades
++✅ robot-profile.yaml = default profile (32 rules) with missing_label and missing_definition at INFO; nothing else differs
++
++✅ Validation self-test passed: every gate fails on its broken fixture, for the documented reason.
++```
++
++Shown to be load-bearing before wiring in — the self-test **goes red** against
++the pre-fix artefacts:
++
++```
++$ SHAPES_FILE=<old shapes> ./scripts/validation-selftest.sh
++🧪 Validation self-test: every gate must fail on its broken fixture
++❌ SHACL report is missing the expected violation: violates a snorkel-specific constraint (see release/tmp/selftest/shacl-invalid-report.txt)
++❌ SHACL report names the ControlAerial node: the snorkel-specific constraint fired on an aerial survey, so the conditional shape is not conditional (see release/tmp/selftest/shacl-invalid-report.txt)
++❌ Validation self-test found 2 problem(s): at least one gate cannot fail, or fails for the wrong reason.
++
++$ PROFILE_FILE=<old robot-profile.yaml> ./scripts/validation-selftest.sh
++🧪 Validation self-test: every gate must fail on its broken fixture
++❌ ROBOT report PASSED the duplicate-label fixture with /tmp/claude-0/-home-user-metasalmon/c65e9c22-7ec7-5a53-8177-deda0f189418/scratchpad/B-44/evidence/old-robot-profile.yaml. The profile is not running duplicate_label at ERROR.
++❌ /tmp/claude-0/-home-user-metasalmon/c65e9c22-7ec7-5a53-8177-deda0f189418/scratchpad/B-44/evidence/old-robot-profile.yaml differs from ROBOT's default profile in more than the two documented downgrades. Re-derive it from the default (see docs/ROBOT_SETUP.md). Diff (- default, + ours):
++     +INFO	missing_definition
++     +INFO	missing_label
++     -ERROR	deprecated_boolean_datatype
++     … (30 more dropped rules) …
++❌ Validation self-test found 2 problem(s): at least one gate cannot fail, or fails for the wrong reason.
++exit=1
++```
++
++### Whole bundle
++
++`make test` (verify-mappings + theme-coverage + alpha-lint + reason +
++check-modules + shacl-validate + competency-questions + validation-selftest):
++**exit 0**. `make quality-check`: **exit 1** on `duplicate_label` as above.
++`git diff --check`: clean.
++
++## What I did not do, and why
++
++- **Not pushed, no pull request opened, no `hub done`, no `hub release`.**
++  `dfo-salmon-ontology` belongs to another organization and has other
++  contributors, so HUB.md's standing authorization does not cover a push
++  there, and this session holds no push credential for it. The work is
++  committed locally on `agent/B-44/a-71a6d7c9eefb16bc`; a patch, diffstat and
++  pull-request text are in the coordinator's deliverables directory for
++  Brett to push and open himself. The claim stays held for him.
++- **Did not resolve the `duplicate_label` finding**, for the reason above.
++- **Did not retarget the shapes, example data or queries** to the terms the
++  ontology now declares (`smn:EscapementSurveyEvent`, `gcdfo:StockManagementUnit`,
++  `skos:inScheme gcdfo:WSPBiologicalStatusZoneScheme`, …). Every such
++  retarget is a choice of term IRI; recorded as a candidate item below with
++  the exact list.
++- **Did not run `make docs-refresh` / WIDOCO.** No ontology bytes changed, so
++  no generated artifact changes; CI's clean-tree check should be unaffected,
++  but I have not demonstrated that here.
++- **Did not fetch a sibling `salmon-domain-ontology` checkout**; the catalog
++  fell back to the pinned smn commit, which is the CI path anyway.
++- **Did not update `docs/CONVENTIONS.md` §2.5**, whose worked SHACL example
++  uses the same contradictory `sh:targetClass` + `sh:hasValue` idiom and a
++  `dfo:` prefix. Candidate item below.
++- **Did not touch the primary clone, `/home/user/metasalmon`, or `queue/`.**
++- **The worktree is left in place** — it holds unpushed commits, which fails
++  the removal checks in HUB.md, and branch deletion is Brett's call.
++
++## Decisions for Brett (term discipline)
++
++1. **Which label changes.** `gcdfo:WildSalmonPolicy` and `gcdfo:WildSalmonPolicyTheme`
++   share `rdfs:label "Wild Salmon Policy"@en`. The gate is red until one
++   differs. If the answer is instead "this check should not gate the repo",
++   the downgrade goes in three places in one change — `robot-profile.yaml`,
++   the expected diff in `scripts/validation-selftest.sh`, and the table in
++   `docs/ROBOT_SETUP.md` — and the reason goes with it. I did not pick.
++2. **`countUnitIRI`: IRI node or `xsd:anyURI` literal?** The shape now
++   accepts either; it narrows the day the property is declared with a range.
++
++## Belongs to another item, or a candidate new item
++
++- **B-0** (docs-widoco baseline): not touched. Nothing here goes near
++  `docs-widoco`; I did not run it.
++- **Candidate new item (P2, term decision, `claimable: false`): the shapes,
++  example data and competency queries name 13 + 3 + 4 IRIs the ontology does
++  not declare.** Full list in the new `docs/tech-debt.md` entry. Retargeting
++  or minting is per-term (the repo's own red-list rule against bulk swaps);
++  once done, flip `scripts/run-competency-questions.sh` to fail on zero rows
++  (its header says where) and add a declared-IRI assertion to the self-test.
++  Until then the SHACL gate is a consistency check between two files, and the
++  competency gate proves parse-and-run only. Both say so in their output.
++- **Candidate new item (P3): `docs/CONVENTIONS.md` §2.5** shows the
++  contradictory snorkel idiom with a `dfo:` prefix; `docs/ADR.md` ADR-005
++  still says SHACL is for "automated classification"; both predate this fix.
++- **Candidate new item (P3): the 3 `missing_obsolete_label` and 2
++  `annotation_whitespace` WARN rows** — trivial to fix, but the whitespace
++  ones edit definition strings and the obsolete-label ones edit labels, so
++  they are term edits and were left alone.
++
++## Guards, skips and workarounds added — and what retires each
++
++- **`scripts/run-competency-questions.sh` does not fail on zero rows.**
++  Retires when every query under `ontology/sparql/competency/` returns at
++  least one row against the example data (the term-decision item above); the
++  header names the line to flip. Stated in the script, `docs/entrypoints.md`,
++  `docs/tech-debt.md`, ADR-010.
++- **`countUnitIRI` accepts IRI node OR `xsd:anyURI` literal.** Retires when
++  `gcdfo:countUnitIRI` is declared with a range. Stated in the shapes file.
++- **`missing_label` and `missing_definition` at INFO in `robot-profile.yaml`.**
++  Pre-existing downgrades, kept; now the *only* two, enforced by the
++  self-test. Retire when ROBOT reads `skos:prefLabel` / `iao:0000115`, or the
++  ontology mirrors both into what ROBOT reads. Stated in `docs/ROBOT_SETUP.md`.
++- **The profile-provenance check assumes ROBOT's default has no native amend
++  option.** Retires when ROBOT can amend rather than replace the default
++  profile; then the file holds only the two overrides and checks 3–4 of the
++  self-test go with it. Stated in the self-test header.
++- **The three fixtures.** Each header says not to fix it and what retires it
++  (the gate it proves being removed or proven another way).
++- **`.hub/workpad.md`** is this file; Brett may drop the commit that adds it
++  before merging.
+-- 
+2.43.0
+

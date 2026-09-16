@@ -1,7 +1,7 @@
 id: B-0
 kind: defect
 title: gcdfo docs-widoco seeds its own baseline, so a failed build goes green over raw output
-state: ready
+state: review
 claimable: true
 repo: dfo-salmon-ontology
 venue: claude-code

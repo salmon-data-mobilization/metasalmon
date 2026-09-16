@@ -1,6 +1,6 @@
 id: B-194
 kind: defect
-title: 'A sidecar declaring one output path twice silently loses a file, identically in both implementations'
+title: 'A sidecar declaring one output path twice silently loses a file, the metasalmon half'
 state: icebox
 claimable: true
 repo: metasalmon
@@ -10,4 +10,4 @@ severity: P4
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'A semantic sidecar that names the same output path for two different closure outputs is refused, or the collision is reported, rather than one file being written over the other -- pinned by a test in each implementation. Measured by the B-165 run 2026-09-16 as present and identical in metasalmon and metasalmonpy, so it is a shared residual rather than a divergence and no parity-deviations row is owed. Low severity because a sidecar is hand-edited and the duplicate has to be written deliberately, but the failure is silent: the second write wins, the first output is simply absent, and the digests recorded in the sidecar are consistent with the file that survived -- so nothing downstream reports a problem. Fix both sides in one change, for the reason B-193 gives about this same helper family.'
+retires_when: 'IN METASALMON, a semantic sidecar that names the same output path for two different closure outputs is refused, or the collision is reported, rather than one file being written over the other -- pinned by one test in this package. Measured by the B-165 run 2026-09-16 as present and identical in metasalmon and metasalmonpy, so it is a shared residual rather than a divergence and no parity-deviations row is owed. Low severity because a sidecar is hand-edited and the duplicate has to be written deliberately, but the failure is silent: the second write wins, the first output is simply absent, and the digests recorded in the sidecar are consistent with the file that survived -- so nothing downstream reports a problem. THE MIRROR HALF IS B-195, a separate item on purpose. Until 2026-09-16 this condition required a test in EACH implementation and told the claimant to fix both sides in one change, which no claimant could do: the repo field here is metasalmon and the hub protocol scopes a claim to the repository that field names, so the item was claimable and unfinishable at the same time -- found by a Codex review of metasalmon pull request 134. Splitting it is this ecosystem''s convention rather than a new idea, since B-111 with B-179, B-115 with B-145 and B-112 with B-144 are the same pairing. The reason B-193 gives about this helper family is why the two halves should land close together; it is not a reason for one item to span two repositories.'
