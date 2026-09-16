@@ -3262,11 +3262,11 @@ telling a reader why the neighbours differ. That fleet section — the defects f
 `B-149` up, and its questions in [`questions.md`](questions.md) — is the sibling
 of this one: same night, different agents, filed separately.
 
-**Twelve findings, eleven items.** One of the twelve, `B-172`, has **no item
-file**: the one-line fix was folded into the change that produced the finding
-before it could be scheduled, and its entry below is the record. A finding and a
-queue item are not the same thing, so the count of findings above stays what it
-was.
+**Twelve recovered findings, eleven items** (twelve counting `B-173`, which was
+not recovered from anything). One of the twelve, `B-172`, has **no item file**:
+the one-line fix was folded into the change that produced the finding before it
+could be scheduled, and its entry below is the record. A finding and a queue item
+are not the same thing, so the count of findings above stays what it was.
 
 | Found by | Items |
 |---|---|
