@@ -1,0 +1,13 @@
+id: B-187
+kind: defect
+title: 'hub reads the queue from whatever checkout it is run in, and says an item does not exist when the tree is stale'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'scripts/hub refuses, or warns by name, when the checkout it is reading the queue from is behind the remote default branch -- demonstrated RED by running claim against an item that exists on origin/main and not in the working tree, and showing the message name staleness rather than absence. MEASURED 2026-09-16: the primary checkout at the dispatch path sat 67 commits behind origin/main on a session branch, carrying a scripts/hub 19 lines old and a queue/items/ missing every item filed that night. HUB.md and the dispatch brief both send agents there for read-only hub commands, so four agents were dispatched with claim commands against it; for two of them the item file did not exist in that tree at all. THE FAILURE IS THE MESSAGE, NOT THE REFUSAL: claim answers "no such queue item" for an item that does exist, which is a true statement about the working tree and a false one about the queue, and an agent that believes it reports the item as missing rather than the checkout as stale. hub list is worse, because it succeeds -- it renders a stale queue with no indication that it is one. Same family as B-173 and B-186: a wrong answer that no check can see. Note what is NOT the fix: telling agents to work from a worktree off origin/main is already the rule in HUB.md section Isolation, and one agent did exactly that unprompted; the gap is that the client cannot tell a reader when the tree it just read is not the queue. Cheapest honest fix is to compare HEAD against the remote default branch once per invocation and say so; the stricter one refuses a claim outright. Whichever is chosen, the message names staleness, the distance, and the branch.'
