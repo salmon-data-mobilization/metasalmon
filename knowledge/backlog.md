@@ -2801,7 +2801,7 @@ accept-then-drop case with a fixture whose label does **not** lexically match
 the column. That fix is independently shippable ahead of the review-flow port —
 it depends on none of that surface existing.
 
-### Open — the R halves of the 2026-09-15 Codex findings on metasalmonpy PR #28
+### The R halves of the 2026-09-15 Codex findings on metasalmonpy PR #28
 
 **Five findings from fixing three Codex P2 findings on metasalmonpy PR #28
 (queue item `B-126`), each re-measured here rather than taken from the report
@@ -2817,7 +2817,12 @@ entry.
 They are headed by their **queue id**, because they are new items with no legacy
 backlog number. **State is not here.** Whether one is icebox, ready, claimed or
 done lives in `queue/items/`; this section is what each item's `evidence:`
-pointer resolves to.
+pointer resolves to. **The heading above says nothing about state on purpose**,
+and the older `Open — …` headings further up this file are the pre-queue
+convention rather than the one to copy: a heading reading `Open` is a second
+copy of five items' state, it goes stale the moment any one of them moves, and
+nothing checks it. *Retires when:* those older headings are relabelled too, at
+which point this note is no longer telling a reader why the neighbours differ.
 
 Everything below was measured on 2026-09-15 under **R 4.3.3** against
 metasalmon **0.5.0 loaded from source at `main` `4cd085c`** (`DESCRIPTION`
