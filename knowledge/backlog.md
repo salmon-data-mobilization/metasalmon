@@ -5727,7 +5727,9 @@ upheld — and the durable output is not the fixes.** The pull request's own
 subject was one queue item and one ruling record. What it produced was a
 measurement of how card prose decays, made on prose written the same afternoon
 by someone who knew it was true when they wrote it. Nine distinct failure shapes
-came out of it and are now `queue/README.md`'s *Nine corollaries, each paid for
+came out of it, and a tenth came out of the pull request that wrote the nine
+down: two of them were broken by that diff itself, caught by review and not by
+the author. All ten are now `queue/README.md`'s *Ten corollaries, each paid for
 once*, each naming what produced it. Counts are from the pull request's review
 API rather than the commit log, which undercounts because one commit often
 answered two findings.
@@ -5759,14 +5761,14 @@ diagnosis makes the next sweep repeat the real failure. Both versions are now in
 an empty result for one target states the instrument's reach and not the target's
 contents, and a post-hoc explanation of a miss is itself a measurement.**
 
-**Two items filed.** `B-209` (P3, metasalmon) asks for a check that fails when a
-tracked prose file restates queue state, since `queue/README.md`'s top rule is
+**Two items filed, and their cards are the authority for every field of them.**
+`B-209` asks for a check that fails when a tracked prose file restates queue
+state, since `queue/README.md`'s top rule is
 today enforced only by a reader noticing, and `config.yaml`'s `generated_blocks`
 covers only the blocks it covers; its first deliverable is deliberately the
 *discrimination rule* and not the checker, because a check that cannot tell *is
 blocked on* from *was blocked on until the split* will be suppressed within a
-week, and `AGENTS.md`'s guard rule then applies to it. `B-208` (P2, in
-`smn-data-pkg`) records that a frozen SDP profile pins
+week, and `AGENTS.md`'s guard rule then applies to it. `B-208` records that a frozen SDP profile pins
 **unversioned** URLs, so only the profile file is frozen and everything it
 references is live: `sdp.rules.yaml` changed twice in the B-106 work and Q-51's
 widening at `f86d9b4` is the third change and the first to a JSON schema. Its card is the authority for its state, and the reason that state is what it

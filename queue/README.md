@@ -282,12 +282,13 @@ Correctness at the moment of writing is exactly what a restatement offers and
 exactly what it cannot keep, so the only durable defence is to have one home
 per fact and to treat any second answer as broken on sight.
 
-### Nine corollaries, each paid for once
+### Ten corollaries, each paid for once
 
 `#137` took **29 review rounds** over one afternoon — 27 that returned
 findings and 2 that came back clean — producing **45 findings**, every one
-of which was upheld. They are not 45 separate lessons: they are nine, most found
-more than once, because fixing an instance is not fixing the class. Each one
+of which was upheld. They are not 45 separate lessons: they are ten, most found
+more than once, because fixing an instance is not fixing the class — and the
+tenth was found in the diff that added the first nine. Each one
 below names what produced it, so a reader can check the claim rather than take
 it. (Counts measured from the pull request's own review API, not from the commit
 log, which undercounts: one commit often answered two findings.)
@@ -302,9 +303,16 @@ log, which undercounts: one commit often answered two findings.)
    once. The prescription is already above: split into a pair with an id each,
    each naming the other.
 
-3. **An evidence pointer must not become a second definition.** A card that
-   says "see the backlog entry" and then summarises it has two answers again,
-   and the summary is the one that rots. Point, or define, not both.
+3. **An evidence pointer must not become a second definition, and which side
+   defines is fixed rather than a matter of taste.** The card defines its
+   **condition** — what has to be true for the item to retire — because that is
+   what an agent about to claim it reads, and nothing else is the authority for
+   it. The evidence file holds the **measurements**: what was observed, where,
+   on what version, and the history. Neither restates the other. A card that
+   says "see the backlog entry" and then summarises the measurements has two
+   answers again, and the summary is the one that rots. The one thing a card may
+   take from its evidence is a conclusion that changes its condition, stated as
+   a conclusion and without the numbers behind it.
 
 4. **`blocked_by` guards order, never direction.** It says B cannot start
    before A; it cannot say B is only wanted if A came out one way. A dependency
@@ -340,9 +348,23 @@ log, which undercounts: one commit often answered two findings.)
    `3.0.5`, the keyword-free fragment dropped by the regex that copied it —
    reached five places, four of them cards, before a review caught it.
 
+10. **The change that introduces a rule is the one least likely to be checked
+    against it.** Measured on the pull request that added this section: two of
+    the nine above were broken by that diff itself. It copied `severity` and
+    `repo` into backlog prose two paragraphs after restating that a card must
+    not restate queue state, and it gave `B-208` an evidence pointer and then
+    defined the evidence in the card as well — corollary 3, in the commit that
+    wrote corollary 3. Neither was caught by the author. Writing a rule down
+    creates a feeling of having complied with it, so the diff that adds one
+    gets read for whether the rule is *well put* rather than for whether the
+    diff *obeys* it. Read a rule-adding diff against its own rule, last, as a
+    separate pass.
+
 Rules 1, 3, 6 and 9 are all the top rule wearing different clothes: one home
 per fact. Rules 7 and 8 are the one class the top rule does not cover, because
-they are about the *search* for stale copies rather than about the copies.
+they are about the *search* for stale copies rather than about the copies. Rule
+10 is about the author, and it is the only one here found by someone else in
+the act of adding the other nine.
 
 Two facts are deliberately **not** queue state, and the same rule points the
 other way for them. Membership of the ecosystem lives in the
