@@ -5444,9 +5444,11 @@ pattern; that pair makes the *validator read* `constraints.pattern` at all.
 **They are not order-free, and this section said they were.** Schema-then-validator
 is harmless; **validator-then-schema is a regression**, because `B-204`/`B-205`
 would enforce the pre-ruling pattern still sitting in the vendored copy against
-a descriptor `B-115` already taught to write instants. The dependency lives in
-`B-204`'s and `B-205`'s `blocked_by`; `knowledge/questions.md` carries the
-reasoning under Q-51.
+a descriptor `B-115` already taught to write instants. The ordering belongs in a
+field rather than a sentence, so those two cards carry their own blockers and
+this section does not restate them; `knowledge/questions.md` carries the
+reasoning under Q-51, including the correction that the first version of this
+paragraph copied the field it was arguing against copying.
 
 ### The 2026-09-16 rulings round
 

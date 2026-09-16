@@ -1218,13 +1218,28 @@ Raised by the Codex review of pull request 137 on `9b625a2`, and verified:
   `validate_salmon_datapackage()` would refuse a package metasalmon itself just
   wrote, for carrying the instant this very question ruled legal.
 
-The dependency is now in `B-204`'s and `B-205`'s `blocked_by`, where a claim can
-act on it. **What this adds to the round:** every earlier finding here was a
-*description* drifting from a field, or a tense standing in for one. This was a
-sequencing claim that was simply **wrong on the merits** — symmetrical in shape,
-asymmetric in fact — and no amount of keeping prose and fields in agreement
-would have caught it, because there was no field to disagree with until one was
-added.
+**An ordering this consequential belongs in a field a claim can act on, not in a
+sentence a claim never reads** — `queue/items/B-204.yaml` and
+`queue/items/B-205.yaml` carry their own blockers, and this entry deliberately
+does not say what those are. The reasoning above is what stays true regardless:
+it explains *why* an ordering constraint exists between the two pairs, which
+survives a rename or a restructure of how it is expressed.
+
+**What this adds to the round:** every earlier finding here was a *description*
+drifting from a field, or a tense standing in for one. This was a sequencing
+claim that was simply **wrong on the merits** — symmetrical in shape, asymmetric
+in fact — and no amount of keeping prose and fields in agreement would have
+caught it, because there was no field to disagree with until one was added.
+
+**And then the correction introduced the older defect.** The commit that fixed
+the sequencing claim wrote *"The dependency is now in `B-204`'s and `B-205`'s
+`blocked_by`"* into this entry and a matching sentence into the backlog — a copy
+of the mutable field, in the same change that stated the rule against copying
+it. Caught by the Codex review of pull request 137 on `7f9ef4d`. It is worth
+recording rather than quietly fixing, because it shows the rule is hard to
+follow precisely when you are pleased with a fix: announcing *where* the fix
+landed feels like completing the explanation, and it is the one sentence that
+will rot.
 
 ---
 
