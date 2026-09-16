@@ -1126,7 +1126,16 @@ test_that("default PID lookup checks both KNB and the Coordinating Node", {
 
   member_node <- methods::new("MNode")
   member_node@identifier <- "urn:node:KNB"
-  coordinating_node <- dataone::CNode("PROD")
+  # Built locally rather than through dataone::CNode("PROD"), which fetches the
+  # production Coordinating Node's node document over the network. This test
+  # does not exercise that service: .ms_knb_lookup_pid_default() passes
+  # client@cn straight to .ms_knb_lookup_node_system_metadata(), which is
+  # mocked below, so the only slot anything reads is @identifier. The literal
+  # is a fixture -- the assertion compares against coordinating_node@identifier
+  # rather than a repeated string, so what it pins is that the lookup visited
+  # the client's mn and then its cn, which is the subject of the test.
+  coordinating_node <- methods::new("CNode")
+  coordinating_node@identifier <- "urn:node:CN"
   client <- methods::new(
     "D1Client",
     mn = member_node,
