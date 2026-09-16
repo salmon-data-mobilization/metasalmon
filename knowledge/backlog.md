@@ -5762,19 +5762,37 @@ an empty result for one target states the instrument's reach and not the target'
 contents, and a post-hoc explanation of a miss is itself a measurement.**
 
 **Two items filed, and their cards are the authority for every field of them.**
+
 `B-209` asks for a check that fails when a tracked prose file restates queue
-state, since `queue/README.md`'s top rule is
-today enforced only by a reader noticing, and `config.yaml`'s `generated_blocks`
-covers only the blocks it covers; its first deliverable is deliberately the
-*discrimination rule* and not the checker, because a check that cannot tell *is
-blocked on* from *was blocked on until the split* will be suppressed within a
-week, and `AGENTS.md`'s guard rule then applies to it. `B-208` records that a frozen SDP profile pins
-**unversioned** URLs, so only the profile file is frozen and everything it
-references is live: `sdp.rules.yaml` changed twice in the B-106 work and Q-51's
-widening at `f86d9b4` is the third change and the first to a JSON schema. Its card is the authority for its state, and the reason that state is what it
-is: the fix changes published URLs that downstream validators are built
-against, which is outward-facing spec design rather than an implementation
-choice.
+state. `queue/README.md`'s top rule says such a restatement is a defect; nothing
+enforces it but a reader noticing. **The distance between what that rule asserts
+and what anything mechanically checks was measured on 2026-09-16, and it is
+wider than "only the blocks it covers" suggests: `queue/config.yaml`'s
+`generated_blocks` contains exactly one entry — `member-count`, rendered into
+`knowledge/roadmap.md`.** One fact in the whole bundle fails the build on
+divergence, and it is the ecosystem member count. Nothing about any item's
+state, severity, blockers or repository is checked anywhere. The card's first
+deliverable is deliberately the *discrimination rule* rather than the checker,
+because a check that cannot tell *is blocked on* from *was blocked on until the
+split* gets switched off within a week — at which point `AGENTS.md`'s guard rule
+applies to it and it is suppressed rather than fixed.
+
+`B-208` records that a frozen SDP profile pins **unversioned** URLs, so only the
+profile *file* is frozen and every schema it references is live. `sdp.rules.yaml`
+changed twice in the B-106 work; Q-51's widening at `f86d9b4` changed a JSON
+schema, which none of the earlier changes had. So a package validated against
+v0.2 today is validated against v0.3's rules. Q-51 did not create this and is
+only the first change a review happened to notice; it was merged anyway on the
+reasoning that the new pattern is a strict *superset* of the old one, so nothing
+that validated under v0.2 stops validating — what changes is that a new package
+can carry an instant while claiming v0.2, the tolerable direction of drift while
+this is decided. The shape of a fix, as a starting point rather than a
+prescription: snapshot each frozen profile's schemas under a version-specific
+path such as `profiles/salmon-data-package/v0.2/schema/…` and repoint v0.2 at
+those, leaving the unversioned paths as the development head. The card is the
+authority for its state, and the reason that state is what it is: the fix
+changes published URLs that downstream validators are built against, which is
+outward-facing spec design rather than an implementation choice.
 
 **`B-161` gained four measurements, because this round found that its two
 options are not comparable.** Read out of `smn-data-pkg` at `f86d9b4` rather
