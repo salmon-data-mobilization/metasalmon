@@ -5309,9 +5309,11 @@ The promotion commit names the sentence it rests on, as `HUB.md`'s promotion row
 requires — and the two sentences differ in kind. *"Regarding B197, promote it"*
 is a promotion instruction. *"Let's stub … and vendor DWC"* rules a modelling
 call and says nothing about promotion, so reading it as a go-ahead would be an
-agent's inference standing where `HUB.md` requires an authorization; `B-158`
-therefore keeps `state: icebox` and waits for the word. Nothing is lost by
-waiting, because its two blockers prevent a claim in any case. **What the ruling
+agent's inference standing where `HUB.md` requires an authorization — and **this
+round did not promote it on that reading**. Whether it has been promoted since
+is `queue/items/B-158.yaml`'s to say and this section's to stay quiet about.
+Nothing was lost by not promoting it here, because its two blockers prevent a
+claim in any case. **What the ruling
 did settle is recorded on the card**: the modelling call it had said only Brett
 could make is now made — the six `obo:`/`geosparql:` superclass IRIs get
 bare declaration stubs under `CONVENTIONS.md` 5b rule 2, and the two `dwc:`
