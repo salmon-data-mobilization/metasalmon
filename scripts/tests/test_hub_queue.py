@@ -58,6 +58,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DOUBLE = "''"
 QUOTE = "'"
 
+# What actually ran, filled in by assert_rejects / assert_accepts and read by
+# tearDownModule. A registry rather than a source scan, because a demonstration
+# that does not execute is not a demonstration.
+DEMONSTRATED_RED: dict = {}
+DEMONSTRATED_GREEN: set = set()
+
 import hub_queue  # noqa: E402
 
 
@@ -230,14 +236,33 @@ class QueueTestCase(unittest.TestCase):
         return code, buffer.getvalue()
 
     def assert_rejects(self, rule: str, *argv):
-        """RED: lint must fail, and must name the rule that caught it."""
+        """RED: lint must fail, and must name the rule that caught it.
+
+        Records the rule against this test's CLASS, because a demonstration
+        only counts if it RAN. Two reviews established that reading the test
+        source cannot tell: a commented-out call, the string inside a
+        docstring, and a call under `if False` all look like demonstrations to
+        a parser, and any of them would let a rule lose its real assertion
+        while the coverage guard stayed green.
+        """
+        DEMONSTRATED_RED.setdefault(type(self).__name__, set()).add(rule)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 1, f"expected lint to FAIL for rule {rule}; output:\n{output}")
         self.assertIn(f"[{rule}]", output, f"lint failed but not for {rule}; output:\n{output}")
         return output
 
     def assert_accepts(self, *argv):
-        """GREEN: lint must pass. A checker that rejects everything is unusable."""
+        """GREEN: lint must pass. A checker that rejects everything is unusable.
+
+        Recorded per CLASS and not per method, because a pair may legitimately
+        span two methods: `TestSoloCrossCheck` documents an ASYMMETRY, where an
+        unsourced `true` is a defect and an unsourced `false` is the correct
+        answer, and splitting those into two named methods is clearer than
+        cramming them into one. Measured 2026-09-16: all 43 rules pair at class
+        granularity and none needs an exemption, so the claim is enforced with
+        no allowlist at all.
+        """
+        DEMONSTRATED_GREEN.add(type(self).__name__)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 0, f"expected lint to pass; output:\n{output}")
         return output
@@ -1946,6 +1971,20 @@ CHECK_ONLY_RULES = {
 INDIRECT_RULE_SUPPLIERS = {("parse_item_file", "rule or 'value'"): "parse_scalar"}
 
 
+def _rule_argument(node):
+    """The `rule` argument of a `Problem(...)` call, positional or keyword.
+
+    Returns None when the call has no readable rule argument at all, which the
+    caller reports rather than skips.
+    """
+    if len(node.args) >= 3:
+        return node.args[2]
+    for keyword in node.keywords:
+        if keyword.arg == "rule":
+            return keyword.value
+    return None
+
+
 def _enclosing_function(tree, target) -> str:
     """The name of the INNERMOST function whose body contains `target`.
 
@@ -1987,56 +2026,58 @@ def _returned_rule_names(tree, function: str):
     return resolved, unresolvable
 
 
-def _red_demonstrations(test_tree):
-    """Rule names passed to a REAL `assert_rejects` call, from the AST.
-
-    Read from the AST and not from the text: a commented-out call, or the
-    string `assert_rejects("rule")` inside a docstring, counts as a
-    demonstration under a text scan. Deleting a rule's executable RED
-    assertion while leaving that text behind would then keep this guard green
-    -- the exact scope overstatement it exists to prevent.
-    """
-    names = set()
-    for node in ast.walk(test_tree):
-        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
-            continue
-        if node.func.attr != "assert_rejects" or not node.args:
-            continue
-        first = node.args[0]
-        if isinstance(first, ast.Constant) and isinstance(first.value, str):
-            names.add(first.value)
-    return names
-
-
 def audit_lint_rule_coverage(
     hub_source: str,
-    test_source: str,
+    red_by_class: dict,
+    green_classes: set,
     check_only=CHECK_ONLY_RULES,
     suppliers=INDIRECT_RULE_SUPPLIERS,
 ) -> dict:
     """Every way the header's claim can be false, as data.
 
-    A PURE FUNCTION OF THE TWO SOURCES so it can be fed constructed inputs.
-    Six review rounds on pull request 141 each found this guard narrower than
-    its claim, every one of them a case I had reasoned about rather than
-    constructed. Returning findings instead of asserting is what lets the
-    cases below be a table.
+    A PURE FUNCTION of the implementation source plus WHAT THE SUITE ACTUALLY
+    DEMONSTRATED, so it can be fed constructed inputs. Seven review rounds on
+    pull request 141 each found this guard narrower than its claim, every one a
+    case reasoned about rather than constructed; returning findings instead of
+    asserting is what lets the cases below be a table.
+
+    The two halves come from different places ON PURPOSE. Which rules EXIST is
+    read statically from `hub_queue.py`, because that is a property of the
+    implementation. Which rules were DEMONSTRATED is collected at runtime,
+    because a demonstration that does not execute is not one -- and three
+    successive static readers each counted something that never ran.
     """
-    hub_tree, test_tree = ast.parse(hub_source), ast.parse(test_source)
-    emitted, sites = set(), {}
+    hub_tree = ast.parse(hub_source)
+    emitted, sites, unsupported = set(), {}, []
     for node in ast.walk(hub_tree):
         if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
             continue
-        if node.func.id != "Problem" or len(node.args) < 3:
+        # NO ARITY GATE HERE. The first version of this kept `len(node.args) < 3`
+        # in front of the reader, which made the keyword and short forms below
+        # unreachable -- the fix was present and could not run, which is exactly
+        # the dead-guard failure AGENTS.md describes. The constructed rows in
+        # TestTheCoverageGuardItself caught it on the first run.
+        if node.func.id != "Problem":
             continue
-        rule = node.args[2]
-        if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
+        rule = _rule_argument(node)
+        if rule is None:
+            # A SHAPE THIS READER CANNOT READ IS A FINDING, NOT A SKIP. A valid
+            # emission written Problem(rule="new-rule", ...) has no positional
+            # argument in slot three, so a reader keyed to position would walk
+            # past it and the rule would need no demonstration. Reporting the
+            # shape means the next constructor form fails loudly instead of
+            # silently narrowing this guard. (Measured 2026-09-16: no keyword
+            # form exists today, so this is a latent hole being closed, not a
+            # live one being fixed.)
+            unsupported.append(f"line {node.lineno}: {ast.unparse(node)[:80]}")
+        elif isinstance(rule, ast.Constant) and isinstance(rule.value, str):
             emitted.add(rule.value)
         else:
             site = (_enclosing_function(hub_tree, node), ast.unparse(rule))
             sites.setdefault(site, []).append(node.lineno)
 
     findings: dict[str, list] = {
+        "unsupported_emissions": unsupported,
         # A site the allowlist does not name at all.
         "unlisted_sites": sorted(set(sites) - set(suppliers)),
         # An allowlist entry for a site that no longer exists: a stale entry is
@@ -2069,7 +2110,17 @@ def audit_lint_rule_coverage(
             )
         emitted |= resolved
 
-    findings["undemonstrated"] = sorted(emitted - _red_demonstrations(test_tree) - set(check_only))
+    demonstrated_red = {rule for rules in red_by_class.values() for rule in rules}
+    findings["undemonstrated"] = sorted(emitted - demonstrated_red - set(check_only))
+
+    # THE GREEN HALF, WHICH THIS GUARD DID NOT CHECK AT ALL UNTIL NOW. The
+    # header promises a rejecting fixture AND a corrected one that passes, and
+    # a RED-only pair passes for an overbroad checker that rejects everything.
+    # Tracked per CLASS because a pair may legitimately span two methods (see
+    # assert_accepts); measured 2026-09-16, all 43 rules pair at that
+    # granularity, so no rule needs an exemption.
+    paired = {rule for cls, rules in red_by_class.items() if cls in green_classes for rule in rules}
+    findings["red_only"] = sorted((demonstrated_red & emitted) - paired - set(check_only))
     return {key: value for key, value in findings.items() if value}
 
 
@@ -2091,25 +2142,36 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
     and it retires with the header or with `hub_queue.py` itself.
     """
 
-    def test_the_real_tree_has_no_findings(self):
+    def test_the_reader_finds_every_rule_the_implementation_emits(self):
+        """The static half, which can run on its own: no unreadable shapes, no
+        unlisted indirect site, no stale allowlist entry, no supplier this
+        reader cannot resolve. The DEMONSTRATED half cannot be checked from
+        inside a single test, because it depends on what the rest of the suite
+        ran -- that is `check_lint_rule_coverage`, called from
+        `tearDownModule`.
+        """
         findings = audit_lint_rule_coverage(
             (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
-            (REPO_ROOT / "scripts" / "tests" / "test_hub_queue.py").read_text(encoding="utf-8"),
+            red_by_class={}, green_classes=set(),
         )
-        self.assertEqual(findings, {}, f"the header's claim is false: {findings}")
+        structural = {k: v for k, v in findings.items() if k not in ("undemonstrated", "red_only")}
+        self.assertEqual(structural, {}, f"the reader cannot see every rule: {structural}")
 
 
 class TestTheCoverageGuardItself(unittest.TestCase):
-    """The guard above, fed constructed sources, one case per way it can lie.
+    """The guard above, fed constructed inputs, one case per way it can lie.
 
-    SIX REVIEW ROUNDS FOUND THIS GUARD NARROWER THAN ITS CLAIM, one hole at a
+    SEVEN REVIEW ROUNDS FOUND THIS GUARD NARROWER THAN ITS CLAIM, one hole at a
     time, and every hole was a case reasoned about rather than constructed:
-    literals only; an indirect emission whose supplier was never resolved; a
-    map keyed by function so a second site collapsed into the first; a
-    supplier return that could not be resolved and was skipped; a RED
-    assertion counted from raw text so a docstring would do. Each row below is
-    one of those, as a source this guard must reject. ADD A ROW WHENEVER
-    ANOTHER WAY IS FOUND -- that is what these rows are for.
+    literals only; an indirect emission whose supplier was never resolved; a map
+    keyed by function so a second site collapsed into the first; a supplier
+    return that could not be resolved and was skipped; a RED assertion counted
+    from raw text so a docstring would do; then from the AST so `if False` would
+    do; a `Problem(rule=...)` keyword form skipped for having no third
+    positional argument; and no check on the GREEN half at all.
+
+    Each row below is one of those, as an input this guard must reject. ADD A
+    ROW WHENEVER ANOTHER WAY IS FOUND -- that is what these rows are for.
     """
 
     HUB_CLEAN = (
@@ -2123,14 +2185,15 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         "def check_one(item):\n"
         "    problems.append(Problem(item.path, 0, 'a-literal-rule', 'x'))\n"
     )
-    TEST_CLEAN = (
-        "def t(self):\n"
-        "    self.assert_rejects('value')\n"
-        "    self.assert_rejects('a-literal-rule')\n"
-    )
+    RED_CLEAN = {"SomeCase": {"value", "a-literal-rule"}}
+    GREEN_CLEAN = {"SomeCase"}
 
-    def audit(self, hub=None, test=None):
-        return audit_lint_rule_coverage(hub or self.HUB_CLEAN, test or self.TEST_CLEAN)
+    def audit(self, hub=None, red=None, green=None):
+        return audit_lint_rule_coverage(
+            hub or self.HUB_CLEAN,
+            red_by_class=self.RED_CLEAN if red is None else red,
+            green_classes=self.GREEN_CLEAN if green is None else green,
+        )
 
     def test_the_constructed_clean_pair_has_no_findings(self):
         """The GREEN control. Without it every row below could pass vacuously."""
@@ -2138,7 +2201,25 @@ class TestTheCoverageGuardItself(unittest.TestCase):
 
     def test_a_literal_rule_with_no_demonstration_is_reported(self):
         hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'undemonstrated-rule'")
-        self.assertIn("undemonstrated", self.audit(hub=hub))
+        self.assertEqual(self.audit(hub=hub).get("undemonstrated"), ["undemonstrated-rule"])
+
+    def test_a_rule_demonstrated_red_with_no_green_in_its_class_is_reported(self):
+        """The half this guard did not check at all until the seventh round."""
+        self.assertEqual(self.audit(green=set()).get("red_only"), ["a-literal-rule", "value"])
+
+    def test_a_rule_named_by_keyword_is_read_not_skipped(self):
+        hub = self.HUB_CLEAN.replace(
+            "Problem(item.path, 0, 'a-literal-rule', 'x')",
+            "Problem(path=item.path, line=0, rule='a-keyword-rule', message='x')",
+        )
+        self.assertEqual(self.audit(hub=hub).get("undemonstrated"), ["a-keyword-rule"])
+
+    def test_an_emission_shape_this_reader_cannot_read_is_reported(self):
+        hub = self.HUB_CLEAN + (
+            "def check_three(item):\n"
+            "    problems.append(Problem(item.path, 0))\n"
+        )
+        self.assertIn("unsupported_emissions", self.audit(hub=hub))
 
     def test_an_indirect_site_the_allowlist_does_not_name_is_reported(self):
         hub = self.HUB_CLEAN + (
@@ -2168,22 +2249,79 @@ class TestTheCoverageGuardItself(unittest.TestCase):
 
     def test_a_supplier_that_yields_no_names_is_reported(self):
         hub = self.HUB_CLEAN.replace("    return None, 'bad', 'value'", "    return None, 'bad', ''")
-        findings = self.audit(hub=hub)
-        self.assertIn("empty_suppliers", findings)
+        self.assertIn("empty_suppliers", self.audit(hub=hub))
 
     def test_a_stale_allowlist_entry_is_reported(self):
         hub = self.HUB_CLEAN.replace("rule or 'value'", "'value'")
         self.assertIn("stale_sites", self.audit(hub=hub))
 
-    def test_a_demonstration_that_is_only_text_does_not_count(self):
-        """A docstring or a comment is not an executable RED assertion."""
-        test = self.TEST_CLEAN.replace(
-            "    self.assert_rejects('a-literal-rule')",
-            "    '''mentions self.assert_rejects('a-literal-rule') in prose'''\n"
-            "    # self.assert_rejects('a-literal-rule')",
+    def test_a_demonstration_that_never_executed_cannot_be_recorded(self):
+        """Why the RED half is collected at RUNTIME and not read from source.
+
+        There is nothing to construct here: a call that does not run simply
+        never reaches `DEMONSTRATED_RED`, so the rule is absent and reported.
+        The row exists to say that this is the design and not an omission --
+        three static readers in a row each counted something that never ran (a
+        docstring, a comment, a body under `if False`), and no fourth reader
+        would have been the last.
+        """
+        self.assertEqual(self.audit(red={}).get("undemonstrated"), ["a-literal-rule", "value"])
+
+
+def rule_bearing_classes() -> set:
+    """Classes in this file that CONTAIN an `assert_rejects` call.
+
+    A static read, and legitimately so: the question is which classes *could*
+    demonstrate a rule, not which demonstrations count. The second question is
+    the one that must be answered at runtime, and is.
+    """
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    names = set()
+    for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:
+        for inner in ast.walk(cls):
+            if (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Attribute)
+                    and inner.func.attr == "assert_rejects"):
+                names.add(cls.name)
+                break
+    return names
+
+
+def tearDownModule():
+    """Enforce the header's claim against what the suite ACTUALLY demonstrated.
+
+    A module teardown rather than a test, because the answer depends on every
+    other test having run, and no test can depend on the ones after it. It
+    raises, which both `unittest` and `pytest` report as an error against this
+    module -- visible, and named in the message.
+
+    IT ONLY ENFORCES WHEN EVERY RULE-BEARING CLASS RAN, and says so when it does not.
+    Under `pytest -k` a subset executes, and a rule whose test was filtered out
+    would otherwise look undemonstrated -- a guard that cries wolf under normal
+    developer use is a guard that gets deleted. Continuous integration runs the
+    full suite, so the claim is enforced there on every push.
+
+    The notice goes to stderr, which `pytest` captures unless given `-s`; under
+    plain `unittest` it is always visible. That is a cosmetic limit of the
+    not-enforced PATH only -- when the whole module runs, the check raises, and
+    a raise is never captured away.
+    """
+    ran = set(DEMONSTRATED_RED) | DEMONSTRATED_GREEN
+    missing = sorted(rule_bearing_classes() - ran)
+    if missing:
+        print(
+            "\n[coverage] not enforced: these rule-bearing classes did not run "
+            f"({', '.join(missing)}). Run the whole module to enforce it.",
+            file=sys.stderr,
         )
-        findings = self.audit(test=test)
-        self.assertEqual(findings.get("undemonstrated"), ["a-literal-rule"])
+        return
+    findings = audit_lint_rule_coverage(
+        (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
+        red_by_class=DEMONSTRATED_RED,
+        green_classes=DEMONSTRATED_GREEN,
+    )
+    if findings:
+        raise AssertionError(f"the header's claim is false: {findings}")
+
 
 if __name__ == "__main__":
     unittest.main()
