@@ -1,381 +1,393 @@
-# Workpad — B-112
+# Workpad — B-111
 
 ## Queue item
 
-**B-112** — "Return the three-column report frame from `migrate_sdp_methods()`'s
-no-op branch" (legacy `#112`, repo metasalmon, stream S10, severity P3, venue
-`claude-code`). Claimed by `a-677b1b31606aaa8c` on 2026-09-14; work branch
-`agent/B-112/a-677b1b31606aaa8c`, worktree
-`hub-worktrees/salmon-data-mobilization-metasalmon-B-112`. Session key
-`fleet-2026-09-14-B-112`. Evidence: the `#112` entry in `knowledge/backlog.md`.
+**B-111** — Make `create_sdp()`'s three create-owned sidecar writes atomic
+(legacy #111, repo metasalmon, severity P2, venue claude-code). Claimed by
+`a-26a2b46d7750d590` on 2026-09-14; work branch
+`agent/B-111/a-26a2b46d7750d590`, worktree
+`hub-worktrees/salmon-data-mobilization-metasalmon-B-111`.
 
-Scope is the item's `retires_when`, read literally: the nothing-to-migrate early
-return builds the same three-column empty frame the other exits build, and a
-test pins the column set of both branches. **Brett ruled the three-column shape
-on 2026-09-14, for both implementations**, so the shape was not an implementer's
-choice and the alternative — a logged ruling that the shapes deliberately differ
-— is closed. The mirror half is **B-144** and was not touched.
+Retires when: `.ms_replace_create_output()` has no callers and a test injects an
+abort into each of the three rewrites and finds the prior file intact.
 
-## What changed and where
+**Both halves are met.** The helper is deleted, not left callerless (reasoning
+below), and `tests/testthat/test-create-sdp-sidecar-atomicity.R` injects an
+abort at each of the three render steps and asserts the prior file is
+byte-identical afterwards. All three failed on the pre-fix code — where the file
+was not truncated but **absent** — and pass on the post-fix code.
 
-Three files, 96 insertions, 1 deletion.
+*(This file is the single `.hub/workpad.md` the protocol names, so it replaces
+B-49's, as B-49's replaced B-95's. The earlier reports live on in git history and
+in their merged pull requests.)*
 
-### `R/sdp-methods.R` — the one-branch fix
+## What changed, and where
 
-The nothing-to-migrate early return built `report$tables` as a two-column frame,
-`table_id` and `method_iri`. It now builds the same three columns the other two
-exits build, adding `columns`. The item's line numbers were verified against the
-current file before editing, as it asked; all three were accurate.
+- `R/package-helpers.R`
+  - **Deleted `.ms_replace_create_output()`.** See the delete-or-keep decision
+    below.
+  - `.ms_write_sdp_review_readme()` renders `README-review.txt` to bytes with
+    `.ms_sdp_extension_text_bytes()` and installs them with
+    `.ms_sdp_extension_atomic_write()`.
+  - `create_sdp()`'s `semantic_suggestions.csv` write renders with
+    `.ms_sdp_extension_csv_bytes(review_suggestions, na = "")` — the same
+    `na = ""` the `readr::write_csv()` call it replaced used — and installs
+    atomically. **The removal branch is unchanged**: when there is no shortlist
+    the file is still deleted with a plain `unlink()`, because deleting is
+    already atomic and the atomic write set has no delete operation.
+  - `create_sdp()`'s EDH XML write renders with `.ms_edh_hnap_xml_bytes()` and
+    installs atomically. One added line, `dir.create(dirname(edh_xml_path), ...)`,
+    because `edh_build_hnap_xml()` used to create `metadata/` as a side effect of
+    writing there and the atomic writer refuses to create a target directory.
+  - Comment at the `.ms_assert_managed_path_contained()` call recording that the
+    three are **three transactions, not one set** (reasoning below).
+- `R/sdp-extension-helpers.R`
+  - New `.ms_sdp_extension_text_bytes()`, beside the existing `_csv_bytes()` and
+    `_json_bytes()` renderers.
+  - Comment at the staging `tempfile()` in `.ms_sdp_extension_atomic_write_set()`
+    recording why the stage is a sibling of the target, why hard links need no
+    separate guard (the retired helper's whole rationale), and what the rename
+    does *not* buy.
+- `R/edh-xml-export.R`
+  - New `.ms_edh_hnap_xml_bytes()`, immediately after `edh_build_hnap_xml()`.
+- `tests/testthat/test-create-sdp-sidecar-atomicity.R` — new, 30 assertions:
+  three abort-injection tests, a happy-path byte and no-stray-file test, and a
+  structural guard.
+- `NEWS.md` — entry under the development version's `### Fixed`.
+- `knowledge/backlog.md` — #111's entry records that both halves of its
+  retirement condition are met, what the fix measured, and the `fsync` scope
+  limit. The dated `#96` sentence saying the sidecars "still go through
+  `.ms_replace_create_output()`" is annotated rather than rewritten, because its
+  point is about scope and it is dated evidence.
+- `knowledge/parity-deviations.md` — row 53 updated. See the mirror note below.
+  **Added 2026-09-16:** the row now points at the roadmap record described next.
+- `knowledge/roadmap.md` — **the deferral of the Python half is logged in the
+  metasalmonpy release-index row. Added 2026-09-16, on a Codex P1 finding on
+  pull request #119; the original pass did not land it.** The finding is exactly
+  right about the state it describes: updating register row 53 alone leaves the
+  mirror destructive and leaves the two registers disagreeing, and `AGENTS.md`
+  gives two ways out — the port in the same stream, or the reason for deferral in
+  the roadmap card. The port is a different repository and the claim covers one
+  branch, so the roadmap record is the one available here. It follows the house
+  shape of the two paragraphs already in that section for B-124 and B-125 ("The
+  development version after 0.5.0 adds to what the port owes"), and adds three
+  things those two did not have to say:
+  1. **the user-visible consequence**, because this deferral leaves a data-loss
+     path open rather than a missing feature: a Python caller re-running
+     `create_sdp()` can still lose an annotated `README-review.txt`, a
+     `semantic_suggestions.csv` carrying review decisions, or the EDH XML;
+  2. **that no queue item covers it yet**, and that **B-163 is not it** —
+     B-163 is the `fsync` durability gap in the write *set* and says in its own
+     text that the mirror half is not a divergence, because neither
+     implementation flushes before renaming. Checked 2026-09-16 against every
+     item on `main` and on the three open `queue/` branches: nothing covers the
+     Python sidecar port. B-165 is B-116's mirror half, not this one. So the
+     record names the absence rather than naming a near-miss item, and filing
+     the item is Brett's (a promotion to `ready` needs an authorization he gave
+     in chat);
+  3. **the `PARITY.md` correction owed with or before the port** — the twin's
+     copy of row 53 still reads "on both sides" and cites the deleted
+     `.ms_replace_create_output()` call site.
 
-| exit | lines (current file) | before | after |
-|---|---|---|---|
-| nothing-to-migrate early return | `R/sdp-methods.R:298-311` | 2 columns | **3 columns** |
-| populated build | `R/sdp-methods.R:343-347` | 3 columns | unchanged |
-| no-placement empty frame | `R/sdp-methods.R:366` | 3 columns | unchanged |
+### Why the bytes are rendered through the writer each file already used
 
-The dry-run return (`:455`) and the final return (`:589`) both read
-`placements`, so they inherit the populated / no-placement shape and needed no
-change. That is why there are three builders and not five.
+`writeLines(useBytes = TRUE)`, `readr::write_csv(na = "")` and
+`edh_build_hnap_xml()` respectively, each into a staging file whose bytes are
+read back. Not `charToRaw(paste(...))` and not the `xml` string
+`edh_build_hnap_xml()` returns: `as.character(root)` is not
+`write_xml(root, options = "format")`, and `paste()` re-encodes, which matters
+because the README interpolates a user-supplied `dataset_id`. The existing
+`.ms_sdp_extension_csv_bytes()` is the in-repo precedent for the pattern, and
+`.ms_datapackage_json_bytes()` carries the same reasoning for the descriptor.
 
-**The empty column's type is `character()`, and it is the populated branch's
-type rather than a default.** The populated build renders `columns` with
-`paste(sort(rows$column_name, method = "radix"), collapse = ", ")`, which is a
-length-1 character vector, and the no-placement branch already declared
-`columns = character()`. So `character()` is the only choice that lets a caller
-`bind_rows()` the reports of two runs without coercing the column. The type is
-asserted for all three exits in the test rather than left implied, and the
-reason is recorded in a comment at the fix.
+**Verified rather than argued**: md5 of all three sidecars, from a full
+`create_sdp(include_edh_xml = TRUE)` run on identical inputs, pre-fix and
+post-fix.
 
-### `tests/testthat/test-sdp-methods.R` — the pin
+| file | pre-fix (HEAD `4cd085c`) | post-fix |
+|---|---|---|
+| `README-review.txt` | `328621943e64c8920da992642cde30cd` | identical |
+| `semantic_suggestions.csv` | `7519d63e2e53352dfbd2e2695d3f6d50` | identical |
+| `metadata/metadata-edh-hnap.xml` | `9d17f1731c0a671a2882d70e64e1388a` | identical |
 
-One new `test_that()` block, "every migrate_sdp_methods() exit reports the same
-three table columns", placed after the REVIEW:-only test so all three fixtures
-it uses are introduced above it.
+### Why three transactions rather than one atomic write set
 
-It pins **all three** exits, not the two the item requires. The item asks for
-both branches because pinning only the branch that was fixed leaves the
-populated branch free to drift away from it; the third exit was one more fixture
-in the same block, so it is cheap and strictly better. For each exit it asserts:
+The backlog entry offers `.ms_sdp_extension_atomic_write_set()` for the
+multi-file case. Three separate single-file installs were chosen instead, for
+three reasons that agree:
 
-- the column set, via `expect_named()`, which compares order as well as
-  membership — so a reordered build fails here too;
-- the `character` type of `columns`;
-- the row count, so the column-set assertion cannot be satisfied by an exit that
-  gained the column by gaining a row it should not have.
+1. The harm #111 names is a **destroyed** file, not a partially-updated group.
+   Render-then-install removes it for each file independently.
+2. The three are written at different points in `create_sdp()`, with the EDH
+   review-state warning between the install and the end of the block. Grouping
+   them would reorder observable cli output.
+3. The suggestions path can **delete** rather than write, and the write set has
+   no delete operation, so one of the three could not join the set anyway.
 
-### `NEWS.md` — the entry
+A grouped write would additionally prevent "README updated, EDH render aborts,
+EDH left at the old content". That is a partial update of independent files that
+a re-run fixes, not data loss, and it is outside this item's retirement
+condition. Recorded here so the next reader does not have to re-derive it.
 
-One bullet under the development version's `### Fixed`. Required: this is an
-observable behaviour change for a caller reading the report frame. It records
-that the frame is empty either way, so nothing reading `nrow()` changes and only
-the column set does; that the three-column shape is the one the migration
-vignette already documents; Brett's 2026-09-14 ruling; that the mirror half is
-B-144; and that `#112`'s retirement condition is met only on the R side until
-B-144 lands.
+### Delete or keep `.ms_replace_create_output()` — deleted
+
+Deleted. It is guard-shaped: its comment explains a hard-link protection and
+says outright that the protection "belongs next to each write, not in one
+caller, so it holds however the writer is reached". Left callerless, that reads
+as a live protection a future author is invited to call — which reintroduces the
+exact unlink-then-rewrite shape this item removes. That is the
+`migrate_sdp_methods()` duplicate-placement-guard hazard `AGENTS.md` names, and
+it is worse here, because the dead call would look like the *safe* choice.
+
+Its rationale is genuinely subsumed rather than merely outweighed: a
+staged-sibling rename never opens the destination, so an external hard link
+keeps its inode and its content. The rationale is not discarded with the code —
+it now sits on the atomic writer's staging line, where someone asking "what
+about hard links" will look. **The existing hard-link test
+(`tests/testthat/test-package-helpers.R:3753`) passes unchanged**, and it is not
+skipped on this machine: `file.link()` is supported here, verified directly, and
+the external file still reads `PRECIOUS EXTERNAL CONTENT` after the README is
+regenerated.
+
+Nothing is left with no callers, so there is no dead guard here needing a
+retirement condition of its own.
+
+## What the word "atomic" does not cover here
+
+`.ms_sdp_extension_atomic_write_set()` stages in the target's **own directory**,
+so the install is a same-filesystem rename and not a cross-device copy — the
+first half of the brief's warning is satisfied. The second half is not:
+`writeBin()` is never followed by an `fsync`, because base R exposes none. So
+the write is atomic against an **aborted call**, which is every abort point #111
+and #96 enumerate, and **not durable against a machine crash or power loss**,
+where a visible rename can outrun the staged data blocks.
+
+This is pre-existing, unchanged by this item, and true of every caller of that
+writer, so closing it is a decision about the writer rather than about
+`create_sdp()`. It is stated in three places rather than implied: the writer's
+own comment, the `NEWS.md` entry, and #111's backlog entry. Filed as a candidate
+item below rather than absorbed.
 
 ## Commands run, and their results
 
-### Failing-before / passing-after
-
-A reproduction script (scratchpad, not committed) drives all three exits through
-`create_sdp()` fixtures and prints the column set, the row count, and the type
-of `report$tables$columns`.
-
-**Before, on the unmodified source:**
+### Failing-before — the new test file against pre-fix code (HEAD `4cd085c`)
 
 ```
---- BRANCH 1 nothing-to-migrate early return ---
-names(report$tables): table_id, method_iri
-nrow:                 0
-report$tables$columns is NULL: TRUE
-class(report$tables$columns): NULL
-Warning messages:
-1: Unknown or uninitialised column: `columns`.
-2: Unknown or uninitialised column: `columns`.
+Rscript -e 'pkgload::load_all("."); testthat::test_file(
+  "tests/testthat/test-create-sdp-sidecar-atomicity.R", reporter = "summary")'
 
---- BRANCH 2 populated build ---
-names(report$tables): table_id, method_iri, columns
-class(report$tables$columns): character
+create-sdp-sidecar-atomicity: ..1..2..3...
 
---- BRANCH 3 no-placement return ---
-names(report$tables): table_id, method_iri, columns
-class(report$tables$columns): character
+-- 1. Failure (...:106:3): an abort rendering README-review.txt ...
+Expected `sidecar_bytes(readme)` to be identical to `before`.
+  `actual` is NULL
+  `expected` is a raw vector (53, 61, 6c, 6d, 6f, ...)
+-- 2. Failure (...:144:3): an abort rendering semantic_suggestions.csv ...
+  `actual` is NULL
+-- 3. Failure (...:171:3): an abort rendering metadata-edh-hnap.xml ...
+  `actual` is NULL
 ```
 
-`NULL` on the clean-package path, confirmed, with tibble's own "Unknown or
-uninitialised column" warning on the read — the defect the item describes, and
-the branch where the package was already clean.
+`actual is NULL` is the whole finding: the sidecar is not truncated, it is
+**gone**. Three injections, three destroyed files. The happy-path test in the
+same file passed on the pre-fix code, which is why nothing in the suite noticed.
 
-**After:** all three branches print
-`names(report$tables): table_id, method_iri, columns` and
-`class(report$tables$columns): character`. The tibble warnings are gone.
+The abort is injected at each sidecar's **render** step — `writeLines`,
+`readr::write_csv` keyed on the frozen 19-column target row, and
+`edh_build_hnap_xml` — because that is where the real abort points are and
+because the render is the one hook the old and the new code share. An injection
+at the *install* step would pass on the pre-fix code and prove nothing.
 
-### The new test demonstrated RED
-
-Run against the unfixed source, with the fix stashed and the test in place:
+### Passing-after (post-fix code)
 
 ```
-== Failed ==
--- 1. Failure ('test-sdp-methods.R:524:3'): every migrate_sdp_methods() exit rep
-Expected `clean$tables` to have names `expected`.
-Differences:
-`actual`:   "table_id" "method_iri"
-`expected`: "table_id" "method_iri" "columns"
-
--- 2. Failure ('test-sdp-methods.R:532:3'): every migrate_sdp_methods() exit rep
-Expected `clean$tables$columns` to have type "character".
-Actual type: "NULL"
+create-sdp-sidecar-atomicity: ..............................
+== DONE ==      (30 assertions, 0 failures)
 ```
 
-Both assertions fail on the clean-package exit and neither fails on the other
-two, which is the shape the item predicts. A pin that has not been shown to fail
-is not evidence that it pins anything.
+### The structural guard, RED-verified in both halves
 
-### Fast loop
+In a throwaway copy of the tree:
 
-`testthat::test_file("tests/testthat/test-sdp-methods.R", reporter = "summary")`
-— 98 passes, no failures, no warnings, no skips.
+- suggestions write reverted to `readr::write_csv(review_suggestions, ...)` ->
+  `Expected create_sdp() body contains direct filesystem call write_csv( to be FALSE.`
+- README write reverted to `writeLines(...)` ->
+  `Expected .ms_write_sdp_review_readme() body contains direct filesystem call writeLines( to be FALSE.`
+- `unlink()` delete branch removed ->
+  `Expected create_sdp() still needs the unlink( exemption to be TRUE.`
+
+The last is the check that the exemptions are *reached*. An exemption for a call
+that is no longer there is a hole nobody can see.
 
 ### Full suite
 
-`Rscript -e 'devtools::test()'` — `[ FAIL 8 | WARN 38 | SKIP 9 | PASS 3877 ]`,
-exit 0.
+```
+Rscript -e 'devtools::test()'
+this branch:   [ FAIL 8 | WARN 38 | SKIP  9 | PASS 3898 ]
+HEAD 4cd085c:  [ FAIL 8 | WARN 41 | SKIP  8 | PASS 3857 ]   (max_fails raised to Inf)
+```
 
-**All 8 failures are pre-existing and environmental, and that was measured, not
-assumed.** The four affected files were re-run with this branch's changes
-stashed; the baseline produces the identical 8 failures at the identical
-locations:
+Two differences in the tallies are the baseline's, not the branch's, and both
+were chased rather than waved at. The three extra `WARN` on HEAD are
+`test-theme-a-benchmark.R` failing to read git state, because that baseline is a
+`git archive` extract with no `.git`. The extra `SKIP` on this branch is
+`test-parity-register-guard.R:55:5`, which skips when metasalmonpy is not checked
+out beside the repository -- it is not, next to a worktree -- and whose own header
+says a skip is not agreement. **It was therefore run by hand** rather than left
+skipped, since this branch edits one of the two registers:
 
-| failure | owner |
+```
+python3 scripts/check-parity-registers.py knowledge/parity-deviations.md \
+  <metasalmonpy checkout>/PARITY.md
+parity registers agree: 61 rows, 1-61 with no gaps       # exit 0
+```
+
+**The same 8 failures by identity on both**, and every one is this machine
+rather than the code:
+
+| failure | cause |
 |---|---|
-| `test-dictionary-helpers.R:224:3` | **B-137** (locale) |
-| `test-iri-predicates.R:39:5`, `:52:5`, `:57:5`, `:104:5` | **B-137** (locale) |
-| `test-review-console.R:231:3` | **B-137** (locale) |
-| `test-github-helpers.R:161:3`, `:264:3` | new-item candidate, below |
-
-Six of the eight are queue item **B-137**, "Six tests depend on a UTF-8 locale
-and fail under the C locale", whose `retires_when` names these exact six
-expectations and predicts this container: *"the suite is green on CI's UTF-8
-runner and red on any container without LANG set."* `locale -a` here offers only
-`C`, `C.utf8` and `POSIX`, and `LANG` is unset. Nothing in `sdp-methods` fails.
+| `test-github-helpers.R:161:3`, `:264:3` | network — HTTP 404 through the proxy |
+| `test-iri-predicates.R:39,52,57,104` | this R's TRE whitespace class accepts `ideographic_space` |
+| `test-dictionary-helpers.R:224:3` | locale — `en_US.UTF-8` unavailable here |
+| `test-review-console.R:231:3` | same locale, box-drawing characters |
 
 ### R CMD check
 
-`Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'`
-— **`Status: 2 ERRORs, 1 WARNING`.** All three are pre-existing, each is owned
-by an existing queue item or measured on the baseline, and none is caused by
-this diff:
+```
+Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'
+this branch:   Status: 2 ERRORs, 1 WARNING   [ FAIL 8 | WARN 38 | SKIP 27 | PASS 3832 ]
+HEAD 4cd085c:  Status: 2 ERRORs, 1 WARNING   [ FAIL 8 | WARN 38 | SKIP 27 | PASS 3802 ]
+```
 
-| finding | check step | owner / evidence |
-|---|---|---|
-| ERROR | `checking tests` — `[ FAIL 8 \| WARN 38 \| SKIP 27 \| PASS 3811 ]` | the same 8 as `devtools::test()`: 6 are **B-137**, 2 are the `test-github-helpers.R` candidate below |
-| ERROR | `checking running R code from vignettes` — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd` | **B-133**, and reproduced on the unmodified baseline |
-| WARNING | `checking R files for syntax errors` | environmental locale; see below |
+Identical outcome and identical failure identities; `PASS` differs by exactly
+the 30 assertions the new file contributes. The two
+ERRORs are two vignettes reading `weir-counts-sdp/metadata/tables.csv` and
+`escapement-sdp/metadata/tables.csv` relative to a temporary vignette directory;
+the WARNING is `Sys.setlocale("LC_CTYPE", "en_US.UTF-8")` failing. Both are
+present on HEAD and neither is touched here.
 
-**The vignette ERROR was measured on the baseline, not reasoned about**, because
-one of the two failing vignettes is `migrate_sdp_methods()`'s own and that made
-it the one finding here that could plausibly have been mine. The base commit
-`4cd085c` was exported to a clean directory with `git archive` (its
-`R/sdp-methods.R` verified to carry the unfixed two-column return) and
-`tools::checkVignettes(tangle = TRUE, weave = FALSE)` produced the identical two
-errors. **B-133** describes the mechanism exactly — each vignette sets
-`eval = FALSE` from a setup chunk marked `purl = FALSE`, so `knitr::purl()` drops
-that chunk and tangles every illustrative chunk as live code — and records that
-it was "measured locally on R 4.3.3 ... and not reproduced on CI, whose newer R
-passed". The logic agrees with the measurement: the migration vignette dies at
-its own line 97, `readr::read_csv("weir-counts-sdp/metadata/tables.csv")`, and
-the first `migrate_sdp_methods()` call in it is at line 263 — the script stops
-166 lines before it reaches the function this branch changes. The second failing
-vignette does not use `migrate_sdp_methods()` at all.
+**A green local check is evidence about this R, not CI's.** `R.version.string`
+here is **R 4.3.3**; `AGENTS.md` records CI on **R 4.6.1**. The non-ASCII check
+is the one that has bitten this repo across versions, so it was checked directly
+rather than inferred: every line this branch adds to `R/` is ASCII
+(`grep -P '[^\x00-\x7F]'` over the added lines returns nothing), and the
+pre-existing non-ASCII in `package-helpers.R` is all comments and roxygen, which
+are exempt.
 
-Two things about the WARNING worth keeping:
+```
+git diff --check      # clean, exit 0
+```
 
-- `checking R files for non-ASCII characters ... OK`.
-- `checking R files for syntax errors ... WARNING`, whose body is
-  `Warning in Sys.setlocale("LC_CTYPE", "en_US.UTF-8"): OS reports request to
-  set locale to "en_US.UTF-8" cannot be honored`. That is R CMD check's own
-  locale switch failing in a container whose `locale -a` offers only `C`,
-  `C.utf8` and `POSIX` — not a syntax error and nothing to do with this diff.
-  Same root cause as B-137, though B-137's `retires_when` names six test
-  expectations and not this check line.
-
-**This machine runs R 4.3.3.** Per AGENTS.md a green local check is evidence
-about this R and not CI's, and the 2026-08-25 episode — two `·` characters that
-passed under R 4.5.2 locally and failed under R 4.6.1 on CI — is the precedent.
-So the added lines were checked for non-ASCII directly rather than trusted to
-the check: **every line this branch adds to `R/` and `tests/` is ASCII**. The
-em-dashes that remain in `R/sdp-methods.R` and `test-sdp-methods.R` are all
-pre-existing and all inside comments, which AGENTS.md exempts. The prose added
-to `NEWS.md` is ASCII too.
-
-### Whitespace
-
-`git diff --check` — clean.
+`devtools::document()` was not run: nothing added is roxygen-documented (all new
+helpers are internal `#`-commented `.ms_` functions), and `R CMD check` reports
+`checking Rd files ... OK` with no undocumented-object note.
 
 ## What I did not do, and why
 
-**`knowledge/parity-deviations.md` was deferred at first and then landed here,
-on a ruling.** The first hand-back left it untouched and reported the staleness
-instead, because this item's `retires_when` does not mention the register, the
-dispatch scoped the mirror half to B-144, and B-111 is in flight with its own
-paragraph in that file. The coordinator ruled on 2026-09-15 that the row lands
-in this pull request rather than with B-144, citing B-115's item text — *"the
-parity register row lands in the pull request that implements each half"* — so
-the R half carries its own row when the R half lands, and the register is never
-left claiming a verification that has stopped being true, not even for the
-length of one pull request. Done in a second commit, `knowledge/parity-deviations.md`
-only; `R/`, `tests/` and `NEWS.md` were not reopened. `origin/main` was still at
-this branch's base commit and the file was unchanged there, so there was no
-conflict with B-111.
+- **The metasalmonpy half.** The same three writes have the same shape there,
+  with a wider EDH window (`_replace_create_output()` then a full
+  `read_salmon_datapackage()` from disk before building). Already registered as
+  parity row 53, whose retirement condition said in advance that it would
+  **not** close when #111's R half closed. Out of scope; candidate item below.
+  Row 53 *was* updated, because its text described the defect as present "on
+  both sides" and that becomes false on merge — leaving it would put a false
+  statement in the register the mirror contract depends on.
+- **`R/metadata-write.R` and `R/sdp-methods.R` were not touched.** B-115 and
+  B-112 are in flight in this repository and both touch metadata/descriptor
+  writing. Neither file was needed here.
+- **The `fsync` durability gap**, above. Filed, not absorbed.
+- **Grouping the three writes into one transaction.** Reasoned and declined
+  above rather than overlooked.
+- **The `Open:` list in `knowledge/backlog.md`'s top-of-file snapshot still
+  lists #111.** Deliberately not edited: it is an explicitly dated snapshot
+  ("re-audited 2026-08-21"), the queue item file is the state authority, and
+  `HUB.md` says a card restating queue state is the copy that is wrong. Editing
+  it would maintain the duplication rather than the fact.
 
-What landed, in one file and with no new numbered row:
+## Guards, suppressions and skips added, with retirement conditions
 
-1. **Row 9 (`:60`) amended in place**, not extended and not deleted. Its
-   "mirrored 1:1 against metasalmon `main` (`e02111a`)" now carries a dated
-   qualifier and an explanation of what stopped being 1:1, in the shape the file
-   itself prescribes for `PARITY.md` row 31 — keep the original claim, date it,
-   say what broke it — because a new row saying the two differ, sitting under an
-   older row saying they were verified identical, leaves a reader to guess which
-   sentence is current.
-2. **A port paragraph** in the "what the port owes" section, after B-124's and
-   B-125's and in their shape, naming **B-144** as the item that closes it.
+1. **The structural guard** in
+   `tests/testthat/test-create-sdp-sidecar-atomicity.R` ("no create-owned
+   sidecar is written by a direct filesystem call"). Scope stated inside the
+   test: exactly `create_sdp()` and `.ms_write_sdp_review_readme()`, the two
+   functions that write the three sidecars. A sidecar write moved into a third
+   function escapes it, and the test says so and says to add that function.
+   *Retires when:* the three sidecars are rendered into one write set that owns
+   the only filesystem handle, making a stray direct write unrepresentable — or
+   when `create_sdp()` stops writing files of its own.
+2. **Two token exemptions inside that guard**, `unlink(` and `dir.create(`, each
+   with its reason in the test body, and each asserted to be *reached* so a
+   stale exemption cannot become an invisible hole. They retire with the guard.
+3. **The `fsync` note** on `.ms_sdp_extension_atomic_write_set()`'s staging
+   line. Not a suppression, but a documented limitation, and it carries a
+   condition: *retires when* the package can fsync a file, at which point the
+   stage is synced before the rename and the note loses its second half.
 
-**No new numbered row, deliberately.** The port is catch-up rather than a chosen
-difference, and the file's own rule is that filing absence as design is the one
-thing this register must not do. Row count is unchanged at **61**, and
-`test-parity-register-guard.R` **passes against the real metasalmonpy tree**
-(`METASALMONPY_PATH=/home/user/metasalmonpy`) rather than skipping, which is what
-it does by default here — its skip message says "a missing twin is not
-agreement", so the default green would not have been evidence.
+No test was skipped, no check suppressed, no allowlist entry added.
 
-**Two things the port paragraph records that reading only the R side would
-miss**, both found by reading the Python tree, which was read and never written:
+## Belongs to another item
 
-- **It runs backwards.** metasalmonpy carried the three-column frame *first* and
-  gave it up at S10 chunk A to match R, so B-144 restores what it originally
-  had. This is the amended mirror contract's own case (Brett, 2026-08-17).
-- **The Python code documents the defect as intended**, so B-144 is a comment
-  correction as well as a code change. `sdp_methods.py:1083-1085` reads *"Two
-  columns, not three: R's nothing-to-migrate report frame has no ``columns``
-  column (unlike the empty placements frame the stop-free path returns), and the
-  differential run showed it."* Accurate about what the differential saw, wrong
-  about what the shape should be. Same shape as the **#118** port, where a
-  docstring documents the current behaviour as intended and the fix is the guard
-  **and** the docstring. A port that fixed the frame and left that comment
-  standing would leave an explanation for a behaviour that no longer exists.
+- **Parity row 53 — the metasalmonpy half of #111.** A register row, not a queue
+  item, as of this hand-back, so it is named here for promotion rather than
+  absorbed. The work: route metasalmonpy's three create-owned sidecar writes
+  through `atomic_io.py`, and make its EDH path build in memory or become
+  transactional, with three abort-injection tests mirroring this branch's. The
+  one thing a port must get right: **inject the abort at the render, not at the
+  install.** An injection at the install passes on the unfixed code and proves
+  nothing, which is why the tests here mock `writeLines`, `readr::write_csv` and
+  `edh_build_hnap_xml` rather than the atomic writer. Row 53 now records this.
+  **Re-checked 2026-09-16 and it is still true: no queue item covers it.** Every
+  item on `main` and on the three open `queue/` branches was read for it.
+  `B-163` is the `fsync` gap, not this, and says so itself; `B-165` is B-116's
+  mirror half. So the roadmap record added 2026-09-16 names the absence rather
+  than a near-miss item, which is the honest shape — promotion is Brett's.
+- **metasalmonpy's `PARITY.md` row 53 is now the stale half of the twin pair,
+  and this is the mirror contract's own named failure mode.** Its text says the
+  defect is present "on both sides" and cites `R/package-helpers.R:1387-1392` for
+  a `.ms_replace_create_output()` call that no longer exists. The hub-side row was
+  corrected here; the twin's cannot be, because the work-branch grant is scoped to
+  the repository the item names and this item names metasalmon. So on merge the
+  two registers disagree about which side is defective, which is exactly the
+  "one of them is wrong and nothing in either file says which" shape `AGENTS.md`
+  warns about. **It needs to land with the port, or before it.** Flagged rather
+  than fixed, and flagged loudly because a reader of the twin alone would
+  conclude the R half is still open.
 
-`python3 scripts/hub_queue.py check` — `OK: every generated block matches the hub
-queue.` The OKF bundle validator (`psc-okf check knowledge --tier capture`) could
-**not** be run: it needs a sibling `psc-data-systems` checkout and there is none
-on this machine. Front matter is untouched, no absolute filesystem path was
-introduced (checked; AGENTS.md forbids them in bundle cards) and row 9 is still a
-single table line — but those are hand checks, not the validator.
+## Candidate new items (no queue id)
 
-**No `devtools::document()` run and no `man/` change.** The `@return` block for
-`migrate_sdp_methods()` describes the three report parts without enumerating
-`tables`'s columns, so this change does not make it wrong, and the migration
-vignette (`vignettes/migrating-to-sdp-0-3-0.Rmd:375-384`) already prints the
-populated `1 x 3` frame — so the fix makes the no-op branch agree with published
-documentation rather than contradicting it. Adding a column list to the roxygen
-would have regenerated all of `man/`, which with B-111 and B-115 in flight is a
-larger and less reviewable diff than a P3 warrants.
-
-**`metasalmonpy` is untouched.** The mirror half is **B-144**, a separate item,
-where Python moves back to the three-column shape it had first. Under the
-amended mirror contract (Brett, 2026-08-17) which side is right is a ruling and
-not an implementer's call; Brett ruled the three-column shape on 2026-09-14, so
-R is the side that moves and Python reverts the change it made at S10 chunk A to
-mirror R's two-column frame. This is the contract's own example of the mirror not
-being automatically the follower.
-
-**One process note, recorded because it touched files outside this item even
-though nothing of it survives.** While setting up the baseline vignette
-comparison I ran `git stash push -- R/sdp-methods.R` after the work was already
-committed, so it stashed nothing, and the following `git stash pop` reached the
-repository's **pre-existing** entry instead — `stash@{0}`, *"On
-claude/blissful-shannon-ag9jec: evidence-pointer edits duplicating PR #110"*.
-The pop conflicted and left seven `queue/items/*.yaml` files in a conflicted
-working-tree state. It was reverted with `git reset --hard HEAD`, which was safe
-because every change of mine was already in the commit. **That stash entry was
-not dropped and is still present and unchanged** — git kept it because the pop
-failed — and `queue/items/` is untouched in this branch's diff. The baseline
-comparison was then redone the correct way, on a `git archive` export of the base
-commit into a scratchpad directory, which is what the R CMD check section above
-reports.
-
-**The AGENTS.md duplicate-placement-guard note is already resolved — checked,
-not assumed.** AGENTS.md records that `migrate_sdp_methods()` once carried
-duplicate placement guards that became unreachable when the real checks moved
-earlier, leaving dead code that invited someone to weaken the live copy. Both
-guards now appear exactly once each (`R/sdp-methods.R:441` and `:448`, before
-the dry-run return), and the comment at `R/sdp-methods.R:462-465` records the
-absence deliberately: *"a repeat of those checks here would be unreachable.
-Deliberately not duplicated: a dead guard invites someone to weaken the live
-one."* Nothing to fix and no new item needed.
-
-## Belonging to another item
-
-- **B-144** — the mirror half of this item, in metasalmonpy. Not touched.
-- **B-137** — six of the eight full-suite failures on this machine. Not touched.
-- **B-111**, **B-115** — worked in parallel by other agents in this repository.
-  The only file this branch touches that they plausibly also touch is `NEWS.md`,
-  where this entry was appended at the end of the development version's
-  `### Fixed` section. A textual conflict there is possible and resolves by
-  keeping both bullets.
-- **B-133** — the vignette-tangle ERROR in `R CMD check`. Not touched.
-- **B-132** — the nearest existing item to new-item candidate 2 below, but a
-  different pair of tests, so the candidate is not part of it.
-
-## New-item candidates
-
-### 1. `parity-deviations.md` row 9 — RESOLVED IN THIS PULL REQUEST, not a candidate
-
-Kept here as the record of how it was found rather than deleted, because the
-finding is the reason the second commit exists. Row 9 claimed *"The migration
-itself is mirrored 1:1 against metasalmon `main` (`e02111a`)"*, and the report
-shape is exactly what this branch changes, so from merge until B-144 lands R
-returns three columns from the no-op exit and Python two. That is the shape the
-file already documents at length for `PARITY.md` row 31: *"Nothing over there
-will announce it, because the row still reads as a passing verification — which
-is the worst shape a stale register row can take."*
-
-It was reported as a candidate at the first hand-back and **ruled into this pull
-request** on 2026-09-15 under B-115's rule that the register row lands in the
-pull request implementing each half. Row 9 is now amended in place and a port
-paragraph naming **B-144** sits with B-124's and B-125's. See "What I did not do"
-above for what landed and what was checked.
-
-### 2. Two `test-github-helpers.R` tests error instead of skipping when the raw host is unreachable but the API host is
-
-**Being filed by the coordinator as a sibling of B-132; not carried by this
-item.** Recorded here because the evidence was measured on this branch.
-
-`test-github-helpers.R:161:3` and `:264:3` fail with
-`Error in httr2::req_perform(req): HTTP 404 Not Found`. The cause is a mismatch
-between what the skip guard probes and what the code under test fetches: the
-guards at `test-github-helpers.R:144-160` probe reachability with `gh::gh()`
-against `api.github.com` and skip on error, but `read_github_csv()` resolves to
-a `raw.githubusercontent.com` URL (`R/github-helpers.R:593`, reached through
-`ms_github_get()` at `R/github-helpers.R:227` and `:618`). Where the API host
-answers and the raw host does not, the guards pass and the fetch then errors.
-
-Same defect shape as **B-132** ("The live upstream SDP bundle test errors
-instead of skipping when the fetch is slow or offline") but a different pair of
-tests, so it is a candidate rather than part of B-132. A fix would probe the URL
-the code actually fetches, or turn the 404 into a skip. *Retires when:* the
-tests stop reaching the network at all, for example against a recorded fixture.
-
-## Retirement conditions of what this branch adds
-
-One test. No suppression, no exclusion, no allowlist entry, no skip and no
-workaround — nothing here silences a signal, so there is nothing that could
-outlive its cause and conceal a failure. The test states its own condition in
-its header comment:
-
-> *Retires when:* `migrate_sdp_methods()` stops returning a `tables` frame, at
-> which point there is no shared column set left to pin.
-
-The **item's** retirement condition is met on the R side by this branch: the
-early return builds the three-column frame, and a test pins the column set of
-both branches the condition names, plus the third. It is met in full only when
-**B-144** lands the same shape in metasalmonpy.
+- **`.ms_sdp_extension_atomic_write_set()` does not fsync the staging file
+  before the rename.** Evidence: `R/sdp-extension-helpers.R`, the
+  `writeBin(writes[[index]], stages[[index]])` call, with no sync before
+  `file.rename(stages[[index]], path)`. Atomic against an aborted call, not
+  durable against a machine crash, where a visible rename can outrun the staged
+  data blocks. Base R exposes no fsync, so closing it means compiled code or a
+  new dependency — which is why this is a decision rather than a fix, and why it
+  is `claimable: false` material. Blast radius is every caller of that writer:
+  `create_sdp()`'s three sidecars, `write_salmon_datapackage()`, observation
+  structures, KNB publication, reproducibility manifests, measurement
+  decompositions. Suggested severity P3 — the failure needs a crash rather than
+  an error, and the package's documented contract (#96, #111) is about aborts.
+  Mirror half applies: `atomic_io.py` should be checked for the same gap, where
+  Python *does* have `os.fsync`, so the two sides may already differ in
+  durability without either register saying so.
+  **Filed since as `B-163`, and it answers the mirror question this bullet left
+  open — the other way round (checked 2026-09-16).** metasalmonpy has zero
+  occurrences of `fsync` and `atomic_io.atomic_write()` calls `os.replace` with
+  no flush, so the two implementations are **identical** in durability and no
+  register row is owed; what differs is the cost of closing it, which is the
+  argument for ruling once for both. B-163 is `claimable: false` for exactly the
+  reason given above. **It is a separate item from the sidecar port**, and
+  confusing the two is easy: B-163 is about the write set never flushing, the
+  port is about Python not using the write set at all.
+- **Two vignettes fail `R CMD check`'s "running R code from vignettes" step on a
+  clean tree**, at HEAD and on this branch alike: `migrating-to-sdp-0-3-0.Rmd`
+  reads `weir-counts-sdp/metadata/tables.csv` and `tidy-data-for-sdp.Rmd` reads
+  `escapement-sdp/metadata/tables.csv`, each relative to the temporary vignette
+  directory the tangled code runs in, where the package an earlier chunk created
+  does not exist. Both chunks are `eval = FALSE` in the rendered vignette, so
+  the article reads correctly and only the tangle-and-source step fails — which
+  is why this has gone unnoticed. It is two ERRORs on every local `rcmdcheck`
+  run, so nobody can use a clean check as a signal here without knowing to
+  discount them, which is the real cost. Suggested severity P3. Not adjacent to
+  this item.
