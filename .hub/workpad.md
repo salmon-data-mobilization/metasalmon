@@ -60,6 +60,34 @@ in their merged pull requests.)*
   `.ms_replace_create_output()`" is annotated rather than rewritten, because its
   point is about scope and it is dated evidence.
 - `knowledge/parity-deviations.md` — row 53 updated. See the mirror note below.
+  **Added 2026-09-16:** the row now points at the roadmap record described next.
+- `knowledge/roadmap.md` — **the deferral of the Python half is logged in the
+  metasalmonpy release-index row. Added 2026-09-16, on a Codex P1 finding on
+  pull request #119; the original pass did not land it.** The finding is exactly
+  right about the state it describes: updating register row 53 alone leaves the
+  mirror destructive and leaves the two registers disagreeing, and `AGENTS.md`
+  gives two ways out — the port in the same stream, or the reason for deferral in
+  the roadmap card. The port is a different repository and the claim covers one
+  branch, so the roadmap record is the one available here. It follows the house
+  shape of the two paragraphs already in that section for B-124 and B-125 ("The
+  development version after 0.5.0 adds to what the port owes"), and adds three
+  things those two did not have to say:
+  1. **the user-visible consequence**, because this deferral leaves a data-loss
+     path open rather than a missing feature: a Python caller re-running
+     `create_sdp()` can still lose an annotated `README-review.txt`, a
+     `semantic_suggestions.csv` carrying review decisions, or the EDH XML;
+  2. **that no queue item covers it yet**, and that **B-163 is not it** —
+     B-163 is the `fsync` durability gap in the write *set* and says in its own
+     text that the mirror half is not a divergence, because neither
+     implementation flushes before renaming. Checked 2026-09-16 against every
+     item on `main` and on the three open `queue/` branches: nothing covers the
+     Python sidecar port. B-165 is B-116's mirror half, not this one. So the
+     record names the absence rather than naming a near-miss item, and filing
+     the item is Brett's (a promotion to `ready` needs an authorization he gave
+     in chat);
+  3. **the `PARITY.md` correction owed with or before the port** — the twin's
+     copy of row 53 still reads "on both sides" and cites the deleted
+     `.ms_replace_create_output()` call site.
 
 ### Why the bytes are rendered through the writer each file already used
 
@@ -309,6 +337,11 @@ No test was skipped, no check suppressed, no allowlist entry added.
   install.** An injection at the install passes on the unfixed code and proves
   nothing, which is why the tests here mock `writeLines`, `readr::write_csv` and
   `edh_build_hnap_xml` rather than the atomic writer. Row 53 now records this.
+  **Re-checked 2026-09-16 and it is still true: no queue item covers it.** Every
+  item on `main` and on the three open `queue/` branches was read for it.
+  `B-163` is the `fsync` gap, not this, and says so itself; `B-165` is B-116's
+  mirror half. So the roadmap record added 2026-09-16 names the absence rather
+  than a near-miss item, which is the honest shape — promotion is Brett's.
 - **metasalmonpy's `PARITY.md` row 53 is now the stale half of the twin pair,
   and this is the mirror contract's own named failure mode.** Its text says the
   defect is present "on both sides" and cites `R/package-helpers.R:1387-1392` for
@@ -338,6 +371,15 @@ No test was skipped, no check suppressed, no allowlist entry added.
   Mirror half applies: `atomic_io.py` should be checked for the same gap, where
   Python *does* have `os.fsync`, so the two sides may already differ in
   durability without either register saying so.
+  **Filed since as `B-163`, and it answers the mirror question this bullet left
+  open — the other way round (checked 2026-09-16).** metasalmonpy has zero
+  occurrences of `fsync` and `atomic_io.atomic_write()` calls `os.replace` with
+  no flush, so the two implementations are **identical** in durability and no
+  register row is owed; what differs is the cost of closing it, which is the
+  argument for ruling once for both. B-163 is `claimable: false` for exactly the
+  reason given above. **It is a separate item from the sidecar port**, and
+  confusing the two is easy: B-163 is about the write set never flushing, the
+  port is about Python not using the write set at all.
 - **Two vignettes fail `R CMD check`'s "running R code from vignettes" step on a
   clean tree**, at HEAD and on this branch alike: `migrating-to-sdp-0-3-0.Rmd`
   reads `weir-counts-sdp/metadata/tables.csv` and `tidy-data-for-sdp.Rmd` reads
