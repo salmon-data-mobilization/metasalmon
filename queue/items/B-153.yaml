@@ -1,7 +1,7 @@
 id: B-153
 kind: defect
 title: Write metasalmonpy 0.5.0's documentation half and bump the version, which is what closes the catch-up window
-state: ready
+state: review
 claimable: true
 repo: metasalmonpy
 venue: claude-code

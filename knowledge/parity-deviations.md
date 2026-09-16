@@ -122,17 +122,42 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
-**metasalmon released `v0.5.0` on 2026-08-25 (roadmap S5) and metasalmonpy is
-still 0.4.0, so a `0.4.0→0.5.0` catch-up window is open.** Read this section as
-the record of what that window owes, and note first what it does **not** owe:
-**no new numbered rows**. None of the nine functions the release adds is a
-deliberate difference — they are simply not built in Python yet — and filing
-absence as design is the one thing this register must not do. It would also
-break `tests/testthat/test-parity-register-guard.R`, which fails on a number
-present in one register and not the other, so a row added here without its twin
-turns CI red in both repositories. **A port is owed, not rows.**
+*(The heading keeps its wording deliberately. It is a citation target: this file,
+the release index in [`roadmap.md`](roadmap.md), and the retirement conditions of
+queue items **B-126** and **B-165** all cite this section by name, and renaming
+it to match the tense below would break four references to buy nothing. The
+window's state is in the first paragraph, which is where a reader looks.)*
 
-**What the port owes**, measured 2026-08-25 against the metasalmonpy tree:
+**The `0.4.0→0.5.0` window is CLOSED as of 2026-09-16.** metasalmon released
+`v0.5.0` on 2026-08-25 (roadmap S5) while metasalmonpy was still 0.4.0, and the
+window closed in two halves: **B-126** ported the behaviour as metasalmonpy pull
+request **#28**, and **B-153** wrote the documentation half and moved the number
+to 0.5.0. Both `AGENTS.md` files and the release index in
+[`roadmap.md`](roadmap.md) read 0.5.0 with no window open. This section is kept
+in the past tense rather than deleted, exactly as the role-inference paragraph
+below is, because it is the record of what was owed and why it was owed as a
+port; delete it and the next window's first reader re-derives the rule.
+
+Read the rest as that record, and note first what the window did **not** owe:
+**no new numbered rows**, and none was added. None of the nine functions the
+release adds was a deliberate difference — they were simply not built in Python
+yet — and filing absence as design is the one thing this register must not do. It
+would also break `tests/testthat/test-parity-register-guard.R`, which fails on a
+number present in one register and not the other, so a row added here without its
+twin turns CI red in both repositories. **A port was owed, not rows.** The one
+amendment that *was* owed, to row 31, was made in place by #28.
+
+**One thing the closure found that this section did not predict**, recorded
+because it is the shape the next window will take too: the behavioural port was
+not enough to make the number true. metasalmon 0.5.0's own NEWS entry leads with
+a *documentation* claim — a package reaching
+`validate_salmon_datapackage(require_iris = TRUE)` "without opening a single file
+in a spreadsheet" — and for twenty-two days metasalmonpy exported all eleven
+calls, listed all eleven in its API reference, and named **none of them** in
+`guides/semantic-review.qmd`. **A window that ships a workflow owes its
+documentation half, and the split is worth planning rather than discovering.**
+
+**What the port owed**, measured 2026-08-25 against the metasalmonpy tree:
 zero hits for all nine names (`review_semantics`, `accept_suggestion`,
 `reject_suggestion`, `apply_sdp_semantics`, `review_metadata`,
 `set_sdp_dataset`, `set_sdp_table`, `set_sdp_column`, `set_sdp_code`); zero
@@ -143,6 +168,16 @@ schema's `constraints.required`, which `review_metadata()` is built on; and the
 descriptor's `contributors` / `licenses` blocks still inline in `package_io.py`
 rather than extracted. The **#118** defect is alive there in the same shape at
 `semantics.py:1294`.
+
+**All of that is closed.** `B-126` landed as metasalmonpy pull request **#28** on
+2026-09-16: all nine functions and both accessors, `decision_reason` with
+decision replay on queue rebuild, `read_salmon_datapackage()` reading
+`semantic_suggestions.csv` back, the first consumer of the schema's
+`constraints.required`, and the #118 exemption at the line this paragraph names.
+`B-153` then closed the documentation half and moved the number, 2026-09-16. The
+measurement above is kept as the dated measurement it was, not corrected in
+place: it is the evidence the port was owed, and rewriting it would leave the
+section asserting a gap with nothing showing there had been one.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column

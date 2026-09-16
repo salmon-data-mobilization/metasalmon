@@ -35,20 +35,26 @@ under `queue/`.
   in the same PR that introduces it. An undocumented difference is a
   contract violation even when the difference itself is fine. Functionality and **release numbers stay in lockstep**
   — metasalmonpy's version is a parity claim, bumped to match metasalmon only
-  when the mirrored behaviour actually lands. Current state: **metasalmon is at
-  0.5.0 and metasalmonpy at 0.4.0, so a `0.4.0→0.5.0` catch-up window is open.**
-  metasalmon released `v0.5.0` on 2026-08-25 — roadmap stream S5, nine new
-  exported functions (`review_semantics()`, `accept_suggestion()`,
-  `reject_suggestion()`, `apply_sdp_semantics()`, `review_metadata()` and the
-  four `set_sdp_*()` setters) — and **metasalmonpy has none of them**: measured
-  2026-08-25, zero hits for all nine names, zero for the `decision_reason`
-  column, no accessor for the suggestion attributes, and no consumer of the
-  schema's `constraints.required`, which `review_metadata()` is built on. The
-  #118 auto-apply defect is alive there in the same shape
-  (`semantics.py:1294`). That is ordinary "R shipped first" lag rather than a
-  set of deliberate differences, so it is owed as a **port** — tracked in
-  `knowledge/parity-deviations.md` and the roadmap's release index, and
-  deliberately **not** as new register rows.
+  when the mirrored behaviour actually lands. Current state, measured
+  2026-09-16: **both packages are at 0.5.0, so no catch-up window is open.**
+  The `0.4.0→0.5.0` window that metasalmon's `v0.5.0` opened on 2026-08-25
+  (roadmap stream S5 — nine new exported functions: `review_semantics()`,
+  `accept_suggestion()`, `reject_suggestion()`, `apply_sdp_semantics()`,
+  `review_metadata()` and the four `set_sdp_*()` setters, plus the
+  `semantic_suggestions()` / `semantic_llm_assessments()` accessors) closed
+  2026-09-16, in two halves: hub queue **B-126** ported the behaviour
+  (metasalmonpy pull request #28) and **B-153** wrote the documentation half and
+  moved the number. **Both halves were needed, and the second is the one that
+  nearly did not happen**, because 0.5.0's own NEWS entry leads with a
+  *documentation* claim — reaching `validate_salmon_datapackage(require_iris = TRUE)`
+  "without opening a single file in a spreadsheet" — which a reference index
+  cannot deliver: metasalmonpy's guide named none of the nine functions for the
+  twenty-two days its reference listed all eleven of them. The whole window was
+  ordinary "R shipped first" lag rather than a set of deliberate differences, so
+  it was owed as a **port** — tracked in `knowledge/parity-deviations.md` and the
+  roadmap's release index, and deliberately **not** as new register rows.
+  metasalmonpy's tree now reads 0.5.0; **tagging `v0.5.0` there is a separate
+  outward act and is Brett's**, so its newest tag is still `v0.4.0`.
   **Parity is the state that decays fastest**, and the version of this
   paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
   decayed one release later, which is the argument for reading any parity
@@ -71,13 +77,26 @@ under `queue/`.
   carried a stale `0.2.2→0.3.0` window after metasalmon tagged 0.4.0, corrected
   there 2026-08-24. Whenever either version moves, read the other file in the
   same change; the release index in `knowledge/roadmap.md` is the third copy
-  and must agree with both. **It is live for a third time as of 2026-08-25**:
-  this release moved metasalmon to 0.5.0, and metasalmonpy's `AGENTS.md` still
-  reads that both packages are at 0.4.0 with no window open. Editing the mirror
-  was out of scope for the release that opened the window, so the correction is
-  owed there — and until it lands, that file is the one that is wrong. Which is
-  the whole reason this rule says *read the other file* rather than *trust the
-  one in front of you*.
+  and must agree with both. **It went live a third time from 2026-08-25 to
+  2026-09-14**: `v0.5.0` moved this package to 0.5.0 while metasalmonpy's
+  `AGENTS.md` went on reading that both packages were at 0.4.0 with no window
+  open, because editing the mirror was out of scope for the release that opened
+  the window. Twenty days, against two the previous time. Corrected there by
+  B-126.
+  **The fourth time was a different shape, and it is the one this rule did not
+  see coming.** On 2026-09-16, when B-153 closed the window, all three copies of
+  the number were read against each other first and **all three already agreed**
+  — 0.5.0 / 0.4.0, window open. What disagreed was every *description* of them:
+  this paragraph said metasalmonpy's `AGENTS.md` "still reads 0.4.0/0.4.0", the
+  roadmap release index said the same, and both B-126's and B-153's
+  `retires_when` said it too. All four had been true and stopped being true hours
+  earlier when #28 merged. So the failure was not two files disagreeing about the
+  number; it was four places agreeing about *which file was wrong* and all four
+  being wrong about it — which checking that the three numbers match cannot
+  catch. **A description of the three copies is not a substitute for reading
+  them**, and that now includes the sentence you are reading: it is a dated
+  measurement like every other one here. Which is the whole reason this rule says
+  *read the other file* rather than *trust the one in front of you*.
   **The mirror is not automatically the follower** (Brett, 2026-08-17):
   *"Don't just make things match metasalmon. If the Python implementation got
   it right, then update metasalmon."* Presumption of mirroring is about
