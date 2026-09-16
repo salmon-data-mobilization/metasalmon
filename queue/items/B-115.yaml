@@ -1,7 +1,7 @@
 id: B-115
 kind: defect
 title: Emit readr's ISO instant spelling for a descriptor POSIXct in both implementations
-state: review
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code

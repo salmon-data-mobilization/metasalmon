@@ -5153,10 +5153,13 @@ reading goes wrong — inferred from a local run, and no checks at all, which is
 the shape a merge conflict takes — and this is a third that neither covers,
 because the checks exist, were read off GitHub, and are green.
 
-**Five items were in `ready` with their work delivered.** `B-0`, `B-115`,
-`B-143` and `B-150` moved to `review`; `B-44` moved to `needs_brett`, for the
-reason in the next paragraph. None had landed: `B-115` is pull
-request 118, open and conflicted; `B-143` is salmon-domain-ontology pull request
+**Five items were in `ready` with their work delivered.** `B-0`, `B-143` and
+`B-150` moved to `review`; `B-44` moved to `needs_brett`, for the reason in the
+next paragraph; and `B-115` went to **`done`**, because pull request 118 merged
+while this branch was open. It was written here as `review` and was wrong within
+the hour — the shortest a wrong state has lasted in this queue, and only because
+that merge happened to be watched. None of the others had landed: `B-143` is
+salmon-domain-ontology pull request
 30, a draft whose own body says not to merge it before `B-107`; `B-0`, `B-44` and
 `B-150` are patches to a shared repository that correctly were never pushed.
 
