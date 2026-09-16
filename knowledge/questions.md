@@ -1164,3 +1164,176 @@ measured findings are carried in the retirement conditions of `B-106`, `B-76`,
 `B-106` (the rule text in `smn-data-pkg`'s `schema/sdp.rules.yaml` and
 metasalmon's vendored copy), with `B-48` waiting behind `B-148`, and the defect
 in [backlog #106](backlog.md).
+
+
+### Q51 — Does the SDP profile admit a typed instant in `temporal_start` and `temporal_end`? — ANSWERED 2026-09-16 (Brett)
+
+**Ruling: (a), widen the pattern.** *"Regarding question 51, I rule that we go with
+A."* — Brett, 2026-09-16, in chat.
+
+**Where the ruling is recorded, which is the authority rather than this entry.**
+`smn-data-pkg` pull request **#9**, *"Admit an ISO instant in `temporal_start` and
+`temporal_end` (Q-51, option A)"*, merged 2026-09-16 as **`f86d9b4`**. Both fields'
+`constraints.pattern` is now
+`^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$`, the
+`sdp:examples` gain `1996-01-01T00:00:00Z` and `2024-12-31T23:59:59Z`, and
+`validate_temporal_value()`'s calendar layer is widened to match, with tests,
+`SPECIFICATION.md` and the changelog moving in the same pull request.
+
+**Two things the ruling deliberately leaves open, named here as open rather than
+read as settled.** The first is a **platform-rendering defect and not a schema
+limit**: the ruled pattern's `\d{4}` branch **accepts** the padded form
+`0999-06-05T13:45:30Z`, and what fails it is the **unpadded** bytes `readr` writes
+on Linux, `999-06-05T13:45:30Z` — which `smn-data-pkg`'s own tests pin as rejected
+under the fixture name *unpadded year*. So what **`B-161`** holds, unruled and
+Brett's, is **which bytes the ecosystem writes — R and Python both** (it read
+*"which bytes R should write"* until 2026-09-16; pandas `to_csv` renders an
+unpadded year too, measured on pandas 3.0.5 and recorded in `B-145`, so the R-only
+scope could have yielded a ruling that omitted Python), not whether the profile admits a
+pre-1000 instant; it does. The second is that no fractional second is admitted,
+because neither writer can emit one; if one ever can, that is a new question
+rather than something this ruling covered.
+
+**The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
+each re-vendoring the ruled schema and adding the test that was missing. **The
+general half of the same gap** — both validators consume `constraints.required`
+and `constraints.enum` and never `constraints.pattern`, so a widened pattern is
+still not *checked* by either package — is **`B-204`** (metasalmon) and
+**`B-205`** (metasalmonpy), filed 2026-09-16 and on `main` since metasalmon
+pull request 139. **The boundary, because the two pairs look alike:** this pair
+pins what the *writer* emits against the vendored pattern, one value checked by
+a test; that pair makes the *validator read* `constraints.pattern` at all, for
+every metadata field carrying one.
+
+**The order between them is not free, and this entry said it was.** It read
+*"Either can land without the other, and each leaves a different hole — a writer
+pinned against a pattern nothing enforces, or an enforcer with nothing pinning
+the writer."* The first of those is a hole; **the second is a regression**, and
+the difference matters because it decides whether a claim is safe to take.
+Raised by the Codex review of pull request 137 on `9b625a2`, and verified:
+
+- **Schema first, then validator** — harmless. A widened pattern that nothing
+  reads changes nothing.
+- **Validator first, then schema** — `B-204`/`B-205` would begin enforcing
+  whatever pattern the vendored copy holds *at that moment*, which on
+  2026-09-16 is still the pre-ruling `^(\d{4}|\d{4}-\d{2}-\d{2})$` — while
+  `B-115` has already landed the instant spelling on the descriptor path. So
+  `validate_salmon_datapackage()` would refuse a package metasalmon itself just
+  wrote, for carrying the instant this very question ruled legal.
+
+**An ordering this consequential belongs in a field a claim can act on, not in a
+sentence a claim never reads** — `queue/items/B-204.yaml` and
+`queue/items/B-205.yaml` carry their own blockers, and this entry deliberately
+does not say what those are. The reasoning above is what stays true regardless:
+it explains *why* an ordering constraint exists between the two pairs, which
+survives a rename or a restructure of how it is expressed.
+
+**What this adds to the round:** every earlier finding here was a *description*
+drifting from a field, or a tense standing in for one. This was a sequencing
+claim that was simply **wrong on the merits** — symmetrical in shape, asymmetric
+in fact — and no amount of keeping prose and fields in agreement would have
+caught it, because there was no field to disagree with until one was added.
+
+**The ordering work also exposed an older defect two items away, and splitting it is
+the last thing this entry records.** `B-161` — the unruled question of how a
+pre-1000 instant should be spelled — declared `repo: metasalmon` while its
+retirement condition required *both* implementations to emit the ruled
+spelling. That is the claimable-and-unfinishable case `queue/README.md`
+forbids, and it had gone unnoticed because `claimable: false` meant no agent
+could take it and find out. It became reachable the moment a validator item was
+blocked on it. The emission work moved out to `B-206` (metasalmon) and `B-207`
+(metasalmonpy), each blocked on `B-161` and each naming the other — the README's
+own prescription for a cross-repository obligation. The ruling still covers both
+implementations at once, which is why they share one blocker rather than getting
+a ruling each: ruling them separately would create a parity row instead of
+closing one. **What `B-161` now requires is `queue/items/B-161.yaml`'s to say
+and this entry does not restate it** — read it there before treating the ruling
+as finished.
+
+*(This said `B-161` "is now the **ruling alone**" until the Codex review of pull
+request 137 on `54b9299`. It was accurate for about an hour and then became an
+**under**-statement, because the card's condition grew into an invariant: the
+ruling must also leave a queue that can be walked from it to a state where
+emission, profile admission and validation agree. The fifth copy of that
+under-statement, and the one the previous sweep missed — because that sweep
+grepped for the phrasings of the **recipe**, and this copy carries the phrasing
+of the **split**. A sweep that searches for sentences you remember writing only
+finds the copies that share your wording.)*
+
+**And then the correction introduced the older defect.** The commit that fixed
+the sequencing claim wrote *"The dependency is now in `B-204`'s and `B-205`'s
+`blocked_by`"* into this entry and a matching sentence into the backlog — a copy
+of the mutable field, in the same change that stated the rule against copying
+it. Caught by the Codex review of pull request 137 on `7f9ef4d`. It is worth
+recording rather than quietly fixing, because it shows the rule is hard to
+follow precisely when you are pleased with a fix: announcing *where* the fix
+landed feels like completing the explanation, and it is the one sentence that
+will rot.
+
+---
+
+**What was asked, kept as the history of the question rather than trimmed to the
+answer.**
+
+**Unblocked:** the spelling already ruled in
+[Q44](#q44--which-spelling-does-a-descriptor-posixct-take--answered-2026-09-14-brett),
+which at the time of asking was legal nowhere. Q44 chose *which* ISO form a
+descriptor `POSIXct` takes; this asked whether the profile admitted any instant at
+all, and it did not — so `B-115` landed, correctly, a spelling the shipped
+profile rejected, and `B-145` is specified to land the same one on the Python
+side. Whether it has is `queue/items/B-145.yaml`'s to say; on 2026-09-16 the
+work sat in metasalmonpy pull request 34. **This is the question Q44 left open** rather than a new
+one, exactly as Q44 was the one
+[Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
+left open.
+**The evidence lives in [`backlog.md`](backlog.md)** under *The 2026-09-16
+temporal-profile finding*, and was deliberately not restated here: both fields
+carried a `constraints.pattern` admitting a four-digit year or a full date and
+nothing else, with `sdp:examples` to match. This file is the index, not the
+authority.
+**The options were not equivalent, and there were four of them rather than three.**
+**(a) Widen the pattern** to admit an `xs:dateTime` — the smallest change, and it
+makes the ruled spelling legal, but it commits the profile to instants in a field
+whose name *and* description both say "date or year". **(b1) Refuse a typed
+instant** at the descriptor boundary — the writer errors and the caller is told,
+so no information is lost and no invalid package is written, at the cost of
+failing a call that works today. **(b2) Coerce it to a date** — the writer accepts
+the instant and truncates the time and the zone, so every call keeps working and
+the data the caller supplied is silently discarded. **(c) Leave it** — the status
+quo, and the only one nobody has chosen on purpose.
+
+*(b1 and b2 were written as a single option "(b) refuse, coercing to a date"
+until a Codex review of pull request 137 pointed out that refusing and coercing
+are different contracts with opposite failure modes — one tells the caller, the
+other does not — so an implementer handed "(b)" could not tell which was ruled.
+Splitting them is the fix; the entry is the durable record of what was asked, so
+it should be answerable.)*
+**Recommendation given:** none, for the reason
+[Q50](#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema)
+gives about itself. The profile is mandated by a specification file this package
+only vendors and is consumed the same way by metasalmonpy, so whether the SDP
+admits an instant was a specification ruling and not an implementation choice.
+What an agent could do was put **(a)**, **(b1)**, **(b2)** and **(c)** in front of
+Brett with their costs, which is what this entry did; it could not pick between
+them. **Each ruling implied different work**, and `B-198` / `B-199` spelled it out
+so the ruling would be directly actionable: under **(a)** the vendored dataset
+schema is re-fetched and the writers are left alone; under **(b1)** and **(b2)**
+the schema is left alone and the writers change, erroring for b1 and truncating
+for b2; under **(c)** both implementation items retire as no-ops and what is
+recorded instead is the accepted mismatch. Under **(a)**, **(b1)** and **(b2)**
+alike, the implementing change should also add the check that was missing — a
+package's temporal fields validated against the profile's own pattern — because
+nothing on either side compared them, and that absence is why this went unseen.
+**Severity is bounded and that does not settle it:** neither implementation
+produces a typed instant on its own, so this reaches a user only through a caller
+who supplies one.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-51` — S6 for
+the reason Q50's owner line already gives, because the ruling reaches the vendored
+profile and both writers rather than any one package. Q50 is adjacent, about the
+same descriptor profile, and whoever rules this should see both.
+**How the filing was scoped, by id:** `Q-51` retired on the ruling being
+*recorded in `smn-data-pkg`* and nothing more, because a retirement condition has
+to be satisfiable inside the repository its `repo` field names — `f86d9b4`
+satisfied it. The two implementation halves are `B-198` (metasalmon) and `B-199`
+(metasalmonpy); read those files for their state rather than assuming it from
+here.
