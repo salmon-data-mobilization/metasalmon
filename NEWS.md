@@ -159,6 +159,58 @@ metasalmon (development version)
   that was wrong, because pinning one leaves the other two free to drift away
   from it and the failure would look identical.
 
+### Changed
+
+* **The vendored SDP rules bundle is re-vendored for the reworded SOSA
+  Procedure rules** (backlog #106, hub item B-106; ruled by Brett 2026-09-14,
+  `knowledge/questions.md` Q47). `inst/extdata/schema/sdp.rules.yaml` is a
+  byte-for-byte copy of `smn-data-pkg`'s `schema/sdp.rules.yaml`, and this is
+  the copy half of that change -- paired with smn-data-pkg PR #8, which merged
+  first as `bb71c8b`. Nothing was hand-edited on this side; the copies were
+  identical before (md5 `3c702a37...`) and are identical after (md5
+  `f94d6c8f...`, git blob `489d46a0`), which is the property
+  `knowledge/orientation.md` asks for when it says to keep them in step by
+  re-vendoring from upstream rather than hand-editing either side.
+
+  **The rationale is no longer in the file, and the pointer it leaves behind is
+  an upstream path.** Brett asked on 2026-09-15 that the reasoning not clutter
+  the rules, so upstream moved it to `docs/adr/0002-sosa-procedure-reachability.md`
+  and left a two-line comment naming that file and the unresolved outcome's
+  retirement condition. metasalmon vendors the schema and not upstream's `docs/`,
+  so a reader of `inst/extdata` who follows that pointer will not find the file
+  here; it resolves in `smn-data-pkg`. Vendoring the ADR too, or rewriting the
+  comment, would both break the byte-identity this entry rests on, so neither was
+  done. *Retires when:* the vendored bundle carries its own rationale pointer
+  that resolves inside this package, or `knowledge/orientation.md` records that a
+  vendored file's internal paths are upstream's and are expected not to resolve.
+
+  What the upstream rewording says, because the package ships the text and a
+  reader of `inst/extdata` will not have the upstream changelog:
+  `methods_are_sosa_procedures` and `row_varying_procedures_use_codes` now
+  state **reachability**. A method or protocol IRI, and every `codes.csv`
+  `term_iri` on a component bound with `sosa:usedProcedure`, is **declared by**
+  a shared vocabulary and **reaches** a resource carrying
+  `rdf:type sosa:Procedure` by a `skos:broader` path of **zero or more steps**
+  -- so a directly typed IRI passes as the zero-length case. The phrase
+  "resolves to" is gone, because it read as a per-IRI HTTP dereference and
+  neither `smn` nor `gcdfo` is served for one. An asserted `skos:broader`,
+  `skos:broadMatch` or any other sub-property of `skos:semanticRelation` whose
+  other side is an `owl:Class` is refused by name: SKOS S19-S22 give every such
+  property `rdfs:domain` and `rdfs:range` `skos:Concept`, so the edge entails
+  that the OWL class is a `skos:Concept` and entails nothing about anything
+  being a Procedure. Estimate-type and data-quality vocabularies are named as
+  never being method vocabularies -- a Hyatt (1997) estimate type
+  (`gcdfo:Type1`-`gcdfo:Type6`) or an ordinal quality or reliability rating says
+  how good a value is, not how it was produced.
+
+  **No observable behaviour changes in this package, and that is the defect
+  rather than a reassurance.** Nothing in `R/` reads a rule `description`:
+  `.ms_load_sdp_schema()` uses the document's `version` and `profile` and no
+  rule text, and both reworded rules are among the three that backlog #48 (hub
+  item B-48) measured as loaded and never executed. B-48 builds its dispatch on
+  this text; no rule `id`, `severity`, `version` or `profile` changed, because
+  that test keys on rule ids.
+
 metasalmon 0.5.0
 ----------------
 
