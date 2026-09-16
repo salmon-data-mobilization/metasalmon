@@ -1,8 +1,8 @@
 id: B-126
 kind: defect
 title: 'Port metasalmon 0.5.0 to metasalmonpy: the nine review functions, decision_reason, and the constraints.required consumer'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5

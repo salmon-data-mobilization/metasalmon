@@ -1,8 +1,8 @@
 id: B-146
 kind: defect
 title: Write the iop-triple explainer for SDPs, a knowledge card with a recommendation and no code
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-science
 stream: S9

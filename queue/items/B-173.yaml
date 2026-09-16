@@ -1,7 +1,7 @@
 id: B-173
 kind: defect
 title: 'hub_queue.py silently truncates an unquoted value at the first space-hash, and lint reports OK'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-165
 kind: defect
 title: Port write_sdp_semantic_closure() to metasalmonpy, the mirror half of B-116
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

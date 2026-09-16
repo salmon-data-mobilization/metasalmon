@@ -1,0 +1,13 @@
+id: B-186
+kind: defect
+title: 'hub_queue.py lint accepts any stream value, so a padded S05 omits an item from its own stream view'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'hub_queue.py lint refuses a stream value that names no S-item in queue/items, and is demonstrated RED against a zero-padded S05 in place of S5. MEASURED 2026-09-16: lint lists stream among the known keys and validates only that it is present, never what it holds, so B-181 through B-185 were filed with S01 and S05 and lint reported OK on all five. The queue''s own convention is unpadded -- S1, S5, S6, S10 -- and the items: block filter matches the string exactly, so a padded value silently omits the item from its own stream view while every check passes. THAT IS THE SAME SHAPE AS B-173 AND THE THIRD OF ITS FAMILY: a field that is wrong in a way no check can see, whose only symptom is an absence somebody has to notice. The cheap fix is an enumeration read from the S-item files themselves rather than a hard-coded list, so it cannot go stale as streams are added; a stricter one also refuses a stream whose S-item is done. FOUND BY CODEX REVIEW ON PULL REQUEST 128, NOT BY THE QUEUE: the five bad values were written, linted clean, and would have merged.'
