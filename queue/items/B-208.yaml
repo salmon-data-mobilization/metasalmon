@@ -1,0 +1,13 @@
+id: B-208
+kind: defect
+title: A frozen SDP profile pins unversioned URLs, so everything the frozen file points at is live and has drifted three times
+state: needs_brett
+claimable: false
+repo: smn-data-pkg
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Each frozen profile resolves to the schema bytes it was frozen against, demonstrated by a test that validates a package against v0.2 and FAILS if any URL v0.2 references has changed content since the freeze commit. NEEDS_BRETT BECAUSE THE FIX CHANGES PUBLISHED URLS that downstream validators are built against, which is outward-facing spec design rather than an implementation choice. THE MEASUREMENT, 2026-09-16: profiles/salmon-data-package/v0.2/profile.json and v0.3/profile.json reference BYTE-IDENTICAL UNVERSIONED URLS for every schema and for sdp.rules.yaml, while README.md, docs/entrypoints.md and CHANGELOG.md all describe v0.2 as a frozen published contract that is never edited. Only the profile FILE is frozen. THE DRIFT IS NOT HYPOTHETICAL AND IS NOW THREE CHANGES: since v0.2 froze at 47f0e81 on 2026-08-21, sdp.rules.yaml -- referenced by v0.2 in two places -- changed twice in the B-106 work, and Q-51''s widening at f86d9b4 is the third and the first to a JSON schema. So a package validated against v0.2 today is validated against v0.3''s rules. NOT CREATED BY Q-51: Q-51''s change is the first one a review happened to notice, and it was merged anyway on the reasoning that the new pattern is a strict SUPERSET of the old one, so nothing that validated under v0.2 stops validating -- what changes is that a new package can carry an instant while claiming v0.2, which is the tolerable direction of drift while this is decided. THE SHAPE OF THE FIX, for Brett to accept or replace: snapshot each frozen profile''s schemas under a version-specific path such as profiles/salmon-data-package/v0.2/schema/... and repoint v0.2 at those, leaving the unversioned paths as the development head. THIS ITEM WAS GOING TO BE B-206 and the id moved because B-206 and B-207 were allocated first, to the two halves of the pre-1000 emission pair behind B-161.'

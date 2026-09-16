@@ -282,6 +282,68 @@ Correctness at the moment of writing is exactly what a restatement offers and
 exactly what it cannot keep, so the only durable defence is to have one home
 per fact and to treat any second answer as broken on sight.
 
+### Nine corollaries, each paid for once
+
+`#137` took **29 review rounds** over one afternoon — 27 that returned
+findings and 2 that came back clean — producing **45 findings**, every one
+of which was upheld. They are not 45 separate lessons: they are nine, most found
+more than once, because fixing an instance is not fixing the class. Each one
+below names what produced it, so a reader can check the claim rather than take
+it. (Counts measured from the pull request's own review API, not from the commit
+log, which undercounts: one commit often answered two findings.)
+
+1. **A card names only ids that exist on the default branch.** An id filed on an
+   unmerged branch reads as a dangling reference to everyone but its author, and
+   the queue offers no way to tell "not filed yet" from "typo".
+
+2. **An item's `retires_when` must be satisfiable in the repository the item
+   declares.** B-161 asked for both implementations to emit a spelling while
+   declaring `repo: metasalmon`, which made it claimable and unfinishable at
+   once. The prescription is already above: split into a pair with an id each,
+   each naming the other.
+
+3. **An evidence pointer must not become a second definition.** A card that
+   says "see the backlog entry" and then summarises it has two answers again,
+   and the summary is the one that rots. Point, or define, not both.
+
+4. **`blocked_by` guards order, never direction.** It says B cannot start
+   before A; it cannot say B is only wanted if A came out one way. A dependency
+   that is conditional on the blocker's *outcome* has to be written into the
+   item that will know the answer — the ruling — because a queue cannot act on
+   a conditional written in prose.
+
+5. **A list of consequences is always one short; where you can, state the
+   invariant.** Three successive rounds each found a consequence nobody had
+   enumerated, and each fix was another list. The fourth attempt said what has
+   to be *true* when the ruling is complete, which covers the cases nobody
+   thought of.
+
+6. **A card must not assert an expectation a sibling card has already
+   measured.** B-207 predicted a renderer's behaviour that B-145 had measured
+   and refuted, in a card filed after it.
+
+7. **An empty result is a claim about the instrument, not about the target.**
+   Six copies of one stale sentence, and the sweep for the last of them printed
+   a header for the authoritative card with nothing under it, first in its
+   output, because it had discarded the id line before searching. Establish an
+   instrument's reach with a positive control before reading its silence as an
+   answer. Where the target is the authority other copies defer to, only
+   reading it clears it.
+
+8. **A post-hoc explanation of a miss is itself a measurement.** The account of
+   why that sweep missed was written from memory rather than from the command,
+   and was wrong in the direction that would have sent the next sweep down the
+   same path. Read the instrument before explaining it.
+
+9. **A measurement's environment is part of the measurement.** A version copied
+   by pattern-match rather than read — `pandas 3.5` for a result measured on
+   `3.0.5`, the keyword-free fragment dropped by the regex that copied it —
+   reached five places, four of them cards, before a review caught it.
+
+Rules 1, 3, 6 and 9 are all the top rule wearing different clothes: one home
+per fact. Rules 7 and 8 are the one class the top rule does not cover, because
+they are about the *search* for stale copies rather than about the copies.
+
 Two facts are deliberately **not** queue state, and the same rule points the
 other way for them. Membership of the ecosystem lives in the
 [domain card](../knowledge/domains/salmon-data-ecosystem.md), whose ruled
