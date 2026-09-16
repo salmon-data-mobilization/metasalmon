@@ -59,8 +59,20 @@ they stand"* and also that *"every IRI the first run reports has been
 resolved"*, and allowlisting nine IRIs satisfies the first reading but not the
 second. Under the second the two items block each other. `B-158`'s card carries
 the measurement, both readings and the two ways out; the choice is Brett's,
-because either way amends a guard. The reasons are on each card, and `B-158`'s `blocked_by` carries the
-order rather than this sentence.
+because either way amends a guard.
+
+**What the queue encodes and what this card encodes are different things, and
+the difference is deliberate.** `B-158` carries two prerequisites, and
+`scripts/hub` checks each independently — so the queue knows that `B-107` and
+`B-143` both precede `B-158`, and nothing more. It does not order `B-107`
+against `B-143`, and `B-147` has no queue dependency at all (`blocked_by: []`
+on all three of `B-107`, `B-143` and `B-147`, measured 2026-09-16). **The
+four-item order above is this card's, which is what a sequence card is for**:
+`blocked_by` is a claimability gate, not a plan, and the two missing edges are
+absent on purpose — ordering `B-107` before `B-143` would presuppose an answer
+to the open question above, and blocking `B-147` on `B-158` would state a
+dependency neither card's retirement condition actually has. The reasons for
+each prerequisite are on the cards that carry them.
 
 ## gcdfo docs-pipeline gate substream
 
