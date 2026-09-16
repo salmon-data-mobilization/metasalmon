@@ -5810,18 +5810,23 @@ direction. None of that decides the item, which is Brett's; it is recorded so th
 ruling is made against measurements rather than against the card's earlier
 framing of two comparable options.
 
-### The 2026-09-16 post-#141 sweep: one fact with two homes, an omitted field, and an exemption read three times as a gap
+### The 2026-09-16 post-#141 sweep: one fact with two homes, an omitted field, and an exemption misread as a gap
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and seven of
-them were wrong the first time in a way that looked like a clean answer* — two
-found by review on consecutive rounds, both in the same paragraph, after this
-section had twice been written up as finished, and one that reported a head
-ready to merge while its review was still running. **The count in this sentence
-has itself been wrong on every round of this pull request.** It stays a count
-rather than becoming "repeatedly" because the number going up each round is the
-finding.
+were both about: *every claim here was produced by an instrument, and every
+instrument was wrong the first time in a way that looked like a clean answer.*
+The instances are enumerated below, each with what it measured, what it was taken
+to measure, and who caught it.
+
+**This paragraph used to carry the count**, and the count was wrong on every
+round of this pull request — as was the heading above it, which said the
+exemption had been read as a gap *three times*. Both are now claims about kind
+rather than number, for the reason the enumeration itself establishes further
+down: **a summary is a second copy of what it summarises, and a correction to
+the thing summarised does not reach it.** Every count in this section that is
+load-bearing sits next to the measurement that produced it; no count sits in a
+sentence whose job is to introduce one.
 
 **Severity has two homes, they are differently shaped, and they have diverged
 once.** Six readings, each taken from the file named:
@@ -5853,7 +5858,7 @@ fact lives, rather than carrying it, acting on it, or recording history: the
 not that it is outnumbered, but that it is the only assertion of the contract,
 in the file an agent reads first and without choosing to.
 
-**The sixth reading is the one that enlarges the question**, and it was found
+**The `HUB.md:551` reading is the one that enlarges the question**, and it was found
 only because the first draft of `Q-52` asserted the opposite. `HUB.md`'s
 normative field list omits `severity` — and omits `stream` with it — while the
 *Select* step twenty lines below orders the queue by `severity`.
@@ -5906,10 +5911,23 @@ not. `B-116` is also the backlog contradicting *itself* — an entry that calls
 its own severity *high* filed under the P4 ecosystem heading. Both have to be
 disposed of by the ruling rather than left to whichever side wins.
 
-**Three wrong readings of that table before this one, all from the same
-script, each looking clean.** Recorded because the first would have closed the
-question with the opposite answer, and none looked like an error while it was
-being read. The third was found by review rather than by the script.
+**Every earlier reading of that table was wrong, and each looked clean.** They
+are enumerated below with the instrument and the finder named on each, and this
+sentence deliberately states neither a count nor a common origin: the version of
+it that did said *"three wrong readings, all from the same script,"* which was
+wrong three ways at once — the list had four items, one of them is a standalone
+`awk` check rather than the Python reader, and two of the four were found by
+review rather than by any run of mine.
+
+**That is the third time in this pull request that a summary sentence was left
+behind by the list it summarises**, after *"diverged once"* against a table
+recording two, and *"four of the six"* against a table totalling 3–2–1. All
+three were caught by review, none by a re-read, and all three are the same
+defect as the one this whole section is about: **a summary is a second copy of
+what it summarises, so it has exactly the two-homes problem, and a correction to
+the list does not touch it.** The structural fix is the one applied here and not
+a more careful count — a lede that carries no facts of its own cannot fall out
+of step with the list under it.
 
 1. The cross-check script first read entries as `### N. title` headings only. It
    reported 34 entries, **zero** under any P-section, zero agreements and zero
