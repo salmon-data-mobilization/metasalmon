@@ -5354,6 +5354,9 @@ fields to the profile's own pattern, with a four-digit-year fixture. Nothing on
 either side does that, which is why this went unseen, so re-vendoring without the
 comparison would leave the hole it came through. `B-199` is blocked on `B-145`,
 because the instant the Python descriptor writes is `B-145`'s output and widening
-the pattern does not by itself make it legal. `B-204` (R) and `B-205` (Python),
-filed the same day, are the general half of the same gap — the validators consume
-`constraints.required` and `enum` and never `constraints.pattern`.
+the pattern does not by itself make it legal. **The general half of the same
+gap** — both validators consume `constraints.required` and `constraints.enum` and
+never `constraints.pattern`, so a widened pattern is still not *checked* by either
+package — is filed as its own pair in the hub's 2026-09-16 rulings round, one item
+per implementation; the ids are cross-referenced here once both pull requests have
+merged.

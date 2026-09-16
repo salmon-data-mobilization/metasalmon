@@ -1188,11 +1188,13 @@ is admitted, because neither writer can emit one; if one ever can, that is a new
 question rather than something this ruling covered.
 
 **The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
-each re-vendoring the ruled schema and adding the test that was missing. `B-204`
-(R) and `B-205` (Python), filed the same day, are the general half of the same
-gap: the validators consume `constraints.required` and `enum` and never
-`constraints.pattern`, so a widened pattern is still not *checked* by either
-package.
+each re-vendoring the ruled schema and adding the test that was missing. **The
+general half of the same gap** — both validators consume `constraints.required`
+and `constraints.enum` and never `constraints.pattern`, so a widened pattern is
+still not *checked* by either package — is filed as its own pair in the hub's
+2026-09-16 rulings round, one item per implementation. Those ids are not named
+here because they are not on `main` yet; the cross-reference lands once both pull
+requests have merged.
 
 ---
 
