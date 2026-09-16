@@ -2358,17 +2358,30 @@ def rule_bearing_classes() -> set:
 def skipped_rule_bearing_classes() -> set:
     """Rule-bearing classes that `unittest` will not run.
 
-    READ FROM THE CLASS OBJECT AND NOT FROM THE DECORATOR TEXT. `unittest.skip`
-    sets `__unittest_skip__` on the class, and a class INHERITS that flag from a
-    skipped base -- so a rule-bearing class with no decorator of its own can
-    still never run, be absent from `RAN_CLASSES`, and take the non-failing
-    "not enforced" path. A review found that; reading the effective attribute
-    covers the direct case and the inherited one with one check instead of two,
-    which is why this replaced the scan rather than being added beside it.
+    READ FROM THE OBJECTS AND NOT FROM THE DECORATOR TEXT, AND FROM BOTH PLACES
+    `unittest` KEEPS THE FLAG. Three reviews closed this hole one variant at a
+    time -- a decorator on the class, a decorator on a BASE the class inherits,
+    then a decorator on every METHOD -- and each time the class never ran, was
+    absent from `RAN_CLASSES`, and the teardown took its non-failing "not
+    enforced" path, so continuous integration could go green with a rule's
+    demonstrations absent.
 
-    It must still be answerable WITHOUT running the class -- a skipped class
-    produces no runtime record at all, and that is exactly what has to be told
-    apart from a class the developer filtered out.
+    Rather than a fourth variant: `unittest` keeps skip state in exactly two
+    places, `__unittest_skip__` on the class (inherited like any attribute) and
+    `__unittest_skip__` on the method. Checking both is the whole mechanism, not
+    another special case.
+
+    A RUNTIME `self.skipTest(...)` is deliberately NOT chased here and does not
+    need to be: a method that skips at runtime never reaches its
+    `assert_rejects`, so its rules come back `undemonstrated` from the coverage
+    audit itself -- the correct failure, by the correct route. This function
+    exists for the skip COMMITTED TO THE REPOSITORY, which is the one that
+    reaches continuous integration.
+
+    It must be answerable WITHOUT running the class, which is why it reads
+    attributes and not the registries: a skipped class produces no runtime
+    record at all, and that is exactly what has to be told apart from a class
+    the developer filtered out at the command line.
     """
     bearing = rule_bearing_classes()
     skipped = set()
@@ -2380,7 +2393,9 @@ def skipped_rule_bearing_classes() -> set:
             skipped.add(name)
             continue
         for attr in vars(cls).values():
-            if getattr(attr, "__unittest_expecting_failure__", False):
+            if getattr(attr, "__unittest_skip__", False) or getattr(
+                attr, "__unittest_expecting_failure__", False
+            ):
                 skipped.add(name)
                 break
     return skipped
@@ -2416,9 +2431,10 @@ def tearDownModule():
     skipped = sorted(skipped_rule_bearing_classes())
     if skipped:
         raise AssertionError(
-            "a rule-bearing class carries a skip decorator, which would disable this "
-            f"check rather than fail it: {', '.join(skipped)}. Remove the skip, or move "
-            "its rules into CHECK_ONLY_RULES with a reason."
+            "a rule-bearing class, a base it inherits, or one of its methods carries a "
+            "skip decorator, which would disable this check rather than fail it: "
+            f"{', '.join(skipped)}. Remove the skip, or move its rules into "
+            "CHECK_ONLY_RULES with a reason."
         )
 
     missing = sorted(rule_bearing_classes() - RAN_CLASSES)
