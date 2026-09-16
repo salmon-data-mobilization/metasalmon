@@ -477,8 +477,11 @@ reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 / B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
 #121, which added three things the port owes — a degraded lookup must abort
 rather than become a gap, incomplete evidence is not a missing term, and the
-three writes install as one link-refusing set), queued as **B-165**, blocked by
-B-116. Every one of them was deferred for the same structural reason rather than
+three writes install as one link-refusing set), **B-165**, blocked by
+B-116 — **landed 2026-09-16 as metasalmonpy #31**, `999fa19`, the fourth to
+close, and the only one of the four whose changelog entry belongs under
+`## 0.5.0` rather than `## Unreleased`, because it merged at 04:18Z and the bump
+at 12:55Z. Every one of them was deferred for the same structural reason rather than
 a judgement: a hub claim covers one branch in one repository, so the mirror half
 is a separate item. The first two reached `parity-deviations.md` and not this index,
 which is the drift the release index exists to catch, so the rule is stated here
@@ -494,6 +497,24 @@ in one direction, and the second where the omitted item was named in the very
 file this index is supposed to agree with. A number in prose that counts a list
 is a copy of that list, and the copy is what rots — so the list is now the only
 place the count lives.)*
+
+**The 2026-09-16 changelog-window rule is metasalmon-only in this stream, and
+this is the record the mirror contract requires for that.** `AGENTS.md`'s
+*Releases* section now says where an entry goes when it merges after a version
+bump and before that version's tag (Brett, 2026-09-16); metasalmonpy's own
+`AGENTS.md` does not yet say it, and its `CHANGELOG.md` has no check for it.
+**Why not in the same stream:** the rule was written in the pull request that
+applies that day's rulings to this repository's queue and bundle, and a hub
+claim covers one branch in one repository — the same structural reason every
+port on this list is a separate item rather than a deferral by judgement. The
+mirror half is hub item **B-201** (`repo: metasalmonpy`), paired with **B-200**
+here, and each names the other; B-201 carries both halves of the mirror work,
+the sentence in that repository's `AGENTS.md` and the check over its
+`CHANGELOG.md`. The instance that produced the rule was metasalmonpy's own —
+B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
+`67fb486` — and metasalmonpy pull request 35 corrected it on 2026-09-16, so the
+mirror repository carries the fix already and owes only the written rule and
+its check.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
