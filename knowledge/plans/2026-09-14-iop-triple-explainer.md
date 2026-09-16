@@ -821,12 +821,16 @@ The 2026-09-15 indexer pass settled more than it left open, but not
 everything, and the gaps are named here so nobody infers them closed:
 
 - **No I-ADOPT annotation was deposited and indexed.** That needs a write to a
-  Metacat test node, which this pass did not do. "I-ADOPT IRIs would be
+  Metacat test node, which no pass on this card did. "I-ADOPT IRIs would be
   indexed literally" is an inference from the XPath filtering nothing and from
-  other non-whitelisted IRIs being indexed. *What would settle it:* deposit an
-  I-ADOPT-annotated EML 2.2.0 record to a test node and query
+  other non-whitelisted IRIs being indexed, and justification 3 in
+  [section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists) rests
+  entirely on it. *What would settle it:* deposit an I-ADOPT-annotated EML
+  2.2.0 record to a test node, query
   `sem_annotation:"https://w3id.org/iadopt/ont/hasObjectOfInterest"` against
-  it.
+  it, then query one of its component IRIs and check that the dataset comes
+  back. The second query is the one that matters for the recommendation's
+  strength; the first only shows the predicate survived.
 - **No claim is made about any DataONE member node other than KNB.** The
   configuration read is the indexer's and MetacatUI's; a different node could
   deploy a different search interface.
