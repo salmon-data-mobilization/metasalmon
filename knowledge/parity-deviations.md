@@ -355,25 +355,6 @@ the merge. Third instance in two days of a "no queue item yet" clause going
 stale within hours of being written, which is the argument for naming the item
 and letting `queue/items/` hold its state.)*
 
-**This one is closed.** `B-165` landed as metasalmonpy pull request **#31**
-(`999fa19`) at 04:18Z on 2026-09-16: `semantic_closure.py` (new, ~1,500 lines)
-exporting `write_sdp_semantic_closure()` from `__init__.py`, with
-`tests/test_semantic_closure.py`, the `term_search.py` / `term_requests.py`
-changes the gap-not-abort shape needs, and the semantic-review guide. Its entry
-sits under `CHANGELOG.md`'s `## 0.5.0`, correctly: #31 merged at 04:18Z and the
-bump (`67fb486`) at 12:55Z, so the commit that made the version current *does*
-contain this change — the one debt of the four that the changelog-window rule
-clears rather than catches. The paragraph above is kept as the record of what
-was owed and why it was owed separately; what changed is the tense. R-shipped-
-first lag being closed, so it mints no numbered row.
-
-*(Recorded 2026-09-16, and it is the **fifth** instance of the failure the two
-notes above name — this passage and the release index went on reading *"queued"*
-for the twelve hours between #31 merging and this correction, while
-`queue/items/B-165.yaml` read `done`. Five instances with the rule written down
-at the third is why `B-202` exists: the rule is now something a check enforces,
-not something another paragraph asks for.)*
-
 **Three more things the port owes, added 2026-09-16 after Codex reviewed the R
 half** (pull request #121, five findings, all valid). They are listed here rather
 than left to be re-derived because each is a way of getting the *ruled* shape
@@ -400,6 +381,28 @@ wrong while appearing to implement it:
    collaborator can point any of the three names at a file outside the package.
    Hard links are closed by the staged rename rather than by detection, and the
    Python half should say so in the same place rather than implying coverage.
+
+**This one is closed, and that covers the three requirements above as well as
+the paragraph before them** — the numbered list is what the port had to get
+right, not a residue it left behind; read it as the specification #31 was
+written against. `B-165` landed as metasalmonpy pull request **#31**
+(`999fa19`) at 04:18Z on 2026-09-16: `semantic_closure.py` (new, ~1,500 lines)
+exporting `write_sdp_semantic_closure()` from `__init__.py`, with
+`tests/test_semantic_closure.py`, the `term_search.py` / `term_requests.py`
+changes the gap-not-abort shape needs, and the semantic-review guide. Its entry
+sits under `CHANGELOG.md`'s `## 0.5.0`, correctly: #31 merged at 04:18Z and the
+bump (`67fb486`) at 12:55Z, so the commit that made the version current *does*
+contain this change — the one debt of the four that the changelog-window rule
+clears rather than catches. The paragraph above is kept as the record of what
+was owed and why it was owed separately; what changed is the tense. R-shipped-
+first lag being closed, so it mints no numbered row.
+
+*(Recorded 2026-09-16, and it is the **fifth** instance of the failure the two
+notes above name — this passage and the release index went on reading *"queued"*
+for the twelve hours between #31 merging and this correction, while
+`queue/items/B-165.yaml` read `done`. Five instances with the rule written down
+at the third is why `B-202` exists: the rule is now something a check enforces,
+not something another paragraph asks for.)*
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-14):
 the descriptor's instant spelling.** A typed `POSIXct` reaching the descriptor

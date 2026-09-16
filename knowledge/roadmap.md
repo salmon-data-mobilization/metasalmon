@@ -498,6 +498,24 @@ file this index is supposed to agree with. A number in prose that counts a list
 is a copy of that list, and the copy is what rots — so the list is now the only
 place the count lives.)*
 
+**The 2026-09-16 changelog-window rule is metasalmon-only in this stream, and
+this is the record the mirror contract requires for that.** `AGENTS.md`'s
+*Releases* section now says where an entry goes when it merges after a version
+bump and before that version's tag (Brett, 2026-09-16); metasalmonpy's own
+`AGENTS.md` does not yet say it, and its `CHANGELOG.md` has no check for it.
+**Why not in the same stream:** the rule was written in the pull request that
+applies that day's rulings to this repository's queue and bundle, and a hub
+claim covers one branch in one repository — the same structural reason every
+port on this list is a separate item rather than a deferral by judgement. The
+mirror half is hub item **B-201** (`repo: metasalmonpy`), paired with **B-200**
+here, and each names the other; B-201 carries both halves of the mirror work,
+the sentence in that repository's `AGENTS.md` and the check over its
+`CHANGELOG.md`. The instance that produced the rule was metasalmonpy's own —
+B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
+`67fb486` — and metasalmonpy pull request 35 corrected it on 2026-09-16, so the
+mirror repository carries the fix already and owes only the written rule and
+its check.
+
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
 window" until 2026-09-16, when closing that window made the wording
