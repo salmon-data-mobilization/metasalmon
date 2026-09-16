@@ -611,14 +611,44 @@ def relative(path: Path, root: Path) -> str:
 # that writer is itself tested for this. Until one of those, this check is the
 # only thing between a doubled apostrophe and a reader.
 #
-# THE PATTERN DISCRIMINATES RATHER THAN BANS, because a card may legitimately
-# need two adjacent apostrophes -- one documenting this very escape, or an SQL
-# empty-string literal. The accidental form is always a POSSESSIVE, so the
-# doubling is preceded by a word character: item''s, readr''s, producers''. A
-# deliberate mention is not: `''` in backticks, "the '' escape" after a space,
-# VALUES('') after a bracket. So the lookbehind is the whole check, and
-# removing it turns a discrimination back into a ban.
-DOUBLED_APOSTROPHE_RE = re.compile(r"(?<=\w)''")
+# THE CHECK DISCRIMINATES RATHER THAN BANS, because a card may legitimately need
+# two adjacent apostrophes -- one documenting this very escape, or an SQL
+# empty-string literal -- and a guard nobody can write around gets deleted
+# rather than narrowed.
+#
+# THE DISCRIMINATION IS DELIMITATION, NOT A LOOKBEHIND ON \w, and the difference
+# is a review finding rather than a refinement. A lookbehind on a word character
+# misses a possessive whose noun is formatted -- `readr`''s parses with a
+# BACKTICK before the doubling -- and queue prose formats identifiers that way
+# constantly, so the invisible defect walks straight through. What actually
+# separates the two forms is that a DELIBERATE mention is delimited on both
+# sides (whitespace, a bracket, a backtick, a quote, or the end of the value)
+# while a POSSESSIVE abuts text on at least one side:
+#
+#   fires        item''s   readr''s   producers''   BRETT''S   `readr`''s
+#   allowed      `''`      the '' escape      VALUES('')      "''"
+#
+# The pairs are pinned as a table in tests/test_hub_queue.py rather than left to
+# the regex, because the two versions of this check that a review rejected were
+# both patterns that looked right read forwards.
+#
+# Retires when: no producer writes an item file through a YAML dumper, or the
+# queue gains one canonical item writer that every producer goes through and
+# that writer is itself tested for this. Until one of those, this check is the
+# only thing between a doubled apostrophe and a reader.
+DOUBLED_APOSTROPHE = "''"
+DELIBERATE_DOUBLING_RE = re.compile(
+    r"(?:^|[\s(\[{`\"])" + DOUBLED_APOSTROPHE + r"(?:[\s)\]}`\",.;:!?]|$)"
+)
+
+
+def accidental_doubling(text: str) -> bool:
+    """Does `text` hold a doubled apostrophe that is NOT a deliberate mention?"""
+    for hit in re.finditer(DOUBLED_APOSTROPHE, text):
+        window = max(0, hit.start() - 1)
+        if not DELIBERATE_DOUBLING_RE.match(text, window):
+            return True
+    return False
 
 
 def check_doubled_apostrophes(item: Item) -> list[Problem]:
@@ -629,17 +659,18 @@ def check_doubled_apostrophes(item: Item) -> list[Problem]:
         for element in values:
             if not isinstance(element, str):
                 continue
-            if DOUBLED_APOSTROPHE_RE.search(element):
+            if accidental_doubling(element):
                 problems.append(
                     Problem(
                         item.path,
                         item.lines.get(key, 0),
                         "doubled-apostrophe",
-                        f"{key} reads back with a doubled apostrophe after a word "
-                        "character, so a possessive was escaped twice. A value handed "
-                        "to a YAML dumper carries one apostrophe and the dumper escapes "
-                        "it. Two adjacent apostrophes that are not a possessive are "
-                        "allowed: put a space, a bracket or a backtick before them",
+                        f"{key} reads back with a doubled apostrophe abutting text, so "
+                        "a possessive was escaped twice. A value handed to a YAML "
+                        "dumper carries one apostrophe and the dumper escapes it. Two "
+                        "adjacent apostrophes meant literally are allowed when "
+                        "delimited on both sides -- in backticks, in quotes, between "
+                        "spaces, or inside brackets",
                     )
                 )
     return problems

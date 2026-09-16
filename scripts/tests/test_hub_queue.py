@@ -52,6 +52,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # rather than taking a list of rule names on trust.
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
+# Two adjacent apostrophes and the quote that wraps a scalar, as names rather
+# than literals: written inline they are the sequence Python itself uses for
+# quoting, which is how one table row silently became a concatenation.
+DOUBLE = "''"
+QUOTE = "'"
+
 import hub_queue  # noqa: E402
 
 
@@ -1825,28 +1831,74 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         )
         self.assert_accepts()
 
-    def test_two_adjacent_apostrophes_that_are_not_a_possessive_are_allowed(self):
-        """The rule discriminates; it does not ban the character pair.
+    # The discrimination, as data rather than as a regex anybody reasoned about.
+    # TWO earlier versions of this check were rejected by review, and both looked
+    # right read forwards: a bare '' match banned deliberate mentions, and a
+    # lookbehind on a word character missed a possessive whose noun is formatted
+    # (`readr`''s has a BACKTICK before the doubling, and queue prose formats
+    # identifiers that way constantly). So the cases are pinned here, both
+    # directions, and the regex has to satisfy the table rather than the table
+    # being written to suit the regex. ADD A ROW WHENEVER A NEW FORM COMES UP.
+    ACCIDENTAL = (
+        "the item''s own condition",          # plain possessive
+        "readr''s output is pinned",
+        "both producers'' output agrees",     # plural possessive, at a word end
+        "WHY IT IS BRETT''S: the spelling",   # shouting
+        "`readr`''s output is pinned",        # possessive on a formatted noun
+        "a value ending in the doubling''",
+    )
+    DELIBERATE = (
+        "a card may write the YAML escape as `''` and pass",
+        "the '' escape doubles an apostrophe in a single-quoted scalar",
+        "an SQL empty string is VALUES('') and is not a possessive",
+        "the token \"''\" is two apostrophes and means nothing else",
+        "a scalar may end with the escape ''",
+    )
 
-        A card may legitimately need two adjacent apostrophes -- one describing
-        this very escape, or an SQL empty-string literal. Banning every pair
-        makes the rule unwriteable in a card, and a guard nobody can write
-        around gets deleted rather than narrowed.
+    def test_every_row_of_both_tables_really_holds_a_doubled_apostrophe(self):
+        """The positive control for the tables above, and it caught a live bug.
+
+        A row that does not hold two adjacent apostrophes in the PARSED value
+        demonstrates nothing, and one row did not: written as a single-quoted
+        Python literal, `\'the token "\'\'" is ...\'` is string CONCATENATION and
+        the apostrophes vanish before the test ever runs. It read as covering
+        the quoted form and covered nothing. Two adjacent apostrophes are
+        exactly the character sequence the host language also uses for quoting,
+        so a row like that cannot be trusted by inspection -- only by parsing it
+        the way `lint` will.
+        """
+        for label, rows in (("ACCIDENTAL", self.ACCIDENTAL), ("DELIBERATE", self.DELIBERATE)):
+            for row in rows:
+                with self.subTest(label=label, row=row):
+                    doubled = row.replace(DOUBLE, DOUBLE * 2)
+                    value, error, _rule = hub_queue.parse_scalar(QUOTE + doubled + QUOTE)
+                    self.assertIsNone(error, f"{label} row does not parse: {row!r}")
+                    self.assertIn(
+                        DOUBLE,
+                        value,
+                        f"{label} row loses its doubled apostrophe before the test runs, "
+                        f"so it demonstrates nothing: {row!r} parsed to {value!r}",
+                    )
+
+    def test_a_doubled_apostrophe_abutting_text_is_rejected(self):
+        for accidental in self.ACCIDENTAL:
+            with self.subTest(accidental=accidental):
+                self.write_item(BASE_DEFECT, retires_when="'" + accidental.replace("''", "''''") + "'")
+                self.assert_rejects("doubled-apostrophe")
+
+    def test_a_doubled_apostrophe_delimited_on_both_sides_is_allowed(self):
+        """The rule discriminates; it does not ban the character pair.
 
         THE FIXTURES NEED FOUR APOSTROPHES IN THE FILE TO PUT TWO IN THE VALUE,
         and the first version of this test did not, which made it vacuous: with
         only '' in the file the parsed value holds ONE apostrophe, so nothing
-        could ever have fired and the test passed with the discriminating
-        lookbehind removed. It was caught by demonstrating RED on that removal,
+        could ever have fired and the test passed with the discrimination
+        removed entirely. It was caught by demonstrating RED on that removal,
         which is the only thing that could have caught it.
         """
-        for legitimate in (
-            "a card may write the YAML escape as `''''` and pass",
-            "the '''' escape doubles an apostrophe in a single-quoted scalar",
-            "an SQL empty string is VALUES('''') and is not a possessive",
-        ):
-            with self.subTest(legitimate=legitimate):
-                self.write_item(BASE_DEFECT, retires_when="'" + legitimate + "'")
+        for deliberate in self.DELIBERATE:
+            with self.subTest(deliberate=deliberate):
+                self.write_item(BASE_DEFECT, retires_when="'" + deliberate.replace("''", "''''") + "'")
                 self.assert_accepts()
 
     def test_file_that_is_not_utf8(self):
@@ -1914,14 +1966,20 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
     # An emission whose rule name is a variable rather than a literal. Reading
     # only literals would let a rule reach `lint` with no pair and this guard
     # stay green -- the hole in exactly the place the guard claims to cover,
-    # which is the failure AGENTS.md's dead-guard rule is about. So each such
-    # site is named here with the FUNCTION whose return values supply the name,
-    # those returns are read out of the source, and an unlisted site fails.
+    # which is the failure AGENTS.md's dead-guard rule is about.
     #
-    # There is one today: `parse_item_file` reports `rule or "value"`, where
-    # `rule` is `parse_scalar`'s third return value. ADD A SITE HERE THE MOMENT
-    # ONE APPEARS, naming its supplier, or this guard shrinks to fit the code.
-    INDIRECT_RULE_SUPPLIERS = {"parse_item_file": "parse_scalar"}
+    # KEYED BY SITE, NOT BY ENCLOSING FUNCTION, and that distinction is a review
+    # finding rather than a detail. Keyed by function, a SECOND indirect emission
+    # inside an already-listed function would find its key present, never have
+    # its own supplier resolved, and pass -- the same guard-narrower-than-its-
+    # claim failure one level down. The site is the function plus the unparsed
+    # rule expression, which is stable when lines move and specific about which
+    # emission is covered.
+    #
+    # There is one today. ADD A SITE HERE THE MOMENT ONE APPEARS, naming the
+    # function whose returns supply its rule names, or this guard shrinks to fit
+    # the code.
+    INDIRECT_RULE_SUPPLIERS = {("parse_item_file", "rule or 'value'"): "parse_scalar"}
 
     @staticmethod
     def _enclosing_function(tree, target) -> str:
@@ -1967,18 +2025,27 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
             if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
                 emitted.add(rule.value)
             else:
-                indirect_in.setdefault(self._enclosing_function(tree, node), []).append(node.lineno)
+                site = (self._enclosing_function(tree, node), ast.unparse(rule))
+                indirect_in.setdefault(site, []).append(node.lineno)
 
-        # Every indirect site must be listed, and its supplier's rule names are
+        # Every indirect SITE must be listed, and its supplier's rule names are
         # then held to the same standard as a literal.
+        unlisted = sorted(set(indirect_in) - set(self.INDIRECT_RULE_SUPPLIERS))
         self.assertEqual(
-            sorted(set(indirect_in) - set(self.INDIRECT_RULE_SUPPLIERS)),
+            unlisted,
             [],
-            "a rule is emitted through a variable in a function this guard does not "
-            "know about, so its rule names bypass the check: "
-            + ", ".join(f"{fn} (line {indirect_in[fn]})" for fn in sorted(indirect_in)),
+            "a rule is emitted through an expression this guard does not know about, "
+            "so its rule names bypass the check: "
+            + ", ".join(f"{fn}: {expr} (line {indirect_in[(fn, expr)]})" for fn, expr in unlisted),
         )
-        for function, supplier in self.INDIRECT_RULE_SUPPLIERS.items():
+        # A listed site that no longer exists is a stale entry, and a stale entry
+        # is how an allowlist stops describing the code it guards.
+        self.assertEqual(
+            sorted(set(self.INDIRECT_RULE_SUPPLIERS) - set(indirect_in)),
+            [],
+            "INDIRECT_RULE_SUPPLIERS names a site hub_queue.py no longer has; drop it",
+        )
+        for (function, _expr), supplier in self.INDIRECT_RULE_SUPPLIERS.items():
             supplied = self._rules_returned_by(tree, supplier)
             self.assertNotEqual(
                 supplied,
