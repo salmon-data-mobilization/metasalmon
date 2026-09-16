@@ -5814,10 +5814,14 @@ framing of two comparable options.
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and six of
-them were wrong the first time in a way that looked like a clean answer* — one
-found by review after this section had already been written up as finished, and
-one that reported a head ready to merge while its review was still running.
+were both about: *every claim here was produced by an instrument, and seven of
+them were wrong the first time in a way that looked like a clean answer* — two
+found by review on consecutive rounds, both in the same paragraph, after this
+section had twice been written up as finished, and one that reported a head
+ready to merge while its review was still running. **The count in this sentence
+has itself been wrong on every round of this pull request.** It stays a count
+rather than becoming "repeatedly" because the number going up each round is the
+finding.
 
 **Severity has two homes, they are differently shaped, and they have diverged
 once.** Six readings, each taken from the file named:
@@ -5924,7 +5928,23 @@ being read. The third was found by review rather than by the script.
    which is what "sits under" means. The script's header now carries all three
    wrong versions.
 
-A fourth, in a different instrument and with the highest cost of any of them.
+4. **And the version that replaced it registered each entry number with
+   `setdefault`, so the FIRST occurrence won.** Four numbers — #94, #112, #113,
+   #115 — are *mentioned* in the provenance prose near the top of this file
+   before their real entry appears inside a P-section (`**#115 came out of
+   closing #93 item 4**` at line 157, against the entry at 1770), so all four
+   read as ungrouped: 39 sectioned rather than 43, and 27 pairs rather than 30.
+   **Found by the Codex review of pull request #142, on the round after the one
+   that found the section-scope bug** — the same reader, the same file, a second
+   wrong number in the same paragraph, caught by the same reviewer one round
+   later. The reader now prefers a *sectioned* occurrence, and states the limit
+   it cannot escape: a mention and an entry are the same shape to it, both a
+   bold `**#N` at line start, so an entry's section is *inferred* from the one
+   occurrence that has a section. Correct for all four of these, verified by
+   reading them, and a heuristic rather than a rule. Making it a rule means the
+   backlog marking its entries — a change to the backlog, not to the reader.
+
+A fifth, in a different instrument and with the highest cost of any of them.
 The round-outcome watcher for this pull request reported head `3cad83b`
 **clean** while its code review was still running. Its reaction check read
 `any("codex" in m["user"]["login"] for m in marks)` — any reaction by Codex at
