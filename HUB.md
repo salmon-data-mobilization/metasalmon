@@ -49,7 +49,12 @@ states:
     means: Work is pushed and handed back. The claim is still held on purpose.
   - name: done
     claimable: false
-    means: Brett merged it. The item stays as a record and is never re-opened in place.
+    means: >-
+      Merged. By Brett, or by an agent under the review-delegation rule in
+      "Which pull requests need Brett". The item stays as a record and is never
+      re-opened in place. Widened 2026-09-16: this read "Brett merged it", which
+      stopped being the only way an item reaches done on the day agents were
+      given the merge.
 
 claim:
   constants: >-
@@ -217,10 +222,15 @@ writes:
         say yes before anything is pushed. When participation cannot be
         determined the repository is shared.
       shape: >-
-        draft only, labelled agent-run, body naming the queue id, from the
-        agent/<queue-id>/<token> branch already pushed. Never marked ready for
-        review, never merged, never a second one for the same item, and never a
-        reply to a review comment on it.
+        labelled agent-run, body naming the queue id, from the
+        agent/<queue-id>/<token> branch already pushed. Opened as a draft, and
+        never a second one for the same item. Narrowed 2026-09-16: this read
+        "draft only ... Never marked ready for review, never merged, ... and
+        never a reply to a review comment on it", and the rows below now grant
+        all three for the delegated classes. It stays a draft, unmerged and
+        unanswered, when the change falls in a class "Which pull requests need
+        Brett" reserves to him, which is what still makes a draft the
+        conservative default rather than a formality.
       max: 1 per handed-back item
       enforced_by: >-
         nothing mechanical. This is the one permitted operation with no client
@@ -271,7 +281,10 @@ writes:
         the agent's own hand-back draft pull request, which stays draft and
         unmerged by the row above. Hand-back is the point where Brett looks, so
         an agent merging its own hand-back would remove the only review the
-        arrangement has.
+        arrangement has. Narrowed 2026-09-16: this exclusion now yields to the
+        three rows below, which move the looking from Brett to Codex for the
+        classes of change "Which pull requests need Brett" says he does not need
+        to see. The reasoning it states is still why he sees the rest.
       max: no limit
       enforced_by: >-
         nothing mechanical. Green is read off the checks before the merge, not
@@ -281,6 +294,76 @@ writes:
         2026-09-10 (ruling R15), under the global rule that an agent may merge a
         green pull request where Brett works alone. Nobody else works in this
         repository, so a merge here reaches no one.
+    - operation: mark a pull request ready for review
+      target: >-
+        a pull request an agent opened under this protocol, in a member
+        repository nobody but Brett has contributed to.
+      shape: >-
+        the draft-to-ready conversion and nothing else. It starts the Codex
+        review, which is the whole reason it is permitted, and it is the step a
+        merge is impossible without: GitHub refuses to merge a draft with a 405,
+        so the merge rows above were unexecutable by an agent until this row
+        existed. Never on a pull request an agent did not open, and never as a
+        way to request a person's attention.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical. The conversion is reversible, which is why this is
+        the least costly of the three rows added on 2026-09-16.
+      granted: >-
+        2026-09-16 (ruling R16), in the instruction "Convert all to 'ready' to
+        trigger codex reviews."
+    - operation: reply to a review comment on a pull request
+      target: >-
+        a review thread on a pull request an agent opened under this protocol,
+        in a member repository nobody but Brett has contributed to.
+      shape: >-
+        a reply that answers the finding, and resolving the thread once it is
+        answered. A finding is either fixed in a push or answered with the
+        evidence that it is not a defect; "acknowledged" is neither. Never a
+        reply that disputes a finding without evidence, and never resolving a
+        thread whose finding was not addressed, which is the one way this row
+        could be used to hide review rather than to serve it.
+      excludes: >-
+        a review left by a person. Where a human reviewer asks for something
+        larger than a local change, the proposal goes to Brett and the reply
+        waits on him, exactly as before. This row moves Codex out of the denial,
+        not people.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical, and this is the row with the most room to go wrong:
+        an agent that answers a finding badly and resolves the thread has
+        removed a signal rather than acted on it. The record is the thread, so a
+        wrong answer stays legible.
+      granted: >-
+        2026-09-16 (ruling R16), in the instruction "I want you to respond to
+        codex reviews in MRs now and moving forwards."
+    - operation: merge an approved pull request in a solo member repository
+      target: >-
+        a pull request in a member repository whose solo key in
+        queue/config.yaml is true, whose checks have all finished green, and
+        whose Codex review has completed with every finding fixed or answered.
+      shape: >-
+        an ordinary merge, after the two conditions above are read rather than
+        assumed. This row is what makes "Which pull requests need Brett" below
+        operative: a change in the delegated classes merges on green CI plus a
+        clean Codex review, and a change in the classes that need him does not
+        merge without him whatever its checks say.
+      excludes: >-
+        every class "Which pull requests need Brett" lists. A pull request that
+        touches one of them is his even when CI is green, Codex is clean, and he
+        has said the word on a different pull request in the same batch.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical, and the asymmetry is deliberate: an agent unsure
+        which side of the boundary a change falls on escalates, because a merge
+        is hard to unwind and a question costs a message.
+      granted: >-
+        2026-09-16 (ruling R16), in the instruction "I don't want me having to
+        review the merge requests to be the bottleneck. We need a system where
+        only consequential or impactful MRs require my review." The named
+        approvals in that same message (metasalmonpy #28; metasalmon #116, #117,
+        #118, #119, #120, #121, #122, #123) are per-pull-request authorizations
+        under this row and are not themselves the standing grant.
     - operation: promote a queue item to state ready
       target: the item file under queue/items/ on this repository's default branch
       shape: >-
@@ -335,24 +418,42 @@ writes:
     outside the permitted list suspends the grant again, and needs its own dated
     entry here from Brett before the protocol resumes.
   denied:
-    - any issue, review, comment, release, or assignee
     - >-
-      any pull request operation other than the two the permitted list names,
-      which are opening the one draft per handed-back item and merging a green
-      pull request in this repository under the row below. On the draft itself:
-      never marked ready for review, never merged, never replied to on a review
-      comment, and never a second one for the same item. Carved out 2026-09-10:
-      this entry read "any pull request other than the one draft", which by its
-      own words denied the merge the permitted list grants three rows later and
-      the next denial below scopes, leaving an agent no valid reading of the
-      register. Narrowing a denial is part of granting a permission, not a
-      follow-up to it.
+      any issue, release, or assignee; and any comment or review except a reply
+      to a Codex review thread under the row the permitted list added on
+      2026-09-16. Carved out 2026-09-16: this entry read "any issue, review,
+      comment, release, or assignee", and a review reply is a comment, so
+      answering Codex would have suspended the protocol under the grant that
+      told an agent to answer it. An issue comment, a review of somebody else's
+      pull request, and a reply to a person's review are all still denied.
+    - >-
+      any pull request operation other than the five the permitted list names,
+      which are opening the one draft per handed-back item, merging a green pull
+      request in this repository, marking ready for review, replying to a Codex
+      review thread, and merging an approved pull request in a solo member
+      repository. Never a second draft for the same item, never an approval, and
+      never marking ready a pull request an agent did not open. Carved out
+      2026-09-10: this entry read "any pull request other than the one draft",
+      which by its own words denied the merge the permitted list grants three
+      rows later and the next denial below scopes, leaving an agent no valid
+      reading of the register. Narrowed again 2026-09-16, when three of the
+      operations this entry named as never -- marked ready for review, merged,
+      replied to on a review comment -- were granted. All three are struck from
+      the never list here rather than left to contradict the grant, because
+      denied_note says an exception has to be carved out in the same change and
+      because the 2026-09-10 lesson was exactly this one.
     - >-
       any label other than agent-run, and that one only on the draft pull
       request the permitted list names
     - >-
-      any merge outside this repository, and here any merge of a pull request
-      whose checks are not all green
+      any merge in a member repository whose solo key in queue/config.yaml is
+      false or absent, any merge of a pull request whose checks are not all
+      green, and any merge of a pull request in a class "Which pull requests
+      need Brett" reserves to him. Carved out 2026-09-16: this entry read "any
+      merge outside this repository", which denied the metasalmonpy merge Brett
+      authorized by number in the same message that widened the register. The
+      boundary is now the solo key rather than the repository name, which is the
+      test the participation table already uses for pushing a branch.
     - >-
       a push to a default branch other than the two the permitted list names,
       which are a small mechanical change here (queue state, a generated block,
@@ -370,10 +471,14 @@ writes:
     - any --force, --force-with-lease, --delete, or non-fast-forward push
     - anything at all on GitLab
     - >-
-      any GitHub API call that writes, including through gh, other than the two
+      any GitHub API call that writes, including through gh, other than the five
       the permitted list names, which are opening the one labelled draft pull
-      request for a handed-back item and merging a green pull request in this
-      repository
+      request for a handed-back item, merging a green pull request in this
+      repository, marking such a pull request ready for review, replying to and
+      resolving a Codex review thread on it, and merging an approved pull request
+      in a solo member repository. Widened 2026-09-16 with the rows it counts:
+      this entry names a number, so a grant that did not update it here would
+      leave the register self-contradicting for the third time.
   denied_note: >-
     This list is closed and it is the operative one, so an exception granted
     anywhere else has to be carved out of it here in the same change. Four of
@@ -381,7 +486,14 @@ writes:
     already been given, from 2026-09-10 until later the same day, which left an
     agent no valid reading of the file at all: obey the grant and self-suspend,
     or obey the denial and ignore an instruction Brett had just given. Narrowing
-    a denial is part of granting a permission, not a follow-up to it.
+    a denial is part of granting a permission, not a follow-up to it. It
+    happened a third time on 2026-09-16 and was caught before landing rather
+    than after: the grant to answer Codex reviews collided with "any issue,
+    review, comment, release, or assignee", with the never-list in the pull
+    request entry, with the repository scope on merging, and with the entry that
+    counts the permitted API calls -- four collisions from one instruction. That
+    the count keeps being four is the argument for reading this whole list
+    against every new row rather than only the row that looks related.
   self_suspends: >-
     The whole standing authorization is suspended the moment an agent executing
     this protocol writes outside the permitted list, and stays suspended until
@@ -629,9 +741,18 @@ never looks free again while he is away, and no second agent redoes it.
 
 Then push the branch and open **one draft pull request** for it, in the member
 repository where the work happened, with the label `agent-run` and the queue id
-in the body. Draft, and draft only: never mark it ready for review, never merge
-it, never reply to a review comment on it, and never open a second one for the
-same item. Then stop.
+in the body. Never open a second one for the same item.
+
+**Whether it stays a draft depends on which list it falls into.** Until
+2026-09-16 this paragraph read "Draft, and draft only: never mark it ready for
+review, never merge it, never reply to a review comment on it", and for a pull
+request in a class "Which pull requests need Brett" reserves to him that is still
+exactly right: it stays draft, unmerged, and unanswered, because hand-back is
+where he looks. For a pull request in the delegated classes, ruling R16 moved the
+looking to Codex: mark it ready, answer what Codex finds, and merge it on the
+four conditions that section lists. An agent that cannot tell which list its own
+pull request is in leaves it a draft and says so, which is the safe direction and
+the one that costs a message rather than a merge.
 
 **Only in a repository nobody but Brett has ever contributed to, and that covers
 the branch push as well as the pull request.** The grant is scoped by
@@ -661,6 +782,96 @@ URL, which is the fallback when a PR cannot be opened.
 appends a `release` commit, the item returns to `ready`, and the workpad says
 what was left undone.
 
+## Which pull requests need Brett
+
+Granted 2026-09-16 (ruling R16): *"I don't want me having to review the merge
+requests to be the bottleneck. We need a system where only consequential or
+impactful MRs require my review."*
+
+The measurement behind it: on 2026-09-15 ten claimed items produced twelve pull
+requests in one night, all green, and every one of them waited on one person. The
+concurrency cap in `queue/config.yaml` was calibrated on the assumption that
+producing `ready` was the bottleneck. For one night it was not, the merge was,
+and the cap's own `Revisit` note asks to be told when that happens.
+
+**The principle.** CI and Codex can check whether a change is correct. Neither
+can check whether it was the right change to make. So the boundary is not
+severity, size, or confidence: it is whether the change contains a judgement
+that a passing test would not catch. `AGENTS.md` already names the archetype:
+a term IRI chosen as a by-product of a change whose stated subject was something
+else, justified by nothing except that strict validation then passed. That is
+the shape this section generalises.
+
+### Brett's, whatever the checks say
+
+A pull request is his if **any** of these is true. Not most, not the worst one. Any.
+
+1. **It chooses, changes, or removes an ontology term IRI, or changes what a
+   term means.** The failure class code review structurally cannot catch.
+2. **It changes a public signature, a return-value attribute, or a frozen column
+   contract**: the 19-column semantic target row, the LLM assessment row, the
+   `inferred_*` / `seed_*` / `semantic_suggestions` attributes.
+3. **It changes a version number, tags, or publishes a release.** A version is a
+   parity claim and a release is an outward act.
+4. **It writes to a member repository whose `solo` key is false or absent.**
+   Participation, not ownership, is the test, and it is the same test the
+   branch-push grant uses.
+5. **It adds, removes, or amends a parity-register row, or changes what the
+   mirror contract claims.** The single fact that contract turns on has three
+   copies and they have disagreed twice.
+6. **It relaxes, narrows, disables, or deletes a guard, test, skip condition or
+   validator.** Adding one is delegated; weakening one is not. A guard whose
+   scope shrinks looks identical in a diff to one whose scope was always that
+   size.
+7. **It changes `HUB.md`, `queue/config.yaml`, or this register.** Policy does
+   not self-amend. The pull request that introduced this section is itself an
+   instance and was not self-merged.
+8. **It promotes a queue item to `ready`, or changes `claimable`.** Already his,
+   and unchanged by this section.
+9. **It commits the project to something outward-facing**: a published page, an
+   issue in another organisation, a term request, a data deposit.
+10. **Its author could not settle a judgement inside it.** A non-empty "needs
+    Brett" section in a workpad is self-declaring, and an agent that writes one
+    has already decided this question.
+
+### Delegated: merges on green CI and a clean Codex review
+
+Everything else, of which the common cases are a defect fix carrying a
+reproduced failing-before and a test; a queue or backlog change; documentation,
+a card, `NEWS.md` or a changelog; a port of an already-ruled behaviour opening no
+new deviation row; and a re-vendor verified by content address.
+
+Four conditions, all of them, before an agent merges one:
+
+- **CI green on the head being merged**, read off the checks rather than inferred
+  from a local run. CI runs a different R than the container does, in both
+  directions: two non-ASCII characters passed locally and failed CI on
+  2026-08-25, and two vignettes fail locally and are not checked at all by CI's
+  newer R (B-164).
+- **The Codex review has completed**, with every finding either fixed in a push
+  or answered on its thread with the evidence that it is not a defect.
+- **No review thread from a person is waiting.** A human comment moves the pull
+  request into the previous list until it is answered.
+- **The agent is not unsure.** Uncertainty about which list a change belongs to
+  resolves toward asking. A merge is expensive to unwind; a question costs a
+  message.
+
+### What keeps this honest
+
+**A merge is the agent's last act on that pull request.** A finding that arrives
+afterwards becomes a queue item, never a quiet follow-up push to `main`.
+
+**Delegation is reported, not silent.** Every batch worked under this section
+ends with one message naming what merged without Brett and under which
+delegated class. Invisible delegation is indistinguishable from an agent
+deciding the boundary for itself, and the whole point of writing the boundary
+down is that he can move it.
+
+*Revise when:* something merges under the delegated list that he would have
+wanted to see. That is the only evidence that matters here, it will arrive as a
+specific pull request rather than as a feeling, and the fix is to add the class
+it belonged to above rather than to withdraw the grant.
+
 ## The standing authorization
 
 Brett's global instruction is the ceiling. One paragraph sits beneath it,
@@ -684,6 +895,16 @@ file is its operative copy:
 That is the whole grant. Two `git push` targets, one draft pull request per
 item, and one README, in named repositories, by an agent executing this
 protocol.
+
+**The block quote is reproduced as Brett wrote it and is not edited when he
+widens it.** Its "never marked ready for review and never merged" was accurate
+when he wrote it and stopped being the whole rule on 2026-09-16, when ruling R16
+granted marking ready, answering a Codex review, and merging an approved pull
+request in a repository whose `solo` key is true. The quote stays verbatim
+because a record of what he said is worth more than a record kept tidy; the
+widening is recorded in `writes.permitted`, which the paragraph below already
+names as the list that governs. Anyone reconciling the two reads the register,
+not the quote.
 
 **The shared-repository case was settled conservatively, on purpose, and this
 paragraph records that it was settled rather than always having read this way.**
@@ -763,9 +984,12 @@ checks. It is not why the grant holds.
 
 **A draft pull request was declined on 2026-09-09 and granted on 2026-09-10**
 (R13, then R15). One draft pull request per handed-back item is now permitted,
-in a member repository **nobody else has contributed to**, labelled `agent-run`,
-never marked ready and never merged. There is still no Project sync paragraph,
-because there is still no Project.
+in a member repository **nobody else has contributed to**, labelled `agent-run`.
+It was also "never marked ready and never merged" until 2026-09-16, when R16
+granted both for the delegated classes and left them forbidden for Brett's;
+"Which pull requests need Brett" is the operative boundary and this sentence
+defers to it. There is still no Project sync paragraph, because there is still
+no Project.
 
 The grant follows a distinction worth stating, because it is the one that makes
 the whole rule coherent: **what matters is not the verb, it is whether another
@@ -775,14 +999,19 @@ colleague. The first is friction; the second is the thing the rule exists to
 prevent.
 
 **The closed exclusion list.** The authorization covers nothing else, and
-specifically not: any issue, review, comment, release, or assignee; any pull
-request operation other than the two granted above, which are the one draft per
-handed-back item and a merge in this repository of a pull request whose checks
-are all green, and on that draft never marking it ready for review, merging it,
-or replying on it; any push of the work branch into a member repository
-somebody else has contributed to, where it is ask-first; any merge outside this
-repository, and here any merge of a pull request
-that is not green; any push to `main` other than this repository's small
+specifically not: any issue, release, or assignee, and any comment or review
+other than a reply to a Codex review thread on a pull request the agent opened;
+any pull request operation other than the five granted above, which are the one
+draft per handed-back item, a merge in this repository of a pull request whose
+checks are all green, marking such a pull request ready for review, replying to
+and resolving a Codex thread on it, and merging an approved pull request in a
+member repository whose `solo` key is true; any push of the work branch into a
+member repository somebody else has contributed to, where it is ask-first; any
+merge in a member repository whose `solo` key is false or absent, any merge of a
+pull request
+that is not green, and any merge of a pull request in a class "Which pull
+requests need Brett" reserves to him; any push to `main` other than this
+repository's small
 mechanical changes and the locks repository's README; any move of an item to
 `ready` that does not rest on an authorization Brett gave in chat and name it in
 the commit; any `--force`; and anything at all on GitLab. The list is closed,
@@ -882,12 +1111,20 @@ is deleted rather than widened, and this section goes with it.
 - Never open, label, comment on, or review a pull request **except** the single
   draft the register permits for a handed-back item, in a member repository
   nobody but Brett has ever contributed to, labelled `agent-run` and carrying
-  the queue id. That draft is never marked ready for review, never merged by
-  the agent that opened it, and never replied to on a review comment.
-- Never merge a pull request **except** in this repository, and there only when
-  every check has finished green, and never the hand-back draft itself. A merge
-  in any other member repository is outside the grant even when the repository
-  is one Brett works alone in.
+  the queue id. On that pull request, ruling R16 permits three further things
+  and nothing more: marking it ready for review, replying to a Codex review
+  thread, and resolving a thread once its finding is fixed or answered. A reply
+  to a *person's* review is still never, and so is any comment on a pull request
+  the agent did not open.
+- Never merge a pull request **except** in a member repository whose `solo` key
+  in `queue/config.yaml` is true, and there only when every check has finished
+  green, the Codex review has completed with every finding fixed or answered,
+  and the change falls in a delegated class rather than one "Which pull requests
+  need Brett" reserves to him. Rewritten 2026-09-16: this read "except in this
+  repository ... and never the hand-back draft itself", both of which R16
+  changed. A merge in a repository whose `solo` key is false or absent is still
+  outside the grant, and so is a merge of a change in one of his classes,
+  however green it is.
 - Never push to `main` or any default branch **except** the small mechanical
   changes enumerated for this repository above (queue state, a generated block,
   a typo, ignoring a stray file) and the locks repository's README, which exists
