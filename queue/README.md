@@ -58,8 +58,10 @@ retires_when: Sentence saying what makes this item stop existing
 
 `HUB.md` carries the normative field list; the block above is illustrative, and
 if the two ever differ, `HUB.md` is right and this one is the copy that is
-wrong. Five things about the shape are worth saying here, because each is load
-bearing rather than stylistic:
+wrong. These things about the shape are worth saying here, because each is load
+bearing rather than stylistic. *(This read "Five things" until 2026-09-16, when a
+sixth was added and the count went stale in the same commit. A number in prose
+that counts a list is a copy of that list, and the copy is what rots.)*
 
 - **One scalar per line at column 0, and `blocked_by` in inline flow style
   only.** The extractor that reads these files is a small awk program, so the
@@ -74,6 +76,23 @@ bearing rather than stylistic:
   of the second among 44 open items. Leaving them claimable does not make them
   reachable; it makes an agent claim one, discover it cannot proceed, and hand
   it back, having taught the queue nothing.
+- **`retires_when` has to be satisfiable inside the repository `repo` names.** A
+  claim is scoped to one member repository, so an item that is `claimable: true`
+  while its end condition requires a test or a fix somewhere else is claimable
+  and unfinishable at once, and whoever takes it finds that out only after
+  claiming. A cross-repository obligation is split into a pair with an id each,
+  and each half names the other: `B-111` with `B-179`, `B-115` with `B-145`,
+  `B-112` with `B-144`. **A person checks this one, and why no program does is
+  worth recording rather than rediscovering.** Both breaches found so far came
+  from one Codex review, of metasalmon pull request 134, and generalising it into
+  a `hub_queue.py` rule was measured not to work. Matching member repository
+  names in `retires_when` flagged 29 of about 80 claimable items, nearly all of
+  which legitimately name another repository as evidence or as a mirror pointer.
+  Narrowing it to a both-sides requirement phrase with no mirror id named flagged
+  four — and passed *both* items the rule was written to catch, because each
+  names related ids for unrelated reasons. A guard whose real scope is narrower
+  than its claimed scope is the failure `AGENTS.md` calls worse than a missing
+  guard, so there is deliberately no rule here. `B-196` carries the measurement.
 - **`legacy` preserves the citation the item replaces.** Backlog items keep
   their numbers, so a passage citing `#53` in a commit message, a card, or a
   test comment still resolves after the migration.

@@ -5113,3 +5113,83 @@ Deferred (unchanged): the open/deferred items in the snapshot above —
 request-builder convergence (#31/#3), encoding detection (#6), create-time EDH XML
 guard (#4), basename source disambiguation (#5), factor-scope `dataset_id` key
 (#8), and real `AGENTS.md` content (#9).
+
+### The 2026-09-16 review-and-bookkeeping round
+
+**One Codex review found the same defect twice, and the audit it prompted found
+five items sitting in `ready` with their work already delivered.** The review is
+of metasalmon pull request 134 and arrived five and a half minutes before that
+pull request was merged, which is its own lesson and is filed as `B-196`.
+
+**Two items were claimable and unfinishable at once.** `B-191`'s retirement
+condition ended by offering the `HUB.md` worktree key as an equally good
+alternative to fixing metasalmonpy's import route. It is neither: renaming the
+key makes hub-created checkouts collect while leaving the suite dependent on its
+directory name, so the opening clause — a checkout at *any* path collects and
+passes — stays false, and the item would retire with its own condition unmet.
+And `HUB.md` is in metasalmon while that item's `repo` is metasalmonpy, so the
+alternative was outside the claim's scope and reserved to Brett besides.
+`B-194` required "a test in each implementation" and told the claimant to fix
+both sides in one change while naming metasalmon in `repo`. Split into `B-194`
+(metasalmon) and `B-195` (metasalmonpy), which is the convention the ecosystem
+already follows for `B-111`/`B-179`, `B-115`/`B-145` and `B-112`/`B-144`.
+
+**The generalisation was measured unmechanizable, and that is the useful part.**
+Matching member repository names in `retires_when` across claimable items flagged
+**29 of about 80**, nearly all legitimately naming another repository as evidence
+or as a mirror pointer. Narrowing to a both-sides requirement phrase with no
+mirror id named flagged **four, and passed both items the rule was written to
+catch** — `B-191` and `B-194` each name related ids for unrelated reasons. A
+guard whose real scope is narrower than its claimed scope is what `AGENTS.md`
+calls worse than a missing guard, so no rule was added and the check lives in
+`queue/README.md` as a filing rule instead.
+
+**`B-196` a green check run measures the base as it stood at the last push.**
+All three checks were green on pull request 118's head `b38e824`, and merging it
+would have turned `main` red: `B-140`'s `validate_workpads()` rule landed in pull
+request 127 afterwards, and 118's head still carries the `.hub/workpad.md` that
+rule forbids. `HUB.md`'s delegated conditions already name two ways a check
+reading goes wrong — inferred from a local run, and no checks at all, which is
+the shape a merge conflict takes — and this is a third that neither covers,
+because the checks exist, were read off GitHub, and are green.
+
+**Five items were in `ready` with their work delivered.** `B-0`, `B-143` and
+`B-150` moved to `review`; `B-44` moved to `needs_brett`, for the reason in the
+next paragraph; and `B-115` went to **`done`**, because pull request 118 merged
+while this branch was open. It was written here as `review` and was wrong within
+the hour — the shortest a wrong state has lasted in this queue, and only because
+that merge happened to be watched. None of the others had landed: `B-143` is
+salmon-domain-ontology pull request
+30, a draft whose own body says not to merge it before `B-107`; `B-0`, `B-44` and
+`B-150` are patches to a shared repository that correctly were never pushed.
+
+**`B-44` was the live hazard, and the lock is what failed.** Its claim ref tip is
+a `beat` with no `branch` field and no `handoff`, so the lease and the reclaim
+grace both elapsed and claimability test 4 passed. `./scripts/hub ready` listed
+it as the only available item, at **P1**, which is the lowest severity number and
+therefore what step 2's selection rule picks first — pointing the next agent at a
+103 KB patch with a four-gate self-test that already exists. The item's `state`
+field was the only thing protecting it, which is the reverse of the design: the
+lock is meant to be the atomic protection and the state the readable copy of it.
+
+**It went to `needs_brett` rather than `review`, and the first answer was
+wrong.** `review` was the obvious move and a Codex review of pull request 135
+caught what it claimed: `review` means the hand-back protocol completed, and for
+`B-44` it did not. The handoff could not simply be appended either — `hub done`
+refuses a claim held by another agent (`scripts/hub:1782-1785`), and forging that
+agent's token on the claim ref is the only way past it. `needs_brett` is also the
+honest state on the merits twice over: the deliverable is a patch to a **shared**
+repository, so landing it needs the push credential Brett holds, and the restored
+`duplicate_label` check is red on `main` because `gcdfo:WildSalmonPolicy` and
+`gcdfo:WildSalmonPolicyTheme` share an `rdfs:label`, which is the term decision
+filed as `B-136`. The claim ref is still inconsistent and wants a `hub reconcile`
+expiry release or a hand repair.
+
+**Three finished hand-backs existed only in places that die with the container.**
+`B-0`, `B-44` and `B-150` — **161 KB** of verified work with recorded
+demonstrations — lived in unpushed worktree branches and a session scratchpad.
+The claim ref proved the work existed and could not produce a line of it. Now
+exported to `.hub/handbacks/<id>.patch` as `git format-patch` output, which
+`.Rbuildignore` keeps out of the tarball. The remaining question is Brett's: a
+patch to a shared member repository has no durable home that is not this
+repository.

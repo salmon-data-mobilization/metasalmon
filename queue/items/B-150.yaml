@@ -1,7 +1,7 @@
 id: B-150
 kind: defect
 title: The gcdfo pre-push hook cannot fail, and discards the artifact make ci just rebuilt
-state: ready
+state: review
 claimable: true
 repo: dfo-salmon-ontology
 venue: claude-code
