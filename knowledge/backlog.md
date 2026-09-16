@@ -5289,22 +5289,30 @@ patched into `AGENTS.md`.
 ### The 2026-09-16 rulings round
 
 **Two rulings in chat, six new items, two promotions, and one modelling call
-recorded as made.** Brett ruled on 2026-09-16, in two messages: *"Regarding
-question 51, I rule that we go with A. Regarding B197, promote it. Regarding the
-agents.md change log entry. I will take your recommendation."* and *"Regarding
-SMN number 27. Let's commit to what we already decided. So yeah, you can merge
-it. Regarding B158 and Q48, let's stub the OBO and GeoSparkle [GeoSPARQL] terms.
-And vendor DWC."* This section records what those two messages changed in this
-repository. The Q-51 half is deliberately **not** recorded here: `Q-51`'s card is
-being written on pull request 137, still open, and a record that gets ahead of
+recorded as made.** Brett ruled on 2026-09-16, in two messages: *"[…] Regarding
+B197, promote it. Regarding the agents.md change log entry. I will take your
+recommendation."* and *"Regarding SMN number 27. Let's commit to what we already
+decided. So yeah, you can merge it. Regarding B158 and Q48, let's stub the OBO
+and GeoSparkle [GeoSPARQL] terms. And vendor DWC."* This section records what
+those two messages changed in this repository. The elided first sentence of the
+first message is Q-51's ruling, deliberately **not** recorded here: `Q-51`'s card
+is being written on pull request 137 (open when this was written, 2026-09-16),
+that pull request is the record of the ruling, and a record that gets ahead of
 the card it describes is the defect `queue/README.md` names. The smn pull
-request 27 half is a merge in another repository and is Brett's act.
+request 27 half is a merge in another repository, authorized by that ruling
+(*"you can merge it"*) and carried out there; it is not recorded here.
 
 **`B-197` and `B-158` were promoted on those rulings**, each in a commit naming
-the sentence it rests on, as `HUB.md`'s promotion row requires. `B-158`'s
-promotion carried the modelling call its card had said only Brett could make, now
-made: the six `obo:`/`geosparql:` superclass IRIs get bare declaration stubs
-under `CONVENTIONS.md` 5b rule 2, and the two `dwc:` IRIs (`dwc:Event`,
+the sentence it rests on, as `HUB.md`'s promotion row requires. The two
+sentences differ in kind, and the record says so: *"Regarding B197, promote it"*
+is a promotion instruction; *"let's stub … and vendor DWC"* rules the modelling
+call and does not say promote, so `B-158` is promoted on the reading that the
+ruling is the go-ahead for the work — the only thing holding it in icebox was
+the call that sentence makes — and its card says that reading is Brett's to
+correct. `B-158`'s promotion carried the modelling call its card had said only
+Brett could make, now made: the six `obo:`/`geosparql:` superclass IRIs get
+bare declaration stubs under `CONVENTIONS.md` 5b rule 2, and the two `dwc:`
+IRIs (`dwc:Event`,
 `dwc:Organism`) are vendored into `ontology/imports/`. **The trade-off the ruling
 settled is the justification, and "the validator accepts it" is not** — the gate
 accepts either. A stub is nearly free and permitted anywhere, but a reasoner
@@ -5313,21 +5321,29 @@ superclass hook, a MIREOT mirror — where the foreign axioms are not what smn
 relies on. Vendoring carries weight, a pin and a licence question per source, so
 it is reserved for the one namespace whose semantics smn actually relies on:
 `dwc:` carries `smn:Deme`, `smn:Population` and `smn:SurveyEvent`. The ruling
-settles the vendor-or-stub half of the decision surface `Q-48` names; the
-taxonomic-assignment pattern bundle itself is still Q-48's, and
+settles the vendor-or-stub half of the decision surface `B-158`'s card joined
+to `Q-48`; the taxonomic-assignment pattern bundle itself is still Q-48's, and
 `knowledge/questions.md` still owes it an entry. `B-107` was not promoted: its
-own retirement condition waits on smn pull request 27, open and a draft when this
-was written, and `B-107` goes before `B-158` because both edit
-`ontology/modules/02-observation-measurement.ttl` in a solo repository — the S6
-card carries the order. The third ruling, where a changelog entry goes between a
-bump and its tag, is now a sentence in `AGENTS.md`'s *Releases* section; the
-section above is its evidence, and `B-200`/`B-201` are its mechanical form.
+card carries its own promotion condition, which had not been met when this was
+written (2026-09-16). `B-158` is promoted but blocked, by `B-107` because both
+edit `ontology/modules/02-observation-measurement.ttl`, and by `B-143` because
+the gate its condition names exists only on salmon-domain-ontology pull request
+30's branch — a `ready` item whose end condition needs a script `main` does not
+carry is claimable and unfinishable at once, and `blocked_by` is what keeps
+`hub ready` from offering it. Nothing in `HUB.md` serialises claims within a
+repository (`solo` is a participation fact, and the only concurrency cap is
+per agent), so the order is carried by `blocked_by` and the S6 card, not by any
+rule. The third ruling, where a changelog entry goes between a bump and its
+tag, is now a sentence in `AGENTS.md`'s *Releases* section; *The 2026-09-16
+network-guard finding, and the changelog window* is its evidence, and
+`B-200`/`B-201` are its mechanical form.
 
 **`B-200`: nothing checks that a `NEWS.md` entry under a released heading was in
 the tree the tag names.** The rule is now written — a change merged after the
 bump commit and before the tag files under *(development version)*, never under
-the version it did not ship in, tag on the bump — and the section above shows two
-agents reading its absence in opposite directions inside one day. A rule that
+the version it did not ship in, tag on the bump — and *The 2026-09-16
+network-guard finding, and the changelog window* shows two agents reading its
+absence in opposite directions inside one day. A rule that
 lives only in prose is the thing `HUB.md` keeps relearning about, so this item is
 the check: a script under `scripts/` (a `check-changelog-window.py` beside
 `check-parity-registers.py`), run from continuous integration on every pull
@@ -5336,12 +5352,28 @@ whose bump commit `main` carries — the `vX.Y.Z` tag when it exists, otherwise 
 first commit on `main` whose `DESCRIPTION` reads that `Version` — every line
 beneath the heading that is absent from the same section at the bump commit is a
 finding unless the commit that added it is an ancestor of the bump
-(`git merge-base --is-ancestor`). A line changed in place is deliberately not a
-finding, so a typo fix to a shipped entry stays possible, and the script's
-docstring says so as the scope it does not cover. **RED demonstration:** a
-fixture repository the test builds — a bump commit setting `Version`, then a
-commit adding a bullet under that version's heading — turns the check red, and
-the same bullet under the development heading turns it green. The B-144 instance
+(`git merge-base --is-ancestor`). **One exemption, and it is measured rather
+than assumed:** a marked, dated correction to a shipped entry — a
+*(Correction, YYYY-MM-DD: …)* paragraph appended to an entry, or a
+*[corrected YYYY-MM-DD: …]* bracket inserted into one — is not a finding,
+because the *Releases* rule admits exactly that, and because `main` does not
+pass without it. At `e9d7dc4`, `git diff -U0 v0.4.0 origin/main -- NEWS.md` has
+three hunks under the 0.4.0 heading, every one a correction dated 2026-08-24 and
+none from an ancestor of `v0.4.0` (`4e2bbb6`): lines 1024–1027 and 1206–1210
+from `09099538` (*"docs: correct two claims about metasalmonpy in the 0.4.0
+notes"*, 40 minutes after the tag) and lines 1162–1163 from `5a90a7f1`. A check
+written without the exemption arrives red on `main`, and `B-143`'s card says
+what that produces: a first reader who weakens it. So the RED demonstration
+also shows that an unmarked paragraph under a released heading is still a
+finding, which is what makes the exemption a marker and not a hole. A line
+changed in place is likewise not a finding, so a typo fix to a shipped entry
+stays possible, and the script's docstring says so as the scope it does not
+cover — along with the two things reading catches and the check cannot: a
+paragraph carrying the marker but describing new work, and a rewrite that turns
+a shipped bullet into one. **RED demonstration:** a fixture repository the test
+builds — a bump commit setting `Version`, then a commit adding a bullet under
+that version's heading — turns the check red, and the same bullet under the
+development heading turns it green. The B-144 instance
 replayed against a metasalmonpy checkout at `1e9245c` (`CHANGELOG.md` lines
 257–297 under `## 0.5.0`, added by `b939fd9`, which is not an ancestor of
 `67fb486`) is the real-history confirmation, reached the way
@@ -5363,19 +5395,21 @@ added by `b939fd9`, the merge of #32, which is a descendant of the bump merge
 `67fb486` (`git merge-base --is-ancestor 67fb486 b939fd9` holds) and therefore
 not an ancestor of it; `1e9245c` (#29, B-124) is later still and went under
 `## Unreleased` correctly, so the check has one finding and not two. metasalmonpy
-pull request 35 moves the entry, verbatim; once it merges the RED is run at a
-checkout of `1e9245c` and green on `main`. The `v0.5.0` tag goes on `67fb486`
-and is Brett's to make. **P3**, as B-200.
+pull request 35 (merged 2026-09-16 as `3f8349a`, 15:47Z) moved the entry,
+verbatim: the RED is run at a checkout of `1e9245c`, and the check is green on
+`main` from `3f8349a` on, where `git diff 67fb486 origin/main -- CHANGELOG.md`
+has a single hunk above the `## 0.5.0` heading at line 97, so the 0.5.0 section
+matches the bump merge. The `v0.5.0` tag goes on `67fb486` and is Brett's to
+make. **P3**, as B-200.
 
 **`B-202`: a port item can reach `done` while the register still says the port
 is owed, and it did four times in one day.** The dated record, from the queue's
 own history. `B-115` was written `review` on pull request 135's branch
 (`85eccc5`, 04:51Z); metasalmon #118 merged while that branch was open; it was
 corrected to `done` on the same branch (`690d53c`) before the branch merged.
-`B-144`'s `review`, written on that same branch in `5a86fd6` (05:14Z, *"handed
-off, metasalmonpy #32 open"*), was true until #32 merged as `b939fd9` at 12:55Z
-and was carried onto `main` by pull request 135's merge `f12396e` one minute
-later; `a592c23` corrected it at 13:08Z. `B-153`: pull request 136's branch
+`B-144`'s `review`, pushed directly to `main` in `5a86fd6` (05:14Z, *"handed
+off, metasalmonpy #32 open"*), was true until #32 merged as `b939fd9` at 12:55Z;
+`a592c23` corrected it at 13:08Z. `B-153`: pull request 136's branch
 first wrote `review` (*"B-153 moves to state review"*, preserved in `a592c23`'s
 squashed message), #33 merged as `67fb486` at 12:55Z before the branch did at
 13:08Z, and the merged result reads `done`. And `B-124` was set `done` on pull
@@ -5442,8 +5476,11 @@ there. R: `.ms_field_from_frictionless()` (`R/schema-helpers.R:387`) reads
 else off `constraints`; the only other `constraints` reader under `R/`,
 `R/package-helpers.R:1539-1540`, reads `required` too; a grep for
 `constraints$pattern` or `[["pattern"]]` finds no consumer under `R/`. Python:
-`package_io.py:1313-1314` reads `constraints["required"]` and nothing else, and
-no `.py` file at `1e9245c` reads a `"pattern"` key. The vendored
+`package_io.py:1313-1314` reads `constraints["required"]` and nothing else; the
+only other reader, `sdp_schema.py:595-596`, reads `required` too;
+`sdp_field_setters.py:970-973` copies the block whole without reading a key; and
+no `.py` file at `1e9245c` reads a `"pattern"` key, single- or double-quoted. The
+vendored
 `inst/extdata/schema/frictionless/metadata/dataset.schema.json` carries a
 `pattern` on `temporal_start` (`:82`) and `temporal_end` (`:94`) — a year or a
 date — which is how a typed instant reached the descriptor and passed local

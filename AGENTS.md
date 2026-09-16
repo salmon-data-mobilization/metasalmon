@@ -275,17 +275,21 @@ not backfill them.
 that version's tag exists is filed under the development heading** —
 `NEWS.md`'s *metasalmon (development version)* here, `## Unreleased` in
 metasalmonpy's `CHANGELOG.md` — **never under the version it did not ship in,
-and the tag stays on the bump commit** (Brett, 2026-09-16). The instance that
-produced the rule: on metasalmonpy `main` the bump merge is `67fb486` (#33,
-B-153) and B-144's merge `b939fd9` (#32) is its *descendant* —
-`git merge-base --is-ancestor 67fb486 b939fd9` holds — yet B-144's entry was
-filed under `## 0.5.0`, which made the changelog say a version contains a
-change that the commit making the version current does not; B-124's `1e9245c`
-(#29), later still, went under `## Unreleased` correctly. metasalmonpy pull
-request 35 moves B-144's entry, and `v0.5.0`, which is Brett's to make, goes on
-`67fb486`. The window is real on every release, because the tag is a separate
-act from the bump; the mechanical check is hub item B-200 (B-201 for the
-mirror).
+and the tag stays on the bump commit** (Brett, 2026-09-16). A dated correction
+to a shipped entry — the *(Correction, 2026-08-24: …)* paragraphs under 0.4.0
+are the existing practice — may still be appended in place, because it makes
+the entry describe what shipped more accurately rather than adding to what
+shipped; only a change, a fix or an addition files under the development
+heading. The instance that produced the rule: on metasalmonpy `main` the bump
+merge is `67fb486` (#33, B-153) and B-144's merge `b939fd9` (#32) is its
+*descendant* — `git merge-base --is-ancestor 67fb486 b939fd9` holds — yet
+B-144's entry was filed under `## 0.5.0`, which made the changelog say a
+version contains a change that the commit making the version current does not;
+B-124's `1e9245c` (#29), later still, went under `## Unreleased` correctly.
+metasalmonpy pull request 35 moved B-144's entry (merged 2026-09-16 as
+`3f8349a`), and `v0.5.0`, which is Brett's to make, goes on `67fb486`. The
+window is real on every release, because the tag is a separate act from the
+bump; the mechanical check is hub item B-200 (B-201 for the mirror).
 
 ## Build / test / docs
 
