@@ -1461,6 +1461,72 @@ def read_hub_participation(path: Path) -> dict:
     return grants
 
 
+WORKPAD_DIR = ".hub/workpads"
+WORKPAD_LEGACY_FILE = ".hub/workpad.md"
+
+
+def validate_workpads(root: Path, items: list[Item]) -> list[Problem]:
+    """One workpad per item, named for the item. This is hub item B-140's guard.
+
+    Until 2026-09-16 every hand-back wrote `.hub/workpad.md`, one path for the
+    whole repository. Two branches that each carried a report collided on it, and
+    the resolution was always to discard one, so `main` held only the report of
+    whichever hand-back merged last. On 2026-09-15 six branches carried a report
+    and four had to be resolved by hand, each resolution costing a CI cycle for a
+    file whose two versions were never in conflict about anything --- they were
+    reports of different items.
+
+    The failure this checks for is silent: the old path merges, resolves, and
+    leaves a plausible file behind, so nothing downstream can tell that a report
+    was lost. It is only visible by asking whether the name is the item's.
+
+    *Retires when:* the workpad stops being a file in the work branch --- if a
+    hand-back ever records its report somewhere that cannot collide by
+    construction, this rule has nothing left to protect.
+    """
+    problems: list[Problem] = []
+
+    if (root / WORKPAD_LEGACY_FILE).exists():
+        problems.append(
+            Problem(
+                WORKPAD_LEGACY_FILE,
+                0,
+                "workpad-shared-path",
+                "the single shared workpad path is back; HUB.md places the report "
+                f"at {WORKPAD_DIR}/<queue-id>.md, one file per item, because two "
+                "hand-backs on one path destroy one report per merge (B-140)",
+            )
+        )
+
+    workpad_dir = root / WORKPAD_DIR
+    if not workpad_dir.is_dir():
+        return problems
+
+    known = {item.id for item in items}
+    for path in sorted(workpad_dir.iterdir(), key=lambda p: p.name):
+        if path.name.startswith(".") or not path.is_file():
+            continue
+        display = f"{WORKPAD_DIR}/{path.name}"
+        if path.suffix != ".md":
+            problems.append(
+                Problem(display, 0, "workpad-name", "not a .md file")
+            )
+            continue
+        if path.stem not in known:
+            problems.append(
+                Problem(
+                    display,
+                    0,
+                    "workpad-name",
+                    f"{path.stem!r} is not an item in {DEFAULT_QUEUE_DIR}/; a workpad is "
+                    "named for the item it reports on, so a name that is not an id "
+                    "is either a typo or a second report sharing one file",
+                )
+            )
+
+    return problems
+
+
 def validate_solo(root: Path) -> list[Problem]:
     config_path = root / QUEUE_CONFIG_FILE
     if not config_path.is_file():
@@ -1800,6 +1866,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_members(root)
         + validate_member_fields(root)
         + validate_solo(root)
+        + validate_workpads(root, items)
     )
 
     baseline: int | None = None

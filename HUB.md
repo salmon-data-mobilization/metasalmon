@@ -623,7 +623,7 @@ every primary checkout.
 `agent/<queue-id>/<token>` and nowhere else. Heartbeat every
 `heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim.
 
-**6. Report.** Into `.hub/workpad.md` on your branch.
+**6. Report.** Into `.hub/workpads/<queue-id>.md` on your branch, one file per item.
 
 **7. Hand back.** Append a `handoff` commit, print the compare URL, stop. In a
 member repository somebody other than Brett has contributed to, the branch is
@@ -704,24 +704,75 @@ sibling directory outside every primary checkout, for example
 work in the primary checkout: it is Brett's day-to-day workspace, and a claim is
 task-scoped rather than a parallel authority over it.
 
-**A worktree is removed only after verifying it holds no unpushed work.** All
-three checks, and all three have to be clean:
+**A worktree is removed only after verifying it holds no unpushed work.** Both
+checks, and both have to be clean:
 
 ```sh
-git -C "$WT" status --porcelain            # empty
-git -C "$WT" log --branches --not --remotes --oneline   # empty
-git -C "$WT" stash list                    # empty
+git -C "$WT" status --porcelain                  # empty
+git -C "$WT" log HEAD --not --remotes --oneline  # empty
 ```
 
-If any of them prints anything, leave the worktree in place and say so in the
+If either prints anything, leave the worktree in place and say so in the
 report. Never remove a dirty worktree, and never delete its branch: branch
 deletion is Brett's call, and `--delete` is in the denied list above.
 
+**Both of those were repository-wide until 2026-09-16, and the correction to the
+second is the one worth reading, because the first correction missed it.**
+
+`git stash list` was a third check here and could never have done anything but
+block. A stash is a repository-level ref: it returns the same entries from inside
+every worktree, so it says nothing about *this* one. This repository has carried
+one deliberately-kept stash since 2026-09-10 (the evidence-pointer edits
+superseded by pull request #110), which made **every** worktree permanently
+unremovable — measured with twenty-odd accumulated and a clean throwaway one
+refused by it. *Retires when:* git gives a stash a worktree of record, at which
+point the check can come back scoped to it.
+
+**The revision walk had the identical defect and survived the edit that removed
+the stash clause**, which claimed in as many words that the two remaining checks
+were "genuinely per-worktree". That was true of `status --porcelain` and false of
+the other: `--branches` means *all* of `refs/heads`, so
+`git log --branches --not --remotes` run inside a worktree reports unpushed
+commits from **every** branch in the repository, including branches checked out
+in other worktrees. Measured 2026-09-16 in a scratch repository — a clean
+worktree detached at a fully pushed commit, refused because an unrelated branch
+in another worktree had one unpushed commit; scoping the walk to `HEAD` permits
+it. Caught in review, not by the rule firing.
+
+The lesson is the one this file keeps relearning and it is worth stating where it
+happened: **a fix that removes one instance of a defect is not a fix for the
+defect.** The stash clause and the revision walk were the same mistake written
+twice, three lines apart, and removing one of them produced a paragraph asserting
+the other was sound. Ask of any such correction what *else* is in the same
+family, before writing the sentence that says the rest is fine.
+
 ## Reporting
 
-The report goes into `.hub/workpad.md` on your branch, committed like any other
-file. It does not go into an issue comment, because an agent may not write an
-issue comment at all.
+The report goes into **`.hub/workpads/<queue-id>.md`** on your branch — one file
+per item, named for the item, for example `.hub/workpads/B-116.md` — committed
+like any other file. It does not go into an issue comment, because an agent may
+not write an issue comment at all.
+
+**The path is per-item because a single shared path made every parallel
+hand-back destroy the one before it.** Until 2026-09-16 the report went to
+`.hub/workpad.md`, one path for the whole repository, so two branches that each
+carried a report collided on it and the resolution was to discard one — which
+meant `main` only ever held the report of whichever hand-back merged last, and
+the fleet's own record of what it had found lived only in closed pull requests.
+That is hub item **B-140**, filed when #111 and #112 first hit it. Measured on
+the night of 2026-09-15: **six** branches carried a report, four had to be
+resolved by hand, and because each resolution is a push, each cost a full
+continuous-integration cycle — for a file whose two versions were never in
+conflict about anything, being reports of different items. With a per-item path
+they merge silently and `main` accumulates the fleet's reports instead of
+overwriting them. *Retires when:* nothing — this is B-140's fix, and the old
+path is what retired.
+
+**One file, one item, and never a union.** If you find yourself resolving a
+conflict inside a workpad, something has gone wrong upstream of you: two items
+are writing to one name. Fix the name rather than merging the prose, because a
+file that claims to be one item's report while holding two is worse than either
+report alone.
 
 The workpad carries, in this order: the queue id and the item title; what you
 changed and where; the commands you ran and their results, including the
@@ -848,6 +899,18 @@ Four conditions, all of them, before an agent merges one:
   directions: two non-ASCII characters passed locally and failed CI on
   2026-08-25, and two vignettes fail locally and are not checked at all by CI's
   newer R (B-164).
+  **Green means there are checks and they are green. No checks at all is not
+  green, and it is the shape a merge conflict takes.** A pull request whose merge
+  ref GitHub cannot compute gets no `pull_request` workflow runs at all, so its
+  head shows an empty check list rather than a red one — which reads as "nothing
+  failed" to anyone counting failures. Measured 2026-09-16 on PR #121: four
+  successive pushes while the branch was conflicted produced **zero** runs over
+  fifty minutes, and all three checks started within a minute of the conflict
+  being resolved, on the same branch with the same credentials. The remedy is
+  never to wait, and never to ask for a hand re-run: **merge the base branch into
+  the head and resolve it**, which is both the fix and the thing that starts CI.
+  An agent that reports a conflicted pull request as "CI not run" has reported
+  the symptom and left the cause.
 - **The Codex review has completed**, with every finding either fixed in a push
   or answered on its thread with the evidence that it is not a defect.
 - **No review thread from a person is waiting.** A human comment moves the pull
@@ -861,11 +924,38 @@ Four conditions, all of them, before an agent merges one:
 **A merge is the agent's last act on that pull request.** A finding that arrives
 afterwards becomes a queue item, never a quiet follow-up push to `main`.
 
-**Delegation is reported, not silent.** Every batch worked under this section
-ends with one message naming what merged without Brett and under which
-delegated class. Invisible delegation is indistinguishable from an agent
-deciding the boundary for itself, and the whole point of writing the boundary
-down is that he can move it.
+**Delegation is recorded, not silent — and recorded is not the same as
+announced.** Every batch worked under this section leaves a record naming what
+merged without Brett and under which delegated class. Invisible delegation is
+indistinguishable from an agent deciding the boundary for itself, and the whole
+point of writing the boundary down is that he can move it.
+
+**That record goes in the repository, not into his attention.** Narrowed
+2026-09-16 on his instruction: *"just notify me for consequential decisions or
+design or user experience or specs or ontology or other high level decisions
+required."* Until then this paragraph said *every batch ends with one message*,
+which made the mechanics of merging — what was green, which conflict was
+resolved how, which check ran — into things he had to read. **That is the
+bottleneck R16 was granted to remove, reappearing as narration.** The pull
+request body, the workpad and the commit message are the record and they persist;
+a chat message is neither durable nor searchable, and spending his attention on
+one costs the same whether the content needed him or not.
+
+So: **write the record, and interrupt him only for a decision that is his.**
+Those are the classes in "Brett's, whatever the checks say" above — an ontology
+term, a public signature or frozen contract, a version or release, a
+specification change, anything outward-facing or user-visible, a parity-register
+row, the weakening of a guard, this file — plus any design or user-experience
+question an implementer cannot settle from the repository. A merge that fell in a
+delegated class is not one of those, however much work it took.
+
+**The asymmetry is deliberate and runs the other way from the grant.** Under-
+reporting a decision that was his costs a wrong decision that stands until
+somebody notices; over-reporting mechanics costs his attention every time and
+trains him to skim, which is how the real question gets missed. When genuinely
+unsure whether something is a decision or a mechanic, ask — the uncertainty is
+itself the signal, and this section already says uncertainty resolves toward
+asking.
 
 *Revise when:* something merges under the delegated list that he would have
 wanted to see. That is the only evidence that matters here, it will arrive as a
@@ -1103,6 +1193,34 @@ It clears those three and nothing else.
 
 ***Retires when:*** claims stop living on git refs. At that point the paragraph
 is deleted rather than widened, and this section goes with it.
+
+## Dispatch briefs restate nothing from this file
+
+An orchestrator that dispatches agents hands each one
+**`.hub/agent-brief.md`**, which is git-tracked and lives beside this file so
+that a change to the rules and a change to the brief are the same review. The
+brief points at this file for every rule and **summarises none of them**.
+
+**This was learned the expensive way on the day the rules changed.** Until
+2026-09-16 the brief lived in a scratch directory outside the repository and
+carried its own copy of the never-list, including *"never reply to a review
+comment."* Ruling R16 granted exactly that reply for a pull request in a
+delegated class and this file was amended the same day; the brief, being a
+separate copy somewhere else, was not. A dispatched agent read the stale copy,
+correctly refused the review replies it had been sent to write, and left them in
+a text file for a person to paste. **The agent was right to obey what it had been
+handed. The second copy was the defect** — and it disagreed with this file at
+exactly the moment this file had just changed, which is when a disagreement costs
+the most and is the least likely to be noticed.
+
+So the rule is structural rather than advisory: a brief, a prompt, a card or a
+comment that restates a permission, a prohibition, a path, a constant or a branch
+pattern from here is **the stale copy**, as the front matter's `authority` key
+already says of any document. If a brief needs a rule, it links to it.
+
+***Retires when:*** nothing — this is the general form of the
+`constants_live_in` rule, applied to prose instead of numbers, and it retires
+with the register.
 
 ## What you must never do
 
