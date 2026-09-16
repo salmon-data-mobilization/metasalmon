@@ -110,7 +110,20 @@ collation_sensitive_fns <- c(
   ".ms_descriptor_sync_metadata_row",
   "review_metadata",
   ".ms_metadata_render_lines",
-  ".ms_binding_name_for"
+  ".ms_binding_name_for",
+  # The descriptor's temporal spelling (backlog #115 / hub item B-115).
+  # `.ms_readr_instant_character()` renders the text that becomes
+  # `datapackage.json` bytes, and `.ms_descriptor_temporal_text()` is the
+  # dispatcher that picks it. Both are registered ON CREATION, per the
+  # `AGENTS.md` maintenance rule, and BOTH are needed rather than either alone:
+  # limitation 3 above is not a footnote here, it is the whole reason these two
+  # entries exist. `.ms_descriptor_apply_dataset_meta()` is already listed and
+  # calls the dispatcher, which calls the renderer -- and the guard does not
+  # traverse callees, so neither was inspected by anything before this entry.
+  # Neither name matches `byte_producing_pattern` either, so the heuristic
+  # backstop does not reach them.
+  ".ms_descriptor_temporal_text",
+  ".ms_readr_instant_character"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

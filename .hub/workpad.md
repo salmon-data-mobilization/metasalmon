@@ -61,6 +61,20 @@ that asserts the two disagree **on purpose** stays green (verified below).
    shape the `Date` test at the old line 246 uses.
 5. **`NEWS.md`** — entry, stating that this is not a wire-format break in the wild.
 6. **`knowledge/parity-deviations.md`** — row 56 updated in place (see below).
+7. **`tests/testthat/test-collation-guard.R`** — `.ms_descriptor_temporal_text()`
+   and `.ms_readr_instant_character()` added to `collation_sensitive_fns`.
+   **Added 2026-09-16, on a Codex P1 finding on pull request #118; the original
+   pass missed it.** `AGENTS.md`'s C-collation contract states the maintenance
+   rule — a function that produces canonical bytes, a hash, or a PID goes into
+   that list, and the list is what keeps the guard from decaying — and
+   `.ms_readr_instant_character()` is a canonical-byte producer by construction:
+   its output is the descriptor's temporal text. **Both names are needed rather
+   than either alone, and the reason is the guard's own stated limitation 3.**
+   `.ms_descriptor_apply_dataset_meta()` was already listed and calls the
+   dispatcher, which calls the renderer, but the guard does not traverse callees,
+   so neither new function was inspected by anything; and neither name matches
+   `byte_producing_pattern`, so the heuristic backstop in the second test does
+   not reach them either. RED demonstration in the commands section below.
 
 ## Commands and results
 
@@ -107,6 +121,29 @@ each naming the defect rather than an incidental difference:
 ```
 
 GREEN after restoring: `canonical-date-render: ....... (46 assertions, 0 failures)`.
+
+### RED demonstration of the collation-guard registration (2026-09-16)
+
+**An allowlist entry that does not make the guard fail is decoration, so it was
+demonstrated rather than asserted.** Four runs of
+`testthat::test_file("tests/testthat/test-collation-guard.R")` on R 4.3.3, the
+first of which is the state Codex's finding describes:
+
+| # | Tree | Result |
+|---|---|---|
+| A | `lines <- lines[order(lines)]` injected into `.ms_readr_instant_character()`, the two names **absent** from `collation_sensitive_fns` | `collation-guard: .........` — **GREEN. The locale-dependent ordering is invisible.** |
+| B | the same injected ordering, the two names **present** | **RED**, `.ms_readr_instant_character: order(lines)` |
+| C | renderer restored; `value <- value[order(value)]` injected into `.ms_descriptor_temporal_text()`, names present | **RED**, `.ms_descriptor_temporal_text: order(value)` |
+| D | both injections removed, names present | `collation-guard: .........` — GREEN |
+
+Run A is the load-bearing one: it proves the entries are what makes the guard
+inspect these functions, not the `byte_producing_pattern` heuristic and not
+`.ms_descriptor_apply_dataset_meta()`'s already-present entry. Runs B and C
+prove one entry each, so neither name is riding on the other. Both failures come
+from the first test in the file (`test-collation-guard.R:194`), which is the
+allowlist test rather than the name-heuristic one — the guard's own
+self-detection test (`the collation guard detects an unqualified ordering`) stays
+green throughout and is not what caught these.
 
 ### Full suite — no new failure, +12 assertions
 
@@ -277,3 +314,12 @@ the other way. So "both sides emit the ruled form" does not by itself close row
   `metadata/dataset.csv` stops being written by `readr::write_csv()`.
 - **Register row 56** — retires when B-145 lands **and** the year-padding residual
   is measured away or registered.
+- **The two `collation_sensitive_fns` entries** — retire with the functions they
+  name: when `.ms_descriptor_temporal_text()` and
+  `.ms_readr_instant_character()` are deleted or stop reaching descriptor bytes,
+  the entries go with them. They do **not** retire when the guard learns to
+  traverse callees; if it ever does, `.ms_descriptor_apply_dataset_meta()`'s
+  entry would reach both of these and the two rows would become redundant rather
+  than wrong, and removing a redundant entry is a judgement about the traversal
+  rather than about these functions. Nothing is suppressed or skipped by adding
+  them: the guard inspects strictly more than it did before.
