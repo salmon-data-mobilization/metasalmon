@@ -340,6 +340,122 @@ class TestScalarValues(QueueTestCase):
         self.assert_accepts()
 
 
+class TestTruncationIsNotSilent(QueueTestCase):
+    """`B-173`: cutting an unquoted value at ` #` was right, and silent.
+
+    The rule was never the defect. Every check passed on a truncated title,
+    because a truncated title is still a valid title, and the only signal was a
+    human reading a rendered block weeks later and finding a sentence that stops
+    mid-thought. Two items were live on `main` in that state for weeks.
+
+    THE RED DEMONSTRATION IS RECONSTRUCTED, NOT TAKEN FROM THE TREE. `B-124` and
+    `B-125` were quoted in the same change that filed `B-173`, so the queue no
+    longer holds an example; the title below is the one `B-173` names, written
+    back out here. The sweep over the real queue is the other half of the
+    evidence and it lives in the workpad, because this file writes only into a
+    temporary directory.
+    """
+
+    #: The exact title that parsed as the single word `Backlog`.
+    TRUNCATED_TITLE = "Backlog #32's fix has no guard, and two vignettes carry the shape"
+    QUOTED_TITLE = "'Backlog #32''s fix has no guard, and two vignettes carry the shape'"
+
+    def test_a_citation_in_a_title_is_refused_rather_than_eaten(self):
+        self.write_item(BASE_DEFECT, title=self.TRUNCATED_TITLE)
+        output = self.assert_rejects("truncated-value")
+        # The message has to name both halves, because the whole failure mode is
+        # that the surviving half looks fine on its own.
+        self.assertIn("Backlog", output)
+        self.assertIn("#32's fix has no guard", output)
+
+        self.write_item(BASE_DEFECT, title=self.QUOTED_TITLE)
+        self.assert_accepts()
+        code, listing = self.run_hub("list")
+        self.assertEqual(code, 0)
+        self.assertIn("Backlog #32's fix has no guard, and two vignettes carry the shape", listing)
+
+    def test_list_no_longer_renders_half_a_title(self):
+        """`list` is how this was found, so it is where the fix is shown."""
+        self.write_item(BASE_DEFECT, title=self.TRUNCATED_TITLE)
+        code, listing = self.run_hub("list")
+        # Before the fix this exited 0 and printed `B-53     Backlog`.
+        self.assertIn("[truncated-value]", listing)
+        self.assertNotIn("B-53     Backlog\n", listing)
+        self.assertEqual(code, 0, "list reports and keeps going; lint is what fails")
+
+    def test_a_citation_in_retires_when_is_refused(self):
+        """The second field `B-173` names, and the one every migrated item fills."""
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="The sweep of #124 and #125 is re-run and finds nothing",
+        )
+        self.assert_rejects("truncated-value")
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="'The sweep of #124 and #125 is re-run and finds nothing'",
+        )
+        self.assert_accepts()
+
+    def test_every_field_is_covered_not_only_the_two_that_were_bitten(self):
+        self.write_item(BASE_DEFECT, repo="metasalmon #the-hub-queue")
+        self.assert_rejects("truncated-value")
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+
+    def test_the_flow_list_branch_is_covered_too(self):
+        """The branch that reads through `strip_comment` without ever reaching
+        the plain-scalar check. A check placed beside the scalar branch alone
+        would let this one keep losing its tail."""
+        self.write_item(BASE_DEFECT, blocked_by="[B-90] #124 is next")
+        self.assert_rejects("truncated-value")
+        self.write_item(BASE_DEFECT, blocked_by="[]")
+        self.assert_accepts()
+
+    def test_render_refuses_a_truncating_value_rather_than_writing_half_of_it(self):
+        """`render` writes item titles into prose, so it is the path that turns a
+        silent truncation into a committed one."""
+        self.write_item(BASE_DEFECT, title=self.TRUNCATED_TITLE)
+        code, output = self.run_hub("render")
+        self.assertEqual(code, 2, output)
+        self.assertIn("does not parse", output)
+
+    # -- the discriminator, from both sides -------------------------------
+
+    def test_hash_then_a_space_is_a_comment_and_still_works(self):
+        """The capability the schema documents, kept. `B-173` offered a blanket
+        ban on unquoted hashes as the cheaper fix; it would fail here, and taking
+        it would mean deleting
+        `test_trailing_comment_is_stripped_from_unquoted_values` above."""
+        self.write_item(BASE_DEFECT, severity="P2 # defects only")
+        self.assert_accepts()
+
+    def test_hash_welded_to_a_character_is_content(self):
+        self.write_item(BASE_DEFECT, severity="P2 #defects-only")
+        self.assert_rejects("truncated-value")
+
+    def test_a_bare_hash_at_end_of_line_is_a_comment(self):
+        self.write_item(BASE_DEFECT, severity="P2 #")
+        self.assert_accepts()
+
+    def test_a_fragment_with_no_space_before_it_is_untouched(self):
+        """`check_evidence_exists` documents `knowledge/backlog.md#B-53` as a
+        working pointer: no ` #`, so nothing is cut and nothing is refused. The
+        blanket ban would have broken this without anything failing to say so."""
+        self.write_evidence("knowledge/backlog.md")
+        self.write_item(BASE_DEFECT, evidence="knowledge/backlog.md#B-53")
+        self.assert_accepts()
+
+    def test_a_fragment_with_a_space_before_it_is_refused(self):
+        self.write_item(BASE_DEFECT, evidence="knowledge/backlog.md #B-53")
+        self.assert_rejects("truncated-value")
+
+    def test_a_quoted_value_may_still_carry_a_trailing_comment(self):
+        """Quotes delimit the value, so the tail is unambiguous and this path
+        never reaches the check at all."""
+        self.write_item(BASE_DEFECT, title="'Fix the thing' # and the docs")
+        self.assert_accepts()
+
+
 class TestIdentity(QueueTestCase):
     def test_id_format(self):
         self.write_item(BASE_DEFECT, id="53", filename="B-53.yaml")
