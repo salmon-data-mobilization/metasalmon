@@ -466,7 +466,8 @@ specified in full under *What metasalmon 0.5.0 owes the mirror* in
 validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
 B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first of the
 four to close), the migration report's no-op shape (**B-144**, blocked by
-B-112), and the
+B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second of the four to
+close), and the
 reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 / B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
 #121, which added three things the port owes — a degraded lookup must abort
