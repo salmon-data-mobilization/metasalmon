@@ -110,7 +110,28 @@ collation_sensitive_fns <- c(
   ".ms_descriptor_sync_metadata_row",
   "review_metadata",
   ".ms_metadata_render_lines",
-  ".ms_binding_name_for"
+  ".ms_binding_name_for",
+  # The reviewed semantic closure producer (backlog #116, hub item B-116).
+  # Registered ON CREATION, for the reason the S5 block above states.
+  # `write_sdp_semantic_closure()` decides the row order of
+  # `metadata/semantic_vocabulary.csv` and `reviewed_semantic_selections.csv`,
+  # hashes each vocabulary row into `reviewed_snapshot_sha256`, and hashes both
+  # whole files into `metadata/eml-mapping.yml`, so an ordering it performs
+  # reaches bytes twice over. `.ms_closure_iri_roles()` orders the roles an IRI
+  # is searched under, and role selects the sources, so it decides WHICH
+  # candidate becomes the written evidence -- not display-only. Neither name
+  # matches the heuristic below.
+  "write_sdp_semantic_closure",
+  ".ms_closure_iri_roles",
+  # Added with the Codex review fixes on pull request #121, by the same rule:
+  # both orderings are read back by something other than a human.
+  # `.ms_closure_incomplete_row()` joins the missing evidence fields into a cell
+  # of `closure$incomplete`, which an EXPORTED function returns and a test
+  # compares. `.ms_search_failed_sources()` orders the sources a degraded lookup
+  # names, which reaches an abort message and is compared by the caller deciding
+  # whether any file is written at all. Neither name matches the heuristic below.
+  ".ms_closure_incomplete_row",
+  ".ms_search_failed_sources"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

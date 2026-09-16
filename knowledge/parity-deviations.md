@@ -204,6 +204,77 @@ explanation for a behaviour that no longer exists. Same shape as the **#118**
 port, where `semantics.py`'s docstring documents the current behaviour as
 intended and the fix is the guard **and** the docstring.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-15):
+the reviewed semantic closure producer.** `write_sdp_semantic_closure()` now
+derives both canonical sets, resolves `smn`/`gcdfo` evidence through
+`find_terms()`, accepts hand-supplied rows for QUDT and the fields the search
+cannot fill, computes every `reviewed_snapshot_sha256` and both sidecar file
+digests, and reports an unresolvable IRI as a term-request gap rather than
+aborting (backlog #116, hub item B-116, Brett's ruling of 2026-09-12).
+
+**This is not a new numbered row, for the reason this section already gives:**
+absence in Python is lag, not design. But it is the one entry here whose R half
+closes a defect the register describes as *shared*, so the asymmetry has to be
+said plainly. Backlog #116 measured the mirror on 2026-08-25 and found the
+identical hole: `eml.py:1654` `_read_vocabulary()` raises `FileNotFoundError` for
+the same file, `knb_publication.py:82-89` lists it in `_REQUIRED_SDP_ARTIFACTS`,
+none of the nine `write_*` entries in `__init__.py:78-140` writes either closure
+file, `package_io.py` contains zero occurrences of either filename, and the
+digest helper is private at `eml.py:1636 _vocabulary_snapshot_sha256`, reached in
+tests only by importing past the API boundary at `tests/test_eml.py:901`. Neither
+file is mentioned in any user-facing Python doc, `guides/semantic-review.qmd`
+included. So until the port lands, metasalmonpy's golden path has a hole
+metasalmon no longer has, and **that is the state of the mirror rather than a
+difference either side chose**.
+
+**What the port owes, specifically**, so the claiming session need not re-derive
+it: one public `write_sdp_semantic_closure(path, evidence=None)`; both canonical
+sets derived rather than reasoned from each other, since they legitimately
+differ; evidence resolved through Python's own `find_terms()` rather than a new
+retrieval path; a hand-supplied `evidence` frame with the same field-by-field
+overlay, including the QUDT case and the `native_type` / `source_url` fields no
+search fills; the per-row digest and both sidecar digests written, with the
+sidecar edited line-wise rather than round-tripped through a YAML dump, because
+the shipped template's own instructions are comments a dump deletes; and an
+unresolvable IRI returned in `detect_semantic_term_gaps()` shape so the
+term-request pipeline consumes it. **The gap-not-abort shape is the ruled part**
+and must not be softened into an exception on the Python side. **Queued as
+`B-165`**, blocked by B-116, filed beside B-124 and B-125; it is recorded here
+rather than left in a pull request description precisely because those
+evaporate. *(This sentence read "no queue item exists for this yet" when it was
+written on 2026-09-15 and was false by the time the branch merged — `B-165` was
+filed the same night, on the branch that became PR #123. Corrected 2026-09-16 in
+the merge. Third instance in two days of a "no queue item yet" clause going
+stale within hours of being written, which is the argument for naming the item
+and letting `queue/items/` hold its state.)*
+
+**Three more things the port owes, added 2026-09-16 after Codex reviewed the R
+half** (pull request #121, five findings, all valid). They are listed here rather
+than left to be re-derived because each is a way of getting the *ruled* shape
+wrong while appearing to implement it:
+
+1. **A gap is a claim, so only one of three outcomes may make one.** A lookup
+   that did not answer — a search that raised, or a result whose failed-source
+   diagnostics name a source that did not reply — **aborts before anything is
+   written**; a term that was found with a required evidence field blank is
+   reported separately as `incomplete`, not as a gap; only "every source answered
+   and none has the term" is a gap. R's fix collapsed a swallowed exception and
+   an ignored diagnostics attribute, both of which had been producing
+   `no_candidates` gap rows — that is the ruled shape turned into a defect, since
+   it asks an ontology to mint a term nobody established was missing. Python's
+   `find_terms()` must expose the same degraded-source signal, in one place, read
+   both by its own warning and by this producer.
+2. **The two closure files and the sidecar digest install as one set**, staged and
+   renamed with rollback, because a failure between them leaves a replaced CSV
+   beside its previous `sha256` — a package that fails its own digest check even
+   though the call raised. Python needs whatever its equivalent of the hardened
+   SDP writer is; if it has none, that is the first half of the port.
+3. **No write follows a link.** Root, every intermediate directory component and
+   each final entry are refused when symlinked, because an SDP received from a
+   collaborator can point any of the three names at a file outside the package.
+   Hard links are closed by the staged rename rather than by detection, and the
+   Python half should say so in the same place rather than implying coverage.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

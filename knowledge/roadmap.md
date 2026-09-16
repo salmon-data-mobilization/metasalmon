@@ -424,6 +424,36 @@ registers therefore disagree about which side is defective, with nothing in
 either file saying which is right — the failure mode both `AGENTS.md` files name
 when they say to read the other file rather than trust the one in front of you.
 
+**The window has since grown four times, and this index was not the copy that
+recorded it.** Each addition is R work merged after 0.5.0 under the mirror rule,
+each is owed as a port rather than a register row, and each is specified in full
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`:
+validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
+B-95), the migration report's no-op shape (**B-144**, blocked by B-112), and the
+reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
+/ B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
+#121, which added three things the port owes — a degraded lookup must abort
+rather than become a gap, incomplete evidence is not a missing term, and the
+three writes install as one link-refusing set), queued as **B-165**, blocked by
+B-116. All four were deferred for the same structural reason rather than a
+judgement: a hub claim covers one branch in one repository, so the mirror half is
+a separate item. The first two reached `parity-deviations.md` and not this index,
+which is the drift the release index exists to catch, so the rule is stated here
+rather than only the instance: **an addition to a catch-up window is recorded in
+both places in the same change.**
+
+*(Two corrections made 2026-09-16 in the merge that brought this paragraph to
+`main`, both of which the paragraph's own rule predicts. The count read **three**
+and omitted `B-144`, which reached `parity-deviations.md` through pull request
+#117 while this paragraph was being written on another branch — the same drift in
+the same direction, one file later. And the closure producer was described as
+having **no queue item yet**: `B-165` was filed the same night on the branch that
+became PR #123, so the clause was false before it merged. The sidecar-atomicity
+addition above is deliberately **not** in this count: it satisfies the first two
+criteria but is specified in register **row 53** rather than in that section, and
+it is the one addition that did reach both places in the same change — the rule
+being followed rather than another instance of its being broken.)*
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |
