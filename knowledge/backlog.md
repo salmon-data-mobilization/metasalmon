@@ -5196,7 +5196,8 @@ repository.
 
 ### The 2026-09-16 network-guard finding, and the changelog window
 
-**`B-197`: one test with no network guard reds every open pull request at once.**
+**`B-197`: one test makes a live call it does not need, so a DataONE outage reds
+every `check` run that executes while it lasts, whatever the diff.**
 Measured on pull request 137, whose entire diff was one queue item and one
 backlog section — both excluded by `.Rbuildignore` and reachable by no test.
 `check` went red with `Error accessing https://cn.dataone.org/cn: Server error:
@@ -5212,12 +5213,33 @@ exactly this case.
 
 The missing guard is specific. The test calls `skip_if_not_installed("dataone")`,
 which checks that the **package** is present and never that the **service** is
-reachable, and no test in that file calls `skip_if_offline()`. `AGENTS.md`
-already warns that a green *offline* run is not full coverage; this is the
-inverse and more expensive — a test that errors instead of skipping when a third
-party is down. `B-132` is the same shape for the live SDP bundle fetch, which is
-why `B-197`'s retirement condition requires sweeping the file rather than fixing
-the one instance that happened to fire.
+reachable, and no test in that file calls `skip_if_offline()`. `B-132` is the
+same shape for the live SDP bundle fetch, which is why `B-197`'s retirement
+condition requires sweeping the file rather than fixing the one instance that
+happened to fire.
+
+**The remedy is to remove the call, not to skip on it, and the first version of
+this item had that backwards.** It asked for a skip — which, under an outage,
+throws away the assertion that both nodes are checked. `AGENTS.md` warns that a
+green *offline* run is not full coverage, so a skip *reduces* coverage exactly
+where removing the call would keep it. And the call is removable, because it is
+not load-bearing: the test already builds `member_node` locally with
+`methods::new("MNode")` and an `@identifier`,
+`.ms_knb_lookup_node_system_metadata()` is mocked, and `coordinating_node` is
+used for precisely two things — the `cn` slot of the `D1Client` and
+`coordinating_node@identifier` in the closing `expect_identical` — so a `CNode`
+built the same local way serves both. `skip_if_offline()` is for the tests where
+the live service genuinely *is* the thing under test.
+
+**The blast radius is narrower than this section first claimed, and the
+correction matters because the claim is what prioritises the item.**
+`.github/workflows/R-CMD-check.yaml:3-7` triggers on `pull_request` and on `push`
+to `main`, with **no `schedule`** — so nothing re-runs a completed check, and
+already-green checks stay green. What is true is that every `check` that
+*executes* during the outage fails regardless of its diff: every new pull
+request, every push to an open one, every re-run. On a busy merge day that still
+reaches most of them, and the diff-independence is what makes it expensive —
+each failure looks like its author's fault until somebody reads the log.
 
 **A changelog entry written between a version bump and its tag has no home, and
 that gap produced two instances in one day.** `AGENTS.md`'s *Releases* section
