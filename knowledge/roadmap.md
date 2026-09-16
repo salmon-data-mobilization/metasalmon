@@ -434,7 +434,9 @@ recorded it.** Each addition is R work merged after 0.5.0 under the mirror rule,
 each is owed as a port rather than a register row, and each is specified in full
 under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`:
 validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
-B-95), the migration report's no-op shape (**B-144**, blocked by B-112), and the
+B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first of the
+four to close), the migration report's no-op shape (**B-144**, blocked by
+B-112), and the
 reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 / B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
 #121, which added three things the port owes — a degraded lookup must abort
