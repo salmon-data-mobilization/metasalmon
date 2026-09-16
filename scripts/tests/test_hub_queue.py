@@ -247,7 +247,7 @@ class QueueTestCase(unittest.TestCase):
         while the coverage guard stayed green.
         """
         RAN_CLASSES.add(type(self).__name__)
-        DEMONSTRATED_RED.setdefault(self.id().rpartition(".")[2], set()).add(rule)
+        DEMONSTRATED_RED.setdefault(_test_key(self), set()).add(rule)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 1, f"expected lint to FAIL for rule {rule}; output:\n{output}")
         self.assertIn(f"[{rule}]", output, f"lint failed but not for {rule}; output:\n{output}")
@@ -273,8 +273,7 @@ class QueueTestCase(unittest.TestCase):
         association the audit could not otherwise see.
         """
         RAN_CLASSES.add(type(self).__name__)
-        method = self.id().rpartition(".")[2]
-        DEMONSTRATED_GREEN.setdefault(method, set()).update(for_rules)
+        DEMONSTRATED_GREEN.setdefault(_test_key(self), set()).update(for_rules)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 0, f"expected lint to pass; output:\n{output}")
         return output
@@ -2233,8 +2232,8 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         "def check_one(item):\n"
         "    problems.append(Problem(item.path, 0, 'a-literal-rule', 'x'))\n"
     )
-    RED_CLEAN = {"test_some_case": {"value", "a-literal-rule"}}
-    GREEN_CLEAN = {"test_some_case": set()}
+    RED_CLEAN = {"SomeCase.test_some_case": {"value", "a-literal-rule"}}
+    GREEN_CLEAN = {"SomeCase.test_some_case": set()}
 
     def audit(self, hub=None, red=None, green=None):
         return audit_lint_rule_coverage(
@@ -2263,17 +2262,50 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         was, so adding an overbroad rule to an existing test class recreated
         the gap the GREEN check had just been added to close.
         """
-        red = {"test_some_case": {"value", "a-literal-rule"}, "test_new_rule": {"a-literal-rule"}}
+        red = {"SomeCase.test_some_case": {"value", "a-literal-rule"}}
         hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'new-rule'")
-        red["test_new_rule"] = {"new-rule"}
-        findings = self.audit(hub=hub, red=red, green={"test_some_case": set()})
+        red["OtherCase.test_new_rule"] = {"new-rule"}
+        findings = self.audit(hub=hub, red=red, green={"SomeCase.test_some_case": set()})
         self.assertEqual(findings.get("red_only"), ["new-rule"])
+
+    def test_two_methods_of_the_same_name_in_different_classes_do_not_merge(self):
+        """The collision a bare-method key produced, tested AT THE KEY FUNCTION.
+
+        This file has one real instance --
+        `test_no_configuration_means_no_cross_check` in both
+        `TestMembersCrossCheck` and `TestSoloCrossCheck` -- so a RED-only rule
+        in one and an `assert_accepts` in the other read as a satisfied pair
+        under the old key.
+
+        THE FIRST VERSION OF THIS TEST WAS VACUOUS and the RED demonstration is
+        the only reason I know. It passed two already-built key strings into
+        `audit_lint_rule_coverage`, which exercises the AUDIT and never touches
+        `_test_key` -- so reverting the key function to the bare-method form
+        left it green. A test for a collision has to call the thing that
+        produces the key.
+        """
+        class AlphaCase(unittest.TestCase):
+            def test_same_name(self):
+                pass
+
+        class BetaCase(unittest.TestCase):
+            def test_same_name(self):
+                pass
+
+        alpha, beta = _test_key(AlphaCase("test_same_name")), _test_key(BetaCase("test_same_name"))
+        self.assertNotEqual(alpha, beta, "two classes' same-named methods share one key")
+        self.assertEqual(alpha, "AlphaCase.test_same_name")
+
+        # And with distinct keys the audit keeps them apart, which is the
+        # consequence that matters.
+        findings = self.audit(red={alpha: {"a-literal-rule"}, beta: {"value"}}, green={beta: set()})
+        self.assertEqual(findings.get("red_only"), ["a-literal-rule"])
 
     def test_a_green_that_names_its_rule_pairs_across_methods(self):
         """And the declared cross-method pair still works, which is the point of
         `for_rules`: the asymmetry in `TestSoloCrossCheck` must stay expressible."""
-        red = {"test_red_half": {"value", "a-literal-rule"}}
-        green = {"test_green_half": {"value", "a-literal-rule"}}
+        red = {"Pair.test_red_half": {"value", "a-literal-rule"}}
+        green = {"Pair.test_green_half": {"value", "a-literal-rule"}}
         self.assertEqual(self.audit(red=red, green=green), {})
 
     def test_a_rule_named_by_keyword_is_read_not_skipped(self):
@@ -2335,6 +2367,20 @@ class TestTheCoverageGuardItself(unittest.TestCase):
         would have been the last.
         """
         self.assertEqual(self.audit(red={}).get("undemonstrated"), ["a-literal-rule", "value"])
+
+
+def _test_key(case) -> str:
+    """`Class.method`, and the CLASS half is load-bearing.
+
+    Keying the demonstration registries by the bare method name merges
+    identically named methods in different classes. This file has one such
+    pair -- `test_no_configuration_means_no_cross_check` in both
+    `TestMembersCrossCheck` and `TestSoloCrossCheck` -- so a RED-only rule in
+    one and an `assert_accepts` in the other would have read as a satisfied
+    pair. Found by review, and it is the same defect as pairing GREEN to the
+    class: a key too coarse to distinguish the things it is asked about.
+    """
+    return f"{type(case).__name__}.{case.id().rpartition('.')[2]}"
 
 
 def rule_bearing_classes() -> set:
