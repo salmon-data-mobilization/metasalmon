@@ -1231,6 +1231,20 @@ claim that was simply **wrong on the merits** — symmetrical in shape, asymmetr
 in fact — and no amount of keeping prose and fields in agreement would have
 caught it, because there was no field to disagree with until one was added.
 
+**The ordering work also exposed an older defect two items away, and splitting it is
+the last thing this entry records.** `B-161` — the unruled question of how a
+pre-1000 instant should be spelled — declared `repo: metasalmon` while its
+retirement condition required *both* implementations to emit the ruled
+spelling. That is the claimable-and-unfinishable case `queue/README.md`
+forbids, and it had gone unnoticed because `claimable: false` meant no agent
+could take it and find out. It became reachable the moment a validator item was
+blocked on it. `B-161` is now the **ruling alone**, and the emission halves are
+`B-206` (metasalmon) and `B-207` (metasalmonpy), each blocked on the ruling and
+each naming the other — the README's own prescription for a cross-repository
+obligation. The ruling still covers both implementations at once, which is why
+they share one blocker rather than getting a ruling each: ruling them separately
+would create a parity row instead of closing one.
+
 **And then the correction introduced the older defect.** The commit that fixed
 the sequencing claim wrote *"The dependency is now in `B-204`'s and `B-205`'s
 `blocked_by`"* into this entry and a matching sentence into the backlog — a copy

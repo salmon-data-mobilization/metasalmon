@@ -1,0 +1,13 @@
+id: B-206
+kind: defect
+title: 'Emit the ruled pre-1000 instant spelling from the R writer, the metasalmon half'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: [B-161]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmon''s descriptor path emits the spelling B-161 rules for a pre-1000 instant in metadata/dataset.csv, and a test asserts that a POSIXct whose year is below 1000 survives write then read unchanged. MEASURED 2026-09-16 on this machine, R 4.3.3, as the RED this retires: .ms_iso_date_columns() leaves a POSIXct alone by design (backlog #93 item 1 ruled that, because coercing an instant changes the separator, the zone marker and whether a fractional second survives), readr renders it, and readr::write_csv() writes as.POSIXct("0999-06-05 13:45:30", tz = "UTC") as 999-06-05T13:45:30Z -- instant form with an UNPADDED year, which is not a valid xs:dateTime and which the SDP profile''s widened temporal pattern rejects, while 2024-12-31T23:59:59Z from the same frame passes. IT IS PLATFORM-DEPENDENT: backlog #93 item 1''s table, measured on macOS R 4.5.2, records year 1 rendering as 0001-01-01T00:00:00Z, already correct. Linux is the platform CI runs. WHICH SPELLING IS NOT THIS ITEM''S TO CHOOSE and that is why it is blocked: B-161 holds the ruling, because padding the CSV path means reopening backlog #93 item 1 deliberately and the only alternative is accepting a platform-dependent instant year across the ecosystem. THE MIRROR HALF IS B-207 (metasalmonpy), which names this item; the two share one blocker rather than getting a ruling each, because ruling them separately would create a parity row instead of closing one. THIS ITEM EXISTS BECAUSE B-161 COULD NOT RETIRE IN ITS OWN REPOSITORY: its condition required both implementations to emit the ruled spelling while declaring repo: metasalmon, which queue/README.md forbids, and its prescription is to split into a pair with an id each. Raised by the Codex review of metasalmon pull request 137 on ad00a37. Reachable only from a caller-supplied typed instant, which neither implementation produces on its own -- so the defect is narrow, and it gates B-204, which cannot enforce the profile pattern while this package writes bytes that fail it.'

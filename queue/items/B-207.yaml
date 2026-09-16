@@ -1,0 +1,13 @@
+id: B-207
+kind: defect
+title: 'Emit the ruled pre-1000 instant spelling from the Python writer, the metasalmonpy half'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: [B-161]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the descriptor path emits the spelling B-161 rules for a pre-1000 instant in metadata/dataset.csv, and a test asserts that a pre-1000 instant survives write then read unchanged. NOBODY HAS MEASURED WHAT METASALMONPY WRITES TODAY, and that measurement is the first step of this item rather than a premise of it: B-206 carries a measured RED for R (readr::write_csv renders as.POSIXct("0999-06-05 13:45:30", tz = "UTC") as 999-06-05T13:45:30Z, unpadded), and the Python writer may or may not have the same defect -- CPython''s datetime.isoformat() pads a year to four digits, so the honest expectation is that it does NOT, and that this item retires as a test plus a parity note rather than a code change. State the measurement either way, because "no change needed" is a claim. WHICH SPELLING IS NOT THIS ITEM''S TO CHOOSE: B-161 holds the ruling, and the two halves share it rather than getting a ruling each, because ruling them separately would create a parity row instead of closing one. THE MIRROR HALF IS B-206 (metasalmon), which names this item and carries the R measurement. THIS ITEM EXISTS BECAUSE B-161 COULD NOT RETIRE IN ITS OWN REPOSITORY: its condition required both implementations to emit the ruled spelling while declaring repo: metasalmon, which queue/README.md forbids. Raised by the Codex review of metasalmon pull request 137 on ad00a37. If the measurement shows metasalmonpy IS affected, B-205 gains this item as a blocker for the same reason B-204 gains B-206 -- a validator that enforces the pattern while the writer emits bytes failing it rejects packages the package itself wrote.'
