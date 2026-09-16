@@ -20,14 +20,28 @@
 # coho example the difference is exactly one row: `smn:Observation` is a review
 # target and not a vocabulary term.
 #
-# GAP, NOT ABORT -- ruled by Brett 2026-09-12. An IRI this producer cannot
-# resolve becomes a row in `detect_semantic_term_gaps()` shape and both files
-# are still written. Aborting would hand the user a failure and nothing to file;
-# a gap is what `render_ontology_term_request()` and
+# GAP, NOT ABORT -- ruled by Brett 2026-09-12. An IRI the searched sources
+# answered about and do not have becomes a row in `detect_semantic_term_gaps()`
+# shape and both files are still written. Aborting would hand the user a failure
+# and nothing to file; a gap is what `render_ontology_term_request()` and
 # `submit_term_request_issues()` already consume, so the unresolvable case
 # leaves the pipeline rather than dead-ending in it. An omitted vocabulary row
 # is *not* silent: `.ms_eml_read_vocabulary()` then names the same IRI as
 # `Missing:` when export is attempted, so the two messages agree.
+#
+# AND A GAP IS A CLAIM, so only one of the three ways a row can go unwritten is
+# allowed to make it. Both of the others were once reported as `no_candidates`
+# gaps, which is the ruled shape turned into a defect: it asks an ontology to
+# mint a term nobody established was missing.
+#
+#   the sources did not answer   ABORT, before anything is written. A degraded
+#                                lookup is unknown -- `find_terms()` says so in
+#                                its own warning -- and the remedy is to re-run.
+#   the term was FOUND with a    REPORT in `incomplete` and warn, naming the
+#   required field blank         field and the slot. The term exists; what is
+#                                missing is evidence about it.
+#   every source answered and    GAP. This one, and only this one.
+#   none has the term
 #
 # NO LLM REACHES THIS PATH. `find_terms()` is deterministic ontology search;
 # there is no `llm_assess` argument here and nothing below constructs an LLM
@@ -359,16 +373,53 @@
   sort(roles, method = "radix")
 }
 
+# The "no search was needed" result, so every consumer of a
+# `.ms_closure_search_evidence()` return reads the same four fields.
+.ms_closure_no_search <- function() {
+  list(
+    values = NULL,
+    query = "",
+    role = "",
+    errors = character(),
+    degraded = character()
+  )
+}
+
+# A LOOKUP THAT DID NOT ANSWER IS NOT AN ONTOLOGY GAP, and the two reach here in
+# the same shape: no matching row. So both ways a search can fail to answer are
+# carried back to the caller rather than collapsed into "the term does not
+# exist".
+#
+#   a thrown error        -- transient network, a parser, a cache
+#   failed-source         -- `find_terms()` records per-source status in its
+#   diagnostics              `"diagnostics"` attribute and returns EMPTY while
+#                            warning, in its own words, that such a result is
+#                            unknown rather than an ontology gap
+#
+# The old code did `error = function(e) NULL` and never looked at the attribute,
+# so an outage became a `no_candidates` gap row, an omitted vocabulary row, and a
+# term request asking an ontology to mint a term that may already exist. The
+# degraded-status test is `.ms_search_failed_sources()` (R/term_search.R), read
+# rather than restated, so this cannot drift from the warning it agrees with.
 .ms_closure_search_evidence <- function(iri,
                                         queries,
                                         roles,
                                         sources,
                                         search_fn) {
+  errors <- character()
+  degraded <- character()
   for (role in roles) {
     for (query in queries) {
       hits <- tryCatch(
         search_fn(query, role = role, sources = sources),
-        error = function(e) NULL
+        error = function(cnd) {
+          errors <<- c(errors, .ms_closure_text(conditionMessage(cnd)))
+          NULL
+        }
+      )
+      degraded <- c(
+        degraded,
+        .ms_search_failed_sources(attr(hits, "diagnostics", exact = TRUE))
       )
       if (is.null(hits) || !is.data.frame(hits) || nrow(hits) == 0L ||
         !"iri" %in% names(hits)) {
@@ -389,13 +440,23 @@
         },
         character(1)
       )
-      return(list(values = values, query = query, role = role))
+      # Resolved. Whatever else did not answer is moot here: the evidence for
+      # THIS IRI is in hand, so there is no gap to misattribute to an outage.
+      return(list(
+        values = values,
+        query = query,
+        role = role,
+        errors = character(),
+        degraded = character()
+      ))
     }
   }
   list(
     values = NULL,
     query = if (length(queries) > 0L) queries[[1]] else "",
-    role = if (length(roles) > 0L) roles[[1]] else ""
+    role = if (length(roles) > 0L) roles[[1]] else "",
+    errors = unique(errors),
+    degraded = sort(unique(degraded), method = "radix")
   )
 }
 
@@ -407,10 +468,14 @@
   scope
 }
 
-# One gap row for an IRI no search returned. `no_candidates` is the basis the
-# enum already carries for "retrieval returned nothing at all", which is exactly
-# this case, so no new detection value is introduced.
-.ms_closure_gap_row <- function(iri, targets, dictionary, query, sources) {
+# Where an IRI sits in the package: the review target that selected it, the
+# dictionary row behind that target, and the defaults for an IRI that is in the
+# measurement set only -- a code-resolved `sosa:usedProcedure`, which no reviewer
+# ever selected as a slot and so has no target row to read.
+#
+# Shared by the gap row and the incomplete-evidence row below, which describe the
+# same IRI in the same place and must not disagree about where that is.
+.ms_closure_target_context <- function(iri, targets, dictionary) {
   rows <- targets[targets$iri == iri, , drop = FALSE]
   target <- if (nrow(rows) > 0L) rows[1, , drop = FALSE] else NULL
   scope <- if (is.null(target)) "code" else .ms_closure_text(target$target_scope, "column")
@@ -442,14 +507,42 @@
       dict_row <- hit[1, , drop = FALSE]
     }
   }
-  label <- if (is.null(dict_row)) "" else .ms_closure_text(dict_row$column_label)
-  description <- if (is.null(dict_row)) {
-    ""
-  } else {
-    .ms_closure_text(dict_row$column_description)
-  }
-  out <- tibble::tibble(
+  list(
+    scope = scope,
+    field = field,
+    role = role,
     dataset_id = dataset_id,
+    table_id = table_id,
+    column_name = column_name,
+    label = if (is.null(dict_row)) "" else .ms_closure_text(dict_row$column_label),
+    description = if (is.null(dict_row)) {
+      ""
+    } else {
+      .ms_closure_text(dict_row$column_description)
+    }
+  )
+}
+
+# One gap row for an IRI no search returned. `no_candidates` is the basis the
+# enum already carries for "retrieval returned nothing at all", which is exactly
+# this case, so no new detection value is introduced.
+#
+# THE PRECONDITION IS THAT NOTHING WAS FOUND. Two other outcomes look like this
+# one from the vocabulary row's point of view -- the search did not answer, and
+# the search found the term with a required field blank -- and neither reaches
+# here: the first aborts, the second becomes an `incomplete` row. A gap row
+# asserts that a term is absent from the searched vocabularies, which is a claim
+# the term-request pipeline acts on.
+.ms_closure_gap_row <- function(iri, targets, dictionary, query, sources) {
+  context <- .ms_closure_target_context(iri, targets, dictionary)
+  scope <- context$scope
+  field <- context$field
+  column_name <- context$column_name
+  table_id <- context$table_id
+  label <- context$label
+  description <- context$description
+  out <- tibble::tibble(
+    dataset_id = context$dataset_id,
     table_id = table_id,
     column_name = column_name,
     code_value = NA_character_,
@@ -462,7 +555,7 @@
     ),
     target_sdp_field = field,
     target_row_key = if (nzchar(column_name)) column_name else table_id,
-    dictionary_role = role,
+    dictionary_role = context$role,
     search_query = query,
     column_label = label,
     column_description = description,
@@ -504,21 +597,99 @@
   out[, .ms_closure_gap_cols(), drop = FALSE]
 }
 
+# INCOMPLETE EVIDENCE IS NOT A MISSING TERM. An exact IRI hit can still carry a
+# blank required field -- an ontology class with no `skos:definition` is the
+# ordinary case -- and the vocabulary row cannot be written without it, because
+# `.ms_eml_read_vocabulary()` refuses a blank. That is a different report from a
+# gap and goes in a different table: a gap row hard-codes `candidate_count = 0`
+# and `gap_detection_basis = "no_candidates"`, so routing a found term through it
+# asks `render_ontology_term_request()` to mint a term that already exists.
+#
+# The fix is a named field and the place it is missing from, which is what a
+# reviewer needs in order to supply it through `evidence` or annotate it
+# upstream. Reported and warned rather than aborted: the rest of the closure is
+# still correct and still worth having, which is the same reasoning as the
+# ruled gap-not-abort shape.
+.ms_closure_incomplete_cols <- function() {
+  c(
+    "dataset_id",
+    "table_id",
+    "column_name",
+    "target_scope",
+    "target_sdp_field",
+    "dictionary_role",
+    "iri",
+    "missing_fields",
+    "resolved_source",
+    "search_query",
+    "searched_role"
+  )
+}
+
+.ms_closure_incomplete_row <- function(iri,
+                                       targets,
+                                       dictionary,
+                                       missing_fields,
+                                       values,
+                                       resolved) {
+  context <- .ms_closure_target_context(iri, targets, dictionary)
+  out <- tibble::tibble(
+    dataset_id = context$dataset_id,
+    table_id = context$table_id,
+    column_name = context$column_name,
+    target_scope = context$scope,
+    target_sdp_field = context$field,
+    dictionary_role = context$role,
+    iri = iri,
+    # Radix: this string is a cell of a returned table and is compared by tests.
+    missing_fields = .ms_closure_text(
+      sort(unique(missing_fields), method = "radix")
+    ),
+    resolved_source = .ms_closure_text(values[["source"]]),
+    search_query = .ms_closure_text(resolved$query),
+    searched_role = .ms_closure_text(resolved$role)
+  )
+  out[, .ms_closure_incomplete_cols(), drop = FALSE]
+}
+
+.ms_closure_empty_incomplete <- function() {
+  out <- tibble::as_tibble(stats::setNames(
+    rep(list(character()), length(.ms_closure_incomplete_cols())),
+    .ms_closure_incomplete_cols()
+  ))
+  out[, .ms_closure_incomplete_cols(), drop = FALSE]
+}
+
+# The sidecar's own path, resolved and checked ONCE and then used for both the
+# read and the write. Checked for the read as well: the declared `path` values
+# this producer obeys come out of that file, so a linked sidecar chooses where the
+# closure gets written.
+.ms_closure_mapping_file <- function(path) {
+  candidate <- file.path(path, "metadata", "eml-mapping.yml")
+  if (!file.exists(candidate)) {
+    return(NULL)
+  }
+  .ms_closure_resolve_write_path(path, "metadata/eml-mapping.yml")
+}
+
 # The reviewed EML sidecar declares where both closure files live and pins their
 # bytes. Honour the declared paths when it exists so the producer cannot write a
 # file the sidecar does not point at, and rewrite the two digests afterwards so
 # that no user hand-writes one.
-.ms_closure_mapping_paths <- function(path) {
+.ms_closure_mapping_paths <- function(mapping_file) {
   defaults <- list(
     vocabulary = "metadata/semantic_vocabulary.csv",
     review = "reviewed_semantic_selections.csv"
   )
-  mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
-  if (!file.exists(mapping_path)) {
+  if (is.null(mapping_file)) {
     return(defaults)
   }
-  mapping <- tryCatch(yaml::read_yaml(mapping_path), error = function(e) NULL)
-  if (is.null(mapping)) {
+  mapping <- tryCatch(yaml::read_yaml(mapping_file), error = function(e) NULL)
+  # `is.list()`, not `is.null()`: a sidecar that parses to a YAML SCALAR rather
+  # than a mapping reached `mapping[["semantic_vocabulary"]]` and raised
+  # `subscript out of bounds`, which says nothing about the file that caused it.
+  # The sidecar is package content, so a malformed one is input and not a bug.
+  if (!is.list(mapping)) {
     return(defaults)
   }
   declared <- function(key, fallback) {
@@ -531,33 +702,94 @@
   )
 }
 
-# A relative path that stays inside the package. The sidecar is package content,
-# so its `path` values are input: an absolute or escaping value must not send a
-# write outside the directory the caller named.
+# A relative path that stays inside the package AND IS REACHED THROUGH NO LINK.
+#
+# THE THREAT MODEL IS AN SDP THAT ARRIVED FROM SOMEBODY ELSE. Both closure
+# targets and the sidecar itself are package content, so all three are untrusted
+# input to an exported, documented workflow: the sidecar's `path` values choose
+# where a write lands, and a symlink already sitting at any of the three names
+# redirects that write to whatever the R process can write. So every one of
+# `root`, each intermediate directory component, and the final entry is refused
+# when it is a link -- the package's hardened SDP layer does exactly this for
+# every other metadata resource, and is called here rather than re-implemented:
+#
+#   .ms_sdp_extension_root()                refuses a symlinked package root
+#   .ms_sdp_extension_assert_safe_directory() walks each component, refusing a
+#                                            symlinked one and one that resolves
+#                                            outside the root, creating levels
+#                                            only after checking them
+#   .ms_sdp_extension_assert_safe_file()    refuses a symlinked final entry
+#
+# `create = TRUE` on the directory walk replaces a `dir.create(recursive = TRUE)`
+# that ran BEFORE the containment check, so a declared escaping path no longer
+# creates directories outside the package on its way to being refused.
+#
+# HARD LINKS ARE NOT DETECTED, AND ARE NOT LEFT OPEN. Base R exposes no link
+# count -- `file.info()` has no `nlink` and `Sys.readlink()` sees nothing -- so
+# there is no portable test to add. What closes it is the INSTALL path rather
+# than a check: `.ms_sdp_extension_atomic_write_set()` writes the bytes to a
+# fresh sibling inode and renames it over the directory entry, so nothing on this
+# path ever opens the destination and an external hard link keeps the inode it
+# had, with the content it had. The residual is that the package's own copy stops
+# sharing that inode, which is the intended outcome of replacing the file.
+#
+# *Retires when:* `.ms_sdp_extension_assert_safe_file()` grows a create-if-absent
+# mode, at which point this function is a single call to it.
 .ms_closure_resolve_write_path <- function(path, relative) {
-  root <- normalizePath(path, mustWork = TRUE)
+  root <- .ms_sdp_extension_root(path)
   if (grepl("^([/\\\\]|[A-Za-z]:)", relative)) {
     cli::cli_abort(c(
       "The reviewed EML sidecar declares an absolute closure path.",
       .ms_cli_bullets(relative)
     ))
   }
-  candidate <- file.path(root, relative)
-  parent <- dirname(candidate)
-  dir.create(parent, recursive = TRUE, showWarnings = FALSE)
-  resolved <- normalizePath(parent, mustWork = TRUE)
-  prefix <- paste0(root, .Platform$file.sep)
-  if (!identical(resolved, root) && !startsWith(resolved, prefix)) {
-    cli::cli_abort(c(
-      "The reviewed EML sidecar declares a closure path outside the package.",
-      .ms_cli_bullets(relative)
-    ))
-  }
-  file.path(resolved, basename(candidate))
+  tryCatch(
+    {
+      .ms_sdp_extension_assert_safe_directory(
+        root,
+        dirname(relative),
+        create = TRUE
+      )
+      .ms_sdp_extension_assert_safe_file(root, relative, must_exist = FALSE)
+    },
+    error = function(cnd) {
+      cli::cli_abort(
+        c(
+          "A closure output path is one this package refuses to write.",
+          .ms_cli_bullets(relative)
+        ),
+        parent = cnd
+      )
+    }
+  )
 }
 
-.ms_closure_file_sha256 <- function(file) {
-  digest::digest(file = file, algo = "sha256", serialize = FALSE)
+# The digest of the bytes about to be installed, not of a file already on disk.
+# That is what lets the sidecar's two `sha256` values join the closure files in
+# ONE atomic write set: hashing installed files would need the CSVs in place
+# first, which is exactly the window where a later failure leaves a replaced file
+# next to a stale digest. Identical output to `digest(file = ...)` by
+# construction -- both hash the same bytes.
+.ms_closure_bytes_sha256 <- function(bytes) {
+  digest::digest(bytes, algo = "sha256", serialize = FALSE)
+}
+
+# The bytes `writeLines()` would have written for these lines. Rendered through
+# the real writer into a staging file rather than assembled with `paste()`: the
+# sidecar is hand-edited and may carry non-ASCII text, `paste()` would re-encode
+# it, and what is wanted here is byte-identity with the writer this file used
+# before the install became atomic.
+#
+# *Retires when:* `.ms_sdp_extension_text_bytes()` lands. PR #119 (hub item
+# B-111) adds exactly this renderer, with exactly this reasoning, to
+# `R/sdp-extension-helpers.R`; this becomes a call to it and the duplicate goes.
+# It is written here rather than imported because #119 is unmerged, and duplicated
+# rather than added to that file so the two changes cannot collide there.
+.ms_closure_text_bytes <- function(lines) {
+  temporary <- tempfile(fileext = ".yml")
+  on.exit(unlink(temporary), add = TRUE)
+  writeLines(lines, con = temporary, useBytes = TRUE)
+  readBin(temporary, what = "raw", n = file.info(temporary)$size)
 }
 
 # Replace one block-mapping `sha256:` value in the sidecar's TEXT rather than by
@@ -606,21 +838,27 @@
   list(lines = append(lines, paste0("  ", entry), after = start), ok = TRUE)
 }
 
-.ms_closure_update_mapping <- function(path, vocabulary_file, review_file) {
-  mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
-  if (!file.exists(mapping_path)) {
-    return(NULL)
+# The sidecar's updated bytes, and nothing written. Rendering is split from
+# installing so that the sidecar joins the two closure files in one atomic write
+# set: the digests are computed over the bytes that are about to be installed, so
+# there is never a moment when a CSV has been replaced and its `sha256` has not.
+# The caller warns about `refused` only after the install succeeds.
+.ms_closure_mapping_bytes <- function(mapping_file,
+                                      vocabulary_bytes,
+                                      review_bytes) {
+  if (is.null(mapping_file)) {
+    return(list(bytes = NULL, refused = character()))
   }
-  lines <- readLines(mapping_path, warn = FALSE)
+  lines <- readLines(mapping_file, warn = FALSE)
   refused <- character()
   for (entry in list(
-    list(key = "semantic_vocabulary", file = vocabulary_file),
-    list(key = "semantic_review", file = review_file)
+    list(key = "semantic_vocabulary", bytes = vocabulary_bytes),
+    list(key = "semantic_review", bytes = review_bytes)
   )) {
     result <- .ms_closure_set_mapping_digest(
       lines,
       entry$key,
-      .ms_closure_file_sha256(entry$file)
+      .ms_closure_bytes_sha256(entry$bytes)
     )
     if (!result$ok) {
       refused <- c(refused, entry$key)
@@ -628,19 +866,7 @@
     }
     lines <- result$lines
   }
-  if (length(refused) > 0L) {
-    cli::cli_warn(c(
-      "!" = "The reviewed EML sidecar writes {length(refused)} key{?s} inline, so {?its/their} {.field sha256} could not be pinned without rewriting the whole document.",
-      .ms_cli_bullets(refused),
-      # No cli pluralization in this element: it interpolates nothing, so a
-      # `{?a/b}` here aborts with "Cannot pluralize without a quantity" -- which
-      # is exactly what happened, and was found only because this otherwise
-      # unreachable path got a test.
-      "i" = "Rewrite each as a block mapping with {.field path} and {.field sha256} on their own lines, then re-run."
-    ))
-  }
-  writeLines(lines, mapping_path)
-  mapping_path
+  list(bytes = .ms_closure_text_bytes(lines), refused = refused)
 }
 
 #' Write the reviewed semantic closure for a Salmon Data Package
@@ -668,14 +894,32 @@
 #' @section Unresolvable IRIs become gaps, not errors:
 #' Evidence is resolved by re-running the package's own deterministic search
 #' ([find_terms()]) for each IRI and keeping the hit whose IRI matches. An IRI
-#' no search returns is reported as a row of `gaps` -- the shape
-#' [detect_semantic_term_gaps()] returns, plus an `unresolved_iri` column --
-#' and both files are still written without it. That is deliberate: an IRI
-#' absent from every searched vocabulary is an ontology gap to file through
-#' [render_ontology_term_request()] and [submit_term_request_issues()], not a
-#' reason to leave the user with no files at all. The omission is not silent:
-#' attempting EML export then names the same IRI as missing from the
-#' vocabulary.
+#' every searched source answered about and none of them has is reported as a
+#' row of `gaps` -- the shape [detect_semantic_term_gaps()] returns, plus an
+#' `unresolved_iri` column -- and both files are still written without it. That
+#' is deliberate: an IRI absent from every searched vocabulary is an ontology
+#' gap to file through [render_ontology_term_request()] and
+#' [submit_term_request_issues()], not a reason to leave the user with no files
+#' at all. The omission is not silent: attempting EML export then names the same
+#' IRI as missing from the vocabulary.
+#'
+#' @section What is not a gap:
+#' Two other outcomes leave a vocabulary row unwritten and neither is an
+#' ontology gap, because in neither case is the term known to be absent.
+#' Reporting them as gaps would ask [render_ontology_term_request()] to mint a
+#' term that exists.
+#'
+#' * **A lookup that did not answer.** If a search throws, or [find_terms()]
+#'   returns empty while its `"diagnostics"` attribute records a source that
+#'   failed, nothing has been learned about that IRI. The call **aborts** and
+#'   writes nothing, naming each IRI and the sources that did not answer; the
+#'   remedy is to re-run, so leaving a half-derived closure on disk would make
+#'   the retry start from worse state.
+#' * **A term found with incomplete evidence.** An exact IRI hit can still carry
+#'   a blank required field -- a class with no definition is the ordinary case.
+#'   The row is reported in `incomplete`, naming the missing field and the slot,
+#'   with a warning; the other rows are still written. Supply the field through
+#'   `evidence`, or annotate the term upstream.
 #'
 #' @section Hand-supplied evidence:
 #' `find_terms()` fills `label`, `definition`, `source`, `ontology`,
@@ -709,10 +953,11 @@
 #'   and placeholder rationales are not suppressed.
 #'
 #' @return Invisibly, a list with `vocabulary` and `review` (the two tibbles as
-#'   written), `gaps` (the unresolvable IRIs in term-gap shape),
-#'   `measurement_iris` and `review_targets` (the two canonical sets),
-#'   `placeholders` (ledger rows that got a `REVIEW REQUIRED:` rationale), and
-#'   `files` (the paths written).
+#'   written), `gaps` (IRIs absent from every searched source, in term-gap
+#'   shape), `incomplete` (IRIs that were found but whose evidence is short of a
+#'   required field, which is not a gap), `measurement_iris` and `review_targets`
+#'   (the two canonical sets), `placeholders` (ledger rows that got a
+#'   `REVIEW REQUIRED:` rationale), and `files` (the paths written).
 #'
 #' @seealso [write_eml_from_sdp()], [publish_sdp_to_knb()],
 #'   [detect_semantic_term_gaps()], [render_ontology_term_request()],
@@ -831,6 +1076,8 @@ write_sdp_semantic_closure <- function(path,
   required_fields <- .ms_closure_required_vocabulary_fields()
   vocabulary_rows <- list()
   gap_rows <- list()
+  incomplete_rows <- list()
+  failure_rows <- list()
   for (iri in measurement_iris) {
     supplied <- vapply(
       setdiff(.ms_closure_vocabulary_fields(), "iri"),
@@ -853,7 +1100,7 @@ write_sdp_semantic_closure <- function(path,
         search_fn
       )
     } else {
-      list(values = NULL, query = "", role = "")
+      .ms_closure_no_search()
     }
 
     values <- supplied
@@ -871,7 +1118,38 @@ write_sdp_semantic_closure <- function(path,
       values[["native_type"]] <- .ms_closure_native_type(values[["resource_kind"]])
     }
 
+    # THREE WAYS A ROW CAN BE SHORT, AND THEY ARE NOT THE SAME REPORT. Only the
+    # last of them is an ontology gap, and only a gap may reach the term-request
+    # pipeline; the first two once did, which is the defect being fixed here.
     if (any(!nzchar(values[required_fields]))) {
+      if (length(resolved$errors) > 0L || length(resolved$degraded) > 0L) {
+        # 1. The lookup did not answer. Nothing has been learned about this IRI,
+        #    so no report about it can be made yet. Collected and aborted on
+        #    below, before any file moves.
+        failure_rows[[length(failure_rows) + 1L]] <- tibble::tibble(
+          iri = iri,
+          failed_sources = .ms_closure_text(resolved$degraded),
+          search_error = .ms_closure_text(resolved$errors),
+          search_query = .ms_closure_text(resolved$query)
+        )
+        next
+      }
+      if (!is.null(resolved$values)) {
+        # 2. The term was FOUND and its evidence is short of a required field.
+        #    Not a gap: the IRI exists and asking for it to be minted would be
+        #    wrong. Named field, named slot, separate table.
+        incomplete_rows[[length(incomplete_rows) + 1L]] <-
+          .ms_closure_incomplete_row(
+            iri,
+            review_targets,
+            dictionary,
+            required_fields[!nzchar(values[required_fields])],
+            values,
+            resolved
+          )
+        next
+      }
+      # 3. Every searched source answered and none of them has the term.
       gap_rows[[length(gap_rows) + 1L]] <- .ms_closure_gap_row(
         iri,
         review_targets,
@@ -885,6 +1163,46 @@ write_sdp_semantic_closure <- function(path,
     row <- tibble::as_tibble(as.list(c(iri = iri, values)))
     vocabulary_rows[[length(vocabulary_rows) + 1L]] <-
       row[, .ms_closure_vocabulary_fields(), drop = FALSE]
+  }
+
+  # ------------------------------------------------------------------
+  # A LOOKUP THAT DID NOT ANSWER STOPS THE RUN, BEFORE ANY FILE MOVES.
+  #
+  # This is the one case the gap-not-abort ruling does NOT cover, and the
+  # distinction is the whole of it: that ruling is about an IRI the searched
+  # vocabularies genuinely do not have, which is a term request somebody can
+  # file. A source that did not answer has told us nothing, so there is nothing
+  # to file and no vocabulary row to omit on purpose -- writing the closure
+  # anyway would put an outage's shape into the two files a publication is built
+  # from, and would hand `render_ontology_term_request()` a request to mint a
+  # term that may already exist. `find_terms()` warns, in its own words, that
+  # such a result is unknown rather than an ontology gap; this obeys it.
+  #
+  # Placed here, ahead of the ledger and every write, because the remedy is to
+  # re-run: leaving a half-derived closure on disk would make the retry start
+  # from worse state than the first attempt did.
+  # ------------------------------------------------------------------
+  if (length(failure_rows) > 0L) {
+    failures <- dplyr::bind_rows(failure_rows)
+    failures <- failures[order(failures$iri, method = "radix"), , drop = FALSE]
+    cli::cli_abort(c(
+      "Vocabulary lookup did not answer for {nrow(failures)} canonical measurement IRI{?s}, so no closure was written.",
+      .ms_cli_bullets(paste0(
+        failures$iri,
+        ifelse(
+          nzchar(failures$failed_sources),
+          paste0(" (no answer from ", failures$failed_sources, ")"),
+          ""
+        ),
+        ifelse(
+          nzchar(failures$search_error),
+          paste0(" (search failed: ", failures$search_error, ")"),
+          ""
+        )
+      )),
+      "i" = "A degraded search is unknown, not an ontology gap: none of these is a term request.",
+      "i" = "Re-run when the sources answer, or supply the evidence through {.arg evidence}."
+    ))
   }
 
   vocabulary <- if (length(vocabulary_rows) > 0L) {
@@ -920,6 +1238,21 @@ write_sdp_semantic_closure <- function(path,
   # ------------------------------------------------------------------
   # The review ledger: one accepted row per canonical target.
   # ------------------------------------------------------------------
+  # THE `REVIEW REQUIRED:` MARKER IS A GUARD, so it says what would retire it.
+  # It satisfies the ledger's non-empty `review_rationale` check without
+  # asserting that a human judged anything, which is the only honest thing to
+  # write when nothing recorded a rationale: inventing one would fabricate the
+  # one purely human part of the ledger, and leaving the cell empty would fail a
+  # validator whose complaint names the wrong problem. The marker and the warning
+  # below are the only signals, deliberately -- judging a rationale is not a
+  # validator's job, so no check here can tell a real one from a plausible one.
+  #
+  # *Retires when:* every accepted slot has a recorded rationale to read, so a
+  # target without one is a defect rather than a row to mark. Concretely: when
+  # `accept_suggestion()` requires a `decision_reason` and `apply_sdp_semantics()`
+  # carries it through to `semantic_suggestions.csv` for every accepted row, this
+  # branch becomes unreachable and the marker, the `placeholders` return value
+  # and the warning all go together, replaced by an abort naming the slot.
   placeholder_rationale <- paste(
     "REVIEW REQUIRED: record why this IRI was selected for this slot.",
     "Supply it as `review_rationale` through the `evidence` argument of",
@@ -970,14 +1303,62 @@ write_sdp_semantic_closure <- function(path,
   review <- review[, .ms_closure_ledger_fields(), drop = FALSE]
 
   # ------------------------------------------------------------------
-  # Write, then pin.
+  # RENDER EVERYTHING, THEN INSTALL IT AS ONE SET.
+  #
+  # Three coordinated files: two CSVs, and the sidecar that pins their bytes. The
+  # set is only meaningful complete -- a vocabulary CSV beside its previous
+  # `sha256` is a package that fails its own digest check -- so all three are
+  # rendered to bytes first and installed by
+  # `.ms_sdp_extension_atomic_write_set()`, which stages each as a sibling,
+  # renames them in, and rolls every one of them back if any install fails. The
+  # earlier sequence of direct writes had two windows in it: an unwritable sidecar
+  # left a replaced CSV with a stale digest, and a failure on the second CSV left
+  # the first replaced with no digest update at all. Both errored, and both left
+  # the package worse than it started.
+  #
+  # It is also what makes a linked destination harmless: nothing here opens a
+  # target file, so neither a symlink nor a hard link at any of the three names
+  # is written through. The path checks above refuse a symlink outright; this is
+  # the layer that covers what no portable check can see.
+  #
+  # Reuse rather than a second mechanism: this writer is the package's own,
+  # already used by the methods migration, the observation structures, the
+  # metadata writer and `write_salmon_datapackage()`.
   # ------------------------------------------------------------------
-  declared <- .ms_closure_mapping_paths(path)
+  mapping_file <- .ms_closure_mapping_file(path)
+  declared <- .ms_closure_mapping_paths(mapping_file)
   vocabulary_file <- .ms_closure_resolve_write_path(path, declared$vocabulary)
   review_file <- .ms_closure_resolve_write_path(path, declared$review)
-  readr::write_csv(vocabulary, vocabulary_file, na = "")
-  readr::write_csv(review, review_file, na = "")
-  mapping_file <- .ms_closure_update_mapping(path, vocabulary_file, review_file)
+
+  vocabulary_bytes <- .ms_sdp_extension_csv_bytes(vocabulary, na = "")
+  review_bytes <- .ms_sdp_extension_csv_bytes(review, na = "")
+  mapping <- .ms_closure_mapping_bytes(
+    mapping_file,
+    vocabulary_bytes,
+    review_bytes
+  )
+
+  writes <- list()
+  writes[[vocabulary_file]] <- vocabulary_bytes
+  writes[[review_file]] <- review_bytes
+  if (!is.null(mapping$bytes)) {
+    writes[[mapping_file]] <- mapping$bytes
+  }
+  .ms_sdp_extension_atomic_write_set(writes)
+
+  # After the install, never before: if nothing was installed there is no
+  # half-pinned sidecar to warn about.
+  if (length(mapping$refused) > 0L) {
+    cli::cli_warn(c(
+      "!" = "The reviewed EML sidecar writes {length(mapping$refused)} key{?s} inline, so {?its/their} {.field sha256} could not be pinned without rewriting the whole document.",
+      .ms_cli_bullets(mapping$refused),
+      # No cli pluralization in this element: it interpolates nothing, so a
+      # `{?a/b}` here aborts with "Cannot pluralize without a quantity" -- which
+      # is exactly what happened, and was found only because this otherwise
+      # unreachable path got a test.
+      "i" = "Rewrite each as a block mapping with {.field path} and {.field sha256} on their own lines, then re-run."
+    ))
+  }
 
   gaps <- if (length(gap_rows) > 0L) {
     out <- dplyr::bind_rows(gap_rows)
@@ -999,6 +1380,31 @@ write_sdp_semantic_closure <- function(path,
       "!" = "{nrow(gaps)} canonical measurement IRI{?s} could not be resolved from {.val {sources}} and {?is/are} absent from the reviewed vocabulary.",
       .ms_cli_bullets(paste0(gaps$target_sdp_field, " = ", gaps$unresolved_iri)),
       "i" = "Each is a row of the returned {.field gaps} table; pass it to {.fn render_ontology_term_request} to file a term request, or supply a row through {.arg evidence}."
+    ))
+  }
+
+  incomplete <- if (length(incomplete_rows) > 0L) {
+    out <- dplyr::bind_rows(incomplete_rows)
+    out[
+      order(out$iri, out$target_sdp_field, method = "radix"),
+      ,
+      drop = FALSE
+    ]
+  } else {
+    .ms_closure_empty_incomplete()
+  }
+
+  if (nrow(incomplete) > 0L) {
+    cli::cli_warn(c(
+      "!" = "{nrow(incomplete)} canonical measurement IRI{?s} resolved to a term whose evidence is short of a required field, so the row was not written.",
+      .ms_cli_bullets(paste0(
+        incomplete$iri, " is missing ", incomplete$missing_fields
+      )),
+      # Said explicitly because the two warnings otherwise read alike, and the
+      # difference decides what a reader should do next: a gap is a term to mint,
+      # this is a field to supply or annotate.
+      "i" = "This is not an ontology gap: the term was found. Each is a row of the returned {.field incomplete} table.",
+      "i" = "Supply the named field through {.arg evidence}, or annotate the term in its ontology, then re-run."
     ))
   }
 
@@ -1031,6 +1437,7 @@ write_sdp_semantic_closure <- function(path,
     vocabulary = vocabulary,
     review = review,
     gaps = gaps,
+    incomplete = incomplete,
     measurement_iris = measurement_iris,
     review_targets = review_targets,
     placeholders = placeholder_rows,

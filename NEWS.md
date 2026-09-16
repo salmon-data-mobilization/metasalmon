@@ -43,6 +43,31 @@ metasalmon (development version)
     directly; both files are still written without that row. The omission is not
     silent, because `write_eml_from_sdp()` then names the same IRI as missing
     from the vocabulary.
+  - **And a gap is a claim, so only one of the three ways a row can go unwritten
+    makes one.** A gap row asserts that a term is absent from the searched
+    vocabularies, which is what the term-request pipeline acts on, so the two
+    outcomes that do not establish absence are reported separately. A **lookup
+    that did not answer** -- a search that threw, or a `find_terms()` result whose
+    `"diagnostics"` attribute names a failed source -- **aborts before anything is
+    written**, naming each IRI and the sources that were silent; `find_terms()`
+    already warns that such a result is unknown rather than an ontology gap, and
+    this obeys it. A **term that was found with a required field blank**, such as
+    a class with no definition, comes back in a new `incomplete` element naming
+    the field and the slot, with a warning that says it is not a gap; the
+    remaining rows are still written.
+  - **The two files and the sidecar digest install as one set, and no write
+    follows a link.** All three are rendered to bytes and installed through the
+    package's existing `.ms_sdp_extension_atomic_write_set()`, which stages each
+    as a sibling, renames them in, and rolls all three back if any install fails
+    -- so a failure can no longer leave a replaced CSV beside its previous
+    `sha256`. The package root, every intermediate directory component and each
+    final entry are refused when they are a symlink, which matters because an SDP
+    received from a collaborator can point any of the three names at a file
+    outside the package and have this function truncate it. Hard links are not
+    detected, because base R exposes no link count, and are closed by the same
+    install path rather than by a check: the bytes go to a fresh inode and a
+    rename replaces the directory entry, so nothing here ever opens the
+    destination.
 
   `scripts/build-fraser-coho-knb-rehearsal.R` reached into `metasalmon:::` at
   three sites for exactly the things this function now returns, and reaches into

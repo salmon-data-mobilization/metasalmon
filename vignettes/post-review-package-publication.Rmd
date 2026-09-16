@@ -482,6 +482,20 @@ The unresolved row is left out of the vocabulary rather than invented, so
 That is the intended sequence: the gap is a term to mint or an IRI to correct,
 and the package is not publishable until it is one or the other.
 
+**Two things that leave a row out are not gaps, and you should not file them as
+term requests.** A gap says the searched vocabularies do not have the term, and
+that is what `render_ontology_term_request()` acts on, so the cases that do not
+establish absence are reported separately:
+
+* **A lookup that did not answer** — a network or parser failure, or a
+  `find_terms()` result whose `"diagnostics"` attribute names a source that did
+  not reply. The call **aborts and writes nothing**, naming each IRI and the
+  silent sources. Re-run when the sources answer; nothing on disk changed.
+* **A term found with a required field blank**, for example a class with no
+  definition. It comes back in `closure$incomplete`, naming the missing field and
+  the slot. The term exists, so supply the field through `evidence` or annotate it
+  upstream rather than requesting a new term.
+
 A worked end-to-end example is `scripts/build-fraser-coho-knb-rehearsal.R` in
 the source repository, which takes the shipped Fraser coho data from
 `create_sdp()` to a clean KNB test-node dry run using only exported functions.

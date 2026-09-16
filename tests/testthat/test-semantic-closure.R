@@ -11,8 +11,8 @@
 # the IRI-to-query derivation is exercised rather than bypassed. It records its
 # calls, which is how the "no search when fully hand-supplied" test proves a
 # negative.
-closure_search_stub <- function(index = NULL, calls = NULL) {
-  index <- index %||% tibble::tribble(
+closure_search_index <- function() {
+  tibble::tribble(
     ~query, ~iri, ~label, ~definition, ~source, ~ontology, ~resource_kind, ~type_iris,
     "observed rate or abundance", "https://w3id.org/smn/ObservedRateOrAbundance",
     "Observed rate or abundance", "An empirically observed compound measurement variable.",
@@ -24,6 +24,10 @@ closure_search_stub <- function(index = NULL, calls = NULL) {
     "An act of observing a property of a feature of interest.",
     "smn", "smn", "Class", "http://www.w3.org/2002/07/owl#Class"
   )
+}
+
+closure_search_stub <- function(index = NULL, calls = NULL) {
+  index <- index %||% closure_search_index()
   function(query, role = NA_character_, sources = NULL, ...) {
     if (!is.null(calls)) {
       calls$queries <- c(calls$queries, query)
@@ -568,4 +572,253 @@ test_that("a missing package directory is refused before anything is read", {
     ),
     "does not exist"
   )
+})
+
+# ---------------------------------------------------------------------------
+# A LOOKUP THAT DID NOT ANSWER IS NOT AN ONTOLOGY GAP.
+#
+# These two are the same defect arriving by the two routes a search has for
+# failing to answer, and the reason they are one subject: both once produced a
+# `no_candidates` gap row, an omitted vocabulary row, and a written closure --
+# which turns B-116's ruled gap-not-abort shape into a request that an ontology
+# mint a term nobody established was missing. `find_terms()` already warns, in
+# its own words, that such a result is unknown rather than an ontology gap.
+# ---------------------------------------------------------------------------
+
+# An empty result carrying the failed-source diagnostics `find_terms()` attaches.
+# This is the harder half: the call returns normally, and only the attribute says
+# the answer is unknown.
+closure_degraded_stub <- function(failed = "gcdfo") {
+  function(query, role = NA_character_, sources = NULL, ...) {
+    hits <- tibble::tibble(
+      label = character(),
+      iri = character(),
+      definition = character(),
+      source = character(),
+      ontology = character(),
+      resource_kind = character(),
+      type_iris = character(),
+      score = numeric()
+    )
+    attr(hits, "diagnostics") <- tibble::tibble(
+      source = failed,
+      query = query,
+      status = "http_error",
+      count = 0L,
+      elapsed_secs = 0,
+      error = "HTTP 503"
+    )
+    hits
+  }
+}
+
+test_that("a search that throws aborts rather than manufacturing a gap", {
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  # Braces in the message on purpose: external text reaching cli unescaped is
+  # evaluated as a template, and an unbalanced one replaces the message with a
+  # parse error.
+  expect_error(
+    write_sdp_semantic_closure(
+      path,
+      evidence = closure_reviewed_evidence(),
+      search_fn = function(...) stop("connection {reset} by peer"),
+      quiet = TRUE
+    ),
+    "did not answer"
+  )
+
+  # NOTHING WAS WRITTEN. The remedy is to re-run, so a half-derived closure on
+  # disk would make the retry start from worse state than the first attempt did.
+  expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+  expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+})
+
+test_that("an empty result with failed-source diagnostics is not a gap", {
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  expect_error(
+    write_sdp_semantic_closure(
+      path,
+      evidence = closure_reviewed_evidence(),
+      search_fn = closure_degraded_stub(),
+      quiet = TRUE
+    ),
+    "did not answer"
+  )
+  expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+  expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+
+  # And the degraded-status test is the one `find_terms()` applies, read rather
+  # than restated, so the two cannot drift apart.
+  expect_identical(
+    .ms_search_failed_sources(tibble::tibble(
+      source = c("smn", "gcdfo"),
+      status = c("success", "http_error")
+    )),
+    "gcdfo"
+  )
+  expect_identical(
+    .ms_search_failed_sources(tibble::tibble(
+      source = "smn",
+      status = "success"
+    )),
+    character()
+  )
+})
+
+test_that("a term found with a blank required field is incomplete, not a gap", {
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  # An ontology class with no definition. The IRI matches exactly, so the term
+  # was FOUND; what is missing is evidence about it.
+  index <- closure_search_index()
+  index$definition[
+    index$iri == "https://w3id.org/smn/ObservedRateOrAbundance"
+  ] <- ""
+
+  expect_warning(
+    closure <- write_sdp_semantic_closure(
+      path,
+      evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(index = index),
+      quiet = TRUE
+    ),
+    "not an ontology gap"
+  )
+
+  # NOT a gap: nothing asks the term-request pipeline to mint what was found.
+  expect_identical(nrow(closure$gaps), 0L)
+  expect_identical(nrow(closure$incomplete), 1L)
+  expect_identical(
+    closure$incomplete$iri,
+    "https://w3id.org/smn/ObservedRateOrAbundance"
+  )
+  expect_identical(closure$incomplete$missing_fields, "definition")
+  expect_identical(closure$incomplete$resolved_source, "smn")
+  expect_identical(closure$incomplete$target_sdp_field, "term_iri")
+  expect_identical(closure$incomplete$dictionary_role, "variable")
+  # The row is still omitted, because the validator refuses a blank definition,
+  # and the other three are still written.
+  expect_identical(nrow(closure$vocabulary), 3L)
+  expect_true(file.exists(closure$files[["vocabulary"]]))
+})
+
+test_that("a linked closure output is refused and its target is left alone", {
+  skip_on_os("windows")
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  # The threat model: an SDP that arrived from a collaborator, whose own content
+  # names a file the R process can write.
+  outside <- withr::local_tempdir()
+  external <- file.path(outside, "keep-me.yml")
+  # A YAML mapping, so the sidecar iteration below exercises the write rather
+  # than tripping over an unparseable link target on its way there.
+  keep <- c("keep_me: true", "other: 1")
+  writeLines(keep, external)
+
+  for (relative in c(
+    "metadata/semantic_vocabulary.csv",
+    "reviewed_semantic_selections.csv",
+    "metadata/eml-mapping.yml"
+  )) {
+    # Rewritten each pass: the point of the loop is that each of the three names
+    # is refused on its own, so each starts from the same untouched target.
+    writeLines(keep, external)
+    target <- file.path(path, relative)
+    original <- if (file.exists(target)) {
+      readLines(target, warn = FALSE)
+    } else {
+      NULL
+    }
+    unlink(target)
+    expect_true(file.symlink(external, target))
+
+    expect_error(
+      write_sdp_semantic_closure(
+        path,
+        evidence = closure_reviewed_evidence(),
+        search_fn = closure_search_stub(),
+        quiet = TRUE
+      ),
+      "refuses to write"
+    )
+    expect_identical(readLines(external, warn = FALSE), keep)
+
+    unlink(target)
+    if (!is.null(original)) {
+      writeLines(original, target)
+    }
+  }
+})
+
+test_that("a failure in the third write leaves the first two unchanged", {
+  path <- withr::local_tempdir()
+  make_eml_test_sdp(path)
+  closure_clear(path)
+
+  # A valid closure whose sidecar digests match its files.
+  first <- write_sdp_semantic_closure(
+    path,
+    evidence = closure_reviewed_evidence(),
+    search_fn = closure_search_stub(),
+    quiet = TRUE
+  )
+  mapping_path <- file.path(path, "metadata", "eml-mapping.yml")
+  read_bytes <- function(file) {
+    readBin(file, what = "raw", n = file.info(file)$size)
+  }
+  before_vocabulary <- read_bytes(first$files[["vocabulary"]])
+  before_mapping <- readLines(mapping_path, warn = FALSE)
+
+  # A second run that WOULD write different bytes, so a surviving old file is
+  # distinguishable from a rewritten identical one.
+  changed <- closure_reviewed_evidence()
+  changed$definition[changed$iri == "https://w3id.org/smn/Stock"] <-
+    "A deliberately different definition."
+
+  # Half one: the sidecar render fails. Before the three writes became one set,
+  # both CSVs had already replaced their valid versions by the time this ran, and
+  # the sidecar kept its old digests -- a package that fails its own digest check
+  # even though the call errored.
+  testthat::with_mocked_bindings(
+    expect_error(
+      write_sdp_semantic_closure(
+        path,
+        evidence = changed,
+        search_fn = closure_search_stub(),
+        quiet = TRUE
+      ),
+      "sidecar digest render failed"
+    ),
+    .ms_closure_set_mapping_digest = function(...) {
+      stop("sidecar digest render failed")
+    }
+  )
+  expect_identical(read_bytes(first$files[["vocabulary"]]), before_vocabulary)
+  expect_identical(readLines(mapping_path, warn = FALSE), before_mapping)
+
+  # Half two, with no mock in it: a stray directory where the ledger belongs
+  # fails the second install. The first must not already be installed.
+  unlink(first$files[["review"]])
+  dir.create(first$files[["review"]])
+  expect_error(
+    write_sdp_semantic_closure(
+      path,
+      evidence = changed,
+      search_fn = closure_search_stub(),
+      quiet = TRUE
+    ),
+    "directory"
+  )
+  expect_identical(read_bytes(first$files[["vocabulary"]]), before_vocabulary)
+  expect_identical(readLines(mapping_path, warn = FALSE), before_mapping)
 })

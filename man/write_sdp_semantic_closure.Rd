@@ -36,10 +36,11 @@ and placeholder rationales are not suppressed.}
 }
 \value{
 Invisibly, a list with \code{vocabulary} and \code{review} (the two tibbles as
-written), \code{gaps} (the unresolvable IRIs in term-gap shape),
-\code{measurement_iris} and \code{review_targets} (the two canonical sets),
-\code{placeholders} (ledger rows that got a \verb{REVIEW REQUIRED:} rationale), and
-\code{files} (the paths written).
+written), \code{gaps} (IRIs absent from every searched source, in term-gap
+shape), \code{incomplete} (IRIs that were found but whose evidence is short of a
+required field, which is not a gap), \code{measurement_iris} and \code{review_targets}
+(the two canonical sets), \code{placeholders} (ledger rows that got a
+\verb{REVIEW REQUIRED:} rationale), and \code{files} (the paths written).
 }
 \description{
 Produces the two files \code{\link[=write_eml_from_sdp]{write_eml_from_sdp()}} and \code{\link[=publish_sdp_to_knb]{publish_sdp_to_knb()}}
@@ -68,14 +69,35 @@ here.
 
 Evidence is resolved by re-running the package's own deterministic search
 (\code{\link[=find_terms]{find_terms()}}) for each IRI and keeping the hit whose IRI matches. An IRI
-no search returns is reported as a row of \code{gaps} -- the shape
-\code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} returns, plus an \code{unresolved_iri} column --
-and both files are still written without it. That is deliberate: an IRI
-absent from every searched vocabulary is an ontology gap to file through
-\code{\link[=render_ontology_term_request]{render_ontology_term_request()}} and \code{\link[=submit_term_request_issues]{submit_term_request_issues()}}, not a
-reason to leave the user with no files at all. The omission is not silent:
-attempting EML export then names the same IRI as missing from the
-vocabulary.
+every searched source answered about and none of them has is reported as a
+row of \code{gaps} -- the shape \code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} returns, plus an
+\code{unresolved_iri} column -- and both files are still written without it. That
+is deliberate: an IRI absent from every searched vocabulary is an ontology
+gap to file through \code{\link[=render_ontology_term_request]{render_ontology_term_request()}} and
+\code{\link[=submit_term_request_issues]{submit_term_request_issues()}}, not a reason to leave the user with no files
+at all. The omission is not silent: attempting EML export then names the same
+IRI as missing from the vocabulary.
+}
+
+\section{What is not a gap}{
+
+Two other outcomes leave a vocabulary row unwritten and neither is an
+ontology gap, because in neither case is the term known to be absent.
+Reporting them as gaps would ask \code{\link[=render_ontology_term_request]{render_ontology_term_request()}} to mint a
+term that exists.
+\itemize{
+\item \strong{A lookup that did not answer.} If a search throws, or \code{\link[=find_terms]{find_terms()}}
+returns empty while its \code{"diagnostics"} attribute records a source that
+failed, nothing has been learned about that IRI. The call \strong{aborts} and
+writes nothing, naming each IRI and the sources that did not answer; the
+remedy is to re-run, so leaving a half-derived closure on disk would make
+the retry start from worse state.
+\item \strong{A term found with incomplete evidence.} An exact IRI hit can still carry
+a blank required field -- a class with no definition is the ordinary case.
+The row is reported in \code{incomplete}, naming the missing field and the slot,
+with a warning; the other rows are still written. Supply the field through
+\code{evidence}, or annotate the term upstream.
+}
 }
 
 \section{Hand-supplied evidence}{

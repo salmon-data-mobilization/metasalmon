@@ -385,3 +385,254 @@ now exercised.
    toolchain is 8.1.0, whose output differs in every `importFrom` directive. Any
    agent running `devtools::document()` must either carry that churn or revert it
    by hand, as this pull request did. One deliberate bump would end it.
+
+---
+
+# Review round 2 — the five Codex findings on pull request #121
+
+Codex left four code-review findings and, three minutes later, one security
+finding, all on `R/semantic-closure.R` at head `5ad5c093bd`. All five were valid.
+Two of them (the code review's `:550` and the security review's `:642`) are the
+same defect seen at different completeness, and one change answers both.
+
+## 1 + 5 — linked closure outputs (`:550` P1, `:642` P1 security)
+
+`.ms_closure_resolve_write_path()` normalized and contained only the *parent*
+directory and returned a path still naming the final entry, so `write_csv()`
+followed a symlink sitting there. `.ms_closure_update_mapping()` was worse: it
+called `writeLines()` on `metadata/eml-mapping.yml` with no path check at all.
+The threat model the security review states is the one that matters — **an SDP
+received from a collaborator**, whose own content names the file, in a function
+that is newly exported and documented as a workflow.
+
+Both are now the package's own hardened layer rather than new code:
+`.ms_sdp_extension_root()` refuses a symlinked root,
+`.ms_sdp_extension_assert_safe_directory(create = TRUE)` walks every component
+refusing a symlinked or escaping one, and
+`.ms_sdp_extension_assert_safe_file(must_exist = FALSE)` refuses a symlinked
+final entry. `create = TRUE` also replaces a `dir.create(recursive = TRUE)` that
+ran *before* the containment check, so a declared escaping path no longer creates
+directories outside the package on its way to being refused. The sidecar's path
+is resolved once and used for both the read and the write, because the declared
+paths this producer obeys come out of that file.
+
+**Hard links are not detected, and are not left open.** Base R exposes no link
+count — `file.info()` has no `nlink`, `Sys.readlink()` sees nothing — so there is
+no portable check to add, and the report says so rather than implying coverage.
+What closes it is the install path: the staged-sibling rename in finding 3 never
+opens the destination, so an external hard link keeps its inode and its content.
+
+Failing before, all three names, with the link target outside the package:
+
+    -- Failure: a linked closure output is refused and its target is left alone
+    Expected `write_sdp_semantic_closure(...)` to throw a error.
+    -- Failure: Expected `readLines(external)` to be identical to `keep`.
+    - "iri,label,definition,source,ontology,resource_kind,type_iris,..."
+    - "http://qudt.org/vocab/quantitykind/Count,Count,A quantity kind for..."
+    + "keep_me: true"
+    + "other: 1"
+
+    (second pass, the ledger)
+    - "dataset_id,table_id,column_name,target_scope,target_sdp_field,..."
+    + "keep_me: true"
+
+    (third pass, the sidecar itself)
+      "keep_me: true"
+      "other: 1"
+    - "semantic_vocabulary:"
+    - "  sha256: '980c35e06763687ae2aa9896d51d01c661644efd2dc49707b8b06892901eeec4'"
+    - "semantic_review:"
+    - "  sha256: 'ad2cf185fae8656890ef024a6603c08cdb5a53c7b2278abfc4ff406e70d4718f'"
+
+A file outside the package was truncated and rewritten in every one of the three
+cases. After the fix all three abort and the target is byte-identical.
+
+## 2 — a lookup failure is not an ontology gap (`:373` P1)
+
+The most important of the five: B-116's whole ruled shape is gap-not-abort, and
+this was that shape turned into a defect. `error = function(e) NULL` swallowed a
+thrown search failure, and the `"diagnostics"` attribute — which `find_terms()`
+attaches to an EMPTY result while warning, in its own words, that such a result
+is unknown rather than an ontology gap — was never read. Either one produced a
+`no_candidates` gap row, an omitted vocabulary row, a written closure, and a term
+request asking an ontology to mint a term nobody established was missing.
+
+`.ms_closure_search_evidence()` now carries both back, and an IRI that failed to
+resolve under a degraded search **aborts before anything is written**, naming the
+IRI and the silent sources. That is not a departure from the ruling: the ruling is
+about a term the searched vocabularies genuinely do not have, which somebody can
+file. A source that did not answer has said nothing, so there is nothing to file,
+and the remedy is to re-run — which is why nothing is left on disk.
+
+The degraded-status test is now **one copy**, `.ms_search_failed_sources()` in
+`R/term_search.R`, read both by `find_terms()`'s own warning and here. A second
+copy would let one caller keep manufacturing gaps after the other stopped.
+
+Failing before:
+
+    -- Failure: a search that throws aborts rather than manufacturing a gap
+    Expected `write_sdp_semantic_closure(...)` to throw a error.
+    -- Failure: Expected `file.exists(.../semantic_vocabulary.csv)` to be FALSE.
+    `actual`: TRUE   `expected`: FALSE
+    -- Failure: Expected `file.exists(.../reviewed_semantic_selections.csv)` ...
+    `actual`: TRUE   `expected`: FALSE
+
+    -- Failure: an empty result with failed-source diagnostics is not a gap
+    Expected `write_sdp_semantic_closure(...)` to throw a error.
+      (and the warning it emitted instead)
+      ! 2 canonical measurement IRIs could not be resolved from "smn" and
+        "gcdfo" and are absent from the reviewed vocabulary.
+      x entity_iri = https://w3id.org/smn/Stock
+      x term_iri = https://w3id.org/smn/ObservedRateOrAbundance
+      i Each is a row of the returned gaps table; pass it to
+        `render_ontology_term_request()` to file a term request
+
+That warning is the defect in its own words: an outage, reported as two ontology
+gaps, with an invitation to file them.
+
+The thrown-error test uses `stop("connection {reset} by peer")` on purpose, so
+the external text reaching cli is escaped rather than interpolated.
+
+## 3 — the three writes install as one set (`:980` P1)
+
+Reused rather than reinvented, as the finding asked: all three render to bytes
+and install through **`.ms_sdp_extension_atomic_write_set()`**, which stages each
+as a sibling, renames them in, and rolls every one back if any install fails.
+
+**This does not depend on pull request #119 landing.**
+`.ms_sdp_extension_atomic_write_set()` is already on `main`
+(`R/sdp-extension-helpers.R:133`), complete with the symlink refusal and the
+rollback; #119 *uses* it for `create_sdp()`'s sidecars rather than introducing it.
+The one thing #119 adds that this needed is `.ms_sdp_extension_text_bytes()`, and
+rather than edit that file and collide with #119 on merge, this branch carries a
+file-local `.ms_closure_text_bytes()` whose comment names #119 as its retirement
+condition. When #119 merges, that function becomes a call to the shared one.
+
+The digests moved from `digest(file = ...)` to `digest(<bytes>)` — identical
+output, verified — because hashing installed files would require the CSVs to be
+in place first, which is precisely the window the finding describes.
+
+Failing before, in two halves, one mocked and one not:
+
+    -- Failure: a failure in the third write leaves the first two unchanged
+    Expected `read_bytes(first$files[["vocabulary"]])` to be identical to
+    `before_vocabulary`.
+    Differences:
+          actual | expected
+    [922] "41"   | "41"
+                 - "6e"            <- "An operationally defined grouping"
+    [923] "20"   | "20"               survived only in `expected`
+    [924] "64"   - "6f"
+    [925] "65"   - "70"            <- on disk: "A deliberately different
+    [926] "6c"   -                    definition."
+
+    -- Error: cannot open the connection
+      7. +-metasalmon::write_sdp_semantic_closure(...)
+      8. | \-readr::write_csv(review, review_file, na = "")
+
+The first half fails the sidecar render; the vocabulary CSV had already replaced a
+valid version and the sidecar still carried its old digests — a package that fails
+its own digest check even though the call errored. The second half puts a
+directory where the ledger belongs, with no mock in it, and the old code replaced
+the vocabulary before erroring on the ledger.
+
+## 4 — incomplete evidence is not a missing term (`:874` P2)
+
+An exact IRI hit with a blank required field (a class with no definition is the
+ordinary case) went through `.ms_closure_gap_row()`, which hard-codes
+`candidate_count = 0` and `gap_detection_basis = "no_candidates"`, so the table
+asked for a term that had just been found. There is now a third outcome:
+`closure$incomplete`, naming the missing field and the slot it is missing from,
+with a warning that says in as many words that it is not an ontology gap. The row
+is still omitted, because `.ms_eml_read_vocabulary()` refuses a blank definition,
+and the other rows are still written.
+
+`.ms_closure_target_context()` was factored out so the gap row and the incomplete
+row cannot disagree about where in the package an IRI sits.
+
+Failing before:
+
+    -- Failure: a term found with a blank required field is incomplete, not a gap
+    Expected `... <- NULL` to throw a warning.
+    -- Failure: Expected `nrow(closure$gaps)` to be identical to 0L.
+      `actual`: 1   `expected`: 0
+    -- Failure: Expected `nrow(closure$incomplete)` to be identical to 1L.
+      `actual` is NULL
+      (and the warning: 1 canonical measurement IRI could not be resolved ...
+       x term_iri = https://w3id.org/smn/ObservedRateOrAbundance)
+
+## The guard-retirement comment B-172 exists for
+
+Codex on pull request #123 pointed out that B-172 exists only because the
+`REVIEW REQUIRED:` placeholder had no retirement condition **in the source**, and
+that B-172 is `blocked_by: [B-116]`, so the violation would land before its
+one-line fix. The pull request body claimed "four, all with retirement conditions
+in the source" and was one short: `.ms_closure_source_url()` and
+`.ms_closure_set_mapping_digest()` carried theirs, the placeholder carried its
+only in this workpad. It is now above `placeholder_rationale` in
+`R/semantic-closure.R`, stated concretely: it retires when `accept_suggestion()`
+requires a `decision_reason` and `apply_sdp_semantics()` carries it through for
+every accepted row, at which point the branch is unreachable and the marker, the
+`placeholders` return value and the warning go together.
+
+Guards added in this round, each with its retirement condition in the source:
+
+1. `.ms_search_degraded_statuses()` / `.ms_search_failed_sources()` — restates
+   the two per-source statuses that mean "did not answer". *Retires when:* a
+   failed lookup stops being representable as an empty result.
+2. `.ms_closure_resolve_write_path()`'s link refusal. *Retires when:*
+   `.ms_sdp_extension_assert_safe_file()` grows a create-if-absent mode, at which
+   point this is one call to it.
+3. `.ms_closure_text_bytes()` — a deliberate duplicate. *Retires when:* #119
+   lands `.ms_sdp_extension_text_bytes()`.
+4. The `REVIEW REQUIRED:` placeholder, above.
+
+No skips added. The new symlink test carries `skip_on_os("windows")`, which is a
+platform fact rather than a workaround: `file.symlink()` needs a privilege there.
+
+## Anything Codex got wrong
+
+Nothing. All five findings reproduce. The only correction to the *remedies* is
+that finding 3 does not need pull request #119: the writer it names is already on
+`main`, and only a text-bytes renderer is owed to #119.
+
+## Commands and results
+
+    Rscript -e 'devtools::test()'
+      before this round: [ FAIL 8 | WARN 38 | SKIP 9 | PASS 3921 ]
+      after:             [ FAIL 8 | WARN 38 | SKIP 9 | PASS 3958 ]
+      test-semantic-closure.R alone: 21 tests, 90 passing, 0 failed (was 16/57)
+
+    The same 8 failures, re-measured on untouched main at 4cd085c in a separate
+    worktree, file by file:
+      test-dictionary-helpers.R  failed 1
+      test-github-helpers.R      error  2
+      test-iri-predicates.R      failed 4
+      test-review-console.R      failed 1     = 8
+
+    Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'
+      2 errors | 1 warning | 0 notes  -- identical to the branch's own recorded
+      baseline and to main's. ERRORs: the 8 test failures, and two vignettes
+      (migrating-to-sdp-0-3-0.Rmd, tidy-data-for-sdp.Rmd). WARNING: "checking R
+      files for syntax errors", whose body is
+      `OS reports request to set locale to "en_US.UTF-8" cannot be honored` --
+      an environment fact about this machine, not about the code.
+      `checking R files for non-ASCII characters ... OK`
+
+    git diff --check      clean
+    non-ASCII in added R lines: none (grep -P '[^\x00-\x7F]' over the diff, and
+      over both R files whole)
+
+**Local R is 4.3.3 here.** `AGENTS.md` measures CI on 4.6.1 and warns that a
+green local check is evidence about this R and not CI's, and the gap is larger
+than the one that paragraph was written about. Every added R line was checked for
+non-ASCII by grep as well as by `R CMD check`, because that is exactly the check
+the older R was measured passing while a newer one warned.
+
+## Claim and heartbeat
+
+Not touched. `refs/heads/claim/B-116` in the locks repository has a `handoff`
+tip from agent `a-2da3cb6cd51c4da7`, and hand-back deliberately does not release
+the claim, so the item is still held and still unclaimable. This round was run
+under a different session key and did not claim, beat, release or hand off; a
+beat from a token that does not hold the claim would be a false record.

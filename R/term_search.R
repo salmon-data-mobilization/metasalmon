@@ -394,9 +394,8 @@ find_terms <- function(query,
   diag_df <- dplyr::bind_rows(lapply(diagnostics, tibble::as_tibble))
   attr(ranked, "diagnostics") <- diag_df
 
-  degraded <- diag_df$status %in% c("error", "http_error")
-  if (any(degraded)) {
-    failed_sources <- sort(unique(diag_df$source[degraded]), method = "radix")
+  failed_sources <- .ms_search_failed_sources(diag_df)
+  if (length(failed_sources) > 0) {
     cli::cli_warn(c(
       "Vocabulary lookup was incomplete: {.val {failed_sources}} did not answer.",
       "i" = "Treat an empty or short result as unknown rather than as an ontology gap.",
@@ -407,10 +406,46 @@ find_terms <- function(query,
   # A degraded lookup is never cached. Caching it would freeze an outage's empty
   # result for the rest of the session, so every later column would inherit the
   # same manufactured gap.
-  if (.metasalmon_cache_enabled() && !any(degraded)) {
+  if (.metasalmon_cache_enabled() && length(failed_sources) == 0) {
     assign(cache_key, ranked, envir = .metasalmon_cache)
   }
   ranked
+}
+
+# The per-source diagnostic statuses that mean a source did NOT ANSWER, and the
+# sources one result's diagnostics report that way.
+#
+# ONE COPY, ON PURPOSE. A lookup that failed and a lookup that found nothing
+# arrive in the same shape -- an empty table -- and the `"diagnostics"` attribute
+# is the only thing that tells them apart. `find_terms()` reads this for its own
+# warning just below, and so must every caller that would otherwise treat an
+# outage as an ontology gap (`write_sdp_semantic_closure()` is one). A second
+# copy of the status list would let one caller keep manufacturing gaps after the
+# other stopped, and nothing in either copy would say which was current.
+#
+# *Retires when:* a failed lookup stops being representable as an empty result --
+# if `find_terms()` ever throws or returns a typed failure for a degraded source,
+# there is nothing left to distinguish and this goes with the warning below.
+.ms_search_degraded_statuses <- function() {
+  c("error", "http_error")
+}
+
+.ms_search_failed_sources <- function(diagnostics) {
+  if (is.null(diagnostics) || !is.data.frame(diagnostics) ||
+    nrow(diagnostics) == 0 ||
+    !all(c("source", "status") %in% names(diagnostics))) {
+    return(character())
+  }
+  degraded <- !is.na(diagnostics$status) &
+    diagnostics$status %in% .ms_search_degraded_statuses()
+  if (!any(degraded)) {
+    return(character())
+  }
+  # Radix: this vector is displayed and is compared by callers that decide
+  # whether to abort, so its order must not depend on a locale.
+  sort(unique(trimws(as.character(diagnostics$source[degraded]))),
+    method = "radix"
+  )
 }
 
 .empty_terms <- function(role) {
