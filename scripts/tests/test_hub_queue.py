@@ -1933,8 +1933,144 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
 
 
 # --------------------------------------------------------------------------
-# The claim in this file's header, made enforceable
+# The claim in this file's header, made enforceable -- and itself tested
 # --------------------------------------------------------------------------
+
+CHECK_ONLY_RULES = {
+    "generated-block-missing",
+    "generated-block-no-target",
+    "generated-block-target-missing",
+    "generated-blocks-unreadable",
+}
+
+INDIRECT_RULE_SUPPLIERS = {("parse_item_file", "rule or 'value'"): "parse_scalar"}
+
+
+def _enclosing_function(tree, target) -> str:
+    """The name of the INNERMOST function whose body contains `target`.
+
+    Innermost rather than first: `ast.walk` yields outer definitions before
+    inner ones, so taking the first match would name an enclosing function for
+    a rule emitted inside a nested one, and the site would then look listed
+    when it is not.
+    """
+    enclosing = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and any(n is target for n in ast.walk(node))
+    ]
+    return max(enclosing, key=lambda n: n.lineno).name if enclosing else "<module>"
+
+
+def _returned_rule_names(tree, function: str):
+    """(resolved names, lines whose last tuple element could not be resolved).
+
+    THE SECOND HALF IS THE POINT. Collecting only string literals and moving on
+    means a supplier that later returns a rule through a variable, an f-string
+    or a conditional has that return silently skipped -- and because its OTHER
+    returns still yield literals, nothing looks wrong. The new rule then needs
+    no RED demonstration. So an unresolvable element is reported, not skipped.
+    """
+    resolved, unresolvable = set(), []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef) and node.name == function):
+            continue
+        for inner in ast.walk(node):
+            if not (isinstance(inner, ast.Return) and isinstance(inner.value, ast.Tuple)):
+                continue
+            last = inner.value.elts[-1] if inner.value.elts else None
+            if isinstance(last, ast.Constant) and isinstance(last.value, str):
+                if last.value:
+                    resolved.add(last.value)
+            else:
+                unresolvable.append(inner.lineno)
+    return resolved, unresolvable
+
+
+def _red_demonstrations(test_tree):
+    """Rule names passed to a REAL `assert_rejects` call, from the AST.
+
+    Read from the AST and not from the text: a commented-out call, or the
+    string `assert_rejects("rule")` inside a docstring, counts as a
+    demonstration under a text scan. Deleting a rule's executable RED
+    assertion while leaving that text behind would then keep this guard green
+    -- the exact scope overstatement it exists to prevent.
+    """
+    names = set()
+    for node in ast.walk(test_tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)):
+            continue
+        if node.func.attr != "assert_rejects" or not node.args:
+            continue
+        first = node.args[0]
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            names.add(first.value)
+    return names
+
+
+def audit_lint_rule_coverage(
+    hub_source: str,
+    test_source: str,
+    check_only=CHECK_ONLY_RULES,
+    suppliers=INDIRECT_RULE_SUPPLIERS,
+) -> dict:
+    """Every way the header's claim can be false, as data.
+
+    A PURE FUNCTION OF THE TWO SOURCES so it can be fed constructed inputs.
+    Six review rounds on pull request 141 each found this guard narrower than
+    its claim, every one of them a case I had reasoned about rather than
+    constructed. Returning findings instead of asserting is what lets the
+    cases below be a table.
+    """
+    hub_tree, test_tree = ast.parse(hub_source), ast.parse(test_source)
+    emitted, sites = set(), {}
+    for node in ast.walk(hub_tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+            continue
+        if node.func.id != "Problem" or len(node.args) < 3:
+            continue
+        rule = node.args[2]
+        if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
+            emitted.add(rule.value)
+        else:
+            site = (_enclosing_function(hub_tree, node), ast.unparse(rule))
+            sites.setdefault(site, []).append(node.lineno)
+
+    findings: dict[str, list] = {
+        # A site the allowlist does not name at all.
+        "unlisted_sites": sorted(set(sites) - set(suppliers)),
+        # An allowlist entry for a site that no longer exists: a stale entry is
+        # how an allowlist stops describing the code it guards.
+        "stale_sites": sorted(set(suppliers) - set(sites)),
+        # ONE KEY, TWO EMISSIONS. Comparing keys alone lets a SECOND identical
+        # emission collapse into the first's allowlist entry and pass, which
+        # contradicts the guarantee that a second site fails. Occurrence count
+        # is therefore part of the finding, not just the key.
+        "repeated_sites": sorted(
+            f"{fn}: {expr} at lines {lines}" for (fn, expr), lines in sites.items() if len(lines) > 1
+        ),
+        "unresolvable_supplier_returns": [],
+        "empty_suppliers": [],
+    }
+
+    for (function, expr), supplier in suppliers.items():
+        if (function, expr) not in sites:
+            continue
+        resolved, unresolvable = _returned_rule_names(hub_tree, supplier)
+        if unresolvable:
+            findings["unresolvable_supplier_returns"].append(
+                f"{supplier} (supplying {function}) returns a rule this reader cannot "
+                f"resolve at line(s) {unresolvable}"
+            )
+        if not resolved:
+            findings["empty_suppliers"].append(
+                f"{supplier} supplies {function}'s rule names and none were found; "
+                "the reader is broken, not the code"
+            )
+        emitted |= resolved
+
+    findings["undemonstrated"] = sorted(emitted - _red_demonstrations(test_tree) - set(check_only))
+    return {key: value for key, value in findings.items() if value}
 
 
 class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
@@ -1942,8 +2078,7 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
 
     THIS IS THE GUARD FOR THE HEADER'S CLAIM, and it exists because the claim
     was false for four rules and nothing said so. It reads the rule names out
-    of `hub_queue.py` rather than taking a list on trust: a rule added without
-    a pair fails here, which is exactly what did not happen on 2026-09-16.
+    of `hub_queue.py` rather than taking a list on trust.
 
     `CHECK_ONLY_RULES` is the one deliberate exclusion and names its own
     maintenance rule, in the manner AGENTS.md asks of every allowlist: these
@@ -1956,127 +2091,99 @@ class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
     and it retires with the header or with `hub_queue.py` itself.
     """
 
-    CHECK_ONLY_RULES = {
-        "generated-block-missing",
-        "generated-block-no-target",
-        "generated-block-target-missing",
-        "generated-blocks-unreadable",
-    }
-
-    # An emission whose rule name is a variable rather than a literal. Reading
-    # only literals would let a rule reach `lint` with no pair and this guard
-    # stay green -- the hole in exactly the place the guard claims to cover,
-    # which is the failure AGENTS.md's dead-guard rule is about.
-    #
-    # KEYED BY SITE, NOT BY ENCLOSING FUNCTION, and that distinction is a review
-    # finding rather than a detail. Keyed by function, a SECOND indirect emission
-    # inside an already-listed function would find its key present, never have
-    # its own supplier resolved, and pass -- the same guard-narrower-than-its-
-    # claim failure one level down. The site is the function plus the unparsed
-    # rule expression, which is stable when lines move and specific about which
-    # emission is covered.
-    #
-    # There is one today. ADD A SITE HERE THE MOMENT ONE APPEARS, naming the
-    # function whose returns supply its rule names, or this guard shrinks to fit
-    # the code.
-    INDIRECT_RULE_SUPPLIERS = {("parse_item_file", "rule or 'value'"): "parse_scalar"}
-
-    @staticmethod
-    def _enclosing_function(tree, target) -> str:
-        """The name of the INNERMOST function whose body contains `target`.
-
-        Innermost rather than first: `ast.walk` yields outer definitions before
-        inner ones, so taking the first match would name an enclosing function
-        for a rule emitted inside a nested one, and the site would then look
-        listed when it is not.
-        """
-        enclosing = [
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, ast.FunctionDef) and any(n is target for n in ast.walk(node))
-        ]
-        return max(enclosing, key=lambda n: n.lineno).name if enclosing else "<module>"
-
-    @staticmethod
-    def _rules_returned_by(tree, function: str) -> set[str]:
-        """Every string literal a function returns in a 3-tuple's last slot."""
-        found = set()
-        for node in ast.walk(tree):
-            if not (isinstance(node, ast.FunctionDef) and node.name == function):
-                continue
-            for inner in ast.walk(node):
-                if not (isinstance(inner, ast.Return) and isinstance(inner.value, ast.Tuple)):
-                    continue
-                last = inner.value.elts[-1] if inner.value.elts else None
-                if isinstance(last, ast.Constant) and isinstance(last.value, str) and last.value:
-                    found.add(last.value)
-        return found
-
-    def test_no_lint_rule_lacks_a_red_demonstration(self):
-        source = (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8")
-        tree = ast.parse(source)
-        emitted, indirect_in = set(), {}
-        for node in ast.walk(tree):
-            if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
-                continue
-            if node.func.id != "Problem" or len(node.args) < 3:
-                continue
-            rule = node.args[2]
-            if isinstance(rule, ast.Constant) and isinstance(rule.value, str):
-                emitted.add(rule.value)
-            else:
-                site = (self._enclosing_function(tree, node), ast.unparse(rule))
-                indirect_in.setdefault(site, []).append(node.lineno)
-
-        # Every indirect SITE must be listed, and its supplier's rule names are
-        # then held to the same standard as a literal.
-        unlisted = sorted(set(indirect_in) - set(self.INDIRECT_RULE_SUPPLIERS))
-        self.assertEqual(
-            unlisted,
-            [],
-            "a rule is emitted through an expression this guard does not know about, "
-            "so its rule names bypass the check: "
-            + ", ".join(f"{fn}: {expr} (line {indirect_in[(fn, expr)]})" for fn, expr in unlisted),
+    def test_the_real_tree_has_no_findings(self):
+        findings = audit_lint_rule_coverage(
+            (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
+            (REPO_ROOT / "scripts" / "tests" / "test_hub_queue.py").read_text(encoding="utf-8"),
         )
-        # A listed site that no longer exists is a stale entry, and a stale entry
-        # is how an allowlist stops describing the code it guards.
-        self.assertEqual(
-            sorted(set(self.INDIRECT_RULE_SUPPLIERS) - set(indirect_in)),
-            [],
-            "INDIRECT_RULE_SUPPLIERS names a site hub_queue.py no longer has; drop it",
-        )
-        for (function, _expr), supplier in self.INDIRECT_RULE_SUPPLIERS.items():
-            supplied = self._rules_returned_by(tree, supplier)
-            self.assertNotEqual(
-                supplied,
-                set(),
-                f"{supplier} supplies {function}'s rule names and none were found; "
-                "the reader is broken, not the code",
-            )
-            emitted |= supplied
+        self.assertEqual(findings, {}, f"the header's claim is false: {findings}")
 
-        tests = set(
-            re.findall(
-                r"assert_rejects\(\s*[" + chr(34) + chr(39) + r"]([^" + chr(34) + chr(39) + r"]+)",
-                (REPO_ROOT / "scripts" / "tests" / "test_hub_queue.py").read_text(encoding="utf-8"),
-            )
-        )
-        undemonstrated = sorted(emitted - tests - self.CHECK_ONLY_RULES)
-        self.assertEqual(
-            undemonstrated,
-            [],
-            "these lint rules can fire and have no RED demonstration in this file, "
-            "which makes the header's claim false: " + ", ".join(undemonstrated),
-        )
 
-        # The exclusion must stay a statement about `lint`, not a place to hide
-        # a rule. Every excluded name has to still exist, or it is stale.
-        self.assertEqual(
-            sorted(self.CHECK_ONLY_RULES - emitted),
-            [],
-            "CHECK_ONLY_RULES names a rule hub_queue.py no longer emits; drop it",
-        )
+class TestTheCoverageGuardItself(unittest.TestCase):
+    """The guard above, fed constructed sources, one case per way it can lie.
 
+    SIX REVIEW ROUNDS FOUND THIS GUARD NARROWER THAN ITS CLAIM, one hole at a
+    time, and every hole was a case reasoned about rather than constructed:
+    literals only; an indirect emission whose supplier was never resolved; a
+    map keyed by function so a second site collapsed into the first; a
+    supplier return that could not be resolved and was skipped; a RED
+    assertion counted from raw text so a docstring would do. Each row below is
+    one of those, as a source this guard must reject. ADD A ROW WHENEVER
+    ANOTHER WAY IS FOUND -- that is what these rows are for.
+    """
+
+    HUB_CLEAN = (
+        "class Problem:\n"
+        "    pass\n"
+        "def parse_scalar(raw):\n"
+        "    return None, 'bad', 'value'\n"
+        "def parse_item_file(path, display):\n"
+        "    rule = None\n"
+        "    problems.append(Problem(display, 0, rule or 'value', 'x'))\n"
+        "def check_one(item):\n"
+        "    problems.append(Problem(item.path, 0, 'a-literal-rule', 'x'))\n"
+    )
+    TEST_CLEAN = (
+        "def t(self):\n"
+        "    self.assert_rejects('value')\n"
+        "    self.assert_rejects('a-literal-rule')\n"
+    )
+
+    def audit(self, hub=None, test=None):
+        return audit_lint_rule_coverage(hub or self.HUB_CLEAN, test or self.TEST_CLEAN)
+
+    def test_the_constructed_clean_pair_has_no_findings(self):
+        """The GREEN control. Without it every row below could pass vacuously."""
+        self.assertEqual(self.audit(), {})
+
+    def test_a_literal_rule_with_no_demonstration_is_reported(self):
+        hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'undemonstrated-rule'")
+        self.assertIn("undemonstrated", self.audit(hub=hub))
+
+    def test_an_indirect_site_the_allowlist_does_not_name_is_reported(self):
+        hub = self.HUB_CLEAN + (
+            "def check_two(item):\n"
+            "    other = 'x'\n"
+            "    problems.append(Problem(item.path, 0, other, 'x'))\n"
+        )
+        self.assertIn("unlisted_sites", self.audit(hub=hub))
+
+    def test_a_second_emission_at_a_listed_site_is_reported(self):
+        """The hole that keying by function alone left open."""
+        hub = self.HUB_CLEAN.replace(
+            "    problems.append(Problem(display, 0, rule or 'value', 'x'))",
+            "    problems.append(Problem(display, 0, rule or 'value', 'x'))\n"
+            "    problems.append(Problem(display, 1, rule or 'value', 'y'))",
+        )
+        self.assertIn("repeated_sites", self.audit(hub=hub))
+
+    def test_a_supplier_return_that_cannot_be_resolved_is_reported(self):
+        """Not skipped: the other returns would otherwise cover for it."""
+        hub = self.HUB_CLEAN.replace(
+            "    return None, 'bad', 'value'",
+            "    return None, 'bad', 'value'\n"
+            "    return None, 'worse', some_variable",
+        )
+        self.assertIn("unresolvable_supplier_returns", self.audit(hub=hub))
+
+    def test_a_supplier_that_yields_no_names_is_reported(self):
+        hub = self.HUB_CLEAN.replace("    return None, 'bad', 'value'", "    return None, 'bad', ''")
+        findings = self.audit(hub=hub)
+        self.assertIn("empty_suppliers", findings)
+
+    def test_a_stale_allowlist_entry_is_reported(self):
+        hub = self.HUB_CLEAN.replace("rule or 'value'", "'value'")
+        self.assertIn("stale_sites", self.audit(hub=hub))
+
+    def test_a_demonstration_that_is_only_text_does_not_count(self):
+        """A docstring or a comment is not an executable RED assertion."""
+        test = self.TEST_CLEAN.replace(
+            "    self.assert_rejects('a-literal-rule')",
+            "    '''mentions self.assert_rejects('a-literal-rule') in prose'''\n"
+            "    # self.assert_rejects('a-literal-rule')",
+        )
+        findings = self.audit(test=test)
+        self.assertEqual(findings.get("undemonstrated"), ["a-literal-rule"])
 
 if __name__ == "__main__":
     unittest.main()
