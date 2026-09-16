@@ -260,13 +260,23 @@ temporal-profile finding*, and is deliberately not restated here: both fields
 carry a `constraints.pattern` that admits a four-digit year or a full date and
 nothing else, with `sdp:examples` to match. This file is the index, not the
 authority.
-**The three options are not equivalent.** **(a) Widen the pattern** to admit an
-`xs:dateTime` — the smallest change, and it makes the ruled spelling legal, but
-it commits the profile to instants in a field whose name *and* description both
-say "date or year". **(b) Refuse a typed instant** at the descriptor boundary,
-coercing to a date — keeps the profile exactly as written, and silently discards
-information the caller supplied. **(c) Leave it** — the status quo, and the only
-one of the three nobody has chosen on purpose.
+**The options are not equivalent, and there are four of them rather than three.**
+**(a) Widen the pattern** to admit an `xs:dateTime` — the smallest change, and it
+makes the ruled spelling legal, but it commits the profile to instants in a field
+whose name *and* description both say "date or year". **(b1) Refuse a typed
+instant** at the descriptor boundary — the writer errors and the caller is told,
+so no information is lost and no invalid package is written, at the cost of
+failing a call that works today. **(b2) Coerce it to a date** — the writer accepts
+the instant and truncates the time and the zone, so every call keeps working and
+the data the caller supplied is silently discarded. **(c) Leave it** — the status
+quo, and the only one nobody has chosen on purpose.
+
+*(b1 and b2 were written as a single option "(b) refuse, coercing to a date"
+until a Codex review of pull request 137 pointed out that refusing and coercing
+are different contracts with opposite failure modes — one tells the caller, the
+other does not — so an implementer handed "(b)" could not tell which was ruled.
+Splitting them is the fix; the entry is the durable record of what was asked, so
+it should be answerable.)*
 **Recommendation:** none, for the reason
 [Q50](#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema)
 gives about itself. The profile is mandated by a specification file this package

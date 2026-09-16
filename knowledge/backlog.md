@@ -5211,18 +5211,18 @@ the same way. What they could not deliver is a *legal* string, because the profi
 admits no instant at all. The work changes **which** invalid string is written, not
 whether one is.
 
-**The agreement itself is not landed on both sides yet, and nothing here should be
-read as saying it is.** Measured 2026-09-16: `B-115` is `state: done` and merged
-here, while `B-145` is `state: ready` and `claimable: true` with its work in
-metasalmonpy [#34](https://github.com/salmon-data-mobilization/metasalmonpy/pull/34),
-**unmerged** — so Python's descriptor and CSV still disagree with each other today.
+**Nothing here should be read as saying the two sides already agree, and this is
+not the place to find out whether they do** — `queue/items/B-145.yaml` owns that,
+and a copy of it here would be wrong the moment it moves. What belongs here is the
+evidence, which does not: measured 2026-09-16, Python's descriptor emitted
+`0999-06-05T13:45:30` with no `Z` while its `metadata/dataset.csv` emitted
+`999-06-05 13:45:30` — disagreeing on the separator *and* the year padding, which
+is the disagreement `B-145` exists to close.
+
 That does not soften the question, and it does change what is being asked: the
-invalidity above is true of both implementations now and stays true after `#34`
-merges, because no instant is legal either way. It is only the *agreement* that is
-pending. *This paragraph is a dated measurement and it expires the moment
-metasalmonpy #34 merges. `queue/items/B-145.yaml` is the copy to read for that
-item's state; if this text and the item file ever disagree, the item file is right
-and this one is the restatement that rotted.*
+invalidity above is true of both implementations **whether or not `B-145` has
+landed**, because no instant is legal either way. The profile ruling is what is
+open; the port is not a precondition for it.
 
 **Why it went unseen through two implementations and four reviews.** Every check
 either side runs compares the two files against each other, or against the ruled
