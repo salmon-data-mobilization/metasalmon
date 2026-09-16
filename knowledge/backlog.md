@@ -5288,8 +5288,8 @@ patched into `AGENTS.md`.
 
 ### The 2026-09-16 rulings round
 
-**Two rulings in chat, six new items, two promotions, and one modelling call
-recorded as made.** Brett ruled on 2026-09-16, in two messages: *"[…] Regarding
+**Two rulings in chat, six new items, one promotion, and one modelling call
+recorded as made without the promotion it does not authorize.** Brett ruled on 2026-09-16, in two messages: *"[…] Regarding
 B197, promote it. Regarding the agents.md change log entry. I will take your
 recommendation."* and *"Regarding SMN number 27. Let's commit to what we already
 decided. So yeah, you can merge it. Regarding B158 and Q48, let's stub the OBO
