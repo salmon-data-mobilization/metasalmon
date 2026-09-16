@@ -46,6 +46,34 @@ Highest strategic value, least code. Run alongside S1–S5. Ordered:
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
 
+**Superclass declarations, ordered 2026-09-16:** Brett ruled `B-158`'s
+vendor-or-stub call that day — the ruling and the trade-off it settled are on
+that card and in the backlog's *2026-09-16 rulings round* — and the order in
+this stream is `B-107`, then **`B-143`'s staged gate landing**, then `B-158`,
+which is what empties `KNOWN_UNDECLARED` and swaps `make test` to the full
+target, then `B-147`. **There is no separate `B-143` switch-on step after
+`B-158`**: the gate arrives staged and switching it on is `B-158`'s own
+retirement condition. **What is open is whether `B-143` may reach `done` on
+that staged landing** — its card asks for a gate green *"over the modules as
+they stand"* and also that *"every IRI the first run reports has been
+resolved"*, and allowlisting nine IRIs satisfies the first reading but not the
+second. Under the second the two items block each other. `B-158`'s card carries
+the measurement, both readings and the two ways out; the choice is Brett's,
+because either way amends a guard.
+
+**What the queue encodes and what this card encodes are different things, and
+the difference is deliberate.** `B-158` carries two prerequisites, and
+`scripts/hub` checks each independently — so the queue knows that `B-107` and
+`B-143` both precede `B-158`, and nothing more. It does not order `B-107`
+against `B-143`, and `B-147` has no queue dependency at all (`blocked_by: []`
+on all three of `B-107`, `B-143` and `B-147`, measured 2026-09-16). **The
+four-item order above is this card's, which is what a sequence card is for**:
+`blocked_by` is a claimability gate, not a plan, and the two missing edges are
+absent on purpose — ordering `B-107` before `B-143` would presuppose an answer
+to the open question above, and blocking `B-147` on `B-158` would state a
+dependency neither card's retirement condition actually has. The reasons for
+each prerequisite are on the cards that carry them.
+
 ## gcdfo docs-pipeline gate substream
 
 The gcdfo documentation build had a **placebo gate**: its WebVOWL normalizer

@@ -2166,7 +2166,6 @@ that deferring it made slice 1's own acceptance criteria unsatisfiable, since th
 marker it leaves blocks strict validation.
 
 
-
 **#77 The SDP asks for tidy data and enforced almost none of it. FIXED in
 0.2.6, with one claim corrected.** The original entry said `MISSING METADATA:`
 placeholders ship unflagged. **That was only half true**:
@@ -3156,7 +3155,13 @@ Two things decide how this is worked, and both are easy to get wrong.
 to be vendored to clear the gate. The decision is therefore
 **vendor-the-namespace versus stub-the-IRI**, taken once and applied eight
 times, not eight independent calls. That is why these are one item and not
-eight, and it is also why the item is not claimable: it is a modelling call.
+eight, and it is why the item was filed `claimable: false` when this section
+was written: a modelling call is not an agent's to make. *(Brett made it on
+2026-09-16 — stubs for the `obo:` and `geosparql:` IRIs, a vendored import for
+the `dwc:` ones — which is what that clause was waiting for. The ruling and its
+justification are recorded in* The 2026-09-16 rulings round *below; what the
+item's fields say now is `queue/items/B-158.yaml`'s to answer, not this
+section's.)*
 
 **This is the item that gates `B-143`'s switch-on, not `B-107`.** `B-107` clears
 one of the nine; the other eight are these, and until all nine clear the gate
@@ -5229,7 +5234,17 @@ not load-bearing: the test already builds `member_node` locally with
 used for precisely two things — the `cn` slot of the `D1Client` and
 `coordinating_node@identifier` in the closing `expect_identical` — so a `CNode`
 built the same local way serves both. `skip_if_offline()` is for the tests where
-the live service genuinely *is* the thing under test.
+the live service genuinely *is* the thing under test — **and even there it is
+not enough on its own**, which `B-132`'s card already measured: it proves the
+host *resolves*, not that the request completes, and the outage that produced
+this item was a 503 from a host that resolved. Those tests need a
+**skip-on-outage** guard, and the word matters: attempt the request, skip on a
+transport error, a 5xx or a named throttling status, and **fail on everything
+else**. A 400, 401, 403 or 404 is this package regressing, not DataONE being
+down, and a guard that skips those is how an outage workaround quietly becomes
+a way to not notice defects. The status goes in the skip message, which makes
+the skip legible without preserving the assertion — which is exactly why the
+4xx side fails instead.
 
 **The blast radius is narrower than this section first claimed, and the
 correction matters because the claim is what prioritises the item.**
@@ -5285,6 +5300,16 @@ one day. The durable fix is a sentence in the *Releases* section naming where an
 entry goes inside that window, plus something that checks it; that is a
 specification change and Brett's, which is why it is recorded here rather than
 patched into `AGENTS.md`.
+
+*(**Resolved the same day, and this paragraph is left standing as the record of
+what was known when it was written.** Brett ruled it on 2026-09-16 — "Regarding
+the agents.md change log entry. I will take your recommendation." — so the two
+present-tense claims above are now history: the gap no longer stands, because
+`AGENTS.md`'s *Releases* section carries the sentence; and moving B-144's entry
+is no longer an owed follow-up, because metasalmonpy pull request 35 did it,
+merging as `3f8349a`. What remains true is everything this section measured —
+the two opposite readings, the commits, and why the tag belongs on the bump.
+The next section records the ruling and the two check items it produced.)*
 
 ### The 2026-09-16 temporal-profile finding
 
@@ -5361,6 +5386,250 @@ because the instant the Python descriptor writes is `B-145`'s output and widenin
 the pattern does not by itself make it legal. **The general half of the same
 gap** — both validators consume `constraints.required` and `constraints.enum` and
 never `constraints.pattern`, so a widened pattern is still not *checked* by either
-package — is filed as its own pair in the hub's 2026-09-16 rulings round, one item
-per implementation; the ids are cross-referenced here once both pull requests have
-merged.
+package — is **`B-204`** (metasalmon) and **`B-205`**
+(metasalmonpy), filed 2026-09-16 and on `main` since metasalmon pull request 139.
+**The boundary:** this pair pins what the *writer* emits against the vendored
+pattern; that pair makes the *validator read* `constraints.pattern` at all.
+Either can land without the other, and each leaves a different hole.
+
+### The 2026-09-16 rulings round
+
+**Two messages in chat carrying three rulings, six new items, one promotion,
+and one modelling call recorded as made without the promotion it does not
+authorize.** The three are `B-197`'s, the `B-158`/`Q-48` modelling call, and the
+changelog-window rule; a fourth sentence in those messages rules Q-51 and a
+fifth authorizes the smn #27 merge, and both are recorded elsewhere for the
+reasons given below. Brett ruled on 2026-09-16, in two messages: *"[…] Regarding
+B197, promote it. Regarding the agents.md change log entry. I will take your
+recommendation."* and *"Regarding SMN number 27. Let's commit to what we already
+decided. So yeah, you can merge it. Regarding B158 and Q48, let's stub the OBO
+and GeoSparkle [GeoSPARQL] terms. And vendor DWC."* This section records what
+those two messages changed in this repository. The elided first sentence of the
+first message is Q-51's ruling, deliberately **not** recorded here: `Q-51`'s card
+is being written on pull request 137 (open when this was written, 2026-09-16),
+that pull request is the record of the ruling, and a record that gets ahead of
+the card it describes is the defect `queue/README.md` names. The smn pull
+request 27 half is a merge to be carried out in that repository, authorized by
+that ruling (*"you can merge it"*); when this was written on 2026-09-16 it was
+still open, a draft at `949ed95` on `d45f8f7`, and it is not recorded here
+either way.
+
+**`B-197` was promoted; `B-158` was not, and the difference is the point.**
+The promotion commit names the sentence it rests on, as `HUB.md`'s promotion row
+requires — and the two sentences differ in kind. *"Regarding B197, promote it"*
+is a promotion instruction. *"Let's stub … and vendor DWC"* rules a modelling
+call and says nothing about promotion, so reading it as a go-ahead would be an
+agent's inference standing where `HUB.md` requires an authorization — and **this
+round did not promote it on that reading**. Whether it has been promoted since
+is `queue/items/B-158.yaml`'s to say and this section's to stay quiet about.
+Nothing was lost by not promoting it here: on 2026-09-16 it carried
+`blocked_by: [B-107, B-143]`, and neither of those was `done`, so a promotion
+would have bought no claimable work that day. **What the ruling
+did settle is recorded on the card**: the modelling call it had said only Brett
+could make is now made — the six `obo:`/`geosparql:` superclass IRIs get
+bare declaration stubs under `CONVENTIONS.md` 5b rule 2, and the two `dwc:`
+IRIs (`dwc:Event`,
+`dwc:Organism`) are vendored into `ontology/imports/`. **The trade-off the ruling
+settled is the justification, and "the validator accepts it" is not** — the gate
+accepts either. A stub is nearly free and permitted anywhere, but a reasoner
+learns nothing from a stub, so it fits an IRI smn uses structurally — a
+superclass hook, a MIREOT mirror — where the foreign axioms are not what smn
+relies on. Vendoring carries weight, a pin and a licence question per source, so
+it is reserved for the one namespace whose semantics smn actually relies on:
+`dwc:` carries `smn:Deme`, `smn:Population` and `smn:SurveyEvent`. The ruling
+settles the vendor-or-stub half of the decision surface `B-158`'s card joined
+to `Q-48`; the taxonomic-assignment pattern bundle itself is still Q-48's, and
+`knowledge/questions.md` still owes it an entry. `B-107` was not promoted: its
+card carries its own promotion condition, which had not been met when this was
+written (2026-09-16). `B-158` gained `blocked_by: [B-107, B-143]` on 2026-09-16, whatever
+its state: `B-107` because both edit
+`ontology/modules/02-observation-measurement.ttl`, and `B-143` because the gate
+its condition names exists only on salmon-domain-ontology pull request 30's
+branch — an item whose end condition needs a script `main` does not carry would
+be claimable and unfinishable at once the moment it were promoted, and
+`blocked_by` is what keeps `hub ready` from offering it. Nothing in `HUB.md` serialises claims within a
+repository (`solo` is a participation fact, and the only concurrency cap is
+per agent), so the order is carried by `blocked_by` and the S6 card, not by any
+rule. The third ruling, where a changelog entry goes between a bump and its
+tag, is now a sentence in `AGENTS.md`'s *Releases* section; *The 2026-09-16
+network-guard finding, and the changelog window* is its evidence, and
+`B-200`/`B-201` are its mechanical form.
+
+**`B-200`: nothing checks that a `NEWS.md` entry under a released heading was in
+the tree the tag names.** The rule is now written — a change merged after the
+bump commit and before the tag files under *(development version)*, never under
+the version it did not ship in, tag on the bump — and *The 2026-09-16
+network-guard finding, and the changelog window* shows two agents reading its
+absence in opposite directions inside one day. A rule that
+lives only in prose is the thing `HUB.md` keeps relearning about, so this item is
+the check: a script under `scripts/` (a `check-changelog-window.py` beside
+`check-parity-registers.py`), run from continuous integration on every pull
+request and named as the pre-tag step in *Releases*. For each released heading
+whose bump commit `main` carries — the `vX.Y.Z` tag when it exists, otherwise the
+first commit on `main` whose `DESCRIPTION` reads that `Version` — every line
+beneath the heading that is absent from the same section at the bump commit is a
+finding unless the commit that added it is an ancestor of the bump
+(`git merge-base --is-ancestor`). **One exemption, and it is measured rather
+than assumed:** a marked, dated correction to a shipped entry — a
+*(Correction, YYYY-MM-DD: …)* paragraph appended to an entry, or a
+*[corrected YYYY-MM-DD: …]* bracket inserted into one — is not a finding,
+because the *Releases* rule admits exactly that, and because `main` does not
+pass without it. At `e9d7dc4`, `git diff -U0 v0.4.0 origin/main -- NEWS.md` has
+three hunks under the 0.4.0 heading, every one a correction dated 2026-08-24 and
+none from an ancestor of `v0.4.0` (`4e2bbb6`): lines 1024–1027 and 1206–1210
+from `09099538` (*"docs: correct two claims about metasalmonpy in the 0.4.0
+notes"*, 40 minutes after the tag) and lines 1162–1163 from `5a90a7f1`. A check
+written without the exemption arrives red on `main`, and `B-143`'s card says
+what that produces: a first reader who weakens it. So the RED demonstration
+also shows that an unmarked paragraph under a released heading is still a
+finding, which is what makes the exemption a marker and not a hole. A line
+changed in place is likewise not a finding, so a typo fix to a shipped entry
+stays possible, and the script's docstring says so as the scope it does not
+cover — along with the two things reading catches and the check cannot: a
+paragraph carrying the marker but describing new work, and a rewrite that turns
+a shipped bullet into one. **RED demonstration:** a fixture repository the test
+builds — a bump commit setting `Version`, then a commit adding a bullet under
+that version's heading — turns the check red, and the same bullet under the
+development heading turns it green. The B-144 instance
+replayed against a metasalmonpy checkout at `1e9245c` (`CHANGELOG.md` lines
+257–297 under `## 0.5.0`, added by `b939fd9`, which is not an ancestor of
+`67fb486`) is the real-history confirmation, reached the way
+`check-parity-registers.py` reaches its twin, and is not part of the retirement
+condition, because a condition satisfiable only with a sibling checkout is the
+shape `queue/README.md` forbids. **P3:** the failure corrupts no data and no
+behaviour, and the window is bounded — bump to tag — but the release record is
+what the mirror contract's parity claim is read from, one real instance occurred
+within a minute of the window opening — `67fb486` at 12:55:23Z, `b939fd9` at
+12:55:44Z — and it is silent until somebody diffs a tag
+against its changelog.
+
+**`B-201`: the metasalmonpy half.** The same sentence in metasalmonpy's
+`AGENTS.md` *Releases* section (line 155 at `1e9245c`), and the same check over
+`CHANGELOG.md` with the bump commit read from `pyproject.toml`'s `version`. **Its
+RED demonstration is its own history**, which is why the pair is filed rather than
+folded: at `1e9245c`, `CHANGELOG.md` lines 257–297 sit under `## 0.5.0` and were
+added by `b939fd9`, the merge of #32, which is a descendant of the bump merge
+`67fb486` (`git merge-base --is-ancestor 67fb486 b939fd9` holds) and therefore
+not an ancestor of it; `1e9245c` (#29, B-124) is later still and went under
+`## Unreleased` correctly, so the check has one finding and not two. metasalmonpy
+pull request 35 (merged 2026-09-16 as `3f8349a`, 15:47Z) moved the entry,
+verbatim: the RED is run at a checkout of `1e9245c`, and the check is green on
+`main` from `3f8349a` on, where `git diff 67fb486 origin/main -- CHANGELOG.md`
+has a single hunk above the `## 0.5.0` heading at line 97, so the 0.5.0 section
+matches the bump merge. The `v0.5.0` tag goes on `67fb486` and is Brett's to
+make. **P3**, as B-200.
+
+**`B-202`: a port item can reach `done` while the register still says the port
+is owed, and it did five times in one day — the fifth on this pull request's own
+branch.** The dated record, from the queue's
+own history. `B-115` was written `review` on pull request 135's branch
+(`85eccc5`, 04:51Z); metasalmon #118 merged while that branch was open; it was
+corrected to `done` on the same branch (`690d53c`) before the branch merged.
+`B-144`'s `review`, pushed directly to `main` in `5a86fd6` (05:14Z, *"handed
+off, metasalmonpy #32 open"*), was true until #32 merged as `b939fd9` at 12:55Z;
+`a592c23` corrected it at 13:08Z. `B-153`: pull request 136's branch
+first wrote `review` (*"B-153 moves to state review"*, preserved in `a592c23`'s
+squashed message), #33 merged as `67fb486` at 12:55Z before the branch did at
+13:08Z, and the merged result reads `done`. And `B-124` was set `done` on pull
+request 138's branch while `knowledge/parity-deviations.md:190` still read
+*"Queued as B-124, blocked by B-49"* and `knowledge/roadmap.md:466` still listed
+validation without the landed marker its neighbours carried; a Codex review of
+#138 caught it, and `e9d7dc4`'s message records it as the fourth time a sentence
+about owed work outlived the work. **`B-165` is the fifth, and it was live on
+`main` while this very item was being drafted**: metasalmonpy #31 merged at
+04:18Z (`999fa19`), the card was set `done` at 04:21Z, and
+`parity-deviations.md` went on reading *"Queued as B-165, blocked by B-116"*
+with `roadmap.md` reading *"queued as B-165"* until the branch carrying this
+section wrote the closure paragraph and the landed marker. The adversarial
+review of that branch found it. An item about stale port records whose own
+branch carried a live stale port record is not an irony worth enjoying; it is
+the measurement that settles whether prose can hold this. **The register's own rule was written at the
+third and broken at the fourth by an agent who had read it** — *"a catch-up
+window changes in both places in the same change"*, stated under B-125's closure
+(`parity-deviations.md:237-238`) and restated under B-124's (`:211-212`). That is
+the evidence that prose cannot hold this: a written state is a claim about a tree
+that moves. The item is a rule in `scripts/hub_queue.py lint`, which already
+reads the queue — or in `scripts/check-parity-registers.py` if it learns to —
+that fails when an id named in the register's port section or the roadmap's
+mirror-debt passage is `done` without a closure paragraph and a landed marker, or
+not `done` with either. **RED demonstration**, two of them, because one is a replay and
+one is real: the queue as it stands against the register and roadmap as they
+stood at `a592c23` (register line 190, roadmap line 466) must fail, and so must
+the queue against those two files as they stood at `e9d7dc4`, where `B-165` was
+`done` and both passages read *"queued"*. `main` must pass once this pull
+request lands — and it passes only because this pull request closes that fifth
+instance, which is the distinction between a check that arrives green and one
+that arrives green *honestly*. The rule reads only ids named **as owed ports**,
+not ids named as blockers or as R halves (six of those are `done` and owed no
+closure paragraph), and looks for the bold *"landed … as metasalmonpy #N"* form
+rather than the bare word. Like
+`check-parity-registers.py`, it catches the shape and not the substance — whether
+a closure paragraph is true is still a reading. **P2:** the register is one of the
+three copies of the single fact the mirror contract turns on, a stale "owed"
+sends the next agent to port work that has landed or to claim a window is open,
+and five instances in a day with the rule written down at the third is the
+argument that the fix is mechanical or nothing.
+
+**`B-203`: `HUB.md`'s worktree-removal check is silently wrong in a
+single-branch clone.** `HUB.md:711-716` requires
+`git -C "$WT" log HEAD --not --remotes --oneline` to print nothing before a
+worktree is removed. `--remotes` walks the local `refs/remotes/` namespace, and
+`git push` updates a remote-tracking ref only where a configured fetch refspec
+maps it — so a clone whose `remote.origin.fetch` is
+`+refs/heads/main:refs/remotes/origin/main`, which is what `--single-branch`
+writes and what the metasalmonpy checkout used by the hub in this environment
+carries, never gets `refs/remotes/origin/<branch>` for anything but `main`, and
+the check reports a fully pushed branch as entirely unpushed, on every branch but
+`main`, with no signal that it is wrong. **Measured 2026-09-16, twice.** In situ:
+`agent/B-145/a-cbde7679ed732a03` sits on the remote at `7b41e59`, identical to
+the local tip (`git ls-remote --heads origin` says so), and the walk prints all
+six of its commits; the agent working there got past it with
+`git fetch origin <branch>:refs/remotes/origin/<branch>`, a workaround and not a
+fix. In a scratch repository built for the purpose: a `--single-branch` clone, an
+empty commit on a new branch, `git push -u origin feature` succeeding and
+`ls-remote` confirming it, the walk printing that commit, and the workaround
+fetch clearing it. **It fails safe, which is why it is P3 and why it is an item
+at all:** the worktree is kept rather than lost, but the check sits in the policy
+file every agent reads, it is wrong for a whole class of clone, and the
+workaround is one every agent rediscovers alone. `scripts/hub` does not carry the
+walk (no `--remotes` under `scripts/` on 2026-09-16), so the edit is to
+`HUB.md`, which is Brett's to merge under class 7; the item is claimable because
+the edit and its demonstration can be prepared unattended. **Retire on:** the
+check verifies against `git ls-remote --heads origin <branch>` — the sha on the
+remote, not the local remote-tracking ref — or the client normalizes the fetch
+refspec before the walk, with a RED demonstration on a single-branch clone. This
+is the third defect in that one paragraph in two days: the stash clause and the
+`--branches` walk were removed on 2026-09-16, and the paragraph already warns
+that a fix removing one instance is not a fix for the defect. This is the
+instance it did not see.
+
+**`B-204` and `B-205`: both validators ignore the vendored schema's
+`constraints.pattern`.** Measured 2026-09-16, at `e9d7dc4` here and `1e9245c`
+there. R: `.ms_field_from_frictionless()` (`R/schema-helpers.R:387`) reads
+`constraints$required` at `:389` and `constraints$enum` at `:401-402` and nothing
+else off `constraints`; the only other `constraints` reader under `R/`,
+`R/package-helpers.R:1539-1540`, reads `required` too; a grep for
+`constraints$pattern` or `[["pattern"]]` finds no consumer under `R/`. Python:
+`package_io.py:1313-1314` reads `constraints["required"]` and nothing else; the
+only other reader, `sdp_schema.py:595-596`, reads `required` too;
+`sdp_field_setters.py:970-973` copies the block whole without reading a key; and
+no `.py` file at `1e9245c` reads a `"pattern"` key, single- or double-quoted. The
+vendored
+`inst/extdata/schema/frictionless/metadata/dataset.schema.json` carries a
+`pattern` on `temporal_start` (`:82`) and `temporal_end` (`:94`) — a year or a
+date — which is how a typed instant reached the descriptor and passed local
+validation while the profile at that time forbade it: the history behind `Q-51`,
+whose ruling is not stated here and does not change these items, because
+whatever the pattern says, nothing reads it. **The specification's own validator
+enforces it:** `smn-data-pkg`'s `scripts/validate_package.py:221-222` at
+`bb71c8b` rejects a value `re.fullmatch` fails, and
+`tests/test_validate_package.py:73-79` pins it with a partial date (`1996-01`)
+and the message *"temporal_start must match pattern"*. So the gap is in the two
+implementations, not the spec — one gap in two trees, filed as a pair naming each
+other because a claim covers one repository. **P2 on both:** silent conformance
+debt. A green `validate_salmon_datapackage()` is read as "conforms to the
+profile", and here it does not, for a rule the profile states in the very file
+both packages vendor. Each retires when its validator enforces
+`constraints.pattern` on metadata fields, with a test that a violating value is
+reported and a conforming one is not, and a parity row or port note as the mirror
+contract requires.

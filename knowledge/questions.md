@@ -1195,10 +1195,14 @@ rather than something this ruling covered.
 each re-vendoring the ruled schema and adding the test that was missing. **The
 general half of the same gap** — both validators consume `constraints.required`
 and `constraints.enum` and never `constraints.pattern`, so a widened pattern is
-still not *checked* by either package — is filed as its own pair in the hub's
-2026-09-16 rulings round, one item per implementation. Those ids are not named
-here because they are not on `main` yet; the cross-reference lands once both pull
-requests have merged.
+still not *checked* by either package — is **`B-204`** (metasalmon) and
+**`B-205`** (metasalmonpy), filed 2026-09-16 and on `main` since metasalmon
+pull request 139. **The boundary, because the two pairs look alike:** this pair
+pins what the *writer* emits against the vendored pattern, one value checked by
+a test; that pair makes the *validator read* `constraints.pattern` at all, for
+every metadata field carrying one. Either can land without the other, and each
+leaves a different hole — a writer pinned against a pattern nothing enforces, or
+an enforcer with nothing pinning the writer.
 
 ---
 
