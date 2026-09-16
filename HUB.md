@@ -906,11 +906,38 @@ Four conditions, all of them, before an agent merges one:
 **A merge is the agent's last act on that pull request.** A finding that arrives
 afterwards becomes a queue item, never a quiet follow-up push to `main`.
 
-**Delegation is reported, not silent.** Every batch worked under this section
-ends with one message naming what merged without Brett and under which
-delegated class. Invisible delegation is indistinguishable from an agent
-deciding the boundary for itself, and the whole point of writing the boundary
-down is that he can move it.
+**Delegation is recorded, not silent — and recorded is not the same as
+announced.** Every batch worked under this section leaves a record naming what
+merged without Brett and under which delegated class. Invisible delegation is
+indistinguishable from an agent deciding the boundary for itself, and the whole
+point of writing the boundary down is that he can move it.
+
+**That record goes in the repository, not into his attention.** Narrowed
+2026-09-16 on his instruction: *"just notify me for consequential decisions or
+design or user experience or specs or ontology or other high level decisions
+required."* Until then this paragraph said *every batch ends with one message*,
+which made the mechanics of merging — what was green, which conflict was
+resolved how, which check ran — into things he had to read. **That is the
+bottleneck R16 was granted to remove, reappearing as narration.** The pull
+request body, the workpad and the commit message are the record and they persist;
+a chat message is neither durable nor searchable, and spending his attention on
+one costs the same whether the content needed him or not.
+
+So: **write the record, and interrupt him only for a decision that is his.**
+Those are the classes in "Brett's, whatever the checks say" above — an ontology
+term, a public signature or frozen contract, a version or release, a
+specification change, anything outward-facing or user-visible, a parity-register
+row, the weakening of a guard, this file — plus any design or user-experience
+question an implementer cannot settle from the repository. A merge that fell in a
+delegated class is not one of those, however much work it took.
+
+**The asymmetry is deliberate and runs the other way from the grant.** Under-
+reporting a decision that was his costs a wrong decision that stands until
+somebody notices; over-reporting mechanics costs his attention every time and
+trains him to skim, which is how the real question gets missed. When genuinely
+unsure whether something is a decision or a mechanic, ask — the uncertainty is
+itself the signal, and this section already says uncertainty resolves toward
+asking.
 
 *Revise when:* something merges under the delegated list that he would have
 wanted to see. That is the only evidence that matters here, it will arrive as a

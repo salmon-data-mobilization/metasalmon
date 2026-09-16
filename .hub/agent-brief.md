@@ -93,4 +93,14 @@ evidence, the before and the after, with the actual command output; anything
 needing Brett, stated as a question with your recommendation; and anything you
 found that is not your item, by id or as a new-item candidate with evidence.
 
+**"Needing Brett" means a decision that is his, not a mechanic that was hard.**
+A conflict you resolved, a check that went green, a re-run you waited out: those
+belong in the workpad and the pull request body, which persist and are
+searchable. What reaches him is an ontology term, a public signature or frozen
+contract, a version or release, a specification change, anything outward-facing,
+a parity-register row, the weakening of a guard, `HUB.md` itself — or a design or
+user-experience question you cannot settle from the repository. `HUB.md`'s
+"Which pull requests need Brett" is the list; this is the same boundary applied
+to your report.
+
 Do not pad it. Several of these are read at once.
