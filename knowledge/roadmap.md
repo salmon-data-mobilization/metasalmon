@@ -464,34 +464,48 @@ mirror rule, each is owed as a port rather than a register row, and each is
 specified in full under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`:
 validation (**B-124**, blocked by B-49), role inference (**B-125**, blocked by
-B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first of the
-four to close), the migration report's no-op shape (**B-144**, blocked by
-B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second of the four to
-close), and the
+B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first to
+close), the migration report's no-op shape (**B-144**, blocked by
+B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second to
+close), the descriptor's instant spelling (**B-145**, blocked by B-115, whose R
+half **landed 2026-09-16 as metasalmon #118** — readr's ISO form with the `T`
+separator and `Z` marker, the spelling Brett ruled on 2026-09-14 for both
+implementations, carried by register row 56 amended in place rather than by a new
+number), and the
 reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 / B-116, 2026-09-15; **widened 2026-09-16** by the Codex review of pull request
 #121, which added three things the port owes — a degraded lookup must abort
 rather than become a gap, incomplete evidence is not a missing term, and the
 three writes install as one link-refusing set), queued as **B-165**, blocked by
-B-116. All four were deferred for the same structural reason rather than a
-judgement: a hub claim covers one branch in one repository, so the mirror half is
-a separate item. The first two reached `parity-deviations.md` and not this index,
+B-116. Every one of them was deferred for the same structural reason rather than
+a judgement: a hub claim covers one branch in one repository, so the mirror half
+is a separate item. The first two reached `parity-deviations.md` and not this index,
 which is the drift the release index exists to catch, so the rule is stated here
 rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
-**These four are *not* part of the `0.4.0→0.5.0` window, and the distinction is
+*(The count is gone from this passage on purpose, as of 2026-09-16. It read
+**three** and omitted `B-144`; the correction below records that. It then read
+**four** and omitted `B-145` — caught by the Codex review of pull request #136,
+after metasalmon #118 merged the R half the same morning and left its mirror debt
+in `parity-deviations.md` and not here. That is the third instance of one drift,
+in one direction, and the second where the omitted item was named in the very
+file this index is supposed to agree with. A number in prose that counts a list
+is a copy of that list, and the copy is what rots — so the list is now the only
+place the count lives.)*
+
+**These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
 window" until 2026-09-16, when closing that window made the wording
 self-contradicting: the index would have said in one place that the window was
-closed and in another that it had grown and three of its four parts were still
+closed and in another that it had grown and most of its parts were still
 open. A window is the gap between metasalmonpy's number and a *released* R
 number, so work merged after `v0.5.0` sits in metasalmon's development version
 and cannot be inside a window that ends at 0.5.0. **On the other reading no
 version could ever be claimed**, because the gap to an unreleased R tree grows
 faster than anyone ports it — which is exactly what the mirror contract means by
 bumping on parity rather than on calendar. So: metasalmonpy 0.5.0 delivers
-metasalmon **0.5.0**, truthfully; these four, plus **B-179** above, are the
+metasalmon **0.5.0**, truthfully; those ports, plus **B-179** above, are the
 **next** window, which opens the day metasalmon cuts its next release. Which of
 them have landed is queue state and lives in their item files under
 `queue/items/`; this card deliberately does not answer that, because a card that
