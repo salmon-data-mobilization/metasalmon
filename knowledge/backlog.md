@@ -5219,7 +5219,10 @@ metasalmonpy [#34](https://github.com/salmon-data-mobilization/metasalmonpy/pull
 That does not soften the question, and it does change what is being asked: the
 invalidity above is true of both implementations now and stays true after `#34`
 merges, because no instant is legal either way. It is only the *agreement* that is
-pending.
+pending. *This paragraph is a dated measurement and it expires the moment
+metasalmonpy #34 merges. `queue/items/B-145.yaml` is the copy to read for that
+item's state; if this text and the item file ever disagree, the item file is right
+and this one is the restatement that rotted.*
 
 **Why it went unseen through two implementations and four reviews.** Every check
 either side runs compares the two files against each other, or against the ruled
@@ -5233,3 +5236,8 @@ Found by the `B-145` run and deliberately not absorbed — it is a specification
 question in `smn-data-pkg`, a third repository, and the three options are not
 equivalent: widen the pattern, refuse the instant at the writer, or accept the
 invalidity on purpose. `Q-50` about the Frictionless profile key is adjacent.
+
+**The decision itself is indexed in [`questions.md`](questions.md) as `Q51`**,
+with the three options and the reason no recommendation is on the table. That
+file is where a ruling only Brett can make is supposed to be listed; this section
+is the evidence it points back to.

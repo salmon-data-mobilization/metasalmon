@@ -245,6 +245,46 @@ and not the blast radius.
 the item said of itself that it was an open question and that only Brett can
 choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
 
+### Q51 — Does the SDP profile admit a typed instant in `temporal_start` and `temporal_end`?
+**Unblocks:** the spelling already ruled in
+[Q44](#q44--which-spelling-does-a-descriptor-posixct-take--answered-2026-09-14-brett),
+which as things stand is legal nowhere. Q44 chose *which* ISO form a descriptor
+`POSIXct` takes; this asks whether the profile admits any instant at all, and
+today it does not — so `B-115` and `B-145` implement, correctly, a spelling the
+shipped profile rejects. **This is the question Q44 left open** rather than a new
+one, exactly as Q44 was the one
+[Q12](#q12--when-r-turns-a-date-into-text-which-renderer-wins--answered-2026-08-24-brett)
+left open.
+**The evidence lives in [`backlog.md`](backlog.md)** under *The 2026-09-16
+temporal-profile finding*, and is deliberately not restated here: both fields
+carry a `constraints.pattern` that admits a four-digit year or a full date and
+nothing else, with `sdp:examples` to match. This file is the index, not the
+authority.
+**The three options are not equivalent.** **(a) Widen the pattern** to admit an
+`xs:dateTime` — the smallest change, and it makes the ruled spelling legal, but
+it commits the profile to instants in a field whose name *and* description both
+say "date or year". **(b) Refuse a typed instant** at the descriptor boundary,
+coercing to a date — keeps the profile exactly as written, and silently discards
+information the caller supplied. **(c) Leave it** — the status quo, and the only
+one of the three nobody has chosen on purpose.
+**Recommendation:** none, for the reason
+[Q50](#q50--does-the-sdp-deliberately-pin-frictionless-v1s-profile-or-move-to-v2s-schema)
+gives about itself. The profile is mandated by a specification file this package
+only vendors and is consumed the same way by metasalmonpy, so whether the SDP
+admits an instant is a specification ruling and not an implementation choice.
+What an agent may do is put (a) and (b) in front of Brett with their costs, which
+is what this entry does; it may not pick between them. If the ruling goes to (a)
+or (b), the implementing change should also add the check that was missing — a
+package's temporal fields validated against the profile's own pattern — because
+nothing on either side compares them today.
+**Severity is bounded and that does not settle it:** neither implementation
+produces a typed instant on its own, so this reaches a user only through a caller
+who supplies one.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-51` — S6 for
+the reason Q50's owner line already gives, because the ruling reaches the vendored
+profile and both writers rather than any one package. Q50 is adjacent, about the
+same descriptor profile, and whoever rules this should see both.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
