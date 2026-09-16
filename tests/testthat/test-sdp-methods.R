@@ -480,6 +480,65 @@ test_that("a package with only REVIEW: bindings still migrates to the v0.3 shape
   expect_true("statistical_modifier_iri" %in% names(migrated))
 })
 
+# migrate_sdp_methods() builds `report$tables` at three exits -- the
+# nothing-to-migrate early return, the populated build, and the no-placement
+# empty frame -- and a caller reading `report$tables$columns` has to get a
+# column from all three. Backlog #112 (hub item B-112): the early return built
+# two columns, so the caller got NULL in exactly the case where the package was
+# already clean, the branch least likely to be exercised. All three are pinned here
+# rather than only the branch that was wrong, because pinning one leaves the
+# others free to drift away from it and the failure would look identical.
+# Brett ruled the three-column shape on 2026-09-14, for both implementations.
+# Retires when: `migrate_sdp_methods()` stops returning a `tables` frame, at
+# which point there is no shared column set left to pin.
+test_that("every migrate_sdp_methods() exit reports the same three table columns", {
+  expected <- c("table_id", "method_iri", "columns")
+
+  # Exit 1: nothing to migrate -- a package already in the v0.3 shape.
+  clean_root <- withr::local_tempdir()
+  make_migration_test_sdp(clean_root)
+  clean <- suppressMessages(migrate_sdp_methods(clean_root))
+
+  # Exit 2: the populated build -- one agreeing method across every
+  # measurement column, so the table-level placement is made.
+  populated_root <- withr::local_tempdir()
+  make_migration_test_sdp(populated_root)
+  add_legacy_dictionary_methods(populated_root, c(
+    abundance = "https://ex.org/m/mark-recapture",
+    density = "https://ex.org/m/mark-recapture"
+  ))
+  populated <- suppressMessages(migrate_sdp_methods(populated_root))
+
+  # Exit 3: no placement -- REVIEW:-only bindings, so the rewrite runs but
+  # nothing is promoted and the frame stays empty.
+  review_root <- withr::local_tempdir()
+  make_migration_test_sdp(review_root)
+  add_legacy_dictionary_methods(review_root, c(
+    abundance = "REVIEW: https://example.org/methods/unresolved",
+    density = "REVIEW: https://example.org/methods/unresolved"
+  ))
+  review <- suppressMessages(migrate_sdp_methods(review_root))
+
+  # `expect_named()` compares order as well as membership, so a reordered
+  # build fails here too.
+  expect_named(clean$tables, expected)
+  expect_named(populated$tables, expected)
+  expect_named(review$tables, expected)
+
+  # The empty exits must carry the type the populated build renders -- it
+  # pastes the column names into one string -- or binding the reports of two
+  # runs together coerces the column.
+  expect_type(populated$tables$columns, "character")
+  expect_type(clean$tables$columns, "character")
+  expect_type(review$tables$columns, "character")
+
+  # Asserted so the column set above cannot be satisfied by an exit that
+  # gained the column by gaining a row it should not have.
+  expect_equal(nrow(clean$tables), 0L)
+  expect_equal(nrow(review$tables), 0L)
+  expect_equal(nrow(populated$tables), 1L)
+})
+
 test_that("migration aborts before any writes when the descriptor cannot be parsed", {
   root <- withr::local_tempdir()
   make_migration_test_sdp(root)

@@ -1,526 +1,381 @@
-# Workpad — B-49
+# Workpad — B-112
 
 ## Queue item
 
-**B-49** — `validate_salmon_datapackage()` checks far less than it claims
-(legacy #49, repo metasalmon, stream S1, severity P1). Claimed by
-`a-a7bf88a77f89e8db` on 2026-09-10; work branch
-`agent/B-49/a-a7bf88a77f89e8db`, worktree
-`hub-worktrees/salmon-data-mobilization-metasalmon-B-49`.
+**B-112** — "Return the three-column report frame from `migrate_sdp_methods()`'s
+no-op branch" (legacy `#112`, repo metasalmon, stream S10, severity P3, venue
+`claude-code`). Claimed by `a-677b1b31606aaa8c` on 2026-09-14; work branch
+`agent/B-112/a-677b1b31606aaa8c`, worktree
+`hub-worktrees/salmon-data-mobilization-metasalmon-B-112`. Session key
+`fleet-2026-09-14-B-112`. Evidence: the `#112` entry in `knowledge/backlog.md`.
 
-Scope is the item's `retires_when`, read literally: the validator checks
-required-column nullability and schema-required metadata fields, refuses corrupt
-SSSOM and decomposition artifacts instead of reporting success, and a test
-asserts a failure for each class. The declared-primary-key clause closed under
-#77 and was not touched.
+Scope is the item's `retires_when`, read literally: the nothing-to-migrate early
+return builds the same three-column empty frame the other exits build, and a
+test pins the column set of both branches. **Brett ruled the three-column shape
+on 2026-09-14, for both implementations**, so the shape was not an implementer's
+choice and the alternative — a logged ruling that the shapes deliberately differ
+— is closed. The mirror half is **B-144** and was not touched.
 
 ## What changed and where
 
-`R/package-helpers.R`
+Three files, 96 insertions, 1 deletion.
 
-- `validate_salmon_datapackage()` now calls
-  `.ms_validate_optional_sdp_semantic_artifacts(path)` right after the
-  observation-structure gate. That helper runs `validate_sdp_sssom()` when
-  `metadata/semantic/mapping-sets.json` is present and
-  `validate_sdp_measurement_decompositions()` when either managed decomposition
-  file is present (file or dangling symlink, the observation-structure
-  precedent). Presence is by managed file name, exactly as
-  `R/knb-publication.R` and `R/knb-sdp-archive.R` already detect it; the
-  directory is never scanned, so an unapproved draft under `metadata/semantic/`
-  stays local. **Class 3.**
-- `.ms_collect_package_validation_issues()`, per-table loop, after the
-  extra-columns check: "Tidy check 4" — a dictionary row with `required = TRUE`
-  whose data column carries an NA or whitespace value is a structural `columns`
-  issue in every mode. Only columns present in the data are checked (an absent
-  one was already reported). **Class 1.**
-- `.ms_collect_package_validation_issues()`, before the dictionary-empty check:
-  blank schema-required **key** fields (`dataset_id`, `table_id`, `file_name`,
-  `column_name`) are structural issues in every mode, typed by file
-  (`dataset` / `tables` / `dictionary` / `codes` — the existing eight
-  categories, none added). Blank schema-required **non-key** fields take the
-  placeholder channel: a `cli_warn` in the default mode (mirrors "Tidy check 3"),
-  and under `require_iris = TRUE` they join `final_review_issues` and abort.
-  **Class 2.**
-- New helpers beside the validator: `.ms_package_metadata_frames()` (one spelling
-  of file → frame / issue type / source name / id fields) and
-  `.ms_collect_blank_required_metadata_fields(pkg, keys = FALSE)`.
-- Roxygen description of `validate_salmon_datapackage()` rewritten to list what
-  it checks — the item title is about the claim, so the claim moved too.
-  `man/validate_salmon_datapackage.Rd` regenerated with `devtools::document()`;
-  the local roxygen2 8.1.0 also rewrote `DESCRIPTION`
-  (`Config/roxygen2/version`) and reflowed `NAMESPACE`, and both were reverted
-  as unrelated churn.
-- Strict-abort hint now names "blank schema-required fields".
+### `R/sdp-methods.R` — the one-branch fix
 
-`R/sdp-field-setters.R`
+The nothing-to-migrate early return built `report$tables` as a two-column frame,
+`table_id` and `method_iri`. It now builds the same three columns the other two
+exits build, adding `columns`. The item's line numbers were verified against the
+current file before editing, as it asked; all three were accurate.
 
-- `.ms_schema_required_metadata_fields(file_name)` — every `constraints.required`
-  field, keys included — split out of `.ms_required_metadata_fields()`, which now
-  derives from it. The validator and `review_metadata()` therefore read one
-  schema parse, so they cannot disagree about which fields block.
+| exit | lines (current file) | before | after |
+|---|---|---|---|
+| nothing-to-migrate early return | `R/sdp-methods.R:298-311` | 2 columns | **3 columns** |
+| populated build | `R/sdp-methods.R:343-347` | 3 columns | unchanged |
+| no-placement empty frame | `R/sdp-methods.R:366` | 3 columns | unchanged |
 
-Tests
+The dry-run return (`:455`) and the final return (`:589`) both read
+`placements`, so they inherit the populated / no-placement shape and needed no
+change. That is why there are three builders and not five.
 
-- `tests/testthat/test-package-helpers.R` (beside the #77 tests):
-  "a column declared required must not ship missing values";
-  "a blank schema-required metadata field warns by default and fails strict
-  validation"; "a blank metadata key field is a structural error in every mode".
-- `tests/testthat/test-sssom.R`: "validate_salmon_datapackage refuses a corrupt
-  SSSOM artifact" (manifest SHA-256 drift).
-- `tests/testthat/test-measurement-decompositions.R`:
-  "validate_salmon_datapackage refuses a corrupt decomposition artifact" (CSV
-  bytes drift from the manifest; then manifest deleted with the CSV present).
-  The decomposition fixture lives inside that test file rather than a helper,
-  which is why the artifact tests sit beside their fixtures instead of in one
-  new file.
+**The empty column's type is `character()`, and it is the populated branch's
+type rather than a default.** The populated build renders `columns` with
+`paste(sort(rows$column_name, method = "radix"), collapse = ", ")`, which is a
+length-1 character vector, and the no-placement branch already declared
+`columns = character()`. So `character()` is the only choice that lets a caller
+`bind_rows()` the reports of two runs without coercing the column. The type is
+asserted for all three exits in the test rather than left implied, and the
+reason is recorded in a comment at the fix.
 
-Other
+### `tests/testthat/test-sdp-methods.R` — the pin
 
-- `NEWS.md`: new `metasalmon (development version)` heading with a `### Fixed`
-  entry for the three classes.
-- `.Rbuildignore`: `^\.hub$` added so this workpad does not reach the tarball.
-- The default-mode warning's hint line uses `cli::qty()` so it reads "Fill it
-  ... as an error" for one field and "Fill them ... as errors" for several;
-  rendered both ways by hand before the suite ran.
+One new `test_that()` block, "every migrate_sdp_methods() exit reports the same
+three table columns", placed after the REVIEW:-only test so all three fixtures
+it uses are introduced above it.
 
-## Commands run and results
+It pins **all three** exits, not the two the item requires. The item asks for
+both branches because pinning only the branch that was fixed leaves the
+populated branch free to drift away from it; the third exit was one more fixture
+in the same block, so it is cheap and strictly better. For each exit it asserts:
 
-R used: **R version 4.3.3 (2024-02-29)** (apt). CI runs a newer R; a check that
-is green here is evidence about this R, not CI's (AGENTS.md, "A green local
-check is evidence about your R"). No non-ASCII characters were added to R code.
+- the column set, via `expect_named()`, which compares order as well as
+  membership — so a reordered build fails here too;
+- the `character` type of `columns`;
+- the row count, so the column-set assertion cannot be satisfied by an exit that
+  gained the column by gaining a row it should not have.
 
-Suggests **absent** when the suite ran (second install phase still in
-progress): pdftools, readxl, openxlsx, emld, jsonvalidate, dataone, datapack.
-Present: knitr, rmarkdown, frictionless, XML. Tests gated on the absent ones
-skip; a green run here is not full coverage of those paths.
+### `NEWS.md` — the entry
 
-### Failing-before (tests written first, run with `R/` stashed at origin/main)
+One bullet under the development version's `### Fixed`. Required: this is an
+observable behaviour change for a caller reading the report frame. It records
+that the frame is empty either way, so nothing reading `nrow()` changes and only
+the column set does; that the three-column shape is the one the migration
+vignette already documents; Brett's 2026-09-14 ruling; that the mirror half is
+B-144; and that `#112`'s retirement condition is met only on the R side until
+B-144 lands.
 
-Runner: `pkgload::load_all()` + `testthat::test_file(<file>, desc = <name>)`.
+## Commands run, and their results
 
-| Class | Test | Before |
+### Failing-before / passing-after
+
+A reproduction script (scratchpad, not committed) drives all three exits through
+`create_sdp()` fixtures and prints the column set, the row count, and the type
+of `report$tables$columns`.
+
+**Before, on the unmodified source:**
+
+```
+--- BRANCH 1 nothing-to-migrate early return ---
+names(report$tables): table_id, method_iri
+nrow:                 0
+report$tables$columns is NULL: TRUE
+class(report$tables$columns): NULL
+Warning messages:
+1: Unknown or uninitialised column: `columns`.
+2: Unknown or uninitialised column: `columns`.
+
+--- BRANCH 2 populated build ---
+names(report$tables): table_id, method_iri, columns
+class(report$tables$columns): character
+
+--- BRANCH 3 no-placement return ---
+names(report$tables): table_id, method_iri, columns
+class(report$tables$columns): character
+```
+
+`NULL` on the clean-package path, confirmed, with tibble's own "Unknown or
+uninitialised column" warning on the read — the defect the item describes, and
+the branch where the package was already clean.
+
+**After:** all three branches print
+`names(report$tables): table_id, method_iri, columns` and
+`class(report$tables$columns): character`. The tibble warnings are gone.
+
+### The new test demonstrated RED
+
+Run against the unfixed source, with the fix stashed and the test in place:
+
+```
+== Failed ==
+-- 1. Failure ('test-sdp-methods.R:524:3'): every migrate_sdp_methods() exit rep
+Expected `clean$tables` to have names `expected`.
+Differences:
+`actual`:   "table_id" "method_iri"
+`expected`: "table_id" "method_iri" "columns"
+
+-- 2. Failure ('test-sdp-methods.R:532:3'): every migrate_sdp_methods() exit rep
+Expected `clean$tables$columns` to have type "character".
+Actual type: "NULL"
+```
+
+Both assertions fail on the clean-package exit and neither fails on the other
+two, which is the shape the item predicts. A pin that has not been shown to fail
+is not evidence that it pins anything.
+
+### Fast loop
+
+`testthat::test_file("tests/testthat/test-sdp-methods.R", reporter = "summary")`
+— 98 passes, no failures, no warnings, no skips.
+
+### Full suite
+
+`Rscript -e 'devtools::test()'` — `[ FAIL 8 | WARN 38 | SKIP 9 | PASS 3877 ]`,
+exit 0.
+
+**All 8 failures are pre-existing and environmental, and that was measured, not
+assumed.** The four affected files were re-run with this branch's changes
+stashed; the baseline produces the identical 8 failures at the identical
+locations:
+
+| failure | owner |
+|---|---|
+| `test-dictionary-helpers.R:224:3` | **B-137** (locale) |
+| `test-iri-predicates.R:39:5`, `:52:5`, `:57:5`, `:104:5` | **B-137** (locale) |
+| `test-review-console.R:231:3` | **B-137** (locale) |
+| `test-github-helpers.R:161:3`, `:264:3` | new-item candidate, below |
+
+Six of the eight are queue item **B-137**, "Six tests depend on a UTF-8 locale
+and fail under the C locale", whose `retires_when` names these exact six
+expectations and predicts this container: *"the suite is green on CI's UTF-8
+runner and red on any container without LANG set."* `locale -a` here offers only
+`C`, `C.utf8` and `POSIX`, and `LANG` is unset. Nothing in `sdp-methods` fails.
+
+### R CMD check
+
+`Rscript -e 'rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")'`
+— **`Status: 2 ERRORs, 1 WARNING`.** All three are pre-existing, each is owned
+by an existing queue item or measured on the baseline, and none is caused by
+this diff:
+
+| finding | check step | owner / evidence |
 |---|---|---|
-| 1 nullability | a column declared required must not ship missing values | **FAIL** — `expect_error(validate_salmon_datapackage(path))` did not throw (`test-package-helpers.R:4110`) |
-| 2 schema-required (non-key) | a blank schema-required metadata field warns by default and fails strict validation | **FAIL ×2** — no warning in default mode (`:4138`), no error under `require_iris = TRUE` (`:4142`) |
-| 2 schema-required (key) | a blank metadata key field is a structural error in every mode | **ERROR** — validator aborted, but the only issue it named was "column_dictionary.csv references table_id values not present in tables.csv"; the blank `table_id` itself was never reported |
-| 3 SSSOM | validate_salmon_datapackage refuses a corrupt SSSOM artifact | **FAIL** — validation passed over a manifest whose SHA-256 was all zeros (`test-sssom.R:479`) |
-| 3 decomposition | validate_salmon_datapackage refuses a corrupt decomposition artifact | **FAIL ×2** — passed over drifted CSV bytes (`:821`) and over a deleted manifest (`:827`) |
+| ERROR | `checking tests` — `[ FAIL 8 \| WARN 38 \| SKIP 27 \| PASS 3811 ]` | the same 8 as `devtools::test()`: 6 are **B-137**, 2 are the `test-github-helpers.R` candidate below |
+| ERROR | `checking running R code from vignettes` — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd` | **B-133**, and reproduced on the unmodified baseline |
+| WARNING | `checking R files for syntax errors` | environmental locale; see below |
 
-### Passing-after (same runner, patched `R/`)
+**The vignette ERROR was measured on the baseline, not reasoned about**, because
+one of the two failing vignettes is `migrate_sdp_methods()`'s own and that made
+it the one finding here that could plausibly have been mine. The base commit
+`4cd085c` was exported to a clean directory with `git archive` (its
+`R/sdp-methods.R` verified to carry the unfixed two-column return) and
+`tools::checkVignettes(tangle = TRUE, weave = FALSE)` produced the identical two
+errors. **B-133** describes the mechanism exactly — each vignette sets
+`eval = FALSE` from a setup chunk marked `purl = FALSE`, so `knitr::purl()` drops
+that chunk and tangles every illustrative chunk as live code — and records that
+it was "measured locally on R 4.3.3 ... and not reproduced on CI, whose newer R
+passed". The logic agrees with the measurement: the migration vignette dies at
+its own line 97, `readr::read_csv("weir-counts-sdp/metadata/tables.csv")`, and
+the first `migrate_sdp_methods()` call in it is at line 263 — the script stops
+166 lines before it reaches the function this branch changes. The second failing
+vignette does not use `migrate_sdp_methods()` at all.
 
-All five: `failed=0`, passed 2 / 2 / 1 / 2 / 3 expectations respectively.
+Two things about the WARNING worth keeping:
 
-### Touched files in full (`testthat::test_file`, patched `R/`)
+- `checking R files for non-ASCII characters ... OK`.
+- `checking R files for syntax errors ... WARNING`, whose body is
+  `Warning in Sys.setlocale("LC_CTYPE", "en_US.UTF-8"): OS reports request to
+  set locale to "en_US.UTF-8" cannot be honored`. That is R CMD check's own
+  locale switch failing in a container whose `locale -a` offers only `C`,
+  `C.utf8` and `POSIX` — not a syntax error and nothing to do with this diff.
+  Same root cause as B-137, though B-137's `retires_when` names six test
+  expectations and not this check line.
 
-- `test-sssom.R`: failed=0 skipped=0 passed=49
-- `test-measurement-decompositions.R`: failed=0 skipped=0 passed=72
-- `test-package-helpers.R`: failed=0 skipped=0 passed=407
+**This machine runs R 4.3.3.** Per AGENTS.md a green local check is evidence
+about this R and not CI's, and the 2026-08-25 episode — two `·` characters that
+passed under R 4.5.2 locally and failed under R 4.6.1 on CI — is the precedent.
+So the added lines were checked for non-ASCII directly rather than trusted to
+the check: **every line this branch adds to `R/` and `tests/` is ASCII**. The
+em-dashes that remain in `R/sdp-methods.R` and `test-sdp-methods.R` are all
+pre-existing and all inside comments, which AGENTS.md exempts. The prose added
+to `NEWS.md` is ASCII too.
 
-### Full suite (`devtools::test()`)
+### Whitespace
 
-Run 21:56–21:59 UTC, 2026-09-10, `devtools::test(reporter = "summary")`:
-**failed=6 (plus 2 errors = 8 failing items), skipped=103, passed=3192,
-warnings=38.** Suggests absent at suite start: pdftools, readxl, openxlsx,
-emld, jsonvalidate, dataone, datapack (the second install phase was still
-running; at suite end only dataone and datapack were still absent, so some
-early-alphabet files ran without emld/jsonvalidate and skipped where gated).
-The 103 skips are those gates plus the `not CI` skip in
-`test-ci-optional-deps.R`.
-
-**All eight failing items pre-exist and are unrelated to this change.** Shown,
-not assumed: with `R/` stashed back to `origin/main` and the same runner, the
-same four files produce the identical eight —
-
-- `test-dictionary-helpers.R` "infer_dictionary recognizes wide numeric and
-  percent metrics" (1 failure) — a column name containing `é` is not matched;
-  this container runs the **C locale** (`Sys.getlocale("LC_CTYPE") == "C"`,
-  `l10n_info()$UTF-8 == FALSE`).
-- `test-github-helpers.R` "read_github_csv can read remote content with a
-  token" and "read_github_csv_dir can fetch when a token is configured"
-  (2 errors) — `HTTP 404 Not Found` from `httr2::req_perform()` through the
-  session proxy; network, not code.
-- `test-iri-predicates.R` (4 failures) — `ideographic_space` accepted as
-  whitespace-free by `.ms_absolute_iri_shape()` and its callers; the same
-  C-locale cause, in the regex engine's `[[:space:]]` class (the file's own
-  header says the engine is contractual and locale-sensitive).
-- `test-review-console.R` "print() emits exactly the rendered lines"
-  (1 failure) — rendered-text comparison under the same non-UTF-8 locale.
-
-Baseline output (original `R/`):
-`test-dictionary-helpers.R failed=1 passed=289`;
-`test-github-helpers.R errors=2 passed=31`;
-`test-iri-predicates.R failed=4 passed=26`;
-`test-review-console.R failed=1 passed=106` — the same names, the same counts.
-None of the four files exercises the validator paths this change touches.
-Not fixed here: a locale-dependent test is a separate finding (see below).
-
-### Other checks
-
-- `devtools::document()` — only `man/validate_salmon_datapackage.Rd` kept.
-- `git diff --check` — clean (exit 0).
-- `rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "warning")` — the
-  CI line, run 22:01–22:06 UTC: **`Status: 2 ERRORs, 1 WARNING`**, so the call
-  threw, and none of the three is this change:
-  - WARNING, "checking R files for syntax errors": `Sys.setlocale("LC_CTYPE",
-    "en_US.UTF-8")` cannot be honored — the container has no such locale (CI
-    sets `LANG: en_US.UTF-8` and has it). Environment.
-  - ERROR, "checking tests": `[ FAIL 8 | WARN 38 | SKIP 27 | PASS 3741 ]` — the
-    same eight items as the suite above (fewer skips because more Suggests had
-    finished installing by then), each reproduced against `origin/main`'s `R/`.
-  - ERROR, "checking running R code from vignettes":
-    `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd` both fail at
-    their first statement, `readr::read_csv("<pkg>-sdp/metadata/tables.csv")`,
-    because nothing created that directory. Measured with `knitr::purl()`: both
-    vignettes set `eval = FALSE` globally inside a `purl = FALSE` setup chunk,
-    so the tangled script the check sources contains every illustrative chunk
-    as live code and its line 2 is that read, with no `create_sdp()` or
-    `write_salmon_datapackage()` before it. No `R/` path is reached before the
-    failure, so it cannot be this change; whether CI's runner exercises the
-    same step is not knowable from here.
-  Every other check line was OK, including "R code for possible problems", the
-  Rd/usage/code-documentation checks over the regenerated man page, examples,
-  and "code files for non-ASCII characters" — with the standing caveat that the
-  last is R-4.3.3's answer, not R-4.6.1's.
+`git diff --check` — clean.
 
 ## What I did not do, and why
 
-- **Did not touch the declared-primary-key check.** Closed under #77 in 0.2.6
-  and excluded by the item's `retires_when`.
-- **Did not make a blank non-key required field a structural error in the
-  default mode.** `create_sdp()` writes placeholders into the required fields it
-  cannot fill, and the package's own vocabulary treats a placeholder as
-  *incomplete* (warn by default, error under strict) rather than *broken*. A
-  blank required field is the same state minus the marker, so it takes the same
-  channel; `review_metadata()` documents these as blocking *strict* validation,
-  and the documented `create_sdp()` → `validate_salmon_datapackage(require_iris
-  = FALSE)` example must keep passing. Keys are the exception and are structural,
-  because a row without its key cannot be addressed by any setter.
-- **Did not scan `metadata/semantic/` for stray `.sssom.tsv` files.** The
-  publication path deliberately publishes only what the manifest names and
-  leaves "an editor backup, private review note, or unapproved mapping draft"
-  local; a validator that refused those would contradict that contract. A
-  mapping set the manifest does not bind is therefore not a package artifact.
-- **Did not add a conformance test driven from `sdp.rules.yaml` rule ids.**
-  That is #48 / the S1 execplan, and the S1 card says it waits on the #90
-  authority ruling.
-- **Did not port to metasalmonpy.** The claim grant covers one branch in the
-  item's repository. See below.
+**`knowledge/parity-deviations.md` was deferred at first and then landed here,
+on a ruling.** The first hand-back left it untouched and reported the staleness
+instead, because this item's `retires_when` does not mention the register, the
+dispatch scoped the mirror half to B-144, and B-111 is in flight with its own
+paragraph in that file. The coordinator ruled on 2026-09-15 that the row lands
+in this pull request rather than with B-144, citing B-115's item text — *"the
+parity register row lands in the pull request that implements each half"* — so
+the R half carries its own row when the R half lands, and the register is never
+left claiming a verification that has stopped being true, not even for the
+length of one pull request. Done in a second commit, `knowledge/parity-deviations.md`
+only; `R/`, `tests/` and `NEWS.md` were not reopened. `origin/main` was still at
+this branch's base commit and the file was unchanged there, so there was no
+conflict with B-111.
 
-## Belongs to another item
+What landed, in one file and with no new numbered row:
 
-- **Workpad path collision (candidate queue item, hub protocol; not filed
-  here -- the coordinator will):** merging `origin/main` (`9361e3b`) into this
-  branch on 2026-09-12 conflicted add/add on `.hub/workpad.md`, because `main`
-  carries B-95's workpad at the same path (merged with #112). Resolved by
-  keeping this branch's file; B-95's stays in history through #112. The
-  protocol's fixed workpad path means each merged handback overwrites the last
-  on `main`, so `main`'s copy is only ever the most recently merged item's.
-- **Mirror port owed (candidate new queue item, repo `metasalmonpy`, stream
-  S10):** the three checks above in `package_io.py`
-  (`_collect_package_validation_issues()` / `validate_salmon_datapackage()`,
-  the row-41 collector), calling `sssom.py`'s `validate_sdp_sssom` and
-  `measurement_decompositions.py`'s `validate_sdp_measurement_decompositions`
-  by manifest presence, plus the key/non-key split of the schema-required
-  fields against its own schema parse. Not a deviation to register: it is
-  "R shipped first" lag, exactly as the 0.4.0→0.5.0 window is recorded in
-  `knowledge/parity-deviations.md`. NEWS says so.
-- **Observation for #48 / #90 (spec authority), not acted on:**
-  `inst/extdata/schema/frictionless/metadata/codes.schema.json` does not mark
-  `code_value` as `constraints.required`, while `.ms_metadata_key_fields()`
-  treats it as a key of `codes.csv`. This change follows the schema (a blank
-  `code_value` is not reported as a blank key). Whichever artifact #90 rules
-  normative decides whether the schema is missing a constraint.
-- **Candidate new item (metasalmon, S2 correctness debt):** six tests are
-  locale-dependent and fail in a C / non-UTF-8 locale on R 4.3.3 —
-  `test-dictionary-helpers.R:218`, the four `test-iri-predicates.R` whitespace
-  cases, `test-review-console.R:231`. They pass on CI's UTF-8 runner, so the
-  suite is green there and red on any container without `LANG` set; either the
-  tests declare the locale they need (`withr::local_locale()` /
-  `skip_if_not(l10n_info()$\`UTF-8\`)`) or the predicates stop depending on it.
-  Evidence: this workpad's baseline run.
-- **Candidate new item (metasalmon, S2 or S11 vignettes):** the tangled code
-  of `vignettes/migrating-to-sdp-0-3-0.Rmd` and `vignettes/tidy-data-for-sdp.Rmd`
-  fails `R CMD check`'s "running R code from vignettes" on any machine, because
-  `eval = FALSE` is set globally from a `purl = FALSE` chunk and `purl()` only
-  honours the option on chunk headers. Fix is in the vignettes (per-chunk
-  `eval = FALSE`, or `purl = FALSE` on illustrative chunks), not in `R/`.
-  Evidence: the rcmdcheck section above and the two tangled scripts.
-- **Observation, not acted on:** on the descriptor-only read path
-  (`datapackage.json` with no canonical CSVs) `contact_name` / `contact_email`
-  arrive as NA by construction, so such a package now warns in the default mode
-  and fails strict validation on those fields. That is the honest answer for a
-  package with no contact, but if the descriptor carries contact information in
-  a field the reader does not map, the fix is in
-  `.ms_descriptor_provenance()`, not here.
+1. **Row 9 (`:60`) amended in place**, not extended and not deleted. Its
+   "mirrored 1:1 against metasalmon `main` (`e02111a`)" now carries a dated
+   qualifier and an explanation of what stopped being 1:1, in the shape the file
+   itself prescribes for `PARITY.md` row 31 — keep the original claim, date it,
+   say what broke it — because a new row saying the two differ, sitting under an
+   older row saying they were verified identical, leaves a reader to guess which
+   sentence is current.
+2. **A port paragraph** in the "what the port owes" section, after B-124's and
+   B-125's and in their shape, naming **B-144** as the item that closes it.
 
-## Guards added, and what retires them
+**No new numbered row, deliberately.** The port is catch-up rather than a chosen
+difference, and the file's own rule is that filing absence as design is the one
+thing this register must not do. Row count is unchanged at **61**, and
+`test-parity-register-guard.R` **passes against the real metasalmonpy tree**
+(`METASALMONPY_PATH=/home/user/metasalmonpy`) rather than skipping, which is what
+it does by default here — its skip message says "a missing twin is not
+agreement", so the default green would not have been evidence.
 
-- `.Rbuildignore` `^\.hub$` — keeps the protocol's workpad out of the R tarball.
-  *Retires when:* `HUB.md` stops placing `.hub/workpad.md` on the work branch,
-  at which point the line is deleted with the directory.
-- No skip, suppression, allowlist entry, or workaround was added. The "presence
-  by managed file name" rule in `.ms_validate_optional_sdp_semantic_artifacts()`
-  is a design choice inherited from the two existing consumers, not a guard,
-  and its comment says why.
+**Two things the port paragraph records that reading only the R side would
+miss**, both found by reading the Python tree, which was read and never written:
 
-## Codex round (2026-09-12, on PR #111 head `cb03cf4` + `ad8d974`)
+- **It runs backwards.** metasalmonpy carried the three-column frame *first* and
+  gave it up at S10 chunk A to match R, so B-144 restores what it originally
+  had. This is the amended mirror contract's own case (Brett, 2026-08-17).
+- **The Python code documents the defect as intended**, so B-144 is a comment
+  correction as well as a code change. `sdp_methods.py:1083-1085` reads *"Two
+  columns, not three: R's nothing-to-migrate report frame has no ``columns``
+  column (unlike the empty placements frame the stop-free path returns), and the
+  differential run showed it."* Accurate about what the differential saw, wrong
+  about what the shape should be. Same shape as the **#118** port, where a
+  docstring documents the current behaviour as intended and the fix is the guard
+  **and** the docstring. A port that fixed the frame and left that comment
+  standing would leave an explanation for a behaviour that no longer exists.
 
-Four findings from the Codex review of #111 and one from its security review,
-relayed by the coordinator. Each treated as a bug report: reproduced against
-`ad8d974` (the head after the parity paragraph landed), then fixed with a test
-that fails without the fix. None was refuted. Runner for every RED/GREEN
-below: `pkgload::load_all()` + `testthat::test_file(<file>, desc = <name>,
-reporter = "check")`, `LC_ALL=C.UTF-8`, R 4.3.3; RED is the run against the
-unmodified `R/`, GREEN the same run after the fix.
+`python3 scripts/hub_queue.py check` — `OK: every generated block matches the hub
+queue.` The OKF bundle validator (`psc-okf check knowledge --tier capture`) could
+**not** be run: it needs a sibling `psc-data-systems` checkout and there is none
+on this machine. Front matter is untouched, no absolute filesystem path was
+introduced (checked; AGENTS.md forbids them in bundle cards) and row 9 is still a
+single table line — but those are hand checks, not the validator.
 
-### 1. P1 -- absent required metadata columns (real)
+**No `devtools::document()` run and no `man/` change.** The `@return` block for
+`migrate_sdp_methods()` describes the three report parts without enumerating
+`tables`'s columns, so this change does not make it wrong, and the migration
+vignette (`vignettes/migrating-to-sdp-0-3-0.Rmd:375-384`) already prints the
+populated `1 x 3` frame — so the fix makes the no-op branch agree with published
+documentation rather than contradicting it. Adding a column list to the roxygen
+would have regenerated all of `man/`, which with B-111 and B-115 in flight is a
+larger and less reviewable diff than a P3 warrants.
 
-Finding: `.ms_collect_blank_required_metadata_fields()` scanned
-`intersect(fields, names(df))`, so a required column missing from the header
-was skipped rather than reported. Reproduced with `create_sdp()` output,
-`contact_email` dropped from `dataset.csv` and `table_label` from `tables.csv`:
-the collector returned zero rows, the default mode gave no schema-required
-warning, strict validation passed, and `review_metadata()` (the same
-`intersect` at `sdp-field-setters.R:268`) listed nothing. Why the four files
-disagreed: the canonical reader normalises the dictionary and codes through
-`.ms_align_cols()` (a missing column becomes NA and was therefore reported)
-and reads `dataset.csv` / `tables.csv` as written.
+**`metasalmonpy` is untouched.** The mirror half is **B-144**, a separate item,
+where Python moves back to the three-column shape it had first. Under the
+amended mirror contract (Brett, 2026-08-17) which side is right is a ruling and
+not an implementer's call; Brett ruled the three-column shape on 2026-09-14, so
+R is the side that moves and Python reverts the change it made at S10 chunk A to
+mirror R's two-column frame. This is the contract's own example of the mirror not
+being automatically the follower.
 
-Fix, one rule -- **a column the file does not have is blank in every row**:
+**One process note, recorded because it touched files outside this item even
+though nothing of it survives.** While setting up the baseline vignette
+comparison I ran `git stash push -- R/sdp-methods.R` after the work was already
+committed, so it stashed nothing, and the following `git stash pop` reached the
+repository's **pre-existing** entry instead — `stash@{0}`, *"On
+claude/blissful-shannon-ag9jec: evidence-pointer edits duplicating PR #110"*.
+The pop conflicted and left seven `queue/items/*.yaml` files in a conflicted
+working-tree state. It was reverted with `git reset --hard HEAD`, which was safe
+because every change of mine was already in the commit. **That stash entry was
+not dropped and is still present and unchanged** — git kept it because the pop
+failed — and `queue/items/` is untouched in this branch's diff. The baseline
+comparison was then redone the correct way, on a `git archive` export of the base
+commit into a scratchpad directory, which is what the R CMD check section above
+reports.
 
-- `R/package-helpers.R`, `.ms_collect_blank_required_metadata_fields()`:
-  iterates every required field; an absent one scans as
-  `rep(NA_character_, nrow(df))`. Same message, same channel as a blank value
-  (placeholder warning / strict error for non-key fields, structural for
-  keys), for all four files regardless of what the reader did.
-- `R/package-helpers.R`, `.ms_collect_missing_table_observation_unit_iri_issues()`:
-  the same rule. It returned nothing for a `tables.csv` with no
-  `observation_unit_iri` column, so strict validation refused a blank IRI and
-  passed a file that never declared the field. Found while making the rule
-  one rule; included because leaving it would have been the next report of
-  the same shape, one function above the one just fixed.
-- `R/sdp-field-setters.R`, `review_metadata()`: aligns each frame to its
-  schema fields (`.ms_align_cols()`, as the reader already does for the
-  dictionary and codes) before the gap scan. It now reports the absent column
-  and the printed `set_sdp_*()` call fills it -- `.ms_set_sdp_metadata()`
-  already adds a column it is asked to write (line 802). Without this the
-  NEWS claim that the validator and `review_metadata()` "cannot disagree
-  about which fields block" would have become false the moment the validator
-  learned to see absent columns.
-- Roxygen of both functions says so; `man/validate_salmon_datapackage.Rd` and
-  `man/review_metadata.Rd` regenerated with `devtools::document()`. roxygen2
-  8.1.0 again rewrote `Config/roxygen2/version` and reflowed `NAMESPACE`; both
-  reverted (DESCRIPTION keeps the yaml minimum from finding 5).
+**The AGENTS.md duplicate-placement-guard note is already resolved — checked,
+not assumed.** AGENTS.md records that `migrate_sdp_methods()` once carried
+duplicate placement guards that became unreachable when the real checks moved
+earlier, leaving dead code that invited someone to weaken the live copy. Both
+guards now appear exactly once each (`R/sdp-methods.R:441` and `:448`, before
+the dry-run return), and the comment at `R/sdp-methods.R:462-465` records the
+absence deliberately: *"a repeat of those checks here would be unreachable.
+Deliberately not duplicated: a dead guard invites someone to weaken the live
+one."* Nothing to fix and no new item needed.
 
-Tests:
+## Belonging to another item
 
-- `test-package-helpers.R` "an absent schema-required metadata column is
-  reported like a blank one" -- `create_sdp()` fixture with attribute-only
-  columns, filled through `set_sdp_dataset()` / `set_sdp_table()` /
-  `set_sdp_column()`, strict pass asserted first so the dropped column is the
-  only defect in play. Then `contact_email` and `table_label` dropped: the
-  default mode warns once, naming `dataset.csv$contact_email` and
-  `tables.csv$table_label`; the strict verdict names
-  `metadata/dataset.csv row 1 (dataset_id=absent-1) field contact_email is
-  required by the SDP schema and blank` and `metadata/tables.csv row 1
-  (table_id=obs, file_name=data/obs.csv) field table_label ...`; then
-  `dataset_id` dropped: structural in the default mode.
-  RED: `Expected blank_warning to have length 1. Actual length: 0.` and
-  `Expected strict to be an S3 object. Actual OO type: none.` (strict
-  validation returned its result list). GREEN: failed=0 passed=8.
-- `test-package-helpers.R` "an absent observation_unit_iri column is refused
-  like a blank one" -- semantic fixture with the column removed; default mode
-  still passes, strict refuses. RED: `Expected suppressWarnings(...) to throw
-  a error.` GREEN: failed=0 passed=2.
-- `test-sdp-field-setters.R` "review_metadata() reports a required column the
-  file does not have, and its call fills it" -- setter fixture brought to
-  zero gaps, then `contact_email`, `table_label` and `observation_unit_iri`
-  dropped; asserts exactly those three gaps by file / field / reason, that
-  strict validation refuses, then executes the printed calls (this file's
-  standard) and asserts the columns are back, zero gaps, strict passes.
-  RED: `Actual:` (empty) versus `Expected: "dataset.csv contact_email
-  required", "tables.csv table_label required", "tables.csv
-  observation_unit_iri iri"`, and strict did not throw. GREEN: failed=0
-  passed=9.
+- **B-144** — the mirror half of this item, in metasalmonpy. Not touched.
+- **B-137** — six of the eight full-suite failures on this machine. Not touched.
+- **B-111**, **B-115** — worked in parallel by other agents in this repository.
+  The only file this branch touches that they plausibly also touch is `NEWS.md`,
+  where this entry was appended at the end of the development version's
+  `### Fixed` section. A textual conflict there is possible and resolves by
+  keeping both bullets.
+- **B-133** — the vignette-tangle ERROR in `R CMD check`. Not touched.
+- **B-132** — the nearest existing item to new-item candidate 2 below, but a
+  different pair of tests, so the candidate is not part of it.
 
-Not done: normalising `dataset.csv` / `tables.csv` inside
-`read_salmon_datapackage()`. It would enforce the rule at one point, but it
-changes the return value of an exported function (columns added and
-reordered) that the writers, EML export and KNB publication consume; the
-collector-level rule leaves the reader alone. Recorded so the next person does
-not re-derive it.
+## New-item candidates
 
-### 2. P2 -- blank `dataset_id` crashes the alignment check (real)
+### 1. `parity-deviations.md` row 9 — RESOLVED IN THIS PULL REQUEST, not a candidate
 
-Reproduced: `dataset.csv$dataset_id <- ""` with the tables and dictionary ids
-intact gives `simpleError: missing value where TRUE/FALSE needed` in both
-modes (`check_ids()`: `all(values == NA)` is NA). Fix:
-`.ms_validate_dataset_id_alignment()` returns early when the root id is NULL,
-NA or whitespace -- a blank root has nothing to align against, and
-`.ms_collect_blank_required_metadata_fields(keys = TRUE)` then reports
-`metadata/dataset.csv row 1 field dataset_id is required by the SDP schema and
-blank` as the structural issue. Chosen over moving the key collector ahead of
-alignment because it also covers an absent `dataset_id` column (NULL root)
-and keeps the validator's order of checks. The validator is the only caller.
+Kept here as the record of how it was found rather than deleted, because the
+finding is the reason the second commit exists. Row 9 claimed *"The migration
+itself is mirrored 1:1 against metasalmon `main` (`e02111a`)"*, and the report
+shape is exactly what this branch changes, so from merge until B-144 lands R
+returns three columns from the no-op exit and Python two. That is the shape the
+file already documents at length for `PARITY.md` row 31: *"Nothing over there
+will announce it, because the row still reads as a passing verification — which
+is the worst shape a stale register row can take."*
 
-Test: `test-package-helpers.R` "a blank dataset_id is a structural issue, not
-an R error" -- both modes; asserts an `rlang_error`, the structural message,
-and that "missing value where TRUE/FALSE needed" is absent. RED: `Expected
-caught to inherit from "rlang_error". Actual class:
-"simpleError"/"error"/"condition".` and `Actual text: missing value where
-TRUE/FALSE needed` (in both modes). GREEN: failed=0 passed=8.
+It was reported as a candidate at the first hand-back and **ruled into this pull
+request** on 2026-09-15 under B-115's rule that the register row lands in the
+pull request implementing each half. Row 9 is now amended in place and a port
+paragraph naming **B-144** sits with B-124's and B-125's. See "What I did not do"
+above for what landed and what was checked.
 
-### 3. P1 -- mirror the behaviour or log the exception (coordinator's)
+### 2. Two `test-github-helpers.R` tests error instead of skipping when the raw host is unreachable but the API host is
 
-The parity paragraph landed in `ad8d974` (`knowledge/parity-deviations.md`,
-the concurrent agent) and `queue/items/B-124.yaml` is on `main` (`0a04524`).
-The NEWS mirror sentence said the port is "owed under the S10 parity stream"
-without pointing anywhere; it now reads "(queue item B-124; see the parity
-register)". Nothing else.
+**Being filed by the coordinator as a sibling of B-132; not carried by this
+item.** Recorded here because the evidence was measured on this branch.
 
-### 4. P2 -- rebuild pkgdown after changing public documentation (real)
+`test-github-helpers.R:161:3` and `:264:3` fail with
+`Error in httr2::req_perform(req): HTTP 404 Not Found`. The cause is a mismatch
+between what the skip guard probes and what the code under test fetches: the
+guards at `test-github-helpers.R:144-160` probe reachability with `gh::gh()`
+against `api.github.com` and skip on error, but `read_github_csv()` resolves to
+a `raw.githubusercontent.com` URL (`R/github-helpers.R:593`, reached through
+`ms_github_get()` at `R/github-helpers.R:227` and `:618`). Where the API host
+answers and the raw host does not, the guards pass and the fetch then errors.
 
-Run twice, because `origin/main` moved between the two runs. pkgdown 2.2.1
-and pandoc 3.1.3 are installed; the checked-in site was built with pkgdown
-2.2.0 and pandoc 3.8.3.
+Same defect shape as **B-132** ("The live upstream SDP bundle test errors
+instead of skipping when the fetch is slow or offline") but a different pair of
+tests, so it is a candidate rather than part of B-132. A fix would probe the URL
+the code actually fetches, or turn the 404 into a skip. *Retires when:* the
+tests stop reaching the network at all, for example against a recorded fixture.
 
-**On the pre-merge tree (`ad8d974`)** `Rscript scripts/build-pkgdown.R`
-fails before it reaches the reference pages, and not because of this
-change: pkgdown's home build renders every root Markdown file, and pandoc
-rejects `HUB.md`, whose first 213 lines are a YAML front-matter block:
+## Retirement conditions of what this branch adds
 
-```
-Reading HUB.md
-YAML parse exception at line 198, column 6,
-while scanning a simple key:
-could not find expected ':'
-Error: pandoc document conversion failed with error 64
-```
+One test. No suppression, no exclusion, no allowlist entry, no skip and no
+workaround — nothing here silences a signal, so there is nothing that could
+outlive its cause and conceal a failure. The test states its own condition in
+its header comment:
 
-Line 198 of that `HUB.md` is a list item ending in an unquoted colon (`...
-that is not a small mechanical change:`) continued on the next line, which
-YAML reads as a key without a value. The failed run's side effects under
-`docs/` (favicons fetched from realfavicongenerator.net,
-`deps/bootstrap-5.3.8/`, `authors.html`, `pkgdown.yml`, and the ignored
-`AGENTS.html` / `CLAUDE.html`) were reverted or deleted. **Fixed on `main`
-in the meantime**: the `HUB.md` that `9d5434e` (pull request #110) brought
-in parses (`pandoc HUB.md -t html` exits 0, where the `ad8d974` copy still
-fails at line 198), so no item is owed for the parse failure.
+> *Retires when:* `migrate_sdp_methods()` stops returning a `tables` frame, at
+> which point there is no shared column set left to pin.
 
-**On the merged tree (`c9a54a8`)** the same script exits 0 -- and modifies
-107 tracked files under `docs/` plus 5 new ones: every page's `<head>` is
-rewritten to reference `deps/bootstrap-5.3.8/` (pkgdown 2.2.1 ships a newer
-Bootstrap than the 5.3.1 the checked-in site uses), favicons are re-fetched,
-`pkgdown.yml` records the new pandoc and pkgdown versions, and the markdown
-companions of every article and reference page are re-rendered by pandoc
-3.1.3 with whitespace and table differences. That is the version churn the
-coordinator said not to commit, and none of it was. The script also writes
-**`docs/HUB.html` and `docs/PULL_REQUEST_TEMPLATE.html`** (with `.md`
-companions, both indexed in `search.json`): pkgdown renders every root
-Markdown file, and the script's `internal_pages` list deletes only `AGENTS`
-and `CLAUDE`, so the hub protocol and the pull-request template become
-public pages on the next real site build, and the forbidden-text check at
-the end of the script does not see them. **Candidate item** (metasalmon,
-docs): extend the list or exclude the files in `_pkgdown.yml`.
-
-What was committed, produced from the regenerated man pages with the same
-pkgdown: `pkgdown::build_reference(".", topics =
-c("validate_salmon_datapackage", "review_metadata"), lazy = FALSE)`,
-`pkgdown::build_news(".")`, `pkgdown::build_search(".")` (exit 0) -- the
-targeted builds keep the site's existing `deps/bootstrap-5.3.1` references
-and do not index the two stray pages. Committed:
-`docs/reference/validate_salmon_datapackage.html` (the new description in
-the body and the `<meta>` tags; the example ran, so its temp path changed
-from the maintainer's `/var/folders/...` to `/tmp/...`; footer 2.2.0 ->
-2.2.1), `docs/reference/review_metadata.html` (the one bullet; footer),
-`docs/news/index.html` (the development-version section, plus
-pkgdown/downlit rendering differences on *old* entries that the maintainers
-should expect to flip back on their next full build: `<tr class="header|odd|
-even">` on the 0.4.0 environment table, and three autolinks dropped --
-`tidyr::pivot_longer()` twice and `read_csv()` once -- because those resolve
-differently in this library; footer), `docs/search.json`, and, from the full
-build, the two churn-free markdown companions
-`docs/reference/validate_salmon_datapackage.md` and
-`docs/reference/review_metadata.md` (the same description text and temp
-path, nothing else). Not committed: `docs/reference/index.html` (footer
-only) and `docs/news/index.md` (its regenerated form re-renders the 0.4.0
-environment table and drops the tidyr links on old entries, so it is left
-for the maintainers' next full build; the HTML changelog page is current).
-
-### 5. P1 advisory, security -- `!expr` in SSSOM metadata (real)
-
-Every `yaml::` read in `R/`, and which the validator reaches through #111:
-
-- `R/sssom.R:241`, `.ms_sssom_parse_metadata()` --
-  `yaml::yaml.load(yaml_text)` on the `#`-prefixed metadata block of every
-  `.sssom.tsv` the manifest names. Reached by the validator through
-  `.ms_validate_optional_sdp_semantic_artifacts()` -> `validate_sdp_sssom()`
-  -> `read_sssom_mapping_set()`, and directly by `write_sdp_sssom()` and
-  `read_sssom_mapping_set()`. **Fixed**: `eval.expr = FALSE`, with a one-line
-  comment naming the finding. `DESCRIPTION` now declares `yaml (>= 2.2.0)`,
-  the version that introduced the argument, so the call cannot become an
-  "unused argument" error on an older yaml.
-- Not reachable through this PR, listed here as a **candidate item**
-  (metasalmon, S2): `R/eml-export.R:2920` `yaml::read_yaml(mapping_path)` and
-  `R/knb-publication.R:297` / `:1572`
-  `yaml::read_yaml(file.path(path, "metadata", "eml-mapping.yml"))` -- three
-  reads of a collaborator-authored `eml-mapping.yml` on the EML-export and
-  publication paths, all at yaml's default. `R/schema-helpers.R:168`
-  (`yaml.load` on `sdp.rules.yaml` fetched from the spec repository) and
-  `:199` (`read_yaml` on the vendored copy) read the package's own schema
-  bundle rather than a collaborator's file; the same one-argument fix applies
-  for defence in depth, but the trust boundary is different, so they are
-  listed rather than changed here.
-- Installed yaml is **2.3.12**. Its default is
-  `eval.expr = getOption("yaml.eval.expr", FALSE)`, so a session option flips
-  it on; with `eval.expr = FALSE` it returns the unevaluated expression as
-  text and emits **no warning** on this version (verified:
-  `yaml.load("a: !expr 1 + 1", eval.expr = FALSE)` gives `"1 + 1"` with no
-  condition; with the option set and no argument it gives `2`). The test
-  tolerates a warning anyway, for versions that emit one.
-
-Test: `test-sssom.R` "validate_salmon_datapackage never evaluates an !expr
-tag in SSSOM metadata" -- installs a benign mapping set through
-`write_sdp_sssom()`, then patches the installed bytes to
-`# mapping_set_title: !expr file.create("<sentinel>")` and the manifest
-SHA-256 to match, so the validator's read is the only reader that meets the
-tag (the writer re-renders metadata it parses, so a tag in the *source* never
-reaches the installed file). Sets `withr::local_options(yaml.eval.expr =
-TRUE)` as the worst case and runs `validate_salmon_datapackage()`. Asserts the
-sentinel is absent, the verdict is not an error, and `read_sssom_mapping_set()`
-returns the title as the literal text. RED (unpatched reader): `Expected
-file.exists(sentinel) to be FALSE. actual: TRUE` and the title read back as
-`"TRUE"` -- the validator executed the expression and then **passed**. GREEN:
-failed=0 passed=5.
-
-### Verification (all `LC_ALL=C.UTF-8`, R 4.3.3)
-
-- Touched files in full (`testthat::test_file`): `test-package-helpers.R`
-  failed=0 passed=425 (407 before this round); `test-sssom.R` failed=0
-  passed=54 (49); `test-sdp-field-setters.R` failed=0 passed=89.
-- `devtools::document()`: only `man/validate_salmon_datapackage.Rd` and
-  `man/review_metadata.Rd` kept.
-- `git diff --check`: clean.
-- testthat 3.3.2 writes `tests/testthat/_problems/` on a failing run (the RED
-  runs above); it is untracked and not ignored, and was deleted before
-  committing. Candidate: add it to `.gitignore`.
-- Full suite, `devtools::test(".", reporter = "summary")`, 13:30-13:34 UTC,
-  2026-09-12, all Suggests installed: **failed=0, errors=2, skipped=7,
-  passed=3852, warnings=38.** The two errors are `test-github-helpers.R`
-  "read_github_csv can read remote content with a token" and
-  "read_github_csv_dir can fetch when a token is configured" -- the HTTP 404
-  through the session proxy, already on the pre-existing list above. The six
-  locale-dependent failures of the earlier run did not occur: that run was
-  under the container's C locale and this one under `C.UTF-8`, which is the
-  evidence for the locale candidate item above (they pass once the locale is
-  UTF-8). Skips fell from 103 to 7 because the second install phase has
-  finished. No new failure.
-
-### Not done, and why
-
-- Did not normalise `pkg$dataset` / `pkg$tables` on read (finding 1).
-- Did not change the five other yaml reads (finding 5, candidate item).
-- Did not make an `!expr` tag a validation *failure*. With `eval.expr =
-  FALSE` it is text, which is what the argument means; whether SSSOM metadata
-  should refuse a tag outright is a spec question for #90.
-- Did not open, edit, comment on or resolve anything on GitHub.
+The **item's** retirement condition is met on the R side by this branch: the
+early return builds the three-column frame, and a test pins the column set of
+both branches the condition names, plus the third. It is met in full only when
+**B-144** lands the same shape in metasalmonpy.
