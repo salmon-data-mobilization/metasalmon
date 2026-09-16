@@ -5814,8 +5814,10 @@ framing of two comparable options.
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and four of
-them were wrong the first time in a way that looked like a clean answer.*
+were both about: *every claim here was produced by an instrument, and five of
+them were wrong the first time in a way that looked like a clean answer* — the
+last of those found by review, after this section had already been written up as
+finished.
 
 **Severity has two homes, they are differently shaped, and they have diverged
 once.** Six readings, each taken from the file named:
@@ -5856,31 +5858,40 @@ reading a file that says another file is authoritative, and then not reading the
 authoritative file.
 
 **The positional copy is partial, and that is not a detail.** Measured
-2026-09-16: of 119 backlog entries, 26 sit under one of the four P-sections. The
-rest sit under none, because severity sections are at the same heading level as
-entries, so a section is in
-force only until the next `###` heading — and every entry filed in the dated
-2026-09 round sections at the end of this file is outside all four. Those
+2026-09-16: of 119 backlog entries, 39 sit under one of the four P-sections and
+80 sit under none — among them all 34 of the older `### N. title` entries, and
+every entry filed in the dated 2026-09 round sections at the end of this file.
+(The highest-numbered line of a P-sectioned entry is 4212; the run of dated
+sections begins at 4780.) Severity sections are at the same heading level as the
+dated round sections, so a P-section ends at the next heading of its own level
+or shallower. Those
 entries carry severity in prose if at all (`**P3**, as B-200`; `**P2 on
 both:**`). A reader who follows `AGENTS.md:358` to find a recent item's severity
 therefore finds nothing — and per B-161's rule, an empty result states the
 instrument's reach, not the target's contents, so that reader concludes "no
 severity recorded" rather than "wrong file."
 
-**One divergence, verified two ways.** Measured 2026-09-16: of the 44 items
-carrying a `legacy: '#NN'` pointer, 16 resolve to an entry under a P-section, 15
-of those agree with the item file, and one does not. `queue/items/B-83.yaml`
-reads `severity: P4`; entry #83 at `knowledge/backlog.md:2116` sits inside
-`### P2 — correctness and conformance debt` (1309, running to 2270). The entry's
-own prose settles which copy is wrong: *"Cosmetic — the value is a ranking
-input, never asserted — so nothing fails."* That is P4 reasoning under a P2
-heading, so the positional copy is the wrong one under either ruling, which is
-why Q-52's condition has to dispose of it rather than leave it to whichever side
-wins.
+**Two divergences, and in both of them the positional copy is the wrong one.**
+Measured 2026-09-16: of the 44 items carrying a `legacy: '#NN'` pointer, 27
+resolve to an entry under a P-section; 25 agree with the item file and two do
+not.
 
-**Two wrong readings before that one, both from instruments, both looking
-clean.** Recorded because the first would have closed the question with the
-opposite answer, and neither looked like an error while it was being read.
+| Item | Card says | Position says | The entry's own prose says |
+| --- | --- | --- | --- |
+| `B-83` (`icebox`) | `P4` | `P2` — inside `### P2 — correctness and conformance debt` (1309–2270), at 2116 | *"Cosmetic — the value is a ranking input, never asserted — so nothing fails"* → P4 |
+| `B-116` (`done`) | `P1` | `P4` — inside `### Open — P4` (3719) via `#### smn-data-pkg` (3733), at 3735 | *"Severity: **high**"* → P1 |
+
+Each entry's prose agrees with its card and contradicts its own position, in
+opposite directions, which is the strongest available evidence for the
+recommendation in `Q-52`: the field is the reliable copy and the position is
+not. `B-116` is also the backlog contradicting *itself* — an entry that calls
+its own severity *high* filed under the P4 ecosystem heading. Both have to be
+disposed of by the ruling rather than left to whichever side wins.
+
+**Three wrong readings of that table before this one, all from the same
+script, each looking clean.** Recorded because the first would have closed the
+question with the opposite answer, and none looked like an error while it was
+being read. The third was found by review rather than by the script.
 
 1. The cross-check script first read entries as `### N. title` headings only. It
    reported 34 entries, **zero** under any P-section, zero agreements and zero
@@ -5896,10 +5907,29 @@ opposite answer, and neither looked like an error while it was being read.
    P-section and made the single divergence disappear. Over the lines it
    actually read — those at or before 2116 — that pattern matches 8 lines where
    `/^##/` matches 54, so the interval expression is not doing what it reads as
-   doing. `grep -n "^#\+ "` gives 1309, agreeing with the
-   Python instrument. The rule is the same one both times, and it is B-161's: a
-   result that makes a finding vanish is the one to re-measure with a second
-   instrument.
+   doing. `grep -n "^#\+ "` gives 1309, agreeing with the Python instrument.
+
+3. **The version that produced the numbers first written into this section
+   cancelled a severity section on *any* heading that was not an entry.** A
+   deeper heading is a *child*, not a terminator: `#### smn-data-pkg` (3733)
+   nests inside `### Open — P4` (3719), and treating it as a terminator made
+   entry #116 and every entry after it read as ungrouped. That concealed the
+   second divergence and understated the grouped population by 13 entries —
+   26 rather than 39 — and cross-checked 16 pairs rather than 27. **It was
+   found by the Codex review of pull request #142, not by this script**, which
+   is the part worth keeping: the section-scope bug produces a *smaller*
+   inventory and a *cleaner* story, so nothing inside the result invites
+   suspicion. The fix is a heading stack keyed by level, so a section is in
+   force until a heading at its own level or shallower — Markdown ancestry,
+   which is what "sits under" means. The script's header now carries all three
+   wrong versions.
+
+The rule is the same one every time, and it is B-161's: a result that makes a
+finding vanish is the one to re-measure with a second instrument. What this
+round adds is the harder case — **a result that makes a finding vanish while
+looking like an ordinary count**, where nothing is empty and nothing is
+surprising, so there is no signal to re-measure against except reading the
+source by hand.
 
 **The exemption that was read three times as a gap.** `CHECK_ONLY_RULES` in
 `scripts/tests/test_hub_queue.py:2004` exempts `generated-block-missing`,
