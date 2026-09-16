@@ -4350,11 +4350,21 @@ pull request 123 and escalated to Brett on 2026-09-16; it is deliberately left a
 a stated conflict rather than a quiet edit, because the quiet edit would be an
 agent choosing the byte.
 
-*Retires when:* **the ruling alone** — one spelling is ruled for a pre-1000
-instant in `metadata/dataset.csv`, recorded in `knowledge/questions.md` together
-with whether B-115's condition is restated to name the ruled bytes.
-`queue/items/B-161.yaml` is the authority for the condition; this passage is its
-evidence, not a second definition of it.
+*Retires when:* `queue/items/B-161.yaml` says, and this passage deliberately
+does not restate it — it is the card's evidence, not a second definition. The
+shape, for a reader deciding whether to open the card: a **ruling**, not an
+implementation, but one that must also leave the queue **walkable** from itself
+to a state where what the writers emit, what the profile admits and what the
+validators check all agree, with every step of that walk filed as an item in the
+repository that can finish it.
+
+*(This said "**the ruling alone** — one spelling … together with whether B-115's
+condition is restated" between the split and `c5e7f59` on 2026-09-16. That was
+right for about an hour and then became an **under**-statement, which is the
+dangerous direction: a reader could have treated the ruling as finished without
+the re-vendor and pin work the walk needs. Caught by the Codex review of pull
+request 137 — the second time the same edit was made to the card and not to this
+passage, which is why the passage now points rather than copies.)*
 
 **It said "and both implementations emit it, with a test pinning write → read
 for a `POSIXct` below year 1000" until 2026-09-16, and that clause is now the
