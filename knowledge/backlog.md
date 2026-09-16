@@ -5193,3 +5193,33 @@ exported to `.hub/handbacks/<id>.patch` as `git format-patch` output, which
 `.Rbuildignore` keeps out of the tarball. The remaining question is Brett's: a
 patch to a shared member repository has no durable home that is not this
 repository.
+
+### The 2026-09-16 temporal-profile finding
+
+**Both implementations now agree on a string the SDP profile forbids**, filed as
+`Q-51`. Verified at `inst/extdata/schema/frictionless/metadata/dataset.schema.json`
+lines 77–98: `temporal_start` and `temporal_end` each carry
+`constraints.pattern` of `^(\d{4}|\d{4}-\d{2}-\d{2})$` — a year or a date, never
+an instant — with `sdp:examples` of `1996` / `1996-01-01` and `2024` /
+`2024-12-31`. So `0999-06-05T13:45:30Z` fails the profile the package ships, and
+so does `2024-12-31T00:00:00Z`.
+
+**It is not a regression, and the distinction is the whole point.** It was true
+before `B-115` and `B-145` and it is true after them. Those two items owed one
+thing — that `datapackage.json` and `metadata/dataset.csv` spell the same instant
+the same way — and they delivered it. What they could not deliver is a *legal*
+string, because the profile admits no instant at all. The work changed **which**
+invalid string is written, not whether one is.
+
+**Why it went unseen through two implementations and four reviews.** Every check
+either side runs compares the two files against each other, or against the ruled
+spelling. Nothing compared the result against the profile's own pattern, so a
+divergence was visible and an invalidity was not. That is the same shape as the
+`role_boost` and `statistical_modifier` cases in `AGENTS.md`: a layer nobody
+thought to look at, where green means only that the layers anyone did look at
+agree.
+
+Found by the `B-145` run and deliberately not absorbed — it is a specification
+question in `smn-data-pkg`, a third repository, and the three options are not
+equivalent: widen the pattern, refuse the instant at the writer, or accept the
+invalidity on purpose. `Q-50` about the Frictionless profile key is adjacent.
