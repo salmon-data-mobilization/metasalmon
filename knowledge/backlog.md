@@ -5280,7 +5280,8 @@ request, every push to an open one, every re-run. On a busy merge day that still
 reaches most of them, and the diff-independence is what makes it expensive —
 each failure looks like its author's fault until somebody reads the log.
 
-**FIXED 2026-09-16** (branch `agent/B-197/a-d592f9a0947ebb37`).
+**FIXED 2026-09-16**, merged as `2313848` in pull request #140 (from branch
+`agent/B-197/a-d592f9a0947ebb37`).
 `dataone::CNode("PROD")` is gone; the node is built with `methods::new("CNode")`
 and a locally set `@identifier`, the way the test already builds `member_node`
 two lines above. Checked rather than assumed to be safe:
@@ -5718,3 +5719,93 @@ both packages vendor. Each retires when its validator enforces
 `constraints.pattern` on metadata fields, with a test that a violating value is
 reported and a conforming one is not, and a parity row or port note as the mirror
 contract requires.
+
+### The 2026-09-16 card-hygiene round
+
+**Twenty-nine Codex review rounds on pull request 137, forty-five findings, all
+upheld — and the durable output is not the fixes.** The pull request's own
+subject was one queue item and one ruling record. What it produced was a
+measurement of how card prose decays, made on prose written the same afternoon
+by someone who knew it was true when they wrote it. Nine distinct failure shapes
+came out of it, and a tenth came out of the pull request that wrote the nine
+down: two of them were broken by that diff itself, caught by review and not by
+the author. All ten are now `queue/README.md`'s *Ten corollaries, each paid for
+once*, each naming what produced it. Counts are from the pull request's review
+API rather than the commit log, which undercounts because one commit often
+answered two findings.
+
+**The largest single group was one sentence copied six times.** `B-161`'s
+condition grew from *rule a spelling* into an invariant, and the sentence saying
+the item was *the ruling alone* became an under-statement in the dangerous
+direction — a reader of the decision log could treat the ruling as finished
+before the conditional re-vendor and pin work existed. Each fix was followed by a
+review finding another copy: `knowledge/backlog.md`, then `B-206` and `B-207`,
+then `B-204` and `B-205`, then `knowledge/questions.md`, then `B-161`'s own card.
+
+**Two of the nine are about the search rather than the copies, and they are the
+new ones.** A sweep keyed to phrasings the author remembered writing finds only
+the copies that share that wording. Then the sweep keyed to the item's *id* —
+the right key — loaded each file, gated on the string, and **replaced the text
+with the `retires_when` field alone before searching**, which discards the `id:`
+line; a card calls itself *THIS ITEM* inside its own condition, so the
+authoritative copy matched nothing. It printed `=== queue/items/B-161.yaml` as
+the first line of its output with no matches under it, while eight other files
+returned three to ten each, and the empty section was read as *no copies here*.
+
+**And the account of that miss, written into the card afterwards, was wrong.** It
+said a card cannot match its own id. Line 1 of every card is `id: B-161`. The
+explanation had been reconstructed from memory rather than read off the command
+that ran, and a review caught it with the reason that matters: a wrong recorded
+diagnosis makes the next sweep repeat the real failure. Both versions are now in
+`B-161`'s card, side by side, because the pair is the finding. **The rule is that
+an empty result for one target states the instrument's reach and not the target's
+contents, and a post-hoc explanation of a miss is itself a measurement.**
+
+**Two items filed, and their cards are the authority for every field of them.**
+
+`B-209` asks for a check that fails when a tracked prose file restates queue
+state. `queue/README.md`'s top rule says such a restatement is a defect; nothing
+enforces it but a reader noticing. **The distance between what that rule asserts
+and what anything mechanically checks was measured on 2026-09-16, and it is
+wider than "only the blocks it covers" suggests: `queue/config.yaml`'s
+`generated_blocks` contains exactly one entry — `member-count`, rendered into
+`knowledge/roadmap.md`.** One fact in the whole bundle fails the build on
+divergence, and it is the ecosystem member count. Nothing about any item's
+state, severity, blockers or repository is checked anywhere. The card's first
+deliverable is deliberately the *discrimination rule* rather than the checker,
+because a check that cannot tell *is blocked on* from *was blocked on until the
+split* gets switched off within a week — at which point `AGENTS.md`'s guard rule
+applies to it and it is suppressed rather than fixed.
+
+`B-208` records that a frozen SDP profile pins **unversioned** URLs, so only the
+profile *file* is frozen and every schema it references is live. `sdp.rules.yaml`
+changed twice in the B-106 work; Q-51's widening at `f86d9b4` changed a JSON
+schema, which none of the earlier changes had. So a package validated against
+v0.2 today is validated against v0.3's rules. Q-51 did not create this and is
+only the first change a review happened to notice; it was merged anyway on the
+reasoning that the new pattern is a strict *superset* of the old one, so nothing
+that validated under v0.2 stops validating — what changes is that a new package
+can carry an instant while claiming v0.2, the tolerable direction of drift while
+this is decided. The shape of a fix, as a starting point rather than a
+prescription: snapshot each frozen profile's schemas under a version-specific
+path such as `profiles/salmon-data-package/v0.2/schema/…` and repoint v0.2 at
+those, leaving the unversioned paths as the development head. The card is the
+authority for its state, and the reason that state is what it is: the fix
+changes published URLs that downstream validators are built against, which is
+outward-facing spec design rather than an implementation choice.
+
+**`B-161` gained four measurements, because this round found that its two
+options are not comparable.** Read out of `smn-data-pkg` at `f86d9b4` rather
+than out of a card describing it, the widened pattern is
+`^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$` — the year is
+`\d{4}`, exactly four digits — so a padded pre-1000 instant already passes the
+profile in force and an unpadded one does not. The profile is not the only layer:
+`scripts/validate_package.py`'s `datetime` branch runs
+`datetime.fromisoformat()` *after* the pattern, and on Python 3.11.15 that
+accepts `0999-06-05T13:45:30Z` and raises on `999-06-05T13:45:30Z`, so the
+unpadded outcome needs **two** widenings upstream rather than one — the same trap
+Q-51 already hit once. It would also land after `B-198`/`B-199` have vendored the
+four-digit pattern, so both get redone, and `B-145` becomes work in the opposite
+direction. None of that decides the item, which is Brett's; it is recorded so the
+ruling is made against measurements rather than against the card's earlier
+framing of two comparable options.

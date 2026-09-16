@@ -9,6 +9,18 @@ and this repository has shipped that failure before -- sdp-0.3.0's
 with 100% of its correct accepts silently downgraded, because every test used a
 hand-written fixture that routed around the layer that was broken.
 
+THAT SENTENCE WAS AN UNENFORCED CLAIM UNTIL 2026-09-16, and for four rules it
+was false. A review of pull request 141 found that adding a new lint rule with
+no pair left every test here green; measuring then showed the new rule was one
+of FOUR with no demonstration -- `doubled-apostrophe`, `encoding`,
+`workpad-name` and `workpad-shared-path`. That is the same failure the
+paragraph above describes, one level up: a file claiming a scope wider than it
+has, where green reads as "all of them verified".
+`TestEveryLintRuleIsDemonstrated` at the end of this file now reads the rule
+names out of `hub_queue.py` and fails when one has no pair, so the claim is
+checked rather than asserted. Rules that only `check` emits are excluded there
+by name, and the exclusion states its own maintenance rule.
+
 The GREEN half of each pair is not decoration. A RED-only test passes when the
 checker rejects everything, which is a checker nobody can use.
 
@@ -26,13 +38,32 @@ same change, or this file starts asserting behaviour that no longer exists.
 
 from __future__ import annotations
 
+import ast
 import io
+import re
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# Used by TestEveryLintRuleIsDemonstrated, which reads the two source files
+# rather than taking a list of rule names on trust.
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# Two adjacent apostrophes and the quote that wraps a scalar, as names rather
+# than literals: written inline they are the sequence Python itself uses for
+# quoting, which is how one table row silently became a concatenation.
+DOUBLE = "''"
+QUOTE = "'"
+
+# What actually ran, filled in by assert_rejects / assert_accepts and read by
+# tearDownModule. A registry rather than a source scan, because a demonstration
+# that does not execute is not a demonstration.
+DEMONSTRATED_RED: dict = {}
+DEMONSTRATED_GREEN: dict = {}
+RAN_CLASSES: set = set()
 
 import hub_queue  # noqa: E402
 
@@ -206,14 +237,43 @@ class QueueTestCase(unittest.TestCase):
         return code, buffer.getvalue()
 
     def assert_rejects(self, rule: str, *argv):
-        """RED: lint must fail, and must name the rule that caught it."""
+        """RED: lint must fail, and must name the rule that caught it.
+
+        Records the rule against this test METHOD, because a demonstration
+        only counts if it RAN. Three reviews established that reading the test
+        source cannot tell: a commented-out call, the string inside a
+        docstring, and a call under `if False` all look like demonstrations to
+        a parser, and any of them would let a rule lose its real assertion
+        while the coverage guard stayed green.
+        """
+        RAN_CLASSES.add(type(self).__name__)
+        DEMONSTRATED_RED.setdefault(_test_key(self), set()).add(rule)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 1, f"expected lint to FAIL for rule {rule}; output:\n{output}")
         self.assertIn(f"[{rule}]", output, f"lint failed but not for {rule}; output:\n{output}")
         return output
 
-    def assert_accepts(self, *argv):
-        """GREEN: lint must pass. A checker that rejects everything is unusable."""
+    def assert_accepts(self, *argv, for_rules=()):
+        """GREEN: lint must pass. A checker that rejects everything is unusable.
+
+        PAIRED WITH A RULE, NOT WITH A CLASS, and the difference is a review
+        finding rather than a refinement. Recording GREEN per class meant any
+        unrelated passing fixture in the class covered every rule the class
+        demonstrated -- so adding an overbroad rule to an existing test class
+        recreated the exact gap the GREEN check was added to close. Measuring
+        had shown class granularity needed no exemptions, and I took that as
+        evidence it was RIGHT; it was evidence it was PERMISSIVE.
+
+        By default a GREEN pairs with the rules its OWN METHOD asserted RED,
+        which is the shape of 63 of the 71 demonstration methods. Where a pair
+        legitimately spans two methods -- `TestSoloCrossCheck` documents an
+        ASYMMETRY, an unsourced `true` being a defect and an unsourced `false`
+        the correct answer -- the GREEN method NAMES the rules it is the other
+        half of, with `for_rules=`. Naming them is the point: it is the
+        association the audit could not otherwise see.
+        """
+        RAN_CLASSES.add(type(self).__name__)
+        DEMONSTRATED_GREEN.setdefault(_test_key(self), set()).update(for_rules)
         code, output = self.run_hub("lint", *argv)
         self.assertEqual(code, 0, f"expected lint to pass; output:\n{output}")
         return output
@@ -1237,11 +1297,17 @@ class TestSoloCrossCheck(QueueTestCase):
         # `HUB.md` says a repository whose participation cannot be determined is
         # shared, so an unmeasured `false` is the correct answer rather than a
         # gap to be filled.
+        #
+        # NAMES ITS RULE, because this is the one pair in the file that spans
+        # two methods: the RED half is the method above, and without `for_rules`
+        # the coverage audit cannot see that these two belong together. Keeping
+        # them as two named methods is clearer than cramming an asymmetry into
+        # one, so the association is declared instead of inferred.
         self.write_world(
             {"metasalmon": "true", "salmon-science-foundry": "false"},
             {"metasalmon": True},
         )
-        self.assert_accepts()
+        self.assert_accepts(for_rules=("solo-unsourced",))
 
     def test_a_missing_policy_file_fails(self):
         self.write_world({"metasalmon": "true"}, policy=False)
@@ -1766,6 +1832,672 @@ class TestOrdering(QueueTestCase):
         )
         self.run_hub("render")
         self.assertIn("B-53, S-12, Q-21", path.read_text(encoding="utf-8"))
+
+
+# --------------------------------------------------------------------------
+# The four pairs this file's own header had been claiming since it was written
+# --------------------------------------------------------------------------
+
+
+class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
+    """RED/GREEN for the lint rules that had no demonstration until 2026-09-16.
+
+    THE HEADER OF THIS FILE ASSERTED A PROPERTY NOTHING ENFORCED. It says every
+    rule the linter enforces has a RED demonstration here, and on 2026-09-16 a
+    review of pull request 141 found that adding a new rule with no pair left
+    all 129 tests green. Measuring then showed the new rule was one of FOUR
+    lint rules with no demonstration -- `doubled-apostrophe`, `encoding`,
+    `workpad-name` and `workpad-shared-path`.
+
+    That is the failure the header itself cites: a guard whose claimed scope
+    exceeds its real scope is worse than a missing guard, because green reads
+    as "all of them verified". `TestEveryLintRuleIsDemonstrated` below now
+    makes the claim enforceable; these are the four pairs that let it pass.
+    """
+
+    def test_doubled_apostrophe(self):
+        # A value escaped twice: the writer doubled the apostrophes and the
+        # dumper doubled them again, so the reader gets `metasalmonpy''s`.
+        # The GREEN half is the correctly escaped form that
+        # `TestPossessiveInAQuotedScalar` above already relies on, which is
+        # what makes this pair a discrimination and not just a rejection.
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="'metasalmonpy''''s dictionary is replaced and a test pins it'",
+        )
+        output = self.assert_rejects("doubled-apostrophe")
+        self.assertIn("retires_when", output)
+        self.write_item(
+            BASE_DEFECT,
+            retires_when="'metasalmonpy''s dictionary is replaced and a test pins it'",
+        )
+        self.assert_accepts()
+
+    # The discrimination, as data rather than as a regex anybody reasoned about.
+    # TWO earlier versions of this check were rejected by review, and both looked
+    # right read forwards: a bare '' match banned deliberate mentions, and a
+    # lookbehind on a word character missed a possessive whose noun is formatted
+    # (`readr`''s has a BACKTICK before the doubling, and queue prose formats
+    # identifiers that way constantly). So the cases are pinned here, both
+    # directions, and the regex has to satisfy the table rather than the table
+    # being written to suit the regex. ADD A ROW WHENEVER A NEW FORM COMES UP.
+    ACCIDENTAL = (
+        "the item''s own condition",          # plain possessive
+        "readr''s output is pinned",
+        "both producers'' output agrees",     # plural possessive, at a word end
+        "WHY IT IS BRETT''S: the spelling",   # shouting
+        "`readr`''s output is pinned",        # possessive on a formatted noun
+        "a value ending in the doubling''",
+    )
+    DELIBERATE = (
+        "a card may write the YAML escape as `''` and pass",
+        "the '' escape doubles an apostrophe in a single-quoted scalar",
+        "an SQL empty string is VALUES('') and is not a possessive",
+        "the token \"''\" is two apostrophes and means nothing else",
+        "a scalar may end with the escape ''",
+        "an escaped embedded quote is written O''Brien in SQL",
+        "a marked literal passes whatever it holds: `James''s boat` in SQL",
+        "and in double quotes too: \"James''s boat\" is a literal",
+    )
+
+    # The two false negatives, named so the limit is documented rather than
+    # rediscovered. Neither is distinguishable BY SHAPE from O''Brien, and shape
+    # is all a parsed value offers; blocking a legitimate literal is the worse
+    # failure, because an unwriteable rule gets removed rather than narrowed.
+    ACCEPTED_FALSE_NEGATIVES = (
+        "won''t is a doubled contraction and is not caught",
+        "`implementation`'' is a plural possessive on a formatted noun",
+    )
+
+    def test_the_accepted_false_negatives_are_still_accepted(self):
+        """Not a gap being hidden -- a limit being pinned.
+
+        If a later change makes either of these fire, this test fails and the
+        comment above has to be revisited rather than quietly becoming wrong.
+        """
+        for missed in self.ACCEPTED_FALSE_NEGATIVES:
+            with self.subTest(missed=missed):
+                self.write_item(BASE_DEFECT, retires_when=QUOTE + missed.replace(DOUBLE, DOUBLE * 2) + QUOTE)
+                self.assert_accepts()
+
+    def test_every_row_of_both_tables_really_holds_a_doubled_apostrophe(self):
+        """The positive control for the tables above, and it caught a live bug.
+
+        A row that does not hold two adjacent apostrophes in the PARSED value
+        demonstrates nothing, and one row did not: written as a single-quoted
+        Python literal, `\'the token "\'\'" is ...\'` is string CONCATENATION and
+        the apostrophes vanish before the test ever runs. It read as covering
+        the quoted form and covered nothing. Two adjacent apostrophes are
+        exactly the character sequence the host language also uses for quoting,
+        so a row like that cannot be trusted by inspection -- only by parsing it
+        the way `lint` will.
+        """
+        for label, rows in (("ACCIDENTAL", self.ACCIDENTAL), ("DELIBERATE", self.DELIBERATE)):
+            for row in rows:
+                with self.subTest(label=label, row=row):
+                    doubled = row.replace(DOUBLE, DOUBLE * 2)
+                    value, error, _rule = hub_queue.parse_scalar(QUOTE + doubled + QUOTE)
+                    self.assertIsNone(error, f"{label} row does not parse: {row!r}")
+                    self.assertIn(
+                        DOUBLE,
+                        value,
+                        f"{label} row loses its doubled apostrophe before the test runs, "
+                        f"so it demonstrates nothing: {row!r} parsed to {value!r}",
+                    )
+
+    def test_a_doubled_apostrophe_abutting_text_is_rejected(self):
+        for accidental in self.ACCIDENTAL:
+            with self.subTest(accidental=accidental):
+                self.write_item(BASE_DEFECT, retires_when="'" + accidental.replace("''", "''''") + "'")
+                self.assert_rejects("doubled-apostrophe")
+
+    def test_a_doubled_apostrophe_delimited_on_both_sides_is_allowed(self):
+        """The rule discriminates; it does not ban the character pair.
+
+        THE FIXTURES NEED FOUR APOSTROPHES IN THE FILE TO PUT TWO IN THE VALUE,
+        and the first version of this test did not, which made it vacuous: with
+        only '' in the file the parsed value holds ONE apostrophe, so nothing
+        could ever have fired and the test passed with the discrimination
+        removed entirely. It was caught by demonstrating RED on that removal,
+        which is the only thing that could have caught it.
+        """
+        for deliberate in self.DELIBERATE:
+            with self.subTest(deliberate=deliberate):
+                self.write_item(BASE_DEFECT, retires_when="'" + deliberate.replace("''", "''''") + "'")
+                self.assert_accepts()
+
+    def test_file_that_is_not_utf8(self):
+        path = self.queue / "B-53.yaml"
+        path.write_bytes(item_text(BASE_DEFECT).encode("utf-8") + b"\xff\xfe")
+        self.assert_rejects("encoding")
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+
+    def test_workpad_named_for_something_that_is_not_an_item(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpads/notes.md", "a report under a name no item has\n")
+        self.assert_rejects("workpad-name")
+        (self.root / ".hub/workpads/notes.md").unlink()
+        self.write_prose(".hub/workpads/B-53.md", "a report named for its item\n")
+        self.assert_accepts()
+
+    def test_workpad_that_is_not_markdown(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpads/B-53.txt", "a report that is not markdown\n")
+        self.assert_rejects("workpad-name")
+        (self.root / ".hub/workpads/B-53.txt").unlink()
+        self.write_prose(".hub/workpads/B-53.md", "a report named for its item\n")
+        self.assert_accepts()
+
+    def test_the_single_shared_workpad_path_is_back(self):
+        self.write_item(BASE_DEFECT)
+        self.write_prose(".hub/workpad.md", "the pre-B-140 shared path\n")
+        self.assert_rejects("workpad-shared-path")
+        (self.root / ".hub/workpad.md").unlink()
+        self.assert_accepts()
+
+
+# --------------------------------------------------------------------------
+# The claim in this file's header, made enforceable -- and itself tested
+# --------------------------------------------------------------------------
+
+CHECK_ONLY_RULES = {
+    "generated-block-missing",
+    "generated-block-no-target",
+    "generated-block-target-missing",
+    "generated-blocks-unreadable",
+}
+
+INDIRECT_RULE_SUPPLIERS = {("parse_item_file", "rule or 'value'"): "parse_scalar"}
+
+
+def _rule_argument(node):
+    """The `rule` argument of a `Problem(...)` call, positional or keyword.
+
+    Returns None when the call has no readable rule argument at all, which the
+    caller reports rather than skips.
+    """
+    if len(node.args) >= 3:
+        return node.args[2]
+    for keyword in node.keywords:
+        if keyword.arg == "rule":
+            return keyword.value
+    return None
+
+
+def _enclosing_function(tree, target) -> str:
+    """The name of the INNERMOST function whose body contains `target`.
+
+    Innermost rather than first: `ast.walk` yields outer definitions before
+    inner ones, so taking the first match would name an enclosing function for
+    a rule emitted inside a nested one, and the site would then look listed
+    when it is not.
+    """
+    enclosing = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef) and any(n is target for n in ast.walk(node))
+    ]
+    return max(enclosing, key=lambda n: n.lineno).name if enclosing else "<module>"
+
+
+def _returned_rule_names(tree, function: str):
+    """(resolved names, lines whose last tuple element could not be resolved).
+
+    THE SECOND HALF IS THE POINT. Collecting only string literals and moving on
+    means a supplier that later returns a rule through a variable, an f-string
+    or a conditional has that return silently skipped -- and because its OTHER
+    returns still yield literals, nothing looks wrong. The new rule then needs
+    no RED demonstration. So an unresolvable element is reported, not skipped.
+    """
+    resolved, unresolvable = set(), []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.FunctionDef) and node.name == function):
+            continue
+        for inner in ast.walk(node):
+            if not (isinstance(inner, ast.Return) and isinstance(inner.value, ast.Tuple)):
+                continue
+            last = inner.value.elts[-1] if inner.value.elts else None
+            if isinstance(last, ast.Constant) and isinstance(last.value, str):
+                if last.value:
+                    resolved.add(last.value)
+            else:
+                unresolvable.append(inner.lineno)
+    return resolved, unresolvable
+
+
+def audit_lint_rule_coverage(
+    hub_source: str,
+    red_by_method: dict,
+    green_by_method: dict,
+    check_only=CHECK_ONLY_RULES,
+    suppliers=INDIRECT_RULE_SUPPLIERS,
+) -> dict:
+    """Every way the header's claim can be false, as data.
+
+    A PURE FUNCTION of the implementation source plus WHAT THE SUITE ACTUALLY
+    DEMONSTRATED, so it can be fed constructed inputs. Seven review rounds on
+    pull request 141 each found this guard narrower than its claim, every one a
+    case reasoned about rather than constructed; returning findings instead of
+    asserting is what lets the cases below be a table.
+
+    The two halves come from different places ON PURPOSE. Which rules EXIST is
+    read statically from `hub_queue.py`, because that is a property of the
+    implementation. Which rules were DEMONSTRATED is collected at runtime,
+    because a demonstration that does not execute is not one -- and three
+    successive static readers each counted something that never ran.
+    """
+    hub_tree = ast.parse(hub_source)
+    emitted, sites, unsupported = set(), {}, []
+    for node in ast.walk(hub_tree):
+        if not (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)):
+            continue
+        # NO ARITY GATE HERE. The first version of this kept `len(node.args) < 3`
+        # in front of the reader, which made the keyword and short forms below
+        # unreachable -- the fix was present and could not run, which is exactly
+        # the dead-guard failure AGENTS.md describes. The constructed rows in
+        # TestTheCoverageGuardItself caught it on the first run.
+        if node.func.id != "Problem":
+            continue
+        rule = _rule_argument(node)
+        if rule is None:
+            # A SHAPE THIS READER CANNOT READ IS A FINDING, NOT A SKIP. A valid
+            # emission written Problem(rule="new-rule", ...) has no positional
+            # argument in slot three, so a reader keyed to position would walk
+            # past it and the rule would need no demonstration. Reporting the
+            # shape means the next constructor form fails loudly instead of
+            # silently narrowing this guard. (Measured 2026-09-16: no keyword
+            # form exists today, so this is a latent hole being closed, not a
+            # live one being fixed.)
+            unsupported.append(f"line {node.lineno}: {ast.unparse(node)[:80]}")
+        elif isinstance(rule, ast.Constant) and isinstance(rule.value, str):
+            emitted.add(rule.value)
+        else:
+            site = (_enclosing_function(hub_tree, node), ast.unparse(rule))
+            sites.setdefault(site, []).append(node.lineno)
+
+    findings: dict[str, list] = {
+        "unsupported_emissions": unsupported,
+        # A site the allowlist does not name at all.
+        "unlisted_sites": sorted(set(sites) - set(suppliers)),
+        # An allowlist entry for a site that no longer exists: a stale entry is
+        # how an allowlist stops describing the code it guards.
+        "stale_sites": sorted(set(suppliers) - set(sites)),
+        # ONE KEY, TWO EMISSIONS. Comparing keys alone lets a SECOND identical
+        # emission collapse into the first's allowlist entry and pass, which
+        # contradicts the guarantee that a second site fails. Occurrence count
+        # is therefore part of the finding, not just the key.
+        "repeated_sites": sorted(
+            f"{fn}: {expr} at lines {lines}" for (fn, expr), lines in sites.items() if len(lines) > 1
+        ),
+        "unresolvable_supplier_returns": [],
+        "empty_suppliers": [],
+    }
+
+    for (function, expr), supplier in suppliers.items():
+        if (function, expr) not in sites:
+            continue
+        resolved, unresolvable = _returned_rule_names(hub_tree, supplier)
+        if unresolvable:
+            findings["unresolvable_supplier_returns"].append(
+                f"{supplier} (supplying {function}) returns a rule this reader cannot "
+                f"resolve at line(s) {unresolvable}"
+            )
+        if not resolved:
+            findings["empty_suppliers"].append(
+                f"{supplier} supplies {function}'s rule names and none were found; "
+                "the reader is broken, not the code"
+            )
+        emitted |= resolved
+
+    demonstrated_red = {rule for rules in red_by_method.values() for rule in rules}
+    findings["undemonstrated"] = sorted(emitted - demonstrated_red - set(check_only))
+
+    # THE GREEN HALF, PAIRED PER RULE. The header promises a rejecting fixture
+    # AND a corrected one that passes, and a RED-only pair passes for an
+    # overbroad checker that rejects everything. A rule is paired when SOME
+    # method both asserted it RED and called assert_accepts -- or when some
+    # method's assert_accepts NAMED it, which is how a pair that legitimately
+    # spans two methods declares itself. Keying this to the CLASS, as the first
+    # version did, let any unrelated passing fixture in the class cover every
+    # rule the class touched.
+    paired = set()
+    for method, rules in red_by_method.items():
+        if method in green_by_method:
+            paired |= rules
+    for named in green_by_method.values():
+        paired |= named
+    findings["red_only"] = sorted((demonstrated_red & emitted) - paired - set(check_only))
+    return {key: value for key, value in findings.items() if value}
+
+
+class TestEveryLintRuleIsDemonstrated(unittest.TestCase):
+    """Every rule `lint` can emit is demonstrated RED somewhere in this file.
+
+    THIS IS THE GUARD FOR THE HEADER'S CLAIM, and it exists because the claim
+    was false for four rules and nothing said so. It reads the rule names out
+    of `hub_queue.py` rather than taking a list on trust.
+
+    `CHECK_ONLY_RULES` is the one deliberate exclusion and names its own
+    maintenance rule, in the manner AGENTS.md asks of every allowlist: these
+    rules are emitted by `validate_generated_blocks`, which `command_check`
+    calls and `command_lint` does not, so they are outside the header's claim
+    rather than gaps in it. MOVE A RULE OUT OF THIS SET THE MOMENT `lint`
+    STARTS EMITTING IT, or this guard quietly shrinks to fit.
+
+    *Retires when:* nothing. This is the check that keeps the header honest,
+    and it retires with the header or with `hub_queue.py` itself.
+    """
+
+    def test_the_reader_finds_every_rule_the_implementation_emits(self):
+        """The static half, which can run on its own: no unreadable shapes, no
+        unlisted indirect site, no stale allowlist entry, no supplier this
+        reader cannot resolve. The DEMONSTRATED half cannot be checked from
+        inside a single test, because it depends on what the rest of the suite
+        ran -- that is `check_lint_rule_coverage`, called from
+        `tearDownModule`.
+        """
+        findings = audit_lint_rule_coverage(
+            (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
+            red_by_method={}, green_by_method={},
+        )
+        structural = {k: v for k, v in findings.items() if k not in ("undemonstrated", "red_only")}
+        self.assertEqual(structural, {}, f"the reader cannot see every rule: {structural}")
+
+
+class TestTheCoverageGuardItself(unittest.TestCase):
+    """The guard above, fed constructed inputs, one case per way it can lie.
+
+    SEVEN REVIEW ROUNDS FOUND THIS GUARD NARROWER THAN ITS CLAIM, one hole at a
+    time, and every hole was a case reasoned about rather than constructed:
+    literals only; an indirect emission whose supplier was never resolved; a map
+    keyed by function so a second site collapsed into the first; a supplier
+    return that could not be resolved and was skipped; a RED assertion counted
+    from raw text so a docstring would do; then from the AST so `if False` would
+    do; a `Problem(rule=...)` keyword form skipped for having no third
+    positional argument; and no check on the GREEN half at all.
+
+    Each row below is one of those, as an input this guard must reject. ADD A
+    ROW WHENEVER ANOTHER WAY IS FOUND -- that is what these rows are for.
+    """
+
+    HUB_CLEAN = (
+        "class Problem:\n"
+        "    pass\n"
+        "def parse_scalar(raw):\n"
+        "    return None, 'bad', 'value'\n"
+        "def parse_item_file(path, display):\n"
+        "    rule = None\n"
+        "    problems.append(Problem(display, 0, rule or 'value', 'x'))\n"
+        "def check_one(item):\n"
+        "    problems.append(Problem(item.path, 0, 'a-literal-rule', 'x'))\n"
+    )
+    RED_CLEAN = {"SomeCase.test_some_case": {"value", "a-literal-rule"}}
+    GREEN_CLEAN = {"SomeCase.test_some_case": set()}
+
+    def audit(self, hub=None, red=None, green=None):
+        return audit_lint_rule_coverage(
+            hub or self.HUB_CLEAN,
+            red_by_method=self.RED_CLEAN if red is None else red,
+            green_by_method=self.GREEN_CLEAN if green is None else green,
+        )
+
+    def test_the_constructed_clean_pair_has_no_findings(self):
+        """The GREEN control. Without it every row below could pass vacuously."""
+        self.assertEqual(self.audit(), {})
+
+    def test_a_literal_rule_with_no_demonstration_is_reported(self):
+        hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'undemonstrated-rule'")
+        self.assertEqual(self.audit(hub=hub).get("undemonstrated"), ["undemonstrated-rule"])
+
+    def test_a_rule_demonstrated_red_with_no_green_is_reported(self):
+        """The half this guard did not check at all until the seventh round."""
+        self.assertEqual(self.audit(green={}).get("red_only"), ["a-literal-rule", "value"])
+
+    def test_an_unrelated_green_elsewhere_does_not_pair_a_rule(self):
+        """The hole that pairing GREEN to the CLASS left open.
+
+        A new rule recorded by a method with no GREEN of its own is NOT paired
+        by some other method's passing fixture. Under the per-class version it
+        was, so adding an overbroad rule to an existing test class recreated
+        the gap the GREEN check had just been added to close.
+        """
+        red = {"SomeCase.test_some_case": {"value", "a-literal-rule"}}
+        hub = self.HUB_CLEAN.replace("'a-literal-rule'", "'new-rule'")
+        red["OtherCase.test_new_rule"] = {"new-rule"}
+        findings = self.audit(hub=hub, red=red, green={"SomeCase.test_some_case": set()})
+        self.assertEqual(findings.get("red_only"), ["new-rule"])
+
+    def test_two_methods_of_the_same_name_in_different_classes_do_not_merge(self):
+        """The collision a bare-method key produced, tested AT THE KEY FUNCTION.
+
+        This file has one real instance --
+        `test_no_configuration_means_no_cross_check` in both
+        `TestMembersCrossCheck` and `TestSoloCrossCheck` -- so a RED-only rule
+        in one and an `assert_accepts` in the other read as a satisfied pair
+        under the old key.
+
+        THE FIRST VERSION OF THIS TEST WAS VACUOUS and the RED demonstration is
+        the only reason I know. It passed two already-built key strings into
+        `audit_lint_rule_coverage`, which exercises the AUDIT and never touches
+        `_test_key` -- so reverting the key function to the bare-method form
+        left it green. A test for a collision has to call the thing that
+        produces the key.
+        """
+        class AlphaCase(unittest.TestCase):
+            def test_same_name(self):
+                pass
+
+        class BetaCase(unittest.TestCase):
+            def test_same_name(self):
+                pass
+
+        alpha, beta = _test_key(AlphaCase("test_same_name")), _test_key(BetaCase("test_same_name"))
+        self.assertNotEqual(alpha, beta, "two classes' same-named methods share one key")
+        self.assertEqual(alpha, "AlphaCase.test_same_name")
+
+        # And with distinct keys the audit keeps them apart, which is the
+        # consequence that matters.
+        findings = self.audit(red={alpha: {"a-literal-rule"}, beta: {"value"}}, green={beta: set()})
+        self.assertEqual(findings.get("red_only"), ["a-literal-rule"])
+
+    def test_a_green_that_names_its_rule_pairs_across_methods(self):
+        """And the declared cross-method pair still works, which is the point of
+        `for_rules`: the asymmetry in `TestSoloCrossCheck` must stay expressible."""
+        red = {"Pair.test_red_half": {"value", "a-literal-rule"}}
+        green = {"Pair.test_green_half": {"value", "a-literal-rule"}}
+        self.assertEqual(self.audit(red=red, green=green), {})
+
+    def test_a_rule_named_by_keyword_is_read_not_skipped(self):
+        hub = self.HUB_CLEAN.replace(
+            "Problem(item.path, 0, 'a-literal-rule', 'x')",
+            "Problem(path=item.path, line=0, rule='a-keyword-rule', message='x')",
+        )
+        self.assertEqual(self.audit(hub=hub).get("undemonstrated"), ["a-keyword-rule"])
+
+    def test_an_emission_shape_this_reader_cannot_read_is_reported(self):
+        hub = self.HUB_CLEAN + (
+            "def check_three(item):\n"
+            "    problems.append(Problem(item.path, 0))\n"
+        )
+        self.assertIn("unsupported_emissions", self.audit(hub=hub))
+
+    def test_an_indirect_site_the_allowlist_does_not_name_is_reported(self):
+        hub = self.HUB_CLEAN + (
+            "def check_two(item):\n"
+            "    other = 'x'\n"
+            "    problems.append(Problem(item.path, 0, other, 'x'))\n"
+        )
+        self.assertIn("unlisted_sites", self.audit(hub=hub))
+
+    def test_a_second_emission_at_a_listed_site_is_reported(self):
+        """The hole that keying by function alone left open."""
+        hub = self.HUB_CLEAN.replace(
+            "    problems.append(Problem(display, 0, rule or 'value', 'x'))",
+            "    problems.append(Problem(display, 0, rule or 'value', 'x'))\n"
+            "    problems.append(Problem(display, 1, rule or 'value', 'y'))",
+        )
+        self.assertIn("repeated_sites", self.audit(hub=hub))
+
+    def test_a_supplier_return_that_cannot_be_resolved_is_reported(self):
+        """Not skipped: the other returns would otherwise cover for it."""
+        hub = self.HUB_CLEAN.replace(
+            "    return None, 'bad', 'value'",
+            "    return None, 'bad', 'value'\n"
+            "    return None, 'worse', some_variable",
+        )
+        self.assertIn("unresolvable_supplier_returns", self.audit(hub=hub))
+
+    def test_a_supplier_that_yields_no_names_is_reported(self):
+        hub = self.HUB_CLEAN.replace("    return None, 'bad', 'value'", "    return None, 'bad', ''")
+        self.assertIn("empty_suppliers", self.audit(hub=hub))
+
+    def test_a_stale_allowlist_entry_is_reported(self):
+        hub = self.HUB_CLEAN.replace("rule or 'value'", "'value'")
+        self.assertIn("stale_sites", self.audit(hub=hub))
+
+    def test_a_demonstration_that_never_executed_cannot_be_recorded(self):
+        """Why the RED half is collected at RUNTIME and not read from source.
+
+        There is nothing to construct here: a call that does not run simply
+        never reaches `DEMONSTRATED_RED`, so the rule is absent and reported.
+        The row exists to say that this is the design and not an omission --
+        three static readers in a row each counted something that never ran (a
+        docstring, a comment, a body under `if False`), and no fourth reader
+        would have been the last.
+        """
+        self.assertEqual(self.audit(red={}).get("undemonstrated"), ["a-literal-rule", "value"])
+
+
+def _test_key(case) -> str:
+    """`Class.method`, and the CLASS half is load-bearing.
+
+    Keying the demonstration registries by the bare method name merges
+    identically named methods in different classes. This file has one such
+    pair -- `test_no_configuration_means_no_cross_check` in both
+    `TestMembersCrossCheck` and `TestSoloCrossCheck` -- so a RED-only rule in
+    one and an `assert_accepts` in the other would have read as a satisfied
+    pair. Found by review, and it is the same defect as pairing GREEN to the
+    class: a key too coarse to distinguish the things it is asked about.
+    """
+    return f"{type(case).__name__}.{case.id().rpartition('.')[2]}"
+
+
+def rule_bearing_classes() -> set:
+    """Classes in this file that CONTAIN an `assert_rejects` call.
+
+    A static read, and legitimately so: the question is which classes *could*
+    demonstrate a rule, not which demonstrations count. The second question is
+    the one that must be answered at runtime, and is.
+    """
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    names = set()
+    for cls in [n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)]:
+        for inner in ast.walk(cls):
+            if (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Attribute)
+                    and inner.func.attr == "assert_rejects"):
+                names.add(cls.name)
+                break
+    return names
+
+
+def skipped_rule_bearing_classes() -> set:
+    """Rule-bearing classes that `unittest` will not run.
+
+    READ FROM THE OBJECTS AND NOT FROM THE DECORATOR TEXT, AND FROM BOTH PLACES
+    `unittest` KEEPS THE FLAG. Three reviews closed this hole one variant at a
+    time -- a decorator on the class, a decorator on a BASE the class inherits,
+    then a decorator on every METHOD -- and each time the class never ran, was
+    absent from `RAN_CLASSES`, and the teardown took its non-failing "not
+    enforced" path, so continuous integration could go green with a rule's
+    demonstrations absent.
+
+    Rather than a fourth variant: `unittest` keeps skip state in exactly two
+    places, `__unittest_skip__` on the class (inherited like any attribute) and
+    `__unittest_skip__` on the method. Checking both is the whole mechanism, not
+    another special case.
+
+    A RUNTIME `self.skipTest(...)` is deliberately NOT chased here and does not
+    need to be: a method that skips at runtime never reaches its
+    `assert_rejects`, so its rules come back `undemonstrated` from the coverage
+    audit itself -- the correct failure, by the correct route. This function
+    exists for the skip COMMITTED TO THE REPOSITORY, which is the one that
+    reaches continuous integration.
+
+    It must be answerable WITHOUT running the class, which is why it reads
+    attributes and not the registries: a skipped class produces no runtime
+    record at all, and that is exactly what has to be told apart from a class
+    the developer filtered out at the command line.
+    """
+    bearing = rule_bearing_classes()
+    skipped = set()
+    for name in bearing:
+        cls = globals().get(name)
+        if cls is None:
+            continue
+        if getattr(cls, "__unittest_skip__", False):
+            skipped.add(name)
+            continue
+        for attr in vars(cls).values():
+            if getattr(attr, "__unittest_skip__", False) or getattr(
+                attr, "__unittest_expecting_failure__", False
+            ):
+                skipped.add(name)
+                break
+    return skipped
+
+
+def tearDownModule():
+    """Enforce the header's claim against what the suite ACTUALLY demonstrated.
+
+    A module teardown rather than a test, because the answer depends on every
+    other test having run, and no test can depend on the ones after it. It
+    raises, which both `unittest` and `pytest` report as an error against this
+    module -- visible, and named in the message.
+
+    IT ONLY ENFORCES WHEN EVERY RULE-BEARING CLASS RAN, and says so when it does not.
+    Under `pytest -k` a subset executes, and a rule whose test was filtered out
+    would otherwise look undemonstrated -- a guard that cries wolf under normal
+    developer use is a guard that gets deleted. Continuous integration runs the
+    full suite, so the claim is enforced there on every push.
+
+    The notice goes to stderr, which `pytest` captures unless given `-s`; under
+    plain `unittest` it is always visible. That is a cosmetic limit of the
+    not-enforced PATH only -- when the whole module runs, the check raises, and
+    a raise is never captured away.
+    """
+    # A COMMITTED SKIP MUST FAIL, NOT DISABLE. A review verified the hole:
+    # marking one rule-bearing class `@unittest.skip` left all tests passing
+    # with the teardown merely printing that coverage was not enforced, so
+    # continuous integration could go green with every demonstration for
+    # several rules absent -- the same claimed-scope failure this guard exists
+    # to prevent, reached by a decorator someone committed on purpose. A second
+    # review then found the inherited case, which is why the detector reads the
+    # class's effective `__unittest_skip__` rather than its decorator text.
+    skipped = sorted(skipped_rule_bearing_classes())
+    if skipped:
+        raise AssertionError(
+            "a rule-bearing class, a base it inherits, or one of its methods carries a "
+            "skip decorator, which would disable this check rather than fail it: "
+            f"{', '.join(skipped)}. Remove the skip, or move its rules into "
+            "CHECK_ONLY_RULES with a reason."
+        )
+
+    missing = sorted(rule_bearing_classes() - RAN_CLASSES)
+    if missing:
+        print(
+            "\n[coverage] not enforced: these rule-bearing classes did not run "
+            f"({', '.join(missing)}). Run the whole module to enforce it.",
+            file=sys.stderr,
+        )
+        return
+    findings = audit_lint_rule_coverage(
+        (REPO_ROOT / "scripts" / "hub_queue.py").read_text(encoding="utf-8"),
+        red_by_method=DEMONSTRATED_RED,
+        green_by_method=DEMONSTRATED_GREEN,
+    )
+    if findings:
+        raise AssertionError(f"the header's claim is false: {findings}")
 
 
 if __name__ == "__main__":

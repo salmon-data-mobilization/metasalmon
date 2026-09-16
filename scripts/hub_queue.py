@@ -592,6 +592,108 @@ def relative(path: Path, root: Path) -> str:
         return str(path)
 
 
+# A parsed value that still carries a doubled apostrophe. `parse_scalar` decodes
+# a single-quoted scalar's `''` to one `'`, so a doubled apostrophe in the
+# PARSED value means the writer escaped text that was already going to be
+# escaped for it, and the reader then sees `item''s`. It is invisible in the
+# file, because `item''''s` in a single-quoted scalar looks like ordinary
+# escaping, and invisible in a diff for the same reason; it shows up only when
+# something reads the value back, which nothing did until a review on pull
+# request 141 read four cards and found it in all four.
+#
+# Two of those four (B-192, B-193) predated that pull request and had been on
+# `main` for days, which is why this is a check and not four edits. The cause is
+# a writer that hand-doubles apostrophes and then hands the string to a YAML
+# dumper that doubles them again; the correct input to a dumper carries one.
+#
+# Retires when: no producer writes an item file through a YAML dumper, or the
+# queue gains one canonical item writer that every producer goes through and
+# that writer is itself tested for this. Until one of those, this check is the
+# only thing between a doubled apostrophe and a reader.
+#
+# TWO RULES, AND THE SECOND IS AN AUTHOR'S ESCAPE HATCH BY DESIGN. Four earlier
+# versions of this check were rejected by review, each one a shape that looked
+# right read forwards, and the last two were rejected for the same reason: a card
+# may legitimately hold two adjacent apostrophes, and a guard nobody can write
+# around gets deleted rather than narrowed.
+#
+# (1) THE SIGNAL IS A POSSESSIVE, not the character pair. Every doubling the
+#     escaping defect actually produced was one -- item''s, readr''s, `readr`''s,
+#     producers'', BRETT''S, AGENTS.md''s -- so:
+#
+#         '' followed by s or S and then a non-word character     (singular)
+#         '' followed by a non-word character, preceded by a word (plural)
+#
+# (2) A DOUBLING INSIDE A BACKTICKED OR DOUBLE-QUOTED SPAN IS EXEMPT, because
+#     quoting it is the author saying "this is a literal". That is what makes the
+#     rule writeable around: O''Brien and James''s boat are both real SQL escapes
+#     and neither is distinguishable from the defect BY SHAPE, so the author needs
+#     a way to declare intent, and the way is the one they would reach for anyway.
+#     `readr`''s still fires -- the doubling is OUTSIDE the span, which is
+#     precisely the difference between quoting the noun and quoting the literal.
+#
+# Measured 2026-09-16 against all 15 doublings this pull request fixed and 10
+# legitimate forms: 15 fire, 0 false positives.
+#
+# TWO FALSE NEGATIVES REMAIN AND ARE NAMED SO THEY ARE NOT DISCOVERED: a doubled
+# contraction (won''t) and a plural possessive on a formatted noun
+# (`implementation`'', where the doubling follows a backtick rather than a word
+# character). Neither is a singular possessive and neither can be told from
+# O''Brien by shape. Both are pinned as rows, so a later change that makes either
+# fire fails the suite and this comment gets revisited rather than quietly
+# becoming wrong. I removed the second from that list while writing this
+# paragraph, on the assumption the new span rule had caught it; it had not, and
+# the check that they are still missed is what said so.
+#
+# Retires when: no producer writes an item file through a YAML dumper, or the
+# queue gains one canonical item writer that every producer goes through and that
+# writer is itself tested for this. Until one of those, this check is the only
+# thing between a doubled apostrophe and a reader.
+DOUBLED_APOSTROPHE = "''"
+POSSESSIVE_DOUBLING_RE = re.compile(
+    DOUBLED_APOSTROPHE + r"[sS](?!\w)|(?<=\w)" + DOUBLED_APOSTROPHE + r"(?!\w)"
+)
+MARKED_LITERAL_RE = re.compile(r"`[^`]*`|\"[^\"]*\"")
+
+
+def accidental_doubling(text: str) -> bool:
+    """Does `text` hold a doubled apostrophe that reads as a twice-escaped possessive?
+
+    A doubling inside a backticked or double-quoted span is the author marking a
+    literal and is not reported; see the two rules above.
+    """
+    marked = [(m.start(), m.end()) for m in MARKED_LITERAL_RE.finditer(text)]
+    for hit in POSSESSIVE_DOUBLING_RE.finditer(text):
+        if not any(start <= hit.start() and hit.end() <= end for start, end in marked):
+            return True
+    return False
+
+
+def check_doubled_apostrophes(item: Item) -> list[Problem]:
+    problems = []
+    for key in sorted(item.raw):
+        value = item.raw[key]
+        values = value if isinstance(value, list) else [value]
+        for element in values:
+            if not isinstance(element, str):
+                continue
+            if accidental_doubling(element):
+                problems.append(
+                    Problem(
+                        item.path,
+                        item.lines.get(key, 0),
+                        "doubled-apostrophe",
+                        f"{key} reads back as a twice-escaped possessive, so a value "
+                        "was escaped before being handed to a YAML dumper that escapes "
+                        "it again. A value given to a dumper carries ONE apostrophe. "
+                        "Two adjacent apostrophes that are not a possessive are fine: "
+                        "an escape written in backticks, an SQL empty string, an "
+                        "embedded quote such as O" + DOUBLED_APOSTROPHE + "Brien",
+                    )
+                )
+    return problems
+
+
 def check_absolute_paths(item: Item) -> list[Problem]:
     problems = []
     for key in sorted(item.raw):
@@ -785,6 +887,7 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
                 problems.append(Problem(path, 0, "missing-key", f"required key {key!r} is missing"))
 
         problems.extend(check_absolute_paths(item))
+        problems.extend(check_doubled_apostrophes(item))
         problems.extend(check_evidence_exists(item, root))
 
         item_id = item.raw.get("id")

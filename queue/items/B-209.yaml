@@ -1,0 +1,13 @@
+id: B-209
+kind: defect
+title: Nothing fails when a card restates queue state in prose, so the top rule of queue/README.md is enforced only by review
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A check run by .github/workflows/hub-queue.yml fails when a tracked prose file asserts a queue fact that the item files are the authority for -- at minimum an item''s state, its claimable flag, and its blocked_by set -- and the check is demonstrated RED on a deliberately stale sentence before it goes green. THE FIRST DELIVERABLE IS THE DISCRIMINATION RULE AND NOT THE CHECKER, and that ordering is part of the condition rather than advice about how to work: prose legitimately discusses queue state in the past tense and in the conditional, and a check that cannot tell -- this item IS blocked on B-161 -- from -- this item WAS blocked on B-161 until the split -- gets switched off within a week, at which point AGENTS.md''s guard rule applies to it and it is suppressed rather than fixed. So state what shape of sentence the check fires on, demonstrated against real sentences taken from knowledge/questions.md and the queue cards, before any CI wiring. THE NARROW VERSION THAT IS PROBABLY RIGHT: extend config.yaml''s generated_blocks so that a card wanting to state another item''s state must do it inside a block, and fail on an item id followed by a state word outside one. Retiring this item does not require the general natural-language case. WHY IT IS NEEDED RATHER THAN OBVIOUS: queue/README.md''s top rule already says a card restating queue state is a defect and that the copy in the card is the wrong one, and generated_blocks already makes that fail the build for the blocks it covers -- so the gap is the distance between what that rule asserts and what anything mechanically checks. THE MEASUREMENTS OF THAT DISTANCE ARE IN THE BACKLOG ENTRY THIS CARD POINTS AT, deliberately not restated here: the 2026-09-16 card-hygiene section counts the review rounds and findings, how many copies of one sentence there were and how they were found, and how many entries generated_blocks actually contains.'
