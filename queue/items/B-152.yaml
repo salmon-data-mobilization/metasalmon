@@ -1,0 +1,12 @@
+id: B-152
+kind: defect
+title: The network guards in test-github-helpers.R probe a host and a credential path the code under test never uses
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Both tests skip rather than error when the host the code under test actually fetches is unreachable or refuses the configured token, because the guard exercises that host and that credential path rather than a different one; demonstrated by making that fetch fail and seeing a skip. The guards at tests/testthat/test-github-helpers.R lines 143-159 and 231-259 probe api.github.com through gh::gh(), while read_github_csv() builds a raw.githubusercontent.com URL at R/github-helpers.R line 593 and fetches it at line 227 through line 618; read_github_csv_dir() lists through the API and then calls read_github_csv() per file at line 446, so its guard covers its listing half and not the fetches that follow. Measured on this machine 2026-09-15 with a token configured: both gh::gh() guards pass, and the fetches at lines 161 and 264 raise HTTP 404, so the two tests ERROR rather than skip. The cause is narrower than host reachability and worth recording because it changes the fix: an unauthenticated request for that same raw file returns 200, and the same request carrying the configured token returns 404, so the guard is wrong about the credential path as well as about the host. Same shape as B-132 in a different test file, and B-132''s fix should be applied here in the same pass while it is still open, since a guard that proves a different host resolves is the defect in both.'

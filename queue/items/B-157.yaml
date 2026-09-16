@@ -1,0 +1,12 @@
+id: B-157
+kind: defect
+title: Two 2026-09-14 knowledge cards are reachable from nothing inside the bundle
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Every card in knowledge/plans/ is reachable from the bundle''s index at knowledge/index.md or from the sequence card it serves, and a check or a documented convention keeps that true. There is a convention and no enumeration: AGENTS.md says a sequence card links to its execplan before implementation starts, and knowledge/index.md names the plans directory as a whole without listing a single card, so nothing enumerates the set and nothing notices a card that joins it unlinked. Measured on main at 4cd085c, 2026-09-15, by searching the sequence cards, the roadmap, the index, the backlog, the questions file and the orientation card for each of the 21 plan-card filenames: exactly two have zero inbound references, knowledge/plans/2026-09-14-taxonomic-assignment-briefing.md and knowledge/plans/2026-09-14-commons-verification-scheme.md, and every other card has at least one. One correction to how this was first reported, because it changes what the item is: the taxonomic briefing is NOT reachable from nothing -- queue/items/Q-48.yaml names its path, so it is reachable from the queue and unreachable from the bundle, which is the weaker claim and the true one. The commons verification scheme is reachable from nothing at all, including the two commons questions Q-39 and Q-40 it was written to answer, which is the stronger case and the one that shows the cost: a card nobody can reach is a card that will be re-derived, and a proposal that answers an open question without being linked from it leaves the question looking unanswered.'

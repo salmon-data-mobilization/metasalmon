@@ -1,0 +1,12 @@
+id: B-167
+kind: defect
+title: SPECIFICATION.md and four other documents still carry the reading the reworded SOSA Procedure rules drop
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: claude-science
+severity: P3
+blocked_by: [B-106]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Every prose copy of the resolves-to-a-shared-vocabulary-concept-typed-as-a-sosa:Procedure reading carries the reachability reading Brett ruled on 2026-09-14, in wording that agrees with the reworded rules, and the reworded prose carries its own justification rather than inheriting B-106''s. FOUR HAND-EDITED SITES AND TWO GENERATED ONES, established 2026-09-15 by reading scripts/generate_artifacts.py, because regenerating and hand-editing are different work and the report that produced this item did not distinguish them. Hand-edited: SPECIFICATION.md lines 237-238 (Every method or protocol IRI resolves to a shared vocabulary concept typed as a sosa:Procedure) and line 265 (a codes.csv term_iri resolving to a shared-vocabulary sosa:Procedure concept); template-source/salmon-data-package-template/README.md lines 15-17; and examples/mixed-grain-example/README.md lines 15-16. Generated: docs/field-reference.md line 64, whose text is the method_iri description in schema/frictionless/metadata/tables.schema.json line 76 and which carries a do-not-edit-by-hand banner, so the edit goes into the schema; and templates/salmon-data-package-template/README.md, which generate_artifacts.py copies verbatim from the template-source copy and which is byte-identical to it. Three source edits plus one regeneration therefore reach all six. REWORDING NORMATIVE SPEC PROSE IS ITSELF A SEMANTIC CHOICE: the pull request must say what justified the new wording other than the rules file already carrying it, which is the failure class AGENTS.md says code review structurally cannot catch. SPECIFICATION.md calls itself the human-readable validity specification and docs/field-reference.md defers to it, so a specification disagreeing with the rules file is the specification being wrong rather than merely stale.'

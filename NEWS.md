@@ -131,6 +131,34 @@ metasalmon (development version)
   The same three writes have the same shape in metasalmonpy, where the EDH
   window is wider still; that is recorded as parity row 53 and owed as a port.
 
+* **`migrate_sdp_methods()` now returns the same three-column `report$tables`
+  frame from every exit** (backlog #112, hub item B-112). The
+  nothing-to-migrate early return built two columns, `table_id` and
+  `method_iri`, while the populated build and the no-placement empty frame
+  both build three by adding `columns`. A caller reading
+  `report$tables$columns` therefore got `NULL` -- with tibble's "Unknown or
+  uninitialised column" warning -- in exactly the case where the package was
+  already clean, which is the branch least likely to be exercised and the
+  reason it survived. The empty `columns` is `character()`, matching the type
+  the populated build renders with `paste(collapse = ", ")`, so binding the
+  reports of two runs together no longer coerces the column. The frame is
+  empty either way, so nothing that read `nrow()` changes; only the column set
+  does. The three-column shape is the one the migration vignette already
+  documents.
+
+  Ruled by Brett on 2026-09-14 for both implementations, so the shape is not
+  an implementer's choice: the alternative -- a logged ruling that the shapes
+  deliberately differ -- is closed. Found 2026-08-22 by stream S10 chunk A's
+  migration differential, where Python carried the internally consistent
+  three-column frame first and was changed to mirror R; under the amended
+  mirror contract which side is right is a ruling rather than an implementer's
+  call, so this is the side that moves. The mirror half is hub item B-144,
+  where metasalmonpy returns to the shape it had originally, and #112's
+  retirement condition is met only on the R side until it lands. All three
+  exits are pinned by `tests/testthat/test-sdp-methods.R`, not only the branch
+  that was wrong, because pinning one leaves the other two free to drift away
+  from it and the failure would look identical.
+
 metasalmon 0.5.0
 ----------------
 

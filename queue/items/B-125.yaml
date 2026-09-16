@@ -1,6 +1,6 @@
 id: B-125
 kind: defect
-title: Port the categorical inference of #95 to metasalmonpy
+title: 'Port the categorical inference of #95 to metasalmonpy'
 state: icebox
 claimable: true
 repo: metasalmonpy

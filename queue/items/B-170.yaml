@@ -1,0 +1,12 @@
+id: B-170
+kind: defect
+title: The roxygen2 version pin is a release behind the installed toolchain, so every document run churns NAMESPACE
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Brett rules which roxygen2 version metasalmon pins, DESCRIPTION''s Config/roxygen2/version carries it, and NAMESPACE is regenerated under that version in the same commit, so the next agent to run devtools::document() produces no diff. CLAIMABLE IS FALSE BECAUSE THE VERSION IS BRETT''S TO CHOOSE, not because the change is hard: a pin is a statement about the toolchain the project supports, and an agent picking one would be inventing a policy rather than doing work. Measured 2026-09-15: DESCRIPTION records Config/roxygen2/version: 8.0.0, the installed toolchain is roxygen2 8.1.0, and roxygen2::roxygenise(roclets = "namespace") produces a 20-line NAMESPACE diff plus the version bump. THE CHURN IS NARROWER THAN REPORTED, and the correction matters for judging the cost: 8.1.0 does not change every importFrom directive, it collapses the importFrom directives of any package with more than one imported name into a single multi-line directive, so the five dplyr lines and three rlang lines become two blocks while importFrom(tools,toTitleCase) and importFrom(utils,askYesNo) come out byte-identical. Until it is pinned, an agent running devtools::document() must either carry that churn into an unrelated diff or revert it by hand, which is what metasalmon pull request 121 did and recorded in its own body.'

@@ -1,0 +1,13 @@
+id: B-158
+kind: defect
+title: Eight foreign superclass IRIs in smn are declared nowhere, and vendor-or-stub is one decision applied eight times
+state: icebox
+claimable: false
+repo: salmon-domain-ontology
+venue: claude-science
+stream: S6
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Each of the eight IRIs is either declared by a vendored import under ontology/imports/ or carries a bare declaration stub per CONVENTIONS.md 5b rule 2, make verify-superclass-declarations exits 0 over the modules as they stand, and KNOWN_UNDECLARED in scripts/verify_superclass_declarations.py is empty so the staged target and its --staged mode can be deleted and make test swapped from verify-superclass-declarations-staged to the full gate. The eight, measured by running that gate in staged mode on 2026-09-15 against the modules at d45f8f7: obo:BFO_0000015 at 02-observation-measurement.ttl line 216 (smn:Escapement) and 03-assessment-benchmarks.ttl line 53 (smn:StockAssessment); obo:IAO_0000030 at 01-entity-systematics.ttl line 69, 03- lines 65 and 82, and 05-provenance-quality.ttl lines 13 and 19, five subjects; obo:IAO_0000109 at 02- line 241 and 03- lines 18 and 45, three subjects; obo:NCBITaxon_8015 at 02- line 202, the MIREOT mirror; obo:NCBITaxon_8018 at 02- line 206 (smn:NCBITaxon_8018); dwc:Event at 02- line 224 (smn:SurveyEvent); dwc:Organism at 01- lines 86 and 94 (smn:Deme, smn:Population); and geosparql:Feature at 01- line 59 (smn:GeographicFeature). They are vendoring OMISSIONS rather than typos, and the measurement is the evidence rather than a flourish: smn declares 13 IRIs in the sosa: namespace and ZERO in each of obo:, dwc: and geosparql:, and a typo needs a correct neighbour to be a typo of. claimable: false because it is a modelling call and Brett makes it. CONVENTIONS.md 5b rule 2 already permits a bare declaration stub anywhere, so the cheap remedy exists and the question is vendor-the-namespace versus stub-the-IRI: ONE call applied eight times rather than eight separate calls, which is why they are one item. THIS IS THE ITEM THAT GATES B-143''s SWITCH-ON, not B-107: B-107 clears one of the nine that gate reports and the other eight are these, so until all nine clear the gate stays staged and make test keeps running the staged target. Whoever rules Q-48 should see this at the same time, because dwc:Organism carries smn:Deme and smn:Population and the two NCBITaxon IRIs are the MIREOT mirror -- the same terms the 2026-09-14 taxonomic-assignment briefing is about, so the vendoring decision and the taxonomy-pattern ruling are one decision surface. salmon-domain-ontology is solo under HUB.md, so an agent may prepare the branch, but the decision is not an agent''s to take.'

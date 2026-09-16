@@ -1,0 +1,12 @@
+id: Q-50
+kind: question
+title: Does the SDP deliberately pin Frictionless v1's profile key, or should the descriptor move to v2's $schema
+state: icebox
+claimable: false
+repo: metasalmon
+venue: either
+stream: S6
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules whether the SDP targets Data Package v1 or v2, after which either the descriptor declares the version the package actually targets or a logged decision records the v1 profile as a deliberate pin with the condition that would retire it. Filed as B-156 on 2026-09-15 and reassigned to this id on 2026-09-16 after a Codex review of metasalmon pull request 122: the item said of itself that it was an OPEN QUESTION rather than an established defect, that it was noticed in passing while writing metasalmon pull request 116 and NOT investigated, and that only Brett can choose between v1 and v2 -- so kind: defect made the queue count and prioritise it as a P4 defect and kept it out of the questions decision log, which is the one place a decision only Brett can make is supposed to be listed. B-156 is not reused for anything else; the gap in the B sequence is the record of the reassignment. What is known, and it is the whole of what is known: R/package-helpers.R line 243 writes a top-level profile from the loaded schema''s profile URI and line 219 writes profile = tabular-data-resource on every resource entry; the vendored SDP profile requires both; smn-data-pkg''s SPECIFICATION.md line 77 requires setting profile; and the retrieved Data Package v2 standard lists $schema among descriptor properties and no profile at all. An agent may do the investigation the item admits was skipped and bring him the two options; it may not choose between them, because the pin is mandated by a specification file this package only vendors and is written the same way by metasalmonpy.'

@@ -1,0 +1,12 @@
+id: B-155
+kind: defect
+title: The CI pak install has no retry, so a transient SSL error fails check before any test runs
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'A transient failure to install the CI toolchain retries before failing the job, or fails with a message naming it as an infrastructure failure rather than a check failure; demonstrated against a simulated download failure. Observed 2026-09-15 on metasalmon pull request 118, run 34912254547 attempt 1: the r-lib setup-r-dependencies step died fetching the pak tarball for R 4.6 on x86_64 linux from r-lib.github.io with status was ''SSL connect error'', the next sub-step raised Error in loadNamespace(x) : there is no package called ''pak'' and Execution halted, and the whole job was red 71 seconds after it started with the test suite and R CMD check both skipped. Transient rather than systemic: the same job passed on pull requests 119, 120 and 121 within twenty minutes on the same base, and attempt 2 of this very run passed on the identical head commit two hours later. The cost is that a red check on this repository does not distinguish "your diff is broken" from "a CDN blinked", which is the same legibility problem as B-132. One detail found while confirming it belongs in the fix: the Install pak sub-step reported success despite the download failing, because the failure arrives as a warning reading download of package ''pak'' failed and only the following step turns red, so this is the same success-mark-over-a-failed-write family as B-149 and B-150 rather than only a missing retry. Should these be one item: NO for B-141, which is about the pkgdown build script rewriting the checked-in site and shares nothing with this but the word CI; and no for B-132 and B-137 either, which are cross-references rather than merges -- B-132 is one test''s guard, B-137 is a locale dependency, this is the toolchain install, and each retires on its own evidence, so folding them would produce one item with three unrelated retirement conditions and no way to finish it.'
