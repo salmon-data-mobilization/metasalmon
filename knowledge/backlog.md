@@ -5332,8 +5332,9 @@ call and says nothing about promotion, so reading it as a go-ahead would be an
 agent's inference standing where `HUB.md` requires an authorization — and **this
 round did not promote it on that reading**. Whether it has been promoted since
 is `queue/items/B-158.yaml`'s to say and this section's to stay quiet about.
-Nothing was lost by not promoting it here, because its two blockers prevent a
-claim in any case. **What the ruling
+Nothing was lost by not promoting it here: on 2026-09-16 it carried
+`blocked_by: [B-107, B-143]`, and neither of those was `done`, so a promotion
+would have bought no claimable work that day. **What the ruling
 did settle is recorded on the card**: the modelling call it had said only Brett
 could make is now made — the six `obo:`/`geosparql:` superclass IRIs get
 bare declaration stubs under `CONVENTIONS.md` 5b rule 2, and the two `dwc:`
