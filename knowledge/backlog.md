@@ -5292,6 +5292,16 @@ entry goes inside that window, plus something that checks it; that is a
 specification change and Brett's, which is why it is recorded here rather than
 patched into `AGENTS.md`.
 
+*(**Resolved the same day, and this paragraph is left standing as the record of
+what was known when it was written.** Brett ruled it on 2026-09-16 — "Regarding
+the agents.md change log entry. I will take your recommendation." — so the two
+present-tense claims above are now history: the gap no longer stands, because
+`AGENTS.md`'s *Releases* section carries the sentence; and moving B-144's entry
+is no longer an owed follow-up, because metasalmonpy pull request 35 did it,
+merging as `3f8349a`. What remains true is everything this section measured —
+the two opposite readings, the commits, and why the tag belongs on the bump.
+The next section records the ruling and the two check items it produced.)*
+
 ### The 2026-09-16 rulings round
 
 **Two messages in chat carrying three rulings, six new items, one promotion,
