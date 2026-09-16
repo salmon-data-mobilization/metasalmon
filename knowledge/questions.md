@@ -1180,12 +1180,16 @@ A."* — Brett, 2026-09-16, in chat.
 `validate_temporal_value()`'s calendar layer is widened to match, with tests,
 `SPECIFICATION.md` and the changelog moving in the same pull request.
 
-**Two things the record deliberately leaves open, named here as open rather than
-read as settled.** The year is still `\d{4}`, so a pre-1000 instant remains
-invalid — that is **`B-161`**, which is Brett's and unruled, and `smn-data-pkg`'s
-own tests pin the pre-1000 form as rejected until it is. And no fractional second
-is admitted, because neither writer can emit one; if one ever can, that is a new
-question rather than something this ruling covered.
+**Two things the ruling deliberately leaves open, named here as open rather than
+read as settled.** The first is a **platform-rendering defect and not a schema
+limit**: the ruled pattern's `\d{4}` branch **accepts** the padded form
+`0999-06-05T13:45:30Z`, and what fails it is the **unpadded** bytes `readr` writes
+on Linux, `999-06-05T13:45:30Z` — which `smn-data-pkg`'s own tests pin as rejected
+under the fixture name *unpadded year*. So what **`B-161`** holds, unruled and
+Brett's, is **which bytes R should write**, not whether the profile admits a
+pre-1000 instant; it does. The second is that no fractional second is admitted,
+because neither writer can emit one; if one ever can, that is a new question
+rather than something this ruling covered.
 
 **The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
 each re-vendoring the ruled schema and adding the test that was missing. **The

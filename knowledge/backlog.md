@@ -5342,10 +5342,14 @@ fields to
 options analysis are indexed in [`questions.md`](questions.md) as `Q51`, now
 ANSWERED; that file is the index and `f86d9b4` is the authority.
 
-**Two things the ruling deliberately did not settle.** The year stays `\d{4}`, so
-a **pre-1000 instant remains invalid** — that is `B-161`, Brett's and unruled, and
-`smn-data-pkg`'s own tests pin the pre-1000 form as rejected until it is. And no
-fractional second is admitted, because neither writer emits one.
+**Two things the ruling deliberately did not settle.** The first is a
+**platform-rendering defect, not a schema limit**: the ruled pattern's `\d{4}`
+branch **accepts** the padded `0999-06-05T13:45:30Z`, and what fails it is the
+**unpadded** bytes `readr` writes on Linux, `999-06-05T13:45:30Z`, which
+`smn-data-pkg`'s own tests pin as rejected under the fixture name *unpadded year*.
+So `B-161`, Brett's and unruled, holds **which bytes R should write** — not
+whether the profile admits a pre-1000 instant, which it does. The second is that
+no fractional second is admitted, because neither writer emits one.
 
 **The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
 each re-vendoring the ruled schema from `f86d9b4` into its own copy and adding the
