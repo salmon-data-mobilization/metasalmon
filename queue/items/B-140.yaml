@@ -1,7 +1,7 @@
 id: B-140
 kind: defect
 title: The workpad's fixed path means each merged handback overwrites the last on main
-state: review
+state: done
 claimable: false
 repo: metasalmon
 venue: claude-code
