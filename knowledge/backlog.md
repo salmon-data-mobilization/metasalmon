@@ -5338,8 +5338,15 @@ is the disagreement `B-145` exists to close.
 
 That does not soften the question, and it does change what is being asked: the
 invalidity above is true of both implementations **whether or not `B-145` has
-landed**, because no instant is legal either way. The profile ruling is what is
-open; the port is not a precondition for it.
+landed**, because no instant was legal either way. *(State at discovery,
+2026-09-16 morning: the profile ruling was the open question and the port was
+not a precondition for it. It was answered (a) later the same day — recorded
+below — so this paragraph describes the position that made the question worth
+asking, not a decision still outstanding. It read in the present tense until the
+Codex review of pull request 137 on `3414a3a` caught it: a sentence saying a
+ruling "is open" in the same section that records the ruling is the
+state-in-prose defect wearing a tense rather than a field, and it survived two
+earlier rounds of exactly this hunt.)*
 
 **Why it went unseen through two implementations and four reviews.** Every check
 either side runs compares the two files against each other, or against the ruled
