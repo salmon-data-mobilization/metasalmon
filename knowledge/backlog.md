@@ -5814,10 +5814,10 @@ framing of two comparable options.
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and five of
-them were wrong the first time in a way that looked like a clean answer* — the
-last of those found by review, after this section had already been written up as
-finished.
+were both about: *every claim here was produced by an instrument, and six of
+them were wrong the first time in a way that looked like a clean answer* — one
+found by review after this section had already been written up as finished, and
+one that reported a head ready to merge while its review was still running.
 
 **Severity has two homes, they are differently shaped, and they have diverged
 once.** Six readings, each taken from the file named:
@@ -5924,12 +5924,29 @@ being read. The third was found by review rather than by the script.
    which is what "sits under" means. The script's header now carries all three
    wrong versions.
 
+A fourth, in a different instrument and with the highest cost of any of them.
+The round-outcome watcher for this pull request reported head `3cad83b`
+**clean** while its code review was still running. Its reaction check read
+`any("codex" in m["user"]["login"] for m in marks)` — any reaction by Codex at
+all — while the bot's own comment states the semantics in the same thread:
+*"Codex reacts with 👀 while any review is running … and reacts with 👍 once all
+reviews finish with no findings."* So 👀 is the **running** signal and the check
+treated it as the finished one. The script's own header described the shape
+correctly ("a THUMBS-UP REACTION … per Codex's own documentation") and the code
+under it did something else, which is the shape `B-210` is about, one file
+lower: **a stated scope and the implementation of it are two artifacts, and only
+one of them runs.** This is the one instrument error in the sweep that could
+have merged an unreviewed head, and it was caught by reading the output against
+documentation that was quoted verbatim in the notification carrying it.
+
 The rule is the same one every time, and it is B-161's: a result that makes a
 finding vanish is the one to re-measure with a second instrument. What this
-round adds is the harder case — **a result that makes a finding vanish while
-looking like an ordinary count**, where nothing is empty and nothing is
-surprising, so there is no signal to re-measure against except reading the
-source by hand.
+round adds is two harder cases. **A result that makes a finding vanish while
+looking like an ordinary count** — nothing empty, nothing surprising, so there
+is no signal to re-measure against except reading the source by hand. And **a
+result that agrees with what you were hoping for**, which is worse, because the
+watcher's false "clean" was the answer that ended the work rather than
+continuing it. An instrument that reports success is the one to check twice.
 
 **The exemption that was read three times as a gap.** `CHECK_ONLY_RULES` in
 `scripts/tests/test_hub_queue.py:2004` exempts `generated-block-missing`,
