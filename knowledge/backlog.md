@@ -5835,9 +5835,23 @@ once.** Six readings, each taken from the file named:
 | The normative field list | `HUB.md:551` | names `id`, `kind`, `title`, `state`, `claimable`, `repo`, `blocked_by`, `legacy`, `evidence`, `venue` and, for a defect, `retires_when` — and **stops there**. Neither `severity` nor `stream` is in it |
 | The second copy | `knowledge/backlog.md` | carries severity by **position**: four sections, `### Open — P1` (1015), `### P2 — correctness and conformance debt` (1309), `### Open — P3` (3312), `### Open — P4` (3719) |
 
-So four of the six behave as though the item file is the home, and the contract
-sentence is the outlier — in the file an agent reads first and without choosing
-to, which is what makes being wrong there expensive rather than untidy.
+**The tally is 3–2–1, and it was never the argument.** Three readings point at
+the item file: the founding rationale, the field itself, and the *Select* step.
+Two point at the backlog: the contract sentence and the positional grouping. One
+points at neither, because it omits `severity` altogether. The version of this
+sentence first written here said *"four of the six behave as though the item
+file is the home"* — and the version before it said *four of the five*, which was
+already wrong by one before the sixth row existed. Adding a row and changing the
+denominator without re-deriving the numerator is the same failure as every other
+one in this section, in the one paragraph that was supposed to summarise them.
+
+**What does bear on the ruling is not a vote count.** Of the six, exactly one
+*acts* on the value — the `Select` step, which orders the queue by it, and which
+reads the item file. And exactly one makes a *normative claim* about where the
+fact lives, rather than carrying it, acting on it, or recording history: the
+`AGENTS.md` sentence. That is what makes it the expensive place to be wrong —
+not that it is outnumbered, but that it is the only assertion of the contract,
+in the file an agent reads first and without choosing to.
 
 **The sixth reading is the one that enlarges the question**, and it was found
 only because the first draft of `Q-52` asserted the opposite. `HUB.md`'s
