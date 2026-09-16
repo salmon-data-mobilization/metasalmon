@@ -3849,6 +3849,20 @@ is a capability SDPs should support *generally* rather than just for I-ADOPT.
 Deliverable is the explainer plus a recommendation — not an implementation.
 Parked under S9 step 6; do not schedule before Brett reviews the explainer.
 
+**The explainer for this entry is the
+[iop-triple card, 2026-09-14](plans/2026-09-14-iop-triple-explainer.md)**,
+allowed under Q46. It corrects this entry's own premise, and the correction is
+why the card has the shape it does: metasalmon **does** already emit triples.
+EML 2.2 semantic annotations are RDF triples by EML's own account, and
+`R/eml-export.R` writes exactly two per measurement attribute
+(`dcterms:subject` → `term_iri`, `qudt:hasUnit` → `unit_iri`) while documenting
+that it "deliberately does not project incomplete I-ADOPT roles". So the gap is
+narrower and sharper than "no triples": the package states the components and
+never states the relation between them. Two findings from that pass are **not**
+part of #78 and belong to separate items rather than to this one — the SDP
+cannot distinguish `hasObjectOfInterest` from `hasContextObject`/`hasMatrix`,
+and cannot express I-ADOPT's `constrains` target at all.
+
 ### The 2026-09-15 recovered findings
 
 **Twelve findings recovered from four hub agents' workpads and pull requests
