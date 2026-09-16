@@ -4859,6 +4859,107 @@ callers, and the EDH path either builds in memory the way R does or brings its
 whole read inside the transaction — pinned by three abort injections at the
 render steps, each demonstrated RED against the pre-fix code, with the
 `PARITY.md` correction landing in the same change.
+### The 2026-09-16 orchestrator filings
+
+**Four items filed by the orchestrator on 2026-09-16, none of which had a
+backlog entry until Codex asked where the evidence was.** Each carried
+`evidence: knowledge/backlog.md` and appeared in that file nowhere — the exact
+shape the agent brief had been rewritten to warn about hours earlier: *"a
+dangling pointer is quieter than a stale copy, because nothing contradicts
+anything and the reader simply finds nothing."* Written four times in one
+sitting by the author of that sentence, which is the useful part of the record.
+Items filed by agents the same night (`B-161`, `B-173`) carry entries; the
+difference is that an agent follows a written protocol and the orchestrator was
+working from memory.
+
+**`B-180` `AGENTS.md`'s no-absolute-paths rule for bundle cards is enforced
+nowhere in bundle prose.** Three live violations on `main`, measured
+2026-09-16: `knowledge/plans/2026-08-12-ontology-alignment-pass.md:58` and
+`knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md:1958`, each
+a tilde-rooted path inside a command, and
+`knowledge/plans/2026-06-24-alice-assmar-metasalmon-report.md:236`, a literal
+temporary-directory path in a `--body-file` argument.
+
+`scripts/hub_queue.py` already owns the regex and an `absolute-path` problem
+class and applies it to queue item fields only, so the guard stops at the queue
+boundary while the rule is written about `knowledge/`. **Two things have to be
+settled before the guard is written, and a naive regex gets both wrong.** What
+counts: a tilde is not literally absolute, and two of the three sit inside
+commands rather than naming repository files, so only the third is plainly the
+case the rule is about. And citation: **the item was itself refused by `lint`
+on first write, for quoting the third violation's path verbatim in the field
+describing it.** A rule over prose that cannot tell a cited path from a used one
+turns every card documenting a violation into one.
+
+*Retires when:* `lint` scans `knowledge/` prose with the same regex, red against
+the case the rule names rather than against every tilde.
+
+**`B-185` an undeclared `*_iri` column is swept by the validator and missed by
+the metadata review, in both implementations.** Measured 2026-09-16 on the
+metasalmonpy branch: an `*_iri` column hand-added to `tables.csv` is collected by
+the review-marker sweep and **not** by `review_metadata()`'s scan, which reaches
+schema-declared fields only — because every row it prints has to be a runnable
+`set_sdp_*()` call. Scan empty, validator refuses.
+
+**This is B-174's residual, not its sibling**, which is why it is
+`blocked_by: [B-174]`: B-174 closes the declared-field case, and this is what is
+left over — a field the scan cannot reach **by design** rather than by oversight.
+Whoever takes B-174 meets the fork and must not quietly widen the scan through
+it; metasalmonpy hit it and pinned the residual in
+`test_an_undeclared_iri_column_is_still_missed` rather than closing it. Closing
+it means printing a call that cannot be run, or letting a setter write an
+undeclared field — a decision about the printed-call contract, which is why the
+item is `needs_brett` rather than claimable. Both languages are identical here,
+so it is a port and not a `parity-deviations.md` row.
+
+**`B-186` `lint` accepts any `stream` value, so a padded `S05` omits an item
+from its own stream view.** Measured 2026-09-16: `lint` lists `stream` among the
+known keys and validates only that it is **present**, never what it holds. Five
+items were filed with `S01` and `S05`, `lint` reported `OK` on all five, and the
+queue's convention is unpadded — `S6`×18, `S5`×14, `S10`×12, down to `S8`×1 —
+with the `items:` block filter matching the string exactly. So a padded value
+silently omits the item from its own stream view while every check passes.
+
+Same shape as `B-173` and the third of that family in one day: a field wrong in
+a way no check can see, whose only symptom is an absence somebody has to notice.
+**Found by Codex review, not by the queue** — the five bad values were written,
+linted clean, and would have merged.
+
+*Retires when:* `lint` refuses a `stream` value naming no `S-` item, red against
+a padded `S05`. Enumerate from the `S-` item files rather than a hard-coded
+list, which would be a fourth copy of a fact `queue/items/` already holds.
+
+**`B-187` `hub` reads the queue from whatever checkout it is run in, and says an
+item does not exist when the tree is stale.** Found 2026-09-16 by dispatching
+four agents at a checkout nobody had noticed was **67 commits behind**: a session
+branch at the tip `origin/main` had when the night began, carrying a
+`scripts/hub` 19 lines old and a `queue/items/` missing everything filed since.
+`HUB.md` and the dispatch brief both send agents there for read-only commands,
+so four claim commands went to it and **for two the item file did not exist in
+that tree at all**.
+
+**The defect is the message, not the refusal.** `hub claim B-165` answers *"no
+such queue item"* for an item that does exist: true about the working tree, false
+about the queue, and an agent that believes it reports the item missing rather
+than the checkout stale. `list` is worse, because it **succeeds** — it renders a
+stale queue with nothing saying so.
+
+Two things the item records that are easy to get wrong. Sending agents to a
+worktree off `origin/main` is **already** the rule (`HUB.md` § *Isolation*) and
+one of the four did exactly that unprompted, so the gap is not the instruction;
+it is that the client cannot tell a reader when the tree it read is not the
+queue. And **the fix cannot live only in the client**: a checkout stale enough to
+show the defect has a `scripts/hub` too old to contain the check, so a
+client-side comparison protects only checkouts that already have it. Closing the
+observed bootstrap failure needs something independently current — a dispatch-time
+check, or a refresh enforced before the checkout-local client is invoked.
+
+*Retires when:* an invocation against a stale tree names staleness, the distance
+and the branch rather than reporting absence — demonstrated RED from a checkout
+that predates the fix, which is the case that matters.
+
+---
+
 
 ---
 
