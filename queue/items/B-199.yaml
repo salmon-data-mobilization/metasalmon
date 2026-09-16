@@ -1,0 +1,13 @@
+id: B-199
+kind: defect
+title: 'Bring metasalmonpy''s temporal writer into line with the Q-51 ruling once it is recorded'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S6
+severity: P2
+blocked_by: [Q-51]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy agrees with the SDP profile about temporal_start and temporal_end, in whichever direction Q-51 is ruled, AND a test pins the agreement rather than the two files pinning only each other. THE ITEM IS DELIBERATELY RULING-AGNOSTIC and must not be read as predicting the outcome: read the ruling as recorded in smn-data-pkg, not this file. UNDER (a), widen the pattern: re-vendor the mirror''s copy of the profile''s dataset schema from the ruled upstream, and add a test that the descriptor instant metasalmonpy writes SATISFIES the vendored constraints.pattern. UNDER (b1) refuse or (b2) coerce, leave the schema alone and change the writer instead, and pin the new behaviour -- an error for b1, the truncated date for b2. EITHER WAY THE TEST IS THE POINT AND IS THE PART THAT WAS MISSING: nothing on either side compares a written package''s temporal fields to the profile''s own pattern, which is exactly why this went unseen through two implementations and four reviews, so a fix that changes behaviour without adding that comparison leaves the hole it came through. Q-51 carries the measurement and the options; this item is its metasalmonpy half and B-198 is the metasalmon half, split because queue/README.md requires a retirement condition to be satisfiable inside the repository the repo field names. Unblocks when Q-51 retires.'

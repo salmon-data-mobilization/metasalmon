@@ -5194,6 +5194,98 @@ exported to `.hub/handbacks/<id>.patch` as `git format-patch` output, which
 patch to a shared member repository has no durable home that is not this
 repository.
 
+### The 2026-09-16 network-guard finding, and the changelog window
+
+**`B-197`: one test makes a live call it does not need, so a DataONE outage reds
+every `check` run that executes while it lasts, whatever the diff.**
+Measured on pull request 137, whose entire diff was one queue item and one
+backlog section — both excluded by `.Rbuildignore` and reachable by no test.
+`check` went red with `Error accessing https://cn.dataone.org/cn: Server error:
+(503) Service Unavailable`, from `dataone::CNode("PROD")` at
+`test-knb-publication.R:1129`.
+
+**Ruled out as the pull request's three ways**, which is the part worth copying:
+the diff touches nothing R runs; `check` was green on the base commit `a592c23`;
+and **a re-run of the identical commit went green** minutes later — same code,
+same sha, different third party. That third check is what turns a plausible story
+into a demonstration, and it is the one re-run the drive-to-green rule allows for
+exactly this case.
+
+The missing guard is specific. The test calls `skip_if_not_installed("dataone")`,
+which checks that the **package** is present and never that the **service** is
+reachable, and no test in that file calls `skip_if_offline()`. `B-132` is the
+same shape for the live SDP bundle fetch, which is why `B-197`'s retirement
+condition requires sweeping the file rather than fixing the one instance that
+happened to fire.
+
+**The remedy is to remove the call, not to skip on it, and the first version of
+this item had that backwards.** It asked for a skip — which, under an outage,
+throws away the assertion that both nodes are checked. `AGENTS.md` warns that a
+green *offline* run is not full coverage, so a skip *reduces* coverage exactly
+where removing the call would keep it. And the call is removable, because it is
+not load-bearing: the test already builds `member_node` locally with
+`methods::new("MNode")` and an `@identifier`,
+`.ms_knb_lookup_node_system_metadata()` is mocked, and `coordinating_node` is
+used for precisely two things — the `cn` slot of the `D1Client` and
+`coordinating_node@identifier` in the closing `expect_identical` — so a `CNode`
+built the same local way serves both. `skip_if_offline()` is for the tests where
+the live service genuinely *is* the thing under test.
+
+**The blast radius is narrower than this section first claimed, and the
+correction matters because the claim is what prioritises the item.**
+`.github/workflows/R-CMD-check.yaml:3-7` triggers on `pull_request` and on `push`
+to `main`, with **no `schedule`** — so nothing re-runs a completed check, and
+already-green checks stay green. What is true is that every `check` that
+*executes* during the outage fails regardless of its diff: every new pull
+request, every push to an open one, every re-run. On a busy merge day that still
+reaches most of them, and the diff-independence is what makes it expensive —
+each failure looks like its author's fault until somebody reads the log.
+
+**A changelog entry written between a version bump and its tag has no home, and
+that gap produced two instances in one day.** `AGENTS.md`'s *Releases* section
+says to tag the commit that made the version current, not a later docs-only
+merge. It says nothing about where a CHANGELOG entry goes for work that merges
+*after* the bump and *before* the tag — and metasalmonpy sat in exactly that
+window all day, at `0.5.0` in-tree with `v0.4.0` still its newest tag.
+
+The two instances were resolved in **opposite directions**, and only one of them
+was right:
+
+- **B-124** (metasalmonpy #29) merged after the bump and its entry went under a
+  **restored `## Unreleased`**, above `## 0.5.0`, mirroring `NEWS.md`'s
+  *(development version)* heading here. That heading's own preamble gives the
+  reason: filing it under `## 0.5.0` "would make this file say a version
+  contains a change that the commit making the version current does not."
+- **B-144** (metasalmonpy #32) merged in the same window and its entry went
+  **under `## 0.5.0`** — the placement B-124's resolution avoided, and by
+  B-124's own stated reason simply misplaced.
+
+**An earlier revision of this section had that backwards, and recording the
+correction is the point.** It reasoned *from* B-144's placement *to* the tag:
+since `## 0.5.0` now claimed a fix the bump commit does not contain, `main` had
+to be the commit to tag. That inverts the two. `AGENTS.md`'s *Releases* section
+names the tag target — *"Tag the commit that made the version current"* — and
+the changelog is the mutable thing, so letting a misplaced entry choose the tag
+lets the mutable copy overrule the rule. It is wrong on scope as well:
+`roadmap.md:497` says of the list that names **B-144** at `:468` that "**these
+are *not* part of the `0.4.0→0.5.0` window**", so B-144 is post-`0.5.0` work
+whose entry does not belong under `## 0.5.0` at all, and tagging `main` to
+accommodate it would bake a next-window port into the release.
+
+**So the tag belongs on the bump.** `19f467b` set the version to `0.5.0` and
+reached `main` as merge `67fb486`; `b939fd9` (B-144) and `1e9245c` (B-124) are
+both later. Moving B-144's entry to `## Unreleased` is the owed follow-up and is
+deliberately **not** done here — a different repository, a different pull
+request, and it touches a release act Brett owns.
+
+**The gap itself stands, and is why this section exists.** `AGENTS.md` says
+nothing about where a CHANGELOG entry goes for work that merges after a bump and
+before its tag, and two agents read that silence in opposite directions inside
+one day. The durable fix is a sentence in the *Releases* section naming where an
+entry goes inside that window, plus something that checks it; that is a
+specification change and Brett's, which is why it is recorded here rather than
+patched into `AGENTS.md`.
+
 ### The 2026-09-16 temporal-profile finding
 
 **The string both implementations are converging on is one the SDP profile
@@ -5233,11 +5325,29 @@ thought to look at, where green means only that the layers anyone did look at
 agree.
 
 Found by the `B-145` run and deliberately not absorbed — it is a specification
-question in `smn-data-pkg`, a third repository, and the three options are not
-equivalent: widen the pattern, refuse the instant at the writer, or accept the
-invalidity on purpose. `Q-50` about the Frictionless profile key is adjacent.
+question in `smn-data-pkg`, a third repository. **There are four options, not
+three,** and the same rendering of them is used in all three places that carry
+them: **(a)** widen the pattern to admit an `xs:dateTime`; **(b1)** refuse — the
+writer errors on a typed instant, so the caller is told; **(b2)** coerce — the
+writer truncates the instant to a date, so the call keeps working and the time
+and zone are silently discarded; **(c)** leave it. b1 and b2 were one option until
+a Codex review of pull request 137: refusing and coercing are opposite failure
+modes, and a ruling of "(b)" would not have been implementable. `Q-50` about the
+Frictionless profile key is adjacent.
 
 **The decision itself is indexed in [`questions.md`](questions.md) as `Q51`**,
-with the three options and the reason no recommendation is on the table. That
+with the four options and the reason no recommendation is on the table. That
 file is where a ruling only Brett can make is supposed to be listed; this section
 is the evidence it points back to.
+
+**The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy),
+both blocked on `Q-51`.** The question item retires on the ruling being recorded
+in `smn-data-pkg` and nothing more, because `queue/README.md` requires a
+retirement condition to be satisfiable inside the repository its `repo` field
+names and a cross-repository obligation to be split into a pair with an id each.
+Both halves are written ruling-agnostic — they say what to do under (a) and what
+to do under (b1)/(b2) — and both carry the part that was actually missing: a test
+comparing a written package's temporal fields to the profile's own pattern.
+Nothing on either side does that today, which is why this went unseen, so a fix
+that changes behaviour without adding that comparison leaves the hole it came
+through.

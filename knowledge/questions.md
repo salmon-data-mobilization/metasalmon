@@ -294,6 +294,12 @@ who supplies one.
 the reason Q50's owner line already gives, because the ruling reaches the vendored
 profile and both writers rather than any one package. Q50 is adjacent, about the
 same descriptor profile, and whoever rules this should see both.
+**What the ruling unblocks, by id:** `Q-51` retires on the ruling being *recorded
+in `smn-data-pkg`* and nothing more, because a retirement condition has to be
+satisfiable inside the repository its `repo` field names. The two implementation
+halves are `B-198` (metasalmon) and `B-199` (metasalmonpy), both blocked on
+`Q-51` and both written ruling-agnostic; read those files for their state rather
+than assuming it from here.
 
 ## Notes on framing
 

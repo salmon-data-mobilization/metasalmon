@@ -192,6 +192,25 @@ did not land in the same stream because the hub claim that produced #111 covers
 one branch in the item's repository, so the port is a separate queue item
 rather than a deviation row.
 
+**This one is closed.** `B-124` landed as metasalmonpy pull request **#29**
+(`1e9245c`) on 2026-09-16, changing `package_io.py` — the file this paragraph
+named as importing neither validator — which now wires
+`_collect_package_validation_issues()` to `sssom.py`'s and
+`measurement_decompositions.py`'s validators, and adds the required-column and
+schema-required-field checks the R half shipped. Its entry sits under
+`CHANGELOG.md`'s `## Unreleased`, not `## 0.5.0`, because it merged after the
+number moved and before the tag. The paragraph above is kept rather than
+rewritten because it is the record of what was owed and why it was owed
+separately; what changed is the tense. This is R-shipped-first lag being closed,
+so it mints no numbered row.
+
+*(Recorded 2026-09-16 on a Codex finding against the state transition that closed
+it, which is the **fourth** time a sentence about owed work has outlived the
+work — the note under `B-125` above called the third one out and stated the rule
+it was breaking. The rule holds and is restated because restating it is evidently
+not enough: **a catch-up window changes in both places in the same change**, and
+"both places" means this register **and** the release index in `roadmap.md`.)*
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 role inference.** `infer_column_role()` now types an enumerable string column
 (character or factor with 1–30 distinct non-missing values, the seeder's own
