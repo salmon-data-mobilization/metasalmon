@@ -11,29 +11,37 @@ psc:
 
 # Emitting I-ADOPT triples from a Salmon Data Package
 
-**Status: proposal, awaiting B-78.** Queue item **B-146** is the explainer;
-**B-78** is the decision on what it recommends, and that decision is Brett's.
-He allowed this card on 2026-09-14 under [Q46](../questions.md) —
-*"For B78, let's allow the explainer now as its own quad science item"* — and
-kept the answer for himself. So [section 6](#6-recommendation-awaiting-b-78)
-is a **proposal and nothing more**: no implementation is scheduled, and the
-2026-08-13 deferral stands to that extent. Written by an agent; the citations
-below were resolved with tools during the pass and the resolution is recorded
-in [section 9](#9-source-register), but **nothing here has been independently
-checked** and the card asserts no verification of its own.
+**This card explains and recommends; it does not decide.** Brett allowed it on
+2026-09-14 under [Q46](../questions.md) — *"For B78, let's allow the explainer
+now as its own quad science item"* — and kept the decision on what it
+recommends for himself. So [section 6](#6-recommendation) is a recommendation
+addressed to him, carries no authority of its own, and schedules nothing. The
+lifecycle state of the explainer and of the decision lives in `queue/items/`
+and nowhere else; this card deliberately does not restate it, because a card
+that restates queue state is a defect and the card is the copy that is wrong.
+Written by an agent; the citations below were resolved with tools during the
+pass and the resolution is recorded in [section 9](#9-source-register), but
+**nothing here has been independently checked** and the card asserts no
+verification of its own.
 
-**Revised 2026-09-15, and the revision is substantive.** The 2026-09-14 draft
+**Revised twice, and both revisions were substantive.** The 2026-09-14 draft
 named one load-bearing uncertainty — whether DataONE's index would query the
-extra predicates — and marked it unchecked. It was then settled, and it
-**refuted the card's strongest argument while leaving its conclusion
-standing**. [Section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)
-and [section 6](#6-recommendation-awaiting-b-78) are rewritten rather than
-patched: the discoverability claim is deleted because it is false, three
-narrower justifications replace it, and §6 now says plainly that the
-recommendation is **weaker** than it was, not merely differently worded. The
-history is kept in place because "the argument was wrong and the answer was
-not" is the useful thing to know, and deleting it would leave the next reader
-wondering why the case is so thin.
+extra predicates — and marked it unchecked. On **2026-09-15** it was settled,
+and it **refuted the card's strongest argument while leaving its conclusion
+standing**; the discoverability claim was deleted as false and three narrower
+justifications replaced it. On **2026-09-16**, after review, that correction
+was found to have **overshot**: it concluded that emission improves
+discoverability "by nothing at all", which is also false, because indexing a
+component IRI lets an API client find the datasets that use it and today no
+such IRI reaches the index. [Section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)
+and [section 6](#6-recommendation) now separate three things the two earlier
+revisions each collapsed into one, and §6 says plainly where the
+recommendation's strength ended up: **weaker than 2026-09-14, stronger than
+2026-09-15 left it.** Both corrections are kept in place rather than tidied
+away, because "the argument was wrong twice, in opposite directions, and the
+answer did not move" is the useful thing to know — and because a card that
+silently absorbs its own corrections teaches the next reader nothing about how
+much to trust its strongest sentence.
 
 Owning stream: [S9 — ontology conventions and alignment pass](../sequences/s9-ontology-alignment.md),
 step 6. Defect of record: [backlog #78](../backlog.md).
@@ -209,14 +217,33 @@ three named consumers, what each can do today, and what it cannot.
 This is the only consumer metasalmon actually publishes to today
 (`R/knb-publication.R`), and the only one whose behaviour is not hypothetical.
 
-**This section carried a discoverability argument until 2026-09-15, and that
-argument was wrong.** The card originally said the strongest case for emission
-was that a DataONE user could then find datasets by a component of the
-variable, and flagged as its load-bearing uncertainty that the index had not
-been checked. It has now been checked, and it refutes the argument. The
-conclusion survives on other grounds; the reasoning is replaced rather than
-patched, because a recommendation resting on a false premise is worth less
-than one resting on a narrower true one.
+**This section's discoverability argument has been wrong twice, in opposite
+directions, and the second error is the more instructive.** The 2026-09-14
+draft said the strongest case for emission was that a DataONE user could find
+datasets by a component of the variable, and flagged as its load-bearing
+uncertainty that the index had not been checked. The index was then read, and
+the 2026-09-15 revision swung to the other extreme: it concluded that emission
+improves discoverability *"by nothing at all"* and added that "any version of
+this card that says otherwise is wrong". That sentence was itself wrong, and
+the shape of the mistake is worth naming — **a correction written so that no
+later correction can be right is not a finding, it is a door being closed.**
+It was reopened on **2026-09-16** by a review of PR #116.
+
+Three things have to be held apart, and each earlier revision collapsed them
+into one:
+
+1. the **pairing** of predicate to object, which the index destroys;
+2. **term-level retrieval of the component IRIs**, which emission newly
+   enables and which is genuine dataset discovery for an API client;
+3. the **search interface a human actually uses**, which cannot reach these
+   IRIs at all.
+
+(1) and (3) are what refute the 2026-09-14 claim, and they hold. (2) does not
+refute it, and the 2026-09-15 revision denied (2) while its own evidence said
+otherwise — it even listed the affordance among the justifications below two
+paragraphs after declaring it worth nothing. The contradiction was on the page
+before any reviewer arrived, which is the argument for checking a correction
+against the rest of its own section rather than against the claim it replaced.
 
 **What the index actually does.** DataONE's indexer registers
 `EmlAnnotationSubprocessor` for exactly one format,
@@ -232,54 +259,95 @@ prototype branch). Its entire field configuration is a single bean:
 
 That XPath is a **union**. Predicate and object are *both* indexed — into the
 **same flat multivalued string field**, with no pairing between them and no
-record of the subject. The failure is not that the predicate is discarded; it
-is more specific than that and worse. You can ask *does this dataset mention
-`hasObjectOfInterest` anywhere*. You can never ask *what is the object of
-interest of this variable*. **To that index, an I-ADOPT decomposition is
-exactly a flat bag of terms** — which is what the SDP already ships.
+record of the subject. **To that index, an I-ADOPT decomposition is exactly a
+flat bag of terms.** Non-whitelisted IRIs are indexed rather than dropped, so
+the bag would contain the I-ADOPT IRIs as written.
 
-Two further findings close the discoverability case:
+**(1) The pairing is unrecoverable, and it is fatal to the 2026-09-14 claim.**
+You can ask *does this dataset mention `hasObjectOfInterest` anywhere*. You can
+never ask *what is the object of interest of this variable*, and you cannot
+even ask *which datasets have X as their object of interest*: a dataset matches
+on `X` whether `X` was its object of interest, its property, its constraint or
+its unit, and matches on `hasObjectOfInterest` whatever that predicate's object
+was. Every argument for emission that depends on querying the *structure* is
+dead, and no amount of emission revives it.
 
-- **The search interface cannot reach arbitrary IRIs even so.** MetacatUI's
-  `AnnotationFilterView.js` is a BioPortal tree picker with
-  `defaultOntology: "ECSO"` (line 74), and KNB's deployed configuration does
-  not override it. DataONE's own documentation says annotation search "only
-  supports searching for ECSO MeasurementType annotations at this time".
-- **Non-whitelisted IRIs are indexed rather than dropped**, so I-ADOPT IRIs
-  would land and be exact-IRI queryable through the Solr API by a client that
-  already knows the IRI. That is an API affordance, not discovery: it answers
-  a question only someone who could already answer it would ask.
+**(2) Term-level retrieval of the components is new, and it is dataset
+discovery.** This is the part the 2026-09-15 revision got wrong. Today
+`sem_annotation` receives exactly two IRIs per measurement attribute — the
+compound `term_iri` and the `unit_iri`, because those are the only two
+annotations `R/eml-export.R` writes ([section 1](#1-correcting-the-premise-before-answering-the-question)).
+`property_iri`, `entity_iri`, `constraint_iri` and `statistical_modifier_iri`
+live in `column_dictionary.csv` and in `datapackage.json`, and DataONE indexes
+neither of those files. So `sem_annotation:"<some property IRI>"` returns
+**nothing at all today** and would return **the datasets that use that
+property** after emission. A client that knows a component IRI but not which
+datasets use it learns which datasets use it. That is discovery of datasets,
+and dismissing it as "a question only someone who could already answer it
+would ask" confuses knowing the IRI with knowing the datasets: the IRI is the
+query, not the answer.
 
-*So: emitting improves discoverability for a DataONE or KNB user by nothing at
-all.* Any version of this card that says otherwise is wrong.
+Two qualifications keep this honest, and neither cancels it. The match is at
+**dataset granularity and is role-blind** — it says *some annotation somewhere
+in this dataset carries this IRI*, not which column or which role, so a term
+that is legitimately an entity in one column and a constraint in another is
+indistinguishable. DataONE's search is dataset-granular by design, so this is
+its native answer rather than a degraded one, but it is a coarser affordance
+than a graph query and should never be described as one. And it rests on the
+**inference** recorded below rather than on a measurement: nothing has been
+deposited and queried.
 
-**What survives, and it is enough.** Three justifications, none of which
-depends on the index:
+**(3) The interface a human uses cannot reach these IRIs at all.** MetacatUI's
+`AnnotationFilterView.js` is a BioPortal tree picker with
+`defaultOntology: "ECSO"` (line 74), and KNB's deployed configuration does not
+override it; DataONE's own documentation says annotation search "only supports
+searching for ECSO MeasurementType annotations at this time". So a person
+browsing KNB gains nothing from emission whatever the index holds. **This is
+the half of the 2026-09-15 finding that was right and stays right**, and it is
+why "improves discoverability" is meaningless in this card without an audience
+attached: for a human at the search box, nothing; for a client with the Solr
+API and an IRI in hand, a query that works where none exists today.
+
+*So, precisely:* emission buys **no** paired or structural query, **no**
+human-facing discoverability at KNB, and **one real term-level dataset-discovery
+affordance for an API client**. The 2026-09-14 claim was too strong and the
+2026-09-15 correction overshot; this is the interval between them.
+
+**What survives, and it is more than the 2026-09-15 revision allowed.** Three
+justifications, only the third of which depends on the index at all:
 
 1. **The landing page renders the full triple.** MetacatUI's `AnnotationView.js`
    and `EMLAnnotation.js` read `propertyURI`/`propertyLabel` and
    `valueURI`/`valueLabel` **from the EML document itself, not from Solr**. So
    a human reading the KNB dataset page sees the decomposition intact, with
    the predicate attached to its object, even though the index has flattened
-   it. This is a real present-tense gain for the consumer that exists, and it
-   is the one that replaces the deleted argument.
+   it. This is a real present-tense gain for the consumer that exists, and
+   together with justification 3 it is what replaces the deleted argument.
 2. **Direct consumers get the real structure.** Anyone reading the EML, or the
    manifest-bound sidecar of [section 4](#where-the-triples-live), gets
    subject, predicate and object as written. **The sidecar's value never
    depended on the index at all** — which is why the finding costs the
    recommendation less than it might have.
-3. **Exact-IRI API queries work** for a client that knows what to ask for.
-   Narrow, but real, and it is the seam through which a future federated query
-   would reach these packages.
+3. **The component IRIs become retrievable, and a client can find datasets by
+   them** — finding (2) above. Coarse and unpaired, but it is dataset discovery
+   that is impossible today rather than an inconvenient version of something
+   already possible, and it is the seam through which a future federated query
+   would reach these packages. *This is the justification the 2026-09-15
+   revision listed here while denying, two paragraphs earlier, that it counted
+   for anything.*
 
 *Limits, stated rather than left silent.* **No I-ADOPT annotation has actually
 been deposited and indexed** — that needs a write to a Metacat test node,
 which this pass did not do. "I-ADOPT IRIs would be indexed literally" is
 therefore an **inference**, resting on the fact that the XPath filters nothing
 and on the observed indexing of other non-whitelisted IRIs. It is a strong
-inference and it is not a measurement. What would settle it: deposit an
-I-ADOPT-annotated EML 2.2.0 record to a test node and query
-`sem_annotation:"https://w3id.org/iadopt/ont/hasObjectOfInterest"` against it.
+inference and it is not a measurement. **Justification 3 rests entirely on it**
+— justifications 1 and 2 do not, and that asymmetry is worth carrying, because
+it says which part of the case a failed deposit test would remove. What would
+settle it: deposit an I-ADOPT-annotated EML 2.2.0 record to a test node and
+query `sem_annotation:"https://w3id.org/iadopt/ont/hasObjectOfInterest"`
+against it, then query one of its component IRIs and check that the dataset
+comes back.
 
 **Do not cite the indexer's readthedocs page for any of this.** Its
 `emlAnnotationSubprocessor` page documents the XPath as
@@ -446,17 +514,92 @@ the same with I-ADOPT's `owl:versionIRI`:
   `hasStatisticalModifier` was in scope when it was written.
 - `artifact.path`, `artifact.sha256`, `artifact.triple_count` — exactly the
   existing decomposition manifest's shape
+- **`inputs[]`, each with `path` and `sha256`** — the files the generator
+  actually read: `metadata/semantic/measurement-decompositions.csv` and its
+  manifest, or `metadata/column_dictionary.csv` in the fallback case. This is
+  the field that makes the graph checkable against the package it ships in
+  rather than only against itself, and the rule below says why
+  `artifact.sha256` cannot do that job.
 - `provenance.generated_by`, `provenance.metasalmon_version`
 - per-component `source` / `source_version`, carried through from the
   decomposition rows, so a consumer can tell which vocabulary release an
   entity IRI was drawn from
 
-And the rule that makes the versioning real rather than decorative: **the
-graph is derived, so it is never edited in place.** It is regenerated, and its
-`sha256` is what proves it still matches its inputs — the same relationship
-`validate_sdp_measurement_decompositions()` already enforces for the
-decomposition CSV. A hand-edited graph whose hash still matched would be the
-one failure mode nothing could see.
+And the rule that makes the versioning real rather than decorative: **the graph
+is derived, so it is never edited in place.** It is regenerated. What proves it
+still matches the package is **two independent checks, not one** — and the
+2026-09-15 draft of this card said the artifact hash was the whole of it, which
+is wrong. *(Corrected 2026-09-16 after a review of PR #116.)*
+
+- **Artifact integrity.** `artifact.sha256` over the graph bytes catches a
+  hand-edited graph, and that is all it catches. A graph and its manifest stay
+  mutually consistent through any change to the *inputs*: edit
+  `measurement-decompositions.csv` after generation and the hash still
+  verifies while the graph publishes assertions the package no longer makes.
+  Nothing in the manifest notices, and the failure is invisible from inside the
+  package — which is worse than a hand-edited graph, because a stale graph is
+  self-consistent and looks correct.
+- **Input binding.** The manifest has to record what the graph was derived
+  *from*, in a form a validator can re-check against what is in the package
+  now.
+
+**Reading `validate_sdp_measurement_decompositions()` is what shows the two are
+separate**, and it is the analogue to copy. It is
+`read_sdp_measurement_decompositions(path, validate = TRUE)`, which runs
+`.ms_sdp_decomposition_validate_manifest()` — schema version, artifact path,
+`sha256` over the exact bytes, `row_count`, writer provenance — **and then**
+`.ms_sdp_decomposition_validate_dictionary()`, which re-reads
+`metadata/column_dictionary.csv` out of the package and checks the artifact
+against it: that each `dataset_id`/`table_id`/`column_name` still resolves to
+one dictionary row with `column_role` `measurement`, that
+`measurement_concept_iri` still equals that row's `term_iri`, and that every
+non-empty dictionary `property_iri`, `entity_iri`, `constraint_iri`,
+`statistical_modifier_iri` and `unit_iri` still appears as a matched component
+of the same role. Every one of those can go wrong with the hash check passing.
+The decomposition artifact is bound to its input by the second check, never by
+the first.
+
+Two shapes for the iop graph's input binding, and the package already ships
+both patterns:
+
+- **`inputs[]` digests** — the field above. The validator re-hashes each named
+  file and fails when a digest has moved. This makes "the graph is stale" a
+  first-class error rather than something a reader has to infer, and it is
+  cheap: one `digest::digest()` per input.
+- **A recomputed derivation fingerprint**, the `plan_sha256` pattern in
+  `R/knb-publication.R`. `.ms_knb_plan_fingerprint()` hashes the canonical JSON
+  of the whole plan, and the publication path re-derives that fingerprint from
+  current state and compares it against the stored one
+  (`identical(reviewed_fingerprint, plan$plan_sha256)`), so a manifest is
+  disowned the moment the inputs that would produce it move. This is the
+  stricter pattern and the more expensive one.
+
+**Recommend `inputs[]` digests plus a role-level re-check of the graph against
+the dictionary, and not a full re-derivation-and-compare.** Re-derivation is
+the strongest check available and it is also the one that makes the validator
+depend on the generator staying byte-stable forever: any later change to
+serialization order, prefix layout or a label would fail every package
+published before it, and the failure would report a stale graph where the real
+change was in the emitter. Input digests fail exactly when an input changed,
+which is the condition actually worth naming.
+
+One asymmetry to carry across, because it is why the decomposition validator
+cannot simply be copied: its dictionary check is a **containment** check —
+every dictionary value must appear in the artifact — precisely because the
+artifact is *allowed* to hold more than the dictionary does, in extra same-role
+components and explicit `gap` rows. The iop graph is a pure function of its
+inputs and is forbidden from holding gap rows at all
+([section 4](#what-generates-them), rule 2), so for it the relation is
+equality in both directions and a stricter check is available than the
+precedent uses.
+
+And the consequence that follows from the input binding rather than from the
+hash: **a graph whose input digests no longer verify is a publication blocker,
+not a warning.** `R/knb-publication.R` already calls
+`validate_sdp_measurement_decompositions()` before it publishes, and the iop
+validator belongs at the same point, because [section 5](#5-what-it-would-cost)
+is about published triples outliving the package that made them — and a stale
+triple outlives it while looking exactly like a current one.
 
 ---
 
@@ -538,9 +681,9 @@ the package that made it.** Three specifics:
 
 ---
 
-## 6. Recommendation, awaiting B-78
+## 6. Recommendation
 
-**A proposal. Brett rules; nothing below is operative.**
+**A recommendation, not a ruling. Brett decides; nothing below is operative.**
 
 **Recommend: yes to emission, scoped to I-ADOPT, built so a second projection
 is cheap but not built for one.** Concretely, and in this order:
@@ -552,16 +695,27 @@ is cheap but not built for one.** Concretely, and in this order:
 2. **Do build the I-ADOPT projector**, as a sidecar graph under
    `metadata/semantic/` closed by its own manifest, generated from
    `measurement-decompositions.csv` with a dictionary fallback, pinning
-   `https://w3id.org/iadopt/ont/1.1.0` by version IRI, hashed, and published
-   only through its manifest.
-3. **Extend the EML annotations in the same decision** — but **for the landing
-   page, not for search.** The index flattens predicate and object into one
-   unpaired bag, so emission buys no discoverability
-   ([section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)); what
-   it buys is that a human reading the KNB dataset page sees the decomposition
-   with each predicate attached to its object, because MetacatUI renders the
-   annotation from the EML document rather than from Solr. That is a smaller
-   claim than the one this card made on 2026-09-14 and it is a true one.
+   `https://w3id.org/iadopt/ont/1.1.0` by version IRI, hashed, **bound to its
+   derivation inputs by per-input digests in the manifest and re-checked
+   against the dictionary before publication** ([section 4](#4-b-the-pattern-for-emitting-them),
+   *How they version*), and published only through its manifest. The artifact
+   hash alone does not bind a derived graph to the package it ships in, and a
+   stale graph is worse than a missing one because it is self-consistent.
+3. **Extend the EML annotations in the same decision** — for the landing page
+   **and** for term-level API retrieval, and **not** for paired or structural
+   search and **not** for the human at KNB's search box. The index flattens
+   predicate and object into one unpaired bag, so no query recovers the
+   pairing, and MetacatUI's picker cannot reach a non-ECSO IRI at all. What
+   emission does buy is two things
+   ([section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)): a
+   human reading the KNB dataset page sees the decomposition with each
+   predicate attached to its object, because MetacatUI renders the annotation
+   from the EML document rather than from Solr; and `sem_annotation` gains the
+   component IRIs, so a client holding a property or entity IRI can retrieve
+   the datasets that use it — a query that returns nothing today, because EML
+   currently carries only the compound term and the unit. Smaller than the
+   claim this card made on 2026-09-14, larger than the one it made on
+   2026-09-15.
    It still requires answering the exporter's stated reason for declining, and
    the answer is available: the reason given is *incomplete* I-ADOPT roles,
    and rule 1 of the generator is exactly a completeness gate — a column that
@@ -571,42 +725,59 @@ is cheap but not built for one.** Concretely, and in this order:
    asserting it for a reviewed property IRI is the supported case. **This is
    my reading of the exporter's intent, not a ruling recorded anywhere**, and
    it is now the point in this card I would most want contradicted.
-4. **Take the four costs as requirements, not caveats.** The
+4. **Take the five costs as requirements, not caveats.** The
    plural-component refusal, the `gap`-row exclusion, the `label`-attribute
-   rule on every EML annotation, and a `SURFACE 8` section in the
-   role-contract guard if a predicate map is introduced.
+   rule on every EML annotation, the input-digest binding with a validator that
+   re-checks it, and a `SURFACE 8` section in the role-contract guard if a
+   predicate map is introduced.
 5. **Put the predicate map and the subject-IRI scheme in the pull request
    text**, with justification other than "validation passed".
 
-**Did the finding change the recommendation? No — it changed the argument, and
-the recommendation is weaker for it.** Both halves matter and neither should
-be reported without the other.
+**Did either finding change the recommendation? No — the argument changed
+twice, in opposite directions, and the recommendation is now weaker than
+2026-09-14 and stronger than 2026-09-15 left it.** All three statements matter
+and none should be reported without the others.
 
 *Why it survives.* The sidecar is the larger half of the recommendation and
 **its value never depended on the index**; it is read directly or not at all.
-Justification 3 in [section 3](#consumer-1-knb-and-dataone-the-one-that-already-exists)
-— the ecosystem's own tools, which currently re-derive the decomposition from
-the dictionary's column layout in two implementations and no artifact — never
+Consumer 3 in [section 3](#consumer-3--the-ecosystems-own-downstream-tools) —
+the ecosystem's own tools, which currently re-derive the decomposition from the
+dictionary's column layout in two implementations and no artifact — never
 depended on RDF at all, let alone on DataONE. Neither is touched by what the
 indexer does.
 
-*Why it is weaker.* The deleted argument was the only one that was concrete,
-present-tense and about a consumer that already exists, and I called it "the
-strongest argument in favour of emission". Its replacement — the landing page
-renders the full triple — is real and checkable but smaller: it serves a human
-reading one page, not a query across a corpus. So the case now rests mainly on
-prospective and internal benefits, which is a genuinely weaker footing than
-the card claimed a day earlier.
+*Why it is weaker than 2026-09-14.* That draft's argument was that a DataONE
+user could find datasets by a component of the variable, and I called it "the
+strongest argument in favour of emission". The *structural* half of it is dead:
+the index keeps no pairing, so nothing can be queried by role, and the person
+at KNB's search box cannot reach a non-ECSO IRI at all. What is left is
+coarser than what was claimed.
+
+*Why it is stronger than 2026-09-15 left it.* That revision replaced the
+deleted argument with the landing-page rendering alone and said the case now
+rested mainly on prospective and internal benefits. It does not. Emission also
+puts the component IRIs into `sem_annotation`, where they are retrievable by a
+client that has an IRI and wants the datasets using it — present-tense, on the
+one consumer that already exists, and impossible today because EML carries only
+the compound term and the unit. That is a second concrete benefit, not a
+restatement of the first, and the 2026-09-15 text denied it while listing it.
+It is an **inference** from the indexer configuration rather than a
+measurement, and it is stated as one.
 
 **What would change the recommendation now.** Not the index question; that is
-settled and already priced in. The remaining load-bearing uncertainty is
-**whether the landing-page rendering is worth the format commitment of
+settled and already priced in, in both directions. Two load-bearing
+uncertainties remain. **Whether the landing-page rendering and the term-level
+retrieval together are worth the format commitment of
 [section 5](#5-what-it-would-cost)** — published triples outlive the package
 that made them, and the exactly-1 axiom makes a plural component a silent
-falsehood. If Brett reads that trade as not worth it for a rendering benefit,
-*wait* becomes the right answer and the sidecar could still proceed alone.
-That split — sidecar yes, EML annotations later — is a coherent third option
-and this card does not argue against it.
+falsehood. And **whether the retrieval affordance survives contact with a real
+node**, which the deposit test in [section 8](#what-was-not-established-stated-as-limits-rather-than-as-silence)
+would settle; if it does not, the EML half falls back to the rendering benefit
+alone and the 2026-09-15 reading of the strength becomes the right one. If
+Brett reads either trade as not worth it, *wait* becomes the right answer for
+the EML half and the sidecar could still proceed alone. That split — sidecar
+yes, EML annotations later — is a coherent third option and this card does not
+argue against it.
 
 ---
 

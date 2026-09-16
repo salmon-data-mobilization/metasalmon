@@ -23,6 +23,12 @@ Three files, all under `knowledge/`. **No code.** That restriction is the whole
 point of the B-146 / B-78 split: an implementation would pre-empt the decision
 Brett kept.
 
+*(Parts of this section were superseded on 2026-09-16 by the Codex-review pass
+recorded at the end of this workpad. Read that section before relying on this
+one: the card's status block no longer restates queue state, §3 no longer says
+emission buys no discoverability, and §4 no longer describes the artifact hash
+as proof that the graph matches its inputs.)*
+
 1. **`knowledge/plans/2026-09-14-iop-triple-explainer.md`** — new, the
    deliverable. Answers the three questions #78 asks, carries a recommendation,
    and marks the recommendation as a proposal awaiting B-78 in its own status
@@ -362,3 +368,105 @@ live, what generates them, and how they version, and (c) whether emission should
 be a general SDP capability and what that costs in implementation, maintenance
 and format commitment — carrying a recommendation marked as awaiting B-78, and
 no implementation.
+
+---
+
+## 2026-09-16 — Codex review fixes on PR #116 (three P1 findings)
+
+Three P1 review threads on `e208ffde4b`, all three judged valid and all three
+fixed. Reviewed under ruling R16 (Brett, 2026-09-16), which permits replying to
+and resolving Codex threads; no other pull-request write was made, the branch was
+not merged, and the draft was not marked ready.
+
+**Finding 1 — duplicated queue state (`...iop-triple-explainer.md:15`).** The
+card's status block restated B-146/B-78 lifecycle state, which is authoritative
+only in `queue/items/`. Removed from all three files the commit touched: the
+card's status block (`Status: proposal, awaiting B-78`, "Queue item B-146 is the
+explainer", "no implementation is scheduled", the 2026-08-13 deferral standing),
+the §6 heading `Recommendation, awaiting B-78` (now `Recommendation`, with both
+in-card anchors updated), `knowledge/backlog.md` ("The explainer is written",
+"carrying a recommendation that awaits his ruling", "want their own items"), and
+`knowledge/sequences/s9-ontology-alignment.md` ("was written 2026-09-14", "what
+remains there is the ruling", "the explainer ... is written", "the ruling on
+what it recommends is his"). What was kept in each place: the links, Q46 and
+Brett's words, who decides, and the premise correction — none of which goes
+stale when either item moves. The pre-existing "Parked under S9 step 6; do not
+schedule before Brett reviews the explainer" in `backlog.md` was left alone for
+the reason the earlier pass gave: it is not this commit's text and rewriting it
+would widen the claim.
+
+**Finding 2 — exact-IRI retrieval is dataset discovery (`:251`).** Valid, and it
+contradicted a claim the 2026-09-15 revision had made: that emission improves
+discoverability "by nothing at all". §3's Consumer 1 now separates three things
+rather than two — the **pairing** is unrecoverable (the flattening argument
+stands), **term-level retrieval of the component IRIs** is newly possible and is
+real dataset discovery for an API client (which the card had denied), and the
+**KNB search UI** cannot reach a non-ECSO IRI at all (which is why a human
+browsing gains nothing). The card says plainly that the earlier revision denied
+the middle case and why that was wrong, and notes that the same revision listed
+the affordance among its own justifications two paragraphs after declaring it
+worthless — the contradiction was on the page before any reviewer arrived.
+Justification 3 in that list was rewritten accordingly and is marked as the one
+justification resting entirely on the un-deposited inference.
+
+**Finding 3 — bind the graph to its derivation inputs (`:457`).** Valid. The
+card said `artifact.sha256` "proves it still matches its inputs", citing
+`validate_sdp_measurement_decompositions()`; reading that function shows the
+opposite — it is `read_sdp_measurement_decompositions(path, validate = TRUE)`,
+which runs `.ms_sdp_decomposition_validate_manifest()` (schema version, artifact
+path, `sha256`, `row_count`, writer provenance) **and separately**
+`.ms_sdp_decomposition_validate_dictionary()`, which re-reads
+`metadata/column_dictionary.csv` and re-checks the artifact against it. §4 now
+distinguishes artifact integrity from input binding, adds an `inputs[]` field
+(per-file `path` + `sha256`) to the proposed manifest, names the second in-repo
+precedent (`plan_sha256` / `.ms_knb_plan_fingerprint()` in
+`R/knb-publication.R`, which recomputes a fingerprint from current state and
+compares), recommends input digests plus a role-level re-check over a full
+re-derivation-and-compare (re-derivation couples the validator to the emitter's
+byte stability forever), records the containment-versus-equality asymmetry that
+stops the decomposition validator being copied verbatim, and states that a
+failed input digest is a publication blocker rather than a warning.
+
+**Did the recommendation change?** No, and §6 now says where its *strength*
+landed: **weaker than 2026-09-14, stronger than 2026-09-15 left it.** Finding 2
+restores one concrete present-tense benefit on the only consumer that exists,
+so the 2026-09-15 sentence that the case "rests mainly on prospective and
+internal benefits" is withdrawn. Finding 3 adds a requirement (item 4 of §6 now
+lists five costs-as-requirements, not four) without changing the answer.
+
+### Verification
+
+- `python3 scripts/hub_queue.py lint` → `OK`, 97 items, 0 defects without
+  `retires_when`.
+- `python3 scripts/hub_queue.py check` → `OK: every generated block matches the
+  hub queue.`
+- `git diff --check` → clean.
+- Front matter of the card byte-unchanged (verified by diffing the front-matter
+  keys). **One residual is reported rather than fixed:** the front-matter
+  `description` still says the 2026-09-15 pass "refuted the card's
+  discoverability argument ... the recommendation is unchanged and deliberately
+  weaker", which this pass narrows, so that field is now the copy that is wrong.
+  It was left untouched because the run's scope pinned the front matter as
+  unchanged; it wants one sentence from whoever next touches the card.
+- Every relative link and every in-card anchor resolves (checked by slugging all
+  headings in the three files and matching each `](#...)` and `](path)` target;
+  0 dead).
+- **The OKF bundle validator was not run and could not be.** The documented
+  command needs a sibling `psc-data-systems` checkout
+  (`uv run --project ../psc-data-systems psc-okf check knowledge --tier
+  capture`) and no such checkout exists on this machine — that is B-159. Stated
+  rather than skipped silently. *Retires when:* a `psc-data-systems` checkout
+  exists here, at which point the command runs against this card unchanged.
+- No R code, tests or CI configuration touched, so no `devtools::test()` or
+  `rcmdcheck()` evidence applies and no `NEWS.md` entry is owed: `knowledge/` is
+  excluded from `R CMD build` and nothing observable changed.
+
+### Out of scope, named rather than absorbed
+
+- The two SDP expressivity gaps against I-ADOPT 1.1 (`hasObjectOfInterest`
+  versus `hasContextObject`/`hasMatrix`; no `constrains` target) remain candidate
+  items, unchanged by this pass.
+- The deposit test that would settle the retrieval inference — write an
+  I-ADOPT-annotated EML 2.2.0 record to a Metacat test node and query
+  `sem_annotation` for a component IRI — is a candidate item, not part of B-146,
+  and §6 now names it as one of the two remaining load-bearing uncertainties.
