@@ -271,6 +271,22 @@ published as a GitHub Release with its `NEWS.md` entry as the body (Brett,
 docs-only merge. Releases 0.2.0–0.2.6 are deliberately untagged history — do
 not backfill them.
 
+**A change that merges after the commit that bumped the version and before
+that version's tag exists is filed under the development heading** —
+`NEWS.md`'s *metasalmon (development version)* here, `## Unreleased` in
+metasalmonpy's `CHANGELOG.md` — **never under the version it did not ship in,
+and the tag stays on the bump commit** (Brett, 2026-09-16). The instance that
+produced the rule: on metasalmonpy `main` the bump merge is `67fb486` (#33,
+B-153) and B-144's merge `b939fd9` (#32) is its *descendant* —
+`git merge-base --is-ancestor 67fb486 b939fd9` holds — yet B-144's entry was
+filed under `## 0.5.0`, which made the changelog say a version contains a
+change that the commit making the version current does not; B-124's `1e9245c`
+(#29), later still, went under `## Unreleased` correctly. metasalmonpy pull
+request 35 moves B-144's entry, and `v0.5.0`, which is Brett's to make, goes on
+`67fb486`. The window is real on every release, because the tag is a separate
+act from the bump; the mechanical check is hub item B-200 (B-201 for the
+mirror).
+
 ## Build / test / docs
 
 ```r

@@ -1,0 +1,13 @@
+id: B-204
+kind: defect
+title: 'validate_salmon_datapackage() ignores the vendored schema''s constraints.pattern, the metasalmon half'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S1
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The R validator enforces constraints.pattern on metadata fields read from the vendored Frictionless schema (inst/extdata/schema/frictionless/metadata/dataset.schema.json), with a test that a violating value is reported and a conforming one is not -- the schema''s own fixture is temporal_start and temporal_end, whose pattern at :82 and :94 is a year or a date, so 1996-01 is reported and 1996 and 1996-01-01 are not -- and a parity row or port note as AGENTS.md''s mirror contract requires, in the same pull request. THE MIRROR HALF IS B-205, which names this item; each half is finishable in its own repository. MEASURED 2026-09-16 at e9d7dc4: .ms_field_from_frictionless() (R/schema-helpers.R:387) reads constraints$required at :389 and constraints$enum at :401-402 and nothing else off constraints; the only other constraints reader under R/, R/package-helpers.R:1539-1540, reads required too; grep for constraints$pattern or [["pattern"]] finds no consumer under R/. The vendored dataset.schema.json carries a pattern on temporal_start (:82) and temporal_end (:94), which is how a typed instant reached the descriptor and passed local validation while the profile at that time forbade it (the history behind Q-51; what Q-51 rules is not stated here and does not change this item, because whatever the pattern says, nothing reads it -- if a ruling widens the pattern, the test fixture changes and the item does not). THE SPEC''S OWN VALIDATOR ENFORCES IT: smn-data-pkg''s scripts/validate_package.py:221-222 at bb71c8b rejects a value re.fullmatch fails, and tests/test_validate_package.py:73-79 pins it with a partial date (1996-01) and the message "temporal_start must match pattern". So the gap is in the two implementations, not the spec. P2 because it is silent conformance debt: a green validate_salmon_datapackage() is read as "conforms to the profile", and here it does not, for a rule stated in the very file this package vendors.'

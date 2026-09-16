@@ -46,6 +46,16 @@ Highest strategic value, least code. Run alongside S1–S5. Ordered:
    named editorial authority and review SLA, org-owned URLs, one accurate
    `entrypoints.md` per repo.
 
+**Superclass declarations, ordered 2026-09-16:** Brett ruled `B-158`'s
+vendor-or-stub call that day — the ruling and the trade-off it settled are on
+that card and in the backlog's *2026-09-16 rulings round* — and the order in
+this stream is `B-107` (which waits on smn pull request 27, the proposal that
+edits the same module) → `B-158` → `B-143`'s switch-on of the full superclass
+gate → `B-147`. Sequenced rather than blocked: salmon-domain-ontology is solo,
+and `B-107` and `B-158` both edit
+`ontology/modules/02-observation-measurement.ttl`, so they land one after the
+other rather than in parallel.
+
 ## gcdfo docs-pipeline gate substream
 
 The gcdfo documentation build had a **placebo gate**: its WebVOWL normalizer
