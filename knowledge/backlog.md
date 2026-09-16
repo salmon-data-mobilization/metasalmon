@@ -4957,6 +4957,44 @@ check, or a refresh enforced before the checkout-local client is invoked.
 *Retires when:* an invocation against a stale tree names staleness, the distance
 and the branch rather than reporting absence — demonstrated RED from a checkout
 that predates the fix, which is the case that matters.
+### The 2026-09-16 review-coverage asymmetry
+
+**`B-188` Codex runs a security review on every metasalmon pull request and none
+on any metasalmonpy one.** Measured 2026-09-16 over every pull request either
+repository has had under Codex, by counting Security Review rows in the review
+summary comment:
+
+```
+metasalmon     #121 #126 #127 #128 #129 #130 #131   ->  7 of 7 have one
+metasalmonpy   #28  #29  #30                        ->  0 of 3 have one
+```
+
+It is a per-repository Codex setting; nothing in either tree selects it.
+
+**The mirror contract is what turns a settings difference into a defect.** The
+same behaviour lands in both repositories by design, so a class of defect caught
+on the R side is a class *not looked for* on the Python side — and the asymmetry
+is invisible from inside either pull request, because a Python review that found
+nothing reads exactly like an R review that found nothing.
+
+**Measured consequence, the same night.** metasalmon pull request 121's
+**security** review raised the symlinked-output finding at
+`R/semantic-closure.R:642`, which its code review had reached only in part: the
+security review named `metadata/eml-mapping.yml`, which the code review missed
+entirely; it covered linked roots and intermediate components rather than final
+entries alone; and it forced the hard-link question to be answered explicitly
+rather than left implied. **`B-165` ports that exact producer into
+metasalmonpy**, so the Python half of a fix that a security review found will not
+get a security review.
+
+*Retires when:* Brett enables the security review for metasalmonpy and a later
+metasalmonpy pull request shows a Security Review row — **or** records the
+decision not to, with its reason, in `knowledge/questions.md`, at which point the
+mirror contract should say that review coverage is deliberately asymmetric, so
+nobody reads a clean Python review as the same assurance an R one gives.
+
+---
+
 
 ---
 

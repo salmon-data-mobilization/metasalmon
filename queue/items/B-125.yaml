@@ -1,8 +1,8 @@
 id: B-125
 kind: defect
 title: 'Port the categorical inference of #95 to metasalmonpy'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10

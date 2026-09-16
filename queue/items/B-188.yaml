@@ -1,0 +1,13 @@
+id: B-188
+kind: defect
+title: 'Codex runs a security review on every metasalmon pull request and none on any metasalmonpy one'
+state: needs_brett
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'THIS IS A CONFIGURATION DECISION AND NOT AN IMPLEMENTATION. Codex runs a security review on every metasalmon pull request and none on any metasalmonpy pull request. Measured 2026-09-16 over every pull request either repository has had under Codex: metasalmon 7 of 7 carry a Security Review row -- 121, 126, 127, 128, 129, 130, 131 -- and metasalmonpy 0 of 3 -- 28, 29, 30. It is a per-repository Codex setting rather than anything in either tree. THE MIRROR CONTRACT IS WHAT MAKES IT MATTER: the same behaviour lands in both repositories by design, so a class of defect caught on the R side is a class not looked for on the Python side, and the asymmetry is invisible from inside either pull request. Measured consequence the same night: metasalmon pull request 121''s SECURITY review raised the symlinked-output finding at R/semantic-closure.R:642, which its code review had reached only partly -- it named metadata/eml-mapping.yml which the code review missed, linked roots and intermediate components rather than final entries only, and it forced the hard-link question to be answered explicitly rather than implied. B-165 ports that exact producer into metasalmonpy, so the Python half of a fix found by a security review will not get one. Retires when Brett either enables the security review for metasalmonpy -- and a later metasalmonpy pull request shows a Security Review row -- or records the decision not to, with the reason, in knowledge/questions.md, at which point the mirror contract should say that review coverage is deliberately asymmetric so nobody reads a clean Python review as the same assurance an R one gives.'
