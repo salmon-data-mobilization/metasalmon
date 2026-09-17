@@ -1,0 +1,13 @@
+id: B-210
+kind: defect
+title: CHECK_ONLY_RULES says why the rules it exempts sit outside the coverage guard and never says where they are demonstrated, so reading it reports a gap
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The CHECK_ONLY_RULES block in scripts/tests/test_hub_queue.py names the place the rules it exempts ARE demonstrated -- TestConfiguredBlocksExist, whose tests construct each condition and assert that `check` fails -- next to the reason they sit outside the coverage guard''s claim, and that pointer is written so it fails rather than rots, because a named class can be renamed or emptied and the sentence would still read true. THE OMISSION IS THE DEFECT AND THE EXEMPTION IS NOT: the set is correctly scoped and already carries its own maintenance rule, because they are emitted by validate_generated_blocks, which command_check calls and command_lint does not, so they are outside a claim about LINT rules rather than gaps inside it. WHY IT IS WORTH THE EDIT: an exemption that says why something sits outside one claim, without naming what is inside another, reads as an absence of coverage -- and it has been read that way, wrongly, by a reader who then nearly filed work that already existed. That is the conclusion; the readings, the counts they produced and what each instrument actually measured are in knowledge/backlog.md, because queue/README.md''s third corollary allows a card to take a conclusion from its evidence and not the numbers behind it.'

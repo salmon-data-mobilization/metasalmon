@@ -5809,3 +5809,296 @@ four-digit pattern, so both get redone, and `B-145` becomes work in the opposite
 direction. None of that decides the item, which is Brett's; it is recorded so the
 ruling is made against measurements rather than against the card's earlier
 framing of two comparable options.
+
+### The 2026-09-16 post-#141 sweep: one fact with two homes, an omitted field, and an exemption misread as a gap
+
+Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
+share a section because they share a lesson, and it is the one #137 and #141
+were both about: *every claim here rests on something that stood in for the
+source — an instrument that read it, or a file that described it — and each of
+those stand-ins was wrong the first time in a way that looked like a clean
+answer.* Most were faulty instruments. **One was not an instrument at all**: a
+file was read that named another as authoritative, and the authoritative file
+was never opened. The instances are enumerated below, each with what it
+measured, what it was taken to measure, and who caught it.
+
+That distinction is the one this lede lost when the count came out of it, which
+is its own instance of the failure below: rewriting a summary to fix one
+mismatch with the list introduced a different one. It reads as a rule now rather
+than a tally, and a rule has to be true of every item it covers.
+
+**This paragraph used to carry the count**, and the count was wrong on every
+round of this pull request — as was the heading above it, which said the
+exemption had been read as a gap *three times*. Both are now claims about kind
+rather than number, for the reason the enumeration itself establishes further
+down: **a summary is a second copy of what it summarises, and a correction to
+the thing summarised does not reach it.** The first version of this paragraph
+then over-claimed, in the sentence right after asserting the rule: it said *no
+count sits in a sentence whose job is to introduce one*, which was not true of
+the section even as it was written — the exemption lede still said *three
+times*, and a review found it one round later.
+
+**The accurate rule, which is narrower.** A count appears here only where the
+material that verifies it is immediately adjacent, and only where the number is
+itself the finding. *"Diverged twice"* stays, because two rather than one is the
+correction, and the two-row table is directly beneath it. The reading lede and
+the exemption lede carry no counts, because there the number only characterised
+a list and a reader gained nothing from it that the list did not already say.
+
+**Severity has two homes, they are differently shaped, and they have diverged
+twice.** Six readings, each taken from the file named:
+
+| What | Where | What it says |
+| --- | --- | --- |
+| The contract sentence | `AGENTS.md:358` | "Severity lives here" — of `knowledge/backlog.md` |
+| The queue's founding rationale | `queue/README.md:22` | lists `severity` among the facts that lived in prose *before* the queue, which exists "so that a state fact has one home" |
+| The field | `queue/items/*.yaml` | every `kind: defect` item carries `severity:`; no `question` or `stream` item does. Stated as an invariant, not a count: the count in the first draft of this row was already stale when it was written, because filing `Q-52` and `B-210` changed it |
+| The protocol that acts on it | `HUB.md:617`, step 2 *Select* | "Prefer the item with the lowest `severity` number among defects" — read out of the item file; step 1 of the same list says "Read item files, not prose" |
+| The normative field list | `HUB.md:551` | names `id`, `kind`, `title`, `state`, `claimable`, `repo`, `blocked_by`, `legacy`, `evidence`, `venue` and, for a defect, `retires_when` — and **stops there**. Neither `severity` nor `stream` is in it |
+| The second copy | `knowledge/backlog.md` | carries severity by **position**: four sections, `### Open — P1` (1015), `### P2 — correctness and conformance debt` (1309), `### Open — P3` (3312), `### Open — P4` (3719) |
+
+**The tally is 3–2–1, and it was never the argument.** Three readings point at
+the item file: the founding rationale, the field itself, and the *Select* step.
+Two point at the backlog: the contract sentence and the positional grouping. One
+points at neither, because it omits `severity` altogether. The version of this
+sentence first written here said *"four of the six behave as though the item
+file is the home"* — and the version before it said *four of the five*, which was
+already wrong by one before the sixth row existed. Adding a row and changing the
+denominator without re-deriving the numerator is the same failure as every other
+one in this section, in the one paragraph that was supposed to summarise them.
+
+**What does bear on the ruling is not a vote count.** Of those readings, exactly one
+*acts* on the value — the `Select` step, which orders the queue by it, and which
+reads the item file. And exactly one makes a *normative claim* about where the
+fact lives, rather than carrying it, acting on it, or recording history: the
+`AGENTS.md` sentence. That is what makes it the expensive place to be wrong —
+not that it is outnumbered, but that it is the only assertion of the contract,
+in the file an agent reads first and without choosing to.
+
+**The `HUB.md:551` reading is the one that enlarges the question**, and it was found
+only because the first draft of `Q-52` asserted the opposite. `HUB.md`'s
+normative field list omits `severity` — and omits `stream` with it — while the
+*Select* step twenty lines below orders the queue by `severity`.
+`queue/README.md:44` shows both fields in its illustrative block, and
+`queue/README.md:59` says of that block: *"`HUB.md` carries the normative field
+list … if the two ever differ, `HUB.md` is right and this one is the copy that
+is wrong."* So by the queue's own precedence rule, the field the queue is
+ordered by is not one of the fields an item carries, and 129 cards carry it
+anyway (117 carry `stream`). **Nothing checks either list**: `hub_queue.py` has
+no field-set validation at all — its checks are doubled apostrophes, absolute
+paths, evidence existence, members, member fields, workpads, `solo`, and
+generated blocks. So the ruling has to name the field in `HUB.md` too, or say
+why a field the protocol depends on is not one an item declares.
+
+The draft of this row said the list *included* `severity` — a claim taken from
+`queue/README.md`'s illustrative block plus that sentence about precedence,
+without opening `HUB.md` at the line the sentence points to. Third instrument
+failure of the same sweep, and the one that was not an instrument at all:
+reading a file that says another file is authoritative, and then not reading the
+authoritative file. This is the case the lede at the top of the section has to
+cover, and did not until the Codex review of pull request #142 said so.
+
+**The positional copy is partial, and that is not a detail.** Measured
+2026-09-16: of 119 backlog entries, 43 sit under one of the four P-sections
+(P1=6, P2=18, P3=5, P4=14) and 76 sit under none — among them all 34 of the
+older `### N. title` entries, and every entry filed in the dated 2026-09 round
+sections at the end of this file.
+(The highest-numbered line of a P-sectioned entry is 4212; the run of dated
+sections begins at 4780.) Severity sections are at the same heading level as the
+dated round sections, so a P-section ends at the next heading of its own level
+or shallower. Those
+entries carry severity in prose if at all (`**P3**, as B-200`; `**P2 on
+both:**`). A reader who follows `AGENTS.md:358` to find a recent item's severity
+therefore finds nothing — and per B-161's rule, an empty result states the
+instrument's reach, not the target's contents, so that reader concludes "no
+severity recorded" rather than "wrong file."
+
+**Two divergences, and in both of them the positional copy is the wrong one.**
+Measured 2026-09-16: of the 44 items carrying a `legacy: '#NN'` pointer, 30
+resolve to an entry under a P-section; 28 agree with the item file and two do
+not.
+
+| Item | Card says | Position says | The entry's own prose says |
+| --- | --- | --- | --- |
+| `B-83` (`icebox`) | `P4` | `P2` — inside `### P2 — correctness and conformance debt` (1309–2270), at 2116 | *"Cosmetic — the value is a ranking input, never asserted — so nothing fails"* → P4 |
+| `B-116` (`done`) | `P1` | `P4` — inside `### Open — P4` (3719) via `#### smn-data-pkg` (3733), at 3735 | *"Severity: **high**"* → P1 |
+
+Each entry's prose agrees with its card and contradicts its own position, in
+opposite directions, which is the strongest available evidence for the
+recommendation in `Q-52`: the field is the reliable copy and the position is
+not. `B-116` is also the backlog contradicting *itself* — an entry that calls
+its own severity *high* filed under the P4 ecosystem heading. Both have to be
+disposed of by the ruling rather than left to whichever side wins.
+
+**Every earlier reading of that table was wrong, and each looked clean.** They
+are enumerated below with the instrument and the finder named on each, and this
+sentence deliberately states neither a count nor a common origin: the version of
+it that did said *"three wrong readings, all from the same script,"* which was
+wrong three ways at once — the list had four items, one of them is a standalone
+`awk` check rather than the Python reader, and two of the four were found by
+review rather than by any run of mine.
+
+**A summary sentence left behind by the list it summarises is the single most
+repeated defect on this pull request**, and the instances are marked where they
+occur rather than tallied here — this paragraph carried a count of them and the
+count went stale twice, which is the defect describing itself. Each was caught
+by review, none by a re-read, and each is the one this whole section is about:
+**a summary is a second copy of what it summarises, so it has exactly the
+two-homes problem, and a correction to the list does not touch it.** The
+structural fix is a lede that carries no facts of its own, because such a lede
+cannot fall out of step with the list under it — which is why the count here is
+gone rather than corrected.
+
+**And the rule that governs this had already excluded this sentence when it was
+written.** Two rounds earlier the section settled on: *a count appears only
+where the material that verifies it is immediately adjacent and the number is
+itself the finding.* Here the number was the finding, but its instances are
+scattered through the section rather than adjacent — so the rule already said
+this count could not stay, and it stayed anyway, until review. That is the
+tenth corollary of `queue/README.md` in its purest form: the change that
+introduces a rule is the one least likely to be checked against it, and this
+time the rule was two rounds old and still not applied to the paragraph
+directly above it.
+
+1. The cross-check script first read entries as `### N. title` headings only. It
+   reported 34 entries, **zero** under any P-section, zero agreements and zero
+   disagreements — which reads as "the backlog does not record severity at all,"
+   a tidy finding that would have retired Q-52 before it was filed. The
+   P-sections do not use headings for entries at all: they use bold-lead
+   paragraphs, of the form `**#96 A Date in dataset_meta destroys the
+   package...**`. Reading both forms gives 119 entries and 26 under a section.
+   The fixed script now prints its counts **per entry form**, so a form it
+   cannot see shows up as a zero beside a non-zero rather than as a clean total.
+2. Checking which heading precedes entry #83, `awk 'NR<=2116 && /^#{2,} /'`
+   returned line 757, a `##` section — which would have put #83 under no
+   P-section and made the single divergence disappear. Over the lines it
+   actually read — those at or before 2116 — that pattern matches 8 lines where
+   `/^##/` matches 54, so the interval expression is not doing what it reads as
+   doing. `grep -n "^#\+ "` gives 1309, agreeing with the Python instrument.
+
+3. **The version that produced the numbers first written into this section
+   cancelled a severity section on *any* heading that was not an entry.** A
+   deeper heading is a *child*, not a terminator: `#### smn-data-pkg` (3733)
+   nests inside `### Open — P4` (3719), and treating it as a terminator made
+   entry #116 and every entry after it read as ungrouped. That concealed the
+   second divergence and understated the grouped population by 13 entries —
+   26 rather than 39 — and cross-checked 16 pairs rather than 27. **It was
+   found by the Codex review of pull request #142, not by this script**, which
+   is the part worth keeping: the section-scope bug produces a *smaller*
+   inventory and a *cleaner* story, so nothing inside the result invites
+   suspicion. The fix is a heading stack keyed by level, so a section is in
+   force until a heading at its own level or shallower — Markdown ancestry,
+   which is what "sits under" means. The script's header now carries all three
+   wrong versions.
+
+4. **And the version that replaced it registered each entry number with
+   `setdefault`, so the FIRST occurrence won.** Four numbers — #94, #112, #113,
+   #115 — are *mentioned* in the provenance prose near the top of this file
+   before their real entry appears inside a P-section (`**#115 came out of
+   closing #93 item 4**` at line 157, against the entry at 1770), so all four
+   read as ungrouped: 39 sectioned rather than 43, and 27 pairs rather than 30.
+   **Found by the Codex review of pull request #142, on the round after the one
+   that found the section-scope bug** — the same reader, the same file, a second
+   wrong number in the same paragraph, caught by the same reviewer one round
+   later. The reader now prefers a *sectioned* occurrence, and states the limit
+   it cannot escape: a mention and an entry are the same shape to it, both a
+   bold `**#N` at line start, so an entry's section is *inferred* from the one
+   occurrence that has a section. Correct for all four of these, verified by
+   reading them, and a heuristic rather than a rule. Making it a rule means the
+   backlog marking its entries — a change to the backlog, not to the reader.
+
+**And one that was not a reading at all — it was a WRITE that never happened.**
+Three of the corrections above were reported as made, replied to on the pull
+request as made, and described in a commit message as made, while the file on
+disk still carried the old text: *"diverged once"* against a table recording
+two, `39` sectioned entries where the corrected figure is `43`, and `27` pairs
+where it is `30`. The script that made them batched every substitution into one
+in-memory string and called `write_text` once at the end; a later assertion
+raised first, so **nothing was written while four `ok:` lines had already
+printed**. The follow-up script then re-applied only the substitutions that had
+*failed to match* — the ones that had "succeeded" looked done. Found five rounds
+later, by a sweep looking for something else.
+
+This is the most consequential failure in the section, because it is the only
+one that made the *reports* false rather than the measurements: the reviewer was
+told a thing was fixed, and it was not. The mechanical fix is that an edit
+writes to disk immediately and is confirmed by re-reading the file, so a later
+failure cannot discard an earlier success and a success is never asserted from a
+variable. The general form belongs with the rest: **a log line saying an edit
+succeeded is a claim about the program's memory, not about the file** — the same
+distinction as instrument versus target, one layer down.
+
+**And one in a different instrument, with a cost none of the others had.**
+The round-outcome watcher for this pull request reported head `3cad83b`
+**clean** while its code review was still running. Its reaction check read
+`any("codex" in m["user"]["login"] for m in marks)` — any reaction by Codex at
+all — while the bot's own comment states the semantics in the same thread:
+*"Codex reacts with 👀 while any review is running … and reacts with 👍 once all
+reviews finish with no findings."* So 👀 is the **running** signal and the check
+treated it as the finished one. The script's own header described the shape
+correctly ("a THUMBS-UP REACTION … per Codex's own documentation") and the code
+under it did something else, which is the shape `B-210` is about, one file
+lower: **a stated scope and the implementation of it are two artifacts, and only
+one of them runs.** This is the one instrument error in the sweep that could
+have merged an unreviewed head, and it was caught by reading the output against
+documentation that was quoted verbatim in the notification carrying it.
+
+The rule is the same one every time, and it is B-161's: a result that makes a
+finding vanish is the one to re-measure with a second instrument. What this
+round adds is two harder cases. **A result that makes a finding vanish while
+looking like an ordinary count** — nothing empty, nothing surprising, so there
+is no signal to re-measure against except reading the source by hand. And **a
+result that agrees with what you were hoping for**, which is worse, because the
+watcher's false "clean" was the answer that ended the work rather than
+continuing it. An instrument that reports success is the one to check twice.
+
+**The exemption that was repeatedly misread as a gap.** `CHECK_ONLY_RULES` in
+`scripts/tests/test_hub_queue.py:2004` exempts `generated-block-missing`,
+`generated-block-no-target`, `generated-block-target-missing` and
+`generated-blocks-unreadable` from the coverage guard that #141 added, and gives
+a correct reason: they are emitted by `validate_generated_blocks`, which
+`command_check` calls and `command_lint` does not, so they are outside a claim
+about lint rules rather than gaps in it. What it does not say is where they *are*
+demonstrated, and the reading that followed went wrong three times in one sweep:
+
+- A grep for the four **rule names** in the test file found one hit outside the
+  set itself. Conclusion drawn: four rules never shown to fire. Filed as a draft
+  queue item asking for four tests.
+- The one hit turned out to be a real demonstration
+  (`test_a_configuration_declaring_no_blocks_fails`). Conclusion narrowed to
+  three. Still wrong, and now wrong *with* a correction attached, which is the
+  more convincing state to be wrong in.
+- A grep for the rules' **message text** — which is what those tests assert on,
+  and the reason the name grep saw nothing — found
+  `test_a_configured_block_with_no_target_fails` ("declares no `target:`") and
+  `test_half_a_marker_pair_is_reported_as_missing` ("delimits nothing"). That is
+  the remaining two, so the demonstrated count is four: all of them.
+
+All four are demonstrated, by six tests in `TestConfiguredBlocksExist`
+(`scripts/tests/test_hub_queue.py:1592`), and
+`test_a_configured_block_with_no_marker_anywhere_fails` carries an explicit
+RED/GREEN pair whose comment names the blocker verbatim: *"RED, and this is the
+blocker verbatim: the configuration declares a block, the repository carries no
+markers at all, and the old `check` printed OK."* The draft item was deleted and
+B-210 filed in its place, for the omission rather than the imagined gap.
+
+**One distinction these rounds forced, and it is the rule `B-209`'s first
+deliverable asks for.** Twice now a card has been trimmed for asserting what the
+tooling currently does or does not check — `Q-52` said *"nothing checks either
+list"* and *"nothing compares them"*, both true today and both invalidated the
+moment `B-209`'s own checker lands. But `B-209`'s **title** asserts an absent
+check too — *"nothing fails when a card restates queue state in prose"* — and
+that one is correct to keep. The difference is what retires the claim: **a card
+may assert an absence that is its own defect, because the card stops existing
+when the absence does; it may not assert the coverage state of anything else,
+because nothing retires the card when that changes.** The first is a condition,
+the second is a measurement wearing a condition's clothes.
+
+The generalisation is B-210's subject and is worth stating on its own, because
+the same shape will recur wherever a guard states a scope: **membership in an
+exemption set is evidence about the guard, never about the test suite.** An
+exemption that explains why something is outside one claim, without naming what
+is inside another, reads as absence of coverage — and the reader most likely to
+misread it is the one who wrote the exemption, because they are reading their own
+sentence for confirmation rather than for content. Three readings, one reader,
+ten minutes.
