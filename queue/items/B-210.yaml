@@ -1,6 +1,6 @@
 id: B-210
 kind: defect
-title: CHECK_ONLY_RULES says why its four rules sit outside the coverage guard and never says where they are demonstrated, so reading it reports a gap
+title: CHECK_ONLY_RULES says why the rules it exempts sit outside the coverage guard and never says where they are demonstrated, so reading it reports a gap
 state: icebox
 claimable: true
 repo: metasalmon

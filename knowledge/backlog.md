@@ -6039,6 +6039,18 @@ blocker verbatim: the configuration declares a block, the repository carries no
 markers at all, and the old `check` printed OK."* The draft item was deleted and
 B-210 filed in its place, for the omission rather than the imagined gap.
 
+**One distinction these rounds forced, and it is the rule `B-209`'s first
+deliverable asks for.** Twice now a card has been trimmed for asserting what the
+tooling currently does or does not check — `Q-52` said *"nothing checks either
+list"* and *"nothing compares them"*, both true today and both invalidated the
+moment `B-209`'s own checker lands. But `B-209`'s **title** asserts an absent
+check too — *"nothing fails when a card restates queue state in prose"* — and
+that one is correct to keep. The difference is what retires the claim: **a card
+may assert an absence that is its own defect, because the card stops existing
+when the absence does; it may not assert the coverage state of anything else,
+because nothing retires the card when that changes.** The first is a condition,
+the second is a measurement wearing a condition's clothes.
+
 The generalisation is B-210's subject and is worth stating on its own, because
 the same shape will recur wherever a guard states a scope: **membership in an
 exemption set is evidence about the guard, never about the test suite.** An
