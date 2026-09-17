@@ -5846,7 +5846,7 @@ the exemption lede carry no counts, because there the number only characterised
 a list and a reader gained nothing from it that the list did not already say.
 
 **Severity has two homes, they are differently shaped, and they have diverged
-once.** Six readings, each taken from the file named:
+twice.** Six readings, each taken from the file named:
 
 | What | Where | What it says |
 | --- | --- | --- |
@@ -5899,9 +5899,10 @@ authoritative file. This is the case the lede at the top of the section has to
 cover, and did not until the Codex review of pull request #142 said so.
 
 **The positional copy is partial, and that is not a detail.** Measured
-2026-09-16: of 119 backlog entries, 39 sit under one of the four P-sections and
-80 sit under none — among them all 34 of the older `### N. title` entries, and
-every entry filed in the dated 2026-09 round sections at the end of this file.
+2026-09-16: of 119 backlog entries, 43 sit under one of the four P-sections
+(P1=6, P2=18, P3=5, P4=14) and 76 sit under none — among them all 34 of the
+older `### N. title` entries, and every entry filed in the dated 2026-09 round
+sections at the end of this file.
 (The highest-numbered line of a P-sectioned entry is 4212; the run of dated
 sections begins at 4780.) Severity sections are at the same heading level as the
 dated round sections, so a P-section ends at the next heading of its own level
@@ -5913,8 +5914,8 @@ instrument's reach, not the target's contents, so that reader concludes "no
 severity recorded" rather than "wrong file."
 
 **Two divergences, and in both of them the positional copy is the wrong one.**
-Measured 2026-09-16: of the 44 items carrying a `legacy: '#NN'` pointer, 27
-resolve to an entry under a P-section; 25 agree with the item file and two do
+Measured 2026-09-16: of the 44 items carrying a `legacy: '#NN'` pointer, 30
+resolve to an entry under a P-section; 28 agree with the item file and two do
 not.
 
 | Item | Card says | Position says | The entry's own prose says |
@@ -5937,15 +5938,27 @@ wrong three ways at once — the list had four items, one of them is a standalon
 `awk` check rather than the Python reader, and two of the four were found by
 review rather than by any run of mine.
 
-**That is the third time in this pull request that a summary sentence was left
-behind by the list it summarises**, after *"diverged once"* against a table
-recording two, and *"four of the six"* against a table totalling 3–2–1. All
-three were caught by review, none by a re-read, and all three are the same
-defect as the one this whole section is about: **a summary is a second copy of
-what it summarises, so it has exactly the two-homes problem, and a correction to
-the list does not touch it.** The structural fix is the one applied here and not
-a more careful count — a lede that carries no facts of its own cannot fall out
-of step with the list under it.
+**A summary sentence left behind by the list it summarises is the single most
+repeated defect on this pull request**, and the instances are marked where they
+occur rather than tallied here — this paragraph carried a count of them and the
+count went stale twice, which is the defect describing itself. Each was caught
+by review, none by a re-read, and each is the one this whole section is about:
+**a summary is a second copy of what it summarises, so it has exactly the
+two-homes problem, and a correction to the list does not touch it.** The
+structural fix is a lede that carries no facts of its own, because such a lede
+cannot fall out of step with the list under it — which is why the count here is
+gone rather than corrected.
+
+**And the rule that governs this had already excluded this sentence when it was
+written.** Two rounds earlier the section settled on: *a count appears only
+where the material that verifies it is immediately adjacent and the number is
+itself the finding.* Here the number was the finding, but its instances are
+scattered through the section rather than adjacent — so the rule already said
+this count could not stay, and it stayed anyway, until review. That is the
+tenth corollary of `queue/README.md` in its purest form: the change that
+introduces a rule is the one least likely to be checked against it, and this
+time the rule was two rounds old and still not applied to the paragraph
+directly above it.
 
 1. The cross-check script first read entries as `### N. title` headings only. It
    reported 34 entries, **zero** under any P-section, zero agreements and zero
@@ -5994,7 +6007,28 @@ of step with the list under it.
    reading them, and a heuristic rather than a rule. Making it a rule means the
    backlog marking its entries — a change to the backlog, not to the reader.
 
-A fifth, in a different instrument and with the highest cost of any of them.
+**And one that was not a reading at all — it was a WRITE that never happened.**
+Three of the corrections above were reported as made, replied to on the pull
+request as made, and described in a commit message as made, while the file on
+disk still carried the old text: *"diverged once"* against a table recording
+two, `39` sectioned entries where the corrected figure is `43`, and `27` pairs
+where it is `30`. The script that made them batched every substitution into one
+in-memory string and called `write_text` once at the end; a later assertion
+raised first, so **nothing was written while four `ok:` lines had already
+printed**. The follow-up script then re-applied only the substitutions that had
+*failed to match* — the ones that had "succeeded" looked done. Found five rounds
+later, by a sweep looking for something else.
+
+This is the most consequential failure in the section, because it is the only
+one that made the *reports* false rather than the measurements: the reviewer was
+told a thing was fixed, and it was not. The mechanical fix is that an edit
+writes to disk immediately and is confirmed by re-reading the file, so a later
+failure cannot discard an earlier success and a success is never asserted from a
+variable. The general form belongs with the rest: **a log line saying an edit
+succeeded is a claim about the program's memory, not about the file** — the same
+distinction as instrument versus target, one layer down.
+
+**And one in a different instrument, with a cost none of the others had.**
 The round-outcome watcher for this pull request reported head `3cad83b`
 **clean** while its code review was still running. Its reaction check read
 `any("codex" in m["user"]["login"] for m in marks)` — any reaction by Codex at
