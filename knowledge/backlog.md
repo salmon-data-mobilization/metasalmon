@@ -5814,10 +5814,18 @@ framing of two comparable options.
 
 Two subjects, filed as **Q-52** (the ruling) and **B-210** (the omission). They
 share a section because they share a lesson, and it is the one #137 and #141
-were both about: *every claim here was produced by an instrument, and every
-instrument was wrong the first time in a way that looked like a clean answer.*
-The instances are enumerated below, each with what it measured, what it was taken
-to measure, and who caught it.
+were both about: *every claim here rests on something that stood in for the
+source — an instrument that read it, or a file that described it — and each of
+those stand-ins was wrong the first time in a way that looked like a clean
+answer.* Most were faulty instruments. **One was not an instrument at all**: a
+file was read that named another as authoritative, and the authoritative file
+was never opened. The instances are enumerated below, each with what it
+measured, what it was taken to measure, and who caught it.
+
+That distinction is the one this lede lost when the count came out of it, which
+is its own instance of the failure below: rewriting a summary to fix one
+mismatch with the list introduced a different one. It reads as a rule now rather
+than a tally, and a rule has to be true of every item it covers.
 
 **This paragraph used to carry the count**, and the count was wrong on every
 round of this pull request — as was the heading above it, which said the
@@ -5885,9 +5893,10 @@ why a field the protocol depends on is not one an item declares.
 The draft of this row said the list *included* `severity` — a claim taken from
 `queue/README.md`'s illustrative block plus that sentence about precedence,
 without opening `HUB.md` at the line the sentence points to. Third instrument
-failure of the same sweep, and the first one that was not even an instrument:
+failure of the same sweep, and the one that was not an instrument at all:
 reading a file that says another file is authoritative, and then not reading the
-authoritative file.
+authoritative file. This is the case the lede at the top of the section has to
+cover, and did not until the Codex review of pull request #142 said so.
 
 **The positional copy is partial, and that is not a detail.** Measured
 2026-09-16: of 119 backlog entries, 39 sit under one of the four P-sections and
