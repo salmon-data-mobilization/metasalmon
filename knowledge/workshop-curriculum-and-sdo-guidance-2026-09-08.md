@@ -67,6 +67,40 @@ term absence. The corresponding kit receipt records input checksum, exact
 Python tag commit, compared columns, and no submission. The lesson directs a
 human to inspect existing terms and rewrite the request as warranted.
 
+## Browser-review refinements, 2026-09-22
+
+Brett's browser annotations prompted the learner-facing revisions in workshop
+commit [`d3c6590`](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/commit/d3c6590).
+The earlier summary/setup revision,
+[`763b184`](https://github.com/salmon-data-mobilization/salmon-data-standards-workshop/commit/763b184),
+introduces the reuse problem before naming the dataset and explains that
+metasalmon bundles the same CSV; the ZIP adds the common teaching artifacts.
+
+- Chapter 1 now shows actual source rows and a worked flow from drawing and
+  dictionary decomposition through peer review, packaging, term reuse and
+  catalog publication. Day 2 adds vocabulary/ontology development and term
+  requests, with released identifiers returning to later metadata versions.
+- Chapter 2 starts with `POP_ID`, `NATURAL_ADULT_SPAWNERS`, and
+  `ESTIMATE_METHOD` from one record. Four drawing conventions introduce named
+  nodes, directed verb-labelled edges, explicit example values and dashed
+  questions. A small completed drawing has editable node/edge evidence tables
+  and a Mermaid source in the kit. The expanded graph remains further practice.
+- The example asks separately how observations were collected and how an
+  estimate was calculated. It links the existing Natural-origin definition
+  while keeping applicability to this source field unresolved. A definition
+  link is not an accepted constraint assignment.
+- Repeated chapter-navigation figures were removed. The sidebar supplies
+  navigation; figures now explain the worked data. Delivery instructions moved
+  to the instructor guide and maintenance instructions to the entrypoints page.
+
+Local Sandpaper checks and rendering passed. The lesson consistency check
+passed for links, kit contents, both 360-minute routes and unchanged source
+bytes: 173 rows, 14 columns and 164 population-year pairs. Browser inspection
+confirmed the data table and both worked diagrams. The five existing Varnish
+favicon warnings remain. These edits change no package API, ontology definition,
+canonical SDP field, or accepted semantic assignment. The separate scientific,
+reference-package and catalog acceptance conditions above remain open.
+
 ## Source pins
 
 | Source | Observed revision / authoritative location |
@@ -79,6 +113,8 @@ human to inspect existing terms and rewrite the request as warranted.
 | MetaSalmon concept-mapping versus decomposition contract | [`R/sssom.R` at 2ef11d3](https://github.com/salmon-data-mobilization/metasalmon/blob/2ef11d38e08593f8f388f858342ca0715c9fa12e/R/sssom.R) and [`post-review-package-publication.Rmd`](https://github.com/salmon-data-mobilization/metasalmon/blob/2ef11d38e08593f8f388f858342ca0715c9fa12e/vignettes/post-review-package-publication.Rmd) |
 | Pinned Python preview | [metasalmonpy v0.4.0 source, 3b587e6](https://github.com/salmon-data-mobilization/metasalmonpy/tree/3b587e6be20d5feaf12c3640d48e449681271d23) |
 | General semantics | [W3C SKOS Reference](https://www.w3.org/TR/skos-reference/), [OWL 2 Primer](https://www.w3.org/TR/owl2-primer/), and [SHACL Recommendation](https://www.w3.org/TR/shacl/) |
+| Minimal graph editing guidance, consulted 2026-09-22 | [yEd graph tutorial](https://yed.yworks.com/support/tutorial/create_graph.html) and [description/URL properties](https://yed.yworks.com/support/manual/properties.html); the workshop's dashed-question convention is local teaching notation |
+| Variable decomposition | [RDA I-ADOPT recommendations, version 1.0 (2022)](https://www.rd-alliance.org/system/files/InteroperAble%20Descriptions%20of%20Observable%20Property%20Terminologies%20%28I-ADOPT%29%20WG%20-%20output%20and%20recommendations_0.pdf) and the [SMN metamodel view at d45f8f7](https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/d45f8f7cc857d92af8bbe54a7c89b2a4a14784b2/ontology/views/README.md) |
 
 ## Draft SDO guidance improvements — no upstream mutation
 
@@ -177,6 +213,29 @@ literal assignments or variable-component decomposition as concept mappings
 in the SDP SSSOM profile. Completion evidence: a candidate remains unapproved
 even when its predicate is `owl:equivalentClass`, and a reviewed close mapping
 is not silently upgraded to equivalence.
+
+### 6. Offer a gradual path from a sketch to the metamodel
+
+**Observed in the 2026-09-22 curriculum review:** introducing the entire
+metamodel before a worked row makes the first drawing exercise harder to
+follow. The [metamodel view](https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/d45f8f7cc857d92af8bbe54a7c89b2a4a14784b2/ontology/views/README.md)
+already distinguishes the variable from the activity and result. Its guide
+could show those distinctions progressively using one sourced example.
+
+**Proposed addition:** begin with three source fields and one result; draw
+entity, property and possible constraints; then add the observation/estimation
+activity, method context and result. Ask both “how were observations collected?”
+and “how was the estimate calculated?” A source method label may answer only
+one, or neither. Offer a small drawing beside the complete metamodel and link
+each plain-language relationship to the formal view only in the later step.
+
+Include an unresolved example beside a defined term. The pinned
+[Natural-origin concept](https://github.com/salmon-data-mobilization/salmon-domain-ontology/blob/d45f8f7cc857d92af8bbe54a7c89b2a4a14784b2/ontology/modules/07-controlled-vocabularies.ttl#L144-L151)
+has a definition, but the NuSEDS source evidence does not establish its
+application here. Completion evidence: a learner can explain a supported
+relationship and an open question, and can distinguish a term's meaning from
+the evidence needed to apply it. This remains a documentation proposal, not a
+new graph syntax requirement or an SDO modeling-policy change.
 
 ## Verification and follow-up
 
