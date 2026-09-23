@@ -437,42 +437,27 @@
   do.call(request_fn, args)
 }
 
+# The request itself is built by `.ms_llm_chat_request()` (R/llm-semantic-helpers.R),
+# the builder semantic review uses too. The body below is still this path's own:
+# routing it through `.ms_llm_build_chat_request_body()` is hub item B-128.
 .ms_chat_http_request <- function(messages, config, response_schema = NULL, temperature = 0.2) {
-  req <- httr2::request(paste0(config$base_url, "/chat/completions")) |>
-    httr2::req_method("POST") |>
-    httr2::req_headers(
-      Authorization = paste("Bearer", config$api_key),
-      `Content-Type` = "application/json"
-    ) |>
-    httr2::req_user_agent(ms_user_agent()) |>
-    httr2::req_timeout(seconds = config$timeout_seconds) |>
-    httr2::req_body_json(list(
+  completion <- .ms_llm_chat_completion(
+    config,
+    list(
       model = config$model,
       messages = messages,
       temperature = temperature
-    ), auto_unbox = TRUE)
-
-  if (identical(config$provider, "openrouter")) {
-    req <- httr2::req_headers(
-      req,
-      `HTTP-Referer` = "https://salmon-data-mobilization.github.io/metasalmon/",
-      `X-Title` = "metasalmon"
     )
-  }
-
-  resp <- httr2::req_perform(req)
-  httr2::resp_check_status(resp)
-  body <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-  content <- .ms_llm_extract_message_content(body)
+  )
   parsed <- tryCatch(
-    jsonlite::fromJSON(.ms_llm_clean_json_text(content), simplifyVector = FALSE),
+    jsonlite::fromJSON(.ms_llm_clean_json_text(completion$content), simplifyVector = FALSE),
     error = function(e) NULL
   )
 
   list(
-    content = content,
+    content = completion$content,
     data = parsed,
-    raw = body
+    raw = completion$raw
   )
 }
 
