@@ -3,9 +3,9 @@
 # Until hub item B-175 both were false on a fresh session under the shipped
 # default options: all five read the SDP schema through `.ms_load_sdp_schema()`,
 # whose default "auto" source fetches eight documents from the pinned remote
-# before it falls back to the bundled copy. Measured 2026-09-15 and again
-# 2026-09-23: eight requests to raw.githubusercontent.com from each of the five,
-# called cold.
+# before it falls back to the bundled copy. Measured 2026-09-23: eight requests
+# to raw.githubusercontent.com from each of the five, called cold (the item's
+# 2026-09-15 measurement had found the same eight for two of them).
 #
 # THE SUITE PIN IS UNDONE HERE, ON PURPOSE. `helper-validation.R` sets
 # `metasalmon.sdp_schema_source = "vendored"` for the whole run, and
@@ -33,10 +33,11 @@
 #      download.file() (libcurl and default method) all reached the listener,
 #      and a no-op did not. So a move to another HTTP client, or a new network
 #      read elsewhere on this path, still lands here. It does NOT see a raw
-#      socketConnection() or a DNS lookup, and a client given an explicit proxy
-#      would bypass it: this is not a block on the socket API, which R does not
-#      expose to a test. `serverSocket()` takes no bind address, so the
-#      listener is on every interface for the length of one test.
+#      socketConnection() or a DNS lookup -- measured the same day, both went
+#      straight past it -- and a client given an explicit proxy would bypass it
+#      too: this is not a block on the socket API, which R does not expose to a
+#      test. `serverSocket()` takes no bind address, so the listener is on every
+#      interface for the length of one test.
 #
 # Retires when: never, while `review_metadata()` documents that it does not
 # contact a network. An offline promise with no test that fails when the
