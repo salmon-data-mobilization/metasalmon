@@ -3581,8 +3581,15 @@ schema cache cleared: **eight** requests to `raw.githubusercontent.com` per
 cold schema load — six Frictionless metadata schemas from
 `.ms_sdp_metadata_schema_paths()`, plus the profile and `sdp.rules.yaml` — each
 carrying the 2-second timeout that is `.ms_fetch_remote_sdp_schema()`'s default,
-1.08s of wall clock with the host reachable and up to 16s when it hangs. *(The
-report said six requests at 2.0s each.)* The bundle is cached in
+1.08s of wall clock with the host reachable, and one 2.1–2.5s timeout per cold
+call when the host never answers. *(The report said six requests at 2.0s each.)*
+*(Corrected 2026-09-23: this read "up to 16s when it hangs". The B-175 run
+measured one timeout per cold call on `main` `12efe9d` — 2.12–2.45s across
+`review_metadata()` and the four setters, each opening one connection to a
+listener that never answered — because the first failed request aborts the whole
+bundle fetch and the loader falls back to the bundled copy. Eight times two
+seconds bounds only a host that answers each request just inside the timeout.)*
+The bundle is cached in
 `.ms_schema_env` per cache key, so it is eight requests on the first call in a
 session and **zero** on the second; a scripted review that starts a fresh R
 process per package pays it every time. `set_sdp_dataset()` measured the same
@@ -5090,9 +5097,13 @@ ever report this.
 
 *Not reproduced independently:* this container has no pandas, so the import fails
 before collection is reached. The 908/907 figures are the B-165 run's
-measurement. Either side may be the right fix — the import route in
-metasalmonpy, or the worktree key in `HUB.md` — and whoever takes it should say
-which and why rather than patching the symptom in a third place.
+measurement. The fix is the import route in metasalmonpy, and nowhere else.
+*(Corrected 2026-09-23. This sentence offered the worktree key in `HUB.md` as an
+equally good fix until then, a week after the item's own condition had ruled it
+out: renaming the key leaves a checkout at any other path failing, and `HUB.md`
+is outside the item's repository and Brett's under class 7. The reasoning is
+under* The 2026-09-16 review-and-bookkeeping round *below; the item file was
+corrected on the day and this paragraph was not.)*
 
 **`B-192` the publication vignette's description of the review-target set makes a
 reader break their own package.** `vignettes/post-review-package-publication.Rmd`
