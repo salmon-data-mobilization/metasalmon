@@ -272,6 +272,91 @@ metasalmon (development version)
   that was wrong, because pinning one leaves the other two free to drift away
   from it and the failure would look identical.
 
+* **`review_metadata()` and the four `set_sdp_*()` setters no longer contact the
+  network under the default options** (hub item B-175). `review_metadata()` has
+  documented since 0.5.0 that it *never contacts a network or an LLM*, and under
+  the default options that was false on every fresh session: all five read the
+  SDP schema through the loader whose default source fetches eight documents
+  from the pinned `sdp-0.3.0` release on `raw.githubusercontent.com` before it
+  falls back to the copy bundled with the package. That was eight requests from
+  each of them called cold, and a stall of about two seconds per call when the
+  host did not answer. Under the default options they now read the bundled
+  copy, in a cache slot of its own, so the schema a session has already
+  resolved is not evicted and the next writer or validator call does not fetch
+  it again.
+
+  **A schema the options select is still the one they read.** When
+  `metasalmon.sdp_schema_source` or `metasalmon.sdp_schema_base_url` selects a
+  different schema, they read it exactly as before. That is the schema the
+  writers read, so a package is reviewed and edited against the field contract
+  it was written to. It comes from the session's cache once a writer has loaded
+  it, and otherwise is fetched as a writer would fetch it. The first version of
+  this change read the bundled copy under every setting, which dropped a
+  selected schema's requirements from the scan and made the setters refuse its
+  fields (raised in the Codex review of #145).
+
+  The setters read the same parse the scan reads, so a call `review_metadata()`
+  prints is one the setter accepts. So does the validator's check for blank
+  schema-required fields, which keeps "the last reported row is gone" and
+  "strict validation passes" one statement; the rest of
+  `validate_salmon_datapackage()` still reads the schema the way it did. The
+  bundled and published copies of the six metadata schemas are identical
+  today, so under the default options no result changes.
+
+  Nothing in the suite could see this, because
+  `tests/testthat/helper-validation.R` pins the bundled source for the whole
+  run. `tests/testthat/test-review-metadata-offline.R` un-pins it and proves the
+  absence with sentinels that **count rather than throw**: the loader catches
+  any error its fetch raises and falls back, so a sentinel that errors passes
+  whether or not the network was reached. One counts calls to the package's
+  own fetch; the other is a local socket named as every HTTP(S) proxy, which
+  every R HTTP client measured reaches, so it still fails if the request moves
+  to another client. The default-options change is the R half of the change
+  metasalmonpy made in pull request 28.
+
+* **No YAML read evaluates an `!expr` tag any more, and adding one that could
+  now fails a test** (hub item B-142). yaml's `!expr` tag asks the parser to run
+  the R code that follows it, and whether it does is set by `eval.expr`, whose
+  default is `getOption("yaml.eval.expr", <fallback>)`. The SSSOM reader has
+  passed `eval.expr = FALSE` since #111; six other reads left it out, and all
+  six now pass it: `write_eml_from_sdp()`'s read of the EML sidecar, the two
+  reads of that sidecar on `publish_sdp_to_knb()`'s path (the plan builder and
+  the artifact inventory), both reads of the SDP rules document (fetched over
+  HTTP, and vendored), and the read of the sidecar's declared paths in
+  `write_sdp_semantic_closure()`. Two facts make this more than a
+  session-option corner:
+
+  - **The fallback was `TRUE` until yaml 2.3.0**, which yaml's own NEWS records
+    as "Made `eval.expr` default to `FALSE`" (the argument itself arrived in
+    2.1.19), and DESCRIPTION's floor is `yaml (>= 2.2.0)`. So on a yaml 2.2.x
+    install those reads ran an `!expr` tag with no option set at all. Measured
+    with yaml 2.2.2 built from CRAN's archive and no option set: the previous
+    closure-path read and the previous remote rules read both ran a tag's
+    `file.create()`, and neither does now. The explicit argument works across
+    the whole declared range, so the floor stays where it is.
+  - **Most of that input is somebody else's.** The sidecar is package content,
+    which the closure producer already treats as untrusted, and the rules
+    document arrives over the network whenever the schema source is `"auto"`
+    or `"remote"`.
+
+  A tag now reaches the caller as its text: `!expr f()` in a sidecar field
+  reads as the string `"f()"`, as it already did under yaml 2.3.0 or later
+  with the option unset. The one difference such a session sees is that
+  yaml's own warning ("Evaluating R expressions (!expr) requires explicit
+  `eval.expr=TRUE` option") no longer appears, because the argument is now
+  given. `tests/testthat/test-yaml-expr-guard.R` walks the namespace and the
+  R/ sources, top-level code included, and fails on any call to `yaml.load()`,
+  `read_yaml()` or `yaml.load_file()` that does not pass the literal
+  `eval.expr = FALSE`, and gives each of the six reads a real tag with the
+  option turned on. Each of those six tests was shown failing against its
+  unfixed read. The sixth read was not on the item's own list of 2026-09-12:
+  it arrived four days later with the closure producer, which is exactly the
+  case the two scans are there to catch.
+  **Mirror:** nothing to port. metasalmonpy already never evaluates a tag here:
+  its sidecar reads use PyYAML's `SafeLoader`, its rules reads a
+  regular-expression scan, and its SSSOM reader a subset parser, which hub item
+  B-189 is to pin with a test.
+
 * **A hand-picked accept now reaches the decision record** (hub item B-176).
   `accept_suggestion(review, column, role, iri = "...")` is the supported
   escape hatch for a term retrieval never surfaced, and a shortlist match was the
