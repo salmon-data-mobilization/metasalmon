@@ -90,13 +90,29 @@
     return(sub("/schema/sdp[.]schema[.]yaml$", "", legacy_url))
   }
 
-  # Pinned to the spec release tag this package implements, not `main`:
-  # tracking main meant every upstream spec release broke networked loads
-  # (sdp-0.3.0 deleted methods.schema.json and the remote fetch 404ed).
-  # Advancing the pin is part of implementing the new spec version.
+  # Pinned to an immutable upstream ref, never `main`: tracking main meant every
+  # upstream spec release broke networked loads (sdp-0.3.0 deleted
+  # methods.schema.json and the remote fetch 404ed). Advancing the pin is part
+  # of implementing the new spec version, and so is re-vendoring, in the same
+  # change. `source = "auto"` loads this ref first and loads the vendored bundle
+  # only when the fetch fails, so the two must hold the same bytes. Otherwise an
+  # online session and an offline one validate against different schemas.
+  # test-schema-helpers.R compares them file by file.
+  #
+  # THE REF IS A COMMIT, NOT A TAG. That was a choice, and it has a cost (hub
+  # item B-198). The commit is smn-data-pkg f86d9b4, the merge of pull request
+  # #9, which records Brett's Q-51 ruling of 2026-09-16 admitting an ISO instant
+  # in temporal_start and temporal_end. The sdp-0.3.0 tag this pinned before
+  # predates that ruling, so every online session loaded the pre-ruling pattern.
+  # No upstream tag carries the ruling: on 2026-09-23 the only tags were
+  # sdp-0.2.0 and sdp-0.3.0. A commit is as immutable as the tag was, and
+  # immutability is the property the pin exists to hold. What a commit gives up
+  # is naming a published spec release.
+  # *Retires when:* smn-data-pkg tags a release at or after f86d9b4 and the pin
+  # moves to that tag. Cutting that tag is an outward release act, and Brett's.
   getOption(
     "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/f86d9b42eb3a37327f1afd8d6738927e05c231e6"
   )
 }
 

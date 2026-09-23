@@ -51,11 +51,14 @@ test_that("remote schema source and SDP profile identifier remain distinct", {
   )
   withr::defer(options(old_options))
 
-  # The base URL is pinned to the spec release tag this package implements,
-  # not `main`: advancing the pin is part of implementing a new spec version.
+  # The base URL is pinned to an immutable upstream ref, never `main`, because
+  # advancing the pin is part of implementing a new spec version. Since hub item
+  # B-198 that ref has been the commit carrying the Q-51 ruling, smn-data-pkg
+  # f86d9b4, rather than a tag: no tag carries the ruling. The reasoning and the
+  # retirement condition are beside the pin in R/schema-helpers.R.
   expect_identical(
     metasalmon:::.ms_default_sdp_schema_base_url(),
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
+    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/f86d9b42eb3a37327f1afd8d6738927e05c231e6"
   )
   expect_identical(
     metasalmon:::.ms_sdp_profile_url(),
@@ -174,6 +177,87 @@ test_that("the live upstream SDP bundle loads", {
   expect_identical(schema$source, "remote")
   expect_identical(schema$profile_uri, schema$rules$profile)
   expect_true(nzchar(schema$version))
+})
+
+test_that("the pinned upstream ref serves the vendored SDP bundle byte for byte", {
+  # Hub item B-198. `.ms_load_sdp_schema()` defaults to `source = "auto"`: it
+  # loads the REMOTE bundle at the pinned ref first, and falls back to the
+  # vendored copy only when that fetch fails. So an offline session gets the
+  # vendored copy and every other session gets the pinned ref. If the two
+  # differ, one package validates against a different schema depending on the
+  # network. That had happened twice before this test existed. The
+  # sdp.rules.yaml re-vendor for B-106 (2026-09-15) left the sdp-0.3.0 pin
+  # serving the older rules. Then the Q-51 temporal pattern (re-vendored by
+  # B-198) was served to every online session in its pre-ruling form by that
+  # same tag. Re-vendoring and advancing the pin are one change, and this test
+  # makes them one.
+  #
+  # FAILING-BEFORE, measured 2026-09-23 in two stages. Values are git blob ids,
+  # checkable upstream with `git rev-parse <ref>:<path>`. On the unchanged tree
+  # at the sdp-0.3.0 pin, one file differed: schema/sdp.rules.yaml (pinned
+  # 608467c6, vendored 489d46a0 since B-106). With the dataset schema
+  # re-vendored but the pin not yet moved, a second file differed too:
+  # schema/frictionless/metadata/dataset.schema.json (pinned 9fe231f6, vendored
+  # 0d0d2855). The second stage is the state the item warned could go green.
+  #
+  # Every path the remote loader fetches is compared. The list comes from the
+  # same functions `.ms_fetch_remote_sdp_schema()` reads, so a resource added
+  # to the bundle is covered without editing this test.
+  #
+  # This is deliberately NOT the shape of the live-bundle test above (hub item
+  # B-132). That test proves only that the host resolves, then fetches under a
+  # hard-coded 2 s timeout. This one sets a generous timeout of its own, and it
+  # skips only when the network or the service fails: a transport error, a 429
+  # or a 5xx. A 404 fails, because it means the pin names a ref or a path that
+  # does not exist. Any byte difference fails too.
+  #
+  # *Retires when:* the loader stops fetching a remote bundle, or stops falling
+  # back to the vendored one. Either way there is no longer a second copy for
+  # the first to disagree with.
+  skip_on_cran()
+  skip_if_offline("raw.githubusercontent.com")
+  withr::local_options(
+    metasalmon.sdp_schema_url = NULL,
+    metasalmon.sdp_schema_base_url = NULL
+  )
+
+  base_url <- metasalmon:::.ms_default_sdp_schema_base_url()
+  paths <- c(
+    unname(metasalmon:::.ms_sdp_metadata_schema_paths()),
+    metasalmon:::.ms_sdp_profile_path(),
+    metasalmon:::.ms_sdp_rules_path()
+  )
+  sha256 <- function(bytes) digest::digest(bytes, algo = "sha256", serialize = FALSE)
+
+  for (path in paths) {
+    request <- httr2::request(paste0(base_url, "/", path))
+    request <- httr2::req_timeout(request, 30)
+    request <- httr2::req_user_agent(request, "metasalmon tests")
+    request <- httr2::req_error(request, is_error = function(resp) FALSE)
+    response <- tryCatch(httr2::req_perform(request), httr2_failure = function(e) e)
+    if (inherits(response, "httr2_failure")) {
+      skip(paste0("Could not fetch ", path, ": ", conditionMessage(response)))
+    }
+    status <- httr2::resp_status(response)
+    if (status == 429L || status >= 500L) {
+      skip(sprintf("raw.githubusercontent.com answered %d for %s", status, path))
+    }
+    if (!identical(status, 200L)) {
+      fail(sprintf(
+        "The pinned ref answered HTTP %d for %s. A 404 means the pin names a ref or a path that does not exist.",
+        status, path
+      ))
+      next
+    }
+
+    vendored <- system.file("extdata", path, package = "metasalmon")
+    expect_true(file.exists(vendored), label = paste("vendored copy of", path))
+    expect_identical(
+      sha256(httr2::resp_body_raw(response)),
+      sha256(readBin(vendored, "raw", n = file.size(vendored))),
+      label = paste("sha256 of", path, "at the pinned ref")
+    )
+  }
 })
 
 test_that("a bundle with no usable version is rejected", {
