@@ -303,9 +303,20 @@ metasalmon (development version)
   `not_selected`. Re-applying the same review, or the review rebuilt from the
   package, leaves every written byte of a slot decided this way as it was.
 
+  **`detect_semantic_term_gaps()` does not count that row as gap evidence.** A
+  gap row claims retrieval found no `smn` term, and the recorded row is a
+  reviewer's decision, not something a search returned. Counted, its blank
+  `search_query` made it a target of its own whose only candidate was not
+  `smn`, so a post-review `semantic_suggestions.csv` passed as `suggestions`
+  reported an ontology gap for the slot the reviewer had just filled. The
+  slot's own retrieval candidates are weighed exactly as before.
+
   A port, not a deviation: metasalmonpy had the same defect in the same shape
   and fixed it first (metasalmonpy pull request #28, hub item B-126), and both
-  now record the same row, so no parity-register row is owed.
+  now record the same row, so no parity-register row is owed. The gap-evidence
+  exclusion is R's alone for now: metasalmonpy's `detect_semantic_term_gaps()`
+  still counts the row it has recorded since #28, and the same fix is owed
+  there.
 
 ### Changed
 

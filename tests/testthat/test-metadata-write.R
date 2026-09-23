@@ -729,3 +729,45 @@ test_that("a hand-picked accept tolerates a candidate row with no IRI in its slo
   slot <- slot_rows(read_suggestions_file(path), "spawner_count", "variable")
   expect_equal(slot$iri[slot$decision %in% "accepted"], handpicked_iri)
 })
+
+test_that("a recorded hand-picked accept is not counted as ontology-gap evidence", {
+  # A gap row claims that retrieval found no `smn` term, and the term-request
+  # pipeline acts on that claim. The recorded row is a reviewer's decision, not
+  # retrieval output. Counted, its blank `search_query` made it a target of its
+  # own whose only candidate was not `smn`, so the post-review record reported
+  # a gap for the slot the reviewer had just filled. This slot's retrieval
+  # candidates are all non-`smn`, so they are a real gap before the review, and
+  # after it they must be that one gap and nothing more.
+  ols_hits <- function(query, role = NA_character_, ...) {
+    if (!identical(as.character(role), "variable")) {
+      return(tibble::tibble())
+    }
+    tibble::tibble(
+      label = c("Fish count", "Tally"),
+      iri = c("https://example.org/ols/FishCount", "https://example.org/ols/Tally"),
+      source = "ols", ontology = "ols", role = "variable",
+      match_type = "label_exact", definition = "A count.", score = c(4.5, 3.5)
+    )
+  }
+  path <- file.path(withr::local_tempdir(), "gap-evidence")
+  suppressMessages(with_mocked_bindings(
+    find_terms = ols_hits,
+    create_sdp(
+      list(spawners = data.frame(spawner_count = c(120L, 340L))),
+      path = path, dataset_id = "demo-1", semantic_max_per_role = 2,
+      seed_semantics = TRUE, seed_verbose = FALSE, check_updates = FALSE,
+      overwrite = TRUE
+    )
+  ))
+  before <- suppressMessages(detect_semantic_term_gaps(suggestions = semantic_suggestions(path)))
+  expect_equal(nrow(before), 1L)
+
+  suppressMessages(apply_sdp_semantics(path, accept_handpicked(path)))
+  record <- semantic_suggestions(path)
+  # The premise: what the detector is fed carries the recorded row.
+  expect_true(handpicked_iri %in% record$iri)
+
+  after <- suppressMessages(detect_semantic_term_gaps(suggestions = record))
+  expect_false(handpicked_iri %in% after$top_non_smn_iri)
+  expect_equal(after, before)
+})

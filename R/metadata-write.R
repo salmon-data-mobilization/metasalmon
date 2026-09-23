@@ -290,6 +290,19 @@
   "user"
 }
 
+# Which rows of a suggestion table are a recorded hand-picked accept -- the rows
+# `.ms_review_with_hand_picked_accept()` writes -- rather than retrieval output.
+# Read wherever retrieval evidence is weighed, so a reviewer's decision is never
+# counted as something a search returned. `source` is compared trimmed and
+# lower-cased, the way `detect_semantic_term_gaps()` normalises it.
+.ms_review_is_hand_picked <- function(suggestions) {
+  if (nrow(suggestions) == 0L || !"source" %in% names(suggestions)) {
+    return(rep(FALSE, nrow(suggestions)))
+  }
+  source <- tolower(trimws(as.character(suggestions$source)))
+  !is.na(source) & source == .ms_review_hand_picked_source()
+}
+
 # Record an accepted IRI that no candidate row in its slot carries -- the
 # `accept_suggestion(iri = )` escape hatch for a term retrieval never surfaced.
 #
