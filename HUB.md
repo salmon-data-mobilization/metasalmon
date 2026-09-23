@@ -498,7 +498,11 @@ writes:
   reinstated_2026_09_23: >-
     2026-09-23, by Brett in chat: "Reinstate", adopting the resumption the
     orchestrating session had put to him ("The protocol resumes, and I finish
-    wave 1."). The suspension it lifts began 2026-09-16 at 13:58 UTC, when that
+    wave 1. Four delegated pull requests (#145, #146, #147, #149) merge once
+    CI is green and Codex has finished."). The four he named are per-pull-request
+    authorizations under the merge row, in the way R16's named approvals are,
+    so they went ahead before this entry reached main; nothing else did. The
+    suspension it lifts began 2026-09-16 at 13:58 UTC, when that
     session edited the description of metasalmonpy pull request 34, claimed
     item B-145's hand-back, through the REST API. No row permitted the write,
     it was made against a claimed item, and self_suspends says such a write
