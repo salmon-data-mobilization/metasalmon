@@ -1,0 +1,12 @@
+id: Q-61
+kind: question
+title: 'What smn:Run denotes: the run timing that smn pull request 27 says it models, or the returning group of fish that smn:RunContext means by run'
+state: needs_brett
+claimable: false
+repo: salmon-domain-ontology
+venue: claude-science
+stream: S9
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules what smn:Run denotes and whether its label changes, and the ruling is recorded in knowledge/questions.md as Q61. The ruling also says whether the scope note that smn pull request 27 adds to smn:LifeHistoryType stands as written; that note says run timing is modelled as smn:Run. The definition itself is then written under B-232 from a source, as that item''s condition requires. It is not written by this question.'

@@ -285,6 +285,54 @@ change nothing a model sees, so registering them or porting them costs nothing
 behavioural either way.
 **Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
 
+### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
+**Unblocks:** `smn:Run`'s definition, which `B-232` cannot write without a
+ruling. On 2026-09-23 Brett found that the published site shows `Run` with no
+definition.
+
+**smn gives the word two readings.** Read on salmon-domain-ontology `main`
+`d45f8f7` unless noted:
+
+- `smn:Run` is `rdfs:subClassOf smn:Life-HistoryCharacteristic`, so as modelled
+  it is a characteristic, not a group
+  (`ontology/modules/02-observation-measurement.ttl:99`).
+- smn pull request 27, not merged, adds a scope note to `smn:LifeHistoryType`
+  reading *"Run timing is modelled separately as the OWL class smn:Run."* (head
+  `949ed95`).
+- `smn:RunContext` uses the word the other way. Its definition is sourced from
+  GC DFO Salmon Ontology release 0.0.8 and reads *"values refer to run size or
+  returning run composition"*. There a run is the fish that return.
+
+No data dictionary, example or test in metasalmon, metasalmonpy or smn-data-pkg
+names `smn:Run`. That was searched in their checkouts on 2026-09-23 with a
+pattern that did find the ontology's own uses, so the empty result is not a
+blind search. Either ruling therefore breaks nothing downstream.
+
+**Options:**
+
+- **(a)** It is run timing, a life-history characteristic, as its superclass
+  and pull request 27's note already say. The ruling then also says whether
+  its label becomes "Run timing".
+- **(b)** It is the returning group of fish, as `smn:RunContext` uses the word.
+  Its superclass is then wrong: it moves under a group class such as
+  `smn:SalmonGroup`. Pull request 27's note must change before that pull
+  request merges.
+- **(c)** Both are wanted. `smn:Run` takes one, and the other is minted as its
+  own term.
+
+**Recommendation, the filing's and not ruled:** (a). The merged superclass
+already says it, pull request 27's note says it again, and the only change is
+the label.
+
+The case for (b) is real, and it is why this is a question. `smn:RunContext`'s
+sourced definition uses "run" for the fish, so a user looking for a term for a
+run-size column finds `smn:Run` and gets a characteristic. Whichever way it goes,
+the definition is written from a source under `B-232`, not from this entry.
+
+**Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`.
+*(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
+next open number, not a gap.)*
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible

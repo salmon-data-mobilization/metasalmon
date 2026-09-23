@@ -6513,3 +6513,78 @@ three; and `test_which_files_a_review_marker_actually_blocks`
 in `tables.csv` and `column_dictionary.csv` and passing one in `codes.csv` and
 `dataset.csv` — the answers measured on 2026-09-16 and recorded on `B-177`'s
 card.
+
+**From Brett's question on 2026-09-23 about the smn documentation site.**
+
+**`B-231` and `B-232`: 43 of smn's 159 local terms carry no definition, and 41
+of them show a blank entry on the published site.** Brett noticed it at
+`https://salmon-data-mobilization.github.io/salmon-domain-ontology/#/Run`.
+Measured by this sweep with rdflib 7.6.0, on salmon-domain-ontology `main` at
+`d45f8f7`. The scope was every `smn:` IRI in `ontology/modules/*.ttl` typed as an
+OWL class, an object, datatype or annotation property, or a SKOS concept or
+concept scheme. That is 159 terms, and 43 of them carry neither
+`obo:IAO_0000115` nor `skos:definition`. By module, the 43 fall:
+
+- 7 in `01-entity-systematics.ttl`;
+- 29 in `02-observation-measurement.ttl`;
+- 2 in `04-management-governance.ttl`;
+- 5 in `07-controlled-vocabularies.ttl`.
+
+Modules 03, 05, 08 and 09 and `alignment-research.ttl` have none.
+
+Two of the 43 carry an `rdfs:comment`, which the site shows in the
+definition's place: `AggregatedMeasurement` and `FishLengthMeasurementType`.
+For the other 41 it shows nothing. Measured a second time under the stricter
+rule the repository already uses for some of its terms (`skos:definition` for a
+SKOS term, `obo:IAO_0000115` otherwise), the count is still 43, and no term is
+defined in the wrong property for its kind.
+
+**It is not a rendering defect.** `smn:Run`, at
+`ontology/modules/02-observation-measurement.ttl:99`, carries a label, a
+superclass and `rdfs:isDefinedBy`, and nothing else. Its entry in
+`docs/index-en.html` shows exactly those three.
+
+**The gap was counted and never filed.** The ontology repository's
+`docs/annotation-gap-ledger.md` records "Missing definitions: **43**" under
+*Current status (2026-05-13)*. Its list and the 43 measured here are the same
+terms. Five of its module-02 entries now sit in module 07 as SKOS concepts,
+moved there by the 2026-08-13 methods-as-SKOS migration.
+
+The hub's `knowledge/plans/2026-08-12-ontology-alignment-pass.md` cites the
+ledger's count among the things S9 step 1 would fix. No queue item was ever
+filed, and `S-09`'s condition does not mention definitions, so the stream could
+close with the gap still open.
+
+Nothing in the build reads the ledger. The one check that asserts a definition
+exists is `require_term_annotations()` in
+`scripts/verify_year_age_semantic_contract.py`, which calls itself "the
+repository's minimum human-facing annotation contract", and it runs only on the
+terms that script names. That is why `B-231` exists alongside `B-232`: the count
+stayed at 43 for four months in a file nothing checks.
+
+**Why the ledger could not simply be worked through.** Its ground rules forbid
+inventing a definition. Its 2026-05-13 backfill note says there was no usable
+wording for these terms in the three sources it checked: the prior GCDFO
+release, the RDA case-study sheet and the Hakai GraphML source. So `B-232` is
+source work before it is ontology work. The commons is where that work belongs:
+the roadmap's census of `salmon-knowledge-commons`, taken 2026-08-18, lists a
+run-timing card among its eleven concepts, none of them human-verified at the
+time.
+
+**The cost reaches metasalmon.** Its smn retrieval takes a candidate's
+definition from `iao:0000115`, `skos:definition` and `rdfs:comment`
+(`R/term_search_smn.R:302`, the same line on `b456201` and on `main`
+`f6cd22a`). `.smn_role_flags()` draws part of its role evidence from that text
+(`:161`). For these terms it has a label and nothing more.
+
+**Terms another item already touches.** Four of the 43 are also in other items:
+
+- `B-108` deletes `smn:NCBITaxon_8018`, which therefore needs no definition.
+- `B-108` also removes the range pins on `smn:observedTaxonFamily` and
+  `smn:observedTaxonSpecies`. Both terms survive and still need definitions.
+- `B-107` changes `smn:Characteristic`'s superclass. It also survives and still
+  needs a definition.
+
+`smn:Run` cannot be defined until `Q-61` is ruled, because smn uses the word
+two ways. The measurements are in that question's entry in
+[`questions.md`](questions.md) and are not repeated here.
