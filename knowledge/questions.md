@@ -329,6 +329,42 @@ sourced definition uses "run" for the fish, so a user looking for a term for a
 run-size column finds `smn:Run` and gets a characteristic. Whichever way it goes,
 the definition is written from a source under `B-232`, not from this entry.
 
+**Update, same day: a fourth sense, and evidence from the working group.**
+Batch 1 of the commons definition backfill (salmon-knowledge-commons pull request
+12, card `concepts/run.md`) read the sources for every use of the word, and they
+name four things, not two. (a) is run timing. (b) is a stock's annual return:
+5 AAC 39.222(f)(31) defines "run" as the number returning in a calendar year. (b2)
+is a *run component*: a persistent group of one or more stocks set apart by when
+its adults migrate, such as a spring run or the A-run and B-run of Snake River
+summer steelhead. That is how most of the prose sources use the bare noun,
+including Healey 1991 and Holtby & Ciruna 2007. (c) is the migration itself. The
+card gives a sourced definition for (a), (b) and (b2), and does not choose.
+
+(b2) is not among the options above, and it bears directly on the PSC release
+field `run`. That field's published text never defines the word, and its codes
+Hybrid, Landlocked and Late Fall Upriver Bright Chinook fit a run component at
+least as well as a timing. (b2), like (b), would move `smn:Run` out from under
+`smn:Life-HistoryCharacteristic` into a group class.
+
+Two more pieces of evidence came from the PSC TCDS meeting on 2026-09-23, per
+Brett's notes (unpublished, and cited here only as a working record):
+
+- The group agreed that "the year in which the majority of the run returns" was
+  circular, and replaced "run" with "fish" in the run-year definitions. The
+  reason given was to avoid implying a stock-specific biological run year. That
+  is sense (b) inside RMIS's own vocabulary, alongside the timing sense in its
+  `run` and `sampled_run` fields.
+- The group decided to build a machine-readable version of the RMIS controlled
+  vocabulary in the mid to near term, so whichever sense smn adopts will be
+  mapped from it.
+
+**Revised recommendation, still the filing's and not ruled:** keep (a) for
+`smn:Run`, relabelled "Run timing". Treat (b2) as a separate candidate term, a
+group class for the run component, because it is what the RMIS `run` codes and
+most prose mean by "a run". This is option (c) above, with the second sense
+narrowed from the annual return to the run component. The annual return (b)
+already has a home through `smn:RunContext` and run size.
+
 **Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
