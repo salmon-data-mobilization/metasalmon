@@ -6282,9 +6282,10 @@ selected through `metasalmon.sdp_schema_base_url` or
 `metasalmon.sdp_schema_source` no longer reached the scan or the setters. The
 B-175 run reproduced it with a selected bundle adding a required `dataset.csv`
 field, `funding_source`, cached under the writers' key: at `2b74b14` the writer
-wrote the column, `review_metadata()` omitted it, `set_sdp_dataset(funding_source
-= ...)` failed with *'dataset.csv' has no such field*, and the validator's
-blank-required collector lost it, where `main` `12efe9d` honoured all four.
+wrote the column, `review_metadata()` omitted it,
+`set_sdp_dataset(funding_source = ...)` failed with *'dataset.csv' has no such
+field*, and the validator's blank-required collector lost it, where `main`
+`12efe9d` honoured all four.
 `7c22fa3` fixed it by reading the bundle under the default options only, and
 that is what merged.
 
@@ -6305,10 +6306,9 @@ did. The port is recorded as owed in `parity-deviations.md` and in the
 roadmap's release index, in this change.
 
 **From `B-176`'s hand-back** (metasalmon pull request 146, merged 2026-09-23 as
-`11e8a2f`). Its
-workpad measured each finding below in both implementations — R on its branch,
-metasalmonpy on `main` `3f8349a` with the same stub retrieval — and found each
-behaving identically, which is why the shared ones are pairs.
+`11e8a2f`). Its workpad measured each finding below in both implementations — R
+on its branch, metasalmonpy on `main` `3f8349a` with the same stub retrieval —
+and found each behaving identically, which is why the shared ones are pairs.
 
 **`B-216`: metasalmonpy counts a recorded hand-picked accept as ontology-gap
 evidence.** Pull request 146 records a hand-picked accept as a row of its own,
@@ -6343,9 +6343,9 @@ shape (`review_console.py:694-695`, filter at `:698-699`). A hand-picked accept
 does not hit it, because pull request 146 inserts that row at the head of its
 slot.
 
-**`B-219` and `B-220`: an accept whose IRI is empty.** `accept_suggestion(iri =
-"REVIEW:")` passes the non-empty check, which runs before the marker is
-stripped: R checks at `R/review-console.R:886` and strips at `:907` on
+**`B-219` and `B-220`: an accept whose IRI is empty.**
+`accept_suggestion(iri = "REVIEW:")` passes the non-empty check, which runs
+before the marker is stripped: R checks at `R/review-console.R:886` and strips at `:907` on
 `b456201`; metasalmonpy checks at `review_console.py:1153-1154` and strips at
 `:1170` on `3f8349a`. The B-176 run measured the consequence: on `main`
 `12efe9d` apply clears the field and records nothing; on its branch and in
@@ -6444,9 +6444,8 @@ between the B-3 run and `b456201`: its own user agent,
 *metasalmon Theme A benchmark*, with the authorization and content-type headers
 and the timeout written out again. It already reaches the body builder through
 `getFromNamespace()`, and records the provider's resolved model and refuses a
-substituted one. The single-builder
-guard's header says the script is outside its reach
-(`tests/testthat/test-llm-chat-request.R:35-39`). The B-3 run also found
+substituted one. The single-builder guard's header says the script is outside
+its reach (`tests/testthat/test-llm-chat-request.R:35-39`). The B-3 run also found
 `.ms_chat_http_request()` accepting `response_schema` and ignoring it; that
 belongs to `B-31`, which owns the engine's request contract, and is not filed
 separately.
@@ -6454,15 +6453,16 @@ separately.
 **From `B-191`'s run** (metasalmonpy, measured on `main` `3f8349a` and on the
 run's local fix `8476b8e`, Python 3.11.15 with pandas 3.0.6).
 
-**`B-227`: bare `pytest`.** `tests/test_validation.py:5` (`from validation
-import validate_semantics`) and `tests/test_term_deduplication.py:5` (`from
-term_deduplication import ...`) resolve only when the checkout root is on
-`sys.path`, which `python -m pytest` from the root arranges and bare `pytest`
-does not. Bare `pytest -q` — the command metasalmonpy's `AGENTS.md` documents
-after `pip install -e ".[test]"` (`AGENTS.md:228` at `3f8349a`) — and `python -m
-pytest -q` launched from inside `tests/` both stop at two collection errors, *No
-module named 'validation'* and *No module named 'term_deduplication'*, and
-report *Interrupted*, the same before and after the B-191 fix.
+**`B-227`: bare `pytest`.** `tests/test_validation.py:5`
+(`from validation import validate_semantics`) and
+`tests/test_term_deduplication.py:5` (`from term_deduplication import ...`)
+resolve only when the checkout root is on `sys.path`, which `python -m pytest`
+from the root arranges and bare `pytest` does not. Bare `pytest -q` — the
+command metasalmonpy's `AGENTS.md` documents after `pip install -e ".[test]"`
+(`AGENTS.md:228` at `3f8349a`) — and `python -m pytest -q` launched from inside
+`tests/` both stop at two collection errors, *No module named 'validation'* and
+*No module named 'term_deduplication'*, and report *Interrupted*, the same
+before and after the B-191 fix.
 
 **`B-228`: the old shared workpad.** metasalmonpy `3f8349a` still carries
 `.hub/workpad.md`, holding B-126's report, beside a `.hub/workpads/` directory
@@ -6484,8 +6484,9 @@ the same ten, created between 2026-08-10 and 2026-08-26 — so none since
 2026-09-01. Four runs carry `run_attempt` 2, each concluding `success`: 215
 (2026-08-18), 337 (2026-09-12), 360 (2026-09-15) and 449 (2026-09-16). None of
 the 22 runs created from 2026-09-17 on failed or was re-run. The 2026-09-16
-count was taken during that day, which is why it is smaller than the 529 runs
-created before 2026-09-17.
+count was taken during that day: runs are numbered in creation order, the 484th
+was created at 18:36 UTC and the 485th at 18:58, and 529 were created before
+2026-09-17.
 
 **What the per-attempt endpoint shows that the run list does not.** Reading each
 re-run's attempts: 337, 360 and 449 each have attempt 1 concluding `failure` and

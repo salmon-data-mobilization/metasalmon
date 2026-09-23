@@ -1389,7 +1389,7 @@ narrower severity range, P2–P3, and he widened it to P0–P3.
 
 **What it changes:** since ruling R15 (2026-09-10,
 [Q38](#q38--does-the-draft-pull-request-refusal-stand--answered-2026-09-10-brett))
-a promotion has needed an authorization naming the item. This is one grant with
+each promotion has needed an authorization of its own. This is one grant with
 a stated test, under which every promotion still names the grant — to promotion
 what R16 is to merging. As first applied, an item that meets the test only once
 a condition is interpreted stays per-item, and the interpretation goes to him as
