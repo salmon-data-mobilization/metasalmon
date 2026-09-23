@@ -1,0 +1,13 @@
+id: B-233
+kind: defect
+title: 'read_sssom_mapping_set() rejects spec-valid SSSOM/TSV that omits the built-in prefixes, so a canonical file fails with an unknown CURIE prefix'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S9
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'read_sssom_mapping_set() accepts a CURIE whose prefix is one of the SSSOM built-in prefixes when the file''s curie_map does not declare it. The built-in prefixes are owl, rdf, rdfs, semapv, skos, sssom, xsd and linkml. It still rejects any other undeclared prefix, and it still rejects a curie_map entry that redefines a built-in prefix to a different IRI, if the SSSOM specification forbids that. A test reads a canonical SSSOM/TSV file with no built-in prefixes declared, and was shown failing before the fix. The metasalmonpy half is B-234, and each names the other. Both land with the same accepted set, so no parity row is owed.'

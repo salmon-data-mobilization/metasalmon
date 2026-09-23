@@ -6588,3 +6588,37 @@ definition from `iao:0000115`, `skos:definition` and `rdfs:comment`
 `smn:Run` cannot be defined until `Q-61` is ruled, because smn uses the word
 two ways. The measurements are in that question's entry in
 [`questions.md`](questions.md) and are not repeated here.
+
+**From the RMIS vocabulary recommendation, 2026-09-23.**
+
+**`B-233` and `B-234`: both SSSOM readers reject canonical SSSOM/TSV.**
+The SSSOM specification says the built-in prefixes (`owl`, `rdf`, `rdfs`,
+`semapv`, `skos`, `sssom`, `xsd`, `linkml`) may be omitted from a file's
+`curie_map`, and that a canonical writer must not include them
+(<https://mapping-commons.github.io/sssom/dev/spec-intro/>,
+<https://mapping-commons.github.io/sssom/dev/spec-formats-tsv/>). Both
+statements were read on 2026-09-23 by the agent that wrote the RMIS
+recommendation.
+
+metasalmon's reader looks up every CURIE prefix in the file's own `curie_map`
+and aborts with *uses unknown CURIE prefix* when it is absent
+(`R/sssom.R:405-409` on `main` `f6cd22a`). Nothing in `R/sssom.R` supplies the
+built-in set. metasalmonpy's reader does the same (`sssom.py:595`). The
+agent's canonical example mapping set was:
+
+- rejected by `read_sssom_mapping_set(validate = TRUE)` with *uses unknown
+  CURIE prefix "skos"*;
+- accepted once `rdfs`, `semapv`, `skos` and `sssom` were declared;
+- read and validated without error by sssom-py 0.4.21.
+
+This is therefore the only objection. Checked against temporary copies;
+metasalmon's working tree stayed clean.
+
+Two related notes, neither filed as its own item:
+
+- metasalmon accepts full IRIs in entity-reference slots (`R/sssom.R:382`),
+  which the SSSOM/TSV specification says parsers *should* reject. sssom-py
+  accepts them too.
+- metasalmon requires `mapping_cardinality` on every `sssom:NoTermFound` row.
+  SSSOM only fixes the value (`1:0`) when the slot is filled, so this is
+  stricter than the specification but harmless.
