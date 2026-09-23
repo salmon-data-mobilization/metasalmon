@@ -1,0 +1,13 @@
+id: B-226
+kind: defect
+title: 'scripts/theme-a-benchmark.R builds a third chat-completions request outside the shared builder, so the benchmark can drift from the request it measures'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S7
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'scripts/theme-a-benchmark.R builds its live request through .ms_llm_chat_request(), reached with getFromNamespace() the way the script already reaches the body builder, and overrides only what it deliberately wants different -- its user agent and its X-Title -- so the endpoint, the authorization and content-type headers and the timeout come from the one place the package builds them. Pinned so that a second copy of the endpoint path under scripts/ fails a test, as B-3''s guard already fails one inside the package namespace, demonstrated RED against the script as it stands. WHY IT MATTERS MORE THAN AN ORDINARY DUPLICATE: the benchmark exists to measure the package''s review behaviour, so a request that drifts from the package''s makes it measure something else while reporting on the package. B-3''s guard cannot see the script, because it walks the namespace, and its header says so.'

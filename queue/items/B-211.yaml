@@ -1,0 +1,13 @@
+id: B-211
+kind: defect
+title: 'review_metadata() reports a prose placeholder in an *_iri field twice, so the call it prints names one argument twice and cannot run'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-174]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'review_metadata() reports a prose placeholder in a schema-declared *_iri field of tables.csv or column_dictionary.csv exactly once, and the set_sdp_*() call it prints for that row runs. Pinned by a test that plants one in tables.csv observation_unit_iri and one in a measurement row''s unit_iri, asserts one row per field, and EXECUTES the printed calls, demonstrated RED on the scan as it stands. THE CAUSE IS TWO BRANCHES ASKING ONE QUESTION: the field loop reports the value as a placeholder, and the observation_unit_iri and measurement-IRI branches then test it with .ms_is_unfilled_metadata(), which counts a prose placeholder as unfilled, so the same value comes back with reason iri. Those branches exist to catch a BLANK field and must keep doing so. B-174 changes the same function, .ms_metadata_gaps_for_file(), to add the REVIEW: marker branch, so this fix builds on that and has to leave a marker reported once as well. LATENT: no producer in the package writes a prose placeholder into an *_iri field, so only a hand-edited package reaches it, and what breaks is the printed-call contract rather than strict validation, which refuses the value either way. THE MIRROR HALF IS B-212 (metasalmonpy), where the same two branches fail the same way; each names the other, and a shared defect owes no parity row.'

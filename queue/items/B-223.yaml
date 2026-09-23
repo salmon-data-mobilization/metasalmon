@@ -1,0 +1,12 @@
+id: B-223
+kind: defect
+title: 'An !expr tag in the EML sidecar reaches published EML as its text in R, where metasalmonpy refuses the sidecar'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: [B-142]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Every R read of the EML sidecar, metadata/eml-mapping.yml -- write_eml_from_sdp(), the KNB artifact inventory and plan builder, and the semantic closure''s path reader -- refuses a sidecar carrying an !expr tag, or any other local tag it has no meaning for, with a clear error that names the file, instead of taking the tag''s text as the value and carrying on. Pinned by a test per read, demonstrated RED on the reads as they stand. THE DIRECTION IS A DEFAULT BRETT WAS OFFERED AND DID NOT OVERRULE, and is recorded as that rather than as a ruling: on 2026-09-23 it was put to him that R moves to metasalmonpy''s behaviour, because silently publishing code as metadata is the worse failure, with the alternative of registering the difference instead, and he did not take the alternative. B-142 made every one of these reads pass eval.expr = FALSE, so no tag runs; what this item changes is the value that reaches published EML, and it builds on B-142, which changed the same reads. B-142''s tests assert both that a tag never runs and that its text arrives as the value: the first assertion stays, and the second becomes the refusal. THE CLOSURE PATH IS NOT SETTLED HERE: metasalmonpy refuses such a sidecar on its EML and KNB paths and falls back silently to the default paths on its closure path, so after this item R refuses on one path where metasalmonpy falls back, and which of the two is right there has not been put to Brett.'

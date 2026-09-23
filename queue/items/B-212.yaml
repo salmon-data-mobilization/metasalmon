@@ -1,0 +1,13 @@
+id: B-212
+kind: defect
+title: 'metasalmonpy review_metadata() reports a prose placeholder in an *_iri field twice, so the call it prints repeats a keyword and does not compile'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, review_metadata() reports a prose placeholder in a schema-declared *_iri field of tables.csv or column_dictionary.csv exactly once, and the set_sdp_*() call it prints for that row compiles and runs. Pinned by a test that plants one in tables.csv observation_unit_iri and one in a measurement row''s unit_iri, asserts one row per field, and executes the printed calls, demonstrated RED on the scan as it stands. THE CAUSE IS THE SAME TWO BRANCHES AS IN R: _gaps_for_file() reports the value through is_review_placeholder() in its field loop, and the observation_unit_iri and measurement-IRI branches test it again with _is_unfilled_metadata(), which counts a prose placeholder as unfilled. The comment on the first of those branches warns that the marker test in both places would report one field twice; the prose test in both places does exactly that. Those branches exist to catch a BLANK field and must keep doing so, and the REVIEW: marker branch already reports a marker once. LATENT: no producer writes a prose placeholder into an *_iri field. THE MIRROR HALF IS B-211 (metasalmon); each names the other, and a shared defect owes no PARITY.md row.'

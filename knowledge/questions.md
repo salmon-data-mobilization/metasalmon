@@ -245,6 +245,46 @@ and not the blast radius.
 the item said of itself that it was an open question and that only Brett can
 choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
 
+### Q53 — Should `validate_salmon_datapackage()` reach the remote SDP schema on a cold session, as R does, or make no network call, as metasalmonpy does?
+**Unblocks:** a parity difference neither register records, and which copy of the
+schema `B-204`'s pattern check will enforce, since that check reads whatever the
+validator loads.
+Measured on both sides, each instrument shown to see a fetch before its silence
+was read: under the shipped defaults R's validator makes one remote fetch attempt
+on a cold session, through its readers' column aligners, and metasalmonpy's makes
+none. R documents no offline promise for its validator; metasalmonpy's code
+states one and keeps it. `B-175` took `review_metadata()` offline and left the
+validator's fetch in place, because the validator was outside that item's
+promise. **The measurements are in [`backlog.md`](backlog.md)** under *The
+2026-09-23 queue sweep*, and are not restated here.
+**Recommendation, the sweep's and not ruled:** R moves, reading the bundled
+schema under the default options as `review_metadata()` now does. A validator
+that waits out a network timeout on a cold session is the failure `B-175` removed
+from the scan, and once `B-198`'s pin and the vendored bundle are the same bytes
+the fetch returns nothing the bundle does not. The case the other way is real,
+which is why this is a question: a remote-first validator sees a published schema
+change before a re-vendor does, which is the property the writers keep.
+**Owner:** [S5](sequences/s5-review-flow.md), with the queue item `Q-53`.
+*(`Q-52`, filed on 2026-09-16 about where an item's severity lives, is owed an
+entry in this file and has none yet. That is its own item's to write; it is named
+here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
+
+### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
+**Unblocks:** four differences neither register records — the temperature, JSON
+mode, OpenRouter's attribution headers and the user agent — and what `B-128` is
+for, since it gives R's chat path the semantic path's temperature rule on the
+premise that R keeps sending a temperature.
+Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
+`main`; **what each side sends, and where, is in [`backlog.md`](backlog.md)**
+under *The 2026-09-23 queue sweep*.
+**Recommendation:** none on the direction of the temperature or of JSON mode,
+which change what a model returns and on which neither side has evidence. The
+instrument that could supply it is the Theme A benchmark, whose live capture
+waits on the credential `B-80` names. The header and user-agent differences
+change nothing a model sees, so registering them or porting them costs nothing
+behavioural either way.
+**Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible

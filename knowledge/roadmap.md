@@ -584,7 +584,7 @@ change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
 falls back to the default paths. That difference is **tracked as its own queue
-item, separate from B-142**, which neither introduced it nor changes it. A
+item, `B-223`, separate from B-142**, which neither introduced it nor changes it. A
 parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
 so it is not made here.
 
@@ -629,7 +629,17 @@ POST at `:426`), and both of its LLM paths call it — semantic review through
 `_chat_choice()` (`chat_decomposition.py:279`). **What this does not say** is
 anything about what the two implementations put *in* that request. They do not
 send the same one, and the B-3 workpad records the difference, with its
-evidence, as a candidate for a parity item rather than settling it here.
+evidence, as a candidate for a parity item rather than settling it here. It is
+filed as the question `Q-54`.
+
+**The closed window's port took one behaviour differently, recorded 2026-09-23:
+a schema the options select, hub item `B-215`.** metasalmonpy's
+`review_metadata()`, setters and validator collector read the bundled schema
+whatever schema the options select, where R honours the selection, and `B-175`
+kept that while taking R's default options offline. It is owed as a port, not a
+register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. Recorded there and here in the same change, as the rule
+above requires.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 

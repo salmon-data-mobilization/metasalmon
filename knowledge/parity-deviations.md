@@ -179,6 +179,22 @@ measurement above is kept as the dated measurement it was, not corrected in
 place: it is the evidence the port was owed, and rewriting it would leave the
 section asserting a gap with nothing showing there had been one.
 
+**One behaviour #28 ported differently, found 2026-09-23: a schema the options
+select.** metasalmonpy's `review_metadata()`, its four setters and its
+validator's blank-required collector read the bundled schema under every setting
+(`_SCHEMA_SOURCE = "vendored"`), so a schema selected with
+`set_sdp_schema_source()` or `set_sdp_schema_base_url()`, or their environment
+variables, reaches the writers and not the scan, the setters or the collector. R
+has honoured a selected schema throughout: before hub item **B-175** it read every
+setting through the loader, and since B-175 (pull request #145) it reads the
+bundle only under the default options and a selected schema as the writers do.
+That is the Codex finding against #145's first head, which had copied the Python
+shape. **Owed as a port, not a row**:
+nobody chose the difference, and `AGENTS.md` says an option that will be ignored
+should warn rather than silently no-op. The port is hub item **B-215**, and the
+measurement is in `backlog.md` under *The 2026-09-23 queue sweep*. Recorded here
+and in the release index in the same change, as the rule there requires.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema

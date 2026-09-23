@@ -1,0 +1,13 @@
+id: B-221
+kind: defect
+title: 'Hand-picking the IRI of a lower-ranked candidate writes term_type skos_concept, and re-applying the rebuilt review writes the candidate''s own type'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-176]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'apply_sdp_semantics() writes one term_type for one decision however the decision was expressed: accept_suggestion(iri = <a shortlisted candidate''s IRI>) writes that candidate''s own term_type, exactly as rank = <its rank> does, so applying, rebuilding the review and re-applying leaves column_dictionary.csv byte-identical. Pinned by a test that hand-picks the IRI of an owl_class candidate below rank 1, applies, rebuilds, re-applies and compares bytes, demonstrated RED on the code as it stands. THE CAUSE IS WHERE THE DECISION SITS: accept_suggestion(iri = ) records it on the slot''s first row, and the writer takes the type from that row only when that row carries the accepted IRI, falling back to skos_concept otherwise. AN IRI NO CANDIDATE CARRIES KEEPS skos_concept, which is the case B-176 is about and must not change; B-176 changes how a hand-picked decision is recorded, so this fix builds on it. SHARED AND PRE-EXISTING: THE MIRROR HALF IS B-222 (metasalmonpy); each names the other.'
