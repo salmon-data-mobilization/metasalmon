@@ -2917,7 +2917,8 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort("EML export requires exactly one SDP dataset row.")
   }
 
-  mapping <- yaml::read_yaml(mapping_path)
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  mapping <- yaml::read_yaml(mapping_path, eval.expr = FALSE)
   configs <- .ms_eml_validate_mapping(mapping, pkg)
   revision_key <- .ms_eml_revision_key(
     mapping,

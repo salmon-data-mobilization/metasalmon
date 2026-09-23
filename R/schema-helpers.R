@@ -210,7 +210,8 @@
     ~ jsonlite::fromJSON(fetch_text(.x), simplifyVector = FALSE)
   )
   profile <- jsonlite::fromJSON(fetch_text(.ms_sdp_profile_path()), simplifyVector = FALSE)
-  rules <- yaml::yaml.load(fetch_text(.ms_sdp_rules_path()))
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  rules <- yaml::yaml.load(fetch_text(.ms_sdp_rules_path()), eval.expr = FALSE)
 
   .ms_validate_sdp_schema(list(
     metadata_schemas = metadata_schemas,
@@ -241,7 +242,8 @@
   .ms_validate_sdp_schema(list(
     metadata_schemas = metadata_schemas,
     profile = jsonlite::read_json(profile_path, simplifyVector = FALSE),
-    rules = yaml::read_yaml(rules_path)
+    # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+    rules = yaml::read_yaml(rules_path, eval.expr = FALSE)
   ))
 }
 
