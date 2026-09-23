@@ -1327,13 +1327,23 @@ their own suspension clause with their own scope, and nothing here narrows or
 replaces it. The scoping was added 2026-09-10, when the register was found
 reading as though editing a file outside a claim were a breach of the hub grant.
 
-**It has fired once, and it has been cleared once** (`writes.reinstated`,
-2026-09-10). Merging, promoting and small mechanical pushes to `main` were made
+**It first fired, and was first cleared, on 2026-09-10** (`writes.reinstated`). Merging, promoting and small mechanical pushes to `main` were made
 while those three operations were still absent from `writes.permitted`, and
 Brett then granted exactly those three, after the fact and knowing they had
 happened. That is a reinstatement in substance, and it is recorded as one and
 dated in the front matter so nobody has to reason it out from two other keys.
 It clears those three and nothing else.
+
+**It fired a second time, and nobody saw it for a week** (`writes.reinstated_2026_09_23`).
+On 2026-09-16 the orchestrating session edited the description of a claimed
+item's hand-back pull request, a write no row covered. The clause suspended the
+protocol at that moment, but the protocol kept running, because nothing checks
+for the trigger. A dispatched agent found the edit on 2026-09-23, the protocol
+stopped, and Brett reinstated it that day. That is the lesson: a clause that
+fires silently only works if some reader looks for its trigger, and on
+2026-09-23 the reader was an agent comparing a pull request's description to
+its own workpad. The three upkeep rows granted with the reinstatement give that
+kind of write a row, so it cannot trip the clause again.
 
 ***Retires when:*** claims stop living on git refs. At that point the paragraph
 is deleted rather than widened, and this section goes with it.
