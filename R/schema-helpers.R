@@ -150,6 +150,31 @@
   schema
 }
 
+# The bundled schema, validated, in a cache slot of its own. For a caller that
+# documents it never contacts a network (B-175): the default "auto" source above
+# fetches eight documents from the pinned remote before it falls back to this
+# same bundle, so a local gap scan reached the network on every fresh session.
+#
+# NOT `.ms_load_sdp_schema(source = "vendored")`, which would be offline too.
+# That loader's cache is ONE slot keyed by source, so each vendored read would
+# evict the session's "auto" bundle: the next writer, reader or validator call
+# would fetch all eight documents again, and a script that writes two packages
+# could stamp them with two different profile identities -- the property the
+# comment above caches the fallback to protect. A slot of its own turns one
+# avoided fetch into none rather than into many. metasalmonpy reads its bundled
+# documents outside its loader's cache for the same reason.
+#
+# Retires when `.ms_load_sdp_schema()` no longer fetches on its default source:
+# every caller can then read the default, and this slot has nothing left to say.
+.ms_vendored_sdp_schema <- function() {
+  if (is.null(.ms_schema_env$vendored)) {
+    schema <- .ms_load_vendored_sdp_schema()
+    schema$source <- "vendored"
+    .ms_schema_env$vendored <- schema
+  }
+  .ms_schema_env$vendored
+}
+
 .ms_fetch_remote_sdp_schema <- function(base_url, timeout = 2) {
   fetch_text <- function(path) {
     url <- paste0(sub("/+$", "", base_url), "/", path)

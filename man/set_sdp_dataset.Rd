@@ -109,6 +109,10 @@ saying nothing.
 
 Pass \code{NA} to clear a field deliberately; a blank string is refused as
 ambiguous.
+
+The fields a setter accepts come from the same bundled SDP schema
+\code{\link[=review_metadata]{review_metadata()}} reads, so a call it prints is one the setter accepts, and
+neither contacts a network.
 }
 \examples{
 \dontrun{

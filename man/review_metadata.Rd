@@ -41,7 +41,9 @@ column the file does not have counts as blank in every row;
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
 }
 
-It never contacts a network or an LLM.
+It never contacts a network or an LLM. The SDP schema it reads the required
+fields from is the copy bundled with metasalmon, never the published one, so
+that guarantee holds under the default options.
 }
 \examples{
 \dontrun{

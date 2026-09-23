@@ -98,10 +98,25 @@
 }
 
 # The declared field definitions for one metadata file, in schema order.
+#
+# From the BUNDLED schema, never the remote one (B-175). `review_metadata()`
+# documents that it never contacts a network, and `.ms_load_sdp_schema()`'s
+# default "auto" source fetches eight documents from the pinned remote before it
+# falls back to this same bundle, so on a fresh session the "local" scan reached
+# the network -- and waited out a timeout when the host hung.
+#
+# Every schema read in this file comes through here, so the setters read the
+# parse the scan reads: a call `review_metadata()` prints has to be one
+# `.ms_set_sdp_metadata()` accepts, and it need not be if one read the remote
+# schema and the other the bundle. So does the validator's blank-required
+# collector, through `.ms_schema_required_metadata_fields()`, which is what keeps
+# "the last row is gone" and "strict validation passes" one statement.
+#
+# Retires when `.ms_load_sdp_schema()` stops fetching on its default source: the
+# default is then already offline, and this read has nothing left to say.
 .ms_metadata_schema_fields <- function(file_name) {
   table_name <- .ms_metadata_schema_tables()[[file_name]]
-  schema <- .ms_load_sdp_schema(quiet = TRUE)
-  schema$metadata_tables[[table_name]]$fields
+  .ms_vendored_sdp_schema()$metadata_tables[[table_name]]$fields
 }
 
 # The fields the schema declares `constraints.required`. THE FIRST CONSUMER of
@@ -337,7 +352,9 @@
 #'   `unit_iri`;
 #' * `tables.csv` rows with a blank `observation_unit_iri`.
 #'
-#' It never contacts a network or an LLM.
+#' It never contacts a network or an LLM. The SDP schema it reads the required
+#' fields from is the copy bundled with metasalmon, never the published one, so
+#' that guarantee holds under the default options.
 #'
 #' @param path Path to the package directory.
 #'
@@ -819,15 +836,14 @@ print.ms_metadata_review <- function(x, ...) {
     frame[[field]][[row]] <- value
   }
 
-  align <- list(
-    "dataset.csv" = .ms_dataset_meta_cols,
-    "tables.csv" = .ms_table_meta_cols,
-    "column_dictionary.csv" = .ms_dictionary_cols,
-    "codes.csv" = .ms_codes_cols
-  )
+  # Ordered by `declared`, the names the field check above was made against.
+  # Not `.ms_dataset_meta_cols()` and its siblings: those read the session's
+  # schema through `.ms_load_sdp_schema()`, which fetches on its default source
+  # (B-175), and a setter reading two parses could accept a field under one and
+  # order the columns by the other.
   writes <- list()
   writes[[located]] <- .ms_sdp_extension_csv_bytes(
-    .ms_align_cols(frame, align[[file_name]]()),
+    .ms_align_cols(frame, declared),
     na = .ms_csv_na_token()
   )
 
@@ -876,6 +892,10 @@ print.ms_metadata_review <- function(x, ...) {
 #'
 #' Pass `NA` to clear a field deliberately; a blank string is refused as
 #' ambiguous.
+#'
+#' The fields a setter accepts come from the same bundled SDP schema
+#' [review_metadata()] reads, so a call it prints is one the setter accepts, and
+#' neither contacts a network.
 #'
 #' @param path Path to the package directory.
 #' @param table Table identifier. For [set_sdp_column()] and [set_sdp_code()]

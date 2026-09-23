@@ -272,6 +272,37 @@ metasalmon (development version)
   that was wrong, because pinning one leaves the other two free to drift away
   from it and the failure would look identical.
 
+* **`review_metadata()` and the four `set_sdp_*()` setters no longer contact the
+  network** (hub item B-175). `review_metadata()` has documented since 0.5.0
+  that it *never contacts a network or an LLM*, and under the default options
+  that was false on every fresh session: all five read the SDP schema through
+  the loader whose default source fetches eight documents from the pinned
+  `sdp-0.3.0` release on `raw.githubusercontent.com` before it falls back to the
+  copy bundled with the package. That was eight requests from each of them
+  called cold, and a stall of about two seconds per call when the host did not
+  answer. They now read the bundled copy, in a cache slot of its own, so the
+  schema a session has already resolved is not evicted and the next writer or
+  validator call does not fetch it again.
+
+  The setters read the same parse the scan reads, so a call `review_metadata()`
+  prints is one the setter accepts. So does the validator's check for blank
+  schema-required fields, which keeps "the last reported row is gone" and
+  "strict validation passes" one statement; the rest of
+  `validate_salmon_datapackage()` still reads the schema the way it did. The
+  bundled and published copies of the six metadata schemas are identical
+  today, so no result changes.
+
+  Nothing in the suite could see this, because
+  `tests/testthat/helper-validation.R` pins the bundled source for the whole
+  run. `tests/testthat/test-review-metadata-offline.R` un-pins it and proves the
+  absence with sentinels that **count rather than throw**: the loader catches
+  any error its fetch raises and falls back, so a sentinel that errors passes
+  whether or not the network was reached. One counts calls to the package's
+  own fetch; the other is a local socket named as every HTTP(S) proxy, which
+  every R HTTP client measured reaches, so it still fails if the request moves
+  to another client. This is the R half of the change metasalmonpy made in
+  pull request 28.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
