@@ -370,6 +370,59 @@ writes:
         approvals in that same message (metasalmonpy #28; metasalmon #116, #117,
         #118, #119, #120, #121, #122, #123) are per-pull-request authorizations
         under this row and are not themselves the standing grant.
+    - operation: correct the description of a pull request an agent opened
+      target: >-
+        the title or body of a pull request an agent opened, in a member
+        repository whose solo key in queue/config.yaml is true
+      shape: >-
+        a correction that makes the description say what the branch now does:
+        a count that was wrong, a plan the branch superseded, a finding fixed
+        since. It is appended and dated, the way a NEWS correction is, rather
+        than overwriting the sentence it corrects, so the record of the mistake
+        survives the fix. Never a change to what the pull request is for.
+      max: no limit
+      enforced_by: >-
+        nothing mechanical. GitHub keeps the edit history, which is the record.
+      granted: >-
+        2026-09-23, in Brett's instruction "Add a row to the registers for your
+        own upkeep as needed", given with the reinstatement recorded under
+        reinstated_2026_09_23. It answered the question put to him that day:
+        correcting a pull-request description, asking Codex to look again and
+        re-running a failed job had no row, which is why the orchestrating
+        session kept stepping outside this register. The write that suspended
+        the protocol on 2026-09-16 was one of these.
+    - operation: ask Codex to review a pull request again
+      target: >-
+        a pull request an agent opened, in a member repository whose solo key
+        in queue/config.yaml is true
+      shape: >-
+        one issue comment whose text is "@codex review", optionally followed by
+        one sentence naming what changed since the last round, then the
+        attribution footer. It is a trigger, not a conversation: anything that
+        answers a finding belongs on that finding's thread, under the reply
+        row.
+      max: >-
+        one per pushed round of fixes, posted after the push. Never to re-roll
+        a round that found something, and never while the previous round is
+        still running, which the reviewer signals with an eyes reaction.
+      enforced_by: nothing mechanical.
+      granted: 2026-09-23, with the row above and in the same words.
+    - operation: re-run the failed jobs of one workflow run
+      target: >-
+        a workflow run on a pull request an agent opened, in a member
+        repository whose solo key in queue/config.yaml is true
+      shape: >-
+        a re-run of the failed jobs, and only when the failure did not come
+        from the change: the job died before any test body ran (checkout,
+        install, runner loss), or the same job passed earlier on this exact
+        commit. The first attempt's failure is recorded in the workpad before
+        the re-run, because a re-run overwrites the run's conclusion and the
+        record of the failure goes with it. Never to get a flaky test green: a
+        failure that repeats is real.
+      max: once per commit
+      enforced_by: >-
+        nothing mechanical. The run's attempt number is the record.
+      granted: 2026-09-23, with the rows above and in the same words.
     - operation: promote a queue item to state ready
       target: the item file under queue/items/ on this repository's default branch
       shape: >-
@@ -380,7 +433,11 @@ writes:
         and an agent's reading of it is not. So a promotion under it is one
         whose item meets all five of its conditions as written; an item that
         qualifies only once a condition is interpreted is per-item, and the
-        interpretation goes to him as a question.
+        interpretation goes to him as a question. He answered the first such
+        question the same day: "'Clear' should not count a done blocker as
+        still blocking." So the grant's "blocked_by is empty" is met when
+        blocked_by is [] or every id it lists is an item whose state is done,
+        which is the claimability test's own reading of blocked.
       max: no limit, and one authorization per promotion
       enforced_by: >-
         nothing mechanical. This was structural until 2026-09-10 because an
@@ -438,6 +495,25 @@ writes:
     arising from those three operations. It clears nothing else: a later write
     outside the permitted list suspends the grant again, and needs its own dated
     entry here from Brett before the protocol resumes.
+  reinstated_2026_09_23: >-
+    2026-09-23, by Brett in chat: "Reinstate", adopting the resumption the
+    orchestrating session had put to him ("The protocol resumes, and I finish
+    wave 1."). The suspension it lifts began 2026-09-16 at 13:58 UTC, when that
+    session edited the description of metasalmonpy pull request 34, claimed
+    item B-145's hand-back, through the REST API. No row permitted the write,
+    it was made against a claimed item, and self_suspends says such a write
+    suspends the whole authorization. Nothing noticed for a week. A dispatched
+    agent flagged the edit on 2026-09-23, the session's transcript confirmed
+    it, and every protocol write stopped and was reported before this entry.
+    The protocol writes made in between (merges on 2026-09-16 and 2026-09-17,
+    and the first wave's claims, pushes and pull requests on 2026-09-23) were
+    made while suspended. They were reported to Brett, by kind and count, before
+    he reinstated, so this entry covers them. Writes on unclaimed pull requests
+    that no row covered either (@codex review comments, one CI re-run, the
+    agent-run label on queue pull requests) are outside this register's scope
+    and are recorded here, not reinstated by it. In the same message Brett
+    granted the three upkeep rows in the permitted list, so the kind of write
+    that caused this suspension now has a row.
   denied:
     - >-
       any issue, release, or assignee; and any comment or review except a reply
@@ -447,12 +523,16 @@ writes:
       answering Codex would have suspended the protocol under the grant that
       told an agent to answer it. An issue comment, a review of somebody else's
       pull request, and a reply to a person's review are all still denied.
+      Carved out again 2026-09-23: the one issue comment the permitted list now
+      names, "@codex review" on a pull request an agent opened, is the only
+      exception, and any other issue comment is still denied.
     - >-
-      any pull request operation other than the five the permitted list names,
+      any pull request operation other than the six the permitted list names,
       which are opening the one draft per handed-back item, merging a green pull
       request in this repository, marking ready for review, replying to a Codex
-      review thread, and merging an approved pull request in a solo member
-      repository. Never a second draft for the same item, never an approval, and
+      review thread, merging an approved pull request in a solo member
+      repository, and correcting the description of a pull request an agent
+      opened (added 2026-09-23). Never a second draft for the same item, never an approval, and
       never marking ready a pull request an agent did not open. Carved out
       2026-09-10: this entry read "any pull request other than the one draft",
       which by its own words denied the merge the permitted list grants three
@@ -492,14 +572,18 @@ writes:
     - any --force, --force-with-lease, --delete, or non-fast-forward push
     - anything at all on GitLab
     - >-
-      any GitHub API call that writes, including through gh, other than the five
-      the permitted list names, which are opening the one labelled draft pull
-      request for a handed-back item, merging a green pull request in this
+      any GitHub API call that writes, including through gh, other than the
+      eight the permitted list names, which are opening the one labelled draft
+      pull request for a handed-back item, merging a green pull request in this
       repository, marking such a pull request ready for review, replying to and
-      resolving a Codex review thread on it, and merging an approved pull request
-      in a solo member repository. Widened 2026-09-16 with the rows it counts:
+      resolving a Codex review thread on it, merging an approved pull request in
+      a solo member repository, and, on a pull request an agent opened,
+      correcting its description, asking Codex to review it again, and
+      re-running a failed job. Widened 2026-09-16 with the rows it counts:
       this entry names a number, so a grant that did not update it here would
-      leave the register self-contradicting for the third time.
+      leave the register self-contradicting for the third time. Widened again
+      2026-09-23 for the same reason, in the change that added the three upkeep
+      rows.
   denied_note: >-
     This list is closed and it is the operative one, so an exception granted
     anywhere else has to be carved out of it here in the same change. Four of
@@ -1144,9 +1228,11 @@ prevent.
 
 **The closed exclusion list.** The authorization covers nothing else, and
 specifically not: any issue, release, or assignee, and any comment or review
-other than a reply to a Codex review thread on a pull request the agent opened;
-any pull request operation other than the five granted above, which are the one
-draft per handed-back item, a merge in this repository of a pull request whose
+other than a reply to a Codex review thread on a pull request the agent opened
+or the "@codex review" trigger the upkeep rows permit on one;
+any pull request operation other than the six granted above, which are the one
+draft per handed-back item, correcting the description of a pull request an
+agent opened, a merge in this repository of a pull request whose
 checks are all green, marking such a pull request ready for review, replying to
 and resolving a Codex thread on it, and merging an approved pull request in a
 member repository whose `solo` key is true; any push of the work branch into a
@@ -1320,11 +1406,14 @@ with the register.
 - Never `--force`, `--force-with-lease`, or delete a remote ref.
 - Never write anything on GitLab.
 - Never call the GitHub API to write, including through `gh`, **except** the
-  five writes the register permits: opening one draft pull request for a
+  eight writes the register permits: opening one draft pull request for a
   handed-back item with the `agent-run` label; merging a green pull request in
   this repository; merging an approved pull request in a solo member repository;
-  marking a pull request ready for review; and replying to a review comment on
-  one. Read-only `gh` is fine. The `hub` client itself makes no API call at all,
+  marking a pull request ready for review; replying to a review comment on
+  one; and, on a pull request an agent opened, correcting its description,
+  posting the `@codex review` trigger once per pushed round of fixes, and
+  re-running a failed job under the conditions its row sets (the last three
+  added 2026-09-23). Read-only `gh` is fine. The `hub` client itself makes no API call at all,
   deliberately, so every one of these is the agent's own call and none is ever
   folded into a `hub` subcommand.
   *(This said **two** until 2026-09-16, and went stale the same day ruling R16
