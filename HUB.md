@@ -37,7 +37,13 @@ states:
     means: Known work, not promoted. An agent may read it and may not start it.
   - name: ready
     claimable: true
-    means: Promoted by Brett. The only state a claim may be taken from.
+    means: >-
+      Promoted: by Brett, or by an agent on an authorization he gave in chat.
+      The only state a claim may be taken from. Widened 2026-09-23: this read
+      "Promoted by Brett", which stopped being the only way on 2026-09-10
+      (ruling R15) and stopped being the only kind of authorization when his
+      standing promotion grant, quoted on the register's promotion row, was
+      given.
   - name: claimed
     claimable: false
     means: A live claim ref exists. Another agent must leave it alone until the ref says otherwise.
@@ -370,13 +376,28 @@ writes:
         a commit that names the authorization Brett gave in chat. A promotion
         that cannot cite one is a defect, and so is a promotion resting on
         something an agent read in a file rather than on something Brett said.
+        The standing grant quoted under granted: below is something he said,
+        and an agent's reading of it is not. So a promotion under it is one
+        whose item meets all five of its conditions as written; an item that
+        qualifies only once a condition is interpreted is per-item, and the
+        interpretation goes to him as a question.
       max: no limit, and one authorization per promotion
       enforced_by: >-
         nothing mechanical. This was structural until 2026-09-10 because an
         agent could not push to the default branch at all; it is now an audit
         trail, which the ready_is_set_by note in this front matter says in the
         one place a reader of the queue will look.
-      granted: 2026-09-10 (ruling R15).
+      granted: >-
+        2026-09-10 (ruling R15), for a promotion on an authorization Brett gives
+        in chat, one item at a time. Widened 2026-09-23 by a standing grant, in
+        his words: "An agent may promote a queue item to ready, citing this
+        authorization, when all of: the item's repo is one you work alone in
+        (solo: true); it carries a non-empty retires_when; its severity is P0,
+        P1, or P2 or P3; its blocked_by is empty; and it is not needs_brett.
+        Anything else stays per-item." It is to promotion what ruling R16 is to
+        merging: one grant with a stated test, under which each promotion still
+        names it. First applied in commit abd58b2, whose message lists what it
+        promoted and what it held back, with the reason for each.
     - operation: push a small mechanical change to this repository's default branch
       target: refs/heads/main in this repository (metasalmon)
       shape: >-
@@ -582,6 +603,16 @@ property that an agent cannot enlarge its own queue is no longer structural,
 and a promotion citing no authorization is a defect rather than an impossibility.
 The supply of claimable work still originates with Brett, and the protocol below
 is still sized for that rather than for throughput.
+
+**Since 2026-09-23 it originates with him in two ways rather than one**: an
+authorization for a named item, or the standing grant quoted on the register's
+promotion row, which states five conditions an item either meets as written or
+does not. The second is the answer to a measured bottleneck, not a relaxation of
+the audit trail: every promotion under it is still a commit that names it, and
+anything outside its test still needs him item by item. The concurrency cap in
+`queue/config.yaml` was calibrated before it existed, and that key's own
+*Revisit* note names the evidence that would show the cap, rather than
+promotion, has become the constraint.
 
 ## What claimable means, exactly
 
@@ -881,8 +912,11 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
 7. **It changes `HUB.md`, `queue/config.yaml`, or this register.** Policy does
    not self-amend. The pull request that introduced this section is itself an
    instance and was not self-merged.
-8. **It promotes a queue item to `ready`, or changes `claimable`.** Already his,
-   and unchanged by this section.
+8. **It promotes a queue item to `ready` outside the standing grant on the
+   register's promotion row, or changes `claimable`.** Already his, and
+   unchanged by this section. *(This read "It promotes a queue item to `ready`"
+   until 2026-09-23, when that grant took the items meeting its test out of this
+   class and left `claimable` in it.)*
 9. **It commits the project to something outward-facing**: a published page, an
    issue in another organisation, a term request, a data deposit.
 10. **Its author could not settle a judgement inside it.** A non-empty "needs
@@ -1030,6 +1064,22 @@ an issue, or opened a pull request:
 | `salmon-data-standards-workshop` | one collaborator, in commits and issues | **no** |
 | `dfo-salmon-ontology` | two, and it is another organization's | **no** |
 | `psc-salmon-vocabularies` | PSC, on GitLab | **no** |
+
+**`dfo-salmon-ontology` gained a reviewer on 2026-09-23, and it changes how work
+leaves this machine for that repository, not whether the grant applies.** Brett,
+in chat: *"Note that for the dfo-salmon-ontology I have a new collaborator who
+will need to review MRs so we cant auto push them any more and I want to review
+any MR or issue text."* The grant column above was already **no** and stays so.
+What is new is the path after his yes. A change reaches that repository only as
+a merge request that collaborator reviews, and never as a push to its default
+branch, whether by an agent or by Brett applying an agent's patch. Brett reviews
+the text of every merge request and every issue an agent drafts for it before
+it is posted. So a hand-back there ends, as it did before, at a diff and the
+text of a merge request shown to him, and his yes now leads to a merge request
+for review rather than to a push. The table row still records the 2026-09-10
+measurement. Whoever re-measures participation there counts the collaborator
+from their first commit, issue or merge request, as the test above counts
+anyone.
 
 **Do not use the collaborator list for this test.** Every repository in the
 organization shows the same eight collaborators, because the organization's
