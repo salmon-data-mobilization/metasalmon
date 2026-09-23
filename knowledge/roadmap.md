@@ -565,12 +565,14 @@ With PyYAML 6.0.1 an `!expr` tag raises `ConstructorError` from both loaders,
 and nothing runs.
 
 **What this does not say** is that the two packages handle a tagged scalar
-alike. They do not, and they did not before B-142 either. R returns the tag's
-text and carries on. metasalmonpy rejects the sidecar as "not valid YAML" on
-the EML and KNB paths, and on the closure path it falls back to the default
-paths. That difference is unregistered. Whether it becomes a register row or
-one side moves is Brett's to rule. It is reported in `.hub/workpads/B-142.md`
-and not decided here.
+alike. They do not, and B-142 did not make them differ. On `main` before the
+change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
+the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
+sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
+falls back to the default paths. That difference is **tracked as its own queue
+item, separate from B-142**, which neither introduced it nor changes it. A
+parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
+so it is not made here.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the

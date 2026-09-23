@@ -299,14 +299,17 @@ metasalmon (development version)
 
   A tag now reaches the caller as its text: `!expr f()` in a sidecar field
   reads as the string `"f()"`, as it already did under yaml 2.3.0 or later
-  with the option unset, so nothing changes for a session that never
-  evaluated. `tests/testthat/test-yaml-expr-guard.R` walks the namespace and
-  fails on any call to `yaml.load()`, `read_yaml()` or `yaml.load_file()` that
-  does not pass the literal `eval.expr = FALSE`, and gives each of the six
-  reads a real tag with the option turned on. Each of those six tests was
-  shown failing against its unfixed read. The sixth read was not on the
-  item's own list of 2026-09-12: it arrived four days later with the closure
-  producer, which is exactly the case the namespace walk is there to catch.
+  with the option unset. The one difference such a session sees is that
+  yaml's own warning ("Evaluating R expressions (!expr) requires explicit
+  `eval.expr=TRUE` option") no longer appears, because the argument is now
+  given. `tests/testthat/test-yaml-expr-guard.R` walks the namespace and the
+  R/ sources, top-level code included, and fails on any call to `yaml.load()`,
+  `read_yaml()` or `yaml.load_file()` that does not pass the literal
+  `eval.expr = FALSE`, and gives each of the six reads a real tag with the
+  option turned on. Each of those six tests was shown failing against its
+  unfixed read. The sixth read was not on the item's own list of 2026-09-12:
+  it arrived four days later with the closure producer, which is exactly the
+  case the two scans are there to catch.
   **Mirror:** nothing to port. metasalmonpy already never evaluates a tag here:
   its sidecar reads use PyYAML's `SafeLoader`, its rules reads a
   regular-expression scan, and its SSSOM reader a subset parser, which hub item
