@@ -110,13 +110,20 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
   `observation_unit_iri`), `column_dictionary.csv` (per-column semantics), and
   `codes.csv` (controlled-vocabulary code values). Validated against the canonical
   `smn-data-pkg` spec.
-- **SDP schema locations:** runtime schema fetches are pinned to the spec
-  release tag the package implements
-  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`,
-  currently `sdp-0.3.0`; metasalmonpy still stamps `sdp-0.2.0` until S10's
-  0.3.0 rung — parity register row 27); tracking `main` let upstream spec releases break
-  networked loads. Advancing the pin is part of implementing a new spec
-  version. Canonical SDP profile, rules, and resource-schema identifiers resolve at
+- **SDP schema locations:** runtime schema fetches are pinned to an immutable
+  upstream ref, never `main`
+  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<ref>`),
+  because tracking `main` let upstream spec releases break networked loads. The
+  ref is whatever `.ms_default_sdp_schema_base_url()` names, and this card does
+  not repeat it. Since hub item B-198 the ref has been a commit rather than a
+  release tag, because no tag carried the Q-51 ruling. The source says why, and
+  what would retire it. metasalmonpy's pin is parity register row 38.
+  Advancing the pin is part of implementing a new spec version, and so is
+  re-vendoring `inst/extdata` in the same change. Under `source = "auto"` the
+  pinned ref loads first and the vendored bundle loads only when that fetch
+  fails. So the two must hold the same bytes, or an online session and an
+  offline one validate against different schemas. `test-schema-helpers.R`
+  compares them file by file. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
   published contract identifiers distinct from the configurable source used for
   runtime schema retrieval.
