@@ -255,6 +255,79 @@
   descriptor
 }
 
+# The columns that say WHICH metadata cell a suggestion row is about. A recorded
+# hand-picked accept copies exactly these from the slot it decides, so
+# `review_semantics()` addresses, filters and prints it the way it does a
+# retrieved candidate: `target_sdp_file`, `target_row_key` and
+# `target_sdp_field` make its slot id, `code_value` keeps a code-level slot
+# resolvable, and `target_scope` keeps `apply_semantic_suggestions(strategy =
+# "reviewed")` from dropping it as a non-column target. Everything else on a
+# suggestion row describes the *candidate* -- its label, source, definition,
+# score, retrieval trace -- and is left empty, because nothing is known about a
+# term the reviewer typed.
+#
+# The same nine columns as metasalmonpy's `_SLOT_ADDRESS_COLUMNS`
+# (`metadata_write.py`), so both implementations record the same row.
+.ms_review_slot_address_cols <- function() {
+  c(
+    "dataset_id",
+    "table_id",
+    "column_name",
+    "code_value",
+    "dictionary_role",
+    "target_scope",
+    "target_sdp_file",
+    "target_sdp_field",
+    "target_row_key"
+  )
+}
+
+# What `source` says on a recorded hand-picked accept. `source` otherwise names
+# the vocabulary retrieval found a candidate in; left empty, the row would read
+# as a candidate from an unnamed source rather than as a term the reviewer
+# supplied. The value metasalmonpy writes (`_HAND_PICKED_SOURCE`).
+.ms_review_hand_picked_source <- function() {
+  "user"
+}
+
+# Record an accepted IRI that no candidate row in its slot carries -- the
+# `accept_suggestion(iri = )` escape hatch for a term retrieval never surfaced.
+#
+# The slot gains a NEW row rather than an existing candidate being relabelled.
+# Marking a candidate `accepted` when its own `iri` is not the one accepted would
+# be a worse record than the missing one: its `label`, `source`, `ontology`,
+# `definition` and `score` would all describe a term nobody chose. The shortlist
+# rows are accurate as they stand -- none of them was selected -- and the thing
+# with no row is the term the reviewer supplied, so it gets one.
+#
+# It is inserted at the HEAD of its slot, not appended to the file, because
+# `review_semantics()` derives `rank` from file position and then drops every
+# row past `max_candidates` (5 by default). Appended behind a full shortlist the
+# record would rank 6 or lower and be filtered straight back out -- the same
+# decision lost one layer further on. At the head it ranks 1, which is also what
+# makes a replayed `accept_suggestion(..., rank = 1)` re-accept the term that
+# was actually chosen. The retrieved candidates keep their relative order, so
+# this is a position, not a re-ranking.
+.ms_review_with_hand_picked_accept <- function(suggestions, in_slot, accepted_iri) {
+  at <- which(in_slot)[[1]]
+  record <- suggestions[at, , drop = FALSE]
+  for (name in setdiff(names(record), .ms_review_slot_address_cols())) {
+    # Indexing by `NA_integer_` gives one missing value of the column's own
+    # type, so the row binds without coercing any column.
+    record[[name]] <- record[[name]][NA_integer_]
+  }
+  record$iri <- accepted_iri
+  if ("source" %in% names(record)) {
+    record$source <- .ms_review_hand_picked_source()
+  }
+  record$decision <- "accepted"
+  dplyr::bind_rows(
+    suggestions[seq_len(at - 1L), , drop = FALSE],
+    record,
+    suggestions[seq.int(at, nrow(suggestions)), , drop = FALSE]
+  )
+}
+
 #' Write semantic review decisions into a package
 #'
 #' Applies the decisions recorded by [accept_suggestion()] and
@@ -461,10 +534,13 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
       if (!"decision_reason" %in% names(suggestions)) {
         suggestions$decision_reason <- NA_character_
       }
-      slot <- .ms_review_slot_id(suggestions)
       for (i in seq_len(nrow(decisions))) {
         row <- decisions[i, , drop = FALSE]
-        in_slot <- slot == row$slot_id[[1]]
+        # Recomputed for every decision rather than once before the loop: a
+        # hand-picked accept INSERTS a row below, which shifts every later
+        # position, so a slot vector computed up front would address the wrong
+        # rows from the first insertion on.
+        in_slot <- .ms_review_slot_id(suggestions) == row$slot_id[[1]]
         if (!any(in_slot)) {
           next
         }
@@ -473,11 +549,26 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
           suggestions$decision_reason[in_slot] <- .ms_scalar_text(row$decision_reason)
           next
         }
+        accepted_iri <- .ms_scalar_text(row$decision_iri)
+        # `%in%`, not `==`: a candidate row with no IRI compares as `NA`, and
+        # `any()` of a mask holding an `NA` and no `TRUE` is `NA`, not `FALSE`.
         accepted <- in_slot &
-          .ms_strip_review_iri(as.character(suggestions$iri)) == .ms_scalar_text(row$decision_iri)
+          .ms_strip_review_iri(as.character(suggestions$iri)) %in% accepted_iri
         suggestions$decision[in_slot] <- "not_selected"
-        suggestions$decision[accepted] <- "accepted"
         suggestions$decision_reason[in_slot] <- NA_character_
+        if (any(accepted)) {
+          suggestions$decision[accepted] <- "accepted"
+        } else {
+          # A shortlist match was the only way an `accepted` row was ever
+          # written, so an IRI supplied with `accept_suggestion(iri = )` left
+          # this mask empty: every candidate became `not_selected`, nothing
+          # became `accepted`, and the decision survived only in the user's
+          # script -- while `column_dictionary.csv` carried it. Nothing in the
+          # package could replay it, because `not_selected` is not a recorded
+          # decision (`.ms_review_recorded_decisions()`), and the slot left the
+          # next queue only because its field was now filled. Hub queue B-176.
+          suggestions <- .ms_review_with_hand_picked_accept(suggestions, in_slot, accepted_iri)
+        }
       }
       # `""` and `NA` share the empty CSV field, so a reason that was never
       # given round-trips as absent rather than as an empty string.
