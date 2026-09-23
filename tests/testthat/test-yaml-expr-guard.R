@@ -10,27 +10,33 @@
 # parses can come from somebody else: a collaborator's SSSOM header or EML
 # sidecar, or a schema bundle fetched over HTTP.
 #
-# Two layers, because each misses what the other sees:
+# Three layers, because each misses what the others see:
 #
 #   1. A static walk of the namespace (below) finds every call to a YAML reader
-#      and fails on one that does not pass the literal `eval.expr = FALSE`. It
-#      is what catches the NEXT read: the list this file began from was dated
-#      2026-09-12 and named five sites, and a sixth
-#      (`.ms_closure_mapping_paths()`) had landed four days later.
-#   2. One behavioural test per site proves the argument does what the walk
-#      assumes: a real `!expr` tag in that site's real input, with the option
+#      inside a function, and fails on one that does not pass the literal
+#      `eval.expr = FALSE`. It is what catches the NEXT read: the list this file
+#      began from was dated 2026-09-12 and named five sites, and a sixth
+#      (`.ms_closure_mapping_paths()`) had landed four days later. It runs
+#      wherever the package is installed, whether or not its sources exist.
+#   2. A scan of the R/ sources applies the same rule to every expression in
+#      every file. That covers what the namespace cannot show: code at the top
+#      level of a file, which runs when the package is built or loaded and
+#      leaves only its value behind, and a function stored inside another value
+#      (raised by Codex in review of #147).
+#   3. One behavioural test per site proves the argument does what the scans
+#      assume: a real `!expr` tag in that site's real input, with the option
 #      turned on, leaves no side effect. Each was shown failing against the
 #      unfixed read before the fix (hub item B-142; the workpad records it).
 #
 # The SSSOM reader's behavioural test is in test-sssom.R, which predates this
-# file (#111) and drives the validator; the walk covers that site too.
+# file (#111) and drives the validator; both scans cover that site too.
 #
 # *Retires when:* yaml stops evaluating `!expr` at all, or metasalmon stops
 # parsing YAML. Not when DESCRIPTION's floor reaches 2.3.0: the option still
 # turns evaluation back on there, which is the case the behavioural tests set.
 
 # ---------------------------------------------------------------------------
-# Layer 1: the static walk
+# Layer 1: the namespace walk
 # ---------------------------------------------------------------------------
 
 # The YAML parsers in yaml's API. MAINTENANCE: add a function here when R/
@@ -41,11 +47,11 @@
 yaml_reader_fns <- c("yaml.load", "read_yaml", "yaml.load_file")
 
 # The functions that hold a YAML read today. This is a POSITIVE CONTROL, not an
-# allowlist: nothing here exempts anything. It proves the walk actually reaches
-# the reads that exist, so that a walk which silently stopped matching (a
-# namespace it can no longer read, a changed call shape) fails instead of
-# passing over nothing. Delete an entry when its read is deleted; add one when a
-# read is added.
+# allowlist: nothing here exempts anything. It proves that the namespace walk and
+# the source scan both reach the reads that exist, so that a scan which silently
+# stopped matching (a namespace it can no longer read, a source directory it
+# cannot find, a changed call shape) fails instead of passing over nothing.
+# Delete an entry when its read is deleted; add one when a read is added.
 known_yaml_read_fns <- c(
   ".ms_sssom_parse_metadata",
   "write_eml_from_sdp",
@@ -166,10 +172,11 @@ test_that("every YAML read in metasalmon passes eval.expr = FALSE", {
   # test-cli-safety-guard.R does and for its reason: under `R CMD check` R/
   # holds no source files, so a grep would skip exactly where enforcement
   # matters. LIMITATIONS, stated so that green means only what it says: it sees
-  # functions in the namespace, not code run at the top level of an R/ file at
-  # build time; a reader reached through a string it cannot see
-  # (`get(paste0("read_", "yaml"))`) is invisible; and it knows only the
-  # parsers named in `yaml_reader_fns`.
+  # the functions bound in the namespace, so code at the top level of an R/
+  # file, and a function stored inside another value, are left to the source
+  # scan below; a reader reached through a string neither can see
+  # (`get(paste0("read_", "yaml"))`) is invisible to both; and both know only
+  # the parsers named in `yaml_reader_fns`.
   findings <- collect_namespace_yaml_reads()
   calls <- Filter(function(f) identical(f$kind, "call"), findings)
   reached <- unique(vapply(calls, `[[`, character(1), "fn"))
@@ -259,7 +266,161 @@ test_that("the YAML read walk flags each unsafe shape and passes the safe ones",
 })
 
 # ---------------------------------------------------------------------------
-# Layer 2: one behavioural test per read
+# Layer 2: the source scan
+# ---------------------------------------------------------------------------
+
+# Every file R CMD INSTALL would source from R/: the extensions it collates.
+r_source_files <- function(root) {
+  sort(
+    list.files(file.path(root, "R"), pattern = "[.][RrSsQq]$", full.names = TRUE),
+    method = "radix"
+  )
+}
+
+# The package's source root, or NA. Under devtools::test() the sources are two
+# levels above tests/testthat. Under R CMD check the tests run in a copy inside
+# the check directory, and the unpacked tarball sits beside that copy in
+# `00_pkg_src/`, which is where CI's check finds them. The installed package in
+# the check directory has a DESCRIPTION and an R/ directory too, but its R/ holds
+# a lazy-load database and no source file, so it is never taken for the sources.
+metasalmon_source_root <- function() {
+  candidates <- c(
+    testthat::test_path("..", ".."),
+    testthat::test_path("..", "..", "00_pkg_src", "metasalmon")
+  )
+  for (root in candidates) {
+    description <- file.path(root, "DESCRIPTION")
+    if (!file.exists(description)) {
+      next
+    }
+    package <- tryCatch(
+      unname(read.dcf(description, fields = "Package")[1, 1]),
+      error = function(e) NA_character_
+    )
+    if (identical(package, "metasalmon") && length(r_source_files(root)) > 0L) {
+      return(normalizePath(root))
+    }
+  }
+  NA_character_
+}
+
+# The name a top-level expression binds (`name <- value`), or NA.
+top_level_binding <- function(expr) {
+  if (is.call(expr) && length(expr) == 3L && is.name(expr[[1]]) &&
+      as.character(expr[[1]]) %in% c("<-", "=", "<<-") &&
+      (is.name(expr[[2]]) || is.character(expr[[2]]))) {
+    return(as.character(expr[[2]]))
+  }
+  NA_character_
+}
+
+# Every expression in every source file, walked whole: top-level code, function
+# bodies and default arguments alike, which makes this layer the literal form
+# of B-142's condition ("every ... call in R/"). A read inside `name <- ...` is
+# reported under `name`, which is what lets `known_yaml_read_fns` control this
+# scan as well as the namespace walk. Anything else is reported under its file.
+collect_source_yaml_reads <- function(root) {
+  findings <- list()
+  for (path in r_source_files(root)) {
+    file_label <- paste0("R/", basename(path))
+    for (expr in as.list(parse(path, keep.source = FALSE, encoding = "UTF-8"))) {
+      name <- top_level_binding(expr)
+      found <- collect_yaml_reads(expr, if (is.na(name)) file_label else name)
+      findings <- c(
+        findings,
+        lapply(found, function(f) c(f, list(file = file_label)))
+      )
+    }
+  }
+  findings
+}
+
+test_that("every YAML read in the R/ sources passes eval.expr = FALSE, top-level code included", {
+  root <- metasalmon_source_root()
+  if (is.na(root)) {
+    # Not finding the sources is not the same as finding them clean. CI always
+    # has them, beside the tests or in R CMD check's `00_pkg_src/`, so there a
+    # missing tree means this layer has stopped running, and that fails.
+    # Elsewhere (an installed package tested on its own) the namespace walk
+    # still runs, and this layer says plainly that it did not.
+    # *Retires when:* nothing. This is how the layer reports that it could not look.
+    skip_if_not(
+      isTRUE(as.logical(Sys.getenv("CI", "false"))),
+      "NOT CHECKED: the R/ sources are not beside these tests, so top-level YAML reads were not scanned (the namespace walk still ran)."
+    )
+    fail(paste(
+      "NOT CHECKED on CI: the R/ sources were found neither beside the tests",
+      "nor in R CMD check's 00_pkg_src/, so top-level YAML reads went unscanned."
+    ))
+  } else {
+    findings <- collect_source_yaml_reads(root)
+    calls <- Filter(function(f) identical(f$kind, "call"), findings)
+    reached <- unique(vapply(calls, `[[`, character(1), "fn"))
+    missing_controls <- setdiff(known_yaml_read_fns, reached)
+    expect(
+      length(missing_controls) == 0L,
+      paste0(
+        "The source scan does not reach a YAML read it is known to hold, so ",
+        "its silence below would mean nothing. Not reached: ",
+        paste(missing_controls, collapse = ", "),
+        ". Sources scanned: ", root, "."
+      )
+    )
+
+    unsafe <- Filter(function(f) !isTRUE(f$safe), findings)
+    if (length(unsafe) > 0L) {
+      detail <- vapply(
+        unsafe,
+        function(f) {
+          paste0(f$file, ": ", f$fn, " (", f$kind, "): ", substr(f$code, 1L, 160L))
+        },
+        character(1)
+      )
+      fail(paste0(
+        "Every YAML read in R/ must pass the literal `eval.expr = FALSE`, ",
+        "top-level code included, or an `!expr` tag in its input runs as R code.\n",
+        paste(detail, collapse = "\n")
+      ))
+    }
+    succeed()
+  }
+})
+
+test_that("the source scan flags a top-level read that the namespace walk cannot see", {
+  # Codex's finding on #147, kept as a standing demonstration. A read at the top
+  # level of an R/ file runs when the package is built or loaded, and binds only
+  # its result, so the namespace walk, which walks functions, has nothing to
+  # look at. A function kept inside a list is out of its sight for the same
+  # reason. The source scan reads the expressions themselves.
+  top_level <- c(
+    ".rules <- yaml::yaml.load(\"probe: 1\")",
+    ".readers <- list(sidecar = function(p) yaml::read_yaml(p))",
+    ".safe <- yaml::yaml.load(\"probe: 1\", eval.expr = FALSE)"
+  )
+  root <- withr::local_tempdir()
+  dir.create(file.path(root, "R"))
+  writeLines(
+    c(top_level, "yaml::yaml.load_file(\"settings.yml\")"),
+    file.path(root, "R", "top-level.R")
+  )
+
+  found <- collect_source_yaml_reads(root)
+  flagged <- vapply(Filter(function(f) !isTRUE(f$safe), found), `[[`, character(1), "fn")
+  passed <- vapply(Filter(function(f) isTRUE(f$safe), found), `[[`, character(1), "fn")
+  expect_setequal(flagged, c(".rules", ".readers", "R/top-level.R"))
+  expect_identical(passed, ".safe")
+
+  # The same bindings, made the way R/ makes them, leave the namespace walk
+  # nothing to flag: each is a list, not a function. If this starts failing,
+  # the namespace walk has learned to see them, and the division of labour in
+  # this file's header should be rewritten to match.
+  env <- new.env(parent = globalenv())
+  eval(parse(text = top_level), envir = env)
+  expect_length(collect_namespace_yaml_reads(env), 0L)
+})
+
+# ---------------------------------------------------------------------------
+# Layer 3: one behavioural test per read
 # ---------------------------------------------------------------------------
 #
 # Each test puts a real `!expr` tag in the real input of one read, turns
