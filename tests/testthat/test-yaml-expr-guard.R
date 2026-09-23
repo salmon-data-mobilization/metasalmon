@@ -201,7 +201,7 @@ test_that("every YAML read in metasalmon passes eval.expr = FALSE", {
   succeed()
 })
 
-test_that("the YAML read walk flags each unsafe shape and passes the safe one", {
+test_that("the YAML read walk flags each unsafe shape and passes the safe ones", {
   # Without this, a walk that silently stopped matching would look like a pass.
   unsafe_shapes <- list(
     omitted = function(p) yaml::read_yaml(p),
@@ -298,7 +298,8 @@ error_info <- function(result) {
 
 test_that("write_eml_from_sdp() never evaluates an !expr tag in the EML sidecar", {
   # R/eml-export.R. The function stops before its read when emld is absent, so
-  # without emld this test could only pass vacuously.
+  # without emld this test could only pass vacuously. *Retires when:* emld
+  # becomes a hard dependency, or the read moves ahead of the emld check.
   skip_if_not_installed("emld")
   probe <- yaml_expr_probe()
   package_path <- make_eml_test_sdp(withr::local_tempdir())
@@ -326,7 +327,7 @@ test_that("write_eml_from_sdp() never evaluates an !expr tag in the EML sidecar"
 
 test_that("the KNB artifact inventory never evaluates an !expr tag in the EML sidecar", {
   # R/knb-publication.R, `.ms_knb_sdp_artifact_paths()`: reached by both KNB
-  # representations and by the SDP archive inventory.
+  # representations, the archive one through the SDP archive inventory.
   probe <- yaml_expr_probe()
   package_path <- make_knb_test_sdp(withr::local_tempdir())
   tag_fixture_sidecar(package_path, probe)
@@ -348,7 +349,8 @@ test_that("the KNB plan builder never evaluates an !expr tag in the EML sidecar"
   # R/knb-publication.R, `.ms_knb_build_plan()`, reached here through the
   # exported dry run. The builder's next step is stopped so that this test sees
   # the builder's own read and no other: that step leads to the inventory and to
-  # the EML export, whose reads are pinned by the two tests above.
+  # the EML export, whose reads are pinned by the two tests above. *Retires
+  # when:* nothing after the builder's read parses YAML.
   probe <- yaml_expr_probe()
   package_path <- make_knb_test_sdp(withr::local_tempdir())
   tag_fixture_sidecar(package_path, probe)
@@ -359,7 +361,8 @@ test_that("the KNB plan builder never evaluates an !expr tag in the EML sidecar"
         "Stopped after the plan builder read the sidecar.",
         class = "yaml_expr_guard_stop"
       ))
-    }
+    },
+    .package = "metasalmon"
   )
 
   expect_error(
@@ -418,6 +421,8 @@ test_that("the vendored SDP rules read never evaluates an !expr tag", {
   # substituted one level down instead: the parser opens a tagged copy of the
   # vendored rules and receives exactly the arguments the call site passed.
   # Whether the tag runs is therefore decided by the site and by nothing else.
+  # *Retires when:* the function takes its rules path from somewhere a test can
+  # point elsewhere, at which point the tagged copy is simply passed in.
   probe <- yaml_expr_probe()
   vendored <- system.file("extdata", .ms_sdp_rules_path(), package = "metasalmon")
   tagged <- file.path(withr::local_tempdir(), "sdp.rules.yaml")
