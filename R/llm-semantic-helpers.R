@@ -1703,7 +1703,28 @@
   body
 }
 
-.ms_llm_chat_json_request <- function(messages, config) {
+# The one place metasalmon builds a chat-completions request (backlog #3, hub
+# item B-3). Both default request functions reach a provider through here:
+# `.ms_llm_chat_json_request()` for semantic review and `.ms_chat_http_request()`
+# (R/chat-decomposition.R) for chat decomposition. So the endpoint, the
+# authorization and content-type headers, the user agent, the timeout and
+# OpenRouter's attribution headers are written once and cannot drift apart
+# again; `tests/testthat/test-llm-chat-request.R` fails if a second function
+# starts building this request for itself.
+#
+# Two things stay with each caller, on purpose:
+#   * The body. Semantic review builds it with `.ms_llm_build_chat_request_body()`;
+#     chat decomposition still sends a fixed temperature and so is not covered
+#     by the GPT-5 temperature rule. Routing it through the body builder is hub
+#     item B-128.
+#   * The return shape. Semantic review returns the parsed JSON object and
+#     aborts when there is none; chat decomposition returns
+#     `list(content, data, raw)` with `data` NULL when the content is not JSON.
+#     The review adapter's two-shape normalizer (`.ms_llm_review_response_data()`)
+#     serves that second shape, and every shape a caller-supplied
+#     `chat_request_fn` can return reaches it wrapped by `.ms_chat()`, so the
+#     normalizer does not depend on these two functions having been separate.
+.ms_llm_chat_request <- function(config, body) {
   req <- httr2::request(paste0(config$base_url, "/chat/completions")) |>
     httr2::req_method("POST") |>
     httr2::req_headers(
@@ -1712,7 +1733,7 @@
     ) |>
     httr2::req_user_agent(ms_user_agent()) |>
     httr2::req_timeout(seconds = config$timeout_seconds) |>
-    httr2::req_body_json(.ms_llm_build_chat_request_body(messages, config), auto_unbox = TRUE)
+    httr2::req_body_json(body, auto_unbox = TRUE)
 
   if (identical(config$provider, "openrouter")) {
     req <- httr2::req_headers(
@@ -1722,11 +1743,32 @@
     )
   }
 
-  resp <- httr2::req_perform(req)
+  req
+}
+
+# Sends a request built by `.ms_llm_chat_request()` and returns the provider's
+# message text as `content` -- extracted, but neither cleaned nor parsed, because
+# the two callers parse it differently -- with the decoded response body as `raw`.
+.ms_llm_chat_completion <- function(config, body) {
+  resp <- httr2::req_perform(.ms_llm_chat_request(config, body))
   httr2::resp_check_status(resp)
-  body <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-  content <- .ms_llm_clean_json_text(.ms_llm_extract_message_content(body))
-  parsed <- jsonlite::fromJSON(content, simplifyVector = FALSE)
+  raw <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+
+  list(
+    content = .ms_llm_extract_message_content(raw),
+    raw = raw
+  )
+}
+
+.ms_llm_chat_json_request <- function(messages, config) {
+  completion <- .ms_llm_chat_completion(
+    config,
+    .ms_llm_build_chat_request_body(messages, config)
+  )
+  parsed <- jsonlite::fromJSON(
+    .ms_llm_clean_json_text(completion$content),
+    simplifyVector = FALSE
+  )
 
   if (!is.list(parsed)) {
     cli::cli_abort("LLM response was not a JSON object.")
