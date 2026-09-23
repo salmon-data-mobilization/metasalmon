@@ -280,9 +280,11 @@ r_source_files <- function(root) {
 # The package's source root, or NA. Under devtools::test() the sources are two
 # levels above tests/testthat. Under R CMD check the tests run in a copy inside
 # the check directory, and the unpacked tarball sits beside that copy in
-# `00_pkg_src/`, which is where CI's check finds them. The installed package in
-# the check directory has a DESCRIPTION and an R/ directory too, but its R/ holds
-# a lazy-load database and no source file, so it is never taken for the sources.
+# `00_pkg_src/`, which is where CI's check finds them. Tests run from an
+# installed package's own tests/ (installed with `--install-tests`) find that
+# package two levels up, with a DESCRIPTION and an R/ directory; but that R/
+# holds a lazy-load database and no source file, so it is never taken for the
+# sources.
 metasalmon_source_root <- function() {
   candidates <- c(
     testthat::test_path("..", ".."),
