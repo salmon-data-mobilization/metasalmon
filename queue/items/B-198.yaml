@@ -1,7 +1,7 @@
 id: B-198
 kind: defect
 title: 'Vendor the ruled temporal pattern into metasalmon and pin the descriptor instant against it'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

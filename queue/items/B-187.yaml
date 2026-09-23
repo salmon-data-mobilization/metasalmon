@@ -1,7 +1,7 @@
 id: B-187
 kind: defect
 title: 'hub reads the queue from whatever checkout it is run in, and says an item does not exist when the tree is stale'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

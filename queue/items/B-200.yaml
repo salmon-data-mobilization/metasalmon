@@ -1,7 +1,7 @@
 id: B-200
 kind: defect
 title: 'No check that a NEWS.md entry under a released heading was in the tree the tag names'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

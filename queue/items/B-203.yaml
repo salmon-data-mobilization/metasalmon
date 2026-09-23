@@ -1,7 +1,7 @@
 id: B-203
 kind: defect
 title: 'HUB.md''s worktree-removal check reports pushed work as unpushed in a single-branch clone'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

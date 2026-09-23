@@ -1,7 +1,7 @@
 id: B-99
 kind: defect
 title: Replace the two 404 example IRIs still shipped in smn-data-pkg's minimal example
-state: icebox
+state: ready
 claimable: true
 repo: smn-data-pkg
 venue: either

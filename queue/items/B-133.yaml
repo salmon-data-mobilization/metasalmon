@@ -1,7 +1,7 @@
 id: B-133
 kind: defect
 title: Two vignettes tangle to scripts that fail at their first statement under R CMD check
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

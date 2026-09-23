@@ -1,7 +1,7 @@
 id: B-120
 kind: defect
 title: Surface crosswalk-filled code slots in the review queue
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

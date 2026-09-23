@@ -1,7 +1,7 @@
 id: B-186
 kind: defect
 title: 'hub_queue.py lint accepts any stream value, so a padded S05 omits an item from its own stream view'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

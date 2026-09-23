@@ -1,7 +1,7 @@
 id: B-3
 kind: defect
 title: Duplicated, divergent HTTP chat request builders
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

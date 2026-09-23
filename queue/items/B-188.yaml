@@ -1,7 +1,7 @@
 id: B-188
 kind: defect
 title: metasalmonpy's code-row seeder accepts a date-like object column, where R's cannot
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

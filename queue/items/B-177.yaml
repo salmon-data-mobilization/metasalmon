@@ -1,7 +1,7 @@
 id: B-177
 kind: defect
 title: Two code paths in the same package disagree about whether dataset.csv and codes.csv are swept for REVIEW-prefixed IRIs
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-58
 kind: defect
 title: No condition classes anywhere
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

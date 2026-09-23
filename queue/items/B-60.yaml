@@ -1,7 +1,7 @@
 id: B-60
 kind: defect
 title: Example and API-surface gaps
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

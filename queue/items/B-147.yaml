@@ -1,7 +1,7 @@
 id: B-147
 kind: defect
 title: smn alignment-main.ttl asserts SKOS semantic relations on OWL classes in 17 rows
-state: icebox
+state: ready
 claimable: true
 repo: salmon-domain-ontology
 stream: S6

@@ -1,7 +1,7 @@
 id: B-137
 kind: defect
 title: Six tests depend on a UTF-8 locale and fail under the C locale
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

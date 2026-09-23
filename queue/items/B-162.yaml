@@ -1,7 +1,7 @@
 id: B-162
 kind: defect
 title: EML calendarDate renders temporal_start through a third renderer, which on today's path cannot disagree
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

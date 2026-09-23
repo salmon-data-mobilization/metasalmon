@@ -1,7 +1,7 @@
 id: B-142
 kind: defect
 title: Five yaml reads outside the SSSOM path still parse without eval.expr = FALSE
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

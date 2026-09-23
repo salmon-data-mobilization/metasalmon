@@ -1,7 +1,7 @@
 id: B-201
 kind: defect
 title: 'No check that a CHANGELOG.md entry under a released heading was in the tree the tag names, the metasalmonpy half'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

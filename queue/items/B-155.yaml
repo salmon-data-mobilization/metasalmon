@@ -1,7 +1,7 @@
 id: B-155
 kind: defect
 title: The CI pak install has no retry, so a transient SSL error fails check before any test runs
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

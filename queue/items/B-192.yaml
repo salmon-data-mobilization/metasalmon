@@ -1,7 +1,7 @@
 id: B-192
 kind: defect
 title: 'The publication vignette describes the semantic review-target set as the measurement set plus observation units, which makes a reader break their own package'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

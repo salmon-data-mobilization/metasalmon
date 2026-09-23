@@ -1,7 +1,7 @@
 id: B-191
 kind: defect
 title: 'The metasalmonpy suite only collects when its checkout directory is named metasalmonpy, which the hub worktree key never is'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

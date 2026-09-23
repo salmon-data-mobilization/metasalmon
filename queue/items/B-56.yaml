@@ -1,7 +1,7 @@
 id: B-56
 kind: defect
 title: Semantic retrieval issues one serial search_fn() call per target
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

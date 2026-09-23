@@ -1,7 +1,7 @@
 id: B-128
 kind: defect
 title: Route .ms_chat_http_request() through the shared chat body builder so GPT-5 chat calls omit temperature
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

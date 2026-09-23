@@ -1,7 +1,7 @@
 id: B-55
 kind: defect
 title: apply_salmon_dictionary(strict = TRUE) never errors on the common coercion failures
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-154
 kind: defect
 title: The SDP cannot express two I-ADOPT relations, and both are format gaps rather than ontology gaps
-state: icebox
+state: ready
 claimable: true
 repo: smn-data-pkg
 venue: claude-science

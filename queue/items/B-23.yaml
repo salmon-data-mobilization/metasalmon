@@ -1,7 +1,7 @@
 id: B-23
 kind: defect
 title: Multi-table recursion forwards the un-widened shortlist
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

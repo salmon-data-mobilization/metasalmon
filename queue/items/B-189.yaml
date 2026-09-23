@@ -1,7 +1,7 @@
 id: B-189
 kind: defect
 title: 'Pin that metasalmonpy''s SSSOM reader never evaluates an !expr tag, the twin of #111''s security fix'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
