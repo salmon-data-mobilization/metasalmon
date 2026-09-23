@@ -544,6 +544,34 @@ metasalmonpy's suite makes no unnecessary live call anywhere. That is a wider
 question about a different repository, it was not asked here, and if it is worth
 answering it is worth its own item rather than an inference from this one.
 
+**`B-142` owes metasalmonpy nothing either, and the answer is measured the same
+way.** The R change makes six YAML reads pass `eval.expr = FALSE`, so an `!expr`
+tag in the EML sidecar, the SDP rules document or the closure's declared paths
+is never run as R code. metasalmonpy does not run one on any of those paths,
+because none of its readers can. Measured 2026-09-23 against its `main` at
+`3f8349a`:
+
+- the sidecar goes through `_read_mapping_yaml()` (`eml.py:3704`, called from
+  `eml.py:3841` and `knb_publication.py:1745`), using `_StrictSafeLoader`
+  (`eml.py:3674`). That is a `yaml.SafeLoader` subclass whose only additions
+  are a duplicate-key check and a timestamp-as-text constructor;
+- the closure's paths go through `yaml.safe_load()` (`semantic_closure.py:864`);
+- both rules reads go through `_rules_scalars()`, a regular-expression scan
+  with no YAML library (`sdp_schema.py:383` and `:406`);
+- the SSSOM header goes through `_parse_yaml_subset()` (`sssom.py:456`), which
+  B-189 is to pin.
+
+With PyYAML 6.0.1 an `!expr` tag raises `ConstructorError` from both loaders,
+and nothing runs.
+
+**What this does not say** is that the two packages handle a tagged scalar
+alike. They do not, and they did not before B-142 either. R returns the tag's
+text and carries on. metasalmonpy rejects the sidecar as "not valid YAML" on
+the EML and KNB paths, and on the closure path it falls back to the default
+paths. That difference is unregistered. Whether it becomes a register row or
+one side moves is Brett's to rule. It is reported in `.hub/workpads/B-142.md`
+and not decided here.
+
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
 window" until 2026-09-16, when closing that window made the wording
