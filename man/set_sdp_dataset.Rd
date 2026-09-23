@@ -110,9 +110,10 @@ saying nothing.
 Pass \code{NA} to clear a field deliberately; a blank string is refused as
 ambiguous.
 
-The fields a setter accepts come from the same bundled SDP schema
-\code{\link[=review_metadata]{review_metadata()}} reads, so a call it prints is one the setter accepts, and
-neither contacts a network.
+The fields a setter accepts come from the same SDP schema \code{\link[=review_metadata]{review_metadata()}}
+reads, so a call it prints is one the setter accepts. Under the default
+options that is the copy bundled with metasalmon, and neither contacts a
+network.
 }
 \examples{
 \dontrun{

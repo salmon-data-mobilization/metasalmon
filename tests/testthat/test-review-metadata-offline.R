@@ -39,6 +39,13 @@
 #      test. `serverSocket()` takes no bind address, so the listener is on every
 #      interface for the length of one test.
 #
+# THE PROMISE IS SCOPED TO THE DEFAULT OPTIONS, and the third test pins the
+# other side of that line. When the schema options select a different schema,
+# the scan and the setters read that one, as the writers do, because it is the
+# field contract the package was written to (Codex review of #145): from the
+# session cache when a writer has resolved it, at no cost, and otherwise by
+# asking the loader for it rather than silently reading the bundle instead.
+#
 # Retires when: never, while `review_metadata()` documents that it does not
 # contact a network. An offline promise with no test that fails when the
 # network is reached is a comment, not a contract.
@@ -236,4 +243,89 @@ test_that("the offline read leaves the session's own schema cache alone", {
   # script writes could carry a different profile identity from the last.
   expect_identical(.ms_schema_env$cache_key, key)
   expect_identical(.ms_schema_env$schema, resolved)
+})
+
+test_that("a schema the options select is the one the scan and the setters read", {
+  pkg <- offline_fixture_package()
+  local_shipped_schema_defaults()
+
+  # A valid bundle adding one required dataset.csv field, selected by a base URL
+  # option and already resolved this session: the state a `create_sdp()` under
+  # these options leaves. The writers read it, so reading the bundled copy here
+  # instead omitted its requirement and refused its field (Codex review of #145).
+  base_url <- "https://example.invalid/smn-data-pkg/sdp-9.9.9"
+  withr::local_options(list(metasalmon.sdp_schema_base_url = base_url))
+  bundled <- .ms_load_vendored_sdp_schema()
+  schemas <- bundled$metadata_schemas
+  schemas$dataset$fields <- c(schemas$dataset$fields, list(list(
+    name = "funding_source",
+    type = "string",
+    description = "Who funded the work.",
+    constraints = list(required = TRUE)
+  )))
+  selected <- .ms_validate_sdp_schema(list(
+    metadata_schemas = schemas, profile = bundled$profile, rules = bundled$rules
+  ))
+  selected$source <- "remote"
+  key <- paste("auto", base_url, sep = "|")
+  .ms_schema_env$schema <- selected
+  .ms_schema_env$cache_key <- key
+
+  fetches <- 0L
+  local_mocked_bindings(.ms_fetch_remote_sdp_schema = function(...) {
+    fetches <<- fetches + 1L
+    stop("B-175 sentinel: the remote SDP schema was fetched")
+  })
+  connections <- local_proxy_listener()
+
+  review <- review_metadata(pkg)
+  expect_true(any(review$file == "dataset.csv" & review$field == "funding_source"))
+  set_sdp_dataset(pkg, funding_source = "A funder", quiet = TRUE)
+  expect_false(any(review_metadata(pkg)$field == "funding_source"))
+  # The validator's blank-required check reads the same parse.
+  expect_true("funding_source" %in% .ms_schema_required_metadata_fields("dataset.csv"))
+
+  # Honouring a schema the session has already resolved costs nothing, and
+  # leaves it where the writers will look for it next.
+  expect_identical(fetches, 0L)
+  expect_identical(connections(), 0L)
+  expect_identical(.ms_schema_env$cache_key, key)
+
+  # Not yet resolved, the selected schema is asked for, as a writer would ask
+  # for it, rather than silently replaced by the bundled copy: selecting a
+  # published schema is the opt-in to reading it, and the default options are
+  # the ones promised to stay offline.
+  clear_schema_caches()
+  utils::capture.output(review_metadata(pkg))
+  expect_identical(fetches, 1L)
+})
+
+test_that("the default options are told apart by what they resolve to", {
+  pinned <- .ms_sdp_schema_pinned_base_url()
+  cases <- list(
+    list(expected = TRUE),
+    list(expected = TRUE, metasalmon.sdp_schema_source = "auto"),
+    list(expected = TRUE, metasalmon.sdp_schema_base_url = pinned),
+    list(expected = TRUE, metasalmon.sdp_schema_url = ""),
+    list(expected = FALSE, metasalmon.sdp_schema_source = "vendored"),
+    list(expected = FALSE, metasalmon.sdp_schema_source = "remote"),
+    list(expected = FALSE, metasalmon.sdp_schema_base_url = "https://example.invalid/x"),
+    list(
+      expected = FALSE,
+      metasalmon.sdp_schema_url = "https://example.invalid/x/schema/sdp.schema.yaml"
+    )
+  )
+  for (case in cases) {
+    settings <- list(
+      metasalmon.sdp_schema_source = NULL,
+      metasalmon.sdp_schema_base_url = NULL,
+      metasalmon.sdp_schema_url = NULL
+    )
+    set <- setdiff(names(case), "expected")
+    settings[set] <- case[set]
+    withr::with_options(settings, expect_identical(
+      .ms_sdp_schema_options_are_default(), case$expected,
+      info = paste(set, collapse = ", ")
+    ))
+  }
 })

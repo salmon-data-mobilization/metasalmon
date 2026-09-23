@@ -90,14 +90,15 @@
     return(sub("/schema/sdp[.]schema[.]yaml$", "", legacy_url))
   }
 
-  # Pinned to the spec release tag this package implements, not `main`:
-  # tracking main meant every upstream spec release broke networked loads
-  # (sdp-0.3.0 deleted methods.schema.json and the remote fetch 404ed).
-  # Advancing the pin is part of implementing the new spec version.
-  getOption(
-    "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
-  )
+  getOption("metasalmon.sdp_schema_base_url", .ms_sdp_schema_pinned_base_url())
+}
+
+# Pinned to the spec release tag this package implements, not `main`:
+# tracking main meant every upstream spec release broke networked loads
+# (sdp-0.3.0 deleted methods.schema.json and the remote fetch 404ed).
+# Advancing the pin is part of implementing the new spec version.
+.ms_sdp_schema_pinned_base_url <- function() {
+  "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/sdp-0.3.0"
 }
 
 .ms_load_sdp_schema <- function(source = getOption("metasalmon.sdp_schema_source", "auto"),
@@ -151,9 +152,11 @@
 }
 
 # The bundled schema, validated, in a cache slot of its own. For a caller that
-# documents it never contacts a network (B-175): the default "auto" source above
-# fetches eight documents from the pinned remote before it falls back to this
-# same bundle, so a local gap scan reached the network on every fresh session.
+# documents it never contacts a network under the default options (B-175): the
+# default "auto" source above fetches eight documents from the pinned remote
+# before it falls back to this same bundle, so a local gap scan reached the
+# network on every fresh session. Only under those options -- see
+# `.ms_sdp_schema_options_are_default()`, and the caller that asks it.
 #
 # NOT `.ms_load_sdp_schema(source = "vendored")`, which would be offline too.
 # That loader's cache is ONE slot keyed by source, so each vendored read would
@@ -173,6 +176,23 @@
     .ms_schema_env$vendored <- schema
   }
   .ms_schema_env$vendored
+}
+
+# Whether the schema options are the shipped defaults: the "auto" source, set or
+# not, and the pinned base URL. Under them the loader would fetch the published
+# copy of the very release the bundled copy was vendored from, so a caller that
+# must stay offline can read the bundle instead and lose nothing. Any other
+# setting selects a schema the bundle may not match -- "remote" demands the
+# published copy, a base URL of its own names another release -- and a caller
+# that wants the schema its package was written to has to read that one.
+#
+# Compared as RESOLVED values, not as "is an option set": asking
+# `.ms_default_sdp_schema_base_url()` rather than re-reading its options keeps
+# one home for which option wins, so a new way of naming a base URL cannot
+# slip past this test while the loader obeys it.
+.ms_sdp_schema_options_are_default <- function() {
+  identical(getOption("metasalmon.sdp_schema_source", "auto"), "auto") &&
+    identical(.ms_default_sdp_schema_base_url(), .ms_sdp_schema_pinned_base_url())
 }
 
 .ms_fetch_remote_sdp_schema <- function(base_url, timeout = 2) {
