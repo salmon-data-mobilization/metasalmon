@@ -1,7 +1,7 @@
 id: B-171
 kind: defect
 title: The code-resolved sosa:usedProcedure direction of B-116's two canonical sets is held by construction and no fixture
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
