@@ -272,6 +272,46 @@ metasalmon (development version)
   that was wrong, because pinning one leaves the other two free to drift away
   from it and the failure would look identical.
 
+* **No YAML read evaluates an `!expr` tag any more, and adding one that could
+  now fails a test** (hub item B-142). yaml's `!expr` tag asks the parser to run
+  the R code that follows it, and whether it does is set by `eval.expr`, whose
+  default is `getOption("yaml.eval.expr", <fallback>)`. The SSSOM reader has
+  passed `eval.expr = FALSE` since #111; six other reads left it out, and all
+  six now pass it: `write_eml_from_sdp()`'s read of the EML sidecar, the two
+  reads of that sidecar on `publish_sdp_to_knb()`'s path (the plan builder and
+  the artifact inventory), both reads of the SDP rules document (fetched over
+  HTTP, and vendored), and the read of the sidecar's declared paths in
+  `write_sdp_semantic_closure()`. Two facts make this more than a
+  session-option corner:
+
+  - **The fallback was `TRUE` until yaml 2.3.0**, which yaml's own NEWS records
+    as "Made `eval.expr` default to `FALSE`" (the argument itself arrived in
+    2.1.19), and DESCRIPTION's floor is `yaml (>= 2.2.0)`. So on a yaml 2.2.x
+    install those reads ran an `!expr` tag with no option set at all. Measured
+    with yaml 2.2.2 built from CRAN's archive and no option set: the previous
+    closure-path read and the previous remote rules read both ran a tag's
+    `file.create()`, and neither does now. The explicit argument works across
+    the whole declared range, so the floor stays where it is.
+  - **Most of that input is somebody else's.** The sidecar is package content,
+    which the closure producer already treats as untrusted, and the rules
+    document arrives over the network whenever the schema source is `"auto"`
+    or `"remote"`.
+
+  A tag now reaches the caller as its text: `!expr f()` in a sidecar field
+  reads as the string `"f()"`, as it already did under yaml 2.3.0 or later
+  with the option unset, so nothing changes for a session that never
+  evaluated. `tests/testthat/test-yaml-expr-guard.R` walks the namespace and
+  fails on any call to `yaml.load()`, `read_yaml()` or `yaml.load_file()` that
+  does not pass the literal `eval.expr = FALSE`, and gives each of the six
+  reads a real tag with the option turned on. Each of those six tests was
+  shown failing against its unfixed read. The sixth read was not on the
+  item's own list of 2026-09-12: it arrived four days later with the closure
+  producer, which is exactly the case the namespace walk is there to catch.
+  **Mirror:** nothing to port. metasalmonpy already never evaluates a tag here:
+  its sidecar reads use PyYAML's `SafeLoader`, its rules reads a
+  regular-expression scan, and its SSSOM reader a subset parser, which hub item
+  B-189 is to pin with a test.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
