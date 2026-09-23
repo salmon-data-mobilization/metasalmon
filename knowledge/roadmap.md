@@ -516,6 +516,16 @@ B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
 mirror repository carries the fix already and owes only the written rule and
 its check.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-23):
+a recorded hand-picked accept is not ontology-gap evidence.** Pull request #146
+(hub item **B-176**) makes `detect_semantic_term_gaps()` drop the
+`source = "user"` rows `apply_sdp_semantics()` records. It is owed in
+metasalmonpy as a port, not a register row, because metasalmonpy has counted
+the recorded row as gap evidence since #28. The port is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
+same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
+queue item is to be filed.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

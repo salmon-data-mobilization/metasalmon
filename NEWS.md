@@ -357,6 +357,52 @@ metasalmon (development version)
   regular-expression scan, and its SSSOM reader a subset parser, which hub item
   B-189 is to pin with a test.
 
+* **A hand-picked accept now reaches the decision record** (hub item B-176).
+  `accept_suggestion(review, column, role, iri = "...")` is the supported
+  escape hatch for a term retrieval never surfaced, and a shortlist match was the
+  only way `apply_sdp_semantics()` ever wrote an `accepted` row to
+  `semantic_suggestions.csv`. So a hand-picked IRI reached
+  `column_dictionary.csv` and nowhere else: every candidate in its slot was
+  written `not_selected`, no row was `accepted`, no row carried the IRI, and the
+  next `review_semantics()` replayed nothing, with `include_filled` either way.
+  The slot left the queue only because its field was now filled, not because
+  the answer had been remembered. Two things that read the record lost it too:
+  `apply_semantic_suggestions(strategy = "reviewed")`, fed the package's own
+  `semantic_suggestions.csv`, re-applied nothing to that slot, and
+  `create_sdp(prune = TRUE)` counted no decision to warn about before deleting
+  the file.
+
+  The accepted IRI now gets **its own row**, carrying the slot's addressing
+  columns (so a code-level slot keeps its `code_value`) and `source = "user"`,
+  with every column that describes a candidate -- `label`, `ontology`,
+  `definition`, `score`, the retrieval trace -- left empty. Relabelling an
+  existing candidate instead would make the file say the reviewer chose a term
+  they did not, with that row's label, definition and score describing another
+  term. The row goes at the **head** of its slot, not the end of the file:
+  `review_semantics()` derives `rank` from file position and drops everything
+  past `max_candidates` (5 by default), so behind a full shortlist an appended
+  record ranks 6 or lower and is filtered straight back out. At the head it
+  ranks 1, which is also what makes a replayed
+  `accept_suggestion(..., rank = 1)` re-accept the term actually chosen. A
+  second hand-picked accept on the same slot demotes the first to
+  `not_selected`. Re-applying the same review, or the review rebuilt from the
+  package, leaves every written byte of a slot decided this way as it was.
+
+  **`detect_semantic_term_gaps()` does not count that row as gap evidence.** A
+  gap row claims retrieval found no `smn` term, and the recorded row is a
+  reviewer's decision, not something a search returned. Counted, its blank
+  `search_query` made it a target of its own whose only candidate was not
+  `smn`, so a post-review `semantic_suggestions.csv` passed as `suggestions`
+  reported an ontology gap for the slot the reviewer had just filled. The
+  slot's own retrieval candidates are weighed exactly as before.
+
+  A port, not a deviation: metasalmonpy had the same defect in the same shape
+  and fixed it first (metasalmonpy pull request #28, hub item B-126), and both
+  now record the same row, so no parity-register row is owed. The gap-evidence
+  exclusion is R's alone for now: metasalmonpy's `detect_semantic_term_gaps()`
+  still counts the row it has recorded since #28, and the same fix is owed
+  there.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
