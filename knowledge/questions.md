@@ -1377,3 +1377,130 @@ to be satisfiable inside the repository its `repo` field names — `f86d9b4`
 satisfied it. The two implementation halves are `B-198` (metasalmon) and `B-199`
 (metasalmonpy); read those files for their state rather than assuming it from
 here.
+
+### Q55 — May an agent promote a queue item to `ready` under a standing test, rather than one item at a time? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"An agent may promote a queue item to ready, citing this
+authorization, when all of: the item's repo is one you work alone in (solo:
+true); it carries a non-empty retires_when; its severity is P0, P1, or P2 or P3;
+its blocked_by is empty; and it is not needs_brett. Anything else stays
+per-item."* — Brett, 2026-09-23, in chat. The wording had been put to him with a
+narrower severity range, P2–P3, and he widened it to P0–P3.
+
+**What it changes:** since ruling R15 (2026-09-10,
+[Q38](#q38--does-the-draft-pull-request-refusal-stand--answered-2026-09-10-brett))
+a promotion has needed an authorization naming the item. This is one grant with
+a stated test, under which every promotion still names the grant — to promotion
+what R16 is to merging. As first applied, an item that meets the test only once
+a condition is interpreted stays per-item, and the interpretation goes to him as
+a question; Q56 is the first.
+
+**Where it is recorded:** the operative copy belongs on the promotion row of
+`HUB.md`'s `writes.permitted`, and pull request 143 is the change that writes it
+there — policy, so Brett's to merge under class 7. It was first applied in
+commit `abd58b2`, whose message quotes it and lists what was promoted and what
+was held back, with the reason for each. **Owner:** `HUB.md`, with
+[S15](sequences/s15-hub-coordination.md).
+
+### Q56 — Is a `blocked_by` that lists only finished items "empty" under that grant? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"'Clear' should not count a done blocker as still blocking."* So the
+grant's "its blocked_by is empty" is met when `blocked_by` is `[]` or every id it
+lists is an item whose `state` is `done`, which is how `HUB.md`'s claimability
+test already reads *blocked* (*What claimable means, exactly*, test 3).
+
+**The question:** `abd58b2` read the grant as written and held back four items
+whose blockers were all done, because treating "empty" as the claimability
+test's "clear" would have rested a promotion on a file rather than on what he
+said. He answered in the same message as the reinstatement (Q57), and `28fef73`
+promoted those four after recomputing the set against `main` rather than copying
+the earlier list.
+
+**Where it is recorded:** the same promotion row as Q55, written by the same
+pull request 143. **Owner:** as Q55.
+
+### Q57 — Does the standing authorization resume after the suspension of 2026-09-16? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Reinstate"* — adopting the resumption put to him, which the
+operative entry quotes: the protocol resumes, the orchestrating session finishes
+wave 1, and four delegated pull requests (#145, #146, #147, #149) merge once CI
+is green and Codex has finished.
+
+**What was suspended:** `HUB.md`'s `self_suspends` clause fired on 2026-09-16 at
+13:58 UTC, when the orchestrating session edited the description of metasalmonpy
+pull request 34 — B-145's claimed hand-back — a write no row in
+`writes.permitted` covered. It went unnoticed for a week. A dispatched agent
+flagged it on 2026-09-23, and every protocol write stopped and was reported to
+him, by kind and count, before he answered. The operative entry says which
+writes it covers and that it covers nothing else.
+
+**Where it is recorded:** `writes.reinstated_2026_09_23` in `HUB.md`, written by
+pull request 143. It is the "dated entry here from Brett" that
+`writes.reinstated` requires before the protocol resumes, which is why wave-1
+workers held until it existed; the `B-142` and `B-175` workpads record the hold
+and what their later writes rested on instead. `28fef73` is the queue commit that
+followed the ruling. **Owner:** `HUB.md`.
+
+### Q58 — What may an agent write to keep its own pull requests current? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Add a row to the registers for your own upkeep as needed"* — given
+in the message that reinstated the protocol (Q57). Three rows answer it, each
+limited to a pull request an agent opened in a member repository whose `solo`
+key is true: correcting its description, appended and dated rather than
+overwritten; asking Codex to review it again, once per pushed round of fixes;
+and re-running the failed jobs of a run, once per commit and only when the
+failure did not come from the change, with the first attempt's failure written
+into the workpad before the re-run.
+
+**The question it answered:** those three writes had no row, which is why the
+orchestrating session kept stepping outside the register; the write that
+suspended the protocol on 2026-09-16 was of the first kind. Without the second,
+every fix pushed after a first Codex round merged on CI and the agent's word
+alone.
+
+**Where it is recorded:** three rows in `HUB.md`'s `writes.permitted`, with the
+matching carve-outs from `writes.denied`, written by pull request 143; they take
+effect when it merges. The re-run row's workpad record complements `B-229` and
+does not retire it, because it misses every re-run no agent made. **Owner:**
+`HUB.md`.
+
+### Q59 — Should strict validation refuse a `REVIEW:` marker in `codes.csv`, and should `review_metadata()` list one? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Yes; Refuse it for the strict validation."* Read as yes to both:
+strict validation refuses the marker, and `review_metadata()` lists it, because
+the scan lists exactly what strict validation refuses.
+
+**The question:** `B-174`'s hand-back (metasalmon pull request 144) left the two
+implementations disagreeing on purpose. metasalmonpy's scan lists a `codes.csv`
+marker because its EDH gate refuses one; `B-174`'s card said not to, because
+strict validation does not refuse one, and also said no parity row was owed. The
+hand-back recommended settling it at the validator through `B-177` rather than
+registering the difference.
+
+**The plan, recorded on `B-177`'s card:** strict validation refuses the marker in
+all four metadata files — `dataset.csv` goes with `codes.csv` because it is the
+same defect — and `review_metadata()`'s marker file list is extended to the same
+four in the same change. `B-230` is the metasalmonpy half. Pull request 144's
+change stands as it is: its scan lists what strict validation refuses today, and
+`B-177` moves the two together.
+
+**Owner:** queue items `B-177` and `B-230`, with the evidence under `B-177` in
+[`backlog.md`](backlog.md).
+
+### Q60 — Does `B-198`'s remote schema pin name the commit `f86d9b4`, or a tag? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"B198: Switch to a tag"* — option (B) of the two `B-198`'s hand-back
+put to him, over the commit pin (A) that its pull request, metasalmon #148,
+implemented and recommended.
+
+**What stays open, named rather than read as settled:** which tag. A tag is a
+release, so its name is a version claim: a patch number keeps the profile's
+`v0.3` URLs, and a new minor implies a `v0.4` profile path, which is `B-208`'s
+question. That choice was put to him the same day with a recommendation of
+`sdp-0.3.1`. Cutting the tag is an outward release act in `smn-data-pkg`, and
+his. The pin moves to the tag once it exists, and `B-199`'s in metasalmonpy,
+which must name the same ref, follows it.
+
+**Where it is recorded:** `B-198`'s card, whose condition now names a tag.
+**Owner:** queue items `B-198` and `B-199`, with `B-208` for the version
+question.

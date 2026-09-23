@@ -6494,3 +6494,19 @@ attempt endpoint keeps each attempt's conclusion. The three are flakes already
 filed: 337 is pull request 112's, the one `B-132` records; 360 is run
 34912254547, `B-155`'s pak install failure; and 449 is pull request 137's
 DataONE 503, `B-197`'s.
+
+**From the 2026-09-23 rulings.**
+
+**`B-230`: the metasalmonpy half of the ruling on `REVIEW:`-marked IRIs.** The
+ruling and the plan that implements it are on `B-177`'s card; the evidence for
+the question is `B-177`'s entry under *The R halves of the 2026-09-15 Codex
+findings on metasalmonpy PR #28* above. What the Python half has to move, read
+by this sweep on `3f8349a`: `_collect_review_issues()`
+(`package_io.py:2465-2496`), which the EDH gate builds on, sweeps `tables.csv`,
+`column_dictionary.csv` and `codes.csv` for `REVIEW:` IRIs and not
+`dataset.csv`; `_REVIEW_IRI_FILES` (`sdp_field_setters.py:259`) lists the same
+three; and `test_which_files_a_review_marker_actually_blocks`
+(`tests/test_sdp_field_setters.py:213`) pins strict validation refusing a marker
+in `tables.csv` and `column_dictionary.csv` and passing one in `codes.csv` and
+`dataset.csv` — the answers measured on 2026-09-16 and recorded on `B-177`'s
+card.
