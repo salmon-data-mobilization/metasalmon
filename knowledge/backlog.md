@@ -6175,10 +6175,10 @@ rather than copying it from a workpad, it says so. The sweep's own runs used R
 named, and Python 3.11.15 with pandas 3.0.5, requests 2.33.1 and PyYAML 6.0.1
 against a `git archive` of metasalmonpy `main` at `3f8349a`, its tip that day,
 imported from a directory named `metasalmonpy` (`B-191` says why). Their scripts
-were scratch files and are not committed. The workpads for `B-3`, `B-142` and
-`B-175` are on `main` under `.hub/workpads/`; those for `B-174`, `B-176` and
-`B-198` are on their pull requests' branches (#144, #146, #148); `B-191`'s was
-in a local metasalmonpy worktree whose branch had not been pushed when this was
+were scratch files and are not committed. The workpads for `B-3`, `B-142`,
+`B-175` and `B-176` are on `main` under `.hub/workpads/`; those for `B-174` and
+`B-198` are on their pull requests' branches (#144, #148); `B-191`'s was in a
+local metasalmonpy worktree whose branch had not been pushed when this was
 written.
 
 **From `B-174`'s hand-back** (metasalmon pull request 144, head `b80bdff`).
@@ -6304,7 +6304,8 @@ which yields column labels, and reported "not named" whatever the collector
 did. The port is recorded as owed in `parity-deviations.md` and in the
 roadmap's release index, in this change.
 
-**From `B-176`'s hand-back** (metasalmon pull request 146, head `ef5ea7b`). Its
+**From `B-176`'s hand-back** (metasalmon pull request 146, merged 2026-09-23 as
+`11e8a2f`). Its
 workpad measured each finding below in both implementations — R on its branch,
 metasalmonpy on `main` `3f8349a` with the same stub retrieval — and found each
 behaving identically, which is why the shared ones are pairs.
@@ -6325,8 +6326,9 @@ because the detector counts that namespace as `smn`. **No function in either
 package passes a post-review file to the detector** (a search of `R/` at
 `b456201` and of metasalmonpy's modules at `3f8349a` finds no caller), so a user
 reaches it by passing `semantic_suggestions(path)` as `suggestions`. Pull
-request 146 writes the port's specification into `parity-deviations.md` and the
-release index; its text says the metasalmonpy item was still to be filed.
+request 146 wrote the port's specification into `parity-deviations.md` and the
+release index, saying the metasalmonpy item was still to be filed; this sweep
+put the id in both places.
 
 **`B-217` and `B-218`: a decision hidden by `max_candidates`.** On a
 six-candidate slot, `accept_suggestion(..., rank = 6)` after
@@ -6361,10 +6363,10 @@ question of the marker's trailing space.
 `owl_class` candidate at rank 2, `accept_suggestion(iri = <that IRI>)` writes
 `term_type` `skos_concept`, and re-applying the rebuilt review — which replays
 the decision at rank 2 — writes `owl_class`, in both implementations, so that
-one path is not byte-stable across a rebuild. In R the decision sits on the
-slot's first row (`R/review-console.R:913`), and the writer takes the type from
-that row only when its `iri` equals the accepted one, falling back to
-`skos_concept` (`R/metadata-write.R:377-387`), both on `b456201`. The B-176 run
+one path is not byte-stable across a rebuild. In R, on `main` `f6cd22a`, the
+decision sits on the slot's first row (`R/review-console.R:913`), and the writer
+takes the type from that row only when its `iri` equals the accepted one,
+falling back to `skos_concept` (`R/metadata-write.R:463-473`). The B-176 run
 scoped its `NEWS.md` sentence about byte-identical re-application to the case
 where no candidate carries the IRI, for this reason.
 

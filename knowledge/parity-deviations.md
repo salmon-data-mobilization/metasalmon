@@ -474,7 +474,7 @@ slot whose candidates are a real non-`smn` gap. It is owed as a port, not a
 register row: the recorded row is itself a port that has landed (#28), and once
 this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is to be filed.
+metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
