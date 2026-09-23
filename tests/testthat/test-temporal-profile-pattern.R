@@ -18,8 +18,8 @@
 #
 # FOUR-DIGIT YEARS ONLY, ON PURPOSE. On Linux, readr writes a pre-1000 instant
 # with an unpadded year (`999-06-05T13:45:30Z`), which the pattern rejects.
-# Which bytes the ecosystem should write there is hub item B-161 (Brett's, and
-# unruled), and this package's emission half is B-206. A four-digit year keeps
+# Which bytes the ecosystem should write there is hub item B-161's question,
+# and this package's emission half is B-206. A four-digit year keeps
 # these tests off that platform-dependent case instead of pinning a rendering
 # nobody has ruled on. *The exclusion retires when:* B-161 is ruled and B-206
 # emits the ruled pre-1000 spelling. At that point a pre-1000 instant belongs in

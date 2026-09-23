@@ -373,7 +373,7 @@ metasalmon (development version)
   `metadata/dataset.csv`. Every earlier check compared those two files with
   each other, which is how a typed instant went unseen while both broke the
   profile. The fixture uses four-digit years, because the pre-1000 spelling is
-  hub item B-161 and unruled. The metasalmonpy half is hub item B-199.
+  hub item B-161's question. The metasalmonpy half is hub item B-199.
 
 metasalmon 0.5.0
 ----------------
