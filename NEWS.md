@@ -324,6 +324,57 @@ metasalmon (development version)
   this text; no rule `id`, `severity`, `version` or `profile` changed, because
   that test keys on rule ids.
 
+* **The vendored SDP dataset schema carries the ruled temporal pattern, and the
+  remote schema pin moves to the commit that ruled it** (hub item B-198). Brett
+  ruled Q-51 on 2026-09-16, and the ruling is recorded in smn-data-pkg pull
+  request #9, merged as `f86d9b4`. `temporal_start` and `temporal_end` now
+  admit an ISO 8601 instant in UTC alongside a year and a date:
+  `^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$`. That is
+  the spelling `datapackage.json` has written for a typed `POSIXct` since B-115,
+  so for a four-digit year the descriptor and the profile no longer disagree.
+  `inst/extdata/schema/frictionless/metadata/dataset.schema.json` is a
+  byte-for-byte copy of upstream's file at `f86d9b4`, copied out of git rather
+  than hand-edited: git blob `0d0d2855` on both sides. The copy also carries the
+  file's other upstream changes since the `sdp-0.3.0` tag: the two temporal
+  field descriptions, the new `sdp:examples`, and a `spec_version` `example`
+  that now reads `sdp-0.3.0`.
+
+  **The remote pin is the half a re-vendor alone would have missed.**
+  `.ms_load_sdp_schema()` defaults to `source = "auto"`, which loads the pinned
+  upstream ref first and the vendored bundle only when that fetch fails. The pin
+  named the `sdp-0.3.0` tag, which predates the ruling, so a session with a
+  working network loaded the pre-ruling pattern whatever the vendored file said.
+  `.ms_default_sdp_schema_base_url()` now names commit `f86d9b4` instead. **It is
+  a commit, not a tag, because no tag carries the ruling**: smn-data-pkg's only
+  tags are `sdp-0.2.0` and `sdp-0.3.0`. A commit is as immutable as the tag was,
+  and that is what the pin exists for. What it gives up is naming a published
+  spec release, and it moves to a tag once upstream tags a release at or after
+  `f86d9b4`. The `metasalmon.sdp_schema_base_url` option still overrides it. The
+  declared spec version stays `sdp-0.3.0`, because upstream's profile and rules
+  still declare it.
+
+  The same move closes a split that B-106's re-vendor left. The vendored
+  `sdp.rules.yaml` has matched upstream since 2026-09-15, while the pin still
+  served the tag's older copy. With the pin at `f86d9b4`, every file the loader
+  fetches is byte-identical to its vendored copy. A new test with network access
+  compares them file by file, so the next re-vendor that forgets the pin fails
+  that test rather than splitting online sessions from offline ones.
+
+  **What a user can observe:** no validation outcome changes, because nothing
+  in `R/` reads `constraints.pattern` yet (hub item B-204 makes the validator
+  read it). The one printed text that changes is the hint `review_metadata()`
+  shows for a placeholder in `temporal_start` or `temporal_end` that carries no
+  instruction of its own, such as a bare `MISSING METADATA:`. That hint is taken
+  from the schema's field description, so it now reads "Start of the period
+  covered by the dataset: a year, a date, or an ISO 8601 instant in UTC."
+
+  A second new test checks the instant a written package carries against the
+  pattern **read from the vendored bundle**, in both `datapackage.json` and
+  `metadata/dataset.csv`. Every earlier check compared those two files with
+  each other, which is how a typed instant went unseen while both broke the
+  profile. The fixture uses four-digit years, because the pre-1000 spelling is
+  hub item B-161 and unruled. The metasalmonpy half is hub item B-199.
+
 metasalmon 0.5.0
 ----------------
 

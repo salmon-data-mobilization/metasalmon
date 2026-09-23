@@ -498,6 +498,19 @@ file this index is supposed to agree with. A number in prose that counts a list
 is a copy of that list, and the copy is what rots — so the list is now the only
 place the count lives.)*
 
+**The development version adds a further debt (2026-09-23): the ruled temporal
+pattern and the remote schema pin, hub item `B-199`.** metasalmon re-vendored
+`dataset.schema.json` from smn-data-pkg `f86d9b4`, the commit recording the Q-51
+ruling, and moved its remote pin from the `sdp-0.3.0` tag to that commit in the
+same change (hub item **B-198**). metasalmonpy owes the same move, and a
+re-vendor that brings its whole bundle to the same bytes: it vendors both
+changed files at the tag. The two pins must name one ref. The debt is specified
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. There,
+register **row 38** was amended in place to record the window rather than a new
+number being spent. It did not land in the same stream for the structural reason every
+entry above shares: a hub claim covers one branch in one repository. Recorded
+here and in the register in the same change, as the rule above requires.
+
 **The 2026-09-16 changelog-window rule is metasalmon-only in this stream, and
 this is the record the mirror contract requires for that.** `AGENTS.md`'s
 *Releases* section now says where an entry goes when it merges after a version
