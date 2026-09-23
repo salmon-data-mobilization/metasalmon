@@ -1,7 +1,7 @@
 id: B-145
 kind: defect
 title: Render a descriptor instant in metasalmonpy as the ruled ISO spelling and pin it against dataset.csv
-state: ready
+state: review
 claimable: true
 repo: metasalmonpy
 venue: claude-code
