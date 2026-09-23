@@ -1,7 +1,7 @@
 id: B-176
 kind: defect
 title: apply_sdp_semantics() loses a hand-picked accept, leaving no accepted row and no replayable decision
-state: ready
+state: review
 claimable: true
 repo: metasalmon
 venue: claude-code

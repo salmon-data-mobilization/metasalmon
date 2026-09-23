@@ -1,7 +1,7 @@
 id: B-166
 kind: defect
 title: Re-vendor sdp.rules.yaml into metasalmonpy once the reworded SOSA Procedure rules merge
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
