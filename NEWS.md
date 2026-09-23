@@ -272,6 +272,32 @@ metasalmon (development version)
   that was wrong, because pinning one leaves the other two free to drift away
   from it and the failure would look identical.
 
+* **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
+  refuses** (hub item B-174). Its contract is that when the last row it prints
+  is gone, `validate_salmon_datapackage(require_iris = TRUE)` passes, and in
+  0.5.0 that failed for the most ordinary unfinished package: one whose
+  semantic review was left partly undecided. A `REVIEW:`-prefixed IRI is not
+  blank and is not one of the three `MISSING ...:` / `REVIEW REQUIRED:`
+  placeholder spellings, so the scan's test for an unfilled value passed over
+  it and `review_metadata()` printed "No outstanding metadata." for a package
+  strict validation then refused. Every IRI field strict validation sweeps was
+  affected -- including the four measurement IRIs and `observation_unit_iri`,
+  which the scan did visit, with a test that could not see the marker. A
+  marker in any schema-declared `*_iri` field of `tables.csv` or
+  `column_dictionary.csv` is now listed, with the `set_sdp_*()` call that
+  replaces it. A marker in `codes.csv` or `dataset.csv` is still not listed,
+  because strict validation does not refuse one there (hub item B-177), and
+  neither is one in a `*_iri` column the schema does not declare, which has no
+  setter to print (hub item B-185).
+
+  The fix is a second test for the marker rather than a wider placeholder
+  test, whose narrowness other callers depend on. It is pinned by marking each
+  declared `*_iri` field of all four metadata files in turn, on a package that
+  otherwise passes, and asserting that the scan lists it exactly when strict
+  validation refuses it. metasalmonpy fixed the same defect in pull request
+  #28; its scan also lists a marker in `codes.csv`, the one file the two
+  disagree about until B-177 is ruled.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

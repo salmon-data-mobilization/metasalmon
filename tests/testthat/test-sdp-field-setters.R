@@ -501,3 +501,273 @@ test_that("a codes.csv gap prints a set_sdp_code() call that fills it", {
   expect_equal(read_meta(pkg, "codes.csv")$code_description[[row]], "Coho salmon.")
   expect_equal(sum(review_metadata(pkg)$file == "codes.csv"), 0L)
 })
+
+# ---------------------------------------------------------------------------
+# Draft `REVIEW:` IRIs (hub item B-174)
+# ---------------------------------------------------------------------------
+#
+# The scan's contract is that when the last row it prints is gone, strict
+# validation passes. An unresolved `REVIEW:` IRI broke it in released 0.5.0:
+# the prose test cannot see the marker, so `review_metadata()` printed "No
+# outstanding metadata." for a package
+# `validate_salmon_datapackage(require_iris = TRUE)` then refused -- the state
+# a user reaches by leaving any part of the semantic review undecided. These
+# tests drive the validator itself rather than asserting on printed text.
+
+# A package with a codes.csv, filled by executing `review_metadata()`'s own
+# printed calls. That it then passes strict validation is asserted here, so a
+# fixture that stops passing fails loudly instead of making every marker test
+# below vacuous. The codes are what let those tests ask about every metadata
+# file, not only the three a plain package has rows in.
+filled_coded_package <- function(name = "filled-coded") {
+  path <- file.path(withr::local_tempdir(.local_envir = parent.frame()), name)
+  pkg <- suppressMessages(create_sdp(
+    list(spawners = data.frame(
+      stream_name = c("Bear Creek", "Elk River"),
+      species = factor(c("CO", "CK")),
+      spawner_count = c(120L, 340L),
+      stringsAsFactors = FALSE
+    )),
+    path = path, dataset_id = "demo-1", seed_semantics = FALSE,
+    check_updates = FALSE, overwrite = TRUE
+  ))
+  for (call_text in fill_templates(printed_setter_calls(review_metadata(pkg)))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_no_error(suppressMessages(validate_salmon_datapackage(pkg, require_iris = TRUE)))
+  pkg
+}
+
+# Write `value` into one field of one row of a metadata CSV, adding the column
+# when the file does not have it. Returns the bytes it replaced.
+mark_metadata_field <- function(pkg, file_name, field, row, value) {
+  csv <- file.path(pkg, "metadata", file_name)
+  original <- readBin(csv, "raw", file.info(csv)$size)
+  meta <- read_meta(pkg, file_name)
+  if (!field %in% names(meta)) {
+    meta[[field]] <- NA_character_
+  }
+  meta[[field]][[row]] <- value
+  readr::write_csv(meta, csv, na = "")
+  original
+}
+
+# Does strict validation refuse the package BECAUSE of a `REVIEW:` marker?
+# Refusal for any other reason is an error here rather than a `TRUE`, so a
+# fixture that broke for an unrelated reason cannot pass for a refused marker.
+# The two phrases are the two sweeps: `.ms_collect_review_iri_issues()` for
+# `tables.csv` and `validate_dictionary()` for the dictionary.
+refuses_review_marker <- function(pkg) {
+  outcome <- tryCatch(
+    {
+      suppressWarnings(suppressMessages(
+        validate_salmon_datapackage(pkg, require_iris = TRUE)
+      ))
+      NULL
+    },
+    error = function(error) gsub("\\s+", " ", conditionMessage(error))
+  )
+  if (is.null(outcome)) {
+    return(FALSE)
+  }
+  if (grepl("still contains a REVIEW-prefixed IRI|while REVIEW-prefixed IRI values remain", outcome)) {
+    return(TRUE)
+  }
+  stop("strict validation refused the package for another reason: ", outcome, call. = FALSE)
+}
+
+test_that("review_metadata() reports a REVIEW: IRI exactly where strict validation refuses one", {
+  pkg <- filled_coded_package()
+  mark <- "REVIEW:https://example.org/Undecided"
+
+  # Every expectation is written out rather than read from
+  # `.ms_review_iri_files()`: a test comparing the scan against the list the
+  # scan is built from passes for any value of that list, which is no test at
+  # all. `refused` is what `validate_salmon_datapackage(require_iris = TRUE)`
+  # does with a marker in that field; `reported` is whether the scan lists it.
+  expected <- tibble::tribble(
+    ~file,                   ~field,                     ~refused, ~reported,
+    "tables.csv",            "observation_unit_iri",     TRUE,     TRUE,
+    "tables.csv",            "protocol_iri",             TRUE,     TRUE,
+    "tables.csv",            "method_iri",               TRUE,     TRUE,
+    "column_dictionary.csv", "term_iri",                 TRUE,     TRUE,
+    "column_dictionary.csv", "property_iri",             TRUE,     TRUE,
+    "column_dictionary.csv", "entity_iri",               TRUE,     TRUE,
+    "column_dictionary.csv", "unit_iri",                 TRUE,     TRUE,
+    "column_dictionary.csv", "constraint_iri",           TRUE,     TRUE,
+    "column_dictionary.csv", "statistical_modifier_iri", TRUE,     TRUE,
+    # Strict validation does not sweep these two files for the marker (hub
+    # item B-177), so reporting one would claim a block that does not exist.
+    # If one of these rows starts failing because strict validation now
+    # refuses the marker, that is B-177 landing: move `.ms_review_iri_files()`
+    # with it and flip both columns, rather than deleting the row.
+    "codes.csv",             "term_iri",                 FALSE,    FALSE,
+    "codes.csv",             "vocabulary_iri",           FALSE,    FALSE,
+    "dataset.csv",           "protocol_iri",             FALSE,    FALSE
+  )
+
+  # Coverage comes from the schema, so a newly declared IRI field fails here
+  # until somebody writes down what strict validation does with it.
+  declared <- unlist(lapply(names(.ms_metadata_schema_tables()), function(file_name) {
+    fields <- purrr::map_chr(.ms_metadata_schema_fields(file_name), "name")
+    paste(file_name, grep("_iri$", fields, value = TRUE))
+  }))
+  expect_setequal(paste(expected$file, expected$field), declared)
+
+  # The dictionary marker goes on a CATEGORICAL row on purpose: the validator
+  # refuses a marker whatever the column's role, and the measurement-IRI branch
+  # of the scan never visits this row, so only the marker test can find it.
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  dictionary_row <- which(dictionary$column_name == "stream_name")
+  expect_identical(dictionary$column_role[[dictionary_row]], "categorical")
+
+  for (i in seq_len(nrow(expected))) {
+    file_name <- expected$file[[i]]
+    field <- expected$field[[i]]
+    label <- paste0(file_name, "$", field)
+    row <- if (identical(file_name, "column_dictionary.csv")) dictionary_row else 1L
+
+    original <- mark_metadata_field(pkg, file_name, field, row, mark)
+    refused <- refuses_review_marker(pkg)
+    review <- review_metadata(pkg)
+    writeBin(original, file.path(pkg, "metadata", file_name))
+
+    hit <- review[review$file == file_name & review$field == field, , drop = FALSE]
+    expect_identical(refused, expected$refused[[i]], info = label)
+    expect_identical(nrow(hit) > 0L, expected$reported[[i]], info = label)
+    # The contract itself, which has to hold whatever the table says.
+    expect_identical(nrow(hit) > 0L, refused, info = label)
+    # Nothing else is reported: the marker is the package's only gap.
+    expect_identical(nrow(review), nrow(hit), info = label)
+    if (nrow(hit) > 0L) {
+      expect_identical(nrow(hit), 1L, info = label)
+      expect_identical(hit$reason[[1]], "iri", info = label)
+      # The draft is shown, so the reader sees there is something to decide
+      # rather than something to invent.
+      expect_identical(hit$current_value[[1]], mark, info = label)
+    }
+  }
+})
+
+test_that("a package whose only gap is a REVIEW: IRI reaches strict validation through the printed call", {
+  # Hub item B-174 as it was measured: one marker on `constraint_iri`, which
+  # is neither schema-required nor a measurement IRI, so no branch of the scan
+  # visited it with a test that could see the marker.
+  pkg <- filled_coded_package()
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  mark_metadata_field(
+    pkg, "column_dictionary.csv", "constraint_iri", row,
+    "REVIEW:https://example.org/Undecided"
+  )
+  expect_true(refuses_review_marker(pkg))
+
+  review <- review_metadata(pkg)
+  expect_identical(
+    paste(review$file, review$column_name, review$field, review$reason),
+    "column_dictionary.csv spawner_count constraint_iri iri"
+  )
+  lines <- .ms_metadata_render_lines(review)
+  expect_false(any(grepl("No outstanding metadata.", lines, fixed = TRUE)))
+
+  # The printed call is executed, as this file's header demands.
+  calls <- printed_setter_calls(review)
+  expect_length(calls, 1L)
+  suppressMessages(eval(
+    parse(text = gsub(
+      "<IRI for constraint_iri>", "https://example.org/DecidedConstraint", calls,
+      fixed = TRUE
+    )),
+    envir = list2env(list(pkg = pkg))
+  ))
+
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_false(refuses_review_marker(pkg))
+})
+
+test_that("a REVIEW: measurement IRI is reported once, and its call runs", {
+  # The marker test runs in the scan's main loop and the measurement branch
+  # keeps the prose test, so a marked measurement IRI is found by one of them
+  # and not both. Reported twice, the printed call would name the argument
+  # twice and could not run -- so the call is run, all four fields at once.
+  pkg <- filled_coded_package()
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  expect_identical(dictionary$column_role[[row]], "measurement")
+  for (field in .ms_measurement_iri_fields()) {
+    mark_metadata_field(
+      pkg, "column_dictionary.csv", field, row,
+      paste0("REVIEW:", dictionary[[field]][[row]])
+    )
+  }
+  mark_metadata_field(
+    pkg, "tables.csv", "observation_unit_iri", 1L,
+    "REVIEW:https://example.org/Undecided"
+  )
+  expect_true(refuses_review_marker(pkg))
+
+  review <- review_metadata(pkg)
+  expect_setequal(
+    paste(review$file, review$field, review$reason),
+    c(
+      paste("column_dictionary.csv", .ms_measurement_iri_fields(), "iri"),
+      "tables.csv observation_unit_iri iri"
+    )
+  )
+  expect_equal(nrow(review), 5L)
+
+  for (call_text in fill_templates(printed_setter_calls(review))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_false(refuses_review_marker(pkg))
+})
+
+test_that("the REVIEW: marker has its own predicate, and the prose ones stay narrow", {
+  values <- c(
+    "REVIEW:https://example.org/Thing",
+    "  review : https://example.org/Thing",
+    "https://example.org/Thing",
+    NA,
+    "",
+    "MISSING METADATA: add it.",
+    "REVIEW REQUIRED: confirm it."
+  )
+  expect_identical(
+    .ms_is_unresolved_iri(values),
+    c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
+  )
+  # Widening either prose test instead would have pushed the marker into
+  # strict validation's placeholder sweep, which would then refuse it in the
+  # files that sweep deliberately leaves alone (hub item B-177), and into the
+  # hint `.ms_metadata_gap_row()` builds from a value's own text.
+  expect_identical(
+    .ms_is_unfilled_metadata(values),
+    c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)
+  )
+  expect_false(.ms_is_review_placeholder("REVIEW:https://example.org/Thing"))
+})
+
+test_that("an undeclared *_iri column carrying a REVIEW: marker is still missed", {
+  # A KNOWN GAP, pinned so it is visible rather than latent: hub item B-185.
+  # `.ms_collect_review_iri_issues()` sweeps every column of `tables.csv` whose
+  # name ends in `_iri`, declared or not. The scan reads schema-declared fields
+  # only, because every row it prints must be a runnable `set_sdp_*()` call and
+  # the setters refuse a field the schema does not declare. Closing it means
+  # printing a call that cannot run or letting a setter write an undeclared
+  # field, which is a ruling about the printed-call contract and not about any
+  # predicate. metasalmonpy pins the same gap in
+  # `test_an_undeclared_iri_column_is_still_missed`.
+  #
+  # Retires when B-185 is ruled and the scan and the validator agree about
+  # undeclared `*_iri` columns. Delete this test in that change: it asserts the
+  # defect, so it fails when the defect is fixed.
+  pkg <- filled_coded_package()
+  mark_metadata_field(
+    pkg, "tables.csv", "custom_thing_iri", 1L,
+    "REVIEW:https://example.org/HandAdded"
+  )
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_true(refuses_review_marker(pkg))
+})

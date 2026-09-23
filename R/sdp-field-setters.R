@@ -17,9 +17,17 @@
 # It reads the package against the rules that actually decide strict
 # validation: the Frictionless schema's `constraints.required` (surfaced as
 # `field$requirement`, which had five producers and no consumers before this),
-# the placeholder markers, the measurement-column IRI requirement, and the
-# table observation-unit IRI requirement. A field that no retrieval ever
-# touched is as visible to it as one with five candidates.
+# the prose placeholder markers, the unresolved `REVIEW:` IRI marker, the
+# measurement-column IRI requirement, and the table observation-unit IRI
+# requirement. A field that no retrieval ever touched is as visible to it as
+# one with five candidates.
+#
+# "The rules that actually decide strict validation" is the whole claim, so a
+# rule it omits is a defect and not a scoping choice. It omitted the `REVIEW:`
+# marker until hub item B-174, because the prose test cannot see one, and so
+# printed "No outstanding metadata." for a package strict validation refused.
+# `.ms_is_unresolved_iri()` records why that needed a second test rather than
+# a wider first one.
 #
 # THE CONTRACT IT IS JUDGED AGAINST: every row `review_metadata()` reports
 # prints a runnable `set_sdp_*()` call that fixes it, and when the last row is
@@ -46,11 +54,42 @@
 # that it is missing. The third is why a blankness test is not enough -- a
 # `MISSING METADATA:` placeholder is a non-empty string, and strict validation
 # refuses it precisely because it is not a value.
+#
+# This is the PROSE test, and it is deliberately blind to the `REVIEW:` IRI
+# marker: `.ms_is_unresolved_iri()` is the fourth way an IRI field can be
+# unfilled, and it is a separate test for the reason recorded there.
 .ms_is_unfilled_metadata <- function(x) {
   text <- as.character(x)
   text[is.na(text)] <- ""
   !nzchar(trimws(text)) |
     vapply(text, .ms_is_review_placeholder, logical(1), USE.NAMES = FALSE)
+}
+
+# An IRI field still carrying the `REVIEW:` marker: the draft a fill helper
+# wrote as "inferred, not confirmed". It is a FOURTH way to be unfilled that
+# the prose test above cannot see -- the value is non-blank, and it is not one
+# of the three `MISSING ...:` / `REVIEW REQUIRED:` spellings. Strict validation
+# does see it: `.ms_collect_review_iri_issues()` refuses one in any `*_iri`
+# column of `tables.csv`, and `validate_dictionary(require_iris = TRUE)` in any
+# of the dictionary's six IRI fields. The marker is matched by
+# `.ms_is_review_iri()`, the same pattern both of those sweeps use.
+#
+# A SECOND test rather than a wider `.ms_is_review_placeholder()`. That one
+# names only the three prose spellings, and callers across the package depend
+# on its narrowness. Widened, strict validation's placeholder sweep
+# (`.ms_collect_review_placeholder_issues()`) would start refusing the marker
+# in `dataset.csv` and `codes.csv` too, which is a ruling hub item B-177 has
+# not made, and `.ms_metadata_gap_row()` would take an IRI's own text for a
+# usable hint. The marker has its own reporting path, as the placement check
+# in `R/package-helpers.R` says where it excludes one. Nor is
+# `.ms_review_is_unfilled()` (`R/review-console.R`) a substitute: it is
+# IRI-aware and blind to the prose spellings, so putting it on this path would
+# trade one half of the defect for the other.
+#
+# Retires when: nothing. The two tests answer different questions about
+# different kinds of field, which is why they are two.
+.ms_is_unresolved_iri <- function(x) {
+  vapply(as.character(x), .ms_is_review_iri, logical(1), USE.NAMES = FALSE)
 }
 
 # The instruction inside a placeholder, without its marker. The placeholder
@@ -141,6 +180,45 @@
 # would make `review_metadata()` report a clean package that still fails.
 .ms_measurement_iri_fields <- function() {
   c("term_iri", "property_iri", "entity_iri", "unit_iri")
+}
+
+# The metadata files in which the scan reports an unresolved `REVIEW:` IRI:
+# exactly the files `validate_salmon_datapackage(require_iris = TRUE)` refuses
+# one in. Measured rather than assumed, because the package's gates do not all
+# sweep the same files: a marker in `codes.csv` or `dataset.csv` passes strict
+# validation, while the EDH XML gate refuses it (hub item B-177). Reporting one
+# of those here would make the scan claim a block that does not exist, the same
+# class of error as missing one, pointing the other way.
+#
+# metasalmonpy's `_REVIEW_IRI_FILES` lists `codes.csv` as well, on purpose,
+# because its EDH gate refuses a marker there. That is the one file the two
+# scans disagree about, and B-177's ruling on what strict validation sweeps is
+# what settles it for both.
+#
+# Which fields within these files is a second question: the SCHEMA-DECLARED
+# `*_iri` ones, because every row the scan reports prints a runnable
+# `set_sdp_*()` call and the setters refuse an undeclared field. An undeclared
+# `*_iri` column hand-added to `tables.csv` is swept by the validator and still
+# missed here. That residual is hub item B-185, a ruling about the printed-call
+# contract, and `tests/testthat/test-sdp-field-setters.R` pins it.
+#
+# Retires when strict validation sweeps every metadata file for the marker
+# (B-177), at which point this list is all four files and should be deleted
+# rather than maintained. Until then the validator-driven test in
+# `tests/testthat/test-sdp-field-setters.R` fails if strict validation changes
+# what it sweeps and this list does not move with it.
+.ms_review_iri_files <- function() {
+  c("tables.csv", "column_dictionary.csv")
+}
+
+# The prompt a printed call carries for one IRI field. One spelling, so the
+# blank branch and the unresolved-marker branch cannot print two different
+# hints for the same field.
+.ms_metadata_iri_hint <- function(field) {
+  if (identical(field, "observation_unit_iri")) {
+    return("IRI for what one row represents")
+  }
+  paste0("IRI for ", field)
 }
 
 # One gap row. `hint` becomes the placeholder inside the printed call.
@@ -280,6 +358,17 @@
         add(row, field, "placeholder")
         next
       }
+      # An unresolved `REVIEW:` marker in a declared `*_iri` field, on any row:
+      # the validator refuses one whatever the column's role. Handled HERE,
+      # rather than in the two branches below, so it also reaches
+      # `constraint_iri`, `statistical_modifier_iri` and `tables.csv`'s method
+      # and protocol placements, which neither of those branches visits.
+      if (file_name %in% .ms_review_iri_files() &&
+          grepl("_iri$", field) &&
+          .ms_is_unresolved_iri(value)) {
+        add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
+        next
+      }
       if (field %in% keys) {
         next
       }
@@ -293,17 +382,23 @@
       # Blank OR still marked: the schema calls this `recommended`, and strict
       # validation refuses a blank one anyway
       # (`.ms_collect_missing_table_observation_unit_iri_issues()`). The schema
-      # is not the authority on what blocks; the validator is.
+      # is not the authority on what blocks; the validator is. A `REVIEW:`
+      # marker was reported by the loop above and the prose test here cannot
+      # see one, so it is not reported twice; testing for the marker here too
+      # would print a call naming `observation_unit_iri` twice, which cannot
+      # run.
       if (.ms_is_unfilled_metadata(value)) {
-        add(row, "observation_unit_iri", "iri", hint = "IRI for what one row represents")
+        add(row, "observation_unit_iri", "iri", hint = .ms_metadata_iri_hint("observation_unit_iri"))
       }
     }
 
     if (identical(file_name, "column_dictionary.csv") &&
         identical(.ms_scalar_text(frame$column_role[[row]]), "measurement")) {
+      # The prose test, for the reason given on the branch above: a `REVIEW:`
+      # marker on one of these four was already reported by the loop.
       for (field in intersect(.ms_measurement_iri_fields(), names(frame))) {
         if (.ms_is_unfilled_metadata(frame[[field]][[row]])) {
-          add(row, field, "iri", hint = paste0("IRI for ", field))
+          add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
         }
       }
     }
@@ -333,6 +428,12 @@
 #'   placeholders in any metadata field;
 #' * schema-required fields (`constraints.required`) that are blank -- a
 #'   column the file does not have counts as blank in every row;
+#' * draft IRIs still carrying the `REVIEW:` prefix in any schema-declared
+#'   `*_iri` field of `tables.csv` or `column_dictionary.csv`, the two files
+#'   strict validation refuses one in. A marker in `codes.csv` or
+#'   `dataset.csv` is not listed, because strict validation does not refuse
+#'   it there. Where retrieval found candidates for one, [review_semantics()]
+#'   shows them;
 #' * measurement columns missing `term_iri`, `property_iri`, `entity_iri` or
 #'   `unit_iri`;
 #' * `tables.csv` rows with a blank `observation_unit_iri`.
