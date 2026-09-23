@@ -739,9 +739,12 @@ test_that("the REVIEW: marker has its own predicate, and the prose ones stay nar
     c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
   )
   # Widening either prose test instead would have pushed the marker into
-  # strict validation's placeholder sweep, which would then refuse it in the
-  # files that sweep deliberately leaves alone (hub item B-177), and into the
-  # hint `.ms_metadata_gap_row()` builds from a value's own text.
+  # strict validation's placeholder sweep, which would then refuse it as
+  # prose -- in `dataset.csv` and `codes.csv` too, which strict validation does
+  # not sweep for the marker today. That scope is interim rather than chosen:
+  # hub item B-177 widens it, and moves `.ms_review_iri_files()` in the same
+  # change. The marker would also have reached the hint `.ms_metadata_gap_row()`
+  # builds from a value's own text.
   expect_identical(
     .ms_is_unfilled_metadata(values),
     c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE)

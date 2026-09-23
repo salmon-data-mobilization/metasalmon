@@ -77,11 +77,14 @@
 # A SECOND test rather than a wider `.ms_is_review_placeholder()`. That one
 # names only the three prose spellings, and callers across the package depend
 # on its narrowness. Widened, strict validation's placeholder sweep
-# (`.ms_collect_review_placeholder_issues()`) would start refusing the marker
-# in `dataset.csv` and `codes.csv` too, which is a ruling hub item B-177 has
-# not made, and `.ms_metadata_gap_row()` would take an IRI's own text for a
-# usable hint. The marker has its own reporting path, as the placement check
-# in `R/package-helpers.R` says where it excludes one. Nor is
+# (`.ms_collect_review_placeholder_issues()`) would refuse the marker as if it
+# were prose: a second refusal in the two files the marker sweeps already
+# cover, and a first one in `dataset.csv` and `codes.csv` that would arrive by
+# accident, through the wrong channel. Refusing a `codes.csv` marker is ruled
+# (Brett, 2026-09-23), and hub item B-177 implements it on purpose. And
+# `.ms_metadata_gap_row()` would take an IRI's own text for a usable hint. The
+# marker has its own reporting path, as the placement check in
+# `R/package-helpers.R` says where it excludes one. Nor is
 # `.ms_review_is_unfilled()` (`R/review-console.R`) a substitute: it is
 # IRI-aware and blind to the prose spellings, so putting it on this path would
 # trade one half of the defect for the other.

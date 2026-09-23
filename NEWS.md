@@ -296,7 +296,7 @@ metasalmon (development version)
   otherwise passes, and asserting that the scan lists it exactly when strict
   validation refuses it. metasalmonpy fixed the same defect in pull request
   #28; its scan also lists a marker in `codes.csv`, the one file the two
-  disagree about until B-177 is ruled.
+  disagree about until B-177 lands.
 
 ### Changed
 
