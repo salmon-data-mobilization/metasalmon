@@ -603,6 +603,20 @@ criteria but is specified in register **row 53** rather than in that section, an
 it is the one addition that did reach both places in the same change — the rule
 being followed rather than another instance of its being broken.)*
 
+**`B-3` owes metasalmonpy nothing either, and on this question the mirror was
+already ahead.** B-3 gives metasalmon one chat-completions request builder,
+`.ms_llm_chat_request()`, where it had two, and moves no behaviour, so there is
+no behaviour to port. It is recorded because the structural question has an
+answer on the other side too, and "the mirror already has it" is a claim like
+any other: measured 2026-09-23 against metasalmonpy `main` at `3f8349a`,
+`llm_review.py` builds its only chat request in `request_json()` (`:415`, the
+POST at `:426`), and both of its LLM paths call it — semantic review through
+`_request_json_with_retries()` (`:611`) and chat decomposition through
+`_chat_choice()` (`chat_decomposition.py:279`). **What this does not say** is
+anything about what the two implementations put *in* that request. They do not
+send the same one, and the B-3 workpad records the difference, with its
+evidence, as a candidate for a parity item rather than settling it here.
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |

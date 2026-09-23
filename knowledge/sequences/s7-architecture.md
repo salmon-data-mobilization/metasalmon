@@ -21,8 +21,18 @@ psc:
   `run_curation_turn()` / `propose_curation_patch()` / `approve_curation_patch()`,
   a question planner with information-gain ranking, and a structured provenance
   bundle. Routing slices and `chat_decomposition()` shipped in 0.1.3.
-- **Shared chat request builder** (#3 / Theme E2) — mutually exclusive with the
-  adapter's dual-shape normalizer, so do it *inside* the curation work.
+- **Shared chat request builder** (#3 / Theme E2) — both default request
+  functions go through one builder, `.ms_llm_chat_request()` (hub item B-3). It
+  was not, after all, mutually exclusive with the adapter's dual-shape
+  normalizer, so it did not need to wait for the curation work: the request and
+  the shape its reply is returned in are separable, and the normalizer's wrapped
+  branch serves what `.ms_chat()` returns, whichever request function produced
+  it. What is left is
+  the chat path's request body (hub item B-128) and whether decomposition
+  converges on one session engine with the semantic path (hub item B-31).
+  *(This read "mutually exclusive with the adapter's dual-shape normalizer, so do
+  it inside the curation work" until 2026-09-23; `knowledge/backlog.md` #3
+  records why that was wrong.)*
 - **Latent cleanups** (#22, #23, #24) — fold into whichever stream touches those
   files rather than scheduling separately.
 
