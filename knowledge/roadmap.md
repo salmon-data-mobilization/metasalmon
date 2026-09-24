@@ -69,8 +69,9 @@ Rules that keep this from decaying:
   not its tail. It was the first window opened by *new* work under the rule
   rather than by an old backlog, exactly the state the 2026-08-24 entry predicted
   when it said parity decays with the next change, and it was owed as an S5 port
-  rather than an S10 rung. metasalmonpy's tree reads 0.5.0; **tagging `v0.5.0`
-  there is Brett's**, so its newest tag is still `v0.4.0`.
+  rather than an S10 rung. metasalmonpy's tree reads 0.5.0, and measured
+  2026-09-24 its newest tag is `v0.5.0`, made that day on the bump merge
+  `67fb486` with a GitHub Release.
   **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
@@ -332,7 +333,7 @@ then metasalmonpy's bump claims that number — and both steps happened on
 from 2026-08-25, and metasalmonpy claimed the number on 2026-09-16 once the S5
 port had landed there and been documented (B-126, then B-153).
 
-### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tree only, newest tag still `v0.4.0`)
+### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
 
 > **The number is now true, and it is the first time in this stream that it has
 > been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
@@ -372,7 +373,7 @@ port had landed there and been documented (B-126, then B-153).
 
 | Version | Date | One line |
 |---|---|---|
-| 0.5.0 | 2026-09-16 (tree only; **not tagged** — tagging is Brett's, newest tag remains `v0.4.0` at `3b587e6`) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
+| 0.5.0 | 2026-09-16 (tagged `v0.5.0` at `67fb486` on 2026-09-24, GitHub Release published) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
 | 0.4.0 | 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub Release published) | The terminal S10 bump: chunks A–H released as one number, plus the two gaps an entry-by-entry audit of metasalmon 0.4.0's NEWS found genuinely absent and ported for it — `knb_environment` on `publish_sdp_to_knb()`/`write_eml_from_sdp()` (the S3 mirror, whose R original landed after every chunk was written) and the `statistical_modifier` `role_boost`. Five further differences were **registered rather than ported**, each with its retirement condition (register rows 54–58). Verified against a pristine `git archive` of metasalmon `v0.4.0` (`4e2bbb6`), never a working checkout; both dependency legs green (795 extras / 682 core, 116 skipped), production KNB identifiers pinned against metasalmon's own fixture |
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
 | 0.2.0 | 2026-08-18 (tagged `v0.2.0`, GitHub Release published) | The dictionary is the type authority: typed round-trip reader with raw-token preservation, overwrite/prune ownership, sidecar survival, symlink refusal, capture-time redaction, remote schema loader pinned to the upstream `sdp-0.2.0` tag. An era-R package round-trips through Python and back **byte-for-byte** |
