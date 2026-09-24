@@ -1,7 +1,7 @@
 id: B-242
 kind: defect
 title: The printed accept_suggestion() call is ambiguous in metasalmonpy for a measurement column with a code list, the mirror half of B-151
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

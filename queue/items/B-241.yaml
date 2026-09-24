@@ -1,7 +1,7 @@
 id: B-241
 kind: defect
 title: metasalmonpy apply_salmon_dictionary() blanks a value missing from its code list without reporting it, the mirror half of B-55
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
