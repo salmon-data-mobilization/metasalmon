@@ -889,21 +889,27 @@ current as the last fetch made there. A checkout that does not contain the tip
 is **stale**, and the client says so, with the distance and both branches.
 Then:
 
-- **`claim`, `ready` and `ready --set` refuse**, exit 3, because what they would
-  answer from is not the queue. `claim` also refuses when the question cannot be
-  asked at all (no `origin`, not a git checkout, `origin` unreachable), because
-  an unverified precondition is a failure, the rule the concurrency cap already
+- **`claim`, `reconcile`, `ready` and `ready --set` refuse**, exit 3, because
+  what they would answer from, or act on other agents' claims under, is not the
+  queue. `claim` and `reconcile` also refuse when the question cannot be asked at
+  all (no `origin`, not a git checkout, `origin` unreachable), because an
+  unverified precondition is a failure, the rule the concurrency cap already
   follows. `ready` and `ready --set` go on with a warning then, as `ready` does
   when the locks repository cannot be read, because the claim after them asks
   again.
-- **`done` warns and hands back anyway.** The handoff it records depends on
-  nothing in the queue; only the compare URL and the instruction it prints
-  after do, and a worktree is routinely behind by the time its work is handed
-  back.
-- **`beat`, `release` and `reconcile` read no queue file and do not ask**, so no
-  heartbeat is ever lost to a merge.
-- **`doctor` fails on it, and `hub fresh [PATH...]` answers it alone**, for any
-  checkout named.
+- **`beat` and `release` go ahead, and `done` warns and hands back anyway.**
+  Each records this agent's own claim, a worktree is routinely behind by the
+  time its work is handed back, and a heartbeat must never be lost to a merge
+  elsewhere.
+- **Every command that pushes, those three included, first checks that
+  `locks_repo` and `claim_ref_prefix` in the checkout are the ones `origin`'s
+  default branch names, and refuses if not**, because a push anywhere else lands
+  where the queue no longer looks and splits the coordination state. That holds
+  whether the checkout is behind, ahead with a change of its own, or edited in
+  place. The lease lengths a heartbeat reads are not compared: a lease records
+  its own expiry, so an old length misleads nobody about where the claim is.
+- **`doctor` fails on either, and `hub fresh [PATH...]` answers the first
+  alone**, for any checkout named.
 
 The remedy for a refusal is a checkout that contains the tip. The worktree
 *Isolation* requires, created from `origin`'s default branch after a fetch, is

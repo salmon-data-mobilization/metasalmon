@@ -96,6 +96,14 @@
 #   also why every fixture queue here is now a git checkout with a bare origin
 #   beside it, rather than a plain directory: make_checkout says why.
 #
+#   41 came from Codex's first review of that change, pull request 156. Because
+#   39 lets beat and done go ahead from a stale checkout, they and release also
+#   took their push target from it, so a checkout whose locks_repo or
+#   claim_ref_prefix origin had since changed pushed where the queue no longer
+#   looks. 41 is every pushing command refusing that, from a stale checkout and
+#   from a current one edited in place. It was run RED against both the client
+#   before B-187 and the first version of the change.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -237,6 +245,16 @@ PREDATES_ID="G-11"    # on origin/main only
 # The fixture of assertion 40: a queue that is not in a git checkout at all.
 NOGIT_ID="H-01"
 NOGIT_TOKEN="nogittest-caller"
+
+# The fixture of assertion 41: a checkout one commit behind an origin whose
+# commit moved claim_ref_prefix, and a second, current checkout of the same
+# origin with the old prefix edited back in place. The item is held by this
+# fixture's own token under the old prefix, which is where a push from either
+# checkout would go.
+ROUTE_ID="R-01"
+ROUTE_TOKEN="routetest-caller"
+ROUTE_OLD_PREFIX="refs/heads/claim/"
+ROUTE_NEW_PREFIX="refs/heads/claim-moved/"
 
 n_pass=0
 n_fail=0
@@ -498,6 +516,10 @@ PREDATES_MARKER=""
 NOGIT_REPO=""
 NOGIT_CLIENT=""
 NOGIT_CACHE=""
+ROUTE_REPO=""
+ROUTE_CLIENT=""
+ROUTE_EDITED=""
+ROUTE_CACHE=""
 CLIENT_PRESENT=0
 CLIENT_USABLE=0
 CLIENT_SKIP_REASON="scripts/hub does not exist yet (migration step 2)"
@@ -936,6 +958,35 @@ write_nogit_fixture() {
   write_stale_item "$NOGIT_REPO/queue/items" "$NOGIT_ID" ready
 }
 
+# The fixture of assertion 41, from Codex's first review of pull request 156:
+# beat, release and done go ahead from a stale checkout on purpose, and before
+# this they also took their push target from it, so a checkout whose routing
+# origin had since changed pushed where the queue no longer looks. Two
+# checkouts of one origin, whose one commit moved claim_ref_prefix: the first
+# is behind that commit, the second contains it and has the old prefix edited
+# back in by hand, because the routing check is not a staleness check and a
+# current checkout edited in place is the case that shows it.
+#
+# RETIRES WHEN: the client reads its configuration from origin's default branch
+# rather than from a working tree, which retires require_routing with it.
+route_fixture_advance() {
+  sed "s#^claim_ref_prefix: .*#claim_ref_prefix: $ROUTE_NEW_PREFIX#" \
+    "$1/queue/config.yaml" >"$1/queue/config.yaml.new" &&
+    mv "$1/queue/config.yaml.new" "$1/queue/config.yaml"
+}
+write_route_fixture() {
+  mkdir -p "$ROUTE_REPO/queue/items" "$ROUTE_REPO/scripts"
+  cp -p "$SOURCE_CLIENT" "$ROUTE_CLIENT" 2>/dev/null || cp "$SOURCE_CLIENT" "$ROUTE_CLIENT"
+  write_queue_config "$ROUTE_REPO" route-test-fixture
+  write_stale_item "$ROUTE_REPO/queue/items" "$ROUTE_ID" ready
+  make_checkout "$ROUTE_REPO" || return 1
+  advance_origin "$ROUTE_REPO" "move claim_ref_prefix" route_fixture_advance || return 1
+  g git clone -q "$ROUTE_REPO.origin.git" "$ROUTE_EDITED" >/dev/null 2>&1 || return 1
+  sed "s#^claim_ref_prefix: .*#claim_ref_prefix: $ROUTE_OLD_PREFIX#" \
+    "$ROUTE_EDITED/queue/config.yaml" >"$ROUTE_EDITED/queue/config.yaml.new" &&
+    mv "$ROUTE_EDITED/queue/config.yaml.new" "$ROUTE_EDITED/queue/config.yaml"
+}
+
 setup() {
   require_git_version
 
@@ -962,6 +1013,10 @@ setup() {
   NOGIT_REPO="$TMPROOT/not-a-checkout-fixture"
   NOGIT_CLIENT="$NOGIT_REPO/scripts/hub"
   NOGIT_CACHE="$TMPROOT/not-a-checkout-cache"
+  ROUTE_REPO="$TMPROOT/route-fixture-repo"
+  ROUTE_CLIENT="$ROUTE_REPO/scripts/hub"
+  ROUTE_EDITED="$TMPROOT/route-edited-checkout"
+  ROUTE_CACHE="$TMPROOT/route-cache"
 
   # No user, system or inherited git configuration reaches the fixture, and no
   # terminal prompt can block an unattended run.
@@ -1000,6 +1055,7 @@ setup() {
     write_stale_fixture || die "could not build the stale-checkout fixture"
     write_predates_fixture || die "could not build the predates fixture"
     write_nogit_fixture
+    write_route_fixture || die "could not build the routing fixture"
     # The client names its own exit codes; read them from it rather than
     # keeping a second copy of two numbers here.
     local v
@@ -2221,13 +2277,17 @@ main() {
     fi
 
     # -- 39 -----------------------------------------------------------------
-    # The two commands staleness must not stop. A heartbeat reads no queue
-    # file, so it does not ask, and a lease must never be lost to a merge that
-    # has nothing to do with it. A hand-back records its branch whatever the
-    # queue says, and warns, because the compare URL and the instruction it
-    # prints after are read from the checkout. An agent's worktree is routinely
-    # behind by the time it hands back, since other work merges while it works,
-    # so a done that refused would strand finished work.
+    # The two commands staleness must not stop. A heartbeat records this
+    # agent's own claim, and a lease must never be lost to a merge that has
+    # nothing to do with it. A hand-back records its branch whatever the queue
+    # says, and warns, because the compare URL and the instruction it prints
+    # after are read from the checkout. An agent's worktree is routinely behind
+    # by the time it hands back, since other work merges while it works, so a
+    # done that refused would strand finished work. Both still check where the
+    # push goes; this fixture's routing is origin's, and 41 is the checkout
+    # whose routing is not. (This comment said a heartbeat "reads no queue
+    # file" until Codex's first review of pull request 156 pointed out that it
+    # reads queue/config.yaml for exactly that routing.)
     local held_ref="refs/heads/claim/$STALE_HELD_ID" held_seed
     local bt_out="$TMPROOT/client.stale.beat.out" dn_out="$TMPROOT/client.stale.handback.out" bt_rc dn_rc
     st_ok=0
@@ -2278,6 +2338,47 @@ main() {
       note "claim: $(head -n 2 "$ng_out" | tr '\n' ' ')"
       note "ready: $(head -n 2 "$ng_err" | tr '\n' ' ')"
     fi
+
+    # -- 41 -----------------------------------------------------------------
+    # Where a push goes, which Codex's first review of pull request 156 found
+    # the first version of this change had left to the checkout. beat, release
+    # and done go ahead from a stale checkout on purpose (39), so each has to
+    # check the one thing a push cannot take from one: that locks_repo and
+    # claim_ref_prefix here are the ones origin names. The item is held under
+    # the old prefix by this fixture's token, and all three commands are asked
+    # from the stale checkout, then beat again from the current checkout with
+    # the old prefix edited back in. Every one must exit 3 naming the routing,
+    # and the claim ref must be exactly as seeded afterwards, with nothing
+    # created under the new prefix either: a refusal that printed the right
+    # words and pushed anyway would pass the first half. Paired with 39, where
+    # the routing matches and the same commands go ahead.
+    local rt_ref="${ROUTE_OLD_PREFIX}$ROUTE_ID" rt_seed rt_ok=0 rt_c rt_rc rt_moved
+    local rt_edited_client="$ROUTE_EDITED/scripts/hub"
+    rt_seed=$(mk_commit "$CLONE_A" "claim $ROUTE_ID by $ROUTE_TOKEN" \
+               "$(claim_record "$ROUTE_ID" "$ROUTE_TOKEN" claim "$future")")
+    push_ref "$CLONE_A" "$rt_seed" "$rt_ref" "$TMPROOT/route.seed.push"
+    for rt_c in beat release done edited-beat; do
+      case $rt_c in
+        beat)        fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" beat "$ROUTE_ID" ;;
+        release)     fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" release "$ROUTE_ID" routing test ;;
+        done)        fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" \
+                       done "$ROUTE_ID" --branch "agent/$ROUTE_ID/$ROUTE_TOKEN" ;;
+        edited-beat) fixture_hub "$rt_edited_client" "$ROUTE_CACHE" "$ROUTE_TOKEN" beat "$ROUTE_ID" ;;
+      esac >"$TMPROOT/client.route.$rt_c.out" 2>&1
+      rt_rc=$?
+      [ "$rt_rc" = "$EX_FAIL" ] || rt_ok=1
+      grep -Fq "ROUTING MISMATCH: claim_ref_prefix" "$TMPROOT/client.route.$rt_c.out" || rt_ok=1
+      [ "$(git -C "$LOCKS" rev-parse "$rt_ref" 2>/dev/null)" = "$rt_seed" ] || rt_ok=1
+      [ "$rt_ok" = "0" ] || break
+    done
+    rt_moved=$(git -C "$LOCKS" for-each-ref --format='%(refname)' "${ROUTE_NEW_PREFIX}" 2>/dev/null | grep -c .)
+    [ "$rt_moved" = "0" ] || rt_ok=1
+    if [ "$rt_ok" = "0" ]; then
+      assert 41 "client: beat, release and done from a checkout whose claim_ref_prefix origin has since moved, and beat from a current checkout with the old prefix edited in, each refuse naming the routing, and the claim ref is untouched with nothing created under either prefix" 0
+    else
+      assert 41 "client: every command that pushes refuses when its routing is not origin's (stopped at $rt_c: rc $rt_rc wanted $EX_FAIL; claim ref $(git -C "$LOCKS" rev-parse --short "$rt_ref" 2>/dev/null) seeded $(git -C "$LOCKS" rev-parse --short "$rt_seed" 2>/dev/null); refs under the new prefix $rt_moved)" 1
+      note "$(grep -v '^locks repository\|^ *source:' "$TMPROOT/client.route.$rt_c.out" | head -n 2 | tr '\n' ' ')"
+    fi
   else
     skip 35 "client: claim from a stale checkout names staleness rather than absence"
     note "$CLIENT_SKIP_REASON"
@@ -2290,6 +2391,8 @@ main() {
     skip 39 "client: beat and done are not stopped by a stale checkout"
     note "$CLIENT_SKIP_REASON"
     skip 40 "client: an uncomparable queue refuses a claim and lists with a warning"
+    note "$CLIENT_SKIP_REASON"
+    skip 41 "client: every command that pushes refuses when its routing is not origin's"
     note "$CLIENT_SKIP_REASON"
   fi
 

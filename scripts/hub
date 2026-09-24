@@ -1169,22 +1169,42 @@ fresh_stale_sentence() {
     "$FRESH_BRANCH" "$(short_sha "$FRESH_TIP")" "$ahead"
 }
 
+# The answer for this client's own checkout, asked once per invocation and
+# kept: claim asks it for the queue and again for the routing below, and one
+# question to origin is enough for both. cmd_fresh asks about other checkouts
+# directly and neither reads nor fills this.
+FRESH_REPO_RC=""
+repo_freshness() { # -> the status checkout_freshness gave for REPO_ROOT
+  if [ -z "$FRESH_REPO_RC" ]; then
+    checkout_freshness "$REPO_ROOT"; FRESH_REPO_RC=$?
+  fi
+  return "$FRESH_REPO_RC"
+}
+
 # Every command that answers from the queue calls this before it reads an item
 # file. MODE is what that command does with the answer:
 #
-#   refuse        stale or unknowable: stop. For claim, which writes. A claim
-#                 decided on a queue this client cannot vouch for rests on an
-#                 unverified precondition, and that is a failure, not an
-#                 allowance -- the same rule the cap and the reclaim limit use.
+#   refuse        stale or unknowable: stop. For claim and reconcile, which
+#                 write on the queue's rules: a claim, or an expiry of another
+#                 agent's claim under the reclaim grace, decided on a queue
+#                 this client cannot vouch for rests on an unverified
+#                 precondition, and that is a failure, not an allowance -- the
+#                 same rule the cap and the reclaim limit use.
 #   refuse-stale  stale: stop; unknowable: say so and go on. For ready and
 #                 ready --set, which only print. A listing that cannot tell
 #                 says so and still lists, as ready already does when the locks
 #                 repository cannot be read, because the claim that follows it
 #                 asks again and refuses honestly.
 #   warn          say so either way and go on. For done: the handoff it records
-#                 does not depend on the queue, only the text it prints after
-#                 does, and a hand-back must not be stopped by a merge that has
-#                 nothing to do with it.
+#                 is this agent's own, only the text it prints after is read
+#                 from the queue, and a hand-back must not be stopped by a
+#                 merge that has nothing to do with it.
+#
+# beat and release do not call this at all: each records this agent's own
+# claim, and a heartbeat refused over an unrelated merge would cost a lease.
+# What every command that pushes does call, those two included, is
+# require_routing below, because the one part of the queue a push cannot take
+# from a stale checkout is where it goes.
 #
 # ID, when given, is the item the command is about. A refusal then says what
 # origin's default branch has for it, because that is the fact the agents on
@@ -1194,7 +1214,7 @@ fresh_stale_sentence() {
 # the section header says.
 require_current_queue() { # mode [id] -> 0 go on, 1 stop, having said why
   local mode=$1 id=${2:-} rc path here there
-  checkout_freshness "$REPO_ROOT"; rc=$?
+  repo_freshness; rc=$?
   case $rc in
     0) return 0 ;;
     1)
@@ -1225,7 +1245,7 @@ require_current_queue() { # mode [id] -> 0 go on, 1 stop, having said why
       return 1 ;;
     *)
       if [ "$mode" = "refuse" ]; then
-        warn "cannot tell whether the checkout at $REPO_ROOT is current: $FRESH_WHY. The queue is origin's default branch and this client reads it from this checkout, so a claim made here would rest on an unverified precondition, which is a failure and not a silent allowance."
+        warn "cannot tell whether the checkout at $REPO_ROOT is current: $FRESH_WHY. The queue is origin's default branch and this client reads it from this checkout, so what this command would write here would rest on an unverified precondition, which is a failure and not a silent allowance."
         return 1
       fi
       warn "cannot tell whether the checkout at $REPO_ROOT is current, so what follows may not be the queue: $FRESH_WHY"
@@ -1244,6 +1264,66 @@ absent_item_sentence() { # id -> sentence on stdout
   else
     printf 'no item %s in this checkout, which could not be compared with origin (see above), so the queue may still have one' "$1"
   fi
+}
+
+# Where a push goes is decided by two values in queue/config.yaml, locks_repo
+# and claim_ref_prefix, and this client reads them from its own checkout. The
+# first version of this change (pull request 156) left that open, and Codex's
+# review of it found the gap: beat, release and done go ahead from a stale
+# checkout on purpose, so a checkout whose routing origin had since changed
+# would renew, release or hand off in a repository or namespace the queue no
+# longer uses. That splits the coordination state while every command reports
+# success, and HUB.md said those commands read no queue file, which was false.
+#
+# So every command that pushes compares those two values with what origin's
+# default branch has before it pushes anything, and refuses on any difference,
+# whether this checkout is behind, ahead with a change of its own, or edited in
+# place. The lease constants a heartbeat also reads are not compared: a lease
+# written with an old length is recorded in the claim with its own expiry and
+# misleads nobody about where the claim is, which is the thing that splits.
+#
+# When the question cannot be asked (no origin, not a checkout, offline) the
+# command says so and goes on. Each command's own freshness policy has already
+# refused or warned where it should, and the locks push that follows fails
+# honestly when the network is what is missing.
+#
+# Retires when: the client reads its configuration from origin's default branch
+# rather than from a working tree, with the rest of this section.
+ROUTING_KEYS="locks_repo claim_ref_prefix"
+ROUTING_WHY=""
+
+routing_differs() { # -> 0 differs (ROUTING_WHY says how), 1 the same, 2 cannot tell
+  local rc doc k here there
+  ROUTING_WHY=""
+  repo_freshness; rc=$?
+  if [ "$rc" -gt 1 ]; then
+    ROUTING_WHY=$FRESH_WHY
+    return 2
+  fi
+  if ! doc=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/config.yaml" 2>/dev/null); then
+    ROUTING_WHY="origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP")) has no queue/config.yaml to compare this checkout's with"
+    return 0
+  fi
+  for k in $ROUTING_KEYS; do
+    here=$(cfg "$k")
+    there=$(printf '%s\n' "$doc" | yaml_scalar_stream "$k")
+    if [ "$here" != "$there" ]; then
+      ROUTING_WHY="$k is '$here' in this checkout and '$there' on origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP"))"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Called by every command that pushes, before its first push: exits 3 when the
+# routing differs, warns and goes on when it cannot be told.
+require_routing() {
+  routing_differs
+  case $? in
+    0) fail "ROUTING MISMATCH: $ROUTING_WHY. A push sent where this checkout says would land where the queue no longer looks, so nothing was pushed. Run hub from a checkout that contains origin/$FRESH_BRANCH -- a worktree created from it after 'git fetch origin' is one. HUB.md: \"Which checkout the queue is read from\"." ;;
+    2) warn "cannot confirm that locks_repo and claim_ref_prefix here are the ones origin names, so this push goes where this checkout says: $ROUTING_WHY" ;;
+  esac
+  return 0
 }
 
 # ---------------------------------------------------------------------------
@@ -1414,11 +1494,20 @@ cmd_doctor() {
   # that a stale checkout does not stop the locks repository being probed; a
   # doctor that stopped early would report one failure where there are two.
   # Retires when: require_current_queue does, with the section that defines it.
-  checkout_freshness "$REPO_ROOT"; rc=$?
+  repo_freshness; rc=$?
   case $rc in
     0) say "ok    this checkout contains origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP"), as origin reported it just now), so the queue it reads is the queue" ;;
     1) say "FAIL  $(fresh_stale_sentence), so the queue this client reads is not the queue"; ok=1 ;;
     *) say "FAIL  cannot tell whether this checkout is current: $FRESH_WHY"; ok=1 ;;
+  esac
+  # And where a push from here would go, which beat, release and done check even
+  # from a stale checkout. Reported separately because it can fail when the line
+  # above passes: a current checkout with a routing value edited in place.
+  routing_differs; rc=$?
+  case $rc in
+    0) say "FAIL  ROUTING MISMATCH: $ROUTING_WHY; a push from this checkout would land where the queue no longer looks"; ok=1 ;;
+    1) say "ok    locks_repo and claim_ref_prefix here are the ones origin/$FRESH_BRANCH names" ;;
+    *) : ;;  # the line above has already said why origin could not be asked
   esac
 
   say ""
@@ -1702,8 +1791,11 @@ cmd_claim() {
   # checkout contains origin's default branch. Refused, rather than warned,
   # both when it is behind and when that cannot be told, because a claim is a
   # write and this is its precondition. Past this line the absence below is
-  # an absence from the queue, and it says so.
+  # an absence from the queue, and it says so. A current checkout can still
+  # route elsewhere, with a locks_repo or claim_ref_prefix edited in place or
+  # changed on a branch that has not merged, so the routing is checked too.
   require_current_queue refuse "$id" || return "$EX_FAIL"
+  require_routing
   item_exists "$id" || fail "$(absent_item_sentence "$id")"
   [ "$(item_field "$id" claimable)" = "true" ] \
     || fail "$id is not claimable: it needs a decision or a credential that only Brett has"
@@ -1927,6 +2019,11 @@ claim_count_and_push() { # id action attempt parent token
 cmd_beat() {
   local id=$1 token tip rc act ag lease sha attempt hb
   token=$(agent_token) || exit $?
+  # Not stopped by a stale checkout, because a lease must not be lost to a
+  # merge that has nothing to do with it; stopped only when the checkout would
+  # send the heartbeat somewhere origin no longer routes claims. See
+  # require_routing.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -1980,6 +2077,9 @@ cmd_release() {
   reason=$*
   [ -n "$reason" ] || reason="released by the agent"
   token=$(agent_token) || exit $?
+  # Like beat: this agent's own claim, so not stopped by a stale checkout, only
+  # by one that would route the release elsewhere.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -2054,6 +2154,10 @@ cmd_done() {
     fail "done: --branch '$branch' is not a branch this grant covers. The standing authorization in HUB.md permits pushes to 'agent/<queue-id>/<token>' and to nothing else, so for $id held by this session that is exactly 'agent/$id/$token'"
   fi
 
+  # Before the handoff is pushed, not after: where it goes is the one thing a
+  # hand-back cannot take from a stale checkout. Staleness otherwise only
+  # qualifies what is printed after the handoff, below.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -2168,6 +2272,12 @@ cmd_done() {
 
 cmd_reconcile() {
   local ref id act ag lu now grace sha rc problems=0 expired=0 skipped=0
+  # Refused like claim, not waved through like beat: reconcile writes on other
+  # agents' claims, under reclaim_grace_minutes read from this checkout, so a
+  # stale checkout would apply a grace the queue may no longer use to work that
+  # is not its own. Then the routing, as for every push.
+  require_current_queue refuse || return "$EX_FAIL"
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -2333,12 +2443,15 @@ hub - the queue client for the salmon ecosystem hub
 
 Which checkout the queue is read from:
   This client reads queue/ from the checkout it sits in, and the queue is the
-  default branch on origin. So doctor, ready, ready --set, claim and done first
-  ask origin for that branch's tip. From a checkout that does not contain it,
-  ready, ready --set and claim refuse, exit 3, naming the distance and both
-  branches; claim also refuses when the question cannot be asked at all; done
-  warns and hands back anyway; doctor fails. beat, release and reconcile read
-  no queue file and do not ask.
+  default branch on origin, so it asks origin for that branch's tip first. From
+  a checkout that does not contain it, claim, reconcile, ready and ready --set
+  refuse, exit 3, naming the distance and both branches; claim and reconcile
+  also refuse when the question cannot be asked at all; done warns and hands
+  back anyway; beat and release go ahead, because they record your own claim;
+  doctor fails. And every command that pushes, beat, release and done
+  included, first checks that locks_repo and claim_ref_prefix here are the
+  ones origin's default branch names, and refuses (exit 3) if they are not: a
+  push anywhere else splits the coordination state.
 
 Options and environment:
   --batch, HUB_MODE=batch        use lease_hours_batch instead of the
