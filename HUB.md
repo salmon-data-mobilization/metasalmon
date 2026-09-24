@@ -884,9 +884,10 @@ queue. The agents reported the items missing rather than the checkout stale
 
 So every command that answers from the queue first asks `origin` which commit
 its default branch is at, and whether the checkout contains it. It asks
-`origin`, not the checkout's own `origin/main`, which in that checkout was as
-old as the branch. A checkout that does not contain the tip is **stale**, and
-the client says so, with the distance and both branches. Then:
+`origin`, not the checkout's own `origin/main`, because that ref is only as
+current as the last fetch made there. A checkout that does not contain the tip
+is **stale**, and the client says so, with the distance and both branches.
+Then:
 
 - **`claim`, `ready` and `ready --set` refuse**, exit 3, because what they would
   answer from is not the queue. `claim` also refuses when the question cannot be

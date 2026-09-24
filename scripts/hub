@@ -1019,8 +1019,14 @@ member_solo_for_repo() { # repo -> yes only when the entry says so, otherwise no
 #
 # So every command that answers from the queue asks, once per invocation,
 # before it reads an item file. It asks ORIGIN, not the checkout's own
-# remote-tracking ref: in the checkout that did this, origin/main was as old as
-# the branch, because nobody had fetched there either.
+# remote-tracking ref, because that ref is only as current as the last fetch
+# made there: in a checkout nobody fetches in it is as old as the branch, and
+# it can say "current" while origin has moved on. Measured on 2026-09-24: a
+# fetch made a minute earlier had origin/main one commit behind what origin
+# then reported. (The 2026-09-16 checkout is not the evidence for this. Its
+# reflog shows origin/main fetched eleven times that night before the item
+# was filed, so a comparison with the local ref would very likely have caught
+# that one too.)
 #
 #   1. `git ls-remote --symref origin HEAD` names the default branch and its
 #      tip. A read; nothing is written.
