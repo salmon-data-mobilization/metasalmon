@@ -432,6 +432,34 @@ redundant: `scripts/check-parity-registers.py` fails on a number present in one
 register and absent from the other, so it would have turned the check red in both
 repositories for a fact row 56 already carries.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-23):
+a recorded hand-picked accept is not ontology-gap evidence.**
+`detect_semantic_term_gaps()` now drops the rows `apply_sdp_semantics()` writes
+for an `accept_suggestion(iri = )` decision before it derives anything from the
+table, embedded LLM assessments included (hub item **B-176**, pull request
+#146). Those rows are marked `source = "user"` and tested by
+`.ms_review_is_hand_picked()`. A gap row claims retrieval found no `smn` term,
+and a recorded row is a reviewer's decision, not retrieval output.
+
+**The port is owed because metasalmonpy has counted the recorded row as gap
+evidence since #28**, the pull request that introduced the row. Its blank
+`search_query` makes it a target of its own whose only candidate is not `smn`,
+so a post-review `semantic_suggestions.csv` passed as `suggestions` reports an
+ontology gap for the slot the reviewer just filled. A hand-picked IRI under
+`w3id.org/smn/` does not trigger it, because the detector counts that
+namespace as `smn`. Measured 2026-09-23 on metasalmonpy `main` `3f8349a`: the
+post-review file gave one gap row more than the pre-review file, and the extra
+row carried `top_non_smn_source` `user` and the hand-picked IRI.
+
+The Python counterpart is `detect_semantic_term_gaps()` in `term_requests.py`,
+keyed on `metadata_write._HAND_PICKED_SOURCE`. The pin should be the R test's:
+the post-review file yields exactly the gap rows the pre-review file did, on a
+slot whose candidates are a real non-`smn` gap. It is owed as a port, not a
+register row: the recorded row is itself a port that has landed (#28), and once
+this lands the two implementations behave alike again. It did not land in the
+same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is to be filed.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

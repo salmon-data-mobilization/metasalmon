@@ -372,10 +372,13 @@ repo at the same time.
 
 ### 3. Duplicated, divergent HTTP chat request builders
 - **Severity:** medium · **Status:** confirmed · **Class:** correctness-bug (drift)
-- **Implementation status:** open/deferred. R4 intentionally deepened the
-  response adapter while preserving the two current response shapes. Converging
-  `.ms_llm_chat_json_request()` and `.ms_chat_http_request()` is a separate
-  request-builder refactor because it would change the adapter shape decision.
+- **Implementation status:** fixed 2026-09-23 for the request builder (hub item
+  B-3; see below). The request body is still divergent, and that is hub item
+  B-128. Until then this read *open/deferred*: R4 intentionally deepened the
+  response adapter while preserving the two current response shapes, and
+  converging `.ms_llm_chat_json_request()` and `.ms_chat_http_request()` was held
+  back as a separate refactor "because it would change the adapter shape
+  decision" — which the fix shows it does not.
 - **Where:** `.ms_llm_chat_json_request` (R/llm-semantic-helpers.R:1301-1330) vs
   `.ms_chat_http_request` (R/chat-decomposition.R:435-472).
 - Two near-identical httr2 `/chat/completions` builders with **divergent** behavior:
@@ -387,6 +390,46 @@ repo at the same time.
 - **Fix:** extract a shared chat request builder. NOTE: doing so is **mutually
   exclusive** with keeping the adapter's dual-shape normalizer — track as its own
   refactor, not inside plan R4 (see plan Missing/Future #2).
+
+**FIXED 2026-09-23** (branch `agent/B-3/a-b14a5733e191f2cc`). One builder,
+`.ms_llm_chat_request()` in `R/llm-semantic-helpers.R`, now constructs the
+chat-completions request for both default request functions, and
+`.ms_llm_chat_completion()` beside it sends the request and hands back the
+extracted message text with the decoded body. `.ms_llm_chat_json_request()` and
+`.ms_chat_http_request()` keep their signatures and their return shapes and do
+only what is theirs: supply a body, and parse the reply. **The wire request is
+unchanged on every provider, and that is measured rather than asserted:**
+`tests/testthat/test-llm-chat-request.R` captures both paths' requests through
+httr2's mocked responses for `openai`, `openrouter`, `openai_compatible` and
+`chapi`, compares URL, method, revealed headers and curl options, and passed on
+the code before this change as well as after it. A guard in the same file walks
+the namespace and fails if any function but `.ms_llm_chat_request()` holds the
+endpoint path — RED before the change, when it found `.ms_chat_http_request`
+and `.ms_llm_chat_json_request`, GREEN after.
+
+**Two sentences in this entry were wrong, and the fix is the evidence.** *"This
+divergence is why the review adapter needs a two-shape normalizer"* and *"doing
+so is mutually exclusive with keeping the adapter's dual-shape normalizer"* both
+assumed that converging the request builders meant converging on one *response*
+shape. It does not: a request and the shape its reply is returned in are
+separable, the shared builder hands back unparsed text, and each caller parses it
+its own way. The normalizer (`.ms_llm_review_response_data()`) stays, and not by
+default. It is needed because `.ms_chat()` wraps whatever a `chat_request_fn`
+returns — a string, a wrapped list or a bare one — into `list(content, data,
+...)` before the review adapter sees it, while the semantic path hands the
+adapter whatever its request function returned. Removing the wrapped branch would
+mean changing what `.ms_chat()` returns, which is the session-engine question
+hub item B-31 carries, not a request-builder one.
+
+**What this does not fix, named rather than absorbed.** The request *bodies*
+still differ: chat decomposition sends a fixed `temperature = 0.2` and never
+consults `.ms_llm_build_chat_request_body()`, so on the chat path an `openai`
+GPT-5 model still receives a temperature, and a `reasoning_effort` configured
+through `METASALMON_LLM_REASONING_EFFORT` still never reaches the provider. That
+is hub item B-128. And `scripts/theme-a-benchmark.R` builds a third request of
+its own, with its own user agent and `X-Title` and a need for the provider's
+model and response id; it is outside the package namespace and outside this
+item's condition, and the B-3 workpad records it rather than converging it here.
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
 - **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug

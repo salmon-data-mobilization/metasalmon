@@ -47,7 +47,12 @@ shows them;
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
 }
 
-It never contacts a network or an LLM.
+It never contacts an LLM, and under the default options it never contacts a
+network: the SDP schema it reads the required fields from is the copy
+bundled with metasalmon. When the \code{metasalmon.sdp_schema_source} or
+\code{metasalmon.sdp_schema_base_url} option selects a different schema, it reads
+that one, as the package writers do: from this session's cache once they have
+loaded it, and otherwise by fetching it as they would.
 }
 \examples{
 \dontrun{

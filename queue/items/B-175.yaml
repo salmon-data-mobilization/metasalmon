@@ -1,7 +1,7 @@
 id: B-175
 kind: defect
 title: review_metadata() contacts the network although its documentation says it never does
-state: ready
+state: done
 claimable: true
 repo: metasalmon
 venue: claude-code
