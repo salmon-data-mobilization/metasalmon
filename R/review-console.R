@@ -67,6 +67,20 @@
   c("column_dictionary.csv", "codes.csv", "tables.csv")
 }
 
+# Whether each target is a code's slot: one whose write-back address includes
+# `code_value`, which today means `codes.csv`. Read from
+# `.ms_review_target_keys()` rather than spelled a second time, so the two cannot
+# disagree. A code's slot stays one when its `code_value` is empty, as a
+# `codes.csv` row's may be when it supplies `vocabulary_iri` instead.
+.ms_review_is_code_slot <- function(target_file) {
+  vapply(
+    as.character(target_file),
+    function(file) !is.na(file) && "code_value" %in% .ms_review_target_keys(file),
+    logical(1),
+    USE.NAMES = FALSE
+  )
+}
+
 # The `decision` values `apply_sdp_semantics()` writes into
 # `semantic_suggestions.csv`, and how each maps back onto a review row.
 # `not_selected` is the sibling of an accept within the same slot: the slot IS
@@ -513,11 +527,18 @@ review_semantics <- function(x,
 # `code_value` has three states, and the third is the one hub queue B-151 was
 # missing. `NULL` leaves it unconstrained; a value selects that code's slot; and
 # a BLANK value (`""`, or `NA`, which `.ms_scalar_text()` reads as `""`)
-# selects the slots with no code value at all. Without the
-# third state a column-level slot could not be told apart from its own codes'
-# slots when they share a role -- a measurement column's `entity_iri` and its
-# codes' `entity` targets do -- because omitting `code_value` matched every
-# code as well as the column.
+# selects the slots that belong to no code: the column's own slot, or a
+# table's. Without the third state a column-level slot could not be told apart
+# from its own codes' slots when they share a role -- a measurement column's
+# `entity_iri` and its codes' `entity` targets do -- because omitting
+# `code_value` matched every code as well as the column.
+#
+# "Belongs to no code" is decided by the slot's file, not by its `code_value`
+# alone. A `codes.csv` row may leave `code_value` empty when it supplies
+# `vocabulary_iri`, which the codes schema allows, and discovery still gives it a
+# code-level target. Reading an empty `code_value` as "no code" matched that
+# slot and the column's own slot together, so the blank never settled anything
+# for a column with such a row (Codex review of pull request #153).
 .ms_review_match_slot_rows <- function(review, column, role, table = NULL, code_value = NULL) {
   keep <- rep(TRUE, nrow(review))
   has_column <- !is.na(review$column_name) & nzchar(trimws(review$column_name))
@@ -536,7 +557,7 @@ review_semantics <- function(x,
     keep <- if (nzchar(code_value)) {
       keep & has_code & review$code_value == code_value
     } else {
-      keep & !has_code
+      keep & !has_code & !.ms_review_is_code_slot(review$target_file)
     }
   }
   review[keep, , drop = FALSE]
@@ -549,10 +570,14 @@ review_semantics <- function(x,
 # slot has no positional spelling at all, so it prints named arguments and
 # `table` is mandatory rather than a disambiguator.
 #
-# When `table` is not enough, `code_value` is added even for a row that has no
-# code value, as `code_value = ""`: that is the only spelling that excludes the
-# code slots sharing this slot's column and role, because an omitted
-# `code_value` matches them all (hub queue B-151).
+# When `table` is not enough, `code_value` is added. For a code's slot that is
+# its code value. For a slot that belongs to no code it is `code_value = ""`,
+# the only spelling that excludes the code slots sharing this slot's column and
+# role, because an omitted `code_value` matches them all (hub queue B-151).
+# A code's slot with an empty `code_value` gets neither: `""` now selects the
+# slots that belong to no code, so printing it there would decide the column's
+# own slot instead of this one. That slot's call stays as ambiguous as it was
+# before B-151, and refuses rather than deciding the wrong slot.
 .ms_review_call_args <- function(review, slot_id) {
   row <- review[review$slot_id == slot_id, , drop = FALSE][1, , drop = FALSE]
   column <- .ms_scalar_text(row$column_name)
@@ -574,7 +599,10 @@ review_semantics <- function(x,
     }
   }
   if (length(resolved(extra)) > 1L) {
-    extra$code_value <- .ms_scalar_text(row$code_value)
+    code_value <- .ms_scalar_text(row$code_value)
+    if (nzchar(code_value) || !.ms_review_is_code_slot(row$target_file)) {
+      extra$code_value <- code_value
+    }
   }
   c(args, extra)
 }
@@ -822,13 +850,19 @@ print.ms_semantic_review <- function(x, ...) {
 
   slots <- unique(rows$slot_id)
   if (length(slots) > 1L) {
-    # Every option offered here has to select one slot when added. A slot with
-    # no code value that shares its table with code slots is selected only by
-    # `code_value = ""`; offering bare `table = ` for it repeated an argument
-    # that could not settle anything, so the column's own slot was unreachable
-    # by following this message (hub queue B-151).
+    # A slot that belongs to no code and shares its table with code slots is
+    # selected only by `code_value = ""`; offering bare `table = ` for it
+    # repeated an argument that could not settle anything, so the column's own
+    # slot was unreachable by following this message (hub queue B-151). What
+    # makes a slot a code's is its file, not a non-empty `code_value`: a
+    # `codes.csv` row may leave the value empty when it supplies
+    # `vocabulary_iri` (Codex review of pull request #153). Such a code slot
+    # has no option of its own that settles it, since no argument tells it
+    # apart from the column's own slot, so it keeps the bare `table = ` it had
+    # before.
+    is_code_slot <- .ms_review_is_code_slot(rows$target_file)
     has_code <- !is.na(rows$code_value) & nzchar(trimws(rows$code_value))
-    needs_blank <- !has_code & rows$table_id %in% rows$table_id[has_code]
+    needs_blank <- !is_code_slot & rows$table_id %in% rows$table_id[is_code_slot]
     ambiguous <- unique(paste0(
       "table = \"", rows$table_id, "\"",
       ifelse(
@@ -873,8 +907,10 @@ print.ms_semantic_review <- function(x, ...) {
 #' @param code_value Code value; needed only for code-level slots. Pass `""`
 #'   (or `NA`) to select a column's own slot when codes of that column have
 #'   slots with the same role, as a measurement column's codes do: leaving
-#'   `code_value` out matches those code slots too. `review_semantics()` prints
-#'   it whenever it is needed.
+#'   `code_value` out matches those code slots too. A blank never selects a
+#'   code's slot, even for a `codes.csv` row that leaves `code_value` empty
+#'   because it supplies `vocabulary_iri`. `review_semantics()` prints it
+#'   whenever it is needed.
 #' @param iri Optional IRI to accept instead of a shortlisted candidate -- for
 #'   the case where the right term exists but retrieval did not surface it.
 #' @param reason Optional free-text reason recorded with a rejection.

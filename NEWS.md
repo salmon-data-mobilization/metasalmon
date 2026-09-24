@@ -417,21 +417,30 @@ metasalmon (development version)
   option it offered for the column's slot was the `table =` the call already
   carried.
 
-  A blank `code_value` now means "no code value":
+  A blank `code_value` now selects the slots that belong to no code:
   `accept_suggestion(..., code_value = "")`, or `code_value = NA`, selects the
-  column's own slot. `review_semantics()` prints `code_value = ""` whenever
-  `table` alone would not select one slot, and the refusal offers it too, so
-  every option it lists now reaches the slot it names. An omitted `code_value`
-  still matches every code, as before, so no call an earlier version printed
-  resolves to a different slot now. Reading the omission as "no code value"
-  instead, the other way to fix this, would have changed what every code
-  slot's call printed without a `code_value` resolves to.
+  column's own slot. It never selects a code's slot, including one whose
+  `codes.csv` row leaves `code_value` empty because it supplies
+  `vocabulary_iri`, which the codes schema allows. `review_semantics()` prints
+  `code_value = ""` whenever `table` alone would not select the column's own
+  slot, and the refusal offers it too. An omitted `code_value` still matches
+  every code, as before, so no call an earlier version printed resolves to a
+  different slot now. Reading the omission as "no code value" instead, the
+  other way to fix this, would have changed what every code slot's call printed
+  without a `code_value` resolves to.
 
-  **Mirror:** metasalmonpy already read `code_value=""` as "no code value",
-  where R aborted with *"No review slot matches"*, so that half moves R to the
-  Python behaviour. metasalmonpy prints the same ambiguous call and pins it
-  as a known limitation shared with R. The rest of this fix, and removing that
-  pin, is owed there as a port.
+  One case is not fixed here. A code slot whose `codes.csv` row has no code
+  value has no call of its own that tells it apart from another slot of the
+  same column, role and table, such as a measurement column's own slot. Its
+  printed call still refuses as ambiguous, as it did before, and never decides
+  the other slot. Set that row's `term_iri` in `codes.csv` directly.
+
+  **Mirror:** metasalmonpy prints the same ambiguous call and pins it as a
+  known limitation shared with R. Its matcher already read `code_value=""` as
+  "no code value", where R aborted with *"No review slot matches"*, but it also
+  matched a code slot whose row has no code value. The printed call, the
+  refusal and that part of the matcher are owed there as a port, with the
+  pin's removal.
 
 ### Changed
 
