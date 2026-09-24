@@ -1,0 +1,13 @@
+id: B-242
+kind: defect
+title: The printed accept_suggestion() call is ambiguous in metasalmonpy for a measurement column with a code list, the mirror half of B-151
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P2
+blocked_by: [B-151]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the accept_suggestion() call review_semantics() prints for a column-level slot of a measurement column carrying a code list resolves to exactly one slot, by the fix B-151 lands in R, so the two consoles print and resolve the same call for the same slot; the Python spellings of .ms_review_call_args() and .ms_review_match_slot_rows() are _review_call_args() and _match_slot_rows(). A metasalmonpy test covers a measurement column carrying a code list, and test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous, the pin metasalmonpy pull request 28 added with this defect as its retirement condition, is removed in the same change. THE METASALMON HALF IS B-151, and each names the other. A PORT, NOT A REGISTER ROW: the defect is in both implementations in the same shape, and once this lands they behave alike again. B-151''s workpad, in metasalmon pull request 153, describes a candidate implementation of this half, prepared under that claim, which covered metasalmon only and so could not push it; it was not reviewed there, so re-verify it rather than trust it.'

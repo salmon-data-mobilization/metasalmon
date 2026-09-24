@@ -515,7 +515,8 @@ for a column whose present values are all listed. Python has no test of the
 coercion half's `strict=True` raise either, although the behaviour is there.
 It is owed as a port, not a register row, because once it lands the two
 implementations behave alike again. It did not land in the same stream because
-a hub claim covers one branch in one repository.
+a hub claim covers one branch in one repository. Its metasalmonpy queue item is
+**B-241**.
 
 **Found while measuring it, and deliberately not part of this port:** that same
 block never applies `code_label`. The call after the constructor, at `:790`,

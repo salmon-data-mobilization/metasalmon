@@ -2956,6 +2956,11 @@ rather than as unconstrained) so it resolves to exactly one slot; a test covers
 a measurement column with a code list in both implementations; and the
 metasalmonpy pin is removed in the same change.
 
+*Split 2026-09-24 (`queue/README.md`, corollary 2):* `B-151` keeps the
+metasalmon half and `B-242` is the metasalmonpy half, which carries the Python
+fix, its test and the pin's removal. The item files hold each half's condition,
+so the *Retires when* above is the condition as filed rather than either half's.
+
 **`B-152` the network guards in `test-github-helpers.R` probe a host and a
 credential path the code under test never uses.** The guards at
 `tests/testthat/test-github-helpers.R:143-159` and `:231-259` reach

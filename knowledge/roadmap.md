@@ -535,8 +535,8 @@ because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
 measuring it that is not part of the port. **Why not in the same stream:** a hub
-claim covers one branch in one repository. Its metasalmonpy queue item is to be
-filed.
+claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-241`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
