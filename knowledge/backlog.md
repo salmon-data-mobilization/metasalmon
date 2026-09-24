@@ -6715,6 +6715,15 @@ B-199 re-vendor the schema from the exact tag B-236 creates, which is the ref th
 remote pin names, instead of from `f86d9b4`, so online and offline sessions
 cannot load different bundles.
 
+**Exemption rows retire with their terms.** B-231 seeds an exemption for
+every local smn term undefined when it lands, and B-232 empties the list. Only
+B-237 said to delete its row, so B-232 could define every other term and leave
+its row in place, and a later loss of that definition would pass the guard.
+B-108 was in the same position for `smn:NCBITaxon_8018`. The next Codex review
+of pull request 150 found it. B-231's check now fails on a stale row, one whose
+term has a definition or is no longer a local term, so B-232 and B-108 each
+delete their rows in the change that defines or removes the term.
+
 **Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
 temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
 which decides which schema their pattern check enforces. The roadmap's B-142
