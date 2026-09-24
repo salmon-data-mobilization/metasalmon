@@ -529,14 +529,14 @@ queue item is to be filed.
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.** Hub item
 **B-53** (backlog #53) stops `infer_column_role()` typing a column `temporal`
-on year-shaped values alone when its name carries a whole-word measurement term,
-so a count whose every value falls between 1800 and 2500 no longer leaves the
-semantic pipeline. metasalmonpy's `infer_column_role()` has the same defect, so
-it is owed there as a port, not a register row. The port is specified under
-*What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`, together with
-the float-column gap in metasalmonpy's year-shape predicate that the port will
-meet first. **Why not in the same stream:** a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is to be filed.
+on year-shaped values alone when the name's words include a measurement word and
+no date or time word, so a count whose every value falls between 1800 and 2500
+no longer leaves the semantic pipeline. metasalmonpy's `infer_column_role()` has
+the same defect, so it is owed there as a port, not a register row. The port is
+specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`, together with the float-column gap in metasalmonpy's
+year-shape predicate that the port will meet first. **Why not in the same
+stream:** a hub claim covers one branch in one repository.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on

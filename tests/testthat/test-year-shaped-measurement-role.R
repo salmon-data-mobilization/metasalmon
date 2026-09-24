@@ -11,7 +11,9 @@
 # without exercising the case it exists for.
 
 # One fixture per kind of whole-word measurement evidence, and per storage type
-# a CSV reader hands back: double, character and integer.
+# a CSV reader hands back: double, character and integer. The last two join
+# their measurement word to the rest of the name with punctuation that
+# `.ms_name_tokens()` does not split at (found by the Codex review of #152).
 year_shaped_measurements <- list(
   NATURAL_ADULT_SPAWNERS = c(1850, 2003, 1999),
   spawner_count = c("1850", "2003", "1999"),
@@ -19,7 +21,9 @@ year_shaped_measurements <- list(
   total_return = c(2011, 2400, 1890),
   mr_1st_sample_size = c(1900, 2000),
   `Water depth (mm)` = c(1850, 1920),
-  avg_weight = c(1900, 2100)
+  avg_weight = c(1900, 2100),
+  `Water depth(mm)` = c(1850, 1920),
+  `adult/count` = c("1850", "2003", "1999")
 )
 
 # The same values moved out of the year range without changing storage type.
@@ -43,9 +47,10 @@ test_that("a year-shaped measurement column is typed measurement, not temporal",
 
 test_that("year-shaped values do not change the role a measurement name gets", {
   # The invariant, stated over more than the measurement branch: with a
-  # whole-word measurement term in the name, the column takes the role it would
-  # take with any other values. So an explicit factor stays categorical and a
-  # method-named column stays metadata, exactly as they do off the year range.
+  # measurement word and no date or time word among the name's words, the
+  # column takes the role it would take with any other values. So an explicit
+  # factor stays categorical and a method-named column stays metadata, exactly
+  # as they do off the year range.
   cases <- c(
     year_shaped_measurements,
     list(
@@ -93,6 +98,30 @@ test_that("the year shape still decides when the name carries no measurement wor
   # A name that says year is temporal before any measurement word is read.
   expect_identical(infer_column_role("count_year", c(2001, 2002)), "temporal")
   expect_identical(infer_column_role("ANALYSIS_YR", c("2023", "2024", "2023")), "temporal")
+
+  # And a year word hidden from that token check by punctuation still keeps the
+  # year shape deciding. Splitting names at punctuation only to find measurement
+  # words would have typed these two `measurement` while `count_year` stays
+  # temporal, so the split finds time words too.
+  hidden_year_word <- list(
+    `Escapement (yr)` = c(2001, 2002),
+    `count/year` = c("2001", "2002")
+  )
+  for (name in names(hidden_year_word)) {
+    values <- hidden_year_word[[name]]
+    expect_true(.ms_values_look_yearish(values), info = name)
+    expect_identical(infer_column_role(name, values), "temporal", info = name)
+  }
+})
+
+test_that("a name's words are split at punctuation and never at a non-ASCII letter", {
+  words <- function(name) .ms_name_words(.ms_name_tokens(name))
+  expect_identical(words("Water depth(mm)"), c("water", "depth", "mm"))
+  expect_identical(words("adult/count"), c("adult", "count"))
+  expect_identical(words("Escapement (yr)"), c("escapement", "yr"))
+  expect_identical(words("NATURAL_ADULT_SPAWNERS"), c("natural", "adult", "spawners"))
+  expect_identical(.ms_name_words("temp\u00e9rature"), "temp\u00e9rature")
+  expect_identical(.ms_name_words(character()), character())
 })
 
 test_that("a substring or a parenthesised unit does not override the year shape", {

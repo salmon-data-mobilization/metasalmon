@@ -463,11 +463,14 @@ metasalmonpy queue item is to be filed.
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.**
 `infer_column_role()` no longer types a column `temporal` on year-shaped values
-alone (every value a four-digit number from 1800 to 2500) when its name carries
-a whole-word measurement term or a sample or partition size (backlog #53, hub
-item **B-53**). Such a column used to leave the semantic pipeline, because
-`suggest_semantics()` skips temporal columns. The whole-word test is the new
-`.ms_name_has_measurement_token()`. It reads the token list
+alone (every value a four-digit number from 1800 to 2500) when the name's words
+include a measurement word, or a sample or partition size, and no date or time
+word (backlog #53, hub item **B-53**). Such a column used to leave the semantic
+pipeline, because `suggest_semantics()` skips temporal columns. The words come
+from the new `.ms_name_words()`, which splits the name's tokens again at every
+ASCII punctuation character, so `Water depth(mm)` and `adult/count` are
+measurement names and the year word in `Escapement (yr)` is still seen. The
+measurement test is the new `.ms_name_has_measurement_word()`. It reads the list
 `.ms_name_has_measurement_hint()` reads, now held once in
 `.ms_measurement_name_tokens()`, and it leaves out that hint's substring and unit
 patterns, because each matches names that are not measurements
@@ -478,12 +481,15 @@ patterns, because each matches names that are not measurements
 `_values_look_yearish(series)` inside the one temporal branch. The pin should be
 the R test's (`tests/testthat/test-year-shaped-measurement-role.R`): each fixture
 checked against the year-shape predicate first, the role unchanged when the same
-values move off the year range, the three names a substring or unit rule would
+values move off the year range, names that join a measurement word with
+punctuation typed as measurements, a year word hidden by punctuation still
+keeping the year shape deciding, the three names a substring or unit rule would
 retype (`temporal_start`, `temporal_end`, `Cohort (Aug)`) still `temporal`, and
-one column followed to its semantic targets. It is owed as a port, not a register
-row: once it lands the two implementations behave alike again. It did not land
-in the same stream because a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is to be filed.
+one column followed to its semantic targets. The word split must use an explicit
+ASCII punctuation set, as R's does, rather than a class whose meaning moves with
+the locale. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because a
+hub claim covers one branch in one repository.
 
 **One thing the port has to know, because it will otherwise meet it as a failing
 control.** metasalmonpy's `_values_look_yearish()` never finds a float column
@@ -499,7 +505,7 @@ without testing anything, which is what the control is for. **The float gap is a
 separate divergence and not this port's to absorb**: it also means a year column
 pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
-and `temporal` here. It has no register row and no queue item yet.
+and `temporal` here.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
