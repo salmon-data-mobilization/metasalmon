@@ -1,0 +1,11 @@
+id: Q-62
+kind: question
+title: 'On the semantic closure path, should an EML sidecar carrying an !expr tag be refused, as both EML paths will, or fall back to the default paths, as metasalmonpy does?'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules what the semantic closure path does when metadata/eml-mapping.yml carries an !expr tag, or any other local tag it has no meaning for: refuse with a clear error naming the file, which is what both implementations will do on their EML and KNB paths once B-223 lands, or fall back silently to the default paths, which is what metasalmonpy does today. The ruling is recorded in knowledge/questions.md, and either the side that moves has a queue item or the difference is registered in both parity registers. Today the two differ on this path: R takes the tag''s text as the path (measured by the B-142 run on main 12efe9d with yaml 2.3.12), and metasalmonpy falls back to the defaults. Split out of B-223 on 2026-09-24 after the Codex review of metasalmon pull request 150, so that B-223 cannot close while leaving this difference unrecorded.'

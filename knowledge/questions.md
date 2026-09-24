@@ -369,6 +369,23 @@ already has a home through `smn:RunContext` and run size.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 
+### Q62 — On the semantic closure path, should an EML sidecar carrying an `!expr` tag be refused or fall back to the default paths?
+**Unblocks:** closing the last R/Python difference B-223 leaves on the EML sidecar.
+Once B-223 lands, both implementations refuse an `!expr`-tagged
+`metadata/eml-mapping.yml` on their EML and KNB paths. On the semantic closure
+path they still differ. R takes the tag's text as the path, as measured by the
+B-142 run on `main` `12efe9d` with yaml 2.3.12. metasalmonpy falls back silently
+to the default paths. Neither behaviour was chosen, and this difference is not
+registered. B-223 originally changed R's closure reader to refuse. The Codex
+review of pull request 150 pointed out that this would replace one unrecorded
+difference with another, so the path was split out to be decided here.
+**Recommendation:** refuse on every path, and have metasalmonpy's closure path
+move. A silent fallback hides a configuration mistake exactly where a user can
+least see it, and it leaves metasalmonpy inconsistent with its own EML path. The
+mirror is not automatically the follower, so this is a recommendation, not a
+default.
+**Owner:** the queue item `Q-62`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible

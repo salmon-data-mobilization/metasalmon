@@ -1,0 +1,13 @@
+id: B-236
+kind: defect
+title: 'No sdp release tag carries the ruled temporal pattern, so B-198 and B-199 have no tag to pin'
+state: needs_brett
+claimable: false
+repo: smn-data-pkg
+venue: either
+stream: S6
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'smn-data-pkg carries an annotated release tag at or after f86d9b4, the commit that recorded the Q-51 ruling, and a GitHub release whose body is that version''s CHANGELOG section. The name is Brett''s, because a tag''s name is a version claim: sdp-0.3.1 keeps the profile''s v0.3 URLs, and sdp-0.4.0 implies a v0.4 profile path, which is B-208''s question. Cutting it is his too, because it is an outward release act, and this environment refuses tag pushes. On his word an agent prepares the release pull request that files CHANGELOG [Unreleased] under the chosen version. Filed 2026-09-24 after the Codex review of metasalmon pull request 150 found B-198 waiting on this tag with no item owning it.'

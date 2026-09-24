@@ -6672,3 +6672,17 @@ Two trivial ones ride along. `.hub/agent-brief.md` is said to live "beside
 this file", but it is under `.hub/`. `self_suspends` says "the reinstatement
 above", in the singular, and there are now two. The field list's omission of
 `severity` and `stream` is the same finding as Q-52 and is tracked there.
+
+**`B-236`: no sdp release tag carries the ruled temporal pattern.** Brett ruled
+on 2026-09-23 that B-198's remote pin names a tag ("B198: Switch to a tag"). On
+2026-09-16, smn-data-pkg's only tags were `sdp-0.2.0` and `sdp-0.3.0`, and the
+Q-51 commit `f86d9b4` was sixteen commits ahead of `sdp-0.3.0`. So B-198 and
+B-199 wait on a tag nobody owned. The Codex review of pull request 150 found the
+gap. B-236 owns the tag, and both items are now blocked on it. The name and the
+act are Brett's.
+
+**`B-223` narrowed, and `Q-62` filed.** B-223 changed R's semantic closure reader
+along with the two EML paths. On that path metasalmonpy falls back to the default
+paths rather than refusing. So B-223 would have closed while leaving an
+unrecorded difference, as the Codex review of pull request 150 pointed out. The
+closure path is now Q-62's.
