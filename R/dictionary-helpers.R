@@ -1523,12 +1523,19 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' reports mismatches. Returns a transformed tibble ready for analysis or
 #' packaging.
 #'
+#' A value that is not in its column's code list has no factor level, so it
+#' becomes `NA`. Each such value is named in a warning, whatever `strict` is.
+#' Blank strings are treated as missing and are not reported.
+#'
 #' @param df A data frame or tibble to transform
 #' @param dict A validated dictionary tibble
 #' @param codes Optional tibble with code lists (columns: `dataset_id`,
 #'   `table_id`, `column_name`, `code_value`, `code_label`, etc.)
 #' @param strict Logical; if `TRUE` (default), errors on type coercion
-#'   failures; if `FALSE`, warns and coerces to character
+#'   failures; if `FALSE`, warns and coerces to character. A coercion failure
+#'   is one that R reports with a warning as well as one it reports with an
+#'   error, so a column typed `integer` holding `"abc"` is a failure even
+#'   though `as.integer("abc")` only warns and returns `NA`.
 #'
 #' @return A tibble with renamed columns, coerced types, and factor levels
 #'   applied
@@ -1592,43 +1599,37 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
     # Get column (use original name)
     col <- df[[col_name]]
 
-    # Coerce type
+    # Coerce type.
+    #
+    # A coercion failure is a warning at least as often as it is an error:
+    # `as.integer("abc")` and `as.numeric("1,5")` warn and return NA, and only
+    # shapes such as `as.Date("abc")` error. This block used to handle `error`
+    # alone, so under `strict = TRUE` the common failure returned NA beside R's
+    # own warning and never reached the abort (backlog #55). Both handlers now
+    # return the condition, so `coerced` is either the converted column or the
+    # reason it could not be converted.
     if (!is.na(value_type)) {
-      tryCatch({
-        if (value_type == "integer") {
-          result[[new_name]] <- as.integer(col)
-        } else if (value_type == "number") {
-          result[[new_name]] <- as.numeric(col)
-        } else if (value_type == "boolean") {
-          result[[new_name]] <- as.logical(col)
-        } else if (value_type == "date") {
-          if (inherits(col, "Date")) {
-            result[[new_name]] <- col
-          } else {
-            result[[new_name]] <- as.Date(col)
-          }
-        } else if (value_type == "datetime") {
-          if (inherits(col, "POSIXt")) {
-            result[[new_name]] <- col
-          } else {
-            result[[new_name]] <- as.POSIXct(col)
-          }
-        } else {
-          # string - keep as is or convert to character
-          result[[new_name]] <- as.character(col)
-        }
-      }, error = function(e) {
+      coerced <- tryCatch(
+        .ms_apply_dictionary_coerce(col, value_type),
+        warning = function(w) w,
+        error = function(e) e
+      )
+      if (inherits(coerced, "condition")) {
+        reason <- conditionMessage(coerced)
+        failed <- .ms_apply_dictionary_failed_values(col, value_type)
         if (strict) {
-          cli::cli_abort(
-            "Failed to coerce column {.field {col_name}} to {.val {value_type}}: {e$message}"
-          )
-        } else {
-          cli::cli_warn(
-            "Failed to coerce column {.field {col_name}} to {.val {value_type}}, keeping as character"
-          )
-          result[[new_name]] <<- as.character(col)
+          cli::cli_abort(c(
+            "Failed to coerce column {.field {col_name}} to {.val {value_type}}: {reason}",
+            "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
+          ))
         }
-      })
+        cli::cli_warn(c(
+          "Failed to coerce column {.field {col_name}} to {.val {value_type}}, keeping as character: {reason}",
+          "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
+        ))
+        coerced <- as.character(col)
+      }
+      result[[new_name]] <- coerced
     }
 
     # Apply factor levels from codes if available
@@ -1643,8 +1644,22 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
         code_values <- col_codes$code_value
         code_labels <- col_codes$code_label
 
-        # Convert to factor with levels from codes
+        # Convert to factor with levels from codes. A value the code list does
+        # not name has no level, so factor() turns it into NA; that happened
+        # silently until backlog #55. It is reported whatever `strict` is,
+        # because `strict` governs type coercion, and the defect was the
+        # silence rather than the conversion.
         if (inherits(result[[new_name]], "character") || inherits(result[[new_name]], "factor")) {
+          observed <- as.character(result[[new_name]])
+          unlisted <- unique(observed[
+            .ms_apply_dictionary_present(observed) & !observed %in% code_values
+          ])
+          if (length(unlisted) > 0) {
+            cli::cli_warn(c(
+              "Column {.field {col_name}} has {length(unlisted)} value{?s} not in its code list; {?it becomes/they become} {.code NA}:",
+              "i" = "{.val {unlisted}}"
+            ))
+          }
           result[[new_name]] <- factor(
             result[[new_name]],
             levels = code_values,
@@ -1668,4 +1683,47 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   }
 
   result
+}
+
+# The conversion apply_salmon_dictionary() makes for one declared `value_type`.
+# A function of its own so the caller can run it inside a handler that sees
+# warnings as well as errors, and so the failure report below can run it again
+# to find the values that did not convert.
+.ms_apply_dictionary_coerce <- function(col, value_type) {
+  if (value_type == "integer") {
+    as.integer(col)
+  } else if (value_type == "number") {
+    as.numeric(col)
+  } else if (value_type == "boolean") {
+    as.logical(col)
+  } else if (value_type == "date") {
+    if (inherits(col, "Date")) col else as.Date(col)
+  } else if (value_type == "datetime") {
+    if (inherits(col, "POSIXt")) col else as.POSIXct(col)
+  } else {
+    # string - keep as is or convert to character
+    as.character(col)
+  }
+}
+
+# TRUE for a value that is present: not NA and not blank. A blank string is a
+# missing value to every reader this package uses, so a coercion or a code list
+# turning one into NA loses nothing and is not reported.
+.ms_apply_dictionary_present <- function(text) {
+  !is.na(text) & nzchar(trimws(text))
+}
+
+# The distinct values a failed coercion could not convert: present before, NA
+# after. Empty when the coercion errors outright, because then there is no
+# converted column to compare against and the condition message is the report.
+.ms_apply_dictionary_failed_values <- function(col, value_type) {
+  converted <- tryCatch(
+    suppressWarnings(.ms_apply_dictionary_coerce(col, value_type)),
+    error = function(e) NULL
+  )
+  if (is.null(converted) || length(converted) != length(col)) {
+    return(character())
+  }
+  text <- as.character(col)
+  unique(text[.ms_apply_dictionary_present(text) & is.na(converted)])
 }
