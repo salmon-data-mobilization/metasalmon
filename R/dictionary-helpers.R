@@ -1166,8 +1166,9 @@ infer_value_type <- function(col) {
 }
 
 # The whole words that mark a column name as a date or time. One home, because
-# `infer_column_role()` reads it twice: against the name's tokens, and against
-# its words when deciding whether year-shaped values may be overridden.
+# `infer_column_role()` reads it twice: against the name's tokens, and, with
+# the plurals added, against its words when deciding whether year-shaped values
+# may be overridden.
 .ms_temporal_name_tokens <- function() {
   c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
 }
@@ -1206,7 +1207,6 @@ infer_value_type <- function(col) {
 infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
   name_tokens <- .ms_name_tokens(col_name)
-  name_words <- .ms_name_words(name_tokens)
 
   # An embedded ID token can describe what a qualifier is about rather than
   # making the qualifier itself an identifier. For example,
@@ -1257,15 +1257,29 @@ infer_column_role <- function(col_name, col) {
   # Words, split at punctuation as well as spaces (`.ms_name_words()`), so that
   # `Water depth(mm)` and `adult/count` are measurement names -- and so that a
   # time word hidden by punctuation still counts, as in `Escapement (yr)` and
-  # `count/year`, which the token check above does not see. Whole words, not
-  # `.ms_name_has_measurement_hint()`: measured 2026-09-24 over the 1,271
-  # columns in the CSVs of metasalmon, metasalmonpy, smn-data-pkg and
-  # salmon-domain-ontology, the only year-shaped columns that hint would have
-  # moved were 18 `temporal_start` / `temporal_end` columns, all rightly
-  # temporal, and the word test moves none of them.
+  # `count/year`, which the token check above does not see. The time words
+  # here include the plurals that check leaves out, so `escapement_years` stays
+  # temporal as it always was. The plurals are not added to that check itself,
+  # which also sees values off the year range, where a column counting days or
+  # years is not a date. Whole words, not `.ms_name_has_measurement_hint()`:
+  # measured 2026-09-24 over the 1,271 columns in the CSVs of metasalmon,
+  # metasalmonpy, smn-data-pkg and salmon-domain-ontology, the only year-shaped
+  # columns that hint would have moved were 18 `temporal_start` /
+  # `temporal_end` columns, all rightly temporal, and the word test moves none.
+  #
+  # The words decide only whether the year shape may decide. The checks below
+  # keep the coarser tokens, so a column this lets through is typed exactly as
+  # it would be with values off the year range. Letting those checks read the
+  # words too was tried (Codex review of #152, rounds 3 and 4): it forces every
+  # check that outranks the measurement check to read them as well, and there
+  # the split breaks units and rates. `Discharge (m3/day)`, `Escapement
+  # (fish/yr)` and `Rate (per day)` became temporal, and `Fish (no./site)` an
+  # identifier. That is a question about all of role inference, not this one.
   if (.ms_values_look_yearish(col)) {
+    name_words <- .ms_name_words(name_tokens)
+    time_words <- c(temporal_tokens, "years", "yrs", "months", "days")
     measurement_named <- .ms_name_has_measurement_word(name_words) &&
-      !any(name_words %in% temporal_tokens)
+      !any(name_words %in% time_words)
     if (!measurement_named) {
       return("temporal")
     }
@@ -1289,22 +1303,15 @@ infer_column_role <- function(col_name, col) {
     return(if (.ms_values_form_code_list(col)) "categorical" else "attribute")
   }
 
-  # The two measurement checks below read the name's words, not its tokens, so
-  # a name the year-shape check above let through as a measurement name is
-  # typed one here, whatever punctuation joins its measurement word:
-  # `adult/spawners`, `fish/weight` and `sample/size` would otherwise pass that
-  # check and still come out `attribute` (Codex review of #152). Every token
-  # without punctuation is also a word, so no name the tokens matched is lost.
-
   # Explicit sample-size / partition-size count fields should stay in the
   # measurement lane even when they lack generic count/amount tokens.
-  if (.ms_name_has_sample_size_hint(name_words) && .ms_values_look_numericish(col)) {
+  if (.ms_name_has_sample_size_hint(name_tokens) && .ms_values_look_numericish(col)) {
     return("measurement")
   }
 
   # Check for measurement/quantity patterns. Wide real-world tables often hide
   # measurements behind unit-bearing headers or percent-like strings.
-  if (.ms_name_has_measurement_hint(name_lower, name_words) && .ms_values_look_numericish(col)) {
+  if (.ms_name_has_measurement_hint(name_lower, name_tokens) && .ms_values_look_numericish(col)) {
     return("measurement")
   }
 

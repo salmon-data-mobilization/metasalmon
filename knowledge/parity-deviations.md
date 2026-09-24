@@ -542,23 +542,26 @@ measurement test is the new `.ms_name_has_measurement_word()`. It reads the list
 `.ms_name_has_measurement_hint()` reads, now held once in
 `.ms_measurement_name_tokens()`, and it leaves out that hint's substring and unit
 patterns, because each matches names that are not measurements
-(`temporal_start`, `Cohort (Aug)`). The sample-size and measurement checks
-further down read the same words, whatever the values, so a name that passes as
-a measurement name also types as one: `adult/spawners`, `fish/weight` and
-`sample/size` type `measurement` where they typed `attribute` before. Every
-word those checks matched before still matches.
+(`temporal_start`, `Cohort (Aug)`). The time words there include the plurals
+(`years`, `months`, `days`) that the name-temporal check leaves out. The words
+decide only whether the year shape may decide. The role checks after it read
+the coarse tokens as before, because splitting every check at punctuation
+breaks units and rates: `Discharge (m3/day)` became temporal and
+`Fish (no./site)` an identifier when that was tried.
 
 **The port is owed because metasalmonpy has the same defect.** Its
 `infer_column_role()` in `dictionary.py` is a node-for-node port and still calls
 `_values_look_yearish(series)` inside the one temporal branch. The pin should be
 the R test's (`tests/testthat/test-year-shaped-measurement-role.R`): each fixture
 checked against the year-shape predicate first, the role unchanged when the same
-values move off the year range, names that join a measurement word with
-punctuation typed as measurements (including words the substring pattern does
-not contain, such as `spawners` and `weight`), a year word hidden by
-punctuation still keeping the year shape deciding, the three names a substring
-or unit rule would retype (`temporal_start`, `temporal_end`, `Cohort (Aug)`)
-still `temporal`, and one column followed to its semantic targets. The word
+values move off the year range (method names joined by punctuation, such as
+`method/spawners`, included and never typed as measurements), names that join
+a measurement word with punctuation typed as measurements, a year word hidden
+by punctuation or written as a plural still keeping the year shape deciding,
+unit and rate headers keeping their roles off the year range, the three names a
+substring or unit rule would retype (`temporal_start`, `temporal_end`,
+`Cohort (Aug)`) still `temporal`, and one column followed to its semantic
+targets. The word
 split must use an explicit ASCII punctuation set, as R's does, rather than a
 class whose meaning moves with the locale. It is owed as a port, not a register
 row: once it lands the two implementations behave alike again. It did not land
