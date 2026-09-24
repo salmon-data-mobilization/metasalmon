@@ -11,9 +11,13 @@
 # without exercising the case it exists for.
 
 # One fixture per kind of whole-word measurement evidence, and per storage type
-# a CSV reader hands back: double, character and integer. The last two join
+# a CSV reader hands back: double, character and integer. The last five join
 # their measurement word to the rest of the name with punctuation that
 # `.ms_name_tokens()` does not split at (found by the Codex review of #152).
+# The first two of those were caught only by the measurement hint's substring
+# pattern. The last three use words that pattern does not contain, so they
+# reach `measurement` only because the measurement checks read the name's
+# words (round 2 of that review).
 year_shaped_measurements <- list(
   NATURAL_ADULT_SPAWNERS = c(1850, 2003, 1999),
   spawner_count = c("1850", "2003", "1999"),
@@ -23,7 +27,10 @@ year_shaped_measurements <- list(
   `Water depth (mm)` = c(1850, 1920),
   avg_weight = c(1900, 2100),
   `Water depth(mm)` = c(1850, 1920),
-  `adult/count` = c("1850", "2003", "1999")
+  `adult/count` = c("1850", "2003", "1999"),
+  `adult/spawners` = c(1850, 2003),
+  `fish/weight` = c(1900L, 2100L),
+  `sample/size` = c("1900", "2000")
 )
 
 # The same values moved out of the year range without changing storage type.

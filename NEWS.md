@@ -196,6 +196,16 @@ metasalmon (development version)
   `temporal_start` / `temporal_end` columns as measurements, all rightly
   temporal; the whole-word rule changes the role of none of the 1,271.
 
+  **The measurement checks read the same words, whatever the values.** A
+  measurement word joined to the rest of the name by punctuation -- as in
+  `adult/spawners`, `fish/weight` or `sample/size` -- now types a column with
+  numeric values `measurement`, as the underscore-joined spelling
+  (`adult_spawners`) already did. Before, such a name was read as having no
+  measurement word at all: a numeric column came out `attribute`, and so it too
+  left the semantic pipeline. Every word the measurement checks matched before
+  still matches, and the 1,271-column measurement above finds no role that
+  changes.
+
   **Not covered, on purpose:** a name whose only measurement evidence is a
   substring (`ADULTCOUNT`) or a unit in parentheses (`Mass (kg)`) is still typed
   `temporal` when its values look like years. Separate the words in the name

@@ -542,7 +542,11 @@ measurement test is the new `.ms_name_has_measurement_word()`. It reads the list
 `.ms_name_has_measurement_hint()` reads, now held once in
 `.ms_measurement_name_tokens()`, and it leaves out that hint's substring and unit
 patterns, because each matches names that are not measurements
-(`temporal_start`, `Cohort (Aug)`).
+(`temporal_start`, `Cohort (Aug)`). The sample-size and measurement checks
+further down read the same words, whatever the values, so a name that passes as
+a measurement name also types as one: `adult/spawners`, `fish/weight` and
+`sample/size` type `measurement` where they typed `attribute` before. Every
+word those checks matched before still matches.
 
 **The port is owed because metasalmonpy has the same defect.** Its
 `infer_column_role()` in `dictionary.py` is a node-for-node port and still calls
@@ -550,14 +554,15 @@ patterns, because each matches names that are not measurements
 the R test's (`tests/testthat/test-year-shaped-measurement-role.R`): each fixture
 checked against the year-shape predicate first, the role unchanged when the same
 values move off the year range, names that join a measurement word with
-punctuation typed as measurements, a year word hidden by punctuation still
-keeping the year shape deciding, the three names a substring or unit rule would
-retype (`temporal_start`, `temporal_end`, `Cohort (Aug)`) still `temporal`, and
-one column followed to its semantic targets. The word split must use an explicit
-ASCII punctuation set, as R's does, rather than a class whose meaning moves with
-the locale. It is owed as a port, not a register row: once it lands the two
-implementations behave alike again. It did not land in the same stream because a
-hub claim covers one branch in one repository.
+punctuation typed as measurements (including words the substring pattern does
+not contain, such as `spawners` and `weight`), a year word hidden by
+punctuation still keeping the year shape deciding, the three names a substring
+or unit rule would retype (`temporal_start`, `temporal_end`, `Cohort (Aug)`)
+still `temporal`, and one column followed to its semantic targets. The word
+split must use an explicit ASCII punctuation set, as R's does, rather than a
+class whose meaning moves with the locale. It is owed as a port, not a register
+row: once it lands the two implementations behave alike again. It did not land
+in the same stream because a hub claim covers one branch in one repository.
 
 **One thing the port has to know, because it will otherwise meet it as a failing
 control.** metasalmonpy's `_values_look_yearish()` never finds a float column

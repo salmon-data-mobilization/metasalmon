@@ -1206,6 +1206,7 @@ infer_value_type <- function(col) {
 infer_column_role <- function(col_name, col) {
   name_lower <- tolower(col_name)
   name_tokens <- .ms_name_tokens(col_name)
+  name_words <- .ms_name_words(name_tokens)
 
   # An embedded ID token can describe what a qualifier is about rather than
   # making the qualifier itself an identifier. For example,
@@ -1263,7 +1264,6 @@ infer_column_role <- function(col_name, col) {
   # moved were 18 `temporal_start` / `temporal_end` columns, all rightly
   # temporal, and the word test moves none of them.
   if (.ms_values_look_yearish(col)) {
-    name_words <- .ms_name_words(name_tokens)
     measurement_named <- .ms_name_has_measurement_word(name_words) &&
       !any(name_words %in% temporal_tokens)
     if (!measurement_named) {
@@ -1289,15 +1289,22 @@ infer_column_role <- function(col_name, col) {
     return(if (.ms_values_form_code_list(col)) "categorical" else "attribute")
   }
 
+  # The two measurement checks below read the name's words, not its tokens, so
+  # a name the year-shape check above let through as a measurement name is
+  # typed one here, whatever punctuation joins its measurement word:
+  # `adult/spawners`, `fish/weight` and `sample/size` would otherwise pass that
+  # check and still come out `attribute` (Codex review of #152). Every token
+  # without punctuation is also a word, so no name the tokens matched is lost.
+
   # Explicit sample-size / partition-size count fields should stay in the
   # measurement lane even when they lack generic count/amount tokens.
-  if (.ms_name_has_sample_size_hint(name_tokens) && .ms_values_look_numericish(col)) {
+  if (.ms_name_has_sample_size_hint(name_words) && .ms_values_look_numericish(col)) {
     return("measurement")
   }
 
   # Check for measurement/quantity patterns. Wide real-world tables often hide
   # measurements behind unit-bearing headers or percent-like strings.
-  if (.ms_name_has_measurement_hint(name_lower, name_tokens) && .ms_values_look_numericish(col)) {
+  if (.ms_name_has_measurement_hint(name_lower, name_words) && .ms_values_look_numericish(col)) {
     return("measurement")
   }
 
