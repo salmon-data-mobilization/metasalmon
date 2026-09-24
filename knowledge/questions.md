@@ -286,8 +286,8 @@ behavioural either way.
 **Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
 
 ### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
-**Unblocks:** `smn:Run`'s definition, which `B-232` cannot write without a
-ruling. On 2026-09-23 Brett found that the published site shows `Run` with no
+**Unblocks:** `smn:Run`'s definition, which `B-237` owns and cannot write
+without a ruling. On 2026-09-23 Brett found that the published site shows `Run` with no
 definition.
 
 **smn gives the word two readings.** Read on salmon-domain-ontology `main`
@@ -327,7 +327,7 @@ the label.
 The case for (b) is real, and it is why this is a question. `smn:RunContext`'s
 sourced definition uses "run" for the fish, so a user looking for a term for a
 run-size column finds `smn:Run` and gets a characteristic. Whichever way it goes,
-the definition is written from a source under `B-232`, not from this entry.
+the definition is written from a source under `B-237`, not from this entry.
 
 **Update, same day: a fourth sense, and evidence from the working group.**
 Batch 1 of the commons definition backfill (salmon-knowledge-commons pull request
