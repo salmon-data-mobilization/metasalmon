@@ -1270,6 +1270,27 @@ infer_column_role <- function(col_name, col) {
   NA
 }
 
+# The `column_dictionary.csv` IRI fields that `validate_dictionary()` sweeps for
+# a `REVIEW:` marker. The list is FIXED rather than read from the schema's
+# declared `*_iri` fields. A schema selected through the options can declare
+# more, and strict validation does not refuse a marker in the extra ones.
+#
+# This is the only copy of the list, and two functions read it: the validator,
+# and `review_metadata()`'s marker branch (`R/sdp-field-setters.R`). Sharing it
+# is what makes the scan list a dictionary marker exactly where strict
+# validation refuses one. The list used to be written out inside
+# `validate_dictionary()`, while the scan read the schema's fields instead; the
+# Codex review of #144 found that, under such a schema, the scan listed a
+# marker strict validation accepted. Copying the six into the scan would have
+# left two lists free to drift apart.
+#
+# Retires when strict validation reads the dictionary's IRI fields from the
+# schema. Both functions then take the schema's list, and this helper is
+# deleted.
+.ms_dictionary_iri_fields <- function() {
+  c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
+}
+
 #' Validate a salmon data dictionary
 #'
 #' Validates a dictionary tibble against the salmon data package schema.
@@ -1362,10 +1383,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   # mode; still surface a high-signal warning because missing fields reduce package quality.
   measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
   semantic_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
-  iri_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
-    names(dict)
-  )
+  iri_fields <- intersect(.ms_dictionary_iri_fields(), names(dict))
 
   review_marker_rows <- lapply(iri_fields, function(field) {
     vals <- dict[[field]]

@@ -461,6 +461,35 @@ same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is to be filed.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
+`review_metadata()` now lists a draft `REVIEW:` IRI wherever
+`validate_salmon_datapackage(require_iris = TRUE)` refuses one (hub item
+**B-174**, pull request #144). That means any declared `*_iri` field of
+`tables.csv` and the six semantic IRI fields of `column_dictionary.csv`. This is
+the R half of metasalmonpy #28's `_is_unresolved_iri()`, and it is one file
+short. metasalmonpy's `_REVIEW_IRI_FILES` also lists `codes.csv`. R's scan does
+not, because R's strict validation does not yet refuse a marker there and the
+scan lists exactly what the validator refuses. The state is reachable only by
+hand-editing: no producer in either package writes a marker into `codes.csv`.
+
+**Brett ruled the direction on 2026-09-23: "Yes; Refuse it for the strict
+validation."** Strict validation will refuse a `codes.csv` marker. metasalmonpy's
+scan therefore already gives the ruled answer, and R is the side that moves.
+**B-177** makes R's strict validation sweep all four metadata files and extends
+the scan's file list in the same change; its card records the ruling, from the
+queue sweep of 2026-09-23 (pull request 150). The ruling covers both
+implementations, and the Python side owes a widening too. Its strict validation
+does not yet refuse a marker in `codes.csv` or `dataset.csv`, and its EDH gate
+and scan both leave out `dataset.csv`. That half was filed in the same sweep as
+**B-230**, and each item names the other.
+
+**It is owed as a port, not a register row**, for the reason this section gives
+throughout. A ruled direction with an owner on each side is lag being closed,
+not a difference anyone wants, and once B-177 and B-230 land the two
+implementations behave alike. No numbered row was added, so
+`scripts/check-parity-registers.py` has nothing new to compare.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Its codes step
 now warns before the factor conversion, naming each distinct value that is
 present in the data and missing from the column's code list, under either value
