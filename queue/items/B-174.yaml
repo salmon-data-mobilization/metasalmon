@@ -1,8 +1,8 @@
 id: B-174
 kind: defect
 title: review_metadata() reports a clean package that strict validation refuses for a REVIEW-marked IRI
-state: review
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S5

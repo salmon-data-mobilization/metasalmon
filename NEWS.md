@@ -403,6 +403,83 @@ metasalmon (development version)
   still counts the row it has recorded since #28, and the same fix is owed
   there.
 
+* **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
+  refuses** (hub item B-174). Its contract is that when the last row it prints
+  is gone, `validate_salmon_datapackage(require_iris = TRUE)` passes, and in
+  0.5.0 that failed for the most ordinary unfinished package: one whose
+  semantic review was left partly undecided. A `REVIEW:`-prefixed IRI is not
+  blank and is not one of the three `MISSING ...:` / `REVIEW REQUIRED:`
+  placeholder spellings, so the scan's test for an unfilled value passed over
+  it and `review_metadata()` printed "No outstanding metadata." for a package
+  strict validation then refused. Every IRI field strict validation sweeps was
+  affected -- including the four measurement IRIs and `observation_unit_iri`,
+  which the scan did visit, with a test that could not see the marker.
+
+  A marker is now listed wherever strict validation refuses one, with the
+  `set_sdp_*()` call that replaces it: in any schema-declared `*_iri` field of
+  `tables.csv`, and in the six semantic IRI fields of `column_dictionary.csv`.
+  The six are read from the list `validate_dictionary()` sweeps, not from the
+  schema. So when a schema selected through the options declares a seventh
+  dictionary `*_iri` field, a marker there is not listed, because strict
+  validation accepts it (raised in the Codex review of #144). Also still not
+  listed:
+
+  - a marker in `codes.csv` or `dataset.csv`, because strict validation does
+    not refuse one there yet (hub item B-177);
+  - a marker in a `*_iri` column the schema does not declare, which has no
+    setter to print (hub item B-185).
+
+  The fix is a second test for the marker rather than a wider placeholder
+  test, because other callers depend on the placeholder test's narrowness. It
+  is pinned by marking each declared `*_iri` field of all four metadata files
+  in turn, on a package that otherwise passes, and asserting that the scan
+  lists it exactly when strict validation refuses it. A second test does the
+  same for a configured schema's extra dictionary field.
+
+  metasalmonpy fixed the same defect in pull request #28, and its scan also
+  lists a marker in `codes.csv`, the one file where the two differ. Brett ruled
+  on 2026-09-23 that strict validation refuses a marker there, so R is the side
+  that moves, when B-177 lands. Until then the difference is tracked as a port
+  owed in `knowledge/parity-deviations.md`, not as a register row.
+
+* **`apply_salmon_dictionary(strict = TRUE)` now stops on the coercion failure
+  it used to let through, and the codes step names the values it blanks**
+  (backlog #55, hub item B-55). Both were silent losses in one call.
+
+  - **A value R only warns about is now a coercion failure.**
+    `as.integer("abc")` and `as.numeric("1,5")` do not error. They warn and
+    return `NA`. The coercion block handled `error` alone, so under the default
+    `strict = TRUE` a column typed `integer` or `number` holding such a value
+    came back with `NA` in its place and R's generic *"NAs introduced by
+    coercion"* beside it, and never reached the abort that `strict` promises.
+    A warning is now a failure too. `strict = TRUE` aborts, naming the column
+    and the type, and for a failure R only warned about, each value that did not
+    convert. `strict = FALSE` warns and keeps the column as character, which is
+    what the argument has always documented; it too returned the `NA`s. A
+    missing or blank value is not a failure.
+  - **A value that is not in its column's code list is reported.** The codes
+    step makes the column a factor whose levels are the code list, so an
+    unlisted value has no level and becomes `NA`, and it used to do that without
+    a word. It now warns, naming each distinct unlisted value, under either
+    value of `strict`: `strict` governs type coercion, and the defect was the
+    silence, not the conversion, which is unchanged. Blank strings count as
+    missing and are not named.
+
+  Two tests pinned the old behaviour. One asserted that `strict = TRUE` returned
+  `NA` for `"not-a-number"`, beside a comment saying the handler "only triggers on
+  actual errors, not warnings". Both now assert the documented contract.
+
+  **Not covered, because it is a different mechanism:** a coercion that loses a
+  value without signalling anything still passes `strict = TRUE`. `as.logical()`
+  returns `NA` for `"yes"` with no warning, `as.Date()` does the same for a
+  value after a parseable first one, and `as.integer("3.7")` truncates to `3`.
+  None of them raises a condition for a handler to catch.
+
+  **Mirror:** the coercion half brings R to where metasalmonpy already was,
+  because its `_coerce_series()` raises on these values under `strict=True`. Its
+  codes step still blanks an unlisted value silently, and that half is owed
+  there as a port (see `knowledge/parity-deviations.md`).
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

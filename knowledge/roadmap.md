@@ -530,6 +530,18 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-216`, filed by the 2026-09-23 queue sweep.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+`apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
+makes its codes step warn about each value missing from a column's code list,
+where it had turned them into `NA` silently, and makes `strict = TRUE` abort on a
+coercion that R only warns about. The coercion half owes metasalmonpy nothing,
+because its `_coerce_series()` already raises there. The codes half is owed as a
+port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`, together with a Python defect found while
+measuring it that is not part of the port. **Why not in the same stream:** a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is to be
+filed.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

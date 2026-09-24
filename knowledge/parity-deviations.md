@@ -476,6 +476,74 @@ this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
+`review_metadata()` now lists a draft `REVIEW:` IRI wherever
+`validate_salmon_datapackage(require_iris = TRUE)` refuses one (hub item
+**B-174**, pull request #144). That means any declared `*_iri` field of
+`tables.csv` and the six semantic IRI fields of `column_dictionary.csv`. This is
+the R half of metasalmonpy #28's `_is_unresolved_iri()`, and it is one file
+short. metasalmonpy's `_REVIEW_IRI_FILES` also lists `codes.csv`. R's scan does
+not, because R's strict validation does not yet refuse a marker there and the
+scan lists exactly what the validator refuses. The state is reachable only by
+hand-editing: no producer in either package writes a marker into `codes.csv`.
+
+**Brett ruled the direction on 2026-09-23: "Yes; Refuse it for the strict
+validation."** Strict validation will refuse a `codes.csv` marker. metasalmonpy's
+scan therefore already gives the ruled answer, and R is the side that moves.
+**B-177** makes R's strict validation sweep all four metadata files and extends
+the scan's file list in the same change; its card records the ruling, from the
+queue sweep of 2026-09-23 (pull request 150). The ruling covers both
+implementations, and the Python side owes a widening too. Its strict validation
+does not yet refuse a marker in `codes.csv` or `dataset.csv`, and its EDH gate
+and scan both leave out `dataset.csv`. That half was filed in the same sweep as
+**B-230**, and each item names the other.
+
+**It is owed as a port, not a register row**, for the reason this section gives
+throughout. A ruled direction with an owner on each side is lag being closed,
+not a difference anyone wants, and once B-177 and B-230 land the two
+implementations behave alike. No numbered row was added, so
+`scripts/check-parity-registers.py` has nothing new to compare.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+`apply_salmon_dictionary()` names the code values it blanks.** Its codes step
+now warns before the factor conversion, naming each distinct value that is
+present in the data and missing from the column's code list, under either value
+of `strict` (hub item **B-55**, backlog #55). The same change makes
+`strict = TRUE` abort on a value that R's coercion only warns about, and **that
+half owes metasalmonpy nothing**: `_coerce_series()` in `dictionary.py` already
+raises there, through `pd.to_numeric(..., errors="raise")` (`:712`, `:714`) and
+`pd.to_datetime(..., errors="raise")` (`:718`, `:720`), so R has moved to where
+Python was. Measured 2026-09-24 on metasalmonpy `main` `3f8349a` with pandas
+3.0.5: `"not-a-number"` in a column typed `integer` raises `ValueError` under
+`strict=True`, and is kept as a string with a `RuntimeWarning` under
+`strict=False`.
+
+**The codes half is owed.** The Python counterpart is the codes block of
+`apply_salmon_dictionary()` in `dictionary.py` (`:789`), which builds
+`pd.Categorical(..., categories=code_values)` and so turns an unlisted value
+into a missing one. Measured on the same commit, `"Unknown"` against a two-value
+code list comes back missing, and the only signal is pandas' own
+`Pandas4Warning` that such a construction "will raise in a future version".
+The pin should be the R test's: one warning naming the unlisted value under
+both values of `strict`, no name for a missing or a blank value, and no warning
+for a column whose present values are all listed. Python has no test of the
+coercion half's `strict=True` raise either, although the behaviour is there.
+It is owed as a port, not a register row, because once it lands the two
+implementations behave alike again. It did not land in the same stream because
+a hub claim covers one branch in one repository.
+
+**Found while measuring it, and deliberately not part of this port:** that same
+block never applies `code_label`. The call after the constructor, at `:790`,
+reaches `rename_categories` on a `Series` rather than on its `.cat` accessor, so
+it raises `AttributeError` into the `except Exception` branch marked
+`pragma: no cover - defensive`, which converts the column to strings. R's factor
+carries the labels. The Python code plainly means to apply them, so this reads
+as a Python defect rather than a design difference, but
+`tests/test_dictionary.py` pins the unlabelled categories, so it is a candidate
+for its own item and the B-55 workpad has the evidence. No register row is added
+here, because adding one is Brett's.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
