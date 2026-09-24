@@ -569,6 +569,36 @@ metasalmon (development version)
   refusal and that part of the matcher are owed there as a port, with the
   pin's removal.
 
+* **`read_sssom_mapping_set()` now reads a canonical SSSOM/TSV file, which
+  leaves the built-in prefixes out of its `curie_map`** (hub item B-233). The
+  reader looked every CURIE prefix up in the file's own `curie_map` and refused
+  any it did not find, so `skos:exactMatch` in a file that did not declare
+  `skos` stopped with *uses unknown CURIE prefix "skos"*. The SSSOM
+  specification allows exactly that file: `owl`, `rdf`, `rdfs`, `semapv`,
+  `skos`, `sssom`, `xsd` and `linkml` are built-in, they "MAY be omitted from
+  the curie_map", and a canonical SSSOM/TSV writer "MUST NOT include" them. As
+  `mapping_justification` is required and is always a `semapv:` CURIE, every
+  canonical file with a mapping in it was refused. The eight are now accepted
+  undeclared. Every other prefix still has to be declared, since SSSOM/TSV
+  parsers "MUST reject a file with undeclared, non-built-in prefix names".
+
+  One kind of file that used to be accepted is now refused: a `curie_map` that
+  declares a built-in prefix with a different expansion, such as `skos` with
+  `https://www.w3.org/2004/02/skos/core#`. The specification says a declared
+  built-in "MUST point to the same IRI prefixes" as its table, and the old
+  reader, which knew no built-ins, read such an entry as an ordinary
+  declaration. The rule sits with the other CURIE checks, so it holds in
+  `validate_sdp_sssom()` and for an in-memory set passed to `write_sdp_sssom()`,
+  which is refused before anything is written, and `validate = FALSE` skips it
+  as it skips them. The rules are in the model's Identifiers section and the
+  table in the introduction's IRI prefixes section
+  (<https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers>,
+  <https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes>),
+  unchanged in the SSSOM 1.1 draft.
+
+  **Mirror:** metasalmonpy's reader refuses the same canonical files. It is
+  owed there as a port, hub item B-234, and not registered as a deviation.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
