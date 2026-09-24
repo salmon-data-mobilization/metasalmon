@@ -530,6 +530,45 @@ metasalmon (development version)
   codes step still blanks an unlisted value silently, and that half is owed
   there as a port (see `knowledge/parity-deviations.md`).
 
+* **The call `review_semantics()` prints for a measurement column's own slot
+  now runs when the column has a code list** (hub item B-151). A measurement
+  column's `entity_iri` and `constraint_iri` targets share their roles with the
+  `codes.csv` targets of its codes, and an omitted `code_value` matches every
+  code. So the column's own slot printed
+  `accept_suggestion(review, "spawner_count", "entity", rank = 1, table = "spawners")`,
+  which matched that slot and every code's slot and aborted with *"That column
+  and role match more than one review slot"*; its `reject_suggestion()` line did
+  the same. Reproduced through `create_sdp(semantic_code_scope = "all")` with a
+  two-code sentinel list on a count column: 6 of the 33 printed calls aborted.
+  The abort's own list of arguments to add was no way out either, because the
+  option it offered for the column's slot was the `table =` the call already
+  carried.
+
+  A blank `code_value` now selects the slots that belong to no code:
+  `accept_suggestion(..., code_value = "")`, or `code_value = NA`, selects the
+  column's own slot. It never selects a code's slot, including one whose
+  `codes.csv` row leaves `code_value` empty because it supplies
+  `vocabulary_iri`, which the codes schema allows. `review_semantics()` prints
+  `code_value = ""` whenever `table` alone would not select the column's own
+  slot, and the refusal offers it too. An omitted `code_value` still matches
+  every code, as before, so no call an earlier version printed resolves to a
+  different slot now. Reading the omission as "no code value" instead, the
+  other way to fix this, would have changed what every code slot's call printed
+  without a `code_value` resolves to.
+
+  One case is not fixed here. A code slot whose `codes.csv` row has no code
+  value has no call of its own that tells it apart from another slot of the
+  same column, role and table, such as a measurement column's own slot. Its
+  printed call still refuses as ambiguous, as it did before, and never decides
+  the other slot. Set that row's `term_iri` in `codes.csv` directly.
+
+  **Mirror:** metasalmonpy prints the same ambiguous call and pins it as a
+  known limitation shared with R. Its matcher already read `code_value=""` as
+  "no code value", where R aborted with *"No review slot matches"*, but it also
+  matched a code slot whose row has no code value. The printed call, the
+  refusal and that part of the matcher are owed there as a port, with the
+  pin's removal.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
@@ -581,6 +620,31 @@ metasalmon (development version)
   item B-48) measured as loaded and never executed. B-48 builds its dispatch on
   this text; no rule `id`, `severity`, `version` or `profile` changed, because
   that test keys on rule ids.
+
+### Internal
+
+* **The test suite now fails when a vignette relies on a global
+  `knitr::opts_chunk$set()` to keep its display-only code out of the script
+  `R CMD check` runs** (backlog #32, hub item B-164).
+  `tests/testthat/test-vignette-purl-guard.R` tangles every vignette the way the
+  check's fresh process does -- through the vignette's own engine, with knitr's
+  default chunk options, because the tangle never runs the setup chunk -- and
+  fails when one that turns `eval` or `purl` off globally still yields live
+  code. #32 closed this shape in six vignettes on 2026-07-21 and added nothing
+  that would notice a seventh. `migrating-to-sdp-0-3-0.Rmd` and
+  `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7 display
+  chunks tangle as live code and fail `R CMD check` at the first statement on
+  R 4.3.3. The guard was shown failing on both before anything else changed.
+  Both stay as they are until hub item B-133 fixes them. Meanwhile the guard
+  lists them as known offenders, each pinned to the chunks that offend today.
+  A new live chunk in either one still fails, and so does an entry that has
+  stopped offending.
+
+  A test is needed because the check step that catches this stopped running by
+  default in R 4.4.0, when `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so
+  CI's current R stays green while `R CMD check` fails for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI's own check runs that
+  step again, which it cannot while the known-offender list has an entry.
 
 metasalmon 0.5.0
 ----------------

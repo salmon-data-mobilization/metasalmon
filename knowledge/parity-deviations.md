@@ -529,6 +529,52 @@ for its own item and the B-55 workpad has the evidence. No register row is added
 here, because adding one is Brett's.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the printed call for a column's own slot says `code_value = ""` when the
+column's codes share its role.** A measurement column's `entity_iri` and
+`constraint_iri` targets share their roles with its codes' `codes.csv` targets,
+so `(column, role, table)` does not select the column's own slot. Both
+implementations printed that call and nothing more, and it aborts as ambiguous
+(hub item **B-151**). R now prints `code_value = ""` for that slot, reads a
+blank `code_value` as selecting the slots that belong to no code, and offers
+that spelling in the ambiguity refusal.
+
+**Whether a slot belongs to a code is read from its file, not from an empty
+`code_value`.** The codes schema lets a `codes.csv` row leave `code_value` empty
+when it supplies `vocabulary_iri`, and discovery still gives that row a
+code-level target. Reading an empty value as "no code" matched that slot and the
+column's own slot together, so the blank settled nothing for such a column. The
+Codex review of metasalmon pull request #153 raised it. R therefore never prints
+`code_value = ""` for a code's slot: that slot's call stays ambiguous and
+refuses, as it did before B-151, rather than deciding the column's slot.
+
+**Python had half of the matcher already.** `_match_slot_rows()` compares
+through `scalar_text()`, which maps a missing value to `""`. So on metasalmonpy
+`main` `3f8349a`, `accept_suggestion(review, col, role, code_value="")` already
+selected the no-code slot, and so did `pd.NA` and `NaN`, where R's `!is.na()`
+guard made the same call abort with *"No review slot matches"*. It also
+selected a code slot whose row has no code value: measured on the same commit,
+with both slots present, `""` and `pd.NA` each raise as ambiguous. No register
+row recorded either difference, so none is amended.
+
+The port owes three things. `_match_slot_rows()` leaves a code's slot out of a
+blank match, reading "a code's slot" from `review_target_keys()` the way R's
+`.ms_review_is_code_slot()` reads `.ms_review_target_keys()`.
+`_review_call_args()` prints the blank value for a slot that belongs to no code,
+and never for a code's slot. `_resolve_slot()` offers `code_value=""` for a
+slot that belongs to no code when its table has code slots among the matches.
+The pin to delete is
+`test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous`,
+which #28 added with this defect as its retirement condition. The tests to
+mirror are the ones in `tests/testthat/test-review-console.R` that build a
+measurement column with a code list, or with a vocabulary-backed code row,
+including the two through `create_sdp()`. The printed spelling is `""` on both
+sides, though R also accepts `NA`. Python's `None` is already the unconstrained
+default, and `""` is the one literal both languages print alike. So it is owed
+as a port, not a register row. It did not land in the same stream because a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is to be
+filed.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.**
 `infer_column_role()` no longer types a column `temporal` on year-shaped values
 alone (every value a four-digit number from 1800 to 2500) when the name's words

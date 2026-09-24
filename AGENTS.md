@@ -53,8 +53,8 @@ under `queue/`.
   ordinary "R shipped first" lag rather than a set of deliberate differences, so
   it was owed as a **port** — tracked in `knowledge/parity-deviations.md` and the
   roadmap's release index, and deliberately **not** as new register rows.
-  metasalmonpy's tree now reads 0.5.0; **tagging `v0.5.0` there is a separate
-  outward act and is Brett's**, so its newest tag is still `v0.4.0`.
+  metasalmonpy's tree reads 0.5.0, and measured 2026-09-24 its newest tag is
+  `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
   **Parity is the state that decays fastest**, and the version of this
   paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
   decayed one release later, which is the argument for reading any parity
@@ -287,9 +287,10 @@ B-144's entry was filed under `## 0.5.0`, which made the changelog say a
 version contains a change that the commit making the version current does not;
 B-124's `1e9245c` (#29), later still, went under `## Unreleased` correctly.
 metasalmonpy pull request 35 moved B-144's entry (merged 2026-09-16 as
-`3f8349a`), and `v0.5.0`, which is Brett's to make, goes on `67fb486`. The
-window is real on every release, because the tag is a separate act from the
-bump; the mechanical check is hub item B-200 (B-201 for the mirror).
+`3f8349a`), and `v0.5.0` went on `67fb486` when it was tagged on 2026-09-24,
+eight days after the bump. The window is real on every release, because the tag
+is a separate act from the bump; the mechanical check is hub item B-200 (B-201
+for the mirror).
 
 ## Build / test / docs
 
