@@ -6883,6 +6883,13 @@ specification forbids it, and B-234 did not, so the halves could have landed wit
 different accepted sets; this change gave B-234 the same conditional rule. The
 Codex review of pull request 150 on `e03fd35` found both.
 
+**The two questions entries followed their items.** The Q53 entry in
+`knowledge/questions.md` named only B-204 as the card whose pattern check the
+ruling decides, and the Q54 entry listed four differences. This change made Q53
+name B-204 and B-205 and leave how the ruling reaches them to `Q-53`, and made
+Q54 list reasoning effort and its effect on B-128. The Codex review of pull
+request 150 on `0fdc5a5` found both.
+
 Every paragraph in this section records what a change made on 2026-09-23 or
 2026-09-24 did, and why. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.

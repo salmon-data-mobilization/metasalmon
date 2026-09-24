@@ -247,8 +247,9 @@ choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
 
 ### Q53 — Should `validate_salmon_datapackage()` reach the remote SDP schema on a cold session, as R does, or make no network call, as metasalmonpy does?
 **Unblocks:** a parity difference neither register records, and which copy of the
-schema `B-204`'s pattern check will enforce, since that check reads whatever the
-validator loads.
+schema the pattern checks of `B-204` (metasalmon) and `B-205` (metasalmonpy)
+enforce, since each reads whatever its validator loads. How the ruling reaches
+those two cards is `Q-53`'s condition.
 Measured on both sides, each instrument shown to see a fetch before its silence
 was read: under the shipped defaults R's validator makes one remote fetch attempt
 on a cold session, through its readers' column aligners, and metasalmonpy's makes
@@ -270,15 +271,19 @@ entry in this file and has none yet. That is its own item's to write; it is name
 here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
 
 ### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
-**Unblocks:** four differences neither register records — the temperature, JSON
-mode, OpenRouter's attribution headers and the user agent — and what `B-128` is
-for, since it gives R's chat path the semantic path's temperature rule on the
-premise that R keeps sending a temperature.
+**Unblocks:** five differences neither register records — the temperature, JSON
+mode, OpenRouter's attribution headers, the user agent and reasoning effort — and
+what `B-128` is for. Routing R's chat path through the shared body builder gives
+it the semantic path's temperature rule, on the premise that R keeps sending a
+temperature, and would also make it send the reasoning effort R resolves from
+`METASALMON_LLM_REASONING_EFFORT`, which neither chat path sends today.
 Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
-`main`; **what each side sends, and where, is in [`backlog.md`](backlog.md)**
-under *The 2026-09-23 queue sweep*.
-**Recommendation:** none on the direction of the temperature or of JSON mode,
-which change what a model returns and on which neither side has evidence. The
+`main`; reasoning effort was added on 2026-09-24 and measured against
+metasalmonpy `e595752` and R `abfc7d6`. **What each side sends, and where, is in
+[`backlog.md`](backlog.md)** under *The 2026-09-23 queue sweep*.
+**Recommendation:** none on the direction of the temperature, JSON mode or
+reasoning effort, which change what a model returns and on which neither side
+has evidence. The
 instrument that could supply it is the Theme A benchmark, whose live capture
 waits on the credential `B-80` names. The header and user-agent differences
 change nothing a model sees, so registering them or porting them costs nothing
