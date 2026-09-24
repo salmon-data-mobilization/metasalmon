@@ -10,4 +10,4 @@ severity: P2
 blocked_by: []
 legacy: '#53'
 evidence: knowledge/sequences/s2-correctness-debt.md
-retires_when: A year-shaped measurement column reaches the semantic pipeline with a measurement role rather than `temporal`, a test pins that case against `.ms_values_look_yearish()`, and metasalmonpy carries the same behaviour.
+retires_when: A year-shaped measurement column reaches the semantic pipeline with a measurement role rather than `temporal`, and a test pins that case against `.ms_values_look_yearish()`. The metasalmonpy half is B-240, and each names the other.
