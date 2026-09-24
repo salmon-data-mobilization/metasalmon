@@ -1117,8 +1117,12 @@ infer_value_type <- function(col) {
   length(.ms_code_list_values(col, code_limit = code_limit)) > 0
 }
 
-.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
-  measurement_tokens <- c(
+# The whole words that mark a column name as a measurement. One home, because
+# two predicates read it: `.ms_name_has_measurement_hint()` below, and
+# `.ms_name_has_measurement_word()`, which is the narrower test the
+# year-shaped value check in `infer_column_role()` yields to.
+.ms_measurement_name_tokens <- function() {
+  c(
     "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
     "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
     "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
@@ -1127,7 +1131,10 @@ infer_value_type <- function(col) {
     "depth", "depths", "width", "widths", "height", "heights", "level", "levels",
     "discharge", "flow", "flows", "mortality"
   )
-  has_token_hint <- any(name_tokens %in% measurement_tokens)
+}
+
+.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
+  has_token_hint <- any(name_tokens %in% .ms_measurement_name_tokens())
   has_regex_hint <- grepl(
     "count|total|number|amount|quantity|measure|temp|temperature|depth|width|height|level|discharge|flow|mortality",
     name_lower
@@ -1156,6 +1163,39 @@ infer_value_type <- function(col) {
   sample_context_tokens <- c("sample", "samples", "partition", "partitions")
 
   any(name_tokens %in% size_tokens) && any(name_tokens %in% sample_context_tokens)
+}
+
+# The whole words that mark a column name as a date or time. One home, because
+# `infer_column_role()` reads it twice: against the name's tokens, and, with
+# the plurals added, against its words when deciding whether year-shaped values
+# may be overridden.
+.ms_temporal_name_tokens <- function() {
+  c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+}
+
+# The words of a column name. `.ms_name_tokens()` splits only at spaces, `.`,
+# `_`, `-` and case changes, so `Water depth(mm)` gives the token `depth(mm)`
+# and `adult/count` stays one token. This splits those tokens again at every
+# other ASCII punctuation character. The characters are spelled out as ranges
+# rather than written `[[:punct:]]`, so the split cannot vary with the locale,
+# and a non-ASCII letter is never a boundary.
+.ms_name_words <- function(name_tokens) {
+  pieces <- strsplit(as.character(name_tokens), "[!-/:-@\\[-`{-~]+", perl = TRUE)
+  words <- as.character(unlist(pieces))
+  words[!is.na(words) & nzchar(words)]
+}
+
+# Measurement evidence made of whole words only: a measurement word, or a
+# sample or partition size. It deliberately leaves out the two pattern tests in
+# `.ms_name_has_measurement_hint()`, because both match names that are not
+# measurements: the substring pattern finds `temp` inside `temporal_start`, and
+# the unit pattern accepts any parenthetical containing a `g`, such as
+# `Cohort (Aug)`. Those are tolerable where the hint only chooses among
+# non-temporal roles, and not where it overrides a temporal signal, which is
+# the one job this predicate has (backlog #53).
+.ms_name_has_measurement_word <- function(name_words) {
+  any(name_words %in% .ms_measurement_name_tokens()) ||
+    .ms_name_has_sample_size_hint(name_words)
 }
 
 #' Infer column role from name and data
@@ -1198,13 +1238,51 @@ infer_column_role <- function(col_name, col) {
     return("identifier")
   }
 
-  # Check for date/time patterns
-  temporal_tokens <- c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+  # Check for date/time patterns in the name or the column type.
+  temporal_tokens <- .ms_temporal_name_tokens()
   if (grepl("date|time|dtt|timestamp", name_lower) ||
       inherits(col, "Date") || inherits(col, "POSIXt") ||
-      any(name_tokens %in% temporal_tokens) ||
-      .ms_values_look_yearish(col)) {
+      any(name_tokens %in% temporal_tokens)) {
     return("temporal")
+  }
+
+  # Year-shaped values -- every value a four-digit number from 1800 to 2500 --
+  # are the one temporal signal that reads nothing but the values, and a count
+  # or escapement column whose values all fall in that range has exactly that
+  # shape. Typed temporal, such a column was dropped from the whole semantic
+  # pipeline (backlog #53). So the value shape decides unless the name's words
+  # include a measurement word and no date or time word; then the column goes
+  # through the same checks below that it would with any other values.
+  #
+  # Words, split at punctuation as well as spaces (`.ms_name_words()`), so that
+  # `Water depth(mm)` and `adult/count` are measurement names -- and so that a
+  # time word hidden by punctuation still counts, as in `Escapement (yr)` and
+  # `count/year`, which the token check above does not see. The time words
+  # here include the plurals that check leaves out, so `escapement_years` stays
+  # temporal as it always was. The plurals are not added to that check itself,
+  # which also sees values off the year range, where a column counting days or
+  # years is not a date. Whole words, not `.ms_name_has_measurement_hint()`:
+  # measured 2026-09-24 over the 1,271 columns in the CSVs of metasalmon,
+  # metasalmonpy, smn-data-pkg and salmon-domain-ontology, the only year-shaped
+  # columns that hint would have moved were 18 `temporal_start` /
+  # `temporal_end` columns, all rightly temporal, and the word test moves none.
+  #
+  # The words decide only whether the year shape may decide. The checks below
+  # keep the coarser tokens, so a column this lets through is typed exactly as
+  # it would be with values off the year range. Letting those checks read the
+  # words too was tried (Codex review of #152, rounds 3 and 4): it forces every
+  # check that outranks the measurement check to read them as well, and there
+  # the split breaks units and rates. `Discharge (m3/day)`, `Escapement
+  # (fish/yr)` and `Rate (per day)` became temporal, and `Fish (no./site)` an
+  # identifier. That is a question about all of role inference, not this one.
+  if (.ms_values_look_yearish(col)) {
+    name_words <- .ms_name_words(name_tokens)
+    time_words <- c(temporal_tokens, "years", "yrs", "months", "days")
+    measurement_named <- .ms_name_has_measurement_word(name_words) &&
+      !any(name_words %in% time_words)
+    if (!measurement_named) {
+      return("temporal")
+    }
   }
 
   # Preserve explicit factor/categorical intent from the source data.

@@ -1,7 +1,7 @@
 id: B-240
 kind: defect
 title: metasalmonpy infer_column_role() classifies year-shaped measurement columns as temporal, the mirror half of B-53
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

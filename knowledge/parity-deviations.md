@@ -590,6 +590,61 @@ default, and `""` is the one literal both languages print alike. So it is owed
 as a port, not a register row. It did not land in the same stream because a hub
 claim covers one branch in one repository. Its metasalmonpy half is `B-242`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a year-shaped measurement column keeps its measurement role.**
+`infer_column_role()` no longer types a column `temporal` on year-shaped values
+alone (every value a four-digit number from 1800 to 2500) when the name's words
+include a measurement word, or a sample or partition size, and no date or time
+word (backlog #53, hub item **B-53**). Such a column used to leave the semantic
+pipeline, because `suggest_semantics()` skips temporal columns. The words come
+from the new `.ms_name_words()`, which splits the name's tokens again at every
+ASCII punctuation character, so `Water depth(mm)` and `adult/count` are
+measurement names and the year word in `Escapement (yr)` is still seen. The
+measurement test is the new `.ms_name_has_measurement_word()`. It reads the list
+`.ms_name_has_measurement_hint()` reads, now held once in
+`.ms_measurement_name_tokens()`, and it leaves out that hint's substring and unit
+patterns, because each matches names that are not measurements
+(`temporal_start`, `Cohort (Aug)`). The time words there include the plurals
+(`years`, `months`, `days`) that the name-temporal check leaves out. The words
+decide only whether the year shape may decide. The role checks after it read
+the coarse tokens as before, because splitting every check at punctuation
+breaks units and rates: `Discharge (m3/day)` became temporal and
+`Fish (no./site)` an identifier when that was tried.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`infer_column_role()` in `dictionary.py` is a node-for-node port and still calls
+`_values_look_yearish(series)` inside the one temporal branch. The pin should be
+the R test's (`tests/testthat/test-year-shaped-measurement-role.R`): each fixture
+checked against the year-shape predicate first, the role unchanged when the same
+values move off the year range (method names joined by punctuation, such as
+`method/spawners`, included and never typed as measurements), names that join
+a measurement word with punctuation typed as measurements, a year word hidden
+by punctuation or written as a plural still keeping the year shape deciding,
+unit and rate headers keeping their roles off the year range, the three names a
+substring or unit rule would retype (`temporal_start`, `temporal_end`,
+`Cohort (Aug)`) still `temporal`, and one column followed to its semantic
+targets. The word
+split must use an explicit ASCII punctuation set, as R's does, rather than a
+class whose meaning moves with the locale. It is owed as a port, not a register
+row: once it lands the two implementations behave alike again. It did not land
+in the same stream because a hub claim covers one branch in one repository.
+
+**One thing the port has to know, because it will otherwise meet it as a failing
+control.** metasalmonpy's `_values_look_yearish()` never finds a float column
+year-shaped, while R's `.ms_values_look_yearish()` does find a double one:
+`_character_values()` renders through `str()`, and `str(1850.0)` is `"1850.0"`
+where `as.character(1850)` is `"1850"`. Measured 2026-09-24 on metasalmonpy
+`main` `3f8349a` (Python 3.11.15, pandas 3.0.5): `spawner_count` as strings and
+`escapement` as int64 type `temporal` there, as they did here before B-53, while
+the float64 `NATURAL_ADULT_SPAWNERS` of 1850.0, 2003.0 and 1999.0 types
+`measurement` because it is never year-shaped at all. So a port that copies the R
+test's double fixtures fails its own year-shape control rather than passing
+without testing anything, which is what the control is for. **The float gap is a
+separate divergence and not this port's to absorb**: it also means a year column
+pandas reads as float64, as it reads any integer column with a missing value,
+types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
+and `temporal` here.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

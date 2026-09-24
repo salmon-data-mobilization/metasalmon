@@ -169,6 +169,56 @@ metasalmon (development version)
   bundled examples. The metasalmonpy fixture is owed as a port, and the
   item's retirement condition is met only on the R side until it lands.
 
+* **A measurement column whose values all look like years is no longer typed
+  `temporal`** (backlog **#53**, queue **B-53**). `infer_column_role()` typed
+  a column `temporal` whenever all its values were four-digit numbers from 1800
+  to 2500, reading the values alone and ahead of any measurement word in its
+  name, so a small stock's `NATURAL_ADULT_SPAWNERS` of 1850, 2003 and 1999, or
+  a sample of 1,900 fish, became a `temporal` column. `suggest_semantics()`
+  skips temporal columns, so such a column left the whole semantic pipeline --
+  no variable, property, entity or unit target -- without a warning, while the
+  same column holding numbers outside that range was typed `measurement`.
+
+  The year shape now decides unless the name's words include a measurement
+  word -- one of the words the measurement check already reads (`count`,
+  `total`, `spawners`, `escapement`, `weight`, `depth` and the rest), or a
+  sample or partition size -- and no date or time word. Then the year shape is
+  not consulted, and the column is typed by the checks that follow exactly as
+  it would be with values outside the year range. Words are split at spaces,
+  punctuation and case changes, so `Water depth(mm)` and `adult/count` are
+  measurement names, while the year word in `Escapement (yr)` and `count/year`,
+  or a plural one as in `escapement_years`, keeps them `temporal`, as
+  `count_year` always was. Whole words rather than
+  the broader measurement hint, because that hint's two pattern tests match
+  names that are not measurements: `temp` inside `temporal_start`, and any
+  parenthetical containing a `g`, such as `Cohort (Aug)`. Measured over the
+  1,271 columns in the CSVs of metasalmon, metasalmonpy, smn-data-pkg and
+  salmon-domain-ontology, the broader hint would have retyped 18
+  `temporal_start` / `temporal_end` columns as measurements, all rightly
+  temporal; the whole-word rule changes the role of none of the 1,271.
+
+  **Not covered, on purpose:** a name whose only measurement evidence is a
+  substring (`ADULTCOUNT`) or a unit in parentheses (`Mass (kg)`) is still typed
+  `temporal` when its values look like years. Separate the words in the name
+  (`ADULT_COUNT`), or correct `column_role` in the dictionary
+  `infer_dictionary()` returns. And the words decide only whether the year
+  shape may decide; the role checks after it read the name as before. So a
+  name whose measurement word only the split reveals, and which those checks
+  do not otherwise recognise (`adult/spawners`, `fish/weight`), is no longer
+  `temporal` but is not `measurement` either: it gets the role it gets with any
+  other values, `attribute` for a numeric column. Letting those checks read
+  the words would need every check that outranks them to read them too, and
+  that breaks units and rates: `Discharge (m3/day)` and `Rate (per day)` would
+  become `temporal`, and `Fish (no./site)` an `identifier`.
+
+  Pinned by `tests/testthat/test-year-shaped-measurement-role.R`, which checks
+  each fixture against `.ms_values_look_yearish()` before asserting its role,
+  and follows one such column through `infer_dictionary()` and
+  `suggest_semantics()` to its semantic targets. **Mirror:** metasalmonpy's
+  `infer_column_role()` (`dictionary.py`) has the same defect; the port is owed
+  (see the parity register), and the item's retirement condition is met only on
+  the R side until it lands.
+
 * **`datapackage.json` and `metadata/dataset.csv` no longer spell the same
   instant two different ways** (backlog **#115**, queue **B-115**). A
   `dataset_meta$temporal_start`/`temporal_end` supplied as a typed `POSIXct`
