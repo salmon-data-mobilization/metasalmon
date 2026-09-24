@@ -1,0 +1,13 @@
+id: B-237
+kind: defect
+title: 'smn:Run has no definition, and cannot have one until Q-61 rules what it denotes'
+state: icebox
+claimable: true
+repo: salmon-domain-ontology
+venue: claude-science
+stream: S9
+severity: P2
+blocked_by: [Q-61]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'smn:Run carries a definition, in skos:definition or obo:IAO_0000115 as the repository''s per-type rule requires, with its source in dcterms:source or obo:IAO_0000119. The definition is written from a source under docs/annotation-gap-ledger.md''s ground rules, in the sense Q-61 rules, and the label changes if the ruling changes it. docs/ is regenerated with make docs-refresh, so the published site shows it. The definition changes what the term means, so the pull request is class 1 and Brett merges it. Split out of B-232 on 2026-09-24 after the Codex review of metasalmon pull request 150: B-232 may retire while Q-61 is still open, and without this item the definition would have no owner once the ruling lands.'

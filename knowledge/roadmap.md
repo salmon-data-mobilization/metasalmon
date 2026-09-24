@@ -583,8 +583,10 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. That difference is **tracked as its own queue
-item, `B-223`, separate from B-142**, which neither introduced it nor changes it. A
+falls back to the default paths. The difference on the EML and KNB paths is
+**tracked as its own queue item, `B-223`, separate from B-142**, which neither
+introduced it nor changes it. The difference on the closure path is **`Q-62`**,
+a question for Brett, split out of B-223 on 2026-09-24. A
 parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
 so it is not made here.
 

@@ -6686,3 +6686,16 @@ along with the two EML paths. On that path metasalmonpy falls back to the defaul
 paths rather than refusing. So B-223 would have closed while leaving an
 unrecorded difference, as the Codex review of pull request 150 pointed out. The
 closure path is now Q-62's.
+
+**`B-237`: `smn:Run`'s definition gets its own owner.** B-232 counts a term as
+accounted for when its meaning waits on a ruling, and Q-61 said the definition
+would be "written under B-232" afterwards. B-232 can retire first. If it does,
+nothing owns the definition once Q-61 is ruled. The Codex review of pull request
+150 found the gap. B-232 now requires every term deferred for a ruling to have
+an item blocked on that ruling that owns its later definition. B-237 is that
+item for `smn:Run`.
+
+**Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
+temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
+which decides which schema their pattern check enforces. The roadmap's B-142
+passage now gives the closure-path difference to Q-62 rather than B-223.
