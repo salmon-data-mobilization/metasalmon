@@ -87,10 +87,11 @@
 #   queue item" for an item filed since, listed a stale queue as though it
 #   were current, and would have claimed an item origin had already closed. 35
 #   is the item's retirement condition read literally, 36 the closed item, 37
-#   ready and doctor. 38 is `hub fresh`, asked by a current client about a
-#   checkout whose own client is too old to know the question, which is the
-#   one case no client can cover from inside. 39 is the two commands staleness
-#   must not stop, beat and done; 40 a queue that is not in a checkout at all.
+#   ready, ready --set and doctor. 38 is `hub fresh`, asked by a current client
+#   about a checkout whose own client is too old to know the question, which is
+#   the one case no client can cover from inside. 39 is the two commands
+#   staleness must not stop, beat and done; 40 a queue that is not in a
+#   checkout at all.
 #   Each was run RED against the client before B-187, the same way. They are
 #   also why every fixture queue here is now a git checkout with a bare origin
 #   beside it, rather than a plain directory: make_checkout says why.
@@ -2151,28 +2152,40 @@ main() {
     fi
 
     # -- 37 -----------------------------------------------------------------
-    # ready and doctor in the same checkout. ready used to succeed there,
-    # listing the tree's items with nothing to say they were not the queue's,
-    # which is worse than failing because nothing about the output looked
-    # wrong. It now refuses and lists nothing, and doctor fails. The other half
-    # of the pair is 16 and 27, where ready lists from a checkout that is
-    # current: a client that refused every listing passes this and fails those.
+    # ready, ready --set and doctor in the same checkout. ready used to succeed
+    # there, listing the tree's items with nothing to say they were not the
+    # queue's, which is worse than failing because nothing about the output
+    # looked wrong. It now refuses and lists nothing. ready --set, asked to
+    # print the promotion of the item the checkout has never heard of, used to
+    # answer "no queue item" like claim did; it now refuses the same way claim
+    # does and prints no edit. doctor fails. The other half of the pair is 16
+    # and 27, where ready lists from a checkout that is current: a client that
+    # refused every listing passes this and fails those.
     local rd_out="$TMPROOT/client.stale.ready.out" rd_err="$TMPROOT/client.stale.ready.err"
-    local dr_out="$TMPROOT/client.stale.doctor.out" rd_rc dr_rc
+    local rs_out="$TMPROOT/client.stale.set.out" rs_err="$TMPROOT/client.stale.set.err"
+    local dr_out="$TMPROOT/client.stale.doctor.out" rd_rc rs_rc dr_rc
     st_ok=0
     fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" ready >"$rd_out" 2>"$rd_err"; rd_rc=$?
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" \
+      ready --set "$STALE_NEW_ID" >"$rs_out" 2>"$rs_err"; rs_rc=$?
     fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" doctor >"$dr_out" 2>&1; dr_rc=$?
     [ "$rd_rc" = "$EX_FAIL" ] || st_ok=1
     [ -s "$rd_out" ] && st_ok=1
     grep -Fq "STALE CHECKOUT" "$rd_err" || st_ok=1
     grep -Fq "is 1 commit behind origin/main" "$rd_err" || st_ok=1
+    [ "$rs_rc" = "$EX_FAIL" ] || st_ok=1
+    [ -s "$rs_out" ] && st_ok=1
+    grep -Fq "STALE CHECKOUT" "$rs_err" || st_ok=1
+    grep -Fq "$STALE_NEW_ID is not in this checkout, and it IS on origin/main" "$rs_err" || st_ok=1
+    grep -Fq "no queue item" "$rs_err" && st_ok=1
     [ "$dr_rc" = "$EX_FAIL" ] || st_ok=1
     grep -Fq "FAIL  STALE CHECKOUT" "$dr_out" || st_ok=1
     if [ "$st_ok" = "0" ]; then
-      assert 37 "client: ready in a stale checkout refuses and lists nothing, naming staleness and the distance, and doctor fails on it" 0
+      assert 37 "client: in a stale checkout, ready refuses and lists nothing, ready --set refuses an item that is only on origin and prints no edit, both naming staleness and the distance, and doctor fails on it" 0
     else
-      assert 37 "client: ready refuses and doctor fails in a stale checkout (ready rc $rd_rc listed $(grep -c . "$rd_out") lines; doctor rc $dr_rc)" 1
+      assert 37 "client: ready and ready --set refuse and doctor fails in a stale checkout (ready rc $rd_rc listed $(grep -c . "$rd_out") lines; ready --set rc $rs_rc printed $(grep -c . "$rs_out") lines; doctor rc $dr_rc)" 1
       note "ready: $(head -n 2 "$rd_err" | tr '\n' ' ')"
+      note "ready --set: $(head -n 2 "$rs_err" | tr '\n' ' ')"
       note "doctor: $(grep -m1 '^FAIL' "$dr_out" | tr '\n' ' ')"
     fi
 
@@ -2271,7 +2284,7 @@ main() {
     note "$CLIENT_SKIP_REASON"
     skip 36 "client: claim from a stale checkout refuses an item origin has closed"
     note "$CLIENT_SKIP_REASON"
-    skip 37 "client: ready refuses and doctor fails in a stale checkout"
+    skip 37 "client: ready and ready --set refuse and doctor fails in a stale checkout"
     note "$CLIENT_SKIP_REASON"
     skip 38 "client: fresh names a stale checkout it is not part of"
     note "$CLIENT_SKIP_REASON"
