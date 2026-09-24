@@ -1,7 +1,7 @@
 id: B-238
 kind: defect
 title: 'The research that establishes what B-232''s smn terms mean has no commons-owned item, so it could end in ontology annotations and never reach a commons card'
-state: icebox
+state: ready
 claimable: true
 repo: salmon-knowledge-commons
 venue: claude-science

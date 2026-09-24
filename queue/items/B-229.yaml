@@ -1,7 +1,7 @@
 id: B-229
 kind: defect
 title: 'A CI re-run overwrites the failed attempt''s conclusion, so the check history cannot be read as a flake history'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-216
 kind: defect
 title: 'metasalmonpy detect_semantic_term_gaps() counts a recorded hand-picked accept as ontology-gap evidence, the port of B-176''s exclusion'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

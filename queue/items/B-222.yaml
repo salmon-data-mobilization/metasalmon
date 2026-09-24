@@ -1,7 +1,7 @@
 id: B-222
 kind: defect
 title: 'metasalmonpy writes term_type skos_concept for a hand-picked IRI that a lower-ranked candidate carries, and the candidate''s own type on re-apply'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

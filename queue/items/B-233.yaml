@@ -1,7 +1,7 @@
 id: B-233
 kind: defect
 title: 'read_sssom_mapping_set() rejects spec-valid SSSOM/TSV that omits the built-in prefixes, so a canonical file fails with an unknown CURIE prefix'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-220
 kind: defect
 title: 'metasalmonpy accept_suggestion(iri="REVIEW:") passes the non-empty check and records an accept whose IRI is empty'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

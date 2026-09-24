@@ -1,7 +1,7 @@
 id: B-211
 kind: defect
 title: 'review_metadata() reports a prose placeholder in an *_iri field twice, so the call it prints names one argument twice and cannot run'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

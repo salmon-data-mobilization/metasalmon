@@ -1,7 +1,7 @@
 id: B-213
 kind: defect
 title: 'The pkgdown build aborts on main because _pkgdown.yml does not index write_sdp_semantic_closure, and nothing in CI builds or checks the site'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

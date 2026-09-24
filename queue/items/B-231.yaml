@@ -1,7 +1,7 @@
 id: B-231
 kind: defect
 title: 'Nothing in the smn build fails when a local term has no definition, so undefined terms reach the published documentation site unnoticed'
-state: icebox
+state: ready
 claimable: true
 repo: salmon-domain-ontology
 venue: claude-code
