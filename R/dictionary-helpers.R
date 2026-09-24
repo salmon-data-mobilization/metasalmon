@@ -1117,8 +1117,12 @@ infer_value_type <- function(col) {
   length(.ms_code_list_values(col, code_limit = code_limit)) > 0
 }
 
-.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
-  measurement_tokens <- c(
+# The whole words that mark a column name as a measurement. One home, because
+# two predicates read it: `.ms_name_has_measurement_hint()` below, and
+# `.ms_name_has_measurement_token()`, which is the narrower test the
+# year-shaped value check in `infer_column_role()` yields to.
+.ms_measurement_name_tokens <- function() {
+  c(
     "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
     "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
     "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
@@ -1127,7 +1131,10 @@ infer_value_type <- function(col) {
     "depth", "depths", "width", "widths", "height", "heights", "level", "levels",
     "discharge", "flow", "flows", "mortality"
   )
-  has_token_hint <- any(name_tokens %in% measurement_tokens)
+}
+
+.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
+  has_token_hint <- any(name_tokens %in% .ms_measurement_name_tokens())
   has_regex_hint <- grepl(
     "count|total|number|amount|quantity|measure|temp|temperature|depth|width|height|level|discharge|flow|mortality",
     name_lower
@@ -1156,6 +1163,19 @@ infer_value_type <- function(col) {
   sample_context_tokens <- c("sample", "samples", "partition", "partitions")
 
   any(name_tokens %in% size_tokens) && any(name_tokens %in% sample_context_tokens)
+}
+
+# Measurement evidence made of whole name tokens only: a measurement word, or a
+# sample or partition size. It deliberately leaves out the two pattern tests in
+# `.ms_name_has_measurement_hint()`, because both match names that are not
+# measurements: the substring pattern finds `temp` inside `temporal_start`, and
+# the unit pattern accepts any parenthetical containing a `g`, such as
+# `Cohort (Aug)`. Those are tolerable where the hint only chooses among
+# non-temporal roles, and not where it overrides a temporal signal, which is
+# the one job this predicate has (backlog #53).
+.ms_name_has_measurement_token <- function(name_tokens) {
+  any(name_tokens %in% .ms_measurement_name_tokens()) ||
+    .ms_name_has_sample_size_hint(name_tokens)
 }
 
 #' Infer column role from name and data
@@ -1198,12 +1218,29 @@ infer_column_role <- function(col_name, col) {
     return("identifier")
   }
 
-  # Check for date/time patterns
+  # Check for date/time patterns in the name or the column type.
   temporal_tokens <- c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
   if (grepl("date|time|dtt|timestamp", name_lower) ||
       inherits(col, "Date") || inherits(col, "POSIXt") ||
-      any(name_tokens %in% temporal_tokens) ||
-      .ms_values_look_yearish(col)) {
+      any(name_tokens %in% temporal_tokens)) {
+    return("temporal")
+  }
+
+  # Year-shaped values -- every value a four-digit number from 1800 to 2500 --
+  # are the one temporal signal that reads nothing but the values, and a count
+  # or escapement column whose values all fall in that range has exactly that
+  # shape. Typed temporal, such a column was dropped from the whole semantic
+  # pipeline (backlog #53). So the value shape decides only when the name has
+  # no whole-word measurement term; with one, the column goes through the same
+  # checks below that it would with any other values.
+  #
+  # Whole words, not `.ms_name_has_measurement_hint()`: measured 2026-09-24
+  # over the 1,271 columns in the CSVs of metasalmon, metasalmonpy,
+  # smn-data-pkg and salmon-domain-ontology, the only year-shaped columns that
+  # hint would have moved were 18 `temporal_start` / `temporal_end` columns,
+  # all rightly temporal, and the token test moves none of them.
+  if (.ms_values_look_yearish(col) &&
+      !.ms_name_has_measurement_token(name_tokens)) {
     return("temporal")
   }
 
