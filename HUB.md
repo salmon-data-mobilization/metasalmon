@@ -352,11 +352,12 @@ writes:
         an ordinary merge, after the two conditions above are read rather than
         assumed. This row is what makes "Which pull requests need Brett" below
         operative: a change in the delegated classes merges on green CI plus a
-        clean Codex review, and a change in the classes that need him does not
-        merge without him whatever its checks say.
+        completed Codex review, and a change in the classes that need him does
+        not merge without him whatever its checks say.
       excludes: >-
         every class "Which pull requests need Brett" lists. A pull request that
-        touches one of them is his even when CI is green, Codex is clean, and he
+        touches one of them is his even when CI is green, the Codex review has
+        completed, and he
         has said the word on a different pull request in the same batch.
       max: no limit
       enforced_by: >-
@@ -403,7 +404,8 @@ writes:
         row.
       max: >-
         one per pushed round of fixes, posted after the push, and at most two
-        on a pull request that changes code and one on any other, because the
+        on a pull request that changes code, as the Delegated section defines
+        it, and one on any other, because the
         review Codex runs on opening counts toward the cap the Delegated
         section sets. Never to re-roll a round that found something, and never
         while the previous round is still running, which the reviewer signals
@@ -1016,7 +1018,7 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
     Brett" section in a workpad is self-declaring, and an agent that writes one
     has already decided this question.
 
-### Delegated: merges on green CI and a clean Codex review
+### Delegated: merges on green CI and a completed Codex review
 
 Everything else, of which the common cases are a defect fix carrying a
 reproduced failing-before and a test; a queue or backlog change; documentation,
@@ -1051,7 +1053,9 @@ Four conditions, all of them, before an agent merges one:
   Codex runs when a pull request opens, a pull request that changes code gets at
   most three reviews and any other pull request (queue items, cards, prose,
   ontology files) at most two; the agent fixes or answers what the last one found,
-  pushes, and does not post `@codex review` again. The count rests on what the
+  pushes, and does not post `@codex review` again. **Code** here means executable
+  source, tests, scripts or workflows; a pull request that mixes code with other
+  files, or whose kind is unclear, counts as code. The count rests on what the
   loop did before the cap: on the code pull requests of 2026-09-24 Codex's
   findings were real behaviour defects and arrived in the first two rounds,
   while hub pull request 150 and commons pull request 16, both prose, took 18
