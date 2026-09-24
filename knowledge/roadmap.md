@@ -459,7 +459,7 @@ nothing in either file saying which is right — the failure mode both `AGENTS.m
 files name when they say to read the other file rather than trust the one in
 front of you.
 
-**Four more debts accumulated while that window was open, and this index was not
+**More debts accumulated while that window was open, and this index was not
 the copy that recorded them.** Each is R work merged **after** 0.5.0 under the
 mirror rule, each is owed as a port rather than a register row, and each is
 specified in full under *What metasalmon 0.5.0 owes the mirror* in
@@ -480,16 +480,20 @@ reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 rather than become a gap, incomplete evidence is not a missing term, and the
 three writes install as one link-refusing set), **B-165**, blocked by
 B-116 — **landed 2026-09-16 as metasalmonpy #31**, `999fa19`, the fourth to
-close, and the only one of the four whose changelog entry belongs under
-`## 0.5.0` rather than `## Unreleased`, because it merged at 04:18Z and the bump
-at 12:55Z. Every one of them was deferred for the same structural reason rather than
-a judgement: a hub claim covers one branch in one repository, so the mirror half
-is a separate item. The first two reached `parity-deviations.md` and not this index,
+close; its changelog entry belongs under `## 0.5.0` rather than
+`## Unreleased`, because it merged at 04:18Z and the bump at 12:55Z, and so
+does B-125's, whose #30 merged at 03:54Z. Every one of them was deferred for the
+same structural reason rather than a judgement: a hub claim covers one branch
+in one repository, so the mirror half is a separate item. The first two reached
+`parity-deviations.md` and not this index,
 which is the drift the release index exists to catch, so the rule is stated here
 rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
-*(The count is gone from this passage on purpose, as of 2026-09-16. It read
+*(The count is gone from this passage on purpose, as of 2026-09-16, and from its
+lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
+beside a clause calling B-165 "the only one of the four" whose entry belongs
+under `## 0.5.0`, which B-125's does too. It read
 **three** and omitted `B-144`; the correction below records that. It then read
 **four** and omitted `B-145` — caught by the Codex review of pull request #136,
 after metasalmon #118 merged the R half the same morning and left its mirror debt
@@ -525,7 +529,7 @@ metasalmonpy as a port, not a register row, because metasalmonpy has counted
 the recorded row as gap evidence since #28. The port is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
-queue item is to be filed.
+queue item is `B-216`, filed by the 2026-09-23 queue sweep.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
@@ -618,8 +622,10 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. That difference is **tracked as its own queue
-item, separate from B-142**, which neither introduced it nor changes it. A
+falls back to the default paths. Which side moves on each path is **`Q-62`**,
+a question for Brett, and R's refusal on the EML and KNB paths, the
+recommended direction, is written as **queue item `B-223`, separate from
+B-142**, which neither introduced the difference nor changes it. A
 parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
 so it is not made here.
 
@@ -664,7 +670,17 @@ POST at `:426`), and both of its LLM paths call it — semantic review through
 `_chat_choice()` (`chat_decomposition.py:279`). **What this does not say** is
 anything about what the two implementations put *in* that request. They do not
 send the same one, and the B-3 workpad records the difference, with its
-evidence, as a candidate for a parity item rather than settling it here.
+evidence, as a candidate for a parity item rather than settling it here. It is
+filed as the question `Q-54`.
+
+**The closed window's port took one behaviour differently, recorded 2026-09-23:
+a schema the options select, hub item `B-215`.** metasalmonpy's
+`review_metadata()`, setters and validator collector read the bundled schema
+whatever schema the options select, where R honours the selection, and `B-175`
+kept that while taking R's default options offline. It is owed as a port, not a
+register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. Recorded there and here in the same change, as the rule
+above requires.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global

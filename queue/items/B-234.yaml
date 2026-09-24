@@ -1,0 +1,13 @@
+id: B-234
+kind: defect
+title: 'The metasalmonpy SSSOM reader rejects spec-valid SSSOM/TSV that omits the built-in prefixes, the mirror half of B-233'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S9
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy''s SSSOM reader accepts a CURIE whose prefix is an SSSOM built-in prefix (owl, rdf, rdfs, semapv, skos, sssom, xsd, linkml) when the curie_map does not declare it. It rejects every other undeclared prefix, exactly as B-233 makes metasalmon do, and it rejects a curie_map entry that redefines a built-in prefix to a different IRI if the SSSOM specification forbids that, the same conditional rule B-233 states, so the two halves land with the same accepted set. Whichever half lands second reads the first half''s finding on that question and applies it rather than deciding it again. Added 2026-09-24 after the Codex review of metasalmon pull request 150 on e03fd35, which found this half could retire accepting an override B-233 rejects. A test pinned RED first reads a canonical file with no built-in prefixes declared. This is the mirror half of B-233, and each names the other.'

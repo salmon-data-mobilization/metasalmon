@@ -1,0 +1,12 @@
+id: B-227
+kind: defect
+title: 'Bare pytest stops metasalmonpy''s suite at two collection errors, because two test modules import package modules by top-level name'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The command metasalmonpy''s AGENTS.md documents -- an editable install with the test extra, then bare pytest -q -- collects and runs the whole suite, from the repository root and from inside tests/, because tests/test_validation.py and tests/test_term_deduplication.py import their modules through the package, from metasalmonpy.validation and metasalmonpy.term_deduplication, rather than by top-level name. And something in CI runs the suite once under bare pytest, so the next top-level import fails a pull request rather than a contributor''s first run, demonstrated RED on the two imports as they stand. python -m pytest from the root puts the root on sys.path, which is why CI, which runs that form, never saw this. IT IS NOT B-191: that item is about which tree the suite imports; this is whether two modules import at all without the root on the path.'

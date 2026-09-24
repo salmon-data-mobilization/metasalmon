@@ -1,0 +1,13 @@
+id: B-230
+kind: defect
+title: 'The metasalmonpy half of the ruling on REVIEW-marked IRIs, so strict validation, the EDH gate and review_metadata() all cover the four metadata files'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-177]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, validate_salmon_datapackage(require_iris=True) refuses a REVIEW-prefixed IRI in every metadata file -- dataset.csv, tables.csv, column_dictionary.csv and codes.csv -- _collect_review_issues(), which the EDH gate builds on, sweeps the same four, and review_metadata()''s _REVIEW_IRI_FILES lists the same four, so the scan keeps listing exactly what strict validation refuses. test_which_files_a_review_marker_actually_blocks carries the new answers, its rows flipped rather than deleted. THE RULING IS B-177''s, given by Brett on 2026-09-23 and recorded on that card, and it covers both implementations. This is the mirror half, and copies the R messages and behaviour B-177 merges; each names the other. Once both land nothing differs, so no register row is owed.'
