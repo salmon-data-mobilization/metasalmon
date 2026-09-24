@@ -6729,6 +6729,13 @@ of pull request 150 found it. B-231's check now fails on a stale row, one whose
 term has a definition or is no longer a local term, so B-232 and B-108 each
 delete their rows in the change that defines or removes the term.
 
+**The whole bundle, not one schema.** B-198 and B-199 re-vendored only
+`dataset.schema.json`, but each package's remote fetch loads eight files: six
+metadata schemas, the profile and the rules. So the pin could move to B-236's tag
+while the fallback kept stale copies of the other seven. Both now re-vendor the
+complete bundle from the tag, commit a manifest of each file's SHA-256, and test
+the vendored files against it. The Codex review of pull request 150 found it.
+
 **Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
 temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
 which decides which schema their pattern check enforces. The roadmap's B-142
