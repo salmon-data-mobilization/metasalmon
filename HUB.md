@@ -1065,7 +1065,12 @@ Four conditions, all of them, before an agent merges one:
   findings, most of them about text the previous round's fix had just written.
   The cap accepts that a late round on code can still find something, because
   the alternative has no ceiling at all; a fix pushed after the last permitted
-  review is the agent's to test the harder for it. Two habits fed that loop and are not part of a
+  review is the agent's to test the harder for it. **The cap is a guard, so it
+  says what moves it.** A defect that reaches `main` from a pull request merged
+  under the cap, and that a further review would plausibly have caught, is filed
+  as a queue item citing this paragraph; the second such item on a code pull
+  request sends the numbers back to Brett to raise. The cap retires when he
+  replaces the numbers or removes it. Two habits fed that loop and are not part of a
   fix: writing the review's history into the files it reviews, and adding new
   work to a pull request under review. A fix changes what the finding names; a
   problem found beside it goes to the next sweep.
