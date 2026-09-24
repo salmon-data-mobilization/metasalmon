@@ -1623,13 +1623,14 @@ implemented and recommended.
 
 **What stays open, named rather than read as settled:** which tag. A tag is a
 release, so its name is a version claim: a patch number keeps the profile's
-`v0.3` URLs, and a new minor implies a `v0.4` profile path, which is `B-208`'s
-question. That choice was put to him the same day with a recommendation of
+`v0.3` URLs, and a new minor implies a `v0.4` profile path, which `B-236`'s
+release then has to carry. That choice was put to him the same day with a recommendation of
 `sdp-0.3.1`. Cutting the tag is an outward release act in `smn-data-pkg`, and
 his. The pin moves to the tag once it exists, and `B-199`'s in metasalmonpy,
 which must name the same ref, follows it.
 
 **Where it is recorded:** `B-198`'s card, whose condition now names a tag.
 **Owner:** queue item `B-236` for the tag itself, whose name and cutting are
-Brett's; `B-198` and `B-199` move the pins once it exists; and `B-208` for the
-version question.
+Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
+move the pins once it exists; and `B-208` for how a frozen profile keeps the
+schema bytes it was frozen against.

@@ -6685,8 +6685,8 @@ on 2026-09-23 that B-198's remote pin names a tag ("B198: Switch to a tag"). On
 2026-09-16, smn-data-pkg's only tags were `sdp-0.2.0` and `sdp-0.3.0`, and the
 Q-51 commit `f86d9b4` was sixteen commits ahead of `sdp-0.3.0`. So B-198 and
 B-199 wait on a tag nobody owned. The Codex review of pull request 150 found the
-gap. B-236 owns the tag, and both items are now blocked on it. The name and the
-act are Brett's.
+gap. B-236 was filed to own the tag, and this change added it to both items'
+`blocked_by`. The name and the act are Brett's.
 
 **`B-223` narrowed, and `Q-62` filed.** B-223 changed R's semantic closure reader
 along with the two EML paths. On that path metasalmonpy falls back to the default
@@ -6698,22 +6698,24 @@ closure path is now Q-62's.
 accounted for when its meaning waits on a ruling, and Q-61 said the definition
 would be "written under B-232" afterwards. B-232 can retire first. If it does,
 nothing owns the definition once Q-61 is ruled. The Codex review of pull request
-150 found the gap. B-232 now requires every term deferred for a ruling to have
-an item blocked on that ruling that owns its later definition. B-237 is that
-item for `smn:Run`.
+150 found the gap. B-232's condition was changed to require every term deferred for a
+ruling to have an item, sequenced after that ruling, that owns its later
+definition. B-237 was filed as that item for `smn:Run`.
 
 **`B-238`: the research behind B-232's definitions gets a commons owner.**
 B-232 writes a definition for every undefined local smn term, each from a source.
 Establishing what a term means is durable salmon knowledge, which AGENTS.md sends
 to the commons, but B-232's condition let it retire with that research recorded
 only in ontology annotations. One item cannot finish work in two repositories, as
-the Codex review of pull request 150 pointed out. B-238 owns the commons cards,
-and B-232 now waits on it and cites each card by commit.
+the Codex review of pull request 150 pointed out. B-238 was filed to own the commons
+cards, and this change sequenced B-232 after it and made B-232's condition cite
+each card by commit.
 
 **`B-239`, and three follow-ups from the next review round.** B-238 counts a
 term deferred for a ruling once its card states the question, but after the
-ruling nothing in the commons would own changing the card. B-239 owns that for
-`smn:Run`, blocked on Q-61, and B-237 now waits on it and cites the updated card.
+ruling nothing in the commons would own changing the card. B-239 was filed to own
+that for `smn:Run`, sequenced after Q-61, and B-237 was sequenced after B-239 and
+made to cite the updated card.
 B-237 also deletes `smn:Run`'s row from B-231's exemptions file when it adds the
 definition, so the guard is not left suppressing a term that has one. B-198 and
 B-199 re-vendor the schema from the exact tag B-236 creates, which is the ref the
@@ -6745,7 +6747,20 @@ It now retires only with an owner for every consequence of the chosen option,
 including a commons gap for a newly minted concept. The Codex review of pull
 request 150 found both.
 
-**Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
-temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
-which decides which schema their pattern check enforces. The roadmap's B-142
-passage now gives the closure-path difference to Q-62 rather than B-223.
+**Three sequencing fixes from the same review.** A ruling decides the shape of
+three items: Q-54's temperature ruling decides B-128's request shape, and Q-53
+decides which schema B-204's and B-205's pattern check enforces. So this change
+added each question to its items' `blocked_by`, which is where the live
+dependency is kept; this paragraph records why it was added, not whether it
+still holds. The roadmap's B-142 passage now gives the closure-path difference
+to Q-62 rather than B-223.
+
+**A minor tag carries its own profile path, and this section keeps no blocker
+state.** B-236 could have retired on an `sdp-0.4.0` tag cut on a commit whose
+profile still said v0.3, and B-198 and B-199 would then have pinned a release
+that claims a version its own profile does not carry. B-236's condition now puts
+the profile move in the release pull request whenever the name is a new minor.
+Separately, several paragraphs above said an item "now waits on" another, which
+restated the live `blocked_by` field in prose that nothing checks. They now
+record what each change did and why. The Codex review of pull request 150 found
+both.
