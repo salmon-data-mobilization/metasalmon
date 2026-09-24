@@ -6816,3 +6816,13 @@ owned only `run.md`; B-239 now owns the gap entry too, and Q-61 retires once the
 owners are filed. The Codex review of pull request 150 found all three. `B-235`
 also gains a thirteenth passage, *M*: `HUB.md` says a reserved pull request
 stays "unanswered" while the reply row lets agents answer Codex on it.
+
+**Q-61 moves to metasalmon, and B-232 lands as one pull request.** Q-61 was
+declared `repo: salmon-domain-ontology`, but it retires by recording a ruling in
+`knowledge/questions.md` and filing queue items, both writes in this repository;
+its ontology consequences already have their own items. The Q61 entry in
+`questions.md` had copied Q-61's retirement rule and owner mapping, so it now
+points at the item instead, and Q60's owner line drops the dependency it had
+restated. B-232 allowed several pull requests, which one claim cannot produce;
+it now lands as one, with a commit per module. The Codex review of pull request
+150 found all three.

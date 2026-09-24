@@ -366,11 +366,8 @@ narrowed from the annual return to the run component. The annual return (b)
 already has a home through `smn:RunContext` and run size.
 
 **Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`,
-which retires only with an owner for every consequence of the option chosen:
-`B-237` for the definition under (a), and new or updated items for the
-superclass move under (b) or the second term under (c), with `B-239` recording
-that second concept as a commons gap. It retires once those owners are filed,
-not once their work lands.
+which holds its retirement condition and names who owns each option's
+consequences.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 
@@ -1635,4 +1632,4 @@ which must name the same ref, follows it.
 **Owner:** queue item `B-236` for the tag itself, whose name and cutting are
 Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
 move the pins once it exists; and `B-208` for how a frozen profile keeps the
-schema bytes it was frozen against, which a minor release waits on.
+schema bytes it was frozen against.

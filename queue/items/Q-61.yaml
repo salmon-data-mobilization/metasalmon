@@ -3,7 +3,7 @@ kind: question
 title: 'What smn:Run denotes: the run timing that smn pull request 27 says it models, or the returning group of fish that smn:RunContext means by run'
 state: needs_brett
 claimable: false
-repo: salmon-domain-ontology
+repo: metasalmon
 venue: claude-science
 stream: S9
 blocked_by: []
