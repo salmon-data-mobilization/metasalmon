@@ -323,6 +323,190 @@ test_that("a column shared by two tables prints and resolves a table-qualified c
   )
 })
 
+# Every printed decision call, run, and checked against the slot and rank it was
+# printed UNDER -- not only that it decides something. A call that resolves to a
+# sibling slot passes a "one decision was recorded" check and writes the wrong
+# field. The text run is the rendered line, so it is what a user pastes.
+expect_printed_calls_decide_their_own_slots <- function(review) {
+  rendered <- sub("\\s+#.*$", "", trimws(.ms_review_render_lines(review, object_name = "review")))
+  run <- function(call) {
+    eval(parse(text = call)[[1]], list(review = review), enclos = environment())
+  }
+  for (i in seq_len(nrow(review))) {
+    call <- .ms_review_accept_call(review, review$slot_id[[i]], review$rank[[i]])
+    expect_true(paste0("review <- ", call) %in% rendered, info = call)
+    decided <- run(call)
+    accepted <- decided[!is.na(decided$decision), , drop = FALSE]
+    expect_equal(nrow(accepted), 1L, info = call)
+    expect_equal(accepted$slot_id, review$slot_id[[i]], info = call)
+    expect_equal(accepted$rank, review$rank[[i]], info = call)
+  }
+  for (slot in unique(review$slot_id)) {
+    call <- .ms_review_reject_call(review, slot)
+    expect_true(paste0("review <- ", call) %in% rendered, info = call)
+    decided <- run(call)
+    expect_equal(unique(decided$slot_id[!is.na(decided$decision)]), slot, info = call)
+  }
+}
+
+# Hub queue B-151. A measurement column's own `entity_iri` and `constraint_iri`
+# targets share their roles with its codes' `codes.csv` targets, which a
+# measurement parent gives the roles constraint, entity and method -- so one
+# (column, role) pair names the column's own slot AND a slot per code. An
+# omitted `code_value` matches every code, so the column's own slot printed
+# `accept_suggestion(review, "spawner_count", "entity", rank = 1, table =
+# "spawners")`, which matched three slots and aborted: the printed call that
+# cannot run, which the header of R/review-console.R names as the defect this
+# feature could most easily ship with. Built the way discovery builds it: the
+# three roles of one code share that code's slot.
+measurement_code_review <- function() {
+  code_rows <- function(code) {
+    dplyr::bind_rows(lapply(c("constraint", "entity", "method"), function(role) {
+      fixture_suggestions(
+        code_value = code,
+        dictionary_role = role,
+        target_scope = "code",
+        target_sdp_file = "codes.csv",
+        target_sdp_field = "term_iri",
+        target_row_key = paste0("demo-1/spawners/spawner_count/", code),
+        label = paste(role, "term for", code),
+        iri = paste0("https://example.org/", role, "/", code)
+      )
+    }))
+  }
+  suggestions <- dplyr::bind_rows(
+    fixture_suggestions(
+      dictionary_role = "entity", target_sdp_field = "entity_iri",
+      label = "Spawner", iri = "https://w3id.org/smn/Spawner"
+    ),
+    fixture_suggestions(
+      dictionary_role = "constraint", target_sdp_field = "constraint_iri",
+      label = "Wild origin", iri = "https://example.org/constraint/column"
+    ),
+    code_rows("-9"),
+    code_rows("-99")
+  )
+  review_semantics(with_suggestions(fixture_dict(constraint_iri = NA_character_), suggestions))
+}
+
+measurement_column_slot <- "column_dictionary.csv|demo-1/spawners/spawner_count|entity_iri"
+
+test_that("a measurement column with a code list prints a call that reaches its own slot", {
+  review <- measurement_code_review()
+  lines <- .ms_review_render_lines(review)
+  expect_true(any(grepl(
+    "accept_suggestion(review, \"spawner_count\", \"entity\", rank = 1, table = \"spawners\", code_value = \"\")",
+    lines,
+    fixed = TRUE
+  )))
+  expect_printed_calls_decide_their_own_slots(review)
+})
+
+test_that("a blank code_value selects the column's own slot, and an omitted one still matches every code", {
+  review <- measurement_code_review()
+  for (blank in list("", NA)) {
+    decided <- accept_suggestion(review, "spawner_count", "entity", rank = 1, code_value = blank)
+    expect_equal(unique(decided$slot_id[!is.na(decided$decision)]), measurement_column_slot)
+  }
+  # An omitted `code_value` still matches every code, as it always has. A call
+  # printed for a code slot when that slot was the only one for its column and
+  # role carries no `code_value`, and reading the omission as "no code value"
+  # would re-point that pasted call at the column's own slot, or at nothing. So
+  # the bare call still refuses rather than guessing.
+  expect_error(
+    accept_suggestion(review, "spawner_count", "entity", rank = 1),
+    "more than one review slot"
+  )
+})
+
+test_that("doing what the ambiguity refusal says reaches every slot it matched", {
+  # The column's own option used to be a bare `table = "spawners"`, which
+  # repeated the ambiguity instead of settling it, so a user who followed the
+  # message could not reach that slot at all.
+  review <- measurement_code_review()
+  refused <- tryCatch(
+    accept_suggestion(review, "spawner_count", "entity", rank = 1),
+    error = identity
+  )
+  expect_match(conditionMessage(refused), "more than one review slot")
+  options <- unname(refused$body[names(refused$body) == "*"])
+  reached <- vapply(options, function(option) {
+    call <- paste0("accept_suggestion(review, \"spawner_count\", \"entity\", rank = 1, ", option, ")")
+    tryCatch({
+      decided <- eval(parse(text = call)[[1]], list(review = review), enclos = environment())
+      unique(decided$slot_id[!is.na(decided$decision)])
+    }, error = function(e) NA_character_)
+  }, character(1), USE.NAMES = FALSE)
+  expect_setequal(reached, unique(review$slot_id[review$role %in% "entity"]))
+})
+
+test_that("a measurement column with a code list round-trips from create_sdp() to disk", {
+  # The same collision reached through the real pipeline rather than a
+  # hand-built frame. `semantic_code_scope = "all"` is the documented option
+  # that gives a numeric column's codes semantic targets, and
+  # `suggest_semantics(codes = )` applies no scope at all.
+  hits <- function(query, role = NA_character_, ...) {
+    tibble::tibble(
+      label = paste("Term", 1:2, "for", role),
+      iri = paste0("https://example.org/candidates/", role, "Term", 1:2),
+      source = "smn", ontology = "smn", role = role,
+      match_type = "label_exact", definition = "A term.", score = c(4.5, 3.5)
+    )
+  }
+  codes <- tibble::tibble(
+    dataset_id = "demo-1", table_id = "spawners", column_name = "spawner_count",
+    code_value = c("-9", "-99"),
+    code_label = c("Not surveyed", "Survey abandoned"),
+    code_description = c("The reach was not surveyed.", "The survey was abandoned.")
+  )
+  path <- file.path(withr::local_tempdir(), "measurement-codes")
+  suppressMessages(with_mocked_bindings(
+    find_terms = hits,
+    create_sdp(
+      list(spawners = data.frame(
+        stream_name = rep(c("Bear Creek", "Elk River"), 6),
+        spawner_count = c(120L, 340L, -9L, 88L, 17L, -99L, 5L, 9L, 10L, 11L, 12L, 13L)
+      )),
+      path = path, dataset_id = "demo-1", table_id = "spawners",
+      semantic_max_per_role = 2, seed_semantics = TRUE, seed_codes = codes,
+      semantic_code_scope = "all",
+      seed_verbose = FALSE, check_updates = FALSE, overwrite = TRUE
+    )
+  ))
+  review <- suppressMessages(review_semantics(path))
+
+  column_slot <- "column_dictionary.csv|demo-1/spawners/spawner_count|entity_iri"
+  code_slots <- paste0("codes.csv|demo-1/spawners/spawner_count/", c("-9", "-99"), "|term_iri")
+  # The collision is real: the column's own slot and both code slots answer to
+  # (spawner_count, entity), and the same holds for constraint.
+  expect_true(all(c(column_slot, code_slots) %in% review$slot_id[review$role %in% "entity"]))
+  expect_true(all(code_slots %in% review$slot_id[review$role %in% "constraint"]))
+
+  expect_printed_calls_decide_their_own_slots(review)
+
+  # And the pasted call writes the column's own field, leaving the codes alone.
+  read_csv_text <- function(file_name) {
+    readr::read_csv(
+      file.path(path, "metadata", file_name),
+      col_types = readr::cols(.default = readr::col_character()),
+      na = ""
+    )
+  }
+  codes_before <- read_csv_text("codes.csv")
+  call <- .ms_review_accept_call(review, column_slot, 1L)
+  expect_match(call, "code_value = \"\"", fixed = TRUE)
+  decided <- eval(parse(text = call)[[1]], list(review = review), enclos = environment())
+  suppressMessages(apply_sdp_semantics(path, decided))
+
+  chosen <- review$iri[review$slot_id == column_slot & review$rank == 1L]
+  dictionary <- read_csv_text("column_dictionary.csv")
+  expect_equal(
+    dictionary$entity_iri[dictionary$column_name == "spawner_count"],
+    .ms_strip_review_iri(chosen)
+  )
+  expect_equal(read_csv_text("codes.csv"), codes_before)
+})
+
 test_that("a single-table review prints the short call, with no needless qualifier", {
   review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
   lines <- .ms_review_render_lines(review)
