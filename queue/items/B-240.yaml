@@ -9,5 +9,5 @@ stream: S2
 severity: P2
 blocked_by: [B-53]
 legacy: ''
-evidence: knowledge/sequences/s2-correctness-debt.md
+evidence: knowledge/backlog.md
 retires_when: 'IN METASALMONPY, infer_column_role() no longer types a year-shaped measurement column temporal on its values alone, by the rule B-53 lands in R, so the column reaches the semantic pipeline with a measurement role; and a metasalmonpy test pins that case against _values_look_yearish(), asserting the predicate is true for every fixture before it asserts the role, so the test cannot pass without exercising a year-shaped column. The fixtures have to be ones metasalmonpy''s own predicate reads as year-shaped, which that control enforces; where the two predicates disagree about a storage type, that is a separate divergence and not this item''s to absorb. THE METASALMON HALF IS B-53, and each names the other. A PORT, NOT A REGISTER ROW: the B-53 run measured the same defect in metasalmonpy, and the port copies the rule that merges in R, so once it lands the two implementations behave alike again.'

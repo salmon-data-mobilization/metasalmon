@@ -2447,6 +2447,21 @@ has no execplan.
 `.ms_values_look_yearish(col)` returns `"temporal"` on value shape alone
 (`R/dictionary-helpers.R`, the role heuristic below the identifier checks).
 
+*The metasalmonpy half, split 2026-09-24 as `B-240`, measured the same day* on
+metasalmonpy `main` `e595752` (Python 3.11.15, pandas 3.0.5), loading
+`dictionary.py` from a `git archive` extract. `infer_column_role()` types
+`spawner_count` (the strings `"1850"`, `"2003"`, `"1999"`) and `escapement`
+(int64 1850, 2003, 1999) `temporal`, and `_values_look_yearish()` is true for
+both; an int64 column off the year range (185, 20003, 99) types `measurement`.
+So the mirror has the same defect. **A different divergence sits beside it,
+and it is not the one B-240 ports:** `_character_values()` renders through
+`str()`, so a float64 column never looks year-shaped in Python. A float64
+`NATURAL_ADULT_SPAWNERS` (1850.0, 2003.0, 1999.0) types `measurement` by that
+accident, and `pd.read_csv()` on `BY,n / 2001,1 / ,2 / 2003,3` gives a float64
+`BY` that types `attribute`. The B-53 run measured both first, on `3f8349a`,
+and also measured `readr::read_csv()` on the same text giving a numeric `BY`
+that R types `temporal`.
+
 **#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
 coercion failures**, and the codes step silently `NA`s unlisted values. Still
 live, and the mechanism is worth stating because it looks handled: the coercion
