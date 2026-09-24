@@ -442,6 +442,44 @@ metasalmon (development version)
   that moves, when B-177 lands. Until then the difference is tracked as a port
   owed in `knowledge/parity-deviations.md`, not as a register row.
 
+* **`apply_salmon_dictionary(strict = TRUE)` now stops on the coercion failure
+  it used to let through, and the codes step names the values it blanks**
+  (backlog #55, hub item B-55). Both were silent losses in one call.
+
+  - **A value R only warns about is now a coercion failure.**
+    `as.integer("abc")` and `as.numeric("1,5")` do not error. They warn and
+    return `NA`. The coercion block handled `error` alone, so under the default
+    `strict = TRUE` a column typed `integer` or `number` holding such a value
+    came back with `NA` in its place and R's generic *"NAs introduced by
+    coercion"* beside it, and never reached the abort that `strict` promises.
+    A warning is now a failure too. `strict = TRUE` aborts, naming the column
+    and the type, and for a failure R only warned about, each value that did not
+    convert. `strict = FALSE` warns and keeps the column as character, which is
+    what the argument has always documented; it too returned the `NA`s. A
+    missing or blank value is not a failure.
+  - **A value that is not in its column's code list is reported.** The codes
+    step makes the column a factor whose levels are the code list, so an
+    unlisted value has no level and becomes `NA`, and it used to do that without
+    a word. It now warns, naming each distinct unlisted value, under either
+    value of `strict`: `strict` governs type coercion, and the defect was the
+    silence, not the conversion, which is unchanged. Blank strings count as
+    missing and are not named.
+
+  Two tests pinned the old behaviour. One asserted that `strict = TRUE` returned
+  `NA` for `"not-a-number"`, beside a comment saying the handler "only triggers on
+  actual errors, not warnings". Both now assert the documented contract.
+
+  **Not covered, because it is a different mechanism:** a coercion that loses a
+  value without signalling anything still passes `strict = TRUE`. `as.logical()`
+  returns `NA` for `"yes"` with no warning, `as.Date()` does the same for a
+  value after a parseable first one, and `as.integer("3.7")` truncates to `3`.
+  None of them raises a condition for a handler to catch.
+
+  **Mirror:** the coercion half brings R to where metasalmonpy already was,
+  because its `_coerce_series()` raises on these values under `strict=True`. Its
+  codes step still blanks an unlisted value silently, and that half is owed
+  there as a port (see `knowledge/parity-deviations.md`).
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

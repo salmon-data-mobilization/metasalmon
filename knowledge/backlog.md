@@ -2451,6 +2451,19 @@ failures the argument is supposed to catch. A `warning =` handler, not a
 different message, is the fix (`R/dictionary-helpers.R`, the coerce-type block
 in `apply_salmon_dictionary()`).
 
+*R half fixed 2026-09-24 (hub item B-55).* The block now has a `warning =`
+handler, the codes step warns about each unlisted value it blanks, and
+`tests/testthat/test-edge-cases.R` covers both. Two of that file's tests had
+pinned the defect and were rewritten to the documented contract. The
+metasalmonpy half is owed as a port; see *What metasalmon 0.5.0 owes the mirror*
+in [`parity-deviations.md`](parity-deviations.md). **What the fix does not
+reach, measured on R 4.3.3:** a `warning =` handler only sees a coercion that
+signals. `as.logical("yes")` returns `NA` silently, `as.Date(c("2020-01-01",
+"abc"))` returns `NA` for the second value silently, and `as.integer("3.7")`
+truncates to `3` silently, so all three still pass `strict = TRUE`. That is the
+same defect class reached by a different mechanism, and the B-55 workpad records
+it as a candidate item.
+
 **#56 Semantic retrieval issues one serial `search_fn()` call per target** with no
 deduplication of identical `(query, role, sources)` tuples. Still live: the
 `purrr::map_dfr()` over `seq_len(nrow(targets))` in `suggest_semantics()` calls
