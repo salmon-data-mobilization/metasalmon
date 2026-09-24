@@ -179,6 +179,22 @@ measurement above is kept as the dated measurement it was, not corrected in
 place: it is the evidence the port was owed, and rewriting it would leave the
 section asserting a gap with nothing showing there had been one.
 
+**One behaviour #28 ported differently, found 2026-09-23: a schema the options
+select.** metasalmonpy's `review_metadata()`, its four setters and its
+validator's blank-required collector read the bundled schema under every setting
+(`_SCHEMA_SOURCE = "vendored"`), so a schema selected with
+`set_sdp_schema_source()` or `set_sdp_schema_base_url()`, or their environment
+variables, reaches the writers and not the scan, the setters or the collector. R
+has honoured a selected schema throughout: before hub item **B-175** it read every
+setting through the loader, and since B-175 (pull request #145) it reads the
+bundle only under the default options and a selected schema as the writers do.
+That is the Codex finding against #145's first head, which had copied the Python
+shape. **Owed as a port, not a row**: nobody chose the difference, and
+`AGENTS.md` says an option that will be ignored should warn rather than silently
+no-op. The port is hub item **B-215**, and the measurement is in `backlog.md`
+under *The 2026-09-23 queue sweep*. Recorded here and in the release index in
+the same change, as the rule there requires.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema
@@ -458,7 +474,176 @@ slot whose candidates are a real non-`smn` gap. It is owed as a port, not a
 register row: the recorded row is itself a port that has landed (#28), and once
 this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is to be filed.
+metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
+`review_metadata()` now lists a draft `REVIEW:` IRI wherever
+`validate_salmon_datapackage(require_iris = TRUE)` refuses one (hub item
+**B-174**, pull request #144). That means any declared `*_iri` field of
+`tables.csv` and the six semantic IRI fields of `column_dictionary.csv`. This is
+the R half of metasalmonpy #28's `_is_unresolved_iri()`, and it is one file
+short. metasalmonpy's `_REVIEW_IRI_FILES` also lists `codes.csv`. R's scan does
+not, because R's strict validation does not yet refuse a marker there and the
+scan lists exactly what the validator refuses. The state is reachable only by
+hand-editing: no producer in either package writes a marker into `codes.csv`.
+
+**Brett ruled the direction on 2026-09-23: "Yes; Refuse it for the strict
+validation."** Strict validation will refuse a `codes.csv` marker. metasalmonpy's
+scan therefore already gives the ruled answer, and R is the side that moves.
+**B-177** makes R's strict validation sweep all four metadata files and extends
+the scan's file list in the same change; its card records the ruling, from the
+queue sweep of 2026-09-23 (pull request 150). The ruling covers both
+implementations, and the Python side owes a widening too. Its strict validation
+does not yet refuse a marker in `codes.csv` or `dataset.csv`, and its EDH gate
+and scan both leave out `dataset.csv`. That half was filed in the same sweep as
+**B-230**, and each item names the other.
+
+**It is owed as a port, not a register row**, for the reason this section gives
+throughout. A ruled direction with an owner on each side is lag being closed,
+not a difference anyone wants, and once B-177 and B-230 land the two
+implementations behave alike. No numbered row was added, so
+`scripts/check-parity-registers.py` has nothing new to compare.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+`apply_salmon_dictionary()` names the code values it blanks.** Its codes step
+now warns before the factor conversion, naming each distinct value that is
+present in the data and missing from the column's code list, under either value
+of `strict` (hub item **B-55**, backlog #55). The same change makes
+`strict = TRUE` abort on a value that R's coercion only warns about, and **that
+half owes metasalmonpy nothing**: `_coerce_series()` in `dictionary.py` already
+raises there, through `pd.to_numeric(..., errors="raise")` (`:712`, `:714`) and
+`pd.to_datetime(..., errors="raise")` (`:718`, `:720`), so R has moved to where
+Python was. Measured 2026-09-24 on metasalmonpy `main` `3f8349a` with pandas
+3.0.5: `"not-a-number"` in a column typed `integer` raises `ValueError` under
+`strict=True`, and is kept as a string with a `RuntimeWarning` under
+`strict=False`.
+
+**The codes half is owed.** The Python counterpart is the codes block of
+`apply_salmon_dictionary()` in `dictionary.py` (`:789`), which builds
+`pd.Categorical(..., categories=code_values)` and so turns an unlisted value
+into a missing one. Measured on the same commit, `"Unknown"` against a two-value
+code list comes back missing, and the only signal is pandas' own
+`Pandas4Warning` that such a construction "will raise in a future version".
+The pin should be the R test's: one warning naming the unlisted value under
+both values of `strict`, no name for a missing or a blank value, and no warning
+for a column whose present values are all listed. Python has no test of the
+coercion half's `strict=True` raise either, although the behaviour is there.
+It is owed as a port, not a register row, because once it lands the two
+implementations behave alike again. It did not land in the same stream because
+a hub claim covers one branch in one repository. Its metasalmonpy queue item is
+**B-241**.
+
+**Found while measuring it, and deliberately not part of this port:** that same
+block never applies `code_label`. The call after the constructor, at `:790`,
+reaches `rename_categories` on a `Series` rather than on its `.cat` accessor, so
+it raises `AttributeError` into the `except Exception` branch marked
+`pragma: no cover - defensive`, which converts the column to strings. R's factor
+carries the labels. The Python code plainly means to apply them, so this reads
+as a Python defect rather than a design difference, but
+`tests/test_dictionary.py` pins the unlabelled categories, so it is a candidate
+for its own item and the B-55 workpad has the evidence. No register row is added
+here, because adding one is Brett's.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the printed call for a column's own slot says `code_value = ""` when the
+column's codes share its role.** A measurement column's `entity_iri` and
+`constraint_iri` targets share their roles with its codes' `codes.csv` targets,
+so `(column, role, table)` does not select the column's own slot. Both
+implementations printed that call and nothing more, and it aborts as ambiguous
+(hub item **B-151**). R now prints `code_value = ""` for that slot, reads a
+blank `code_value` as selecting the slots that belong to no code, and offers
+that spelling in the ambiguity refusal.
+
+**Whether a slot belongs to a code is read from its file, not from an empty
+`code_value`.** The codes schema lets a `codes.csv` row leave `code_value` empty
+when it supplies `vocabulary_iri`, and discovery still gives that row a
+code-level target. Reading an empty value as "no code" matched that slot and the
+column's own slot together, so the blank settled nothing for such a column. The
+Codex review of metasalmon pull request #153 raised it. R therefore never prints
+`code_value = ""` for a code's slot: that slot's call stays ambiguous and
+refuses, as it did before B-151, rather than deciding the column's slot.
+
+**Python had half of the matcher already.** `_match_slot_rows()` compares
+through `scalar_text()`, which maps a missing value to `""`. So on metasalmonpy
+`main` `3f8349a`, `accept_suggestion(review, col, role, code_value="")` already
+selected the no-code slot, and so did `pd.NA` and `NaN`, where R's `!is.na()`
+guard made the same call abort with *"No review slot matches"*. It also
+selected a code slot whose row has no code value: measured on the same commit,
+with both slots present, `""` and `pd.NA` each raise as ambiguous. No register
+row recorded either difference, so none is amended.
+
+The port owes three things. `_match_slot_rows()` leaves a code's slot out of a
+blank match, reading "a code's slot" from `review_target_keys()` the way R's
+`.ms_review_is_code_slot()` reads `.ms_review_target_keys()`.
+`_review_call_args()` prints the blank value for a slot that belongs to no code,
+and never for a code's slot. `_resolve_slot()` offers `code_value=""` for a
+slot that belongs to no code when its table has code slots among the matches.
+The pin to delete is
+`test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous`,
+which #28 added with this defect as its retirement condition. The tests to
+mirror are the ones in `tests/testthat/test-review-console.R` that build a
+measurement column with a code list, or with a vocabulary-backed code row,
+including the two through `create_sdp()`. The printed spelling is `""` on both
+sides, though R also accepts `NA`. Python's `None` is already the unconstrained
+default, and `""` is the one literal both languages print alike. So it is owed
+as a port, not a register row. It did not land in the same stream because a hub
+claim covers one branch in one repository. Its metasalmonpy half is `B-242`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a year-shaped measurement column keeps its measurement role.**
+`infer_column_role()` no longer types a column `temporal` on year-shaped values
+alone (every value a four-digit number from 1800 to 2500) when the name's words
+include a measurement word, or a sample or partition size, and no date or time
+word (backlog #53, hub item **B-53**). Such a column used to leave the semantic
+pipeline, because `suggest_semantics()` skips temporal columns. The words come
+from the new `.ms_name_words()`, which splits the name's tokens again at every
+ASCII punctuation character, so `Water depth(mm)` and `adult/count` are
+measurement names and the year word in `Escapement (yr)` is still seen. The
+measurement test is the new `.ms_name_has_measurement_word()`. It reads the list
+`.ms_name_has_measurement_hint()` reads, now held once in
+`.ms_measurement_name_tokens()`, and it leaves out that hint's substring and unit
+patterns, because each matches names that are not measurements
+(`temporal_start`, `Cohort (Aug)`). The time words there include the plurals
+(`years`, `months`, `days`) that the name-temporal check leaves out. The words
+decide only whether the year shape may decide. The role checks after it read
+the coarse tokens as before, because splitting every check at punctuation
+breaks units and rates: `Discharge (m3/day)` became temporal and
+`Fish (no./site)` an identifier when that was tried.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`infer_column_role()` in `dictionary.py` is a node-for-node port and still calls
+`_values_look_yearish(series)` inside the one temporal branch. The pin should be
+the R test's (`tests/testthat/test-year-shaped-measurement-role.R`): each fixture
+checked against the year-shape predicate first, the role unchanged when the same
+values move off the year range (method names joined by punctuation, such as
+`method/spawners`, included and never typed as measurements), names that join
+a measurement word with punctuation typed as measurements, a year word hidden
+by punctuation or written as a plural still keeping the year shape deciding,
+unit and rate headers keeping their roles off the year range, the three names a
+substring or unit rule would retype (`temporal_start`, `temporal_end`,
+`Cohort (Aug)`) still `temporal`, and one column followed to its semantic
+targets. The word
+split must use an explicit ASCII punctuation set, as R's does, rather than a
+class whose meaning moves with the locale. It is owed as a port, not a register
+row: once it lands the two implementations behave alike again. It did not land
+in the same stream because a hub claim covers one branch in one repository.
+
+**One thing the port has to know, because it will otherwise meet it as a failing
+control.** metasalmonpy's `_values_look_yearish()` never finds a float column
+year-shaped, while R's `.ms_values_look_yearish()` does find a double one:
+`_character_values()` renders through `str()`, and `str(1850.0)` is `"1850.0"`
+where `as.character(1850)` is `"1850"`. Measured 2026-09-24 on metasalmonpy
+`main` `3f8349a` (Python 3.11.15, pandas 3.0.5): `spawner_count` as strings and
+`escapement` as int64 type `temporal` there, as they did here before B-53, while
+the float64 `NATURAL_ADULT_SPAWNERS` of 1850.0, 2003.0 and 1999.0 types
+`measurement` because it is never year-shaped at all. So a port that copies the R
+test's double fixtures fails its own year-shape control rather than passing
+without testing anything, which is what the control is for. **The float gap is a
+separate divergence and not this port's to absorb**: it also means a year column
+pandas reads as float64, as it reads any integer column with a missing value,
+types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
+and `temporal` here.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

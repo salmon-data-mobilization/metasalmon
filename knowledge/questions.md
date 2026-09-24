@@ -245,6 +245,186 @@ and not the blast radius.
 the item said of itself that it was an open question and that only Brett can
 choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
 
+### Q53 — Should `validate_salmon_datapackage()` reach the remote SDP schema on a cold session, as R does, or make no network call, as metasalmonpy does?
+**Unblocks:** a parity difference neither register records, and which copy of the
+schema the pattern checks of `B-204` (metasalmon) and `B-205` (metasalmonpy)
+enforce, since each reads whatever its validator loads. How the ruling reaches
+those two cards is `Q-53`'s condition.
+Measured on both sides, each instrument shown to see a fetch before its silence
+was read: under the shipped defaults R's validator makes one remote fetch attempt
+on a cold session, through its readers' column aligners, and metasalmonpy's makes
+none. R documents no offline promise for its validator; metasalmonpy's code
+states one and keeps it. `B-175` took `review_metadata()` offline and left the
+validator's fetch in place, because the validator was outside that item's
+promise. **The measurements are in [`backlog.md`](backlog.md)** under *The
+2026-09-23 queue sweep*, and are not restated here.
+**Recommendation, the sweep's and not ruled:** R moves, reading the bundled
+schema under the default options as `review_metadata()` now does. A validator
+that waits out a network timeout on a cold session is the failure `B-175` removed
+from the scan, and once `B-198`'s pin and the vendored bundle are the same bytes
+the fetch returns nothing the bundle does not. The case the other way is real,
+which is why this is a question: a remote-first validator sees a published schema
+change before a re-vendor does, which is the property the writers keep.
+**Owner:** [S5](sequences/s5-review-flow.md), with the queue item `Q-53`.
+*(`Q-52`, filed on 2026-09-16 about where an item's severity lives, is owed an
+entry in this file and has none yet. That is its own item's to write; it is named
+here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
+
+### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
+**Unblocks:** five differences neither register records — the temperature, JSON
+mode, OpenRouter's attribution headers, the user agent and reasoning effort — and
+what `B-128` is for. Routing R's chat path through the shared body builder gives
+it the semantic path's temperature rule, on the premise that R keeps sending a
+temperature, and would also make it send the reasoning effort R resolves from
+`METASALMON_LLM_REASONING_EFFORT`, which neither chat path sends today.
+Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
+`main`; reasoning effort was added on 2026-09-24 and measured against
+metasalmonpy `e595752` and R `abfc7d6`. **What each side sends, and where, is in
+[`backlog.md`](backlog.md)** under *The 2026-09-23 queue sweep*.
+**Recommendation:** none on the direction of the temperature, JSON mode or
+reasoning effort, which change what a model returns and on which neither side
+has evidence. The
+instrument that could supply it is the Theme A benchmark, whose live capture
+waits on the credential `B-80` names. The header and user-agent differences
+change nothing a model sees, so registering them or porting them costs nothing
+behavioural either way.
+**Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
+
+### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
+**Unblocks:** `smn:Run`'s definition, which `B-237` owns and cannot write
+without a ruling. On 2026-09-23 Brett found that the published site shows `Run` with no
+definition.
+
+**smn gives the word two readings.** Read on salmon-domain-ontology `main`
+`d45f8f7` unless noted:
+
+- `smn:Run` is `rdfs:subClassOf smn:Life-HistoryCharacteristic`, so as modelled
+  it is a characteristic, not a group
+  (`ontology/modules/02-observation-measurement.ttl:99`).
+- smn pull request 27, not merged, adds a scope note to `smn:LifeHistoryType`
+  reading *"Run timing is modelled separately as the OWL class smn:Run."* (head
+  `949ed95`).
+- `smn:RunContext` uses the word the other way. Its definition is sourced from
+  GC DFO Salmon Ontology release 0.0.8 and reads *"values refer to run size or
+  returning run composition"*. There a run is the fish that return.
+
+No data dictionary, example or test in metasalmon, metasalmonpy or smn-data-pkg
+names `smn:Run`. That was searched in their checkouts on 2026-09-23 with a
+pattern that did find the ontology's own uses, so the empty result is not a
+blind search. Either ruling therefore breaks nothing downstream.
+
+**Options:**
+
+- **(a)** It is run timing, a life-history characteristic, as its superclass
+  and pull request 27's note already say. The ruling then also says whether
+  its label becomes "Run timing".
+- **(b)** It is the returning group of fish, as `smn:RunContext` uses the word.
+  Its superclass is then wrong: it moves under a group class such as
+  `smn:SalmonGroup`. Pull request 27's note must change before that pull
+  request merges.
+- **(c)** Both are wanted. `smn:Run` takes one, and the other is minted as its
+  own term.
+
+**Recommendation, the filing's and not ruled:** (a). The merged superclass
+already says it, pull request 27's note says it again, and the only change is
+the label.
+
+The case for (b) is real, and it is why this is a question. `smn:RunContext`'s
+sourced definition uses "run" for the fish, so a user looking for a term for a
+run-size column finds `smn:Run` and gets a characteristic. Whichever way it goes,
+the definition is written from a source under `B-237`, not from this entry.
+
+**Update, same day: a fourth sense, and evidence from the working group.**
+Batch 1 of the commons definition backfill (salmon-knowledge-commons pull request
+12, card `concepts/run.md`) read the sources for every use of the word, and they
+name four things, not two. (a) is run timing. (b) is a stock's annual return:
+5 AAC 39.222(f)(31) defines "run" as the number returning in a calendar year. (b2)
+is a *run component*: a persistent group of one or more stocks set apart by when
+its adults migrate, such as a spring run or the A-run and B-run of Snake River
+summer steelhead. That is how most of the prose sources use the bare noun,
+including Healey 1991 and Holtby & Ciruna 2007. (c) is the migration itself. The
+card gives a sourced definition for (a), (b) and (b2), and does not choose.
+
+(b2) is not among the options above, and it bears directly on the PSC release
+field `run`. That field's published text never defines the word, and its codes
+Hybrid, Landlocked and Late Fall Upriver Bright Chinook fit a run component at
+least as well as a timing. (b2), like (b), would move `smn:Run` out from under
+`smn:Life-HistoryCharacteristic` into a group class.
+
+Two more pieces of evidence came from the PSC TCDS meeting on 2026-09-23, per
+Brett's notes (unpublished, and cited here only as a working record):
+
+- The group agreed that "the year in which the majority of the run returns" was
+  circular, and replaced "run" with "fish" in the run-year definitions. The
+  reason given was to avoid implying a stock-specific biological run year. That
+  is sense (b) inside RMIS's own vocabulary, alongside the timing sense in its
+  `run` and `sampled_run` fields.
+- The group decided to build a machine-readable version of the RMIS controlled
+  vocabulary in the mid to near term, so whichever sense smn adopts will be
+  mapped from it.
+
+**Revised recommendation, still the filing's and not ruled:** keep (a) for
+`smn:Run`, relabelled "Run timing". Treat (b2) as a separate candidate term, a
+group class for the run component, because it is what the RMIS `run` codes and
+most prose mean by "a run". This is option (c) above, with the second sense
+narrowed from the annual return to the run component. The annual return (b)
+already has a home through `smn:RunContext` and run size.
+
+**Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`,
+which holds its retirement condition and names who owns each option's
+consequences.
+*(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
+next open number, not a gap.)*
+
+### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves?
+**Unblocks:** `B-223`, and the two R/Python differences on
+`metadata/eml-mapping.yml`. Neither behaviour on either reader was chosen, and
+neither difference is registered. Both were measured by the B-142 run on `main`
+`12efe9d` with yaml 2.3.12; the evidence is under `B-223` in
+[`backlog.md`](backlog.md).
+
+- **The EML and KNB reads.** R takes the tag's text as the value that reaches
+  published EML; metasalmonpy refuses the sidecar. `B-223` is written for R
+  moving to refusal, which was put to Brett on 2026-09-23 as a recommendation.
+  He has not ruled, and the absence of an objection is not a ruling, as the
+  Codex review of pull request 150 on `4d84682` pointed out.
+- **The semantic closure path.** R takes the tag's text as the path;
+  metasalmonpy falls back silently to the default paths. `B-223` originally
+  changed R's closure reader to refuse, and the Codex review of pull request 150
+  pointed out that this would replace one unrecorded difference with another.
+
+**Recommendation:** refuse on every path. On the EML and KNB reads R moves,
+because silently publishing code as metadata is the worse failure. On the
+closure path metasalmonpy moves, because a silent fallback hides a configuration
+mistake exactly where a user can least see it, and it leaves metasalmonpy
+inconsistent with its own EML path. The mirror is not automatically the
+follower, so this is a recommendation, not a default.
+**Owner:** the queue item `Q-62`.
+
+### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
+**Unblocks:** closing a reader-side difference that B-219 and B-220 would otherwise
+leave in place. It is not only a difference between the packages: each one is
+mixed. In R, `.ms_is_review_iri()` and `.ms_strip_review_iri()`
+(`R/package-helpers.R:3777-3789` on `43d7fb3`) accept `^\s*REVIEW\s*:` ignoring
+case, four detectors test `^REVIEW:` (`package-helpers.R:1754`,
+`sdp-extension-helpers.R:37`, `sdp-methods.R:272`,
+`semantic-bundle-validators.R:696`), and the EML and KNB output guards test the
+literal substring `REVIEW:` (`eml-export.R:2787`, `knb-publication.R:834`). In
+metasalmonpy (`9661633`), `dictionary.py:622` and `package_io.py:2441` accept the
+wide form, `package_io.py:219` and `:2528` and `review_console.py:140` and `:146`
+test a leading `REVIEW:` upper-cased, and `eml.py:3472` and
+`knb_publication.py:1043` test the literal substring. So `REVIEW :x` is stripped
+on one path and passed as an IRI on another, in both packages. Neither behaviour
+was chosen, and neither parity register records it. Q18 is about the bytes the
+writers emit after the colon; this is about what the readers accept.
+**Recommendation:** every detector in both packages recognises the wider set,
+through one predicate per package. A marker is most often hand-edited in a
+spreadsheet, where a stray space is likely, and a marker a reader misses reaches
+strict validation as a malformed IRI rather than as an unreviewed slot. The
+mirror is not automatically the follower, so this is a recommendation, not a
+default.
+**Owner:** the queue item `Q-63`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
@@ -1337,3 +1517,129 @@ to be satisfiable inside the repository its `repo` field names — `f86d9b4`
 satisfied it. The two implementation halves are `B-198` (metasalmon) and `B-199`
 (metasalmonpy); read those files for their state rather than assuming it from
 here.
+
+### Q55 — May an agent promote a queue item to `ready` under a standing test, rather than one item at a time? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"An agent may promote a queue item to ready, citing this
+authorization, when all of: the item's repo is one you work alone in (solo:
+true); it carries a non-empty retires_when; its severity is P0, P1, or P2 or P3;
+its blocked_by is empty; and it is not needs_brett. Anything else stays
+per-item."* — Brett, 2026-09-23, in chat. The wording had been put to him with a
+narrower severity range, P2–P3, and he widened it to P0–P3.
+
+**What it changes:** since ruling R15 (2026-09-10,
+[Q38](#q38--does-the-draft-pull-request-refusal-stand--answered-2026-09-10-brett))
+each promotion has needed an authorization of its own. This is one grant with
+a stated test, under which every promotion still names the grant — to promotion
+what R16 is to merging. As first applied, an item that meets the test only once
+a condition is interpreted stays per-item, and the interpretation goes to him as
+a question; Q56 is the first.
+
+**Where it is recorded:** the operative copy belongs on the promotion row of
+`HUB.md`'s `writes.permitted`, and pull request 143 is the change that writes it
+there — policy, so Brett's to merge under class 7. It was first applied in
+commit `abd58b2`, whose message quotes it and lists what was promoted and what
+was held back, with the reason for each. **Owner:** `HUB.md`, with
+[S15](sequences/s15-hub-coordination.md).
+
+### Q56 — Is a `blocked_by` that lists only finished items "empty" under that grant? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"'Clear' should not count a done blocker as still blocking."* So the
+grant's "its blocked_by is empty" is met when `blocked_by` is `[]` or every id it
+lists is an item whose `state` is `done`, which is how `HUB.md`'s claimability
+test already reads *blocked* (*What claimable means, exactly*, test 3).
+
+**The question:** `abd58b2` read the grant as written and held back four items
+whose blockers were all done, because treating "empty" as the claimability
+test's "clear" would have rested a promotion on a file rather than on what he
+said. He answered in the same message as the reinstatement (Q57), and `28fef73`
+promoted those four after recomputing the set against `main` rather than copying
+the earlier list.
+
+**Where it is recorded:** the same promotion row as Q55, written by the same
+pull request 143. **Owner:** as Q55.
+
+### Q57 — Does the standing authorization resume after the suspension of 2026-09-16? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Reinstate"* — adopting the resumption put to him, which the
+operative entry quotes: the protocol resumes, the orchestrating session finishes
+wave 1, and four delegated pull requests (#145, #146, #147, #149) merge once CI
+is green and Codex has finished.
+
+**What was suspended:** `HUB.md`'s `self_suspends` clause fired on 2026-09-16 at
+13:58 UTC, when the orchestrating session edited the description of metasalmonpy
+pull request 34 — B-145's claimed hand-back — a write no row in
+`writes.permitted` covered. It went unnoticed for a week. A dispatched agent
+flagged it on 2026-09-23, and every protocol write stopped and was reported to
+him, by kind and count, before he answered. The operative entry says which
+writes it covers and that it covers nothing else.
+
+**Where it is recorded:** `writes.reinstated_2026_09_23` in `HUB.md`, written by
+pull request 143. It is the "dated entry here from Brett" that
+`writes.reinstated` requires before the protocol resumes, which is why wave-1
+workers held until it existed; the `B-142` and `B-175` workpads record the hold
+and what their later writes rested on instead. `28fef73` is the queue commit that
+followed the ruling. **Owner:** `HUB.md`.
+
+### Q58 — What may an agent write to keep its own pull requests current? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Add a row to the registers for your own upkeep as needed"* — given
+in the message that reinstated the protocol (Q57). Three rows answer it, each
+limited to a pull request an agent opened in a member repository whose `solo`
+key is true: correcting its description, appended and dated rather than
+overwritten; asking Codex to review it again, once per pushed round of fixes;
+and re-running the failed jobs of a run, once per commit and only when the
+failure did not come from the change, with the first attempt's failure written
+into the workpad before the re-run.
+
+**The question it answered:** those three writes had no row, which is why the
+orchestrating session kept stepping outside the register; the write that
+suspended the protocol on 2026-09-16 was of the first kind. Without the second,
+every fix pushed after a first Codex round merged on CI and the agent's word
+alone.
+
+**Where it is recorded:** three rows in `HUB.md`'s `writes.permitted`, with the
+matching carve-outs from `writes.denied`, written by pull request 143; they take
+effect when it merges. The re-run row's workpad record complements `B-229` and
+does not retire it, because it misses every re-run no agent made. **Owner:**
+`HUB.md`.
+
+### Q59 — Should strict validation refuse a `REVIEW:` marker in `codes.csv`, and should `review_metadata()` list one? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Yes; Refuse it for the strict validation."* Read as yes to both:
+strict validation refuses the marker, and `review_metadata()` lists it, because
+the scan lists exactly what strict validation refuses.
+
+**The question:** `B-174`'s hand-back (metasalmon pull request 144) left the two
+implementations disagreeing on purpose. metasalmonpy's scan lists a `codes.csv`
+marker because its EDH gate refuses one; `B-174`'s card said not to, because
+strict validation does not refuse one, and also said no parity row was owed. The
+hand-back recommended settling it at the validator through `B-177` rather than
+registering the difference.
+
+**The plan** is in the item files: `B-177` for metasalmon and `B-230`, its
+metasalmonpy half, hold its scope and its condition, and are not restated here.
+Pull request 144's change stood as it was when the ruling was made.
+
+**Owner:** queue items `B-177` and `B-230`, with the evidence under `B-177` in
+[`backlog.md`](backlog.md).
+
+### Q60 — Does `B-198`'s remote schema pin name the commit `f86d9b4`, or a tag? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"B198: Switch to a tag"* — option (B) of the two `B-198`'s hand-back
+put to him, over the commit pin (A) that its pull request, metasalmon #148,
+implemented and recommended.
+
+**What stays open, named rather than read as settled:** which tag. A tag is a
+release, so its name is a version claim: a patch number keeps the profile's
+`v0.3` URLs, and a new minor implies a `v0.4` profile path, which `B-236`'s
+release then has to carry. That choice was put to him the same day with a recommendation of
+`sdp-0.3.1`. Cutting the tag is an outward release act in `smn-data-pkg`, and
+his. The pin moves to the tag once it exists, and `B-199`'s in metasalmonpy,
+which must name the same ref, follows it.
+
+**Where it is recorded:** `B-198`'s card, whose condition now names a tag.
+**Owner:** queue item `B-236` for the tag itself, whose name and cutting are
+Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
+move the pins once it exists; and `B-208` for how a frozen profile keeps the
+schema bytes it was frozen against.

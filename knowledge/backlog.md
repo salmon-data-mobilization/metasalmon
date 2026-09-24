@@ -430,6 +430,7 @@ is hub item B-128. And `scripts/theme-a-benchmark.R` builds a third request of
 its own, with its own user agent and `X-Title` and a need for the provider's
 model and response id; it is outside the package namespace and outside this
 item's condition, and the B-3 workpad records it rather than converging it here.
+It is filed as `B-226`.
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
 - **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
@@ -756,6 +757,12 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   insufficient because the check's tangle phase does not execute the setup chunk.
   Without per-chunk metadata it tried to run credential, network, and local-file
   examples that were intended only for display.
+- **Guarded from 2026-09-24** by `tests/testthat/test-vignette-purl-guard.R`
+  (hub item B-164), which makes the focused `knitr::purl()` validation above
+  permanent: a vignette that turns `eval` or `purl` off through
+  `opts_chunk$set()` must tangle to no live code. Until then nothing checked
+  the rule, and two vignettes written after this fix broke it; see `B-164`
+  below.
 
 ---
 
@@ -2441,6 +2448,21 @@ has no execplan.
 `.ms_values_look_yearish(col)` returns `"temporal"` on value shape alone
 (`R/dictionary-helpers.R`, the role heuristic below the identifier checks).
 
+*The metasalmonpy half, split 2026-09-24 as `B-240`, measured the same day* on
+metasalmonpy `main` `e595752` (Python 3.11.15, pandas 3.0.5), loading
+`dictionary.py` from a `git archive` extract. `infer_column_role()` types
+`spawner_count` (the strings `"1850"`, `"2003"`, `"1999"`) and `escapement`
+(int64 1850, 2003, 1999) `temporal`, and `_values_look_yearish()` is true for
+both; an int64 column off the year range (185, 20003, 99) types `measurement`.
+So the mirror has the same defect. **A different divergence sits beside it,
+and it is not the one B-240 ports:** `_character_values()` renders through
+`str()`, so a float64 column never looks year-shaped in Python. A float64
+`NATURAL_ADULT_SPAWNERS` (1850.0, 2003.0, 1999.0) types `measurement` by that
+accident, and `pd.read_csv()` on `BY,n / 2001,1 / ,2 / 2003,3` gives a float64
+`BY` that types `attribute`. The B-53 run measured both first, on `3f8349a`,
+and also measured `readr::read_csv()` on the same text giving a numeric `BY`
+that R types `temporal`.
+
 **#55 `apply_salmon_dictionary(strict = TRUE)` never errors on the common
 coercion failures**, and the codes step silently `NA`s unlisted values. Still
 live, and the mechanism is worth stating because it looks handled: the coercion
@@ -2450,6 +2472,19 @@ return `NA`** rather than erroring, so the handler never fires for exactly the
 failures the argument is supposed to catch. A `warning =` handler, not a
 different message, is the fix (`R/dictionary-helpers.R`, the coerce-type block
 in `apply_salmon_dictionary()`).
+
+*R half fixed 2026-09-24 (hub item B-55).* The block now has a `warning =`
+handler, the codes step warns about each unlisted value it blanks, and
+`tests/testthat/test-edge-cases.R` covers both. Two of that file's tests had
+pinned the defect and were rewritten to the documented contract. The
+metasalmonpy half is owed as a port; see *What metasalmon 0.5.0 owes the mirror*
+in [`parity-deviations.md`](parity-deviations.md). **What the fix does not
+reach, measured on R 4.3.3:** a `warning =` handler only sees a coercion that
+signals. `as.logical("yes")` returns `NA` silently, `as.Date(c("2020-01-01",
+"abc"))` returns `NA` for the second value silently, and `as.integer("3.7")`
+truncates to `3` silently, so all three still pass `strict = TRUE`. That is the
+same defect class reached by a different mechanism, and the B-55 workpad records
+it as a candidate item.
 
 **#56 Semantic retrieval issues one serial `search_fn()` call per target** with no
 deduplication of identical `(query, role, sources)` tuples. Still live: the
@@ -2936,6 +2971,11 @@ explicitly (or the matcher reads an absent `code_value` as "no code value"
 rather than as unconstrained) so it resolves to exactly one slot; a test covers
 a measurement column with a code list in both implementations; and the
 metasalmonpy pin is removed in the same change.
+
+*Split 2026-09-24 (`queue/README.md`, corollary 2):* `B-151` keeps the
+metasalmon half and `B-242` is the metasalmonpy half, which carries the Python
+fix, its test and the pin's removal. The item files hold each half's condition,
+so the *Retires when* above is the condition as filed rather than either half's.
 
 **`B-152` the network guards in `test-github-helpers.R` probe a host and a
 credential path the code under test never uses.** The guards at
@@ -3581,8 +3621,15 @@ schema cache cleared: **eight** requests to `raw.githubusercontent.com` per
 cold schema load — six Frictionless metadata schemas from
 `.ms_sdp_metadata_schema_paths()`, plus the profile and `sdp.rules.yaml` — each
 carrying the 2-second timeout that is `.ms_fetch_remote_sdp_schema()`'s default,
-1.08s of wall clock with the host reachable and up to 16s when it hangs. *(The
-report said six requests at 2.0s each.)* The bundle is cached in
+1.08s of wall clock with the host reachable, and one 2.1–2.5s timeout per cold
+call when the host never answers. *(The report said six requests at 2.0s each.)*
+*(Corrected 2026-09-23: this read "up to 16s when it hangs". The B-175 run
+measured one timeout per cold call on `main` `12efe9d` — 2.12–2.45s across
+`review_metadata()` and the four setters, each opening one connection to a
+listener that never answered — because the first failed request aborts the whole
+bundle fetch and the loader falls back to the bundled copy. Eight times two
+seconds bounds only a host that answers each request just inside the timeout.)*
+The bundle is cached in
 `.ms_schema_env` per cache key, so it is eight requests on the first call in a
 session and **zero** on the second; a scripted review that starts a fresh R
 process per package pays it every time. `set_sdp_dataset()` measured the same
@@ -4537,6 +4584,20 @@ present on 4.3.3, absent on 4.6.1.) That **inverts** the warning in `AGENTS.md`
 rather than repeating it: there a green local check hid a CI failure; here a
 green CI hides a failure any user on an older R hits.
 
+**Determined 2026-09-24, by the change that added the guard: R 4.4.0 stopped
+running the step, by changing a default rather than removing the code.** In
+`tools:::.check_packages()`, `R_check_vignettes_skip_run_maybe` reads
+`_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` with a default of `"FALSE"` at R's
+`R-4-1-0`, `R-4-2-0` and `R-4-3-3` tags and `"TRUE"` at `R-4-4-0`, `R-4-4-3`,
+`R-4-5-0` and trunk, read from `src/library/tools/R/check.R` at each tag in the
+`wch/r-source` mirror; the `NEWS.Rd` at `R-4-4-0` does not name the variable.
+When it is true and the vignettes are being re-built, the step runs only for a
+vignette with a `.Rout.save`, and none here has one. `--as-cran` sets it on
+every version, 4.3.3 included, so the reproduction above saw the step because
+it ran without `--as-cran`. The function the step calls for each vignette,
+`tools:::.run_one_vignette()`, fails on both files when called directly on
+R 4.3.3 and completes on the other nine, which is exactly the guard's verdict.
+
 *Retires when:* a test fails when a vignette relies on the global
 `opts_chunk$set()` form instead of per-chunk `purl = FALSE`, demonstrated RED
 against both files before either is fixed. The two fixes are not the item; the
@@ -5090,9 +5151,13 @@ ever report this.
 
 *Not reproduced independently:* this container has no pandas, so the import fails
 before collection is reached. The 908/907 figures are the B-165 run's
-measurement. Either side may be the right fix — the import route in
-metasalmonpy, or the worktree key in `HUB.md` — and whoever takes it should say
-which and why rather than patching the symptom in a third place.
+measurement. The fix is the import route in metasalmonpy, and nowhere else.
+*(Corrected 2026-09-23. This sentence offered the worktree key in `HUB.md` as an
+equally good fix until then, a week after the item's own condition had ruled it
+out: renaming the key leaves a checkout at any other path failing, and `HUB.md`
+is outside the item's repository and Brett's under class 7. The reasoning is
+under* The 2026-09-16 review-and-bookkeeping round *below; the item file was
+corrected on the day and this paragraph was not.)*
 
 **`B-192` the publication vignette's description of the review-target set makes a
 reader break their own package.** `vignettes/post-review-package-publication.Rmd`
@@ -5364,8 +5429,9 @@ attempt 1's log is reachable only by following the API's redirect to blob
 storage with the `Authorization` header stripped, or it 401s. So the honest
 reading of "no failed checks this month" is **not** that nothing failed; it is
 that nothing failed *and stayed failed*, which is a different and much weaker
-claim. This has no queue item and is not one of `B-132`/`B-152`/`B-155`/`B-197`
-— it is the measurement layer under all of them.
+claim. It had no queue item until the 2026-09-23 sweep filed it as `B-229`, and
+it is not one of `B-132`/`B-152`/`B-155`/`B-197` — it is the measurement layer
+under all of them.
 
 **A changelog entry written between a version bump and its tag has no home, and
 that gap produced two instances in one day.** `AGENTS.md`'s *Releases* section
@@ -5498,9 +5564,12 @@ whether the profile admits a pre-1000 instant, which it does. The second is that
 no fractional second is admitted, because neither writer emits one.
 
 **The implementation halves are `B-198` (metasalmon) and `B-199` (metasalmonpy)**,
-each re-vendoring the ruled schema from `f86d9b4` into its own copy and adding the
-test that was actually missing: a comparison of a written package's temporal
-fields to the profile's own pattern, with a four-digit-year fixture. Nothing on
+each re-vendoring the ruled schema into its own copy from the smn-data-pkg tag
+that `B-236` cuts, which contains `f86d9b4` and is the ref the remote pin names,
+so the vendored and remote bundles cannot differ (their queue cards are the
+authority on the ref), and adding the test that was actually missing: a
+comparison of a written package's temporal fields to the profile's own
+pattern, with a four-digit-year fixture. Nothing on
 either side does that, which is why this went unseen, so re-vendoring without the
 comparison would leave the hole it came through. `B-199` was filed depending on `B-145`, and
 the reason is durable whatever the field says later: the instant the Python
@@ -5645,8 +5714,8 @@ pull request 35 (merged 2026-09-16 as `3f8349a`, 15:47Z) moved the entry,
 verbatim: the RED is run at a checkout of `1e9245c`, and the check is green on
 `main` from `3f8349a` on, where `git diff 67fb486 origin/main -- CHANGELOG.md`
 has a single hunk above the `## 0.5.0` heading at line 97, so the 0.5.0 section
-matches the bump merge. The `v0.5.0` tag goes on `67fb486` and is Brett's to
-make. **P3**, as B-200.
+matches the bump merge. The `v0.5.0` tag went on `67fb486` on 2026-09-24.
+**P3**, as B-200.
 
 **`B-202`: a port item can reach `done` while the register still says the port
 is owed, and it did five times in one day — the fifth on this pull request's own
@@ -6145,3 +6214,712 @@ is inside another, reads as absence of coverage — and the reader most likely t
 misread it is the one who wrote the exemption, because they are reading their own
 sentence for confirmation rather than for content. Three readings, one reader,
 ten minutes.
+
+### The 2026-09-23 queue sweep
+
+**What wave 1's hand-backs found and deliberately did not absorb, each filed
+below as its own item, plus a measurement-layer finding from 2026-09-16 that
+waited a week for a card.** Each entry is headed by its queue id. **State,
+severity and each item's condition live in `queue/items/` and are not restated
+here**: this section is what each new item's `evidence:` pointer resolves to,
+and it holds the measurements — what was observed, on which tree, and by whom.
+
+**Where a number comes from is part of the number.** Each measurement is cited
+to the run that took it and the tree it ran on. Where this sweep re-ran one
+rather than copying it from a workpad, it says so. The sweep's own runs used R
+4.3.3 under `C.UTF-8` on metasalmon `main` at `b456201` unless another tree is
+named, and Python 3.11.15 with pandas 3.0.5, requests 2.33.1 and PyYAML 6.0.1
+against a `git archive` of metasalmonpy `main` at `3f8349a`, its tip that day,
+imported from a directory named `metasalmonpy` (`B-191` says why). Their scripts
+were scratch files and are not committed. The workpads for `B-3`, `B-142`,
+`B-175` and `B-176` are on `main` under `.hub/workpads/`; those for `B-174` and
+`B-198` are on their pull requests' branches (#144, #148); `B-191`'s was in a
+local metasalmonpy worktree whose branch had not been pushed when this was
+written.
+
+**From `B-174`'s hand-back** (metasalmon pull request 144, head `b80bdff`).
+
+**`B-211` and `B-212`: a prose placeholder in an `*_iri` field is reported
+twice, and the call printed for it cannot run.** Measured by the B-174 run on
+`main` `12efe9d`: with `MISSING METADATA: add the observation unit IRI.` in
+`tables.csv`'s `observation_unit_iri`, `review_metadata()` returns two rows for
+the field, `placeholder` from the field loop and `iri` from the dedicated
+branch, and the printed `set_sdp_table()` call names `observation_unit_iri`
+twice, so evaluating it fails with *formal argument "observation_unit_iri"
+matched by multiple actual arguments*. `REVIEW REQUIRED: pick a unit.` in a
+measurement row's `unit_iri` does the same through `set_sdp_column()`.
+
+**Re-measured by this sweep, which is how it is known to predate B-174:** the
+same two plantings, on a package `create_sdp()` built with the schema source
+pinned to `vendored`, give two rows per field and the same two errors on `main`
+`28fef73`, on pull request 144's head `b80bdff`, and on `main` `b456201`. On
+`b456201` the code is `.ms_metadata_gaps_for_file()`
+(`R/sdp-field-setters.R:271`): the field loop's `.ms_is_review_placeholder()`
+at `:306`, then `.ms_is_unfilled_metadata()` at `:324` for
+`observation_unit_iri` and at `:332` for the measurement IRIs.
+
+**metasalmonpy was read by the B-174 run and run by this sweep.** The same two
+plantings on `3f8349a` give two rows per field, `placeholder` and `iri`, and
+both printed calls fail to compile with *keyword argument repeated*.
+`_gaps_for_file()` (`sdp_field_setters.py:403`) tests `is_review_placeholder()`
+in its loop at `:447` and `_is_unfilled_metadata()` at `:480` and `:494`, and
+`_is_unfilled_metadata()` counts a prose placeholder as unfilled (`:186`).
+
+**Latent on both sides**, per the B-174 workpad: nothing in the package writes a
+prose placeholder into an `*_iri` field — the one `REVIEW REQUIRED:` writer, in
+`R/semantic-closure.R`, targets a rationale column — so only a hand-edited
+package reaches it.
+
+**From `B-175`'s hand-back** (metasalmon pull request 145, merged 2026-09-23 as
+`c7e4274`).
+
+**`B-213`: the pkgdown build aborts on `main`.** Measured by the B-175 run with
+pkgdown 2.2.1 on a copy of `12efe9d` plus that branch's two regenerated Rd
+files: `pkgdown::build_reference()` stops with *In _pkgdown.yml, 1 topic missing
+from index: "write_sdp_semantic_closure"*. Re-measured by this sweep on
+`b456201` with `pkgdown::check_pkgdown()` under pkgdown 2.2.1, which reads the
+index without building anything: the same message. `NAMESPACE:69` exports the
+function and `man/write_sdp_semantic_closure.Rd` documents it; B-116 exported
+it, and `_pkgdown.yml` last changed on 2026-08-25 (`8c8ec6a`). **Nothing in CI
+would have said so:** a search of `.github/workflows/` for `pkgdown` finds
+nothing, so no job builds or checks the site. The B-175 workpad records that
+the function's reference page was never generated either.
+
+**`Q-53`: R's validator reaches the remote schema on a cold session, and
+metasalmonpy's makes no network call.** Measured by the B-175 run under the
+shipped defaults with a cold schema cache: `validate_salmon_datapackage()` makes
+one remote fetch attempt, for the whole bundle, through the readers' column
+aligners (`.ms_sdp_schema_field_names()`), from 13 schema-loader calls on `main`
+`12efe9d` and 5 on pull request 145's branch, where the blank-required collector
+stopped loading. **Re-measured by this sweep on `b456201`**, with the loader and
+the remote fetch counted and the fetch failing as an unreachable host's would:
+
+| call, each from a cold cache | loader calls | remote fetch attempts |
+|---|---|---|
+| `validate_salmon_datapackage(pkg)` | 5 | 1 |
+| `validate_salmon_datapackage(pkg, require_iris = TRUE)` | 3 | 1 |
+| `review_metadata(pkg)` (B-175's fix) | 0 | 0 |
+| `.ms_load_sdp_schema()`, the control | 1 | 1 |
+
+The `require_iris = TRUE` call stops on the fixture's unfilled `term_iri` after
+its fetch, so its counts run to that point. On a host that never answers, the
+attempt costs one timeout (the correction under `B-175` above). R's
+documentation for its validator makes no offline claim.
+
+metasalmonpy's docstring for its blank-required collector reads the bundled
+schema "because `validate_salmon_datapackage()` makes no network call"
+(`package_io.py:2336-2337` at `3f8349a`). The B-175 run did not measure that.
+This sweep did: a package built by `create_sdp()` under the vendored pin, then
+the source reset to `auto`, the loader cache and the vendored-document cache
+cleared, `requests.get` replaced by a counter that raises, and
+`socket.socket.connect` blocked. `validate_salmon_datapackage(pkg)`, the same
+with `require_iris=True` (which raised on the fixture's unreviewed IRIs, after
+reading the package), and `read_salmon_datapackage(pkg)` made no remote fetch,
+no GET and no socket connection, and raised no fallback warning. **The
+instrument's reach was shown first, in the same process:** a cold
+`load_sdp_schema()` under `auto` registered one fetch and one GET. Neither
+`knowledge/parity-deviations.md` nor metasalmonpy's `PARITY.md` mentions the
+difference.
+
+**`B-214`: metasalmonpy's socket test never calls `set_sdp_code()`.** At
+`3f8349a`, `test_the_offline_path_opens_no_socket_at_all`
+(`tests/test_sdp_field_setters.py:460`) blocks `socket.socket.connect`,
+`connect_ex` and `socket.create_connection`, then calls `review_metadata()`, the
+console renderer, `set_sdp_dataset()`, `set_sdp_table()` and `set_sdp_column()`.
+Its docstring says it covers "the four setters and the console renderer, because
+`_SCHEMA_SOURCE` claims the bundled read for all of them". Found by the B-175
+run; this sweep set the docstring against the body. The four setters share
+`_set_sdp_metadata()`, so the fourth is covered by construction and not by
+assertion. metasalmon's offline test, added by B-175, asserts all four.
+
+**`B-215`: metasalmonpy ignores a schema the options select.** Codex's finding on
+pull request 145 at `2b74b14` (thread `PRRT_kwDOSoVfrc6lNfgN`) was that a schema
+selected through `metasalmon.sdp_schema_base_url` or
+`metasalmon.sdp_schema_source` no longer reached the scan or the setters. The
+B-175 run reproduced it with a selected bundle adding a required `dataset.csv`
+field, `funding_source`, cached under the writers' key: at `2b74b14` the writer
+wrote the column, `review_metadata()` omitted it,
+`set_sdp_dataset(funding_source = ...)` failed with *'dataset.csv' has no such
+field*, and the validator's blank-required collector lost it, where `main`
+`12efe9d` honoured all four.
+`7c22fa3` fixed it by reading the bundle under the default options only, and
+that is what merged.
+
+**metasalmonpy has the finding verbatim, and has had it since its pull request
+28 merged on 2026-09-16.** `_SCHEMA_SOURCE = "vendored"`
+(`sdp_field_setters.py:153` at `3f8349a`) is passed to every schema read in
+`sdp_field_setters.py` and to the validator's collector in `package_io.py`
+(`:2345-2357`). Run by this sweep on `3f8349a`, with the same shape of bundle
+cached under the key `set_sdp_schema_source("remote")` selects: the writers'
+field list included `funding_source`; `review_metadata()` did not report it;
+`set_sdp_dataset(funding_source=...)` raised *dataset.csv has no such field:
+funding_source*; the collector did not name it; and no GET was made. **The
+control:** with `_SCHEMA_SOURCE` pointed at the session's source, the scan and
+the collector both reported the field. That control earned its place: the first
+version of the probe tested the collector by iterating the DataFrame it returns,
+which yields column labels, and reported "not named" whatever the collector
+did. The port is recorded as owed in `parity-deviations.md` and in the
+roadmap's release index, in this change.
+
+**From `B-176`'s hand-back** (metasalmon pull request 146, merged 2026-09-23 as
+`11e8a2f`). Its workpad measured each finding below in both implementations — R
+on its branch, metasalmonpy on `main` `3f8349a` with the same stub retrieval —
+and found each behaving identically, which is why the shared ones are pairs.
+
+**`B-216`: metasalmonpy counts a recorded hand-picked accept as ontology-gap
+evidence.** Pull request 146 records a hand-picked accept as a row of its own,
+`source` `user`. Codex found on its first head, `142ff91`, that
+`detect_semantic_term_gaps()` then reported a false gap: on a fixture whose
+`spawner_count` slot holds two `ols` candidates, one real gap, the post-review
+file gave a second row for the slot, with a blank `search_query`,
+`top_non_smn_source` `user`, the hand-picked IRI and placement `uncertain`.
+`52b0a6c` excludes `source = "user"` rows in R. metasalmonpy has recorded the
+same row since its #28 and still counts it: measured on `3f8349a`, one gap row
+before a hand-picked accept and two after. A hand-picked IRI under
+`w3id.org/smn/` does not trigger it — measured at `142ff91`,
+`https://w3id.org/smn/HandpickedSmn` gives one row before and one after —
+because the detector counts that namespace as `smn`. **No function in either
+package passes a post-review file to the detector** (a search of `R/` at
+`b456201` and of metasalmonpy's modules at `3f8349a` finds no caller), so a user
+reaches it by passing `semantic_suggestions(path)` as `suggestions`. Pull
+request 146 wrote the port's specification into `parity-deviations.md` and the
+release index, saying the metasalmonpy item was still to be filed; this sweep
+put the id in both places.
+
+**`B-217` and `B-218`: a decision hidden by `max_candidates`.** On a
+six-candidate slot, `accept_suggestion(..., rank = 6)` after
+`review_semantics(max_candidates = Inf)`, applied, then the review rebuilt at
+the default: no decided row is shown and no `DECIDED` line is printed, in both
+implementations, while the slot still leaves the default queue. In R on
+`b456201` the default queue computes the decided set at
+`R/review-console.R:394`, inside the branch `include_filled = TRUE` skips, the
+rank filter follows at `:398-399`, and the `DECIDED` line is built only from
+rows carrying a decision (`:661-666`). metasalmonpy at `3f8349a` has the same
+shape (`review_console.py:694-695`, filter at `:698-699`). A hand-picked accept
+does not hit it, because pull request 146 inserts that row at the head of its
+slot.
+
+**`B-219` and `B-220`: an accept whose IRI is empty.**
+`accept_suggestion(iri = "REVIEW:")` passes the non-empty check, which runs
+before the marker is stripped: R checks at `R/review-console.R:886` and strips at `:907` on
+`b456201`; metasalmonpy checks at `review_console.py:1153-1154` and strips at
+`:1170` on `3f8349a`. The B-176 run measured the consequence: on `main`
+`12efe9d` apply clears the field and records nothing; on its branch and in
+metasalmonpy it clears the field and records an `accepted` row with an empty
+`iri`, which `review_semantics()`, `apply_semantic_suggestions()` and the
+closure reader each drop. **The two strips are not the same function**: R's
+removes `^\s*REVIEW\s*:\s*` ignoring case (`R/package-helpers.R:3787`), and
+metasalmonpy's removes a leading `REVIEW:` compared upper-cased
+(`review_console.py:140`), so a space before the colon is stripped by one and
+not the other. That is why each item's condition names the spellings its own
+package's strip removes rather than a shared list. `Q-63` owns which spellings
+every detector in both packages should recognise, so the pair cannot close the
+difference by accident or leave it unowned. Each package is itself mixed as well:
+R's four `^REVIEW:` detectors and both packages' literal-substring output guards
+disagree with their own strips, and Q-63 lists every site. `Q-18` holds the
+neighbouring question of the marker's trailing space.
+
+**`B-221` and `B-222`: the `term_type` a hand-picked IRI gets.** With an
+`owl_class` candidate at rank 2, `accept_suggestion(iri = <that IRI>)` writes
+`term_type` `skos_concept`, and re-applying the rebuilt review — which replays
+the decision at rank 2 — writes `owl_class`, in both implementations, so that
+one path is not byte-stable across a rebuild. In R, on `main` `f6cd22a`, the
+decision sits on the slot's first row (`R/review-console.R:913`), and the writer
+takes the type from that row only when its `iri` equals the accepted one,
+falling back to `skos_concept` (`R/metadata-write.R:463-473`). The B-176 run
+scoped its `NEWS.md` sentence about byte-identical re-application to the case
+where no candidate carries the IRI, for this reason.
+
+**From `B-142`'s hand-back** (metasalmon pull request 147, merged 2026-09-23 as
+`b456201`).
+
+**`B-223`: a tagged scalar in the EML sidecar.** Measured by the B-142 run on
+`main` `12efe9d` with yaml 2.3.12 and the option unset: an `!expr` tag in
+`metadata/eml-mapping.yml` came back as its text from
+`.ms_closure_mapping_paths()` and from `write_eml_from_sdp()`, whose EML methods
+paragraph carried the text, with yaml's warning *Evaluating R expressions
+(!expr) requires explicit `eval.expr=TRUE` option*; since B-142 the explicit
+argument also silences that warning. Any unrecognised local tag, such as
+`!foo`, reads the same way. metasalmonpy at `3f8349a`, PyYAML 6.0.1:
+`_read_mapping_yaml()` (`eml.py:3704`) raises *EML mapping sidecar ... is not
+valid YAML* on the EML and KNB paths, and `_mapping_paths()`
+(`semantic_closure.py:851`, `yaml.safe_load()` at `:864`) falls back silently
+to the default closure paths. Register row 14 records PyYAML for the sidecar and
+says nothing about tags. The roadmap's `B-142` paragraph says the difference is
+tracked as its own queue item; this is that item.
+
+**`B-224`: yaml's history, told two ways in one `NEWS.md` section.** yaml's own
+NEWS dates the argument to 2.1.19 (*"Added `eval.expr` option"*) and the
+default change to 2.3.0 (*"Made `eval.expr` default to `FALSE`"*). The B-142
+run read `yaml.load()`'s signature in CRAN's archived tarballs —
+`getOption("yaml.eval.expr", TRUE)` in 2.2.0 and 2.2.2, `FALSE` in 2.3.4 — and,
+on yaml 2.2.2 built from the archive with no option set, measured `main`'s
+remote rules read and closure read evaluating a tag. `NEWS.md:129`, in #111's
+validator entry under the development heading, calls `yaml (>= 2.2.0)` "the
+version that introduced the argument", and `:125-128` describe the exposure as a
+session that turned the option on; `tests/testthat/test-sssom.R:491-493` says
+yaml's own default is `FALSE` and that such a session is the worst case. Since
+`b456201` the same `NEWS.md` section also carries B-142's entry, which states
+the history correctly (`:329-331`), so the section contradicts itself. `B-189`'s
+card makes the same understatement in its rationale; its retirement condition
+is unaffected.
+
+**`B-225`: nothing pins metasalmonpy's other YAML reads.** Read by the B-142 run
+on `3f8349a`: the sidecar goes through `_read_mapping_yaml()`, whose loader is
+`_StrictSafeLoader` (`eml.py:3676`), a `yaml.SafeLoader` subclass adding only a
+duplicate-key check and a timestamp-as-text constructor; the closure's paths go
+through `yaml.safe_load()` (`semantic_closure.py:864`); both rules reads go
+through `_rules_scalars()`, a regular-expression scan (`sdp_schema.py:383`,
+`:406`); and the SSSOM header goes through `_parse_yaml_subset()`
+(`sssom.py:456`), which `B-189` is to pin. Nothing fails if
+`_strict_yaml_loader()` is swapped for `yaml.Loader`, or `safe_load()` for
+`yaml.load()` or `full_load()`.
+
+**From `B-3`'s hand-back** (metasalmon pull request 149, merged as `19bf188`).
+
+**`Q-54`: the two request shapes.** Measured by the B-3 run against metasalmonpy
+`main` `3f8349a`, with R read at its branch head and re-read by this sweep on
+`b456201`:
+
+| | R | metasalmonpy |
+|---|---|---|
+| temperature | `0` on semantic review, omitted for an `openai` GPT-5 model (`R/llm-semantic-helpers.R:1693-1697`); `0.2` on chat decomposition (`R/chat-decomposition.R:443-450`) | none |
+| JSON mode | never | `response_format: {"type": "json_object"}` (`llm_review.py:422`) |
+| OpenRouter attribution | `HTTP-Referer` and `X-Title` (`R/llm-semantic-helpers.R:1741-1742`) | none |
+| user agent | `metasalmon/<version>` (`:1734`) | the `requests` default |
+
+metasalmonpy's chat decomposition goes through the same `request_json()`
+(`chat_decomposition.py:279`), so both of its paths send one shape. Both
+packages send a configured `reasoning_effort` on semantic review; R's chat
+decomposition sends none, and whether metasalmonpy's resolves one there was not
+measured. A search of both registers for temperature, `response_format`,
+`json_object`, reasoning effort, referer, `X-Title`, user agent, `request_json`
+and the endpoint path finds nothing relevant; row 60 matches only on "billable
+LLM requests".
+
+**Reasoning effort, measured 2026-09-24** on metasalmon `main` `abfc7d6` and
+metasalmonpy `main` `e595752`, which refines the sentence above. R resolves
+`METASALMON_LLM_REASONING_EFFORT` when no argument names an effort, then drops
+the effort for every provider but `openai` (`R/llm-semantic-helpers.R:412-418`),
+and the body builder sends what is left (`:1699-1701`). metasalmonpy reads no
+such variable (no `.py` file contains `REASONING_EFFORT`) and sends an effort
+whenever `llm_reasoning_effort` names one, for any provider
+(`llm_review.py:424-425`). So semantic review differs twice: a session that sets
+only the variable sends an effort from R and none from metasalmonpy, and an
+effort named for OpenRouter reaches the provider from metasalmonpy and not from
+R. Neither chat path sends one today: R's builds its own body, and metasalmonpy's
+passes `reasoning_effort=None` (`chat_decomposition.py:253`). R's chat path
+resolves its config through `.ms_llm_resolve_config()` with no effort argument
+(`R/chat-decomposition.R:487-494`), so routing it through the shared builder, as
+B-128 does, would make it send the variable's value. The Codex review of pull
+request 150 on `e03fd35` found the chat-path half.
+
+**`B-226`: a third request, in the benchmark.** `scripts/theme-a-benchmark.R`
+builds the endpoint at `:2074` and the request at `:2106-2130`, unchanged
+between the B-3 run and `b456201`: its own user agent,
+`metasalmon-theme-a-benchmark/1`, and for OpenRouter its own `X-Title`,
+*metasalmon Theme A benchmark*, with the authorization and content-type headers
+and the timeout written out again. It already reaches the body builder through
+`getFromNamespace()`, and records the provider's resolved model and refuses a
+substituted one. The single-builder guard's header says the script is outside
+its reach (`tests/testthat/test-llm-chat-request.R:35-39`). The B-3 run also found
+`.ms_chat_http_request()` accepting `response_schema` and ignoring it; that
+belongs to `B-31`, which owns the engine's request contract, and is not filed
+separately.
+
+**From `B-191`'s run** (metasalmonpy, measured on `main` `3f8349a` and on the
+run's local fix `8476b8e`, Python 3.11.15 with pandas 3.0.6).
+
+**`B-227`: bare `pytest`.** `tests/test_validation.py:5`
+(`from validation import validate_semantics`) and
+`tests/test_term_deduplication.py:5` (`from term_deduplication import ...`)
+resolve only when the checkout root is on `sys.path`, which `python -m pytest`
+from the root arranges and bare `pytest` does not. Bare `pytest -q` — the
+command metasalmonpy's `AGENTS.md` documents after `pip install -e ".[test]"`
+(`AGENTS.md:228` at `3f8349a`) — and `python -m pytest -q` launched from inside
+`tests/` both stop at two collection errors, *No module named 'validation'* and
+*No module named 'term_deduplication'*, and report *Interrupted*, the same
+before and after the B-191 fix.
+
+**`B-228`: the old shared workpad.** metasalmonpy `3f8349a` still carries
+`.hub/workpad.md`, holding B-126's report, beside a `.hub/workpads/` directory
+that has no `B-126.md`. B-140 retired the shared path in metasalmon only. The
+B-165, B-144 and B-191 runs each named it, and none moved it, since it was none
+of theirs.
+
+**From *The 2026-09-16 network-guard finding* above.**
+
+**`B-229`: a re-run erases the flake it fixes.** Filed from the orchestrator's
+*Salmon Hub Decisions* page (the card *A re-run erases the flake it fixes*,
+2026-09-23), which carries the B-197 run's figures of 2026-09-16, recorded in
+that section: across 484 `R-CMD-check` runs, ten had ever finished failed and
+none since 2026-09-01, while four carried `run_attempt > 1`, three of them in
+the five days to 2026-09-16. **Re-measured by this sweep on 2026-09-23 through
+the Actions API**, reading workflow `R-CMD-check` (id 322644612): 551 runs, 549
+completed and 2 in progress; 387 `success`, 152 `cancelled` and 10 `failure` —
+the same ten, created between 2026-08-10 and 2026-08-26 — so none since
+2026-09-01. Four runs carry `run_attempt` 2, each concluding `success`: 215
+(2026-08-18), 337 (2026-09-12), 360 (2026-09-15) and 449 (2026-09-16). None of
+the 22 runs created from 2026-09-17 on failed or was re-run. The 2026-09-16
+count was taken during that day: runs are numbered in creation order, the 484th
+was created at 18:36 UTC and the 485th at 18:58, and 529 were created before
+2026-09-17.
+
+**What the per-attempt endpoint shows that the run list does not.** Reading each
+re-run's attempts: 337, 360 and 449 each have attempt 1 concluding `failure` and
+attempt 2 `success`, and 215's attempt 1 was `cancelled`. So three failures are
+invisible to any count taken from the run listing, and recoverable without the
+blob-storage redirect the 2026-09-16 reading needed for logs, because the
+attempt endpoint keeps each attempt's conclusion. The three are flakes already
+filed: 337 is pull request 112's, the one `B-132` records; 360 is run
+34912254547, `B-155`'s pak install failure; and 449 is pull request 137's
+DataONE 503, `B-197`'s.
+
+**From the 2026-09-23 rulings.**
+
+**`B-230`: the metasalmonpy half of the ruling on `REVIEW:`-marked IRIs.** The
+ruling and the plan that implements it are on `B-177`'s card; the evidence for
+the question is `B-177`'s entry under *The R halves of the 2026-09-15 Codex
+findings on metasalmonpy PR #28* above. What the Python half has to move, read
+by this sweep on `3f8349a`: `_collect_review_issues()`
+(`package_io.py:2465-2496`), which the EDH gate builds on, sweeps `tables.csv`,
+`column_dictionary.csv` and `codes.csv` for `REVIEW:` IRIs and not
+`dataset.csv`; `_REVIEW_IRI_FILES` (`sdp_field_setters.py:259`) lists the same
+three; and `test_which_files_a_review_marker_actually_blocks`
+(`tests/test_sdp_field_setters.py:213`) pins strict validation refusing a marker
+in `tables.csv` and `column_dictionary.csv` and passing one in `codes.csv` and
+`dataset.csv` — the answers measured on 2026-09-16 and recorded on `B-177`'s
+card.
+
+**From Brett's question on 2026-09-23 about the smn documentation site.**
+
+**`B-231` and `B-232`: 43 of smn's 159 local terms carry no definition, and 41
+of them show a blank entry on the published site.** Brett noticed it at
+`https://salmon-data-mobilization.github.io/salmon-domain-ontology/#/Run`.
+Measured by this sweep with rdflib 7.6.0, on salmon-domain-ontology `main` at
+`d45f8f7`. The scope was every `smn:` IRI in `ontology/modules/*.ttl` typed as an
+OWL class, an object, datatype or annotation property, or a SKOS concept or
+concept scheme. That is 159 terms, and 43 of them carry neither
+`obo:IAO_0000115` nor `skos:definition`. By module, the 43 fall:
+
+- 7 in `01-entity-systematics.ttl`;
+- 29 in `02-observation-measurement.ttl`;
+- 2 in `04-management-governance.ttl`;
+- 5 in `07-controlled-vocabularies.ttl`.
+
+Modules 03, 05, 08 and 09 and `alignment-research.ttl` have none.
+
+Two of the 43 carry an `rdfs:comment`, which the site shows in the
+definition's place: `AggregatedMeasurement` and `FishLengthMeasurementType`.
+For the other 41 it shows nothing. Measured a second time under the stricter
+rule the repository already uses for some of its terms (`skos:definition` for a
+SKOS term, `obo:IAO_0000115` otherwise), the count is still 43, and no term is
+defined in the wrong property for its kind.
+
+**It is not a rendering defect.** `smn:Run`, at
+`ontology/modules/02-observation-measurement.ttl:99`, carries a label, a
+superclass and `rdfs:isDefinedBy`, and nothing else. Its entry in
+`docs/index-en.html` shows exactly those three.
+
+**The gap was counted and never filed.** The ontology repository's
+`docs/annotation-gap-ledger.md` records "Missing definitions: **43**" under
+*Current status (2026-05-13)*. Its list and the 43 measured here are the same
+terms. Five of its module-02 entries now sit in module 07 as SKOS concepts,
+moved there by the 2026-08-13 methods-as-SKOS migration.
+
+The hub's `knowledge/plans/2026-08-12-ontology-alignment-pass.md` cites the
+ledger's count among the things S9 step 1 would fix. No queue item was ever
+filed, and `S-09`'s condition does not mention definitions, so the stream could
+close with the gap still open.
+
+Nothing in the build reads the ledger. The one check that asserts a definition
+exists is `require_term_annotations()` in
+`scripts/verify_year_age_semantic_contract.py`, which calls itself "the
+repository's minimum human-facing annotation contract", and it runs only on the
+terms that script names. That is why `B-231` exists alongside `B-232`: the count
+stayed at 43 for four months in a file nothing checks.
+
+**Why the ledger could not simply be worked through.** Its ground rules forbid
+inventing a definition. Its 2026-05-13 backfill note says there was no usable
+wording for these terms in the three sources it checked: the prior GCDFO
+release, the RDA case-study sheet and the Hakai GraphML source. So `B-232` is
+source work before it is ontology work. The commons is where that work belongs:
+the roadmap's census of `salmon-knowledge-commons`, taken 2026-08-18, lists a
+run-timing card among its eleven concepts, none of them human-verified at the
+time.
+
+**The cost reaches metasalmon.** Its smn retrieval takes a candidate's
+definition from `iao:0000115`, `skos:definition` and `rdfs:comment`
+(`R/term_search_smn.R:302`, the same line on `b456201` and on `main`
+`f6cd22a`). `.smn_role_flags()` draws part of its role evidence from that text
+(`:161`). For these terms it has a label and nothing more.
+
+**Terms another item already touches.** Four of the 43 are also in other items:
+
+- `B-108` deletes `smn:NCBITaxon_8018`, which therefore needs no definition.
+- `B-108` also removes the range pins on `smn:observedTaxonFamily` and
+  `smn:observedTaxonSpecies`. Both terms survive and still need definitions.
+- `B-107` changes `smn:Characteristic`'s superclass. It also survives and still
+  needs a definition.
+
+`smn:Run` cannot be defined until `Q-61` is ruled, because smn uses the word
+two ways. The measurements are in that question's entry in
+[`questions.md`](questions.md) and are not repeated here.
+
+**From the RMIS vocabulary recommendation, 2026-09-23.**
+
+**`B-233` and `B-234`: both SSSOM readers reject canonical SSSOM/TSV.**
+The SSSOM specification says the built-in prefixes (`owl`, `rdf`, `rdfs`,
+`semapv`, `skos`, `sssom`, `xsd`, `linkml`) may be omitted from a file's
+`curie_map`, and that a canonical writer must not include them
+(<https://mapping-commons.github.io/sssom/dev/spec-intro/>,
+<https://mapping-commons.github.io/sssom/dev/spec-formats-tsv/>). Both
+statements were read on 2026-09-23 by the agent that wrote the RMIS
+recommendation.
+
+metasalmon's reader looks up every CURIE prefix in the file's own `curie_map`
+and aborts with *uses unknown CURIE prefix* when it is absent
+(`R/sssom.R:405-409` on `main` `f6cd22a`). Nothing in `R/sssom.R` supplies the
+built-in set. metasalmonpy's reader does the same (`sssom.py:595`). The
+agent's canonical example mapping set was:
+
+- rejected by `read_sssom_mapping_set(validate = TRUE)` with *uses unknown
+  CURIE prefix "skos"*;
+- accepted once `rdfs`, `semapv`, `skos` and `sssom` were declared;
+- read and validated without error by sssom-py 0.4.21.
+
+This is therefore the only objection. Checked against temporary copies;
+metasalmon's working tree stayed clean.
+
+Two related notes, neither filed as its own item:
+
+- metasalmon accepts full IRIs in entity-reference slots (`R/sssom.R:382`),
+  which the SSSOM/TSV specification says parsers *should* reject. sssom-py
+  accepts them too.
+- metasalmon requires `mapping_cardinality` on every `sssom:NoTermFound` row.
+  SSSOM only fixes the value (`1:0`) when the slot is filled, so this is
+  stricter than the specification but harmless.
+
+**`B-235`: `HUB.md` contradicts its own writes register in thirteen places.**
+Found on 2026-09-24 by the agent trimming `HUB.md` for length, reading the file
+on `main` at `7bfc3ca`. Sections are named rather than line-numbered, because
+line citations into this file have gone stale three times. None of these was
+fixed in the trim, which changes no rule.
+
+- **A.** *What you must never do*, the pull-request bullet, says R16 permits
+  "three further things and nothing more" on an agent's pull request. The
+  register has since added the "@codex review" trigger and the description
+  correction, and the same list's API bullet counts eight writes.
+- **B.** *The standing authorization*, "Three more operations", merge bullet:
+  "never in another member repository even one Brett works alone in; and never
+  the agent's own hand-back draft". This contradicts the approved-merge row
+  (R16), the `excludes` of the merge-in-this-repository row, and the
+  never-list's merge bullet.
+- **C.** "That is the whole grant.", after the quoted grant, predates R15, R16
+  and the 2026-09-23 upkeep rows. The register governs.
+- **D.** *Hand back*: "The item stays unclaimable until Brett merges." Since
+  R16 agents merge delegated pull requests too. The `done` state was widened;
+  this sentence was not.
+- **E.** *Reporting*: "an agent may not write an issue comment at all". The
+  "@codex review" trigger is a permitted issue comment.
+- **F.** The merge-in-this-repository row (R15) requires only green checks.
+  The approved-merge row, the never-list and *Delegated* also require a
+  completed Codex review, and *Delegated* adds two more conditions. metasalmon
+  is solo, so both rows apply to it, and the R15 row is the looser.
+- **G.** `writes.denied` lists six pull-request operations. Neither the
+  "@codex review" comment nor the CI re-run is among them. If either counts as
+  a pull-request operation, the entry denies what two upkeep rows permit.
+- **H.** `scope_note` and `self_suspends` cover writes "against a claimed queue
+  item". Merges, promotions and small pushes to `main` are usually not made
+  against a claimed item, and `reinstated_2026_09_23` already treats writes on
+  unclaimed pull requests as out of scope. So whether those rows, and a breach
+  of them, fall inside the register at all is unclear.
+- **I.** The draft-pull-request row's `enforced_by` says it is "the one
+  permitted operation with no client check behind it". Eleven rows now say
+  "nothing mechanical".
+- **J.** Class 5 says the parity fact's three copies "have disagreed twice".
+  `AGENTS.md` records four.
+- **K.** The `review` state reads "Work is pushed and handed back". A
+  hand-back in a shared repository pushes nothing. This is the governance call
+  already on Brett's decisions page.
+- **L.** The small-push row calls "small and mechanical" "a judgement". The
+  body says the phrase "is enumerated rather than left to judgement".
+- **M.** The draft-pull-request row's `shape` and *Hand back* both say a pull
+  request in a class reserved to Brett "stays a draft, unmerged and
+  unanswered". The reply-to-a-review-comment row has no class exception, so it
+  permits answering Codex on that draft. Practice on 2026-09-24 followed the
+  reply row: B-179's metasalmonpy #39 and B-187's #156 answered Codex on
+  reserved drafts, so that Brett reviews a change Codex has already passed.
+  Added to this list on 2026-09-24, found by B-179 and B-144's workpads.
+
+Two trivial ones ride along. `.hub/agent-brief.md` is said to live "beside
+this file", but it is under `.hub/`. `self_suspends` says "the reinstatement
+above", in the singular, and there are now two. The field list's omission of
+`severity` and `stream` is the same finding as Q-52 and is tracked there.
+
+**`B-236`: no sdp release tag carries the ruled temporal pattern.** Brett ruled
+on 2026-09-23 that B-198's remote pin names a tag ("B198: Switch to a tag"). On
+2026-09-16, smn-data-pkg's only tags were `sdp-0.2.0` and `sdp-0.3.0`, and the
+Q-51 commit `f86d9b4` was sixteen commits ahead of `sdp-0.3.0`. So B-198 and
+B-199 were waiting on a tag nobody owned. The Codex review of pull request 150 found the
+gap. B-236 was filed to own the tag, and this change added it to both items'
+`blocked_by`. The name and the act are Brett's.
+
+**`B-223` narrowed, and `Q-62` filed.** B-223 changed R's semantic closure reader
+along with the two EML paths. On that path metasalmonpy falls back to the default
+paths rather than refusing. So B-223 would have closed while leaving an
+unrecorded difference, as the Codex review of pull request 150 pointed out. This
+change gave the closure path to Q-62.
+
+**`B-237`: `smn:Run`'s definition gets its own owner.** B-232 counts a term as
+accounted for when its meaning waits on a ruling, and Q-61 said the definition
+would be "written under B-232" afterwards. B-232 can retire first. If it does,
+nothing owns the definition once Q-61 is ruled. The Codex review of pull request
+150 found the gap. B-232's condition was changed to require every term deferred for a
+ruling to have an item, sequenced after that ruling, that owns its later
+definition. B-237 was filed as that item for `smn:Run`.
+
+**`B-238`: the research behind B-232's definitions gets a commons owner.**
+B-232 writes a definition for every undefined local smn term, each from a source.
+Establishing what a term means is durable salmon knowledge, which AGENTS.md sends
+to the commons, but B-232's condition let it retire with that research recorded
+only in ontology annotations. One item cannot finish work in two repositories, as
+the Codex review of pull request 150 pointed out. B-238 was filed to own the commons
+cards, and this change sequenced B-232 after it and made B-232's condition cite
+each card by commit.
+
+**`B-239`, and three follow-ups from the next review round.** B-238 counted a
+term deferred for a ruling once its card stated the question, but after the
+ruling nothing in the commons would have owned changing the card. B-239 was filed
+to own that for `smn:Run`, sequenced after Q-61, and B-237 was sequenced after
+B-239 and made to cite the updated card. This change also made B-237 delete
+`smn:Run`'s row from B-231's exemptions file when it adds the definition, so the
+guard is not left suppressing a term that has one, and made B-198 and B-199
+re-vendor from the exact tag B-236 creates, the ref the remote pin names, rather
+than from `f86d9b4`, so online and offline sessions cannot load different
+bundles.
+
+**Exemption rows retire with their terms.** B-231 was written to seed an
+exemption for every local smn term undefined when it lands, and B-232 to empty
+the list. Only B-237 said to delete its row, so B-232 could have defined every
+other term and left its row in place, and a later loss of that definition would
+have passed the guard. B-108 was in the same position for `smn:NCBITaxon_8018`.
+The next Codex review of pull request 150 found it. This change made B-231's
+check fail on a stale row, one whose term has a definition or is no longer a
+local term, and made B-232 and B-108 each delete their rows in the change that
+defines or removes the term.
+
+**The whole bundle, not one schema.** B-198 and B-199 asked for a re-vendor
+of `dataset.schema.json` only, but each package's remote fetch loads eight files:
+six metadata schemas, the profile and the rules. So the pin could have moved to
+B-236's tag while the fallback kept stale copies of the other seven. This change
+made both re-vendor the complete bundle from the tag, commit a manifest of each
+file's SHA-256, and test the vendored files against it. The Codex review of pull
+request 150 found it.
+
+**Two more owners.** B-238 required a commons card proposing definition
+wording for every term in B-232's scope, which no card can do for
+`smn:NCBITaxon_8018`, since B-108 deletes it. This change let a term that an open
+item deletes go without a card, accounted for by naming that item. Q-61 could
+have retired on the ruling alone, while options (b) and (c) need ontology work
+B-237 did not own; this change made its retirement wait on an owner for every
+consequence of the chosen option, including a commons gap for a newly minted
+concept. The Codex review of pull request 150 found both.
+
+**Three sequencing fixes from the same review.** A ruling decides the shape of
+three items: Q-54's temperature ruling decides B-128's request shape, and Q-53
+decides which schema B-204's and B-205's pattern check enforces. So this change
+added each question to its items' `blocked_by`, which is where the live
+dependency is kept; this paragraph records why it was added, not whether it
+still holds. This change also moved the closure-path difference in the
+roadmap's B-142 passage from B-223 to Q-62.
+
+**A minor tag carries its own profile path, and this section keeps no blocker
+state.** B-236 could have retired on an `sdp-0.4.0` tag cut on a commit whose
+profile still said v0.3, and B-198 and B-199 would then have pinned a release
+that claims a version its own profile does not carry. This change made B-236's
+condition put the profile move in the release pull request whenever the name is a
+new minor. Separately, several paragraphs above said an item "now waits on"
+another, which restated the live `blocked_by` field in prose that nothing
+checks; this change rewrote them to record what each change did and why. The
+Codex review of pull request 150 found both.
+
+**Three more owners from the next review.** Publishing a v0.4 profile freezes
+v0.3, whose schema URLs are unversioned, and keeping a frozen profile's schema
+bytes is B-208's subject; so a minor release depends on B-208 where a patch does
+not. This change recorded that dependency in B-236's condition, because B-236 is
+where the minor-or-patch answer is made. Q-53, Q-54, Q-62 and Q-63 each let a
+ruling that keeps a difference retire only once both parity registers had been
+written, which no metasalmon item can do; this change rewrote each to ask for a
+pair of register items, one per repository. Under Q-61's option (c) the commons
+gap entry had no runnable owner, since B-239 was blocked on Q-61 and owned only
+`run.md`; this change gave B-239 the gap entry and tied Q-61's retirement to its
+owners being filed. The Codex review of pull request 150 found all three. `B-235`
+also gained a thirteenth passage, *M*: `HUB.md` says a reserved pull request
+stays "unanswered" while the reply row lets agents answer Codex on it.
+
+**Q-61 moved to metasalmon, and B-232 to one pull request.** Q-61 was
+declared `repo: salmon-domain-ontology`, but retiring it meant recording a ruling
+in `knowledge/questions.md` and filing queue items, both writes in this
+repository, and its ontology consequences already had their own items; this
+change moved it. The Q61 entry in `questions.md` had copied Q-61's retirement
+rule and owner mapping; this change pointed it at the item instead and dropped
+from Q60's owner line the dependency it had restated. B-232 allowed several pull
+requests, which one claim cannot produce; this change made it one pull request
+with a commit per module. The Codex review of pull request 150 found all three.
+
+**The profile path, the validator cards, and this section's tense.** Under a
+minor tag, B-198 and B-199 could have moved the pin and re-vendored every file
+the loaders request while `.ms_sdp_profile_path()` (`R/schema-helpers.R:71-73`)
+and metasalmonpy's `SDP_PROFILE_PATH` went on naming the v0.3 profile, so both
+packages would have pinned the new tag and loaded the frozen profile. This change
+made both cards move the profile path with the pin under a minor name. Q-53 had
+been added to B-204's and B-205's `blocked_by`, but both conditions still named
+the vendored file, and Q-53 can rule for a remote-first validator; this change
+made recording Q-53's ruling include updating both cards to the schema copy it
+selects, and took the copy out of their conditions until then. The same review
+found that the paragraphs above restated live conditions of B-236 and of Q-53,
+Q-54, Q-62 and Q-63; this change rewrote the section in the past tense. The
+Codex review of pull request 150 on `7daeea6` found all three. Separately, B-201's
+sentence that the metasalmonpy `v0.5.0` tag was still Brett's to make was
+corrected, because the tag was made on 2026-09-24 on `67fb486`; the Codex review
+of metasalmon pull request 159 found it.
+
+**Q-54's ruling owns B-128's condition too.** Q-54 asked its temperature ruling
+only to say what becomes of B-128, whose condition assumes R's chat path keeps
+sending a temperature, so a ruling to send none could have retired Q-54 and
+unblocked B-128 with a condition the ruling contradicts. This change made
+recording that ruling update, replace or retire B-128, as Q-53's does for B-204
+and B-205, and added the same pointer to B-128. The Codex review of pull request
+150 on `462cf5f` found it.
+
+**Q-54 gained reasoning effort, and B-234 the redefinition rule.** B-128's routing
+would make R's chat path send a reasoning effort resolved from the environment,
+which neither chat path sends, and Q-54 listed four differences without it; the
+measurement under Q-54 above found two more on semantic review. This change added
+reasoning effort to Q-54 as a fifth difference and made B-128 follow that ruling
+too. B-233 rejects a `curie_map` entry redefining a built-in prefix if the SSSOM
+specification forbids it, and B-234 did not, so the halves could have landed with
+different accepted sets; this change gave B-234 the same conditional rule. The
+Codex review of pull request 150 on `e03fd35` found both.
+
+**The two questions entries followed their items.** The Q53 entry in
+`knowledge/questions.md` named only B-204 as the card whose pattern check the
+ruling decides, and the Q54 entry listed four differences. This change made Q53
+name B-204 and B-205 and leave how the ruling reaches them to `Q-53`, and made
+Q54 list reasoning effort and its effect on B-128. The Codex review of pull
+request 150 on `0fdc5a5` found both.
+
+**B-223's direction became Q-62's to rule, and Q59 stopped copying a plan.**
+B-223 recorded R moving to refusal on the EML and KNB reads as a default Brett
+had been offered and had not overruled, which read the absence of an objection
+as a ruling on which side of a divergence moves. This change widened Q-62 from
+the closure path to both readers of the EML sidecar, added Q-62 to B-223's
+`blocked_by`, and made recording Q-62's ruling update, replace or retire B-223.
+The Q59 entry in `knowledge/questions.md` had copied the implementation plan on
+B-177's card; this change pointed it at B-177 and B-230 instead. The Codex
+review of pull request 150 on `4d84682` found both.
+
+Every paragraph in this section records what a change made on 2026-09-23 or
+2026-09-24 did, and why. The conditions in force are in the item files under
+`queue/items/`, and where the two differ, the item file is right.

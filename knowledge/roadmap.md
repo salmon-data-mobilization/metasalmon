@@ -69,8 +69,9 @@ Rules that keep this from decaying:
   not its tail. It was the first window opened by *new* work under the rule
   rather than by an old backlog, exactly the state the 2026-08-24 entry predicted
   when it said parity decays with the next change, and it was owed as an S5 port
-  rather than an S10 rung. metasalmonpy's tree reads 0.5.0; **tagging `v0.5.0`
-  there is Brett's**, so its newest tag is still `v0.4.0`.
+  rather than an S10 rung. metasalmonpy's tree reads 0.5.0, and measured
+  2026-09-24 its newest tag is `v0.5.0`, made that day on the bump merge
+  `67fb486` with a GitHub Release.
   **Amended 2026-08-17 (Brett):
   the mirror is not automatically the follower** — *"don't just make things
   match metasalmon; if the Python implementation got it right, then update
@@ -332,7 +333,7 @@ then metasalmonpy's bump claims that number — and both steps happened on
 from 2026-08-25, and metasalmonpy claimed the number on 2026-09-16 once the S5
 port had landed there and been documented (B-126, then B-153).
 
-### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tree only, newest tag still `v0.4.0`)
+### metasalmonpy (Python mirror) — current **0.5.0** (= metasalmon 0.5.0 parity; tagged `v0.5.0` 2026-09-24)
 
 > **The number is now true, and it is the first time in this stream that it has
 > been.** S10's implementation completed 2026-08-22 — all eight chunks A–H
@@ -372,7 +373,7 @@ port had landed there and been documented (B-126, then B-153).
 
 | Version | Date | One line |
 |---|---|---|
-| 0.5.0 | 2026-09-16 (tree only; **not tagged** — tagging is Brett's, newest tag remains `v0.4.0` at `3b587e6`) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
+| 0.5.0 | 2026-09-16 (tagged `v0.5.0` at `67fb486` on 2026-09-24, GitHub Release published) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
 | 0.4.0 | 2026-08-24 (tagged `v0.4.0` at `3b587e6`, GitHub Release published) | The terminal S10 bump: chunks A–H released as one number, plus the two gaps an entry-by-entry audit of metasalmon 0.4.0's NEWS found genuinely absent and ported for it — `knb_environment` on `publish_sdp_to_knb()`/`write_eml_from_sdp()` (the S3 mirror, whose R original landed after every chunk was written) and the `statistical_modifier` `role_boost`. Five further differences were **registered rather than ported**, each with its retirement condition (register rows 54–58). Verified against a pristine `git archive` of metasalmon `v0.4.0` (`4e2bbb6`), never a working checkout; both dependency legs green (795 extras / 682 core, 116 skipped), production KNB identifiers pinned against metasalmon's own fixture |
 | 0.2.1 | 2026-08-18 (tagged `v0.2.1`, GitHub Release published) | Every descriptor URI comes from one loader: 0.2.1's per-resource schema URLs, derived from the remote loader 0.2.0 introduced |
 | 0.2.0 | 2026-08-18 (tagged `v0.2.0`, GitHub Release published) | The dictionary is the type authority: typed round-trip reader with raw-token preservation, overwrite/prune ownership, sidecar survival, symlink refusal, capture-time redaction, remote schema loader pinned to the upstream `sdp-0.2.0` tag. An era-R package round-trips through Python and back **byte-for-byte** |
@@ -458,7 +459,7 @@ nothing in either file saying which is right — the failure mode both `AGENTS.m
 files name when they say to read the other file rather than trust the one in
 front of you.
 
-**Four more debts accumulated while that window was open, and this index was not
+**More debts accumulated while that window was open, and this index was not
 the copy that recorded them.** Each is R work merged **after** 0.5.0 under the
 mirror rule, each is owed as a port rather than a register row, and each is
 specified in full under *What metasalmon 0.5.0 owes the mirror* in
@@ -479,16 +480,20 @@ reviewed semantic closure producer (`write_sdp_semantic_closure()`, backlog #116
 rather than become a gap, incomplete evidence is not a missing term, and the
 three writes install as one link-refusing set), **B-165**, blocked by
 B-116 — **landed 2026-09-16 as metasalmonpy #31**, `999fa19`, the fourth to
-close, and the only one of the four whose changelog entry belongs under
-`## 0.5.0` rather than `## Unreleased`, because it merged at 04:18Z and the bump
-at 12:55Z. Every one of them was deferred for the same structural reason rather than
-a judgement: a hub claim covers one branch in one repository, so the mirror half
-is a separate item. The first two reached `parity-deviations.md` and not this index,
+close; its changelog entry belongs under `## 0.5.0` rather than
+`## Unreleased`, because it merged at 04:18Z and the bump at 12:55Z, and so
+does B-125's, whose #30 merged at 03:54Z. Every one of them was deferred for the
+same structural reason rather than a judgement: a hub claim covers one branch
+in one repository, so the mirror half is a separate item. The first two reached
+`parity-deviations.md` and not this index,
 which is the drift the release index exists to catch, so the rule is stated here
 rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
-*(The count is gone from this passage on purpose, as of 2026-09-16. It read
+*(The count is gone from this passage on purpose, as of 2026-09-16, and from its
+lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
+beside a clause calling B-165 "the only one of the four" whose entry belongs
+under `## 0.5.0`, which B-125's does too. It read
 **three** and omitted `B-144`; the correction below records that. It then read
 **four** and omitted `B-145` — caught by the Codex review of pull request #136,
 after metasalmon #118 merged the R half the same morning and left its mirror debt
@@ -524,7 +529,45 @@ metasalmonpy as a port, not a register row, because metasalmonpy has counted
 the recorded row as gap evidence since #28. The port is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
-queue item is to be filed.
+queue item is `B-216`, filed by the 2026-09-23 queue sweep.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+`apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
+makes its codes step warn about each value missing from a column's code list,
+where it had turned them into `NA` silently, and makes `strict = TRUE` abort on a
+coercion that R only warns about. The coercion half owes metasalmonpy nothing,
+because its `_coerce_series()` already raises there. The codes half is owed as a
+port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`, together with a Python defect found while
+measuring it that is not part of the port. **Why not in the same stream:** a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-241`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the printed call for a column's own slot says `code_value = ""` when the
+column's codes share its role.** Hub item **B-151** makes the call
+`review_semantics()` prints for a measurement column's own `entity_iri` or
+`constraint_iri` slot runnable when the column has a code list, and makes the
+ambiguity refusal offer an option that reaches that slot. It is owed in
+metasalmonpy as a port, not a register row. metasalmonpy prints the same
+ambiguous call and pins it as a limitation shared with R. Its matcher already
+reads a blank value as "no code value", but it also matches a code slot whose
+`codes.csv` row leaves `code_value` empty, which R's does not. The port is
+specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
+branch in one repository. Its metasalmonpy half is `B-242`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+a year-shaped measurement column keeps its measurement role.** Hub item
+**B-53** (backlog #53) stops `infer_column_role()` typing a column `temporal`
+on year-shaped values alone when the name's words include a measurement word and
+no date or time word, so a count whose every value falls between 1800 and 2500
+no longer leaves the semantic pipeline. metasalmonpy's `infer_column_role()` has
+the same defect, so it is owed there as a port, not a register row. The port is
+specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`, together with the float-column gap in metasalmonpy's
+year-shape predicate that the port will meet first. **Why not in the same
+stream:** a hub claim covers one branch in one repository.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
@@ -579,8 +622,10 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. That difference is **tracked as its own queue
-item, separate from B-142**, which neither introduced it nor changes it. A
+falls back to the default paths. Which side moves on each path is **`Q-62`**,
+a question for Brett, and R's refusal on the EML and KNB paths, the
+recommended direction, is written as **queue item `B-223`, separate from
+B-142**, which neither introduced the difference nor changes it. A
 parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
 so it is not made here.
 
@@ -625,7 +670,35 @@ POST at `:426`), and both of its LLM paths call it — semantic review through
 `_chat_choice()` (`chat_decomposition.py:279`). **What this does not say** is
 anything about what the two implementations put *in* that request. They do not
 send the same one, and the B-3 workpad records the difference, with its
-evidence, as a candidate for a parity item rather than settling it here.
+evidence, as a candidate for a parity item rather than settling it here. It is
+filed as the question `Q-54`.
+
+**The closed window's port took one behaviour differently, recorded 2026-09-23:
+a schema the options select, hub item `B-215`.** metasalmonpy's
+`review_metadata()`, setters and validator collector read the bundled schema
+whatever schema the options select, where R honours the selection, and `B-175`
+kept that while taking R's default options offline. It is owed as a port, not a
+register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. Recorded there and here in the same change, as the rule
+above requires.
+
+**`B-164` owes metasalmonpy nothing, because the shape it guards against has
+nowhere to live there.** The R guard fails when a vignette relies on a global
+`knitr::opts_chunk$set()` to keep display-only code out of the script
+`R CMD check` tangles and runs. That needs two things: a global switch that
+stops code running, and a later step that runs the code without it. metasalmonpy
+has neither. Measured 2026-09-24 against its `main` at `3f8349a`: its ten
+`.qmd` pages (`index.qmd`, `getting-started.qmd` and eight under `guides/`)
+carry their code in plain fenced blocks such as ```` ```python ````, which
+Quarto shows and never runs; the only brace-delimited cell is a
+```` ```{mermaid} ```` diagram in `index.qmd`; no page and no `_quarto.yml` sets
+`execute` or `eval`; and nothing extracts guide code to run it, since the
+documentation workflow runs `quartodoc build` and `quarto render`, and
+`pyproject.toml` configures no doctest. **What this does not say** is that the
+Python guides' code works. Nothing runs it at all. Whether documentation code
+should run is the question slice 6 of the
+[S11 card](sequences/s11-vignettes-and-walkthroughs.md) raises for the R
+walkthrough, and it is a different question from this one.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 

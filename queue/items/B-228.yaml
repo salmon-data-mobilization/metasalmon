@@ -1,0 +1,13 @@
+id: B-228
+kind: defect
+title: 'metasalmonpy still carries the single shared .hub/workpad.md that B-140 retired in metasalmon'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S15
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy has no .hub/workpad.md. The report it holds, B-126''s, moves to .hub/workpads/B-126.md, the per-item path HUB.md prescribes, rather than being deleted, and something that runs in metasalmonpy''s CI fails if the shared path returns. metasalmon''s guard for the same rule is validate_workpads() in scripts/hub_queue.py, which never looks at another repository. The mirror of B-140, which was scoped to metasalmon.'

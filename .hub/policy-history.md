@@ -302,8 +302,8 @@ constants_live_in: >-
         an ordinary merge, after the two conditions above are read rather than
         assumed. This row is what makes "Which pull requests need Brett" below
         operative: a change in the delegated classes merges on green CI plus a
-        clean Codex review, and a change in the classes that need him does not
-        merge without him whatever its checks say.
+        completed Codex review, and a change in the classes that need him does
+        not merge without him whatever its checks say.
       enforced_by: >-
         nothing mechanical, and the asymmetry is deliberate: an agent unsure
         which side of the boundary a change falls on escalates, because a merge
@@ -740,7 +740,7 @@ the shape this section generalises.
    until 2026-09-23, when that grant took the items meeting its test out of this
    class and left `claimable` in it.)*
 
-### Delegated: merges on green CI and a clean Codex review (history)
+### Delegated: merges on green CI and a completed Codex review (history)
 
 - **CI green on the head being merged**, read off the checks rather than inferred
   from a local run. CI runs a different R than the container does, in both

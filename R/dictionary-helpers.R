@@ -1117,8 +1117,12 @@ infer_value_type <- function(col) {
   length(.ms_code_list_values(col, code_limit = code_limit)) > 0
 }
 
-.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
-  measurement_tokens <- c(
+# The whole words that mark a column name as a measurement. One home, because
+# two predicates read it: `.ms_name_has_measurement_hint()` below, and
+# `.ms_name_has_measurement_word()`, which is the narrower test the
+# year-shaped value check in `infer_column_role()` yields to.
+.ms_measurement_name_tokens <- function() {
+  c(
     "count", "counts", "total", "totals", "number", "numbers", "amount", "quantity",
     "measure", "measurement", "measurements", "abundance", "abundances", "spawner", "spawners",
     "recruit", "recruits", "escapement", "escapements", "biomass", "density", "densities",
@@ -1127,7 +1131,10 @@ infer_value_type <- function(col) {
     "depth", "depths", "width", "widths", "height", "heights", "level", "levels",
     "discharge", "flow", "flows", "mortality"
   )
-  has_token_hint <- any(name_tokens %in% measurement_tokens)
+}
+
+.ms_name_has_measurement_hint <- function(name_lower, name_tokens) {
+  has_token_hint <- any(name_tokens %in% .ms_measurement_name_tokens())
   has_regex_hint <- grepl(
     "count|total|number|amount|quantity|measure|temp|temperature|depth|width|height|level|discharge|flow|mortality",
     name_lower
@@ -1156,6 +1163,39 @@ infer_value_type <- function(col) {
   sample_context_tokens <- c("sample", "samples", "partition", "partitions")
 
   any(name_tokens %in% size_tokens) && any(name_tokens %in% sample_context_tokens)
+}
+
+# The whole words that mark a column name as a date or time. One home, because
+# `infer_column_role()` reads it twice: against the name's tokens, and, with
+# the plurals added, against its words when deciding whether year-shaped values
+# may be overridden.
+.ms_temporal_name_tokens <- function() {
+  c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+}
+
+# The words of a column name. `.ms_name_tokens()` splits only at spaces, `.`,
+# `_`, `-` and case changes, so `Water depth(mm)` gives the token `depth(mm)`
+# and `adult/count` stays one token. This splits those tokens again at every
+# other ASCII punctuation character. The characters are spelled out as ranges
+# rather than written `[[:punct:]]`, so the split cannot vary with the locale,
+# and a non-ASCII letter is never a boundary.
+.ms_name_words <- function(name_tokens) {
+  pieces <- strsplit(as.character(name_tokens), "[!-/:-@\\[-`{-~]+", perl = TRUE)
+  words <- as.character(unlist(pieces))
+  words[!is.na(words) & nzchar(words)]
+}
+
+# Measurement evidence made of whole words only: a measurement word, or a
+# sample or partition size. It deliberately leaves out the two pattern tests in
+# `.ms_name_has_measurement_hint()`, because both match names that are not
+# measurements: the substring pattern finds `temp` inside `temporal_start`, and
+# the unit pattern accepts any parenthetical containing a `g`, such as
+# `Cohort (Aug)`. Those are tolerable where the hint only chooses among
+# non-temporal roles, and not where it overrides a temporal signal, which is
+# the one job this predicate has (backlog #53).
+.ms_name_has_measurement_word <- function(name_words) {
+  any(name_words %in% .ms_measurement_name_tokens()) ||
+    .ms_name_has_sample_size_hint(name_words)
 }
 
 #' Infer column role from name and data
@@ -1198,13 +1238,51 @@ infer_column_role <- function(col_name, col) {
     return("identifier")
   }
 
-  # Check for date/time patterns
-  temporal_tokens <- c("date", "dates", "time", "times", "timestamp", "timestamps", "datetime", "dtt", "year", "yr", "month", "day")
+  # Check for date/time patterns in the name or the column type.
+  temporal_tokens <- .ms_temporal_name_tokens()
   if (grepl("date|time|dtt|timestamp", name_lower) ||
       inherits(col, "Date") || inherits(col, "POSIXt") ||
-      any(name_tokens %in% temporal_tokens) ||
-      .ms_values_look_yearish(col)) {
+      any(name_tokens %in% temporal_tokens)) {
     return("temporal")
+  }
+
+  # Year-shaped values -- every value a four-digit number from 1800 to 2500 --
+  # are the one temporal signal that reads nothing but the values, and a count
+  # or escapement column whose values all fall in that range has exactly that
+  # shape. Typed temporal, such a column was dropped from the whole semantic
+  # pipeline (backlog #53). So the value shape decides unless the name's words
+  # include a measurement word and no date or time word; then the column goes
+  # through the same checks below that it would with any other values.
+  #
+  # Words, split at punctuation as well as spaces (`.ms_name_words()`), so that
+  # `Water depth(mm)` and `adult/count` are measurement names -- and so that a
+  # time word hidden by punctuation still counts, as in `Escapement (yr)` and
+  # `count/year`, which the token check above does not see. The time words
+  # here include the plurals that check leaves out, so `escapement_years` stays
+  # temporal as it always was. The plurals are not added to that check itself,
+  # which also sees values off the year range, where a column counting days or
+  # years is not a date. Whole words, not `.ms_name_has_measurement_hint()`:
+  # measured 2026-09-24 over the 1,271 columns in the CSVs of metasalmon,
+  # metasalmonpy, smn-data-pkg and salmon-domain-ontology, the only year-shaped
+  # columns that hint would have moved were 18 `temporal_start` /
+  # `temporal_end` columns, all rightly temporal, and the word test moves none.
+  #
+  # The words decide only whether the year shape may decide. The checks below
+  # keep the coarser tokens, so a column this lets through is typed exactly as
+  # it would be with values off the year range. Letting those checks read the
+  # words too was tried (Codex review of #152, rounds 3 and 4): it forces every
+  # check that outranks the measurement check to read them as well, and there
+  # the split breaks units and rates. `Discharge (m3/day)`, `Escapement
+  # (fish/yr)` and `Rate (per day)` became temporal, and `Fish (no./site)` an
+  # identifier. That is a question about all of role inference, not this one.
+  if (.ms_values_look_yearish(col)) {
+    name_words <- .ms_name_words(name_tokens)
+    time_words <- c(temporal_tokens, "years", "yrs", "months", "days")
+    measurement_named <- .ms_name_has_measurement_word(name_words) &&
+      !any(name_words %in% time_words)
+    if (!measurement_named) {
+      return("temporal")
+    }
   }
 
   # Preserve explicit factor/categorical intent from the source data.
@@ -1268,6 +1346,27 @@ infer_column_role <- function(col_name, col) {
   # Respect the resolved role. An ID token can occur inside the name of a
   # non-identifier qualifier (for example, `stock_ID_quality`).
   NA
+}
+
+# The `column_dictionary.csv` IRI fields that `validate_dictionary()` sweeps for
+# a `REVIEW:` marker. The list is FIXED rather than read from the schema's
+# declared `*_iri` fields. A schema selected through the options can declare
+# more, and strict validation does not refuse a marker in the extra ones.
+#
+# This is the only copy of the list, and two functions read it: the validator,
+# and `review_metadata()`'s marker branch (`R/sdp-field-setters.R`). Sharing it
+# is what makes the scan list a dictionary marker exactly where strict
+# validation refuses one. The list used to be written out inside
+# `validate_dictionary()`, while the scan read the schema's fields instead; the
+# Codex review of #144 found that, under such a schema, the scan listed a
+# marker strict validation accepted. Copying the six into the scan would have
+# left two lists free to drift apart.
+#
+# Retires when strict validation reads the dictionary's IRI fields from the
+# schema. Both functions then take the schema's list, and this helper is
+# deleted.
+.ms_dictionary_iri_fields <- function() {
+  c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
 }
 
 #' Validate a salmon data dictionary
@@ -1362,10 +1461,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   # mode; still surface a high-signal warning because missing fields reduce package quality.
   measurement_rows <- !is.na(dict$column_role) & dict$column_role == "measurement"
   semantic_fields <- c("term_iri", "property_iri", "entity_iri", "unit_iri")
-  iri_fields <- intersect(
-    c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri"),
-    names(dict)
-  )
+  iri_fields <- intersect(.ms_dictionary_iri_fields(), names(dict))
 
   review_marker_rows <- lapply(iri_fields, function(field) {
     vals <- dict[[field]]
@@ -1505,12 +1601,19 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' reports mismatches. Returns a transformed tibble ready for analysis or
 #' packaging.
 #'
+#' A value that is not in its column's code list has no factor level, so it
+#' becomes `NA`. Each such value is named in a warning, whatever `strict` is.
+#' Blank strings are treated as missing and are not reported.
+#'
 #' @param df A data frame or tibble to transform
 #' @param dict A validated dictionary tibble
 #' @param codes Optional tibble with code lists (columns: `dataset_id`,
 #'   `table_id`, `column_name`, `code_value`, `code_label`, etc.)
 #' @param strict Logical; if `TRUE` (default), errors on type coercion
-#'   failures; if `FALSE`, warns and coerces to character
+#'   failures; if `FALSE`, warns and coerces to character. A coercion failure
+#'   is one that R reports with a warning as well as one it reports with an
+#'   error, so a column typed `integer` holding `"abc"` is a failure even
+#'   though `as.integer("abc")` only warns and returns `NA`.
 #'
 #' @return A tibble with renamed columns, coerced types, and factor levels
 #'   applied
@@ -1574,43 +1677,37 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
     # Get column (use original name)
     col <- df[[col_name]]
 
-    # Coerce type
+    # Coerce type.
+    #
+    # A coercion failure is a warning at least as often as it is an error:
+    # `as.integer("abc")` and `as.numeric("1,5")` warn and return NA, and only
+    # shapes such as `as.Date("abc")` error. This block used to handle `error`
+    # alone, so under `strict = TRUE` the common failure returned NA beside R's
+    # own warning and never reached the abort (backlog #55). Both handlers now
+    # return the condition, so `coerced` is either the converted column or the
+    # reason it could not be converted.
     if (!is.na(value_type)) {
-      tryCatch({
-        if (value_type == "integer") {
-          result[[new_name]] <- as.integer(col)
-        } else if (value_type == "number") {
-          result[[new_name]] <- as.numeric(col)
-        } else if (value_type == "boolean") {
-          result[[new_name]] <- as.logical(col)
-        } else if (value_type == "date") {
-          if (inherits(col, "Date")) {
-            result[[new_name]] <- col
-          } else {
-            result[[new_name]] <- as.Date(col)
-          }
-        } else if (value_type == "datetime") {
-          if (inherits(col, "POSIXt")) {
-            result[[new_name]] <- col
-          } else {
-            result[[new_name]] <- as.POSIXct(col)
-          }
-        } else {
-          # string - keep as is or convert to character
-          result[[new_name]] <- as.character(col)
-        }
-      }, error = function(e) {
+      coerced <- tryCatch(
+        .ms_apply_dictionary_coerce(col, value_type),
+        warning = function(w) w,
+        error = function(e) e
+      )
+      if (inherits(coerced, "condition")) {
+        reason <- conditionMessage(coerced)
+        failed <- .ms_apply_dictionary_failed_values(col, value_type)
         if (strict) {
-          cli::cli_abort(
-            "Failed to coerce column {.field {col_name}} to {.val {value_type}}: {e$message}"
-          )
-        } else {
-          cli::cli_warn(
-            "Failed to coerce column {.field {col_name}} to {.val {value_type}}, keeping as character"
-          )
-          result[[new_name]] <<- as.character(col)
+          cli::cli_abort(c(
+            "Failed to coerce column {.field {col_name}} to {.val {value_type}}: {reason}",
+            "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
+          ))
         }
-      })
+        cli::cli_warn(c(
+          "Failed to coerce column {.field {col_name}} to {.val {value_type}}, keeping as character: {reason}",
+          "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
+        ))
+        coerced <- as.character(col)
+      }
+      result[[new_name]] <- coerced
     }
 
     # Apply factor levels from codes if available
@@ -1625,8 +1722,22 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
         code_values <- col_codes$code_value
         code_labels <- col_codes$code_label
 
-        # Convert to factor with levels from codes
+        # Convert to factor with levels from codes. A value the code list does
+        # not name has no level, so factor() turns it into NA; that happened
+        # silently until backlog #55. It is reported whatever `strict` is,
+        # because `strict` governs type coercion, and the defect was the
+        # silence rather than the conversion.
         if (inherits(result[[new_name]], "character") || inherits(result[[new_name]], "factor")) {
+          observed <- as.character(result[[new_name]])
+          unlisted <- unique(observed[
+            .ms_apply_dictionary_present(observed) & !observed %in% code_values
+          ])
+          if (length(unlisted) > 0) {
+            cli::cli_warn(c(
+              "Column {.field {col_name}} has {length(unlisted)} value{?s} not in its code list; {?it becomes/they become} {.code NA}:",
+              "i" = "{.val {unlisted}}"
+            ))
+          }
           result[[new_name]] <- factor(
             result[[new_name]],
             levels = code_values,
@@ -1650,4 +1761,47 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   }
 
   result
+}
+
+# The conversion apply_salmon_dictionary() makes for one declared `value_type`.
+# A function of its own so the caller can run it inside a handler that sees
+# warnings as well as errors, and so the failure report below can run it again
+# to find the values that did not convert.
+.ms_apply_dictionary_coerce <- function(col, value_type) {
+  if (value_type == "integer") {
+    as.integer(col)
+  } else if (value_type == "number") {
+    as.numeric(col)
+  } else if (value_type == "boolean") {
+    as.logical(col)
+  } else if (value_type == "date") {
+    if (inherits(col, "Date")) col else as.Date(col)
+  } else if (value_type == "datetime") {
+    if (inherits(col, "POSIXt")) col else as.POSIXct(col)
+  } else {
+    # string - keep as is or convert to character
+    as.character(col)
+  }
+}
+
+# TRUE for a value that is present: not NA and not blank. A blank string is a
+# missing value to every reader this package uses, so a coercion or a code list
+# turning one into NA loses nothing and is not reported.
+.ms_apply_dictionary_present <- function(text) {
+  !is.na(text) & nzchar(trimws(text))
+}
+
+# The distinct values a failed coercion could not convert: present before, NA
+# after. Empty when the coercion errors outright, because then there is no
+# converted column to compare against and the condition message is the report.
+.ms_apply_dictionary_failed_values <- function(col, value_type) {
+  converted <- tryCatch(
+    suppressWarnings(.ms_apply_dictionary_coerce(col, value_type)),
+    error = function(e) NULL
+  )
+  if (is.null(converted) || length(converted) != length(col)) {
+    return(character())
+  }
+  text <- as.character(col)
+  unique(text[.ms_apply_dictionary_present(text) & is.na(converted)])
 }

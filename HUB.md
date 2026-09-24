@@ -268,7 +268,8 @@ writes:
         assumed.
       excludes: >-
         every class "Which pull requests need Brett" lists. A pull request that
-        touches one of them is his even when CI is green, Codex is clean, and he
+        touches one of them is his even when CI is green, the Codex review has
+        completed, and he
         has said the word on a different pull request in the same batch.
       max: no limit
       enforced_by: >-
@@ -308,11 +309,17 @@ writes:
         answers a finding belongs on that finding's thread, under the reply
         row.
       max: >-
-        one per pushed round of fixes, posted after the push. Never to re-roll
-        a round that found something, and never while the previous round is
-        still running, which the reviewer signals with an eyes reaction.
+        one per pushed round of fixes, posted after the push, and at most two
+        on a pull request that changes code, as the Delegated section defines
+        it, and one on any other, because the
+        review Codex runs on opening counts toward the cap the Delegated
+        section sets. Never to re-roll a round that found something, and never
+        while the previous round is still running, which the reviewer signals
+        with an eyes reaction.
       enforced_by: nothing mechanical.
-      granted: 2026-09-23, with the row above and in the same words.
+      granted: 2026-09-23, with the row above and in the same words. The cap
+        was added on 2026-09-24 on Brett's instruction to stop at the valuable
+        80% of review.
     - operation: re-run the failed jobs of one workflow run
       target: >-
         a workflow run on a pull request an agent opened, in a member
@@ -756,7 +763,7 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
     Brett" section in a workpad is self-declaring, and an agent that writes one
     has already decided this question.
 
-### Delegated: merges on green CI and a clean Codex review
+### Delegated: merges on green CI and a completed Codex review
 
 Everything else, of which the common cases are a defect fix carrying a
 reproduced failing-before and a test; a queue or backlog change; documentation,
@@ -776,6 +783,34 @@ Four conditions, all of them, before an agent merges one:
   starts CI.
 - **The Codex review has completed**, with every finding either fixed in a push
   or answered on its thread with the evidence that it is not a defect.
+  **"Completed" means the last review the agent asked for, not a review of the
+  final head, and the asking is capped** (Brett, 2026-09-24: *"If there's a way
+  to get 80% of the value and stop at that point I think we should do that since
+  the last 20% is probably disproportionately expensive"*). Counting the review
+  Codex runs when a pull request opens, a pull request that changes code gets at
+  most three reviews and any other pull request (queue items, cards, prose,
+  ontology files) at most two; the agent fixes or answers what the last one found,
+  pushes, and does not post `@codex review` again. **Code** here means executable
+  source, tests, scripts or workflows; a pull request that mixes code with other
+  files, or whose kind is unclear, counts as code. The count is a trade, and
+  the evidence it rests on cuts both ways. On the code pull requests of
+  2026-09-24 Codex's findings were real behaviour defects: #153 and #157 needed
+  one round, but #152 needed four, and its third round's fix introduced a
+  regression that only the fourth caught, so a cap of three would have merged
+  that regression. The prose pull requests are where the cost was: hub pull
+  request 150 and commons pull request 16 took 18 and 15 rounds for 36 and 34
+  findings, most of them about text the previous round's fix had just written.
+  The cap accepts that a late round on code can still find something, because
+  the alternative has no ceiling at all; a fix pushed after the last permitted
+  review is the agent's to test the harder for it. **The cap is a guard, so it
+  says what moves it.** A defect that reaches `main` from a pull request merged
+  under the cap, and that a further review would plausibly have caught, is filed
+  as a queue item citing this paragraph; the second such item on a code pull
+  request sends the numbers back to Brett to raise. The cap retires when he
+  replaces the numbers or removes it. Two habits fed that loop and are not part of a
+  fix: writing the review's history into the files it reviews, and adding new
+  work to a pull request under review. A fix changes what the finding names; a
+  problem found beside it goes to the next sweep.
 - **No review thread from a person is waiting.** A human comment moves the pull
   request into the previous list until it is answered.
 - **The agent is not unsure.** Uncertainty about which list a change belongs to

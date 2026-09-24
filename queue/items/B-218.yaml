@@ -1,0 +1,13 @@
+id: B-218
+kind: defect
+title: 'metasalmonpy review_semantics(include_filled=True) hides the decision on a slot whose accepted candidate ranks past max_candidates'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, review_semantics(include_filled=True) shows every decided slot''s decision -- its DECIDED line, and the decided candidate or an equivalent statement of it -- whatever max_candidates is, when the accepted candidate ranks past the cut. Pinned by a test that accepts the sixth candidate of a six-candidate slot after review_semantics(max_candidates=None), applies, rebuilds the review at the default max_candidates, and asserts the DECIDED line, demonstrated RED on the console as it stands. THE CAUSE IS THE SAME ORDER AS IN R: only the default queue computes the decided set before the rank filter, and with include_filled=True the filter drops the only row the DECIDED line is built from. THE MIRROR HALF IS B-217 (metasalmon); each names the other.'

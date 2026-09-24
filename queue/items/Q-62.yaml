@@ -1,0 +1,11 @@
+id: Q-62
+kind: question
+title: 'What should each reader of the EML sidecar do with an !expr tag -- refuse, take its text, or fall back -- and which implementation moves?'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules, for each reader of metadata/eml-mapping.yml, what an !expr tag or any other local tag it has no meaning for does: (a) the EML and KNB reads, where R takes the tag''s text as the value that reaches published EML and metasalmonpy refuses the sidecar; (b) the semantic closure path, where R takes the tag''s text as the path and metasalmonpy falls back silently to the default paths. The options on each are to refuse with a clear error naming the file, to take the text, or to fall back. The ruling is recorded in knowledge/questions.md, and for each reader either the side that moves has a queue item or, if the difference is kept, a pair of register items is filed, one in metasalmon for knowledge/parity-deviations.md and one in metasalmonpy for PARITY.md, each naming the other, because one item cannot finish a write in two repositories. Both differences were measured by the B-142 run on main 12efe9d with yaml 2.3.12, and the evidence is under B-223 in knowledge/backlog.md. THE RULING ON (a) DECIDES B-223, which is written for R moving to refusal on those reads: recording it updates B-223''s retires_when to match, or replaces or retires B-223, in the same change, because this item''s retirement unblocks B-223 and it must not unblock with a condition the ruling contradicts. (b) was split out of B-223 on 2026-09-24 after the Codex review of metasalmon pull request 150, so that B-223 could not close while leaving that difference unrecorded; (a) was added the same day after the Codex review of that pull request on 4d84682 found B-223 taking the absence of an objection as the ruling on its own direction.'
