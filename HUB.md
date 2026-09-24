@@ -1055,12 +1055,17 @@ Four conditions, all of them, before an agent merges one:
   ontology files) at most two; the agent fixes or answers what the last one found,
   pushes, and does not post `@codex review` again. **Code** here means executable
   source, tests, scripts or workflows; a pull request that mixes code with other
-  files, or whose kind is unclear, counts as code. The count rests on what the
-  loop did before the cap: on the code pull requests of 2026-09-24 Codex's
-  findings were real behaviour defects and arrived in the first two rounds,
-  while hub pull request 150 and commons pull request 16, both prose, took 18
-  and 15 rounds for 36 and 34 findings, most of them about text the previous
-  round's fix had just written. Two habits fed that loop and are not part of a
+  files, or whose kind is unclear, counts as code. The count is a trade, and
+  the evidence it rests on cuts both ways. On the code pull requests of
+  2026-09-24 Codex's findings were real behaviour defects: #153 and #157 needed
+  one round, but #152 needed four, and its third round's fix introduced a
+  regression that only the fourth caught, so a cap of three would have merged
+  that regression. The prose pull requests are where the cost was: hub pull
+  request 150 and commons pull request 16 took 18 and 15 rounds for 36 and 34
+  findings, most of them about text the previous round's fix had just written.
+  The cap accepts that a late round on code can still find something, because
+  the alternative has no ceiling at all; a fix pushed after the last permitted
+  review is the agent's to test the harder for it. Two habits fed that loop and are not part of a
   fix: writing the review's history into the files it reviews, and adding new
   work to a pull request under review. A fix changes what the finding names; a
   problem found beside it goes to the next sweep.
