@@ -532,6 +532,31 @@ metasalmon (development version)
   this text; no rule `id`, `severity`, `version` or `profile` changed, because
   that test keys on rule ids.
 
+### Internal
+
+* **The test suite now fails when a vignette relies on a global
+  `knitr::opts_chunk$set()` to keep its display-only code out of the script
+  `R CMD check` runs** (backlog #32, hub item B-164).
+  `tests/testthat/test-vignette-purl-guard.R` tangles every vignette the way the
+  check's fresh process does -- through the vignette's own engine, with knitr's
+  default chunk options, because the tangle never runs the setup chunk -- and
+  fails when one that turns `eval` or `purl` off globally still yields live
+  code. #32 closed this shape in six vignettes on 2026-07-21 and added nothing
+  that would notice a seventh. `migrating-to-sdp-0-3-0.Rmd` and
+  `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7 display
+  chunks tangle as live code and fail `R CMD check` at the first statement on
+  R 4.3.3. The guard was shown failing on both before anything else changed.
+  Both stay as they are until hub item B-133 fixes them. Meanwhile the guard
+  lists them as known offenders, each pinned to the chunks that offend today.
+  A new live chunk in either one still fails, and so does an entry that has
+  stopped offending.
+
+  A test is needed because the check step that catches this stopped running by
+  default in R 4.4.0, when `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so
+  CI's current R stays green while `R CMD check` fails for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI's own check runs that
+  step again, which it cannot while the known-offender list has an entry.
+
 metasalmon 0.5.0
 ----------------
 
