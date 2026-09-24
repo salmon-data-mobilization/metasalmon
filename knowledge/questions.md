@@ -365,7 +365,10 @@ most prose mean by "a run". This is option (c) above, with the second sense
 narrowed from the annual return to the run component. The annual return (b)
 already has a home through `smn:RunContext` and run size.
 
-**Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`.
+**Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`,
+which retires only with an owner for every consequence of the option chosen:
+`B-237` for the definition under (a), and new or updated items for the
+superclass move under (b) or the second term and its commons gap under (c).
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 

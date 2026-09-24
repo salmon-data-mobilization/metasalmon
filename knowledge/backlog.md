@@ -6736,6 +6736,15 @@ while the fallback kept stale copies of the other seven. Both now re-vendor the
 complete bundle from the tag, commit a manifest of each file's SHA-256, and test
 the vendored files against it. The Codex review of pull request 150 found it.
 
+**Two more owners.** B-238 required a commons card proposing definition
+wording for every term in B-232's scope, which no card can do for
+`smn:NCBITaxon_8018`, since B-108 deletes it. A term an open item deletes now
+needs no card and is accounted for by naming that item. Q-61 could retire on the
+ruling alone, while options (b) and (c) need ontology work B-237 does not own.
+It now retires only with an owner for every consequence of the chosen option,
+including a commons gap for a newly minted concept. The Codex review of pull
+request 150 found both.
+
 **Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
 temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
 which decides which schema their pattern check enforces. The roadmap's B-142
