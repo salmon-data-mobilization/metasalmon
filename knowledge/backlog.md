@@ -6910,6 +6910,16 @@ name B-204 and B-205 and leave how the ruling reaches them to `Q-53`, and made
 Q54 list reasoning effort and its effect on B-128. The Codex review of pull
 request 150 on `0fdc5a5` found both.
 
+**B-223's direction became Q-62's to rule, and Q59 stopped copying a plan.**
+B-223 recorded R moving to refusal on the EML and KNB reads as a default Brett
+had been offered and had not overruled, which read the absence of an objection
+as a ruling on which side of a divergence moves. This change widened Q-62 from
+the closure path to both readers of the EML sidecar, added Q-62 to B-223's
+`blocked_by`, and made recording Q-62's ruling update, replace or retire B-223.
+The Q59 entry in `knowledge/questions.md` had copied the implementation plan on
+B-177's card; this change pointed it at B-177 and B-230 instead. The Codex
+review of pull request 150 on `4d84682` found both.
+
 Every paragraph in this section records what a change made on 2026-09-23 or
 2026-09-24 did, and why. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.

@@ -376,21 +376,29 @@ consequences.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 
-### Q62 — On the semantic closure path, should an EML sidecar carrying an `!expr` tag be refused or fall back to the default paths?
-**Unblocks:** closing the last R/Python difference B-223 leaves on the EML sidecar.
-Once B-223 lands, both implementations refuse an `!expr`-tagged
-`metadata/eml-mapping.yml` on their EML and KNB paths. On the semantic closure
-path they still differ. R takes the tag's text as the path, as measured by the
-B-142 run on `main` `12efe9d` with yaml 2.3.12. metasalmonpy falls back silently
-to the default paths. Neither behaviour was chosen, and this difference is not
-registered. B-223 originally changed R's closure reader to refuse. The Codex
-review of pull request 150 pointed out that this would replace one unrecorded
-difference with another, so the path was split out to be decided here.
-**Recommendation:** refuse on every path, and have metasalmonpy's closure path
-move. A silent fallback hides a configuration mistake exactly where a user can
-least see it, and it leaves metasalmonpy inconsistent with its own EML path. The
-mirror is not automatically the follower, so this is a recommendation, not a
-default.
+### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves?
+**Unblocks:** `B-223`, and the two R/Python differences on
+`metadata/eml-mapping.yml`. Neither behaviour on either reader was chosen, and
+neither difference is registered. Both were measured by the B-142 run on `main`
+`12efe9d` with yaml 2.3.12; the evidence is under `B-223` in
+[`backlog.md`](backlog.md).
+
+- **The EML and KNB reads.** R takes the tag's text as the value that reaches
+  published EML; metasalmonpy refuses the sidecar. `B-223` is written for R
+  moving to refusal, which was put to Brett on 2026-09-23 as a recommendation.
+  He has not ruled, and the absence of an objection is not a ruling, as the
+  Codex review of pull request 150 on `4d84682` pointed out.
+- **The semantic closure path.** R takes the tag's text as the path;
+  metasalmonpy falls back silently to the default paths. `B-223` originally
+  changed R's closure reader to refuse, and the Codex review of pull request 150
+  pointed out that this would replace one unrecorded difference with another.
+
+**Recommendation:** refuse on every path. On the EML and KNB reads R moves,
+because silently publishing code as metadata is the worse failure. On the
+closure path metasalmonpy moves, because a silent fallback hides a configuration
+mistake exactly where a user can least see it, and it leaves metasalmonpy
+inconsistent with its own EML path. The mirror is not automatically the
+follower, so this is a recommendation, not a default.
 **Owner:** the queue item `Q-62`.
 
 ### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
@@ -1609,12 +1617,9 @@ strict validation does not refuse one, and also said no parity row was owed. The
 hand-back recommended settling it at the validator through `B-177` rather than
 registering the difference.
 
-**The plan, recorded on `B-177`'s card:** strict validation refuses the marker in
-all four metadata files — `dataset.csv` goes with `codes.csv` because it is the
-same defect — and `review_metadata()`'s marker file list is extended to the same
-four in the same change. `B-230` is the metasalmonpy half. Pull request 144's
-change stands as it is: its scan lists what strict validation refuses today, and
-`B-177` moves the two together.
+**The plan** is in the item files: `B-177` for metasalmon and `B-230`, its
+metasalmonpy half, hold its scope and its condition, and are not restated here.
+Pull request 144's change stood as it was when the ruling was made.
 
 **Owner:** queue items `B-177` and `B-230`, with the evidence under `B-177` in
 [`backlog.md`](backlog.md).
