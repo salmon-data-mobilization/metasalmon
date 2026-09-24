@@ -36,6 +36,13 @@ What it reports:
 placeholders in any metadata field;
 \item schema-required fields (\code{constraints.required}) that are blank -- a
 column the file does not have counts as blank in every row;
+\item draft IRIs still carrying the \verb{REVIEW:} prefix wherever strict validation
+refuses one: any schema-declared \verb{*_iri} field of \code{tables.csv}, and the
+six semantic IRI fields of \code{column_dictionary.csv} (\code{term_iri},
+\code{property_iri}, \code{entity_iri}, \code{unit_iri}, \code{constraint_iri} and
+\code{statistical_modifier_iri}). A marker in \code{codes.csv} or \code{dataset.csv} is
+not listed, because strict validation does not refuse it there. Where
+retrieval found candidates for one, \code{\link[=review_semantics]{review_semantics()}} shows them;
 \item measurement columns missing \code{term_iri}, \code{property_iri}, \code{entity_iri} or
 \code{unit_iri};
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
