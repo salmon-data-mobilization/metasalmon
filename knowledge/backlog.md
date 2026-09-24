@@ -756,6 +756,12 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   insufficient because the check's tangle phase does not execute the setup chunk.
   Without per-chunk metadata it tried to run credential, network, and local-file
   examples that were intended only for display.
+- **Guarded from 2026-09-24** by `tests/testthat/test-vignette-purl-guard.R`
+  (hub item B-164), which makes the focused `knitr::purl()` validation above
+  permanent: a vignette that turns `eval` or `purl` off through
+  `opts_chunk$set()` must tangle to no live code. Until then nothing checked
+  the rule, and two vignettes written after this fix broke it; see `B-164`
+  below.
 
 ---
 
@@ -4536,6 +4542,20 @@ further regressions. (Which R release dropped the step was not determined —
 present on 4.3.3, absent on 4.6.1.) That **inverts** the warning in `AGENTS.md`
 rather than repeating it: there a green local check hid a CI failure; here a
 green CI hides a failure any user on an older R hits.
+
+**Determined 2026-09-24, by the change that added the guard: R 4.4.0 stopped
+running the step, by changing a default rather than removing the code.** In
+`tools:::.check_packages()`, `R_check_vignettes_skip_run_maybe` reads
+`_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` with a default of `"FALSE"` at R's
+`R-4-1-0`, `R-4-2-0` and `R-4-3-3` tags and `"TRUE"` at `R-4-4-0`, `R-4-4-3`,
+`R-4-5-0` and trunk, read from `src/library/tools/R/check.R` at each tag in the
+`wch/r-source` mirror; the `NEWS.Rd` at `R-4-4-0` does not name the variable.
+When it is true and the vignettes are being re-built, the step runs only for a
+vignette with a `.Rout.save`, and none here has one. `--as-cran` sets it on
+every version, 4.3.3 included, so the reproduction above saw the step because
+it ran without `--as-cran`. The function the step calls for each vignette,
+`tools:::.run_one_vignette()`, fails on both files when called directly on
+R 4.3.3 and completes on the other nine, which is exactly the guard's verdict.
 
 *Retires when:* a test fails when a vignette relies on the global
 `opts_chunk$set()` form instead of per-chunk `purl = FALSE`, demonstrated RED
