@@ -174,7 +174,13 @@ test_that("apply_salmon_dictionary handles dictionary columns not in data", {
   expect_equal(nrow(result), 3)
 })
 
-test_that("apply_salmon_dictionary handles type coercion failures (strict)", {
+# Backlog #55 (hub item B-55). The two coercion tests below used to assert that
+# `strict = TRUE` returned NA for "not-a-number" and that `strict = FALSE` did
+# the same, with a comment saying the error handler "only triggers on actual
+# errors, not warnings". That was the defect, pinned: `as.integer()` reports a
+# value it cannot convert by warning and returning NA, so the documented abort
+# never ran. They now assert the documented contract for each mode.
+test_that("apply_salmon_dictionary aborts on a coercion failure R only warns about (strict)", {
   df <- data.frame(count = c("100", "not-a-number", "200"))
   dict <- infer_dictionary(df)
   dict <- fill_measurement_components(dict)
@@ -182,20 +188,28 @@ test_that("apply_salmon_dictionary handles type coercion failures (strict)", {
 
   validate_dictionary(dict)
 
-  # Strict mode: as.integer() produces NAs and warnings, not errors
-  # The function will succeed but produce NAs
-  result <- suppressWarnings(
-    apply_salmon_dictionary(df, dict, strict = TRUE)
-  )
+  # as.integer("not-a-number") warns and returns NA; it does not error.
+  expect_warning(as.integer("not-a-number"), "NAs introduced by coercion")
 
-  # Should produce result with NAs
-  expect_equal(nrow(result), 3)
-  # Check that NAs were introduced
-  result_col <- result[[dict$column_label[dict$column_name == "count"]]]
-  expect_true(any(is.na(result_col)))
+  err <- expect_error(
+    apply_salmon_dictionary(df, dict, strict = TRUE),
+    "Failed to coerce column"
+  )
+  # The report names the value to fix, not only R's generic warning text.
+  expect_match(conditionMessage(err), "not-a-number", fixed = TRUE)
+
+  # The same holds for `number`, whose failures are warnings too.
+  df_num <- data.frame(weight = c("1.5", "1,5"))
+  dict_num <- fill_measurement_components(infer_dictionary(df_num))
+  dict_num$value_type[dict_num$column_name == "weight"] <- "number"
+  expect_error(
+    apply_salmon_dictionary(df_num, dict_num, strict = TRUE),
+    "1,5",
+    fixed = TRUE
+  )
 })
 
-test_that("apply_salmon_dictionary handles type coercion failures (non-strict)", {
+test_that("apply_salmon_dictionary warns and keeps a failed column as character (non-strict)", {
   df <- data.frame(count = c("100", "not-a-number", "200"))
   dict <- infer_dictionary(df)
   dict <- fill_measurement_components(dict)
@@ -203,21 +217,42 @@ test_that("apply_salmon_dictionary handles type coercion failures (non-strict)",
 
   validate_dictionary(dict)
 
-  # Non-strict mode: as.integer() produces NAs with warnings
-  # The function's error handler only triggers on actual errors, not warnings
-  # So this will produce NAs but the function will succeed
-  result <- suppressWarnings(
-    apply_salmon_dictionary(df, dict, strict = FALSE)
+  expect_warning(
+    result <- apply_salmon_dictionary(df, dict, strict = FALSE),
+    "keeping as character"
   )
 
-  # Should still produce result (with NAs)
+  # The documented non-strict behaviour: the column is kept as character, so
+  # the value that did not convert survives instead of becoming NA.
   expect_equal(nrow(result), 3)
   result_col <- result[[dict$column_label[dict$column_name == "count"]]]
-  expect_true(any(is.na(result_col)))
+  expect_type(result_col, "character")
+  expect_identical(result_col, c("100", "not-a-number", "200"))
 })
 
-test_that("apply_salmon_dictionary handles codes with mismatched values", {
-  df <- data.frame(species = c("Coho", "Chinook", "Unknown"))
+test_that("apply_salmon_dictionary does not count missing or blank values as coercion failures", {
+  df <- data.frame(count = c("1", NA, "", "2"))
+  dict <- fill_measurement_components(infer_dictionary(df))
+  dict$value_type[dict$column_name == "count"] <- "integer"
+
+  expect_no_warning(result <- apply_salmon_dictionary(df, dict, strict = TRUE))
+  result_col <- result[[dict$column_label[dict$column_name == "count"]]]
+  expect_identical(result_col, c(1L, NA, NA, 2L))
+})
+
+test_that("apply_salmon_dictionary still aborts on a coercion that errors (strict)", {
+  df <- data.frame(day = c("not a date", "2024-01-01"))
+  dict <- fill_measurement_components(infer_dictionary(df))
+  dict$value_type[dict$column_name == "day"] <- "date"
+
+  expect_error(
+    apply_salmon_dictionary(df, dict, strict = TRUE),
+    "Failed to coerce column"
+  )
+})
+
+test_that("apply_salmon_dictionary reports values not in the code list", {
+  df <- data.frame(species = c("Coho", "Chinook", "Unknown", NA, ""))
 
   # The ids must match the `codes` fixture below. This test previously relied on
   # infer_dictionary()'s defaults ("dataset-1"/"table_1") not matching the codes
@@ -237,10 +272,36 @@ test_that("apply_salmon_dictionary handles codes with mismatched values", {
     term_type = NA_character_
   )
 
-  result <- apply_salmon_dictionary(df, dict, codes = codes)
+  # Backlog #55: "Unknown" used to become NA with no report at all. It is
+  # reported under both values of `strict`, because `strict` governs type
+  # coercion; only the value that is present and unlisted is named.
+  for (strict in c(TRUE, FALSE)) {
+    warnings <- character()
+    result <- withCallingHandlers(
+      apply_salmon_dictionary(df, dict, codes = codes, strict = strict),
+      warning = function(w) {
+        warnings <<- c(warnings, conditionMessage(w))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_length(warnings, 1L)
+    expect_match(warnings, "not in its code list", fixed = TRUE)
+    expect_match(warnings, "\"Unknown\"", fixed = TRUE)
+    expect_no_match(warnings, "\"\"", fixed = TRUE)
 
-  # Should handle gracefully (Unknown becomes NA in factor)
-  expect_s3_class(result[[dict$column_label[1]]], "factor")
+    # The conversion itself is unchanged: still a factor, Unknown still NA.
+    result_col <- result[[dict$column_label[1]]]
+    expect_s3_class(result_col, "factor")
+    expect_identical(
+      as.character(result_col),
+      c("Coho Salmon", "Chinook Salmon", NA, NA, NA)
+    )
+  }
+
+  # A column whose every present value is listed raises no report.
+  expect_no_warning(
+    apply_salmon_dictionary(df[1:2, , drop = FALSE], dict, codes = codes)
+  )
 })
 
 test_that("apply_salmon_dictionary handles missing required columns", {

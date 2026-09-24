@@ -527,6 +527,18 @@ same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is to be filed.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
+`apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
+makes its codes step warn about each value missing from a column's code list,
+where it had turned them into `NA` silently, and makes `strict = TRUE` abort on a
+coercion that R only warns about. The coercion half owes metasalmonpy nothing,
+because its `_coerce_series()` already raises there. The codes half is owed as a
+port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`, together with a Python defect found while
+measuring it that is not part of the port. **Why not in the same stream:** a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is to be
+filed.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
 column's codes share its role.** Hub item **B-151** makes the call
 `review_semantics()` prints for a measurement column's own `entity_iri` or
@@ -640,6 +652,24 @@ POST at `:426`), and both of its LLM paths call it — semantic review through
 anything about what the two implementations put *in* that request. They do not
 send the same one, and the B-3 workpad records the difference, with its
 evidence, as a candidate for a parity item rather than settling it here.
+
+**`B-164` owes metasalmonpy nothing, because the shape it guards against has
+nowhere to live there.** The R guard fails when a vignette relies on a global
+`knitr::opts_chunk$set()` to keep display-only code out of the script
+`R CMD check` tangles and runs. That needs two things: a global switch that
+stops code running, and a later step that runs the code without it. metasalmonpy
+has neither. Measured 2026-09-24 against its `main` at `3f8349a`: its ten
+`.qmd` pages (`index.qmd`, `getting-started.qmd` and eight under `guides/`)
+carry their code in plain fenced blocks such as ```` ```python ````, which
+Quarto shows and never runs; the only brace-delimited cell is a
+```` ```{mermaid} ```` diagram in `index.qmd`; no page and no `_quarto.yml` sets
+`execute` or `eval`; and nothing extracts guide code to run it, since the
+documentation workflow runs `quartodoc build` and `quarto render`, and
+`pyproject.toml` configures no doctest. **What this does not say** is that the
+Python guides' code works. Nothing runs it at all. Whether documentation code
+should run is the question slice 6 of the
+[S11 card](sequences/s11-vignettes-and-walkthroughs.md) raises for the R
+walkthrough, and it is a different question from this one.
 
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
