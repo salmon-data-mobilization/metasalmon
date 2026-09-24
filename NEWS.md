@@ -403,6 +403,45 @@ metasalmon (development version)
   still counts the row it has recorded since #28, and the same fix is owed
   there.
 
+* **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
+  refuses** (hub item B-174). Its contract is that when the last row it prints
+  is gone, `validate_salmon_datapackage(require_iris = TRUE)` passes, and in
+  0.5.0 that failed for the most ordinary unfinished package: one whose
+  semantic review was left partly undecided. A `REVIEW:`-prefixed IRI is not
+  blank and is not one of the three `MISSING ...:` / `REVIEW REQUIRED:`
+  placeholder spellings, so the scan's test for an unfilled value passed over
+  it and `review_metadata()` printed "No outstanding metadata." for a package
+  strict validation then refused. Every IRI field strict validation sweeps was
+  affected -- including the four measurement IRIs and `observation_unit_iri`,
+  which the scan did visit, with a test that could not see the marker.
+
+  A marker is now listed wherever strict validation refuses one, with the
+  `set_sdp_*()` call that replaces it: in any schema-declared `*_iri` field of
+  `tables.csv`, and in the six semantic IRI fields of `column_dictionary.csv`.
+  The six are read from the list `validate_dictionary()` sweeps, not from the
+  schema. So when a schema selected through the options declares a seventh
+  dictionary `*_iri` field, a marker there is not listed, because strict
+  validation accepts it (raised in the Codex review of #144). Also still not
+  listed:
+
+  - a marker in `codes.csv` or `dataset.csv`, because strict validation does
+    not refuse one there yet (hub item B-177);
+  - a marker in a `*_iri` column the schema does not declare, which has no
+    setter to print (hub item B-185).
+
+  The fix is a second test for the marker rather than a wider placeholder
+  test, because other callers depend on the placeholder test's narrowness. It
+  is pinned by marking each declared `*_iri` field of all four metadata files
+  in turn, on a package that otherwise passes, and asserting that the scan
+  lists it exactly when strict validation refuses it. A second test does the
+  same for a configured schema's extra dictionary field.
+
+  metasalmonpy fixed the same defect in pull request #28, and its scan also
+  lists a marker in `codes.csv`, the one file where the two differ. Brett ruled
+  on 2026-09-23 that strict validation refuses a marker there, so R is the side
+  that moves, when B-177 lands. Until then the difference is tracked as a port
+  owed in `knowledge/parity-deviations.md`, not as a register row.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
