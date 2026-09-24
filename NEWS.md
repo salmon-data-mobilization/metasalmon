@@ -403,6 +403,36 @@ metasalmon (development version)
   still counts the row it has recorded since #28, and the same fix is owed
   there.
 
+* **The call `review_semantics()` prints for a measurement column's own slot
+  now runs when the column has a code list** (hub item B-151). A measurement
+  column's `entity_iri` and `constraint_iri` targets share their roles with the
+  `codes.csv` targets of its codes, and an omitted `code_value` matches every
+  code. So the column's own slot printed
+  `accept_suggestion(review, "spawner_count", "entity", rank = 1, table = "spawners")`,
+  which matched that slot and every code's slot and aborted with *"That column
+  and role match more than one review slot"*; its `reject_suggestion()` line did
+  the same. Reproduced through `create_sdp(semantic_code_scope = "all")` with a
+  two-code sentinel list on a count column: 6 of the 33 printed calls aborted.
+  The abort's own list of arguments to add was no way out either, because the
+  option it offered for the column's slot was the `table =` the call already
+  carried.
+
+  A blank `code_value` now means "no code value":
+  `accept_suggestion(..., code_value = "")`, or `code_value = NA`, selects the
+  column's own slot. `review_semantics()` prints `code_value = ""` whenever
+  `table` alone would not select one slot, and the refusal offers it too, so
+  every option it lists now reaches the slot it names. An omitted `code_value`
+  still matches every code, as before, so no call an earlier version printed
+  resolves to a different slot now. Reading the omission as "no code value"
+  instead, the other way to fix this, would have changed what every code
+  slot's call printed without a `code_value` resolves to.
+
+  **Mirror:** metasalmonpy already read `code_value=""` as "no code value",
+  where R aborted with *"No review slot matches"*, so that half moves R to the
+  Python behaviour. metasalmonpy prints the same ambiguous call and pins it
+  as a known limitation shared with R. The rest of this fix, and removing that
+  pin, is owed there as a port.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

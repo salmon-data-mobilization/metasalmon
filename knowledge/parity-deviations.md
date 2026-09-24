@@ -460,6 +460,38 @@ this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is to be filed.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the printed call for a column's own slot says `code_value = ""` when the
+column's codes share its role.** A measurement column's `entity_iri` and
+`constraint_iri` targets share their roles with its codes' `codes.csv` targets,
+so `(column, role, table)` does not select the column's own slot. Both
+implementations printed that call and nothing more, and it aborts as ambiguous
+(hub item **B-151**). R now prints `code_value = ""` for that slot, reads a
+blank `code_value` as "no code value", and offers that spelling in the
+ambiguity refusal.
+
+**One of those three was already Python's behaviour, and R moved to it.**
+`_match_slot_rows()` compares through `scalar_text()`, which maps a missing
+value to `""`. So on metasalmonpy `main` `3f8349a`,
+`accept_suggestion(review, col, role, code_value="")` already selected the
+no-code slot, and so did `pd.NA` and `NaN`. R's `!is.na()` guard made the same
+call abort with *"No review slot matches"*. No register row recorded that
+difference, so none is amended; the change closes it.
+
+The port owes the other two. `_review_call_args()` drops its `if code_value:`
+guard so the blank value is printed, and `_resolve_slot()` offers
+`code_value=""` for a row with no code value that shares its table with code
+rows. The pin to delete is
+`test_a_column_level_slot_sharing_a_role_with_its_codes_is_still_ambiguous`,
+which #28 added with this defect as its retirement condition. The tests to
+mirror are the ones in `tests/testthat/test-review-console.R` that build a
+measurement column with a code list, including the one through `create_sdp()`.
+The printed spelling is `""` on both sides, though R also accepts `NA`. Python's
+`None` is already the unconstrained default, and `""` is the one literal both
+languages print alike. So it is owed as a port, not a register row. It did not
+land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is to be filed.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

@@ -526,6 +526,19 @@ metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is to be filed.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the printed call for a column's own slot says `code_value = ""` when the
+column's codes share its role.** Hub item **B-151** makes the call
+`review_semantics()` prints for a measurement column's own `entity_iri` or
+`constraint_iri` slot runnable when the column has a code list, and makes the
+ambiguity refusal offer an option that reaches that slot. It is owed in
+metasalmonpy as a port, not a register row. metasalmonpy prints the same
+ambiguous call and pins it as a limitation shared with R, and its matcher
+already reads the blank value the way R now does. The port is specified under
+*What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in
+the same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is to be filed.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

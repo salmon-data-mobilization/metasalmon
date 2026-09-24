@@ -509,6 +509,15 @@ review_semantics <- function(x,
 # "entity", ...)` for the table slot, and a spurious `table = "spawners"` on an
 # unrelated dictionary slot that the phantom NA row had made look ambiguous.
 # `column = NULL` selects the column-less (table-scope) slots deliberately.
+#
+# `code_value` has three states, and the third is the one hub queue B-151 was
+# missing. `NULL` leaves it unconstrained; a value selects that code's slot; and
+# a BLANK value (`""`, or `NA`, which `.ms_scalar_text()` reads as `""`)
+# selects the slots with no code value at all. Without the
+# third state a column-level slot could not be told apart from its own codes'
+# slots when they share a role -- a measurement column's `entity_iri` and its
+# codes' `entity` targets do -- because omitting `code_value` matched every
+# code as well as the column.
 .ms_review_match_slot_rows <- function(review, column, role, table = NULL, code_value = NULL) {
   keep <- rep(TRUE, nrow(review))
   has_column <- !is.na(review$column_name) & nzchar(trimws(review$column_name))
@@ -522,7 +531,13 @@ review_semantics <- function(x,
     keep <- keep & !is.na(review$table_id) & review$table_id == table
   }
   if (!is.null(code_value)) {
-    keep <- keep & !is.na(review$code_value) & review$code_value == code_value
+    code_value <- .ms_scalar_text(code_value)
+    has_code <- !is.na(review$code_value) & nzchar(trimws(review$code_value))
+    keep <- if (nzchar(code_value)) {
+      keep & has_code & review$code_value == code_value
+    } else {
+      keep & !has_code
+    }
   }
   review[keep, , drop = FALSE]
 }
@@ -533,6 +548,11 @@ review_semantics <- function(x,
 # prints the short call the execplan's target experience shows. A column-less
 # slot has no positional spelling at all, so it prints named arguments and
 # `table` is mandatory rather than a disambiguator.
+#
+# When `table` is not enough, `code_value` is added even for a row that has no
+# code value, as `code_value = ""`: that is the only spelling that excludes the
+# code slots sharing this slot's column and role, because an omitted
+# `code_value` matches them all (hub queue B-151).
 .ms_review_call_args <- function(review, slot_id) {
   row <- review[review$slot_id == slot_id, , drop = FALSE][1, , drop = FALSE]
   column <- .ms_scalar_text(row$column_name)
@@ -554,10 +574,7 @@ review_semantics <- function(x,
     }
   }
   if (length(resolved(extra)) > 1L) {
-    code_value <- .ms_scalar_text(row$code_value)
-    if (nzchar(code_value)) {
-      extra$code_value <- code_value
-    }
+    extra$code_value <- .ms_scalar_text(row$code_value)
   }
   c(args, extra)
 }
@@ -805,9 +822,20 @@ print.ms_semantic_review <- function(x, ...) {
 
   slots <- unique(rows$slot_id)
   if (length(slots) > 1L) {
+    # Every option offered here has to select one slot when added. A slot with
+    # no code value that shares its table with code slots is selected only by
+    # `code_value = ""`; offering bare `table = ` for it repeated an argument
+    # that could not settle anything, so the column's own slot was unreachable
+    # by following this message (hub queue B-151).
+    has_code <- !is.na(rows$code_value) & nzchar(trimws(rows$code_value))
+    needs_blank <- !has_code & rows$table_id %in% rows$table_id[has_code]
     ambiguous <- unique(paste0(
       "table = \"", rows$table_id, "\"",
-      ifelse(is.na(rows$code_value) | !nzchar(rows$code_value), "", paste0(", code_value = \"", rows$code_value, "\""))
+      ifelse(
+        has_code,
+        paste0(", code_value = \"", rows$code_value, "\""),
+        ifelse(needs_blank, ", code_value = \"\"", "")
+      )
     ))
     cli::cli_abort(
       c(
@@ -842,7 +870,11 @@ print.ms_semantic_review <- function(x, ...) {
 #' @param rank Rank of the candidate to accept, as printed in the shortlist.
 #' @param table Table identifier; needed only when the column name appears in
 #'   more than one table.
-#' @param code_value Code value; needed only for code-level slots.
+#' @param code_value Code value; needed only for code-level slots. Pass `""`
+#'   (or `NA`) to select a column's own slot when codes of that column have
+#'   slots with the same role, as a measurement column's codes do: leaving
+#'   `code_value` out matches those code slots too. `review_semantics()` prints
+#'   it whenever it is needed.
 #' @param iri Optional IRI to accept instead of a shortlisted candidate -- for
 #'   the case where the right term exists but retrieval did not surface it.
 #' @param reason Optional free-text reason recorded with a rejection.
