@@ -627,7 +627,8 @@ targets. The word
 split must use an explicit ASCII punctuation set, as R's does, rather than a
 class whose meaning moves with the locale. It is owed as a port, not a register
 row: once it lands the two implementations behave alike again. It did not land
-in the same stream because a hub claim covers one branch in one repository.
+in the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is **B-240**.
 
 **One thing the port has to know, because it will otherwise meet it as a failing
 control.** metasalmonpy's `_values_look_yearish()` never finds a float column
