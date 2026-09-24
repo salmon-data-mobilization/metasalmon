@@ -53,21 +53,63 @@
 # model of it can go. That cannot happen while known_offenders below has an
 # entry, because the real step fails on every one.
 
-# Vignettes that break the rule today, each named with the queue item that fixes
-# it. This is a record and not an exemption: a listed vignette that stops
-# breaking the rule FAILS the test until its entry is deleted, so no entry can
-# outlive its defect, and a vignette that breaks the rule without being listed
-# fails too -- the part backlog #32 lacked. MAINTENANCE: delete an entry in the
-# change that fixes its vignette. Add one only for a defect that has its own
-# queue item, never to let a new vignette through; the fix is one chunk option
-# per chunk.
+# Vignettes that break the rule today. Each is named with the queue item that
+# fixes it and pinned to the violation it had when it was recorded: the first
+# statement of every chunk that tangles as live code, and the count of live
+# expressions. An entry covers exactly that violation. A chunk that turns live in
+# a listed vignette fails the test just as it would in any other vignette, and
+# so does any other change to what the entry pins. A list of file names alone
+# would let such chunks through, which the Codex review of #157 caught. A listed
+# vignette that stops breaking the rule fails too, until its entry is deleted,
+# so no entry outlives its defect. A vignette that breaks the rule without being
+# listed fails as well, which is the check backlog #32 lacked.
+#
+# MAINTENANCE: delete an entry in the change that fixes its vignette, and trim
+# it in a change that fixes some of its chunks. Add an entry only for a defect
+# that has its own queue item, never to let a new vignette or a new chunk
+# through. The fix is one chunk option per chunk.
 #
 # *Retires when:* hub item B-133 declares purl = FALSE in these two vignettes'
-# display-only chunks and deletes both entries. The list is then empty, and
-# stays empty.
-known_offenders <- c(
-  "migrating-to-sdp-0-3-0.Rmd" = "B-133",
-  "tidy-data-for-sdp.Rmd" = "B-133"
+# display-only chunks and deletes both entries, their pinned violations with
+# them. The list is then empty, and stays empty.
+known_offenders <- list(
+  "migrating-to-sdp-0-3-0.Rmd" = list(
+    item = "B-133",
+    expressions = 50L,
+    chunks = c(
+      "tables <- readr::read_csv(\"weir-counts-sdp/metadata/tables.csv\", na = \"\")",
+      "tables$protocol_iri[tables$table_id == \"escapement\"] <-",
+      "readr::write_csv(tables, \"weir-counts-sdp/metadata/tables.csv\", na = \"\")",
+      "escapement <- readr::read_csv(\"weir-counts-sdp/data/escapement.csv\", na = \"\")",
+      "nuseds_enumeration_method_crosswalk()",
+      "sources_for_role(\"statistical_modifier\")",
+      "library(metasalmon)",
+      "library(metasalmon)",
+      "report <- migrate_sdp_methods(legacy_path, dry_run = TRUE)",
+      "report$tables",
+      "report$registry[c(\"method_label\", \"method_version\", \"citation\")]",
+      "report <- migrate_sdp_methods(legacy_path)",
+      "tables <- readr::read_csv(",
+      "names(readr::read_csv(",
+      "file.exists(file.path(legacy_path, \"metadata\", \"methods.csv\"))",
+      "validate_salmon_datapackage(legacy_path, require_iris = FALSE)",
+      "reviewed_dict <- read_salmon_datapackage(legacy_path)$dictionary",
+      "report <- migrate_sdp_methods(\"weir-counts-sdp\", dry_run = TRUE)"
+    )
+  ),
+  "tidy-data-for-sdp.Rmd" = list(
+    item = "B-133",
+    expressions = 18L,
+    chunks = c(
+      "tables <- readr::read_csv(\"escapement-sdp/metadata/tables.csv\", na = \"\")",
+      "validate_salmon_datapackage(\"escapement-sdp\", require_iris = FALSE)",
+      "wide <- tibble::tibble(",
+      "c(\"stream_id\", \"count_1998\", \"count_1999\", \"count_2000\")",
+      "long <- tidyr::pivot_longer(",
+      "pkg_path <- create_sdp(",
+      "wide_two <- tibble::tibble("
+    )
+  )
 )
 
 # The metasalmon source tree whose vignettes/ this run can read, or NA. Under
@@ -289,7 +331,45 @@ describe_offender <- function(name, verdict) {
   )
 }
 
-test_that("the guard flags a vignette relying on a global chunk option, and passes each per-chunk fix", {
+# How a known offender's live chunks differ from the violation its entry pins,
+# as one message, or character(0) when they match. Chunks are matched by first
+# statement, one recorded chunk per live one, so a repeated statement counts
+# twice and a reordering changes nothing.
+pinned_drift <- function(name, entry, verdict) {
+  counts <- vapply(verdict$live, function(chunk) chunk$count, integer(1))
+  expressions <- if (anyNA(counts)) NA_integer_ else sum(counts)
+  unmatched <- entry$chunks
+  added <- character()
+  for (chunk in verdict$live) {
+    hit <- match(trimws(chunk$first), unmatched)
+    if (is.na(hit)) {
+      added <- c(added, sprintf(
+        "    line %s: %s", if (is.na(chunk$line)) "?" else chunk$line, chunk$first
+      ))
+    } else {
+      unmatched <- unmatched[-hit]
+    }
+  }
+  if (length(added) == 0L && length(unmatched) == 0L &&
+      identical(expressions, entry$expressions)) {
+    return(character())
+  }
+  paste0(
+    "vignettes/", name, " is listed in known_offenders against ", entry$item,
+    ", but its violation is no longer the one the entry pins:",
+    if (length(added)) paste0("\n  now live, and not in the entry:\n", paste(added, collapse = "\n")),
+    if (length(unmatched)) {
+      paste0("\n  in the entry, and no longer live:\n", paste0("    ", unmatched, collapse = "\n"))
+    },
+    if (!identical(expressions, entry$expressions)) {
+      sprintf("\n  live expressions: %s pinned, %s now", entry$expressions, expressions)
+    },
+    "\n  Declare purl = FALSE in the own options of each chunk that is newly live.",
+    " Where pinned chunks were fixed, trim the entry in the same change."
+  )
+}
+
+test_that("the guard flags a vignette relying on a global chunk option, passes each per-chunk fix, and holds a known offender to its pin", {
   skip_if_not_installed("knitr")
 
   vignette <- function(setup, chunk) {
@@ -385,12 +465,32 @@ test_that("the guard flags a vignette relying on a global chunk option, and pass
 
   dir <- file.path(withr::local_tempdir(), "vignettes")
   dir.create(dir)
+  doc <- file.path(dir, "fixture.Rmd")
   for (case in cases) {
-    doc <- file.path(dir, "fixture.Rmd")
     writeLines(vignette(case[[2]], case[[3]]), doc)
     verdict <- vignette_verdict(doc)
     expect_identical(verdict$offends, case[[4]], info = case[[1]])
   }
+
+  # The pin behind known_offenders. An entry that matches passes. One more live
+  # chunk, one fewer, or one more live statement each fails. A name-only list
+  # passed all three, which is what the Codex review of #157 found.
+  writeLines(vignette(display_setup, c(shown("r", "a <- 1"), "", shown("r", c("b <- 2", "d <- 3")))), doc)
+  verdict <- vignette_verdict(doc)
+  pin <- list(item = "a fixture", expressions = 3L, chunks = c("b <- 2", "a <- 1"))
+  expect_identical(pinned_drift("fixture.Rmd", pin, verdict), character())
+  expect_match(
+    pinned_drift("fixture.Rmd", utils::modifyList(pin, list(chunks = "a <- 1")), verdict),
+    "now live, and not in the entry:\n    line 20: b <- 2", fixed = TRUE
+  )
+  expect_match(
+    pinned_drift("fixture.Rmd", utils::modifyList(pin, list(chunks = c(pin$chunks, "e <- 4"))), verdict),
+    "in the entry, and no longer live:\n    e <- 4", fixed = TRUE
+  )
+  expect_match(
+    pinned_drift("fixture.Rmd", utils::modifyList(pin, list(expressions = 2L)), verdict),
+    "live expressions: 2 pinned, 3 now", fixed = TRUE
+  )
 })
 
 test_that("no vignette relies on a global knitr::opts_chunk$set() to keep display-only code out of R CMD check's tangle", {
@@ -433,16 +533,18 @@ test_that("no vignette relies on a global knitr::opts_chunk$set() to keep displa
       next
     }
     flagged <- c(flagged, name)
-    if (!name %in% names(known_offenders)) {
-      problems <- c(problems, describe_offender(name, verdict))
-    }
+    entry <- known_offenders[[name]]
+    problems <- c(
+      problems,
+      if (is.null(entry)) describe_offender(name, verdict) else pinned_drift(name, entry, verdict)
+    )
   }
   for (name in setdiff(names(known_offenders), flagged)) {
     problems <- c(problems, paste0(
       "vignettes/", name, " is listed in known_offenders against ",
-      known_offenders[[name]], ", but no longer relies on a global chunk option",
-      " to keep code out of the tangle. Its fix has landed: delete the entry in",
-      " the same change."
+      known_offenders[[name]]$item, ", but no longer relies on a global chunk",
+      " option to keep code out of the tangle. Its fix has landed: delete the",
+      " entry in the same change."
     ))
   }
 

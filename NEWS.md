@@ -508,9 +508,10 @@ metasalmon (development version)
   `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7 display
   chunks tangle as live code and fail `R CMD check` at the first statement on
   R 4.3.3. The guard was shown failing on both before anything else changed.
-  Both stay as they are until hub item B-133 fixes them, and the guard lists
-  them as known offenders, a list that fails the test as soon as an entry stops
-  offending.
+  Both stay as they are until hub item B-133 fixes them. Meanwhile the guard
+  lists them as known offenders, each pinned to the chunks that offend today.
+  A new live chunk in either one still fails, and so does an entry that has
+  stopped offending.
 
   A test is needed because the check step that catches this stopped running by
   default in R 4.4.0, when `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so
