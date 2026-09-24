@@ -6360,9 +6360,11 @@ metasalmonpy's removes a leading `REVIEW:` compared upper-cased
 (`review_console.py:140`), so a space before the colon is stripped by one and
 not the other. That is why each item's condition names the spellings its own
 package's strip removes rather than a shared list. `Q-63` owns which spellings
-both should recognise, so the pair cannot close the difference by accident or
-leave it unowned; `Q-18` holds the neighbouring question of the marker's
-trailing space.
+every detector in both packages should recognise, so the pair cannot close the
+difference by accident or leave it unowned. Each package is itself mixed as well:
+R's four `^REVIEW:` detectors and both packages' literal-substring output guards
+disagree with their own strips, and Q-63 lists every site. `Q-18` holds the
+neighbouring question of the marker's trailing space.
 
 **`B-221` and `B-222`: the `term_type` a hand-picked IRI gets.** With an
 `owl_class` candidate at rank 2, `accept_suggestion(iri = <that IRI>)` writes

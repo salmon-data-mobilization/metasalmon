@@ -388,18 +388,26 @@ default.
 
 ### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
 **Unblocks:** closing a reader-side difference that B-219 and B-220 would otherwise
-leave in place. R strips `^\s*REVIEW\s*:\s*` ignoring case
-(`R/package-helpers.R:3787` on `b456201`), so `REVIEW :x` and ` REVIEW:x` are
-recognised as marked. metasalmonpy strips a leading `REVIEW:` compared
-upper-cased (`review_console.py:140` on `3f8349a`), so they are not, and the
-value reads as an IRI instead. Neither behaviour was chosen, and neither parity
-register records the difference. Q18 is about the bytes the writers emit after
-the colon; this is about what the readers accept.
-**Recommendation:** both recognise R's wider set. A marker is most often
-hand-edited in a spreadsheet, where a stray space is likely, and a marker a
-reader misses reaches strict validation as a malformed IRI rather than as an
-unreviewed slot. The mirror is not automatically the follower, so this is a
-recommendation, not a default.
+leave in place. It is not only a difference between the packages: each one is
+mixed. In R, `.ms_is_review_iri()` and `.ms_strip_review_iri()`
+(`R/package-helpers.R:3777-3789` on `43d7fb3`) accept `^\s*REVIEW\s*:` ignoring
+case, four detectors test `^REVIEW:` (`package-helpers.R:1754`,
+`sdp-extension-helpers.R:37`, `sdp-methods.R:272`,
+`semantic-bundle-validators.R:696`), and the EML and KNB output guards test the
+literal substring `REVIEW:` (`eml-export.R:2787`, `knb-publication.R:834`). In
+metasalmonpy (`9661633`), `dictionary.py:622` and `package_io.py:2441` accept the
+wide form, `package_io.py:219` and `:2528` and `review_console.py:140` and `:146`
+test a leading `REVIEW:` upper-cased, and `eml.py:3472` and
+`knb_publication.py:1043` test the literal substring. So `REVIEW :x` is stripped
+on one path and passed as an IRI on another, in both packages. Neither behaviour
+was chosen, and neither parity register records it. Q18 is about the bytes the
+writers emit after the colon; this is about what the readers accept.
+**Recommendation:** every detector in both packages recognises the wider set,
+through one predicate per package. A marker is most often hand-edited in a
+spreadsheet, where a stray space is likely, and a marker a reader misses reaches
+strict validation as a malformed IRI rather than as an unreviewed slot. The
+mirror is not automatically the follower, so this is a recommendation, not a
+default.
 **Owner:** the queue item `Q-63`.
 
 ## Notes on framing
