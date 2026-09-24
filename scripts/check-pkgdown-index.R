@@ -96,6 +96,14 @@ if (length(ns$exportPatterns) > 0L) {
     "loaded, and this check only reads files."
   )
 }
+s4_exports <- c(ns$exportClasses, ns$exportMethods, ns$exportClassPatterns)
+if (length(s4_exports) > 0L) {
+  cannot_run(
+    "NAMESPACE exports S4 classes or methods (",
+    paste(s4_exports, collapse = ", "), "). This check maps only export() ",
+    "names to topics, so it cannot say those are indexed."
+  )
+}
 exports <- unique(ns$exports)
 if (length(exports) == 0L) {
   cannot_run("NAMESPACE exports nothing, so a pass would have checked nothing.")
