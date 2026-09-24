@@ -1,7 +1,7 @@
 id: Q-39
 kind: question
 title: What does a verified entry on a commons card mean, and may an agent ever write one
-state: needs_brett
+state: done
 claimable: false
 repo: salmon-knowledge-commons
 venue: claude-science
@@ -9,4 +9,4 @@ stream: S6
 blocked_by: []
 legacy: ''
 evidence: knowledge/questions.md
-retires_when: 'Brett rules what verification requires and who may assert it. Twenty-six cards carry 250 sources and 623 citations and not one has ever been verified, in any commit on any branch. The rule that the writer cannot be the checker is stated but unenforceable, and whether an agent re-reading a source counts as independent checking is genuinely undecided in the documentation rather than merely unwritten.'
+retires_when: 'Brett rules what verification requires and who may assert it. Twenty-six cards carry 250 sources and 623 citations and not one has ever been verified, in any commit on any branch. The rule that the writer cannot be the checker is stated but unenforceable, and whether an agent re-reading a source counts as independent checking is genuinely undecided in the documentation rather than merely unwritten. RULED 2026-09-24 BY BRETT, in chat: "I approve Q-39 but remove the requirement that checks for agent co-authorship." So the scheme in knowledge/plans/2026-09-14-commons-verification-scheme.md is adopted, except that check 2 no longer rejects a verified entry whose commit carries an agent co-author or agent session trailer. In the same conversation he chose where each card''s citation ledger lives: "Use in-card tables". The operative copy moves to the commons as VERIFICATION.md. Enforcement is B-123.'
