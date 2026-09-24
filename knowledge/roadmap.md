@@ -655,6 +655,24 @@ register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
 above requires.
 
+**`B-164` owes metasalmonpy nothing, because the shape it guards against has
+nowhere to live there.** The R guard fails when a vignette relies on a global
+`knitr::opts_chunk$set()` to keep display-only code out of the script
+`R CMD check` tangles and runs. That needs two things: a global switch that
+stops code running, and a later step that runs the code without it. metasalmonpy
+has neither. Measured 2026-09-24 against its `main` at `3f8349a`: its ten
+`.qmd` pages (`index.qmd`, `getting-started.qmd` and eight under `guides/`)
+carry their code in plain fenced blocks such as ```` ```python ````, which
+Quarto shows and never runs; the only brace-delimited cell is a
+```` ```{mermaid} ```` diagram in `index.qmd`; no page and no `_quarto.yml` sets
+`execute` or `eval`; and nothing extracts guide code to run it, since the
+documentation workflow runs `quartodoc build` and `quarto render`, and
+`pyproject.toml` configures no doctest. **What this does not say** is that the
+Python guides' code works. Nothing runs it at all. Whether documentation code
+should run is the question slice 6 of the
+[S11 card](sequences/s11-vignettes-and-walkthroughs.md) raises for the R
+walkthrough, and it is a different question from this one.
+
 ### salmon-domain-ontology (smn) — current **0.0.3**
 
 | Version | Date | One line |
