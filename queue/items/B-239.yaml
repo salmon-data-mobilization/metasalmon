@@ -1,0 +1,13 @@
+id: B-239
+kind: defect
+title: 'Once Q-61 rules what smn:Run denotes, the commons card for it still says the question is open, and no commons item owns the update'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-science
+stream: S9
+severity: P2
+blocked_by: [Q-61]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'concepts/run.md on the commons main branch records the meaning Brett ruled under Q-61, quoting the ruling with its date, the reasons the card has for that sense, and the definition wording B-237 will write into smn, marked as reused from a source or composed. The card''s citation ledger passes the ledger check and the validator reports no errors. B-237 cites the merged card by commit, which is why it waits on this item. Filed 2026-09-24 after the Codex review of metasalmon pull request 150: B-238 lets a term deferred for a ruling count as accounted for once its card states the question, and after the ruling nothing else in the commons would own changing the card.'

@@ -6703,6 +6703,16 @@ only in ontology annotations. One item cannot finish work in two repositories, a
 the Codex review of pull request 150 pointed out. B-238 owns the commons cards,
 and B-232 now waits on it and cites each card by commit.
 
+**`B-239`, and three follow-ups from the next review round.** B-238 counts a
+term deferred for a ruling once its card states the question, but after the
+ruling nothing in the commons would own changing the card. B-239 owns that for
+`smn:Run`, blocked on Q-61, and B-237 now waits on it and cites the updated card.
+B-237 also deletes `smn:Run`'s row from B-231's exemptions file when it adds the
+definition, so the guard is not left suppressing a term that has one. B-198 and
+B-199 re-vendor the schema from the exact tag B-236 creates, which is the ref the
+remote pin names, instead of from `f86d9b4`, so online and offline sessions
+cannot load different bundles.
+
 **Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
 temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
 which decides which schema their pattern check enforces. The roadmap's B-142
