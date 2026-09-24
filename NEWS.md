@@ -186,15 +186,15 @@ metasalmon (development version)
   not consulted, and the column is typed by the checks that follow exactly as
   it would be with values outside the year range. Words are split at spaces,
   punctuation and case changes, so `Water depth(mm)` and `adult/count` are
-  measurement names, while `Escapement (yr)` and `count/year` keep the year
-  shape deciding, as `count_year` does. Whole words rather than the broader
-  measurement hint, because that hint's two pattern tests match names that are
-  not measurements: `temp` inside `temporal_start`, and any parenthetical
-  containing a `g`, such as `Cohort (Aug)`. Measured over the 1,271 columns in
-  the CSVs of metasalmon, metasalmonpy, smn-data-pkg and salmon-domain-ontology,
-  the broader hint would have retyped 18 `temporal_start` / `temporal_end`
-  columns as measurements, all rightly temporal; the whole-word rule changes the
-  role of none of the 1,271.
+  measurement names, while the year word in `Escapement (yr)` and `count/year`
+  keeps them `temporal`, as `count_year` always was. Whole words rather than
+  the broader measurement hint, because that hint's two pattern tests match
+  names that are not measurements: `temp` inside `temporal_start`, and any
+  parenthetical containing a `g`, such as `Cohort (Aug)`. Measured over the
+  1,271 columns in the CSVs of metasalmon, metasalmonpy, smn-data-pkg and
+  salmon-domain-ontology, the broader hint would have retyped 18
+  `temporal_start` / `temporal_end` columns as measurements, all rightly
+  temporal; the whole-word rule changes the role of none of the 1,271.
 
   **Not covered, on purpose:** a name whose only measurement evidence is a
   substring (`ADULTCOUNT`) or a unit in parentheses (`Mass (kg)`) is still typed
