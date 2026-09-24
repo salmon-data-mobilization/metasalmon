@@ -1,8 +1,8 @@
 id: B-53
 kind: defect
 title: infer_column_role() classifies 4-digit measurement columns as temporal
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S2
