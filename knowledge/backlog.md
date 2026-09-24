@@ -5698,8 +5698,8 @@ pull request 35 (merged 2026-09-16 as `3f8349a`, 15:47Z) moved the entry,
 verbatim: the RED is run at a checkout of `1e9245c`, and the check is green on
 `main` from `3f8349a` on, where `git diff 67fb486 origin/main -- CHANGELOG.md`
 has a single hunk above the `## 0.5.0` heading at line 97, so the 0.5.0 section
-matches the bump merge. The `v0.5.0` tag goes on `67fb486` and is Brett's to
-make. **P3**, as B-200.
+matches the bump merge. The `v0.5.0` tag went on `67fb486` on 2026-09-24.
+**P3**, as B-200.
 
 **`B-202`: a port item can reach `done` while the register still says the port
 is owed, and it did five times in one day — the fifth on this pull request's own
