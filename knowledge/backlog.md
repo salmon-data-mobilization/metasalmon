@@ -6848,6 +6848,14 @@ sentence that the metasalmonpy `v0.5.0` tag was still Brett's to make was
 corrected, because the tag was made on 2026-09-24 on `67fb486`; the Codex review
 of metasalmon pull request 159 found it.
 
+**Q-54's ruling owns B-128's condition too.** Q-54 asked its temperature ruling
+only to say what becomes of B-128, whose condition assumes R's chat path keeps
+sending a temperature, so a ruling to send none could have retired Q-54 and
+unblocked B-128 with a condition the ruling contradicts. This change made
+recording that ruling update, replace or retire B-128, as Q-53's does for B-204
+and B-205, and added the same pointer to B-128. The Codex review of pull request
+150 on `462cf5f` found it.
+
 Every paragraph in this section records what a change made on 2026-09-23 or
 2026-09-24 did, and why. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.
