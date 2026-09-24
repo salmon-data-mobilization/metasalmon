@@ -543,7 +543,7 @@ call is the property this design is buying, because it means the client needs no
 GitHub permission beyond `git push` and cannot exceed the grant on an agent's
 behalf. That is worth more than the convenience of one fewer command to run.
 
-## The queue and the states
+## The queue and the states (history)
 
 Each item is one YAML document under `queue/items/`, carrying its
 `id`, `kind`, `title`, `state`, `claimable`, `repo`, `blocked_by`, its `legacy`
@@ -580,7 +580,7 @@ anything outside its test still needs him item by item. The concurrency cap in
 *Revisit* note names the evidence that would show the cap, rather than
 promotion, has become the constraint.
 
-## Claiming, and what to do when the push is rejected
+## Claiming, and what to do when the push is rejected (history)
 
 A claim is git's own compare-and-swap. A first claim is an **orphan** commit,
 with no parent, pushed to the item's ref under `claim_ref_prefix`
@@ -612,7 +612,7 @@ and exits 3 at the limit, so this is a rule the client applies and not one it
 merely states. An item that keeps being reclaimed is an item that keeps
 defeating agents: report it rather than taking it again.
 
-## Isolation
+## Isolation (history)
 
 **Both of those were repository-wide until 2026-09-16, and the correction to the
 second is the one worth reading, because the first correction missed it.**
@@ -644,7 +644,7 @@ twice, three lines apart, and removing one of them produced a paragraph assertin
 the other was sound. Ask of any such correction what *else* is in the same
 family, before writing the sentence that says the rest is fine.
 
-## Reporting
+## Reporting (history)
 
 **The path is per-item because a single shared path made every parallel
 hand-back destroy the one before it.** Until 2026-09-16 the report went to
@@ -671,7 +671,7 @@ condition outlives its cause and then conceals a failure it was never written
 for, so a workpad that adds one without saying what would retire it is
 incomplete.
 
-## Hand back
+## Hand back (history)
 
 **Whether it stays a draft depends on which list it falls into.** Until
 2026-09-16 this paragraph read "Draft, and draft only: never mark it ready for
@@ -708,7 +708,7 @@ client makes no GitHub API call at all and that property is worth more than the
 convenience of folding this into `hub done`; the client still prints the compare
 URL, which is the fallback when a PR cannot be opened.
 
-## Which pull requests need Brett
+## Which pull requests need Brett (history)
 
 The measurement behind it: on 2026-09-15 ten claimed items produced twelve pull
 requests in one night, all green, and every one of them waited on one person. The
@@ -724,7 +724,7 @@ a term IRI chosen as a by-product of a change whose stated subject was something
 else, justified by nothing except that strict validation then passed. That is
 the shape this section generalises.
 
-### Brett's, whatever the checks say
+### Brett's, whatever the checks say (history)
 
 5. **It adds, removes, or amends a parity-register row, or changes what the
    mirror contract claims.** The single fact that contract turns on has three
@@ -740,7 +740,7 @@ the shape this section generalises.
    until 2026-09-23, when that grant took the items meeting its test out of this
    class and left `claimable` in it.)*
 
-### Delegated: merges on green CI and a clean Codex review
+### Delegated: merges on green CI and a clean Codex review (history)
 
 - **CI green on the head being merged**, read off the checks rather than inferred
   from a local run. CI runs a different R than the container does, in both
@@ -760,7 +760,7 @@ the shape this section generalises.
   An agent that reports a conflicted pull request as "CI not run" has reported
   the symptom and left the cause.
 
-### What keeps this honest
+### What keeps this honest (history)
 
 **Delegation is recorded, not silent — and recorded is not the same as
 announced.** Every batch worked under this section leaves a record naming what
@@ -787,7 +787,7 @@ unsure whether something is a decision or a mechanic, ask — the uncertainty is
 itself the signal, and this section already says uncertainty resolves toward
 asking.
 
-## The standing authorization
+## The standing authorization (history)
 
 **The block quote is reproduced as Brett wrote it and is not edited when he
 widens it.** Its "never marked ready for review and never merged" was accurate
@@ -848,11 +848,6 @@ into two different boundaries, and nothing in either copy would say which one an
 agent is operating under. Section 9.5 now carries a summary that says this file
 governs, and the review that found the duplicate found it by reading the two
 against each other rather than by reading either alone.
-
-Both `git push` targets are checked by the client rather than left to an
-agent's reading, **and the check is a seatbelt rather than a wall.** Say what
-it does and does not do, because a guard described as prevention is a guard
-people stop watching:
 
 - The claim-ref target is printed before every push, and once the locks
   repository is configured an environment variable cannot redirect it. The
@@ -991,7 +986,7 @@ fires silently only works if some reader looks for its trigger, and on
 its own workpad. The three upkeep rows granted with the reinstatement give that
 kind of write a row, so it cannot trip the clause again.
 
-## Dispatch briefs restate nothing from this file
+## Dispatch briefs restate nothing from this file (history)
 
 **This was learned the expensive way on the day the rules changed.** Until
 2026-09-16 the brief lived in a scratch directory outside the repository and
@@ -1010,7 +1005,7 @@ comment that restates a permission, a prohibition, a path, a constant or a branc
 pattern from here is **the stale copy**, as the front matter's `authority` key
 already says of any document. If a brief needs a rule, it links to it.
 
-## What you must never do
+## What you must never do (history)
 
 - Never merge a pull request **except** in a member repository whose `solo` key
   in `queue/config.yaml` is true, and there only when every check has finished
