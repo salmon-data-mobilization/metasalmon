@@ -536,8 +536,8 @@ because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
 measuring it that is not part of the port. **Why not in the same stream:** a hub
-claim covers one branch in one repository. Its metasalmonpy queue item is to be
-filed.
+claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-241`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
@@ -551,7 +551,7 @@ reads a blank value as "no code value", but it also matches a code slot whose
 `codes.csv` row leaves `code_value` empty, which R's does not. The port is
 specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
-branch in one repository. Its metasalmonpy queue item is to be filed.
+branch in one repository. Its metasalmonpy half is `B-242`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
