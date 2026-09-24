@@ -6695,6 +6695,14 @@ nothing owns the definition once Q-61 is ruled. The Codex review of pull request
 an item blocked on that ruling that owns its later definition. B-237 is that
 item for `smn:Run`.
 
+**`B-238`: the research behind B-232's definitions gets a commons owner.**
+B-232 writes a definition for every undefined local smn term, each from a source.
+Establishing what a term means is durable salmon knowledge, which AGENTS.md sends
+to the commons, but B-232's condition let it retire with that research recorded
+only in ontology annotations. One item cannot finish work in two repositories, as
+the Codex review of pull request 150 pointed out. B-238 owns the commons cards,
+and B-232 now waits on it and cites each card by commit.
+
 **Three sequencing fixes from the same review.** B-128 waits on Q-54, whose
 temperature ruling decides its request shape. B-204 and B-205 wait on Q-53,
 which decides which schema their pattern check enforces. The roadmap's B-142
