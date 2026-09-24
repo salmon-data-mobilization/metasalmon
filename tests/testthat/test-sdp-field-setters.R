@@ -774,3 +774,50 @@ test_that("an undeclared *_iri column carrying a REVIEW: marker is still missed"
   expect_equal(nrow(review_metadata(pkg)), 0L)
   expect_true(refuses_review_marker(pkg))
 })
+
+test_that("a dictionary IRI field a configured schema adds is listed only if strict validation refuses its marker", {
+  # Raised in the Codex review of #144. A schema selected through the options
+  # can declare an `*_iri` field on `column_dictionary.csv` beyond the bundled
+  # six, and the scan reads the selected schema (B-175). `validate_dictionary()`
+  # sweeps a fixed six, so a marker in the added field passes strict
+  # validation, and listing it would claim a block that does not exist -- the
+  # same class of error as missing one. `tables.csv` has no such case: its
+  # sweep takes every `*_iri` column, so any field declared there is swept.
+  pkg <- filled_coded_package()
+  table_name <- .ms_metadata_schema_tables()[["column_dictionary.csv"]]
+  extended <- .ms_vendored_sdp_schema()
+  extended$metadata_tables[[table_name]]$fields <- c(
+    extended$metadata_tables[[table_name]]$fields,
+    list(list(
+      name = "extension_iri", type = "string", requirement = "optional",
+      description = "A dictionary IRI field that only this test's schema declares."
+    ))
+  )
+  # A non-default source makes every reader go through the loader, which is
+  # how a selected schema reaches the scan, the setters and the validator.
+  withr::local_options(metasalmon.sdp_schema_source = "remote")
+  local_mocked_bindings(.ms_load_sdp_schema = function(...) extended)
+  # The configuration took; without this the assertions below are vacuous.
+  expect_true(
+    "extension_iri" %in%
+      purrr::map_chr(.ms_metadata_schema_fields("column_dictionary.csv"), "name")
+  )
+
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "stream_name")
+  mark <- "REVIEW:https://example.org/Undecided"
+
+  # The field the configured schema adds: strict validation accepts the
+  # marker, so the scan does not list it.
+  original <- mark_metadata_field(pkg, "column_dictionary.csv", "extension_iri", row, mark)
+  expect_false(refuses_review_marker(pkg))
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  writeBin(original, file.path(pkg, "metadata", "column_dictionary.csv"))
+
+  # One of the six, under the same configured schema: refused, so listed. The
+  # restriction must not cost the fields strict validation does sweep.
+  mark_metadata_field(pkg, "column_dictionary.csv", "constraint_iri", row, mark)
+  expect_true(refuses_review_marker(pkg))
+  review <- review_metadata(pkg)
+  expect_identical(paste(review$file, review$field), "column_dictionary.csv constraint_iri")
+})
