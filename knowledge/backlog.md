@@ -6622,3 +6622,53 @@ Two related notes, neither filed as its own item:
 - metasalmon requires `mapping_cardinality` on every `sssom:NoTermFound` row.
   SSSOM only fixes the value (`1:0`) when the slot is filled, so this is
   stricter than the specification but harmless.
+
+**`B-235`: `HUB.md` contradicts its own writes register in twelve places.**
+Found on 2026-09-24 by the agent trimming `HUB.md` for length, reading the file
+on `main` at `7bfc3ca`. Sections are named rather than line-numbered, because
+line citations into this file have gone stale three times. None of these was
+fixed in the trim, which changes no rule.
+
+- **A.** *What you must never do*, the pull-request bullet, says R16 permits
+  "three further things and nothing more" on an agent's pull request. The
+  register has since added the "@codex review" trigger and the description
+  correction, and the same list's API bullet counts eight writes.
+- **B.** *The standing authorization*, "Three more operations", merge bullet:
+  "never in another member repository even one Brett works alone in; and never
+  the agent's own hand-back draft". This contradicts the approved-merge row
+  (R16), the `excludes` of the merge-in-this-repository row, and the
+  never-list's merge bullet.
+- **C.** "That is the whole grant.", after the quoted grant, predates R15, R16
+  and the 2026-09-23 upkeep rows. The register governs.
+- **D.** *Hand back*: "The item stays unclaimable until Brett merges." Since
+  R16 agents merge delegated pull requests too. The `done` state was widened;
+  this sentence was not.
+- **E.** *Reporting*: "an agent may not write an issue comment at all". The
+  "@codex review" trigger is a permitted issue comment.
+- **F.** The merge-in-this-repository row (R15) requires only green checks.
+  The approved-merge row, the never-list and *Delegated* also require a
+  completed Codex review, and *Delegated* adds two more conditions. metasalmon
+  is solo, so both rows apply to it, and the R15 row is the looser.
+- **G.** `writes.denied` lists six pull-request operations. Neither the
+  "@codex review" comment nor the CI re-run is among them. If either counts as
+  a pull-request operation, the entry denies what two upkeep rows permit.
+- **H.** `scope_note` and `self_suspends` cover writes "against a claimed queue
+  item". Merges, promotions and small pushes to `main` are usually not made
+  against a claimed item, and `reinstated_2026_09_23` already treats writes on
+  unclaimed pull requests as out of scope. So whether those rows, and a breach
+  of them, fall inside the register at all is unclear.
+- **I.** The draft-pull-request row's `enforced_by` says it is "the one
+  permitted operation with no client check behind it". Eleven rows now say
+  "nothing mechanical".
+- **J.** Class 5 says the parity fact's three copies "have disagreed twice".
+  `AGENTS.md` records four.
+- **K.** The `review` state reads "Work is pushed and handed back". A
+  hand-back in a shared repository pushes nothing. This is the governance call
+  already on Brett's decisions page.
+- **L.** The small-push row calls "small and mechanical" "a judgement". The
+  body says the phrase "is enumerated rather than left to judgement".
+
+Two trivial ones ride along. `.hub/agent-brief.md` is said to live "beside
+this file", but it is under `.hub/`. `self_suspends` says "the reinstatement
+above", in the singular, and there are now two. The field list's omission of
+`severity` and `stream` is the same finding as Q-52 and is tracked there.
