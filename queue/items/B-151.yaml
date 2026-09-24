@@ -1,8 +1,8 @@
 id: B-151
 kind: defect
 title: The printed accept_suggestion() call is ambiguous for a measurement column with a code list
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S5

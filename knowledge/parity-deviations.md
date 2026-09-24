@@ -572,8 +572,7 @@ including the two through `create_sdp()`. The printed spelling is `""` on both
 sides, though R also accepts `NA`. Python's `None` is already the unconstrained
 default, and `""` is the one literal both languages print alike. So it is owed
 as a port, not a register row. It did not land in the same stream because a hub
-claim covers one branch in one repository. Its metasalmonpy queue item is to be
-filed.
+claim covers one branch in one repository. Its metasalmonpy half is `B-242`.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

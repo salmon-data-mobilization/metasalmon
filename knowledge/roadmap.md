@@ -550,7 +550,7 @@ reads a blank value as "no code value", but it also matches a code slot whose
 `codes.csv` row leaves `code_value` empty, which R's does not. The port is
 specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
-branch in one repository. Its metasalmonpy queue item is to be filed.
+branch in one repository. Its metasalmonpy half is `B-242`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
