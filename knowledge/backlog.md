@@ -6477,6 +6477,23 @@ measured. A search of both registers for temperature, `response_format`,
 and the endpoint path finds nothing relevant; row 60 matches only on "billable
 LLM requests".
 
+**Reasoning effort, measured 2026-09-24** on metasalmon `main` `abfc7d6` and
+metasalmonpy `main` `e595752`, which refines the sentence above. R resolves
+`METASALMON_LLM_REASONING_EFFORT` when no argument names an effort, then drops
+the effort for every provider but `openai` (`R/llm-semantic-helpers.R:412-418`),
+and the body builder sends what is left (`:1699-1701`). metasalmonpy reads no
+such variable (no `.py` file contains `REASONING_EFFORT`) and sends an effort
+whenever `llm_reasoning_effort` names one, for any provider
+(`llm_review.py:424-425`). So semantic review differs twice: a session that sets
+only the variable sends an effort from R and none from metasalmonpy, and an
+effort named for OpenRouter reaches the provider from metasalmonpy and not from
+R. Neither chat path sends one today: R's builds its own body, and metasalmonpy's
+passes `reasoning_effort=None` (`chat_decomposition.py:253`). R's chat path
+resolves its config through `.ms_llm_resolve_config()` with no effort argument
+(`R/chat-decomposition.R:487-494`), so routing it through the shared builder, as
+B-128 does, would make it send the variable's value. The Codex review of pull
+request 150 on `e03fd35` found the chat-path half.
+
 **`B-226`: a third request, in the benchmark.** `scripts/theme-a-benchmark.R`
 builds the endpoint at `:2074` and the request at `:2106-2130`, unchanged
 between the B-3 run and `b456201`: its own user agent,
@@ -6855,6 +6872,16 @@ unblocked B-128 with a condition the ruling contradicts. This change made
 recording that ruling update, replace or retire B-128, as Q-53's does for B-204
 and B-205, and added the same pointer to B-128. The Codex review of pull request
 150 on `462cf5f` found it.
+
+**Q-54 gained reasoning effort, and B-234 the redefinition rule.** B-128's routing
+would make R's chat path send a reasoning effort resolved from the environment,
+which neither chat path sends, and Q-54 listed four differences without it; the
+measurement under Q-54 above found two more on semantic review. This change added
+reasoning effort to Q-54 as a fifth difference and made B-128 follow that ruling
+too. B-233 rejects a `curie_map` entry redefining a built-in prefix if the SSSOM
+specification forbids it, and B-234 did not, so the halves could have landed with
+different accepted sets; this change gave B-234 the same conditional rule. The
+Codex review of pull request 150 on `e03fd35` found both.
 
 Every paragraph in this section records what a change made on 2026-09-23 or
 2026-09-24 did, and why. The conditions in force are in the item files under
