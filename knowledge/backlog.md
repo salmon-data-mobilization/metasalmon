@@ -6724,15 +6724,15 @@ above", in the singular, and there are now two. The field list's omission of
 on 2026-09-23 that B-198's remote pin names a tag ("B198: Switch to a tag"). On
 2026-09-16, smn-data-pkg's only tags were `sdp-0.2.0` and `sdp-0.3.0`, and the
 Q-51 commit `f86d9b4` was sixteen commits ahead of `sdp-0.3.0`. So B-198 and
-B-199 wait on a tag nobody owned. The Codex review of pull request 150 found the
+B-199 were waiting on a tag nobody owned. The Codex review of pull request 150 found the
 gap. B-236 was filed to own the tag, and this change added it to both items'
 `blocked_by`. The name and the act are Brett's.
 
 **`B-223` narrowed, and `Q-62` filed.** B-223 changed R's semantic closure reader
 along with the two EML paths. On that path metasalmonpy falls back to the default
 paths rather than refusing. So B-223 would have closed while leaving an
-unrecorded difference, as the Codex review of pull request 150 pointed out. The
-closure path is now Q-62's.
+unrecorded difference, as the Codex review of pull request 150 pointed out. This
+change gave the closure path to Q-62.
 
 **`B-237`: `smn:Run`'s definition gets its own owner.** B-232 counts a term as
 accounted for when its meaning waits on a ruling, and Q-61 said the definition
@@ -6751,78 +6751,103 @@ the Codex review of pull request 150 pointed out. B-238 was filed to own the com
 cards, and this change sequenced B-232 after it and made B-232's condition cite
 each card by commit.
 
-**`B-239`, and three follow-ups from the next review round.** B-238 counts a
-term deferred for a ruling once its card states the question, but after the
-ruling nothing in the commons would own changing the card. B-239 was filed to own
-that for `smn:Run`, sequenced after Q-61, and B-237 was sequenced after B-239 and
-made to cite the updated card.
-B-237 also deletes `smn:Run`'s row from B-231's exemptions file when it adds the
-definition, so the guard is not left suppressing a term that has one. B-198 and
-B-199 re-vendor the schema from the exact tag B-236 creates, which is the ref the
-remote pin names, instead of from `f86d9b4`, so online and offline sessions
-cannot load different bundles.
+**`B-239`, and three follow-ups from the next review round.** B-238 counted a
+term deferred for a ruling once its card stated the question, but after the
+ruling nothing in the commons would have owned changing the card. B-239 was filed
+to own that for `smn:Run`, sequenced after Q-61, and B-237 was sequenced after
+B-239 and made to cite the updated card. This change also made B-237 delete
+`smn:Run`'s row from B-231's exemptions file when it adds the definition, so the
+guard is not left suppressing a term that has one, and made B-198 and B-199
+re-vendor from the exact tag B-236 creates, the ref the remote pin names, rather
+than from `f86d9b4`, so online and offline sessions cannot load different
+bundles.
 
-**Exemption rows retire with their terms.** B-231 seeds an exemption for
-every local smn term undefined when it lands, and B-232 empties the list. Only
-B-237 said to delete its row, so B-232 could define every other term and leave
-its row in place, and a later loss of that definition would pass the guard.
-B-108 was in the same position for `smn:NCBITaxon_8018`. The next Codex review
-of pull request 150 found it. B-231's check now fails on a stale row, one whose
-term has a definition or is no longer a local term, so B-232 and B-108 each
-delete their rows in the change that defines or removes the term.
+**Exemption rows retire with their terms.** B-231 was written to seed an
+exemption for every local smn term undefined when it lands, and B-232 to empty
+the list. Only B-237 said to delete its row, so B-232 could have defined every
+other term and left its row in place, and a later loss of that definition would
+have passed the guard. B-108 was in the same position for `smn:NCBITaxon_8018`.
+The next Codex review of pull request 150 found it. This change made B-231's
+check fail on a stale row, one whose term has a definition or is no longer a
+local term, and made B-232 and B-108 each delete their rows in the change that
+defines or removes the term.
 
-**The whole bundle, not one schema.** B-198 and B-199 re-vendored only
-`dataset.schema.json`, but each package's remote fetch loads eight files: six
-metadata schemas, the profile and the rules. So the pin could move to B-236's tag
-while the fallback kept stale copies of the other seven. Both now re-vendor the
-complete bundle from the tag, commit a manifest of each file's SHA-256, and test
-the vendored files against it. The Codex review of pull request 150 found it.
+**The whole bundle, not one schema.** B-198 and B-199 asked for a re-vendor
+of `dataset.schema.json` only, but each package's remote fetch loads eight files:
+six metadata schemas, the profile and the rules. So the pin could have moved to
+B-236's tag while the fallback kept stale copies of the other seven. This change
+made both re-vendor the complete bundle from the tag, commit a manifest of each
+file's SHA-256, and test the vendored files against it. The Codex review of pull
+request 150 found it.
 
 **Two more owners.** B-238 required a commons card proposing definition
 wording for every term in B-232's scope, which no card can do for
-`smn:NCBITaxon_8018`, since B-108 deletes it. A term an open item deletes now
-needs no card and is accounted for by naming that item. Q-61 could retire on the
-ruling alone, while options (b) and (c) need ontology work B-237 does not own.
-It now retires only with an owner for every consequence of the chosen option,
-including a commons gap for a newly minted concept. The Codex review of pull
-request 150 found both.
+`smn:NCBITaxon_8018`, since B-108 deletes it. This change let a term that an open
+item deletes go without a card, accounted for by naming that item. Q-61 could
+have retired on the ruling alone, while options (b) and (c) need ontology work
+B-237 did not own; this change made its retirement wait on an owner for every
+consequence of the chosen option, including a commons gap for a newly minted
+concept. The Codex review of pull request 150 found both.
 
 **Three sequencing fixes from the same review.** A ruling decides the shape of
 three items: Q-54's temperature ruling decides B-128's request shape, and Q-53
 decides which schema B-204's and B-205's pattern check enforces. So this change
 added each question to its items' `blocked_by`, which is where the live
 dependency is kept; this paragraph records why it was added, not whether it
-still holds. The roadmap's B-142 passage now gives the closure-path difference
-to Q-62 rather than B-223.
+still holds. This change also moved the closure-path difference in the
+roadmap's B-142 passage from B-223 to Q-62.
 
 **A minor tag carries its own profile path, and this section keeps no blocker
 state.** B-236 could have retired on an `sdp-0.4.0` tag cut on a commit whose
 profile still said v0.3, and B-198 and B-199 would then have pinned a release
-that claims a version its own profile does not carry. B-236's condition now puts
-the profile move in the release pull request whenever the name is a new minor.
-Separately, several paragraphs above said an item "now waits on" another, which
-restated the live `blocked_by` field in prose that nothing checks. They now
-record what each change did and why. The Codex review of pull request 150 found
-both.
+that claims a version its own profile does not carry. This change made B-236's
+condition put the profile move in the release pull request whenever the name is a
+new minor. Separately, several paragraphs above said an item "now waits on"
+another, which restated the live `blocked_by` field in prose that nothing
+checks; this change rewrote them to record what each change did and why. The
+Codex review of pull request 150 found both.
 
-**Three more owners from the next review.** A minor release also waits on
-B-208, because publishing a v0.4 profile freezes v0.3 with unversioned schema
-URLs; B-236's condition says so, since it holds only under a minor name. Q-53,
-Q-54, Q-62 and Q-63 each let a ruling that keeps a difference retire only once
-both parity registers were written, which no metasalmon item can do; each now
-asks for a pair of register items, one per repository. Under Q-61's option (c)
-the commons gap entry had no runnable owner, since B-239 is blocked on Q-61 and
-owned only `run.md`; B-239 now owns the gap entry too, and Q-61 retires once the
-owners are filed. The Codex review of pull request 150 found all three. `B-235`
-also gains a thirteenth passage, *M*: `HUB.md` says a reserved pull request
+**Three more owners from the next review.** Publishing a v0.4 profile freezes
+v0.3, whose schema URLs are unversioned, and keeping a frozen profile's schema
+bytes is B-208's subject; so a minor release depends on B-208 where a patch does
+not. This change recorded that dependency in B-236's condition, because B-236 is
+where the minor-or-patch answer is made. Q-53, Q-54, Q-62 and Q-63 each let a
+ruling that keeps a difference retire only once both parity registers had been
+written, which no metasalmon item can do; this change rewrote each to ask for a
+pair of register items, one per repository. Under Q-61's option (c) the commons
+gap entry had no runnable owner, since B-239 was blocked on Q-61 and owned only
+`run.md`; this change gave B-239 the gap entry and tied Q-61's retirement to its
+owners being filed. The Codex review of pull request 150 found all three. `B-235`
+also gained a thirteenth passage, *M*: `HUB.md` says a reserved pull request
 stays "unanswered" while the reply row lets agents answer Codex on it.
 
-**Q-61 moves to metasalmon, and B-232 lands as one pull request.** Q-61 was
-declared `repo: salmon-domain-ontology`, but it retires by recording a ruling in
-`knowledge/questions.md` and filing queue items, both writes in this repository;
-its ontology consequences already have their own items. The Q61 entry in
-`questions.md` had copied Q-61's retirement rule and owner mapping, so it now
-points at the item instead, and Q60's owner line drops the dependency it had
-restated. B-232 allowed several pull requests, which one claim cannot produce;
-it now lands as one, with a commit per module. The Codex review of pull request
-150 found all three.
+**Q-61 moved to metasalmon, and B-232 to one pull request.** Q-61 was
+declared `repo: salmon-domain-ontology`, but retiring it meant recording a ruling
+in `knowledge/questions.md` and filing queue items, both writes in this
+repository, and its ontology consequences already had their own items; this
+change moved it. The Q61 entry in `questions.md` had copied Q-61's retirement
+rule and owner mapping; this change pointed it at the item instead and dropped
+from Q60's owner line the dependency it had restated. B-232 allowed several pull
+requests, which one claim cannot produce; this change made it one pull request
+with a commit per module. The Codex review of pull request 150 found all three.
+
+**The profile path, the validator cards, and this section's tense.** Under a
+minor tag, B-198 and B-199 could have moved the pin and re-vendored every file
+the loaders request while `.ms_sdp_profile_path()` (`R/schema-helpers.R:71-73`)
+and metasalmonpy's `SDP_PROFILE_PATH` went on naming the v0.3 profile, so both
+packages would have pinned the new tag and loaded the frozen profile. This change
+made both cards move the profile path with the pin under a minor name. Q-53 had
+been added to B-204's and B-205's `blocked_by`, but both conditions still named
+the vendored file, and Q-53 can rule for a remote-first validator; this change
+made recording Q-53's ruling include updating both cards to the schema copy it
+selects, and took the copy out of their conditions until then. The same review
+found that the paragraphs above restated live conditions of B-236 and of Q-53,
+Q-54, Q-62 and Q-63; this change rewrote the section in the past tense. The
+Codex review of pull request 150 on `7daeea6` found all three. Separately, B-201's
+sentence that the metasalmonpy `v0.5.0` tag was still Brett's to make was
+corrected, because the tag was made on 2026-09-24 on `67fb486`; the Codex review
+of metasalmon pull request 159 found it.
+
+Every paragraph in this section records what a change made on 2026-09-23 or
+2026-09-24 did, and why. The conditions in force are in the item files under
+`queue/items/`, and where the two differ, the item file is right.
