@@ -119,7 +119,11 @@ writes:
         the item's claim ref, under claim_ref_prefix in the repository named by
         locks_repo, both keys in queue/config.yaml
       shape: child of the tip you just read
-      max: 1 per heartbeat_minutes per held claim
+      max: >-
+        about 1 per heartbeat_minutes per held claim. A beat made sooner
+        renews the lease early and is not a write outside this list (Brett,
+        2026-09-24: "Early beats are not a breach"), so it never triggers
+        self_suspends. The interval is a pace, not a limit.
     - operation: push a release commit
       target: >-
         the item's claim ref, under claim_ref_prefix in the repository named by
@@ -518,6 +522,25 @@ writes:
     and are recorded here, not reinstated by it. In the same message Brett
     granted the three upkeep rows in the permitted list, so the kind of write
     that caused this suspension now has a row.
+  reinstated_2026_09_24: >-
+    2026-09-24, by Brett in chat: "Early beats are not a breach. Reinstated.
+    But make beats less often...something more like an hour". The question put
+    to him: after the 2026-09-23 reinstatement two held claims heartbeated
+    inside heartbeat_minutes (B-164 at 13:18:28Z and 13:29:22Z, B-187 at
+    13:19:26Z and 13:32:44Z), against this register's then "max: 1 per
+    heartbeat_minutes per held claim". The client told each holder its next
+    beat was "due within" that interval, so the only beat breaking neither
+    rule was one made exactly on the minute, and early beats went back to
+    2026-09-14 unflagged. The orchestrating session stopped protocol writes at
+    13:40 UTC. The writes made after the first early beat and before the stop
+    reached the workers were reported to Brett before he ruled: B-151's and
+    B-55's beats, handoffs and pull requests 153 and 154, B-187's second beat,
+    B-179's handoff, and the merge of metasalmonpy pull request 36. The ruling
+    makes an early beat a write inside the list, so it suspended nothing; this
+    entry records the reinstatement because Brett gave one, and so that the
+    held work resumed on his word rather than on a reading of the rule. In the
+    same message he set the interval to about an hour: heartbeat_minutes in
+    queue/config.yaml reads 60, and the heartbeat row's max is now a pace.
   denied:
     - >-
       any issue, release, or assignee; and any comment or review except a reply
@@ -743,8 +766,9 @@ the item and you must not start it.
 every primary checkout.
 
 **5. Work.** Inside that worktree and inside that item's scope. Commits go to
-`agent/<queue-id>/<token>` and nowhere else. Heartbeat every
-`heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim.
+`agent/<queue-id>/<token>` and nowhere else. Heartbeat about every
+`heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim;
+a beat made early is not a breach (ruled 2026-09-24).
 
 **6. Report.** Into `.hub/workpads/<queue-id>.md` on your branch, one file per item.
 
