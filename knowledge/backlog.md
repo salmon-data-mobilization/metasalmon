@@ -6643,7 +6643,7 @@ Two related notes, neither filed as its own item:
   SSSOM only fixes the value (`1:0`) when the slot is filled, so this is
   stricter than the specification but harmless.
 
-**`B-235`: `HUB.md` contradicts its own writes register in twelve places.**
+**`B-235`: `HUB.md` contradicts its own writes register in thirteen places.**
 Found on 2026-09-24 by the agent trimming `HUB.md` for length, reading the file
 on `main` at `7bfc3ca`. Sections are named rather than line-numbered, because
 line citations into this file have gone stale three times. None of these was
@@ -6687,6 +6687,13 @@ fixed in the trim, which changes no rule.
   already on Brett's decisions page.
 - **L.** The small-push row calls "small and mechanical" "a judgement". The
   body says the phrase "is enumerated rather than left to judgement".
+- **M.** The draft-pull-request row's `shape` and *Hand back* both say a pull
+  request in a class reserved to Brett "stays a draft, unmerged and
+  unanswered". The reply-to-a-review-comment row has no class exception, so it
+  permits answering Codex on that draft. Practice on 2026-09-24 followed the
+  reply row: B-179's metasalmonpy #39 and B-187's #156 answered Codex on
+  reserved drafts, so that Brett reviews a change Codex has already passed.
+  Added to this list on 2026-09-24, found by B-179 and B-144's workpads.
 
 Two trivial ones ride along. `.hub/agent-brief.md` is said to live "beside
 this file", but it is under `.hub/`. `self_suspends` says "the reinstatement
@@ -6777,3 +6784,15 @@ Separately, several paragraphs above said an item "now waits on" another, which
 restated the live `blocked_by` field in prose that nothing checks. They now
 record what each change did and why. The Codex review of pull request 150 found
 both.
+
+**Three more owners from the next review.** A minor release also waits on
+B-208, because publishing a v0.4 profile freezes v0.3 with unversioned schema
+URLs; B-236's condition says so, since it holds only under a minor name. Q-53,
+Q-54, Q-62 and Q-63 each let a ruling that keeps a difference retire only once
+both parity registers were written, which no metasalmon item can do; each now
+asks for a pair of register items, one per repository. Under Q-61's option (c)
+the commons gap entry had no runnable owner, since B-239 is blocked on Q-61 and
+owned only `run.md`; B-239 now owns the gap entry too, and Q-61 retires once the
+owners are filed. The Codex review of pull request 150 found all three. `B-235`
+also gains a thirteenth passage, *M*: `HUB.md` says a reserved pull request
+stays "unanswered" while the reply row lets agents answer Codex on it.

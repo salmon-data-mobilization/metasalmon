@@ -1,6 +1,6 @@
 id: B-235
 kind: defect
-title: 'HUB.md contradicts its own writes register in twelve places, found while trimming it on 2026-09-24'
+title: 'HUB.md contradicts its own writes register in thirteen places, found while trimming it on 2026-09-24'
 state: needs_brett
 claimable: false
 repo: metasalmon
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'Each of the twelve passages the backlog entry lists either agrees with writes.permitted and writes.denied, or is deleted. A reader who checks every permitted row against every prohibition in HUB.md finds no sentence that forbids what a row permits or permits what a row forbids. The fix is a change to HUB.md, which is reserved class 7, so Brett merges it. It is kept separate from the trim that found it, so that the trim can be reviewed as a change of no rule and this one as a change of rules.'
+retires_when: 'Each of the thirteen passages the backlog entry lists either agrees with writes.permitted and writes.denied, or is deleted. A reader who checks every permitted row against every prohibition in HUB.md finds no sentence that forbids what a row permits or permits what a row forbids. The fix is a change to HUB.md, which is reserved class 7, so Brett merges it. It is kept separate from the trim that found it, so that the trim can be reviewed as a change of no rule and this one as a change of rules.'
