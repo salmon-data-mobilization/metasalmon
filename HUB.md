@@ -402,11 +402,16 @@ writes:
         answers a finding belongs on that finding's thread, under the reply
         row.
       max: >-
-        one per pushed round of fixes, posted after the push. Never to re-roll
-        a round that found something, and never while the previous round is
-        still running, which the reviewer signals with an eyes reaction.
+        one per pushed round of fixes, posted after the push, and at most two
+        on a pull request that changes code and one on any other, because the
+        review Codex runs on opening counts toward the cap the Delegated
+        section sets. Never to re-roll a round that found something, and never
+        while the previous round is still running, which the reviewer signals
+        with an eyes reaction.
       enforced_by: nothing mechanical.
-      granted: 2026-09-23, with the row above and in the same words.
+      granted: 2026-09-23, with the row above and in the same words. The cap
+        was added on 2026-09-24 on Brett's instruction to stop at the valuable
+        80% of review.
     - operation: re-run the failed jobs of one workflow run
       target: >-
         a workflow run on a pull request an agent opened, in a member
@@ -1039,6 +1044,22 @@ Four conditions, all of them, before an agent merges one:
   the symptom and left the cause.
 - **The Codex review has completed**, with every finding either fixed in a push
   or answered on its thread with the evidence that it is not a defect.
+  **"Completed" means the last review the agent asked for, not a review of the
+  final head, and the asking is capped** (Brett, 2026-09-24: *"If there's a way
+  to get 80% of the value and stop at that point I think we should do that since
+  the last 20% is probably disproportionately expensive"*). Counting the review
+  Codex runs when a pull request opens, a pull request that changes code gets at
+  most three reviews and any other pull request (queue items, cards, prose,
+  ontology files) at most two; the agent fixes or answers what the last one found,
+  pushes, and does not post `@codex review` again. The count rests on what the
+  loop did before the cap: on the code pull requests of 2026-09-24 Codex's
+  findings were real behaviour defects and arrived in the first two rounds,
+  while hub pull request 150 and commons pull request 16, both prose, took 18
+  and 15 rounds for 36 and 34 findings, most of them about text the previous
+  round's fix had just written. Two habits fed that loop and are not part of a
+  fix: writing the review's history into the files it reviews, and adding new
+  work to a pull request under review. A fix changes what the finding names; a
+  problem found beside it goes to the next sweep.
 - **No review thread from a person is waiting.** A human comment moves the pull
   request into the previous list until it is answered.
 - **The agent is not unsure.** Uncertainty about which list a change belongs to
