@@ -590,6 +590,21 @@ default, and `""` is the one literal both languages print alike. So it is owed
 as a port, not a register row. It did not land in the same stream because a hub
 claim covers one branch in one repository. Its metasalmonpy half is `B-242`.
 
+**This one is closed.** `B-242` landed as metasalmonpy pull request **#42**
+(`afe5626`) on 2026-09-24, changing `review_console.py` in the three places this
+paragraph named, `_match_slot_rows()`, `_review_call_args()` and
+`_resolve_slot()`, plus a new `_is_code_slot()` that reads a code's slot from
+`review_target_keys()`. `tests/test_review_console.py` carries the mirrors of
+B-151's tests, and the pin is deleted. Run through both packages'
+`create_sdp()` on the same inputs against metasalmon `71a9199`, the printed
+arguments, the slot each call resolves to and the refusal's options agree on all
+64 lines, where 32 differed before. In metasalmonpy a blank `code_value` is
+`""`, `pd.NA` or `NaN`, and `None` stays the unconstrained default, as R's
+`NULL` does. The
+case neither implementation fixes, a code slot whose row has no code value and
+so no call of its own, behaves the same on both sides, so it is not a
+divergence.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.**
 `infer_column_role()` no longer types a column `temporal` on year-shaped values
@@ -645,6 +660,17 @@ separate divergence and not this port's to absorb**: it also means a year column
 pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
+
+**This one is closed.** `B-240` landed as metasalmonpy pull request **#41**
+(`ace8eed`) on 2026-09-24, changing `infer_column_role()` in `dictionary.py`.
+`tests/test_year_shaped_measurement_role.py` is the port of the R test, and it
+checks each fixture against `_values_look_yearish()` before it asserts a role.
+Over 64 name and value pairs run through metasalmon `16976b1` and the port,
+every year-shape verdict and every role agree, where 18 differed before. Its
+fixtures are `int64`, nullable `Int64`, text and categorical, the storage types
+metasalmonpy reads as year-shaped. So the float gap above is outside what the
+port tests, and the port did not change it, as metasalmonpy's `CHANGELOG.md`
+entry for it says.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
