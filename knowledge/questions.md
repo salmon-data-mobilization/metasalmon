@@ -386,6 +386,22 @@ mirror is not automatically the follower, so this is a recommendation, not a
 default.
 **Owner:** the queue item `Q-62`.
 
+### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
+**Unblocks:** closing a reader-side difference that B-219 and B-220 would otherwise
+leave in place. R strips `^\s*REVIEW\s*:\s*` ignoring case
+(`R/package-helpers.R:3787` on `b456201`), so `REVIEW :x` and ` REVIEW:x` are
+recognised as marked. metasalmonpy strips a leading `REVIEW:` compared
+upper-cased (`review_console.py:140` on `3f8349a`), so they are not, and the
+value reads as an IRI instead. Neither behaviour was chosen, and neither parity
+register records the difference. Q18 is about the bytes the writers emit after
+the colon; this is about what the readers accept.
+**Recommendation:** both recognise R's wider set. A marker is most often
+hand-edited in a spreadsheet, where a stray space is likely, and a marker a
+reader misses reaches strict validation as a malformed IRI rather than as an
+unreviewed slot. The mirror is not automatically the follower, so this is a
+recommendation, not a default.
+**Owner:** the queue item `Q-63`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
@@ -1603,5 +1619,6 @@ his. The pin moves to the tag once it exists, and `B-199`'s in metasalmonpy,
 which must name the same ref, follows it.
 
 **Where it is recorded:** `B-198`'s card, whose condition now names a tag.
-**Owner:** queue items `B-198` and `B-199`, with `B-208` for the version
-question.
+**Owner:** queue item `B-236` for the tag itself, whose name and cutting are
+Brett's; `B-198` and `B-199` move the pins once it exists; and `B-208` for the
+version question.

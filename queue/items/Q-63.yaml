@@ -1,0 +1,11 @@
+id: Q-63
+kind: question
+title: 'R and metasalmonpy recognise different spellings of the REVIEW: marker, and neither parity register records it; which spellings should both recognise?'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules which spellings of the REVIEW: marker both implementations recognise when they strip or detect it, and the ruling is recorded in knowledge/questions.md, with a queue item in the repository that moves or a row in both parity registers if the difference is kept on purpose. Today they differ: R strips ^\s*REVIEW\s*:\s* ignoring case (R/package-helpers.R:3787 on b456201), so a leading space or a space before the colon is recognised, and metasalmonpy strips a leading REVIEW: compared upper-cased (review_console.py:140 on 3f8349a), so neither is. B-219 and B-220 each refuse an iri left empty by their own package''s strip, so both can retire with this difference in place, which is why this question owns it. Q-18 is the neighbouring question about the trailing space the writers emit, not about what the readers accept. Filed 2026-09-24 after the Codex review of metasalmon pull request 150.'
