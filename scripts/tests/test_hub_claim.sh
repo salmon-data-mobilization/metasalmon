@@ -239,7 +239,24 @@ run_with_timeout() {
   local watchdog=$!
   local rc=0
   wait "$pid"; rc=$?
-  kill "$watchdog" >/dev/null 2>&1
+  # SIGKILL, not SIGTERM, and the difference is the fixture's life. The
+  # watchdog is a subshell of this script, forked with `trap cleanup EXIT INT
+  # TERM` in force, and a SIGTERM that reaches it before it has reset the
+  # inherited handler runs cleanup INSIDE the watchdog: `rm -rf "$TMPROOT"`,
+  # mid-run. The watchdog then carries on into its sleep, this `wait` blocks
+  # for the whole timeout, and it ends with a `kill -9` of a pid that exited
+  # long before and may belong to anything by then. Measured 2026-09-24 in a
+  # copy of this function whose watchdog recorded instead of killing: SIGTERM
+  # ran the parent's trap in the subshell in 18 of 300 calls of `true`, SIGKILL
+  # in none. The race was always here. B-187's fixtures made it bite: about
+  # forty more short git calls in setup, each a window, and in the hour before
+  # this line changed the suite failed in five of twenty-four runs, four of
+  # them in setup.
+  # A SIGKILL cannot be trapped, so the watchdog dies where it stands, and its
+  # orphaned sleep exits on its own.
+  # RETIRES WHEN: this function stops forking a subshell to keep time, or the
+  # script stops trapping TERM with a handler that deletes the fixture.
+  kill -9 "$watchdog" >/dev/null 2>&1
   wait "$watchdog" >/dev/null 2>&1
   # A process killed by a signal reports 128 plus the signal. SIGKILL from the
   # watchdog is 137 and there is no other kill in this script, so 137 is the
