@@ -1,0 +1,13 @@
+id: B-276
+kind: defect
+title: 'A codes.csv row with no code_value has no address in the review console, so every call printed for its slot refuses'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, the semantic slot of a codes.csv row whose code_value is empty, a vocabulary-backed row the schema allows, is either decidable through the console, by a printed accept_suggestion() call that resolves to that slot and to no other, or is not a semantic target at all, so review_semantics() does not queue it. Pinned by a test that runs every call printed for such a slot, demonstrated RED on the console as it stands. WHICH OF THE TWO IS NOT DECIDED HERE: an address needs a change to accept_suggestion()''s signature, which is class 2 in HUB.md''s Which pull requests need Brett, and no target is a ruling on what term_iri means for such a row, which the schema defines as the specific term that code_value represents. THE METASALMONPY HALF IS B-277, and each names the other.'

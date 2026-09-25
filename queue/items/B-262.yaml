@@ -1,0 +1,13 @@
+id: B-262
+kind: defect
+title: 'The publication vignette''s step 9 says strict validation passes only when a package is publication-ready, which step 10 contradicts, and two closure comments keep the reviewer gloss B-192 removed from the vignette'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Step 9 of vignettes/post-review-package-publication.Rmd no longer says strict validation "should pass only when the package is actually publication-ready": it agrees with step 10, which says strict validation is not the publication gate. And the header comment of R/semantic-closure.R and the comment above .ms_closure_target_context() in the same file no longer say a code-resolved procedure is one "which no reviewer ever selected as a slot": they say, as the vignette has said since B-192, that the ledger has no slot for it, because it is reached through the code values in the data rather than through any field the review-target set reads. A documentation and comment change; no behaviour changes.'

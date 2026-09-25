@@ -1,0 +1,12 @@
+id: B-268
+kind: defect
+title: '.metasalmonpy-sibling, the metasalmonpy checkout CI places inside the package directory, is not in .Rbuildignore, so every R CMD check on CI carries two NOTEs from it'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: '.Rbuildignore excludes .metasalmonpy-sibling, the path .github/workflows/R-CMD-check.yaml checks metasalmonpy out to for METASALMONPY_PATH, so R CMD build leaves it out of the tarball and the check step on CI reports neither the hidden-files NOTE nor the non-portable-file-paths NOTE that list files under it. Decided by the R CMD check log of the pull request that makes the change. The register guard that reads METASALMONPY_PATH still runs on CI, because the checkout step and the environment variable are unchanged.'

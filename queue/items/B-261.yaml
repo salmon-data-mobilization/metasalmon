@@ -1,0 +1,13 @@
+id: B-261
+kind: defect
+title: 'metasalmonpy''s semantic-review guide says a package stops validating and that no reviewer ever selected a code-resolved procedure, and neither is true in Python'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S11
+severity: P3
+blocked_by: [B-192]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'guides/semantic-review.qmd says what the reviewed export does with a ledger row added for a code-resolved procedure, in the terms metasalmon''s vignettes/post-review-package-publication.Rmd uses since B-192 and with Python names: the export that reads the ledger refuses it, while validate_salmon_datapackage() goes on passing, because only _export_reviewed() in eml.py reads the ledger; and the procedure is outside the review-target set because the ledger has no slot for it, not because no reviewer ever selected it, since review_console.py lists codes.csv among WRITABLE_FILES and a reviewer can decide a code value''s term_iri. Each sentence is checked against the Python code it describes. A DOCUMENTATION PORT of B-192''s wording, not a parity-register row.'

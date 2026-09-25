@@ -1,0 +1,13 @@
+id: B-274
+kind: defect
+title: 'metasalmonpy''s apply_salmon_dictionary() never applies code_label, because rename_categories is called on a Series and a defensive branch swallows the error'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, apply_salmon_dictionary() gives a coded column the labels in codes.csv''s code_label, as metasalmon''s factor(levels = code_value, labels = code_label) does, and the column_role categorical block after it keeps them rather than rebuilding the categories from the code values and blanking every labelled value; a value missing from the code list still becomes missing and is still named in the warning B-241 added. The except Exception branch marked pragma: no cover no longer hides the failure: the rename reaches the .cat accessor, and a failure that remains is reported rather than turned into a string column in silence. test_apply_salmon_dictionary_with_codes in tests/test_dictionary.py, which asserts that the categories are the code values and so pins the missing labels, asserts the labels instead, and a test covers a Categorical of integers against integer code values. Demonstrated RED on the code as it stands. Not a port of an R change and not a register row: metasalmon applies the labels.'
