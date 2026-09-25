@@ -1,8 +1,8 @@
 id: B-236
 kind: defect
 title: 'No sdp release tag carries the ruled temporal pattern, so B-198 and B-199 have no tag to pin'
-state: needs_brett
-claimable: false
+state: ready
+claimable: true
 repo: smn-data-pkg
 venue: either
 stream: S6
@@ -10,4 +10,4 @@ severity: P2
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'smn-data-pkg carries an annotated release tag at or after f86d9b4, the commit that recorded the Q-51 ruling, and a GitHub release whose body is that version''s CHANGELOG section. The name is Brett''s, because a tag''s name is a version claim: sdp-0.3.1 keeps the profile''s v0.3 URLs, and sdp-0.4.0 implies a v0.4 profile path. SO A NEW MINOR NAME ADDS WORK TO THIS ITEM RATHER THAN TO ANOTHER ONE: if he names one, the release pull request also moves the profile to that version''s path and published URLs, and the tag goes on a commit whose profile names the version the tag claims. A minor tag on a commit whose profile still says v0.3 does not retire this item, because B-198 and B-199 would then pin a release that claims a version its own profile does not carry. B-208 is related but different: it owns how a frozen profile keeps the schema bytes it was frozen against, which constrains how a new version''s path is laid out but does not move the profile to it. A MINOR RELEASE ALSO WAITS ON B-208: publishing a v0.4 profile freezes v0.3, whose schema URLs are unversioned, so under a minor name this item cuts no tag until B-208 has landed. The dependency is written here rather than in blocked_by because it holds only if the name is a new minor, and this item is where that answer is recorded. Added 2026-09-24 after the next Codex review of pull request 150. Added 2026-09-24 after the Codex review of metasalmon pull request 150 found this item could retire on a minor tag alone. Cutting it is his too, because it is an outward release act, and this environment refuses tag pushes. On his word an agent prepares the release pull request that files CHANGELOG [Unreleased] under the chosen version. Filed 2026-09-24 after the Codex review of metasalmon pull request 150 found B-198 waiting on this tag with no item owning it.'
+retires_when: 'smn-data-pkg carries an annotated release tag named sdp-0.3.1, on a commit at or after f86d9b4 (the commit that recorded the Q-51 ruling) whose profile still names v0.3, and a GitHub release whose body is the 0.3.1 section of its CHANGELOG. The tag is cut by a release workflow in smn-data-pkg of the kind metasalmonpy''s release.yml is, which this item adds, and before the tag a release pull request files CHANGELOG [Unreleased] under 0.3.1. NAMED BY BRETT 2026-09-25 (decisions page, item 7): "0.3.1 and yes smn-data-pkg gets the release workflow." A patch name keeps the profile''s v0.3 paths and published URLs, so no profile move is owed and B-208 is not a precondition; a tag named anything else does not retire this item. B-198 and B-199 pin this tag. Filed 2026-09-24 after the Codex review of metasalmon pull request 150 found B-198 waiting on this tag with no item owning it.'
