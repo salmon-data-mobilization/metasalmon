@@ -2241,6 +2241,14 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * whether a port named in one passage is named in the other. Each passage
         is checked for what it says; one that never mentions a port cannot be
         stale about it.
+      * the ORDER of a record and its port's mentions. Any record for a port
+        counts for every mention of it in the passage, and a file's matching
+        sections are read as one passage, so a debt paragraph written below its
+        own closure passes. Tying a record to one entry would need the prose's
+        wording to tell a debt from a citation. Measured 2026-09-25, 13 mentions
+        of done ports follow their port's last record in these passages, and
+        every one is a citation ("B-125 one entry above"). A done item is never
+        re-opened in place, so a new debt gets a new id, which this rule reads.
       * a debt the passage describes without naming its item's id. The rule
         reads ids, so an entry that says "it is owed there as a port" and names
         nothing is invisible to it.
