@@ -878,6 +878,46 @@ test_that("accept_suggestion(iri = ) naming a shortlisted candidate records what
   )
 })
 
+test_that("a candidate whose stored IRI carries the REVIEW: marker writes its own term_type, by iri = and by rank =", {
+  # Whether the decision row IS the accepted candidate is decided by comparing
+  # IRIs. The writer compared the stored IRI, marker and all, with a decision
+  # recorded without the marker, so a marked candidate never matched and wrote
+  # `skos_concept` by `rank =` as much as by `iri =`.
+  marked_iri <- paste0("REVIEW: ", owl_class_iri)
+  decisions <- list(
+    "iri =" = function(review) {
+      accept_suggestion(review, "spawner_count", "variable", iri = owl_class_iri)
+    },
+    "rank =" = function(review) {
+      accept_suggestion(review, "spawner_count", "variable", rank = 2)
+    }
+  )
+  for (how in names(decisions)) {
+    path <- typed_fixture_package()
+    suggestions <- read_suggestions_file(path)
+    suggestions$iri[suggestions$iri %in% owl_class_iri] <- marked_iri
+    readr::write_csv(suggestions, file.path(path, "semantic_suggestions.csv"), na = "")
+    review <- suppressMessages(review_semantics(path))
+    # The premise: the rank-2 candidate is stored marked, and is an `owl_class`.
+    slot <- variable_slot(review)
+    expect_equal(slot$iri[slot$rank == 2L], marked_iri, info = how)
+    expect_equal(slot$term_type[slot$rank == 2L], "owl_class", info = how)
+
+    suppressMessages(apply_sdp_semantics(path, decisions[[how]](review)))
+    dictionary <- read_metadata_file(path, "column_dictionary.csv")
+    written <- dictionary[dictionary$column_name == "spawner_count", , drop = FALSE]
+    expect_equal(written$term_iri, owl_class_iri, info = how)
+    expect_equal(written$term_type, "owl_class", info = how)
+
+    first_apply <- managed_digests(path)
+    suppressMessages(apply_sdp_semantics(
+      path,
+      suppressMessages(review_semantics(path, include_filled = TRUE))
+    ))
+    expect_identical(managed_digests(path), first_apply, info = how)
+  }
+})
+
 test_that("an IRI no candidate carries still writes skos_concept, whatever the first candidate is", {
   # B-176's case, which this must not move. Nothing is known about a term the
   # reviewer typed, so the type of the row its decision is recorded on is not
