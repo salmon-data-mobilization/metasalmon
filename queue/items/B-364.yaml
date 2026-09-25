@@ -1,0 +1,13 @@
+id: B-364
+kind: defect
+title: 'metasalmonpy chunks and scores context the way metasalmon does, for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, context documents become excerpts by metasalmon''s algorithm: its extension list; its text extraction for text formats (UTF-8, then cp1252, then latin-1, CRLF to LF, front matter and fences dropped, no whitespace collapsing); 2200-character chunks with 200 characters of overlap; its source labels and chunk ids; token-overlap scoring over lowercase ASCII tokens of three or more characters; ties broken in metasalmon''s order; and four excerpts per target. Pinned by a test on text-only fixtures that both packages score identically. Text extracted from PDF, DOCX, XLSX and HTML may still differ by library, and the pull request registers that as an Idiom row in both registers, each naming the other. Ruled 2026-09-25 by Brett when he took every recommendation in section 10 of the S16 execplan (decision 4 and section 2.7). A prerequisite of B-327. No metasalmon half, except that metasalmon''s scorer becomes radix-ordered under B-326.'
