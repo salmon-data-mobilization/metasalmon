@@ -1,8 +1,8 @@
 id: B-236
 kind: defect
 title: 'No sdp release tag carries the ruled temporal pattern, so B-198 and B-199 have no tag to pin'
-state: needs_brett
-claimable: false
+state: ready
+claimable: true
 repo: smn-data-pkg
 venue: either
 stream: S6
