@@ -1,0 +1,13 @@
+id: B-338
+kind: defect
+title: 'hub done has no hand-back for a shared repository, where nothing is pushed, so a hand-back shown in chat leaves no claim record'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'scripts/hub records a hand-back for a claim whose work is shown in chat rather than pushed: a documented option of hub done appends a handoff commit that keeps the claim and names no branch, and says in the commit that the hand-back is in chat. It is refused unless the item''s repo is one whose solo key in queue/config.yaml is false or absent, so the branch check that protects a solo repository is unchanged. A test in scripts/tests demonstrates it RED on the client as it stands, where done without --branch exits with "done needs --branch", and GREEN after; a second test shows the option refused for a solo repository. HUB.md step 7 stops telling an agent in a shared repository to keep the claim alive with heartbeats and names the option instead. That HUB.md change is class 7 in "Which pull requests need Brett", so the pull request that lands this item is his to merge.'

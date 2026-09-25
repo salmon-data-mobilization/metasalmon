@@ -52,7 +52,11 @@ states:
     means: Blocked on a decision Brett makes or a credential he holds.
   - name: review
     claimable: false
-    means: Work is pushed and handed back. The claim is still held on purpose.
+    means: >-
+      Handed back — pushed where the grant covers a push, shown in chat where it
+      does not. The claim is still held on purpose. Changed 2026-09-25 (Brett):
+      this read "Work is pushed and handed back", which gave finished work in a
+      shared repository, where the push is forbidden, no honest state.
   - name: done
     claimable: false
     means: >-
@@ -243,10 +247,14 @@ writes:
         never a second one for the same item. Narrowed 2026-09-16: this read
         "draft only ... Never marked ready for review, never merged, ... and
         never a reply to a review comment on it", and the rows below now grant
-        all three for the delegated classes. It stays a draft, unmerged and
-        unanswered, when the change falls in a class "Which pull requests need
-        Brett" reserves to him, which is what still makes a draft the
-        conservative default rather than a formality.
+        all three for the delegated classes. It stays a draft and unmerged when
+        the change falls in a class "Which pull requests need Brett" reserves
+        to him, which is what still makes a draft the conservative default
+        rather than a formality. There the agent replies to each Codex finding
+        to say how it was fixed, or why it is not a defect, and leaves
+        resolving the thread to him. (Until 2026-09-25 this read "a draft,
+        unmerged and unanswered", which the reply row below contradicted, and
+        practice had split between the two.)
       max: 1 per handed-back item
       enforced_by: >-
         nothing mechanical. This is the one permitted operation with no client
@@ -334,8 +342,11 @@ writes:
         in a member repository nobody but Brett has contributed to.
       shape: >-
         a reply that answers the finding, and resolving the thread once it is
-        answered. A finding is either fixed in a push or answered with the
-        evidence that it is not a defect; "acknowledged" is neither. Never a
+        answered, except on a pull request in a class "Which pull requests need
+        Brett" reserves to him: there the agent replies and leaves resolving the
+        thread to him (Brett, 2026-09-25). A finding is either fixed in a push
+        or answered with the evidence that it is not a defect; "acknowledged" is
+        neither. Never a
         reply that disputes a finding without evidence, and never resolving a
         thread whose finding was not addressed, which is the one way this row
         could be used to hide review rather than to serve it.
@@ -498,15 +509,24 @@ writes:
     - operation: push a small mechanical change to this repository's default branch
       target: refs/heads/main in this repository (metasalmon)
       shape: >-
-        queue state, a generated block, a typo, ignoring a stray file. Anything
-        substantive goes through a pull request, because that is what Codex
-        reviews and losing the review costs more than the extra step.
+        queue state on an item file that already exists, a generated block, a
+        typo, ignoring a stray file. A new item file and a correction to a card
+        go through a pull request, as anything substantive does, because that
+        is what Codex reviews and losing the review costs more than the extra
+        step. A port's landed record, which lint requires in the same change as
+        the item's done mark, is part of that queue-state change and goes with
+        it.
       max: no limit
       enforced_by: >-
         nothing mechanical. Whether a change is small and mechanical is a
         judgement, and the commit message is where the judgement is recorded so
         that a wrong one is legible afterwards.
-      granted: 2026-09-10 (ruling R15).
+      granted: >-
+        2026-09-10 (ruling R15). Narrowed 2026-09-25 (Brett): the shape read
+        "queue state, a generated block, a typo, ignoring a stray file". Under
+        that wording one push to main filed four new item files and broke
+        main's lint, and another added dated corrections to two knowledge
+        cards.
   permitted_note: >-
     Three rows, merge a pull request in this repository, promote a queue item
     to state ready, and push a small mechanical change to this repository's
@@ -622,9 +642,10 @@ writes:
       test the participation table already uses for pushing a branch.
     - >-
       a push to a default branch other than the two the permitted list names,
-      which are a small mechanical change here (queue state, a generated block,
-      a typo, ignoring a stray file) and the locks repository's README.
-      Anything substantive goes through a pull request, because that is what
+      which are a small mechanical change here (queue state on an existing
+      item file, a generated block, a typo, ignoring a stray file) and the
+      locks repository's README. A new item file, a card correction and
+      anything substantive go through a pull request, because that is what
       Codex reviews, and losing the review costs more than the extra step.
     - >-
       a push of the work branch into a member repository anyone other than
@@ -641,7 +662,8 @@ writes:
       eight the permitted list names, which are opening the one labelled draft
       pull request for a handed-back item, merging a green pull request in this
       repository, marking such a pull request ready for review, replying to and
-      resolving a Codex review thread on it, merging an approved pull request in
+      resolving a Codex review thread on it (on one reserved to Brett, replying
+      only, since he resolves it), merging an approved pull request in
       a solo member repository, and, on a pull request an agent opened,
       correcting its description, asking Codex to review it again, and
       re-running a failed job. Widened 2026-09-16 with the rows it counts:
@@ -720,10 +742,10 @@ behalf. That is worth more than the convenience of one fewer command to run.
 ## The queue and the states
 
 Each item is one YAML document under `queue/items/`, carrying its
-`id`, `kind`, `title`, `state`, `claimable`, `repo`, `blocked_by`, its `legacy`
-citation so the bare backlog numbers already written into 191 places never have
-to be rewritten, an `evidence` pointer, a `venue`, and, for a defect,
-`retires_when`.
+`id`, `kind`, `title`, `state`, `claimable`, `repo`, `severity`, `stream`,
+`blocked_by`, its `legacy` citation so the bare backlog numbers already
+written into 191 places never have to be rewritten, an `evidence` pointer, a
+`venue`, and, for a defect, `retires_when`.
 
 **`venue` is advice and never a gate.** It is `claude-science` when the work is
 reading, evidence synthesis, semantic judgement, statistical analysis or
@@ -816,10 +838,12 @@ a beat made early is not a breach (ruled 2026-09-24).
 **7. Hand back.** Append a `handoff` commit, print the compare URL, stop. In a
 member repository somebody other than Brett has contributed to, the branch is
 never pushed at all and the hand-back is a diff plus a pull request draft shown
-in chat; the Hand back section says how to tell which case you are in. Pass
-`hub done` the branch you actually pushed, and it will be
-`agent/<queue-id>/<token>` because that is the only branch you were allowed to
-push. The client checks the name against the grant and exits 3 on anything
+in chat; the Hand back section says how to tell which case you are in. There
+nothing is pushed, so there is no branch to pass `hub done`, and the client has
+no chat hand-back yet (queue item B-338): keep the claim alive with heartbeats
+until Brett answers in chat. Everywhere else, pass `hub done` the branch you
+actually pushed, and it will be `agent/<queue-id>/<token>` because that is the
+only branch you were allowed to push. The client checks the name against the grant and exits 3 on anything
 else, so a mismatch means either the branch is not one the register covers or
 your agent token is not the one holding the claim. Both are worth stopping for.
 
@@ -1056,9 +1080,12 @@ in the body. Never open a second one for the same item.
 2026-09-16 this paragraph read "Draft, and draft only: never mark it ready for
 review, never merge it, never reply to a review comment on it", and for a pull
 request in a class "Which pull requests need Brett" reserves to him that is still
-exactly right: it stays draft, unmerged, and unanswered, because hand-back is
-where he looks. For a pull request in the delegated classes, ruling R16 moved the
-looking to Codex: mark it ready, answer what Codex finds, and merge it on the
+exactly right: it stays draft and unmerged, because hand-back is where he
+looks. The agent still replies to each Codex finding there, saying how it was
+fixed or why it is not a defect, and leaves resolving the thread to him
+(Brett, 2026-09-25; this read "draft, unmerged, and unanswered" until then).
+For a pull request in the delegated classes, ruling R16 moved the looking to
+Codex: mark it ready, answer what Codex finds, and merge it on the
 four conditions that section lists. An agent that cannot tell which list its own
 pull request is in leaves it a draft and says so, which is the safe direction and
 the one that costs a message rather than a merge.
@@ -1404,7 +1431,8 @@ any pull request operation other than the six granted above, which are the one
 draft per handed-back item, correcting the description of a pull request an
 agent opened, a merge in this repository of a pull request whose
 checks are all green, marking such a pull request ready for review, replying to
-and resolving a Codex thread on it, and merging an approved pull request in a
+and resolving a Codex thread on it (on one reserved to Brett, replying only,
+since he resolves it), and merging an approved pull request in a
 member repository whose `solo` key is true; any push of the work branch into a
 member repository somebody else has contributed to, where it is ask-first; any
 merge in a member repository whose `solo` key is false or absent, any merge of a
@@ -1443,9 +1471,10 @@ than the global one it comes from:
   commit names the authorization Brett gave in chat, and a promotion that
   cannot cite one is a defect.
 - **Pushing to `main`** is for small mechanical changes only, and here that
-  phrase is enumerated rather than left to judgement: queue state, a generated
-  block, a typo, ignoring a stray file. Anything else goes through a pull
-  request, because that is what Codex reviews.
+  phrase is enumerated rather than left to judgement: queue state on an
+  existing item file, a generated block, a typo, ignoring a stray file. A new
+  item file, a card correction and anything else go through a pull request,
+  because that is what Codex reviews.
 
 **This section called those three widenings until 2026-09-10, and the label was
 wrong in a way that costs something.** A widening claims an authority this file
@@ -1558,7 +1587,8 @@ with the register.
   nobody but Brett has ever contributed to, labelled `agent-run` and carrying
   the queue id. On that pull request, ruling R16 permits three further things
   and nothing more: marking it ready for review, replying to a Codex review
-  thread, and resolving a thread once its finding is fixed or answered. A reply
+  thread, and resolving a thread once its finding is fixed or answered, except
+  on a pull request in a class reserved to him, where he resolves it. A reply
   to a *person's* review is still never, and so is any comment on a pull request
   the agent did not open.
 - Never merge a pull request **except** in a member repository whose `solo` key
@@ -1571,10 +1601,11 @@ with the register.
   outside the grant, and so is a merge of a change in one of his classes,
   however green it is.
 - Never push to `main` or any default branch **except** the small mechanical
-  changes enumerated for this repository above (queue state, a generated block,
-  a typo, ignoring a stray file) and the locks repository's README, which exists
-  so that a claim ref is never that repository's default branch. Anything
-  substantive goes through a pull request.
+  changes enumerated for this repository above (queue state on an existing
+  item file, a generated block, a typo, ignoring a stray file) and the locks
+  repository's README, which exists so that a claim ref is never that
+  repository's default branch. A new item file, a card correction and anything
+  substantive go through a pull request.
 - Never set an item to `ready` **except** on an authorization Brett gave in
   chat, and then the commit must name it. A promotion commit that cannot cite
   one is a defect.
