@@ -1,0 +1,13 @@
+id: B-247
+kind: defect
+title: 'metasalmonpy''s review console can still record an accept whose IRI is empty or still a REVIEW: marker, and reports a suggestion row with an empty IRI as a field it cannot decide, the mirror half of B-246'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-246]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the four cases B-246 names hold, by the rule B-246 lands in R: accept_suggestion(rank=) on a shortlisted candidate whose iri is only the marker, in each spelling _strip_review_iri() removes, records no accept with an empty decision_iri; a review rebuilt over a recorded accepted row whose iri is only the marker replays no empty decision_iri; an accept whose IRI is still a marker once _strip_review_iri() has run, such as iri="REVIEW:REVIEW:", records no decision_iri that _is_review_iri() reads as a marker, which is what the docstring of _strip_review_iri() already promises; and review_semantics() does not list a row it drops for an empty iri among the fields it "cannot decide". Each is pinned by a test demonstrated RED on the code as it stands. The replay case was read in this package and not run, so its RED run is its first measurement here. WHICH SPELLINGS COUNT AS THE MARKER IS Q-63''s. THE METASALMON HALF IS B-246, and each names the other. A PORT, NOT A REGISTER ROW: none of the four is a deliberate difference.'

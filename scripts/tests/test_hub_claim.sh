@@ -81,6 +81,29 @@
 #   later process waited out. 34 is a refused rename, which used to spin the
 #   waiter with no sleep and no count. Each was run RED the same way.
 #
+#   35 to 40 came from hub item B-187, on 2026-09-24, and are about which
+#   checkout the queue is read from. The client reads queue/ from the checkout
+#   it sits in, and a checkout behind origin's default branch answered "no
+#   queue item" for an item filed since, listed a stale queue as though it
+#   were current, and would have claimed an item origin had already closed. 35
+#   is the item's retirement condition read literally, 36 the closed item, 37
+#   ready, ready --set and doctor. 38 is `hub fresh`, asked by a current client
+#   about a checkout whose own client is too old to know the question, which is
+#   the one case no client can cover from inside. 39 is the two commands
+#   staleness must not stop, beat and done; 40 a queue that is not in a
+#   checkout at all.
+#   Each was run RED against the client before B-187, the same way. They are
+#   also why every fixture queue here is now a git checkout with a bare origin
+#   beside it, rather than a plain directory: make_checkout says why.
+#
+#   41 came from Codex's first review of that change, pull request 156. Because
+#   39 lets beat and done go ahead from a stale checkout, they and release also
+#   took their push target from it, so a checkout whose locks_repo or
+#   claim_ref_prefix origin had since changed pushed where the queue no longer
+#   looks. 41 is every pushing command refusing that, from a stale checkout and
+#   from a current one edited in place. It was run RED against both the client
+#   before B-187 and the first version of the change.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -205,6 +228,34 @@ PART_SOLO_ID="F-01"    # repo metasalmon: nobody but Brett works in it
 PART_SHARED_ID="F-02"  # repo salmon-data-standards-workshop: shared
 PART_TOKEN="parttest-caller"
 
+# The stale fixture of assertions 35 to 37 and 39 (hub item B-187): a checkout
+# one commit behind its origin, where that commit filed one item and closed
+# another. Its own agent token, so nothing it does is counted against another
+# fixture's concurrency cap.
+STALE_NEW_ID="G-01"   # on origin/main only: filed after the checkout was last updated
+STALE_DONE_ID="G-02"  # ready in the checkout, done on origin/main
+STALE_HELD_ID="G-03"  # the same in both, and held by this fixture's token for beat and done
+STALE_TOKEN="staletest-caller"
+
+# The fixture of assertion 38: a checkout one commit behind its origin whose
+# scripts/hub is a sentinel rather than a client, standing in for a checkout
+# older than the check. It records that it ran, and it must never run.
+PREDATES_ID="G-11"    # on origin/main only
+
+# The fixture of assertion 40: a queue that is not in a git checkout at all.
+NOGIT_ID="H-01"
+NOGIT_TOKEN="nogittest-caller"
+
+# The fixture of assertion 41: a checkout one commit behind an origin whose
+# commit moved claim_ref_prefix, and a second, current checkout of the same
+# origin with the old prefix edited back in place. The item is held by this
+# fixture's own token under the old prefix, which is where a push from either
+# checkout would go.
+ROUTE_ID="R-01"
+ROUTE_TOKEN="routetest-caller"
+ROUTE_OLD_PREFIX="refs/heads/claim/"
+ROUTE_NEW_PREFIX="refs/heads/claim-moved/"
+
 n_pass=0
 n_fail=0
 n_skip=0
@@ -239,11 +290,27 @@ run_with_timeout() {
   local watchdog=$!
   local rc=0
   wait "$pid"; rc=$?
-  kill "$watchdog" >/dev/null 2>&1
+  # SIGKILL, not SIGTERM, and the difference is the fixture's life. The
+  # watchdog is a subshell of this script, forked with `trap cleanup EXIT INT
+  # TERM` in force, and a SIGTERM that reaches it before it has reset those
+  # inherited traps can run cleanup INSIDE the watchdog: `rm -rf "$TMPROOT"`,
+  # mid-run. Measured 2026-09-24 in a copy of this function whose watchdog
+  # recorded instead of killing, over 300 calls of `true`: with SIGTERM the
+  # parent's cleanup ran inside the watchdog 18 times, and twice the watchdog
+  # then went on to its own kill line anyway; with SIGKILL, never. The race was
+  # always here. B-187's fixtures made it bite, with about forty more short
+  # git calls in setup, each a window: in the hour before this line changed the
+  # suite failed in five of twenty-four runs, four of them in setup. A SIGKILL
+  # cannot be trapped, so the watchdog dies where it stands, and its orphaned
+  # sleep exits on its own.
+  # RETIRES WHEN: this function stops forking a subshell to keep time, or the
+  # script stops trapping TERM with a handler that deletes the fixture.
+  kill -9 "$watchdog" >/dev/null 2>&1
   wait "$watchdog" >/dev/null 2>&1
   # A process killed by a signal reports 128 plus the signal. SIGKILL from the
-  # watchdog is 137 and there is no other kill in this script, so 137 is the
-  # timeout and anything else is the command's own answer.
+  # watchdog is 137 and nothing else in this script kills the command, so 137
+  # is the timeout and anything else is the command's own answer. (The kill
+  # above is of the watchdog, after the command's status is already read.)
   if [ "$rc" -eq 137 ]; then return 124; fi
   return "$rc"
 }
@@ -441,6 +508,18 @@ REFUSE_CACHE=""
 PART_REPO=""
 PART_CLIENT=""
 PART_CACHE=""
+STALE_REPO=""
+STALE_CLIENT=""
+STALE_CACHE=""
+PREDATES_REPO=""
+PREDATES_MARKER=""
+NOGIT_REPO=""
+NOGIT_CLIENT=""
+NOGIT_CACHE=""
+ROUTE_REPO=""
+ROUTE_CLIENT=""
+ROUTE_EDITED=""
+ROUTE_CACHE=""
 CLIENT_PRESENT=0
 CLIENT_USABLE=0
 CLIENT_SKIP_REASON="scripts/hub does not exist yet (migration step 2)"
@@ -475,6 +554,44 @@ cleanup() {
   fi
 }
 trap cleanup EXIT INT TERM
+
+# make_checkout DIR - makes a fixture queue a git checkout of its own, with a
+# bare `origin` beside it whose default branch is exactly that checkout's HEAD.
+#
+# Since hub item B-187 the client asks origin, before it reads any item file,
+# whether the checkout it sits in contains origin's default branch, and a claim
+# refuses from anything it cannot compare with origin. Until then every fixture
+# here was a plain directory, which the client never looked at twice. So every
+# fixture queue is a real checkout, current with a real origin, and each
+# assertion that measures something else still measures it: a fixture that
+# could not be compared would have turned every claim below into a refusal
+# about the fixture. The origin is a bare repository next to the fixture, under
+# $TMPROOT, so the client's ls-remote and fetch reach nothing else and the run
+# stays offline.
+#
+# RETIRES WHEN: the client stops reading the queue from a working tree, which
+# retires the question that makes a fixture need an origin.
+make_checkout() {
+  local dir="$1"
+  g git -C "$dir" init -q --initial-branch=main >/dev/null 2>&1 || return 1
+  g git -C "$dir" add -A >/dev/null 2>&1 || return 1
+  g git -C "$dir" commit -q -m "fixture queue" >/dev/null 2>&1 || return 1
+  g git clone -q --bare "$dir" "$dir.origin.git" >/dev/null 2>&1 || return 1
+  g git -C "$dir" remote add origin "$dir.origin.git" >/dev/null 2>&1 || return 1
+}
+
+# advance_origin DIR MESSAGE EDIT_FUNCTION - lands one commit on DIR's origin
+# that DIR does not have, which is the whole of what makes a checkout stale.
+# The commit is made in a scratch clone of the origin, by EDIT_FUNCTION run with
+# that clone's path as its only argument, and pushed; DIR is left alone.
+advance_origin() {
+  local dir="$1" message="$2" edit="$3" up="$1.upstream"
+  g git clone -q "$dir.origin.git" "$up" >/dev/null 2>&1 || return 1
+  "$edit" "$up" || return 1
+  g git -C "$up" add -A >/dev/null 2>&1 || return 1
+  g git -C "$up" commit -q -m "$message" >/dev/null 2>&1 || return 1
+  g git -C "$up" push -q origin main >/dev/null 2>&1 || return 1
+}
 
 require_git_version() {
   local v major minor
@@ -732,6 +849,144 @@ YAML
   write_fixture_item "$items" "$PART_SHARED_ID" salmon-data-standards-workshop
 }
 
+# write_queue_config DIR LABEL - the configuration the three B-187 fixtures
+# share: a placeholder locks_repo for the reason the main fixture gives, and
+# one solo member, because the item's repository is not what they measure.
+write_queue_config() {
+  cat >"$1/queue/config.yaml" <<YAML
+# Fixture configuration for $2. Not the real queue. locks_repo is a
+# placeholder for the same reason as the main fixture: the test passes
+# HUB_LOCKS_URL, and a plausible remote here could send a stray push somewhere
+# real if the override were ever dropped.
+locks_repo: PLACEHOLDER-$2
+claim_ref_prefix: refs/heads/claim/
+lease_hours_interactive: 4
+lease_hours_batch: 12
+heartbeat_minutes: 30
+reclaim_grace_minutes: 60
+max_concurrent_claims: 2
+max_reclaims_per_item_per_day: 1
+members:
+  - repo: metasalmon
+    org: salmon-data-mobilization
+    forge: github
+    solo: true
+YAML
+}
+
+# write_stale_item ITEMS_DIR ID STATE
+write_stale_item() {
+  cat >"$1/$2.yaml" <<YAML
+id: $2
+kind: defect
+title: Fixture item for the stale-checkout assertions
+state: $3
+claimable: true
+repo: metasalmon
+blocked_by: []
+evidence: backlog.md
+retires_when: The client stops reading the queue from a working tree.
+YAML
+}
+
+# The stale fixture, for assertions 35 to 37 and 39 (hub item B-187).
+#
+# A checkout one commit behind its origin, which is the 2026-09-16 shape at the
+# smallest distance that has it: the commit it lacks filed one item and closed
+# another. So it holds three answers that are true of the tree and false of the
+# queue, one per way a stale tree misleads -- an item it has never heard of
+# (the reported defect), an item it still reads as ready that origin has closed
+# (a claim that should not be made), and an item that is the same on both sides
+# (which beat and done must go on serving). The client in it is the client
+# under test, so the only thing wrong with this checkout is its distance.
+#
+# RETIRES WHEN: the client stops reading the queue from a working tree, with
+# assertions 35 to 37 and 39.
+stale_fixture_advance() { # upstream clone -> the commit the checkout lacks
+  write_stale_item "$1/queue/items" "$STALE_NEW_ID" ready
+  write_stale_item "$1/queue/items" "$STALE_DONE_ID" done
+}
+write_stale_fixture() {
+  local items="$STALE_REPO/queue/items"
+  mkdir -p "$items" "$STALE_REPO/scripts"
+  cp -p "$SOURCE_CLIENT" "$STALE_CLIENT" 2>/dev/null || cp "$SOURCE_CLIENT" "$STALE_CLIENT"
+  write_queue_config "$STALE_REPO" stale-checkout-test-fixture
+  write_stale_item "$items" "$STALE_DONE_ID" ready
+  write_stale_item "$items" "$STALE_HELD_ID" ready
+  make_checkout "$STALE_REPO" || return 1
+  advance_origin "$STALE_REPO" "file $STALE_NEW_ID and close $STALE_DONE_ID" stale_fixture_advance
+}
+
+# The fixture of assertion 38: a checkout one commit behind its origin whose
+# scripts/hub is not a client at all but a sentinel, standing in for a
+# checkout older than the check -- the 2026-09-16 primary checkout, whose
+# client had never heard the question. `hub fresh` is asked about it by the
+# client under test from another checkout, and has to answer from git and
+# origin alone. If anything runs the sentinel, it leaves a marker file, and 38
+# fails on the marker whatever else was printed.
+#
+# RETIRES WHEN: `hub fresh` retires, with the client's reading of the queue
+# from a working tree.
+# The checkout's queue/items is empty, and git does not carry an empty
+# directory, so the clone the commit is made in has to create it.
+predates_fixture_advance() {
+  mkdir -p "$1/queue/items" && write_stale_item "$1/queue/items" "$PREDATES_ID" ready
+}
+write_predates_fixture() {
+  mkdir -p "$PREDATES_REPO/queue/items" "$PREDATES_REPO/scripts"
+  cat >"$PREDATES_REPO/scripts/hub" <<SENTINEL
+#!/bin/sh
+# A stand-in for a client older than the freshness check. It must never run.
+: >"$PREDATES_MARKER"
+exit 97
+SENTINEL
+  chmod +x "$PREDATES_REPO/scripts/hub"
+  write_queue_config "$PREDATES_REPO" predates-test-fixture
+  make_checkout "$PREDATES_REPO" || return 1
+  advance_origin "$PREDATES_REPO" "file $PREDATES_ID" predates_fixture_advance
+}
+
+# The fixture of assertion 40: a queue in a plain directory, as every fixture
+# here was until B-187. There is nothing to compare it with, so whether it is
+# the queue cannot be told, and the two answers to that differ by command.
+#
+# RETIRES WHEN: the client stops reading the queue from a working tree.
+write_nogit_fixture() {
+  mkdir -p "$NOGIT_REPO/queue/items" "$NOGIT_REPO/scripts"
+  cp -p "$SOURCE_CLIENT" "$NOGIT_CLIENT" 2>/dev/null || cp "$SOURCE_CLIENT" "$NOGIT_CLIENT"
+  write_queue_config "$NOGIT_REPO" not-a-checkout-test-fixture
+  write_stale_item "$NOGIT_REPO/queue/items" "$NOGIT_ID" ready
+}
+
+# The fixture of assertion 41, from Codex's first review of pull request 156:
+# beat, release and done go ahead from a stale checkout on purpose, and before
+# this they also took their push target from it, so a checkout whose routing
+# origin had since changed pushed where the queue no longer looks. Two
+# checkouts of one origin, whose one commit moved claim_ref_prefix: the first
+# is behind that commit, the second contains it and has the old prefix edited
+# back in by hand, because the routing check is not a staleness check and a
+# current checkout edited in place is the case that shows it.
+#
+# RETIRES WHEN: the client reads its configuration from origin's default branch
+# rather than from a working tree, which retires require_routing with it.
+route_fixture_advance() {
+  sed "s#^claim_ref_prefix: .*#claim_ref_prefix: $ROUTE_NEW_PREFIX#" \
+    "$1/queue/config.yaml" >"$1/queue/config.yaml.new" &&
+    mv "$1/queue/config.yaml.new" "$1/queue/config.yaml"
+}
+write_route_fixture() {
+  mkdir -p "$ROUTE_REPO/queue/items" "$ROUTE_REPO/scripts"
+  cp -p "$SOURCE_CLIENT" "$ROUTE_CLIENT" 2>/dev/null || cp "$SOURCE_CLIENT" "$ROUTE_CLIENT"
+  write_queue_config "$ROUTE_REPO" route-test-fixture
+  write_stale_item "$ROUTE_REPO/queue/items" "$ROUTE_ID" ready
+  make_checkout "$ROUTE_REPO" || return 1
+  advance_origin "$ROUTE_REPO" "move claim_ref_prefix" route_fixture_advance || return 1
+  g git clone -q "$ROUTE_REPO.origin.git" "$ROUTE_EDITED" >/dev/null 2>&1 || return 1
+  sed "s#^claim_ref_prefix: .*#claim_ref_prefix: $ROUTE_OLD_PREFIX#" \
+    "$ROUTE_EDITED/queue/config.yaml" >"$ROUTE_EDITED/queue/config.yaml.new" &&
+    mv "$ROUTE_EDITED/queue/config.yaml.new" "$ROUTE_EDITED/queue/config.yaml"
+}
+
 setup() {
   require_git_version
 
@@ -750,6 +1005,18 @@ setup() {
   PART_REPO="$TMPROOT/participation-fixture-repo"
   PART_CLIENT="$PART_REPO/scripts/hub"
   PART_CACHE="$TMPROOT/participation-cache"
+  STALE_REPO="$TMPROOT/stale-fixture-repo"
+  STALE_CLIENT="$STALE_REPO/scripts/hub"
+  STALE_CACHE="$TMPROOT/stale-cache"
+  PREDATES_REPO="$TMPROOT/predates-fixture-repo"
+  PREDATES_MARKER="$TMPROOT/predates-client-ran"
+  NOGIT_REPO="$TMPROOT/not-a-checkout-fixture"
+  NOGIT_CLIENT="$NOGIT_REPO/scripts/hub"
+  NOGIT_CACHE="$TMPROOT/not-a-checkout-cache"
+  ROUTE_REPO="$TMPROOT/route-fixture-repo"
+  ROUTE_CLIENT="$ROUTE_REPO/scripts/hub"
+  ROUTE_EDITED="$TMPROOT/route-edited-checkout"
+  ROUTE_CACHE="$TMPROOT/route-cache"
 
   # No user, system or inherited git configuration reaches the fixture, and no
   # terminal prompt can block an unattended run.
@@ -780,6 +1047,15 @@ setup() {
     write_cap_fixture
     write_refuse_fixture
     write_participation_fixture
+    # Each a checkout current with an origin of its own; make_checkout says why.
+    local d
+    for d in "$FIXTURE_REPO" "$CAP_REPO" "$REFUSE_REPO" "$PART_REPO"; do
+      make_checkout "$d" || die "could not make $d a git checkout with an origin"
+    done
+    write_stale_fixture || die "could not build the stale-checkout fixture"
+    write_predates_fixture || die "could not build the predates fixture"
+    write_nogit_fixture
+    write_route_fixture || die "could not build the routing fixture"
     # The client names its own exit codes; read them from it rather than
     # keeping a second copy of two numbers here.
     local v
@@ -803,6 +1079,14 @@ setup() {
 # about file permissions.
 hub() {
   if [ -x "$CLIENT" ]; then g "$CLIENT" "$@"; else g bash "$CLIENT" "$@"; fi
+}
+
+# fixture_hub CLIENT CACHE TOKEN ARGS... - one call of another fixture's own
+# client, with that fixture's own cache and agent token, so nothing it does is
+# counted against the main fixture's concurrency cap. Assertions 35 to 40.
+fixture_hub() {
+  local c="$1" cache="$2" tok="$3"; shift 3
+  ( HUB_CACHE_DIR="$cache" HUB_AGENT_TOKEN="$tok" g bash "$c" "$@" )
 }
 
 # probe_client - decides whether the client assertions can say anything true.
@@ -1853,6 +2137,262 @@ main() {
     skip 33 "client: a failed pid write leaves no lock behind"
     note "$CLIENT_SKIP_REASON"
     skip 34 "client: a refused rename returns within the budget"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 35 to 40 -------------------------------------------------------------
+  # Which checkout the queue is read from (hub item B-187).
+  #
+  # The client reads queue/ from the checkout it sits in, and the queue is the
+  # default branch on origin. On 2026-09-16 four agents were sent to run claim
+  # in a checkout 67 commits behind, and for two of them the item file was not
+  # in that tree at all: claim answered "no queue item", true of the tree and
+  # false of the queue, and the agents reported the items missing rather than
+  # the checkout stale. 35 is the retirement condition read literally: claim,
+  # against an item that exists on origin/main and not in the working tree,
+  # names staleness rather than absence.
+  #
+  # Each was run RED against the client as it stood before B-187, with
+  # HUB_CLIENT pointing this file at a copy of it, and GREEN against the fix;
+  # both runs are in the item's workpad.
+  #
+  # RETIRES WHEN: the client reads the queue from origin's default branch rather
+  # than from a working tree. There is then no checkout to be stale, and 35 to
+  # 40 go with the check.
+  if [ "$probe_ok" = "0" ]; then
+    local st_out st_rc st_ok st_refs
+
+    # -- 35 -----------------------------------------------------------------
+    # The reported defect. The item is on origin only. The refusal has to say
+    # that the checkout is stale, by how much and against which branch, and
+    # that the item exists; and it must not say "no queue item", which is the
+    # sentence that sent four agents the wrong way. It is refused before any
+    # push, so no claim ref may exist for the item afterwards.
+    st_out="$TMPROOT/client.stale.new.out"; st_ok=0
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" claim "$STALE_NEW_ID" >"$st_out" 2>&1
+    st_rc=$?
+    [ "$st_rc" = "$EX_FAIL" ] || st_ok=1
+    grep -Fq "STALE CHECKOUT" "$st_out" || st_ok=1
+    grep -Fq "(branch main, at " "$st_out" || st_ok=1
+    grep -Fq "is 1 commit behind origin/main" "$st_out" || st_ok=1
+    grep -Fq "$STALE_NEW_ID is not in this checkout, and it IS on origin/main" "$st_out" || st_ok=1
+    grep -Fq "no queue item" "$st_out" && st_ok=1
+    st_refs=$(git -C "$LOCKS" for-each-ref --format='%(refname)' "refs/heads/claim/$STALE_NEW_ID" 2>/dev/null | grep -c .)
+    [ "$st_refs" = "0" ] || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 35 "client: claim, in a checkout one commit behind origin/main, of an item on origin and not in the tree, refuses naming staleness, the distance and both branches rather than absence, and writes no claim ref" 0
+    else
+      assert 35 "client: claim from a stale checkout names staleness rather than absence (rc $st_rc, wanted $EX_FAIL; claim refs $st_refs)" 1
+      note "$(head -n 3 "$st_out" | tr '\n' ' ')"
+    fi
+
+    # -- 36 -----------------------------------------------------------------
+    # The same checkout, and the item it still reads as ready that origin has
+    # closed. The client before B-187 claimed it, because every answer it read
+    # from the tree said yes: a claim on finished work, with nothing anywhere
+    # saying so. Refused, with both states named, and no claim ref.
+    st_out="$TMPROOT/client.stale.closed.out"; st_ok=0
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" claim "$STALE_DONE_ID" >"$st_out" 2>&1
+    st_rc=$?
+    [ "$st_rc" = "$EX_FAIL" ] || st_ok=1
+    grep -Fq "STALE CHECKOUT" "$st_out" || st_ok=1
+    grep -Fq "$STALE_DONE_ID is in state 'ready' here and 'done' on origin/main" "$st_out" || st_ok=1
+    st_refs=$(git -C "$LOCKS" for-each-ref --format='%(refname)' "refs/heads/claim/$STALE_DONE_ID" 2>/dev/null | grep -c .)
+    [ "$st_refs" = "0" ] || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 36 "client: claim, in the same checkout, of an item it reads as ready and origin/main has closed, refuses naming both states, and writes no claim ref" 0
+    else
+      assert 36 "client: claim from a stale checkout refuses an item origin has closed (rc $st_rc, wanted $EX_FAIL; claim refs $st_refs)" 1
+      note "$(head -n 3 "$st_out" | tr '\n' ' ')"
+    fi
+
+    # -- 37 -----------------------------------------------------------------
+    # ready, ready --set and doctor in the same checkout. ready used to succeed
+    # there, listing the tree's items with nothing to say they were not the
+    # queue's, which is worse than failing because nothing about the output
+    # looked wrong. It now refuses and lists nothing. ready --set, asked to
+    # print the promotion of the item the checkout has never heard of, used to
+    # answer "no queue item" like claim did; it now refuses the same way claim
+    # does and prints no edit. doctor fails. The other half of the pair is 16
+    # and 27, where ready lists from a checkout that is current: a client that
+    # refused every listing passes this and fails those.
+    local rd_out="$TMPROOT/client.stale.ready.out" rd_err="$TMPROOT/client.stale.ready.err"
+    local rs_out="$TMPROOT/client.stale.set.out" rs_err="$TMPROOT/client.stale.set.err"
+    local dr_out="$TMPROOT/client.stale.doctor.out" rd_rc rs_rc dr_rc
+    st_ok=0
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" ready >"$rd_out" 2>"$rd_err"; rd_rc=$?
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" \
+      ready --set "$STALE_NEW_ID" >"$rs_out" 2>"$rs_err"; rs_rc=$?
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" doctor >"$dr_out" 2>&1; dr_rc=$?
+    [ "$rd_rc" = "$EX_FAIL" ] || st_ok=1
+    [ -s "$rd_out" ] && st_ok=1
+    grep -Fq "STALE CHECKOUT" "$rd_err" || st_ok=1
+    grep -Fq "is 1 commit behind origin/main" "$rd_err" || st_ok=1
+    [ "$rs_rc" = "$EX_FAIL" ] || st_ok=1
+    [ -s "$rs_out" ] && st_ok=1
+    grep -Fq "STALE CHECKOUT" "$rs_err" || st_ok=1
+    grep -Fq "$STALE_NEW_ID is not in this checkout, and it IS on origin/main" "$rs_err" || st_ok=1
+    grep -Fq "no queue item" "$rs_err" && st_ok=1
+    [ "$dr_rc" = "$EX_FAIL" ] || st_ok=1
+    grep -Fq "FAIL  STALE CHECKOUT" "$dr_out" || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 37 "client: in a stale checkout, ready refuses and lists nothing, ready --set refuses an item that is only on origin and prints no edit, both naming staleness and the distance, and doctor fails on it" 0
+    else
+      assert 37 "client: ready and ready --set refuse and doctor fails in a stale checkout (ready rc $rd_rc listed $(grep -c . "$rd_out") lines; ready --set rc $rs_rc printed $(grep -c . "$rs_out") lines; doctor rc $dr_rc)" 1
+      note "ready: $(head -n 2 "$rd_err" | tr '\n' ' ')"
+      note "ready --set: $(head -n 2 "$rs_err" | tr '\n' ' ')"
+      note "doctor: $(grep -m1 '^FAIL' "$dr_out" | tr '\n' ' ')"
+    fi
+
+    # -- 38 -----------------------------------------------------------------
+    # The bootstrap failure, the part of B-187 no client can fix from inside: a
+    # checkout older than the check carries a client that does not ask, and it
+    # answers "no queue item" exactly as before. So the answer has to come from
+    # a client newer than that checkout, before anybody runs the checkout's own.
+    # That is `hub fresh PATH`, run here by the main fixture's client against a
+    # checkout whose scripts/hub is a sentinel. It has to name the staleness,
+    # the distance and both branches, exit 3, and leave the sentinel unrun.
+    # Paired inside the assertion: the same command answers 0 for its own
+    # checkout, which is current, and 3 for the two named together, so a client
+    # that called everything stale fails here as well.
+    local fr_out="$TMPROOT/client.fresh.out" fs_out="$TMPROOT/client.fresh.self.out" fr_rc fs_rc fb_rc
+    st_ok=0
+    rm -f "$PREDATES_MARKER"
+    hub fresh "$PREDATES_REPO" >"$fr_out" 2>&1; fr_rc=$?
+    hub fresh >"$fs_out" 2>&1; fs_rc=$?
+    hub fresh "$FIXTURE_REPO" "$PREDATES_REPO" >/dev/null 2>&1; fb_rc=$?
+    [ "$fr_rc" = "$EX_FAIL" ] || st_ok=1
+    grep -Fq "STALE CHECKOUT" "$fr_out" || st_ok=1
+    grep -Fq "predates-fixture-repo (branch main, at " "$fr_out" || st_ok=1
+    grep -Fq "is 1 commit behind origin/main" "$fr_out" || st_ok=1
+    [ -e "$PREDATES_MARKER" ] && st_ok=1
+    [ "$fs_rc" = "0" ] || st_ok=1
+    grep -Fq "current: " "$fs_out" || st_ok=1
+    [ "$fb_rc" = "$EX_FAIL" ] || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 38 "client: fresh, asked about a checkout one commit behind whose own client is too old to know the question, names staleness, the distance and both branches without running that client, and answers 0 for a current checkout and 3 when either of two is stale" 0
+    else
+      assert 38 "client: fresh names a stale checkout it is not part of (rc $fr_rc wanted $EX_FAIL; own checkout rc $fs_rc wanted 0; both rc $fb_rc wanted $EX_FAIL; sentinel ran: $([ -e "$PREDATES_MARKER" ] && echo yes || echo no))" 1
+      note "$(head -n 2 "$fr_out" | tr '\n' ' ')"
+    fi
+
+    # -- 39 -----------------------------------------------------------------
+    # The two commands staleness must not stop. A heartbeat records this
+    # agent's own claim, and a lease must never be lost to a merge that has
+    # nothing to do with it. A hand-back records its branch whatever the queue
+    # says, and warns, because the compare URL and the instruction it prints
+    # after are read from the checkout. An agent's worktree is routinely behind
+    # by the time it hands back, since other work merges while it works, so a
+    # done that refused would strand finished work. Both still check where the
+    # push goes; this fixture's routing is origin's, and 41 is the checkout
+    # whose routing is not. (This comment said a heartbeat "reads no queue
+    # file" until Codex's first review of pull request 156 pointed out that it
+    # reads queue/config.yaml for exactly that routing.)
+    local held_ref="refs/heads/claim/$STALE_HELD_ID" held_seed
+    local bt_out="$TMPROOT/client.stale.beat.out" dn_out="$TMPROOT/client.stale.handback.out" bt_rc dn_rc
+    st_ok=0
+    held_seed=$(mk_commit "$CLONE_A" "claim $STALE_HELD_ID by $STALE_TOKEN" \
+                 "$(claim_record "$STALE_HELD_ID" "$STALE_TOKEN" claim "$future")")
+    push_ref "$CLONE_A" "$held_seed" "$held_ref" "$TMPROOT/stale.held.push"
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" beat "$STALE_HELD_ID" >"$bt_out" 2>&1; bt_rc=$?
+    fixture_hub "$STALE_CLIENT" "$STALE_CACHE" "$STALE_TOKEN" \
+      done "$STALE_HELD_ID" --branch "agent/$STALE_HELD_ID/$STALE_TOKEN" >"$dn_out" 2>&1; dn_rc=$?
+    [ "$bt_rc" = "0" ] || st_ok=1
+    grep -Fq "STALE" "$bt_out" && st_ok=1
+    [ "$dn_rc" = "0" ] || st_ok=1
+    grep -Fq "handed off $STALE_HELD_ID" "$dn_out" || st_ok=1
+    grep -Fq "STALE CHECKOUT" "$dn_out" || st_ok=1
+    grep -Fq "not from the queue" "$dn_out" || st_ok=1
+    [ "$(tip_value "$held_ref" action)" = "handoff" ] || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 39 "client: in a stale checkout, beat renews a held lease without asking, and done hands back and records the handoff while warning that what it prints is read from a stale checkout" 0
+    else
+      assert 39 "client: beat and done are not stopped by a stale checkout (beat rc $bt_rc, done rc $dn_rc, tip $(tip_value "$held_ref" action))" 1
+      note "beat: $(head -n 3 "$bt_out" | tr '\n' ' ')"
+      note "done: $(grep -v '^locks repository\|^ *source:' "$dn_out" | head -n 3 | tr '\n' ' ')"
+    fi
+
+    # -- 40 -----------------------------------------------------------------
+    # A queue that is not in a checkout at all, which is what every fixture in
+    # this file was until B-187. Whether it is the queue cannot be told, and
+    # two commands answer that differently on purpose. claim refuses, because
+    # it writes and this is its precondition, the same rule the concurrency cap
+    # follows. ready lists with a warning, as it does when the locks repository
+    # cannot be read, because the claim that follows it refuses honestly.
+    local ng_out="$TMPROOT/client.nogit.claim.out" ng_ready="$TMPROOT/client.nogit.ready.out"
+    local ng_err="$TMPROOT/client.nogit.ready.err" ng_rc ng_rrc ng_refs
+    st_ok=0
+    fixture_hub "$NOGIT_CLIENT" "$NOGIT_CACHE" "$NOGIT_TOKEN" claim "$NOGIT_ID" >"$ng_out" 2>&1; ng_rc=$?
+    fixture_hub "$NOGIT_CLIENT" "$NOGIT_CACHE" "$NOGIT_TOKEN" ready >"$ng_ready" 2>"$ng_err"; ng_rrc=$?
+    ng_refs=$(git -C "$LOCKS" for-each-ref --format='%(refname)' "refs/heads/claim/$NOGIT_ID" 2>/dev/null | grep -c .)
+    [ "$ng_rc" = "$EX_FAIL" ] || st_ok=1
+    grep -Fq "cannot tell whether the checkout" "$ng_out" || st_ok=1
+    [ "$ng_refs" = "0" ] || st_ok=1
+    [ "$ng_rrc" = "0" ] || st_ok=1
+    grep -q "^$NOGIT_ID " "$ng_ready" || st_ok=1
+    grep -Fq "cannot tell whether the checkout" "$ng_err" || st_ok=1
+    if [ "$st_ok" = "0" ]; then
+      assert 40 "client: a queue in a directory that is not a git checkout cannot be compared with origin, so claim refuses naming why and writes no claim ref, while ready lists it with a warning" 0
+    else
+      assert 40 "client: an uncomparable queue refuses a claim and lists with a warning (claim rc $ng_rc wanted $EX_FAIL, claim refs $ng_refs; ready rc $ng_rrc wanted 0)" 1
+      note "claim: $(head -n 2 "$ng_out" | tr '\n' ' ')"
+      note "ready: $(head -n 2 "$ng_err" | tr '\n' ' ')"
+    fi
+
+    # -- 41 -----------------------------------------------------------------
+    # Where a push goes, which Codex's first review of pull request 156 found
+    # the first version of this change had left to the checkout. beat, release
+    # and done go ahead from a stale checkout on purpose (39), so each has to
+    # check the one thing a push cannot take from one: that locks_repo and
+    # claim_ref_prefix here are the ones origin names. The item is held under
+    # the old prefix by this fixture's token, and all three commands are asked
+    # from the stale checkout, then beat again from the current checkout with
+    # the old prefix edited back in. Every one must exit 3 naming the routing,
+    # and the claim ref must be exactly as seeded afterwards, with nothing
+    # created under the new prefix either: a refusal that printed the right
+    # words and pushed anyway would pass the first half. Paired with 39, where
+    # the routing matches and the same commands go ahead.
+    local rt_ref="${ROUTE_OLD_PREFIX}$ROUTE_ID" rt_seed rt_ok=0 rt_c rt_rc rt_moved
+    local rt_edited_client="$ROUTE_EDITED/scripts/hub"
+    rt_seed=$(mk_commit "$CLONE_A" "claim $ROUTE_ID by $ROUTE_TOKEN" \
+               "$(claim_record "$ROUTE_ID" "$ROUTE_TOKEN" claim "$future")")
+    push_ref "$CLONE_A" "$rt_seed" "$rt_ref" "$TMPROOT/route.seed.push"
+    for rt_c in beat release done edited-beat; do
+      case $rt_c in
+        beat)        fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" beat "$ROUTE_ID" ;;
+        release)     fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" release "$ROUTE_ID" routing test ;;
+        done)        fixture_hub "$ROUTE_CLIENT" "$ROUTE_CACHE" "$ROUTE_TOKEN" \
+                       done "$ROUTE_ID" --branch "agent/$ROUTE_ID/$ROUTE_TOKEN" ;;
+        edited-beat) fixture_hub "$rt_edited_client" "$ROUTE_CACHE" "$ROUTE_TOKEN" beat "$ROUTE_ID" ;;
+      esac >"$TMPROOT/client.route.$rt_c.out" 2>&1
+      rt_rc=$?
+      [ "$rt_rc" = "$EX_FAIL" ] || rt_ok=1
+      grep -Fq "ROUTING MISMATCH: claim_ref_prefix" "$TMPROOT/client.route.$rt_c.out" || rt_ok=1
+      [ "$(git -C "$LOCKS" rev-parse "$rt_ref" 2>/dev/null)" = "$rt_seed" ] || rt_ok=1
+      [ "$rt_ok" = "0" ] || break
+    done
+    rt_moved=$(git -C "$LOCKS" for-each-ref --format='%(refname)' "${ROUTE_NEW_PREFIX}" 2>/dev/null | grep -c .)
+    [ "$rt_moved" = "0" ] || rt_ok=1
+    if [ "$rt_ok" = "0" ]; then
+      assert 41 "client: beat, release and done from a checkout whose claim_ref_prefix origin has since moved, and beat from a current checkout with the old prefix edited in, each refuse naming the routing, and the claim ref is untouched with nothing created under either prefix" 0
+    else
+      assert 41 "client: every command that pushes refuses when its routing is not origin's (stopped at $rt_c: rc $rt_rc wanted $EX_FAIL; claim ref $(git -C "$LOCKS" rev-parse --short "$rt_ref" 2>/dev/null) seeded $(git -C "$LOCKS" rev-parse --short "$rt_seed" 2>/dev/null); refs under the new prefix $rt_moved)" 1
+      note "$(grep -v '^locks repository\|^ *source:' "$TMPROOT/client.route.$rt_c.out" | head -n 2 | tr '\n' ' ')"
+    fi
+  else
+    skip 35 "client: claim from a stale checkout names staleness rather than absence"
+    note "$CLIENT_SKIP_REASON"
+    skip 36 "client: claim from a stale checkout refuses an item origin has closed"
+    note "$CLIENT_SKIP_REASON"
+    skip 37 "client: ready and ready --set refuse and doctor fails in a stale checkout"
+    note "$CLIENT_SKIP_REASON"
+    skip 38 "client: fresh names a stale checkout it is not part of"
+    note "$CLIENT_SKIP_REASON"
+    skip 39 "client: beat and done are not stopped by a stale checkout"
+    note "$CLIENT_SKIP_REASON"
+    skip 40 "client: an uncomparable queue refuses a claim and lists with a warning"
+    note "$CLIENT_SKIP_REASON"
+    skip 41 "client: every command that pushes refuses when its routing is not origin's"
     note "$CLIENT_SKIP_REASON"
   fi
 

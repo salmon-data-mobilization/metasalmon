@@ -631,7 +631,7 @@ writes:
 # HUB.md, the hub coordination policy
 
 The client is dumb and this file is the brain. A `hub` client (`doctor`,
-`ready`, `claim`, `beat`, `release`, `done`, `reconcile`) does the mechanics;
+`ready`, `claim`, `beat`, `release`, `done`, `reconcile`, `fresh`) does the mechanics;
 every rule it enforces is written here, once, and nowhere else. **Every number
 those rules use lives in `queue/config.yaml`, once, and nowhere else**,
 including here. Cite a constant by its key; do not restate its value in prose,
@@ -737,7 +737,9 @@ once you are inside.
 **1. Poll.** Fetch the queue directory and the claim refs. Read item files, not
 prose. Prose that restates a state fact is a generated block with a freshness
 check on it, so if you find yourself reading a status sentence to decide
-something, you are reading the wrong artifact.
+something, you are reading the wrong artifact. Read them in a checkout that
+contains `origin`'s default branch, because the client refuses to answer from
+one that does not; *Which checkout the queue is read from* says why.
 
 **2. Select.** Apply the five claimable tests in order. Prefer the item with
 the lowest `severity` number among defects, then the oldest id. Do not select
@@ -875,6 +877,76 @@ defect.** The stash clause and the revision walk were the same mistake written
 twice, three lines apart, and removing one of them produced a paragraph asserting
 the other was sound. Ask of any such correction what *else* is in the same
 family, before writing the sentence that says the rest is fine.
+
+## Which checkout the queue is read from
+
+**The queue is the default branch on `origin`, and the client reads it from the
+checkout it is run in.** Those are the same thing only while that checkout
+contains the branch's tip, and until 2026-09-24 nothing asked whether it did. On
+2026-09-16 four agents were sent to run `hub claim` in a primary checkout 67
+commits behind `origin/main`. For two of them the item file was not in that
+tree, and the client answered "no queue item": true of the tree, false of the
+queue. The agents reported the items missing rather than the checkout stale
+(hub item B-187).
+
+So every command that answers from the queue first asks `origin` which commit
+its default branch is at, and whether the checkout contains it. It asks
+`origin`, not the checkout's own `origin/main`, because that ref is only as
+current as the last fetch made there. A checkout that does not contain the tip
+is **stale**, and the client says so, with the distance and both branches.
+Then:
+
+- **`claim`, `reconcile`, `ready` and `ready --set` refuse**, exit 3, because
+  what they would answer from, or act on other agents' claims under, is not the
+  queue. `claim` and `reconcile` also refuse when the question cannot be asked at
+  all (no `origin`, not a git checkout, `origin` unreachable), because an
+  unverified precondition is a failure, the rule the concurrency cap already
+  follows. `ready` and `ready --set` go on with a warning then, as `ready` does
+  when the locks repository cannot be read, because the claim after them asks
+  again.
+- **`beat` and `release` go ahead, and `done` warns and hands back anyway.**
+  Each records this agent's own claim, a worktree is routinely behind by the
+  time its work is handed back, and a heartbeat must never be lost to a merge
+  elsewhere.
+- **Every command that pushes, those three included, first checks that
+  `locks_repo` and `claim_ref_prefix` in the checkout are the ones `origin`'s
+  default branch names, and refuses if not**, because a push anywhere else lands
+  where the queue no longer looks and splits the coordination state. That holds
+  whether the checkout is behind, ahead with a change of its own, or edited in
+  place. The lease lengths a heartbeat reads are not compared: a lease records
+  its own expiry, so an old length misleads nobody about where the claim is.
+- **`doctor` fails on either, and `hub fresh [PATH...]` answers the first
+  alone**, for any checkout named.
+
+The remedy for a refusal is a checkout that contains the tip. The worktree
+*Isolation* requires, created from `origin`'s default branch after a fetch, is
+one, so an agent refused a claim for staleness may create that worktree first
+and claim from inside it. It stops being one as soon as anything else merges,
+which is why the question is asked on every command rather than once.
+
+**The client cannot vouch for a checkout older than itself, so whoever names a
+checkout checks it.** A checkout stale enough to mislead can carry a
+`scripts/hub` from before this check existed, and that client goes on answering
+"no queue item" exactly as it did on 2026-09-16. Nothing inside that checkout
+can change that. So **an orchestrator runs `scripts/hub fresh <path>`, from its
+own checkout, against every checkout a dispatch brief names for `hub` commands,
+at dispatch, and names only one it passes.** From its own checkout rather than
+the named one's, because the check has to be newer than what it checks; its own
+checkout it checks the same way, with no path. `fresh` is a verb of its own
+rather than a line in `doctor` for exactly this reason: a client too old to know
+it exits 3 with "unknown subcommand", where an old `doctor` would pass, having
+never heard the question. An "unknown subcommand" answer is therefore the same
+finding as a stale one, about the checkout it was run from.
+
+What it does not see, stated so that a pass is not read as more than it is:
+uncommitted edits under `queue/`, because it compares commits; a checkout that
+contains the tip and is ahead of it with queue edits of its own, such as an item
+promoted on a branch that has not merged, which is not the queue either; and
+anything that merges after it asked.
+
+*Retires when:* the client reads the queue from `origin`'s default branch rather
+than from a working tree. There is then no checkout to be stale, and this
+section, `hub fresh` and the check in every command go together.
 
 ## Reporting
 
@@ -1406,6 +1478,13 @@ So the rule is structural rather than advisory: a brief, a prompt, a card or a
 comment that restates a permission, a prohibition, a path, a constant or a branch
 pattern from here is **the stale copy**, as the front matter's `authority` key
 already says of any document. If a brief needs a rule, it links to it.
+
+**The same failure has a second shape, and it is the checkout rather than the
+brief.** A brief that names a checkout for `hub` commands hands the agent that
+checkout's copy of this file, of the queue and of the client, and on 2026-09-16
+the checkout a brief named was 67 commits behind. So an orchestrator checks a
+checkout before a brief names it; *Which checkout the queue is read from* says
+how, and why a checkout cannot check itself.
 
 ***Retires when:*** nothing — this is the general form of the
 `constants_live_in` rule, applied to prose instead of numbers, and it retires
