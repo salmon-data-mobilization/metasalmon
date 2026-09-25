@@ -92,10 +92,16 @@ claim:
 writes:
   scope_note: >-
     What this register governs: writes made by an agent executing the hub
-    protocol in this file against a claimed queue item. Inside that scope it is
-    the only enumeration of what such an agent may write without asking, and an
+    protocol in this file against a claimed queue item, and the queue upkeep
+    its rows name for items nobody has claimed, which is promoting an item to
+    ready, setting an item's claimable to true, and a small mechanical push to
+    this repository's default branch. Inside that scope it is the only
+    enumeration of what such an agent may write without asking, and an
     operation it does not list is not permitted there, whatever its resemblance
-    to one that is. Outside that scope it governs nothing. Ordinary repository
+    to one that is. Outside that scope it governs nothing. (Widened 2026-09-25:
+    this said "against a claimed queue item" and stopped there, which left the
+    promotion row, granted for unclaimed items, outside the only scope that
+    makes a row operative. A review of the claimable grant found it.) Ordinary repository
     work, meaning everything an agent does that is not the hub protocol acting
     on a claim, is governed by Brett's global agent instructions and by the
     repository it happens in; this register neither widens nor narrows that.
@@ -498,7 +504,9 @@ writes:
         that a wrong one is legible afterwards.
       granted: 2026-09-10 (ruling R15).
   permitted_note: >-
-    The last three rows were granted on 2026-09-10 and reached this register on
+    Three rows, merge a pull request in this repository, promote a queue item
+    to state ready, and push a small mechanical change to this repository's
+    default branch, were granted on 2026-09-10 and reached this register on
     2026-09-10, in a later change, after a review pointed out that they had been
     written into the prose below and into Brett's global instruction but not
     into the only enumeration scope_note says is operative. Until they landed
