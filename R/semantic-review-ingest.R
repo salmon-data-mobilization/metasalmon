@@ -780,12 +780,23 @@
 # as does a hand-picked row; a slot the packet does not hold is untouched.
 .ms_semantic_review_rewrite_suggestions <- function(path, merged, targets) {
   suggestions_path <- file.path(path, "semantic_suggestions.csv")
-  if (!file.exists(suggestions_path) || dir.exists(suggestions_path)) {
-    return(NULL)
+  merged <- tibble::as_tibble(merged)
+  existing <- if (file.exists(suggestions_path) && !dir.exists(suggestions_path)) {
+    tibble::as_tibble(.ms_read_metadata_csv(suggestions_path))
+  } else {
+    tibble::tibble()
   }
-  existing <- tibble::as_tibble(.ms_read_metadata_csv(suggestions_path))
   if (nrow(existing) == 0L) {
-    return(NULL)
+    # A package whose every lookup found nothing has no shortlist file. A
+    # retry that gained candidates gives it one: without the file the
+    # accepted term lives only in the returned object, and
+    # `review_semantics(path)` could never show it (Codex review on #194).
+    if (nrow(merged) == 0L) {
+      return(NULL)
+    }
+    out <- .ms_semantic_review_character_frame(merged)
+    out <- .ms_semantic_add_missing_cols(out, c("decision", "decision_reason"))
+    return(list(path = suggestions_path, rows = out, bytes = .ms_sdp_extension_csv_bytes(out, na = "")))
   }
   existing <- .ms_semantic_add_missing_cols(
     existing,
@@ -1018,8 +1029,19 @@ ingest_semantic_assessments <- function(x,
     row <- harness[row_for_slot[[i]], , drop = FALSE]
     config <- .ms_semantic_review_row_config(row, provider, model)
     if (is.na(config$provider) || is.na(config$model)) {
-      rows[[i]] <- .ms_semantic_review_error_row(target, config, "llm_provider and llm_model must be non-empty.")
       errors <- errors + 1L
+      rows[[i]] <- if (pass == 2L) {
+        # Unusable at pass 2 for the same reason as any other unusable
+        # answer: the pass-1 row and candidates stand.
+        fallback[[i]] <- TRUE
+        kept_pass_1 <- kept_pass_1 + 1L
+        .ms_semantic_review_note(
+          slot$previous_assessment,
+          "Pass-2 answer was unusable, so the pass-1 answer stands: llm_provider and llm_model must be non-empty."
+        )
+      } else {
+        .ms_semantic_review_error_row(target, config, "llm_provider and llm_model must be non-empty.")
+      }
       next
     }
     validated <- .ms_semantic_review_validate_row(row, slot, config, context_chunks)

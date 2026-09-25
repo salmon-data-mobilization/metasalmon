@@ -990,3 +990,86 @@ test_that("the result after a continuation pass describes the whole session, not
   expect_identical(nrow(attr(result$dictionary, "semantic_targets")), 2L)
   expect_identical(nrow(semantic_llm_assessments(result$dictionary)), 2L)
 })
+
+# -----------------------------------------------------------------------------
+# Codex round three on #194: two findings, each pinned
+# -----------------------------------------------------------------------------
+
+test_that("a package that started with no shortlist gets one when a retry gains candidates", {
+  nothing <- function(query, role = NA_character_, sources = NULL, ...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "no-shortlist-retry")
+  suppressMessages(with_mocked_bindings(
+    find_terms = nothing,
+    create_sdp(
+      list(catch = data.frame(water_temp = c(8.5, 9.1, 7.4))),
+      path = path, dataset_id = "demo-1", table_id = "catch",
+      semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+      semantic_code_scope = "none", check_updates = FALSE, overwrite = TRUE
+    )
+  ))
+  expect_false(file.exists(file.path(path, "semantic_suggestions.csv")))
+  built <- write_semantic_review_packet(path, search_fn = nothing, code_scope = "none", quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  gear <- Filter(function(s) identical(s$target$column_name[[1]], "water_temp") && identical(s$target$dictionary_role[[1]], "variable"), slots)
+  expect_length(gear, 1L)
+  expect_identical(nrow(gear[[1]]$candidates), 0L)
+
+  wider <- function(query, role, sources) {
+    if (!identical(query, "stream water temperature measured in situ")) return(tibble::tibble())
+    tibble::tibble(
+      label = "Water temperature", iri = "https://w3id.org/smn/WaterTemperature", source = "smn",
+      ontology = "Salmon Ontology", role = role, match_type = "label_partial",
+      definition = "The temperature of the water.", score = 0.92
+    )
+  }
+  harness_1 <- dplyr::bind_rows(lapply(slots, function(slot) {
+    if (identical(slot$key, gear[[1]]$key)) {
+      semantic_review_harness_row(slot$target, llm_decision = "retry_search", llm_confidence = 0.3, llm_rationale = "Search for water temperature.", llm_retry_query = "stream water temperature measured in situ")
+    } else {
+      semantic_review_harness_row(slot$target, llm_decision = "review", llm_confidence = 0.2, llm_rationale = "Nothing offered.")
+    }
+  }))
+  first <- ingest_semantic_assessments(path, assessments = harness_1, packet_id = built$packet_id, search_fn = wider, quiet = TRUE)
+  expect_identical(first$status, "awaiting_pass_2")
+  pass_2 <- semantic_review_read_json(first$next_packet)
+  gear_2 <- Filter(function(s) isTRUE(s$reassess), metasalmon:::.ms_semantic_review_slots(pass_2))[[1]]
+  expect_identical(nrow(gear_2$candidates), 1L)
+  harness_2 <- semantic_review_harness_row(gear_2$target, llm_decision = "accept", llm_confidence = 0.9,
+    llm_selected_candidate_index = 1L, llm_selected_iri = "https://w3id.org/smn/WaterTemperature", llm_rationale = "Found it.")
+  result <- ingest_semantic_assessments(path, assessments = harness_2, packet_id = pass_2$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_identical(result$status, "complete")
+  # The shortlist file now exists, and the documented console path sees the accept.
+  written <- semantic_suggestions(path)
+  expect_false(is.null(written))
+  expect_true("https://w3id.org/smn/WaterTemperature" %in% written$iri)
+  expect_true(all(c("decision", "decision_reason") %in% names(written)))
+  review <- suppressMessages(review_semantics(path))
+  expect_true("https://w3id.org/smn/WaterTemperature" %in% review$iri)
+  expect_true(any(review$llm_decision %in% "accept"))
+})
+
+test_that("a pass-2 row with a blank provider or model keeps the pass-1 answer like any other unusable answer", {
+  responses <- semantic_review_search_responses()
+  case <- build_case("retry_gain")
+  first <- ingest_semantic_assessments(
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
+    review_dir = case$review_dir, search_fn = semantic_review_fake_search(responses), quiet = TRUE
+  )
+  pass_2 <- semantic_review_read_json(first$next_packet)
+  slot <- metasalmon:::.ms_semantic_review_slots(pass_2)[[1]]
+  blank <- semantic_review_harness_row(slot$target, llm_decision = "accept", llm_confidence = 0.9,
+    llm_selected_candidate_index = 1L, llm_selected_iri = "https://w3id.org/smn/FishingGear", llm_rationale = "Found it.")
+  blank$llm_provider <- NA_character_
+  result <- ingest_semantic_assessments(
+    case$dict, assessments = blank, packet_id = pass_2$packet_id,
+    review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
+  )
+  expect_identical(result$status, "complete")
+  expect_identical(result$summary$kept_pass_1, 1L)
+  expect_identical(result$summary$errors, 1L)
+  expect_identical(result$assessments$llm_decision, "retry_search")
+  expect_true(is.na(result$assessments$llm_error))
+  expect_match(result$assessments$llm_rationale, "llm_provider and llm_model must be non-empty", fixed = TRUE)
+  expect_setequal(result$suggestions$iri, c("https://w3id.org/smn/Equipment", "https://w3id.org/smn/Tool"))
+})
