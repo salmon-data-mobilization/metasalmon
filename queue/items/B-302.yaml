@@ -1,8 +1,8 @@
 id: B-302
 kind: defect
 title: 'metasalmonpy suggest_semantics() shows the LLM max_per_role candidates instead of llm_top_n on its direct path, and pyproject.toml does not declare frictionless, the mirror half of B-57'
-state: icebox
-claimable: false
+state: ready
+claimable: true
 repo: metasalmonpy
 venue: claude-code
 stream: S2

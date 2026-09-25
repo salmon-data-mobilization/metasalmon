@@ -8482,3 +8482,51 @@ hub's account of it is out of date.
 Every paragraph in this section records what was observed, where and by whom, on
 2026-09-25. The conditions in force are in the item files under `queue/items/`,
 and where the two differ, the item file is right.
+
+### The 2026-09-25 filing of B-188's R half
+
+**`B-310`: metasalmon's code-row seeder lists a character column that readr
+would read as dates.** Filed from Brett's ruling of 2026-09-25 on metasalmonpy
+pull request 44 (hub item `B-188`), which accepted that pull request's
+recommendation: R ports the mirror's readr date test, and the difference is
+registered as row 64 in both parity registers until it does. (It was first
+numbered 62; B-364 and B-326 committed rows 62 and 63 first, and a committed row
+keeps its number.) The item's condition is in `queue/items/B-310.yaml`; this
+entry holds the measurements.
+
+**Measured by the B-188 run** (2026-09-24; R 4.3.3, readr 2.2.0, vroom 1.7.1,
+`pkgload::load_all()` on metasalmon `0cac6c8`; recorded under *Commands run* in
+metasalmonpy's `.hub/workpads/B-188.md`). `inst/extdata/nuseds-fraser-coho-sample.csv`
+read with `readr::read_csv()` gives `START_DTT` and `END_DTT` the class `Date`,
+and `create_sdp()` seeds 129 `codes.csv` rows over 12 columns, none of them off
+categorical. Read with every column as character, it seeds `START_DTT` and
+`END_DTT`, and `START_DTT` is typed `temporal`. So what keeps R's documented path
+clean is readr's type guess, not the seeder's class test,
+`inherits(col, "factor") || inherits(col, "character")`.
+
+**Re-measured for this filing on metasalmon `main` at `4ce7f33`**, with the same
+R, readr and vroom, `pkgload::load_all()`, and `create_sdp()` called with
+`seed_semantics = FALSE`, over three reads of the same file:
+
+| read | `codes.csv` rows / seeded columns | `START_DTT` and `END_DTT` | seeded but not `categorical` |
+|---|---|---|---|
+| `readr::read_csv()` | 129 / 12 | `Date`, typed `temporal`, 0 rows each | none |
+| `readr::read_csv()`, every column character | 203 / 17 | character, typed `temporal`, 14 rows each | `ANALYSIS_YR`, `END_DTT`, `NATURAL_SPAWNERS_TOTAL`, `POP_ID`, `START_DTT` |
+| base `read.csv()` | 163 / 14 | character, typed `temporal`, 15 rows each | `END_DTT`, `START_DTT` |
+
+The B-188 measurement holds on this tree, and `END_DTT` is typed `temporal` as
+well. Two things it did not show:
+
+- **Base `read.csv()` keeps blanks as text.** Each date column's 16 blank cells
+  arrive as `""` rather than `NA`, and the seeder lists `""` as a fifteenth
+  value; readr reads them as `NA`. metasalmonpy's readr test skips blank text as
+  missing (read from its docstring, not run), so a port that follows it still
+  recognises these columns as dates.
+- **Numbers held as text are seeded too.** Read with every column as character,
+  `ANALYSIS_YR`, `NATURAL_SPAWNERS_TOTAL` and `POP_ID` are seeded while typed
+  something other than `categorical`. That is the same shape for numbers rather
+  than dates, reachable only when a caller hands R numbers as text, and B-310
+  does not cover it.
+
+**Found** by the first Codex review of metasalmonpy pull request 44, on
+`9855083` (*"Register the admitted character-column divergence"*).
