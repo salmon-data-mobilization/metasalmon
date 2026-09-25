@@ -885,19 +885,20 @@ only that `iri` was not blank. So `rank =` no longer accepts a candidate whose
 empty `decision_iri`, and a candidate carrying a doubled marker is not queued
 either. A row carrying a recorded reject is kept whatever its IRI, because
 rejecting a slot names no candidate, so its rejection and reason are still
-replayed; before, a slot whose only candidate had a blank `iri` lost both.
-`accept_suggestion()` refuses a value the predicate rejects, by `iri =` and by
-`rank =`. So `iri = "REVIEW: REVIEW:"`, which recorded `REVIEW:`, now aborts,
-and so does `rank =` on such a candidate in a review the current
-`review_semantics()` did not build, one saved by an earlier version or edited by
-hand. And the message *"Some suggestions target fields this review cannot
-decide"* is built from the rows with no write-back address or no IRI field
-alone, so a row dropped for having no IRI, which targets a field the review does
-decide, is dropped without a word. **The port has to take the same shape, not
-just the same outcome:** a candidate the queue drops takes no rank, so the
-candidates after it rank one place higher. That was already true of a blank
-`iri` in both packages. A port that only refused in `accept_suggestion()` would
-print different ranks for the same table.
+replayed; before, a slot whose only candidate had a blank `iri` lost both. The
+console prints no accept call for a candidate whose IRI names no term, because
+the call would be refused. `accept_suggestion()` refuses a value the predicate
+rejects, by `iri =` and by `rank =`. So `iri = "REVIEW: REVIEW:"`, which
+recorded `REVIEW:`, now aborts, and so does `rank =` on such a candidate in a
+review the current `review_semantics()` did not build, one saved by an earlier
+version or edited by hand. And the message *"Some suggestions target fields this
+review cannot decide"* is built from the rows with no write-back address or no
+IRI field alone, so a row dropped for having no IRI, which targets a field the
+review does decide, is dropped without a word. **The port has to take the same
+shape, not just the same outcome:** a candidate the queue drops takes no rank,
+so the candidates after it rank one place higher. That was already true of a
+blank `iri` in both packages. A port that only refused in `accept_suggestion()`
+would print different ranks for the same table.
 
 **The port is owed because metasalmonpy has the same defects.** Its `keep` mask
 in `review_console.py` tests only that the text of `iri` is not empty, and one
@@ -916,12 +917,14 @@ candidate carrying it is neither queued nor replayed. For every spelling of
 either kind, `rank=` refuses a candidate a review holds whose IRI names no term.
 For every spelling of either kind, and for an empty and a missing `iri`, a
 recorded reject of a slot whose only candidate carries it is replayed with its
-reason. A row with an empty or missing IRI is not listed among the fields the
-review cannot decide, and a field it cannot decide still is. Which spellings
-count as the marker is hub question `Q-63`'s, and neither half decides it. It is
-owed as a port, not a register row: once it lands the two implementations behave
-alike again. It did not land in the same stream because a hub claim covers one
-branch in one repository. Its metasalmonpy queue item is `B-247`.
+reason, and the console prints no accept call for that candidate while every
+call it does print runs. A row with an empty or missing IRI is not listed among
+the fields the review cannot decide, and a field it cannot decide still is.
+Which spellings count as the marker is hub question `Q-63`'s, and neither half
+decides it. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because a
+hub claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-247`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as

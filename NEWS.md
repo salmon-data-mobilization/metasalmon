@@ -655,7 +655,8 @@ metasalmon (development version)
     again. A recorded reject is still replayed from such a candidate, and now
     from one with a blank IRI too, because rejecting a slot names no candidate.
     A slot whose only candidate was blank used to lose its rejection and reason
-    from `include_filled = TRUE`.
+    from `include_filled = TRUE`. The console prints no accept call for such a
+    candidate, since the call would be refused.
   - The strip removes one marker, so `accept_suggestion(iri = "REVIEW:
     REVIEW:")` recorded the IRI `REVIEW:`. An `iri` that is still a marker once
     one is removed is now refused, a shortlisted candidate carrying one is not
