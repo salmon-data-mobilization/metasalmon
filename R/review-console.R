@@ -1011,9 +1011,18 @@ accept_suggestion <- function(review,
   # decision records. Run before the strip, it let `iri = "REVIEW:"`, and every
   # other spelling the strip removes, record an accept that named no term
   # (hub item B-219). The strip removes one marker, so a value that is still a
-  # marker after it is refused too (hub item B-246). `rank =` needs no check:
-  # `review_semantics()` queues no candidate that this would refuse.
-  if (!is.null(iri) && !.ms_review_names_term(accepted_iri)) {
+  # marker after it is refused too (hub item B-246). `rank =` is checked as well:
+  # `review_semantics()` queues no such candidate, but a review it did not build
+  # as it is now -- one saved by an earlier version, or edited by hand -- can
+  # still hold one.
+  if (!.ms_review_names_term(accepted_iri)) {
+    if (is.null(iri)) {
+      cli::cli_abort(c(
+        "The candidate at that {.arg rank} names no term.",
+        "i" = "Its IRI is empty, or still a {.code REVIEW:} marker once one is removed.",
+        "i" = "Rebuild the review with {.fn review_semantics}, which does not queue such a candidate."
+      ))
+    }
     message <- "{.arg iri} must be a non-empty IRI."
     if (nzchar(accepted_iri)) {
       message <- c(

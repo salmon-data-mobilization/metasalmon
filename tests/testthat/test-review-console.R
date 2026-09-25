@@ -906,6 +906,26 @@ for (spelling in names(doubled_marker_iris)) {
   })
 }
 
+# A review the current `review_semantics()` did not build can still hold such a
+# candidate: one saved by an earlier version, or edited by hand. `rank =` refuses
+# it there too, rather than trusting the queue to have left it out.
+names_no_term_iris <- c(marker_only_iris, doubled_marker_iris)
+
+for (spelling in names(names_no_term_iris)) {
+  test_that(paste0("rank = refuses a candidate in the review whose IRI names no term: ", spelling), {
+    value <- names_no_term_iris[[spelling]]
+    stripped <- .ms_strip_review_iri(.ms_scalar_text(value))
+    expect_true(!nzchar(stripped) || .ms_is_review_iri(stripped))
+
+    review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
+    review$iri[[1]] <- value
+    expect_error(
+      accept_suggestion(review, "spawner_count", "variable", rank = 1),
+      "names no term"
+    )
+  })
+}
+
 # A row with no IRI targets a field the review does decide, so it is not one of
 # the fields "this review cannot decide", and editing the metadata CSV by hand
 # is not what it needs. The shape B-219 left in a package: a hand-picked
