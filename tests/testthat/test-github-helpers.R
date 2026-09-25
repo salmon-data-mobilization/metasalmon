@@ -127,6 +127,93 @@ test_that("read_github_csv_dir can list and read public content without a token"
   expect_equal(used_tokens, c("", ""))
 })
 
+# Skip unless `url` can be fetched the way read_github_csv() fetches it: a GET
+# to that raw.githubusercontent.com URL carrying the token as
+# `Authorization: token <token>`, which is what ms_github_get() sends. The live
+# tests below used to guard with gh::gh() against api.github.com instead, a
+# different host and a different credential path, so the guard passed while
+# the fetch failed and the tests errored rather than skipped (hub item B-152:
+# measured with a token that api.github.com accepts and the raw host answers
+# with 404). The request is built here rather than through the package, so a
+# defect in the package still fails the test instead of becoming a skip.
+#
+# Retires when: these tests stop reaching the network. If ms_github_get()
+# changes the host or how it sends the token, this probe changes in the same
+# commit; the pin below fails until it does.
+skip_unless_raw_github_serves <- function(url, token = "") {
+  req <- httr2::request(url) |>
+    httr2::req_timeout(30) |>
+    httr2::req_retry(max_tries = 4) |>
+    httr2::req_error(is_error = function(resp) FALSE)
+  if (nzchar(token)) {
+    req <- httr2::req_headers(req, Authorization = paste("token", token))
+  }
+  resp <- tryCatch(httr2::req_perform(req), error = function(e) e)
+  if (inherits(resp, "error")) {
+    testthat::skip(paste("Cannot reach", url, "-", conditionMessage(resp)))
+  }
+  status <- httr2::resp_status(resp)
+  if (status >= 400) {
+    testthat::skip(sprintf(
+      "%s answered HTTP %d to a request %s the configured token.",
+      url, status, if (nzchar(token)) "carrying" else "without"
+    ))
+  }
+  invisible(resp)
+}
+
+# The two pins below answer requests with httr2::local_mocked_responses()
+# (httr2 1.0.0) and read them back with httr2::req_get_headers() (1.2.0).
+# DESCRIPTION pins neither, so they skip on an older install, as
+# test-llm-chat-request.R does. Retires when DESCRIPTION's Imports requires
+# httr2 (>= 1.2.0).
+test_that("the raw-host guard sends the request read_github_csv() sends", {
+  skip_if_not_installed("httr2", "1.2.0")
+  seen <- list()
+  httr2::local_mocked_responses(function(req) {
+    seen[[length(seen) + 1L]] <<- req
+    httr2::response(
+      status_code = 200,
+      headers = list(`Content-Type` = "text/csv; charset=utf-8"),
+      body = charToRaw("x\n1\n")
+    )
+  })
+  token <- "fake-token-for-b152"
+  url <- "https://raw.githubusercontent.com/owner/repo/main/data/file.csv"
+
+  read_github_csv("data/file.csv", ref = "main", repo = "owner/repo", token = token, progress = FALSE)
+  skip_unless_raw_github_serves(url, token = token)
+
+  auth <- function(req) httr2::req_get_headers(req, redacted = "reveal")$Authorization
+  expect_length(seen, 2L)
+  expect_identical(seen[[1]]$url, url)
+  expect_identical(seen[[2]]$url, seen[[1]]$url)
+  expect_match(auth(seen[[1]]), token, fixed = TRUE)
+  expect_identical(auth(seen[[2]]), auth(seen[[1]]))
+})
+
+test_that("the raw-host guard skips when that host refuses the request or cannot be reached", {
+  skip_if_not_installed("httr2", "1.0.0")
+  url <- "https://raw.githubusercontent.com/owner/repo/main/data/file.csv"
+  guard_skip <- function(mock) {
+    httr2::local_mocked_responses(mock)
+    tryCatch(
+      {
+        skip_unless_raw_github_serves(url, token = "fake-token-for-b152")
+        NA_character_
+      },
+      skip = conditionMessage
+    )
+  }
+
+  expect_match(guard_skip(function(req) httr2::response(status_code = 404)), "HTTP 404")
+  expect_match(
+    guard_skip(function(req) stop("simulated transport failure")),
+    "simulated transport failure"
+  )
+  expect_identical(guard_skip(function(req) httr2::response(status_code = 200)), NA_character_)
+})
+
 test_that("read_github_csv can read remote content with a token", {
   token <- metasalmon:::ms_current_token()
   skip_if(!nzchar(token), "No GitHub token configured; skipping Qualark fetch test.")
@@ -140,22 +227,9 @@ test_that("read_github_csv can read remote content with a token", {
   path <- Sys.getenv("METASALMON_GITHUB_TEST_PATH", "inst/extdata/nuseds-fraser-coho-sample.csv")
   ref <- Sys.getenv("METASALMON_GITHUB_TEST_REF", "main")
 
-  tryCatch(
-    gh::gh(sprintf("/repos/%s", repo), .token = token),
-    error = function(e) {
-      testthat::skip(paste("Cannot access", repo, "with current token:", conditionMessage(e)))
-    }
-  )
-
-  tryCatch(
-    gh::gh(
-      sprintf("/repos/%s/contents/%s", repo, path),
-      .token = token,
-      ref = ref
-    ),
-    error = function(e) {
-      testthat::skip(paste("Test CSV path not reachable:", conditionMessage(e)))
-    }
+  skip_unless_raw_github_serves(
+    sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, ref, path),
+    token = token
   )
 
   df <- read_github_csv(path, ref = ref, repo = repo, token = token, progress = FALSE)
@@ -256,6 +330,16 @@ test_that("read_github_csv_dir can fetch when a token is configured", {
     error = function(e) {
       testthat::skip(paste("Test directory path not reachable:", conditionMessage(e)))
     }
+  )
+
+  # The probes above cover the listing, which goes through the API as
+  # read_github_csv_dir() does. Each listed file is then fetched from
+  # raw.githubusercontent.com with the token, so probe the first of those
+  # fetches too. Only the first: that proves the host and the token, and a
+  # fetch that fails for one particular file should still fail the test.
+  skip_unless_raw_github_serves(
+    sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, ref, csv_files[[1]]$path),
+    token = token
   )
 
   # `inst/extdata` holds CSVs with unrelated schemas, so readr reports parse
