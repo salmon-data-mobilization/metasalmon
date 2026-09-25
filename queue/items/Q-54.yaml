@@ -1,0 +1,12 @@
+id: Q-54
+kind: question
+title: 'R and metasalmonpy send different chat-completions requests and neither register records it, so which side is right, difference by difference'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+stream: S7
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Brett rules each difference below, and each ruling is recorded in knowledge/questions.md with its implementing item filed in the repository that can finish it, or, where the ruling keeps a difference on purpose, with a pair of register items filed, one in metasalmon for knowledge/parity-deviations.md and one in metasalmonpy for PARITY.md, each naming the other, because one item cannot finish a write in two repositories. The differences, one per clause: (1) the temperature -- whether one is sent, and which, on semantic review and on chat decomposition; (2) JSON mode -- whether the request asks for response_format json_object; (3) OpenRouter attribution -- whether HTTP-Referer and X-Title are sent to OpenRouter; (4) the user agent; (5) reasoning effort -- whether METASALMON_LLM_REASONING_EFFORT supplies one when no argument names one, whether one is sent only to openai, and whether chat decomposition sends one. Clause (5) was added 2026-09-24 after the Codex review of pull request 150 on e03fd35. What each side sends, and where, is in knowledge/backlog.md and deliberately not restated here. NEITHER SIDE HAS EVIDENCE IT IS BETTER on (1), (2) or (5), which change what a model returns; the instrument that could supply it is the Theme A benchmark, whose live capture waits on the credential B-80 names. (3) and (4) change nothing a model sees, and could be registered or ported either way at no behavioural cost. THE RULINGS ON (1) AND (5) ALSO DECIDE B-128, which routes R''s chat path through the shared body builder: that gives it the semantic path''s temperature rule, on the premise that R keeps sending a temperature, and would also make it send the reasoning effort R resolves, which neither chat path sends today. So recording those rulings includes updating B-128''s retires_when to match them, or replacing or retiring B-128 if a ruling removes its premise, in the same change, because this item''s retirement unblocks B-128 and it must not unblock with a condition the ruling contradicts. Added 2026-09-24 after the Codex review of pull request 150 on 462cf5f, which found this sentence only asking the ruling to say what becomes of B-128.'

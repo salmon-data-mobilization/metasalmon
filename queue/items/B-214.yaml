@@ -1,0 +1,13 @@
+id: B-214
+kind: defect
+title: 'metasalmonpy''s offline socket test says it covers the four setters and calls three, so set_sdp_code() is never asserted'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'test_the_offline_path_opens_no_socket_at_all in metasalmonpy''s tests/test_sdp_field_setters.py also calls set_sdp_code() under the blocked socket API, on a package with a codes.csv row to set, so the four setters its docstring names are the four it exercises -- demonstrated RED by pointing set_sdp_code() alone at a schema read that opens a socket. A GUARD WHOSE STATED SCOPE EXCEEDS ITS REAL SCOPE, which AGENTS.md calls worse than a missing one: the docstring says the test covers the four setters and the console renderer, and the body calls three setters. Nothing is broken today, because the four share one write path; what is missing is the assertion that would fail if that stopped being true.'

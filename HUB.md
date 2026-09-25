@@ -356,11 +356,12 @@ writes:
         an ordinary merge, after the two conditions above are read rather than
         assumed. This row is what makes "Which pull requests need Brett" below
         operative: a change in the delegated classes merges on green CI plus a
-        clean Codex review, and a change in the classes that need him does not
-        merge without him whatever its checks say.
+        completed Codex review, and a change in the classes that need him does
+        not merge without him whatever its checks say.
       excludes: >-
         every class "Which pull requests need Brett" lists. A pull request that
-        touches one of them is his even when CI is green, Codex is clean, and he
+        touches one of them is his even when CI is green, the Codex review has
+        completed, and he
         has said the word on a different pull request in the same batch.
       max: no limit
       enforced_by: >-
@@ -406,11 +407,17 @@ writes:
         answers a finding belongs on that finding's thread, under the reply
         row.
       max: >-
-        one per pushed round of fixes, posted after the push. Never to re-roll
-        a round that found something, and never while the previous round is
-        still running, which the reviewer signals with an eyes reaction.
+        one per pushed round of fixes, posted after the push, and at most two
+        on a pull request that changes code, as the Delegated section defines
+        it, and one on any other, because the
+        review Codex runs on opening counts toward the cap the Delegated
+        section sets. Never to re-roll a round that found something, and never
+        while the previous round is still running, which the reviewer signals
+        with an eyes reaction.
       enforced_by: nothing mechanical.
-      granted: 2026-09-23, with the row above and in the same words.
+      granted: 2026-09-23, with the row above and in the same words. The cap
+        was added on 2026-09-24 on Brett's instruction to stop at the valuable
+        80% of review.
     - operation: re-run the failed jobs of one workflow run
       target: >-
         a workflow run on a pull request an agent opened, in a member
@@ -647,7 +654,7 @@ writes:
 # HUB.md, the hub coordination policy
 
 The client is dumb and this file is the brain. A `hub` client (`doctor`,
-`ready`, `claim`, `beat`, `release`, `done`, `reconcile`) does the mechanics;
+`ready`, `claim`, `beat`, `release`, `done`, `reconcile`, `fresh`) does the mechanics;
 every rule it enforces is written here, once, and nowhere else. **Every number
 those rules use lives in `queue/config.yaml`, once, and nowhere else**,
 including here. Cite a constant by its key; do not restate its value in prose,
@@ -753,7 +760,9 @@ once you are inside.
 **1. Poll.** Fetch the queue directory and the claim refs. Read item files, not
 prose. Prose that restates a state fact is a generated block with a freshness
 check on it, so if you find yourself reading a status sentence to decide
-something, you are reading the wrong artifact.
+something, you are reading the wrong artifact. Read them in a checkout that
+contains `origin`'s default branch, because the client refuses to answer from
+one that does not; *Which checkout the queue is read from* says why.
 
 **2. Select.** Apply the five claimable tests in order. Prefer the item with
 the lowest `severity` number among defects, then the oldest id. Do not select
@@ -892,6 +901,76 @@ defect.** The stash clause and the revision walk were the same mistake written
 twice, three lines apart, and removing one of them produced a paragraph asserting
 the other was sound. Ask of any such correction what *else* is in the same
 family, before writing the sentence that says the rest is fine.
+
+## Which checkout the queue is read from
+
+**The queue is the default branch on `origin`, and the client reads it from the
+checkout it is run in.** Those are the same thing only while that checkout
+contains the branch's tip, and until 2026-09-24 nothing asked whether it did. On
+2026-09-16 four agents were sent to run `hub claim` in a primary checkout 67
+commits behind `origin/main`. For two of them the item file was not in that
+tree, and the client answered "no queue item": true of the tree, false of the
+queue. The agents reported the items missing rather than the checkout stale
+(hub item B-187).
+
+So every command that answers from the queue first asks `origin` which commit
+its default branch is at, and whether the checkout contains it. It asks
+`origin`, not the checkout's own `origin/main`, because that ref is only as
+current as the last fetch made there. A checkout that does not contain the tip
+is **stale**, and the client says so, with the distance and both branches.
+Then:
+
+- **`claim`, `reconcile`, `ready` and `ready --set` refuse**, exit 3, because
+  what they would answer from, or act on other agents' claims under, is not the
+  queue. `claim` and `reconcile` also refuse when the question cannot be asked at
+  all (no `origin`, not a git checkout, `origin` unreachable), because an
+  unverified precondition is a failure, the rule the concurrency cap already
+  follows. `ready` and `ready --set` go on with a warning then, as `ready` does
+  when the locks repository cannot be read, because the claim after them asks
+  again.
+- **`beat` and `release` go ahead, and `done` warns and hands back anyway.**
+  Each records this agent's own claim, a worktree is routinely behind by the
+  time its work is handed back, and a heartbeat must never be lost to a merge
+  elsewhere.
+- **Every command that pushes, those three included, first checks that
+  `locks_repo` and `claim_ref_prefix` in the checkout are the ones `origin`'s
+  default branch names, and refuses if not**, because a push anywhere else lands
+  where the queue no longer looks and splits the coordination state. That holds
+  whether the checkout is behind, ahead with a change of its own, or edited in
+  place. The lease lengths a heartbeat reads are not compared: a lease records
+  its own expiry, so an old length misleads nobody about where the claim is.
+- **`doctor` fails on either, and `hub fresh [PATH...]` answers the first
+  alone**, for any checkout named.
+
+The remedy for a refusal is a checkout that contains the tip. The worktree
+*Isolation* requires, created from `origin`'s default branch after a fetch, is
+one, so an agent refused a claim for staleness may create that worktree first
+and claim from inside it. It stops being one as soon as anything else merges,
+which is why the question is asked on every command rather than once.
+
+**The client cannot vouch for a checkout older than itself, so whoever names a
+checkout checks it.** A checkout stale enough to mislead can carry a
+`scripts/hub` from before this check existed, and that client goes on answering
+"no queue item" exactly as it did on 2026-09-16. Nothing inside that checkout
+can change that. So **an orchestrator runs `scripts/hub fresh <path>`, from its
+own checkout, against every checkout a dispatch brief names for `hub` commands,
+at dispatch, and names only one it passes.** From its own checkout rather than
+the named one's, because the check has to be newer than what it checks; its own
+checkout it checks the same way, with no path. `fresh` is a verb of its own
+rather than a line in `doctor` for exactly this reason: a client too old to know
+it exits 3 with "unknown subcommand", where an old `doctor` would pass, having
+never heard the question. An "unknown subcommand" answer is therefore the same
+finding as a stale one, about the checkout it was run from.
+
+What it does not see, stated so that a pass is not read as more than it is:
+uncommitted edits under `queue/`, because it compares commits; a checkout that
+contains the tip and is ahead of it with queue edits of its own, such as an item
+promoted on a branch that has not merged, which is not the queue either; and
+anything that merges after it asked.
+
+*Retires when:* the client reads the queue from `origin`'s default branch rather
+than from a working tree. There is then no checkout to be stale, and this
+section, `hub fresh` and the check in every command go together.
 
 ## Reporting
 
@@ -1035,7 +1114,7 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
     Brett" section in a workpad is self-declaring, and an agent that writes one
     has already decided this question.
 
-### Delegated: merges on green CI and a clean Codex review
+### Delegated: merges on green CI and a completed Codex review
 
 Everything else, of which the common cases are a defect fix carrying a
 reproduced failing-before and a test; a queue or backlog change; documentation,
@@ -1063,6 +1142,34 @@ Four conditions, all of them, before an agent merges one:
   the symptom and left the cause.
 - **The Codex review has completed**, with every finding either fixed in a push
   or answered on its thread with the evidence that it is not a defect.
+  **"Completed" means the last review the agent asked for, not a review of the
+  final head, and the asking is capped** (Brett, 2026-09-24: *"If there's a way
+  to get 80% of the value and stop at that point I think we should do that since
+  the last 20% is probably disproportionately expensive"*). Counting the review
+  Codex runs when a pull request opens, a pull request that changes code gets at
+  most three reviews and any other pull request (queue items, cards, prose,
+  ontology files) at most two; the agent fixes or answers what the last one found,
+  pushes, and does not post `@codex review` again. **Code** here means executable
+  source, tests, scripts or workflows; a pull request that mixes code with other
+  files, or whose kind is unclear, counts as code. The count is a trade, and
+  the evidence it rests on cuts both ways. On the code pull requests of
+  2026-09-24 Codex's findings were real behaviour defects: #153 and #157 needed
+  one round, but #152 needed four, and its third round's fix introduced a
+  regression that only the fourth caught, so a cap of three would have merged
+  that regression. The prose pull requests are where the cost was: hub pull
+  request 150 and commons pull request 16 took 18 and 15 rounds for 36 and 34
+  findings, most of them about text the previous round's fix had just written.
+  The cap accepts that a late round on code can still find something, because
+  the alternative has no ceiling at all; a fix pushed after the last permitted
+  review is the agent's to test the harder for it. **The cap is a guard, so it
+  says what moves it.** A defect that reaches `main` from a pull request merged
+  under the cap, and that a further review would plausibly have caught, is filed
+  as a queue item citing this paragraph; the second such item on a code pull
+  request sends the numbers back to Brett to raise. The cap retires when he
+  replaces the numbers or removes it. Two habits fed that loop and are not part of a
+  fix: writing the review's history into the files it reviews, and adding new
+  work to a pull request under review. A fix changes what the finding names; a
+  problem found beside it goes to the next sweep.
 - **No review thread from a person is waiting.** A human comment moves the pull
   request into the previous list until it is answered.
 - **The agent is not unsure.** Uncertainty about which list a change belongs to
@@ -1395,6 +1502,13 @@ So the rule is structural rather than advisory: a brief, a prompt, a card or a
 comment that restates a permission, a prohibition, a path, a constant or a branch
 pattern from here is **the stale copy**, as the front matter's `authority` key
 already says of any document. If a brief needs a rule, it links to it.
+
+**The same failure has a second shape, and it is the checkout rather than the
+brief.** A brief that names a checkout for `hub` commands hands the agent that
+checkout's copy of this file, of the queue and of the client, and on 2026-09-16
+the checkout a brief named was 67 commits behind. So an orchestrator checks a
+checkout before a brief names it; *Which checkout the queue is read from* says
+how, and why a checkout cannot check itself.
 
 ***Retires when:*** nothing — this is the general form of the
 `constants_live_in` rule, applied to prose instead of numbers, and it retires

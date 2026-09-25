@@ -1,0 +1,13 @@
+id: B-216
+kind: defect
+title: 'metasalmonpy detect_semantic_term_gaps() counts a recorded hand-picked accept as ontology-gap evidence, the port of B-176''s exclusion'
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-176]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy''s detect_semantic_term_gaps() drops the rows metadata_write._HAND_PICKED_SOURCE marks before it derives anything from the table, embedded LLM assessments included, so a post-review semantic_suggestions.csv passed as suggestions yields exactly the gap rows the pre-review file did. Pinned by that before-and-after equality on a slot whose retrieved candidates are a real non-smn gap, which must survive, demonstrated RED on the detector as it stands. THE REASONING IS ONE SENTENCE: a gap row claims retrieval found no smn term, and a recorded decision is not retrieval output. So the exclusion never retires; if a reviewer''s choice should ever count as a gap signal, that is a new gap_detection_basis, not this row passing as a candidate. The test''s hand-picked IRI must lie outside w3id.org/smn/, because the detector counts that namespace as smn whatever the source says and the false gap then never appears. A PORT, NOT A REGISTER ROW: B-176 makes the same exclusion in R, and the port copies what merges there.'

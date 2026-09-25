@@ -169,6 +169,56 @@ metasalmon (development version)
   bundled examples. The metasalmonpy fixture is owed as a port, and the
   item's retirement condition is met only on the R side until it lands.
 
+* **A measurement column whose values all look like years is no longer typed
+  `temporal`** (backlog **#53**, queue **B-53**). `infer_column_role()` typed
+  a column `temporal` whenever all its values were four-digit numbers from 1800
+  to 2500, reading the values alone and ahead of any measurement word in its
+  name, so a small stock's `NATURAL_ADULT_SPAWNERS` of 1850, 2003 and 1999, or
+  a sample of 1,900 fish, became a `temporal` column. `suggest_semantics()`
+  skips temporal columns, so such a column left the whole semantic pipeline --
+  no variable, property, entity or unit target -- without a warning, while the
+  same column holding numbers outside that range was typed `measurement`.
+
+  The year shape now decides unless the name's words include a measurement
+  word -- one of the words the measurement check already reads (`count`,
+  `total`, `spawners`, `escapement`, `weight`, `depth` and the rest), or a
+  sample or partition size -- and no date or time word. Then the year shape is
+  not consulted, and the column is typed by the checks that follow exactly as
+  it would be with values outside the year range. Words are split at spaces,
+  punctuation and case changes, so `Water depth(mm)` and `adult/count` are
+  measurement names, while the year word in `Escapement (yr)` and `count/year`,
+  or a plural one as in `escapement_years`, keeps them `temporal`, as
+  `count_year` always was. Whole words rather than
+  the broader measurement hint, because that hint's two pattern tests match
+  names that are not measurements: `temp` inside `temporal_start`, and any
+  parenthetical containing a `g`, such as `Cohort (Aug)`. Measured over the
+  1,271 columns in the CSVs of metasalmon, metasalmonpy, smn-data-pkg and
+  salmon-domain-ontology, the broader hint would have retyped 18
+  `temporal_start` / `temporal_end` columns as measurements, all rightly
+  temporal; the whole-word rule changes the role of none of the 1,271.
+
+  **Not covered, on purpose:** a name whose only measurement evidence is a
+  substring (`ADULTCOUNT`) or a unit in parentheses (`Mass (kg)`) is still typed
+  `temporal` when its values look like years. Separate the words in the name
+  (`ADULT_COUNT`), or correct `column_role` in the dictionary
+  `infer_dictionary()` returns. And the words decide only whether the year
+  shape may decide; the role checks after it read the name as before. So a
+  name whose measurement word only the split reveals, and which those checks
+  do not otherwise recognise (`adult/spawners`, `fish/weight`), is no longer
+  `temporal` but is not `measurement` either: it gets the role it gets with any
+  other values, `attribute` for a numeric column. Letting those checks read
+  the words would need every check that outranks them to read them too, and
+  that breaks units and rates: `Discharge (m3/day)` and `Rate (per day)` would
+  become `temporal`, and `Fish (no./site)` an `identifier`.
+
+  Pinned by `tests/testthat/test-year-shaped-measurement-role.R`, which checks
+  each fixture against `.ms_values_look_yearish()` before asserting its role,
+  and follows one such column through `infer_dictionary()` and
+  `suggest_semantics()` to its semantic targets. **Mirror:** metasalmonpy's
+  `infer_column_role()` (`dictionary.py`) has the same defect; the port is owed
+  (see the parity register), and the item's retirement condition is met only on
+  the R side until it lands.
+
 * **`datapackage.json` and `metadata/dataset.csv` no longer spell the same
   instant two different ways** (backlog **#115**, queue **B-115**). A
   `dataset_meta$temporal_start`/`temporal_end` supplied as a typed `POSIXct`
@@ -204,9 +254,10 @@ metasalmon (development version)
   path is correct already" as a macOS-only measurement. The descriptor now emits
   whichever year readr emits, so the two files agree on both platforms; padding
   only the descriptor would have re-opened this defect on the platform CI runs
-  on. **Mirror:** metasalmonpy owes the same ruling (queue **B-145**);
-  parity-deviations row 56 carries the ruling, which side moved, and the
-  year-padding residual B-145 has to measure.
+  on. **Mirror:** metasalmonpy adopted the same ruling in queue **B-145**
+  (metasalmonpy pull request #34, 2026-09-25); parity-deviations row 56
+  records that both sides moved, and the one residual left, the year below
+  1000, which is hub item B-161.
 
 * **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
   (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
@@ -403,6 +454,288 @@ metasalmon (development version)
   still counts the row it has recorded since #28, and the same fix is owed
   there.
 
+* **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
+  refuses** (hub item B-174). Its contract is that when the last row it prints
+  is gone, `validate_salmon_datapackage(require_iris = TRUE)` passes, and in
+  0.5.0 that failed for the most ordinary unfinished package: one whose
+  semantic review was left partly undecided. A `REVIEW:`-prefixed IRI is not
+  blank and is not one of the three `MISSING ...:` / `REVIEW REQUIRED:`
+  placeholder spellings, so the scan's test for an unfilled value passed over
+  it and `review_metadata()` printed "No outstanding metadata." for a package
+  strict validation then refused. Every IRI field strict validation sweeps was
+  affected -- including the four measurement IRIs and `observation_unit_iri`,
+  which the scan did visit, with a test that could not see the marker.
+
+  A marker is now listed wherever strict validation refuses one, with the
+  `set_sdp_*()` call that replaces it: in any schema-declared `*_iri` field of
+  `tables.csv`, and in the six semantic IRI fields of `column_dictionary.csv`.
+  The six are read from the list `validate_dictionary()` sweeps, not from the
+  schema. So when a schema selected through the options declares a seventh
+  dictionary `*_iri` field, a marker there is not listed, because strict
+  validation accepts it (raised in the Codex review of #144). Also still not
+  listed:
+
+  - a marker in `codes.csv` or `dataset.csv`, because strict validation does
+    not refuse one there yet (hub item B-177);
+  - a marker in a `*_iri` column the schema does not declare, which has no
+    setter to print (hub item B-185).
+
+  The fix is a second test for the marker rather than a wider placeholder
+  test, because other callers depend on the placeholder test's narrowness. It
+  is pinned by marking each declared `*_iri` field of all four metadata files
+  in turn, on a package that otherwise passes, and asserting that the scan
+  lists it exactly when strict validation refuses it. A second test does the
+  same for a configured schema's extra dictionary field.
+
+  metasalmonpy fixed the same defect in pull request #28, and its scan also
+  lists a marker in `codes.csv`, the one file where the two differ. Brett ruled
+  on 2026-09-23 that strict validation refuses a marker there, so R is the side
+  that moves, when B-177 lands. Until then the difference is tracked as a port
+  owed in `knowledge/parity-deviations.md`, not as a register row.
+
+* **`apply_salmon_dictionary(strict = TRUE)` now stops on the coercion failure
+  it used to let through, and the codes step names the values it blanks**
+  (backlog #55, hub item B-55). Both were silent losses in one call.
+
+  - **A value R only warns about is now a coercion failure.**
+    `as.integer("abc")` and `as.numeric("1,5")` do not error. They warn and
+    return `NA`. The coercion block handled `error` alone, so under the default
+    `strict = TRUE` a column typed `integer` or `number` holding such a value
+    came back with `NA` in its place and R's generic *"NAs introduced by
+    coercion"* beside it, and never reached the abort that `strict` promises.
+    A warning is now a failure too. `strict = TRUE` aborts, naming the column
+    and the type, and for a failure R only warned about, each value that did not
+    convert. `strict = FALSE` warns and keeps the column as character, which is
+    what the argument has always documented; it too returned the `NA`s. A
+    missing or blank value is not a failure.
+  - **A value that is not in its column's code list is reported.** The codes
+    step makes the column a factor whose levels are the code list, so an
+    unlisted value has no level and becomes `NA`, and it used to do that without
+    a word. It now warns, naming each distinct unlisted value, under either
+    value of `strict`: `strict` governs type coercion, and the defect was the
+    silence, not the conversion, which is unchanged. Blank strings count as
+    missing and are not named.
+
+  Two tests pinned the old behaviour. One asserted that `strict = TRUE` returned
+  `NA` for `"not-a-number"`, beside a comment saying the handler "only triggers on
+  actual errors, not warnings". Both now assert the documented contract.
+
+  **Not covered, because it is a different mechanism:** a coercion that loses a
+  value without signalling anything still passes `strict = TRUE`. `as.logical()`
+  returns `NA` for `"yes"` with no warning, `as.Date()` does the same for a
+  value after a parseable first one, and `as.integer("3.7")` truncates to `3`.
+  None of them raises a condition for a handler to catch.
+
+  **Mirror:** the coercion half brings R to where metasalmonpy already was,
+  because its `_coerce_series()` raises on these values under `strict=True`. Its
+  codes step still blanks an unlisted value silently, and that half is owed
+  there as a port (see `knowledge/parity-deviations.md`).
+
+* **The call `review_semantics()` prints for a measurement column's own slot
+  now runs when the column has a code list** (hub item B-151). A measurement
+  column's `entity_iri` and `constraint_iri` targets share their roles with the
+  `codes.csv` targets of its codes, and an omitted `code_value` matches every
+  code. So the column's own slot printed
+  `accept_suggestion(review, "spawner_count", "entity", rank = 1, table = "spawners")`,
+  which matched that slot and every code's slot and aborted with *"That column
+  and role match more than one review slot"*; its `reject_suggestion()` line did
+  the same. Reproduced through `create_sdp(semantic_code_scope = "all")` with a
+  two-code sentinel list on a count column: 6 of the 33 printed calls aborted.
+  The abort's own list of arguments to add was no way out either, because the
+  option it offered for the column's slot was the `table =` the call already
+  carried.
+
+  A blank `code_value` now selects the slots that belong to no code:
+  `accept_suggestion(..., code_value = "")`, or `code_value = NA`, selects the
+  column's own slot. It never selects a code's slot, including one whose
+  `codes.csv` row leaves `code_value` empty because it supplies
+  `vocabulary_iri`, which the codes schema allows. `review_semantics()` prints
+  `code_value = ""` whenever `table` alone would not select the column's own
+  slot, and the refusal offers it too. An omitted `code_value` still matches
+  every code, as before, so no call an earlier version printed resolves to a
+  different slot now. Reading the omission as "no code value" instead, the
+  other way to fix this, would have changed what every code slot's call printed
+  without a `code_value` resolves to.
+
+  One case is not fixed here. A code slot whose `codes.csv` row has no code
+  value has no call of its own that tells it apart from another slot of the
+  same column, role and table, such as a measurement column's own slot. Its
+  printed call still refuses as ambiguous, as it did before, and never decides
+  the other slot. Set that row's `term_iri` in `codes.csv` directly.
+
+  **Mirror:** metasalmonpy prints the same ambiguous call and pins it as a
+  known limitation shared with R. Its matcher already read `code_value=""` as
+  "no code value", where R aborted with *"No review slot matches"*, but it also
+  matched a code slot whose row has no code value. The printed call, the
+  refusal and that part of the matcher are owed there as a port, with the
+  pin's removal.
+
+* **`suggest_semantics()` searches each distinct query, role and sources
+  tuple once, where it searched once per target row** (backlog #56, hub item
+  B-56). Rows repeat a tuple whenever tables share a column or columns fall
+  back to the same unit query: four tables carrying the same two columns are
+  40 targets and 9 distinct tuples, and all 40 were searches. Now 9 are. A
+  `search_fn` you supply is therefore called fewer times, and a counting or
+  logging one will see it. What each row gets is unchanged: its candidates,
+  their order and every attribute of the result are `identical()` to before on
+  that fixture and on the bundled example package. The saving lasts for one
+  call only, so it is not a cache and never outlives a change of settings. An
+  answer whose diagnostics say a source did not answer is never reused, and the
+  next row with that tuple searches again, as `find_terms()` already refuses
+  to cache a degraded lookup. The LLM review's retry searches are unchanged.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` still searches once per
+  target row, and the change is owed there as a port.
+
+* **`accept_suggestion()` now refuses an `iri` that is only the `REVIEW:`
+  marker** (hub item B-219). It checked that `iri` was not empty before
+  stripping the marker, so `accept_suggestion(review, column, role, iri =
+  "REVIEW:")` passed the check. So did every other spelling the strip removes,
+  in any case and with whitespace before or after the colon. The accept
+  recorded an IRI that named no term. `apply_sdp_semantics()` then cleared the
+  field, whatever it held, and gave a cleared `term_iri` a `term_type` anyway.
+  It marked every retrieved candidate `not_selected` and wrote an `accepted`
+  row with an empty `iri` to `semantic_suggestions.csv`, which the next
+  `review_semantics()` drops, so the slot came back undecided. The check now
+  reads the value after the strip, which is the value the decision records, and
+  the refusal says that the marker was removed and nothing followed it. An
+  `iri` with a term after the marker is accepted as before and recorded without
+  the marker.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` checks in the same order and
+  records the same empty accept for every spelling its own strip removes. The
+  fix is owed there as a port (see `knowledge/parity-deviations.md`).
+
+* **Naming a shortlisted candidate's IRI in `accept_suggestion(iri = )` now
+  writes that candidate's `term_type`** (hub item B-221). The accept was
+  recorded on the slot's first row. `apply_sdp_semantics()` takes `term_type`
+  from the row a decision sits on only when that row carries the accepted IRI,
+  and writes `skos_concept` otherwise. So hand-picking the IRI of a candidate
+  below rank 1 wrote `skos_concept`, whatever that candidate was. The review
+  rebuilt from the package replays the same decision on the candidate's own
+  row, and re-applying it wrote the candidate's type. So one decision changed
+  `column_dictionary.csv` and `datapackage.json` between two applies. With an
+  `owl_class` candidate at rank 2, the first apply wrote `skos_concept` and the
+  re-apply `owl_class`. An `iri` that a candidate in the review's shortlist
+  carries, compared without the `REVIEW:` marker, is now recorded on that
+  candidate's row. It is the same decision as `rank = <its rank>`, and applying,
+  rebuilding and re-applying it writes the same bytes. A candidate stored with
+  the `REVIEW:` marker on its IRI now writes its own `term_type` too, by
+  `iri =` and by `rank =` alike. The writer compared that stored IRI, marker
+  and all, with the unmarked IRI the decision records, so it never recognised
+  the candidate and wrote `skos_concept`. The record in
+  `semantic_suggestions.csv` now reads a candidate's IRI the same way, trimmed
+  as well as unmarked. A quoted IRI keeps a trailing newline through
+  `read_csv()`, so the record missed such a candidate and gave the IRI a
+  hand-picked row instead, which the rebuilt review replayed as `skos_concept`.
+  An IRI that no candidate in the shortlist carries still writes
+  `skos_concept`, as before. That includes hub item B-176's case, a term the
+  reviewer typed whose type nothing records.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` also records `iri=` on the
+  slot's first row, and its writer falls back to `skos_concept` the same way,
+  marked candidates included, so the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
+
+* **The publication vignette no longer leads a reader to add a ledger row that
+  stops their package publishing** (hub item B-192).
+  `vignettes/post-review-package-publication.Rmd` described the canonical
+  review target set as the measurement set *plus* each table's
+  `observation_unit_iri`, which holds in one direction only. The measurement set
+  includes every `sosa:usedProcedure` reached through a code value, and the
+  review targets never do: `.ms_eml_canonical_review_targets()` reads only the
+  dictionary and `tables.csv`, and never calls the used-procedure resolver that
+  the measurement set calls. So a reader who followed the sentence and added a
+  `reviewed_semantic_selections.csv` row for such a procedure had it refused by
+  `write_eml_from_sdp()` and `publish_sdp_to_knb()`, whose ledger gate accepts
+  exactly the canonical target set, while
+  `validate_salmon_datapackage(require_iris = TRUE)` went on passing. The
+  vignette now describes the review target set on its own terms and says both
+  directions: an `observation_unit_iri` is a review target and not a vocabulary
+  term, and a code-resolved procedure is a vocabulary term and not a review
+  target. No code changed. `write_sdp_semantic_closure()` writes the ledger from
+  the canonical target set, so a ledger it wrote never carried the row; only a
+  hand-edited one could.
+
+  **Mirror:** metasalmonpy corrected the same passage first, in pull request
+  31, because its `guides/semantic-review.qmd` was transcribed from this
+  vignette. This is the R half following it.
+
+* **`review_metadata()` reports a placeholder in an IRI field once, and the
+  call it prints for that row runs** (hub item B-211). A `MISSING METADATA:`,
+  `MISSING DESCRIPTION:` or `REVIEW REQUIRED:` placeholder in `tables.csv`'s
+  `observation_unit_iri`, or in a measurement column's `term_iri`,
+  `property_iri`, `entity_iri` or `unit_iri`, came back as two rows. The
+  scan's field loop reported it with reason `placeholder`, as it does a
+  placeholder in any field. The check for a blank one of those fields then
+  reported it again with reason `iri`, because its test counts a placeholder
+  as unfilled. The `set_sdp_table()` or `set_sdp_column()` call printed for the
+  row named the field twice, so evaluating it failed with *formal argument
+  "observation_unit_iri" matched by multiple actual arguments*. Measured on
+  hub `main` `643209c` with one placeholder planted in each file: two rows for
+  each field, both printed calls failed that way, and the console counted 16
+  fields still blocking strict validation where there were 14. Each field now
+  comes back once, as a placeholder, and its call runs. A blank IRI field is
+  still reported once with reason `iri`, and so is one still carrying a
+  `REVIEW:` marker.
+
+  The scan now keeps one row per field of each metadata row, and the first
+  check to report a field keeps it. So the same holds whichever two checks
+  find one field. Under a schema selected through the options that calls
+  `unit_iri` required, a blank one on a measurement row came back as
+  `required` and as `iri`, and its call failed the same way. It now comes back
+  once, as `required`. No shipped schema calls an IRI field required, and
+  nothing in the package writes a placeholder into an IRI field, so only a
+  hand-edited package reached either. `tests/testthat/test-sdp-field-setters.R`
+  plants a placeholder, a blank and a `REVIEW:` marker in turn, and pins the
+  required-IRI case with a configured schema. Each test runs the printed calls,
+  and the placeholder and required-IRI tests failed on the scan as it stood.
+
+  The console's footer now counts IRI gaps by field, not by the reason a row
+  kept. So an IRI field reported as a placeholder, or as `required`, still
+  counts as an IRI. And when every IRI gap is a placeholder, the line pointing
+  at `review_semantics()` still prints. Counted by reason, that line dropped
+  out once each field came back once. A test pins it with every IRI gap a
+  placeholder.
+
+  **Mirror:** metasalmonpy fixed the same defect first, with the same rule
+  (hub item B-212, metasalmonpy pull request #49), so the two packages report
+  the same rows. Its suite does not pin the required-IRI case. A defect the
+  two packages shared is not a deliberate difference, so it opens no
+  parity-register row. metasalmonpy's footer still counts IRI gaps by reason,
+  so the footer change is owed there as a port, hub item B-244 (see
+  `knowledge/parity-deviations.md`).
+
+* **`read_sssom_mapping_set()` now reads a canonical SSSOM/TSV file, which
+  leaves the built-in prefixes out of its `curie_map`** (hub item B-233). The
+  reader looked every CURIE prefix up in the file's own `curie_map` and refused
+  any it did not find, so `skos:exactMatch` in a file that did not declare
+  `skos` stopped with *uses unknown CURIE prefix "skos"*. The SSSOM
+  specification allows exactly that file: `owl`, `rdf`, `rdfs`, `semapv`,
+  `skos`, `sssom`, `xsd` and `linkml` are built-in, they "MAY be omitted from
+  the curie_map", and a canonical SSSOM/TSV writer "MUST NOT include" them. As
+  `mapping_justification` is required and is always a `semapv:` CURIE, every
+  canonical file with a mapping in it was refused. The eight are now accepted
+  undeclared. Every other prefix still has to be declared, since SSSOM/TSV
+  parsers "MUST reject a file with undeclared, non-built-in prefix names".
+
+  One kind of file that used to be accepted is now refused: a `curie_map` that
+  declares a built-in prefix with a different expansion, such as `skos` with
+  `https://www.w3.org/2004/02/skos/core#`. The specification says a declared
+  built-in "MUST point to the same IRI prefixes" as its table, and the old
+  reader, which knew no built-ins, read such an entry as an ordinary
+  declaration. The rule sits with the other CURIE checks, so it holds in
+  `validate_sdp_sssom()` and for an in-memory set passed to `write_sdp_sssom()`,
+  which is refused before anything is written, and `validate = FALSE` skips it
+  as it skips them. The rules are in the model's Identifiers section and the
+  table in the introduction's IRI prefixes section
+  (<https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers>,
+  <https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes>),
+  unchanged in the SSSOM 1.1 draft.
+
+  **Mirror:** metasalmonpy's reader refuses the same canonical files. It is
+  owed there as a port, hub item B-234, and not registered as a deviation.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
@@ -454,6 +787,31 @@ metasalmon (development version)
   item B-48) measured as loaded and never executed. B-48 builds its dispatch on
   this text; no rule `id`, `severity`, `version` or `profile` changed, because
   that test keys on rule ids.
+
+### Internal
+
+* **The test suite now fails when a vignette relies on a global
+  `knitr::opts_chunk$set()` to keep its display-only code out of the script
+  `R CMD check` runs** (backlog #32, hub item B-164).
+  `tests/testthat/test-vignette-purl-guard.R` tangles every vignette the way the
+  check's fresh process does -- through the vignette's own engine, with knitr's
+  default chunk options, because the tangle never runs the setup chunk -- and
+  fails when one that turns `eval` or `purl` off globally still yields live
+  code. #32 closed this shape in six vignettes on 2026-07-21 and added nothing
+  that would notice a seventh. `migrating-to-sdp-0-3-0.Rmd` and
+  `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7 display
+  chunks tangle as live code and fail `R CMD check` at the first statement on
+  R 4.3.3. The guard was shown failing on both before anything else changed.
+  Both stay as they are until hub item B-133 fixes them. Meanwhile the guard
+  lists them as known offenders, each pinned to the chunks that offend today.
+  A new live chunk in either one still fails, and so does an entry that has
+  stopped offending.
+
+  A test is needed because the check step that catches this stopped running by
+  default in R 4.4.0, when `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so
+  CI's current R stays green while `R CMD check` fails for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI's own check runs that
+  step again, which it cannot while the known-offender list has an entry.
 
 metasalmon 0.5.0
 ----------------

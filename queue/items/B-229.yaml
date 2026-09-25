@@ -1,0 +1,13 @@
+id: B-229
+kind: defect
+title: 'A CI re-run overwrites the failed attempt''s conclusion, so the check history cannot be read as a flake history'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The hub can count the CI failures a re-run turned green without already knowing which runs were re-run: one instrument the bundle names reads each run''s attempts rather than its run-level conclusion -- the Actions API keeps every attempt''s conclusion on its per-attempt endpoint after a re-run, so no log download is needed -- and it is demonstrated to report R-CMD-check runs 337, 360 and 449 as failed on their first attempt, which the run listing reports as success. Any count of CI failures written into the bundle afterwards says whether it counted runs or attempts. A RECORD OF AN AGENT''S OWN RE-RUN IN ITS WORKPAD IS A COMPLEMENT, NOT THE FIX: it misses every re-run no agent made and every one made before such a record was required. THIS IS THE MEASUREMENT LAYER UNDER B-132, B-152, B-155 AND B-197 AND IS NONE OF THEM: each of those is a flake that a re-run hides, and folding this into any one would lose it when that one retires.'

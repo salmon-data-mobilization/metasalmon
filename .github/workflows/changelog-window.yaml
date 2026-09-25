@@ -1,0 +1,75 @@
+name: changelog-window
+
+# Why this workflow exists.
+#
+# AGENTS.md's Releases rule (Brett, 2026-09-16): a change that merges after the
+# commit that bumped the version, and before that version's tag exists, is
+# filed under the development heading -- never under the version it did not
+# ship in -- and the tag stays on the bump commit. The window between bump and
+# tag opens on every release, because the tag is a separate act from the bump,
+# and on metasalmonpy it was missed within a minute of opening: B-144's merge
+# b939fd9 landed 21 seconds after the bump merge 67fb486 and filed its entry
+# under `## 0.5.0`. Nothing said so until somebody diffed a tag against its
+# changelog.
+#
+# `scripts/check-changelog-window.py` is the rule's mechanical form (hub item
+# B-200), and this job runs it on every pull request, so a line filed under a
+# released heading fails a check at the time rather than surfacing weeks later.
+#
+# On every pull request, with no path filter, on purpose. The line that breaks
+# the rule arrives in NEWS.md, but whether a heading is released is decided by
+# DESCRIPTION and the tags, and the job is cheap: the object store is about
+# 9 MiB packed, and the check took under a second on the full history
+# (2026-09-25). A path filter is the one part of a guard its own tests cannot
+# reach, which `hub-queue.yml` records having learned twice.
+#
+# RETIREMENT CONDITION: delete this workflow with the script, whose docstring
+# says when that is -- once the changelog stops being written by hand, a line
+# can no longer be filed under a version it did not ship in.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# Read-only, like every guard workflow here: this job reads history and writes
+# nothing.
+permissions:
+  contents: read
+
+concurrency:
+  group: changelog-window-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  released-headings-hold-only-what-shipped:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # The whole history and the tags, because the check reads `git blame` and
+      # `git merge-base --is-ancestor` across every release and looks each
+      # version's tag up by name. A shallow clone is refused by the script with
+      # exit 2 rather than read as clean, so a later change to this depth fails
+      # loudly -- do not "fix" that by making the step continue-on-error.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The script's own RED demonstrations, run before the script is trusted
+      # over this repository: each test builds a throwaway repository with a
+      # bump commit and shows the check red on a line added after it, and green
+      # on the same line under the development heading. Run directly rather
+      # than through pytest, so this job installs nothing. An empty run exits
+      # 5 on Python 3.12 and 0 on 3.11 (measured 2026-09-25), so the version
+      # pinned above is what makes a file whose tests vanished fail here.
+      - name: The check turns red on the shapes it exists for
+        run: python3 scripts/tests/test_check_changelog_window.py
+
+      - name: Released headings in NEWS.md hold only what shipped
+        run: python3 scripts/check-changelog-window.py

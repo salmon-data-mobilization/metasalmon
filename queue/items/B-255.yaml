@@ -1,0 +1,13 @@
+id: B-255
+kind: defect
+title: 'Two candidates carrying one IRI in one slot make a re-applied rebuilt review write a different term_type in metasalmonpy too, the mirror half of B-254'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-254]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, accepting either of two candidates that carry one IRI in one slot writes that candidate''s own term_type, and a rebuilt review re-applies to the same bytes, by the record B-254 lands in R. Pinned by the twin of B-254''s test, demonstrated RED on the code as it stands. THE METASALMON HALF IS B-254, which owns the design question, and each names the other. A PORT, NOT A REGISTER ROW.'

@@ -45,10 +45,12 @@ the supply of `ready`, which only Brett produces.
 4. **`HUB.md` at the repository root is the single policy file**, carrying the
    states, the claim protocol, and a `writes:` register. Brett's global
    instruction is the ceiling and the narrower of the two governs.
-5. **A client with seven verbs** (`doctor`, `ready`, `claim`, `beat`,
-   `release`, `done`, `reconcile`) that distinguishes losing the race from a
-   failed call, because folding a dead credential into "somebody got there
-   first" makes an agent spin through the whole queue reporting nothing wrong.
+5. **A small client** (`doctor`, `ready`, `claim`, `beat`, `release`, `done`,
+   `reconcile`, and from 2026-09-24 `fresh`, added by B-187) that distinguishes
+   losing the race from a failed call, because folding a dead credential into
+   "somebody got there first" makes an agent spin through the whole queue
+   reporting nothing wrong. *(This read "a client with seven verbs" until the
+   eighth arrived; a count of a list is a copy of the list, so the count went.)*
 6. **No GitHub Project** (R12). Section 9.8 of the execplan records what the
    Project would have given and that reviving it is additive, because the queue
    files are the source.
