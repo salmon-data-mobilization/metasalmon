@@ -590,7 +590,8 @@ metasalmonpy's `suggest_semantics()` still searches once per target, measured at
 40 calls for 9 tuples on `main` `85ebbb0`, so it is owed there as a port, not a
 register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
-covers one branch in one repository. Its metasalmonpy half is `B-243`.
+covers one branch in one repository. Its metasalmonpy half is `B-243`, which
+**landed 2026-09-25 as metasalmonpy #57**, `0235487`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Hub
