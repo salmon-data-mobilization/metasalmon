@@ -607,7 +607,8 @@ on the slot's first row, measured on `main` `2405df2`, so it has the same defect
 and the fix is owed there as a port, not a register row. The port is specified
 under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
 not in the same stream:** a hub claim covers one branch in one repository. Its
-metasalmonpy half is `B-222`.
+metasalmonpy half is `B-222`, which **landed 2026-09-25 as metasalmonpy #48**,
+`70fa8fd`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file.** Hub item **B-233** makes
