@@ -332,8 +332,11 @@ writes:
         in a member repository nobody but Brett has contributed to.
       shape: >-
         a reply that answers the finding, and resolving the thread once it is
-        answered. A finding is either fixed in a push or answered with the
-        evidence that it is not a defect; "acknowledged" is neither. Never a
+        answered, except on a pull request in a class "Which pull requests need
+        Brett" reserves to him: there the agent replies and leaves resolving the
+        thread to him (Brett, 2026-09-25). A finding is either fixed in a push
+        or answered with the evidence that it is not a defect; "acknowledged" is
+        neither. Never a
         reply that disputes a finding without evidence, and never resolving a
         thread whose finding was not addressed, which is the one way this row
         could be used to hide review rather than to serve it.
@@ -605,7 +608,8 @@ writes:
       eight the permitted list names, which are opening the one labelled draft
       pull request for a handed-back item, merging a green pull request in this
       repository, marking such a pull request ready for review, replying to and
-      resolving a Codex review thread on it, merging an approved pull request in
+      resolving a Codex review thread on it (on one reserved to Brett, replying
+      only, since he resolves it), merging an approved pull request in
       a solo member repository, and, on a pull request an agent opened,
       correcting its description, asking Codex to review it again, and
       re-running a failed job. Widened 2026-09-16 with the rows it counts:
@@ -778,10 +782,12 @@ every primary checkout.
 **7. Hand back.** Append a `handoff` commit, print the compare URL, stop. In a
 member repository somebody other than Brett has contributed to, the branch is
 never pushed at all and the hand-back is a diff plus a pull request draft shown
-in chat; the Hand back section says how to tell which case you are in. Pass
-`hub done` the branch you actually pushed, and it will be
-`agent/<queue-id>/<token>` because that is the only branch you were allowed to
-push. The client checks the name against the grant and exits 3 on anything
+in chat; the Hand back section says how to tell which case you are in. There
+nothing is pushed, so there is no branch to pass `hub done`, and the client has
+no chat hand-back yet (queue item B-320): keep the claim alive with heartbeats
+until Brett answers in chat. Everywhere else, pass `hub done` the branch you
+actually pushed, and it will be `agent/<queue-id>/<token>` because that is the
+only branch you were allowed to push. The client checks the name against the grant and exits 3 on anything
 else, so a mismatch means either the branch is not one the register covers or
 your agent token is not the one holding the claim. Both are worth stopping for.
 
@@ -1366,7 +1372,8 @@ any pull request operation other than the six granted above, which are the one
 draft per handed-back item, correcting the description of a pull request an
 agent opened, a merge in this repository of a pull request whose
 checks are all green, marking such a pull request ready for review, replying to
-and resolving a Codex thread on it, and merging an approved pull request in a
+and resolving a Codex thread on it (on one reserved to Brett, replying only,
+since he resolves it), and merging an approved pull request in a
 member repository whose `solo` key is true; any push of the work branch into a
 member repository somebody else has contributed to, where it is ask-first; any
 merge in a member repository whose `solo` key is false or absent, any merge of a
@@ -1521,7 +1528,8 @@ with the register.
   nobody but Brett has ever contributed to, labelled `agent-run` and carrying
   the queue id. On that pull request, ruling R16 permits three further things
   and nothing more: marking it ready for review, replying to a Codex review
-  thread, and resolving a thread once its finding is fixed or answered. A reply
+  thread, and resolving a thread once its finding is fixed or answered, except
+  on a pull request in a class reserved to him, where he resolves it. A reply
   to a *person's* review is still never, and so is any comment on a pull request
   the agent did not open.
 - Never merge a pull request **except** in a member repository whose `solo` key

@@ -7521,3 +7521,23 @@ the warning cannot say where.
 Every paragraph in this section records what was observed, where and by whom,
 on 2026-09-25. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.
+
+## B-320: a hand-back shown in chat has no claim record (filed 2026-09-25)
+
+**`B-320` `hub done` has no hand-back for a shared repository.** `HUB.md` step 7
+says that in a member repository somebody other than Brett has contributed to,
+"the branch is never pushed at all and the hand-back is a diff plus a pull
+request draft shown in chat". The same paragraph then says to pass `hub done`
+the branch you pushed. The client requires one: `scripts/hub` exits with "done
+needs --branch, naming the branch you pushed" when `--branch` is missing, and
+refuses any name other than `agent/<queue-id>/<token>`. So in the shared case
+there is no honest way to record the hand-back. Passing the expected name
+records a remote branch that does not exist, and skipping `hub done` leaves an
+ordinary claim to expire. Read, not run.
+
+Found by the Codex review of pull request 184 on `8745c0d`. That pull request
+rewords the `review` state, on Brett's 2026-09-25 ruling, as "Handed back —
+pushed where the grant covers a push, shown in chat where it does not". The
+reword describes the chat case honestly, and this item gives the client a way
+to record it. Until then, step 7 tells the agent to keep the claim alive with
+heartbeats while Brett answers in chat.
