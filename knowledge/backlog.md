@@ -324,7 +324,7 @@ repo at the same time.
 
 
 ### 1. `infer_dictionary()` silently drops LLM options when `seed_semantics = FALSE`
-- **Severity:** medium · **Status:** confirmed + spot-verified · **Class:** ux-bug
+- **Status:** confirmed + spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed. `infer_dictionary()` now routes through
   `.ms_llm_review_plan()` and warns once before list/data-frame branching when
   LLM semantic options are supplied with `seed_semantics = FALSE`; regression
@@ -342,7 +342,7 @@ repo at the same time.
   the suite for `infer_dictionary(... llm_*)` calls lacking `expect_warning`.
 
 ### 2. Exploration with skipped reassessment pairs a stale selected-index with a re-sorted candidate set
-- **Severity:** medium · **Status:** spot-verified (NEW) · **Class:** correctness-bug
+- **Status:** spot-verified (NEW) · **Class:** correctness-bug
 - **Implementation status:** fixed (completed during 2026-06-25 code review).
   Codex's first pass only fixed the *failed-reassessment* branch
   (`R/llm-semantic-helpers.R:1310`); the **no-gain skip branch** (`candidate_gain
@@ -371,7 +371,7 @@ repo at the same time.
   with the original assessment so index and ordering stay aligned.
 
 ### 3. Duplicated, divergent HTTP chat request builders
-- **Severity:** medium · **Status:** confirmed · **Class:** correctness-bug (drift)
+- **Status:** confirmed · **Class:** correctness-bug (drift)
 - **Implementation status:** fixed 2026-09-23 for the request builder (hub item
   B-3; see below). The request body is still divergent, and that is hub item
   B-128. Until then this read *open/deferred*: R4 intentionally deepened the
@@ -433,7 +433,7 @@ item's condition, and the B-3 workpad records it rather than converging it here.
 It is filed as `B-226`.
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
-- **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
+- **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
 - **Implementation status:** fixed (2026-06-26, roadmap B1). `create_sdp()` still
   writes create-time EDH XML, but now reuses `.ms_collect_edh_review_state_issues()`
   and emits a "DRAFT EDH" warning (pointing to `write_edh_xml_from_sdp()`) when
@@ -451,7 +451,7 @@ It is filed as `B-226`.
   shared builder that stamps/blocks when placeholders/REVIEW markers are present.
 
 ### 5. `chunk_id` / source-label collisions for context files sharing a basename
-- **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Status:** confirmed · **Class:** architectural-smell
 - **Implementation status:** fixed (2026-06-26, roadmap D2).
   `.ms_unique_context_sources()` disambiguates colliding basenames (parent dir, then
   a numeric suffix) inside `.ms_collect_context_chunks()`; unique labels are left
@@ -466,7 +466,7 @@ It is filed as `B-226`.
   "preserve source reporting exactly."
 
 ### 6. Encoding mismatch can corrupt non-UTF-8 context files
-- **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Status:** confirmed · **Class:** architectural-smell
 - **Implementation status:** fixed (2026-06-26, roadmap D1). `.ms_read_text_utf8()`
   reads the main plain-text/CSV path as UTF-8, detects invalid UTF-8 via
   `validUTF8()`, and falls back to Windows-1252/Latin-1 decoding. Test in
@@ -477,7 +477,7 @@ It is filed as `B-226`.
   degrades scoring. **Fix:** detect/allow encoding in one place.
 
 ### 7. Provider truncation reported as a generic null-response abort
-- **Severity:** low · **Status:** confirmed · **Class:** ux-bug
+- **Status:** confirmed · **Class:** ux-bug
 - **Implementation status:** fixed. The review adapter now includes a sanitized
   content snippet when wrapped chat content is malformed and parsed `data` is not
   available; tests also assert parsed `data` wins over malformed `content`.
@@ -487,7 +487,7 @@ It is filed as `B-226`.
   surface a content snippet; assert in malformed-response tests for both consumers.
 
 ### 8. `semantic_code_scope = "factor"` semi-join omits `dataset_id`
-- **Severity:** low · **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
+- **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
 - **Implementation status:** fixed (2026-06-26, roadmap D3).
   `.ms_factor_code_keys()` / `.ms_select_semantic_seed_codes()` now thread
   `dataset_id` and join on `c("dataset_id","table_id","column_name")` when present
@@ -499,7 +499,7 @@ It is filed as `B-226`.
   cross-matches across datasets. **Fix:** include `dataset_id` in the key when present.
 
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
-- **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
+- **Status:** spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed 2026-06-26 in a *working copy only*; genuinely
   fixed 2026-08-10. The 2026-06-26 pass wrote real guidance into `AGENTS.md`, but
   `.gitignore` listed `AGENTS.md` and `CLAUDE.md`, so neither file was ever
@@ -559,7 +559,7 @@ adversarial pass** — re-confirm before fixing.
   round-trip is spent. **Fix:** record the rejection; consider honoring near-duplicates.
 
 ### 33. Canonical project and runtime URLs point to the former organization
-- **Severity:** medium · **Status:** spot-verified · **Class:** reliability/ux-bug
+- **Status:** spot-verified · **Class:** reliability/ux-bug
 - **Implementation status:** fixed (2026-07-21). Package metadata, install and
   help links, update checks, OpenRouter attribution, tests, and source
   documentation now use `salmon-data-mobilization/metasalmon`. Runtime SDP
@@ -747,7 +747,7 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   being the destination for R3's target rows and a consumer in R4.
 
 ### 32. Display-only vignettes are tangled and executed by `R CMD check`
-- **Severity:** low-medium · **Status:** confirmed · **Class:** test-infra bug
+- **Status:** confirmed · **Class:** test-infra bug
 - **Implementation status:** fixed (2026-07-21, roadmap E5). Every display-only
   chunk in the six affected vignettes now declares `purl = FALSE` in its chunk
   header. A focused `knitr::purl()` validation found zero executable lines, and
