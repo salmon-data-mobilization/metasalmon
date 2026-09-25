@@ -32,7 +32,10 @@ For every released version heading in the changelog at the revision checked:
    first-commit reading fails `main` on them. While a version is current its
    window is open and the first commit rules, so continuous integration sees
    such a line when it is written; a line added under a superseded version
-   after it was superseded is still a finding.
+   after it was superseded is still a finding. *Retires when:* no superseded,
+   untagged heading holds a line added after its first commit -- in practice
+   never while 0.1.6 and 0.2.4 keep theirs, since AGENTS.md rules out tagging
+   them; it is the reading of fixed history, not a hole with an end date.
 2. The section as it stood at the bump commit is diffed against the section
    as it stands now. A line the diff inserts is ADDED. A run that replaces
    shipped lines stands for them one for one -- the lines that keep the most
