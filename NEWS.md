@@ -636,6 +636,42 @@ metasalmon (development version)
   marked candidates included, so the fix is owed there as a port (see
   `knowledge/parity-deviations.md`).
 
+* **`review_metadata()` reports a placeholder in an IRI field once, and the
+  call it prints for that row runs** (hub item B-211). A `MISSING METADATA:`,
+  `MISSING DESCRIPTION:` or `REVIEW REQUIRED:` placeholder in `tables.csv`'s
+  `observation_unit_iri`, or in a measurement column's `term_iri`,
+  `property_iri`, `entity_iri` or `unit_iri`, came back as two rows. The
+  scan's field loop reported it with reason `placeholder`, as it does a
+  placeholder in any field. The check for a blank one of those fields then
+  reported it again with reason `iri`, because its test counts a placeholder
+  as unfilled. The `set_sdp_table()` or `set_sdp_column()` call printed for the
+  row named the field twice, so evaluating it failed with *formal argument
+  "observation_unit_iri" matched by multiple actual arguments*. Measured on
+  hub `main` `643209c` with one placeholder planted in each file: two rows for
+  each field, both printed calls failed that way, and the console counted 16
+  fields still blocking strict validation where there were 14. Each field now
+  comes back once, as a placeholder, and its call runs. A blank IRI field is
+  still reported once with reason `iri`, and so is one still carrying a
+  `REVIEW:` marker.
+
+  The scan now keeps one row per field of each metadata row, and the first
+  check to report a field keeps it. So the same holds whichever two checks
+  find one field. Under a schema selected through the options that calls
+  `unit_iri` required, a blank one on a measurement row came back as
+  `required` and as `iri`, and its call failed the same way. It now comes back
+  once, as `required`. No shipped schema calls an IRI field required, and
+  nothing in the package writes a placeholder into an IRI field, so only a
+  hand-edited package reached either. `tests/testthat/test-sdp-field-setters.R`
+  plants a placeholder, a blank and a `REVIEW:` marker in turn, and pins the
+  required-IRI case with a configured schema. Each test runs the printed calls,
+  and the placeholder and required-IRI tests failed on the scan as it stood.
+
+  **Mirror:** metasalmonpy fixed the same defect first, with the same rule
+  (hub item B-212, metasalmonpy pull request #49), so the two packages report
+  the same rows. Its suite does not pin the required-IRI case. A defect the
+  two packages shared is not a deliberate difference, so this opens no
+  parity-register row.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
