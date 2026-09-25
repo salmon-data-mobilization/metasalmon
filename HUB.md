@@ -92,10 +92,16 @@ claim:
 writes:
   scope_note: >-
     What this register governs: writes made by an agent executing the hub
-    protocol in this file against a claimed queue item. Inside that scope it is
-    the only enumeration of what such an agent may write without asking, and an
+    protocol in this file against a claimed queue item, and the queue upkeep
+    its rows name for items nobody has claimed, which is promoting an item to
+    ready, setting an item's claimable to true, and a small mechanical push to
+    this repository's default branch. Inside that scope it is the only
+    enumeration of what such an agent may write without asking, and an
     operation it does not list is not permitted there, whatever its resemblance
-    to one that is. Outside that scope it governs nothing. Ordinary repository
+    to one that is. Outside that scope it governs nothing. (Widened 2026-09-25:
+    this said "against a claimed queue item" and stopped there, which left the
+    promotion row, granted for unclaimed items, outside the only scope that
+    makes a row operative. A review of the claimable grant found it.) Ordinary repository
     work, meaning everything an agent does that is not the hub protocol acting
     on a claim, is governed by Brett's global agent instructions and by the
     repository it happens in; this register neither widens nor narrows that.
@@ -462,6 +468,29 @@ writes:
         merging: one grant with a stated test, under which each promotion still
         names it. First applied in commit abd58b2, whose message lists what it
         promoted and what it held back, with the reason for each.
+    - operation: set a queue item's claimable to true
+      target: the item file under queue/items/ on this repository's default branch
+      shape: >-
+        a commit that names this grant and says, for each item, why its work
+        needs no decision only Brett can make and no credential he holds. An
+        item qualifies only when all of these hold as written: its repo is
+        solo: true; it is not kind: question; its retires_when is non-empty and
+        leaves no choice open (it says nothing like "not settled here", "not
+        decided here" or "is open", and its retirement needs no pull request of
+        a class in "Which pull requests need Brett"); and no workpad for it has
+        a non-empty section saying it needs Brett. An item that qualifies only
+        once a condition is interpreted is per-item, and the interpretation
+        goes to him as a question, as under the promotion row. Setting
+        claimable to false is not covered and stays in class 8.
+      max: no limit, and one commit naming the grant per change
+      enforced_by: >-
+        nothing mechanical. As with promotion, the commit is the audit trail.
+      granted: >-
+        2026-09-25, in his words, answering the decisions page's "Make B-244
+        and B-245 claimable?": "yes, and change class 8 so you can make this
+        type of thing claimable". The two items that question named were made
+        claimable on his per-item word in commit 461c639; this row is the
+        standing half of the same answer.
     - operation: push a small mechanical change to this repository's default branch
       target: refs/heads/main in this repository (metasalmon)
       shape: >-
@@ -475,7 +504,9 @@ writes:
         that a wrong one is legible afterwards.
       granted: 2026-09-10 (ruling R15).
   permitted_note: >-
-    The last three rows were granted on 2026-09-10 and reached this register on
+    Three rows, merge a pull request in this repository, promote a queue item
+    to state ready, and push a small mechanical change to this repository's
+    default branch, were granted on 2026-09-10 and reached this register on
     2026-09-10, in a later change, after a review pointed out that they had been
     written into the prose below and into Brett's global instruction but not
     into the only enumeration scope_note says is operative. Until they landed
@@ -614,8 +645,9 @@ writes:
     The whole standing authorization is suspended the moment an agent executing
     this protocol writes outside the permitted list, and stays suspended until
     Brett reinstates it. The trigger is scoped the way scope_note scopes the
-    register: a write made under the protocol against a claimed item, not any
-    write an agent makes anywhere. Ordinary repository work outside the protocol
+    register: a write made under the protocol against a claimed item, or the
+    queue upkeep scope_note names for items nobody has claimed, not any write an
+    agent makes anywhere. Ordinary repository work outside the protocol
     is governed by Brett's global agent instructions and suspends itself under
     that file's own clause, which is a separate rule with a separate scope and
     is not narrowed by this one. Neither the scoping nor the reinstatement above
@@ -1080,10 +1112,13 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
    not self-amend. The pull request that introduced this section is itself an
    instance and was not self-merged.
 8. **It promotes a queue item to `ready` outside the standing grant on the
-   register's promotion row, or changes `claimable`.** Already his, and
-   unchanged by this section. *(This read "It promotes a queue item to `ready`"
-   until 2026-09-23, when that grant took the items meeting its test out of this
-   class and left `claimable` in it.)*
+   register's promotion row, or changes `claimable` outside the grant on the
+   register's claimable row.** Already his, and unchanged by this section.
+   *(This read "It promotes a queue item to `ready`" until 2026-09-23, when that
+   grant took the items meeting its test out of this class and left `claimable`
+   in it. It read "or changes `claimable`" until 2026-09-25, when his claimable
+   grant took setting it to `true`, for the items meeting that row's test, out
+   of this class; setting it to `false` stayed.)*
 9. **It commits the project to something outward-facing**: a published page, an
    issue in another organisation, a term request, a data deposit.
 10. **Its author could not settle a judgement inside it.** A non-empty "needs
