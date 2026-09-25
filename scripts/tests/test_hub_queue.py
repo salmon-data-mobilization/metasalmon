@@ -1997,6 +1997,158 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         self.assert_accepts()
 
 
+# The two passages B-202 reads, in the shapes they really have. B-124 is the
+# fourth instance: set done while the register read "Queued as B-124, blocked by
+# B-49" (a592c23, line 190) and the roadmap listed it with no landed marker.
+REGISTER_HEAD = (
+    "# Parity deviations\n\n| # | Kind |\n|---|---|\n| 1 | Idiom |\n\n"
+    "## What metasalmon 0.5.0 owes the mirror (2026-08-25) -- a port\n\n"
+)
+REGISTER_OWED = (
+    "**The development version after 0.5.0 adds to what the port owes "
+    "(2026-09-12): validation.** Queued as **B-124**, blocked by B-49.\n"
+)
+REGISTER_CLOSED = (
+    "\n**This one is closed.** `B-124` landed as metasalmonpy pull request **#29**\n"
+    "(`1e9245c`) on 2026-09-16.\n"
+)
+ROADMAP_HEAD = (
+    "# ROADMAP\n\n## Release index\n\n### metasalmon (R) -- current **0.5.0**\n\n"
+    "Nothing is owed from this row.\n\n"
+    "### metasalmonpy (Python mirror) -- current **0.5.0**\n\n"
+)
+ROADMAP_OWED = "validation (**B-124**, blocked by B-49"
+ROADMAP_LANDED = " -- **landed 2026-09-16 as metasalmonpy\n#29**, `1e9245c`"
+ROADMAP_TAIL = ").\n\n### salmon-domain-ontology (smn) -- current **0.0.3**\n\nNo ports.\n"
+
+
+class TestPortRecords(QueueTestCase):
+    """B-202: a port the queue calls done must not still read as owed.
+
+    Each pair plants the defect in one passage and then records the landing,
+    in the form the passages already use.
+    """
+
+    def write_ports(self, state="done", **extra):
+        self.write_item(BASE_DEFECT, id="B-49", repo="metasalmon", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-124", repo="metasalmonpy", state=state,
+                        claimable="false", blocked_by="[B-49]", legacy="''", **extra)
+
+    def write_passages(self, register, roadmap, register_head=REGISTER_HEAD):
+        self.write_prose(hub_queue.PORT_REGISTER_FILE, register_head + register)
+        self.write_prose(hub_queue.PORT_ROADMAP_FILE, ROADMAP_HEAD + roadmap + ROADMAP_TAIL)
+
+    def test_a_done_port_the_register_still_calls_owed_is_refused(self):
+        self.write_ports()
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED + ROADMAP_LANDED)
+        output = self.assert_rejects("port-landed-unrecorded")
+        self.assertIn(f"{hub_queue.PORT_REGISTER_FILE}:9:", output)
+        self.assertNotIn(hub_queue.PORT_ROADMAP_FILE + ":", output)
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_accepts()
+
+    def test_a_done_port_the_roadmap_still_lists_as_owed_is_refused(self):
+        self.write_ports()
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED)
+        output = self.assert_rejects("port-landed-unrecorded")
+        self.assertIn(hub_queue.PORT_ROADMAP_FILE + ":", output)
+        self.assertNotIn(hub_queue.PORT_REGISTER_FILE + ":", output)
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_accepts()
+
+    def test_a_record_for_a_port_that_is_not_done_is_refused(self):
+        """Prose ahead of the queue. B-145 sat in `review` with its pull request
+        open; a record written then would claim a landing that had not happened.
+        Not done and recorded nowhere is the other half, and passes."""
+        self.write_ports(state="review")
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+        output = self.assert_rejects("port-landed-early")
+        self.assertIn("'review'", output)
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED)
+        self.assert_accepts()
+
+    def test_a_record_that_follows_no_mirror_id_is_refused(self):
+        """A record credited to nothing cannot be checked, and the paragraph is
+        the bound: the port's id one paragraph up does not own it."""
+        self.write_ports()
+        unowned = REGISTER_CLOSED.replace("`B-124` landed", "It landed")
+        self.write_passages(REGISTER_OWED + unowned, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_rejects("port-landed-orphan")
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_accepts()
+
+    def test_the_port_section_is_found_by_what_it_says_not_by_its_version(self):
+        """The next release renames the heading. A literal match would then find
+        no section and pass while a port sat described as owed; this one still
+        finds it, and fails when no heading says what the mirror is owed."""
+        self.write_ports()
+        renamed = REGISTER_HEAD.replace("0.5.0 owes the mirror (2026-08-25)",
+                                        "0.6.0 owes the mirror (2026-10-01)")
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED + ROADMAP_LANDED, register_head=renamed)
+        self.assert_rejects("port-landed-unrecorded")
+        unfound = REGISTER_HEAD.replace("What metasalmon 0.5.0 owes the mirror", "Ports")
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED + ROADMAP_LANDED, register_head=unfound)
+        output = self.assert_rejects("port-passage-missing")
+        self.assertNotIn("port-landed-unrecorded", output.split(hub_queue.PORT_ROADMAP_FILE)[0])
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED,
+                            register_head=renamed)
+        self.assert_accepts()
+
+    def test_a_queue_with_ports_needs_both_passages(self):
+        self.write_ports(state="ready")
+        self.write_prose(hub_queue.PORT_ROADMAP_FILE, ROADMAP_HEAD + ROADMAP_OWED + ROADMAP_TAIL)
+        output = self.assert_rejects("port-passage-missing")
+        self.assertIn(hub_queue.PORT_REGISTER_FILE, output)
+        self.write_prose(hub_queue.PORT_REGISTER_FILE, REGISTER_HEAD + REGISTER_OWED)
+        self.write_prose(hub_queue.PORT_ROADMAP_FILE,
+                         ROADMAP_HEAD.replace("(Python mirror)", "(Python)") + ROADMAP_OWED + ROADMAP_TAIL)
+        output = self.assert_rejects("port-passage-missing")
+        self.assertIn(hub_queue.PORT_ROADMAP_FILE, output)
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED)
+        self.assert_accepts()
+
+    def test_blockers_r_halves_and_the_window_halves_are_not_read_as_ports(self):
+        """The retirement condition's scope, as fixtures. B-49 is a blocker and an
+        R half; B-126 and B-153 closed the 0.4.0->0.5.0 window and have no
+        metasalmon blocker; B-145 is a port in `review` whose R half's own record
+        says `as metasalmon #118`. All four are done or named with no mirror
+        record, and none may be reported. B-124 done with no record is the
+        control that shows the passages were read at all."""
+        self.write_ports()
+        self.write_item(BASE_DEFECT, id="B-115", repo="metasalmon", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-145", repo="metasalmonpy", state="review",
+                        claimable="true", blocked_by="[B-115]", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-126", repo="metasalmonpy", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-153", repo="metasalmonpy", state="done",
+                        claimable="false", blocked_by="[B-126]", legacy="''")
+        window = ("The window closed in two halves: **B-126** ported the behaviour "
+                  "(metasalmonpy #28) and **B-153** moved the number.\n\n")
+        instant = ("\n\nthe descriptor's instant spelling (**B-145**, blocked by B-115, "
+                   "whose R half **landed 2026-09-16 as metasalmon #118**), once the port lands.\n")
+        self.write_passages(window + REGISTER_OWED + instant, window + ROADMAP_OWED + instant)
+        output = self.assert_rejects("port-landed-unrecorded")
+        for other in ("B-49 ", "B-115", "B-126", "B-145", "B-153"):
+            self.assertNotIn(other, output.replace("half of B-49)", ""))
+        self.write_passages(window + REGISTER_OWED + REGISTER_CLOSED + instant,
+                            window + ROADMAP_OWED + ROADMAP_LANDED + instant)
+        self.assert_accepts()
+
+    def test_a_line_that_opens_with_an_inline_code_span_is_not_a_fence(self):
+        """The roadmap's own shape. A detector that toggled on any leading run of
+        backticks hid every heading after this line, so the mirror's passage ran
+        to the end of the file and read other members' sections as its own."""
+        lines = (ROADMAP_HEAD + "```` ```{mermaid} ```` diagram in `index.qmd`\n\n"
+                 "```sh\n# a comment, not a heading\n```\n" + ROADMAP_TAIL).splitlines()
+        spans = hub_queue.port_passage_spans(hub_queue.PORT_ROADMAP_FILE, lines)
+        self.assertEqual(len(spans), 1)
+        start, end = spans[0]
+        self.assertTrue(lines[start].startswith("### metasalmonpy"))
+        self.assertTrue(lines[end].startswith("### salmon-domain-ontology"), lines[end])
+
+
 # --------------------------------------------------------------------------
 # The claim in this file's header, made enforceable -- and itself tested
 # --------------------------------------------------------------------------
