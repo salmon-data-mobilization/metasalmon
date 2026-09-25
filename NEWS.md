@@ -666,11 +666,20 @@ metasalmon (development version)
   required-IRI case with a configured schema. Each test runs the printed calls,
   and the placeholder and required-IRI tests failed on the scan as it stood.
 
+  The console's footer now counts IRI gaps by field, not by the reason a row
+  kept. So an IRI field reported as a placeholder, or as `required`, still
+  counts as an IRI. And when every IRI gap is a placeholder, the line pointing
+  at `review_semantics()` still prints. Counted by reason, that line dropped
+  out once each field came back once. A test pins it with every IRI gap a
+  placeholder.
+
   **Mirror:** metasalmonpy fixed the same defect first, with the same rule
   (hub item B-212, metasalmonpy pull request #49), so the two packages report
   the same rows. Its suite does not pin the required-IRI case. A defect the
-  two packages shared is not a deliberate difference, so this opens no
-  parity-register row.
+  two packages shared is not a deliberate difference, so it opens no
+  parity-register row. metasalmonpy's footer still counts IRI gaps by reason,
+  so the footer change is owed there as a port, hub item B-244 (see
+  `knowledge/parity-deviations.md`).
 
 ### Changed
 
