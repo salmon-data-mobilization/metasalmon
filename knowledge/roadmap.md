@@ -622,6 +622,18 @@ mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
 covers one branch in one repository, and metasalmonpy #49 had merged before the
 R half found it. Its metasalmonpy queue item is `B-244`.
 
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): EML `calendarDate` carries the spelling
+`metadata/dataset.csv` holds.** Hub item **B-162** closed by design. The EML
+copies the text it reads back from the package, so the `as.character()` there
+is not a third rendering. Two R tests pin this, and no behaviour changed.
+metasalmonpy's `eml.py` has the same two lines and reads its metadata as text,
+measured on `main` `012d04b`. So the same answer holds there, and nothing pins
+it. What is owed there is the twin tests, not a port and not a register row.
+They are specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
+branch in one repository. Its metasalmonpy queue item is `B-245`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
