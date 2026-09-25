@@ -794,12 +794,36 @@ metasalmon (development version)
   returns the rows of a response with no `key` column, with an `NA` detail
   `url`, where it aborted. A failed request still gives the same empty result
   as an empty answer, as `ices_code_types()` and `ices_codes()` always have, so
-  an empty result does not say whether ICES answered.
+  an empty result does not say whether ICES answered. The next entry adds the
+  warning that tells the two apart (hub item B-377).
 
   **Mirror:** metasalmonpy already behaves this way. Its helpers fill a missing
   column with `""` and return an empty frame for an empty or failed response,
   and its own tests use a response with no `longDescription`. R has moved to
   match it, so nothing is owed there and no register row is needed.
+
+* **The ICES helpers warn when the request fails, so an empty result no longer
+  hides an outage** (hub item B-377). `ices_code_types()`, `ices_codes()`,
+  `ices_find_code_types()` and `ices_find_codes()` returned the same empty
+  tibble for a request that failed as for an answer with no rows, and nothing
+  warned, so during an outage a user asking for a code list was told there was
+  none. `.safe_json()` did record the failure, but as a condition with no
+  default handler, and the ICES helpers installed none. A refused connection,
+  an HTTP error status, a timeout, or an answer that is not JSON now gives a
+  warning that names the request, with any secret in it redacted, and says what
+  failed. The result is still the empty tibble, and an answer with no rows
+  still gives it with no warning. A timeout also keeps the warning it already
+  had.
+
+  It is a warning and not an error because the return value does not change:
+  the list helpers have always returned the empty tibble for a failed request,
+  the find helpers have since B-57, and a caller that expects a data frame
+  keeps getting one. `find_terms()` answers the same problem the same way, with
+  a warning that a source did not answer.
+
+  **Mirror:** metasalmonpy's helpers return an empty frame for a failed request
+  with no warning, measured by the second 2026-09-25 queue sweep on its `main`
+  at `056fccc`. The warning is owed there as a port, hub item B-378.
 
 ### Changed
 
