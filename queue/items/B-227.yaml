@@ -1,8 +1,8 @@
 id: B-227
 kind: defect
 title: 'Bare pytest stops metasalmonpy''s suite at two collection errors, because two test modules import package modules by top-level name'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 severity: P3
