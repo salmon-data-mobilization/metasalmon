@@ -41,6 +41,21 @@
   file.path(review_dir, name)
 }
 
+# Refuse to read a review file through a symbolic link. `review/` and the
+# files in it are read back by the ingester and by `semantic_llm_assessments()`,
+# and a package written by someone else could make `review/`, or one file in
+# it, a link to another package's private review record. The repository's
+# containment guard checks the directory itself and every component under
+# it; a path that does not exist yet passes, because there is nothing to
+# follow (Codex security review on pull request #194).
+.ms_semantic_review_assert_readable <- function(review_dir, paths) {
+  paths <- paths[file.exists(paths)]
+  if (length(paths) > 0L) {
+    .ms_assert_managed_path_contained(review_dir, paths)
+  }
+  invisible(paths)
+}
+
 .ms_semantic_review_session_files <- function(review_dir) {
   c(
     .ms_semantic_review_file(review_dir, "packet", 1L),

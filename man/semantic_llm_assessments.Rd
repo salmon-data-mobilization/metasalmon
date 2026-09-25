@@ -18,7 +18,9 @@ attached. For a package path, the record
 \code{review/semantic-llm-assessments.csv}, typed as the 30-column assessment
 row and carrying the validator findings as its
 \code{semantic_validator_findings} attribute, or \code{NULL} when no record has
-been ingested. The in-package model call never writes one.
+been ingested. The in-package model call never writes one. A \verb{review/}
+directory or record that is a symbolic link is refused rather than
+followed.
 }
 \description{
 The companion accessor to \code{\link[=semantic_suggestions]{semantic_suggestions()}}, for the

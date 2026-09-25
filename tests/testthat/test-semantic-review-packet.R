@@ -1073,3 +1073,51 @@ test_that("a pass-2 row with a blank provider or model keeps the pass-1 answer l
   expect_match(result$assessments$llm_rationale, "llm_provider and llm_model must be non-empty", fixed = TRUE)
   expect_setequal(result$suggestions$iri, c("https://w3id.org/smn/Equipment", "https://w3id.org/smn/Tool"))
 })
+
+test_that("a symlinked review directory or record is refused, not followed", {
+  hits <- function(query, role = NA_character_, sources = NULL, ...) {
+    tibble::tibble(
+      label = paste("Term", 1:2, "for", role),
+      iri = paste0("https://example.org/candidates/", role, "Term", 1:2),
+      source = "smn", ontology = "smn", role = role,
+      match_type = "label_exact", definition = "A term.", score = c(4.5, 3.5)
+    )
+  }
+  make_package <- function(name) {
+    path <- file.path(withr::local_tempdir(.local_envir = parent.frame()), name)
+    suppressMessages(with_mocked_bindings(
+      find_terms = hits,
+      create_sdp(
+        list(spawners = data.frame(stream_name = c("Bear Creek", "Elk River"), spawner_count = c(120L, 340L))),
+        path = path, dataset_id = "demo-1", table_id = "spawners",
+        semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+        check_updates = FALSE, overwrite = TRUE
+      )
+    ))
+    path
+  }
+  # A package with a private record.
+  private <- make_package("private")
+  built <- write_semantic_review_packet(private, search_fn = hits, quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness <- dplyr::bind_rows(lapply(slots, function(slot) {
+    semantic_review_harness_row(slot$target, llm_decision = "review", llm_confidence = 0.4, llm_rationale = "Private.")
+  }))
+  ingest_semantic_assessments(private, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_false(is.null(semantic_llm_assessments(private)))
+
+  # Another package whose review/ is a link to the first one's.
+  other <- make_package("other")
+  skip_if_not(file.symlink(file.path(private, "review"), file.path(other, "review")), "symbolic links are not available here")
+  expect_error(semantic_llm_assessments(other), "symbolic[- ]link")
+  expect_error(ingest_semantic_assessments(other, search_fn = function(...) stop("no search"), quiet = TRUE), "symbolic[- ]link")
+  unlink(file.path(other, "review"))
+
+  # And one whose record file alone is a link.
+  dir.create(file.path(other, "review"))
+  expect_true(file.symlink(file.path(private, "review", "semantic-llm-assessments.csv"), file.path(other, "review", "semantic-llm-assessments.csv")))
+  expect_error(semantic_llm_assessments(other), "symbolic[- ]link")
+  unlink(file.path(other, "review"), recursive = TRUE)
+  expect_null(semantic_llm_assessments(other))
+})

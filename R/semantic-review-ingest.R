@@ -129,6 +129,7 @@
   if (is.null(packet)) {
     pass_2 <- .ms_semantic_review_file(review_dir, "packet", 2L)
     pass_1 <- .ms_semantic_review_file(review_dir, "packet", 1L)
+    .ms_semantic_review_assert_readable(review_dir, c(pass_1, pass_2))
     path <- if (file.exists(pass_2)) pass_2 else pass_1
     if (!file.exists(path)) {
       cli::cli_abort(c(
@@ -354,6 +355,10 @@
 .ms_semantic_review_read_assessments <- function(assessments, pass, review_dir) {
   default_path <- .ms_semantic_review_file(review_dir, "assessments", pass)
   if (is.null(assessments)) {
+    .ms_semantic_review_assert_readable(
+      review_dir,
+      c(default_path, .ms_semantic_review_sidecar_path(default_path))
+    )
     if (!file.exists(default_path)) {
       cli::cli_abort(c(
         "No assessment file at {.path {default_path}}.",
@@ -755,6 +760,7 @@
 
 .ms_semantic_review_read_record <- function(review_dir) {
   path <- .ms_semantic_review_file(review_dir, "record")
+  .ms_semantic_review_assert_readable(review_dir, path)
   if (!file.exists(path)) {
     return(NULL)
   }
@@ -763,6 +769,7 @@
 
 .ms_semantic_review_read_findings <- function(review_dir) {
   path <- .ms_semantic_review_file(review_dir, "findings")
+  .ms_semantic_review_assert_readable(review_dir, path)
   if (!file.exists(path)) {
     return(.ms_semantic_review_empty_findings())
   }
@@ -933,6 +940,7 @@ ingest_semantic_assessments <- function(x,
       )
     }
     parent <- .ms_semantic_review_text_scalar(packet$parent_packet_id)
+    .ms_semantic_review_assert_readable(review_dir, pass_1_path)
     pass_1_packet <- .ms_semantic_review_read_json(pass_1_path)
     if (is.null(parent) || !identical(parent, .ms_semantic_review_packet_id(pass_1_packet))) {
       .ms_semantic_review_abort(
