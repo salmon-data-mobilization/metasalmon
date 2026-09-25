@@ -162,7 +162,7 @@ skip_unless_raw_github_serves <- function(url, token = "") {
   invisible(resp)
 }
 
-# The two pins below answer requests with httr2::local_mocked_responses()
+# The pins below answer requests with httr2::local_mocked_responses()
 # (httr2 1.0.0) and read them back with httr2::req_get_headers() (1.2.0).
 # DESCRIPTION pins neither, so they skip on an older install, as
 # test-llm-chat-request.R does. Retires when DESCRIPTION's Imports requires
@@ -212,6 +212,32 @@ test_that("the raw-host guard skips when that host refuses the request or cannot
     "simulated transport failure"
   )
   expect_identical(guard_skip(function(req) httr2::response(status_code = 200)), NA_character_)
+})
+
+# Pins the CI condition in skip_unless_raw_github_serves(): the same failed
+# probe skips with CI unset and does not skip with CI=true, which is what
+# GitHub Actions sets.
+test_that("the raw-host guard skips only off CI", {
+  skip_if_not_installed("httr2", "1.0.0")
+  url <- "https://raw.githubusercontent.com/owner/repo/main/data/file.csv"
+  guard_skip <- function(mock, ci) {
+    withr::local_envvar(CI = ci)
+    httr2::local_mocked_responses(mock)
+    tryCatch(
+      {
+        skip_unless_raw_github_serves(url, token = "fake-token-for-b152")
+        NA_character_
+      },
+      skip = conditionMessage
+    )
+  }
+  refused <- function(req) httr2::response(status_code = 404)
+  unreachable <- function(req) stop("simulated transport failure")
+
+  expect_identical(guard_skip(refused, ci = "true"), NA_character_)
+  expect_identical(guard_skip(unreachable, ci = "true"), NA_character_)
+  expect_match(guard_skip(refused, ci = NA), "HTTP 404")
+  expect_match(guard_skip(unreachable, ci = NA), "simulated transport failure")
 })
 
 test_that("read_github_csv can read remote content with a token", {
