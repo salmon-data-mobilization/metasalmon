@@ -327,8 +327,8 @@
   whichever year readr emits, so the two files agree on both platforms;
   padding only the descriptor would have re-opened this defect on the
   platform CI runs on. **Mirror:** metasalmonpy adopted the same ruling
-  in queue **B-145** (metasalmonpy pull request
-  [\#34](https://github.com/salmon-data-mobilization/metasalmon/issues/34),
+  in queue **B-145** ([metasalmonpy pull request
+  34](https://github.com/salmon-data-mobilization/metasalmonpy/pull/34),
   2026-09-25); parity-deviations row 56 records that both sides moved,
   and the one residual left, the year below 1000, which is hub item
   B-161.
@@ -562,14 +562,14 @@
   The slot’s own retrieval candidates are weighed exactly as before.
 
   A port, not a deviation: metasalmonpy had the same defect in the same
-  shape and fixed it first (metasalmonpy pull request
-  [\#28](https://github.com/salmon-data-mobilization/metasalmon/issues/28),
+  shape and fixed it first ([metasalmonpy pull request
+  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28),
   hub item B-126), and both now record the same row, so no
   parity-register row is owed. The gap-evidence exclusion is R’s alone
   for now: metasalmonpy’s
   [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
-  still counts the row it has recorded since
-  [\#28](https://github.com/salmon-data-mobilization/metasalmon/issues/28),
+  still counts the row it has recorded since [pull request
+  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28),
   and the same fix is owed there.
 
 - **[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
@@ -612,8 +612,8 @@
   validation refuses it. A second test does the same for a configured
   schema’s extra dictionary field.
 
-  metasalmonpy fixed the same defect in pull request
-  [\#28](https://github.com/salmon-data-mobilization/metasalmon/issues/28),
+  metasalmonpy fixed the same defect in [pull request
+  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28),
   and its scan also lists a marker in `codes.csv`, the one file where
   the two differ. Brett ruled on 2026-09-23 that strict validation
   refuses a marker there, so R is the side that moves, when B-177 lands.
@@ -872,8 +872,8 @@
   came back once. A test pins it with every IRI gap a placeholder.
 
   **Mirror:** metasalmonpy fixed the same defect first, with the same
-  rule (hub item B-212, metasalmonpy pull request
-  [\#49](https://github.com/salmon-data-mobilization/metasalmon/issues/49)),
+  rule (hub item B-212, [metasalmonpy pull request
+  49](https://github.com/salmon-data-mobilization/metasalmonpy/pull/49)),
   so the two packages report the same rows. Its suite does not pin the
   required-IRI case. A defect the two packages shared is not a
   deliberate difference, so it opens no parity-register row.
@@ -1017,8 +1017,8 @@
   hub item B-106; ruled by Brett 2026-09-14, `knowledge/questions.md`
   Q47). `inst/extdata/schema/sdp.rules.yaml` is a byte-for-byte copy of
   `smn-data-pkg`’s `schema/sdp.rules.yaml`, and this is the copy half of
-  that change – paired with smn-data-pkg PR
-  [\#8](https://github.com/salmon-data-mobilization/metasalmon/issues/8),
+  that change – paired with [smn-data-pkg PR
+  8](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/8),
   which merged first as `bb71c8b`. Nothing was hand-edited on this side;
   the copies were identical before (md5 `3c702a37...`) and are identical
   after (md5 `f94d6c8f...`, git blob `489d46a0`), which is the property
@@ -1600,7 +1600,7 @@ which gains a `decision_reason` column.
   implementations spell the `REVIEW:` marker differently (`REVIEW:`
   here, `REVIEW:` there). The second is inert to behaviour, invisible to
   every test on either side, and now registered as row 61 with
-  [Q18](https://salmon-data-mobilization.github.io/metasalmon/news/knowledge/questions.md)
+  [Q18](https://github.com/salmon-data-mobilization/metasalmon/blob/main/knowledge/questions.md#q18--review--or-review--does-the-markers-exact-spelling-matter)
   open on it.
 
 - **The role-contract guard now checks all seven surfaces in one file,
