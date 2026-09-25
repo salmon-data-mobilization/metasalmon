@@ -7664,6 +7664,317 @@ Every paragraph in this section records what was observed, where and by whom,
 on 2026-09-25. The condition in force is in `queue/items/B-370.yaml`, and where
 the two differ, the item file is right.
 
+### The 2026-09-25 specification rulings
+
+**What Brett ruled on 2026-09-25, and the evidence for the items that implement
+it.** On the decisions page's item "Fourteen small specification calls" he wrote
+*"for decision 13 I accept your recommendations"*. Twelve of the fourteen calls
+carried a recommendation; the two on `B-185` and `B-193` carried none and stay
+open. This section is what the `evidence:` pointers of `B-340` to `B-355`
+resolve to, and it records why `B-223`, `B-276` and `B-277` changed. **State,
+severity and each item's condition live in `queue/items/` and are not restated
+here**: this section holds the measurements, meaning what was observed, on which
+tree and by whom, and for each new item the reason its severity was proposed,
+given without the value.
+
+**Where a number comes from is part of the number.** Everything below that is
+not cited to another run was measured or read by this filing on 2026-09-25:
+metasalmon `main` at `95ce664` and `41146fc`, whose `R/` trees are identical,
+under R 4.3.3 with yaml 2.3.12, loaded with `pkgload::load_all()` in a session
+whose `LC_CTYPE` is `C`; and metasalmonpy `main` at `ba1b54a`, from a
+`git archive` export imported from a directory named `metasalmonpy`, under
+Python 3.11.15 with pandas 3.0.5 and PyYAML 6.0.1. lxml is not installed there,
+so no Python EML schema check was run. The scripts were scratch files and are
+not committed. A statement marked *read, not run* was read on those commits.
+
+**Call (a), the chat requests: no new item.** The call recommended a question
+item with one difference per line and no change until each is ruled. `Q-54`,
+filed by the 2026-09-23 sweep from `B-3`'s hand-back, is that item: its
+condition lists the five differences one per clause and retires only when each
+is ruled. Filing a second would have given one question two homes, so the
+`Q54` entry in `questions.md` now lists the differences one per line and
+records the acceptance.
+
+**`B-223`, `B-340` and `B-341`: an `!expr` tag in the EML sidecar (calls (b)
+and (e)).** Measured, with a sidecar whose `semantic_vocabulary` path is
+`!expr "x/evil.csv"` and whose `semantic_review` path is an untagged
+`other/review.csv`:
+
+- R's `.ms_closure_mapping_paths()` (`R/semantic-closure.R:679`, the read at
+  `:689`) returns `x/evil.csv` as the vocabulary path and honours the untagged
+  review path; with `!foo` in place of `!expr` it returns the same text.
+- metasalmonpy's `_mapping_paths()` (`semantic_closure.py:851`, `yaml.safe_load()`
+  at `:864` inside `except Exception: return defaults`) returns both default
+  paths, discarding the untagged declaration as well, and so does it with
+  `!foo`. `_read_mapping_yaml()` (`eml.py:3704`) refuses the same file:
+  *EML mapping sidecar … is not valid YAML: could not determine a constructor
+  for the tag '!expr'*.
+
+So on the closure path neither package refuses, and "refuse on every path"
+moves both, although the recommendation named only metasalmonpy. The EML and
+KNB reads were measured by the `B-142` run, under `B-223` in *The 2026-09-23
+queue sweep* above, and were read, not run, here: R reads the sidecar in
+`write_eml_from_sdp()` (`R/eml-export.R:2931`), `.ms_knb_sdp_artifact_paths()`
+(`R/knb-publication.R:298`) and `.ms_knb_build_plan()` (`:1577`), and
+metasalmonpy once per path through `_read_mapping_yaml()` (`eml.py:3841`,
+`knb_publication.py:1745`).
+
+**Why `B-223` was updated, rather than replaced or retired.** Q-62's record said
+recording its ruling updates, replaces or retires B-223. B-223 was written for
+the direction both calls ruled, R moving to refusal on the EML and KNB reads, so
+its work is unchanged and it keeps its id and its history. What changed is its
+hedge, that the direction was Q-62's to rule, which is now a stated ruling, and
+its scoping of the closure reader, which is now a pointer to `B-340` and
+`B-341`. The closure reader went to its own pair rather than back into B-223
+because it is a different reader in a different file, and its metasalmonpy half
+is a change where B-223's is none.
+
+*Read, not run, and not filed:* both closure readers also fall back silently to
+the default paths when the sidecar does not parse at all, or parses to something
+other than a mapping (R's `tryCatch(..., error = function(e) NULL)` and
+`!is.list()`, metasalmonpy's `except Exception` and `isinstance(..., dict)`).
+Neither call asked about that case.
+
+*Why this severity (`B-340`, `B-341`):* a tag in a sidecar is rare and typed by
+hand, and nothing runs. But R writes the closure to a path taken from a tag's
+text, and metasalmonpy writes it to the default paths while the sidecar declares
+others, and neither says so.
+
+**`B-342` to `B-345`: the `REVIEW:` marker (call (f)).** The detectors, read on
+both trees:
+
+- **R:** `.ms_is_review_iri()` and `.ms_strip_review_iri()`
+  (`R/package-helpers.R:3779`, `:3787`) and three more copies of
+  `^\s*REVIEW\s*:` ignoring case (`R/package-helpers.R:1357`, `:1629`,
+  `R/dictionary-helpers.R:1468`); `^REVIEW:` ignoring case
+  (`R/package-helpers.R:1754`, `R/sdp-extension-helpers.R:37`,
+  `R/sdp-methods.R:272`) and `^REVIEW:\s*` (`R/semantic-bundle-validators.R:696`);
+  and the output guards' literal `REVIEW:` (`R/eml-export.R:2797`,
+  `R/knb-publication.R:834`).
+- **metasalmonpy:** `^\s*REVIEW\s*:` ignoring case (`dictionary.py:719`,
+  `package_io.py:2568`); `.upper().startswith("REVIEW:")` (`review_console.py:160`
+  and `:166`, `package_io.py:317` and `:2655`); `_REVIEW_RE`, `^REVIEW:` ignoring
+  case (`sdp_methods.py:85`); and the output guards' literal `REVIEW:`
+  (`eml.py:3472`, `knb_publication.py:1043`).
+
+Q-63's own list, measured on 2026-09-24, named fewer sites. The difference is
+sites that list did not name, not sites that moved.
+
+Measured, the two strip helpers against the ruled definition. "Marker" is the
+package's `is` helper; the strip is what is left.
+
+| value | R: marker, strip | metasalmonpy: marker, strip | metasalmonpy `_REVIEW_IRI_RE` | ruled definition |
+|---|---|---|---|---|
+| `REVIEW:x` | yes, `x` | yes, `x` | yes | marker, `x` |
+| `review:x` | yes, `x` | yes, `x` | yes | marker, `x` |
+| ` REVIEW :x` | yes, `x` | **no** | yes | marker, `x` |
+| `REVIEW:` U+00A0 `x` | yes, U+00A0 `x` | yes, `x` | yes | marker, U+00A0 `x` |
+| `REV` U+0131 `EW:x` | no | **yes**, `x` | yes | not a marker |
+| tab `REVIEW:` tab `x` | yes, `x` | yes, `x` | yes | marker, `x` |
+| `REVIEW` newline `:x` | **yes**, `x` | no | **yes** | not a marker |
+| U+00A0 `REVIEW:x` | no | no | **yes** | not a marker |
+
+Measured, strict validation. `validate_salmon_datapackage(require_iris = TRUE)`
+over a package whose measurement column's `term_iri` was replaced; the R package
+came from `make_eml_test_sdp()` (`tests/testthat/helper-eml.R`) and the Python
+one from `_build_example()` (`tests/test_validation_hardening.py`):
+
+| `term_iri` | R | metasalmonpy |
+|---|---|---|
+| `https://w3id.org/smn/ObservedRateOrAbundance` | passes | passes |
+| `REVIEW: https://…` | refused as a marker | refused as a marker |
+| `REV` U+0131 `EW:https://…` | **passes** | refused as a marker |
+| U+00A0 then `https://…` | **passes** | **passes** |
+| `REVIEW:` U+00A0 `https://…` | refused as a marker | refused as a marker |
+| `REVIEW :https://…` | refused as a marker | refused as a marker |
+| `foo bar` | **passes** | **passes** |
+
+So strict validation refuses no value in these fields for its shape, in either
+package. The only IRI shape it checks is that of a method or protocol placement
+(`.ms_collect_placement_iri_issues()` in R, `package_io.py:2641-2657` in
+metasalmonpy), and the vendored `column_dictionary.schema.json` types all six
+semantic IRI fields as plain strings. The ruling's reason includes that *"a
+missed marker reaches strict validation as a malformed IRI"*; without a shape
+check it does not, and metasalmonpy's dotless-i spelling, refused today as a
+marker, would pass once the narrowing lands. That is why `B-342` and `B-343`
+were filed, and why the marker items' conditions name them. The shape exists in
+each package already: `.ms_absolute_iri_shape()` (`R/iri-predicates.R`), and the
+same pattern over `R_SPACE_CLASS` in metasalmonpy (`sdp_methods.py:79`,
+`eml.py:100`).
+
+The per-spelling lists that `B-219` and `B-220` added to the
+`accept_suggestion()` tests (`marker_only_iris` in
+`tests/testthat/test-review-console.R`, `MARKER_ONLY_IRIS` in
+`tests/test_review_console.py`) say in their comments that they follow the strip
+until Q-63 is ruled. Under the ruled definition, "a form feed after the colon"
+leaves both lists and "a dotless i" leaves metasalmonpy's, so
+`accept_suggestion()` then records such an IRI rather than refusing it, and it is
+strict validation that refuses it.
+
+*Why these severities:* `B-342` and `B-343`, because strict validation is the
+publication gate and it passes text that is not an IRI in an IRI field. `B-344`
+and `B-345`, because a spelling a detector misses is most often hand-typed, and
+today each package disagrees with itself about some spellings.
+
+**`B-276`, `B-277`, `B-346` and `B-347`: a `codes.csv` row with no code value
+(calls (g) and (j)).**
+
+- *`apply_salmon_dictionary()`.* Measured with a character column `species`
+  (`Coho`, `Chinook`, `Coho`) whose only `codes.csv` row gives a
+  `vocabulary_iri` and no code value, under `strict = FALSE`: R returns the
+  column as a factor whose values are all `NA`, with the warning *Column species
+  has 2 values not in its code list; they become `NA`*; metasalmonpy returns
+  every value missing, with *Column 'species' has 2 values not in its code list;
+  they become missing: 'Coho' and 'Chinook'*.
+- *No item carried it before.* Searched before this filing: the item files
+  mentioning `apply_salmon_dictionary` were `B-55`, `B-241`, `B-274` and
+  `B-275` (the positive control, `B-274`, was found), and none concerns a
+  vocabulary-backed column; none mentioned `vocabulary_iri`, and the ten that
+  mention a vocabulary at all are about something else. So `B-346` and `B-347`
+  were filed.
+- *The tests the ruling changes.* R's "a measurement column whose codes.csv row
+  names a vocabulary round-trips from create_sdp() to disk" expects the slot
+  `codes.csv|demo-1/spawners/spawner_count/NA|term_iri`, and metasalmonpy's twin
+  counts one `codes.csv` slot for the same row, not naming it because the two
+  spell the key differently.
+- *Call (j), folded into `B-277`.* Measured through metasalmonpy's
+  `create_sdp()`, with a fixture shaped like the B-242 run's (`spawner_count`
+  with one vocabulary-backed `codes.csv` row and one coded value, `-9`) and a
+  search stub. On `ba1b54a` the
+  vocabulary row is keyed `…/spawner_count/nan` when its code value is `pd.NA`,
+  `NaN` or `None`, and `…/spawner_count/` when it is empty text, beside
+  `…/spawner_count/-9`. With the codes loop in `suggest_semantics()` made to skip
+  a row whose code value `_is_missing()` reads as missing, a probe-only change
+  that was not committed, all four give only the `-9` key and slot. The one
+  `…/nan` key left is a code whose value is the text `nan`, which is that
+  value's own spelling, and R's `paste()` keys it the same way (read, not run).
+  So once such a row has no target no key for it is formed in either package,
+  and (j) became one more assertion in `B-277` rather than an item of its own.
+
+*Why this severity (`B-346`, `B-347`):* the row is one the schema allows, and it
+turns every value of its column into a missing value. Since `B-55` and `B-241`
+the user is told, but the output is still empty.
+
+**`B-348`: float years (call (h)).** Measured: `pandas.read_csv()` on
+`BY,n / 2001,1 / ,2 / 2003,3` gives `BY` as `float64`, which
+`_values_look_yearish()` reads as not year-shaped and `infer_column_role()`
+types `attribute`. R's `infer_column_role("BY", c(2001, NA, 2003))` gives
+`temporal`. The B-53 and B-240 runs measured the same on earlier trees: see the
+`#53` entry above, and `.hub/workpads/B-240.md` on metasalmonpy's `main`, its
+*Found, belonging elsewhere* item 1. `_character_values()`
+is also read by `_values_look_numericish()`, which returns before it for any
+numeric dtype (read, not run).
+
+*Why this severity:* pandas reads any integer column with a blank cell as
+`float64`, so a year column with a missing value is typed differently by the two
+packages on each one's documented path.
+
+**`B-349`: date columns (call (i)).** Measured, with three ISO dates:
+
+| column | R role, value type | metasalmonpy role, value type |
+|---|---|---|
+| `SURVEY_WAVE`, dates as `Date` / `datetime.date` | `temporal`, `date` | `categorical`, `date` |
+| `SURVEY_WAVE`, the same dates as text | `categorical`, `string` | `categorical`, `string` |
+| `SURVEY_WAVE`, `POSIXct` / `datetime64` | `temporal`, `datetime` | `temporal`, `datetime` |
+| `START_DTT`, the dates as text | `temporal` | `temporal`, `string` |
+
+metasalmonpy types a low-cardinality date column `categorical` on `ba1b54a`;
+the B-188 run, on its branch (metasalmonpy pull request 44,
+`.hub/workpads/B-188.md` there, *Found, not absorbed* item 2), measured
+`attribute` once its seeder stops listing such a column, and measured the
+bundled sample's `START_DTT` and `END_DTT` as `value_type` `string` in
+metasalmonpy where readr gives R a `Date` typed `temporal` and `date`. The call
+named both differences, the role and the value type, so `B-349` carries both.
+
+*Read, and not filed:* on R's in-memory path a character vector of ISO dates is
+typed `categorical`, or `temporal` when its name has a time word, as the second
+row shows. Once `B-349` lands, metasalmonpy types that text `temporal` whatever
+its name, so the two differ there. That is the shape of the code-row seeder
+difference Brett ruled on 2026-09-25 for metasalmonpy pull request 44, where R
+moves. This ruling moves metasalmonpy only, so no R item was filed.
+
+*Why this severity:* on the documented Python path, `pandas.read_csv()` then
+`create_sdp()`, every date column arrives as text, so every one without a time
+word is typed differently from R, and every one gets `value_type` `string`.
+
+**`B-350` and `B-351`: canonical SSSOM/TSV (call (k)).** The specification's
+*Canonical SSSOM/TSV format* section, read from `src/docs/spec-formats-tsv.md` in
+`mapping-commons/sssom` on `master` and present with the same rules on the
+published `1.0` page, says writers SHOULD write it and readers MUST NOT reject a
+file that does not follow it. Measured, `.ms_sssom_canonical_bytes()` over
+`sssom_test_text()` from `tests/testthat/test-sssom.R`:
+
+```
+# sssom_version: "1.1"
+# mapping_set_id: "https://example.org/mappings/psc-to-gcdfo"
+…
+# curie_map:
+#   gcdfo: "https://w3id.org/gcdfo/salmon#"
+#   psc: "https://w3id.org/psc/vocab/concept/"
+#   semapv: "https://w3id.org/semapv/vocab/"
+#   skos: "http://www.w3.org/2004/02/skos/core#"
+#   sssom: "https://w3id.org/sssom/"
+```
+
+That is a space after each `#`, every scalar double-quoted, `curie_map` last,
+and three built-in prefixes kept, one of them (`sssom`) unused, which is the
+B-233 run's finding (`.hub/workpads/B-233.md`, *Found, and not this item's*,
+item 3). metasalmonpy's
+byte-parity fixtures, `tests/data/sssom/canonical/` and `r-sdp/`, were
+generated by R's writer, so its half regenerates them from R's new writer after
+`B-350`, and it needs `B-234` because its reader still refuses an undeclared
+built-in prefix. `B-271` and `B-272` also change what the manifest records, so
+landing all four in one minor version moves the manifest hashes once. The
+`!expr` tests of `B-352` and `B-353` patch the writer's quoted title line, so
+whichever lands second adjusts that line.
+
+*Why this severity:* the specification says SHOULD, the mappings are unaffected,
+and the change moves every manifest hash, which is why it waits for a minor
+version.
+
+**`B-352` and `B-353`: a tag in SSSOM metadata (call (l)).** Measured,
+`read_sssom_mapping_set()` on a mapping set whose metadata carries
+`mapping_set_title:` followed by each value:
+
+| value | R returns | metasalmonpy returns |
+|---|---|---|
+| `!expr file.create('x')` | `file.create('x')` | `"!expr file.create('x')"` |
+| `!foo X` | `X` | `'!foo X'` |
+| `!!str X` | `X` | `'!!str X'` |
+| `"!expr X"` | `!expr X` | `'!expr X'` |
+
+Neither evaluates anything; the last row is quoted text, not a tag, and both
+read it as text. The two tests that pin the present behaviour are named in the
+items.
+
+*Why this severity:* the profile has no use for a tag, and nothing runs, but
+each reader returns a different value for the same line.
+
+**`B-354` and `B-355`: an instant in EML coverage (call (m)).** The B-162 run
+measured it in R (`.hub/workpads/B-162.md` on `main`, on `372ef07` under R
+4.3.3): for a package whose `temporal_start` is `2024-01-01T00:00:00Z`,
+`write_eml_from_sdp()` aborts with *Element 'calendarDate': '…' is not a valid
+value of the union type '…yearDate'*. Read, not run: `.ms_eml_add_coverage()`
+(`R/eml-export.R:1671` and `:1673`) and metasalmonpy's `_add_coverage()`
+(`eml.py:2253` and `:2255`) both put the whole value in `calendarDate`, and
+metasalmonpy runs the same EML 2.2.0 schema set through `_xsd_validate()`
+(`eml.py:3530`). The schema's `SingleDateTimeType`, read in metasalmonpy's
+vendored `data/xsd/eml-2.2.0/eml-coverage.xsd`, is a `calendarDate` of type
+`res:yearDate` followed by an optional `time` of type `xs:time`, so the ruled
+instant `YYYY-MM-DDThh:mm:ssZ` splits into a valid pair. An instant with an
+unpadded year is not the ruled form and stays `B-161`'s.
+
+*Why this severity:* the profile admits an instant, and R's own writer produces
+one from a typed `POSIXct`, so a valid package cannot be published as EML.
+
+**Call (n): no item.** The S13 card now records the two argument changes as
+changes the Fraser Recruits recipe makes, and points at
+`write_sdp_semantic_closure()`.
+
+Every paragraph in this section records what was observed, where and by whom,
+on 2026-09-25. The conditions in force are in the item files under
+`queue/items/`, and where the two differ, the item file is right.
+
 ### The second 2026-09-25 queue sweep
 
 **What the day's later runs found and did not absorb, filed as `B-371` to

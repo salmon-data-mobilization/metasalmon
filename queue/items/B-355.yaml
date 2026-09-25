@@ -1,0 +1,12 @@
+id: B-355
+kind: defect
+title: 'metasalmonpy''s write_eml_from_sdp() puts a whole instant in calendarDate too, the mirror half of B-354'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): split the instant at the T into calendarDate plus EML''s time element, B-354''s rule. IN METASALMONPY, _add_coverage() in eml.py writes a temporal_start or temporal_end in the profile''s instant form, YYYY-MM-DDThh:mm:ssZ, as a calendarDate holding the text before the T followed by a time holding the text after it, so write_eml_from_sdp() passes the EML 2.2.0 schema check _xsd_validate() runs. Both elements are cut from the one rendering the package holds, and joined by a T they give it back unchanged; a year or a date is still a calendarDate alone; and each end is handled on its own. Pinned by a test demonstrated RED on the writer as it stands. THE METASALMON HALF IS B-354, and each names the other. A PORT OF A RULING, NOT A REGISTER ROW: both writers put the instant in calendarDate today, and once both land they write the same elements.'

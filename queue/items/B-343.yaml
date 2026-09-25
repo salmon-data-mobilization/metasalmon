@@ -1,0 +1,13 @@
+id: B-343
+kind: defect
+title: 'metasalmonpy''s strict validation accepts text that is not an IRI in an _iri field, the mirror half of B-342'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S1
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, validate_salmon_datapackage(require_iris=True) refuses a value that is not an absolute IRI in every field where it refuses a REVIEW: marker: the semantic IRI fields validate_dictionary() in dictionary.py sweeps, and every _iri column _collect_review_iri_issues() in package_io.py sweeps. The shape is the one metasalmon''s .ms_absolute_iri_shape() tests, written over R_SPACE_CLASS as the absolute-IRI pattern in sdp_methods.py already is, so the two validators refuse the same values; a blank value is left to the checks that already handle blanks, and a value refused as a REVIEW: marker is reported once, as a marker. Pinned by a test per field class, demonstrated RED on the validator as it stands, with a value such as foo bar and a value that starts with a no-break space. Filed with the REVIEW: ruling for the reason B-342 gives, and B-345 is blocked by this item. THE METASALMON HALF IS B-342, and each names the other. A PORT, NOT A REGISTER ROW: once both land, the two refuse alike.'

@@ -1,0 +1,13 @@
+id: B-349
+kind: defect
+title: 'metasalmonpy types a column of dates by its name alone, where R types a Date column temporal whatever it is called'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: [B-188]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): metasalmonpy moves, and a date column is temporal. IN METASALMONPY, infer_column_role() in dictionary.py types temporal, whatever the column is called, a column whose non-missing values are all dates: datetime.date or datetime.datetime objects, as R types a Date or POSIXct column, or text that the readr date test B-188 adds to the code-row seeder reads as dates, as R types the Date or POSIXct column readr makes of that text; and infer_value_type() gives such text date, or datetime where that test reads date-times, where it gives string today. Pinned by tests demonstrated RED on the code as it stands: a column of datetime.date objects and a column of ISO date text, each named with no time word, and START_DTT and END_DTT from data/nuseds-fraser-coho-sample.csv read with pandas.read_csv(), which get value_type date. THE CALL COVERED BOTH HALVES: the role is the ruling''s own clause, and the value type is the second difference the same call named, which the ruling also moves to R''s answer. Blocked by B-188 so that the role, the value type and the seeder read date text through one test. The metasalmon side does not change. A PORT OF A RULING, NOT A REGISTER ROW.'
