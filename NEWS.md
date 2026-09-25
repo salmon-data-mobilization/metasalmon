@@ -735,6 +735,22 @@ metasalmon (development version)
   measured on `main` `f1f7230`. The widening is owed there as a port, hub item
   B-302.
 
+* **`find_terms()` now checks what each parallel search worker delivered**
+  (backlog #57, hub item B-57). When parallel search is on, the default outside
+  Windows, the sources after `smn` and `gcdfo` are searched in forked
+  `parallel::mclapply()` workers, and each worker's result was read without a
+  check that it had delivered one. A worker that died, the way an out-of-memory
+  kill or a crash in a native library ends one, dropped its source silently. It
+  left no diagnostic row and no *did not answer* warning, and the incomplete
+  result was cached and read as complete. An error that escaped a worker aborted
+  the whole search with `$ operator is invalid for atomic vectors`. Either is
+  now recorded as an error from that source, the way a source that errors is
+  already recorded. So `find_terms()` warns that the source did not answer and
+  does not cache the result.
+
+  **Mirror:** metasalmonpy does not have this defect. Its `find_terms()`
+  searches its sources one after another, so there is no worker to fail.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
