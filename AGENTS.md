@@ -221,10 +221,11 @@ under `queue/`.
   the same command must return. A plausible count is the harder case, because
   it raises no alarm; check it against the source by hand. Where the target is
   the authority other copies defer to, no instrument clears it; only reading
-  it does. Observed six times on pull request #137 and five more times in the
-  sweep after #141, once as a count that looked plausible and hid a real
-  divergence until Codex found it. `queue/README.md` corollaries 7 and 8 are
-  the narrower rules for a queue sweep. (Brett, 2026-09-25.) *Retires when:* a
+  it does. Observed on pull request #137: a sweep for the copies of one stale
+  sentence printed the authoritative card's header with nothing under it, and
+  the empty section was read as *no copies here* (the account is in
+  `knowledge/backlog.md`). `queue/README.md` corollaries 7 and 8 are the
+  narrower rules for a queue sweep. (Brett, 2026-09-25.) *Retires when:* a
   sweep carries its own positive control and fails when the control does not
   come back.
 - **C collation for anything reproducible.** Any ordering whose result is
