@@ -331,8 +331,11 @@ options and recommends one. That decision is Brett's; its lifecycle state is in
    sea-type the genus of river-type. Two of the PR's attributions fail the
    passage check: the river-type "one to two years" figure is Gustafson et al.
    1997 p. 23 / Gustafson & Winans 1999 / RD 2023/003 p. 5, not Beacham &
-   Withler (who write "at least one year"); and Gilbert 1913 names *four*
-   species for "sea type", not five. Burgner 1991 and Wood 1995 remain unread
+   Withler (who write "at least one year"); and Gilbert 1913 was read as naming
+   *four* species for "sea type", not five. *(Corrected 2026-09-25: the second
+   flag was wrong. Gilbert uses "sea type" in all five species sections; four is
+   the count of one sentence on p. 8. See the commons card
+   `concepts/sea-type-terminology.md` and B-122.)* Burgner 1991 and Wood 1995 remain unread
    (lending-restricted scans). Recommendation, not ruling: **(a)**, with Wood
    2008 carried as a `skos:historyNote`, and a riverine-rearing grouping
    concept minted if DFO's `SER` code needs a target. Replacement literals are

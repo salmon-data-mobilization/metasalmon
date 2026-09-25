@@ -698,6 +698,9 @@ five", while the PR-branch `iao:0000119` and scope note as read on 2026-09-14
 say "applied it across five species". **The count discrepancy is not resolved
 here** — Gilbert 1913 was not read during this pass — and it is flagged so that
 whoever edits the concept does not preserve a figure S9 already contradicts.
+*(Settled 2026-09-25 by B-122: five. Gilbert uses "sea type" in all five
+species sections, and S9's four was the count of one sentence on p. 8; see the
+commons card `concepts/sea-type-terminology.md`.)*
 
 ### 6.4 Decision 8 — sockeye river-type peerhood
 
@@ -971,7 +974,7 @@ Every row was retrieved during this pass. "Status" is the HTTP status observed.
 | **Springer/Taylor & Francis full texts** | `link.springer.com` redirected to an auth IDP (HTTP 303); `tandfonline.com` HTTP **403** | Franz & Peet 2009 and the ENVO paper are cited from **CrossRef metadata** (authors, title, journal, volume, pages, year, DOI) plus, for ENVO, the PMC full text. **The Franz & Peet abstract was not read from the publisher**; its characterisation in §3.3 rests on CrossRef metadata and secondary summaries and should be treated as **not verified** at the sentence level |
 | **NERC S25 concept data via SPARQL** | The endpoint answered collection-title queries (HTTP 200) but returned empty bindings for concept-level queries | S25 evidence comes from the HTML collection page (HTTP 200) instead. The `BE000005` label is quoted from that page; **the count of 197 concepts is as the page reports it and was not independently counted** |
 | **Darwin Core term pages for `taxonID` / `scientificNameID` / `taxonConceptID` via the HTML quick reference** | The page is too large to reach the Taxon section through the fetch tool | Resolved: definitions and examples in §3.1 come from the **machine-readable `term_versions.csv`** (HTTP 200), which is the authoritative record |
-| **Gilbert 1913 species count** | Not read | The four-versus-five discrepancy in §6.3 is flagged, **not resolved** |
+| **Gilbert 1913 species count** | Not read | The four-versus-five discrepancy in §6.3 is flagged, **not resolved** (settled 2026-09-25 by B-122: five) |
 | **Burgner 1991, Wood 1995** | Not attempted (S9 records them as lending-restricted) | No bearing on the taxonomy question |
 
 ---
