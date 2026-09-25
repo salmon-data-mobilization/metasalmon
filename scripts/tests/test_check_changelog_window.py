@@ -237,6 +237,32 @@ class TestTheBumpCommit(WindowTestCase):
         })
         self.assertExit(repo.check(), EXIT_FINDINGS)
 
+    def test_an_untagged_version_superseded_is_measured_where_it_stood(self):
+        # Before the rule, entries accumulated under a version's heading while
+        # it stood -- metasalmon 0.1.6 and 0.2.4 record it -- and neither was
+        # ever tagged. While the version is current its window is open and the
+        # first commit rules, so such a line is red at the time. Once a later
+        # version supersedes it untagged, it is measured as it stood at the
+        # last commit that read it: what it gained while it stood passes, and
+        # a line added after that is red.
+        repo, _ = self.released()
+        stood = V010 + SHIPPED + "* While it stood.\n"
+        repo.commit("An entry while 0.1.0 stands", {"NEWS.md": stood})
+        self.assertExit(repo.check(), EXIT_FINDINGS)
+        v020 = heading("metasalmon 0.2.0") + "* Next.\n\n"
+        repo.commit("Bump the version to 0.2.0", {
+            "DESCRIPTION": DESCRIPTION.format("0.2.0"),
+            "NEWS.md": v020 + stood,
+        })
+        self.assertExit(repo.check(), EXIT_OK)
+        repo.commit("A line under 0.1.0 after it was superseded", {
+            "NEWS.md": v020 + stood + "* After it.\n",
+        })
+        done = repo.check()
+        self.assertExit(done, EXIT_FINDINGS)
+        self.assertIn("* After it.", done.stderr)
+        self.assertNotIn("* While it stood.", done.stderr)
+
     def test_a_heading_with_no_bump_commit_is_listed_not_passed_silently(self):
         repo, _ = self.released()
         old = heading("metasalmon 0.0.1") + "* Older than this history.\n"
@@ -324,6 +350,32 @@ class TestWhatItDoesNotCover(WindowTestCase):
         self.assertExit(done, EXIT_FINDINGS)
         self.assertIn("Something new that did not ship.", done.stderr)
         self.assertNotIn("over two lines, edited.", done.stderr)
+
+    def test_the_edited_line_stands_for_its_original_even_beside_a_short_one(self):
+        # The strings are NEWS.md's own, from the 0.4.0 correction at line 1664
+        # on metasalmon main: the shipped line was edited and grew into a
+        # correction, whose short closing line shares a few of its words.
+        # Pairing by difflib's ratio chose the closing line and reported the
+        # edited one as added; pairing by characters kept does not.
+        repo = Fixture(self.tmp / "repo")
+        repo.commit("development", {
+            "DESCRIPTION": DESCRIPTION.format("0.0.0.9000"),
+            "NEWS.md": DEV + "* An entry.\n  both Python readers already did.\n",
+        })
+        repo.commit("Bump the version to 0.1.0", {
+            "DESCRIPTION": DESCRIPTION.format("0.1.0"),
+            "NEWS.md": V010 + "* An entry.\n  both Python readers already did.\n",
+        })
+        repo.commit("Correct it", {
+            "NEWS.md": V010 + "* An entry.\n"
+            + "  one Python reader already did. *(Correction, 2026-08-24: this entry shipped\n"
+            + "  how widely it already held.)*\n",
+        })
+        self.assertExit(repo.check(), EXIT_OK)
+        done = repo.check("--no-exemption")
+        self.assertExit(done, EXIT_FINDINGS)
+        self.assertIn("how widely it already held.)*", done.stderr)
+        self.assertNotIn("one Python reader already did.", done.stderr)
 
 
 class TestItCannotBeFooled(WindowTestCase):
