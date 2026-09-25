@@ -708,7 +708,7 @@ whatever schema the options select, where R honours the selection, and `B-175`
 kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
-above requires.
+above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global

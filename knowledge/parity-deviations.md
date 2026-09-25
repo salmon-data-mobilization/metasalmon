@@ -195,6 +195,22 @@ no-op. The port is hub item **B-215**, and the measurement is in `backlog.md`
 under *The 2026-09-23 queue sweep*. Recorded here and in the release index in
 the same change, as the rule there requires.
 
+**This one is closed.** `B-215` landed as metasalmonpy pull request **#47**
+(`ed5e22e`) on 2026-09-25. `review_metadata()`, the four setters and
+`validate_salmon_datapackage()`'s blank-required collector now read the schema
+the options select through `_schema_source()`, the twin of R's
+`.ms_sdp_schema_options_are_default()` rule: the bundled copy, with no network
+call, under the shipped settings, and otherwise the loader's schema, as the
+writers read it. Codex review carried the port on to R's writers: under a
+selected schema the setters, `write_salmon_datapackage()` and
+`apply_sdp_semantics()` add each declared column a file lacks, empty, and write
+the declared order, as R's `.ms_align_cols()` does, and every file is
+byte-identical under the shipped settings, measured. One part is not ported and
+is owed: `normalize_*()` still synthesises a bundled field that a selected
+schema removes, and the writers put it after the declared fields, where R writes
+no such column into a frame that lacked it. That predates the port, as its
+workpad measured on `2405df2`, and it is to be filed as its own metasalmonpy item.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema
