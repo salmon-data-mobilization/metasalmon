@@ -638,7 +638,8 @@ by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
 not a register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
 covers one branch in one repository, and metasalmonpy #49 had merged before the
-R half found it. Its metasalmonpy queue item is `B-244`.
+R half found it. Its metasalmonpy queue item is `B-244`, which **landed
+2026-09-25 as metasalmonpy #61**, `056fccc`.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): EML `calendarDate` carries the spelling

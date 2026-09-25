@@ -902,7 +902,8 @@ and the footer asserted to count two IRIs and to print the `review_semantics()`
 pointer. It is owed as a port, not a register row: once it lands the two
 implementations behave alike again. It did not land in the same stream because
 a hub claim covers one branch in one repository, and metasalmonpy #49 had merged
-before the R half found it. Its metasalmonpy queue item is **B-244**.
+before the R half found it. Its metasalmonpy queue item is **B-244**, which
+**landed 2026-09-25 as metasalmonpy #61**, `056fccc`.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25), and no behaviour: EML `calendarDate` carries the spelling
