@@ -758,6 +758,52 @@ test_that("accept_suggestion(iri =) takes a term retrieval never surfaced", {
   )
 })
 
+# An `iri =` that is empty once its `REVIEW:` marker is stripped (hub item
+# B-219). The non-empty check read `iri` before the strip, so the bare marker
+# passed it and the accept recorded an IRI that named no term.
+# `apply_sdp_semantics()` then cleared the field and wrote an `accepted` row
+# with an empty `iri` into `semantic_suggestions.csv`.
+#
+# One test per spelling `.ms_strip_review_iri()` removes, because the check has
+# to agree with the strip. Which spellings count as the marker is hub question
+# Q-63, so this list is what the strip removes today, not a ruling. Each test
+# asserts that premise first, so a change to the strip fails here and names
+# the spelling rather than leaving a test that checks nothing.
+marker_only_iris <- c(
+  "the bare marker" = "REVIEW:",
+  "the marker as the package writes it" = .ms_review_iri_prefix(),
+  "lower case" = "review:",
+  "mixed case" = "Review:",
+  "a space before the colon" = "REVIEW :",
+  "a tab before the colon" = "REVIEW\t:",
+  "leading spaces" = "  REVIEW:",
+  # `.ms_scalar_text()` trims spaces, tabs and newlines. A form feed survives
+  # the trim, and only the strip's `\s*` removes it.
+  "a form feed after the colon" = "REVIEW:\f"
+)
+
+for (spelling in names(marker_only_iris)) {
+  test_that(paste0("accept_suggestion() refuses an `iri` that is only the REVIEW: marker: ", spelling), {
+    marker <- marker_only_iris[[spelling]]
+    expect_identical(.ms_strip_review_iri(.ms_scalar_text(marker)), "")
+
+    review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
+    expect_error(
+      accept_suggestion(review, "spawner_count", "variable", iri = marker),
+      "non-empty IRI"
+    )
+  })
+}
+
+test_that("accept_suggestion(iri =) still takes a marked IRI, and records it without the marker", {
+  review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions())) |>
+    accept_suggestion("spawner_count", "variable", iri = "review : https://w3id.org/smn/WaterTemperature")
+  expect_equal(
+    review$decision_iri[!is.na(review$decision)],
+    "https://w3id.org/smn/WaterTemperature"
+  )
+})
+
 test_that("accept_suggestion() rejects a rank that is not in the shortlist", {
   review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
   expect_error(
