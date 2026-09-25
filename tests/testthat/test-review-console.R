@@ -926,6 +926,34 @@ for (spelling in names(names_no_term_iris)) {
   })
 }
 
+# Rejecting a slot does not depend on any candidate's IRI, so a recorded reject
+# is replayed from a row whose IRI names no term, which the queue otherwise
+# leaves out. Without that, a slot whose only candidate is such a row lost its
+# rejection, and the reason, from `include_filled = TRUE`.
+test_that("a recorded reject is replayed from a candidate whose IRI names no term", {
+  for (value in c(as.list(names_no_term_iris), list(""), list(NA_character_))) {
+    label <- if (is.na(value)) "NA" else encodeString(value, quote = '"')
+    suggestions <- fixture_suggestions(iri = value)
+    suggestions$decision <- "rejected"
+    suggestions$decision_reason <- "no candidate describes a wild-origin count"
+    data <- with_suggestions(fixture_dict(), suggestions)
+
+    revisited <- review_semantics(data, include_filled = TRUE)
+    expect_equal(revisited$decision, "reject", info = label)
+    expect_equal(
+      revisited$decision_reason,
+      "no candidate describes a wild-origin count",
+      info = label
+    )
+    expect_equal(nrow(review_semantics(data)), 0L, info = label)
+    expect_error(
+      accept_suggestion(revisited, "spawner_count", "variable", rank = 1),
+      "names no term",
+      info = label
+    )
+  }
+})
+
 # A row with no IRI targets a field the review does decide, so it is not one of
 # the fields "this review cannot decide", and editing the metadata CSV by hand
 # is not what it needs. The shape B-219 left in a package: a hand-picked

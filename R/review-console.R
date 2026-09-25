@@ -310,7 +310,17 @@ review_semantics <- function(x,
   # marker was queued, `rank =` accepted it with an empty `decision_iri`, and a
   # recorded accept of one replayed the same way (hub item B-246).
   has_iri <- .ms_review_names_term(.ms_review_decision_iri(suggestions$iri))
-  keep <- decidable & has_iri
+  # A recorded reject is kept whatever its IRI, because rejecting a slot names
+  # no candidate: dropped, a slot whose only candidate named no term lost its
+  # rejection and reason on replay. `accept_suggestion(rank = )` refuses such a
+  # row, so keeping it lets nothing record an accept.
+  recorded <- .ms_review_recorded_decisions()
+  rejected <- if ("decision" %in% names(suggestions)) {
+    trimws(as.character(suggestions$decision)) %in% names(recorded)[recorded == "reject"]
+  } else {
+    rep(FALSE, nrow(suggestions))
+  }
+  keep <- decidable & (has_iri | rejected)
   # Only a field the review cannot decide is reported as one. A row dropped for
   # naming no term targets a field the review does decide, and listing it here
   # told the user to edit that field by hand (hub item B-246); it offers nothing
