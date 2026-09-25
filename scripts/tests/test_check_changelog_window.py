@@ -398,6 +398,27 @@ class TestItCannotBeFooled(WindowTestCase):
         self.assertExit(done, EXIT_CANNOT_RUN)
         self.assertIn("shallow", done.stderr)
 
+    def test_a_superseded_release_the_policy_tags_needs_its_tag(self):
+        # AGENTS.md tags every release from 0.3.0 forward. In a clone without
+        # the tags, such a version would read as untagged history and be
+        # measured where it last stood -- which on main passed 0.4.0's
+        # corrections even with the exemption off. So it cannot run instead.
+        repo = Fixture(self.tmp / "repo")
+        v030 = heading("metasalmon 0.3.0") + SHIPPED
+        bump = repo.commit("Bump the version to 0.3.0", {
+            "DESCRIPTION": DESCRIPTION.format("0.3.0"),
+            "NEWS.md": v030,
+        })
+        repo.commit("Bump the version to 0.4.0", {
+            "DESCRIPTION": DESCRIPTION.format("0.4.0"),
+            "NEWS.md": heading("metasalmon 0.4.0") + "* Next.\n\n" + v030,
+        })
+        done = repo.check()
+        self.assertExit(done, EXIT_CANNOT_RUN)
+        self.assertIn("v0.3.0", done.stderr)
+        repo.git("tag", "-a", "v0.3.0", "-m", "0.3.0", bump)
+        self.assertExit(repo.check(), EXIT_OK)
+
     def test_a_missing_changelog_cannot_run(self):
         repo = Fixture(self.tmp / "repo")
         repo.commit("no changelog", {"DESCRIPTION": DESCRIPTION.format("0.1.0")})

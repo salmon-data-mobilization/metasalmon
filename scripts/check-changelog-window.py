@@ -78,7 +78,13 @@ worse than none, so:
   version file has read yet. Those are listed in the output rather than
   skipped silently, and a run that could check no released heading at all
   cannot run rather than passes.
-* The tag is trusted. A tag on the wrong commit makes this measure the wrong
+* The tags are trusted, and required where the repository's own policy says
+  a release is tagged (every one from 0.3.0 forward, in AGENTS.md). A clone
+  without them would read such a version as untagged history and measure it
+  where it last stood: measured 2026-09-25, a clone of `main` with no tags
+  passed 0.4.0's corrections even with the exemption switched off. So a
+  superseded version the policy tags, with no tag in the clone, cannot run
+  rather than passes. A tag on the wrong commit makes this measure the wrong
   tree; AGENTS.md says which commit a tag belongs on.
 * It reads a committed revision, never the working tree.
 
@@ -145,6 +151,9 @@ class Profile:
     heading: re.Pattern
     sibling_env: str | None = None
     sibling_dir: str | None = None
+    # The first version whose release the repository's own policy tags. A
+    # superseded version from here on with no tag in the clone cannot run.
+    tagged_from: str | None = None
 
 
 PROFILES = {
@@ -155,6 +164,8 @@ PROFILES = {
         version_file="DESCRIPTION",
         version=re.compile(r"^Version:\s*(\S+)\s*$", re.M),
         heading=re.compile(r"^(#{1,2}\s+)?metasalmon\s+(\S.*?)\s*$"),
+        # AGENTS.md, Releases: "Every release from 0.3.0 forward is tagged".
+        tagged_from="0.3.0",
     ),
     # For B-201: `## 0.5.0` below `## Unreleased`, the version in pyproject.toml.
     "metasalmonpy": Profile(
@@ -164,6 +175,8 @@ PROFILES = {
         heading=re.compile(r"^(##\s+)(\S.*?)\s*$"),
         sibling_env="METASALMONPY_PATH",
         sibling_dir="metasalmonpy",
+        # Unset until B-201 reads metasalmonpy's own tagging history.
+        tagged_from=None,
     ),
 }
 
@@ -181,6 +194,10 @@ class Finding:
     commit: str
     bump: str
     how: str
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
 
 
 def git(repo: Path, *args: str) -> str:
@@ -431,6 +448,17 @@ def run(repo: Path, rev: str, profile: Profile, exemption: bool) -> int:
 
     bumps = bump_commits(repo, head, profile, released)
     unchecked = [v for v in released if v not in bumps]
+    if profile.tagged_from:
+        floor = version_key(profile.tagged_from)
+        missing = [v for v, (_, how) in bumps.items()
+                   if how.startswith("never tagged") and version_key(v) >= floor]
+        if missing:
+            raise CannotRun(
+                f"no tag for {', '.join('v' + v for v in missing)} in this clone, "
+                f"though every release from {profile.tagged_from} forward is tagged. "
+                "Fetch the tags (git fetch --tags), or check out with fetch-depth: 0; "
+                "read as untagged history, the check would pass what the tag names."
+            )
     if not bumps:
         raise CannotRun(
             f"none of the {len(released)} released headings in {profile.changelog} "
