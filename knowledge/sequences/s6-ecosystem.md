@@ -89,10 +89,11 @@ This section is the operative copy of that order. Six pull requests in
 1. **`B-320`**, pull request 25: `stale_after` becomes a full UTC instant.
 2. **`B-321`**, the `$defs` refactor: no semantic change, plus `--schema` and
    `--json` for `okf-check.py`.
-3. **`B-322`**, the optional fields: the three Brett named are
-   `sources[].published`, typed `relations` between cards, and
-   `alignment.bindings`. Whether it carries only those, or the eight commons
-   pull request 29 proposes, is his call.
+3. **`B-322`**, the three optional fields Brett named: `sources[].published`,
+   typed `relationships` between cards (upstream OKF's name), and
+   `alignment.bindings`. He chose those three on 2026-09-25 over a parallel
+   eight-field pull request, and chose this chain's `$defs` pull request (#28)
+   over a parallel one.
 4. **`B-323`**, CI: the validator runs on every pull request.
 5. **`B-123`**, the generated/verified split, which is what makes the
    commons' `VERIFICATION.md` enforceable rather than advisory.

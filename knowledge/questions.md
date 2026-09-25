@@ -1719,9 +1719,13 @@ workshop's lane (`B-331`). The harness skill that replaces the in-package call
 lives in the plugin, outside this hub, and the removal and the workshop's lane
 each need it released.
 
-**What stays open, and is his:** the public names and paths the additive
-release proposes; whether that release rides the 0.6.0 train that section A3
-reserves for the first `salmon` verb, or takes its own number; the notice to
+**Ruled the same day, in answer to the S16 execplan:** Brett took every
+recommendation in its section 10 (*"Take all recommendations"*). So the public
+names are `write_semantic_review_packet()` and `ingest_semantic_assessments()`,
+the additive release is 0.6.0 in both packages, tagged together, and the removal
+is 0.7.0, after at least one tagged 0.6.x.
+
+**What stays open, and is his:** the notice to
 the users of the in-package provider route before the removal; whether Q54's
 differences are registered until the removal; and Q23's pilot anchor, only if
 the harness split cannot keep a replay of the recorded fixtures against their
@@ -1750,9 +1754,12 @@ reserves its schema, its validator and its `AGENTS.md` to a human. In order:
 fields pull request adds the fields he rules. Study-bundle card types are not
 added to the commons `type` enum.
 
-**What stays open:** which fields, since his words named three (source
-publication dates, typed relations and bindings) while commons pull request 29
-proposes the panel's eight; the name of the binding field, which the panel offered as
+**Ruled the same day:** two sessions had built the `$defs` and fields steps in
+parallel, and Brett chose *"Mine: #28 + 3 fields"*. So the `$defs` step is
+commons pull request 28, and the fields step adds only the three he named, with
+typed relations under upstream OKF's name `relationships`.
+
+**What stays open:** the name of the binding field, which the panel offered as
 `alignment.bindings` or `semantic_bindings` and `B-322`'s pull request proposes;
 the fields the panel proposed that he did not name, which that pull request
 lists; the date backfill, which is `B-325`, unpromoted, and whose timing matters
@@ -1783,7 +1790,9 @@ and metasalmonpy's. The plugin is also where S16's harness skills live.
 corrected in the change that recorded this ruling. The row said "→ institute"
 and "rename", which Q26 had already overruled. The plugin is not a hub member,
 so the work has no queue item: it is a pull request in the plugin's own
-repository.
+repository. Two sessions opened one each, and on 2026-09-25 Brett chose
+*"#2, plus #1's evals"*: `smn-sci-plgn` pull request 2 goes forward, with the
+per-skill evaluation cases from pull request 1 ported onto it.
 
 **What stays open, and is his:** the plugin's version bump and tag; and whether
 the plugin should become a hub member. Under the test Q10 adopted, membership
