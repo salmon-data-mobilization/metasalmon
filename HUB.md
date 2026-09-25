@@ -546,8 +546,8 @@ writes:
     makes an early beat a write inside the list, so it suspended nothing; this
     entry records the reinstatement because Brett gave one, and so that the
     held work resumed on his word rather than on a reading of the rule. In the
-    same message he set the interval to about an hour: heartbeat_minutes in
-    queue/config.yaml reads 60, and the heartbeat row's max is now a pace.
+    same message he set the interval to about an hour, which heartbeat_minutes
+    in queue/config.yaml carries, and the heartbeat row's max is now a pace.
   denied:
     - >-
       any issue, release, or assignee; and any comment or review except a reply
