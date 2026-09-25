@@ -459,6 +459,13 @@ nothing in either file saying which is right — the failure mode both `AGENTS.m
 files name when they say to read the other file rather than trust the one in
 front of you.
 
+**This one is closed.** `B-179` **landed 2026-09-25 as metasalmonpy #39**,
+`ba1b54a`: the three sidecars render to bytes and install through
+`atomic_io.atomic_write()`, `_replace_create_output()` is deleted, the EDH read
+runs before anything touches the file, and `PARITY.md` row 53 was corrected in
+the same pull request. The paragraphs above are the dated record of what was
+owed, and are kept as written.
+
 **More debts accumulated while that window was open, and this index was not
 the copy that recorded them.** Each is R work merged **after** 0.5.0 under the
 mirror rule, each is owed as a port rather than a register row, and each is
@@ -541,7 +548,8 @@ coercion that R only warns about. The coercion half owes metasalmonpy nothing,
 because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
-measuring it that is not part of the port. **Why not in the same stream:** a hub
+measuring it that is not part of the port, hub item `B-274`. **Why not in the
+same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.
 
@@ -645,6 +653,46 @@ not a register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, with the specification passages it applies
 rather than decides again. **Why not in the same stream:** a hub claim covers
 one branch in one repository. Its metasalmonpy half is `B-234`.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a required IRI field under a selected schema is reported
+once.** Hub item **B-211** pinned in R a route that metasalmonpy's **B-212** had
+closed first and not pinned. metasalmonpy's suite has no such test, so what is
+owed there is the twin, not a port and not a register row, because nothing
+behaves differently. It is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
+covers one branch in one repository, and the missing pin was found after both
+halves had merged. Its metasalmonpy queue item is `B-260`.
+
+**The development version after 0.5.0 adds a documentation port to what the
+mirror is owed (2026-09-25): the semantic-review guide's account of the two
+canonical sets.** Hub item **B-192** rewrote the vignette passage from which
+metasalmonpy's `guides/semantic-review.qmd` was transcribed, and two of its
+corrections hold for Python too: the guide says the package stops validating,
+and that no reviewer ever selected a code-resolved procedure. It is owed there
+as a documentation port, not a register row, and is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
+same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is `B-261`.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
+review target.** Hub item **B-171** added the R test that pins this direction of
+the semantic closure's two canonical sets. metasalmonpy has the same producer
+and the same fallback and no such test, so what is owed there is the twin, not a
+port and not a register row. It is specified under *What metasalmon 0.5.0 owes
+the mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-264`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the warning for a column kept as text names the column and the values.**
+metasalmon's `apply_salmon_dictionary()` names both, the values since hub item
+**B-55**, and metasalmonpy's names neither. It is owed there as a port, not a
+register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
+branch in one repository, and the port that followed B-55 left it out. Its
+metasalmonpy queue item is `B-275`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
@@ -758,6 +806,11 @@ kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
 above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
+One part of that behaviour was not ported and is owed: under a selected schema
+that does not declare a bundled field, `normalize_*()` still hands the writers
+that field, and they write it where R writes only the declared columns. It is
+specified in the same section of `parity-deviations.md`, and its metasalmonpy
+queue item is `B-252`.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global
