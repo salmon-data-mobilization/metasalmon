@@ -1,7 +1,7 @@
 id: B-276
 kind: defect
 title: 'A codes.csv row with no code_value has no address in the review console, so every call printed for its slot refuses'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
