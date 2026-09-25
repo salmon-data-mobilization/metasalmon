@@ -16,6 +16,10 @@
 #       to select candidate 1.
 #   (4) A downgrade with no rationale writes its note without the literal text
 #       "NA " in front of it.
+#   (5) The retry-query duplicate check folds case over ASCII letters only, the
+#       same in every locale. `tolower()` folds non-ASCII letters by locale, so
+#       the same pair was a duplicate under en_US.UTF-8 and not under C.
+#       metasalmonpy's B-362 mirrors the rule exactly as this file pins it.
 
 .b361_candidates <- function() {
   tibble::tibble(
@@ -453,4 +457,61 @@ test_that("two downgrade notes join with one space after the rationale", {
     result$rationale,
     "Need more. Model requested retry_search without providing a retry query; downgraded to review."
   )
+})
+
+# (5) --------------------------------------------------------------------------
+
+# Run `code` under each of two LC_CTYPE locales: one UTF-8 locale (the first
+# of a short list that this machine can set) and C. A locale that cannot be
+# set is skipped by name, so a platform without any UTF-8 locale still runs
+# the C half. Retires when R's tolower() stops depending on the locale, which
+# it will not; the helper is only how the pin is stated.
+.b361_with_ctype <- function(locale, code) {
+  previous <- Sys.getlocale("LC_CTYPE")
+  set <- suppressWarnings(Sys.setlocale("LC_CTYPE", locale))
+  if (!nzchar(set)) {
+    testthat::skip(paste("LC_CTYPE", locale, "cannot be set on this machine"))
+  }
+  on.exit(suppressWarnings(Sys.setlocale("LC_CTYPE", previous)), add = TRUE)
+  force(code)
+}
+
+.b361_utf8_locale <- function() {
+  previous <- Sys.getlocale("LC_CTYPE")
+  on.exit(suppressWarnings(Sys.setlocale("LC_CTYPE", previous)), add = TRUE)
+  for (candidate in c("en_US.UTF-8", "C.UTF-8", "en_CA.UTF-8", "en_GB.UTF-8")) {
+    if (nzchar(suppressWarnings(Sys.setlocale("LC_CTYPE", candidate)))) {
+      return(candidate)
+    }
+  }
+  NA_character_
+}
+
+test_that("the retry-query duplicate check folds ASCII case only, identically in every locale", {
+  # E-acute in both cases: tolower() folds it under a UTF-8 locale and not
+  # under C, so the old check gave a locale-dependent verdict.
+  retry <- "Poisson ÉLEVÉ"
+  original <- "poisson élevé"
+  ascii_retry <- "CATCH Weight"
+  ascii_original <- "catch weight"
+
+  utf8 <- .b361_utf8_locale()
+  locales <- c(if (!is.na(utf8)) utf8, "C")
+  for (locale in locales) {
+    .b361_with_ctype(locale, {
+      non_ascii <- metasalmon:::.ms_llm_classify_retry_query(retry, original)
+      expect_equal(non_ascii$disposition, "use_query", info = locale)
+      expect_true(is.na(non_ascii$rejection_reason), info = locale)
+
+      ascii <- metasalmon:::.ms_llm_classify_retry_query(ascii_retry, ascii_original)
+      expect_equal(ascii$disposition, "duplicate_original_query", info = locale)
+      expect_equal(ascii$rejection_reason, "duplicate_original_query", info = locale)
+    })
+  }
+})
+
+test_that(".ms_ascii_tolower folds A-Z only and leaves every other character alone", {
+  expect_identical(metasalmon:::.ms_ascii_tolower("ABC xyz 123 ÉÀ"), "abc xyz 123 ÉÀ")
+  expect_identical(metasalmon:::.ms_ascii_tolower(character()), character())
+  expect_identical(metasalmon:::.ms_ascii_tolower(NA_character_), NA_character_)
 })

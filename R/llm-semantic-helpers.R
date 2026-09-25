@@ -1246,6 +1246,16 @@
   trimws(gsub("\\s+", " ", text))
 }
 
+# Fold case over the ASCII letters only, identically in every locale.
+# `tolower()` folds non-ASCII letters according to the locale, so a
+# comparison built on it answers differently on different machines: the
+# retry-query duplicate check called a pair differing only in an accented
+# letter's case a duplicate under en_US.UTF-8 and not under C (hub item
+# B-361, defect 5). metasalmonpy's B-362 mirrors this rule exactly.
+.ms_ascii_tolower <- function(x) {
+  chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", x)
+}
+
 .ms_llm_query_looks_like_identifier <- function(x) {
   text <- .ms_llm_normalize_query_text(x)
   if (is.na(text)) {
@@ -1262,7 +1272,7 @@
   disposition <- if (is.na(retry)) {
     "invalid"
   } else if (!is.na(original) &&
-      identical(tolower(retry), tolower(original))) {
+      identical(.ms_ascii_tolower(retry), .ms_ascii_tolower(original))) {
     "duplicate_original_query"
   } else if (.ms_llm_query_looks_like_identifier(retry)) {
     "identifier_like"

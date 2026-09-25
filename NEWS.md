@@ -77,14 +77,14 @@ metasalmon (development version)
 
 ### Fixed
 
-* **Any final `reject_shortlist` now escalates to `request_new_term`, and three
+* **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
   Brett on 2026-09-25 as decisions 10 and 11 of the S16 execplan, and a
-  prerequisite of the review-packet contract, B-326). All four sit in the
-  validation and escalation code that every review path shares -- the generic,
-  batched and bundle paths today, and the assessment ingester next -- so the
-  ingester does not inherit them. Each is pinned by a test that failed before
-  the change (`tests/testthat/test-llm-assessment-validation.R`).
+  prerequisite of the review-packet contract, B-326). All five sit in the
+  validation, escalation and retry code that every review path shares -- the
+  generic, batched and bundle paths today, and the assessment ingester next --
+  so the ingester does not inherit them. Each is pinned by a test that failed
+  before the change (`tests/testthat/test-llm-assessment-validation.R`).
 
   1. **A `reject_shortlist` that follows a `retry_search` is escalated.**
      `AGENTS.md` has said since 2026-08-10 that an unresolved `reject_shortlist`
@@ -116,6 +116,15 @@ metasalmon (development version)
      selecting a candidate; ...`, because `nzchar(NA)` is `TRUE` and the
      filter meant to drop the missing rationale kept it. Notes now join with
      one space and a missing rationale contributes nothing.
+  5. **The retry-query duplicate check folds case over ASCII letters only, the
+     same in every locale.** The check compared `tolower()` of the retry
+     query with `tolower()` of the original, and `tolower()` folds non-ASCII
+     letters according to the locale, so a pair of queries differing only in
+     an accented letter's case was a duplicate (and the retry withheld) under
+     `en_US.UTF-8` and a usable query under `C`. The fold is now `A-Z` to
+     `a-z` through `chartr()`, so the verdict is the same on every machine;
+     metasalmonpy's B-362 mirrors the rule exactly as this package now states
+     it. Raised in a Codex review of hub pull request #187.
 
 * **`validate_salmon_datapackage()` now checks the three things backlog #49
   (hub item B-49) measured it claiming and not doing.** Each was a contract
