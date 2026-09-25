@@ -634,6 +634,23 @@ They are specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
 branch in one repository. Its metasalmonpy queue item is `B-245`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the direct `suggest_semantics()` call keeps `llm_top_n` candidates per role for
+the LLM, and `DESCRIPTION` declares `frictionless`.** Hub item **B-57** (backlog
+#57) widens the direct call's retrieval to the larger of `max_per_role` and
+`llm_top_n` when `llm_assess = TRUE`, the rule every wrapper already applied, so
+the LLM is shown the shortlist `llm_top_n` asks for. It also names Python 3 and
+the `frictionless` Python package in `SystemRequirements`, for
+`dwc_dp_build_descriptor(validate = TRUE)`. metasalmonpy's first review round
+shows the LLM 3 candidates under the same defaults, measured on `main`
+`f1f7230`, and its `pyproject.toml` does not declare `frictionless`. Both are
+owed there as a port, not a register row. The port is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. B-57's other two
+fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
+parallel worker to fail, and its ICES helpers already behaved as R now does.
+**Why not in the same stream:** a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is `B-302`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

@@ -2516,6 +2516,76 @@ cannot widen the shortlist on the direct `suggest_semantics()` path;
 error instead of degrading on a missing column; the composite-intent gate's
 `optional_hint_fields` is inert.
 
+*Re-measured 2026-09-25 by hub item B-57, on `main` `6675dae` under R 4.3.3;
+the mirror on metasalmonpy `main` `f1f7230` under Python 3.11.15 and pandas
+3.0.5.* All five still reproduced. Four are fixed and two are refiled: item 1
+split into one of each. Every search, LLM request and `.safe_json()` call was
+injected, so nothing left the machine.
+
+1. **`dwc_dp_build_descriptor(validate = TRUE)`.** *The `SystemRequirements`
+   half is fixed:* `DESCRIPTION` now names Python 3 and the `frictionless`
+   Python package, as optional. *The validation-result half is refiled as
+   **B-300**, which needs Brett.* With a stub interpreter whose validator prints
+   a failing report and exits 1, the call printed the report and returned the
+   descriptor with no attribute. The only signal was R's own `system2()`
+   warning that the command `had status 1`. The `python3` on the measuring
+   machine has no `frictionless` module, and it produced the same outcome
+   exactly, so "not installed" cannot be told from "invalid". Two more things
+   stand in the way of a plain "abort when invalid" fix. First, the descriptor
+   is validated from `tempfile(fileext = ".json")` in R's session temp
+   directory, and Frictionless resolves a local resource path relative to the
+   descriptor. So `occurrence.csv` would be looked for in the temp directory
+   and would never be found there. That is Frictionless's documented rule and
+   was not measured, because `frictionless` is not installed here and
+   installing it is a network call. Second, the table schemas are URLs on
+   `raw.githubusercontent.com`, so validation needs the network. Acting on the
+   result without the path fix would turn a report nobody reads into an abort
+   for every relative path. The questions for Brett: should an invalid report
+   abort, as `read_sdp_reproducibility_manifest(validate = TRUE)` does on a
+   failed check, or warn and return? And which directory should relative paths
+   resolve against? The recommendation is to abort, and to resolve against
+   `dirname(output_path)` when it is given and the working directory otherwise.
+   metasalmonpy's `dwc_dp_build_descriptor(validate=True)` also discards the
+   report: with a fake `frictionless` reporting invalid, it returned the
+   descriptor with no warning. Without `frictionless` it returned silently.
+2. **`llm_top_n` on the direct `suggest_semantics()` path. Fixed.** An injected
+   `search_fn` gave eight candidates per role. With the defaults, the direct
+   call kept 3 per role and its first review request named 3, while
+   `infer_dictionary()` kept and showed 5. After the fix both keep and show 5.
+   metasalmonpy's direct call shows the LLM 3 as well, and the port is
+   **B-302**.
+3. **`find_terms()` and `parallel::mclapply` worker failure. Fixed.** With
+   `ols` and `nvs` mocked and the `nvs` worker killed by `SIGKILL`, the result
+   had no `nvs` diagnostic row and `.ms_search_failed_sources()` returned
+   nothing. The only warning was `mclapply()`'s own, and the result was cached.
+   With an error escaping `run_source()` in that worker, the search aborted
+   with `$ operator is invalid for atomic vectors`. After the fix both record
+   `nvs` with `status = "error"` and give the *did not answer* warning, and
+   nothing is cached. metasalmonpy searches its sources one after another, so
+   it has no worker to fail.
+4. **ICES helpers on a missing column. Fixed.** A response with no
+   `longDescription` aborted both find helpers with *Column `longDescription`
+   not found in `.data`*. An empty array and a failed request aborted them on
+   `key`, and `ices_codes()` aborted on a response with no `key`. metasalmonpy
+   returned the match, or an empty frame, in every one of those cases, so R
+   moved to match it. What remains is not #57's: an empty result from any ICES
+   helper, in either package, cannot say whether ICES answered. That is a
+   candidate with no item.
+5. **The composite-intent gate's `optional_hint_fields`. Refiled as
+   **B-301**, which needs Brett.** Any reading under which `source_name` alone
+   stops failing a package narrows a validator, and HUB.md reserves that to
+   him (class 6). A package with no `cu_timeseries` table, and with
+   `source_name = "Composite of three weir counts"` in `dataset.csv`, fails
+   validation with *Explicit composite route intent detected in source_name*.
+   Without that column it validates with 0 issues. There are three readings.
+   (a) An optional hint field never fires the gate on its own: it only adds
+   context to a hint field that fires. This is recommended, because the gate's
+   own message calls what it detects "explicit" intent, and free text is not
+   that. (b) Optional hints count only when the package has a `cu_timeseries`
+   table, which is where the WSP signal is read from. (c) `source_name` is
+   dropped from the gate. metasalmonpy's `_collect_composite_hint_values()`
+   merges the two lists the same way.
+
 ### Open — the 2026-08-21 example-and-validator recon
 
 **Every item below was reproduced by executing the tools, not by reading
