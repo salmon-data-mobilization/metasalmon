@@ -529,6 +529,15 @@ B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
 mirror repository carries the fix already and owes only the written rule and
 its check.
 
+**This one is closed.** `B-201` **landed 2026-09-25 as metasalmonpy #59**,
+`380a7a4`: metasalmonpy's `AGENTS.md` *Releases* section states the rule and
+names the check as its pre-release step, and `scripts/check-changelog-window.py`,
+a port of the hub's copy kept aligned with it by a test, runs on every pull
+request. It applies Brett's 2026-09-25 ruling on `v0.2.1`: a dated correction
+under `## 0.2.1`, and an exemption for `10d0616` that holds only while that
+correction names it. The paragraph above is the dated record of what was owed,
+and is kept as written.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-23):
 a recorded hand-picked accept is not ontology-gap evidence.** Pull request #146
 (hub item **B-176**) makes `detect_semantic_term_gaps()` drop the
