@@ -7604,3 +7604,46 @@ the warning cannot say where.
 Every paragraph in this section records what was observed, where and by whom,
 on 2026-09-25. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.
+
+### The 2026-09-25 metasalmonpy concat crash (B-370)
+
+**`B-370`: `create_sdp()` with its defaults raises at `pd.concat`.** Found by the
+B-243 worker and recorded in `.hub/workpads/B-243.md` on metasalmonpy `main`,
+*Found* item 1. Re-measured by the orchestrator on metasalmonpy `main`
+`0235487` (Python 3.11.15, pandas 3.0.6, both dependency legs), with the
+worker's probe: every `term_search._search_*` source patched to answer one
+candidate before any call is built, the network refused at the socket, and a
+two-column frame (`spawner_count`, `fork_length_mm`) passed to `create_sdp()`
+with its defaults:
+
+```
+create_sdp raised ValueError: Can only compare identically-labeled (both index and columns) DataFrame objects; source calls before it: 52
+  at concat.py:662 _get_result: return out.__finalize__(
+  at generic.py:6170 __finalize__: have_same_attrs = all(obj.attrs == attrs for obj in objs[1:])
+```
+
+The path: `find_terms()` sets `ranked.attrs["diagnostics"]` to a DataFrame
+(`term_search.py:1474`). The retrieval loop's copy, filter, sort and `head()`
+carry `attrs` along, so every candidate frame reaches
+`pd.concat(suggestion_rows, ignore_index=True)` (`semantics.py:1078`) with one.
+When every input has non-empty `attrs`, pandas compares them with
+`obj.attrs == attrs`, and a DataFrame there has no single truth value. The
+worker's first measurement, on `ba1b54a` with one source, raised *The truth
+value of a DataFrame is ambiguous* from the same line; the message differs with
+the diagnostics frames' shapes, and the comparison is the same.
+`infer_dictionary(seed_semantics=True)` also calls `suggest_semantics()`
+without a `search_fn`, and was not run.
+
+The suite does not see it, because no test's search stub sets `attrs`. It is
+why B-243's outage test answers with no candidates where metasalmon's twin
+answers with one; the workpad records that guard and its retirement.
+metasalmonpy declares `pandas>=1.5`; only 3.0.6 was measured. R has no
+counterpart of pandas' `attrs` comparison and was not measured.
+
+*Why this severity:* `create_sdp()` with its defaults is the documented one-shot
+path, and it raises whenever two or more columns get candidates, which a live
+search gives routinely.
+
+Every paragraph in this section records what was observed, where and by whom,
+on 2026-09-25. The condition in force is in `queue/items/B-370.yaml`, and where
+the two differ, the item file is right.
