@@ -685,8 +685,8 @@ behalf. That is worth more than the convenience of one fewer command to run.
 Each item is one YAML document under `queue/items/`, carrying its
 `id`, `kind`, `title`, `state`, `claimable`, `repo`, `severity`, `stream`,
 `blocked_by`, its `legacy` citation so the bare backlog numbers already
-written into 191 places never have to be rewritten, an `evidence` pointer, a `venue`, and, for a defect,
-`retires_when`.
+written into 191 places never have to be rewritten, an `evidence` pointer, a
+`venue`, and, for a defect, `retires_when`.
 
 **`venue` is advice and never a gate.** It is `claude-science` when the work is
 reading, evidence synthesis, semantic judgement, statistical analysis or
