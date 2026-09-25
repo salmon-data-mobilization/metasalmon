@@ -1,0 +1,13 @@
+id: B-382
+kind: defect
+title: 'metasalmonpy''s first-pass retrieval converges on metasalmon''s rules for deduplication, missing scores and depth, for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, pass-1 retrieval gives metasalmon''s shortlist: it deduplicates by candidate identity rather than by (source, iri), keeps a missing score missing and sorts it last rather than filling it with 0, and floors the depth at 1, as the pass-2 path already does since B-363. The pass_one branch in semantics._retrieve_semantic_target_candidates() that B-363 left in place, and whose docstring names this retirement, is removed. Pinned by shared-input tests against what R gives, and suggest_semantics()''s pinned output is re-captured with the change recorded in CHANGELOG.md, because this changes what metasalmonpy returns for inputs where the two rules differ. A prerequisite of B-327: the exporter re-retrieves each pass-1 target, so the two packages'' packets can only agree if their first passes do. Found by the B-363 run on 2026-09-25, which pinned pass-1 output unchanged as that item required. No metasalmon half: R is the rule.'
