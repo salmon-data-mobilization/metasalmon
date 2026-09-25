@@ -1424,11 +1424,19 @@ run, with agreement reported.
   V, OV), three epochs, two models. The first six are the six Theme A cases
   (their `case_id`, evidence status, context, targets, candidates, and
   required / allowed / forbidden oracle seed the retrieval, code-list, and
-  decomposition families), and the Inspect harness must reproduce
-  `Rscript scripts/theme-a-benchmark.R replay` before any new task is
-  added; the rest derive from the S12 campaign. Pilot results debug scorers
-  and are never reported as an effect. A protocol preprint precedes the
-  confirmatory run.
+  decomposition families), and the Inspect harness must reproduce the
+  replay/oracle half of the Theme A harness (its fixtures and their
+  comparison), independent of any live provider capture mode, before any
+  new task is added; the rest derive from the S12 campaign. Pilot results
+  debug scorers and are never reported as an effect. A protocol preprint
+  precedes the confirmatory run.
+  *(Reworded 2026-09-25. Until then the anchor read "must reproduce
+  `Rscript scripts/theme-a-benchmark.R replay`", which pinned it to one
+  script's subcommand rather than to the fixtures and comparison that
+  subcommand runs. The ruling is unchanged — Q23: the three Theme A captures
+  finish as the pilot's regression anchor — and what the wording now says is
+  that the anchor survives whatever happens to the script's live capture
+  side, which is another item's subject.)*
 - **v0.1 (Stage B):** the *released benchmark* is 60 curated tasks across
   six families (construction 15, diagnosis 10, mapping and gap 10,
   decomposition 10, provenance 10, governance 5), all deterministic or
