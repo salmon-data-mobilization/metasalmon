@@ -89,6 +89,12 @@ with no candidates, with the first \code{top_n} candidates of each from the
 The packet holds excerpts from your own context documents. It is written
 under \verb{review/}, which no publication path reads, and it is never
 published.
+
+For a package path, recovering blank slots re-runs discovery over the
+package's own metadata and data. A data resource is opened only when
+\code{tables.csv} names it with a plain relative path inside the package (no
+\code{..}, no absolute path, no symbolic link in the path); any other row is
+skipped with a warning.
 }
 \examples{
 dict <- tibble::tibble(

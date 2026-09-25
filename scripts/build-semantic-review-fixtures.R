@@ -229,7 +229,8 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
         downgrades = as.integer(result$summary$downgrades),
         escalations = as.integer(result$summary$escalations),
         retries = as.integer(result$summary$retries),
-        awaiting_pass_2 = as.integer(result$summary$awaiting_pass_2)
+        awaiting_pass_2 = as.integer(result$summary$awaiting_pass_2),
+        kept_pass_1 = as.integer(result$summary$kept_pass_1)
       ),
       search_calls = counter$calls
     ), file.path(expected_dir, paste0("status-", pass, ".json")))

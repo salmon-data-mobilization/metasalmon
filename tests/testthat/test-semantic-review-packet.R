@@ -134,6 +134,7 @@ expect_case_pass <- function(case, result, pass, counter) {
   expect_identical(result$summary$downgrades, status$summary$downgrades, info = info)
   expect_identical(result$summary$escalations, status$summary$escalations, info = info)
   expect_identical(result$summary$retries, status$summary$retries, info = info)
+  expect_identical(result$summary$kept_pass_1, status$summary$kept_pass_1, info = info)
   expect_identical(counter$calls, status$search_calls, info = info)
   semantic_review_expect_frames_equal(
     result$assessments,
@@ -337,13 +338,21 @@ test_that("a stale assessment file is refused after the packet is rebuilt", {
 
 test_that("a harness value in a package-owned column is overwritten with one warning naming the columns", {
   case <- build_case("row_errors")
-  expect_warning(
-    result <- ingest_semantic_assessments(
+  # The case also plants secrets, so the ingest warns twice; collect both and
+  # assert the one this test is about.
+  messages <- character()
+  result <- withCallingHandlers(
+    ingest_semantic_assessments(
       case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
       review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
     ),
-    "package-owned"
+    warning = function(w) {
+      messages <<- c(messages, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
   )
+  expect_length(grep("package-owned", messages), 1L)
+  expect_match(grep("package-owned", messages, value = TRUE), "llm_selected_label", fixed = TRUE)
   row <- result$assessments[result$assessments$column_name == "FIELD_13", ]
   expect_true(is.na(row$llm_selected_label))
   expect_false(identical(row$llm_context_sources, "should-be-overwritten"))
@@ -784,4 +793,200 @@ test_that("a blank code-level slot outside the code scope is reported as not cov
   wide_slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(wide$path))
   code_slots <- Filter(function(s) identical(s$target$target_sdp_file[[1]], "codes.csv"), wide_slots)
   expect_setequal(vapply(code_slots, function(s) s$target$slot_id[[1]], character(1)), narrow$not_covered$slot_id)
+})
+
+# -----------------------------------------------------------------------------
+# Codex review on #194: three findings, each pinned
+# -----------------------------------------------------------------------------
+
+test_that("a package whose every lookup found nothing still gets a packet holding its blank slots", {
+  nothing <- function(query, role = NA_character_, sources = NULL, ...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "all-zero")
+  suppressMessages(with_mocked_bindings(
+    find_terms = nothing,
+    create_sdp(
+      list(catch = data.frame(catch_weight = c(12.5, 8.1, 20.4), water_temp = c(8.5, 9.1, 7.4))),
+      path = path, dataset_id = "demo-1", table_id = "catch",
+      semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+      check_updates = FALSE, overwrite = TRUE
+    )
+  ))
+  # No shortlist was written, and the console refuses to open a queue.
+  expect_null(semantic_suggestions(path))
+  expect_false(file.exists(file.path(path, "semantic_suggestions.csv")))
+  expect_error(suppressMessages(review_semantics(path)), "No semantic suggestions")
+
+  built <- expect_no_warning(write_semantic_review_packet(path, search_fn = nothing, quiet = TRUE))
+  packet <- semantic_review_read_json(built$path)
+  slots <- metasalmon:::.ms_semantic_review_slots(packet)
+  expect_true(all(vapply(slots, function(s) nrow(s$candidates) == 0L, logical(1))))
+  # Both measurement columns come back as bundles; the table's observation
+  # unit, blank too, is a target unit beside them.
+  kinds <- vapply(packet$units, `[[`, character(1), "unit_kind")
+  keys <- vapply(packet$units, `[[`, character(1), "unit_key")
+  expect_setequal(keys[kinds == "bundle"], c("bundle:demo-1/catch/catch_weight", "bundle:demo-1/catch/water_temp"))
+  expect_true(any(grepl("^target:tables\\.csv", keys)))
+  columns <- vapply(slots, function(s) s$target$column_name[[1]], character(1))
+  expect_setequal(columns[!is.na(columns)], c("catch_weight", "water_temp"))
+
+  # The gaps reach the term-request pipeline through the ingester.
+  harness <- dplyr::bind_rows(lapply(slots, function(slot) {
+    semantic_review_harness_row(slot$target, llm_decision = "request_new_term", llm_confidence = 0.7,
+      llm_rationale = "Nothing was offered.", llm_new_term_label = paste("Term for", slot$target$dictionary_role[[1]]))
+  }))
+  result <- ingest_semantic_assessments(path, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_identical(result$status, "complete")
+  expect_true(all(result$assessments$llm_decision == "request_new_term"))
+  gaps <- detect_semantic_term_gaps(result$dictionary)
+  expect_true(all(c("catch_weight", "water_temp") %in% gaps$column_name))
+})
+
+test_that("a tables.csv row pointing outside the package is refused, not followed", {
+  hits <- function(query, role = NA_character_, sources = NULL, ...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "escape")
+  suppressMessages(with_mocked_bindings(
+    find_terms = hits,
+    create_sdp(
+      list(catch = data.frame(catch_weight = c(12.5, 8.1))),
+      path = path, dataset_id = "demo-1", table_id = "catch",
+      semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+      check_updates = FALSE, overwrite = TRUE
+    )
+  ))
+  secret <- file.path(withr::local_tempdir(), "outside.csv")
+  writeLines(c("catch_weight", "999"), secret)
+  tables_path <- file.path(path, "metadata", "tables.csv")
+  tables <- readr::read_csv(tables_path, col_types = readr::cols(.default = readr::col_character()), na = "")
+  tables$file_name[[1]] <- file.path("..", "..", basename(dirname(secret)), "outside.csv")
+  readr::write_csv(tables, tables_path, na = "")
+  expect_null(metasalmon:::.ms_semantic_review_contained_resource(path, tables$file_name[[1]]))
+  expect_null(metasalmon:::.ms_semantic_review_contained_resource(path, "/etc/hosts"))
+  expect_null(metasalmon:::.ms_semantic_review_contained_resource(path, "data/./spawners.csv"))
+  expect_identical(
+    metasalmon:::.ms_semantic_review_contained_resource(path, "data/catch.csv"),
+    file.path(path, "data", "catch.csv")
+  )
+  # A symbolic link inside the package is refused too.
+  link <- file.path(path, "data", "linked.csv")
+  if (file.symlink(secret, link)) {
+    expect_null(metasalmon:::.ms_semantic_review_contained_resource(path, "data/linked.csv"))
+  }
+  expect_warning(
+    built <- write_semantic_review_packet(path, search_fn = hits, review_dir = file.path(withr::local_tempdir(), "r"), quiet = TRUE),
+    "not plain files inside the package"
+  )
+  expect_true(built$units > 0L)
+})
+
+test_that("a continuation target the harness leaves unanswered keeps its pass-1 answer and candidates, and the session completes", {
+  responses <- semantic_review_search_responses()
+  for (variant in c("missing", "unusable")) {
+    case <- build_case("retry_gain")
+    first <- ingest_semantic_assessments(
+      case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
+      review_dir = case$review_dir, search_fn = semantic_review_fake_search(responses), quiet = TRUE
+    )
+    expect_identical(first$status, "awaiting_pass_2")
+    pass_2 <- semantic_review_read_json(first$next_packet)
+    slot <- metasalmon:::.ms_semantic_review_slots(pass_2)[[1]]
+    expect_true(slot$reassess)
+    expect_identical(nrow(slot$candidates), 4L)
+    empty <- semantic_review_harness_row(slot$target)[0, ]
+    answer <- if (identical(variant, "missing")) {
+      empty
+    } else {
+      semantic_review_harness_row(slot$target, llm_error = "The model timed out.")
+    }
+    result <- ingest_semantic_assessments(
+      case$dict, assessments = answer, packet_id = pass_2$packet_id,
+      review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
+    )
+    # Execplan section 4, item 3: the pass-1 row and candidates stand, the
+    # session is complete, and the fallback is counted rather than silent.
+    expect_identical(result$status, "complete", info = variant)
+    expect_null(result$next_packet, info = variant)
+    expect_identical(result$summary$kept_pass_1, 1L, info = variant)
+    expect_identical(result$summary$errors, if (identical(variant, "missing")) 0L else 1L, info = variant)
+    row <- result$assessments
+    expect_identical(row$llm_decision, "retry_search", info = variant)
+    expect_match(row$llm_rationale, "pass-1 answer stands", fixed = TRUE, info = variant)
+    expect_true(isTRUE(row$llm_exploration_used), info = variant)
+    # The merged suggestions carry the pass-1 shortlist, not the widened one,
+    # so the record's (absent) index maps onto what the harness first saw.
+    expect_setequal(result$suggestions$iri, c("https://w3id.org/smn/Equipment", "https://w3id.org/smn/Tool"))
+    expect_false(any(result$suggestions$llm_selected), info = variant)
+    expect_true(all(result$suggestions$llm_decision == "retry_search"), info = variant)
+    persisted <- semantic_review_read_csv(file.path(case$review_dir, "semantic-llm-assessments.csv"))
+    expect_identical(persisted$llm_decision, "retry_search", info = variant)
+  }
+})
+
+test_that("the result after a continuation pass describes the whole session, not the continuation subset", {
+  # Two target units: GEAR_TYPE retries and gains, VESSEL is accepted at pass 1.
+  target <- function(column, query, label, description) tibble::tibble(
+    dataset_id = "fixture-1", table_id = "catch", column_name = column, code_value = NA_character_,
+    dictionary_role = "variable", search_role = "variable", target_scope = "column",
+    target_sdp_file = "column_dictionary.csv", target_sdp_field = "term_iri",
+    target_row_key = paste("fixture-1/catch", column, sep = "/"), target_label = label,
+    target_description = description, search_query = query, target_query_basis = "column_description",
+    target_query_context = paste0(label, ": ", description), column_label = label,
+    column_description = description, code_label = NA_character_, code_description = NA_character_
+  )
+  targets <- dplyr::bind_rows(
+    target("GEAR_TYPE", "gear type", "Gear type", "The fishing gear used."),
+    target("VESSEL", "vessel", "Vessel", "The vessel name.")
+  )
+  candidate <- function(t, label, iri, score) dplyr::bind_cols(t, tibble::tibble(
+    label = label, iri = iri, source = "smn", ontology = "Salmon Ontology", role = "variable",
+    match_type = "label_partial", definition = paste0(label, "."), score = score, term_type = "owl_class",
+    retrieval_query = t$search_query[[1]], retrieval_pass = 1L
+  ))
+  candidates <- dplyr::bind_rows(
+    candidate(targets[1, ], "Equipment", "https://w3id.org/smn/Equipment", 0.4),
+    candidate(targets[1, ], "Tool", "https://w3id.org/smn/Tool", 0.3),
+    candidate(targets[2, ], "Vessel", "https://w3id.org/smn/Vessel", 0.6)
+  )
+  dict <- tibble::tibble(
+    dataset_id = "fixture-1", table_id = "catch", column_name = c("GEAR_TYPE", "VESSEL"),
+    column_label = c("Gear type", "Vessel"), column_description = c("The fishing gear used.", "The vessel name."),
+    column_role = "categorical", value_type = "string", term_iri = NA_character_
+  )
+  attr(dict, "semantic_targets") <- targets
+  attr(dict, "semantic_suggestions") <- candidates
+  review_dir <- file.path(withr::local_tempdir(), "review")
+  built <- write_semantic_review_packet(dict, review_dir = review_dir, quiet = TRUE)
+  expect_identical(built$units, 2L)
+
+  responses <- semantic_review_search_responses()
+  harness_1 <- dplyr::bind_rows(
+    semantic_review_harness_row(targets[1, ], llm_decision = "retry_search", llm_confidence = 0.3, llm_rationale = "Generic.", llm_retry_query = "fishing gear type"),
+    semantic_review_harness_row(targets[2, ], llm_decision = "accept", llm_confidence = 0.9, llm_selected_candidate_index = 1L, llm_selected_iri = "https://w3id.org/smn/Vessel", llm_rationale = "The vessel.")
+  )
+  first <- ingest_semantic_assessments(dict, assessments = harness_1, packet_id = built$packet_id,
+    review_dir = review_dir, search_fn = semantic_review_fake_search(responses), quiet = TRUE)
+  expect_identical(first$status, "awaiting_pass_2")
+  # At pass 1 the pending target is not merged; the accepted one is.
+  expect_setequal(unique(first$suggestions$column_name), "VESSEL")
+  expect_identical(nrow(first$targets), 2L)
+
+  pass_2 <- semantic_review_read_json(first$next_packet)
+  expect_length(pass_2$units, 1L)
+  gear <- metasalmon:::.ms_semantic_review_slots(pass_2)[[1]]
+  harness_2 <- semantic_review_harness_row(gear$target, llm_decision = "accept", llm_confidence = 0.9,
+    llm_selected_candidate_index = 1L, llm_selected_iri = "https://w3id.org/smn/FishingGear", llm_rationale = "Found it.")
+  result <- ingest_semantic_assessments(dict, assessments = harness_2, packet_id = pass_2$packet_id,
+    review_dir = review_dir, search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_identical(result$status, "complete")
+  # Every pass-1 target and every slot's candidates, with both accepts selected.
+  expect_identical(nrow(result$targets), 2L)
+  expect_setequal(result$targets$column_name, c("GEAR_TYPE", "VESSEL"))
+  expect_identical(nrow(result$assessments), 2L)
+  expect_setequal(unique(result$suggestions$column_name), c("GEAR_TYPE", "VESSEL"))
+  selected <- result$suggestions[result$suggestions$llm_selected, ]
+  expect_setequal(selected$iri, c("https://w3id.org/smn/FishingGear", "https://w3id.org/smn/Vessel"))
+  expect_true("https://w3id.org/smn/GearDeployment" %in% result$suggestions$iri)
+  expect_identical(semantic_suggestions(result$dictionary), result$suggestions)
+  expect_identical(nrow(attr(result$dictionary, "semantic_targets")), 2L)
+  expect_identical(nrow(semantic_llm_assessments(result$dictionary)), 2L)
 })

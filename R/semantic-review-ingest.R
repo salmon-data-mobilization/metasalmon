@@ -929,6 +929,11 @@ ingest_semantic_assessments <- function(x,
         "The pass-2 packet does not descend from the pass-1 packet in {.path {review_dir}}."
       )
     }
+    # The whole session's slots: the result describes every pass-1 target,
+    # and a reassessed slot whose pass-2 answer is missing or unusable falls
+    # back to its pass-1 candidates.
+    pass_1_slots <- .ms_semantic_review_slots(pass_1_packet)
+    pass_1_keys <- vapply(pass_1_slots, `[[`, character(1), "key")
   } else if (is.character(assessments) && length(assessments) == 1L &&
     identical(basename(assessments), basename(.ms_semantic_review_file(".", "assessments", 2L)))) {
     .ms_semantic_review_abort(
@@ -976,11 +981,16 @@ ingest_semantic_assessments <- function(x,
     ))
   }
 
-  # Row validation, one row per packet slot; a slot with no row is an error row.
+  # Row validation, one row per packet slot; a slot with no row is an error row
+  # at pass 1. At pass 2 a reassessed slot whose answer is missing or unusable
+  # keeps its pass-1 row and its pass-1 candidates (execplan section 4, item
+  # 3), the session still completes, and the fallback is counted and said.
   row_for_slot <- match(slot_keys, row_keys)
   rows <- vector("list", length(slots))
+  fallback <- logical(length(slots))
   errors <- 0L
   downgrades <- 0L
+  kept_pass_1 <- 0L
   for (i in seq_along(slots)) {
     slot <- slots[[i]]
     unit <- packet$units[[slot$unit_index]]
@@ -992,12 +1002,17 @@ ingest_semantic_assessments <- function(x,
     }
     if (is.na(row_for_slot[[i]])) {
       config <- list(provider = provider %||% NA_character_, model = model %||% NA_character_)
-      rows[[i]] <- if (pass == 2L) {
-        .ms_semantic_review_note(slot$previous_assessment, "No pass-2 assessment was supplied; the pass-1 answer stands.")
+      if (pass == 2L) {
+        rows[[i]] <- .ms_semantic_review_note(
+          slot$previous_assessment,
+          "No pass-2 assessment was supplied; the pass-1 answer stands and there is no third pass."
+        )
+        fallback[[i]] <- TRUE
+        kept_pass_1 <- kept_pass_1 + 1L
       } else {
-        .ms_semantic_review_error_row(target, config, "No assessment was supplied for this target.")
+        rows[[i]] <- .ms_semantic_review_error_row(target, config, "No assessment was supplied for this target.")
+        errors <- errors + 1L
       }
-      errors <- errors + as.integer(pass == 1L)
       next
     }
     row <- harness[row_for_slot[[i]], , drop = FALSE]
@@ -1011,9 +1026,12 @@ ingest_semantic_assessments <- function(x,
     if (!is.na(validated$llm_error[[1]])) {
       errors <- errors + 1L
       if (pass == 2L) {
-        # An error at pass 2 keeps the pass-1 row and candidates.
-        validated <- .ms_semantic_review_note(slot$previous_assessment, paste0("Pass-2 answer was unusable: ", validated$llm_error[[1]]))
-        slots[[i]]$reassess <- FALSE
+        validated <- .ms_semantic_review_note(
+          slot$previous_assessment,
+          paste0("Pass-2 answer was unusable, so the pass-1 answer stands: ", validated$llm_error[[1]])
+        )
+        fallback[[i]] <- TRUE
+        kept_pass_1 <- kept_pass_1 + 1L
       }
     } else {
       harness_decision <- tolower(.ms_llm_non_empty_string(row$llm_decision[[1]]))
@@ -1035,6 +1053,16 @@ ingest_semantic_assessments <- function(x,
       }
     }
     rows[[i]] <- validated
+  }
+  if (pass == 2L && any(fallback)) {
+    # The pass-1 row's index maps onto the pass-1 candidates, so a fallback
+    # slot merges those and not the widened shortlist it was shown.
+    for (i in which(fallback)) {
+      original <- match(slots[[i]]$key, pass_1_keys)
+      if (!is.na(original)) {
+        slots[[i]]$candidates <- pass_1_slots[[original]]$candidates
+      }
+    }
   }
 
   # Retry bookkeeping (pass 1 only): classify, retrieve, merge, count the gain.
@@ -1115,20 +1143,48 @@ ingest_semantic_assessments <- function(x,
     record <- final_rows
   }
 
-  # The merge: the final targets' candidates with their assessment columns.
+  # The merge: the final targets' candidates with their assessment columns. At
+  # pass 2 that is every reassessed slot of the continuation packet (a
+  # fallback slot with its pass-1 candidates); the slots that were final at
+  # pass 1 were merged then.
+  top_n <- .ms_semantic_review_top_n_from_packet(packet)
   merge_slots <- which(is_final & (pass == 1L | vapply(slots, `[[`, logical(1), "reassess")))
   candidates <- dplyr::bind_rows(lapply(slots[merge_slots], `[[`, "candidates"))
   merged <- if (nrow(candidates) > 0L) {
     .ms_semantic_merge_llm_assessments(
       candidates,
       assessments = final_rows[merge_slots, , drop = FALSE],
-      top_n = .ms_semantic_review_top_n_from_packet(packet)
+      top_n = top_n
     )
   } else {
     candidates
   }
   targets <- dplyr::bind_rows(lapply(slots, `[[`, "target"))
   final_targets <- targets[merge_slots, , drop = FALSE]
+
+  # What the result describes is the whole session, never the continuation
+  # subset: at pass 2 the targets are every pass-1 target, and the suggestions
+  # every pass-1 slot's candidates (the continuation's for a reassessed slot,
+  # pass 1's otherwise) merged with the record.
+  if (pass == 2L) {
+    session_targets <- dplyr::bind_rows(lapply(pass_1_slots, `[[`, "target"))
+    session_candidates <- dplyr::bind_rows(lapply(seq_along(pass_1_slots), function(j) {
+      here <- match(pass_1_keys[[j]], slot_keys)
+      if (!is.na(here) && isTRUE(slots[[here]]$reassess)) {
+        slots[[here]]$candidates
+      } else {
+        pass_1_slots[[j]]$candidates
+      }
+    }))
+    session_merged <- if (nrow(session_candidates) > 0L) {
+      .ms_semantic_merge_llm_assessments(session_candidates, assessments = record, top_n = top_n)
+    } else {
+      session_candidates
+    }
+  } else {
+    session_targets <- targets
+    session_merged <- merged
+  }
 
   # Persistence, as one atomic set after the containment check. The harness
   # file is never copied into `review/`; when the harness wrote it at the
@@ -1172,14 +1228,14 @@ ingest_semantic_assessments <- function(x,
   }
 
   attr(record, "semantic_validator_findings") <- findings
-  suggestions <- suggestions_out %||% merged
+  suggestions <- suggestions_out %||% session_merged
   dictionary <- if (identical(input$kind, "package")) {
     .ms_review_source_frames(input$path)[["column_dictionary.csv"]] %||% tibble::tibble()
   } else {
     input$dict
   }
   attr(dictionary, "semantic_suggestions") <- suggestions
-  attr(dictionary, "semantic_targets") <- targets[, .ms_semantic_target_cols(), drop = FALSE]
+  attr(dictionary, "semantic_targets") <- session_targets[, .ms_semantic_target_cols(), drop = FALSE]
   attr(dictionary, "semantic_llm_assessments") <- record
 
   status <- if (length(pending) > 0L) "awaiting_pass_2" else "complete"
@@ -1190,12 +1246,14 @@ ingest_semantic_assessments <- function(x,
     downgrades = downgrades,
     escalations = escalations,
     retries = retries,
-    awaiting_pass_2 = length(pending)
+    awaiting_pass_2 = length(pending),
+    kept_pass_1 = kept_pass_1
   )
   if (!isTRUE(quiet)) {
     cli::cli_inform(c(
       "Ingested {nrow(final_rows)} assessment{?s} for pass {pass}: status {.val {status}}.",
       "i" = "{errors} error row{?s}, {downgrades} downgrade{?s}, {escalations} escalation{?s}, {retries} retr{?y/ies}.",
+      if (kept_pass_1 > 0L) c("!" = "{kept_pass_1} reassessed target{?s} kept {?its/their} pass-1 answer because the pass-2 answer was missing or unusable; there is no third pass."),
       if (!is.null(next_packet)) c("i" = "Continuation packet written to {.path {next_packet}}; have the harness answer it, then ingest again.")
     ))
   }
@@ -1207,7 +1265,7 @@ ingest_semantic_assessments <- function(x,
     assessments = record,
     findings = findings,
     suggestions = suggestions,
-    targets = targets[, .ms_semantic_target_cols(), drop = FALSE],
+    targets = session_targets[, .ms_semantic_target_cols(), drop = FALSE],
     dictionary = dictionary,
     summary = summary
   ))

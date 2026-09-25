@@ -161,6 +161,73 @@
   }, character(1))
 }
 
+# A data resource is opened only when `tables.csv` names it with a plain
+# relative path inside the package: no absolute path, no drive letter, no
+# `.` or `..` component, and no symbolic link anywhere in the path. A row
+# that fails the check is skipped with a warning naming it, never followed;
+# `tables.csv` is external text, and a package written by someone else could
+# otherwise point the reader at any file the analyst can open (Codex security
+# review on pull request #194). The package root itself is checked by
+# `.ms_assert_managed_path_contained()` before any packet is written.
+.ms_semantic_review_contained_resource <- function(root, file_name) {
+  text <- .ms_scalar_text(file_name)
+  if (!nzchar(text)) {
+    return(NULL)
+  }
+  normalized <- gsub("\\\\", "/", text)
+  if (startsWith(normalized, "/") || grepl("^[A-Za-z]:", normalized)) {
+    return(NULL)
+  }
+  parts <- strsplit(normalized, "/", fixed = TRUE)[[1]]
+  parts <- parts[nzchar(parts)]
+  if (length(parts) == 0L || any(parts %in% c(".", ".."))) {
+    return(NULL)
+  }
+  current <- root
+  for (part in parts) {
+    current <- file.path(current, part)
+    link <- Sys.readlink(current)
+    if (length(link) == 1L && !is.na(link) && nzchar(link)) {
+      return(NULL)
+    }
+  }
+  if (!file.exists(current) || dir.exists(current)) {
+    return(NULL)
+  }
+  current
+}
+
+.ms_semantic_review_package_resources <- function(path, table_meta, dictionary) {
+  resources <- list()
+  table_meta <- tibble::as_tibble(table_meta)
+  if (nrow(table_meta) == 0L || !all(c("table_id", "file_name") %in% names(table_meta))) {
+    return(resources)
+  }
+  refused <- character()
+  for (i in seq_len(nrow(table_meta))) {
+    table_id <- .ms_scalar_text(table_meta$table_id[[i]])
+    file_name <- .ms_scalar_text(table_meta$file_name[[i]])
+    if (!nzchar(table_id) || !nzchar(file_name)) {
+      next
+    }
+    contained <- .ms_semantic_review_contained_resource(path, file_name)
+    if (is.null(contained)) {
+      refused <- c(refused, file_name)
+      next
+    }
+    table_dict <- dictionary[!is.na(dictionary$table_id) & dictionary$table_id == table_id, , drop = FALSE]
+    resources[[table_id]] <- .ms_read_resource_csv(contained, table_dict)
+  }
+  if (length(refused) > 0L) {
+    cli::cli_warn(c(
+      "Some data resources named in {.file tables.csv} are not plain files inside the package and were not read:",
+      .ms_cli_bullets(refused, "*"),
+      "i" = "Blank slots are still recovered from the metadata; code-level slots of these tables may be missed."
+    ))
+  }
+  resources
+}
+
 # Blank slots with no candidates, recovered by discovery. `semantic_suggestions.csv`
 # holds only candidate rows and the package does not persist its targets, so a
 # slot `create_sdp()` left blank because retrieval found nothing is invisible
@@ -176,11 +243,22 @@
   if (is.null(dict) || nrow(dict) == 0L) {
     return(list(targets = tibble::tibble(), not_covered = tibble::tibble()))
   }
-  package <- read_salmon_datapackage(path)
-  codes <- package$codes %||% tibble::tibble()
-  table_meta <- package$tables %||% tibble::tibble()
-  dataset_meta <- package$dataset %||% tibble::tibble()
-  resources <- package$resources %||% list()
+  # The package's own frames, normalized the way `create_sdp()` saw them, and
+  # its data resources read only through the containment check below: a
+  # `tables.csv` row names its file, and a file name is external text.
+  dict <- .ms_normalize_dictionary(dict)
+  if ("required" %in% names(dict)) {
+    dict$required <- .ms_parse_logical(dict$required)
+  }
+  codes <- .ms_normalize_codes(frames[["codes.csv"]] %||% tibble::tibble())
+  table_meta <- .ms_normalize_table_meta(frames[["tables.csv"]] %||% tibble::tibble())
+  dataset_path <- .ms_locate_metadata_file(path, "dataset.csv")
+  dataset_meta <- if (length(dataset_path) == 1L && !is.na(dataset_path) && file.exists(dataset_path) && !dir.exists(dataset_path)) {
+    .ms_normalize_dataset_meta(tibble::as_tibble(.ms_read_metadata_csv(dataset_path)))
+  } else {
+    tibble::tibble()
+  }
+  resources <- .ms_semantic_review_package_resources(path, table_meta, dict)
   dataset_id <- .ms_semantic_trim_string(dataset_meta$dataset_id) %||% .ms_semantic_trim_string(dict$dataset_id)
   known_slots <- if (!is.null(suggestions) && nrow(suggestions) > 0L) {
     unique(.ms_review_slot_id(.ms_semantic_add_missing_cols(
@@ -240,7 +318,17 @@
 # Targets and candidates for a package path: the review queue plus the blank
 # slots discovery recovers, all re-retrieved at depth `top_n`.
 .ms_semantic_review_package_targets <- function(path, frames, top_n, source_policy, search_fn, code_scope) {
-  queue <- .ms_review_queue(path, include_filled = FALSE, columns = NULL)
+  # A package whose every lookup found nothing has no `semantic_suggestions.csv`
+  # at all (`create_sdp()` writes none for an empty shortlist), and the console
+  # refuses to open a queue without one. That package is exactly the one whose
+  # blank slots discovery has to recover, so an absent or empty shortlist is
+  # an empty queue here, not a refusal.
+  existing <- semantic_suggestions(path)
+  queue <- if (is.null(existing) || nrow(existing) == 0L) {
+    list(review = tibble::tibble(), suggestions = tibble::tibble(), source_row = integer(), review_path = path)
+  } else {
+    .ms_review_queue(path, include_filled = FALSE, columns = NULL)
+  }
   review <- queue$review
   targets <- tibble::tibble()
   if (nrow(review) > 0L) {
@@ -257,7 +345,8 @@
   }
   blank <- .ms_semantic_review_blank_slots(path, frames, queue$suggestions, code_scope)
   if (nrow(blank$targets) > 0L) {
-    targets <- dplyr::bind_rows(targets, blank$targets[!blank$targets$slot_id %in% targets$slot_id, , drop = FALSE])
+    known <- if (nrow(targets) > 0L) targets$slot_id else character()
+    targets <- dplyr::bind_rows(targets, blank$targets[!blank$targets$slot_id %in% known, , drop = FALSE])
   }
   if (nrow(targets) == 0L) {
     return(list(targets = targets, candidates = tibble::tibble(), failed_sources = character(), not_covered = blank$not_covered))
@@ -748,6 +837,12 @@
 #' The packet holds excerpts from your own context documents. It is written
 #' under `review/`, which no publication path reads, and it is never
 #' published.
+#'
+#' For a package path, recovering blank slots re-runs discovery over the
+#' package's own metadata and data. A data resource is opened only when
+#' `tables.csv` names it with a plain relative path inside the package (no
+#' `..`, no absolute path, no symbolic link in the path); any other row is
+#' skipped with a warning.
 #'
 #' @param x A package directory written by [create_sdp()], or a dictionary
 #'   carrying the `semantic_targets` and `semantic_suggestions` attributes
