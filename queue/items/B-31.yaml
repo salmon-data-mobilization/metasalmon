@@ -1,7 +1,7 @@
 id: B-31
 kind: defect
 title: Chat session-engine and request-builder convergence
-state: ready
+state: icebox
 claimable: true
 repo: metasalmon
 venue: claude-code

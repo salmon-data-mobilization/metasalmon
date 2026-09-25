@@ -1,0 +1,13 @@
+id: B-269
+kind: defect
+title: 'The SSSOM reader validates predicate_type, subject_category, object_category and similarity_measure as CURIEs, so every value the specification allows there is refused'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, the SSSOM reader and validator check each of the four columns against the range the SSSOM schema gives it, rather than as a member of .ms_sssom_reference_columns in R/sssom.R: predicate_type accepts the values of entity_type_enum, such as owl annotation property, and refuses any other value; subject_category, object_category and similarity_measure accept free text. The other columns in that list, which the schema types EntityReference or NonRelativeURI, are checked as before. Pinned by a test per column that reads a mapping set carrying one value the specification allows in that column, demonstrated RED on the reader as it stands, with a control that a value outside entity_type_enum is still refused in predicate_type; and a mapping set carrying the four can be written by write_sdp_sssom() and read back. THE METASALMONPY HALF IS B-270, and each names the other.'
