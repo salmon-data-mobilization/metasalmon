@@ -124,38 +124,9 @@ it is what both sides' detectors already encode and what the two `AGENTS.md`
 files name; but the honest answer may be that this is not worth a change.
 **Owner:** [parity row 61](parity-deviations.md).
 
-### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one?
-**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
-verification, each of which is currently costing it at zero.
-Every card in the commons carries `generated` (who wrote it) and `verified`
-(who independently checked it), and the rule that the writer cannot be the
-checker is **prose only**: the two fields share one schema pattern, a
-self-verifying card validates, and that repository has no CI. Twenty-six cards
-carry 250 sources and 623 citations and **not one has ever been verified, in
-any commit on any branch.**
-[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
-ruled the who-half for publication — a card is *stable* when it carries a named
-human `verified` entry and passes its citation ledger — so what is open is the
-what-half: whether an agent re-reading a source counts as independent checking.
-That is genuinely undecided in the documentation rather than merely unwritten,
-which is why it is a question and not a defect.
-**Recommendation:** two tiers with distinct field values, so no card can claim
-more than it earned. `checked` is agent-eligible and never spelled "verified":
-an agent that is not the generator re-resolves every citation by the
-citation-ledger procedure, re-derives each claim from the located passages
-without reading the card's own argument, and records the ledger, its identity
-and the date, with any disagreement moving the card to `disputed` rather than
-leaving a partial check. `verified` stays human-only — a named person who is
-not the generator has read the located passages rather than the summary. Then
-grade the bar to the consequence: one human makes a card verified, *stable*
-needs two humans or one human plus two agreeing `checked` entries, and a card
-that mints, retargets or defines a term wants three.
-**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
-it is what makes B-123's schema split writable.
-
 ### Q40 — Verify one commons card end to end, to find out what verification costs
 **Unblocks:** every estimate that currently assumes verification is free.
-Follows Q39 and B-121. **The point is the measurement as much as the card:**
+Follows Q39 (answered 2026-09-24, below) and B-121. **The point is the measurement as much as the card:**
 until one card has been carried all the way to a real `verified` entry naming a
 human, nobody knows whether verifying a card is twenty minutes or a day, and
 every plan that promises verification has been priced at zero. Choose the card
@@ -1678,3 +1649,56 @@ condition now names the tag.
 Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
 move the pins once it exists; and `B-208` for how a frozen profile keeps the
 schema bytes it was frozen against.
+
+### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one? — ANSWERED 2026-09-24 (Brett)
+**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
+verification, each of which is currently costing it at zero.
+Every card in the commons carries `generated` (who wrote it) and `verified`
+(who independently checked it), and the rule that the writer cannot be the
+checker is **prose only**: the two fields share one schema pattern, a
+self-verifying card validates, and that repository has no CI. Twenty-six cards
+carry 250 sources and 623 citations and **not one has ever been verified, in
+any commit on any branch.**
+[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
+ruled the who-half for publication — a card is *stable* when it carries a named
+human `verified` entry and passes its citation ledger — so what is open is the
+what-half: whether an agent re-reading a source counts as independent checking.
+That is genuinely undecided in the documentation rather than merely unwritten,
+which is why it is a question and not a defect.
+**Recommendation:** two tiers with distinct field values, so no card can claim
+more than it earned. `checked` is agent-eligible and never spelled "verified":
+an agent that is not the generator re-resolves every citation by the
+citation-ledger procedure, re-derives each claim from the located passages
+without reading the card's own argument, and records the ledger, its identity
+and the date, with any disagreement moving the card to `disputed` rather than
+leaving a partial check. `verified` stays human-only — a named person who is
+not the generator has read the located passages rather than the summary. Then
+grade the bar to the consequence: one human makes a card verified, *stable*
+needs two humans or one human plus two agreeing `checked` entries, and a card
+that mints, retargets or defines a term wants three.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
+it is what makes B-123's schema split writable.
+
+**Ruling: the recommendation's two-tier scheme, adopted with one amendment.**
+*"I approve Q-39 but remove the requirement that checks for agent
+co-authorship."* — Brett, 2026-09-24, in chat. So the scheme in the
+[2026-09-14 verification plan](plans/2026-09-14-commons-verification-scheme.md)
+stands, except that its check 2 no longer rejects a `verified` entry whose commit
+carries an agent co-author or agent session trailer. In the same conversation he
+chose where each card's citation ledger lives: *"Use in-card tables."*
+
+**Where the ruling is recorded, which is the authority rather than this entry:**
+the commons' `VERIFICATION.md`, whose lines 3–5 quote the ruling and name the
+scheme it condenses, landed by salmon-knowledge-commons pull request **#16**
+(merged 2026-09-24). Its fields (`generated`, `citations_checked`,
+`corroboration`, `verified`, `disputed_readings`, `cited_by`), its derived
+`status` (`draft` / `checked` / `verified` / `stable` / `disputed`) and its claim
+classes A, B and C are what `B-123` now enforces. None of its checks runs yet;
+that file says so in its own third paragraph.
+
+**What moved:** queue item `Q-39` reached `done` on 2026-09-24 (commit
+`43d7fb3`, which also promoted `B-123`), and `B-123`'s and `Q-40`'s blockers
+dropped it on 2026-09-25 on Brett's chat authorisation *"Q-39 done; B-123 ready
+and claimable"*. Indexed here the same day; the entry above the ruling is left
+as asked, including its "not one has ever been verified", which was true when
+written and is still true at commons commit `cab0248`.
