@@ -137,9 +137,17 @@ test_that("read_github_csv_dir can list and read public content without a token"
 # with 404). The request is built here rather than through the package, so a
 # defect in the package still fails the test instead of becoming a skip.
 #
-# Retires when: these tests stop reaching the network. If ms_github_get()
-# changes the host or how it sends the token, this probe changes in the same
-# commit; the pin below fails until it does.
+# The skip applies only off CI (Brett, 2026-09-25: "keep CI strict, so the new
+# skip applies only off CI"). On CI the probe still sends its request, so the
+# first pin below checks that request there too, but a failed probe returns
+# instead of skipping. The test's own fetch then fails, so a request GitHub
+# refuses on CI is a failure there and not only a line in the skip count. CI is
+# detected the way test-ci-optional-deps.R and test-yaml-expr-guard.R do it.
+#
+# Retires when: these tests stop reaching the network, and the CI condition
+# goes with the probe, never before it. If ms_github_get() changes the host or
+# how it sends the token, this probe changes in the same commit; the first pin
+# below fails until it does.
 skip_unless_raw_github_serves <- function(url, token = "") {
   req <- httr2::request(url) |>
     httr2::req_timeout(30) |>
@@ -149,6 +157,9 @@ skip_unless_raw_github_serves <- function(url, token = "") {
     req <- httr2::req_headers(req, Authorization = paste("token", token))
   }
   resp <- tryCatch(httr2::req_perform(req), error = function(e) e)
+  if (isTRUE(as.logical(Sys.getenv("CI", "false")))) {
+    return(invisible(resp))
+  }
   if (inherits(resp, "error")) {
     testthat::skip(paste("Cannot reach", url, "-", conditionMessage(resp)))
   }
@@ -194,6 +205,8 @@ test_that("the raw-host guard sends the request read_github_csv() sends", {
 
 test_that("the raw-host guard skips when that host refuses the request or cannot be reached", {
   skip_if_not_installed("httr2", "1.0.0")
+  # Off CI, the only place the guard skips. The next test pins the CI half.
+  withr::local_envvar(CI = NA)
   url <- "https://raw.githubusercontent.com/owner/repo/main/data/file.csv"
   guard_skip <- function(mock) {
     httr2::local_mocked_responses(mock)
