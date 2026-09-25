@@ -1552,42 +1552,56 @@
 # the likely ontology gap is surfaced to the new-term workflow instead of being
 # left as a dead-end rejection. A reassessment that turns into accept (or a softer
 # review/retry_search) is left untouched.
+#
+# The rule is "any FINAL reject_shortlist escalates", whatever the decision
+# before the retry was (hub item B-361, Brett's 2026-09-25 ruling on decision
+# 10 of the S16 execplan). Until then this escalated only when the pre-retry
+# decision was also a rejection, so retry_search followed by reject_shortlist
+# was stored as a dead end, which contradicted AGENTS.md. `pre_assessment` may
+# be NULL when there is no earlier answer for the target; it is used only to
+# label the rationale when the earlier answer was itself a rejection.
 .ms_llm_escalate_unresolved_rejection <- function(pre_assessment, explored) {
-  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
-  if (!identical(pre_decision, "reject_shortlist")) {
-    return(explored)
-  }
-
   assessment <- explored$assessment
   post_decision <- .ms_llm_non_empty_string(assessment$llm_decision[[1]] %||% NA_character_)
   if (!identical(post_decision, "reject_shortlist")) {
     return(explored)
   }
 
-  assessment$llm_decision <- "request_new_term"
-  assessment$llm_selected_candidate_index <- NA_integer_
-  assessment$llm_selected_iri <- NA_character_
-  assessment$llm_selected_label <- NA_character_
-  assessment$llm_escalated_from <- "reject_shortlist"
+  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
   pre_rationale <- .ms_llm_non_empty_string(
     pre_assessment$llm_rationale[[1]] %||% NA_character_
   )
   post_rationale <- .ms_llm_non_empty_string(
     assessment$llm_rationale[[1]] %||% NA_character_
   )
+
+  assessment$llm_decision <- "request_new_term"
+  assessment$llm_selected_candidate_index <- NA_integer_
+  assessment$llm_selected_iri <- NA_character_
+  assessment$llm_selected_label <- NA_character_
+  assessment$llm_escalated_from <- "reject_shortlist"
+
   rationale_parts <- character()
-  if (!is.na(pre_rationale)) {
-    rationale_parts <- c(
-      rationale_parts,
-      paste0("Initial shortlist rejection: ", pre_rationale)
-    )
-  }
-  if (!is.na(post_rationale) &&
-      (is.na(pre_rationale) || !identical(post_rationale, pre_rationale))) {
-    rationale_parts <- c(
-      rationale_parts,
-      paste0("Post-retry shortlist rejection: ", post_rationale)
-    )
+  if (identical(pre_decision, "reject_shortlist")) {
+    # The earlier answer was a rejection too: keep both, labelled, when they
+    # differ, and the initial one alone when the retry repeated it.
+    if (!is.na(pre_rationale)) {
+      rationale_parts <- c(
+        rationale_parts,
+        paste0("Initial shortlist rejection: ", pre_rationale)
+      )
+    }
+    if (!is.na(post_rationale) &&
+        (is.na(pre_rationale) || !identical(post_rationale, pre_rationale))) {
+      rationale_parts <- c(
+        rationale_parts,
+        paste0("Post-retry shortlist rejection: ", post_rationale)
+      )
+    }
+  } else if (!is.na(post_rationale)) {
+    # The earlier answer was not a rejection (or there was none), so the
+    # final rationale is the only rejection rationale and needs no label.
+    rationale_parts <- c(rationale_parts, post_rationale)
   }
   note <- paste(
     "Shortlist rejected and exploration found no acceptable candidate;",
@@ -1776,6 +1790,20 @@
   parsed
 }
 
+# Append a package note to a rationale that may be NA or empty. The parts join
+# with one space and an absent rationale contributes nothing, so a downgrade
+# with no rationale never starts with the literal text "NA " (hub item B-361,
+# defect 4: `paste(c(NA, note))` rendered the NA, and `nzchar(NA)` is TRUE so
+# the filter that was meant to drop it did not).
+.ms_llm_append_note <- function(rationale, note) {
+  parts <- c(rationale, note)
+  parts <- parts[!is.na(parts) & nzchar(parts)]
+  if (length(parts) == 0L) {
+    return(NA_character_)
+  }
+  paste(parts, collapse = " ")
+}
+
 .ms_validate_llm_assessment <- function(result, candidate_rows) {
   decision <- tolower(.ms_llm_non_empty_string(result$decision %||% NA_character_))
   aliases <- c(propose_new_term = "request_new_term")
@@ -1787,11 +1815,16 @@
     cli::cli_abort("LLM assessment must return decision = accept, review, retry_search, request_new_term, or reject_shortlist.")
   }
 
+  # The index is read as a number here and cast to integer only once it has
+  # passed the whole-number and range checks below. `as.integer()` truncates,
+  # which is what let 1.9 select candidate 1 (hub item B-361, defect 3). A
+  # value that is not a number at all reads as NA, meaning no candidate was
+  # selected.
   selected_index <- .ms_llm_first_scalar(result$selected_candidate_index %||% NULL)
   if (is.null(selected_index) || identical(as.character(selected_index), "") || isFALSE(length(selected_index) > 0)) {
-    selected_index <- NA_integer_
+    selected_index <- NA_real_
   } else {
-    selected_index <- suppressWarnings(as.integer(selected_index))
+    selected_index <- suppressWarnings(as.numeric(selected_index))
   }
 
   confidence <- .ms_llm_scalar_numeric(result$confidence %||% NA_real_)
@@ -1808,40 +1841,40 @@
 
   if (identical(decision, "accept") && is.na(selected_index)) {
     decision <- "review"
-    rationale <- paste(
-      c(
-        rationale,
-        "Model returned accept without selecting a candidate; downgraded to review."
-      )[nzchar(c(rationale, "Model returned accept without selecting a candidate; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model returned accept without selecting a candidate; downgraded to review."
     )
   }
-  if (!is.na(selected_index) && (selected_index < 1L || selected_index > nrow(candidate_rows))) {
+  if (!identical(decision, "accept")) {
+    # These decisions never select a candidate, so the index is cleared BEFORE
+    # it is range-checked: a reject_shortlist carrying a stray out-of-range
+    # index used to be downgraded to review here, and its ontology gap was
+    # then never escalated (B-361, defect 2). reject_shortlist is preserved as
+    # a distinct decision (not downgraded to review) so the stored
+    # llm_decision carries the rejection; the orchestration later escalates a
+    # final rejection to request_new_term via
+    # .ms_llm_escalate_unresolved_rejection().
+    selected_index <- NA_integer_
+  } else if (selected_index != trunc(selected_index)) {
+    cli::cli_abort(
+      "LLM assessment selected_candidate_index must be a whole number, not {format(selected_index, digits = 15)}."
+    )
+  } else if (selected_index < 1 || selected_index > nrow(candidate_rows)) {
     decision <- "review"
     selected_index <- NA_integer_
-    rationale <- paste(
-      c(
-        rationale,
-        "Model returned an out-of-range candidate index; downgraded to review."
-      )[nzchar(c(rationale, "Model returned an out-of-range candidate index; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model returned an out-of-range candidate index; downgraded to review."
     )
-  }
-  # These decisions never select a candidate. reject_shortlist is preserved here
-  # as a distinct decision (not downgraded to review) so the stored llm_decision
-  # carries the rejection; the orchestration later escalates an unresolved
-  # rejection to request_new_term via .ms_llm_escalate_unresolved_rejection().
-  if (!identical(decision, "accept")) {
-    selected_index <- NA_integer_
+  } else {
+    selected_index <- as.integer(selected_index)
   }
   if (identical(decision, "retry_search") && is.na(retry_query)) {
     decision <- "review"
-    rationale <- paste(
-      c(
-        rationale,
-        "Model requested retry_search without providing a retry query; downgraded to review."
-      )[nzchar(c(rationale, "Model requested retry_search without providing a retry query; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model requested retry_search without providing a retry query; downgraded to review."
     )
   }
 
