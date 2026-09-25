@@ -545,6 +545,20 @@ as a Python defect rather than a design difference, but
 for its own item and the B-55 workpad has the evidence. No register row is added
 here, because adding one is Brett's.
 
+**This one is closed.** `B-241` landed as metasalmonpy pull request **#43**
+(`85ebbb0`) on 2026-09-25, changing the codes block of
+`apply_salmon_dictionary()` in `dictionary.py`. One `RuntimeWarning` per column
+names each distinct unlisted value under either value of `strict`, and the value
+is blanked before `pd.Categorical` is built, so the step no longer relies on the
+construction pandas deprecates. The step runs only on a character or categorical
+column, through `_code_list_applies()`, which is R's
+`inherits(x, "character") || inherits(x, "factor")` guard. So an `integer`,
+`number`, `boolean` or `date` column with a code list keeps its values
+unreported, as in R, where before the port metasalmonpy blanked them without a
+word. `ApplyDictionaryFailureReportTests` in `tests/test_dictionary.py` pins both
+halves, including the `strict=True` coercion raise, which needed only a test. The
+`code_label` defect above is outside the port and was not changed by it.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
 column's codes share its role.** A measurement column's `entity_iri` and

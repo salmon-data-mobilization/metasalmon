@@ -541,7 +541,7 @@ port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
 measuring it that is not part of the port. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-241`.
+`B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
