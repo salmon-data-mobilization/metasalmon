@@ -1,7 +1,7 @@
 id: B-338
 kind: defect
 title: 'hub done has no hand-back for a shared repository, where nothing is pushed, so a hand-back shown in chat leaves no claim record'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
