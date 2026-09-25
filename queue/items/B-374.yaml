@@ -1,0 +1,12 @@
+id: B-374
+kind: defect
+title: 'metasalmonpy''s port of check-changelog-window.py also exits 1 when it crashes, the mirror half of B-373'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: [B-373]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the two cases B-373 names hold for scripts/check-changelog-window.py as they do for the hub''s copy: an OSError where the script starts git, such as git absent from PATH, is raised as CannotRun and exits 2 with "cannot run" and the cause on standard error; and any other exception that escapes run() keeps its full traceback, is not described as missing input, and exits with the code the hub''s half chose, never 1. Pinned by tests in tests/test_check_changelog_window.py, RED on the copy as it stands, and TestTheHubCopy passes against the hub''s copy once both halves have landed. THE HUB HALF IS B-373, and each names the other.'

@@ -1,0 +1,13 @@
+id: B-379
+kind: defect
+title: 'On the serial path an error that escapes run_source()''s own handler still aborts find_terms(), where the forked path records it'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Wherever find_terms() runs a source without forking, which it always does for smn and gcdfo and does for the other sources whenever parallel search is switched off, one source or one worker remains, or the platform is Windows, an error that escapes run_source()''s own handler is recorded as .ms_checked_worker_results() records it on the forked path: that source''s diagnostic has status "error", count 0 and the redacted message, the did-not-answer warning is raised, nothing is cached, and the other sources'' rows are kept. Pinned by a test that forces the escape by making .ms_is_timeout_error() fail inside the handler, as the forked-path test in tests/testthat/test-term-search.R does, with METASALMON_TERM_SEARCH_PARALLEL=false; the test is RED on the code as it stands, where find_terms() aborts. THE METASALMONPY HALF IS B-387, and each names the other.'
