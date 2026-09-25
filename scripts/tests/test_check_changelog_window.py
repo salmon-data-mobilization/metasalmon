@@ -337,6 +337,37 @@ class TestWhatItDoesNotCover(WindowTestCase):
         })
         self.assertExit(repo.check("--no-exemption"), EXIT_OK)
 
+    def test_reordering_shipped_bullets_is_not_a_finding(self):
+        # A moved line is not absent from the section at the bump, though the
+        # diff removes it in one place and inserts it in another and blame
+        # credits whoever moved it.
+        repo = Fixture(self.tmp / "repo")
+        bullets = ["* First shipped bullet.\n", "* Second shipped bullet.\n",
+                   "* Third shipped bullet.\n"]
+        repo.commit("Bump the version to 0.1.0", {
+            "DESCRIPTION": DESCRIPTION.format("0.1.0"),
+            "NEWS.md": V010 + "".join(bullets),
+        })
+        repo.commit("Put the third bullet first", {
+            "NEWS.md": V010 + bullets[2] + bullets[0] + bullets[1],
+        })
+        self.assertExit(repo.check("--no-exemption"), EXIT_OK)
+
+    def test_a_line_moved_in_from_another_heading_is_red(self):
+        # Moving is forgiven within a section only. A line moved under a
+        # released heading from anywhere else changes that release's record.
+        repo, _ = self.released()
+        repo.commit("A late fix, under development", {
+            "NEWS.md": DEV + "* A late fix.\n\n" + V010 + SHIPPED,
+        })
+        self.assertExit(repo.check(), EXIT_OK)
+        repo.commit("Move it under the release", {
+            "NEWS.md": DEV + V010 + SHIPPED + "* A late fix.\n",
+        })
+        done = repo.check()
+        self.assertExit(done, EXIT_FINDINGS)
+        self.assertIn("* A late fix.", done.stderr)
+
     def test_a_new_line_beside_a_line_changed_in_place_is_still_red(self):
         # One replaced run: the shipped line is edited and a new line is written
         # beside it. The edit stands for the line it replaced; the new one is
