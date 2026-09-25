@@ -1,0 +1,13 @@
+id: B-370
+kind: defect
+title: 'metasalmonpy create_sdp() with its defaults raises at pd.concat once two targets get search candidates, because every find_terms() answer carries a DataFrame in attrs'
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P1
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, suggest_semantics() completes when the search answers it collects carry a DataFrame in attrs, as every find_terms() answer does: the candidate frames reach pd.concat without the attrs of the search that returned them, and what a caller reads from find_terms()''s own attrs is unchanged. A test pins it with a search stub whose answers carry attrs["diagnostics"] as a DataFrame, for two or more targets that get candidates, through both suggest_semantics() and create_sdp() with its defaults (semantic seeding on, no search_fn passed), and asserts that both complete and keep the candidates; the test is RED on the code as it stands. B-243''s outage test then answers with a candidate, as metasalmon''s twin does, which retires the guard B-243''s workpad records for that test. No metasalmon half is owed: the failure is pandas'' attrs comparison, which R does not have.'

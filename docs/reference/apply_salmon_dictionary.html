@@ -80,13 +80,22 @@ packaging.</p>
 
 <dt id="arg-strict">strict<a class="anchor" aria-label="anchor" href="#arg-strict"></a></dt>
 <dd><p>Logical; if <code>TRUE</code> (default), errors on type coercion
-failures; if <code>FALSE</code>, warns and coerces to character</p></dd>
+failures; if <code>FALSE</code>, warns and coerces to character. A coercion failure
+is one that R reports with a warning as well as one it reports with an
+error, so a column typed <code>integer</code> holding <code>"abc"</code> is a failure even
+though <code>as.integer("abc")</code> only warns and returns <code>NA</code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A tibble with renamed columns, coerced types, and factor levels
 applied</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>A value that is not in its column's code list has no factor level, so it
+becomes <code>NA</code>. Each such value is named in a warning, whatever <code>strict</code> is.
+Blank strings are treated as missing and are not reported.</p>
     </div>
 
     <div class="section level2">

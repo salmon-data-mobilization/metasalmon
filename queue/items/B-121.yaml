@@ -1,7 +1,7 @@
 id: B-121
 kind: defect
 title: Regenerate the smn PR 27 replacement literals from the commons cards
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 severity: P2

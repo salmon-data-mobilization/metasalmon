@@ -547,6 +547,15 @@ B-144's entry filed under `## 0.5.0` when `b939fd9` descends from the bump
 mirror repository carries the fix already and owes only the written rule and
 its check.
 
+**This one is closed.** `B-201` **landed 2026-09-25 as metasalmonpy #59**,
+`380a7a4`: metasalmonpy's `AGENTS.md` *Releases* section states the rule and
+names the check as its pre-release step, and `scripts/check-changelog-window.py`,
+a port of the hub's copy kept aligned with it by a test, runs on every pull
+request. It applies Brett's 2026-09-25 ruling on `v0.2.1`: a dated correction
+under `## 0.2.1`, and an exemption for `10d0616` that holds only while that
+correction names it. The paragraph above is the dated record of what was owed,
+and is kept as written.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-23):
 a recorded hand-picked accept is not ontology-gap evidence.** Pull request #146
 (hub item **B-176**) makes `detect_semantic_term_gaps()` drop the
@@ -608,7 +617,8 @@ metasalmonpy's `suggest_semantics()` still searches once per target, measured at
 40 calls for 9 tuples on `main` `85ebbb0`, so it is owed there as a port, not a
 register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
-covers one branch in one repository. Its metasalmonpy half is `B-243`.
+covers one branch in one repository. Its metasalmonpy half is `B-243`, which
+**landed 2026-09-25 as metasalmonpy #57**, `0235487`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Hub
@@ -646,7 +656,8 @@ by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
 not a register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
 covers one branch in one repository, and metasalmonpy #49 had merged before the
-R half found it. Its metasalmonpy queue item is `B-244`.
+R half found it. Its metasalmonpy queue item is `B-244`, which **landed
+2026-09-25 as metasalmonpy #61**, `056fccc`.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): EML `calendarDate` carries the spelling
@@ -658,7 +669,8 @@ measured on `main` `012d04b`. So the same answer holds there, and nothing pins
 it. What is owed there is the twin tests, not a port and not a register row.
 They are specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
-branch in one repository. Its metasalmonpy queue item is `B-245`.
+branch in one repository. Its metasalmonpy queue item is `B-245`, which **landed
+2026-09-25 as metasalmonpy #62**, `6700062`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file.** Hub item **B-233** makes
@@ -671,6 +683,14 @@ not a register row. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, with the specification passages it applies
 rather than decides again. **Why not in the same stream:** a hub claim covers
 one branch in one repository. Its metasalmonpy half is `B-234`.
+
+**This one is closed.** `B-234` **landed 2026-09-25 as metasalmonpy #58**,
+`66ad1a3`: the SSSOM reader accepts the eight built-in prefixes when a file's
+`curie_map` leaves them out, `_validate_builtin_prefixes()` refuses a
+`curie_map` entry that gives a built-in any other expansion (an in-memory set
+handed to `write_sdp_sssom()` included), and the six twin tests run on a
+canonical fixture byte-identical to R's. The paragraph above is the dated record
+of what was owed, and is kept as written.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a required IRI field under a selected schema is reported
@@ -711,6 +731,23 @@ register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
 branch in one repository, and the port that followed B-55 left it out. Its
 metasalmonpy queue item is `B-275`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the direct `suggest_semantics()` call keeps `llm_top_n` candidates per role for
+the LLM, and `DESCRIPTION` declares `frictionless`.** Hub item **B-57** (backlog
+#57) widens the direct call's retrieval to the larger of `max_per_role` and
+`llm_top_n` when `llm_assess = TRUE`, the rule every wrapper already applied, so
+the LLM is shown the shortlist `llm_top_n` asks for. It also names Python 3 and
+the `frictionless` Python package in `SystemRequirements`, for
+`dwc_dp_build_descriptor(validate = TRUE)`. metasalmonpy's first review round
+shows the LLM 3 candidates under the same defaults, measured on `main`
+`f1f7230`, and its `pyproject.toml` does not declare `frictionless`. Both are
+owed there as a port, not a register row. The port is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. B-57's other two
+fixes owe metasalmonpy nothing, which was measured: its `find_terms()` has no
+parallel worker to fail, and its ICES helpers already behaved as R now does.
+**Why not in the same stream:** a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is `B-302`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
