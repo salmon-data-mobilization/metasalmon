@@ -731,6 +731,19 @@ parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the ICES helpers warn when the request fails.** Hub item **B-377** makes
+`ices_code_types()`, `ices_codes()`, `ices_find_code_types()` and
+`ices_find_codes()` warn, naming the request, when it is refused or answered
+with an HTTP error, where they returned the empty tibble an answer of `[]` gets
+and said nothing. The result is still that empty tibble, which is why it is a
+warning and not an error. metasalmonpy's helpers give an empty `DataFrame` with
+no warning in all three cases, measured on `main` `056fccc` by the second
+2026-09-25 queue sweep. It is owed there as a port, not a register row, and is specified
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
+not in the same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is `B-378`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
