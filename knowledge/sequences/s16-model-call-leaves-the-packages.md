@@ -91,9 +91,9 @@ holds the order and the reasons for it.
    low-confidence answers, on a rejected shortlist, before it escalates;
    metasalmonpy retries on `retry_search` only. In the file contract a retry is
    a continuation packet holding the widened shortlist, which the harness
-   answers before the ingester merges or escalates that target. Whether a
-   rejected shortlist earns a second pass before it escalates is one of the
-   divergences whose direction is Brett's.
+   answers before the ingester merges or escalates that target. A rejected
+   shortlist earns no second pass: it escalates at once, as metasalmonpy does
+   today, which is the design Brett adopted with the execplan's section 10.
 2. **The Theme A harness split: `B-328`.** Keep the replay of the recorded
    fixtures against their required, allowed and forbidden oracles, which is
    what the Foundry plan's pilot anchor for [Q23](../questions.md) reproduces.

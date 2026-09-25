@@ -246,6 +246,18 @@ re-retrieved at depth `top_n` with its recorded `search_query`, the precedent
 would silently drop every slot `create_sdp()` pre-filled with a `REVIEW:`
 marker, because the discovery code treats a marked slot as filled.
 
+**Targets with no candidates are recovered separately,** because
+`semantic_suggestions.csv` holds only candidate rows and the package does not
+persist its targets. A slot with no candidate is one `create_sdp()` left
+*blank*, never `REVIEW:`-marked, and a blank slot is exactly what discovery
+does see. So for every writable IRI slot that is blank, has no suggestion row
+and has no recorded decision, the exporter rebuilds the target by running the
+same discovery `create_sdp()` ran, restricted to those slots. The one thing it
+cannot recover is a code scope the caller chose at creation, because nothing
+records it: the packet records the scope it used, and a code-level slot outside
+it is listed in the summary as not covered rather than silently dropped. These
+are the strongest term-gap cases, which is why losing them is not acceptable.
+
 **For in-memory input,** the targets and candidates are the dictionary's own
 attributes and no retrieval runs.
 
@@ -349,8 +361,12 @@ identical ingest results in both languages.
 
 The package directory or the in-memory object the packet was built from; the
 assessment file (a CSV path or a data frame, defaulting to the pass's file in
-`review/`); the packet (defaulting to the latest pass); an optional expected
-`packet_id`; optional `provider` and `model` overrides for columns 10 and 11;
+`review/`); the packet (defaulting to the latest pass); **the `packet_id` the
+assessments were made against, which is required**, supplied either by the
+harness in a one-line sidecar beside its CSV (`<csv>.packet-id`, copied from the
+packet it judged, as the instructions tell it to) or as an argument, because the
+frozen 30-column row has nowhere to carry it; optional `provider` and `model`
+overrides for columns 10 and 11;
 `search_fn` for the retry; `review_dir`; and `quiet`.
 
 ### 3.2 The assessment file
@@ -383,7 +399,10 @@ escaping helpers.
 
 **A file-level problem aborts the ingest and writes nothing,** with a stable
 code both languages test the same way: `packet_version`, `packet_integrity` (the
-recomputed `packet_id` does not match), `packet_mismatch`, `header`,
+recomputed `packet_id` does not match), `packet_unbound` (neither a sidecar
+nor an argument names the packet the assessments were made against, so a stale
+file could otherwise be recorded under a newer packet's provenance),
+`packet_mismatch` (the packet named is not the one being ingested), `header`,
 `unknown_target`, `duplicate_target`, `provenance` and `no_pass_2`.
 
 **A row-level problem makes that row an error row or downgrades it with a
@@ -428,15 +447,20 @@ more roles are accepted, so a later pass never reverses an earlier one.
 
 The merge sets `llm_selected` only for an `accept` (R changes) and caps the rank
 at `top_n` (Python changes). The ingester writes, as one atomic set after the
-containment check: the harness file as received, `review/semantic-llm-assessments.csv`
+containment check: `review/semantic-llm-assessments.csv`
 (the record, one row per pass-1 target, numbers through the shared formatter,
 logicals as `TRUE`/`FALSE`, NA as empty), `review/semantic-validator-findings.csv`,
 the pass-2 packet when a retry gained candidates, and, for a package path, the
 rows of `semantic_suggestions.csv` for targets whose slots are still undecided.
 Decisions, decision reasons and hand-picked rows are preserved, and a slot
 decided between build and ingest keeps its rows. `semantic_llm_assessments(path)`
-then reads the typed record with the findings attached. **The ingester never
-touches the metadata CSVs:** applying a choice stays `review_semantics()` →
+then reads the typed record with the findings attached. **No unredacted copy of
+harness text survives.** Every harness-owned free-text value is redacted at
+capture, as `AGENTS.md` requires, before it reaches the record; the ingester
+never copies a harness file into `review/`; and when the harness wrote its file
+at the packet's default location inside `review/`, the ingester replaces that
+file with its redacted form after a successful ingest and warns if anything
+was redacted. **The ingester never touches the metadata CSVs:** applying a choice stays `review_semantics()` →
 `accept_suggestion()` → `apply_sdp_semantics()`.
 
 ### 3.6 Return value
@@ -457,6 +481,11 @@ types and validate against the vendored row schema.
 ## 4. The second pass
 
 This is what "a retry is a second harness pass" in `B-326` means in detail.
+**A `reject_shortlist` earns no second pass.** It escalates at once under
+decision 10, and a harness that wants a wider search asks for one with
+`retry_search`, which is what the instructions say (§3.4). That is
+metasalmonpy's behaviour today; R's in-package path, which gives some rejections
+a second pass, moves.
 
 1. **At pass 1,** each `retry_search` with a usable query is retrieved again
    inside the package, under the packet's source policy and depth, through the
@@ -655,7 +684,9 @@ ruling, and the recommendation text is kept as it was put to him.
    is a direction ruled per divergence, as `AGENTS.md` requires, not an "R
    leads" default.
 10. **The escalation rule (§0.9).** Recommended: any final `reject_shortlist`
-    escalates, with R moving, because R's rule contradicts `AGENTS.md`.
+    escalates, with R moving, because R's rule contradicts `AGENTS.md`. Under
+    the design this plan recommends, a rejected shortlist earns no second pass
+    (§3.4), so at pass 1 a rejection is already final.
 11. **The four latent defects (§0.8), fixed in the shared code,** so the legacy
     path is fixed too. Recommended: yes.
 12. **The new rejection reason `identifier_like_query`.** Recommended: yes.
