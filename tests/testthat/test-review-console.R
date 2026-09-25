@@ -766,9 +766,11 @@ test_that("accept_suggestion(iri =) takes a term retrieval never surfaced", {
 #
 # One test per spelling `.ms_strip_review_iri()` removes, because the check has
 # to agree with the strip. Which spellings count as the marker is hub question
-# Q-63, so this list is what the strip removes today, not a ruling. Each test
-# asserts that premise first, so a change to the strip fails here and names
-# the spelling rather than leaving a test that checks nothing.
+# Q-63, so this list is what the strip removes today, not a ruling, and it
+# follows the strip: when Q-63 is ruled, a spelling the ruling drops leaves the
+# list and one it adds joins it. Each test asserts that premise first, so a
+# change to the strip fails here and names the spelling rather than leaving a
+# test that checks nothing.
 marker_only_iris <- c(
   "the bare marker" = "REVIEW:",
   "the marker as the package writes it" = .ms_review_iri_prefix(),
