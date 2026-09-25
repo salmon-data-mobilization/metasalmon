@@ -133,7 +133,12 @@ not: `psc-salmon-vocabularies` lives on PSC's GitLab, and
 the ruled membership test as of 2026-08-24; it is the only one in this bundle,
 and the roadmap now states it in the same words. In particular, `psc-data-systems`,
 `psc-data-systems-site`, `campModelInput`, and `ctc-knowledge-map` are external
-to the hub. When one matters to this domain, the hub records only a typed
+to the hub, and so is `tern` (`Symecology-Institute/tern`, formerly
+`era-claude`): a requirements-driving consumer of the commons exports,
+metasalmonpy term search and the S14 gates, and a tool the Foundry may consume,
+recorded as a typed edge in the [roadmap](../roadmap.md) on 2026-09-25 and not
+as a member, because its sequencing lives in its own `PLAN.md`. When one
+matters to this domain, the hub records only a typed
 dependency edge with its owner, required artifact or gate, owning plan, and
 observation date; it does not absorb that repository's tasks, status, branches,
 approvals, or releases.
