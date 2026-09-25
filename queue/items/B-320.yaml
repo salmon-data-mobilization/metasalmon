@@ -1,0 +1,13 @@
+id: B-320
+kind: defect
+title: 'Land commons pull request 25: every stale_after a full UTC instant, and a validator that refuses one that is not a real instant'
+state: done
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'Commons pull request 25 is merged. It moves every card''s stale_after from a date to a full instant with an explicit UTC offset, makes a date-only stale_after a schema error, and has scripts/okf-check.py compare staleness as instants. THE CODEX FINDING ON 1c8974c IS PART OF THIS CONDITION, NOT A FOLLOW-UP: the digit-width pattern that commit added accepts quoted values that are not instants, such as 2027-13-40T25:61:61Z and 2027-02-29T00:00:00Z, and a quoted value also skipped the staleness comparison. So the pull request retires this item only once the validator refuses a value that is not a real calendar instant, whichever type YAML hands it. Brett merges it: CONTRIBUTING reserves the schema and the validator to a human, and the commons has no CI, so no check could be green. First in the order Brett ruled on 2026-09-25 (Q68); B-321 is stacked on it. SATISFIED 2026-09-25: commons pull request 25 merged as c35ca9c with the fix in 804bf56, which checks stale_after as a real instant through a format checker whether YAML hands it a string or a datetime, and reports an unquoted invalid instant as an error against its card where it used to crash the validator.'

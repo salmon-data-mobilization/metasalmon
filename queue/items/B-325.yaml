@@ -1,0 +1,13 @@
+id: B-325
+kind: defect
+title: 'Backfill sources[].published on the commons cards once the field exists'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-science
+stream: S6
+severity: P3
+blocked_by: [B-322]
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'Every source on every commons card whose publication date can be found carries sources[].published, read from the source itself or from the registration metadata of its DOI rather than inferred, in a pull request confined to concepts/ in which each value can be traced to where it was read. A source with no findable date is listed rather than guessed. NOT IN THE ORDER BRETT RULED ON 2026-09-25 (Q68), which is why this item is not promoted: he named the field, not the backfill. When it runs is his to set, and it is cheapest before any card carries a verification entry, because sources are inside the digest such an entry records; the S6 card has the measurement.'
