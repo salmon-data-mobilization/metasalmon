@@ -705,6 +705,20 @@ metasalmon (development version)
   so the footer change is owed there as a port, hub item B-244 (see
   `knowledge/parity-deviations.md`).
 
+* **`DESCRIPTION` now declares the Python toolchain that
+  `dwc_dp_build_descriptor(validate = TRUE)` runs** (backlog #57, hub item
+  B-57). Validation writes a Python script, runs it with the interpreter the
+  `python` argument names, and imports the `frictionless` Python package.
+  Neither is an R dependency, and nothing in the package's metadata said they
+  were needed. `SystemRequirements` now names both and says they are optional.
+  What the function does with the validation result is unchanged: it still
+  prints the report and returns the descriptor whatever the report says. That
+  is hub item B-300.
+
+  **Mirror:** metasalmonpy imports `frictionless` in-process, and its
+  `pyproject.toml` does not declare it, not even as an optional extra. The
+  declaration is owed there as part of hub item B-302.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
