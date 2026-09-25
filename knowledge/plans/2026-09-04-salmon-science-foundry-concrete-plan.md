@@ -184,7 +184,7 @@ place (**corrected**, with the finding ids from Appendix D), or replaced
 | Section | Change | Driven by |
 |---|---|---|
 | 7-D Scale | the pilot anchor names the replay/oracle half of the Theme A harness rather than one script subcommand; dated note beneath | Q23 unchanged; the harness's live side is another item's subject |
-| 10 issue table | issue 10 loses "→ institute" and "rename"; issues 13 and 16 leave Stage B for queue items `B-280`, `B-278` and `B-279`; dated notes beneath the table | Q26; the `tern` edge in the roadmap |
+| 10 issue table | issues 13 and 16 leave Stage B for queue items `B-280`, `B-278` and `B-279`; dated notes beneath the table | the `tern` edge in the roadmap |
 
 ### 0.3 The verdict, in one paragraph
 
@@ -1946,7 +1946,7 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 | 7 | the institute organization's `salmon-science-foundry` (Q35) | Create the repository with its `knowledge/` bundle, v0.1 contracts, the Tier 0 ledger, and the `Rscript` adapter; one real `create_sdp()` call writes a receipt (C1) | A | backend agent | bundle validates; receipt fixture; approval bound to a digest; no credential in the repo |
 | 8 | the SalmonBench repository (Q26) | SalmonBench task schema, contributor guide, Inspect harness, and the 25-task pilot from S12 | A | benchmark agent, second key holder named | every task deterministic; canary present; keys encrypted; five-epoch smoke run reports `pass^k` |
 | 9 | `metasalmon`, `metasalmonpy` (or the sibling pair, Q27) | `salmon fetch nuseds` with a DatasetReceipt; source registry seeded from `smn-sci-plgn` cards | A | data-access agent | snapshot plus receipt feeds `create_sdp()` on the gold standard's source; live test scheduled |
-| 10 | `smn-sci-plgn` | Repoint at metasalmon 0.5.0, add the Claude plugin manifest, retire duplicated scripts | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
+| 10 | `smn-sci-plgn` → institute | Repoint at metasalmon 0.5.0, rename, add the Claude plugin manifest, retire duplicated scripts | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
 | 11 | four core repositories | Zenodo archiving, `CITATION.cff`, `inst/CITATION`; resolve `Codex [aut]` | A | docs agent, Brett approves authorship | a DOI on the next tag of each |
 | 12 | `salmon-domain-ontology`, `smn-data-pkg` | Draft `GOVERNANCE.md` for the RDA working group's review | B | docs agent, Brett and the WG | editorial group, change classes, CODEOWNERS with two humans, unavailability clause |
 | 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | queue `B-280`; out of Stage B 2026-09-25 | semantic agent | deterministic distribution from a clean checkout; no publication |
@@ -1957,11 +1957,6 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 **Added 2026-09-05 for S15 and S16.** Issues 17 to 19 are the coordination
 change; issue 20 is the PSC ontology and is filed in the PSC organization
 through the PSC-DSC intake, not here.
-
-**Corrected 2026-09-25.** Issue 10 read "`smn-sci-plgn` → institute" and
-"rename" until today, which contradicted Q26 (2026-09-05: `smn-sci-plgn` stays
-a personal repository, repointed at metasalmon 0.5.0 in place, and is not
-renamed). Both words are dropped; the acceptance test is unchanged.
 
 **Re-sequenced 2026-09-25.** Issues 13 and 16 read Stage B until today. Both
 now live in the hub queue — the compiler as `B-280`, the `--gaps` reader as the
