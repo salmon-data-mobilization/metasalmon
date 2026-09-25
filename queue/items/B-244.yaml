@@ -2,7 +2,7 @@ id: B-244
 kind: defect
 title: 'metasalmonpy review_metadata() leaves an IRI field reported as a placeholder out of its IRI count, and drops the review_semantics() pointer when every IRI gap is one'
 state: ready
-claimable: true
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5
