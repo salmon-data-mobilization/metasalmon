@@ -115,6 +115,14 @@ under `queue/`.
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
   This is the contract behind the 0.1.4 fix; supplying options that will be ignored
   should warn, not silently no-op.
+  **Ruled 2026-09-25 (Brett, hub Q67): the model call leaves both packages.**
+  This contract governs every release that still carries the in-package call.
+  The additive release (hub item B-326) deprecates that call, and the removal
+  release (B-329) deletes it, at which point this becomes the stronger contract
+  that the packages make no model call at all. Until then, work that only
+  improves the provider path has at most the releases before the removal to
+  matter in. The order, and what stays, is the
+  [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
@@ -127,7 +135,10 @@ under `queue/`.
   (`.ms_semantic_target_cols()`) and the ~30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
-  must keep identical column sets.
+  must keep identical column sets. **The assessment row outlives the provider
+  code** (hub Q67, 2026-09-25): it becomes the contract a harness writes and the
+  package's assessment ingester reads, so it stays frozen after the model call
+  is gone.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
 - **A semantic role is a contract across seven surfaces, not a string.** Adding
@@ -363,7 +374,7 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
   and the cross-repo release index.** Undated, edited in place, the single
   sequencing authority for the whole ecosystem. Start here.
-- **`knowledge/sequences/`** — one card per stream (S1–S13) with the detail the
+- **`knowledge/sequences/`** — one card per stream (S1–S16) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
   of open items. Severity lives here; *ordering* lives in the roadmap, and the

@@ -1,0 +1,13 @@
+id: B-329
+kind: defect
+title: 'Remove the in-package model call from metasalmon: the provider client, the chat request code, the retry stack, llm_request_fn, the llm_* arguments and chat_decomposition()'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: [B-326, B-328]
+legacy: ''
+evidence: knowledge/sequences/s16-model-call-leaves-the-packages.md
+retires_when: 'metasalmon holds no model client and makes no model call. The provider configuration and its presets, every read of a provider key from the environment, the two chat request functions and the builder they share, the Retry-After and retry helpers, llm_request_fn, the llm_* and chat_* arguments on the public signatures, and chat_decomposition() are deleted with their tests. The context readers, the bundle validators, the merge, gap detection, the redaction of secrets and the cli escaping that external text still needs all stay. NEWS.md states it as a breaking change and names what replaces each removed path. Every parity row describing the removed code is retired in knowledge/parity-deviations.md in the same pull request, and B-31, B-128 and Q-54 are updated in the same change to say that the code they concern is gone. NOT CLAIMABLE, AND THE REASONS ARE BRETT''S: it ships no earlier than one release after B-326''s, so that the deprecation warnings have been seen; its release number is his; and he tells the users of the in-package provider route before it merges, which is an outward act. Step 4 of S16 (Q67). B-330 is the metasalmonpy half, and each names the other.'

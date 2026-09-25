@@ -288,6 +288,15 @@ instrument that could supply it is the Theme A benchmark, whose live capture
 waits on the credential `B-80` names. The header and user-agent differences
 change nothing a model sees, so registering them or porting them costs nothing
 behavioural either way.
+**Changed by Q67 on 2026-09-25, and still open.** The removal release (`B-329`,
+`B-330`) deletes the request code in both packages. From then on neither side sends a
+request, so no side has to move. What the ruling leaves open is the releases
+before the removal: whether the five differences are registered for them, or
+left unregistered because the removal deletes both sides. **Recommendation on
+that:** register them, as one row in each register whose retirement condition is
+the removal release. `AGENTS.md` calls an undocumented difference a contract
+violation whether or not the difference is about to be deleted, and until the
+removal ships these ones reach users.
 **Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
 
 ### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
@@ -1643,3 +1652,105 @@ which must name the same ref, follows it.
 Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
 move the pins once it exists; and `B-208` for how a frozen profile keeps the
 schema bytes it was frozen against.
+
+### Q67 — Does the model call stay inside metasalmon and metasalmonpy? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The LLM call features leaves metasalmon and metasalmonpy. The
+packages keep everything deterministic (retrieval, ranking, validators, merge,
+gap detection, the 30-column assessment row as the record). They gain a
+review-packet exporter and an assessment ingester. Judgement runs in the user's
+harness (Claude Code, Codex, Claude Science) through `smn-sci-plgn` skills. This
+is Brett's own example, and it removes the only API-key and HTTP-client path in
+either package."* — Brett, 2026-09-25, in chat.
+
+**How it was asked:** not here. On 2026-09-24 a review panel, reading this hub,
+both packages, the commons, the ontologies and the plugin, put three moves to
+him outside this bundle. He adopted all three the next day in one message, in
+the panel's own words: *"Couple of changes I want you to do now."* Q68 and Q69
+are the other two. By the time he ruled, two facts the panel had measured had
+changed. Both change the order of the work, not the ruling. metasalmonpy was
+already tagged `v0.5.0`, so the `0.4.0→0.5.0` window that section A3 of the
+[Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md) says
+no new shared API may land in, and which the panel had put in front of every
+package change, was closed. And `Q-53` and `Q-54` had been filed for other
+questions, so the numbers the panel proposed were taken.
+
+**What it changes:** the packages stop calling a model. What stays and what goes
+are listed in the [S16 card](sequences/s16-model-call-leaves-the-packages.md).
+The 30-column assessment row stays frozen and becomes the contract a harness
+writes to. The order is S16's: the additive release (`B-326`, `B-327`), then the
+harness skill outside this hub, then the Theme A harness split (`B-328`), then
+the removal (`B-329`, `B-330`), then the workshop's lane (`B-331`).
+
+**What stays open, and is his:** the public names and paths the additive
+release proposes; whether that release rides the 0.6.0 train that section A3
+reserves for the first `salmon` verb, or takes its own number; the notice to
+the users of the in-package provider route before the removal; whether Q54's
+differences are registered until the removal; and Q23's pilot anchor, only if
+the harness split cannot keep a replay of the recorded fixtures against their
+oracles. `B-31`, whose engine the removal deletes, was moved to icebox on his
+instruction the same day (*"Do this edit please"*) and retires with the
+removal.
+
+**Where it is recorded:** the S16 card, which is the operative copy; the Foundry
+plan's §1.3 and its semantic-mapper paragraph, amended the same day; and a dated
+pointer beside the LLM opt-in contract in `AGENTS.md`. **Owner:**
+[S16](sequences/s16-model-call-leaves-the-packages.md).
+
+### Q68 — In what order do the commons schema changes land, and does the commons take study-bundle card types? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"One ordered sequence of commons schema PRs. PR #25 first, then a
+`$defs` refactor, then one additive fields PR (source publication dates, typed
+relations, bindings), then B-123 as three PRs (CI, the generated/verified split,
+the merge rule). Study-bundle card types stay local."* — Brett, 2026-09-25, in
+chat, in the message Q67 quotes.
+
+**What it changes:** six pull requests land in one order, each small enough to
+review on its own. Each is Brett's to merge, because the commons' CONTRIBUTING
+reserves its schema, its validator and its `AGENTS.md` to a human. In order:
+`B-320` (#25), `B-321` (the `$defs` refactor), `B-322` (the fields), `B-323`
+(CI), `B-123` (the generated/verified split) and `B-324` (the merge rule). The
+fields pull request adds the fields he rules. Study-bundle card types are not
+added to the commons `type` enum.
+
+**What stays open:** which fields, since his words named three (source
+publication dates, typed relations and bindings) while commons pull request 29
+proposes the panel's eight; the name of the binding field, which the panel offered as
+`alignment.bindings` or `semantic_bindings` and `B-322`'s pull request proposes;
+the fields the panel proposed that he did not name, which that pull request
+lists; the date backfill, which is `B-325`, unpromoted, and whose timing matters
+because the first verification entry makes a backfill costly; and whether
+required status checks are worth GitHub Pro or a public repository.
+`B-123`, promoted before this order was ruled, is now blocked by `B-322` and
+`B-323` on his instruction the same day (*"Do this edit please"*), so the queue
+encodes the whole order.
+
+**Where it is recorded:** the [S6 card](sequences/s6-ecosystem.md)'s section on
+the commons schema order. The commons' own `AGENTS.md` records the study-bundle
+ruling, in `B-322`'s pull request. **Owner:** [S6](sequences/s6-ecosystem.md).
+
+### Q69 — What does `smn-sci-plgn` become? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The smn-sci-plugin becomes the thin, dual-manifest front door. Its
+third term-search implementation retires in favour of metasalmonpy."* — Brett,
+2026-09-25, in chat, in the message Q67 quotes.
+
+**What it changes:** it applies Q26 rather than revising it. The plugin stays a
+personal repository, changed in place and not renamed. It gains a Claude plugin
+manifest beside its Codex one, points at the tagged 0.5.0 releases of both
+packages, and deletes its own JSON-LD term ranking in favour of metasalmonpy's.
+That ranking is the third implementation of term search, beside metasalmon's
+and metasalmonpy's. The plugin is also where S16's harness skills live.
+
+**Where it is recorded:** the Foundry plan's §3.5 and its issue-10 row, both
+corrected in the change that recorded this ruling. The row said "→ institute"
+and "rename", which Q26 had already overruled. The plugin is not a hub member,
+so the work has no queue item: it is a pull request in the plugin's own
+repository.
+
+**What stays open, and is his:** the plugin's version bump and tag; and whether
+the plugin is now a hub member. The test Q10 adopted is that membership follows
+from this hub sequencing a repository's work, and S16 names a plugin step in
+its order. The change that recorded this ruling assumes neither answer.
+**Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
+Foundry plan is.

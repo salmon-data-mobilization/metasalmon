@@ -1,0 +1,13 @@
+id: B-328
+kind: defect
+title: 'Split the Theme A harness: keep replay and its oracles, retire the live, capture and promote modes'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P3
+blocked_by: [B-326]
+legacy: ''
+evidence: knowledge/sequences/s16-model-call-leaves-the-packages.md
+retires_when: 'scripts/theme-a-benchmark.R keeps a runnable replay mode whose required, allowed and forbidden oracles still check the recorded fixtures, so that the pilot anchor the Foundry plan states for Q23, which reproduces that replay, keeps something to reproduce and Q23 stands unamended. The live, capture and promote modes, the --allow-live-api gate and the cohort-gate machinery are deleted with their tests; the theme-a-integrity workflow shrinks to what replay needs; and scripts/llm-sanity-check.R is retired. The same oracles also run as conformance cases against the ingester B-326 adds, so that an assessment judged in a harness is scored by the cases that scored the package''s own model call. Row 45 of knowledge/parity-deviations.md is retired or reduced to the replay half, and B-332 does the same in metasalmonpy''s PARITY.md, each naming the other. B-80, which asks for live captures, and B-226, which asks for the live request to go through the shared builder, both concern the mode this deletes, so the same change updates each to retire with it. This deletes tests and guards and amends a register row, so Brett merges it. IF THE REPLAY CANNOT BE KEPT, the item stops and asks Brett, rather than deleting what the pilot anchor reproduces. Step 3 of S16 (Q67).'

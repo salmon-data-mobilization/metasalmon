@@ -267,6 +267,24 @@ Ordering that is not optional, independent of who is executing:
   Subareas the example holds or all 604 in SOR/2007-77 Schedule 2 — owner
   [S12](sequences/s12-fraser-coho-gold-standard.md), routed through
   [S9 step 7](sequences/s9-ontology-alignment.md).
+- **The model call leaves the packages in two releases, additive first**
+  (Brett, 2026-09-25, hub [Q67](questions.md)). The exporter and ingester land
+  in both packages in one train, with the in-package model call deprecated and
+  still working. The removal is a later, breaking release, at least one release
+  after that, and it waits on Brett's notice to the users of the provider route.
+  The harness skill that replaces the in-package call is released between the
+  two, in the plugin, against a released package. Detail and the items:
+  [S16](sequences/s16-model-call-leaves-the-packages.md).
+- **Commons schema changes land in one order, and each is Brett's to merge**
+  (Brett, 2026-09-25, hub [Q68](questions.md)): pull request 25, then the
+  `$defs` refactor, then the three optional fields, then CI, then the
+  generated/verified split, then the merge rule. The order and its reasons are
+  in [S6](sequences/s6-ecosystem.md), and each item is blocked by the one
+  before it.
+- **The plugin calls the packages at a release tag** (applying hub
+  [Q69](questions.md), 2026-09-25): `smn-sci-plgn`'s term search becomes
+  metasalmonpy's, called at a tag rather than reimplemented, so a plugin release
+  follows the package release it names.
 
 Live pull-request state is deliberately NOT tracked here — it is stale the
 moment anything merges. Current work-in-flight lives in the owning execplan.
@@ -1378,12 +1396,19 @@ release half of that gate is satisfied.
 - [S13 — Fraser Recruits case-study requirements](sequences/s13-fraser-recruits-case-study.md)
 - [S14 — Salmon Science Foundry and SalmonBench](sequences/s14-salmon-science-foundry.md) · **admitted 2026-09-05 (Brett, [Q19](questions.md))** as the ninth member, because this hub sequences its work · owns the Tier 0 runtime (C), SalmonBench (D, in its own institute repository since Brett's Q26 ruling of 2026-09-05; whether this hub comes to sequence that repository's work directly, and so whether it becomes a member under the ruled test, is a question owed to S14), the data-access verbs (H, or the packages per [Q27](questions.md)), and the Foundry-specific halves of E, G and I; it consumes S1, S3's deposit, S5's port, S12, S13's requirements, and S9's Q6 rulings as dependencies rather than re-owning them. Fraser Recruits is out of the Foundry (Brett, 2026-09-04) and stayed out when the PSC work was withdrawn on 2026-09-09; the gold standard stays in metasalmon ([Q25](questions.md)); no public commons subset without [Q24](questions.md). **No repository and no organization exist yet**: the institute was renamed to Symecology Institute on 2026-09-09 and creating the organization is deferred to Stage A week 3. Execplan: the [2026-09-04 Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md), reviewed and revised the same day
 - [S15 — Hub coordination: a git-native queue](sequences/s15-hub-coordination.md) · **ruled 2026-09-05 (Brett, R9), simplified 2026-09-09 (R12): no GitHub Project, the queue is git files alone** · planning state moves to one YAML file per item under `queue/` at the repository root, a claim is a plain `git push` of an orphan commit to a claim ref, `HUB.md` is the single policy file, and every prose restatement of a state fact becomes a generated block under a freshness check. It is blocked by nothing and blocked only the paste half of S14. **Landed 2026-09-09:** the queue files, `HUB.md`, the `hub` client, the render-and-check guard in `scripts/hub_queue.py` with its CI workflow, and the first generated block at the top of this card. **Landed 2026-09-10:** the locks repository (`salmon-data-mobilization/hub-locks`, created by Brett and named by `queue/config.yaml`) and the first real claims taken against it. **Outstanding:** the two-terminal race test against the real repository is not recorded; the remaining restated state facts are still prose; and the point of no return, step 5, has not been passed. Execplan: section 9 of the [2026-09-04 Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md)
+- [S16 — The model call leaves the packages](sequences/s16-model-call-leaves-the-packages.md) · **ruled 2026-09-25 (Brett, [Q67](questions.md))** · metasalmon and metasalmonpy stop calling a model: they keep the deterministic pipeline and the frozen 30-column assessment row, gain a review-packet exporter and an assessment ingester, and the judgement runs in the caller's harness through `smn-sci-plgn` skills. Five steps in order — the additive release in both packages, the harness skill outside this hub, the Theme A harness split, the breaking removal, the workshop's lane — and the card says which of them wait on Brett
 
-**S16 is deliberately free.** A PSC core-model ontology stream was drafted for
-that number on 2026-09-05 and withdrawn on 2026-09-09 (Brett, R11): *"I don't
-think I want the PSC Ontology as part of this hub anymore."* No repository was
-admitted, no card was written, and the number was not consumed, so the next
-stream this hub sequences takes it.
+**S16 was free until 2026-09-25, and the model-call split took it.** A PSC
+core-model ontology stream was drafted for that number on 2026-09-05 and
+withdrawn on 2026-09-09 (Brett, R11): *"I don't think I want the PSC Ontology
+as part of this hub anymore."* No repository was admitted, no card was written,
+and the number was not consumed, so the next stream this hub sequenced took it.
+That was [S16](sequences/s16-model-call-leaves-the-packages.md). It admits no
+repository. Every queue item it files is in a member repository, and its one
+step outside them is in the plugin, which is not a member. Whether naming that
+step here amounts to this hub sequencing the plugin's work, which is the
+membership test [Q10](questions.md) adopted, is Brett's question, and nothing
+here assumes the answer.
 
 **S12 and S13 are new streams for work that was already a stated top priority
 and had no card.** Before 2026-08-21 the phrase "gold standard" appeared

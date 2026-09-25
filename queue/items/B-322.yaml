@@ -1,0 +1,13 @@
+id: B-322
+kind: defect
+title: 'Add the three optional fields Brett named to the commons schema: source publication dates, typed relations and bindings'
+state: needs_brett
+claimable: false
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-321]
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'A commons pull request stacked on the one B-321 names is merged, adding the optional fields Brett rules, so that no existing card needs migrating. WHICH FIELDS IS OPEN, AND IS HIS: his ruling (Q68) named three, source publication dates, typed relations and bindings, while commons pull request 29 proposes eight, adding evidence_through, deprecated_because, sources[].access, sources[].licence and export_hold. The three he named are: sources[].published, a year, month or day validated as a real date; a card-level relations list whose entries name a card that exists, a type from a closed list and a note, with any cited ids resolving to the card''s own sources; and alignment.bindings, SSSOM-shaped entries naming an absolute IRI, a SKOS mapping predicate and a SEMAPV justification. The pull request says how a binding relates to the plain alignment.exact, broader and related lists, so that there are not two unrelated ways to state one mapping. The same pull request records in the commons AGENTS.md that study-bundle card types stay local (Brett, 2026-09-25). Brett merges it. Third in the order he ruled (Q68).'
