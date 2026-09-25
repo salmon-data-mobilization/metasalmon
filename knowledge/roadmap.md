@@ -966,14 +966,13 @@ Newest member of the domain, added 2026-08-17. **Private.** Created 2026-08-17
 (`2026-08-18T01:50Z`); zero tags and zero release objects, re-checked
 2026-08-18. **It cannot be pinned by version at all — only by commit SHA.**
 
-**It grew fast: eleven concepts and 24 gaps, not the four and seven recorded
-here on 2026-08-17.** PRs #1 and #2 merged 2026-08-18. The eleven cards are
-cycle line, broodline, cyclic dominance, run timing, conservation-unit
-independence, FishBase as a vocabulary source, migration-timing genetic
-architecture, Pacific salmonid taxonomic authorities, potamodromous migration
-vocabulary, sockeye rearing ecotypes, and stream-type/ocean-type chinook.
-**Still none human-verified.** Gap `mint_target`s: `smn` 18, `gcdfo` 4,
-`do-not-mint` 2.
+**The concept and gap counts live in the
+[domain card](domains/salmon-data-ecosystem.md)'s admission note and nowhere
+else.** *(Until 2026-09-25 this entry restated them — "eleven concepts and 24
+gaps", the eleven titles, and the mint-target split, all measured 2026-08-18 —
+and was 43 concepts and 69 gaps stale when the restatement was removed under
+the one-home rule. Whether any card is human-verified is the domain card's to
+say too.)*
 
 It is an **upstream OKF v0.2** bundle, not a PSC-profile one, and that is a
 decision rather than an oversight: the PSC profile's closed card schema rejects

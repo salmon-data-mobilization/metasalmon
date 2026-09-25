@@ -66,8 +66,14 @@ say and where it should be minted — which is what
 (cycle line, broodline, cyclic dominance, run timing) came out of resolving a
 live modelling question in
 [salmon-domain-ontology PR #27](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/27).
-It now holds **eleven concepts and 24 gaps** (2026-08-18; re-checked 2026-08-21
-against the checkout — unchanged, and every gap still `open`).
+It now holds **54 concepts and 93 gaps, 81 `open` and 12 `proposed`**
+(measured 2026-09-25 with the commons' own `scripts/okf-check.py` at commit
+`cab0248`; mint targets `smn` 58, `gcdfo` 12, `do-not-mint` 7, undecided 16;
+every card `draft`, none human-verified). *(This read "eleven concepts and 24
+gaps (2026-08-18; re-checked 2026-08-21 ... every gap still `open`)" until
+2026-09-25, and the roadmap's release-index entry for the commons restated the
+same count with the eleven titles; that restatement was removed the same day
+under the one-home rule, so this sentence is the count's only home.)*
 
 ## The term lifecycle is what connects the commons to the ontologies
 
@@ -96,11 +102,14 @@ loop; `evidence_needed` is what makes a rejection a *route* rather than a dead
 end, which is why S9's group D can record "leave it as data until a published
 scheme is in hand" as a **result** rather than a failure.
 
-Note the machinery is untested in practice: **all 24 gaps are currently
-`open`**, and `rejected_because` / `evidence_needed` appear in the schema, the
-contributing guide and the checker but in **no card**. smn PR #27 is the
-obvious first customer — it is a live proposal that withdrew its species
-scheme, which is a `rejected` gap in everything but the recording.
+Note the machinery is only partly exercised: at the count above no gap has
+reached `rejected`, so `rejected_because` / `evidence_needed` appear in the
+schema, the contributing guide and the checker but in **no card**. smn PR #27
+is the obvious first customer — it is a live proposal that withdrew its species
+scheme, which is a `rejected` gap in everything but the recording. *(This said
+"all 24 gaps are currently `open`" until 2026-09-25; twelve are now `proposed`,
+against that same PR #27, which is the first half of the lifecycle running and
+not yet the second.)*
 
 **Do not read membership as maturity.** It was created 2026-08-17, **none of its
 concepts is human-verified**, and its card schema and contribution flow are
