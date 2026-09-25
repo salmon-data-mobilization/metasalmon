@@ -442,6 +442,16 @@ January 2027, or delays tern's stage 0 to the Foundry's Stage A gate.
 **Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md), which
 records the split once ruled, with the queue item `Q-65`; the ruling's other
 half lives in tern's `PLAN.md`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's own record has moved past the recommendation above. Its
+`docs/DECISIONS.md` §B, row B-11, and `PLAN.md` §14 — seen in tern's working
+tree that day, not yet committed on top of `fe914ab` — record D-2 as ruled in
+chat: "Moot. Brett does what he can", the Foundry-split machinery removed from
+its §11, and "the hub question in ECOSYSTEM.md M-04 is not needed". If that
+record stands once committed, this entry retires as moot: no split is booked
+on either side and the S14 card records nothing beyond that. It stays open
+here until Brett says so, because a ruling seen only in another repository's
+uncommitted file is not yet one this index can cite.)*
 
 ### Q66 — D-1/D-8 coupling: tern's institute affiliation engages R2, so the PSC-derived Fraser packs need a ruling
 **Unblocks:** whether tern's first science case may use the Salmon Prize
@@ -463,6 +473,17 @@ tern's `PLAN.md`; this hub records only that R2 was engaged and how, so that
 the S14 card and R2 stay consistent.
 **Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md) for the R2
 consequence, with the queue item `Q-66`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's `docs/DECISIONS.md` §B, row B-10, and `PLAN.md` §14 — seen in tern's
+working tree that day, not yet committed on top of `fe914ab` — record D-1 as
+ruled in chat: **(a)**, the organizers' packs and the PSC Fraser sockeye
+spawner–recruit public release admissible, the information barrier and the
+competing-interests statement kept, Bristol Bay still the transfer test, and
+"the former coupling to D-8 is dissolved: Brett is allowed to use PSC public
+data whatever the affiliation". If that record stands once committed, what
+this entry still owes the hub is one sentence: whether R2 needs any amendment
+for PSC *public* releases or was never engaged by them. It stays open here
+until Brett says so, for the reason Q65's note gives.)*
 
 ## Notes on framing
 
