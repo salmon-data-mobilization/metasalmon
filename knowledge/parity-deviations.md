@@ -841,6 +841,23 @@ register row: once it lands the two implementations behave alike again. It did
 not land in the same stream because a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is **B-222**.
 
+**This one is closed.** `B-222` landed as metasalmonpy pull request **#48**
+(`70fa8fd`) on 2026-09-25. `accept_suggestion()` in `review_console.py` now
+records an `iri` that a shortlisted candidate carries on the first row in the
+slot whose IRI, read through `_strip_review_iri()`, equals it, which is the row
+`rank=` uses; an IRI no candidate carries still goes on the slot's first row and
+still writes `skos_concept`. `apply_sdp_semantics()` in `metadata_write.py`
+reads the row's IRI through `_strip_review_iri()` rather than `_text()`, so a
+candidate stored as `REVIEW: <IRI>` writes its own type by `iri=` and by
+`rank=`. No second helper was added: `_strip_review_iri()` already trims before
+it strips, so it computes what R's `.ms_review_decision_iri()` computes.
+`tests/test_review_console.py` twins four of the five R tests. The fifth, the
+trailing newline, is not twinned, because its premise does not hold there:
+measured on one file, readr 2.2.0 keeps a quoted trailing newline and
+metasalmonpy's `read_sdp_csv()` strips it. That reader difference is not among
+the mismatches `PARITY.md` row 23 names, and it goes to the next queue sweep.
+`PARITY.md` did not change.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
