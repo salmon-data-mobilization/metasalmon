@@ -326,7 +326,12 @@ find_terms <- function(query,
       ) {
         worker_count <- .metasalmon_term_search_worker_count(length(remaining_sources))
         if (worker_count > 1L) {
-          source_results <- parallel::mclapply(remaining_sources, run_source, mc.cores = worker_count)
+          source_results <- .ms_checked_worker_results(
+            parallel::mclapply(remaining_sources, run_source, mc.cores = worker_count),
+            sources = remaining_sources,
+            query = q,
+            role = role
+          )
         } else {
           source_results <- purrr::map(remaining_sources, run_source)
         }
@@ -446,6 +451,50 @@ find_terms <- function(query,
   sort(unique(trimws(as.character(diagnostics$source[degraded]))),
     method = "radix"
   )
+}
+
+# The `run_source()` results of one `parallel::mclapply()` call, with every
+# element a worker failed to deliver replaced by the record `run_source()`
+# writes for a source that errored.
+#
+# A forked worker that dies hands back NULL, and one whose error escapes
+# `run_source()` hands back a `try-error` string. `find_terms()` read `$result`
+# from both (backlog #57). The first silently dropped the source, with no
+# diagnostic row, so the incomplete lookup was cached and read as complete; the
+# second aborted the whole search. As an errored source, the failure reaches
+# `.ms_search_failed_sources()`, so `find_terms()` warns that the source did not
+# answer and does not cache the result. `mclapply()` has already warned as well.
+.ms_checked_worker_results <- function(results, sources, query, role) {
+  lapply(seq_along(sources), function(i) {
+    res <- if (i <= length(results)) results[[i]] else NULL
+    delivered <- is.list(res) && !inherits(res, "try-error") &&
+      all(c("result", "diagnostic") %in% names(res))
+    if (delivered) {
+      return(res)
+    }
+    detail <- if (inherits(res, "try-error")) {
+      condition <- attr(res, "condition")
+      message <- if (inherits(condition, "condition")) {
+        conditionMessage(condition)
+      } else {
+        paste(as.character(res), collapse = " ")
+      }
+      .ms_redact_secrets(trimws(message))
+    } else {
+      "the worker returned no result"
+    }
+    list(
+      result = .empty_terms(role),
+      diagnostic = list(
+        source = sources[[i]],
+        query = query,
+        status = "error",
+        count = 0L,
+        elapsed_secs = NA_real_,
+        error = paste0("parallel search worker failed: ", detail)
+      )
+    )
+  })
 }
 
 .empty_terms <- function(role) {

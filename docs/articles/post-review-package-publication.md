@@ -400,14 +400,16 @@ because the EML/KNB path additionally requires a **reviewed closure**: a
 standing record of which vocabulary terms you accepted, on what
 evidence, and for which target.
 
-Three files carry it, and **metasalmon validates all three but writes
-none of them** (see the note at the end of this section):
+Three files carry it.
+**[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+writes the first two and pins the digests the third one carries**; the
+reviewed EML facts in the third are yours (step 11):
 
-| File | What it must contain |
-|----|----|
-| `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less |
-| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target |
-| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above |
+| File | What it must contain | Written by |
+|----|----|----|
+| `metadata/semantic_vocabulary.csv` | One evidence row per canonical measurement IRI — exactly that set, no more and no less | [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md) |
+| `reviewed_semantic_selections.csv` | Exactly one `accepted` row per canonical review target | [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md) |
+| `metadata/eml-mapping.yml` | The reviewed EML facts, plus the SHA-256 of each of the two files above | you, except the two SHA-256 values |
 
 **The canonical measurement IRI set** is every non-empty value across
 `term_iri`, `property_iri`, `entity_iri`, `constraint_iri`,
@@ -415,22 +417,41 @@ none of them** (see the note at the end of this section):
 dictionary rows, plus any `tables.csv` `method_iri` and any procedure
 IRIs reached through `codes.csv` from an observation-structures binding.
 
-**The canonical review target set** is that same set *plus* each table’s
-`observation_unit_iri`. The two differ, deliberately: the observation
-unit is a reviewed selection but not a measurement term, so it belongs
-in the ledger and not in the vocabulary.
+**The canonical review target set** is derived independently, and it is
+*not* the measurement set plus anything. It has one target for each
+filled slot among these: the same six semantic fields on your
+`measurement` dictionary rows, plus each table’s `observation_unit_iri`
+**and** its `method_iri`.
+
+**The two sets differ in both directions**, which is why neither can be
+reasoned from the other:
+
+- an `observation_unit_iri` is a **review target and not a vocabulary
+  term** — a reviewed selection, but not something the EML measurement
+  path emits; and
+- a `sosa:usedProcedure` reached through a code value is a **vocabulary
+  term and not a review target** — the EML method path emits it, but the
+  ledger has no slot for it, because it is reached through the code
+  values in your data rather than through any field the review target
+  set reads.
+
+Getting that second direction backwards is worth avoiding rather than
+discovering: the ledger gate accepts **exactly** the canonical target
+set, so a row added for a code-resolved procedure is refused as
+unexpected.
+[`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+and
+[`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)
+stop and name the row, while
+`validate_salmon_datapackage(require_iris = TRUE)` goes on passing: the
+package stops being publishable because of a row you added to make it
+publishable.
 
 `semantic_vocabulary.csv` needs these columns, all non-empty except
 `type_iris` and `source_artifact_sha256`:
 
     iri, label, definition, source, ontology, resource_kind, type_iris,
     native_type, source_url, source_artifact_sha256, reviewed_snapshot_sha256
-
-[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
-returns `label`, `definition`, `source`, `ontology`, `resource_kind` and
-`type_iris` directly, so re-running the search that justified each
-accepted IRI is how you source that evidence rather than transcribing
-it. `native_type` and `source_url` are yours to supply.
 
 `reviewed_semantic_selections.csv` needs:
 
@@ -440,14 +461,114 @@ it. `native_type` and `source_url` are yours to supply.
 Every `decision` must be `accepted` — a final ledger holds no open
 decisions — and `column_name` is empty only for table-scope rows.
 
-**Known gap.** `reviewed_snapshot_sha256` binds each vocabulary row to
-its own evidence, and there is **no exported function that computes
-it**. Neither closure file has an exported producer at all; metasalmon
-only validates them. Until that is fixed, see
+#### Produce both files
+
+[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+derives both canonical sets from the package, re-runs
+[`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+for each IRI to resolve its evidence, computes every
+`reviewed_snapshot_sha256`, writes both files, and rewrites the two file
+digests in `metadata/eml-mapping.yml`. **No SHA-256 in a reviewed
+package is ever hand-written.**
+
+Two kinds of value it cannot derive, and both go in `evidence`:
+
+- **Vocabularies
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  cannot search.** It resolves `smn` and `gcdfo`. A QUDT unit row is
+  hand-authored in full. It also cannot fill `native_type` or
+  `source_url`, which describe the ontology *artifact* rather than the
+  term; those are derived from the resolved source and can be
+  overridden.
+- **`confidence` and `review_rationale`**, which are your judgement.
+  They are read from `semantic_suggestions.csv` where
+  [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md)
+  recorded a decision reason, and otherwise written as a
+  `REVIEW REQUIRED:` marker with a warning naming each target that got
+  one. Replace those before publishing.
+
+``` r
+
+# Your judgement on each accepted IRI. The term evidence is resolved for you.
+judgements <- tibble::tribble(
+  ~iri, ~confidence, ~review_rationale,
+  "https://w3id.org/gcdfo/salmon#SpawnerAbundance", "high",
+  "The column is an escapement estimate of adult spawners.",
+  "https://w3id.org/smn/Abundance", "high",
+  "The measured characteristic is abundance.",
+  "https://w3id.org/smn/Observation", "high",
+  "Each row is one population-year observation."
+)
+
+# A QUDT row is hand-authored end to end: the search cannot reach QUDT.
+qudt <- tibble::tibble(
+  iri = "https://qudt.org/vocab/unit/INDIV",
+  label = "Individual",
+  definition = "A counting unit denoting one organism.",
+  source = "qudt",
+  ontology = "qudt",
+  resource_kind = "Unit",
+  type_iris = "http://qudt.org/schema/qudt/Unit",
+  native_type = "qudt:Unit",
+  source_url = "https://qudt.org/vocab/unit/",
+  confidence = "high",
+  review_rationale = "Values are whole counts of organisms."
+)
+
+closure <- write_sdp_semantic_closure(
+  "path/to/package",
+  evidence = dplyr::bind_rows(judgements, qudt)
+)
+```
+
+Copy the sidecar template (step 11) **before** running this, so the two
+digests are pinned in the same pass. If you produce the closure first,
+run it again once the sidecar exists.
+
+**An IRI it cannot resolve is reported, not guessed at, and not fatal.**
+`closure$gaps` is a term-gap table in the same shape
+[`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+returns, so it feeds the request pipeline directly:
+
+``` r
+
+if (nrow(closure$gaps) > 0) {
+  requests <- render_ontology_term_request(closure$gaps, ask = FALSE)
+  submit_term_request_issues(requests, dry_run = TRUE)
+}
+```
+
+The unresolved row is left out of the vocabulary rather than invented,
+so
+[`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+will still refuse the package and will name the same IRI. That is the
+intended sequence: the gap is a term to mint or an IRI to correct, and
+the package is not publishable until it is one or the other.
+
+**Two things that leave a row out are not gaps, and you should not file
+them as term requests.** A gap says the searched vocabularies do not
+have the term, and that is what
+[`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
+acts on, so the cases that do not establish absence are reported
+separately:
+
+- **A lookup that did not answer** — a network or parser failure, or a
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  result whose `"diagnostics"` attribute names a source that did not
+  reply. The call **aborts and writes nothing**, naming each IRI and the
+  silent sources. Re-run when the sources answer; nothing on disk
+  changed.
+- **A term found with a required field blank**, for example a class with
+  no definition. It comes back in `closure$incomplete`, naming the
+  missing field and the slot. The term exists, so supply the field
+  through `evidence` or annotate it upstream rather than requesting a
+  new term.
+
+A worked end-to-end example is
 `scripts/build-fraser-coho-knb-rehearsal.R` in the source repository,
-which builds both files end to end for the shipped Fraser coho example
-and takes it to a clean KNB test-node dry run. Tracked as backlog item
-\#116.
+which takes the shipped Fraser coho data from
+[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+to a clean KNB test-node dry run using only exported functions.
 
 ### 11) Build reviewed EML and preview KNB publication when needed
 

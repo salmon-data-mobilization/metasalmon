@@ -1,0 +1,13 @@
+id: B-388
+kind: defect
+title: 'metasalmonpy aborts reading or validating a package whose declared datetime column holds a date-time that lies before year 1 or after year 9999 once its offset is applied'
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, resource_types.convert_declared_tokens() does not raise on a declared datetime token that parse_datetime_token() matches but that lies before year 1 or after year 9999 once its UTC offset is applied, such as 0001-01-01T00:00:00+01 and 9999-12-31T23:00:00-02, and read_salmon_datapackage() and validate_salmon_datapackage() return, rather than raise OverflowError, on a package whose declared datetime column holds one. The value read for such a token is the instant readr reads for the same token. Pinned by tests RED on the code as it stands.'

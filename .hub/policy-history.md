@@ -377,7 +377,9 @@ constants_live_in: >-
 
 ```yaml
   permitted_note: >-
-    The last three rows were granted on 2026-09-10 and reached this register on
+    Three rows, merge a pull request in this repository, promote a queue item
+    to state ready, and push a small mechanical change to this repository's
+    default branch, were granted on 2026-09-10 and reached this register on
     2026-09-10, in a later change, after a review pointed out that they had been
     written into the prose below and into Brett's global instruction but not
     into the only enumeration scope_note says is operative. Until they landed
@@ -735,10 +737,13 @@ the shape this section generalises.
    instance and was not self-merged.
 
 8. **It promotes a queue item to `ready` outside the standing grant on the
-   register's promotion row, or changes `claimable`.** Already his, and
-   unchanged by this section. *(This read "It promotes a queue item to `ready`"
-   until 2026-09-23, when that grant took the items meeting its test out of this
-   class and left `claimable` in it.)*
+   register's promotion row, or changes `claimable` outside the grant on the
+   register's claimable row.** Already his, and unchanged by this section.
+   *(This read "It promotes a queue item to `ready`" until 2026-09-23, when that
+   grant took the items meeting its test out of this class and left `claimable`
+   in it. It read "or changes `claimable`" until 2026-09-25, when his claimable
+   grant took setting it to `true`, for the items meeting that row's test, out
+   of this class; setting it to `false` stayed.)*
 
 ### Delegated: merges on green CI and a completed Codex review (history)
 

@@ -277,7 +277,9 @@ the same encoding.
   builds one chunk pool and threads it as an explicit `context_chunk_pool`;
   `.ms_prepare_context_chunks()` no longer silently re-collects from source files.
 - **Scoring:** deterministic bag-of-words token overlap (no embeddings).
-  Tokens < 3 chars dropped, camelCase split. Chunk defaults 2200 chars / 200
+  Tokens < 3 chars dropped. (A camelCase split is written but never fires:
+  `.ms_context_tokens()` lowercases the text before its camelCase pattern runs,
+  read 2026-09-25.) Chunk defaults 2200 chars / 200
   overlap.
 
 ## LLM review response contract / adapter (R/llm-review-adapter.R)
@@ -295,9 +297,11 @@ the same encoding.
   index, out-of-range index, retry_search without query.
 - Assessment rows already carry `llm_retry_query`, `llm_new_term_label`,
   `llm_new_term_definition`, and `llm_new_term_namespace`. Direct
-  `request_new_term` responses populate them, but the term-request workflow does
-  not yet consume the parallel `semantic_llm_assessments` attribute; this is the
-  remaining Theme A4 integration boundary.
+  `request_new_term` responses populate them, and `detect_semantic_term_gaps()`
+  reads the parallel `semantic_llm_assessments` attribute and counts a
+  `request_new_term` assessment as gap evidence (`R/term-request-helpers.R`,
+  read 2026-09-25). So the Theme A4 boundary this line used to call open is
+  closed.
 - **Five distinct LLM review paths:** (1) generic single-target, (2) decomposition
   single-target (routed by `.ms_llm_should_route_to_decomposition`), (3) batch
   (two-layer fallback to per-target), (4) query-exploration re-review, (5)
@@ -441,8 +445,9 @@ every release — re-run the count rather than trusting these to the digit.
   Start here.** Undated and edited in place; it links each stream to its
   execplan.
 - `knowledge/backlog.md` — the live backlog and the single index of
-  open items. Items #34+ came from the 2026-08-10 comprehensive review. Severity
-  lives here; ordering lives in the roadmap.
+  open items. Items #34+ came from the 2026-08-10 comprehensive review. An
+  item's severity lives in the `severity` field of its file under
+  `queue/items/`, not here; ordering lives in the roadmap.
 - `knowledge/plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
   KNB staging target and the workshop rebuild (roadmap S3/S4).
 - `knowledge/sequences/s4-workshop-rebuild.md` — current workshop state; the

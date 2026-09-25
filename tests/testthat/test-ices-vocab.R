@@ -64,3 +64,72 @@ test_that("ices_codes returns codes with a detail URL and supports filtering", {
   expect_equal(res_filtered$key[[1]], "BMT")
 })
 
+
+# `.data$longDescription %||% ""` looked like a guard against a missing column
+# and was not one: inside a data mask a missing column is an error, never NULL,
+# so every ICES find helper aborted on a response without one of the three
+# columns it searches (backlog #57). metasalmonpy's `ices_vocab.py` treats a
+# missing column as empty text, and its tests use a response with no
+# `longDescription` at all.
+ices_response <- function(types, codes) {
+  function(url, headers = NULL, timeout_secs = 30) {
+    if (grepl("/CodeType", url, fixed = TRUE)) return(types)
+    if (grepl("/Code/Gear", url, fixed = TRUE)) return(codes)
+    NULL
+  }
+}
+
+test_that("the ICES find helpers search the columns a response has", {
+  respond <- ices_response(
+    types = data.frame(
+      key = c("Gear", "TS_Sex"),
+      description = c("Gear Type Codes", "Sex Codes (Fisheries)"),
+      stringsAsFactors = FALSE
+    ),
+    codes = data.frame(
+      key = c("BOT", "BMT"),
+      description = c("Bottom Trawl", "Beam trawl"),
+      stringsAsFactors = FALSE
+    )
+  )
+
+  found_types <- with_mocked_bindings(.safe_json = respond, ices_find_code_types("sex"))
+  expect_identical(found_types$key, "TS_Sex")
+
+  found_codes <- with_mocked_bindings(.safe_json = respond, ices_find_codes("beam", "Gear"))
+  expect_identical(found_codes$key, "BMT")
+
+  # A column holding NA reads as empty text too, as it did before.
+  respond_na <- ices_response(
+    types = data.frame(key = c("Gear", NA), description = c(NA, "Sex Codes"), stringsAsFactors = FALSE),
+    codes = NULL
+  )
+  found_na <- with_mocked_bindings(.safe_json = respond_na, ices_find_code_types("sex"))
+  expect_identical(found_na$description, "Sex Codes")
+})
+
+test_that("an ICES response with no rows gives an empty result rather than an error", {
+  # The API answers an unknown code type with an empty array, and the helpers
+  # hand that on as a tibble with no columns at all.
+  respond <- ices_response(types = list(), codes = list())
+
+  types <- with_mocked_bindings(.safe_json = respond, ices_find_code_types("gear"))
+  expect_s3_class(types, "tbl_df")
+  expect_identical(nrow(types), 0L)
+
+  codes <- with_mocked_bindings(.safe_json = respond, ices_find_codes("beam", "NoSuchType"))
+  expect_s3_class(codes, "tbl_df")
+  expect_identical(nrow(codes), 0L)
+})
+
+test_that("ices_codes() gives an NA detail URL when a response has no key column", {
+  respond <- ices_response(
+    types = NULL,
+    codes = data.frame(description = c("Bottom Trawl", "Beam trawl"), stringsAsFactors = FALSE)
+  )
+
+  res <- with_mocked_bindings(.safe_json = respond, ices_codes("Gear"))
+  expect_identical(nrow(res), 2L)
+  expect_identical(unique(res$code_type), "Gear")
+  expect_true(all(is.na(res$url)))
+})

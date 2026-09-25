@@ -319,7 +319,8 @@
 #' @param max_per_role Maximum number of suggestions to keep per semantic role
 #'   (variable, property, entity, unit, constraint, statistical_modifier;
 #'   plus method for code values) per column. Default
-#'   is 3.
+#'   is 3. When `llm_assess = TRUE`, at least `llm_top_n` are kept, because
+#'   the LLM can only be shown the candidates retrieval kept.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
 #' @param codes Optional `codes.csv`-like tibble. When provided, suggestions are
@@ -355,7 +356,9 @@
 #' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to the
 #'   OpenAI chat-completions request body when `llm_provider = "openai"`.
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
-#'   per target for each assessment round. Default is `5`.
+#'   per target for each assessment round. Default is `5`. Retrieval keeps at
+#'   least this many per role when `llm_assess = TRUE`, whatever
+#'   `max_per_role` says.
 #' @param llm_context_files Optional character vector of local context files
 #'   (for example README/markdown notes, CSV dictionaries, HTML exports,
 #'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
@@ -512,6 +515,18 @@ suggest_semantics <- function(df,
     context_files = llm_context_files,
     context_text = llm_context_text
   )
+  # The LLM can only be shown what retrieval kept, so keeping `max_per_role`
+  # candidates made the documented `llm_top_n` default of 5 silently become 3
+  # on this direct path (backlog #57). Every wrapper already widens by this
+  # rule through `.ms_llm_review_plan()`; applying it again to their widened
+  # value changes nothing. Without `llm_assess` the shortlist is untouched.
+  if (isTRUE(llm_assess)) {
+    max_per_role <- .ms_llm_effective_shortlist_size(
+      max_per_role %||% 3L,
+      llm_assess = TRUE,
+      llm_top_n = llm_top_n
+    )
+  }
 
   resource_lookup <- NULL
   default_df <- NULL

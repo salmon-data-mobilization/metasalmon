@@ -74,10 +74,16 @@ claim:
 writes:
   scope_note: >-
     What this register governs: writes made by an agent executing the hub
-    protocol in this file against a claimed queue item. Inside that scope it is
-    the only enumeration of what such an agent may write without asking, and an
+    protocol in this file against a claimed queue item, and the queue upkeep
+    its rows name for items nobody has claimed, which is promoting an item to
+    ready, setting an item's claimable to true, and a small mechanical push to
+    this repository's default branch. Inside that scope it is the only
+    enumeration of what such an agent may write without asking, and an
     operation it does not list is not permitted there, whatever its resemblance
-    to one that is. Outside that scope it governs nothing. Ordinary repository
+    to one that is. Outside that scope it governs nothing. (Widened 2026-09-25:
+    this said "against a claimed queue item" and stopped there, which left the
+    promotion row, granted for unclaimed items, outside the only scope that
+    makes a row operative. A review of the claimable grant found it.) Ordinary repository
     work, meaning everything an agent does that is not the hub protocol acting
     on a claim, is governed by Brett's global agent instructions and by the
     repository it happens in; this register neither widens nor narrows that.
@@ -96,7 +102,11 @@ writes:
     - operation: push a heartbeat commit
       target: *claim_ref
       shape: child of the tip you just read
-      max: 1 per heartbeat_minutes per held claim
+      max: >-
+        about 1 per heartbeat_minutes per held claim. A beat made sooner
+        renews the lease early and is not a write outside this list (Brett,
+        2026-09-24: "Early beats are not a breach"), so it never triggers
+        self_suspends. The interval is a pace, not a limit.
     - operation: push a release commit
       target: *claim_ref
       shape: child of the tip you just read
@@ -362,6 +372,29 @@ writes:
         (solo: true); it carries a non-empty retires_when; its severity is P0,
         P1, or P2 or P3; its blocked_by is empty; and it is not needs_brett.
         Anything else stays per-item." Each promotion under it still names it.
+    - operation: set a queue item's claimable to true
+      target: the item file under queue/items/ on this repository's default branch
+      shape: >-
+        a commit that names this grant and says, for each item, why its work
+        needs no decision only Brett can make and no credential he holds. An
+        item qualifies only when all of these hold as written: its repo is
+        solo: true; it is not kind: question; its retires_when is non-empty and
+        leaves no choice open (it says nothing like "not settled here", "not
+        decided here" or "is open", and its retirement needs no pull request of
+        a class in "Which pull requests need Brett"); and no workpad for it has
+        a non-empty section saying it needs Brett. An item that qualifies only
+        once a condition is interpreted is per-item, and the interpretation
+        goes to him as a question, as under the promotion row. Setting
+        claimable to false is not covered and stays in class 8.
+      max: no limit, and one commit naming the grant per change
+      enforced_by: >-
+        nothing mechanical. As with promotion, the commit is the audit trail.
+      granted: >-
+        2026-09-25, in his words, answering the decisions page's "Make B-244
+        and B-245 claimable?": "yes, and change class 8 so you can make this
+        type of thing claimable". The two items that question named were made
+        claimable on his per-item word in commit 461c639; this row is the
+        standing half of the same answer.
     - operation: push a small mechanical change to this repository's default branch
       target: refs/heads/main in this repository (metasalmon)
       shape: >-
@@ -401,6 +434,25 @@ writes:
     requests that no row covered either (@codex review comments, one CI
     re-run, the agent-run label on queue pull requests) are outside this
     register's scope and are recorded here, not reinstated by it.
+  reinstated_2026_09_24: >-
+    2026-09-24, by Brett in chat: "Early beats are not a breach. Reinstated.
+    But make beats less often...something more like an hour". The question put
+    to him: after the 2026-09-23 reinstatement two held claims heartbeated
+    inside heartbeat_minutes (B-164 at 13:18:28Z and 13:29:22Z, B-187 at
+    13:19:26Z and 13:32:44Z), against this register's then "max: 1 per
+    heartbeat_minutes per held claim". The client told each holder its next
+    beat was "due within" that interval, so the only beat breaking neither
+    rule was one made exactly on the minute, and early beats went back to
+    2026-09-14 unflagged. The orchestrating session stopped protocol writes at
+    13:40 UTC. The writes made after the first early beat and before the stop
+    reached the workers were reported to Brett before he ruled: B-151's and
+    B-55's beats, handoffs and pull requests 153 and 154, B-187's second beat,
+    B-179's handoff, and the merge of metasalmonpy pull request 36. The ruling
+    makes an early beat a write inside the list, so it suspended nothing; this
+    entry records the reinstatement because Brett gave one, and so that the
+    held work resumed on his word rather than on a reading of the rule. In the
+    same message he set the interval to about an hour, which heartbeat_minutes
+    in queue/config.yaml carries, and the heartbeat row's max is now a pace.
   denied:
     - >-
       any issue, release, or assignee; and any comment or review except a reply
@@ -457,8 +509,9 @@ writes:
     The whole standing authorization is suspended the moment an agent executing
     this protocol writes outside the permitted list, and stays suspended until
     Brett reinstates it. The trigger is scoped the way scope_note scopes the
-    register: a write made under the protocol against a claimed item, not any
-    write an agent makes anywhere. Ordinary repository work outside the protocol
+    register: a write made under the protocol against a claimed item, or the
+    queue upkeep scope_note names for items nobody has claimed, not any write an
+    agent makes anywhere. Ordinary repository work outside the protocol
     is governed by Brett's global agent instructions and suspends itself under
     that file's own clause, which is a separate rule with a separate scope and
     is not narrowed by this one. Neither the scoping nor the reinstatement above
@@ -559,8 +612,9 @@ the item and you must not start it.
 every primary checkout.
 
 **5. Work.** Inside that worktree and inside that item's scope. Commits go to
-`agent/<queue-id>/<token>` and nowhere else. Heartbeat every
-`heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim.
+`agent/<queue-id>/<token>` and nowhere else. Heartbeat about every
+`heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim;
+a beat made early is not a breach (ruled 2026-09-24).
 
 **6. Report.** Into `.hub/workpads/<queue-id>.md` on your branch, one file per item.
 
@@ -827,8 +881,8 @@ A pull request is his if **any** of these is true. Not most, not the worst one. 
 7. **It changes `HUB.md`, `queue/config.yaml`, or this register.** Policy does
    not self-amend.
 8. **It promotes a queue item to `ready` outside the standing grant on the
-   register's promotion row, or changes `claimable`.** Already his, and
-   unchanged by this section.
+   register's promotion row, or changes `claimable` outside the grant on the
+   register's claimable row.** Already his, and unchanged by this section.
 9. **It commits the project to something outward-facing**: a published page, an
    issue in another organisation, a term request, a data deposit.
 10. **Its author could not settle a judgement inside it.** A non-empty "needs

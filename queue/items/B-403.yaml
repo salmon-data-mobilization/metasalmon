@@ -1,0 +1,13 @@
+id: B-403
+kind: defect
+title: 'The specification''s minimal example describes the NuSEDS AREA column as a Pacific Fishery Management Area code, where NuSEDS defines it as a DFO sub-district'
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: either
+stream: S12
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In smn-data-pkg, the AREA row of examples/minimal-example/metadata/column_dictionary.csv and the AREA field of examples/minimal-example/datapackage.json no longer label the column "PFMA area" or describe it as a Pacific Fishery Management Area code: they describe what the NuSEDS data dictionary defines AREA as, the sub-district. Decided by grep. THE METASALMON HALF IS B-401 AND THE METASALMONPY HALF IS B-402, and each names the others.'
