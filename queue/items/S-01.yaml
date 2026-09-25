@@ -2,7 +2,7 @@ id: S-01
 kind: stream
 title: One validation authority so the validator executes the rules the spec declares
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S1
