@@ -1,6 +1,6 @@
 id: B-373
 kind: defect
-title: 'An unexpected crash in scripts/check-changelog-window.py exits 1, the findings code, rather than 2, the cannot-run code'
+title: 'scripts/check-changelog-window.py exits 1, its findings code, when it crashes, even when all that failed is that git could not be started'
 state: icebox
 claimable: true
 repo: metasalmon
@@ -9,4 +9,4 @@ severity: P4
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'Any exception other than CannotRun that escapes run() in scripts/check-changelog-window.py makes the script exit 2, the code its docstring gives for a run that cannot see what it needs, with "cannot run" and the exception named on standard error, rather than exit 1, the findings code. A test in scripts/tests/test_check_changelog_window.py forces such an exception, for example by running the script with no git on PATH, and asserts exit 2; it is RED on the script as it stands. THE METASALMONPY HALF IS B-374, and each names the other.'
+retires_when: 'Two cases, each pinned by a test in scripts/tests/test_check_changelog_window.py that is RED on the script as it stands, where both exit 1, the code the docstring gives for findings. (1) An environmental failure where the script starts git, meaning an OSError from starting the subprocess, such as git absent from PATH, is raised as CannotRun at that boundary, so the script exits 2 with "cannot run" and the cause named on standard error, as it does for a shallow clone. (2) Any other exception that escapes run(), which is a defect in the script rather than in its input, keeps its full traceback on standard error, is not described as missing input, and exits with a code that is neither 0 nor 1; which code is the fix''s to choose, and the docstring''s list of exit codes names it. THE METASALMONPY HALF IS B-374, and each names the other.'
