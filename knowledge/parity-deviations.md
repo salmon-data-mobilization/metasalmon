@@ -464,6 +464,14 @@ redundant: `scripts/check-parity-registers.py` fails on a number present in one
 register and absent from the other, so it would have turned the check red in both
 repositories for a fact row 56 already carries.
 
+**This one is closed.** `B-145` landed as metasalmonpy pull request **#34**
+(`f1f7230`) on 2026-09-25. `resource_types.iso_instant_text()` is now the one
+renderer every instant metasalmonpy writes passes through, so its
+`datapackage.json` and `metadata/dataset.csv` spell an instant identically, in
+the ruled `T`/`Z` form, as R's do. What is left is the year below 1000, which is
+B-161's. Row 56's hub-side twin edit amends a register row, so it is Brett's
+and is metasalmon pull request **#175**.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-23):
 a recorded hand-picked accept is not ontology-gap evidence.**
 `detect_semantic_term_gaps()` now drops the rows `apply_sdp_semantics()` writes

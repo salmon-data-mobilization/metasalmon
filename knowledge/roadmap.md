@@ -469,8 +469,9 @@ validation (**B-124**, blocked by B-49 — **landed 2026-09-16 as metasalmonpy
 B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first to
 close), the migration report's no-op shape (**B-144**, blocked by
 B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second to
-close), the descriptor's instant spelling (**B-145**, blocked by B-115, whose R
-half **landed 2026-09-16 as metasalmon #118** — readr's ISO form with the `T`
+close), the descriptor's instant spelling (**B-145**, blocked by B-115 — **landed
+2026-09-25 as metasalmonpy #34**, `f1f7230`; its R half **landed 2026-09-16 as
+metasalmon #118** — readr's ISO form with the `T`
 separator and `Z` marker, the spelling Brett ruled on 2026-09-14 for both
 implementations, carried by register row 56 amended in place rather than by a new
 number), and the
