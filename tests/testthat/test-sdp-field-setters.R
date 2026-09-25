@@ -837,6 +837,31 @@ test_that("a field two checks both find is reported once: a required IRI a confi
   expect_false("unit_iri" %in% review_metadata(pkg)$field)
 })
 
+test_that("an IRI field reported as a placeholder still counts as an IRI in the console", {
+  # One field is one gap row, so an IRI field holding a prose placeholder keeps
+  # its `placeholder` row and gets no `iri` row. The console counts the IRI
+  # gaps and, when there are any, points at `review_semantics()`. The count has
+  # to be taken by the field for that row to be one of them. Every IRI gap here
+  # is a placeholder, so a count by reason finds none and drops the pointer.
+  pkg <- filled_coded_package()
+  planted <- unfilled_iri_states[["prose placeholder"]]
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  mark_metadata_field(pkg, "tables.csv", "observation_unit_iri", 1L, planted$observation_unit_iri)
+  mark_metadata_field(pkg, "column_dictionary.csv", "unit_iri", row, planted$unit_iri)
+
+  review <- review_metadata(pkg)
+  expect_identical(sort(review$field), c("observation_unit_iri", "unit_iri"))
+  expect_identical(review$reason, c("placeholder", "placeholder"))
+
+  lines <- .ms_metadata_render_lines(review, path_expr = "pkg")
+  expect_true("   2 fields still block strict validation." %in% lines)
+  expect_true(
+    "   2 of them are IRIs -- review_semantics() shows candidates for any that have them." %in%
+      lines
+  )
+})
+
 test_that("the REVIEW: marker has its own predicate, and the prose ones stay narrow", {
   values <- c(
     "REVIEW:https://example.org/Thing",
