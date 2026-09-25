@@ -954,6 +954,49 @@ test_that("a recorded reject is replayed from a candidate whose IRI names no ter
   }
 })
 
+# The console prints a call only where the call runs. A candidate whose IRI
+# names no term is refused by `accept_suggestion()`, so it gets no accept call,
+# while its slot keeps its reject call and every other candidate keeps its own.
+test_that("the console prints no accept call for a candidate whose IRI names no term", {
+  for (value in list("REVIEW:", "REVIEW: REVIEW:", "", NA_character_)) {
+    label <- if (is.na(value)) "NA" else encodeString(value, quote = '"')
+    rejected <- fixture_suggestions(iri = value)
+    rejected$decision <- "rejected"
+    rejected$decision_reason <- "no candidate describes a wild-origin count"
+    suggestions <- dplyr::bind_rows(
+      rejected,
+      fixture_suggestions(
+        dictionary_role = "property",
+        target_sdp_field = "property_iri",
+        label = "Abundance",
+        iri = "https://w3id.org/smn/Abundance"
+      )
+    )
+    review <- review_semantics(
+      with_suggestions(fixture_dict(), suggestions),
+      include_filled = TRUE
+    )
+    lines <- .ms_review_render_lines(review)
+    expect_true(any(grepl("DECIDED: reject", lines, fixed = TRUE)), info = label)
+    expect_true(any(grepl("names no term", lines, fixed = TRUE)), info = label)
+
+    printed <- eval_printed_calls(review, "accept_suggestion(")
+    expect_length(printed, 1L)
+    for (text in printed) {
+      decided <- eval(parse(text = text)[[1]], list(review = review), enclos = environment())
+      accepted <- decided[decided$decision %in% "accept", , drop = FALSE]
+      expect_equal(accepted$decision_iri, "https://w3id.org/smn/Abundance", info = label)
+    }
+    for (text in eval_printed_calls(review, "reject_suggestion(")) {
+      text <- sub("\\s+#.*$", "", text)
+      expect_s3_class(
+        eval(parse(text = text)[[1]], list(review = review), enclos = environment()),
+        "ms_semantic_review"
+      )
+    }
+  }
+})
+
 # A row with no IRI targets a field the review does decide, so it is not one of
 # the fields "this review cannot decide", and editing the metadata CSV by hand
 # is not what it needs. The shape B-219 left in a package: a hand-picked

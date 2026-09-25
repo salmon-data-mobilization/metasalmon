@@ -791,10 +791,17 @@ review_semantics <- function(x,
         ))
         lines <- c(lines, .ms_review_wrap(candidate$llm_rationale, indent = "            "))
       }
-      lines <- c(lines, paste0(
-        "       ", object_name, " <- ",
-        .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
-      ))
+      # A call is printed only where it runs. A candidate whose IRI names no
+      # term is here only to carry a recorded reject, or because the review was
+      # not built by `review_semantics()`, and `accept_suggestion()` refuses it.
+      lines <- c(lines, if (.ms_review_names_term(.ms_review_decision_iri(candidate$iri))) {
+        paste0(
+          "       ", object_name, " <- ",
+          .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
+        )
+      } else {
+        "       (its IRI names no term, so it cannot be accepted)"
+      })
       lines <- c(lines, "")
     }
 
