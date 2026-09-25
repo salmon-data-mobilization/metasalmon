@@ -712,7 +712,11 @@ review_metadata <- function(path) {
     )
   }
 
-  iri_rows <- sum(review$reason == "iri")
+  # Counted by the field, not by the reason its row kept. The scan keeps one row
+  # per field, so an IRI field holding a placeholder is reported as a
+  # placeholder, and it is still an IRI `review_semantics()` may have
+  # candidates for (hub B-211).
+  iri_rows <- sum(grepl("_iri$", review$field))
   c(
     lines,
     .ms_review_rule("next"),
