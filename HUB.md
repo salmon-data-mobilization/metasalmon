@@ -645,8 +645,9 @@ writes:
     The whole standing authorization is suspended the moment an agent executing
     this protocol writes outside the permitted list, and stays suspended until
     Brett reinstates it. The trigger is scoped the way scope_note scopes the
-    register: a write made under the protocol against a claimed item, not any
-    write an agent makes anywhere. Ordinary repository work outside the protocol
+    register: a write made under the protocol against a claimed item, or the
+    queue upkeep scope_note names for items nobody has claimed, not any write an
+    agent makes anywhere. Ordinary repository work outside the protocol
     is governed by Brett's global agent instructions and suspends itself under
     that file's own clause, which is a separate rule with a separate scope and
     is not narrowed by this one. Neither the scoping nor the reinstatement above
