@@ -11,6 +11,9 @@ psc:
 
 # S16 — The model call leaves the packages
 
+**Execplan:** [the review-packet and assessment-ingest contract](../plans/2026-09-25-s16-review-packet-contract.md)
+(step 1, a proposal until Brett rules its section 10).
+
 **Ruled by Brett, 2026-09-25, in chat** ([Q67](../questions.md)):
 
 > The LLM call features leaves metasalmon and metasalmonpy. The packages keep
