@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "Bugs and improvements backlog"
-description: "Live index of every known metasalmon defect and improvement, with file:line evidence and verification status. Ordering lives in the roadmap card; severity lives here."
+description: "Live index of every known metasalmon defect and improvement, with file:line evidence and verification status. Ordering lives in the roadmap card; an item's severity lives in its queue item file."
 status: draft
 tags: [backlog, defects]
 psc:
@@ -25,7 +25,10 @@ two adversarial verification passes + author spot-checks). Each item cites
   spend limit; re-confirm before acting.
 - **by-design** — investigated and judged intended behavior (kept for the record).
 
-Severity = how much it can bite a real user.
+Severity = how much it can bite a real user. An item's severity lives in the
+`severity` field of its file under `queue/items/` (ruled 2026-09-25), not in
+this file: a severity quoted here records what was true on the date it was
+written, and where it differs from the item file, the item file is right.
 
 **Implementation status legend (updated 2026-07-28 on `feature/theme-a-semantic-review`)**
 - **fixed** — implemented on this branch and covered by focused tests.
@@ -160,8 +163,8 @@ different type, in both implementations. It is filed separately rather than
 folded in, because #93's retire condition names `Date` and the SSSOM renderer,
 and quietly widening a condition an item has already met is how a retired item
 comes back without anyone deciding that it should.
-Priorities here are severity; *ordering* is decided in
-`knowledge/roadmap.md` and the two can differ — #54 was a P2 that shipped before the
+*Ordering* is decided in
+`knowledge/roadmap.md` and can differ from severity — #54 was a P2 that shipped before the
 remaining P1 because it silently lost user data and was cheap. An item marked **fixed**
 should name a check that proves it from a clean clone; #9 is the cautionary
 example of what happens otherwise. **A number here is a permanent handle**: an
@@ -324,7 +327,7 @@ repo at the same time.
 
 
 ### 1. `infer_dictionary()` silently drops LLM options when `seed_semantics = FALSE`
-- **Severity:** medium · **Status:** confirmed + spot-verified · **Class:** ux-bug
+- **Status:** confirmed + spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed. `infer_dictionary()` now routes through
   `.ms_llm_review_plan()` and warns once before list/data-frame branching when
   LLM semantic options are supplied with `seed_semantics = FALSE`; regression
@@ -342,7 +345,7 @@ repo at the same time.
   the suite for `infer_dictionary(... llm_*)` calls lacking `expect_warning`.
 
 ### 2. Exploration with skipped reassessment pairs a stale selected-index with a re-sorted candidate set
-- **Severity:** medium · **Status:** spot-verified (NEW) · **Class:** correctness-bug
+- **Status:** spot-verified (NEW) · **Class:** correctness-bug
 - **Implementation status:** fixed (completed during 2026-06-25 code review).
   Codex's first pass only fixed the *failed-reassessment* branch
   (`R/llm-semantic-helpers.R:1310`); the **no-gain skip branch** (`candidate_gain
@@ -371,7 +374,7 @@ repo at the same time.
   with the original assessment so index and ordering stay aligned.
 
 ### 3. Duplicated, divergent HTTP chat request builders
-- **Severity:** medium · **Status:** confirmed · **Class:** correctness-bug (drift)
+- **Status:** confirmed · **Class:** correctness-bug (drift)
 - **Implementation status:** fixed 2026-09-23 for the request builder (hub item
   B-3; see below). The request body is still divergent, and that is hub item
   B-128. Until then this read *open/deferred*: R4 intentionally deepened the
@@ -433,7 +436,7 @@ item's condition, and the B-3 workpad records it rather than converging it here.
 It is filed as `B-226`.
 
 ### 4. `create_sdp(include_edh_xml = TRUE)` writes EDH XML bypassing the unreviewed-rebuild guard
-- **Severity:** low-medium · **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
+- **Status:** finder-verified (NEW; likely intended) · **Class:** ux-bug
 - **Implementation status:** fixed (2026-06-26, roadmap B1). `create_sdp()` still
   writes create-time EDH XML, but now reuses `.ms_collect_edh_review_state_issues()`
   and emits a "DRAFT EDH" warning (pointing to `write_edh_xml_from_sdp()`) when
@@ -451,7 +454,7 @@ It is filed as `B-226`.
   shared builder that stamps/blocks when placeholders/REVIEW markers are present.
 
 ### 5. `chunk_id` / source-label collisions for context files sharing a basename
-- **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Status:** confirmed · **Class:** architectural-smell
 - **Implementation status:** fixed (2026-06-26, roadmap D2).
   `.ms_unique_context_sources()` disambiguates colliding basenames (parent dir, then
   a numeric suffix) inside `.ms_collect_context_chunks()`; unique labels are left
@@ -466,7 +469,7 @@ It is filed as `B-226`.
   "preserve source reporting exactly."
 
 ### 6. Encoding mismatch can corrupt non-UTF-8 context files
-- **Severity:** low · **Status:** confirmed · **Class:** architectural-smell
+- **Status:** confirmed · **Class:** architectural-smell
 - **Implementation status:** fixed (2026-06-26, roadmap D1). `.ms_read_text_utf8()`
   reads the main plain-text/CSV path as UTF-8, detects invalid UTF-8 via
   `validUTF8()`, and falls back to Windows-1252/Latin-1 decoding. Test in
@@ -477,7 +480,7 @@ It is filed as `B-226`.
   degrades scoring. **Fix:** detect/allow encoding in one place.
 
 ### 7. Provider truncation reported as a generic null-response abort
-- **Severity:** low · **Status:** confirmed · **Class:** ux-bug
+- **Status:** confirmed · **Class:** ux-bug
 - **Implementation status:** fixed. The review adapter now includes a sanitized
   content snippet when wrapped chat content is malformed and parsed `data` is not
   available; tests also assert parsed `data` wins over malformed `content`.
@@ -487,7 +490,7 @@ It is filed as `B-226`.
   surface a content snippet; assert in malformed-response tests for both consumers.
 
 ### 8. `semantic_code_scope = "factor"` semi-join omits `dataset_id`
-- **Severity:** low · **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
+- **Status:** finder-verified (NEW; latent) · **Class:** correctness-bug (latent)
 - **Implementation status:** fixed (2026-06-26, roadmap D3).
   `.ms_factor_code_keys()` / `.ms_select_semantic_seed_codes()` now thread
   `dataset_id` and join on `c("dataset_id","table_id","column_name")` when present
@@ -499,7 +502,7 @@ It is filed as `B-226`.
   cross-matches across datasets. **Fix:** include `dataset_id` in the key when present.
 
 ### 9. `CLAUDE.md` / `AGENTS.md` circular self-reference
-- **Severity:** low (repo hygiene) · **Status:** spot-verified · **Class:** ux-bug
+- **Status:** spot-verified · **Class:** ux-bug
 - **Implementation status:** fixed 2026-06-26 in a *working copy only*; genuinely
   fixed 2026-08-10. The 2026-06-26 pass wrote real guidance into `AGENTS.md`, but
   `.gitignore` listed `AGENTS.md` and `CLAUDE.md`, so neither file was ever
@@ -516,7 +519,7 @@ It is filed as `B-226`.
 
 ---
 
-## LLM-review robustness (new finder bugs, low severity)
+## LLM-review robustness (new finder bugs)
 
 These are batch/exploration robustness gaps. Output correctness is preserved
 (fallbacks exist) but behavior is poor. **Status: finder-verified, unverified by the
@@ -559,7 +562,7 @@ adversarial pass** — re-confirm before fixing.
   round-trip is spent. **Fix:** record the rejection; consider honoring near-duplicates.
 
 ### 33. Canonical project and runtime URLs point to the former organization
-- **Severity:** medium · **Status:** spot-verified · **Class:** reliability/ux-bug
+- **Status:** spot-verified · **Class:** reliability/ux-bug
 - **Implementation status:** fixed (2026-07-21). Package metadata, install and
   help links, update checks, OpenRouter attribution, tests, and source
   documentation now use `salmon-data-mobilization/metasalmon`. Runtime SDP
@@ -747,7 +750,7 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   being the destination for R3's target rows and a consumer in R4.
 
 ### 32. Display-only vignettes are tangled and executed by `R CMD check`
-- **Severity:** low-medium · **Status:** confirmed · **Class:** test-infra bug
+- **Status:** confirmed · **Class:** test-infra bug
 - **Implementation status:** fixed (2026-07-21, roadmap E5). Every display-only
   chunk in the six affected vignettes now declares `purl = FALSE` in its chunk
   header. A focused `knitr::purl()` validation found zero executable lines, and
@@ -1062,7 +1065,7 @@ risk that broke remote schema loading before 0.2.0 (#35).
 validated bundle. The constant survives as the fallback for a bundle predating
 the v0.2 extension resources.
 
-### Open — P1 (highest value next)
+### Open — validation, reproducibility and data loss
 
 **#96 A `Date` in `dataset_meta$temporal_start` destroys the package already on
 disk. The most severe item on this list.** *(Retired 2026-08-22 — both halves
@@ -1356,7 +1359,7 @@ review is for.
 with its alternatives, or the decision is recorded that crosswalk prefills are
 authoritative and deliberately not reviewable.
 
-### P2 — correctness and conformance debt
+### Correctness and conformance debt
 
 **Mixed state; read each item's first line, not this heading.** Open: **#86**,
 **#87**, **#82**, **#83**, **#111**, **#113**. Fixed but unreleased in gcdfo:
@@ -2968,7 +2971,7 @@ guarded by `|| true`.
 1. **The gate is inert.** Demonstrated 2026-09-15 with the same shape: `bash -lc
    'make definitely-not-a-target; git checkout -- README.md || true'` exits
    **0**. So a failing `make ci` does not fail the push, and never has. This is
-   the P1 half.
+   the half the item's severity rests on.
 2. **The `git checkout --` discards a real result.** It fires on success exactly
    as it fires on failure, and the hook's `files: ^ontology/dfo-salmon\.ttl$`
    restricts it to pushes that changed the canonical ontology — precisely when
@@ -3417,7 +3420,7 @@ ontology document URL (ECSO, ENVO, ProvONE, the OBOE modules) and a namespace
 prefix (all five `odo/` entries) — which is what says which shape smn's own
 entry would take.
 
-**Why this is P2 rather than a nicety.** An annotation whose IRI is outside the
+**Why this is more than a nicety.** An annotation whose IRI is outside the
 list is still indexed — it lands in the flat `sem_annotation` field and is
 exact-IRI queryable — but it gets **no expansion**, so a search for a parent
 concept does not match a dataset annotated with a child of it. For a package
@@ -3477,7 +3480,7 @@ matching a record annotated only with a child — or a logged decision records
 that smn will instead mint or align under an already-accepted namespace, or that
 the ask was made and declined, with what was said.
 
-### Open — P3 (R-package and API hygiene)
+### Open — R-package and API hygiene
 
 **#58 No condition classes anywhere.** 415 `cli_abort` + 38 `cli_warn` + 3
 `rlang::abort`, all unclassed, so callers cannot `tryCatch` selectively — a real
@@ -3881,7 +3884,7 @@ the body's evidence table was measured at the first. At the head — `ead77a3`,
 `tests/test_review_console.py` and `tests/test_sdp_field_setters.py`. A reader
 checking the body against the head finds four numbers all wrong by six, with
 nothing in the body saying which commit it describes. That is evidence hygiene
-rather than a code defect, which is why it is P4: a PR body's evidence should
+rather than a code defect, which is what its severity reflects: a PR body's evidence should
 reproduce, and when it does not, the first question is whether the measurement
 or the environment differs — here it was neither, it was the commit.
 
@@ -3891,7 +3894,7 @@ body carries its commit is written into wherever that repository records its
 release and review procedure. No code change is owed in either repository and no
 `PARITY.md` row is owed.
 
-### Open — P4 (ecosystem: spec, ontologies, workshop, governance)
+### Open — ecosystem: spec, ontologies, workshop, governance
 
 **#61 Ecosystem findings.** 37 verified findings across `smn-data-pkg`,
 `salmon-domain-ontology`, `dfo-salmon-ontology`,
@@ -3910,8 +3913,8 @@ Pages configuration.
 **#116 The reviewed closure has no producer and no documentation, so the
 publication path is unreachable from the published docs. FIXED IN R
 2026-09-15 (hub item B-116); the mirror half is still owed.** Found 2026-08-25
-while taking the Fraser coho example to a KNB test-node dry run. Severity:
-**high** — it is not a defect in any one function, it is a hole in the golden
+while taking the Fraser coho example to a KNB test-node dry run. *Why this
+severity:* it is not a defect in any one function, it is a hole in the golden
 path, and the symptom is that a user who does everything the vignette says gets
 `metadata/semantic_vocabulary.csv does not exist` with nowhere to go.
 
@@ -4792,7 +4795,7 @@ here.
 *Retires when:* metasalmon's `.Rbuildignore` excludes `.pytest_cache`, so a
 checkout where pytest has been run builds the same tarball as a fresh one; and
 `.gitignore` names `.pytest_cache/` beside the `__pycache__/` entry it already
-carries, here and in the two siblings that run pytest. P4 — nothing is
+carries, here and in the two siblings that run pytest. *Why this severity:* nothing is
 committed today and it is one line per repository — and filed rather than
 dropped because the next person to check re-derives the same wrong answer.
 
@@ -5284,7 +5287,7 @@ detected once and in one place.
 
 **`B-194` a sidecar declaring one output path twice silently loses a file.**
 Present and identical in both implementations, so a shared residual rather than a
-divergence. Low severity — a sidecar is hand-edited and the duplicate has to be
+divergence. *Why this severity:* a sidecar is hand-edited and the duplicate has to be
 written deliberately — but the failure is **silent**: the second write wins, the
 first output is simply absent, and the digests recorded in the sidecar are
 consistent with the file that survived, so nothing downstream reports anything.
@@ -5779,7 +5782,7 @@ replayed against a metasalmonpy checkout at `1e9245c` (`CHANGELOG.md` lines
 `67fb486`) is the real-history confirmation, reached the way
 `check-parity-registers.py` reaches its twin, and is not part of the retirement
 condition, because a condition satisfiable only with a sibling checkout is the
-shape `queue/README.md` forbids. **P3:** the failure corrupts no data and no
+shape `queue/README.md` forbids. *Why this severity:* the failure corrupts no data and no
 behaviour, and the window is bounded — bump to tag — but the release record is
 what the mirror contract's parity claim is read from, one real instance occurred
 within a minute of the window opening — `67fb486` at 12:55:23Z, `b939fd9` at
@@ -5800,7 +5803,7 @@ verbatim: the RED is run at a checkout of `1e9245c`, and the check is green on
 `main` from `3f8349a` on, where `git diff 67fb486 origin/main -- CHANGELOG.md`
 has a single hunk above the `## 0.5.0` heading at line 97, so the 0.5.0 section
 matches the bump merge. The `v0.5.0` tag went on `67fb486` on 2026-09-24.
-**P3**, as B-200.
+*Why this severity:* as for B-200.
 
 **`B-202`: a port item can reach `done` while the register still says the port
 is owed, and it did five times in one day — the fifth on this pull request's own
@@ -5847,7 +5850,7 @@ not ids named as blockers or as R halves (six of those are `done` and owed no
 closure paragraph), and looks for the bold *"landed … as metasalmonpy #N"* form
 rather than the bare word. Like
 `check-parity-registers.py`, it catches the shape and not the substance — whether
-a closure paragraph is true is still a reading. **P2:** the register is one of the
+a closure paragraph is true is still a reading. *Why this severity:* the register is one of the
 three copies of the single fact the mirror contract turns on, a stale "owed"
 sends the next agent to port work that has landed or to claim a window is open,
 and five instances in a day with the rule written down at the third is the
@@ -5871,8 +5874,8 @@ six of its commits; the agent working there got past it with
 fix. In a scratch repository built for the purpose: a `--single-branch` clone, an
 empty commit on a new branch, `git push -u origin feature` succeeding and
 `ls-remote` confirming it, the walk printing that commit, and the workaround
-fetch clearing it. **It fails safe, which is why it is P3 and why it is an item
-at all:** the worktree is kept rather than lost, but the check sits in the policy
+fetch clearing it. **It fails safe, which is what its severity reflects, and it is an item
+all the same:** the worktree is kept rather than lost, but the check sits in the policy
 file every agent reads, it is wrong for a whole class of clone, and the
 workaround is one every agent rediscovers alone. `scripts/hub` does not carry the
 walk (no `--remotes` under `scripts/` on 2026-09-16), so the edit is to
@@ -5924,7 +5927,7 @@ enforces it:** `smn-data-pkg`'s `scripts/validate_package.py:221-222` at
 `tests/test_validate_package.py:73-79` pins it with a partial date (`1996-01`)
 and the message *"temporal_start must match pattern"*. So the gap is in the two
 implementations, not the spec — one gap in two trees, filed as a pair naming each
-other because a claim covers one repository. **P2 on both:** silent conformance
+other because a claim covers one repository. *Why this severity, on both:* silent conformance
 debt. A green `validate_salmon_datapackage()` is read as "conforms to the
 profile", and here it does not, for a rule the profile states in the very file
 both packages vendor. Each retires when its validator enforces
@@ -6153,6 +6156,16 @@ recommendation in `Q-52`: the field is the reliable copy and the position is
 not. `B-116` is also the backlog contradicting *itself* — an entry that calls
 its own severity *high* filed under the P4 ecosystem heading. Both have to be
 disposed of by the ruling rather than left to whichever side wins.
+
+*(Disposed of 2026-09-25, after Brett ruled that the item file is the home. The
+four P-section headings, and the `low severity` in the `LLM-review robustness`
+heading, no longer name a severity, so no entry's position can disagree with its
+card; the per-entry `**Severity:**` values are deleted, and `B-116`'s
+*"Severity: **high**"* is now a reason without a value. Re-read the same day
+before the change, with a heading stack and the sectioned-occurrence rule of
+item 4 below: the same two divergences, and no third among values on the
+queue's own scale. The headings, quotations and line numbers in this section
+are the file as it was measured on 2026-09-16.)*
 
 **Every earlier reading of that table was wrong, and each looked clean.** They
 are enumerated below with the instrument and the finder named on each, and this
