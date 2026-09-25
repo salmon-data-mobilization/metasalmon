@@ -883,9 +883,12 @@ not empty and is not still read as a marker by `.ms_is_review_iri()`.
 only that `iri` was not blank. So `rank =` no longer accepts a candidate whose
 `iri` is only the marker, a recorded accept of one is no longer replayed with an
 empty `decision_iri`, and a candidate carrying a doubled marker is not queued
-either. `accept_suggestion()` refuses a value the predicate rejects, by `iri =`
-and by `rank =`. So `iri = "REVIEW: REVIEW:"`, which recorded `REVIEW:`, now
-aborts, and so does `rank =` on such a candidate in a review the current
+either. A row carrying a recorded reject is kept whatever its IRI, because
+rejecting a slot names no candidate, so its rejection and reason are still
+replayed; before, a slot whose only candidate had a blank `iri` lost both.
+`accept_suggestion()` refuses a value the predicate rejects, by `iri =` and by
+`rank =`. So `iri = "REVIEW: REVIEW:"`, which recorded `REVIEW:`, now aborts,
+and so does `rank =` on such a candidate in a review the current
 `review_semantics()` did not build, one saved by an earlier version or edited by
 hand. And the message *"Some suggestions target fields this review cannot
 decide"* is built from the rows with no write-back address or no IRI field
@@ -898,24 +901,27 @@ print different ranks for the same table.
 
 **The port is owed because metasalmonpy has the same defects.** Its `keep` mask
 in `review_console.py` tests only that the text of `iri` is not empty, and one
-message lists every row it drops. Three of the four routes were measured: by
-the 2026-09-25 queue sweep on `main` `f1f7230`, and by the B-220 run on
-`85ebbb0`. The replay was read there and not run. Those measurements are under
-`B-246` and `B-247` in `knowledge/backlog.md`, and are not repeated here. The
-pin should be the R tests' twins in `tests/test_review_console.py`, each
-asserting its spelling premise against metasalmonpy's own strip and detector
-first. For every spelling in `MARKER_ONLY_IRIS`, a candidate that is only the
-marker is not queued, alone or ahead of a real candidate, and a recorded accept
-of one replays no empty IRI and leaves the slot to be asked again. For a doubled
-marker, `iri=` refuses it and a candidate carrying it is neither queued nor
-replayed. For every spelling of either kind, `rank=` refuses a candidate a
-review holds whose IRI names no term. A row with an empty or missing IRI is not
-listed among the fields the review cannot decide, and a field it cannot decide
-still is. Which spellings count as the marker is hub question `Q-63`'s, and
-neither half decides it. It is owed as a port, not a register row: once it lands
-the two implementations behave alike again. It did not land in the same stream
-because a hub claim covers one branch in one repository. Its metasalmonpy queue
-item is `B-247`.
+message lists every row it drops. Three of the four routes were measured: by the
+2026-09-25 queue sweep on `main` `f1f7230`, and by the B-220 run on `85ebbb0`.
+The replay was read there and not run, and so was the loss of a recorded reject
+from a slot whose only candidate has a blank `iri`, which the same mask drops.
+Those measurements are under `B-246` and `B-247` in `knowledge/backlog.md`, and
+are not repeated here. The pin should be the R tests' twins in
+`tests/test_review_console.py`, each asserting its spelling premise against
+metasalmonpy's own strip and detector first. For every spelling in
+`MARKER_ONLY_IRIS`, a candidate that is only the marker is not queued, alone or
+ahead of a real candidate, and a recorded accept of one replays no empty IRI and
+leaves the slot to be asked again. For a doubled marker, `iri=` refuses it and a
+candidate carrying it is neither queued nor replayed. For every spelling of
+either kind, `rank=` refuses a candidate a review holds whose IRI names no term.
+For every spelling of either kind, and for an empty and a missing `iri`, a
+recorded reject of a slot whose only candidate carries it is replayed with its
+reason. A row with an empty or missing IRI is not listed among the fields the
+review cannot decide, and a field it cannot decide still is. Which spellings
+count as the marker is hub question `Q-63`'s, and neither half decides it. It is
+owed as a port, not a register row: once it lands the two implementations behave
+alike again. It did not land in the same stream because a hub claim covers one
+branch in one repository. Its metasalmonpy queue item is `B-247`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
