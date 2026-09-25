@@ -618,14 +618,18 @@ metasalmon (development version)
   re-apply `owl_class`. An `iri` that a candidate in the review's shortlist
   carries, compared without the `REVIEW:` marker, is now recorded on that
   candidate's row. It is the same decision as `rank = <its rank>`, and applying,
-  rebuilding and re-applying it writes the same bytes. An IRI that no candidate
-  in the shortlist carries still writes `skos_concept`, as before. That
-  includes hub item B-176's case, a term the reviewer typed whose type nothing
-  records.
+  rebuilding and re-applying it writes the same bytes. A candidate stored with
+  the `REVIEW:` marker on its IRI now writes its own `term_type` too, by
+  `iri =` and by `rank =` alike. The writer compared that stored IRI, marker
+  and all, with the unmarked IRI the decision records, so it never recognised
+  the candidate and wrote `skos_concept`. An IRI that no candidate in the
+  shortlist carries still writes `skos_concept`, as before. That includes hub
+  item B-176's case, a term the reviewer typed whose type nothing records.
 
   **Mirror:** metasalmonpy's `accept_suggestion()` also records `iri=` on the
   slot's first row, and its writer falls back to `skos_concept` the same way,
-  so the fix is owed there as a port (see `knowledge/parity-deviations.md`).
+  marked candidates included, so the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
 
 ### Changed
 

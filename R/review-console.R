@@ -90,6 +90,19 @@
   c(accepted = "accept", accept = "accept", rejected = "reject")
 }
 
+# A candidate's IRI as a decision records it: trimmed, with the leading
+# `REVIEW:` marker removed, which is what `accept_suggestion(rank = )` and a
+# replayed decision put in `decision_iri`. Whether a decision names a given
+# candidate is asked twice. `accept_suggestion(iri = )` picks the candidate's
+# row with it, and `apply_sdp_semantics()` takes the candidate's `term_type`
+# only when the decision row carries the accepted IRI. Both read this one
+# rendering. While the writer compared the stored IRI with its marker, a
+# candidate stored as `REVIEW: <IRI>` was picked by the first and not recognised
+# by the second, so it wrote `skos_concept` (hub item B-221).
+.ms_review_decision_iri <- function(x) {
+  .ms_strip_review_iri(trimws(as.character(x)))
+}
+
 # Replay the decisions recorded in the package onto a freshly built review.
 .ms_review_seed_recorded_decisions <- function(review, suggestions) {
   if (!"decision" %in% names(suggestions) || nrow(review) == 0L) {
@@ -997,16 +1010,14 @@ accept_suggestion <- function(review,
   # the rebuilt review replays the decision. On the slot's first row instead,
   # one decision wrote `skos_concept` when first applied and the candidate's own
   # type once rebuilt (hub item B-221). Candidate IRIs are compared as a
-  # decision records them, trimmed and without the marker, and the first
-  # carrier wins, as it does on replay. An IRI no candidate in this review
-  # carries still goes on the first row, whose different IRI tells the writer
-  # nothing is known about its type.
+  # decision records them (`.ms_review_decision_iri()`, which the writer reads
+  # too), and the first carrier wins, as it does on replay. An IRI no candidate
+  # in this review carries still goes on the first row, whose different IRI
+  # tells the writer nothing is known about its type.
   target <- if (is.null(iri)) {
     which(in_slot & review$rank == as.integer(rank))
   } else {
-    carried <- which(
-      in_slot & .ms_strip_review_iri(trimws(as.character(review$iri))) %in% accepted_iri
-    )
+    carried <- which(in_slot & .ms_review_decision_iri(review$iri) %in% accepted_iri)
     if (length(carried) > 0L) carried[[1]] else which(in_slot)[[1]]
   }
   review$decision[target] <- "accept"
