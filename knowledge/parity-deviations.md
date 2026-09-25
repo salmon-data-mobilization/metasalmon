@@ -775,6 +775,41 @@ records that only R removes a space or tab before the colon, that only
 metasalmonpy removes a no-break space after it or folds a dotless i, and that
 R's result for some Unicode spaces depends on the locale. That is Q-63's.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion(iri = )` naming a shortlisted candidate records that
+candidate.** An `iri` that a candidate in the slot's shortlist carries, compared
+trimmed and without the `REVIEW:` marker, is now recorded on that candidate's
+row, the row `rank =` its rank records, where it was recorded on the slot's
+first row (hub item **B-221**). `apply_sdp_semantics()` takes `term_type` from
+the row a decision sits on only when that row carries the accepted IRI, and
+writes `skos_concept` otherwise. So hand-picking a lower-ranked candidate's IRI
+wrote `skos_concept`, and re-applying the review rebuilt from the package, which
+replays the decision on the candidate's own row, wrote the candidate's type. The
+fix is in `accept_suggestion()`, and `apply_sdp_semantics()` is unchanged. An
+IRI that no shortlisted candidate carries still goes on the first row and still
+writes `skos_concept`.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`accept_suggestion()` in `review_console.py` sets `target_index` to the slot's
+first row whenever `iri` is given (`:1214`), and `apply_sdp_semantics()` in
+`metadata_write.py` compares that row's `iri` with `decision_iri` and writes
+`skos_concept` when they differ (`:192-200`). Measured 2026-09-25 on
+metasalmonpy `main` `2405df2` (Python 3.11.15, pandas 3.0.5), loading the
+package from a `git archive` extract, on a slot with two `variable` candidates
+and an `owl_class` at rank 2. `iri=` naming that candidate records the accept on
+rank 1 and writes `skos_concept`. The rebuilt review replays it on rank 2, and
+re-applying writes `owl_class`, so `column_dictionary.csv` changes. `rank=2`
+writes `owl_class` both times. The pin should be the R tests'
+(`tests/testthat/test-metadata-write.R`). One hand-picks the IRI of an
+`owl_class` candidate below rank 1, applies, rebuilds with
+`include_filled=True`, re-applies and compares bytes. One checks that the review
+`iri=` gives, marked or not, is the one `rank=` gives. A control makes every
+candidate an `owl_class` and checks that an IRI none carries still writes
+`skos_concept`. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because a
+hub claim covers one branch in one repository. Its metasalmonpy queue item is
+**B-222**.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
