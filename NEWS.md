@@ -751,6 +751,25 @@ metasalmon (development version)
   **Mirror:** metasalmonpy does not have this defect. Its `find_terms()`
   searches its sources one after another, so there is no worker to fail.
 
+* **The ICES find helpers search the columns a response has, where a missing
+  one was an error** (backlog #57, hub item B-57). `ices_find_code_types()` and
+  `ices_find_codes()` guarded each column they search with `.data$col %||% ""`,
+  which guards nothing: inside a data mask a missing column is an error, never
+  `NULL`. So a response with no `longDescription` column aborted the search
+  with *Column `longDescription` not found in `.data`*. An answer with no rows
+  aborted it too, because it reaches the helpers as a tibble with no columns at
+  all. A missing column now reads as empty text, as a missing value already
+  did, and an answer with no rows gives an empty result. `ices_codes()` now
+  returns the rows of a response with no `key` column, with an `NA` detail
+  `url`, where it aborted. A failed request still gives the same empty result
+  as an empty answer, as `ices_code_types()` and `ices_codes()` always have, so
+  an empty result does not say whether ICES answered.
+
+  **Mirror:** metasalmonpy already behaves this way. Its helpers fill a missing
+  column with `""` and return an empty frame for an empty or failed response,
+  and its own tests use a response with no `longDescription`. R has moved to
+  match it, so nothing is owed there and no register row is needed.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
