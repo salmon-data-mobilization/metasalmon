@@ -1,0 +1,13 @@
+id: B-324
+kind: defect
+title: 'Reconcile the commons merge rule in CONTRIBUTING with its CI and with the hub''s review delegation, the last of B-123''s three pull requests'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-123]
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'The commons CONTRIBUTING.md says exactly what an agent may merge there once B-323''s check exists and B-123''s split has landed, and what enforces it. That covers whether the concepts-only rule also requires the check to be green on the head being merged, which files join the human-approval list (the workflow and the scripts among them), and that the enforcement is the agent''s own rule rather than the server''s wherever required checks are unavailable. It reconciles that rule with the section of HUB.md headed Which pull requests need Brett rather than restating it. The rule is Brett''s policy, so an agent drafts the text and Brett merges it. Sixth and last in the order he ruled on 2026-09-25 (Q68).'
