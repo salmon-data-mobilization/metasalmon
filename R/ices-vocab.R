@@ -17,6 +17,33 @@ NULL
   tibble::tibble()
 }
 
+# The lower-cased text of `field` in each row of an ICES response, with a
+# missing column and a missing value both read as "".
+#
+# `.data$longDescription %||% ""` was written as this guard and was not one:
+# inside a data mask a missing column is an error, never NULL, so a response
+# without one of the searched columns aborted the search, and so did a response
+# with no rows, which reaches here as a tibble with no columns (backlog #57).
+# metasalmonpy's `ices_vocab.py` fills a missing column with "" in the same way.
+.ices_text <- function(df, field) {
+  if (!field %in% names(df)) {
+    return(rep("", nrow(df)))
+  }
+  text <- as.character(df[[field]])
+  text[is.na(text)] <- ""
+  tolower(text)
+}
+
+# The rows whose `key`, `description` or `longDescription` contains `query`,
+# ignoring case, and at most `max_results` of them.
+.ices_filter_text <- function(df, query, max_results) {
+  q <- tolower(query)
+  hit <- grepl(q, .ices_text(df, "key"), fixed = TRUE) |
+    grepl(q, .ices_text(df, "description"), fixed = TRUE) |
+    grepl(q, .ices_text(df, "longDescription"), fixed = TRUE)
+  utils::head(df[hit, , drop = FALSE], max_results)
+}
+
 #' List ICES code types
 #'
 #' @param code_type Optional code type key or GUID to filter the API response.
@@ -66,10 +93,17 @@ ices_codes <- function(code_type,
   data <- .safe_json(url, headers = c(Accept = "application/json"))
   if (is.null(data) || !is.data.frame(data) || nrow(data) == 0) return(.ices_empty())
 
+  # A response with no `key` column still returns its rows. Only the detail
+  # URL, which is built from the key, is NA (backlog #57).
+  has_key <- "key" %in% names(data)
   tibble::as_tibble(data) %>%
     dplyr::mutate(
       code_type = code_type,
-      url = paste0(.ices_base_url, "/CodeDetail/", utils::URLencode(code_type, reserved = TRUE), "/", .data$key)
+      url = if (has_key) {
+        paste0(.ices_base_url, "/CodeDetail/", utils::URLencode(code_type, reserved = TRUE), "/", .data$key)
+      } else {
+        NA_character_
+      }
     )
 }
 
@@ -82,14 +116,7 @@ ices_codes <- function(code_type,
 #' @export
 ices_find_code_types <- function(query, max_results = 20) {
   if (is.null(query) || is.na(query) || !nzchar(query)) return(.ices_empty())
-  q <- tolower(query)
-  ices_code_types() %>%
-    dplyr::filter(
-      grepl(q, tolower(.data$key %||% ""), fixed = TRUE) |
-        grepl(q, tolower(.data$description %||% ""), fixed = TRUE) |
-        grepl(q, tolower(.data$longDescription %||% ""), fixed = TRUE)
-    ) %>%
-    utils::head(max_results)
+  .ices_filter_text(ices_code_types(), query, max_results)
 }
 
 #' Find ICES codes within a code type by text match
@@ -102,13 +129,6 @@ ices_find_code_types <- function(query, max_results = 20) {
 #' @export
 ices_find_codes <- function(query, code_type, max_results = 50) {
   if (is.null(query) || is.na(query) || !nzchar(query)) return(.ices_empty())
-  q <- tolower(query)
-  ices_codes(code_type) %>%
-    dplyr::filter(
-      grepl(q, tolower(.data$key %||% ""), fixed = TRUE) |
-        grepl(q, tolower(.data$description %||% ""), fixed = TRUE) |
-        grepl(q, tolower(.data$longDescription %||% ""), fixed = TRUE)
-    ) %>%
-    utils::head(max_results)
+  .ices_filter_text(ices_codes(code_type), query, max_results)
 }
 

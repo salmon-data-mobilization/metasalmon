@@ -1053,6 +1053,51 @@ port, not a register row, because nobody chose the difference. It did not land
 in the same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is **B-275**.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the direct `suggest_semantics()` call keeps `llm_top_n` candidates per role for
+the LLM, and `DESCRIPTION` declares `frictionless`.** Hub item **B-57** (backlog
+#57) makes `suggest_semantics()` apply `.ms_llm_effective_shortlist_size()` to
+`max_per_role` when `llm_assess = TRUE`. That is the rule
+`.ms_llm_review_plan()` already applied for every wrapper, and applying it to a
+wrapper's widened value changes nothing. Before, the direct call kept
+`max_per_role` candidates per role, so the documented `llm_top_n` default of 5
+became the `max_per_role` default of 3 in front of the LLM. Without `llm_assess`
+nothing changed. The same item names Python 3 and the `frictionless` Python
+package in `SystemRequirements`, as optional, because
+`dwc_dp_build_descriptor(validate = TRUE)` runs both and nothing declared
+either.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`suggest_semantics()` in `semantics.py` keeps `res.head(max_per_role)` at the
+first pass (`:1001`) and widens only the argument it hands the review,
+`max_per_role=max(max_per_role, llm_top_n)` (`:1082`), which the retry
+retrieval reads. It was measured 2026-09-25 on metasalmonpy `main` `f1f7230`
+(Python 3.11.15, pandas 3.0.5), with an injected `search_fn` giving eight
+candidates per role and a recording `llm_request_fn`, under the defaults. The
+first pass kept 3 per role, and the first review request named 3 per role,
+which is what R did before B-57. The pin should be the R test's
+(`tests/testthat/test-llm-shortlist-width.R`): with the defaults, five kept per
+role and five named in the first request; a larger `max_per_role` still setting
+how many are kept; three kept without `llm_assess`. The `frictionless` half has
+the same shape: `dwc_dp_export.py` imports `frictionless` inside
+`validate_descriptor()`, and `pyproject.toml`'s `[project.optional-dependencies]`
+has no entry that names it. The counterpart of R's `SystemRequirements` line is
+an extra that does. Both are owed as a port, not a register row: once they land
+the two implementations behave alike again. They did not land in the same
+stream because a hub claim covers one branch in one repository. Their
+metasalmonpy queue item is **B-302**.
+
+**Two of B-57's fixes owe metasalmonpy nothing, and both answers were measured
+on `f1f7230`.** `find_terms()` there searches its sources one after another in
+`term_search.py`, so no parallel worker can fail to deliver. Its ICES helpers
+in `ices_vocab.py` already fill a missing column with `""` and return an empty
+frame for an empty or failed response. The four response shapes that aborted R
+all degraded there, so R moved to match the mirror. B-57's two refiled halves,
+**B-300** (what `dwc_dp_build_descriptor(validate = TRUE)` does with its report)
+and **B-301** (the composite-intent gate's `optional_hint_fields`), will owe
+metasalmonpy a half each once Brett rules them. metasalmonpy has the same
+behaviour in both places.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

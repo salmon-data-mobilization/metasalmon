@@ -736,6 +736,71 @@ metasalmon (development version)
   **Mirror:** metasalmonpy's reader refuses the same canonical files. It is
   owed there as a port, hub item B-234, and not registered as a deviation.
 
+* **`DESCRIPTION` now declares the Python toolchain that
+  `dwc_dp_build_descriptor(validate = TRUE)` runs** (backlog #57, hub item
+  B-57). Validation writes a Python script, runs it with the interpreter the
+  `python` argument names, and imports the `frictionless` Python package.
+  Neither is an R dependency, and nothing in the package's metadata said they
+  were needed. `SystemRequirements` now names both and says they are optional.
+  What the function does with the validation result is unchanged: it still
+  prints the report and returns the descriptor whatever the report says. That
+  is hub item B-300.
+
+  **Mirror:** metasalmonpy imports `frictionless` in-process, and its
+  `pyproject.toml` does not declare it, not even as an optional extra. The
+  declaration is owed there as part of hub item B-302.
+
+* **`suggest_semantics(llm_assess = TRUE)` now shows the LLM as many candidates
+  as `llm_top_n` says** (backlog #57, hub item B-57). The LLM can only be shown
+  what retrieval kept, and the direct call kept `max_per_role` candidates per
+  role, so the documented `llm_top_n` default of 5 silently became the
+  `max_per_role` default of 3. `create_sdp()`, `infer_dictionary()` and
+  `infer_salmon_datapackage_artifacts()` already widened retrieval to the larger
+  of the two, and the direct call now does the same. With `llm_assess = TRUE`,
+  `semantic_suggestions` therefore keeps up to `max(max_per_role, llm_top_n)`
+  rows per role where it kept up to `max_per_role`. Without `llm_assess`
+  nothing changes.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` has the same defect. Under
+  the same defaults its first review round shows the LLM 3 candidates per role,
+  measured on `main` `f1f7230`. The widening is owed there as a port, hub item
+  B-302.
+
+* **`find_terms()` now checks what each parallel search worker delivered**
+  (backlog #57, hub item B-57). When parallel search is on, the default outside
+  Windows, the sources after `smn` and `gcdfo` are searched in forked
+  `parallel::mclapply()` workers, and each worker's result was read without a
+  check that it had delivered one. A worker that died, the way an out-of-memory
+  kill or a crash in a native library ends one, dropped its source silently. It
+  left no diagnostic row and no *did not answer* warning, and the incomplete
+  result was cached and read as complete. An error that escaped a worker aborted
+  the whole search with `$ operator is invalid for atomic vectors`. Either is
+  now recorded as an error from that source, the way a source that errors is
+  already recorded. So `find_terms()` warns that the source did not answer and
+  does not cache the result.
+
+  **Mirror:** metasalmonpy does not have this defect. Its `find_terms()`
+  searches its sources one after another, so there is no worker to fail.
+
+* **The ICES find helpers search the columns a response has, where a missing
+  one was an error** (backlog #57, hub item B-57). `ices_find_code_types()` and
+  `ices_find_codes()` guarded each column they search with `.data$col %||% ""`,
+  which guards nothing: inside a data mask a missing column is an error, never
+  `NULL`. So a response with no `longDescription` column aborted the search
+  with *Column `longDescription` not found in `.data`*. An answer with no rows
+  aborted it too, because it reaches the helpers as a tibble with no columns at
+  all. A missing column now reads as empty text, as a missing value already
+  did, and an answer with no rows gives an empty result. `ices_codes()` now
+  returns the rows of a response with no `key` column, with an `NA` detail
+  `url`, where it aborted. A failed request still gives the same empty result
+  as an empty answer, as `ices_code_types()` and `ices_codes()` always have, so
+  an empty result does not say whether ICES answered.
+
+  **Mirror:** metasalmonpy already behaves this way. Its helpers fill a missing
+  column with `""` and return an empty frame for an empty or failed response,
+  and its own tests use a response with no `longDescription`. R has moved to
+  match it, so nothing is owed there and no register row is needed.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

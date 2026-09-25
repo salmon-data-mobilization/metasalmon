@@ -1567,3 +1567,95 @@ test_that("the BioPortal key travels in a header, not the query string", {
     fixed = TRUE
   )
 })
+
+# A forked `parallel::mclapply()` worker that dies hands back NULL, and one
+# whose error escapes `run_source()` hands back a `try-error`. Neither is a
+# source result, and `find_terms()` read `$result` from each element without
+# checking (backlog #57): the first silently dropped the source, leaving no
+# diagnostic row, so an incomplete lookup was cached and read as complete; the
+# second aborted the whole search. Both need the fork, so they skip on Windows,
+# where `find_terms()` searches serially and there is no worker to fail.
+# *Retires when:* `find_terms()` forks on Windows too, or stops forking at all.
+worker_failure_search <- function(nvs_search, ...) {
+  one_row <- function(src, role) {
+    tibble::tibble(
+      label = paste(src, "hit"),
+      iri = paste0("https://example.org/", src, "/hit"),
+      source = src,
+      ontology = "demo",
+      role = role,
+      match_type = "label_exact",
+      definition = paste("A", src, "term")
+    )
+  }
+  warnings <- character()
+  res <- withCallingHandlers(
+    with_mocked_bindings(
+      .safe_json = function(...) stop("no network call belongs in this test"),
+      .search_ols = function(query, role) one_row("ols", role),
+      .search_nvs = nvs_search,
+      ...,
+      find_terms(
+        "spawner abundance",
+        role = "variable",
+        sources = c("ols", "nvs"),
+        expand_query = FALSE
+      )
+    ),
+    warning = function(w) {
+      warnings <<- c(warnings, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(result = res, warnings = warnings)
+}
+
+test_that("a parallel search worker that dies is a source that did not answer", {
+  skip_on_os("windows")
+  withr::local_envvar(c(METASALMON_TERM_SEARCH_PARALLEL = "true", METASALMON_CACHE = "1"))
+  rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache)
+  withr::defer(rm(list = ls(envir = .metasalmon_cache, all.names = TRUE), envir = .metasalmon_cache))
+
+  test_process <- Sys.getpid()
+  out <- worker_failure_search(function(query, role) {
+    # Kill only a forked worker. Run here, in the test process, it would mean
+    # the branch under test was never taken, which the assertions below catch.
+    if (Sys.getpid() == test_process) {
+      stop("the nvs search ran in the test process")
+    }
+    tools::pskill(Sys.getpid(), tools::SIGKILL)
+    Sys.sleep(5)
+  })
+
+  diagnostics <- attr(out$result, "diagnostics")
+  expect_setequal(diagnostics$source, c("ols", "nvs"))
+  nvs <- diagnostics[diagnostics$source == "nvs", , drop = FALSE]
+  expect_identical(nvs$status, "error")
+  expect_match(nvs$error, "parallel search worker failed", fixed = TRUE)
+  expect_identical(.ms_search_failed_sources(diagnostics), "nvs")
+  expect_true(any(grepl("did not answer", out$warnings, fixed = TRUE)))
+  # The source that answered is kept, and the incomplete lookup is not cached.
+  expect_identical(unique(out$result$source), "ols")
+  expect_length(ls(envir = .metasalmon_cache, all.names = TRUE), 0L)
+})
+
+test_that("an error that escapes a parallel search worker is reported, not dereferenced", {
+  skip_on_os("windows")
+  withr::local_envvar(c(METASALMON_TERM_SEARCH_PARALLEL = "true", METASALMON_CACHE = ""))
+
+  out <- worker_failure_search(
+    function(query, role) stop("nvs exploded"),
+    # `run_source()`'s own error handler is the only code between a source and
+    # the worker's edge, so failing it is how an error gets past it.
+    .ms_is_timeout_error = function(message) stop("the timeout classifier failed")
+  )
+
+  diagnostics <- attr(out$result, "diagnostics")
+  nvs <- diagnostics[diagnostics$source == "nvs", , drop = FALSE]
+  expect_identical(nvs$status, "error")
+  expect_match(nvs$error, "parallel search worker failed", fixed = TRUE)
+  expect_match(nvs$error, "the timeout classifier failed", fixed = TRUE)
+  expect_identical(.ms_search_failed_sources(diagnostics), "nvs")
+  expect_true(any(grepl("did not answer", out$warnings, fixed = TRUE)))
+  expect_identical(unique(out$result$source), "ols")
+})
