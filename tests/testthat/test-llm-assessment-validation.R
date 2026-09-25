@@ -489,7 +489,9 @@ test_that("two downgrade notes join with one space after the rationale", {
 
 test_that("the retry-query duplicate check folds ASCII case only, identically in every locale", {
   # E-acute in both cases: tolower() folds it under a UTF-8 locale and not
-  # under C, so the old check gave a locale-dependent verdict.
+  # under C, so the old check gave a locale-dependent verdict. Written as
+  # escapes so the source stays ASCII (R code must be; a raw accented literal
+  # is what R 4.6's non-ASCII check warns on).
   retry <- "Poisson ÉLEVÉ"
   original <- "poisson élevé"
   ascii_retry <- "CATCH Weight"
@@ -511,7 +513,10 @@ test_that("the retry-query duplicate check folds ASCII case only, identically in
 })
 
 test_that(".ms_ascii_tolower folds A-Z only and leaves every other character alone", {
-  expect_identical(metasalmon:::.ms_ascii_tolower("ABC xyz 123 ÉÀ"), "abc xyz 123 ÉÀ")
+  expect_identical(
+    metasalmon:::.ms_ascii_tolower("ABC xyz 123 ÉÀ"),
+    "abc xyz 123 ÉÀ"
+  )
   expect_identical(metasalmon:::.ms_ascii_tolower(character()), character())
   expect_identical(metasalmon:::.ms_ascii_tolower(NA_character_), NA_character_)
 })
