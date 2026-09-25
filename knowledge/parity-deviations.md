@@ -892,6 +892,47 @@ implementations behave alike again. It did not land in the same stream because
 a hub claim covers one branch in one repository, and metasalmonpy #49 had merged
 before the R half found it. Its metasalmonpy queue item is **B-244**.
 
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25), and no behaviour: EML `calendarDate` carries the spelling
+`metadata/dataset.csv` holds.** Hub item **B-162** asked whether the
+`as.character()` in `.ms_eml_add_coverage()` renders `temporal_start` and
+`temporal_end` a third time. It answered by design that it does not.
+`write_eml_from_sdp()` reads the package back from disk as text, so the EML
+copies the one rendering a writer made. Two R tests in
+`tests/testthat/test-canonical-date-render.R` pin this:
+
+- a typed Date goes through the exported writer and its schema check, and all
+  three copies must agree;
+- for the text `"999-06-05"`, the EML must follow the CSV.
+
+Nothing behaved differently before or after.
+
+**The twins are owed because metasalmonpy has the same two lines and no test
+of them.** `eml.py:2253` reads
+`_add_text(begin, "calendarDate", _as_character(temporal_start))`, `:2255` is
+its `temporal_end` twin, and `read_sdp_csv()` reads `dtype=str`
+(`metadata.py:112`). So the same answer holds there, by the same construction.
+
+It was measured 2026-09-25 on metasalmonpy `main` `012d04b`, with Python
+3.9.23, pandas 2.3.3 and the `eml` extra. A minimal package was written through
+`write_salmon_datapackage()`, and the coverage was built by `_add_coverage()`
+from `read_salmon_datapackage()`'s frame:
+
+- `datetime.date(999, 1, 1)` gives `0999-01-01` in `dataset.csv`, in
+  `datapackage.json` and in the `calendarDate`;
+- the text `"999-06-05"` gives `999-06-05` in `dataset.csv` and in the
+  `calendarDate`.
+
+Both twins would therefore pass today. What is missing is the pin, and
+`tests/test_eml.py` has none. The pins should take the R tests' shape. The
+first uses a date through `write_eml_from_sdp()` and its schema check. The
+second uses the text, with the coverage built from the frame the builder
+receives, because the exported call aborts on `999-06-05`. The second asserts
+the EML against the CSV only, as R's does. They are owed as pins, not as a port
+or a register row: nothing behaves differently. They did not land in the same
+stream because a hub claim covers one branch in one repository. Their
+metasalmonpy queue item is **B-245**.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
 of its `curie_map`.** Hub item **B-233** makes `read_sssom_mapping_set()` accept
