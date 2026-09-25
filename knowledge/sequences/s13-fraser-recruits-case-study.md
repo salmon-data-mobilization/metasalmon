@@ -56,6 +56,19 @@ renamed or have their signatures changed without breaking a live consumer that
 has already published with them. That is a real compatibility obligation on
 this package, and nothing in `R/` says so.
 
+**Two of the eight had already changed shape when this section was written.**
+`f76ed4f` (2026-08-15), first released in `v0.3.0`, changed
+`.ms_eml_canonical_measurement_iris()` from `(dictionary)` to `(path, pkg)` and
+`.ms_eml_read_vocabulary()` from `(path, dictionary, mapping)` to
+`(path, pkg, mapping)`. So for these two the recipe's calls, written against
+0.1.8, no longer match `main`, and this section, written six days after that
+commit, did not say so. The signatures at both revisions are in
+`.hub/workpads/B-131.md` on `main`, and
+`tests/testthat/test-fraser-recruits-internals-guard.R` pins the shapes on
+`main`, not the recipe's. Whether this package restores the 0.1.8 shapes for
+these two, or the recipe's migration crosses them as breaks, is open, and this
+card does not answer it.
+
 ## Requirement 2 — a migration path off sdp-0.2.0 and metasalmon 0.1.8
 
 `recipe.yml` pins engine `metasalmon` **0.1.8** at revision

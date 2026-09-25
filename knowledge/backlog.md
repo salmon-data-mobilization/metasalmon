@@ -5816,6 +5816,21 @@ is the third defect in that one paragraph in two days: the stash clause and the
 that a fix removing one instance is not a fix for the defect. This is the
 instance it did not see.
 
+**Reported three more times on 2026-09-25, once by a second route.** Three
+metasalmonpy runs reported it to the orchestrator and did not write it into
+their workpads, so what follows is the orchestrator's record of those reports,
+not a measurement taken here. The B-222 run (metasalmonpy pull request 48) and
+the B-227 run (pull request 50) each found `git log HEAD --not --remotes`
+listing pushed commits as unpushed in a single-branch clone, which is the case
+above. The B-212 run (pull request 49) met the same false report another way: in
+the shared metasalmonpy clone, another session's fetch pruned the
+remote-tracking ref of a branch this run had pushed, and the walk listed that
+branch's commits until a re-fetch restored the ref. How the ref came to be
+pruned was not established. Read by the 2026-09-25 queue sweep: that clone's
+`remote.origin.fetch` is still `+refs/heads/main:refs/remotes/origin/main`, and
+every metasalmonpy worktree shares the setting. Whichever fix lands should be
+checked against the second route as well as the first.
+
 **`B-204` and `B-205`: both validators ignore the vendored schema's
 `constraints.pattern`.** Measured 2026-09-16, at `e9d7dc4` here and `1e9245c`
 there. R: `.ms_field_from_frictionless()` (`R/schema-helpers.R:387`) reads
@@ -5846,6 +5861,18 @@ both packages vendor. Each retires when its validator enforces
 `constraints.pattern` on metadata fields, with a test that a violating value is
 reported and a conforming one is not, and a parity row or port note as the mirror
 contract requires.
+
+**`B-204` observed again, by the B-162 run on 2026-09-25**
+(`.hub/workpads/B-162.md` on `main`, measured on `main` `372ef07` under R
+4.3.3). `validate_salmon_datapackage(require_iris = TRUE)` accepted a package
+whose `temporal_start` was each of `999-06-05T13:45:30Z`,
+`2024-01-01T00:00:00Z`, `2024-01-02T04:00:00Z` and `999-06-05`. The pattern
+vendored at that commit, `^(\d{4}|\d{4}-\d{2}-\d{2})$` on both temporal fields
+(read by the 2026-09-25 queue sweep, unchanged on `be7c4e8`), admits none of
+them. Each was refused only afterwards, by `write_eml_from_sdp()`'s EML schema
+check: *Generated EML 2.2.0 failed schema validation*, on `calendarDate`. The
+first three are what the package's own writer makes of a typed `POSIXct`, so the
+gap is reachable without editing a file by hand.
 
 ### The 2026-09-16 card-hygiene round
 
