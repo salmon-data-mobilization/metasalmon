@@ -9,5 +9,5 @@ stream: S16
 severity: P2
 blocked_by: []
 legacy: ''
-evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
-retires_when: 'IN METASALMON, .ms_context_text_from_rmarkdown() reads a .Rmd or .qmd context file through the same decoding chain the other text readers use (UTF-8, then cp1252, then latin-1) before it drops front matter and fences, so a Windows-1252 file becomes excerpts instead of an error. Measured 2026-09-25 under R 4.5.2: it reads with readLines(encoding = "UTF-8") at R/llm-semantic-helpers.R:554 on main, and a cp1252 byte then fails at nchar() with invalid multibyte string, while metasalmonpy after B-364 decodes the same file. Pinned by a test with a cp1252 .qmd that fails before the change. No metasalmonpy half: it already decodes the file. Wanted before the additive release of S16 step 1, because B-326''s packet carries excerpts from these files.'
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, .ms_context_text_from_rmarkdown() decodes a .Rmd or .qmd context file through the chain the other text readers use (UTF-8, then cp1252, then latin-1) before it drops front matter and fences, so a cp1252 file becomes excerpts rather than an error. Pinned by a test with a cp1252 .qmd that fails before the change. No metasalmonpy half: it already decodes the file. Wanted before the additive release of S16 step 1, because B-326''s packet carries excerpts from these files.'

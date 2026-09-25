@@ -1,6 +1,6 @@
 id: B-384
 kind: defect
-title: 'metasalmon''s validator phrase anchor fails on every multi-line context chunk, because its leading-token pattern cannot cross a newline'
+title: 'metasalmon''s validator phrase anchor fails on a multi-line context chunk whose later lines contain an underscore or hyphen'
 state: icebox
 claimable: true
 repo: metasalmon
@@ -9,5 +9,5 @@ stream: S16
 severity: P2
 blocked_by: []
 legacy: ''
-evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
-retires_when: 'IN METASALMON, .ms_semantic_validator_chunk_has_anchor() finds a chunk''s leading token whatever follows it. Its pattern ^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$ runs with perl = TRUE and no dot-all flag, so on a chunk with a newline the substitution does not match, the whole chunk is kept as the leading token, and any underscore or hyphen anywhere in it defeats the phrase anchor. Measured 2026-09-25 under R 4.5.2: a one-line chunk gives the leading token Spawner, the same text with a second line containing table_2 gives back the whole chunk, and adding (?s) gives Spawner again. That is the common case, because context chunks are up to 2200 characters. Fixed with the dot-all flag or an equivalent first-token match, pinned by a test over a multi-line chunk that fails before the change. B-385 is the metasalmonpy half, because B-360 copied the quirk on purpose and pinned it so that both packages change together; each names the other.'
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, .ms_semantic_validator_chunk_has_anchor() takes a chunk''s leading token from its first line whatever the later lines hold, so a phrase anchor is judged on the chunk''s start and not rejected because an underscore or hyphen appears further down. Pinned by a test over a multi-line chunk whose later line holds table_2, which fails before the change, and over one with no underscore or hyphen, which anchors both before and after. B-385 is the metasalmonpy half, and each names the other.'

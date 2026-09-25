@@ -9,5 +9,5 @@ stream: S16
 severity: P2
 blocked_by: [B-384, B-360]
 legacy: ''
-evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+evidence: knowledge/backlog.md
 retires_when: 'IN METASALMONPY, the phrase-anchor check B-360 ported finds a chunk''s leading token across newlines the way metasalmon does once B-384 lands, and the multiline_chunk_phrase_anchor_quirk case B-360 pinned is updated to the fixed verdict with the R-computed expectations regenerated against metasalmon with B-384 applied. THE METASALMON HALF IS B-384, and each names the other.'
