@@ -72,7 +72,9 @@ suggest_semantics(
 
   Maximum number of suggestions to keep per semantic role (variable,
   property, entity, unit, constraint, statistical_modifier; plus method
-  for code values) per column. Default is 3.
+  for code values) per column. Default is 3. When `llm_assess = TRUE`,
+  at least `llm_top_n` are kept, because the LLM can only be shown the
+  candidates retrieval kept.
 
 - search_fn:
 
@@ -142,7 +144,9 @@ suggest_semantics(
 - llm_top_n:
 
   Maximum number of retrieved candidates to send to the LLM per target
-  for each assessment round. Default is `5`.
+  for each assessment round. Default is `5`. Retrieval keeps at least
+  this many per role when `llm_assess = TRUE`, whatever `max_per_role`
+  says.
 
 - llm_context_files:
 
