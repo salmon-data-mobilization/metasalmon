@@ -1,7 +1,7 @@
 id: Q-62
 kind: question
 title: 'What should each reader of the EML sidecar do with an !expr tag -- refuse, take its text, or fall back -- and which implementation moves?'
-state: needs_brett
+state: done
 claimable: false
 repo: metasalmon
 venue: either

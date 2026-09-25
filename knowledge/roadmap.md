@@ -764,12 +764,12 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. Which side moves on each path is **`Q-62`**,
-a question for Brett, and R's refusal on the EML and KNB paths, the
-recommended direction, is written as **queue item `B-223`, separate from
-B-142**, which neither introduced the difference nor changes it. A
-parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
-so it is not made here.
+falls back to the default paths. Which side moves on each path was **`Q-62`**,
+and Brett ruled it on 2026-09-25: refuse on every path, recorded in
+[`questions.md`](questions.md). R's refusal on the EML and KNB paths is
+**queue item `B-223`, separate from B-142**, which neither introduced the
+difference nor changes it, and the closure path's refusal is `B-340` in this
+package and `B-341` in metasalmonpy.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the

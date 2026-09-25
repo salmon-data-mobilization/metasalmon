@@ -271,11 +271,24 @@ entry in this file and has none yet. That is its own item's to write; it is name
 here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
 
 ### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
-**Unblocks:** five differences neither register records — the temperature, JSON
-mode, OpenRouter's attribution headers, the user agent and reasoning effort — and
-what `B-128` is for. Routing R's chat path through the shared body builder gives
-it the semantic path's temperature rule, on the premise that R keeps sending a
-temperature, and would also make it send the reasoning effort R resolves from
+**Unblocks:** five differences neither register records, one per line:
+
+- the temperature;
+- JSON mode;
+- OpenRouter's attribution headers;
+- the user agent;
+- reasoning effort.
+
+**This shape was accepted on 2026-09-25.** On the decisions page, whose item
+"Fourteen small specification calls" carried this as call (a), Brett accepted the
+recommendation to keep it one question with one difference per line and to
+change nothing until he rules on each: *"for decision 13 I accept your
+recommendations"*. `Q-54` is that question item, so no second one was filed.
+
+It also unblocks what `B-128` is for. Routing R's chat path through the shared
+body builder gives it the semantic path's temperature rule, on the premise that
+R keeps sending a temperature, and would also make it send the reasoning effort
+R resolves from
 `METASALMON_LLM_REASONING_EFFORT`, which neither chat path sends today.
 Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
 `main`; reasoning effort was added on 2026-09-24 and measured against
@@ -376,54 +389,8 @@ consequences.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 
-### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves?
-**Unblocks:** `B-223`, and the two R/Python differences on
-`metadata/eml-mapping.yml`. Neither behaviour on either reader was chosen, and
-neither difference is registered. Both were measured by the B-142 run on `main`
-`12efe9d` with yaml 2.3.12; the evidence is under `B-223` in
-[`backlog.md`](backlog.md).
-
-- **The EML and KNB reads.** R takes the tag's text as the value that reaches
-  published EML; metasalmonpy refuses the sidecar. `B-223` is written for R
-  moving to refusal, which was put to Brett on 2026-09-23 as a recommendation.
-  He has not ruled, and the absence of an objection is not a ruling, as the
-  Codex review of pull request 150 on `4d84682` pointed out.
-- **The semantic closure path.** R takes the tag's text as the path;
-  metasalmonpy falls back silently to the default paths. `B-223` originally
-  changed R's closure reader to refuse, and the Codex review of pull request 150
-  pointed out that this would replace one unrecorded difference with another.
-
-**Recommendation:** refuse on every path. On the EML and KNB reads R moves,
-because silently publishing code as metadata is the worse failure. On the
-closure path metasalmonpy moves, because a silent fallback hides a configuration
-mistake exactly where a user can least see it, and it leaves metasalmonpy
-inconsistent with its own EML path. The mirror is not automatically the
-follower, so this is a recommendation, not a default.
-**Owner:** the queue item `Q-62`.
-
-### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
-**Unblocks:** closing a reader-side difference that B-219 and B-220 would otherwise
-leave in place. It is not only a difference between the packages: each one is
-mixed. In R, `.ms_is_review_iri()` and `.ms_strip_review_iri()`
-(`R/package-helpers.R:3777-3789` on `43d7fb3`) accept `^\s*REVIEW\s*:` ignoring
-case, four detectors test `^REVIEW:` (`package-helpers.R:1754`,
-`sdp-extension-helpers.R:37`, `sdp-methods.R:272`,
-`semantic-bundle-validators.R:696`), and the EML and KNB output guards test the
-literal substring `REVIEW:` (`eml-export.R:2787`, `knb-publication.R:834`). In
-metasalmonpy (`9661633`), `dictionary.py:622` and `package_io.py:2441` accept the
-wide form, `package_io.py:219` and `:2528` and `review_console.py:140` and `:146`
-test a leading `REVIEW:` upper-cased, and `eml.py:3472` and
-`knb_publication.py:1043` test the literal substring. So `REVIEW :x` is stripped
-on one path and passed as an IRI on another, in both packages. Neither behaviour
-was chosen, and neither parity register records it. Q18 is about the bytes the
-writers emit after the colon; this is about what the readers accept.
-**Recommendation:** every detector in both packages recognises the wider set,
-through one predicate per package. A marker is most often hand-edited in a
-spreadsheet, where a stray space is likely, and a marker a reader misses reaches
-strict validation as a malformed IRI rather than as an unreviewed slot. The
-mirror is not automatically the follower, so this is a recommendation, not a
-default.
-**Owner:** the queue item `Q-63`.
+*(`Q62` and `Q63` were answered on 2026-09-25 and sit under **Answered** below,
+so `Q64` is the next open number, not a gap.)*
 
 ### Q64 — What do three smn terms mean, and how are life stages and composed wording settled? — PARTLY ANSWERED 2026-09-25 (Brett)
 
@@ -1678,3 +1645,61 @@ condition now names the tag.
 Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
 move the pins once it exists; and `B-208` for how a frozen profile keeps the
 schema bytes it was frozen against.
+
+### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, whose item "Fourteen small specification
+calls" carried this question as call (e) with the recommendation *"Refuse on
+every path, and metasalmonpy moves: a silent fallback hides the mistake where a
+user can least see it."* Call (b), the EML and KNB half of the same question as
+`B-142`'s run found it, carried *"R moves to Python's behaviour"*, and he
+accepted that too.
+
+**What it means for each reader.** On the EML and KNB reads R moves to
+metasalmonpy's refusal. On the semantic closure's path reader both packages move,
+because neither refuses there: R takes the tag's text as the path and
+metasalmonpy falls back to the default paths. The recommendation named only
+metasalmonpy as moving on that path; "refuse on every path" moves R's closure
+reader as well.
+
+**Where the work went:** `B-223`, updated to the ruling, for R's EML and KNB
+reads, where metasalmonpy already refuses; `B-340` and `B-341` for the closure
+reader in each package. The SSSOM reader got the same answer in call (l), as
+`B-352` and `B-353`. No register row is owed, because every reader in both
+packages ends at the same refusal.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).
+
+### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, where this question was call (f), with the
+recommendation *"One ASCII-only definition in both packages: REVIEW in any case,
+with optional ASCII spaces or tabs before it and around the colon. Hand-edited
+markers pick up stray spaces, a missed marker reaches strict validation as a
+malformed IRI, and nothing should depend on the locale."*
+
+**The ruled set is narrower than the one this entry recommended.** The open
+entry recommended the wider set, `^\s*REVIEW\s*:` ignoring case, in every
+detector. The recommendation Brett accepted admits ASCII spaces and tabs only,
+and ASCII case only. So each package narrows as well as widens, and the
+narrowing is his ruling rather than an implementer's choice: metasalmonpy stops
+removing a no-break space after the colon and stops folding a dotless ı into I,
+R stops depending on the locale for Unicode spaces, and neither counts a line
+break before the colon.
+
+**One premise of the ruling did not hold when it was checked.** Measured on
+2026-09-25, strict validation in neither package checks the shape of an IRI in
+`column_dictionary.csv`'s semantic IRI fields, so a value that no detector reads
+as a marker passes it. `B-342` and `B-343` add that check.
+
+**Where the work went:** `B-344` (metasalmon) and `B-345` (metasalmonpy) put
+every detector in each package behind one predicate for the ruled definition,
+and `B-342` and `B-343` add the check above. Once both pairs land the two
+packages recognise the same spellings, so no register row is owed. `Q18`, about the bytes the
+writers emit after the colon, is not changed by this.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).

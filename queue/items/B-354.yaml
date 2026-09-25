@@ -1,0 +1,12 @@
+id: B-354
+kind: defect
+title: 'write_eml_from_sdp() aborts on a package whose temporal coverage is an instant, because it puts the whole instant in calendarDate'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): split the instant at the T into calendarDate plus EML''s time element, so nothing is lost and there is still one rendering of the value. In metasalmon, .ms_eml_add_coverage() in R/eml-export.R writes a temporal_start or temporal_end in the profile''s instant form, YYYY-MM-DDThh:mm:ssZ, as a calendarDate holding the text before the T followed by a time holding the text after it, in beginDate or endDate, so write_eml_from_sdp() passes its EML 2.2.0 schema check. Both elements are cut from the one rendering the package holds, and joined by a T they give it back unchanged; a year or a date is still a calendarDate alone; and each end is handled on its own, so a range may begin with a date and end with an instant. Pinned by a test demonstrated RED on the writer as it stands. THE METASALMONPY HALF IS B-355, and each names the other.'
