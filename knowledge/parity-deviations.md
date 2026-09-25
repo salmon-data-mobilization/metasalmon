@@ -721,6 +721,34 @@ once it lands the two implementations behave alike again. It did not land in
 the same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy half is a metasalmonpy item to be filed.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Its
+non-empty check now reads the value `.ms_strip_review_iri()` leaves, where it
+read the value before the strip. So `iri = "REVIEW:"`, and every other spelling
+that strip removes, aborts instead of recording an accept whose IRI is empty
+(hub item **B-219**). Recorded, that accept made `apply_sdp_semantics()` clear
+the slot's field and write an `accepted` row with an empty `iri`, which every
+reader of `semantic_suggestions.csv` then had to know to drop. The fix is at
+the check, and `apply_sdp_semantics()` is unchanged.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`accept_suggestion()` in `review_console.py` checks `iri` at `:1214-1215` and
+strips it at `:1231`. Measured 2026-09-25 on metasalmonpy `main` `85ebbb0`
+(Python 3.11.15, pandas 3.0.5): `"REVIEW:"`, `"REVIEW: "`, `"review:"`,
+`"Review:"`, `"  REVIEW:"` and `"REVIEW:\f"` each record an accept whose
+`decision_iri` is empty. The two strips do not remove the same spellings.
+`_strip_review_iri()` (`:144`) removes a leading `REVIEW:` in any case, and it
+leaves `"REVIEW :"`, which metasalmonpy records as the IRI verbatim. Which
+spellings both packages should recognise is hub question **Q-63**, and the port
+does not settle it. Its pin is one test per spelling metasalmonpy's own strip
+removes, each asserting first that the strip empties it, plus a control that a
+marked IRI with a term after the marker is accepted without the marker, as in
+`tests/testthat/test-review-console.R`. It is owed as a port, not a register
+row: once it lands, the two refuse alike every spelling both strips remove, and
+the difference left is Q-63's. It did not land in the same stream because a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is
+**B-220**.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

@@ -583,6 +583,18 @@ mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
 covers one branch in one repository. Its metasalmonpy half is a metasalmonpy
 item to be filed.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Hub
+item **B-219** moves the function's non-empty check after the marker is
+stripped, so `iri = "REVIEW:"`, in every spelling R's strip removes, no longer
+records an accept whose IRI is empty. metasalmonpy's `accept_suggestion()`
+checks in the same order and has the same defect, so it is owed there as a
+port, not a register row. The port is specified under *What metasalmon 0.5.0
+owes the mirror* in `parity-deviations.md`, together with the spellings the two
+strips disagree about, which are hub question `Q-63`'s and not the port's.
+**Why not in the same stream:** a hub claim covers one branch in one repository.
+Its metasalmonpy half is `B-220`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

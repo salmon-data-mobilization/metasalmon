@@ -950,11 +950,7 @@ accept_suggestion <- function(review,
   in_slot <- review$slot_id == slot
 
   accepted_iri <- if (!is.null(iri)) {
-    value <- .ms_scalar_text(iri)
-    if (!nzchar(value)) {
-      cli::cli_abort("{.arg iri} must be a non-empty IRI.")
-    }
-    value
+    .ms_scalar_text(iri)
   } else {
     hit <- which(in_slot & review$rank == as.integer(rank))
     if (length(hit) != 1L) {
@@ -973,6 +969,21 @@ accept_suggestion <- function(review,
   # write time keeps the review object and the written bytes agreeing about
   # what was decided.
   accepted_iri <- .ms_strip_review_iri(accepted_iri)
+
+  # The non-empty check reads the stripped value, because that is the value the
+  # decision records. Run before the strip, it let `iri = "REVIEW:"`, and every
+  # other spelling the strip removes, record an accept that named no term
+  # (hub item B-219).
+  if (!is.null(iri) && !nzchar(accepted_iri)) {
+    message <- "{.arg iri} must be a non-empty IRI."
+    if (nzchar(.ms_scalar_text(iri))) {
+      message <- c(
+        message,
+        "i" = "An accepted IRI is recorded without its {.code REVIEW:} marker, and nothing follows the marker here."
+      )
+    }
+    cli::cli_abort(message)
+  }
 
   review$decision[in_slot] <- NA_character_
   review$decision_iri[in_slot] <- NA_character_
