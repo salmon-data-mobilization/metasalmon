@@ -464,6 +464,14 @@ redundant: `scripts/check-parity-registers.py` fails on a number present in one
 register and absent from the other, so it would have turned the check red in both
 repositories for a fact row 56 already carries.
 
+**This one is closed.** `B-145` landed as metasalmonpy pull request **#34**
+(`f1f7230`) on 2026-09-25. `resource_types.iso_instant_text()` is now the one
+renderer every instant metasalmonpy writes passes through, so its
+`datapackage.json` and `metadata/dataset.csv` spell an instant identically, in
+the ruled `T`/`Z` form, as R's do. What is left is the year below 1000, which is
+B-161's. Row 56's hub-side twin edit amends a register row, so it is Brett's
+and is metasalmon pull request **#175**.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-23):
 a recorded hand-picked accept is not ontology-gap evidence.**
 `detect_semantic_term_gaps()` now drops the rows `apply_sdp_semantics()` writes
@@ -932,6 +940,49 @@ the EML against the CSV only, as R's does. They are owed as pins, not as a port
 or a register row: nothing behaves differently. They did not land in the same
 stream because a hub claim covers one branch in one repository. Their
 metasalmonpy queue item is **B-245**.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
+of its `curie_map`.** Hub item **B-233** makes `read_sssom_mapping_set()` accept
+a CURIE whose prefix is one of the eight SSSOM built-ins (`owl`, `rdf`, `rdfs`,
+`semapv`, `skos`, `sssom`, `xsd`, `linkml`) when the `curie_map` does not
+declare it, and refuse a `curie_map` entry that gives a built-in any expansion
+other than the one the specification fixes. Every other undeclared prefix is
+refused as before. metasalmonpy's `_validate_reference()` in `sssom.py` looks a
+prefix up in the file's `curie_map` alone, as R's did, so it refuses the same
+canonical files and reads a redefinition as an ordinary declaration.
+
+**The specification question is settled, so the port applies the answer rather
+than deciding it again.** The model's Identifiers section says: *"By exception,
+prefix names listed in the table found in the IRI prefixes section are
+considered 'built-in'. As such, they MAY be omitted from the curie_map. If they
+are not omitted, they MUST point to the same IRI prefixes as in the
+aforementioned table."*
+(<https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers>). The
+table is the introduction's IRI prefixes section
+(<https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes>), and
+both read the same on the 1.1 draft under `/sssom/dev/`. `.hub/workpads/B-233.md`
+has the full record, including two lists that are not this one: the `prefixes:`
+block of the SSSOM LinkML schema, and sssom-py 0.4.21's `SSSOM_BUILT_IN_PREFIXES`,
+which has six names and lets a redefinition through by overriding it.
+
+The port owes three things, placed where R placed them. The table, as
+`.ms_sssom_builtin_prefixes` in `R/sssom.R` has it, in the specification's
+order. `_validate_reference()` treating a built-in prefix as declared. And a
+check in `_validate_metadata()`, ahead of the `subject_source` and
+`object_source` references, that every `curie_map` entry named for a built-in
+carries that built-in's expansion after trimming, whether or not anything uses
+the prefix. The check sits with the CURIE checks rather than in the parser, so
+it holds for an in-memory set handed to `write_sdp_sssom()`, which is refused
+before anything is written, and `validate=False` skips it as it skips them. R's
+refusal says *redefines built-in prefix*, and its tests match on that phrase.
+The reader's docstring says it enforces "complete CURIE declarations", which R's
+documentation said too and no longer does.
+The tests to mirror are the six B-233 added to `tests/testthat/test-sssom.R`,
+whose fixture is a file in the specification's canonical form. It is owed as a
+port, not a register row: once it lands the two readers accept the same set. It
+did not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy half is **B-234**.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

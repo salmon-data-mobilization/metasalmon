@@ -469,8 +469,9 @@ validation (**B-124**, blocked by B-49 — **landed 2026-09-16 as metasalmonpy
 B-95 — **landed 2026-09-16 as metasalmonpy #30**, `786b3cb`, the first to
 close), the migration report's no-op shape (**B-144**, blocked by
 B-112 — **landed 2026-09-16 as metasalmonpy #32**, the second to
-close), the descriptor's instant spelling (**B-145**, blocked by B-115, whose R
-half **landed 2026-09-16 as metasalmon #118** — readr's ISO form with the `T`
+close), the descriptor's instant spelling (**B-145**, blocked by B-115 — **landed
+2026-09-25 as metasalmonpy #34**, `f1f7230`; its R half **landed 2026-09-16 as
+metasalmon #118** — readr's ISO form with the `T`
 separator and `Z` marker, the spelling Brett ruled on 2026-09-14 for both
 implementations, carried by register row 56 amended in place rather than by a new
 number), and the
@@ -633,6 +634,18 @@ it. What is owed there is the twin tests, not a port and not a register row.
 They are specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
 branch in one repository. Its metasalmonpy queue item is `B-245`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the SSSOM reader reads a canonical file.** Hub item **B-233** makes
+`read_sssom_mapping_set()` accept the eight SSSOM built-in prefixes when a
+file's `curie_map` leaves them out, which the SSSOM specification allows and
+requires of a canonical writer, and refuse a `curie_map` entry that gives a
+built-in any other expansion, which the specification forbids. metasalmonpy's
+SSSOM reader refuses the same canonical files, so it is owed there as a port,
+not a register row. The port is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`, with the specification passages it applies
+rather than decides again. **Why not in the same stream:** a hub claim covers
+one branch in one repository. Its metasalmonpy half is `B-234`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on

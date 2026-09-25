@@ -289,8 +289,18 @@ B-124's `1e9245c` (#29), later still, went under `## Unreleased` correctly.
 metasalmonpy pull request 35 moved B-144's entry (merged 2026-09-16 as
 `3f8349a`), and `v0.5.0` went on `67fb486` when it was tagged on 2026-09-24,
 eight days after the bump. The window is real on every release, because the tag
-is a separate act from the bump; the mechanical check is hub item B-200 (B-201
-for the mirror).
+is a separate act from the bump.
+
+**The pre-tag step is `python3 scripts/check-changelog-window.py`, run on an
+up-to-date `main` in a full clone before the tag is made.** Until the tag
+exists it measures the version against its bump commit — the first commit on
+`main` whose `DESCRIPTION` reads it — and fails on any line under that heading
+added by a commit that is not an ancestor of it. A correction passes only in a
+marked, dated form: a `*(Correction, YYYY-MM-DD: …)*` paragraph or a
+`[corrected YYYY-MM-DD: …]` bracket. A red run before tagging means an entry
+moves to the development heading first. It also runs on every pull request
+(`.github/workflows/changelog-window.yaml`), and its docstring states what it
+does not cover. Hub item B-200; B-201 is the mirror.
 
 ## Build / test / docs
 
