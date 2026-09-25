@@ -254,9 +254,10 @@ metasalmon (development version)
   path is correct already" as a macOS-only measurement. The descriptor now emits
   whichever year readr emits, so the two files agree on both platforms; padding
   only the descriptor would have re-opened this defect on the platform CI runs
-  on. **Mirror:** metasalmonpy owes the same ruling (queue **B-145**);
-  parity-deviations row 56 carries the ruling, which side moved, and the
-  year-padding residual B-145 has to measure.
+  on. **Mirror:** metasalmonpy adopted the same ruling in queue **B-145**
+  (metasalmonpy pull request #34, 2026-09-25); parity-deviations row 56
+  records that both sides moved, and the one residual left, the year below
+  1000, which is hub item B-161.
 
 * **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
   (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
@@ -568,6 +569,172 @@ metasalmon (development version)
   matched a code slot whose row has no code value. The printed call, the
   refusal and that part of the matcher are owed there as a port, with the
   pin's removal.
+
+* **`suggest_semantics()` searches each distinct query, role and sources
+  tuple once, where it searched once per target row** (backlog #56, hub item
+  B-56). Rows repeat a tuple whenever tables share a column or columns fall
+  back to the same unit query: four tables carrying the same two columns are
+  40 targets and 9 distinct tuples, and all 40 were searches. Now 9 are. A
+  `search_fn` you supply is therefore called fewer times, and a counting or
+  logging one will see it. What each row gets is unchanged: its candidates,
+  their order and every attribute of the result are `identical()` to before on
+  that fixture and on the bundled example package. The saving lasts for one
+  call only, so it is not a cache and never outlives a change of settings. An
+  answer whose diagnostics say a source did not answer is never reused, and the
+  next row with that tuple searches again, as `find_terms()` already refuses
+  to cache a degraded lookup. The LLM review's retry searches are unchanged.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` still searches once per
+  target row, and the change is owed there as a port.
+
+* **`accept_suggestion()` now refuses an `iri` that is only the `REVIEW:`
+  marker** (hub item B-219). It checked that `iri` was not empty before
+  stripping the marker, so `accept_suggestion(review, column, role, iri =
+  "REVIEW:")` passed the check. So did every other spelling the strip removes,
+  in any case and with whitespace before or after the colon. The accept
+  recorded an IRI that named no term. `apply_sdp_semantics()` then cleared the
+  field, whatever it held, and gave a cleared `term_iri` a `term_type` anyway.
+  It marked every retrieved candidate `not_selected` and wrote an `accepted`
+  row with an empty `iri` to `semantic_suggestions.csv`, which the next
+  `review_semantics()` drops, so the slot came back undecided. The check now
+  reads the value after the strip, which is the value the decision records, and
+  the refusal says that the marker was removed and nothing followed it. An
+  `iri` with a term after the marker is accepted as before and recorded without
+  the marker.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` checks in the same order and
+  records the same empty accept for every spelling its own strip removes. The
+  fix is owed there as a port (see `knowledge/parity-deviations.md`).
+
+* **Naming a shortlisted candidate's IRI in `accept_suggestion(iri = )` now
+  writes that candidate's `term_type`** (hub item B-221). The accept was
+  recorded on the slot's first row. `apply_sdp_semantics()` takes `term_type`
+  from the row a decision sits on only when that row carries the accepted IRI,
+  and writes `skos_concept` otherwise. So hand-picking the IRI of a candidate
+  below rank 1 wrote `skos_concept`, whatever that candidate was. The review
+  rebuilt from the package replays the same decision on the candidate's own
+  row, and re-applying it wrote the candidate's type. So one decision changed
+  `column_dictionary.csv` and `datapackage.json` between two applies. With an
+  `owl_class` candidate at rank 2, the first apply wrote `skos_concept` and the
+  re-apply `owl_class`. An `iri` that a candidate in the review's shortlist
+  carries, compared without the `REVIEW:` marker, is now recorded on that
+  candidate's row. It is the same decision as `rank = <its rank>`, and applying,
+  rebuilding and re-applying it writes the same bytes. A candidate stored with
+  the `REVIEW:` marker on its IRI now writes its own `term_type` too, by
+  `iri =` and by `rank =` alike. The writer compared that stored IRI, marker
+  and all, with the unmarked IRI the decision records, so it never recognised
+  the candidate and wrote `skos_concept`. The record in
+  `semantic_suggestions.csv` now reads a candidate's IRI the same way, trimmed
+  as well as unmarked. A quoted IRI keeps a trailing newline through
+  `read_csv()`, so the record missed such a candidate and gave the IRI a
+  hand-picked row instead, which the rebuilt review replayed as `skos_concept`.
+  An IRI that no candidate in the shortlist carries still writes
+  `skos_concept`, as before. That includes hub item B-176's case, a term the
+  reviewer typed whose type nothing records.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` also records `iri=` on the
+  slot's first row, and its writer falls back to `skos_concept` the same way,
+  marked candidates included, so the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
+
+* **The publication vignette no longer leads a reader to add a ledger row that
+  stops their package publishing** (hub item B-192).
+  `vignettes/post-review-package-publication.Rmd` described the canonical
+  review target set as the measurement set *plus* each table's
+  `observation_unit_iri`, which holds in one direction only. The measurement set
+  includes every `sosa:usedProcedure` reached through a code value, and the
+  review targets never do: `.ms_eml_canonical_review_targets()` reads only the
+  dictionary and `tables.csv`, and never calls the used-procedure resolver that
+  the measurement set calls. So a reader who followed the sentence and added a
+  `reviewed_semantic_selections.csv` row for such a procedure had it refused by
+  `write_eml_from_sdp()` and `publish_sdp_to_knb()`, whose ledger gate accepts
+  exactly the canonical target set, while
+  `validate_salmon_datapackage(require_iris = TRUE)` went on passing. The
+  vignette now describes the review target set on its own terms and says both
+  directions: an `observation_unit_iri` is a review target and not a vocabulary
+  term, and a code-resolved procedure is a vocabulary term and not a review
+  target. No code changed. `write_sdp_semantic_closure()` writes the ledger from
+  the canonical target set, so a ledger it wrote never carried the row; only a
+  hand-edited one could.
+
+  **Mirror:** metasalmonpy corrected the same passage first, in pull request
+  31, because its `guides/semantic-review.qmd` was transcribed from this
+  vignette. This is the R half following it.
+
+* **`review_metadata()` reports a placeholder in an IRI field once, and the
+  call it prints for that row runs** (hub item B-211). A `MISSING METADATA:`,
+  `MISSING DESCRIPTION:` or `REVIEW REQUIRED:` placeholder in `tables.csv`'s
+  `observation_unit_iri`, or in a measurement column's `term_iri`,
+  `property_iri`, `entity_iri` or `unit_iri`, came back as two rows. The
+  scan's field loop reported it with reason `placeholder`, as it does a
+  placeholder in any field. The check for a blank one of those fields then
+  reported it again with reason `iri`, because its test counts a placeholder
+  as unfilled. The `set_sdp_table()` or `set_sdp_column()` call printed for the
+  row named the field twice, so evaluating it failed with *formal argument
+  "observation_unit_iri" matched by multiple actual arguments*. Measured on
+  hub `main` `643209c` with one placeholder planted in each file: two rows for
+  each field, both printed calls failed that way, and the console counted 16
+  fields still blocking strict validation where there were 14. Each field now
+  comes back once, as a placeholder, and its call runs. A blank IRI field is
+  still reported once with reason `iri`, and so is one still carrying a
+  `REVIEW:` marker.
+
+  The scan now keeps one row per field of each metadata row, and the first
+  check to report a field keeps it. So the same holds whichever two checks
+  find one field. Under a schema selected through the options that calls
+  `unit_iri` required, a blank one on a measurement row came back as
+  `required` and as `iri`, and its call failed the same way. It now comes back
+  once, as `required`. No shipped schema calls an IRI field required, and
+  nothing in the package writes a placeholder into an IRI field, so only a
+  hand-edited package reached either. `tests/testthat/test-sdp-field-setters.R`
+  plants a placeholder, a blank and a `REVIEW:` marker in turn, and pins the
+  required-IRI case with a configured schema. Each test runs the printed calls,
+  and the placeholder and required-IRI tests failed on the scan as it stood.
+
+  The console's footer now counts IRI gaps by field, not by the reason a row
+  kept. So an IRI field reported as a placeholder, or as `required`, still
+  counts as an IRI. And when every IRI gap is a placeholder, the line pointing
+  at `review_semantics()` still prints. Counted by reason, that line dropped
+  out once each field came back once. A test pins it with every IRI gap a
+  placeholder.
+
+  **Mirror:** metasalmonpy fixed the same defect first, with the same rule
+  (hub item B-212, metasalmonpy pull request #49), so the two packages report
+  the same rows. Its suite does not pin the required-IRI case. A defect the
+  two packages shared is not a deliberate difference, so it opens no
+  parity-register row. metasalmonpy's footer still counts IRI gaps by reason,
+  so the footer change is owed there as a port, hub item B-244 (see
+  `knowledge/parity-deviations.md`).
+
+* **`read_sssom_mapping_set()` now reads a canonical SSSOM/TSV file, which
+  leaves the built-in prefixes out of its `curie_map`** (hub item B-233). The
+  reader looked every CURIE prefix up in the file's own `curie_map` and refused
+  any it did not find, so `skos:exactMatch` in a file that did not declare
+  `skos` stopped with *uses unknown CURIE prefix "skos"*. The SSSOM
+  specification allows exactly that file: `owl`, `rdf`, `rdfs`, `semapv`,
+  `skos`, `sssom`, `xsd` and `linkml` are built-in, they "MAY be omitted from
+  the curie_map", and a canonical SSSOM/TSV writer "MUST NOT include" them. As
+  `mapping_justification` is required and is always a `semapv:` CURIE, every
+  canonical file with a mapping in it was refused. The eight are now accepted
+  undeclared. Every other prefix still has to be declared, since SSSOM/TSV
+  parsers "MUST reject a file with undeclared, non-built-in prefix names".
+
+  One kind of file that used to be accepted is now refused: a `curie_map` that
+  declares a built-in prefix with a different expansion, such as `skos` with
+  `https://www.w3.org/2004/02/skos/core#`. The specification says a declared
+  built-in "MUST point to the same IRI prefixes" as its table, and the old
+  reader, which knew no built-ins, read such an entry as an ordinary
+  declaration. The rule sits with the other CURIE checks, so it holds in
+  `validate_sdp_sssom()` and for an in-memory set passed to `write_sdp_sssom()`,
+  which is refused before anything is written, and `validate = FALSE` skips it
+  as it skips them. The rules are in the model's Identifiers section and the
+  table in the introduction's IRI prefixes section
+  (<https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers>,
+  <https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes>),
+  unchanged in the SSSOM 1.1 draft.
+
+  **Mirror:** metasalmonpy's reader refuses the same canonical files. It is
+  owed there as a port, hub item B-234, and not registered as a deviation.
 
 ### Changed
 

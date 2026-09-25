@@ -464,8 +464,13 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         # `term_type` describes the candidate. When the decision is a
         # hand-supplied `iri =` rather than a shortlisted candidate, the
         # candidate row on which the decision was recorded describes a
-        # *different* term, so its type is not evidence about this one.
-        if (identical(.ms_scalar_text(row$iri), .ms_scalar_text(row$decision_iri))) {
+        # *different* term, so its type is not evidence about this one. An
+        # `iri =` that a shortlisted candidate carries is recorded on that
+        # candidate's row (`accept_suggestion()`), so it takes the first branch,
+        # exactly as the same candidate accepted by `rank =` does. The row's
+        # IRI is read as a decision records it, without a `REVIEW:` marker,
+        # the rendering `accept_suggestion()` selected the row by.
+        if (identical(.ms_review_decision_iri(row$iri), .ms_scalar_text(row$decision_iri))) {
           .ms_scalar_text(row$term_type)
         } else {
           "skos_concept"
@@ -565,8 +570,12 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         accepted_iri <- .ms_scalar_text(row$decision_iri)
         # `%in%`, not `==`: a candidate row with no IRI compares as `NA`, and
         # `any()` of a mask holding an `NA` and no `TRUE` is `NA`, not `FALSE`.
+        # Each IRI is read through `.ms_review_decision_iri()`, as
+        # `accept_suggestion()` and the `term_type` check above read it.
+        # Stripped without the trim, a quoted IRI that kept a trailing newline
+        # was missed here, and the IRI gained a hand-picked row (hub item B-221).
         accepted <- in_slot &
-          .ms_strip_review_iri(as.character(suggestions$iri)) %in% accepted_iri
+          .ms_review_decision_iri(suggestions$iri) %in% accepted_iri
         suggestions$decision[in_slot] <- "not_selected"
         suggestions$decision_reason[in_slot] <- NA_character_
         if (any(accepted)) {

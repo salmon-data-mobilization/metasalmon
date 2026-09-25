@@ -1,13 +1,13 @@
 id: B-220
 kind: defect
 title: 'metasalmonpy accept_suggestion(iri="REVIEW:") passes the non-empty check and records an accept whose IRI is empty'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5
 severity: P3
-blocked_by: []
+blocked_by: [B-219]
 legacy: ''
 evidence: knowledge/backlog.md
 retires_when: 'In metasalmonpy, accept_suggestion() refuses an iri that is empty once the REVIEW: marker is stripped, in every spelling _strip_review_iri() removes, because the non-empty check runs on the stripped value rather than before the strip. Pinned by a test per spelling, demonstrated RED on the function as it stands. FIX IT AT THE SOURCE: apply_sdp_semantics() otherwise clears the field and records an accept that names no term, inert only because every reader drops it. THE MIRROR HALF IS B-219 (metasalmon); each names the other.'

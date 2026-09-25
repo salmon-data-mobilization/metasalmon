@@ -1,8 +1,8 @@
 id: B-56
 kind: defect
 title: Semantic retrieval issues one serial search_fn() call per target
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S2
@@ -10,4 +10,4 @@ severity: P2
 blocked_by: []
 legacy: '#56'
 evidence: knowledge/sequences/s2-correctness-debt.md
-retires_when: Identical query, role and sources tuples are deduplicated before retrieval, the per-row map over targets no longer issues one call per row, and a test counts `search_fn` invocations for a duplicate-heavy target set.
+retires_when: Identical query, role and sources tuples are deduplicated before retrieval, the per-row map over targets no longer issues one call per row, and a test counts `search_fn` invocations for a duplicate-heavy target set. THE METASALMONPY HALF IS B-243, filed when this item closed, and each names the other.

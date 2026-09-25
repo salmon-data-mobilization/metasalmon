@@ -1,8 +1,8 @@
 id: B-221
 kind: defect
 title: 'Hand-picking the IRI of a lower-ranked candidate writes term_type skos_concept, and re-applying the rebuilt review writes the candidate''s own type'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S5

@@ -1,13 +1,13 @@
 id: B-222
 kind: defect
 title: 'metasalmonpy writes term_type skos_concept for a hand-picked IRI that a lower-ranked candidate carries, and the candidate''s own type on re-apply'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5
 severity: P3
-blocked_by: []
+blocked_by: [B-221]
 legacy: ''
 evidence: knowledge/backlog.md
 retires_when: 'In metasalmonpy, apply_sdp_semantics() writes one term_type for one decision however it was expressed: accept_suggestion(iri=<a shortlisted candidate''s IRI>) writes that candidate''s own term_type, exactly as rank=<its rank> does, so applying, rebuilding the review and re-applying leaves column_dictionary.csv byte-identical. Pinned by a test that hand-picks the IRI of an owl_class candidate below rank 1, applies, rebuilds, re-applies and compares bytes, demonstrated RED on the code as it stands. An IRI no candidate carries keeps skos_concept. THE MIRROR HALF IS B-221 (metasalmon); each names the other.'

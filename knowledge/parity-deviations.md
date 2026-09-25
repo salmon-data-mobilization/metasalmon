@@ -113,7 +113,7 @@ also the only reason the twin has caught this one.
 | 53 | Gap (open — **R fixed 2026-09-14, Python not**; recorded until then as "a shared defect the mirror has *more* of") | `create_sdp()`'s three create-owned sidecars **were** unlink-then-rewrite on both sides (backlog **#111**), with metasalmonpy's widest window the wider of the two. For `metadata/metadata-edh-hnap.xml`, R called `.ms_replace_create_output()` then built from the **in-memory** `artifacts$dataset_meta`; metasalmonpy calls `_replace_create_output()` then runs a **full `read_salmon_datapackage()` from disk** before building, so every read and parse failure of the whole package sits inside the destroyed-file window too. **R closed its half on 2026-09-14** (queue B-111): all three render to bytes and install through `.ms_sdp_extension_atomic_write()`, and `.ms_replace_create_output()` is deleted. This row therefore now records a **one-sided** defect rather than a shared one, in the ordinary "R shipped first" direction — owed as a **port**, never as a deliberate difference | Measured, not read, during S10 chunk H (2026-08-22): after a clean `create_sdp(include_edh_xml=True)`, an abort injected into the EDH builder leaves 5479 bytes of previously written XML **deleted with nothing in its place**. The other two sidecars share the shape at narrower windows. Recorded rather than fixed because it is genuinely separate from chunk H — single-file blast radius against chunk H's whole-package one, and these files are `create_sdp()`-owned rather than part of the writer's managed-path inventory. **It did not retire when #111's R half closed, exactly as this row said it would not**: #111 was the R shape, and closing it leaves metasalmonpy's wider read-from-disk window standing. The R half is the model for the port — `atomic_io.py` is the counterpart writer, and `tests/testthat/test-create-sdp-sidecar-atomicity.R` the counterpart test: three abort injections at the three **render** steps, each asserting the prior file is byte-identical afterwards. Injecting at the render rather than at the install is what makes the test fail on the pre-fix code, so a port whose test injects at the install proves nothing. **The deferral of the Python half is logged in [the roadmap](roadmap.md)'s metasalmonpy release-index row** (added 2026-09-16 on a review finding on pull request #119, which read this row as leaving the mirror destructive while updating only this register -- it does, and the mirror rule's own remedy for that is the roadmap record): it names why the port did not land in the same stream (a hub claim covers one branch in one repository, and B-111 names metasalmon), points at the queue item that covers the port -- **`B-179`**, filed 2026-09-16, which is *not* **B-163** (that one is the `fsync` durability gap in the atomic write *set*, where the two implementations agree) -- and carries the `PARITY.md` correction this row's twin needs -- the twin still says "on both sides" and cites the deleted `.ms_replace_create_output()` call site. *Retires when:* metasalmonpy's three create-owned sidecar writes go through `atomic_io.py` and its EDH path either builds in memory or becomes transactional |
 | 54 | Gap (converged 2026-08-24 in R) — **ruled: R moved** | `write_salmon_datapackage()` now writes into an **existing empty directory** without `overwrite = TRUE`, as metasalmonpy always did. `.ms_check_package_write_dir()` (`R/package-helpers.R`) had ordered its guards *not a directory → create and return; `!overwrite` → abort; empty → return*, so an existing empty directory hit the `overwrite` abort first; it now tests emptiness **before** the `overwrite` gate, matching `package_io._check_package_write_dir()`. `create_sdp()`'s own earlier copy of the gate moved with it | **Not new, and not S10 chunk H's doing.** The reversed order arrived in the mirror with commit `e33526d` ("align core workflows with metasalmon 0.1.6"), and metasalmon 0.1.6's `.ms_prepare_package_write_dir()` already had R's order — so the difference was carried forward faithfully and silently since **before** the 0.1.6 parity claim. **Neither side's tests pinned it**, which is why a whole-suite parity run stayed green over it: R's `test-package-helpers.R` exercised a **non-empty** directory and the mirror exercised the case not at all. Found by metasalmonpy's 0.4.0 audit, not by a failure. Raised as [Q15](questions.md) and **ruled 2026-08-24 (Brett): *"Go with the python implementation."*** So **R moved**, on the reasoning the row had already set out: an empty directory carries no data to destroy, `overwrite` exists to authorize destroying something, and demanding it for the ordinary `mkdir -p && write` shape trains callers to pass it habitually — which is the flag's whole value gone. **What the measurement added to the row, and it is the part that was undefined rather than merely divergent: both sides already computed the identical notion of "empty"** — R's `.ms_dir_entries()` is `list.files(all.files = TRUE, no.. = TRUE)` and Python's is `list(target.iterdir())`, so dot-files count on both — and **only the predicate's POSITION relative to the `overwrite` gate differed.** Measured against metasalmon `main` @ `1e473c6` and metasalmonpy `main` @ `b4323fb` over five directory shapes: truly empty (R abort / Python write — the one divergent cell), dot-file only, stale sentinel, empty `data/` subdirectory, and non-empty (all four: abort on both). So a near-empty directory still requires `overwrite`, and emptiness is never recursive. Both suites now pin all of it — `test-package-helpers.R` ("writes into an existing EMPTY directory without overwrite" plus one test per near miss) and `tests/test_current_workflow.py` (`test_writer_writes_into_an_existing_empty_directory_without_overwrite` plus a parametrized near-miss trio). **Retirement condition:** none — the divergence is closed and this row is its record, kept because the *definition of empty* is the thing that drifted and a future reader needs to find it stated somewhere. |
 | 55 | Ahead (converged 2026-08-17 in Python, 2026-08-24 in R) — **unregistered until metasalmonpy's 0.4.0 audit** | A `datetime`-typed observation dimension validates. metasalmonpy's `observation_structures._typed_character()` formats a temporal value into the canonical ISO-8601 lexical form the validators expect and leaves character input untouched; metasalmon 0.4.0 fixed the same defect on this side, seven days later | **Recorded late, which is the point of recording it.** Both implementations had the identical bug — the normalizer took a string coercion of a typed instant, yielding `"2024-01-31 10:00:00"`, and tested it against a strict ISO-8601 pattern that string can never match, so **every** package with a datetime-typed dimension was rejected and `write_sdp_observation_structures()` refused to write one. metasalmonpy fixed it in commit `739f9fd` (2026-08-17), and its commit message states it had previously "mirrored the rejection rather than diverging silently, reporting it to the hub" — the **correct** behaviour under the mirror contract, and it left **no register row** for the window in which the two sides deliberately differed. **So R was the follower here**, and metasalmon's own 0.4.0 NEWS entry described the fix without naming the mirror; that entry now carries a dated correction (2026-08-24) saying so and citing this row. An undocumented difference is a contract violation even when the difference itself was right, and a deliberately-mirrored defect is exactly the kind that evaporates: once both sides are green, the next auditor sees a matching suite and no trace of the window. **Retirement condition:** none — the divergence is closed and this row is its record. It stays as the precedent for how a deliberately-mirrored defect gets registered *while* it is being mirrored, not after |
-| 56 | Gap (**ruled 2026-09-14; R moved, Python still owes it** — was: open, a shared residual and a cross-implementation difference) | A `POSIXct`/`Timestamp` metadata scalar is rendered differently by the descriptor and by the CSV writer, on **both** sides, in opposite directions. metasalmon 0.4.0 routed the descriptor's temporal values through `.ms_iso_character()` so "the JSON and the CSV cannot disagree about the same field" — true for `Date`, because `.ms_align_cols()` has already converted it to character, and **false for `POSIXct`**: measured, `.ms_iso_character()` yields `2024-01-31 10:00:00` while `readr::write_csv()` renders the same column `2024-01-31T10:00:00Z`. metasalmonpy has the mirror image: `package_io._clean()` emits the `T` form into `datapackage.json` and `to_csv` emits the space form into `metadata/dataset.csv`. So the two descriptors also disagree **with each other** for the same input. **Ruled 2026-09-14 (Brett), once for both implementations so that no implementer picks a spelling: a typed instant reaching the descriptor takes readr's ISO instant form, the `T` separator and the `Z` zone marker.** metasalmon adopted it the same day (hub item **B-115**): `.ms_descriptor_temporal_text()` sends an instant to `.ms_readr_instant_character()`, which asks `readr::write_csv()` itself for the bytes, so the descriptor and `metadata/dataset.csv` now share one renderer rather than two that are believed to agree. **metasalmonpy has not moved yet — hub item B-145 — so for that window the R descriptor emits the ruled form and the Python descriptor does not** | Found by metasalmonpy's 0.4.0 audit by driving both writers over the same instant, not by reading either; re-measured here 2026-08-24 (R 4.5.2, readr 2.x) before this row was written. Deliberately not fixed on either side: a unilateral change moves one descriptor's bytes to match neither its own CSV nor the other implementation, and **the correct lexical form for a metadata instant is a decision the SDP profile should make once for both sides**. `Date` already has such a ruling — [backlog #93](backlog.md) item 1, "Date only, per the measured rule", which is why `.ms_iso_date_columns()` deliberately does not touch `POSIXct`: readr's instant path was never broken and coercing it would change bytes twice over. Instants have no such ruling. The 0.4.0 port did fix the *adjacent* half in the mirror: every descriptor scalar presence test now renders and **trims** before deciding (`package_io._meta_scalar_present()`, mirroring `.ms_meta_scalar_present()`), which removes a whitespace-only `primary_key` writing `"primaryKey": []` — a key R cannot produce. **The ruling arrived, and the R half exposed something the ruling's own fixture could not state — read this before doing B-145.** `readr::write_csv()`'s instant year is **not** padded on every platform: measured 2026-09-14 on Linux R 4.3.3 / readr 2.2.0, it writes `999-06-05T13:45:30Z` for the backlog's fixture where macOS R 4.5.2 / readr 2.2.0 wrote `0999-06-05T13:45:30Z`. That is the `%Y` platform split at the top of `R/platform-time.R` reaching readr's own instant path, and it means the standing claim next to `.ms_iso_date_columns()` that "readr's instant path is correct already" was a macOS-only measurement (the comment now says so; #93 item 1's *ruling* is untouched, because its real justification is that coercing an instant changes three fields). **R therefore emits whichever year readr emits, deliberately**: the item's tested condition is that `datapackage.json` and `metadata/dataset.csv` agree, and padding only the descriptor to reach the ruling's literal `0999-…` would have re-opened this row's own defect on the platform CI runs on. **The consequence for B-145 is that "both sides emit the ruled form" does not by itself close this row.** Python's renderers are pure-Python and padded (`str()`/`isoformat()`), so a Python half that pads will still differ from R on a pre-1000 instant, in the year rather than the separator — a *narrower* version of this row rather than its closure — while a Python half routed through `to_csv`'s `datetime64` path inherits pandas' own unpadded year (backlog #115's Python measurement) and differs the other way. Neither is a reason to delay B-145; it is a reason for B-145 to measure the year on both sides and either register the residual here or state that the ecosystem accepts a platform-dependent instant year. A third option worth naming because it closes the whole thing: rule that a descriptor instant is **always** padded and make the CSV side padded too — which is a change to `.ms_iso_date_columns()` and therefore needs #93 item 1 re-opened deliberately, not in passing. **Retirement condition (sharpened 2026-09-14, was: the SDP profile rules on the canonical lexical form for a metadata instant — that ruling has now happened):** metasalmonpy adopts the ruled `T`/`Z` form (B-145) **and** the year-padding residual above is either measured away or registered, at which point this row records the ruling rather than the divergence. Until B-145 lands, this row is the record of a divergence that is *known and one-sided*, which is the state the mirror contract asks for rather than a violation of it |
+| 56 | Gap (**ruled 2026-09-14; R moved in B-115, metasalmonpy in B-145 — one residual is left and it is hub item B-161** — was: open, a shared residual and a cross-implementation difference) | A `POSIXct`/`Timestamp` metadata scalar is rendered differently by the descriptor and by the CSV writer, on **both** sides, in opposite directions. metasalmon 0.4.0 routed the descriptor's temporal values through `.ms_iso_character()` so "the JSON and the CSV cannot disagree about the same field" — true for `Date`, because `.ms_align_cols()` has already converted it to character, and **false for `POSIXct`**: measured, `.ms_iso_character()` yields `2024-01-31 10:00:00` while `readr::write_csv()` renders the same column `2024-01-31T10:00:00Z`. metasalmonpy has the mirror image: `package_io._clean()` emits the `T` form into `datapackage.json` and `to_csv` emits the space form into `metadata/dataset.csv`. So the two descriptors also disagree **with each other** for the same input. **Ruled 2026-09-14 (Brett), once for both implementations so that no implementer picks a spelling: a typed instant reaching the descriptor takes readr's ISO instant form, the `T` separator and the `Z` zone marker.** metasalmon adopted it the same day (hub item **B-115**): `.ms_descriptor_temporal_text()` sends an instant to `.ms_readr_instant_character()`, which asks `readr::write_csv()` itself for the bytes, so the descriptor and `metadata/dataset.csv` now share one renderer rather than two that are believed to agree. **metasalmonpy adopted it in hub item B-145**, by making `resource_types.iso_instant_text()` the one renderer every written instant passes through — the descriptor's two temporal keys, every SDP metadata CSV, every data-resource column, and the observation-dimension normalizer — so both implementations now agree with themselves. **Both sides have moved and this row is no longer one-sided**; what is left is the year, below 1000, and only on Linux. | Found by metasalmonpy's 0.4.0 audit by driving both writers over the same instant, not by reading either; re-measured here 2026-08-24 (R 4.5.2, readr 2.x) before this row was written. Deliberately not fixed on either side: a unilateral change moves one descriptor's bytes to match neither its own CSV nor the other implementation, and **the correct lexical form for a metadata instant is a decision the SDP profile should make once for both sides**. `Date` already has such a ruling — [backlog #93](backlog.md) item 1, "Date only, per the measured rule", which is why `.ms_iso_date_columns()` deliberately does not touch `POSIXct`: readr's instant path was never broken and coercing it would change bytes twice over. Instants have no such ruling. The 0.4.0 port did fix the *adjacent* half in the mirror: every descriptor scalar presence test now renders and **trims** before deciding (`package_io._meta_scalar_present()`, mirroring `.ms_meta_scalar_present()`), which removes a whitespace-only `primary_key` writing `"primaryKey": []` — a key R cannot produce. **The ruling arrived, and the R half exposed something the ruling's own fixture could not state — read this before doing B-145.** `readr::write_csv()`'s instant year is **not** padded on every platform: measured 2026-09-14 on Linux R 4.3.3 / readr 2.2.0, it writes `999-06-05T13:45:30Z` for the backlog's fixture where macOS R 4.5.2 / readr 2.2.0 wrote `0999-06-05T13:45:30Z`. That is the `%Y` platform split at the top of `R/platform-time.R` reaching readr's own instant path, and it means the standing claim next to `.ms_iso_date_columns()` that "readr's instant path is correct already" was a macOS-only measurement (the comment now says so; #93 item 1's *ruling* is untouched, because its real justification is that coercing an instant changes three fields). **R therefore emits whichever year readr emits, deliberately**: the item's tested condition is that `datapackage.json` and `metadata/dataset.csv` agree, and padding only the descriptor to reach the ruling's literal `0999-…` would have re-opened this row's own defect on the platform CI runs on. **The consequence for B-145 is that "both sides emit the ruled form" does not by itself close this row.** Python's renderers are pure-Python and padded (`str()`/`isoformat()`), so a Python half that pads will still differ from R on a pre-1000 instant, in the year rather than the separator — a *narrower* version of this row rather than its closure — while a Python half routed through `to_csv`'s `datetime64` path inherits pandas' own unpadded year (backlog #115's Python measurement) and differs the other way. Neither is a reason to delay B-145; it is a reason for B-145 to measure the year on both sides and either register the residual here or state that the ecosystem accepts a platform-dependent instant year. A third option worth naming because it closes the whole thing: rule that a descriptor instant is **always** padded and make the CSV side padded too — which is a change to `.ms_iso_date_columns()` and therefore needs #93 item 1 re-opened deliberately, not in passing. **Measured 2026-09-16 on one Linux container — R 4.3.3 / readr 2.2.0 and pandas 3.0.5 — by driving each implementation's own writer over the same fixture: metasalmon writes `999-06-05T13:45:30Z` (unpadded, both files), metasalmonpy writes `0999-06-05T13:45:30Z` (padded, both files), and for `2024-12-31T00:00:00Z` the two agree exactly. On macOS R 4.5.2 / readr 2.2.0 metasalmon wrote `0999-06-05T13:45:30Z` and would agree — cited from B-115's measurement, not re-measured. Neither side's year is arbitrary: R follows `readr::write_csv()`, whose `%Y` is its build's libc, and metasalmonpy pads by construction through `resource_types._iso_date`, which row 40 already registers and `tests/test_platform_determinism_guard.py` exists to keep true, so matching R's Linux output there would mean deliberately undoing that guard. Which year is correct is hub item **B-161** and is not settled here.** **Retirement condition (sharpened 2026-09-16; was "metasalmonpy adopts the ruled `T`/`Z` form (B-145) and the year-padding residual is either measured away or registered" — the first half is done and this row is the second):** B-161 rules one spelling for a pre-1000 instant, both implementations emit it, and each side's suite asserts it; at that point this row records the ruling rather than a divergence. Until then the difference is exactly one leading zero on a pre-1000 instant — known, measured, one-sided in neither direction, and reachable only from a caller-supplied typed instant, which neither implementation produces on its own |
 | 57 | Gap (converged 2026-08-24 in Python) — **ruled: Python moved** | `create_sdp()`'s deterministic prefill applies **every** role on both sides: a constraint or statistical modifier is applied when the column's own name, label or description carries the evidence, gated by `.ms_measurement_supports_constraint_slot()` / `..._statistical_modifier_slot()` here and by `semantics._measurement_suggestion_is_compatible()` in the mirror, and the filled slot is **marked** `REVIEW:`. metasalmonpy had restricted the whole prefill to `auto_roles = ["variable", "property", "entity", "unit"]` and now passes `roles=None` on the deterministic path | Surfaced by metasalmonpy's 0.4.0 **documentation** audit rather than by a test, and that is the striking part: metasalmon 0.4.0 corrected its quickstart's "never auto-filled" claim as **wrong for R**, and the identical sentence in the mirror's `guides/faq.qmd` and `guides/parity.qmd` was **true for Python**. The prose matched the code on each side while the code diverged, so no reader of either was in a position to catch it. Raised as [Q16](questions.md) and **ruled 2026-08-24 (Brett): *"Yeah lets go the R way."*** So **Python moved**, and the marking moved with it — `package_io._auto_apply_package_suggestions()` now marks `constraint_iri` and `statistical_modifier_iri` alongside the four core fields. That was not decoration: review-visibility is the property the ruling turned on, so a port that filled the same slots without marking them would have taken the behaviour and dropped its justification. **Two things the port found that this row did not describe.** First, **R's "no role restriction" is true of the deterministic path only**: the LLM path runs through `.ms_prepare_llm_auto_apply_suggestions()` with `.ms_create_sdp_llm_auto_apply_roles()` — the same four roles — so porting `roles = NULL` unconditionally would have widened the mirror *past* R and re-opened this row in the other direction. The mirror now splits the same way (`roles=None` for `"top"`, the four roles for `"llm"`), pinned by `test_llm_auto_apply_still_refuses_the_two_qualifier_roles`. Second, **neither side pinned the positive case**: both suites already asserted the two slots stay *empty* when the gate rejects, and nothing asserted they ever fill — which is precisely how this divergence survived two green suites. **Both sides now pin the written dictionary**, R in `test-package-helpers.R` ("create_sdp prefills and MARKS constraint and statistical modifier from column evidence") and Python in `test_create_sdp_prefills_and_marks_constraint_and_statistical_modifier`, each with an unqualified-column twin proving the gate still holds. Measured end to end rather than read: one `mean_wild_spawner_count` column through both `create_sdp()` implementations with retrieval stubbed identically, against metasalmon `main` @ `1e473c6` and metasalmonpy `main` @ `b4323fb` — R filled all six IRI slots, Python four. It now fills six. **Retirement condition:** none — the divergence is closed and this row is its record, and it is the precedent for the fact that a prefill's *marking* is part of the behaviour rather than a detail of it. |
 | 58 | Gap (open) — documentation | metasalmon 0.4.0 added two vignettes (roadmap S11 slice 2) with no counterpart in metasalmonpy: **Migrating to SDP 0.3.0** (`vignettes/migrating-to-sdp-0-3-0.Rmd`) and **Tidy Data for Salmon Data Packages** (`vignettes/tidy-data-for-sdp.Rmd`). `migrate_sdp_methods()` is exported there and has no `reference/` page at all | The *behaviour* both vignettes document exists in the mirror — `migrate_sdp_methods()` with its stop-and-report cases, declared-primary-key uniqueness, the value-like column-name warning, the `pivot_longer` reshape (row 49) — so this is a **prose gap, not a capability gap**, and the 0.4.0 parity claim rests on behaviour. What the 0.4.0 port **did** fix there is the docs that were factually *wrong* rather than merely absent: `guides/semantic-review.qmd`, `guides/glossary.qmd`, `README.md` and `guides/parity.qmd` all still described a dictionary `method` slot that sdp-0.3.0 removed, the glossary named four I-ADOPT components instead of five, and `guides/parity.qmd` claimed 0.1.6 parity while listing EML export, KNB publication, SSSOM, decompositions and observation structures as "not yet in Python" — every one of which ships. **A register that points at a stale guide is worse than one that admits a missing guide**, which is why the wrong docs were the priority and this row is what keeps the missing ones from being forgotten. The checked-in generated `reference/*.qmd` remain stale (they need quartodoc and a `quarto` binary to regenerate); the source docstrings they were generated from are already correct. **Retirement condition:** the two guides are written in metasalmonpy — **or** the ecosystem decides that narrative guides live once, on the R side, and the mirror's docs link to them instead of duplicating them. Either answer retires the row; leaving it unanswered is what this row exists to prevent. The `reference/` half retires when a docs build runs in metasalmonpy's CI |
 | 59 | Idiom | A **non-character SSSOM mapping cell** is spelled by each language's native scalar-to-text conversion, and the two differ. metasalmon renders through `as.character()` (`.ms_canonical_character()`, `R/platform-time.R`), so a numeric `confidence` of `100000` emits `1e+05` and a `POSIXct` emits `0999-01-31 10:00:00.5`; metasalmonpy renders through `str()` (`sssom._cell()`), which emits `100000.0` and `0999-01-31 10:00:00.500000` | **Row 36's shape, applied to the SSSOM table instead of the data resource**: same values, different formatter, different bytes — and therefore a different `sha256` in `metadata/semantic/mapping-sets.json`. Added 2026-08-25 with metasalmon's fix for backlog #93 item 3, and it registers a difference that **pre-dates that fix and was never recorded**: R previously rendered these cells through `as.matrix()`/`format()` (`1.0e+05`, `1.5e+00`), so the two implementations already disagreed, differently and vector-wise. The fix moved R's spelling and did not remove the divergence, which is why the row is opened now rather than closed. **Narrow by construction:** a mapping set read from a `.sssom.tsv` is all character in both implementations, where every renderer agrees, so this is reachable only from an **in-memory** mapping set a caller builds with a typed column. Measured 2026-08-25, both sides, same fixture: for a typed `mapping_date` the two now emit byte-identical tables (`0999-01-01` before `1000-01-01`, padded, sorted by the spelling they emit), so the *date* half of this row is convergent and only the numeric and instant spellings differ. Neither spelling is more correct — `1e+05` and `100000.0` are the same double — but neither is the canonical value token either side already owns. **Retirement condition:** both implementations render a non-character SSSOM cell through their own canonical value renderer (`.ms_format_number_token()` in R, `format_number_token()` in Python), which row 36 records as agreeing, instead of the language's default scalar conversion. Nothing owns that today, and this row is deliberately not claiming a milestone it cannot name |
@@ -194,6 +194,24 @@ shape. **Owed as a port, not a row**: nobody chose the difference, and
 no-op. The port is hub item **B-215**, and the measurement is in `backlog.md`
 under *The 2026-09-23 queue sweep*. Recorded here and in the release index in
 the same change, as the rule there requires.
+
+**This one is closed.** `B-215` landed as metasalmonpy pull request **#47**
+(`ed5e22e`) on 2026-09-25. `review_metadata()`, the four setters and
+`validate_salmon_datapackage()`'s blank-required collector now read the schema
+the options select through `_schema_source()`, the twin of R's
+`.ms_sdp_schema_options_are_default()` rule: the bundled copy, with no network
+call, under the shipped settings, and otherwise the loader's schema, as the
+writers read it. Codex review carried the port on to R's writers: under a
+selected schema the setters, `write_salmon_datapackage()` and
+`apply_sdp_semantics()` add each declared column a file lacks, empty, and write
+the declared order, as R's `.ms_align_cols()` does, and every file is
+byte-identical under the shipped settings, measured. One part is not ported and
+is owed: `normalize_*()` still synthesises a bundled field that a selected
+schema removes, and the writers put it after the declared fields, where R writes
+no such column into a frame that lacked it. That predates the port. The B-215
+workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
+it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
+queue item is **B-252**.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
@@ -448,6 +466,14 @@ redundant: `scripts/check-parity-registers.py` fails on a number present in one
 register and absent from the other, so it would have turned the check red in both
 repositories for a fact row 56 already carries.
 
+**This one is closed.** `B-145` landed as metasalmonpy pull request **#34**
+(`f1f7230`) on 2026-09-25. `resource_types.iso_instant_text()` is now the one
+renderer every instant metasalmonpy writes passes through, so its
+`datapackage.json` and `metadata/dataset.csv` spell an instant identically, in
+the ruled `T`/`Z` form, as R's do. What is left is the year below 1000, which is
+B-161's. Row 56's hub-side twin edit amends a register row, so it is Brett's
+and is metasalmon pull request **#175**.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-23):
 a recorded hand-picked accept is not ontology-gap evidence.**
 `detect_semantic_term_gaps()` now drops the rows `apply_sdp_semantics()` writes
@@ -475,6 +501,18 @@ register row: the recorded row is itself a port that has landed (#28), and once
 this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
+
+**This one is closed.** `B-216` landed as metasalmonpy pull request **#46**
+(`2405df2`) on 2026-09-25. `detect_semantic_term_gaps()` in `term_requests.py`
+now drops the rows `metadata_write._is_hand_picked()` marks, `source` trimmed
+and lower-cased equal to `user` as R's `.ms_review_is_hand_picked()` reads it,
+as soon as the suggestions table is built on either entry path and before any
+embedded LLM field is read. `tests/test_term_requests.py` pins the
+before-and-after equality on a slot whose `ols` candidates are a real
+non-`smn` gap, and that a recorded row carrying an embedded `request_new_term`
+yields no gap row. Both packages still reserve `user` in the `source` column,
+so a caller's own `search_fn` that labels a candidate `user` loses it in both;
+that is a pair of its own, **B-249** and **B-250**, not part of this port.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
@@ -541,9 +579,23 @@ it raises `AttributeError` into the `except Exception` branch marked
 `pragma: no cover - defensive`, which converts the column to strings. R's factor
 carries the labels. The Python code plainly means to apply them, so this reads
 as a Python defect rather than a design difference, but
-`tests/test_dictionary.py` pins the unlabelled categories, so it is a candidate
-for its own item and the B-55 workpad has the evidence. No register row is added
-here, because adding one is Brett's.
+`tests/test_dictionary.py` pins the unlabelled categories, so it is an item of
+its own, **B-274**, and the B-55 workpad has the evidence. No register row is
+added here, because adding one is Brett's.
+
+**This one is closed.** `B-241` landed as metasalmonpy pull request **#43**
+(`85ebbb0`) on 2026-09-25, changing the codes block of
+`apply_salmon_dictionary()` in `dictionary.py`. One `RuntimeWarning` per column
+names each distinct unlisted value under either value of `strict`, and the value
+is blanked before `pd.Categorical` is built, so the step no longer relies on the
+construction pandas deprecates. The step runs only on a character or categorical
+column, through `_code_list_applies()`, which is R's
+`inherits(x, "character") || inherits(x, "factor")` guard. So an `integer`,
+`number`, `boolean` or `date` column with a code list keeps its values
+unreported, as in R, where before the port metasalmonpy blanked them without a
+word. `ApplyDictionaryFailureReportTests` in `tests/test_dictionary.py` pins both
+halves, including the `strict=True` coercion raise, which needed only a test. The
+`code_label` defect above is outside the port and was not changed by it.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
@@ -590,6 +642,21 @@ default, and `""` is the one literal both languages print alike. So it is owed
 as a port, not a register row. It did not land in the same stream because a hub
 claim covers one branch in one repository. Its metasalmonpy half is `B-242`.
 
+**This one is closed.** `B-242` landed as metasalmonpy pull request **#42**
+(`afe5626`) on 2026-09-24, changing `review_console.py` in the three places this
+paragraph named, `_match_slot_rows()`, `_review_call_args()` and
+`_resolve_slot()`, plus a new `_is_code_slot()` that reads a code's slot from
+`review_target_keys()`. `tests/test_review_console.py` carries the mirrors of
+B-151's tests, and the pin is deleted. Run through both packages'
+`create_sdp()` on the same inputs against metasalmon `71a9199`, the printed
+arguments, the slot each call resolves to and the refusal's options agree on all
+64 lines, where 32 differed before. In metasalmonpy a blank `code_value` is
+`""`, `pd.NA` or `NaN`, and `None` stays the unconstrained default, as R's
+`NULL` does. The
+case neither implementation fixes, a code slot whose row has no code value and
+so no call of its own, behaves the same on both sides, so it is not a
+divergence.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.**
 `infer_column_role()` no longer types a column `temporal` on year-shaped values
@@ -627,7 +694,8 @@ targets. The word
 split must use an explicit ASCII punctuation set, as R's does, rather than a
 class whose meaning moves with the locale. It is owed as a port, not a register
 row: once it lands the two implementations behave alike again. It did not land
-in the same stream because a hub claim covers one branch in one repository.
+in the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is **B-240**.
 
 **One thing the port has to know, because it will otherwise meet it as a failing
 control.** metasalmonpy's `_values_look_yearish()` never finds a float column
@@ -644,6 +712,346 @@ separate divergence and not this port's to absorb**: it also means a year column
 pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
+
+**This one is closed.** `B-240` landed as metasalmonpy pull request **#41**
+(`ace8eed`) on 2026-09-24, changing `infer_column_role()` in `dictionary.py`.
+`tests/test_year_shaped_measurement_role.py` is the port of the R test, and it
+checks each fixture against `_values_look_yearish()` before it asserts a role.
+Over 64 name and value pairs run through metasalmon `16976b1` and the port,
+every year-shape verdict and every role agree, where 18 differed before. Its
+fixtures are `int64`, nullable `Int64`, text and categorical, the storage types
+metasalmonpy reads as year-shaped. So the float gap above is outside what the
+port tests, and the port did not change it, as metasalmonpy's `CHANGELOG.md`
+entry for it says.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`suggest_semantics()` searches each distinct query, role and sources tuple
+once.** Its retrieval map called `search_fn()` once per target row, so a column
+repeated across tables, or a unit query two columns fall back to, was searched
+again for every row that carried it (backlog #56, hub item **B-56**). The map
+now receives `.ms_search_once_per_call(search_fn)`, which is created for the
+call and dropped with it. A repeat of a tuple it has answered gets that answer,
+and the rows are built from it exactly as before, so every row keeps the
+candidates and the order its own search gave it. An answer whose diagnostics
+name a source that did not answer is never kept, read through
+`.ms_search_failed_sources()` as `find_terms()` reads it for its own cache, so
+the next row with that tuple searches again. The key is the arguments exactly as
+`search_fn` receives them, sources in their given order. The two LLM retry
+passes still call `search_fn` directly.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`suggest_semantics()` in `semantics.py` calls `search_fn()` inside
+`for target in targets:` and nothing wraps it. Measured 2026-09-25 on
+metasalmonpy `main` `85ebbb0` (Python 3.11.15, pandas 3.0.5), loading the
+package from a `git archive` extract: the R test's four-table fixture makes 40
+calls for 9 distinct tuples, four for each of eight and eight for the `count`
+unit query both columns fall back to, which are the counts R made before B-56.
+The pin should be the R test's (`tests/testthat/test-semantic-retrieval-dedup.R`):
+a counting `search_fn` on that fixture, no tuple searched twice, every row's
+candidates identical to per-row retrieval's and in the same order, a degraded
+first answer kept by the row that got it while the tuple's next row searches
+again, and an outage that lasts searched once per row. Degraded means what
+`_search_failed_sources()` in `term_search.py` says of
+`result.attrs.get("diagnostics")`, the mirror's one copy of that test. The dedup
+must live for one call rather than at module level, where it would become a
+second cache beside `find_terms()`'s. It is owed as a port, not a register row:
+once it lands the two implementations behave alike again. It did not land in
+the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy half is `B-243`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Its
+non-empty check now reads the value `.ms_strip_review_iri()` leaves, where it
+read the value before the strip. So `iri = "REVIEW:"`, and every other spelling
+that strip removes, aborts instead of recording an accept whose IRI is empty
+(hub item **B-219**). Recorded, that accept made `apply_sdp_semantics()` clear
+the slot's field and write an `accepted` row with an empty `iri`, which every
+reader of `semantic_suggestions.csv` then had to know to drop. The fix is at
+the check, and `apply_sdp_semantics()` is unchanged.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`accept_suggestion()` in `review_console.py` checks `iri` at `:1214-1215` and
+strips it at `:1231`. Measured 2026-09-25 on metasalmonpy `main` `85ebbb0`
+(Python 3.11.15, pandas 3.0.5): `"REVIEW:"`, `"REVIEW: "`, `"review:"`,
+`"Review:"`, `"  REVIEW:"` and `"REVIEW:\f"` each record an accept whose
+`decision_iri` is empty. The two strips do not remove the same spellings.
+`_strip_review_iri()` (`:144`) removes a leading `REVIEW:` in any case, and it
+leaves `"REVIEW :"`, which metasalmonpy records as the IRI verbatim. Which
+spellings both packages should recognise is hub question **Q-63**, and the port
+does not settle it. Its pin is one test per spelling metasalmonpy's own strip
+removes, each asserting first that the strip empties it, plus a control that a
+marked IRI with a term after the marker is accepted without the marker, as in
+`tests/testthat/test-review-console.R`. It is owed as a port, not a register
+row: once it lands, the two refuse alike every spelling both strips remove, and
+the difference left is Q-63's. It did not land in the same stream because a hub
+claim covers one branch in one repository. Its metasalmonpy queue item is
+**B-220**.
+
+**This one is closed.** `B-220` landed as metasalmonpy pull request **#45**
+(`fc5d16f`) on 2026-09-25. `accept_suggestion()` in `review_console.py` now
+runs its non-empty check on the value `_strip_review_iri()` returns, so every
+spelling that strip removes is refused where each recorded an accept whose
+`decision_iri` was empty; the port's workpad re-measured 19 such spellings on
+`85ebbb0`, not only the six above. `tests/test_review_console.py` pins one per
+way the strip ends up empty, each asserting first that the strip empties it,
+with a control that a marked IRI with a term after the marker is recorded
+without the marker. No spelling changed in either package, so the two strips
+still disagree about what the marker is, in both directions: the workpad
+records that only R removes a space or tab before the colon, that only
+metasalmonpy removes a no-break space after it or folds a dotless i, and that
+R's result for some Unicode spaces depends on the locale. That is Q-63's.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion(iri = )` naming a shortlisted candidate records that
+candidate.** An `iri` that a candidate in the slot's shortlist carries, compared
+trimmed and without the `REVIEW:` marker, is now recorded on that candidate's
+row, the row `rank =` its rank records, where it was recorded on the slot's
+first row (hub item **B-221**). `apply_sdp_semantics()` takes `term_type` from
+the row a decision sits on only when that row carries the accepted IRI, and
+writes `skos_concept` otherwise. So hand-picking a lower-ranked candidate's IRI
+wrote `skos_concept`, and re-applying the review rebuilt from the package, which
+replays the decision on the candidate's own row, wrote the candidate's type. The
+fix is in `accept_suggestion()`, and in the two comparisons
+`apply_sdp_semantics()` makes: whether the decision row is the accepted
+candidate, and which rows of `semantic_suggestions.csv` it records as accepted.
+All three now read a candidate's IRI through `.ms_review_decision_iri()`,
+trimmed and without the marker. The writer had compared the stored IRI with
+its marker, so a candidate stored as `REVIEW: <IRI>` now writes its own type,
+by `rank =` as well as by `iri =`. The record had stripped without trimming,
+so a quoted IRI that kept a trailing newline is now recorded as accepted
+instead of gaining a hand-picked row. An IRI that no shortlisted candidate
+carries still goes on the first row and still writes `skos_concept`.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`accept_suggestion()` in `review_console.py` sets `target_index` to the slot's
+first row whenever `iri` is given (`:1214`), and `apply_sdp_semantics()` in
+`metadata_write.py` compares that row's `iri` with `decision_iri` and writes
+`skos_concept` when they differ (`:192-200`). Measured 2026-09-25 on
+metasalmonpy `main` `2405df2` (Python 3.11.15, pandas 3.0.5), loading the
+package from a `git archive` extract, on a slot with two `variable` candidates
+and an `owl_class` at rank 2. `iri=` naming that candidate records the accept on
+rank 1 and writes `skos_concept`. The rebuilt review replays it on rank 2, and
+re-applying writes `owl_class`, so `column_dictionary.csv` changes. `rank=2`
+writes `owl_class` both times. With that candidate's IRI stored as
+`REVIEW: <IRI>` in `semantic_suggestions.csv`, `rank=2` records the unmarked IRI
+and writes `skos_concept`, because `_text(row["iri"])` keeps the marker. Its
+record already matches through `_strip_review_iri()`, which trims
+`" \t\r\n"` first, so the port needs the selection and the writer's check but
+not the record. The pin should be the R tests'
+(`tests/testthat/test-metadata-write.R`). One hand-picks the IRI of an
+`owl_class` candidate below rank 1, applies, rebuilds with
+`include_filled=True`, re-applies and compares bytes. One checks that the review
+`iri=` gives, marked or not, is the one `rank=` gives. One stores that
+candidate's IRI with the marker and checks its own type is written by `iri=`
+and by `rank=`. One stores it with a trailing newline and checks the record
+accepts the candidate and adds no hand-picked row. A control makes every
+candidate an `owl_class` and checks that an IRI none carries still writes
+`skos_concept`. It is owed as a port, not a
+register row: once it lands the two implementations behave alike again. It did
+not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-222**.
+
+**This one is closed.** `B-222` landed as metasalmonpy pull request **#48**
+(`70fa8fd`) on 2026-09-25. `accept_suggestion()` in `review_console.py` now
+records an `iri` that a shortlisted candidate carries on the first row in the
+slot whose IRI, read through `_strip_review_iri()`, equals it, which is the row
+`rank=` uses; an IRI no candidate carries still goes on the slot's first row and
+still writes `skos_concept`. `apply_sdp_semantics()` in `metadata_write.py`
+reads the row's IRI through `_strip_review_iri()` rather than `_text()`, so a
+candidate stored as `REVIEW: <IRI>` writes its own type by `iri=` and by
+`rank=`. No second helper was added: `_strip_review_iri()` already trims before
+it strips, so it computes what R's `.ms_review_decision_iri()` computes.
+`tests/test_review_console.py` twins four of the five R tests. The fifth, the
+trailing newline, is not twinned, because its premise does not hold there:
+measured on one file, readr 2.2.0 keeps a quoted trailing newline and
+metasalmonpy's `read_sdp_csv()` strips it. That reader difference is not among
+the mismatches `PARITY.md` row 23 names. It is **B-257**, which records that
+which side is right is open.
+`PARITY.md` did not change.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`review_metadata()`'s console counts an IRI field reported as a placeholder as
+an IRI.** Hub item **B-211** makes the scan keep one gap row per field of a
+metadata row. That is the rule metasalmonpy shipped first, as **B-212**
+(metasalmonpy pull request #49, `25dc7f3`). So a prose placeholder in
+`observation_unit_iri` or a measurement IRI keeps its `placeholder` row and gets
+no `iri` row. `.ms_metadata_render_lines()` counted the footer's IRI gaps with
+`review$reason == "iri"`, so that field fell out of the count. When every IRI
+gap was a placeholder, the footer also lost its line pointing at
+`review_semantics()`. B-211 now counts the rows whose `field` ends in `_iri`,
+the suffix the scan's marker sweep reads. Every row the old count found has
+such a field, so the count only gains IRI fields reported under another reason:
+a placeholder, or `required` under a configured schema that calls an IRI field
+required. The printed calls do not change.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`_render_metadata_lines()` in `sdp_field_setters.py` counts
+`iri_rows = int((rows["reason"] == "iri").sum())` (`:817`). This was measured
+2026-09-25 on metasalmonpy `main` `25dc7f3` (Python 3.11.15, pandas 3.0.6, core
+dependencies only), on a `create_sdp()` package filled by its own printed calls.
+`MISSING METADATA: add the observation unit IRI.` was then written into
+`tables.csv` `observation_unit_iri`, and `REVIEW REQUIRED: pick a unit.` into the
+`spawner_count` row's `unit_iri`. `review_metadata()` returns both rows as
+`placeholder`, and the footer reads `2 fields still block strict validation.`
+with no IRI line. The change owed is that one count, taken by field as R now
+takes it. The pin should be the R test `an IRI field reported as a placeholder
+still counts as an IRI in the console`
+(`tests/testthat/test-sdp-field-setters.R`): every IRI gap a prose placeholder,
+and the footer asserted to count two IRIs and to print the `review_semantics()`
+pointer. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because
+a hub claim covers one branch in one repository, and metasalmonpy #49 had merged
+before the R half found it. Its metasalmonpy queue item is **B-244**.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25), and no behaviour: EML `calendarDate` carries the spelling
+`metadata/dataset.csv` holds.** Hub item **B-162** asked whether the
+`as.character()` in `.ms_eml_add_coverage()` renders `temporal_start` and
+`temporal_end` a third time. It answered by design that it does not.
+`write_eml_from_sdp()` reads the package back from disk as text, so the EML
+copies the one rendering a writer made. Two R tests in
+`tests/testthat/test-canonical-date-render.R` pin this:
+
+- a typed Date goes through the exported writer and its schema check, and all
+  three copies must agree;
+- for the text `"999-06-05"`, the EML must follow the CSV.
+
+Nothing behaved differently before or after.
+
+**The twins are owed because metasalmonpy has the same two lines and no test
+of them.** `eml.py:2253` reads
+`_add_text(begin, "calendarDate", _as_character(temporal_start))`, `:2255` is
+its `temporal_end` twin, and `read_sdp_csv()` reads `dtype=str`
+(`metadata.py:112`). So the same answer holds there, by the same construction.
+
+It was measured 2026-09-25 on metasalmonpy `main` `012d04b`, with Python
+3.9.23, pandas 2.3.3 and the `eml` extra. A minimal package was written through
+`write_salmon_datapackage()`, and the coverage was built by `_add_coverage()`
+from `read_salmon_datapackage()`'s frame:
+
+- `datetime.date(999, 1, 1)` gives `0999-01-01` in `dataset.csv`, in
+  `datapackage.json` and in the `calendarDate`;
+- the text `"999-06-05"` gives `999-06-05` in `dataset.csv` and in the
+  `calendarDate`.
+
+Both twins would therefore pass today. What is missing is the pin, and
+`tests/test_eml.py` has none. The pins should take the R tests' shape. The
+first uses a date through `write_eml_from_sdp()` and its schema check. The
+second uses the text, with the coverage built from the frame the builder
+receives, because the exported call aborts on `999-06-05`. The second asserts
+the EML against the CSV only, as R's does. They are owed as pins, not as a port
+or a register row: nothing behaves differently. They did not land in the same
+stream because a hub claim covers one branch in one repository. Their
+metasalmonpy queue item is **B-245**.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-24):
+the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
+of its `curie_map`.** Hub item **B-233** makes `read_sssom_mapping_set()` accept
+a CURIE whose prefix is one of the eight SSSOM built-ins (`owl`, `rdf`, `rdfs`,
+`semapv`, `skos`, `sssom`, `xsd`, `linkml`) when the `curie_map` does not
+declare it, and refuse a `curie_map` entry that gives a built-in any expansion
+other than the one the specification fixes. Every other undeclared prefix is
+refused as before. metasalmonpy's `_validate_reference()` in `sssom.py` looks a
+prefix up in the file's `curie_map` alone, as R's did, so it refuses the same
+canonical files and reads a redefinition as an ordinary declaration.
+
+**The specification question is settled, so the port applies the answer rather
+than deciding it again.** The model's Identifiers section says: *"By exception,
+prefix names listed in the table found in the IRI prefixes section are
+considered 'built-in'. As such, they MAY be omitted from the curie_map. If they
+are not omitted, they MUST point to the same IRI prefixes as in the
+aforementioned table."*
+(<https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers>). The
+table is the introduction's IRI prefixes section
+(<https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes>), and
+both read the same on the 1.1 draft under `/sssom/dev/`. `.hub/workpads/B-233.md`
+has the full record, including two lists that are not this one: the `prefixes:`
+block of the SSSOM LinkML schema, and sssom-py 0.4.21's `SSSOM_BUILT_IN_PREFIXES`,
+which has six names and lets a redefinition through by overriding it.
+
+The port owes three things, placed where R placed them. The table, as
+`.ms_sssom_builtin_prefixes` in `R/sssom.R` has it, in the specification's
+order. `_validate_reference()` treating a built-in prefix as declared. And a
+check in `_validate_metadata()`, ahead of the `subject_source` and
+`object_source` references, that every `curie_map` entry named for a built-in
+carries that built-in's expansion after trimming, whether or not anything uses
+the prefix. The check sits with the CURIE checks rather than in the parser, so
+it holds for an in-memory set handed to `write_sdp_sssom()`, which is refused
+before anything is written, and `validate=False` skips it as it skips them. R's
+refusal says *redefines built-in prefix*, and its tests match on that phrase.
+The reader's docstring says it enforces "complete CURIE declarations", which R's
+documentation said too and no longer does.
+The tests to mirror are the six B-233 added to `tests/testthat/test-sssom.R`,
+whose fixture is a file in the specification's canonical form. It is owed as a
+port, not a register row: once it lands the two readers accept the same set. It
+did not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy half is **B-234**.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a required IRI field under a selected schema is reported
+once.** Under a selected schema that marks `column_dictionary.csv` `unit_iri`
+required, a blank `unit_iri` on a measurement row was reported twice, as
+`required` and as `iri`, so the printed `set_sdp_column()` call named the field
+twice and could not run. metasalmonpy closed that route first, with the one row
+per field that **B-212** put in `add()`, and measured it only with a scratch
+script: two rows and *keyword argument repeated: unit_iri* on `70fa8fd`, one row
+on `351fed6`, per its workpad. Hub item **B-211** closed it in R and pinned it,
+with the test *a field two checks both find is reported once: a required IRI a
+configured schema declares* in `tests/testthat/test-sdp-field-setters.R`.
+metasalmonpy's suite has no such test, as both workpads say. What is owed is the
+twin, shown to fail when `add()` keeps a second row for the field. It is not a
+port and not a register row, because nothing behaves differently. It was found
+after both halves had merged, and a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-260**.
+
+**The development version after 0.5.0 adds a documentation port to what the
+mirror is owed (2026-09-25): the semantic-review guide's account of the two
+canonical sets.** Hub item **B-192** rewrote the passage of
+`vignettes/post-review-package-publication.Rmd` from which metasalmonpy's
+`guides/semantic-review.qmd` was transcribed, after metasalmonpy pull request 31
+had fixed that guide's larger error. The R text departs from the Python wording
+where the wording was not accurate for R, and two of those departures hold for
+Python too. Measured by the B-192 run on metasalmonpy `main` `70fa8fd`, and read
+again on `f1f7230` by the 2026-09-25 queue sweep: the guide says the package
+"stops validating" because of a row added for a code-resolved procedure
+(`:463`), where the ledger is read only by `_export_reviewed()` in `eml.py` and
+never by `validate_salmon_datapackage()`; and it says no reviewer ever selected
+such a procedure as a slot (`:456-457`), where `review_console.py` lists
+`codes.csv` among `WRITABLE_FILES`, so a reviewer can decide a code value's
+`term_iri`. It is owed as a documentation port, not a register row. It did not
+land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-261**.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
+review target.** Hub item **B-171** added the R test of that name to
+`tests/testthat/test-semantic-closure.R`, on a fixture that binds a data column
+to a measure as `sosa:usedProcedure`, so that its code values' `term_iri` land in
+the measurement set and in no review target. It is the first test to reach the
+role fallback in `.ms_closure_iri_roles()`, and a mutation of that fallback
+fails it. metasalmonpy has the same producer and the same fallback, `_iri_roles()`
+in `semantic_closure.py` (the fallback at `:504-507` on `f1f7230`), and
+`tests/test_semantic_closure.py` has no `usedProcedure` component, no
+observation structure and no `example.org/methods` IRI: read by the B-171 run on
+`25dc7f3`, and again by the 2026-09-25 queue sweep on `f1f7230`. Its one
+set-difference test pins the other direction, `smn:Observation`. What is owed is
+the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
+not a port and not a register row, because nothing behaves differently. It did
+not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-264**.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the warning for a column kept as text names the column and the values.** When
+`apply_salmon_dictionary(strict = FALSE)` cannot convert a column to its
+`value_type`, metasalmon keeps it as character with a warning that has always
+named the column and, since hub item **B-55**, also names the values that
+cannot be read as that type. metasalmonpy's warning names neither: *Coercion to
+integer failed; keeping as string*, from `dictionary.py:822` on `f1f7230`,
+measured there by the 2026-09-25 queue sweep with `"x"` in a column typed
+`integer`. The B-241 run found it and left it outside that port. It is owed as a
+port, not a register row, because nobody chose the difference. It did not land
+in the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is **B-275**.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

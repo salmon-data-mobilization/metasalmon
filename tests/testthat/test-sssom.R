@@ -67,6 +67,58 @@ sssom_test_manifest <- function(path) {
   jsonlite::read_json(path, simplifyVector = FALSE)
 }
 
+# sssom_test_text()'s mapping set, written in the canonical SSSOM/TSV form
+# (https://mapping-commons.github.io/sssom/1.0/spec-formats-tsv/#canonical-sssomtsv-format):
+# no space between `#` and the YAML, slots in the order of the MappingSet
+# "Slots" table (so `curie_map` second), plain scalars except `sssom_version`,
+# which plain style would read back as a number, and a CURIE map holding only
+# the prefixes the set uses, sorted, with no built-in prefix in it, because a
+# canonical writer "MUST NOT include in the CURIE map the prefix names that are
+# considered 'built-in'". So `skos` and `semapv` are used and never declared.
+sssom_test_canonical_text <- function(
+    curie_map = c(
+      "#  gcdfo: https://w3id.org/gcdfo/salmon#",
+      "#  psc: https://w3id.org/psc/vocab/concept/"
+    ),
+    predicate_id = "skos:exactMatch") {
+  paste0(
+    paste(
+      c(
+        "#sssom_version: \"1.1\"",
+        "#curie_map:",
+        curie_map,
+        "#mapping_set_id: https://example.org/mappings/psc-to-gcdfo",
+        "#mapping_set_version: 2026-07-31",
+        "#license: https://creativecommons.org/licenses/by/4.0/",
+        "#subject_source: https://w3id.org/psc/vocab/",
+        "#subject_source_version: v0.2.0",
+        "#object_source: https://w3id.org/gcdfo/salmon",
+        "#object_source_version: 0.0.8",
+        paste(
+          "subject_id",
+          "subject_label",
+          "predicate_id",
+          "object_id",
+          "object_label",
+          "mapping_justification",
+          sep = "\t"
+        ),
+        paste(
+          "psc:PSC-CV-000001",
+          "Net",
+          predicate_id,
+          "gcdfo:FixedSiteCensusManual",
+          "Fixed Site Census (Manual)",
+          "semapv:ManualMappingCuration",
+          sep = "\t"
+        )
+      ),
+      collapse = "\n"
+    ),
+    "\n"
+  )
+}
+
 test_that("read_sssom_mapping_set reads and validates SSSOM 1.1 embedded TSV", {
   root <- withr::local_tempdir()
   path <- file.path(root, "psc-to-gcdfo.sssom.tsv")
@@ -225,6 +277,180 @@ test_that("SSSOM validation refuses unknown prefixes and missing required fields
   missing <- gsub("\tsemapv:ManualMappingCuration", "", missing, fixed = TRUE)
   sssom_test_write_raw(missing_path, missing)
   expect_error(read_sssom_mapping_set(missing_path), "mapping_justification")
+})
+
+# Hub B-233. The SSSOM model lets a mapping set omit the built-in prefixes from
+# its curie_map and requires any it declares to keep the built-in IRI prefix:
+# "By exception, prefix names listed in the table found in the IRI prefixes
+# section are considered 'built-in'. As such, they MAY be omitted from the
+# curie_map. If they are not omitted, they MUST point to the same IRI prefixes
+# as in the aforementioned table."
+# (https://mapping-commons.github.io/sssom/1.0/spec-model/#identifiers; the same
+# words on the 1.1 draft at https://mapping-commons.github.io/sssom/dev/spec-model/).
+# The reader used to demand every prefix in the curie_map, so it refused every
+# canonical file, which never declares `skos` or `semapv`.
+test_that("read_sssom_mapping_set reads a canonical SSSOM/TSV file that omits the built-in prefixes", {
+  root <- withr::local_tempdir()
+  path <- file.path(root, "psc-to-gcdfo.sssom.tsv")
+  sssom_test_write_raw(path, sssom_test_canonical_text())
+
+  result <- read_sssom_mapping_set(path)
+
+  expect_identical(names(result$metadata$curie_map), c("gcdfo", "psc"))
+  expect_identical(result$mappings$predicate_id, "skos:exactMatch")
+  expect_identical(
+    result$mappings$mapping_justification,
+    "semapv:ManualMappingCuration"
+  )
+  expect_true(isTRUE(validate_sdp_sssom(path)))
+})
+
+test_that("each SSSOM built-in prefix may be omitted from the curie_map", {
+  # The table in the IRI prefixes section of the specification, in its order
+  # (https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes,
+  # unchanged on the 1.1 draft).
+  builtin <- c(
+    owl = "http://www.w3.org/2002/07/owl#",
+    rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    rdfs = "http://www.w3.org/2000/01/rdf-schema#",
+    semapv = "https://w3id.org/semapv/vocab/",
+    skos = "http://www.w3.org/2004/02/skos/core#",
+    sssom = "https://w3id.org/sssom/",
+    xsd = "http://www.w3.org/2001/XMLSchema#",
+    linkml = "https://w3id.org/linkml/"
+  )
+
+  # The local name is a placeholder that nothing dereferences: the reader
+  # checks that a prefix resolves, not what a term means.
+  root <- withr::local_tempdir()
+  for (prefix in names(builtin)) {
+    path <- file.path(root, paste0(prefix, ".sssom.tsv"))
+    sssom_test_write_raw(
+      path,
+      sssom_test_canonical_text(predicate_id = paste0(prefix, ":placeholder"))
+    )
+    expect_no_error(read_sssom_mapping_set(path))
+  }
+
+  # Pinned because the reader's table is copied from the specification rather
+  # than derived from anything.
+  expect_identical(metasalmon:::.ms_sssom_builtin_prefixes, builtin)
+})
+
+test_that("an undeclared prefix that is not a built-in is still refused", {
+  # SSSOM/TSV: "parsers MUST reject a file with undeclared, non-built-in prefix
+  # names". `dcterms` is in the SSSOM LinkML schema's own `prefixes:` block and
+  # is not built-in, which is the distinction this pins; `SKOS` differs from a
+  # built-in only in case, and prefix names are case-sensitive.
+  root <- withr::local_tempdir()
+  for (prefix in c("dcterms", "SKOS")) {
+    path <- file.path(root, paste0(prefix, ".sssom.tsv"))
+    sssom_test_write_raw(
+      path,
+      sssom_test_canonical_text(predicate_id = paste0(prefix, ":placeholder"))
+    )
+    expect_error(
+      read_sssom_mapping_set(path),
+      paste0("unknown CURIE prefix.*", prefix)
+    )
+  }
+
+  undeclared_path <- file.path(root, "undeclared-subject.sssom.tsv")
+  sssom_test_write_raw(
+    undeclared_path,
+    sssom_test_canonical_text(
+      curie_map = "#  gcdfo: https://w3id.org/gcdfo/salmon#"
+    )
+  )
+  expect_error(
+    read_sssom_mapping_set(undeclared_path),
+    "unknown CURIE prefix.*psc"
+  )
+})
+
+test_that("a curie_map entry may repeat a built-in prefix but not redefine it", {
+  # Every prefix the set uses is declared in each file below, so the reader
+  # before hub B-233, which knew no built-ins, accepted all three: the two
+  # redefinitions were read as ordinary declarations.
+  root <- withr::local_tempdir()
+  declared <- c(
+    "#  gcdfo: https://w3id.org/gcdfo/salmon#",
+    "#  psc: https://w3id.org/psc/vocab/concept/",
+    "#  semapv: https://w3id.org/semapv/vocab/"
+  )
+
+  repeated_path <- file.path(root, "repeated.sssom.tsv")
+  sssom_test_write_raw(
+    repeated_path,
+    sssom_test_canonical_text(curie_map = c(
+      declared,
+      "#  skos: http://www.w3.org/2004/02/skos/core#"
+    ))
+  )
+  expect_identical(
+    read_sssom_mapping_set(repeated_path)$metadata$curie_map$skos,
+    "http://www.w3.org/2004/02/skos/core#"
+  )
+
+  # The scheme alone is enough to make a different IRI prefix.
+  https_path <- file.path(root, "https-skos.sssom.tsv")
+  sssom_test_write_raw(
+    https_path,
+    sssom_test_canonical_text(curie_map = c(
+      declared,
+      "#  skos: https://www.w3.org/2004/02/skos/core#"
+    ))
+  )
+  expect_error(
+    read_sssom_mapping_set(https_path),
+    "redefines built-in prefix.*skos"
+  )
+
+  # The rule is on the declaration, so it holds for a prefix nothing uses.
+  unused_path <- file.path(root, "unused-owl.sssom.tsv")
+  sssom_test_write_raw(
+    unused_path,
+    sssom_test_canonical_text(curie_map = c(
+      declared,
+      "#  owl: https://example.org/owl#",
+      "#  skos: http://www.w3.org/2004/02/skos/core#"
+    ))
+  )
+  expect_error(
+    read_sssom_mapping_set(unused_path),
+    "redefines built-in prefix.*owl"
+  )
+})
+
+test_that("write_sdp_sssom packages a canonical mapping set", {
+  source <- file.path(withr::local_tempdir(), "psc-to-gcdfo.sssom.tsv")
+  sssom_test_write_raw(source, sssom_test_canonical_text())
+
+  sdp <- withr::local_tempdir()
+  write_sdp_sssom(sdp, mapping_sets = source)
+
+  expect_true(isTRUE(validate_sdp_sssom(sdp)))
+  written <- read_sssom_mapping_set(
+    file.path(sdp, "metadata", "semantic", "psc-to-gcdfo.sssom.tsv")
+  )
+  expect_identical(names(written$metadata$curie_map), c("gcdfo", "psc"))
+})
+
+test_that("write_sdp_sssom refuses an in-memory set that redefines a built-in prefix", {
+  # A parsed set handed to the writer never passes back through the file
+  # parser, so the rule has to hold on the in-memory path as well, and before
+  # anything is written.
+  source <- file.path(withr::local_tempdir(), "approved.sssom.tsv")
+  sssom_test_write_raw(source, sssom_test_text())
+  redefined <- read_sssom_mapping_set(source)
+  redefined$metadata$curie_map$skos <- "https://example.org/skos#"
+
+  sdp <- withr::local_tempdir()
+  expect_error(
+    write_sdp_sssom(sdp, mapping_sets = redefined),
+    "redefines built-in prefix.*skos"
+  )
+  expect_false(file.exists(file.path(sdp, "metadata", "semantic")))
 })
 
 test_that("SSSOM mapping sets cannot carry decompositions or literal assignments", {

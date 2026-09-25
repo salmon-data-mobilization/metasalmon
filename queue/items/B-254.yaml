@@ -1,0 +1,13 @@
+id: B-254
+kind: defect
+title: 'With two candidates carrying one IRI in one slot, the record cannot say which was accepted, so re-applying a rebuilt review writes a different term_type'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, accepting either of two candidates that carry one IRI in one slot writes that candidate''s own term_type, and re-applying the rebuilt review writes the same bytes: accept_suggestion(rank = ) naming the later carrier, apply_sdp_semantics(), review_semantics(include_filled = TRUE) and a second apply leave column_dictionary.csv unchanged. Pinned by a test demonstrated RED on the code as it stands, for an exact duplicate and for the same IRI stored with a trailing newline. THE DESIGN QUESTION IS OPEN AND THIS ITEM DOES NOT ANSWER IT: the record in semantic_suggestions.csv marks accepted every row of the slot whose IRI equals the decision''s, so it cannot say which carrier was chosen, and the fix has to choose how the record tells two rows with one IRI apart. Position in the slot is not stable, because a hand-picked accept inserts a row at the head of its slot; source, label or something else are the candidates, and each changes what the record means. If the choice changes the columns semantic_suggestions.csv records, it is class 2 in HUB.md''s Which pull requests need Brett. THE METASALMONPY HALF IS B-255, and each names the other.'

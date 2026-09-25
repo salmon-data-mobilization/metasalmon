@@ -134,8 +134,9 @@ reference:
       - validate_sdp_reproducibility_manifest
 
   - title: "EML and KNB"
-    desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication"
+    desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication, starting from the semantic closure both require"
     contents:
+      - write_sdp_semantic_closure
       - write_eml_from_sdp
       - publish_sdp_to_knb
 

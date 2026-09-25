@@ -1,0 +1,12 @@
+id: B-273
+kind: defect
+title: 'metasalmonpy declares requires-python >=3.9 while its tests call a 3.10 API, and CI runs no Python below 3.11'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The lowest Python the requires-python field of pyproject.toml admits is one the whole test suite passes on, and a CI job runs the suite on it: either the tests stop calling APIs newer than the floor, or the floor rises to what the package and its tests need. Decided by that CI job, green on the declared floor. WHICH OF THE TWO IS NOT SETTLED HERE: raising the floor drops a Python version users can install on.'
