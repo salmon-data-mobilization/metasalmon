@@ -2,7 +2,7 @@ id: B-245
 kind: defect
 title: 'metasalmonpy has no test that EML calendarDate carries the spelling metadata/dataset.csv holds, the mirror half of B-162'
 state: ready
-claimable: false
+claimable: true
 repo: metasalmonpy
 venue: claude-code
 severity: P3
