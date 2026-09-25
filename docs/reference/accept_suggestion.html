@@ -113,12 +113,20 @@ more than one table.</p></dd>
 
 
 <dt id="arg-code-value">code_value<a class="anchor" aria-label="anchor" href="#arg-code-value"></a></dt>
-<dd><p>Code value; needed only for code-level slots.</p></dd>
+<dd><p>Code value; needed only for code-level slots. Pass <code>""</code>
+(or <code>NA</code>) to select a column's own slot when codes of that column have
+slots with the same role, as a measurement column's codes do: leaving
+<code>code_value</code> out matches those code slots too. A blank never selects a
+code's slot, even for a <code>codes.csv</code> row that leaves <code>code_value</code> empty
+because it supplies <code>vocabulary_iri</code>. <code><a href="review_semantics.html">review_semantics()</a></code> prints it
+whenever it is needed.</p></dd>
 
 
 <dt id="arg-iri">iri<a class="anchor" aria-label="anchor" href="#arg-iri"></a></dt>
 <dd><p>Optional IRI to accept instead of a shortlisted candidate – for
-the case where the right term exists but retrieval did not surface it.</p></dd>
+the case where the right term exists but retrieval did not surface it. An
+<code>iri</code> that a shortlisted candidate in the slot carries is recorded as that
+candidate, exactly as its <code>rank</code> would be.</p></dd>
 
 
 <dt id="arg-reason">reason<a class="anchor" aria-label="anchor" href="#arg-reason"></a></dt>

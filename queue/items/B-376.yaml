@@ -1,0 +1,12 @@
+id: B-376
+kind: defect
+title: 'metasalmonpy''s port of check-changelog-window.py keys the same tag requirement on the same description string, the mirror half of B-375'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: [B-375]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the tag requirement in run() of scripts/check-changelog-window.py reads what B-375 makes the hub''s copy read, and not the text of the description. The same mutation, applied to this copy, leaves its test_a_superseded_release_the_policy_tags_needs_its_tag at exit 2, where on the copy as it stands it makes that test get exit 0, and TestTheHubCopy passes against the hub''s copy once both halves have landed. THE HUB HALF IS B-375, and each names the other.'
