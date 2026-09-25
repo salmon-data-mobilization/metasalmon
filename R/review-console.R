@@ -912,7 +912,9 @@ print.ms_semantic_review <- function(x, ...) {
 #'   because it supplies `vocabulary_iri`. `review_semantics()` prints it
 #'   whenever it is needed.
 #' @param iri Optional IRI to accept instead of a shortlisted candidate -- for
-#'   the case where the right term exists but retrieval did not surface it.
+#'   the case where the right term exists but retrieval did not surface it. An
+#'   `iri` that a shortlisted candidate in the slot carries is recorded as that
+#'   candidate, exactly as its `rank` would be.
 #' @param reason Optional free-text reason recorded with a rejection.
 #'
 #' @return The review, with the decision recorded.
@@ -989,7 +991,24 @@ accept_suggestion <- function(review,
   review$decision_iri[in_slot] <- NA_character_
   review$decision_reason[in_slot] <- NA_character_
 
-  target <- if (!is.null(iri)) which(in_slot)[[1]] else which(in_slot & review$rank == as.integer(rank))
+  # An `iri` that a shortlisted candidate carries names that candidate, so the
+  # decision goes on the candidate's row, where `rank =` would put it. That row
+  # is where `apply_sdp_semantics()` reads the candidate's `term_type` and where
+  # the rebuilt review replays the decision. On the slot's first row instead,
+  # one decision wrote `skos_concept` when first applied and the candidate's own
+  # type once rebuilt (hub item B-221). Candidate IRIs are compared as a
+  # decision records them, trimmed and without the marker, and the first
+  # carrier wins, as it does on replay. An IRI no candidate in this review
+  # carries still goes on the first row, whose different IRI tells the writer
+  # nothing is known about its type.
+  target <- if (is.null(iri)) {
+    which(in_slot & review$rank == as.integer(rank))
+  } else {
+    carried <- which(
+      in_slot & .ms_strip_review_iri(trimws(as.character(review$iri))) %in% accepted_iri
+    )
+    if (length(carried) > 0L) carried[[1]] else which(in_slot)[[1]]
+  }
   review$decision[target] <- "accept"
   review$decision_iri[target] <- accepted_iri
   review

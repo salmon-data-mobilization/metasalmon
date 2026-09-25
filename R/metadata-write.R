@@ -464,7 +464,10 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         # `term_type` describes the candidate. When the decision is a
         # hand-supplied `iri =` rather than a shortlisted candidate, the
         # candidate row on which the decision was recorded describes a
-        # *different* term, so its type is not evidence about this one.
+        # *different* term, so its type is not evidence about this one. An
+        # `iri =` that a shortlisted candidate carries is recorded on that
+        # candidate's row (`accept_suggestion()`), so it takes the first branch,
+        # exactly as the same candidate accepted by `rank =` does.
         if (identical(.ms_scalar_text(row$iri), .ms_scalar_text(row$decision_iri))) {
           .ms_scalar_text(row$term_type)
         } else {
