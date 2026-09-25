@@ -755,7 +755,7 @@ must live for one call rather than at module level, where it would become a
 second cache beside `find_terms()`'s. It is owed as a port, not a register row:
 once it lands the two implementations behave alike again. It did not land in
 the same stream because a hub claim covers one branch in one repository. Its
-metasalmonpy half is a metasalmonpy item to be filed.
+metasalmonpy half is `B-243`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Its
