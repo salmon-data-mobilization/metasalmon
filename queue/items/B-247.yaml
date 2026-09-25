@@ -1,7 +1,7 @@
 id: B-247
 kind: defect
 title: 'metasalmonpy''s review console can still record an accept whose IRI is empty or still a REVIEW: marker, and reports a suggestion row with an empty IRI as a field it cannot decide, the mirror half of B-246'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
