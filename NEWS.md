@@ -636,6 +636,30 @@ metasalmon (development version)
   marked candidates included, so the fix is owed there as a port (see
   `knowledge/parity-deviations.md`).
 
+* **The publication vignette no longer leads a reader to add a ledger row that
+  stops their package publishing** (hub item B-192).
+  `vignettes/post-review-package-publication.Rmd` described the canonical
+  review target set as the measurement set *plus* each table's
+  `observation_unit_iri`, which holds in one direction only. The measurement set
+  includes every `sosa:usedProcedure` reached through a code value, and the
+  review targets never do: `.ms_eml_canonical_review_targets()` reads only the
+  dictionary and `tables.csv`, and never calls the used-procedure resolver that
+  the measurement set calls. So a reader who followed the sentence and added a
+  `reviewed_semantic_selections.csv` row for such a procedure had it refused by
+  `write_eml_from_sdp()` and `publish_sdp_to_knb()`, whose ledger gate accepts
+  exactly the canonical target set, while
+  `validate_salmon_datapackage(require_iris = TRUE)` went on passing. The
+  vignette now describes the review target set on its own terms and says both
+  directions: an `observation_unit_iri` is a review target and not a vocabulary
+  term, and a code-resolved procedure is a vocabulary term and not a review
+  target. No code changed. `write_sdp_semantic_closure()` writes the ledger from
+  the canonical target set, so a ledger it wrote never carried the row; only a
+  hand-edited one could.
+
+  **Mirror:** metasalmonpy corrected the same passage first, in pull request
+  31, because its `guides/semantic-review.qmd` was transcribed from this
+  vignette. This is the R half following it.
+
 * **`review_metadata()` reports a placeholder in an IRI field once, and the
   call it prints for that row runs** (hub item B-211). A `MISSING METADATA:`,
   `MISSING DESCRIPTION:` or `REVIEW REQUIRED:` placeholder in `tables.csv`'s
