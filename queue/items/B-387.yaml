@@ -1,0 +1,13 @@
+id: B-387
+kind: defect
+title: 'metasalmonpy''s find_terms() aborts when an error escapes its per-source handler and loses the other sources'' answers, the mirror half of B-379'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P4
+blocked_by: [B-379]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, find_terms() records an error that escapes its per-source except block as that source''s error, with status "error", count 0 and the redacted message, raises its did-not-answer warning, caches nothing and keeps the other sources'' answers, as B-379 makes metasalmon''s serial path do. Pinned by a test that forces the escape by making _is_timeout_error() raise inside the handler, with every source patched before find_terms() is called, RED on the code as it stands, where find_terms() raises. THE METASALMON HALF IS B-379, and each names the other.'

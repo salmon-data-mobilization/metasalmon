@@ -1,0 +1,13 @@
+id: B-398
+kind: defect
+title: 'metasalmonpy seeds codes.csv rows for a column of time-of-day text that it types temporal, which the specification''s code-list rule refuses'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'WHICH TEXT COUNTS AS A TIME OF DAY IS OPEN, and this item does not decide it: adopting readr''s time guess, which is how metasalmon reads such a column, is a judgement and not only a port, because that guess also reads text such as the ratio 1:10 as a time, and the ruling is Brett''s. Whatever is ruled, this item retires in metasalmonpy when infer_codes_from_resources() seeds codes.csv rows only for a column that dictionary.infer_column_role() types categorical, pinned by a test on a frame whose START_TIME column holds 08:30 and 09:15, which on the code as it stands is typed temporal and seeds two rows, with the ruling deciding whether that column becomes categorical and keeps its rows or keeps a temporal type and seeds none.'
