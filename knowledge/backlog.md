@@ -1368,7 +1368,8 @@ resolved ones carry reasoning the open ones refer back to; the top-of-file
 snapshot is the index.
 
 **#113 One shared package-ownership sentinel, replacing the two per-language
-ones. RULED, not yet implemented.** A package directory written by metasalmon
+ones. RULED; the metasalmon half is implemented (queue B-113) and the
+metasalmonpy half is not (queue B-127).** A package directory written by metasalmon
 and then rewritten by metasalmonpy ends up holding **both**
 `.metasalmon-package` (content `metasalmon-owned\n`) and `.metasalmonpy-package`
 (`metasalmonpy-owned\n`), because each writer's managed-path inventory —
@@ -1404,6 +1405,21 @@ each side's ownership test reads. Both sides already fall back to the SDP-CSV
 check, so no package is refused during the change. *Retires when:* both
 implementations write and recognise the one name, neither writes a per-language
 sentinel, and parity row 51 records the convergence in both registers.
+
+**What queue B-113 chose and measured** (2026-09-25; the queue item file holds
+the state, this paragraph holds the evidence). The name and content line are
+chosen, and [parity-deviations](parity-deviations.md) row 51 is their one home,
+with the reasons; `tests/testthat/test-package-ownership-sentinel.R` pins both.
+On this side the sentinel helpers and `.ms_package_managed_paths()` name only the
+shared file, and nothing writes a per-language one. Measured against `main` @
+`862ad88` before the change, the new test file recorded 13 failures, three of
+them errors, against 5 passes: the name, the bytes, the file on disk,
+recognition of a directory carrying only the shared sentinel, refusal of one
+carrying only `.metasalmon-package`, and the managed-path inventory. After it,
+all 20 expectations pass.
+`test-package-helpers.R` gives the same counts before and after (111 tests, 448
+expectations, none failing); its sentinel fixtures are now written through the
+helpers rather than as literals.
 
 **#111 `create_sdp()`'s create-owned sidecars are unlink-then-rewrite, the same
 defect shape #96 retired, at single-file blast radius.** Found while retiring

@@ -1,6 +1,35 @@
 metasalmon (development version)
 --------------------------------
 
+### Breaking changes
+
+* **A package's ownership sentinel is now `.sdp-package`, holding the line
+  `sdp-owned`, and `.metasalmon-package` is no longer written or recognised**
+  (hub item B-113; ruled by Brett 2026-08-24, `knowledge/questions.md` Q14).
+  `write_salmon_datapackage()`, and
+  `create_sdp()` through it, now mark a package directory with one sentinel
+  shared with metasalmonpy rather than a file named after this implementation,
+  because what owns the directory is the SDP tooling and not one language's copy
+  of it. The name and content line are recorded in
+  `knowledge/parity-deviations.md` row 51. For a directory you already have:
+
+  - **A package that still has its SDP metadata needs nothing.** The
+    `overwrite = TRUE` check recognises it by its `metadata/` CSVs, as it
+    always has, and the next write adds `.sdp-package`.
+  - **A directory whose only sign of being a package is `.metasalmon-package`
+    is no longer replaced.** `overwrite = TRUE` now stops with *"Refusing to
+    overwrite non-metasalmon directory"*. If it is a package you mean to
+    rewrite, rename that file to `.sdp-package`; otherwise write to a new
+    directory.
+  - **An existing `.metasalmon-package` is left where it is.** A rewrite no
+    longer manages it, so it survives unless `prune = TRUE` empties the
+    directory. Nothing reads it any more, and you can delete it.
+
+  metasalmonpy writes `.metasalmonpy-package` until its half of the change
+  lands (hub item B-127). This package still recognises a package metasalmonpy
+  wrote by its SDP metadata, so nothing is refused in the meantime, but a
+  package written by both carries both files until then.
+
 ### Added
 
 * **`write_sdp_semantic_closure()` produces the reviewed semantic closure, which
