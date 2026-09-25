@@ -870,45 +870,9 @@ see this table, which is the reason the hub carries it.
 | Consumer | Declares or pins | Current? |
 |---|---|---|
 | `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. **The "byte-identical to metasalmon's vendored bundle" clause this cell carried goes false when the B-106 re-vendor merges** — `sdp.rules.yaml` only, and the spec version does not move; see the paragraph below | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25) | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
-
-**The re-vendored `sdp.rules.yaml` reaches two of the four consumers and not
-the third, and the deferral is deliberate (2026-09-16).** Brett's Q47 ruling of
-2026-09-14 reworded the two SOSA `Procedure` rules to the reachability reading;
-smn-data-pkg landed the text in **PR #8** (merged as `bb71c8b`) and metasalmon
-re-vendored it in **PR #120**, so both copies are the same git blob,
-`489d46a0b43c07a5979ba53891e1918e384e3378`. **metasalmonpy's
-`data/schema/sdp.rules.yaml` is still at the pre-change bytes**, md5
-`3c702a373409b23f9c58cb1e1a702c06` (measured 2026-09-16), so until it is copied
-a Python consumer reads the old *"resolves to"* rule text where an R consumer
-reads the reachability contract — one shipped answer to a question the spec
-repository owns, given two ways.
-
-**Queued as `B-166`**, blocked by B-106 (`repo: metasalmonpy`);
-`queue/items/B-166.yaml` is the authority for its state, and this paragraph
-deliberately does not copy it. The sentence here previously said the item was
-filed on a branch and "not yet on `main`" — true when written on 2026-09-16 and
-false within the hour, when PR #123 merged. That is the whole argument for a card
-naming the item and not its state.
-**It did not land in the same stream because a hub claim covers one branch in one
-repository and B-106 names smn-data-pkg and metasalmon**, which is the same
-reason B-124 and B-125 are separate items. Owed as a **port, not a register
-row**: the file is vendored spec text rather than an implementation choice, so a
-`parity-deviations.md` entry would tell the next reader the difference was
-wanted and nobody would go looking for the missing copy. **No behaviour moves on
-either side while it is open**, and that is a measured fact rather than a
-comfort (measured 2026-09-16): nothing in `R/` reads a rule `description`, and
-metasalmonpy's `sdp_schema.py` reads only the document's top-level `version:`
-and `profile:` scalars — it never parses the rules list at all, by design, to
-keep PyYAML out of the core dependencies. Both reworded rules are also among
-the three B-48 measured as loaded and never executed, which is how the shipped
-text and the shipped modelling drifted apart unnoticed in the first place.
-
-*Closes when:* metasalmonpy's copy is the same blob as smn-data-pkg's, at which
-point this paragraph and the clause added to the `metasalmonpy` row above are
-both deleted.
 
 Two things the spread made visible, one of them now resolved. First —
 resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry
