@@ -9,4 +9,4 @@ stream: S7
 blocked_by: []
 legacy: 'S7'
 evidence: knowledge/sequences/s7-architecture.md
-retires_when: package-helpers.R is split, the curation session engine and shared chat request builder are in place, and the latent cleanups have been folded into the streams that touch those files.
+retires_when: 'package-helpers.R is split, the curation session engine is in place with no model call inside it, and the latent cleanups have been folded into the streams that touch those files. This read "the curation session engine and shared chat request builder are in place" until 2026-09-25, when Brett ruled (Q67) that the model call leaves the package, so S16 deletes the chat request code instead.'

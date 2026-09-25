@@ -180,8 +180,11 @@ reproducibility sidecars
 
 ## EML and KNB
 
-Reviewed EML 2.2.0 export and verified DataONE/KNB publication
+Reviewed EML 2.2.0 export and verified DataONE/KNB publication, starting
+from the semantic closure both require
 
+- [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+  : Write the reviewed semantic closure for a Salmon Data Package
 - [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
   : Write reviewed EML 2.2.0 metadata from a Salmon Data Package
 - [`publish_sdp_to_knb()`](https://salmon-data-mobilization.github.io/metasalmon/reference/publish_sdp_to_knb.md)

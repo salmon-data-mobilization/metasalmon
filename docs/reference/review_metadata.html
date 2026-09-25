@@ -96,10 +96,22 @@ a full one look the same to it.</p>
 placeholders in any metadata field;</p></li>
 <li><p>schema-required fields (<code>constraints.required</code>) that are blank – a
 column the file does not have counts as blank in every row;</p></li>
+<li><p>draft IRIs still carrying the <code>REVIEW:</code> prefix wherever strict validation
+refuses one: any schema-declared <code>*_iri</code> field of <code>tables.csv</code>, and the
+six semantic IRI fields of <code>column_dictionary.csv</code> (<code>term_iri</code>,
+<code>property_iri</code>, <code>entity_iri</code>, <code>unit_iri</code>, <code>constraint_iri</code> and
+<code>statistical_modifier_iri</code>). A marker in <code>codes.csv</code> or <code>dataset.csv</code> is
+not listed, because strict validation does not refuse it there. Where
+retrieval found candidates for one, <code><a href="review_semantics.html">review_semantics()</a></code> shows them;</p></li>
 <li><p>measurement columns missing <code>term_iri</code>, <code>property_iri</code>, <code>entity_iri</code> or
 <code>unit_iri</code>;</p></li>
 <li><p><code>tables.csv</code> rows with a blank <code>observation_unit_iri</code>.</p></li>
-</ul><p>It never contacts a network or an LLM.</p>
+</ul><p>It never contacts an LLM, and under the default options it never contacts a
+network: the SDP schema it reads the required fields from is the copy
+bundled with metasalmon. When the <code>metasalmon.sdp_schema_source</code> or
+<code>metasalmon.sdp_schema_base_url</code> option selects a different schema, it reads
+that one, as the package writers do: from this session's cache once they have
+loaded it, and otherwise by fetching it as they would.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -125,7 +137,7 @@ column the file does not have counts as blank in every row;</p></li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
