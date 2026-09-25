@@ -569,6 +569,23 @@ metasalmon (development version)
   refusal and that part of the matcher are owed there as a port, with the
   pin's removal.
 
+* **`suggest_semantics()` searches each distinct query, role and sources
+  tuple once, where it searched once per target row** (backlog #56, hub item
+  B-56). Rows repeat a tuple whenever tables share a column or columns fall
+  back to the same unit query: four tables carrying the same two columns are
+  40 targets and 9 distinct tuples, and all 40 were searches. Now 9 are. A
+  `search_fn` you supply is therefore called fewer times, and a counting or
+  logging one will see it. What each row gets is unchanged: its candidates,
+  their order and every attribute of the result are `identical()` to before on
+  that fixture and on the bundled example package. The saving lasts for one
+  call only, so it is not a cache and never outlives a change of settings. An
+  answer whose diagnostics say a source did not answer is never reused, and the
+  next row with that tuple searches again, as `find_terms()` already refuses
+  to cache a degraded lookup. The LLM review's retry searches are unchanged.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` still searches once per
+  target row, and the change is owed there as a port.
+
 * **`accept_suggestion()` now refuses an `iri` that is only the `REVIEW:`
   marker** (hub item B-219). It checked that `iri` was not empty before
   stripping the marker, so `accept_suggestion(review, column, role, iri =

@@ -687,6 +687,41 @@ port tests, and the port did not change it, as metasalmonpy's `CHANGELOG.md`
 entry for it says.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`suggest_semantics()` searches each distinct query, role and sources tuple
+once.** Its retrieval map called `search_fn()` once per target row, so a column
+repeated across tables, or a unit query two columns fall back to, was searched
+again for every row that carried it (backlog #56, hub item **B-56**). The map
+now receives `.ms_search_once_per_call(search_fn)`, which is created for the
+call and dropped with it. A repeat of a tuple it has answered gets that answer,
+and the rows are built from it exactly as before, so every row keeps the
+candidates and the order its own search gave it. An answer whose diagnostics
+name a source that did not answer is never kept, read through
+`.ms_search_failed_sources()` as `find_terms()` reads it for its own cache, so
+the next row with that tuple searches again. The key is the arguments exactly as
+`search_fn` receives them, sources in their given order. The two LLM retry
+passes still call `search_fn` directly.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`suggest_semantics()` in `semantics.py` calls `search_fn()` inside
+`for target in targets:` and nothing wraps it. Measured 2026-09-25 on
+metasalmonpy `main` `85ebbb0` (Python 3.11.15, pandas 3.0.5), loading the
+package from a `git archive` extract: the R test's four-table fixture makes 40
+calls for 9 distinct tuples, four for each of eight and eight for the `count`
+unit query both columns fall back to, which are the counts R made before B-56.
+The pin should be the R test's (`tests/testthat/test-semantic-retrieval-dedup.R`):
+a counting `search_fn` on that fixture, no tuple searched twice, every row's
+candidates identical to per-row retrieval's and in the same order, a degraded
+first answer kept by the row that got it while the tuple's next row searches
+again, and an outage that lasts searched once per row. Degraded means what
+`_search_failed_sources()` in `term_search.py` says of
+`result.attrs.get("diagnostics")`, the mirror's one copy of that test. The dedup
+must live for one call rather than at module level, where it would become a
+second cache beside `find_terms()`'s. It is owed as a port, not a register row:
+once it lands the two implementations behave alike again. It did not land in
+the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy half is a metasalmonpy item to be filed.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Its
 non-empty check now reads the value `.ms_strip_review_iri()` leaves, where it
 read the value before the strip. So `iri = "REVIEW:"`, and every other spelling
