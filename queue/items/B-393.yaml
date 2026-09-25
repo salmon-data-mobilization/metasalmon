@@ -1,0 +1,13 @@
+id: B-393
+kind: defect
+title: 'The toolchain check in scripts/build-pkgdown.R does not see four inputs that rewrite pages, so a run can print Toolchain matches and still rewrite the site'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'scripts/build-pkgdown.R does not print "Toolchain matches" and build when any of four inputs that change pages differs from what the committed site was built with: the bslib version, the locale, which of the packages downlit links to are installed, and the favicon sources pkgdown reads from pkgdown/favicon/. For each of the four, a run that differs either stops before building and names the input, as a pkgdown or pandoc mismatch does, or sets that input itself so that no page whose sources did not change is rewritten. Decided by four runs on a tree whose page sources did not change, each with one of the four inputs changed from the committed site''s; on the script as it stands each one prints "Toolchain matches" and rewrites pages. Recording or pinning the four inputs widens the guard and is delegated. A change that loosens a comparison the script already makes, turns one of its stops into a warning, or removes a check narrows the guard, and that part is Brett''s under class 6 of HUB.md''s Which pull requests need Brett.'

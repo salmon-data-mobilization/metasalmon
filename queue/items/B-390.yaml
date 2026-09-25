@@ -1,0 +1,13 @@
+id: B-390
+kind: defect
+title: 'smn-data-pkg still carries the single shared .hub/workpad.md, holding B-106''s report, at the path B-140 retired'
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: claude-code
+stream: S15
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'smn-data-pkg has no .hub/workpad.md. The report it holds, B-106''s, moves to .hub/workpads/B-106.md, the per-item path HUB.md prescribes, rather than being deleted, and something that runs in smn-data-pkg''s CI fails if the shared path returns. B-228 is the same defect in metasalmonpy.'

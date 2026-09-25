@@ -74,6 +74,68 @@ to the open question above, and blocking `B-147` on `B-158` would state a
 dependency neither card's retirement condition actually has. The reasons for
 each prerequisite are on the cards that carry them.
 
+## The commons schema order, ruled 2026-09-25
+
+**Ruled by Brett, 2026-09-25, in chat** ([Q68](../questions.md)):
+
+> One ordered sequence of commons schema PRs. PR #25 first, then a `$defs`
+> refactor, then one additive fields PR (source publication dates, typed
+> relations, bindings), then B-123 as three PRs (CI, the generated/verified
+> split, the merge rule). Study-bundle card types stay local.
+
+This section is the operative copy of that order. Six pull requests in
+`salmon-knowledge-commons`, one after another:
+
+1. **`B-320`**, pull request 25: `stale_after` becomes a full UTC instant.
+2. **`B-321`**, the `$defs` refactor: no semantic change, plus `--schema` and
+   `--json` for `okf-check.py`.
+3. **`B-322`**, the three optional fields Brett named: `sources[].published`,
+   typed `relationships` between cards (upstream OKF's name), and
+   `alignment.bindings`. He chose those three on 2026-09-25 over a parallel
+   eight-field pull request, and chose this chain's `$defs` pull request (#28)
+   over a parallel one.
+4. **`B-323`**, CI: the validator runs on every pull request.
+5. **`B-123`**, the generated/verified split, which is what makes the
+   commons' `VERIFICATION.md` enforceable rather than advisory.
+6. **`B-324`**, the merge rule in the commons' CONTRIBUTING, rewritten once the
+   checks it can rely on exist.
+
+**Why this order.** Each pull request is a diff against the one before it, so
+each can be reviewed on its own. The `$defs` refactor comes before any new field
+so that each field is a small change to a named definition rather than an edit
+somewhere inside one schema object. The optional fields come before the split,
+because the split migrates every card, and it is cheaper to migrate once against
+the final field set than twice. CI comes before the split so that the split's
+migration is checked by something other than its author. The merge rule comes
+last because it describes what the checks enforce, and until steps 4 and 5 exist
+there is nothing for it to describe.
+
+**Every one of them is Brett's to merge.** The commons' CONTRIBUTING reserves
+changes to its schema, its validator, its `AGENTS.md` and its CONTRIBUTING to a
+human, and lets an agent merge only a change confined to `concepts/`. Until
+`B-323` lands the commons has no CI, so no check could be green either.
+
+**What the queue encodes.** Each step's item is blocked by the step before
+it, so no step can be claimed out of order. `B-123` needed the one edit this
+section could not assume: it was promoted before the order was ruled, and its
+only blocker, `Q-39`, was already done, so the queue would have let an agent
+claim it ahead of steps 1 to 4. Brett authorized that edit in chat the same day
+(*"Do this edit please"*), and `B-123` is now blocked by `B-322` and `B-323`.
+
+**Study-bundle card types stay local.** The commons `type` enum does not gain
+the card types a study bundle needs, such as a hypothesis, a prediction or a
+result. They live in the study bundles that need them. `B-322`'s pull request
+records this in the commons' own `AGENTS.md`.
+
+**Outside the order, and filed so that it is not lost: `B-325`, the backfill of
+`sources[].published`.** Brett named the field, not the backfill. When it runs
+matters. `VERIFICATION.md`'s content digest covers every part of a card except
+its verification fields, `status`, `stale_after` and its ledger tables. Sources
+are therefore inside the digest, so a backfill made after a card's first
+`citations_checked` or `verified` entry lapses that entry, while a backfill made
+before any such entry exists costs nothing. Measured against the commons `main`
+at `cab0248`, 2026-09-25.
+
 ## gcdfo docs-pipeline gate substream
 
 The gcdfo documentation build had a **placebo gate**: its WebVOWL normalizer

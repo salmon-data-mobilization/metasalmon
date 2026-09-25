@@ -1,0 +1,13 @@
+id: B-323
+kind: defect
+title: 'Run the commons validator in CI on every pull request, the first of B-123''s three pull requests'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-322]
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'A workflow in salmon-knowledge-commons runs scripts/okf-check.py on every pull request and on every push to main, and fails on any validator error, so that a card change is checked by something other than its author. It folds in the ledger tools from draft pull request 22 only where they check something the cards carry by then, and without the compiled .pyc files that pull request committed. The pull request states what the check enforces and what it does not: if required status checks stay unavailable to the commons, as they are to a private repository on the Free plan, the check is advisory, and B-324 writes that into CONTRIBUTING. Brett merges it, because an agent may merge in the commons only a change confined to concepts/. Fourth in the order Brett ruled on 2026-09-25 (Q68); B-123 follows it.'

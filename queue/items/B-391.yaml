@@ -1,0 +1,12 @@
+id: B-391
+kind: defect
+title: 'smn-data-pkg''s CHANGELOG.md dates its released 0.1.1 entry 2026-2026-01-14, which is not a date'
+state: icebox
+claimable: true
+repo: smn-data-pkg
+venue: either
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The heading of the 0.1.1 entry in smn-data-pkg''s CHANGELOG.md carries one date in YYYY-MM-DD form. Because 0.1.1 is a released entry, the change is a marked, dated correction in one of the two forms the Releases section of metasalmon''s AGENTS.md admits, a [corrected YYYY-MM-DD: ...] bracket or a *(Correction, YYYY-MM-DD: ...)* paragraph, and it says what the heading read and what the date it gives now rests on. Decided by grep: every "## [" heading in CHANGELOG.md ends in one YYYY-MM-DD date or carries none, which the 0.1.1 heading as it stands does not, and the 0.1.1 section holds the marker.'

@@ -1,0 +1,13 @@
+id: B-363
+kind: defect
+title: 'metasalmonpy retrieves a target''s shortlist through one function and merges a second pass the way metasalmon does, for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, the retrieval loop inline in suggest_semantics() is one function that takes a target, a source policy, a depth, the search function, an optional query and a retrieval pass, and suggest_semantics() calls it with no change in its results, which a test pins against the current output. A second-pass shortlist merges with the first by metasalmon''s rule: a C-order sort on metasalmon''s seven keys, deduplicated by candidate identity, with the gain counted the same way, pinned by a test run on the same inputs in both packages. This is the loop B-243 also touches, so whichever lands second rebases onto the other rather than duplicating it. Ruled 2026-09-25 by Brett when he took every recommendation in section 10 of the S16 execplan (sections 2.3 and 4); it also makes the retry half of parity row 39 true again. A prerequisite of B-327. No metasalmon half.'

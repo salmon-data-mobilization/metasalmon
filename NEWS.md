@@ -255,7 +255,7 @@ metasalmon (development version)
   whichever year readr emits, so the two files agree on both platforms; padding
   only the descriptor would have re-opened this defect on the platform CI runs
   on. **Mirror:** metasalmonpy adopted the same ruling in queue **B-145**
-  (metasalmonpy pull request #34, 2026-09-25); parity-deviations row 56
+  ([metasalmonpy pull request 34](https://github.com/salmon-data-mobilization/metasalmonpy/pull/34), 2026-09-25); parity-deviations row 56
   records that both sides moved, and the one residual left, the year below
   1000, which is hub item B-161.
 
@@ -448,10 +448,10 @@ metasalmon (development version)
   slot's own retrieval candidates are weighed exactly as before.
 
   A port, not a deviation: metasalmonpy had the same defect in the same shape
-  and fixed it first (metasalmonpy pull request #28, hub item B-126), and both
+  and fixed it first ([metasalmonpy pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), hub item B-126), and both
   now record the same row, so no parity-register row is owed. The gap-evidence
   exclusion is R's alone for now: metasalmonpy's `detect_semantic_term_gaps()`
-  still counts the row it has recorded since #28, and the same fix is owed
+  still counts the row it has recorded since [pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), and the same fix is owed
   there.
 
 * **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
@@ -487,7 +487,7 @@ metasalmon (development version)
   lists it exactly when strict validation refuses it. A second test does the
   same for a configured schema's extra dictionary field.
 
-  metasalmonpy fixed the same defect in pull request #28, and its scan also
+  metasalmonpy fixed the same defect in [pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), and its scan also
   lists a marker in `codes.csv`, the one file where the two differ. Brett ruled
   on 2026-09-23 that strict validation refuses a marker there, so R is the side
   that moves, when B-177 lands. Until then the difference is tracked as a port
@@ -699,7 +699,7 @@ metasalmon (development version)
   placeholder.
 
   **Mirror:** metasalmonpy fixed the same defect first, with the same rule
-  (hub item B-212, metasalmonpy pull request #49), so the two packages report
+  (hub item B-212, [metasalmonpy pull request 49](https://github.com/salmon-data-mobilization/metasalmonpy/pull/49)), so the two packages report
   the same rows. Its suite does not pin the required-IRI case. A defect the
   two packages shared is not a deliberate difference, so it opens no
   parity-register row. metasalmonpy's footer still counts IRI gaps by reason,
@@ -736,13 +736,78 @@ metasalmon (development version)
   **Mirror:** metasalmonpy's reader refuses the same canonical files. It is
   owed there as a port, hub item B-234, and not registered as a deviation.
 
+* **`DESCRIPTION` now declares the Python toolchain that
+  `dwc_dp_build_descriptor(validate = TRUE)` runs** (backlog #57, hub item
+  B-57). Validation writes a Python script, runs it with the interpreter the
+  `python` argument names, and imports the `frictionless` Python package.
+  Neither is an R dependency, and nothing in the package's metadata said they
+  were needed. `SystemRequirements` now names both and says they are optional.
+  What the function does with the validation result is unchanged: it still
+  prints the report and returns the descriptor whatever the report says. That
+  is hub item B-300.
+
+  **Mirror:** metasalmonpy imports `frictionless` in-process, and its
+  `pyproject.toml` does not declare it, not even as an optional extra. The
+  declaration is owed there as part of hub item B-302.
+
+* **`suggest_semantics(llm_assess = TRUE)` now shows the LLM as many candidates
+  as `llm_top_n` says** (backlog #57, hub item B-57). The LLM can only be shown
+  what retrieval kept, and the direct call kept `max_per_role` candidates per
+  role, so the documented `llm_top_n` default of 5 silently became the
+  `max_per_role` default of 3. `create_sdp()`, `infer_dictionary()` and
+  `infer_salmon_datapackage_artifacts()` already widened retrieval to the larger
+  of the two, and the direct call now does the same. With `llm_assess = TRUE`,
+  `semantic_suggestions` therefore keeps up to `max(max_per_role, llm_top_n)`
+  rows per role where it kept up to `max_per_role`. Without `llm_assess`
+  nothing changes.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` has the same defect. Under
+  the same defaults its first review round shows the LLM 3 candidates per role,
+  measured on `main` `f1f7230`. The widening is owed there as a port, hub item
+  B-302.
+
+* **`find_terms()` now checks what each parallel search worker delivered**
+  (backlog #57, hub item B-57). When parallel search is on, the default outside
+  Windows, the sources after `smn` and `gcdfo` are searched in forked
+  `parallel::mclapply()` workers, and each worker's result was read without a
+  check that it had delivered one. A worker that died, the way an out-of-memory
+  kill or a crash in a native library ends one, dropped its source silently. It
+  left no diagnostic row and no *did not answer* warning, and the incomplete
+  result was cached and read as complete. An error that escaped a worker aborted
+  the whole search with `$ operator is invalid for atomic vectors`. Either is
+  now recorded as an error from that source, the way a source that errors is
+  already recorded. So `find_terms()` warns that the source did not answer and
+  does not cache the result.
+
+  **Mirror:** metasalmonpy does not have this defect. Its `find_terms()`
+  searches its sources one after another, so there is no worker to fail.
+
+* **The ICES find helpers search the columns a response has, where a missing
+  one was an error** (backlog #57, hub item B-57). `ices_find_code_types()` and
+  `ices_find_codes()` guarded each column they search with `.data$col %||% ""`,
+  which guards nothing: inside a data mask a missing column is an error, never
+  `NULL`. So a response with no `longDescription` column aborted the search
+  with *Column `longDescription` not found in `.data`*. An answer with no rows
+  aborted it too, because it reaches the helpers as a tibble with no columns at
+  all. A missing column now reads as empty text, as a missing value already
+  did, and an answer with no rows gives an empty result. `ices_codes()` now
+  returns the rows of a response with no `key` column, with an `NA` detail
+  `url`, where it aborted. A failed request still gives the same empty result
+  as an empty answer, as `ices_code_types()` and `ices_codes()` always have, so
+  an empty result does not say whether ICES answered.
+
+  **Mirror:** metasalmonpy already behaves this way. Its helpers fill a missing
+  column with `""` and return an empty frame for an empty or failed response,
+  and its own tests use a response with no `longDescription`. R has moved to
+  match it, so nothing is owed there and no register row is needed.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
   Procedure rules** (backlog #106, hub item B-106; ruled by Brett 2026-09-14,
   `knowledge/questions.md` Q47). `inst/extdata/schema/sdp.rules.yaml` is a
   byte-for-byte copy of `smn-data-pkg`'s `schema/sdp.rules.yaml`, and this is
-  the copy half of that change -- paired with smn-data-pkg PR #8, which merged
+  the copy half of that change -- paired with [smn-data-pkg PR 8](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/8), which merged
   first as `bb71c8b`. Nothing was hand-edited on this side; the copies were
   identical before (md5 `3c702a37...`) and are identical after (md5
   `f94d6c8f...`, git blob `489d46a0`), which is the property
@@ -1205,7 +1270,7 @@ below — an in-memory SSSOM mapping set carrying a typed column, and
   core roles the mirror used everywhere — and the two implementations spell the
   `REVIEW:` marker differently (`REVIEW: ` here, `REVIEW:` there). The second is
   inert to behaviour, invisible to every test on either side, and now
-  registered as row 61 with [Q18](knowledge/questions.md) open on it.
+  registered as row 61 with [Q18](https://github.com/salmon-data-mobilization/metasalmon/blob/main/knowledge/questions.md#q18--review--or-review--does-the-markers-exact-spelling-matter) open on it.
 
 
 * **The role-contract guard now checks all seven surfaces in one file, and
