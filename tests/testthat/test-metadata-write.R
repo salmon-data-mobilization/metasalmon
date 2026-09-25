@@ -918,6 +918,52 @@ test_that("a candidate whose stored IRI carries the REVIEW: marker writes its ow
   }
 })
 
+test_that("a candidate whose quoted IRI keeps a trailing newline is the row the record accepts, by iri = and by rank =", {
+  # `read_csv()` trims spaces and tabs, even inside quotes, but a quoted field
+  # keeps a newline. The selection and the writer read a candidate's IRI
+  # trimmed. The record did not, so it missed the candidate and inserted a
+  # hand-picked row for the IRI instead. The rebuilt review replayed that row,
+  # whose type nothing records, and wrote `skos_concept`.
+  padded_iri <- paste0(owl_class_iri, "\n")
+  decisions <- list(
+    "iri =" = function(review) {
+      accept_suggestion(review, "spawner_count", "variable", iri = owl_class_iri)
+    },
+    "rank =" = function(review) {
+      accept_suggestion(review, "spawner_count", "variable", rank = 2)
+    }
+  )
+  for (how in names(decisions)) {
+    path <- typed_fixture_package()
+    suggestions <- read_suggestions_file(path)
+    suggestions$iri[suggestions$iri %in% owl_class_iri] <- padded_iri
+    readr::write_csv(suggestions, file.path(path, "semantic_suggestions.csv"), na = "")
+    # The premise: the newline survives the package's own reader.
+    expect_true(padded_iri %in% semantic_suggestions(path)$iri, info = how)
+
+    suppressMessages(apply_sdp_semantics(
+      path,
+      decisions[[how]](suppressMessages(review_semantics(path)))
+    ))
+    slot <- slot_rows(read_suggestions_file(path), "spawner_count", "variable")
+    expect_false("user" %in% slot$source, info = how)
+    expect_equal(slot$decision[slot$iri %in% padded_iri], "accepted", info = how)
+
+    first_apply <- managed_digests(path)
+    suppressMessages(apply_sdp_semantics(
+      path,
+      suppressMessages(review_semantics(path, include_filled = TRUE))
+    ))
+    dictionary <- read_metadata_file(path, "column_dictionary.csv")
+    expect_equal(
+      dictionary$term_type[dictionary$column_name == "spawner_count"],
+      "owl_class",
+      info = how
+    )
+    expect_identical(managed_digests(path), first_apply, info = how)
+  }
+})
+
 test_that("an IRI no candidate carries still writes skos_concept, whatever the first candidate is", {
   # B-176's case, which this must not move. Nothing is known about a term the
   # reviewer typed, so the type of the row its decision is recorded on is not
