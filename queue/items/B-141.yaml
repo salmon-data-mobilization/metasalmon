@@ -1,8 +1,8 @@
 id: B-141
 kind: defect
 title: The pkgdown build script publishes HUB.md and the pull-request template and rewrites the site under a newer toolchain
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S11
