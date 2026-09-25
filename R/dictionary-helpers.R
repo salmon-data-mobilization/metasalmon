@@ -95,6 +95,16 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
                             llm_context_text = NULL,
                             llm_timeout_seconds = 60,
                             llm_request_fn = NULL) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings, and one even when
+  # `seed_semantics = FALSE` leaves the options unused. See
+  # R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_dictionary", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)

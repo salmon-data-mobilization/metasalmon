@@ -1149,9 +1149,16 @@
       by = .ms_semantic_assessment_join_cols()
     ) |>
     dplyr::mutate(
+      # Selected only on an ACCEPT whose index names this rank. The decision
+      # is checked here as well as the index because the two are separate
+      # columns of a record a harness now writes (parity row 31, converged
+      # for the review-packet contract in hub item B-326): an index on a
+      # non-accept row is cleared by validation, and this is the second
+      # guard on the same invariant.
       llm_selected = !is.na(.data$llm_selected_candidate_index) &
         !is.na(.data$llm_candidate_rank) &
-        .data$llm_selected_candidate_index == .data$llm_candidate_rank
+        .data$llm_selected_candidate_index == .data$llm_candidate_rank &
+        .data$llm_decision %in% "accept"
     ) |>
     dplyr::select(-dplyr::any_of(c(".ms_group_key", ".ms_bundle_key", ".ms_row_order")))
 }

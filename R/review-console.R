@@ -257,6 +257,30 @@ review_semantics <- function(x,
                              include_filled = FALSE,
                              max_candidates = 5L,
                              columns = NULL) {
+  queue <- .ms_review_queue(x, include_filled = include_filled, columns = columns)
+  review <- queue$review
+
+  if (is.finite(max_candidates)) {
+    review <- review[review$rank <= as.integer(max_candidates), , drop = FALSE]
+  }
+
+  attr(review, "review_path") <- queue$review_path
+  class(review) <- c("ms_semantic_review", class(tibble::tibble()))
+  review
+}
+
+# The review queue: which slots still need a decision, with every candidate
+# row that would be shown for them. This is the one rule both
+# `review_semantics()` and `write_semantic_review_packet()` apply (hub item
+# B-326), so the packet a harness judges holds exactly the slots the console
+# would show and never a fresh discovery -- re-running discovery would drop
+# every slot `create_sdp()` pre-filled with a `REVIEW:` marker, because the
+# discovery code treats a marked slot as filled.
+#
+# Returns the review rows (one per candidate, before `max_candidates`), the
+# suggestion rows they were built from (`suggestions[source_row, ]` is the row
+# behind `review[i, ]`), and the package path when there is one.
+.ms_review_queue <- function(x, include_filled = FALSE, columns = NULL) {
   suggestions <- semantic_suggestions(x)
   if (is.null(suggestions) || nrow(suggestions) == 0L) {
     cli::cli_abort(c(
@@ -410,6 +434,7 @@ review_semantics <- function(x,
   # new. The round trip is the point of persisting the decision at all.
   review <- .ms_review_seed_recorded_decisions(review, suggestions)
 
+  source_row <- seq_len(nrow(review))
   if (!isTRUE(include_filled)) {
     # A slot with an unknown current value (no frame to read, or an ambiguous
     # row match) is kept: dropping it would hide work, and the console labels
@@ -417,18 +442,20 @@ review_semantics <- function(x,
     unfilled <- is.na(review$current_value) | .ms_review_is_unfilled(review$current_value)
     # A recorded decision takes a slot out of the queue even though rejecting
     # leaves the field blank -- "blank" and "undecided" are different states,
-    # and only `include_filled = TRUE` shows the decided ones again.
+    # and only `include_filled = TRUE` shows the decided ones again. A
+    # hand-picked accept (`source = "user"`) is recorded with a decision, so
+    # this is also what drops it.
     decided <- review$slot_id %in% unique(review$slot_id[!is.na(review$decision)])
-    review <- review[unfilled & !decided, , drop = FALSE]
+    source_row <- which(unfilled & !decided)
+    review <- review[source_row, , drop = FALSE]
   }
 
-  if (is.finite(max_candidates)) {
-    review <- review[review$rank <= as.integer(max_candidates), , drop = FALSE]
-  }
-
-  attr(review, "review_path") <- review_path
-  class(review) <- c("ms_semantic_review", class(tibble::tibble()))
-  review
+  list(
+    review = review,
+    suggestions = suggestions,
+    source_row = source_row,
+    review_path = review_path
+  )
 }
 
 # --------------------------------------------------------------------------

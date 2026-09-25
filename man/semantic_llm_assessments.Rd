@@ -13,8 +13,12 @@ or a length-one character path to a written Salmon Data Package.}
 }
 \value{
 A tibble of target-level assessment rows, or \code{NULL} when none are
-attached. A package path always returns \code{NULL} — assessments are not
-written into the package, so a package on disk cannot carry them.
+attached. For a package path, the record
+\code{\link[=ingest_semantic_assessments]{ingest_semantic_assessments()}} persisted in
+\code{review/semantic-llm-assessments.csv}, typed as the 30-column assessment
+row and carrying the validator findings as its
+\code{semantic_validator_findings} attribute, or \code{NULL} when no record has
+been ingested. The in-package model call never writes one.
 }
 \description{
 The companion accessor to \code{\link[=semantic_suggestions]{semantic_suggestions()}}, for the

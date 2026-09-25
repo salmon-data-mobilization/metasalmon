@@ -114,7 +114,30 @@ under `queue/`.
   `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
   This is the contract behind the 0.1.4 fix; supplying options that will be ignored
-  should warn, not silently no-op.
+  should warn, not silently no-op. **The in-package model call is deprecated
+  (2026-09-25, hub Q67, stream S16):** `llm_assess = TRUE`, the eleven `llm_*`
+  arguments and `chat_decomposition()` warn once per top-level call (class
+  `metasalmon_llm_deprecated`; silenced suite-wide by the option
+  `metasalmon.llm_deprecation_quiet`) and are removed in 0.7.0. Judgement now
+  runs in the user's harness against a file: `write_semantic_review_packet()`
+  writes `review/semantic-review-packet.json` and `ingest_semantic_assessments()`
+  reads `review/semantic-assessments-pass-<n>.csv` back. **The file contract:**
+  the packet's `packet_id` is the SHA-256 of its canonical bytes minus
+  `packet_id` and `producer`, the harness names the packet it judged in a
+  one-line sidecar `<csv>.packet-id` (or the caller passes `packet_id`), an
+  IRI the packet did not offer is never applied, a retry is a second harness
+  pass (a continuation packet; nothing from that target merges until it is
+  answered), a rejected shortlist earns no second pass, and every harness
+  free-text value is redacted at capture. The 30-column row's per-column
+  ownership (`harness`, `package`, `harness_or_package`) and requiredness live
+  in `.ms_semantic_review_output_columns()` and are written into every packet.
+  Neither function may reach a model provider; the network is reached only
+  through `search_fn`, and `tests/testthat/test-semantic-review-packet.R`
+  walks the call graph to prove it. The schema, the instructions and the
+  conformance fixtures (`inst/extdata/semantic-review/`,
+  `tests/testthat/fixtures/semantic-review/v1/`) are one contract vendored
+  byte-identically in metasalmonpy; a change to any of them is a change to
+  the contract and needs the same change there.
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
@@ -124,10 +147,16 @@ under `queue/`.
   attaches `semantic_suggestions` (+ `semantic_llm_assessments` when `llm_assess`).
   These are read by other modules and many tests.
 - **Frozen column contracts:** the 19-col semantic target row
-  (`.ms_semantic_target_cols()`) and the ~30-col LLM assessment row
+  (`.ms_semantic_target_cols()`) and the 30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
-  must keep identical column sets.
+  must keep identical column sets. **Since S16 step 1 the 30-column row is
+  the record a harness writes and the package reads back** (the packet's
+  `output.columns` names each column's owner and requiredness, and
+  `review/semantic-llm-assessments.csv` persists it), so its column contract
+  outlives the provider code that first wrote it: every row still comes from
+  the two builders and leaves through the one normalizer, and the persisted
+  header is `.ms_llm_assessment_cols()`.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
 - **A semantic role is a contract across seven surfaces, not a string.** Adding
@@ -275,7 +304,11 @@ under `queue/`.
   `tests/testthat/test-cli-safety-guard.R`.
 - LLM review decisions: `accept`, `review`, `retry_search`, `request_new_term`,
   `reject_shortlist`. An unresolved `reject_shortlist` escalates to
-  `request_new_term` (surfaces an ontology gap) — keep that distinction.
+  `request_new_term` (surfaces an ontology gap) — keep that distinction. **Any
+  final `reject_shortlist` escalates, whatever the decision before a retry was**
+  (B-361, ruled 2026-09-25); in the review-packet contract a rejection earns
+  no second pass and escalates at once, and only `retry_search` widens a
+  shortlist.
 
 ## Releases
 

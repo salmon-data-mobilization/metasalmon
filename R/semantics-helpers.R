@@ -506,6 +506,14 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "suggest_semantics", llm_deprecation_triggered),
+    add = TRUE
+  )
   source_policy <- .ms_semantic_source_policy(
     sources,
     omitted = missing(sources)
@@ -608,51 +616,7 @@ suggest_semantics <- function(df,
   })
 
   if (nrow(suggestions) > 0) {
-    suggestions$candidate_label_norm <- tolower(trimws(suggestions$label %||% ""))
-    grouped <- suggestions %>%
-      dplyr::group_by(
-        .data$dataset_id,
-        .data$table_id,
-        .data$column_name,
-        .data$code_value,
-        .data$target_scope,
-        .data$target_sdp_file,
-        .data$candidate_label_norm
-      ) %>%
-      dplyr::summarise(
-        collision_roles = paste(sort(unique(.data$dictionary_role), method = "radix"), collapse = "|"),
-        role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
-        .groups = "drop"
-      )
-    suggestions <- suggestions %>%
-      dplyr::left_join(
-        grouped,
-        by = c(
-          "dataset_id",
-          "table_id",
-          "column_name",
-          "code_value",
-          "target_scope",
-          "target_sdp_file",
-          "candidate_label_norm"
-        )
-      ) %>%
-      dplyr::mutate(
-        role_collision_note = dplyr::case_when(
-          .data$role_collision & .data$dictionary_role == "variable" ~ paste0(
-            "Label appears for variable and property candidates; this row targets variable semantics for ",
-            .data$target_sdp_field,
-            "."
-          ),
-          .data$role_collision & .data$dictionary_role == "property" ~ paste0(
-            "Label appears for variable and property candidates; this row targets property semantics for ",
-            .data$target_sdp_field,
-            "."
-          ),
-          TRUE ~ NA_character_
-        )
-      ) %>%
-      dplyr::select(-dplyr::any_of("candidate_label_norm"))
+    suggestions <- .ms_semantic_flag_role_collisions(suggestions)
   }
 
   if (isTRUE(llm_assess) && nrow(targets) > 0) {
@@ -934,7 +898,16 @@ apply_semantic_suggestions <- function(dict,
         )
       )
     }
-    suggestions <- suggestions[!is.na(suggestions$llm_selected) & suggestions$llm_selected, , drop = FALSE]
+    selected <- !is.na(suggestions$llm_selected) & suggestions$llm_selected
+    # An applied row must also carry an accepting decision when the frame
+    # records one (parity row 31, converged in hub item B-326). The column is
+    # not yet required here -- that lands with the removal release, decision
+    # 15 of the S16 execplan -- so a frame without it is filtered on
+    # `llm_selected` alone, as before.
+    if ("llm_decision" %in% names(suggestions)) {
+      selected <- selected & suggestions$llm_decision %in% "accept"
+    }
+    suggestions <- suggestions[selected, , drop = FALSE]
   }
   if (identical(strategy, "reviewed")) {
     if (!"decision" %in% names(suggestions)) {
@@ -1228,8 +1201,12 @@ semantic_suggestions <- function(x) {
 #' @inheritParams semantic_suggestions
 #'
 #' @return A tibble of target-level assessment rows, or `NULL` when none are
-#'   attached. A package path always returns `NULL` — assessments are not
-#'   written into the package, so a package on disk cannot carry them.
+#'   attached. For a package path, the record
+#'   [ingest_semantic_assessments()] persisted in
+#'   `review/semantic-llm-assessments.csv`, typed as the 30-column assessment
+#'   row and carrying the validator findings as its
+#'   `semantic_validator_findings` attribute, or `NULL` when no record has
+#'   been ingested. The in-package model call never writes one.
 #' @export
 #'
 #' @examples
@@ -1237,8 +1214,78 @@ semantic_suggestions <- function(x) {
 #' semantic_llm_assessments(dict)
 semantic_llm_assessments <- function(x) {
   found <- .ms_semantic_attribute_from(x, "semantic_llm_assessments", arg = "x")
-  if (identical(found$kind, "path") || is.null(found$value)) {
+  if (identical(found$kind, "path")) {
+    review_dir <- file.path(found$path, "review")
+    record <- .ms_semantic_review_read_record(review_dir)
+    if (is.null(record)) {
+      return(NULL)
+    }
+    attr(record, "semantic_validator_findings") <- .ms_semantic_review_read_findings(review_dir)
+    return(record)
+  }
+  if (is.null(found$value)) {
     return(NULL)
   }
   tibble::as_tibble(found$value)
+}
+
+# Flag a label that surfaces as both a variable and a property candidate for
+# the same target column, so a reviewer sees that the row targets one role's
+# semantics. Extracted from `suggest_semantics()` so the review packet builder
+# (hub item B-326) marks a re-retrieved shortlist the same way.
+.ms_semantic_flag_role_collisions <- function(suggestions) {
+  suggestions <- tibble::as_tibble(suggestions)
+  if (nrow(suggestions) == 0L) {
+    return(suggestions)
+  }
+  suggestions <- .ms_semantic_add_missing_cols(
+    suggestions,
+    c("dataset_id", "table_id", "column_name", "code_value", "target_scope", "target_sdp_file", "target_sdp_field", "dictionary_role")
+  )
+  suggestions$candidate_label_norm <- tolower(trimws(suggestions$label %||% ""))
+  grouped <- suggestions %>%
+    dplyr::group_by(
+      .data$dataset_id,
+      .data$table_id,
+      .data$column_name,
+      .data$code_value,
+      .data$target_scope,
+      .data$target_sdp_file,
+      .data$candidate_label_norm
+    ) %>%
+    dplyr::summarise(
+      collision_roles = paste(sort(unique(.data$dictionary_role), method = "radix"), collapse = "|"),
+      role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
+      .groups = "drop"
+    )
+  suggestions %>%
+    dplyr::select(-dplyr::any_of(c("collision_roles", "role_collision", "role_collision_note"))) %>%
+    dplyr::left_join(
+      grouped,
+      by = c(
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "target_scope",
+        "target_sdp_file",
+        "candidate_label_norm"
+      )
+    ) %>%
+    dplyr::mutate(
+      role_collision_note = dplyr::case_when(
+        .data$role_collision & .data$dictionary_role == "variable" ~ paste0(
+          "Label appears for variable and property candidates; this row targets variable semantics for ",
+          .data$target_sdp_field,
+          "."
+        ),
+        .data$role_collision & .data$dictionary_role == "property" ~ paste0(
+          "Label appears for variable and property candidates; this row targets property semantics for ",
+          .data$target_sdp_field,
+          "."
+        ),
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    dplyr::select(-dplyr::any_of("candidate_label_norm"))
 }

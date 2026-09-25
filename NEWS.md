@@ -3,6 +3,114 @@ metasalmon (development version)
 
 ### Added
 
+* **Model judgement runs outside the package: `write_semantic_review_packet()`
+  writes a review packet for a harness to judge and
+  `ingest_semantic_assessments()` reads its assessments back** (hub item
+  B-326, step 1 of stream S16; ruled by Brett on 2026-09-25, hub Q67, with
+  every recommendation of the S16 execplan's section 10 taken the same day).
+  The in-package model call is deprecated below; this is its replacement, and
+  the seam is a file because a harness cannot hand an R closure to a package
+  process it did not start.
+
+  - **The packet** is a deterministic JSON file, `review/semantic-review-packet.json`,
+    holding what the package already computes for a review: every slot that
+    still needs a decision (for a package path, exactly the queue
+    `review_semantics()` shows, re-retrieved at depth `top_n`, plus the blank
+    slots discovery recovers because retrieval found nothing for them at
+    creation), each slot's ranked candidates by index with the evidence the
+    validators read (label, IRI, source, ontology, native type, role hints,
+    term type, resource kind, type IRIs, definition and scores), the
+    measurement bundles with their current slots, the scored excerpts from
+    the caller's context documents, the review instructions, the decision
+    vocabulary and the 30-column assessment schema with an owner and a
+    requiredness per column. Its `packet_id` is the SHA-256 of its canonical
+    bytes with `packet_id` and `producer` removed, so the same packet built by
+    metasalmon and metasalmonpy has the same id, and the id is an integrity
+    check at ingest. Every ordering is C-collated and the emitter renders the
+    bytes Python's `json.dumps(indent = 2, ensure_ascii = False)` renders,
+    with numbers by value (a whole number as an integer literal, anything
+    else through the shared number-token formatter), so the bar the execplan
+    sets -- byte identity across the two languages except the `producer`
+    member -- is met on the shared fixtures. Nothing pins an ontology today,
+    and the packet says so (`pins.ontologies.pinned = false`) rather than
+    pretending; it records the sources searched, the sources that failed, the
+    vendored SDP profile version, the ranking identity and the retrieval
+    depth, source policy and code scope the ingester needs to widen a
+    shortlist.
+  - **The assessment file** is the frozen 30-column row, one per target,
+    written by the harness with a CSV library, plus a one-line sidecar
+    `<csv>.packet-id` naming the packet it judged (the row has nowhere to
+    carry it; `packet_id = ` names it instead). The ingester validates each
+    row in a fixed order -- a harness-declared error, the decision vocabulary
+    and its alias, a confidence in [0, 1] with no clamping, the index cleared
+    on a non-accept before any range check, **an accept whose echoed IRI the
+    packet did not offer is an error and is never applied**, an accept
+    without an index or with an out-of-range one downgraded to review, a
+    fractional index refused, an echo naming a different candidate an error,
+    an accept carrying a new-term field an error, a retry without a query
+    downgraded -- and continues past a bad row. A file-level problem aborts
+    with nothing written, under a stable code carried as the condition's
+    `code` field: `packet_version`, `packet_integrity`, `packet_unbound`,
+    `packet_mismatch`, `header`, `unknown_target`, `duplicate_target`,
+    `provenance`, `no_pass_2`. Package-owned columns are overwritten with one
+    warning naming them.
+  - **A retry is a second harness pass.** A `retry_search` with a usable query
+    is retrieved inside the package under the packet's source policy and
+    depth (the only network the ingester reaches, through `search_fn`), and
+    when it widens the shortlist a continuation packet
+    (`review/semantic-review-packet-pass-2.json`) is written carrying the
+    widened shortlist, every slot's pass-1 row and every bundle's pass-1
+    findings; nothing from that target is merged or escalated until the
+    harness has answered it, and a `retry_search` answered at pass 2 is
+    final. A duplicate query keeps its existing reason; an identifier-like
+    query gets the new reason `identifier_like_query`, since there is no
+    model call to replace it. **A rejected shortlist earns no second pass**:
+    a final `reject_shortlist` escalates at once to `request_new_term`, which
+    is metasalmonpy's rule and the one B-361 made R's.
+  - **The bundle validators run at every ingest**, rebuilt from the packet, so
+    the deterministic layer protects the record whatever the harness says:
+    accepting the fork-length method for `catch_count` still fails through
+    `SEM_METHOD_EVIDENCE_REQUIRED`, accepting `CatchContext` beside
+    `CatchAbundance` still raises `SEM_REDUNDANT_CATCH_CONTEXT`, and the
+    Theme A cases pass their recorded oracles through the ingester and the
+    prefill step. Findings only grow across passes.
+  - **Persistence is one atomic set** after the containment check:
+    `review/semantic-llm-assessments.csv` (the record; numbers through the
+    shared formatter, logicals as `TRUE`/`FALSE`, NA empty),
+    `review/semantic-validator-findings.csv`, the pass-2 packet when owed,
+    and, for a package path, the rows of `semantic_suggestions.csv` for the
+    targets whose slots are still undecided -- decisions, decision reasons
+    and hand-picked rows are preserved, and a slot decided between build and
+    ingest keeps its rows. The ingester never touches the metadata CSVs:
+    applying a choice stays `review_semantics()` -> `accept_suggestion()` ->
+    `apply_sdp_semantics()`, and `review_semantics()` now shows the harness's
+    judgement. **No unredacted copy of harness text survives**: every
+    harness-owned free-text value goes through `.ms_redact_secrets()` at
+    capture, the ingester never copies a harness file into `review/`, and a
+    file the harness wrote at the packet's default location is replaced with
+    its redacted form after a successful ingest, with a warning. `prune = TRUE`
+    now warns about a record under `review/` as it does about recorded
+    decisions.
+  - **`semantic_llm_assessments(path)` reads the persisted record**, typed as
+    the 30-column row with the findings attached as
+    `semantic_validator_findings`, where it returned `NULL` for every path
+    before. `detect_semantic_term_gaps()` and the accessors work unchanged on
+    the dictionary the ingester returns.
+  - **The contract is shared with metasalmonpy** (hub item B-327 is its
+    half): the packet schema (`inst/extdata/semantic-review/semantic-review-packet-v1.schema.json`),
+    the instructions file (`semantic-review-instructions-v1.txt`, carrying
+    the bundle prompt's judgement policy verbatim, so it inherits surface 2 of
+    the role contract) and the conformance fixtures under
+    `tests/testthat/fixtures/semantic-review/v1/` -- a manifest of SHA-256s,
+    the fake search responses, and per case the builder input, the golden
+    packet, the harness file with its sidecar, and the expected record,
+    findings, suggestions and status, with the pass-2 files where a case
+    retries, the error code of every reject variant, and the Theme A cases
+    with their expected oracle events. A sentinel proves no model-provider
+    entry point is reachable from either function and that the network is
+    reached only through `search_fn`, once per distinct query, role and
+    source set.
+
 * **`write_sdp_semantic_closure()` produces the reviewed semantic closure, which
   metasalmon has validated in three places and written in none** (backlog #116,
   hub item B-116). `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require
