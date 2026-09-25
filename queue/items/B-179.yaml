@@ -1,8 +1,8 @@
 id: B-179
 kind: defect
 title: Port create_sdp()'s three atomic sidecar writes to metasalmonpy, the mirror half of B-111
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10

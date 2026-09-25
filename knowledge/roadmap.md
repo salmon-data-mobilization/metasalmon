@@ -459,6 +459,13 @@ nothing in either file saying which is right — the failure mode both `AGENTS.m
 files name when they say to read the other file rather than trust the one in
 front of you.
 
+**This one is closed.** `B-179` **landed 2026-09-25 as metasalmonpy #39**,
+`ba1b54a`: the three sidecars render to bytes and install through
+`atomic_io.atomic_write()`, `_replace_create_output()` is deleted, the EDH read
+runs before anything touches the file, and `PARITY.md` row 53 was corrected in
+the same pull request. The paragraphs above are the dated record of what was
+owed, and are kept as written.
+
 **More debts accumulated while that window was open, and this index was not
 the copy that recorded them.** Each is R work merged **after** 0.5.0 under the
 mirror rule, each is owed as a port rather than a register row, and each is
