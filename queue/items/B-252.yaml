@@ -1,7 +1,7 @@
 id: B-252
 kind: defect
 title: 'Under a selected schema that does not declare a bundled field, metasalmonpy''s writers still write that field, where metasalmon writes only the declared columns'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

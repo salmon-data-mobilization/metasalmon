@@ -1,7 +1,7 @@
 id: B-274
 kind: defect
 title: 'metasalmonpy''s apply_salmon_dictionary() never applies code_label, because rename_categories is called on a Series and a defensive branch swallows the error'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

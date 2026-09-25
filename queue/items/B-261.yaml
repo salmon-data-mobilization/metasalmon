@@ -1,7 +1,7 @@
 id: B-261
 kind: defect
 title: 'metasalmonpy''s semantic-review guide says a package stops validating and that no reviewer ever selected a code-resolved procedure, and neither is true in Python'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

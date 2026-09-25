@@ -1,7 +1,7 @@
 id: B-265
 kind: defect
 title: 'The semantic closure''s gap and incomplete-evidence rows for a code-resolved procedure name a codes.csv method_iri field that does not exist, and leave the known table, column and code empty'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
