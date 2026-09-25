@@ -395,7 +395,19 @@
     )
   }
 
+  # One gap row per field of a metadata row, because the printed call names
+  # each reported field as an argument and R refuses a formal argument matched
+  # by two actual arguments. A field two checks both report is therefore not
+  # reported more loudly: its call cannot run (hub B-211; B-212 is
+  # metasalmonpy's half). The first check to report a field keeps it, and the
+  # field loop runs first. `reported` is reset for each metadata row below.
+  reported <- character()
+
   add <- function(row, field, reason, hint = NULL) {
+    if (field %in% reported) {
+      return(invisible(NULL))
+    }
+    reported <<- c(reported, field)
     at <- address(row)
     gaps[[length(gaps) + 1L]] <<- .ms_metadata_gap_row(
       file_name, field, frame[[field]][[row]], reason,
@@ -412,6 +424,7 @@
   scan_fields <- intersect(purrr::map_chr(.ms_metadata_schema_fields(file_name), "name"), names(frame))
 
   for (row in seq_len(nrow(frame))) {
+    reported <- character()
     for (field in scan_fields) {
       value <- frame[[field]][[row]]
       # A placeholder anywhere is refused, whether or not the schema calls the
@@ -442,14 +455,16 @@
 
     if (identical(file_name, "tables.csv") && "observation_unit_iri" %in% names(frame)) {
       value <- frame$observation_unit_iri[[row]]
-      # Blank OR still marked: the schema calls this `recommended`, and strict
-      # validation refuses a blank one anyway
+      # This branch and the measurement-IRI one below exist to catch a BLANK
+      # field, which the loop above passes over unless the schema calls the
+      # field required. This one is `recommended`, and strict validation
+      # refuses a blank one anyway
       # (`.ms_collect_missing_table_observation_unit_iri_issues()`). The schema
-      # is not the authority on what blocks; the validator is. A `REVIEW:`
-      # marker was reported by the loop above and the prose test here cannot
-      # see one, so it is not reported twice; testing for the marker here too
-      # would print a call naming `observation_unit_iri` twice, which cannot
-      # run.
+      # is not the authority on what blocks; the validator is. The prose test
+      # cannot see a `REVIEW:` marker, which the loop reports. It does count a
+      # prose placeholder as unfilled, and the loop has already reported one as
+      # a placeholder in any field it scans, so `add()` keeps that row and
+      # drops this one. Before that, the field came back twice (hub B-211).
       if (.ms_is_unfilled_metadata(value)) {
         add(row, "observation_unit_iri", "iri", hint = .ms_metadata_iri_hint("observation_unit_iri"))
       }
@@ -457,8 +472,7 @@
 
     if (identical(file_name, "column_dictionary.csv") &&
         identical(.ms_scalar_text(frame$column_role[[row]]), "measurement")) {
-      # The prose test, for the reason given on the branch above: a `REVIEW:`
-      # marker on one of these four was already reported by the loop.
+      # The same test, and the same single report, as the branch above.
       for (field in intersect(.ms_measurement_iri_fields(), names(frame))) {
         if (.ms_is_unfilled_metadata(frame[[field]][[row]])) {
           add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
@@ -698,7 +712,11 @@ review_metadata <- function(path) {
     )
   }
 
-  iri_rows <- sum(review$reason == "iri")
+  # Counted by the field, not by the reason its row kept. The scan keeps one row
+  # per field, so an IRI field holding a placeholder is reported as a
+  # placeholder, and it is still an IRI `review_semantics()` may have
+  # candidates for (hub B-211).
+  iri_rows <- sum(grepl("_iri$", review$field))
   c(
     lines,
     .ms_review_rule("next"),

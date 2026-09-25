@@ -724,6 +724,144 @@ test_that("a REVIEW: measurement IRI is reported once, and its call runs", {
   expect_false(refuses_review_marker(pkg))
 })
 
+# Three ways to leave `tables.csv`'s `observation_unit_iri` and a measurement
+# column's `unit_iri` unfilled: the value planted in each, and the one reason
+# the scan must give for each field.
+unfilled_iri_states <- list(
+  # Reported by the field loop, which reports a placeholder in any field.
+  "prose placeholder" = list(
+    observation_unit_iri = "MISSING METADATA: add the observation unit IRI.",
+    unit_iri = "REVIEW REQUIRED: pick a unit.",
+    reason = "placeholder"
+  ),
+  # What the observation-unit and measurement-IRI branches exist to catch.
+  "blank" = list(
+    observation_unit_iri = NA_character_,
+    unit_iri = NA_character_,
+    reason = "iri"
+  ),
+  # Reported by the field loop's marker branch.
+  "REVIEW: marker" = list(
+    observation_unit_iri = "REVIEW:https://example.org/Undecided",
+    unit_iri = "REVIEW:https://example.org/Undecided",
+    reason = "iri"
+  )
+)
+
+# Fill every `*_iri` template in a printed call with an IRI, whatever its hint
+# says, and every other template as `fill_templates()` does. A placeholder's
+# hint is its own text, which `fill_templates()` would fill with prose.
+fill_iri_templates <- function(call_text) {
+  fill_templates(gsub(
+    "([a-z_]+_iri) = \"<[^\"]*>\"", "\\1 = \"https://example.org/Decided\"",
+    call_text
+  ))
+}
+
+for (state in names(unfilled_iri_states)) {
+  test_that(paste0("an unfilled IRI field is reported once, and its call runs: ", state), {
+    # One field, one gap row, one argument in the printed call (hub B-211;
+    # metasalmonpy's half is B-212). A prose placeholder in
+    # `observation_unit_iri` or a measurement IRI was reported twice: as a
+    # placeholder by the field loop, then as an IRI by the branch for that
+    # field, whose prose test counts a placeholder as unfilled too. The printed
+    # `set_sdp_table()` and `set_sdp_column()` calls then named the field twice,
+    # and R refuses a formal argument matched by two actual arguments. The
+    # blank and `REVIEW:` states are the ones the fix must not disturb: those
+    # branches exist to catch a blank field, and the loop reports a marker once.
+    planted <- unfilled_iri_states[[state]]
+    pkg <- filled_coded_package()
+    dictionary <- read_meta(pkg, "column_dictionary.csv")
+    row <- which(dictionary$column_name == "spawner_count")
+    expect_identical(dictionary$column_role[[row]], "measurement")
+    mark_metadata_field(pkg, "tables.csv", "observation_unit_iri", 1L, planted$observation_unit_iri)
+    mark_metadata_field(pkg, "column_dictionary.csv", "unit_iri", row, planted$unit_iri)
+
+    review <- review_metadata(pkg)
+    expect_identical(
+      sort(paste(review$file, review$field, review$reason)),
+      sort(c(
+        paste("column_dictionary.csv unit_iri", planted$reason),
+        paste("tables.csv observation_unit_iri", planted$reason)
+      ))
+    )
+    expect_identical(
+      review$column_name[review$file == "column_dictionary.csv"],
+      "spawner_count"
+    )
+
+    # Run what was printed: a call naming an argument twice fails here.
+    for (call_text in fill_iri_templates(printed_setter_calls(review))) {
+      suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+    }
+    expect_equal(nrow(review_metadata(pkg)), 0L)
+    expect_no_error(suppressMessages(
+      validate_salmon_datapackage(pkg, require_iris = TRUE)
+    ))
+  })
+}
+
+test_that("a field two checks both find is reported once: a required IRI a configured schema declares", {
+  # The rule behind the tests above is one gap row per field of a metadata
+  # row, whichever checks find it, so it closes a second route to the same
+  # broken call. Under a schema selected through the options that calls
+  # `unit_iri` required, a blank one on a measurement row came back from the
+  # field loop as `required` and from the measurement-IRI branch as `iri`. No
+  # shipped schema calls an IRI field required. metasalmonpy has the same rule
+  # (hub B-212) and measured this route there, but its suite does not pin it.
+  pkg <- filled_coded_package()
+  table_name <- .ms_metadata_schema_tables()[["column_dictionary.csv"]]
+  configured <- .ms_vendored_sdp_schema()
+  declared <- purrr::map_chr(configured$metadata_tables[[table_name]]$fields, "name")
+  at <- which(declared == "unit_iri")
+  configured$metadata_tables[[table_name]]$fields[[at]]$requirement <- "required"
+  # A non-default source makes every reader go through the loader, which is
+  # how a selected schema reaches the scan, the setters and the validator.
+  withr::local_options(metasalmon.sdp_schema_source = "remote")
+  local_mocked_bindings(.ms_load_sdp_schema = function(...) configured)
+  # The configuration took; without this the assertions below are vacuous.
+  expect_true("unit_iri" %in% .ms_required_metadata_fields("column_dictionary.csv"))
+
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  expect_identical(dictionary$column_role[[row]], "measurement")
+  mark_metadata_field(pkg, "column_dictionary.csv", "unit_iri", row, NA_character_)
+
+  review <- review_metadata(pkg)
+  measured <- review[review$column_name %in% "spawner_count" & review$field == "unit_iri", ]
+  expect_identical(measured$reason, "required")
+
+  for (call_text in fill_iri_templates(printed_setter_calls(review))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_false("unit_iri" %in% review_metadata(pkg)$field)
+})
+
+test_that("an IRI field reported as a placeholder still counts as an IRI in the console", {
+  # One field is one gap row, so an IRI field holding a prose placeholder keeps
+  # its `placeholder` row and gets no `iri` row. The console counts the IRI
+  # gaps and, when there are any, points at `review_semantics()`. The count has
+  # to be taken by the field for that row to be one of them. Every IRI gap here
+  # is a placeholder, so a count by reason finds none and drops the pointer.
+  pkg <- filled_coded_package()
+  planted <- unfilled_iri_states[["prose placeholder"]]
+  dictionary <- read_meta(pkg, "column_dictionary.csv")
+  row <- which(dictionary$column_name == "spawner_count")
+  mark_metadata_field(pkg, "tables.csv", "observation_unit_iri", 1L, planted$observation_unit_iri)
+  mark_metadata_field(pkg, "column_dictionary.csv", "unit_iri", row, planted$unit_iri)
+
+  review <- review_metadata(pkg)
+  expect_identical(sort(review$field), c("observation_unit_iri", "unit_iri"))
+  expect_identical(review$reason, c("placeholder", "placeholder"))
+
+  lines <- .ms_metadata_render_lines(review, path_expr = "pkg")
+  expect_true("   2 fields still block strict validation." %in% lines)
+  expect_true(
+    "   2 of them are IRIs -- review_semantics() shows candidates for any that have them." %in%
+      lines
+  )
+})
+
 test_that("the REVIEW: marker has its own predicate, and the prose ones stay narrow", {
   values <- c(
     "REVIEW:https://example.org/Thing",

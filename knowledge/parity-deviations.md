@@ -858,6 +858,40 @@ metasalmonpy's `read_sdp_csv()` strips it. That reader difference is not among
 the mismatches `PARITY.md` row 23 names, and it goes to the next queue sweep.
 `PARITY.md` did not change.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`review_metadata()`'s console counts an IRI field reported as a placeholder as
+an IRI.** Hub item **B-211** makes the scan keep one gap row per field of a
+metadata row. That is the rule metasalmonpy shipped first, as **B-212**
+(metasalmonpy pull request #49, `25dc7f3`). So a prose placeholder in
+`observation_unit_iri` or a measurement IRI keeps its `placeholder` row and gets
+no `iri` row. `.ms_metadata_render_lines()` counted the footer's IRI gaps with
+`review$reason == "iri"`, so that field fell out of the count. When every IRI
+gap was a placeholder, the footer also lost its line pointing at
+`review_semantics()`. B-211 now counts the rows whose `field` ends in `_iri`,
+the suffix the scan's marker sweep reads. Every row the old count found has
+such a field, so the count only gains IRI fields reported under another reason:
+a placeholder, or `required` under a configured schema that calls an IRI field
+required. The printed calls do not change.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`_render_metadata_lines()` in `sdp_field_setters.py` counts
+`iri_rows = int((rows["reason"] == "iri").sum())` (`:817`). This was measured
+2026-09-25 on metasalmonpy `main` `25dc7f3` (Python 3.11.15, pandas 3.0.6, core
+dependencies only), on a `create_sdp()` package filled by its own printed calls.
+`MISSING METADATA: add the observation unit IRI.` was then written into
+`tables.csv` `observation_unit_iri`, and `REVIEW REQUIRED: pick a unit.` into the
+`spawner_count` row's `unit_iri`. `review_metadata()` returns both rows as
+`placeholder`, and the footer reads `2 fields still block strict validation.`
+with no IRI line. The change owed is that one count, taken by field as R now
+takes it. The pin should be the R test `an IRI field reported as a placeholder
+still counts as an IRI in the console`
+(`tests/testthat/test-sdp-field-setters.R`): every IRI gap a prose placeholder,
+and the footer asserted to count two IRIs and to print the `review_semantics()`
+pointer. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because
+a hub claim covers one branch in one repository, and metasalmonpy #49 had merged
+before the R half found it. Its metasalmonpy queue item is **B-244**.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
