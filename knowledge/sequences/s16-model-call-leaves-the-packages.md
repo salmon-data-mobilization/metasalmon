@@ -12,7 +12,7 @@ psc:
 # S16 — The model call leaves the packages
 
 **Execplan:** [the review-packet and assessment-ingest contract](../plans/2026-09-25-s16-review-packet-contract.md)
-(step 1, a proposal until Brett rules its section 10).
+(step 1; its section 10 ruled 2026-09-25, every recommendation taken).
 
 **Ruled by Brett, 2026-09-25, in chat** ([Q67](../questions.md)):
 
@@ -78,8 +78,11 @@ Each step is one or two queue items. The queue holds their state; this card
 holds the order and the reasons for it.
 
 1. **The additive release: `B-326` (metasalmon) and `B-327` (metasalmonpy), in
-   one train.** The exporter, the ingester, conformance fixtures both packages
-   test against, and deprecation warnings on the in-package model call. Nothing
+   one train,** after the convergence items `B-360` to `B-364`, which make the
+   two packages agree where the shared fixtures need them to. The exporter
+   (`write_semantic_review_packet()`), the ingester
+   (`ingest_semantic_assessments()`), conformance fixtures both packages test
+   against, and deprecation warnings on the in-package model call. Nothing
    is removed, so nobody's script breaks at this step. **A retry is a second
    harness pass, not a second package call.** Today R's in-package path widens
    the search and asks the model again on a `retry_search` and, for some
@@ -149,12 +152,12 @@ calls a released package.
 
 ## What is Brett's
 
-- **The public names and paths.** The exporter's and ingester's names, their
-  arguments and the file paths they write are public signatures. Step 1's pull
-  requests propose them and he accepts or changes them.
-- **The release numbers.** Section A3 of the Foundry plan reserves the first
-  0.6.0 train for the first `salmon` verb, released by both packages together.
-  Whether step 1 rides that train or takes its own minor number is his call.
+**Ruled 2026-09-25**, when he took every recommendation in section 10 of the
+execplan: the names above, the paths under `review/`, the release numbers (the
+additive release as 0.6.0 in both packages, tagged together, and the removal as
+0.7.0 after at least one tagged 0.6.x), the cross-language bar, and the
+direction of each divergence the execplan lists. Still his:
+
 - **The notice before step 3** to the users of the in-package provider route.
 - **Whether `Q-54`'s differences are registered** for the releases before
   step 3, or left unregistered because step 3 deletes both sides.

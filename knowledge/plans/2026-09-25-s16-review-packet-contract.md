@@ -1,7 +1,7 @@
 ---
 type: Artifact
 title: "S16 step 1 — the review-packet and assessment-ingest contract"
-description: "The file contract that lets model judgement run in a harness instead of inside metasalmon and metasalmonpy: what the current in-package review path does (measured), the packet a package writes, the assessment file it reads back, the second pass a retry needs, where the files live, the deprecation of the in-package call, the conformance fixtures, the parity rows owed, what the later breaking release deletes, and the decisions that are Brett's. Written 2026-09-25 for hub items B-326 and B-327; a proposal until he rules section 10."
+description: "The file contract that lets model judgement run in a harness instead of inside metasalmon and metasalmonpy: what the current in-package review path does (measured), the packet a package writes, the assessment file it reads back, the second pass a retry needs, where the files live, the deprecation of the in-package call, the conformance fixtures, the parity rows owed, what the later breaking release deletes, and the decisions that are Brett's. Written 2026-09-25 for hub items B-326 and B-327, and ruled the same day: Brett took every recommendation in section 10."
 status: draft
 tags: [s16, semantic-review, llm, parity, execplan, proposal]
 psc:
@@ -11,12 +11,14 @@ psc:
 
 # S16 step 1 — the review-packet and assessment-ingest contract
 
-**Status: proposal.** Brett ruled on 2026-09-25 (hub Q67) that the model call
-leaves metasalmon and metasalmonpy, and that the packages gain a review-packet
-exporter and an assessment ingester. This plan says how. The ruling's operative
-copy is the [S16 card](../sequences/s16-model-call-leaves-the-packages.md); the
-items are `B-326` (metasalmon) and `B-327` (metasalmonpy). Nothing below is
-settled until Brett rules section 10.
+**Status: ruled 2026-09-25.** Brett ruled that day (hub Q67) that the model
+call leaves metasalmon and metasalmonpy, and that the packages gain a
+review-packet exporter and an assessment ingester. This plan says how, and he
+ruled it the same day: when section 10's nineteen decisions were put to him, he
+chose *"Take all recommendations"*. The ruling's operative copy is the
+[S16 card](../sequences/s16-model-call-leaves-the-packages.md). The items are
+`B-326` (metasalmon) and `B-327` (metasalmonpy), with the convergence items
+`B-360` to `B-364` before them.
 
 **Measurement basis.** Every file:line below is from metasalmon `ae16b42` and
 metasalmonpy `f1f7230`, read on 2026-09-25, with five read-only probes against
@@ -620,7 +622,11 @@ The workshop's session 5 changes under `B-331`. The plugin's metasalmon skill
 gains packet and ingest actions, outside this hub. Rows 44, 45 and the legacy
 row retire.
 
-## 10. Decisions that are Brett's, each with a recommendation
+## 10. Decisions that were Brett's — ruled 2026-09-25: every recommendation taken
+
+Put to him the day this plan was written, with the recommendation for each;
+he chose *"Take all recommendations"*. Each line below is therefore now the
+ruling, and the recommendation text is kept as it was put to him.
 
 1. **Names.** Every `read_*` in the package is a pure reader, and this one
    writes files and can retrieve. Recommended: `write_semantic_review_packet()`
@@ -667,13 +673,15 @@ row retire.
 
 ## 11. Build order
 
-1. **Convergence first:** the validators, the retry-query classifier, Python's
-   retrieval extraction, the port of R's merge, the context algorithm, and the
-   boolean and rationale fixes. Each is a divergence or a defect and each gets
-   its own item once section 10 is ruled.
+1. **Convergence first,** one item each: metasalmonpy's validators converge on
+   R's (`B-360`); R escalates any final rejection and fixes its three
+   assessment defects (`B-361`); metasalmonpy reads a persisted `FALSE`
+   correctly and ports R's retry-query classifier (`B-362`); metasalmonpy's
+   retrieval loop becomes a function and ports R's merge (`B-363`); and
+   metasalmonpy ports R's context algorithm (`B-364`).
 2. **The schema, the instructions and the fixtures** land in metasalmon.
-3. **The two implementations** proceed in parallel against the fixtures
-   (`B-326`, `B-327`).
+3. **The two implementations,** `B-326` and then `B-327`, which vendors the
+   contract and fixtures `B-326` lands.
 4. **Deprecations, documentation and the registers.**
 5. **Both packages tagged together** at the number decision 3 sets.
 

@@ -1,0 +1,13 @@
+id: B-361
+kind: defect
+title: 'metasalmon escalates any final reject_shortlist and stops mangling three kinds of assessment, as Brett ruled for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMON, four things hold, each pinned by a test that fails before the change. (1) Any final reject_shortlist escalates to request_new_term, including one that follows a retry_search, so the rule AGENTS.md states is the rule the code applies; today R escalates only when the decision before the retry was also a rejection. (2) A non-accept decision has its index cleared before the index is range-checked, so a reject_shortlist carrying a stray out-of-range index escalates instead of becoming review. (3) An index that is not a whole number is refused rather than truncated, so 1.9 no longer selects candidate 1. (4) A downgrade with no rationale writes its note without the literal text NA in front of it. Brett ruled all four on 2026-09-25 when he took every recommendation in section 10 of the S16 execplan (decisions 10 and 11); metasalmonpy already escalates any final rejection, so (1) is R moving, and the other three are defects. A prerequisite of B-326. No metasalmonpy half for (1) to (4); B-362 carries metasalmonpy''s own defect.'

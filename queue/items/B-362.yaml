@@ -1,0 +1,13 @@
+id: B-362
+kind: defect
+title: 'metasalmonpy reads a persisted FALSE as false and classifies retry queries as metasalmon does, for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, two things hold, each pinned by a test that fails before the change. (1) normalize_assessment_rows() reads the strings TRUE and FALSE as the booleans they name, so a persisted assessment CSV reads back correctly; today FALSE becomes True. (2) The retry-query classifier gives metasalmon''s verdicts: whitespace collapsed, a case-insensitive duplicate check over ASCII only, and metasalmon''s identifier pattern, which recognises a CURIE such as gcdfo_v2:X that metasalmonpy''s misses. Ruled 2026-09-25 by Brett when he took every recommendation in section 10 of the S16 execplan (decisions 11 and 12, and section 3.4). A prerequisite of B-327. No metasalmon half: R does not change.'
