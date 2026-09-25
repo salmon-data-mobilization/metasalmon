@@ -37,10 +37,12 @@ For every released version heading in the changelog at the revision checked:
    never while 0.1.6 and 0.2.4 keep theirs, since AGENTS.md rules out tagging
    them; it is the reading of fixed history, not a hole with an end date.
 2. The section as it stood at the bump commit is diffed against the section
-   as it stands now. A line the diff inserts is ADDED. A run that replaces
-   shipped lines stands for them one for one -- the lines that keep the most
-   of them, in order -- and only the lines by which it outgrows them are
-   added.
+   as it stands now. A line the diff inserts is ADDED, unless the diff
+   removed a line of exactly its text from elsewhere in the section: that is
+   a move within it, so reordering shipped entries is not a finding. A run
+   that replaces shipped lines stands for them one for one -- the lines that
+   keep the most of them, in order -- and only the lines by which it outgrows
+   them are added.
 3. An added line is a FINDING when `git blame` attributes it to a commit that
    is not an ancestor of the bump commit (`git merge-base --is-ancestor`):
    the line was not in the tree the release names. Blame is asked as well as
@@ -72,6 +74,10 @@ worse than none, so:
   once a later version supersedes it (see 1), including one that was red when
   it merged and was merged anyway. A version that is tagged is not forgiven:
   its tag is its bump for good.
+* A shipped line moved within its section passes only with its text
+  unchanged; moved and edited, it reads as an addition. A line moved in from
+  any other heading is an addition, which is the point: it changes what that
+  release records.
 * A deleted line is never a finding, and a blank line is never checked.
 * A heading with no bump commit is not checked: a version older than the
   history (metasalmon 0.0.1 to 0.1.2 predate its first commit), or one no
@@ -118,6 +124,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -371,16 +378,31 @@ def most_alike(old: list[str], new: list[str]) -> set[int]:
 
 
 def added_lines(shipped: list[str], now: list[str]) -> list[int]:
-    """Indices into `now` of the lines the diff from `shipped` adds."""
+    """Indices into `now` of the lines the diff from `shipped` adds.
+
+    A line whose exact text the diff removes from elsewhere in the section is
+    a move within it, not an addition. A diff shows a reordering as a line
+    deleted in one place and inserted in another, and blame credits whoever
+    moved it, so without this a shipped bullet moved to the top reads as new.
+    """
     added = []
+    removed: Counter[str] = Counter()
     matcher = difflib.SequenceMatcher(None, shipped, now, autojunk=False)
     for op, i1, i2, j1, j2 in matcher.get_opcodes():
+        if op in ("delete", "replace"):
+            removed.update(shipped[i1:i2])
         if op == "insert":
             added.extend(range(j1, j2))
         elif op == "replace" and j2 - j1 > i2 - i1:
             kept = most_alike(shipped[i1:i2], now[j1:j2])
             added.extend(j1 + j for j in range(j2 - j1) if j not in kept)
-    return added
+    new = []
+    for j in added:
+        if removed[now[j]]:
+            removed[now[j]] -= 1
+        else:
+            new.append(j)
+    return new
 
 
 def closing(text: str, at: int, opener: str, closer: str) -> int | None:
