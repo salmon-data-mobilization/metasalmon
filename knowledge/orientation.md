@@ -441,8 +441,9 @@ every release — re-run the count rather than trusting these to the digit.
   Start here.** Undated and edited in place; it links each stream to its
   execplan.
 - `knowledge/backlog.md` — the live backlog and the single index of
-  open items. Items #34+ came from the 2026-08-10 comprehensive review. Severity
-  lives here; ordering lives in the roadmap.
+  open items. Items #34+ came from the 2026-08-10 comprehensive review. An
+  item's severity lives in the `severity` field of its file under
+  `queue/items/`, not here; ordering lives in the roadmap.
 - `knowledge/plans/2026-08-11-knb-environments-and-workshop-rebuild.md` — the
   KNB staging target and the workshop rebuild (roadmap S3/S4).
 - `knowledge/sequences/s4-workshop-rebuild.md` — current workshop state; the

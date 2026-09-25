@@ -757,7 +757,8 @@ must live for one call rather than at module level, where it would become a
 second cache beside `find_terms()`'s. It is owed as a port, not a register row:
 once it lands the two implementations behave alike again. It did not land in
 the same stream because a hub claim covers one branch in one repository. Its
-metasalmonpy half is `B-243`.
+metasalmonpy half is `B-243`, which **landed 2026-09-25 as metasalmonpy #57**,
+`0235487`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `accept_suggestion()` refuses an `iri` that is only the `REVIEW:` marker.** Its
@@ -985,7 +986,8 @@ The tests to mirror are the six B-233 added to `tests/testthat/test-sssom.R`,
 whose fixture is a file in the specification's canonical form. It is owed as a
 port, not a register row: once it lands the two readers accept the same set. It
 did not land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy half is **B-234**.
+repository. Its metasalmonpy half is **B-234**, which **landed 2026-09-25 as
+metasalmonpy #58**, `66ad1a3`.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a required IRI field under a selected schema is reported
