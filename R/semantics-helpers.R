@@ -214,21 +214,35 @@
 #     vector (`.ms_sources_for_target_role()`), so sorting would merge no more
 #     rows, and it would assume an injected `search_fn` ignores source order.
 #
-# The hash only finds the bucket: a hit counts only when the stored arguments
-# are identical, so a collision costs a search, never a wrong answer.
+# Nothing is hashed. A hash of the arguments would lean on a dependency version
+# the unversioned rlang import does not promise, or on the serialiser, which
+# rlang 1.3.0's NEWS records hashing identical objects differently on R 4.6.0.
+# Instead the kept answers are narrowed by query string, compared in C, and a
+# hit counts only when the whole argument list is `identical()`. A call whose
+# query is not a single string is passed straight through and never kept.
 .ms_search_once_per_call <- function(search_fn) {
-  answered <- new.env(parent = emptyenv())
+  kept <- new.env(parent = emptyenv())
+  kept$query <- character()
+  kept$args <- list()
+  kept$result <- list()
   function(query, role, sources) {
     call_args <- list(query, role, sources)
-    key <- rlang::hash(call_args)
-    hit <- answered[[key]]
-    if (!is.null(hit) && identical(hit$args, call_args)) {
-      return(hit$result)
+    keyable <- is.character(query) && length(query) == 1L && !is.na(query)
+    if (keyable) {
+      for (i in which(kept$query == query)) {
+        if (identical(kept$args[[i]], call_args)) {
+          return(kept$result[[i]])
+        }
+      }
     }
     result <- search_fn(query, role = role, sources = sources)
     failed <- .ms_search_failed_sources(attr(result, "diagnostics", exact = TRUE))
-    if (is.null(hit) && length(failed) == 0L) {
-      answered[[key]] <- list(args = call_args, result = result)
+    if (keyable && length(failed) == 0L) {
+      n <- length(kept$args) + 1L
+      kept$query[[n]] <- query
+      kept$args[[n]] <- call_args
+      # `[<-` with a list, so a NULL answer is kept rather than dropped.
+      kept$result[n] <- list(result)
     }
     result
   }
