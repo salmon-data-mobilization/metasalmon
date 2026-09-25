@@ -330,8 +330,8 @@ write_salmon_datapackage <- function(
   file.path(path, ".sdp-package")
 }
 
-# A fixed ASCII line ending in LF, so its bytes are the same on every platform
-# and in both implementations.
+# A fixed ASCII line ending in LF, so it has one byte encoding on every platform
+# and in either language.
 .ms_package_ownership_bytes <- function() {
   charToRaw("sdp-owned\n")
 }
