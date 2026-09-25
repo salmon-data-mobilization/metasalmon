@@ -541,7 +541,7 @@ port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
 measuring it that is not part of the port. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-241`.
+`B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the printed call for a column's own slot says `code_value = ""` when the
@@ -555,7 +555,8 @@ reads a blank value as "no code value", but it also matches a code slot whose
 `codes.csv` row leaves `code_value` empty, which R's does not. The port is
 specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
-branch in one repository. Its metasalmonpy half is `B-242`.
+branch in one repository. Its metasalmonpy half is `B-242`, which **landed
+2026-09-24 as metasalmonpy #42**, `afe5626`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a year-shaped measurement column keeps its measurement role.** Hub item
@@ -567,7 +568,8 @@ the same defect, so it is owed there as a port, not a register row. The port is
 specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`, together with the float-column gap in metasalmonpy's
 year-shape predicate that the port will meet first. **Why not in the same
-stream:** a hub claim covers one branch in one repository.
+stream:** a hub claim covers one branch in one repository. Its metasalmonpy half
+is `B-240`, which **landed 2026-09-24 as metasalmonpy #41**, `ace8eed`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file.** Hub item **B-233** makes
