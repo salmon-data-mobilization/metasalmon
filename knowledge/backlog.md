@@ -7592,9 +7592,9 @@ Every paragraph in this section records what was observed, where and by whom,
 on 2026-09-25. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.
 
-## B-320: a hand-back shown in chat has no claim record (filed 2026-09-25)
+## B-338: a hand-back shown in chat has no claim record (filed 2026-09-25)
 
-**`B-320` `hub done` has no hand-back for a shared repository.** `HUB.md` step 7
+**`B-338` `hub done` has no hand-back for a shared repository.** `HUB.md` step 7
 says that in a member repository somebody other than Brett has contributed to,
 "the branch is never pushed at all and the hand-back is a diff plus a pull
 request draft shown in chat". The same paragraph then says to pass `hub done`

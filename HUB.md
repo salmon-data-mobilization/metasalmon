@@ -784,7 +784,7 @@ member repository somebody other than Brett has contributed to, the branch is
 never pushed at all and the hand-back is a diff plus a pull request draft shown
 in chat; the Hand back section says how to tell which case you are in. There
 nothing is pushed, so there is no branch to pass `hub done`, and the client has
-no chat hand-back yet (queue item B-320): keep the claim alive with heartbeats
+no chat hand-back yet (queue item B-338): keep the claim alive with heartbeats
 until Brett answers in chat. Everywhere else, pass `hub done` the branch you
 actually pushed, and it will be `agent/<queue-id>/<token>` because that is the
 only branch you were allowed to push. The client checks the name against the grant and exits 3 on anything
