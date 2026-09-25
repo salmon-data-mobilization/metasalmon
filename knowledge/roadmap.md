@@ -651,7 +651,8 @@ measured on `main` `012d04b`. So the same answer holds there, and nothing pins
 it. What is owed there is the twin tests, not a port and not a register row.
 They are specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. **Why not in the same stream:** a hub claim covers one
-branch in one repository. Its metasalmonpy queue item is `B-245`.
+branch in one repository. Its metasalmonpy queue item is `B-245`, which **landed
+2026-09-25 as metasalmonpy #62**, `6700062`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file.** Hub item **B-233** makes

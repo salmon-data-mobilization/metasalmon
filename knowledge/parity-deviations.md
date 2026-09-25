@@ -944,7 +944,8 @@ receives, because the exported call aborts on `999-06-05`. The second asserts
 the EML against the CSV only, as R's does. They are owed as pins, not as a port
 or a register row: nothing behaves differently. They did not land in the same
 stream because a hub claim covers one branch in one repository. Their
-metasalmonpy queue item is **B-245**.
+metasalmonpy queue item is **B-245**, which **landed 2026-09-25 as metasalmonpy
+#62**, `6700062`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
