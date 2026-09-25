@@ -1,0 +1,13 @@
+id: B-402
+kind: defect
+title: 'metasalmonpy describes the NuSEDS AREA column as a Pacific Fishery Management Area code too, the mirror half of B-401'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: either
+stream: S12
+severity: P3
+blocked_by: [B-401]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the AREA row of data/column_dictionary.csv describes the NuSEDS sub-district as B-401 makes metasalmon''s copy of the same file do, and no longer labels the column "PFMA area" or describes it as a Pacific Fishery Management Area code. Decided by grep. THE METASALMON HALF IS B-401 AND THE SMN-DATA-PKG HALF IS B-403, and each names the others.'

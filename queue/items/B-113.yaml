@@ -1,7 +1,7 @@
 id: B-113
 kind: defect
 title: Converge on one shared package-ownership sentinel, the metasalmon half
-state: ready
+state: review
 claimable: true
 repo: metasalmon
 venue: claude-code
