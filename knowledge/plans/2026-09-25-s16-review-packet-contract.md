@@ -413,8 +413,10 @@ row gets an error row saying no assessment was supplied.
 
 ### 3.4 After validation
 
-**Retry classification** uses R's classifier. A duplicate keeps its existing
-reason; an identifier-like query gets a new reason, `identifier_like_query`,
+**Retry classification** uses R's classifier, with one correction first: its
+duplicate check folds case with `tolower()`, which folds non-ASCII letters by
+locale, so it becomes ASCII-only in every locale (`B-361`) and metasalmonpy
+matches that (`B-362`). A duplicate keeps its existing reason; an identifier-like query gets a new reason, `identifier_like_query`,
 since there is no longer a model call to replace it; a usable query goes to the
 second pass (§4). **Escalation:** a final `reject_shortlist` becomes
 `request_new_term` with the selection cleared and `llm_escalated_from` set; the
@@ -673,12 +675,13 @@ ruling, and the recommendation text is kept as it was put to him.
 
 ## 11. Build order
 
-1. **Convergence first,** one item each: metasalmonpy's validators converge on
+1. **Convergence,** one item each, before the implementation that needs it: metasalmonpy's validators converge on
    R's (`B-360`); R escalates any final rejection and fixes its three
    assessment defects (`B-361`); metasalmonpy reads a persisted `FALSE`
    correctly and ports R's retry-query classifier (`B-362`); metasalmonpy's
    retrieval loop becomes a function and ports R's merge (`B-363`); and
-   metasalmonpy ports R's context algorithm (`B-364`).
+   metasalmonpy ports R's context algorithm (`B-364`). `B-326` needs only
+   `B-361`; `B-327` needs the other four.
 2. **The schema, the instructions and the fixtures** land in metasalmon.
 3. **The two implementations,** `B-326` and then `B-327`, which vendors the
    contract and fixtures `B-326` lands.

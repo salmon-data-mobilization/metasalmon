@@ -78,8 +78,10 @@ Each step is one or two queue items. The queue holds their state; this card
 holds the order and the reasons for it.
 
 1. **The additive release: `B-326` (metasalmon) and `B-327` (metasalmonpy), in
-   one train,** after the convergence items `B-360` to `B-364`, which make the
-   two packages agree where the shared fixtures need them to. The exporter
+   one train.** `B-326` follows `B-361`, R's convergence item. `B-327` follows
+   `B-326`, whose contract and fixtures it vendors, and metasalmonpy's
+   convergence items `B-360`, `B-362`, `B-363` and `B-364`, which make it agree
+   with R where the shared fixtures need it to. The exporter
    (`write_semantic_review_packet()`), the ingester
    (`ingest_semantic_assessments()`), conformance fixtures both packages test
    against, and deprecation warnings on the in-package model call. Nothing
