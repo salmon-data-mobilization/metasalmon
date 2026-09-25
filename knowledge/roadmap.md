@@ -575,7 +575,8 @@ coercion that R only warns about. The coercion half owes metasalmonpy nothing,
 because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
-measuring it that is not part of the port, hub item `B-274`. **Why not in the
+measuring it that is not part of the port, hub item `B-274`, which **landed
+2026-09-25 as metasalmonpy #64**, `c7be120`. **Why not in the
 same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.

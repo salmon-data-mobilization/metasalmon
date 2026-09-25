@@ -584,7 +584,9 @@ carries the labels. The Python code plainly means to apply them, so this reads
 as a Python defect rather than a design difference, but
 `tests/test_dictionary.py` pins the unlabelled categories, so it is an item of
 its own, **B-274**, and the B-55 workpad has the evidence. No register row is
-added here, because adding one is Brett's.
+added here, because adding one is Brett's. `B-274` **landed 2026-09-25 as
+metasalmonpy #64**, `c7be120`: a coded column now carries its `code_label`
+labels, as R's factor does.
 
 **This one is closed.** `B-241` landed as metasalmonpy pull request **#43**
 (`85ebbb0`) on 2026-09-25, changing the codes block of
