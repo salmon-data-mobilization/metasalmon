@@ -610,6 +610,18 @@ not in the same stream:** a hub claim covers one branch in one repository. Its
 metasalmonpy half is `B-222`, which **landed 2026-09-25 as metasalmonpy #48**,
 `70fa8fd`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`review_metadata()`'s console counts an IRI field reported as a placeholder as
+an IRI.** Hub item **B-211** keeps one gap row per field, as metasalmonpy's
+**B-212** already did, and counts the footer's IRI gaps by field rather than by
+reason. So an IRI field holding a placeholder still counts, and the
+`review_semantics()` pointer still prints. metasalmonpy's footer still counts
+by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
+not a register row. The port is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
+covers one branch in one repository, and metasalmonpy #49 had merged before the
+R half found it. Its metasalmonpy queue item is `B-244`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

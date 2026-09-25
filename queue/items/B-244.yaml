@@ -1,0 +1,13 @@
+id: B-244
+kind: defect
+title: 'metasalmonpy review_metadata() leaves an IRI field reported as a placeholder out of its IRI count, and drops the review_semantics() pointer when every IRI gap is one'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-211]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'In metasalmonpy, the review_metadata() console counts an IRI gap by its field, not by the reason its row kept: _render_metadata_lines() in sdp_field_setters.py counts the rows whose field ends in _iri, as metasalmon''s .ms_metadata_render_lines() does after B-211, so an IRI field reported as a placeholder is counted as an IRI and the review_semantics() pointer is printed whenever any IRI field is a gap. The printed calls and the one-row-per-field rule B-212 added are unchanged. TODAY, measured 2026-09-25 on metasalmonpy main 25dc7f3 (Python 3.11.15, pandas 3.0.6, core dependencies only): it counts iri_rows = int((rows["reason"] == "iri").sum()) (sdp_field_setters.py:817), so on a package whose only gaps are MISSING METADATA: in tables.csv observation_unit_iri and REVIEW REQUIRED: in a measurement row''s unit_iri, both rows come back as placeholder and the footer reads "2 fields still block strict validation." with no IRI line. Pinned by a test in which every IRI gap is a prose placeholder, in those two fields, asserting that the footer counts two IRIs and prints the review_semantics() pointer, demonstrated RED on 25dc7f3. FILED UNDER the Codex review cap in HUB.md''s section Which pull requests need Brett, whose sentence reads: "A defect that reaches `main` from a pull request merged under the cap, and that a further review would plausibly have caught, is filed as a queue item citing this paragraph". It reached main from metasalmonpy pull request #49 (merge 25dc7f3), which merged after one of its three reviews; the Codex review of the R half, metasalmon pull request 170, found the same defect in R. THE R HALF IS B-211, which fixed it there; this is an owed port, not a parity-register row.'
