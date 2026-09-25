@@ -1,7 +1,7 @@
 id: B-394
 kind: defect
 title: 'Queue lint cannot see a done port whose item was filed with an empty blocked_by, so a passage can go on calling the port owed while lint passes'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

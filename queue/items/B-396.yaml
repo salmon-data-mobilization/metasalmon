@@ -1,7 +1,7 @@
 id: B-396
 kind: defect
 title: 'No check fails when a port is named in one of the two passages that record what the mirror is owed and not in the other'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

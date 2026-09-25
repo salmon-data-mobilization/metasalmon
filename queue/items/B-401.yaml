@@ -1,7 +1,7 @@
 id: B-401
 kind: defect
 title: 'metasalmon describes the NuSEDS AREA column as a Pacific Fishery Management Area code, where NuSEDS defines it as a DFO sub-district'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: either

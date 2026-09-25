@@ -1,7 +1,7 @@
 id: B-377
 kind: defect
 title: 'The ICES helpers return the same empty result for a request that failed as for an answer with no rows, and nothing warns'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
