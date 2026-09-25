@@ -529,7 +529,8 @@ metasalmonpy as a port, not a register row, because metasalmonpy has counted
 the recorded row as gap evidence since #28. The port is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
-queue item is `B-216`, filed by the 2026-09-23 queue sweep.
+queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
+2026-09-25 as metasalmonpy #46**, `2405df2`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
@@ -595,6 +596,18 @@ strips disagree about, which are hub question `Q-63`'s and not the port's.
 **Why not in the same stream:** a hub claim covers one branch in one repository.
 Its metasalmonpy half is `B-220`,
 which **landed 2026-09-25 as metasalmonpy #45**, `fc5d16f`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion(iri = )` naming a shortlisted candidate records that
+candidate.** Hub item **B-221** records an `iri` that a shortlisted candidate
+carries on that candidate's row, as `rank =` does. So `apply_sdp_semantics()`
+writes the candidate's own `term_type`, and re-applying the rebuilt review
+writes the same bytes. metasalmonpy's `accept_suggestion()` still records `iri=`
+on the slot's first row, measured on `main` `2405df2`, so it has the same defect
+and the fix is owed there as a port, not a register row. The port is specified
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
+not in the same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy half is `B-222`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file.** Hub item **B-233** makes
@@ -719,7 +732,7 @@ whatever schema the options select, where R honours the selection, and `B-175`
 kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
-above requires.
+above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global

@@ -1,8 +1,8 @@
 id: B-215
 kind: defect
 title: 'metasalmonpy review_metadata() and the setters read the bundled schema whatever schema the options select, the port of B-175''s fix'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S5

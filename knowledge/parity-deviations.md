@@ -195,6 +195,22 @@ no-op. The port is hub item **B-215**, and the measurement is in `backlog.md`
 under *The 2026-09-23 queue sweep*. Recorded here and in the release index in
 the same change, as the rule there requires.
 
+**This one is closed.** `B-215` landed as metasalmonpy pull request **#47**
+(`ed5e22e`) on 2026-09-25. `review_metadata()`, the four setters and
+`validate_salmon_datapackage()`'s blank-required collector now read the schema
+the options select through `_schema_source()`, the twin of R's
+`.ms_sdp_schema_options_are_default()` rule: the bundled copy, with no network
+call, under the shipped settings, and otherwise the loader's schema, as the
+writers read it. Codex review carried the port on to R's writers: under a
+selected schema the setters, `write_salmon_datapackage()` and
+`apply_sdp_semantics()` add each declared column a file lacks, empty, and write
+the declared order, as R's `.ms_align_cols()` does, and every file is
+byte-identical under the shipped settings, measured. One part is not ported and
+is owed: `normalize_*()` still synthesises a bundled field that a selected
+schema removes, and the writers put it after the declared fields, where R writes
+no such column into a frame that lacked it. That predates the port, as its
+workpad measured on `2405df2`, and it is to be filed as its own metasalmonpy item.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema
@@ -475,6 +491,18 @@ register row: the recorded row is itself a port that has landed (#28), and once
 this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
+
+**This one is closed.** `B-216` landed as metasalmonpy pull request **#46**
+(`2405df2`) on 2026-09-25. `detect_semantic_term_gaps()` in `term_requests.py`
+now drops the rows `metadata_write._is_hand_picked()` marks, `source` trimmed
+and lower-cased equal to `user` as R's `.ms_review_is_hand_picked()` reads it,
+as soon as the suggestions table is built on either entry path and before any
+embedded LLM field is read. `tests/test_term_requests.py` pins the
+before-and-after equality on a slot whose `ols` candidates are a real
+non-`smn` gap, and that a recorded row carrying an embedded `request_new_term`
+yields no gap row. Both packages still reserve `user` in the `source` column,
+so a caller's own `search_fn` that labels a candidate `user` loses it in both;
+that is a candidate for its own pair, not part of this port.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
@@ -762,6 +790,56 @@ still disagree about what the marker is, in both directions: the workpad
 records that only R removes a space or tab before the colon, that only
 metasalmonpy removes a no-break space after it or folds a dotless i, and that
 R's result for some Unicode spaces depends on the locale. That is Q-63's.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion(iri = )` naming a shortlisted candidate records that
+candidate.** An `iri` that a candidate in the slot's shortlist carries, compared
+trimmed and without the `REVIEW:` marker, is now recorded on that candidate's
+row, the row `rank =` its rank records, where it was recorded on the slot's
+first row (hub item **B-221**). `apply_sdp_semantics()` takes `term_type` from
+the row a decision sits on only when that row carries the accepted IRI, and
+writes `skos_concept` otherwise. So hand-picking a lower-ranked candidate's IRI
+wrote `skos_concept`, and re-applying the review rebuilt from the package, which
+replays the decision on the candidate's own row, wrote the candidate's type. The
+fix is in `accept_suggestion()`, and in the two comparisons
+`apply_sdp_semantics()` makes: whether the decision row is the accepted
+candidate, and which rows of `semantic_suggestions.csv` it records as accepted.
+All three now read a candidate's IRI through `.ms_review_decision_iri()`,
+trimmed and without the marker. The writer had compared the stored IRI with
+its marker, so a candidate stored as `REVIEW: <IRI>` now writes its own type,
+by `rank =` as well as by `iri =`. The record had stripped without trimming,
+so a quoted IRI that kept a trailing newline is now recorded as accepted
+instead of gaining a hand-picked row. An IRI that no shortlisted candidate
+carries still goes on the first row and still writes `skos_concept`.
+
+**The port is owed because metasalmonpy has the same defect.** Its
+`accept_suggestion()` in `review_console.py` sets `target_index` to the slot's
+first row whenever `iri` is given (`:1214`), and `apply_sdp_semantics()` in
+`metadata_write.py` compares that row's `iri` with `decision_iri` and writes
+`skos_concept` when they differ (`:192-200`). Measured 2026-09-25 on
+metasalmonpy `main` `2405df2` (Python 3.11.15, pandas 3.0.5), loading the
+package from a `git archive` extract, on a slot with two `variable` candidates
+and an `owl_class` at rank 2. `iri=` naming that candidate records the accept on
+rank 1 and writes `skos_concept`. The rebuilt review replays it on rank 2, and
+re-applying writes `owl_class`, so `column_dictionary.csv` changes. `rank=2`
+writes `owl_class` both times. With that candidate's IRI stored as
+`REVIEW: <IRI>` in `semantic_suggestions.csv`, `rank=2` records the unmarked IRI
+and writes `skos_concept`, because `_text(row["iri"])` keeps the marker. Its
+record already matches through `_strip_review_iri()`, which trims
+`" \t\r\n"` first, so the port needs the selection and the writer's check but
+not the record. The pin should be the R tests'
+(`tests/testthat/test-metadata-write.R`). One hand-picks the IRI of an
+`owl_class` candidate below rank 1, applies, rebuilds with
+`include_filled=True`, re-applies and compares bytes. One checks that the review
+`iri=` gives, marked or not, is the one `rank=` gives. One stores that
+candidate's IRI with the marker and checks its own type is written by `iri=`
+and by `rank=`. One stores it with a trailing newline and checks the record
+accepts the candidate and adds no hand-picked row. A control makes every
+candidate an `owl_class` and checks that an IRI none carries still writes
+`skos_concept`. It is owed as a port, not a
+register row: once it lands the two implementations behave alike again. It did
+not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-222**.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
