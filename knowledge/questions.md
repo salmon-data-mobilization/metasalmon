@@ -1670,8 +1670,8 @@ which must name the same ref, follows it.
 **Answered 2026-09-25 (Brett), on the decisions page:** *"0.3.1 and yes
 smn-data-pkg gets the release workflow."* So the tag is `sdp-0.3.1`, which keeps
 the profile's `v0.3` URLs, and it is cut by a release workflow in smn-data-pkg
-of the kind metasalmonpy's cuts its tags with. `B-236` leaves `needs_brett` in
-the change that records this.
+of the kind metasalmonpy's cuts its tags with. `B-236` owns both, and its
+condition now names the tag.
 
 **Where it is recorded:** `B-198`'s card, whose condition now names a tag.
 **Owner:** queue item `B-236` for the tag itself, whose name and cutting are
