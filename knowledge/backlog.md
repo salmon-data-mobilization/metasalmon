@@ -7609,15 +7609,15 @@ measured by this filing on 2026-09-25, on metasalmon `main` at `41146fc` and
 metasalmonpy `main` at `ba1b54a`. Every stubbed run was repeated at each
 package's `v0.5.0` tag, metasalmon `af84689` and metasalmonpy `67fb486`, with
 the same results, except the plain stale-copy run in the `Q-71` entry, which
-ran on `main` only. Line numbers are `main`'s. The runs
-loaded `git archive` exports and never a checkout. R was 4.5.2, with httr 1.4.8
+ran on `main` only. Line numbers are `main`'s. The package runs loaded
+`git archive` exports rather than any checkout. R was 4.5.2, with httr 1.4.8
 and testthat 3.3.2, loading metasalmon through `pkgload::load_all()`. Python was
 3.11.14, with pandas 3.0.5 and requests 2.33.1, importing metasalmonpy from a
 directory of that name. No request in those runs reached a network: every search
 function and every ontology request was replaced by a stub, so they show each
 package's own control flow and not a service's answer. The URL checks in the
-`Q-71` entry and the clone in the `B-337` entry are the only network
-measurements, and each says so. The probe scripts were scratch files and are
+`Q-71` entry, and the repository checks and the clone in the `B-337` entry, are
+the only network measurements, and each says so. The probe scripts were scratch files and are
 not committed.
 
 **`Q-70`: which sources `find_terms()` searches when a caller names a role and
@@ -7717,9 +7717,15 @@ apart from the package rename in `91d993a`.
   (`:4-5`). The nearest register row is row 6, which says a failed or empty
   ontology fetch raises in Python where 0.1.6-era R returned an empty index,
   and that R adopted the same principle at 0.2.2. That row is about the term
-  index, and it does not record this. Read as a statement about this function,
-  its R half would be wrong, because R's fetcher does not raise when a copy is
-  cached.
+  index, and it does not record this: metasalmonpy's index reads through its own
+  `_fetch_ontology_text()` (`term_search.py:654`), which refuses to let a failed
+  lookup "masquerade as an empty index", and never calls
+  `fetch_salmon_ontology()`. Read as a statement about this function, the row's
+  R half would be wrong, because R's fetcher does not raise when a copy is
+  cached. R's own index fetchers do call it, with caches under `tempdir()`, so
+  there the stale path can only return a copy fetched earlier in the same R
+  session, when an index is rebuilt with `refresh = TRUE`; that was read and
+  not run.
 - *The default fallback is used whatever `url` a caller passes* (`B-333`,
   `B-334`). In both packages the default `fallback_urls` belongs to the default
   ontology, and it is tried after any `url` the caller names. Measured with the
@@ -7751,7 +7757,12 @@ apart from the package rename in `91d993a`.
   The report named the metasalmonpy file only. Measured in both with the
   request layer stubbed: fetching smn and then gcdfo into one directory left
   one ontology file, holding gcdfo, at the path the smn call had returned, and
-  the gcdfo request carried smn's ETag in `If-None-Match`. In R the stale-copy
+  the gcdfo request carried smn's ETag in `If-None-Match`. The same happens to
+  one url fetched under two `accept` values, which both signatures expose:
+  measured the same way, a Turtle fetch and then an RDF/XML fetch of
+  `https://w3id.org/smn/` into one directory left one file, holding the RDF/XML
+  body at the path the Turtle call had returned, and the RDF/XML request carried
+  the Turtle ETag. In R the stale-copy
   path above then serves that file for any `url`: with gcdfo cached there, a
   call for the default smn, with every request failing, returned the gcdfo
   body under the warning "Failed to refresh Salmon ontology; using cached copy".
@@ -7772,12 +7783,12 @@ apart from the package rename in `91d993a`.
   ruling has to name, so a change to the cache's file layout moves a line that
   item points at.
 
-  *Why this severity:* it needs two ontologies fetched into one directory,
-  which the defaults make the ordinary case. In metasalmonpy it costs a
-  re-download, a path whose content changes under a caller who kept it, and a
-  file name that says gcdfo whatever it holds. In R it costs the same, and a
-  later outage then returns the other ontology under a warning that calls it
-  the cached copy.
+  *Why this severity:* it needs two fetches into one directory that differ in
+  url or in representation, which the defaults make the ordinary case. In
+  metasalmonpy it costs a re-download, a path whose content changes under a
+  caller who kept it, and a file name that says gcdfo whatever it holds. In R it
+  costs the same, and a later outage then returns the other ontology or
+  representation under a warning that calls it the cached copy.
 
 **`B-337`: metasalmonpy's `.gitmodules`.** It declares one submodule,
 `data/ontology`, with the url `../dfo-salmon-ontology` (`.gitmodules:1-3`),

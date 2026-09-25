@@ -1,6 +1,6 @@
 id: B-335
 kind: defect
-title: 'fetch_salmon_ontology() caches every url as salmon-ontology.ttl with one set of validators, so two ontologies fetched into one cache_dir overwrite each other'
+title: 'fetch_salmon_ontology() caches every url and representation as salmon-ontology.ttl with one set of validators, so two fetches into one cache_dir overwrite each other'
 state: icebox
 claimable: true
 repo: metasalmon
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'In metasalmon, fetch_salmon_ontology() keys its cached copy and its validators by the url a call names. Two calls with different urls and one cache_dir leave two copies; a path one call returned still holds that call''s ontology after the other call returns; the If-None-Match and If-Modified-Since headers sent with a request are the ones stored for that url; and no call returns a copy that a call naming a different url wrote, whether the server answers 304 or every url fails. Pinned by a test with httr::GET stubbed that fetches smn and then gcdfo into one directory and checks all four, demonstrated RED on the function as it stands. It holds whichever failure behaviour Q-71 rules. THE METASALMONPY HALF IS B-336, and each names the other.'
+retires_when: 'In metasalmon, fetch_salmon_ontology() keys its cached copy and its validators by the url a call names and the representation it asks for through accept. Two calls with one cache_dir that differ in url or in accept leave two copies; a path one call returned still holds what that call fetched after the other call returns; the If-None-Match and If-Modified-Since headers sent with a request are the ones stored for that url and accept; and no call returns a copy that a call differing in url or accept wrote, whether the server answers 304 or every url fails. Pinned by a test with httr::GET stubbed that fetches smn and then gcdfo into one directory, and one url under a Turtle and an RDF/XML accept into another, and checks all four in each, demonstrated RED on the function as it stands. It holds whichever failure behaviour Q-71 rules. THE METASALMONPY HALF IS B-336, and each names the other.'

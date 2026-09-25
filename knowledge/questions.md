@@ -480,8 +480,8 @@ and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.
 (2) When every URL fails and a copy is cached, R returns the copy with a warning
 and metasalmonpy raises. Two defects in the same function were found beside
 these, and each is a pair: the default fallback is tried whatever `url` a caller
-names (`B-333` and `B-334`), and every ontology is cached under one file name
-(`B-335` and `B-336`). Both are defects under any ruling here. Found by the
+names (`B-333` and `B-334`), and every fetch is cached under one file name,
+whatever its `url` or representation (`B-335` and `B-336`). Both are defects under any ruling here. Found by the
 same run as Q70, and measured on both sides on 2026-09-25.
 **The measurements are in [`backlog.md`](backlog.md)** under *The 2026-09-25
 plugin-thinning findings*, and are not restated here.
