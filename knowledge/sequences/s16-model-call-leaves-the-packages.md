@@ -24,7 +24,12 @@ psc:
 The wording is a review panel's summary, which Brett adopted verbatim in the
 same message as [Q68](../questions.md) and [Q69](../questions.md). It is quoted
 as he sent it, including the panel's description of the idea as his own
-example.
+example. **Its last clause is true of model providers, not of HTTP in general.**
+The provider key and the chat-completions client are the only credential and
+client for a model in either package. `find_terms()` still reads
+`BIOPORTAL_APIKEY` and calls `httr`, `httr2` serves the schema, GitHub and KNB
+code, and `requests` is used across metasalmonpy. All of those stay (measured
+2026-09-25 at metasalmon `ae16b42` and metasalmonpy `f1f7230`).
 
 This card is the operative copy of the ruling. `questions.md` indexes it, the
 [Foundry plan](../plans/2026-09-04-salmon-science-foundry-concrete-plan.md)'s
@@ -72,53 +77,71 @@ holds the order and the reasons for it.
 1. **The additive release: `B-326` (metasalmon) and `B-327` (metasalmonpy), in
    one train.** The exporter, the ingester, conformance fixtures both packages
    test against, and deprecation warnings on the in-package model call. Nothing
-   is removed, so nobody's script breaks at this step.
-2. **Outside this hub: the harness skill.** A `smn-sci-plgn` skill that builds a
-   packet, judges it in the harness, writes the assessments and ingests them
-   ([Q69](../questions.md)). The plugin is not a hub member, so this step has no
-   queue item. It follows step 1's *release*, not its merge, because a skill
-   calls a released package.
-3. **The Theme A harness split: `B-328`.** Keep the replay of the recorded
+   is removed, so nobody's script breaks at this step. **A retry is a second
+   harness pass, not a second package call.** Today R's in-package path widens
+   the search and asks the model again on a `retry_search` and, for some
+   low-confidence answers, on a rejected shortlist, before it escalates;
+   metasalmonpy retries on `retry_search` only. In the file contract a retry is
+   a continuation packet holding the widened shortlist, which the harness
+   answers before the ingester merges or escalates that target. Whether a
+   rejected shortlist earns a second pass before it escalates is one of the
+   divergences whose direction is Brett's.
+2. **The Theme A harness split: `B-328`.** Keep the replay of the recorded
    fixtures against their required, allowed and forbidden oracles, which is
    what the Foundry plan's pilot anchor for [Q23](../questions.md) reproduces.
    Retire the live, capture and promote modes, which depend on the provider
    path and whose one live attempt returned HTTP 401 for every target (`B-80`).
    Keeping the replay runnable is what lets Q23 stand unamended.
-4. **The removal release: `B-329` (metasalmon) and `B-330` (metasalmonpy).**
-   Breaking. No earlier than one release after step 1, so the deprecation
-   warnings have shipped. And not before Brett has told the people who use the
-   in-package provider route, because that notice is his outward act.
-5. **The workshop's session-5 lane: `B-331`.** Session 5 teaches learners to
-   get a provider key, so it breaks at step 4. Measured 2026-09-25 on the
+3. **The removal release: `B-329` (metasalmon) and `B-330` (metasalmonpy).**
+   Breaking, and both halves wait for the whole of steps 1 and 2 so that
+   neither package removes the provider path while the other lags. No earlier
+   than one release after step 1, so the deprecation warnings have shipped. Not
+   before a released harness skill exists (below), so users have a route to
+   model judgement when the in-package one goes. And not before Brett has told
+   the people who use the in-package provider route, because that notice is his
+   outward act.
+4. **The workshop's session-5 lane: `B-331`.** Session 5 teaches learners to
+   get a provider key, so it breaks at step 3. Measured 2026-09-25 on the
    workshop's `main` at `8d739db`: `episodes/session-5.Rmd` routes its optional
    live lane through `openrouter/free` by `scripts/review_ai.R` and
    `scripts/review_ai.py`, which turn on `llm_assess`, and the kit's
    `ai/README.md` tells learners to create an OpenRouter key and set
-   `OPENROUTER_API_KEY`. The step follows step 2, because the replacement lane
-   is the harness skill. Every word in that repository is shown to Brett before
-   it is pushed.
+   `OPENROUTER_API_KEY`. The replacement lane is the harness skill, so this
+   step needs it released. Every word in that repository is shown to Brett
+   before it is pushed.
+
+## Outside this hub: the harness skill
+
+The judgement itself runs in a `smn-sci-plgn` skill that builds a packet, has
+the harness judge it, writes the assessments and ingests them
+([Q69](../questions.md)). **This hub does not sequence that work.** The plugin
+is not a hub member, its own repository owns the skill's tasks and releases,
+and no item here is a step of it. What this card records is the dependency,
+the way the roadmap records a typed external edge: steps 3 and 4 above each
+need a *released* skill, and the skill needs a released step 1, because a skill
+calls a released package.
 
 ## What this changes in records that already exist
 
 - **`B-31`** asks for chat decomposition and the semantic path to share one
-  session engine. Step 4 deletes the engine it would converge, so Brett moved
+  session engine. Step 3 deletes the engine it would converge, so Brett moved
   it to icebox the same day (*"Do this edit please"*), and it retires with
-  step 4.
-- **`B-128`** fixes the temperature the chat path sends to GPT-5 models. Step 4
-  deletes that path, so the fix matters only in the releases before step 4.
+  step 3.
+- **`B-128`** fixes the temperature the chat path sends to GPT-5 models. Step 3
+  deletes that path, so the fix matters only in the releases before step 3.
 - **`B-226`** routes the benchmark's third request builder through the shared
-  one. Step 3 deletes that builder instead.
+  one. Step 2 deletes that builder instead.
 - **`B-80`** asks for three live captures of the Theme A cohort under a
-  provider credential. Step 3 retires the live mode, and a cohort judged in the
+  provider credential. Step 2 retires the live mode, and a cohort judged in the
   harness replaces it.
-- **`Q-54`** asks which side of five request differences is right. At step 4
+- **`Q-54`** asks which side of five request differences is right. At step 3
   neither side sends a request, so no side has to move. What is left is whether
-  the differences are registered for the releases before step 4.
+  the differences are registered for the releases before step 3.
 - **The S7 card's shared chat request builder** is not converged; it is
   deleted. The deterministic half of S7's curation work is untouched.
-- **Parity rows** that describe the provider path retire at step 4, by
+- **Parity rows** that describe the provider path retire at step 3, by
   deletion, in both registers and in the pull requests that delete the code.
-  Step 1's pull requests say which rows its ingester touches. Step 3 amends
+  Step 1's pull requests say which rows its ingester touches. Step 2 amends
   row 45 in both registers.
 
 ## What is Brett's
@@ -129,15 +152,15 @@ holds the order and the reasons for it.
 - **The release numbers.** Section A3 of the Foundry plan reserves the first
   0.6.0 train for the first `salmon` verb, released by both packages together.
   Whether step 1 rides that train or takes its own minor number is his call.
-- **The notice before step 4** to the users of the in-package provider route.
+- **The notice before step 3** to the users of the in-package provider route.
 - **Whether `Q-54`'s differences are registered** for the releases before
-  step 4, or left unregistered because step 4 deletes both sides.
-- **Q23's pilot anchor**, only if step 3 cannot keep the replay.
-- **Whether the plugin is a hub member.** Step 2 happens in `smn-sci-plgn`,
-  which is not one. The membership test Q10 adopted is that membership follows
-  from this hub sequencing a repository's work, and this card names that step
-  in its order. This card assumes neither answer, which is why step 2 has no
-  queue item.
+  step 3, or left unregistered because step 3 deletes both sides.
+- **Q23's pilot anchor**, only if step 2 cannot keep the replay.
+- **Whether the plugin should become a hub member.** Under the test Q10
+  adopted, membership follows from this hub sequencing a repository's work,
+  which is why this card records the skill as an external dependency and
+  sequences none of it. Admitting the plugin would be a membership ruling, and
+  it would move the skill's tasks into this card's order.
 
 ## Retires when
 

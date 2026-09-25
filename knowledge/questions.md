@@ -1714,8 +1714,10 @@ questions, so the numbers the panel proposed were taken.
 are listed in the [S16 card](sequences/s16-model-call-leaves-the-packages.md).
 The 30-column assessment row stays frozen and becomes the contract a harness
 writes to. The order is S16's: the additive release (`B-326`, `B-327`), then the
-harness skill outside this hub, then the Theme A harness split (`B-328`), then
-the removal (`B-329`, `B-330`), then the workshop's lane (`B-331`).
+Theme A harness split (`B-328`), then the removal (`B-329`, `B-330`), then the
+workshop's lane (`B-331`). The harness skill that replaces the in-package call
+lives in the plugin, outside this hub, and the removal and the workshop's lane
+each need it released.
 
 **What stays open, and is his:** the public names and paths the additive
 release proposes; whether that release rides the 0.6.0 train that section A3
@@ -1784,8 +1786,9 @@ so the work has no queue item: it is a pull request in the plugin's own
 repository.
 
 **What stays open, and is his:** the plugin's version bump and tag; and whether
-the plugin is now a hub member. The test Q10 adopted is that membership follows
-from this hub sequencing a repository's work, and S16 names a plugin step in
-its order. The change that recorded this ruling assumes neither answer.
+the plugin should become a hub member. Under the test Q10 adopted, membership
+follows from this hub sequencing a repository's work, so S16 records the
+harness skill as an external dependency and sequences none of the plugin's
+work. Admitting the plugin would be a membership ruling.
 **Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
 Foundry plan is.
