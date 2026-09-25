@@ -647,14 +647,16 @@ metasalmon (development version)
     `accept_suggestion(rank = )` then recorded an accept with an empty IRI, in
     every spelling the strip removes. Such a candidate is no longer queued. In
     a slot that held one, the candidates after it now rank one place higher,
-    as they already did after a candidate with a blank IRI.
+    as they already did after a candidate with a blank IRI. A review saved by
+    an earlier version, or edited by hand, can still hold one, so `rank =`
+    now refuses a candidate whose IRI names no term.
   - A recorded accept of such a candidate came back in the next review as an
     accept with an empty IRI. It is no longer replayed, so the slot is asked
     again.
   - The strip removes one marker, so `accept_suggestion(iri = "REVIEW:
     REVIEW:")` recorded the IRI `REVIEW:`. An `iri` that is still a marker once
-    one is removed is now refused, and a shortlisted candidate carrying one is
-    not queued.
+    one is removed is now refused, a shortlisted candidate carrying one is not
+    queued, and `rank =` refuses one that a review still holds.
   - `review_semantics()` listed a suggestion row with no IRI under *"Some
     suggestions target fields this review cannot decide"*, naming a field the
     review does decide, and said to edit it in the metadata CSVs directly. A
