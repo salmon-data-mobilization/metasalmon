@@ -7762,10 +7762,17 @@ apart from the package rename in `91d993a`.
   measured the same way, a Turtle fetch and then an RDF/XML fetch of
   `https://w3id.org/smn/` into one directory left one file, holding the RDF/XML
   body at the path the Turtle call had returned, and the RDF/XML request carried
-  the Turtle ETag. In R the stale-copy
-  path above then serves that file for any `url`: with gcdfo cached there, a
-  call for the default smn, with every request failing, returned the gcdfo
-  body under the warning "Failed to refresh Salmon ontology; using cached copy".
+  the Turtle ETag. Validators also cross from a fallback to the `url` a call
+  names, because each call sends its stored validators to every URL it tries
+  and a `304` returns whatever file the directory holds
+  (`R/ontology_fetch.R:81-83`, `ontology_fetch.py:113-114`). Measured the same
+  way in both, with a stub that answers `304` to any validator: a call whose
+  `url` failed and whose fallback answered stored the fallback's ETag, the next
+  call sent it to the `url` in `If-None-Match`, and the `url`'s `304` then
+  returned the fallback's body as the `url`'s. In R the stale-copy path above
+  also serves the one file for any `url`: with gcdfo cached there, a call for
+  the default smn, with every request failing, returned the gcdfo body under
+  the warning "Failed to refresh Salmon ontology; using cached copy".
   Each package's default `cache_dir` is shared by every call that does not
   name one. In R it is a persistent user cache,
   `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
@@ -7776,9 +7783,7 @@ apart from the package rename in `91d993a`.
   (`R/term_search_smn.R:25-39`) and separate `smn` and `gcdfo` directories
   under `tempdir()` for the two index roots, so the package's own searches do
   not collide. A caller of the exported function who keeps the default
-  directory does. Read and not run: on a `304` answer both return whatever file
-  the directory holds (`R/ontology_fetch.R:81-83`, `ontology_fetch.py:113-114`),
-  whichever URL's validators the request carried. `B-163` cites this function's
+  directory does. `B-163` cites this function's
   rename, `R/ontology_fetch.R:90`, among the atomic-write sites a durability
   ruling has to name, so a change to the cache's file layout moves a line that
   item points at.
