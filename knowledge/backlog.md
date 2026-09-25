@@ -2493,6 +2493,20 @@ deduplication of identical `(query, role, sources)` tuples. Still live: the
 (`R/semantics-helpers.R`). Plus a cluster of smaller per-call costs listed in
 the review (`term_search.R:341,1763,2190`, `semantic-suggestions.R:863,920`).
 
+*R half fixed 2026-09-25 (hub item B-56).* `suggest_semantics()` now hands the
+map `.ms_search_once_per_call(search_fn)`, which searches each distinct
+`(query, role, sources)` tuple once for the life of the call and never keeps an
+answer whose diagnostics name a source that did not answer.
+`tests/testthat/test-semantic-retrieval-dedup.R` counts the calls. Measured on
+R 4.3.3 with a counting `search_fn`: four tables carrying the same two columns
+make 40 targets and 9 distinct tuples, and the calls fell from 40 to 9 while the
+returned object, every attribute included, stayed `identical()`; the bundled
+example package, whose 35 tuples are all distinct, still makes 35. The cluster
+of smaller per-call costs above and the two LLM retry passes are not part of
+it. The metasalmonpy half is owed as a port: its `suggest_semantics()` makes 40
+calls for the same 9 tuples on `main` `85ebbb0`. See *What metasalmon 0.5.0
+owes the mirror* in [`parity-deviations.md`](parity-deviations.md).
+
 **#57 Assorted smaller correctness items** carried verbatim from the review:
 locale-dependent DataONE plan fingerprint inputs now fixed under #40, but
 `dwc_dp_build_descriptor(validate = TRUE)` still discards its validation result
