@@ -597,6 +597,18 @@ strips disagree about, which are hub question `Q-63`'s and not the port's.
 Its metasalmonpy half is `B-220`,
 which **landed 2026-09-25 as metasalmonpy #45**, `fc5d16f`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`accept_suggestion(iri = )` naming a shortlisted candidate records that
+candidate.** Hub item **B-221** records an `iri` that a shortlisted candidate
+carries on that candidate's row, as `rank =` does. So `apply_sdp_semantics()`
+writes the candidate's own `term_type`, and re-applying the rebuilt review
+writes the same bytes. metasalmonpy's `accept_suggestion()` still records `iri=`
+on the slot's first row, measured on `main` `2405df2`, so it has the same defect
+and the fix is owed there as a port, not a register row. The port is specified
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
+not in the same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy half is `B-222`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

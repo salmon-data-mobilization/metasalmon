@@ -605,6 +605,37 @@ metasalmon (development version)
   records the same empty accept for every spelling its own strip removes. The
   fix is owed there as a port (see `knowledge/parity-deviations.md`).
 
+* **Naming a shortlisted candidate's IRI in `accept_suggestion(iri = )` now
+  writes that candidate's `term_type`** (hub item B-221). The accept was
+  recorded on the slot's first row. `apply_sdp_semantics()` takes `term_type`
+  from the row a decision sits on only when that row carries the accepted IRI,
+  and writes `skos_concept` otherwise. So hand-picking the IRI of a candidate
+  below rank 1 wrote `skos_concept`, whatever that candidate was. The review
+  rebuilt from the package replays the same decision on the candidate's own
+  row, and re-applying it wrote the candidate's type. So one decision changed
+  `column_dictionary.csv` and `datapackage.json` between two applies. With an
+  `owl_class` candidate at rank 2, the first apply wrote `skos_concept` and the
+  re-apply `owl_class`. An `iri` that a candidate in the review's shortlist
+  carries, compared without the `REVIEW:` marker, is now recorded on that
+  candidate's row. It is the same decision as `rank = <its rank>`, and applying,
+  rebuilding and re-applying it writes the same bytes. A candidate stored with
+  the `REVIEW:` marker on its IRI now writes its own `term_type` too, by
+  `iri =` and by `rank =` alike. The writer compared that stored IRI, marker
+  and all, with the unmarked IRI the decision records, so it never recognised
+  the candidate and wrote `skos_concept`. The record in
+  `semantic_suggestions.csv` now reads a candidate's IRI the same way, trimmed
+  as well as unmarked. A quoted IRI keeps a trailing newline through
+  `read_csv()`, so the record missed such a candidate and gave the IRI a
+  hand-picked row instead, which the rebuilt review replayed as `skos_concept`.
+  An IRI that no candidate in the shortlist carries still writes
+  `skos_concept`, as before. That includes hub item B-176's case, a term the
+  reviewer typed whose type nothing records.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` also records `iri=` on the
+  slot's first row, and its writer falls back to `skos_concept` the same way,
+  marked candidates included, so the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

@@ -48,7 +48,9 @@ because it supplies \code{vocabulary_iri}. \code{review_semantics()} prints it
 whenever it is needed.}
 
 \item{iri}{Optional IRI to accept instead of a shortlisted candidate -- for
-the case where the right term exists but retrieval did not surface it.}
+the case where the right term exists but retrieval did not surface it. An
+\code{iri} that a shortlisted candidate in the slot carries is recorded as that
+candidate, exactly as its \code{rank} would be.}
 
 \item{reason}{Optional free-text reason recorded with a rejection.}
 }
