@@ -569,6 +569,25 @@ metasalmon (development version)
   refusal and that part of the matcher are owed there as a port, with the
   pin's removal.
 
+* **`accept_suggestion()` now refuses an `iri` that is only the `REVIEW:`
+  marker** (hub item B-219). It checked that `iri` was not empty before
+  stripping the marker, so `accept_suggestion(review, column, role, iri =
+  "REVIEW:")` passed the check. So did every other spelling the strip removes,
+  in any case and with whitespace before or after the colon. The accept
+  recorded an IRI that named no term. `apply_sdp_semantics()` then cleared the
+  field, whatever it held, and gave a cleared `term_iri` a `term_type` anyway.
+  It marked every retrieved candidate `not_selected` and wrote an `accepted`
+  row with an empty `iri` to `semantic_suggestions.csv`, which the next
+  `review_semantics()` drops, so the slot came back undecided. The check now
+  reads the value after the strip, which is the value the decision records, and
+  the refusal says that the marker was removed and nothing followed it. An
+  `iri` with a term after the marker is accepted as before and recorded without
+  the marker.
+
+  **Mirror:** metasalmonpy's `accept_suggestion()` checks in the same order and
+  records the same empty accept for every spelling its own strip removes. The
+  fix is owed there as a port (see `knowledge/parity-deviations.md`).
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA
