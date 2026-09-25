@@ -571,6 +571,18 @@ year-shape predicate that the port will meet first. **Why not in the same
 stream:** a hub claim covers one branch in one repository. Its metasalmonpy half
 is `B-240`, which **landed 2026-09-24 as metasalmonpy #41**, `ace8eed`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+`suggest_semantics()` searches each distinct query, role and sources tuple
+once.** Hub item **B-56** (backlog #56) stops its retrieval map calling
+`search_fn()` once per target row. A repeated tuple gets the first answer, which
+is never kept when degraded, and every row keeps the candidates it had.
+metasalmonpy's `suggest_semantics()` still searches once per target, measured at
+40 calls for 9 tuples on `main` `85ebbb0`, so it is owed there as a port, not a
+register row. The port is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub claim
+covers one branch in one repository. Its metasalmonpy half is a metasalmonpy
+item to be filed.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the

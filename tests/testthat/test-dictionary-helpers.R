@@ -867,7 +867,7 @@ test_that("suggest_semantics keeps biological qualifiers in count-like variable 
     )
   }
 
-  suggest_semantics(
+  res <- suggest_semantics(
     NULL,
     dict,
     sources = "smn",
@@ -875,20 +875,24 @@ test_that("suggest_semantics keeps biological qualifiers in count-like variable 
     search_fn = fake_search
   )
 
-  variable_queries <- purrr::map_dfr(calls, tibble::as_tibble) |>
+  expected_queries <- c(
+    "recruit abundance",
+    "smolt abundance",
+    "fry abundance",
+    "effective female spawner abundance",
+    "spawner abundance"
+  )
+  searched_queries <- purrr::map_dfr(calls, tibble::as_tibble) |>
     dplyr::filter(.data$role == "variable") |>
     dplyr::pull(.data$query)
+  expect_setequal(searched_queries, expected_queries)
 
-  expect_setequal(
-    variable_queries,
-    c(
-      "recruit abundance",
-      "smolt abundance",
-      "fry abundance",
-      "effective female spawner abundance",
-      "spawner abundance"
-    )
-  )
+  # How many columns ask for each query is read from the targets rather than
+  # from the search log, because a query two columns share is searched once
+  # (backlog #56).
+  targets <- attr(res, "semantic_targets")
+  variable_queries <- trimws(targets$search_query[targets$search_role == "variable"])
+  expect_setequal(variable_queries, expected_queries)
   expect_equal(sum(variable_queries == "effective female spawner abundance"), 1L)
   expect_equal(sum(variable_queries == "spawner abundance"), 2L)
   expect_equal(sum(variable_queries == "smolt abundance"), 2L)
