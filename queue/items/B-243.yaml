@@ -1,0 +1,13 @@
+id: B-243
+kind: defect
+title: metasalmonpy suggest_semantics() calls search_fn() once per target row, the mirror half of B-56
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: [B-56]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, suggest_semantics() searches each distinct (query, role, sources) tuple once per call, by the rule B-56 lands in R: a repeat of a tuple gets the answer already given, every target keeps the candidates and the order its own search would have given it, and an answer whose diagnostics name a source that did not answer is never reused, as _search_failed_sources() in term_search.py reads it for find_terms(), so the next target with that tuple searches again. The dedup lives for one call and not at module level, where it would become a second cache beside find_terms()''s. A metasalmonpy test pins it as tests/testthat/test-semantic-retrieval-dedup.R pins it in R: a counting search_fn on the four-table fixture, which makes 40 calls for 9 distinct tuples on metasalmonpy main 85ebbb0, sees each tuple searched once; every target''s candidates are identical to per-target retrieval''s and in the same order; a degraded first answer is kept by the target that got it while the tuple''s next target searches again; and an outage that lasts is searched once per target. The two LLM retry passes are not part of it. THE METASALMON HALF IS B-56, and each names the other. A PORT, NOT A REGISTER ROW: the defect is in both implementations in the same shape, and once this lands they behave alike again.'

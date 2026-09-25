@@ -2503,9 +2503,10 @@ make 40 targets and 9 distinct tuples, and the calls fell from 40 to 9 while the
 returned object, every attribute included, stayed `identical()`; the bundled
 example package, whose 35 tuples are all distinct, still makes 35. The cluster
 of smaller per-call costs above and the two LLM retry passes are not part of
-it. The metasalmonpy half is owed as a port: its `suggest_semantics()` makes 40
-calls for the same 9 tuples on `main` `85ebbb0`. See *What metasalmon 0.5.0
-owes the mirror* in [`parity-deviations.md`](parity-deviations.md).
+it. The metasalmonpy half, filed 2026-09-25 as `B-243`, is owed as a port: its
+`suggest_semantics()` makes 40 calls for the same 9 tuples on `main` `85ebbb0`.
+See *What metasalmon 0.5.0 owes the mirror* in
+[`parity-deviations.md`](parity-deviations.md).
 
 **#57 Assorted smaller correctness items** carried verbatim from the review:
 locale-dependent DataONE plan fingerprint inputs now fixed under #40, but
