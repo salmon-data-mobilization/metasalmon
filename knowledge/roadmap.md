@@ -654,6 +654,14 @@ mirror* in `parity-deviations.md`, with the specification passages it applies
 rather than decides again. **Why not in the same stream:** a hub claim covers
 one branch in one repository. Its metasalmonpy half is `B-234`.
 
+**This one is closed.** `B-234` **landed 2026-09-25 as metasalmonpy #58**,
+`66ad1a3`: the SSSOM reader accepts the eight built-in prefixes when a file's
+`curie_map` leaves them out, `_validate_builtin_prefixes()` refuses a
+`curie_map` entry that gives a built-in any other expansion (an in-memory set
+handed to `write_sdp_sssom()` included), and the six twin tests run on a
+canonical fixture byte-identical to R's. The paragraph above is the dated record
+of what was owed, and is kept as written.
+
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a required IRI field under a selected schema is reported
 once.** Hub item **B-211** pinned in R a route that metasalmonpy's **B-212** had
