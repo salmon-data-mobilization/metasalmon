@@ -570,8 +570,12 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         accepted_iri <- .ms_scalar_text(row$decision_iri)
         # `%in%`, not `==`: a candidate row with no IRI compares as `NA`, and
         # `any()` of a mask holding an `NA` and no `TRUE` is `NA`, not `FALSE`.
+        # Each IRI is read through `.ms_review_decision_iri()`, as
+        # `accept_suggestion()` and the `term_type` check above read it.
+        # Stripped without the trim, a quoted IRI that kept a trailing newline
+        # was missed here, and the IRI gained a hand-picked row (hub item B-221).
         accepted <- in_slot &
-          .ms_strip_review_iri(as.character(suggestions$iri)) %in% accepted_iri
+          .ms_review_decision_iri(suggestions$iri) %in% accepted_iri
         suggestions$decision[in_slot] <- "not_selected"
         suggestions$decision_reason[in_slot] <- NA_character_
         if (any(accepted)) {

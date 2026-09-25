@@ -785,13 +785,16 @@ the row a decision sits on only when that row carries the accepted IRI, and
 writes `skos_concept` otherwise. So hand-picking a lower-ranked candidate's IRI
 wrote `skos_concept`, and re-applying the review rebuilt from the package, which
 replays the decision on the candidate's own row, wrote the candidate's type. The
-fix is in `accept_suggestion()`, and in the one comparison
-`apply_sdp_semantics()` makes to decide whether the decision row is the accepted
-candidate. Both now read a candidate's IRI through `.ms_review_decision_iri()`,
-trimmed and without the marker, where the writer compared the stored IRI with
-its marker. So a candidate stored as `REVIEW: <IRI>` now writes its own type,
-by `rank =` as well as by `iri =`. An IRI that no shortlisted candidate carries
-still goes on the first row and still writes `skos_concept`.
+fix is in `accept_suggestion()`, and in the two comparisons
+`apply_sdp_semantics()` makes: whether the decision row is the accepted
+candidate, and which rows of `semantic_suggestions.csv` it records as accepted.
+All three now read a candidate's IRI through `.ms_review_decision_iri()`,
+trimmed and without the marker. The writer had compared the stored IRI with
+its marker, so a candidate stored as `REVIEW: <IRI>` now writes its own type,
+by `rank =` as well as by `iri =`. The record had stripped without trimming,
+so a quoted IRI that kept a trailing newline is now recorded as accepted
+instead of gaining a hand-picked row. An IRI that no shortlisted candidate
+carries still goes on the first row and still writes `skos_concept`.
 
 **The port is owed because metasalmonpy has the same defect.** Its
 `accept_suggestion()` in `review_console.py` sets `target_index` to the slot's
@@ -805,14 +808,19 @@ rank 1 and writes `skos_concept`. The rebuilt review replays it on rank 2, and
 re-applying writes `owl_class`, so `column_dictionary.csv` changes. `rank=2`
 writes `owl_class` both times. With that candidate's IRI stored as
 `REVIEW: <IRI>` in `semantic_suggestions.csv`, `rank=2` records the unmarked IRI
-and writes `skos_concept`, because `_text(row["iri"])` keeps the marker. The pin
-should be the R tests' (`tests/testthat/test-metadata-write.R`). One hand-picks
-the IRI of an `owl_class` candidate below rank 1, applies, rebuilds with
+and writes `skos_concept`, because `_text(row["iri"])` keeps the marker. Its
+record already matches through `_strip_review_iri()`, which trims
+`" \t\r\n"` first, so the port needs the selection and the writer's check but
+not the record. The pin should be the R tests'
+(`tests/testthat/test-metadata-write.R`). One hand-picks the IRI of an
+`owl_class` candidate below rank 1, applies, rebuilds with
 `include_filled=True`, re-applies and compares bytes. One checks that the review
 `iri=` gives, marked or not, is the one `rank=` gives. One stores that
 candidate's IRI with the marker and checks its own type is written by `iri=`
-and by `rank=`. A control makes every candidate an `owl_class` and checks that
-an IRI none carries still writes `skos_concept`. It is owed as a port, not a
+and by `rank=`. One stores it with a trailing newline and checks the record
+accepts the candidate and adds no hand-picked row. A control makes every
+candidate an `owl_class` and checks that an IRI none carries still writes
+`skos_concept`. It is owed as a port, not a
 register row: once it lands the two implementations behave alike again. It did
 not land in the same stream because a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is **B-222**.

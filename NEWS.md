@@ -622,9 +622,14 @@ metasalmon (development version)
   the `REVIEW:` marker on its IRI now writes its own `term_type` too, by
   `iri =` and by `rank =` alike. The writer compared that stored IRI, marker
   and all, with the unmarked IRI the decision records, so it never recognised
-  the candidate and wrote `skos_concept`. An IRI that no candidate in the
-  shortlist carries still writes `skos_concept`, as before. That includes hub
-  item B-176's case, a term the reviewer typed whose type nothing records.
+  the candidate and wrote `skos_concept`. The record in
+  `semantic_suggestions.csv` now reads a candidate's IRI the same way, trimmed
+  as well as unmarked. A quoted IRI keeps a trailing newline through
+  `read_csv()`, so the record missed such a candidate and gave the IRI a
+  hand-picked row instead, which the rebuilt review replayed as `skos_concept`.
+  An IRI that no candidate in the shortlist carries still writes
+  `skos_concept`, as before. That includes hub item B-176's case, a term the
+  reviewer typed whose type nothing records.
 
   **Mirror:** metasalmonpy's `accept_suggestion()` also records `iri=` on the
   slot's first row, and its writer falls back to `skos_concept` the same way,
