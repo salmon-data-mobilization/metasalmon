@@ -254,9 +254,10 @@ metasalmon (development version)
   path is correct already" as a macOS-only measurement. The descriptor now emits
   whichever year readr emits, so the two files agree on both platforms; padding
   only the descriptor would have re-opened this defect on the platform CI runs
-  on. **Mirror:** metasalmonpy owes the same ruling (queue **B-145**);
-  parity-deviations row 56 carries the ruling, which side moved, and the
-  year-padding residual B-145 has to measure.
+  on. **Mirror:** metasalmonpy adopted the same ruling in queue **B-145**
+  (metasalmonpy pull request #34, 2026-09-25); parity-deviations row 56
+  records that both sides moved, and the one residual left, the year below
+  1000, which is hub item B-161.
 
 * **A failed `create_sdp()` no longer destroys the sidecar it was rewriting**
   (backlog #111, hub item B-111). `create_sdp()` writes three files of its own
