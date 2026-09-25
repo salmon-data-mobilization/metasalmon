@@ -2,7 +2,7 @@ id: B-268
 kind: defect
 title: '.metasalmonpy-sibling, the metasalmonpy checkout CI places inside the package directory, is not in .Rbuildignore, so every R CMD check on CI carries two NOTEs from it'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmon
 venue: claude-code
 severity: P3

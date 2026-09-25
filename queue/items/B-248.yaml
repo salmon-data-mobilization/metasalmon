@@ -2,7 +2,7 @@ id: B-248
 kind: defect
 title: 'Semantic retrieval still pays five per-call costs that grow with the number of targets, the part of backlog #56 that B-56 did not cover'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmon
 venue: claude-code
 stream: S2
@@ -10,4 +10,4 @@ severity: P4
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'None of the five costs listed beside #56 in knowledge/backlog.md is paid again for each call or row: inst/extdata/iadopt-terminologies.csv, which .iadopt_vocab() also parses with one httr::parse_url() per row, and inst/extdata/ontology-preferences.csv, which .role_preferences() reads for .score_and_rank_terms(), are read once and reused rather than read again on every find_terms() call; the ontology-preference scoring in .score_and_rank_terms() evaluates each preference row''s iri_pattern once over all the candidates rather than once per candidate row and preference row; and target discovery in R/semantic-suggestions.R no longer rescans the whole dictionary for every dictionary row (non_measurement_roles()) and for every code row (the parent-row lookup). Each is pinned by a test that counts what the fix removes, and the suggestions suggest_semantics() returns, every attribute included, stay identical() to before on the bundled example package and on the four-table fixture in tests/testthat/test-semantic-retrieval-dedup.R. B-56 retired on the per-row retrieval map alone, so these five have no other owner. METASALMON ONLY: metasalmonpy was not measured for any of them.'
+retires_when: 'None of the five costs listed beside #56 in knowledge/backlog.md is paid again for each call or row: inst/extdata/iadopt-terminologies.csv, which .iadopt_vocab() also parses with one httr::parse_url() per row, and inst/extdata/ontology-preferences.csv, which .role_preferences() reads for .score_and_rank_terms(), are read once and reused rather than read again on every find_terms() call; the ontology-preference scoring in .score_and_rank_terms() evaluates each preference row''s iri_pattern once over all the candidates rather than once per candidate row and preference row; and target discovery in R/semantic-suggestions.R no longer rescans the whole dictionary for every dictionary row (non_measurement_roles()) and for every code row (the parent-row lookup). Each is pinned by a test that counts what the fix removes, and the suggestions suggest_semantics() returns, every attribute included, stay identical() to before on the bundled example package and on the four-table fixture in tests/testthat/test-semantic-retrieval-dedup.R. METASALMON ONLY: metasalmonpy was not measured for any of them.'

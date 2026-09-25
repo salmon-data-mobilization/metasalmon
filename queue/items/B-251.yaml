@@ -2,7 +2,7 @@ id: B-251
 kind: defect
 title: 'metasalmonpy''s sdp_schema_fields() docstring says the default source fetches six documents and waits a timeout per document, which is not what the remote read does'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmonpy
 venue: claude-code
 severity: P4

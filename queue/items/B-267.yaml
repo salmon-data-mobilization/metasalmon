@@ -2,7 +2,7 @@ id: B-267
 kind: defect
 title: 'tests/testthat/test-theme-a-benchmark.R fails when the suite is started from a script file or run outside a git checkout'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmon
 venue: claude-code
 severity: P4

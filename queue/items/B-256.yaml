@@ -2,11 +2,11 @@ id: B-256
 kind: defect
 title: 'read_github_csv()''s 401, 403 and 404 messages can never be shown, because httr2 raises inside ms_github_get() before the status is read'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmon
 venue: claude-code
 severity: P3
 blocked_by: []
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'read_github_csv() reaches its own message for a 401, for a 403 with and without the SSO header and with and without a token, and for a 404 with and without a token, so a user reading a private repository without a token is told to configure a PAT, rather than seeing the HTTP error httr2::req_perform() raises inside ms_github_get(). Pinned by a test that serves each status through httr2::local_mocked_responses() and asserts each message, demonstrated RED on the code as it stands. METASALMON ONLY: metasalmonpy''s read_github_csv() gets the response from _perform_request(), which returns a 4xx response rather than raising, so its own messages are reachable; that was read, not run.'
+retires_when: 'read_github_csv() reaches its own message for a 401, for a 403 with and without the SSO header and with and without a token, and for a 404 with and without a token, so a user reading a private repository without a token is told to configure a PAT, rather than seeing the HTTP error httr2::req_perform() raises inside ms_github_get(). Pinned by a test that serves each status through httr2::local_mocked_responses() and asserts each message, demonstrated RED on the code as it stands. METASALMON ONLY: metasalmonpy''s read_github_csv() reaches its own messages; that was read, not run.'

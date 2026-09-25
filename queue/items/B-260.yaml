@@ -2,7 +2,7 @@ id: B-260
 kind: defect
 title: 'Nothing in metasalmonpy pins that a required IRI field under a selected schema is reported once, the twin of B-211''s test'
 state: icebox
-claimable: false
+claimable: true
 repo: metasalmonpy
 venue: claude-code
 stream: S5
@@ -10,4 +10,4 @@ severity: P4
 blocked_by: [B-211]
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'metasalmonpy''s tests/test_sdp_field_setters.py carries the twin of metasalmon''s test "a field two checks both find is reported once: a required IRI a configured schema declares" in tests/testthat/test-sdp-field-setters.R: a selected schema that marks column_dictionary.csv unit_iri required, a measurement row whose unit_iri is blank, and assertions that review_metadata() reports that field once, under required, and that every call it prints runs. The behaviour is already there, because the one row per field that B-212 put in add() closed this route, so the twin is shown to fail when add() keeps a second row for the field rather than on the code as it stands. THE R TEST IS B-211''s. Owed as a pin, not as a behaviour port and not as a parity-register row, because nothing behaves differently.'
+retires_when: 'metasalmonpy''s tests/test_sdp_field_setters.py carries the twin of metasalmon''s test "a field two checks both find is reported once: a required IRI a configured schema declares" in tests/testthat/test-sdp-field-setters.R: a selected schema that marks column_dictionary.csv unit_iri required, a measurement row whose unit_iri is blank, and assertions that review_metadata() reports that field once, under required, and that every call it prints runs. The behaviour is already there, so the twin is shown to fail when add() keeps a second row for the field, not on the code as it stands. THE R TEST IS B-211''s. Owed as a pin, not as a behaviour port and not as a parity-register row, because nothing behaves differently.'
