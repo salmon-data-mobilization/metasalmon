@@ -214,6 +214,20 @@ under `queue/`.
   lists here work because they name their own maintenance rule
   (`collation_sensitive_fns`, `hint_roles`); apply the same discipline to
   anything that silences a signal.
+- **An empty result is a claim about the instrument, not about the target.**
+  When a search, filter or query returns nothing for a file, item or row, that
+  states what the instrument could reach, not what the target contains.
+  Establish reach with a positive control: something you know is present that
+  the same command must return. A plausible count is the harder case, because
+  it raises no alarm; check it against the source by hand. Where the target is
+  the authority other copies defer to, no instrument clears it; only reading
+  it does. Observed on pull request #137: a sweep for the copies of one stale
+  sentence printed the authoritative card's header with nothing under it, and
+  the empty section was read as *no copies here* (the account is in
+  `knowledge/backlog.md`). `queue/README.md` corollaries 7 and 8 are the
+  narrower rules for a queue sweep. (Brett, 2026-09-25.) *Retires when:* a
+  sweep carries its own positive control and fails when the control does not
+  come back.
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:

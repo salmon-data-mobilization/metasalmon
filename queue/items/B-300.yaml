@@ -1,0 +1,13 @@
+id: B-300
+kind: defect
+title: 'dwc_dp_build_descriptor(validate = TRUE) prints its validation report and returns the descriptor whatever the report says'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'dwc_dp_build_descriptor(validate = TRUE) acts on what its validator reports, and a test for each outcome uses a stub interpreter and no network. A report that the package is invalid does not come back the way a valid descriptor does. A validator that could not run, because the interpreter is missing or cannot import frictionless, is reported as not having run, not as an invalid package. Relative resource paths are validated against the directory they are relative to for the caller, not against the temporary copy of the descriptor the function writes to R''s session temp directory. NEEDS BRETT FIRST, which is why it is not claimable: whether an invalid report aborts, as read_sdp_reproducibility_manifest(validate = TRUE) does on a failed check, or warns and returns; and which directory relative paths resolve against when output_path is not given. The options and the measurements are in the #57 entry of the evidence. REFILED FROM B-57, which fixed the other half of the same review line, the SystemRequirements declaration. The metasalmonpy half is owed once this is ruled, because its dwc_dp_build_descriptor(validate=True) discards the report too.'
