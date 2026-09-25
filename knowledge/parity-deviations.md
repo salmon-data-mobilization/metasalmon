@@ -1107,6 +1107,35 @@ and **B-301** (the composite-intent gate's `optional_hint_fields`), will owe
 metasalmonpy a half each once Brett rules them. metasalmonpy has the same
 behaviour in both places.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the ICES helpers warn when the request fails.** Hub item **B-377** makes
+`ices_code_types()`, `ices_codes()`, `ices_find_code_types()` and
+`ices_find_codes()` tell a failed request from an empty answer. They now handle
+the `metasalmon_search_failure` condition `.safe_json()` signals, as
+`find_terms()` already did, so a refused connection, an HTTP error status, a
+timeout or an answer that is not JSON gives a warning naming the request, with
+any secret in it redacted, and what failed. The result is still the empty
+tibble, and an answer of `[]` still gives it with no warning. It is a warning
+and not an error because the return value does not change: the list helpers
+have always returned the empty tibble for a failed request, and B-57 made the
+find helpers return it rather than abort.
+
+**The port is owed because metasalmonpy has the same defect.** Its helpers give
+an empty `DataFrame` with no warning for an answer of `[]`, a refused connection
+and an HTTP 503 alike. That was measured on its `main` at `056fccc` by the
+second 2026-09-25 queue sweep, with `urllib.request.urlopen` patched, and
+`ices_vocab.py` and `term_search.py` are unchanged from there to `dab0bb2`, its
+`main` when this was written. Its `_signal_search_failure()` records a failure
+only when a caller has installed a sink, and `ices_vocab.py` installs none. The
+pin should be R's tests in `tests/testthat/test-ices-vocab.R`: with the request
+mocked to refuse the connection and to answer HTTP 503, each of the four helpers
+warns once, naming the request, and returns an empty frame; with `[]` it returns
+one with no warning; and a secret in the request URL or in the failure text does
+not reach the warning. It is owed as a port, not a register row: once it lands
+the two implementations behave alike again. It did not land in the same stream
+because a hub claim covers one branch in one repository. Its metasalmonpy queue
+item is `B-378`.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went
