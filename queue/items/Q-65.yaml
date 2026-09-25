@@ -1,0 +1,12 @@
+id: Q-65
+kind: question
+title: 'D-2: how Brett''s weekly hours split between S14 and tern, and which calendar wins a contested week'
+state: needs_brett
+claimable: false
+repo: salmon-science-foundry
+venue: either
+stream: S14
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'Brett rules the split and the tiebreak, and the S14 card records them. Both programmes book the same hours today: the Foundry plan''s section 8.1 plans about 4.8 h/week of Brett through late January 2027 and tern''s PLAN.md section 11 derives about 1.4 h/week for its stage 0, against one supply of about 5 h/week. tern is a typed external edge in the roadmap (recorded 2026-09-25), not a member, so this item owns only the S14 half of the answer. The recommendation on the table is tern PLAN section 11: at most 2 h/week for tern, its stage 3-4 dates win a contested week, re-ruled if its derived figure exceeds 2 h/week.'

@@ -179,6 +179,13 @@ place (**corrected**, with the finding ids from Appendix D), or replaced
 | 9.5 | **reduced**: the quoted paragraph and the exclusion list are deleted rather than corrected, and the section now points at `HUB.md` and keeps only the design reasoning and the reversal | R15; the duplicated-boundary defect §9.1 measures |
 | Appendix A Q37 | the 2026-09-09 ruling is kept and a dated supersession note added beneath it | R15; this file's never-delete convention |
 
+**Fifth pass, 2026-09-25** (hub records only; no ruling changed).
+
+| Section | Change | Driven by |
+|---|---|---|
+| 7-D Scale | the pilot anchor names the replay/oracle half of the Theme A harness rather than one script subcommand; dated note beneath | Q23 unchanged; the harness's live side is another item's subject |
+| 10 issue table | issue 10 loses "→ institute" and "rename"; issues 13 and 16 leave Stage B for queue items `B-280`, `B-278` and `B-279`; dated notes beneath the table | Q26; the `tern` edge in the roadmap |
+
 ### 0.3 The verdict, in one paragraph
 
 The thesis is worth testing and the plan's guardrails (rights gate, no model
@@ -1942,10 +1949,10 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 | 10 | `smn-sci-plgn` | Repoint at metasalmon 0.5.0, add the Claude plugin manifest, retire duplicated scripts | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
 | 11 | four core repositories | Zenodo archiving, `CITATION.cff`, `inst/CITATION`; resolve `Codex [aut]` | A | docs agent, Brett approves authorship | a DOI on the next tag of each |
 | 12 | `salmon-domain-ontology`, `smn-data-pkg` | Draft `GOVERNANCE.md` for the RDA working group's review | B | docs agent, Brett and the WG | editorial group, change classes, CODEOWNERS with two humans, unavailability clause |
-| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | B | semantic agent | deterministic distribution from a clean checkout; no publication |
+| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | queue `B-280`; out of Stage B 2026-09-25 | semantic agent | deterministic distribution from a clean checkout; no publication |
 | 14 | foundry | The PR #27 evidence briefing for Q6 (advocate, challenger, adjudicator; decision matrix) | B | evidence agents | matrix delivered to Brett; no term minted; withdrawn gaps moved to `rejected` |
 | 15 | the SalmonBench repository (Q26) | SalmonBench v0.1: 60 tasks, held-out keys, external authors onboarded, preregistered analysis | B | benchmark lead, contributors | frozen plan; raw logs; results preprint |
-| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | B | R and Python agents | a register gap is detected without hand-filing, on both sides |
+| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | queue `B-278` and `B-279`; out of Stage B 2026-09-25 | R and Python agents | a register gap is detected without hand-filing, on both sides |
 
 **Added 2026-09-05 for S15 and S16.** Issues 17 to 19 are the coordination
 change; issue 20 is the PSC ontology and is filed in the PSC organization
@@ -1955,6 +1962,16 @@ through the PSC-DSC intake, not here.
 "rename" until today, which contradicted Q26 (2026-09-05: `smn-sci-plgn` stays
 a personal repository, repointed at metasalmon 0.5.0 in place, and is not
 renamed). Both words are dropped; the acceptance test is unchanged.
+
+**Re-sequenced 2026-09-25.** Issues 13 and 16 read Stage B until today. Both
+now live in the hub queue — the compiler as `B-280`, the `--gaps` reader as the
+pair `B-278` (metasalmon) and `B-279` (metasalmonpy) — and the queue, not this
+table, sequences them: `tern` (a requirements-driving consumer, recorded as an
+edge in the roadmap the same day) consumes the compiler's distribution at a
+pinned commit and would otherwise build a second exporter, and the reader is
+what makes the commons register the pipeline's front end in fact rather than in
+intent. The rows keep their acceptance tests; their stage cells say where they
+went.
 
 | # | Repository | Issue title | Stage | Delegate | Acceptance evidence |
 |---|---|---|---|---|---|

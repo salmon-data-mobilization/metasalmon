@@ -425,6 +425,45 @@ terms B-232 must define:
 **Owner:** `B-232`, which writes the definitions once each ruling lands, and
 `B-238` for the commons research behind them.
 
+### Q65 — D-2: how does Brett's ~5 h/week split between S14 and tern, and which calendar wins a contested week?
+**Unblocks:** tern's stage 0 (its `PLAN.md` §14 lists D-2 as blocking) and an
+honest S14 budget. Both programmes currently book the same hours: the Foundry
+plan's §8.1 plans about 4.8 h/week of Brett through late January 2027, and
+tern's `PLAN.md` §11 derives about 1.4 h/week for its stage 0 and up to
+0.7 h/week later, against one ~5 h/week supply. `tern`
+(`Symecology-Institute/tern`, formerly `era-claude`) is the requirements-driving
+consumer the [roadmap](roadmap.md) records as a typed edge on 2026-09-25, not a
+member, so this hub owns only the S14 side of the answer.
+**Recommendation:** tern's `PLAN.md` §11: at most 2 h/week for tern, and its
+stage 3–4 dates (the tree freeze and the prospective forecast) win a contested
+week; D-2 is re-ruled if tern's derived figure exceeds 2 h/week. Whichever way
+it goes, the ruling names the Foundry line that shrinks from October 2026 to
+January 2027, or delays tern's stage 0 to the Foundry's Stage A gate.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md), which
+records the split once ruled, with the queue item `Q-65`; the ruling's other
+half lives in tern's `PLAN.md`.
+
+### Q66 — D-1/D-8 coupling: tern's institute affiliation engages R2, so the PSC-derived Fraser packs need a ruling
+**Unblocks:** whether tern's first science case may use the Salmon Prize
+Fraser packs at all (five-stock extracts of the PSC Fraser sockeye
+spawner–recruit data set plus DFO fill-ins), and the affiliation and
+competing-interests wording tern needs before its R1 is public.
+The Foundry plan's R2 makes non-public PSC and partner systems "never" for the
+institute's Foundry, and R11 removed PSC work from the plan entirely. An
+institute-affiliated tern inherits R2 in full, so D-1 (the data) and D-8 (the
+affiliation) are one decision. The options, from tern's `PLAN.md` §9.1: **(a)**
+amend R2 to admit PSC-published public data under tern's information barrier;
+**(b)** admit the organizers' packs only, as public competition data, with the
+scoring source ruled at the same time; **(c)** neither, and Bristol Bay becomes
+the primary system. An institute affiliation leaves (b) or (c); "independent
+researcher" leaves (a) open.
+**Recommendation:** tern's own: (b), with the information barrier, decided in
+writing before tern's first registry build. The ruling itself is recorded in
+tern's `PLAN.md`; this hub records only that R2 was engaged and how, so that
+the S14 card and R2 stay consistent.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md) for the R2
+consequence, with the queue item `Q-66`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
