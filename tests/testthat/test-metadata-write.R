@@ -771,3 +771,130 @@ test_that("a recorded hand-picked accept is not counted as ontology-gap evidence
   expect_false(handpicked_iri %in% after$top_non_smn_iri)
   expect_equal(after, before)
 })
+
+# ---------------------------------------------------------------------------
+# One decision, one `term_type` (hub queue B-221)
+#
+# `term_type` says what kind of thing `term_iri` names. `apply_sdp_semantics()`
+# takes it from the review row a decision sits on when that row carries the
+# accepted IRI, and writes `skos_concept` when it does not. `accept_suggestion(iri
+# = )` put every decision on the slot's first row, so naming the IRI of a
+# lower-ranked candidate wrote `skos_concept` whatever that candidate was. The
+# review rebuilt from the package replays the same decision on the candidate's
+# own row, and re-applying it wrote the candidate's type: one decision, two
+# `term_type`s, and `column_dictionary.csv` changed between two applies of it.
+# ---------------------------------------------------------------------------
+
+owl_class_iri <- "https://example.org/ols/SpawnerCount"
+owl_class_type_iri <- "http://www.w3.org/2002/07/owl#Class"
+
+# A package whose `spawner_count` variable slot holds two candidates, an `smn`
+# term and then `owl_class_iri`. `type_iris` is each one's type evidence, and a
+# candidate with none reads as `skos_concept`.
+typed_fixture_package <- function(type_iris = c(NA_character_, owl_class_type_iri)) {
+  hits <- tibble::tibble(
+    label = c("Spawner Abundance", "Spawner count"),
+    iri = c("https://w3id.org/smn/SpawnerAbundance", owl_class_iri),
+    source = c("smn", "ols"), ontology = c("smn", "ols"), role = "variable",
+    match_type = "label_exact",
+    definition = c("Mature salmon returning to spawn.", "A count of spawners."),
+    score = c(4.9, 3.2),
+    type_iris = type_iris
+  )
+  search <- function(query, role = NA_character_, ...) {
+    if (identical(as.character(role), "variable")) hits else tibble::tibble()
+  }
+  path <- file.path(withr::local_tempdir(.local_envir = parent.frame()), "typed")
+  suppressMessages(with_mocked_bindings(
+    find_terms = search,
+    create_sdp(
+      list(spawners = data.frame(spawner_count = c(120L, 340L))),
+      path = path, dataset_id = "demo-1", semantic_max_per_role = 2,
+      seed_semantics = TRUE, seed_verbose = FALSE, check_updates = FALSE,
+      overwrite = TRUE
+    )
+  ))
+  path
+}
+
+variable_slot <- function(review) {
+  review[review$column_name %in% "spawner_count" & review$role %in% "variable", , drop = FALSE]
+}
+
+test_that("hand-picking a lower-ranked owl_class candidate's IRI writes its term_type, and a rebuild re-applies the same bytes", {
+  path <- typed_fixture_package()
+  review <- suppressMessages(review_semantics(path))
+  # The premise, asserted rather than assumed: the IRI is a candidate's below
+  # rank 1, that candidate is an `owl_class`, and the rank-1 candidate is not.
+  slot <- variable_slot(review)
+  expect_equal(slot$rank[slot$iri %in% owl_class_iri], 2L)
+  expect_equal(slot$term_type[slot$iri %in% owl_class_iri], "owl_class")
+  expect_equal(slot$term_type[slot$rank == 1L], "skos_concept")
+
+  suppressMessages(apply_sdp_semantics(
+    path,
+    accept_suggestion(review, "spawner_count", "variable", iri = owl_class_iri)
+  ))
+  dictionary <- read_metadata_file(path, "column_dictionary.csv")
+  written <- dictionary[dictionary$column_name == "spawner_count", , drop = FALSE]
+  expect_equal(written$term_iri, owl_class_iri)
+  expect_equal(written$term_type, "owl_class")
+
+  dictionary_path <- file.path(path, "metadata", "column_dictionary.csv")
+  dictionary_bytes <- readBin(dictionary_path, "raw", file.info(dictionary_path)$size)
+  first_apply <- managed_digests(path)
+
+  # The rebuilt review carries the decision, on the candidate's own row, so
+  # re-applying it is a second apply of the same decision.
+  rebuilt <- suppressMessages(review_semantics(path, include_filled = TRUE))
+  replayed <- variable_slot(rebuilt)
+  replayed <- replayed[!is.na(replayed$decision), , drop = FALSE]
+  expect_equal(replayed$decision, "accept")
+  expect_equal(replayed$decision_iri, owl_class_iri)
+  expect_equal(replayed$rank, 2L)
+
+  suppressMessages(apply_sdp_semantics(path, rebuilt))
+  expect_identical(
+    readBin(dictionary_path, "raw", file.info(dictionary_path)$size),
+    dictionary_bytes
+  )
+  # The descriptor carries `term_type` too, so it has to hold still as well.
+  expect_identical(managed_digests(path), first_apply)
+})
+
+test_that("accept_suggestion(iri = ) naming a shortlisted candidate records what rank = records", {
+  path <- typed_fixture_package()
+  review <- suppressMessages(review_semantics(path))
+  by_rank <- accept_suggestion(review, "spawner_count", "variable", rank = 2)
+  expect_identical(
+    accept_suggestion(review, "spawner_count", "variable", iri = owl_class_iri),
+    by_rank
+  )
+  # The marker is stripped before the IRI is compared, so a marked spelling of
+  # the candidate's IRI is the same decision.
+  expect_identical(
+    accept_suggestion(review, "spawner_count", "variable", iri = paste0("REVIEW: ", owl_class_iri)),
+    by_rank
+  )
+})
+
+test_that("an IRI no candidate carries still writes skos_concept, whatever the first candidate is", {
+  # B-176's case, which this must not move. Nothing is known about a term the
+  # reviewer typed, so the type of the row its decision is recorded on is not
+  # evidence about it. Every candidate here is an `owl_class`, so a writer that
+  # took the first row's type regardless would write `owl_class`.
+  path <- typed_fixture_package(type_iris = rep(owl_class_type_iri, 2L))
+  review <- suppressMessages(review_semantics(path))
+  expect_equal(unique(variable_slot(review)$term_type), "owl_class")
+  expect_false(handpicked_iri %in% review$iri)
+
+  suppressMessages(apply_sdp_semantics(
+    path,
+    accept_suggestion(review, "spawner_count", "variable", iri = handpicked_iri)
+  ))
+  dictionary <- read_metadata_file(path, "column_dictionary.csv")
+  expect_equal(
+    dictionary$term_type[dictionary$column_name == "spawner_count"],
+    "skos_concept"
+  )
+})
