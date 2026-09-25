@@ -1,0 +1,12 @@
+id: B-371
+kind: defect
+title: 'Two live GitHub read tests in test-github-helpers.R still error rather than skip off CI when GitHub cannot be reached, because the guard B-152 added does not cover them'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Off CI, the tests "read_github_csv without token can read a known public GitHub raw CSV" and "read_github_csv_dir handles empty directories" in tests/testthat/test-github-helpers.R skip rather than error when GitHub cannot serve the requests the code under test makes, whether the connection is refused, the host cannot be reached or GitHub refuses the probe, because each is guarded by a probe of what that code actually requests: the raw fetch without a token for the first, as skip_unless_raw_github_serves() sends it, and a request to the GitHub API with the token for the second, whose directory listing goes through that API. On CI neither skips for that reason and each fails at its own request, as the two tests B-152 guarded do, so CI stays exactly as strict as it is and only what happens off CI changes. Decided by running the file with NOT_CRAN=true, a token configured and HTTPS refused, for example with HTTPS_PROXY pointing at a closed local port: with CI unset both tests skip, where on the file as it stands both error, and with CI=true both fail. The pull request that lands it relaxes two tests off CI, so it is Brett''s under class 6 of HUB.md''s Which pull requests need Brett. The live SDP bundle test in tests/testthat/test-schema-helpers.R is B-132''s and not this item''s. THE METASALMONPY SIBLING IS B-372, and each names the other.'

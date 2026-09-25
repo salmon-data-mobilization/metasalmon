@@ -1,0 +1,13 @@
+id: B-401
+kind: defect
+title: 'metasalmon describes the NuSEDS AREA column as a Pacific Fishery Management Area code, where NuSEDS defines it as a DFO sub-district'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: either
+stream: S12
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, the AREA rows of inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv and inst/extdata/column_dictionary.csv no longer label the column "PFMA area" or describe it as a Pacific Fishery Management Area code: they describe what the NuSEDS data dictionary defines AREA as, the sub-district. And the hub''s gold-standard records, the S12 card, the gcdfo carve-out in the roadmap''s active sequencing constraints and the Q5 entry of knowledge/questions.md, no longer read the extract''s AREA values as PFMA Subareas. What the gold standard then needs from gcdfo, if anything, is left as the open question it is, for the commons gap register and for Brett, and is not decided in the change. Decided by grep for "Pacific Fishery Management Area code" and "PFMA area" in the two dictionaries, and by reading the three passages. THE METASALMONPY HALF IS B-402 AND THE SMN-DATA-PKG HALF IS B-403, and each names the others.'

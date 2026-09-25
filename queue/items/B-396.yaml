@@ -1,0 +1,13 @@
+id: B-396
+kind: defect
+title: 'No check fails when a port is named in one of the two passages that record what the mirror is owed and not in the other'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'python3 scripts/hub_queue.py lint fails when a port, a metasalmonpy item blocked by a metasalmon item, is named in one of the two passages the port-record rule reads, the register''s port section and the roadmap''s mirror section, and not in the other, unless a list the rule keeps exempts it with its reason and what retires the exemption; B-179, whose divergence is register row 53, is named in the roadmap alone on purpose. A test in scripts/tests/test_hub_queue.py demonstrates it RED on a queue in which a port is named in the register''s port section and not in the roadmap''s mirror section. Lint passes on main when the rule lands, so a port named in one passage only is recorded in the other, or exempted with its reason, in the same change.'

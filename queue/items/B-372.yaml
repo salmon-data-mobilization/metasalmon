@@ -1,0 +1,12 @@
+id: B-372
+kind: defect
+title: 'metasalmonpy''s test_read_github_csv_integration probes api.github.com but fetches from raw.githubusercontent.com, so a refusal from the raw host errors rather than skips'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, test_read_github_csv_integration in tests/test_github_io.py, when enabled, skips off CI rather than erroring when the raw host refuses the request read_github_csv() makes or cannot be reached, because its guard sends that request, to raw.githubusercontent.com with the token as read_github_csv() sends it, rather than only probing api.github.com. On CI it does not skip for that reason and fails at its own fetch, the rule B-152 follows in metasalmon, so only what happens off CI changes. Decided with the transport mocked and nothing reaching the network: once the API probes succeed, a raw answer of HTTP 404, 401 or 403 gives a skip with CI unset, where on the test as it stands each gives an error, and gives a failure with CI set. The pull request that lands it relaxes a test off CI, so it is Brett''s under class 6 of HUB.md''s Which pull requests need Brett. THE METASALMON SIBLING IS B-371, and each names the other.'

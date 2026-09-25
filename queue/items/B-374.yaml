@@ -1,0 +1,12 @@
+id: B-374
+kind: defect
+title: 'metasalmonpy''s port of check-changelog-window.py also exits 1 on an unexpected crash, the mirror half of B-373'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: [B-373]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, any exception other than CannotRun that escapes run() in scripts/check-changelog-window.py makes the script exit 2 with "cannot run" on standard error, as B-373 makes the hub''s copy do. tests/test_check_changelog_window.py forces such an exception the way the hub''s test does and asserts exit 2, RED on the copy as it stands, and TestTheHubCopy passes against the hub''s copy once both halves have landed. THE HUB HALF IS B-373, and each names the other.'

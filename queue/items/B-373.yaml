@@ -1,0 +1,12 @@
+id: B-373
+kind: defect
+title: 'An unexpected crash in scripts/check-changelog-window.py exits 1, the findings code, rather than 2, the cannot-run code'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Any exception other than CannotRun that escapes run() in scripts/check-changelog-window.py makes the script exit 2, the code its docstring gives for a run that cannot see what it needs, with "cannot run" and the exception named on standard error, rather than exit 1, the findings code. A test in scripts/tests/test_check_changelog_window.py forces such an exception, for example by running the script with no git on PATH, and asserts exit 2; it is RED on the script as it stands. THE METASALMONPY HALF IS B-374, and each names the other.'

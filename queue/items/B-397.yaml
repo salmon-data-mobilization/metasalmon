@@ -1,0 +1,13 @@
+id: B-397
+kind: defect
+title: 'metasalmonpy''s apply_salmon_dictionary() blanks every value, listed codes included, of a column whose name the data frame repeats'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, apply_salmon_dictionary(), given a data frame that repeats the name of a column with a code list, blanks none of that column''s listed values: it either refuses the frame before changing anything, naming the repeated column, or applies the dictionary to the first such column only, as R''s [[ reads a repeated name. A test pins the behaviour chosen, and it is RED on the code as it stands, where every value of the repeated column comes back missing, listed ones included.'
