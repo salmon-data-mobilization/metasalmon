@@ -7289,8 +7289,9 @@ measured step 10 right, with strict validation passing on a package both
 ever selected as a slot", in its header comment (`:19`) and in the comment above
 `.ms_closure_target_context()` (`:473-474`). That is the gloss the B-192 rewrite
 avoided, because in R a reviewer can choose a code value's `term_iri`. The
-roxygen section *The two canonical sets are not one set* on the same function
-(`:869`) is already accurate.
+B-192 run judged the roxygen section *The two canonical sets are not one set* on
+the same function (`:869`) accurate already; it calls a code-resolved procedure
+a vocabulary term and not a review target, without the gloss.
 
 *Why this severity:* a user-facing vignette contradicts itself about the
 publication gate from one step to the next.
