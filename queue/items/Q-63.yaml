@@ -1,7 +1,7 @@
 id: Q-63
 kind: question
 title: 'R and metasalmonpy recognise different spellings of the REVIEW: marker, and neither parity register records it; which spellings should both recognise?'
-state: needs_brett
+state: done
 claimable: false
 repo: metasalmon
 venue: either

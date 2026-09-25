@@ -186,10 +186,14 @@ constants_live_in: >-
         never a second one for the same item. Narrowed 2026-09-16: this read
         "draft only ... Never marked ready for review, never merged, ... and
         never a reply to a review comment on it", and the rows below now grant
-        all three for the delegated classes. It stays a draft, unmerged and
-        unanswered, when the change falls in a class "Which pull requests need
-        Brett" reserves to him, which is what still makes a draft the
-        conservative default rather than a formality.
+        all three for the delegated classes. It stays a draft and unmerged when
+        the change falls in a class "Which pull requests need Brett" reserves
+        to him, which is what still makes a draft the conservative default
+        rather than a formality. There the agent replies to each Codex finding
+        to say how it was fixed, or why it is not a defect, and leaves
+        resolving the thread to him. (Until 2026-09-25 this read "a draft,
+        unmerged and unanswered", which the reply row below contradicted, and
+        practice had split between the two.)
       enforced_by: >-
         nothing mechanical. This is the one permitted operation with no client
         check behind it, because the client makes no API call; it is a rule an
@@ -364,13 +368,24 @@ constants_live_in: >-
 ```yaml
     - operation: push a small mechanical change to this repository's default branch
       shape: >-
-        queue state, a generated block, a typo, ignoring a stray file. Anything
-        substantive goes through a pull request, because that is what Codex
-        reviews and losing the review costs more than the extra step.
+        queue state on an item file that already exists, a generated block, a
+        typo, ignoring a stray file. A new item file and a correction to a card
+        go through a pull request, as anything substantive does, because that
+        is what Codex reviews and losing the review costs more than the extra
+        step. A port's landed record, which lint requires in the same change as
+        the item's done mark, is part of that queue-state change and goes with
+        it.
+      max: no limit
       enforced_by: >-
         nothing mechanical. Whether a change is small and mechanical is a
         judgement, and the commit message is where the judgement is recorded so
         that a wrong one is legible afterwards.
+      granted: >-
+        2026-09-10 (ruling R15). Narrowed 2026-09-25 (Brett): the shape read
+        "queue state, a generated block, a typo, ignoring a stray file". Under
+        that wording one push to main filed four new item files and broke
+        main's lint, and another added dated corrections to two knowledge
+        cards.
 ```
 
 ### `writes.permitted_note`
@@ -679,9 +694,12 @@ incomplete.
 2026-09-16 this paragraph read "Draft, and draft only: never mark it ready for
 review, never merge it, never reply to a review comment on it", and for a pull
 request in a class "Which pull requests need Brett" reserves to him that is still
-exactly right: it stays draft, unmerged, and unanswered, because hand-back is
-where he looks. For a pull request in the delegated classes, ruling R16 moved the
-looking to Codex: mark it ready, answer what Codex finds, and merge it on the
+exactly right: it stays draft and unmerged, because hand-back is where he
+looks. The agent still replies to each Codex finding there, saying how it was
+fixed or why it is not a defect, and leaves resolving the thread to him
+(Brett, 2026-09-25; this read "draft, unmerged, and unanswered" until then).
+For a pull request in the delegated classes, ruling R16 moved the looking to
+Codex: mark it ready, answer what Codex finds, and merge it on the
 four conditions that section lists. An agent that cannot tell which list its own
 pull request is in leaves it a draft and says so, which is the safe direction and
 the one that costs a message rather than a merge.
@@ -893,7 +911,8 @@ any pull request operation other than the six granted above, which are the one
 draft per handed-back item, correcting the description of a pull request an
 agent opened, a merge in this repository of a pull request whose
 checks are all green, marking such a pull request ready for review, replying to
-and resolving a Codex thread on it, and merging an approved pull request in a
+and resolving a Codex thread on it (on one reserved to Brett, replying only,
+since he resolves it), and merging an approved pull request in a
 member repository whose `solo` key is true; any push of the work branch into a
 member repository somebody else has contributed to, where it is ask-first; any
 merge in a member repository whose `solo` key is false or absent, any merge of a

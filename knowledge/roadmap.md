@@ -575,7 +575,8 @@ coercion that R only warns about. The coercion half owes metasalmonpy nothing,
 because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
-measuring it that is not part of the port, hub item `B-274`. **Why not in the
+measuring it that is not part of the port, hub item `B-274`, which **landed
+2026-09-25 as metasalmonpy #64**, `c7be120`. **Why not in the
 same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.
@@ -749,6 +750,19 @@ parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`.
 
+**The development version after 0.5.0 changes what the mirror owes on row 51
+(2026-09-25): one shared ownership sentinel, `.sdp-package` holding
+`sdp-owned`.** Hub item **B-113** carries out Brett's ruling Q14 of 2026-08-24
+in metasalmon. `write_salmon_datapackage()`, and `create_sdp()` through it, now
+write, manage and recognise only `.sdp-package`, so a directory whose only sign
+of being a package is the old `.metasalmon-package` is no longer replaced.
+metasalmonpy still writes `.metasalmonpy-package`, measured on `main` `cae3d83`,
+so a package written by both carries both files until its half lands. That half
+is owed as the move row 51 of `parity-deviations.md` records, with the name and
+content line it must take, and not as a new register row. **Why not in the
+same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
+queue item is `B-127`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
@@ -802,12 +816,12 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. Which side moves on each path is **`Q-62`**,
-a question for Brett, and R's refusal on the EML and KNB paths, the
-recommended direction, is written as **queue item `B-223`, separate from
-B-142**, which neither introduced the difference nor changes it. A
-parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
-so it is not made here.
+falls back to the default paths. Which side moves on each path was **`Q-62`**,
+and Brett ruled it on 2026-09-25: refuse on every path, recorded in
+[`questions.md`](questions.md). R's refusal on the EML and KNB paths is
+**queue item `B-223`, separate from B-142**, which neither introduced the
+difference nor changes it, and the closure path's refusal is `B-340` in this
+package and `B-341` in metasalmonpy.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
