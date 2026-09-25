@@ -637,6 +637,39 @@ metasalmon (development version)
   marked candidates included, so the fix is owed there as a port (see
   `knowledge/parity-deviations.md`).
 
+* **The semantic review no longer records, by any route, an accept whose IRI
+  is empty or still a `REVIEW:` marker** (hub item B-246). Hub item B-219
+  closed one route, `accept_suggestion(iri = )`. Three more stayed open, and
+  one message misdirected:
+
+  - `review_semantics()` queued a shortlisted candidate whose `iri` was only
+    the marker, because it tested only that `iri` was not blank.
+    `accept_suggestion(rank = )` then recorded an accept with an empty IRI, in
+    every spelling the strip removes. Such a candidate is no longer queued. In
+    a slot that held one, the candidates after it now rank one place higher,
+    as they already did after a candidate with a blank IRI.
+  - A recorded accept of such a candidate came back in the next review as an
+    accept with an empty IRI. It is no longer replayed, so the slot is asked
+    again.
+  - The strip removes one marker, so `accept_suggestion(iri = "REVIEW:
+    REVIEW:")` recorded the IRI `REVIEW:`. An `iri` that is still a marker once
+    one is removed is now refused, and a shortlisted candidate carrying one is
+    not queued.
+  - `review_semantics()` listed a suggestion row with no IRI under *"Some
+    suggestions target fields this review cannot decide"*, naming a field the
+    review does decide, and said to edit it in the metadata CSVs directly. A
+    package where an accept before B-219 recorded an empty IRI printed that on
+    every review. A row with no IRI offers nothing to accept, and it is now
+    dropped without a message. Fields the review cannot decide are still
+    listed.
+
+  Which spellings count as the marker is unchanged: these checks use the same
+  strip and detector as before.
+
+  **Mirror:** metasalmonpy's review console has the same defects (the replay
+  was read there, not run), and the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
+
 * **The publication vignette no longer leads a reader to add a ledger row that
   stops their package publishing** (hub item B-192).
   `vignettes/post-review-package-publication.Rmd` described the canonical

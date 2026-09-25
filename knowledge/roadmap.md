@@ -629,6 +629,21 @@ metasalmonpy half is `B-222`, which **landed 2026-09-25 as metasalmonpy #48**,
 `70fa8fd`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the review console records no accept whose IRI is empty or still a `REVIEW:`
+marker, by any route.** Hub item **B-246** makes `review_semantics()` queue a
+candidate only when the IRI a decision would record is neither empty nor still
+a marker, so neither `rank =` nor a replayed accept can record one whose `iri`
+is only the marker. It makes `accept_suggestion(iri = )` refuse a value that is
+still a marker once one is stripped, and it stops listing a row with no IRI
+among the fields the review cannot decide. metasalmonpy's review console has
+the same defects, so the fix is owed there as a port, not a register row, in
+the same shape, because a candidate the queue drops takes no rank. The port is
+specified under *What metasalmon 0.5.0 owes the mirror* in
+`parity-deviations.md`. Which spellings count as the marker is `Q-63`'s and not
+the port's. **Why not in the same stream:** a hub claim covers one branch in
+one repository. Its metasalmonpy half is `B-247`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** keeps one gap row per field, as metasalmonpy's
 **B-212** already did, and counts the footer's IRI gaps by field rather than by
