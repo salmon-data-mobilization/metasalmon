@@ -719,6 +719,22 @@ metasalmon (development version)
   `pyproject.toml` does not declare it, not even as an optional extra. The
   declaration is owed there as part of hub item B-302.
 
+* **`suggest_semantics(llm_assess = TRUE)` now shows the LLM as many candidates
+  as `llm_top_n` says** (backlog #57, hub item B-57). The LLM can only be shown
+  what retrieval kept, and the direct call kept `max_per_role` candidates per
+  role, so the documented `llm_top_n` default of 5 silently became the
+  `max_per_role` default of 3. `create_sdp()`, `infer_dictionary()` and
+  `infer_salmon_datapackage_artifacts()` already widened retrieval to the larger
+  of the two, and the direct call now does the same. With `llm_assess = TRUE`,
+  `semantic_suggestions` therefore keeps up to `max(max_per_role, llm_top_n)`
+  rows per role where it kept up to `max_per_role`. Without `llm_assess`
+  nothing changes.
+
+  **Mirror:** metasalmonpy's `suggest_semantics()` has the same defect. Under
+  the same defaults its first review round shows the LLM 3 candidates per role,
+  measured on `main` `f1f7230`. The widening is owed there as a port, hub item
+  B-302.
+
 ### Changed
 
 * **The vendored SDP rules bundle is re-vendored for the reworded SOSA

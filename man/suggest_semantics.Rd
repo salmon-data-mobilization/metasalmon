@@ -50,7 +50,8 @@ Default is \code{FALSE} to keep the UI simple for non-DwC users.}
 \item{max_per_role}{Maximum number of suggestions to keep per semantic role
 (variable, property, entity, unit, constraint, statistical_modifier;
 plus method for code values) per column. Default
-is 3.}
+is 3. When \code{llm_assess = TRUE}, at least \code{llm_top_n} are kept, because
+the LLM can only be shown the candidates retrieval kept.}
 
 \item{search_fn}{Function used to search terms. Defaults to \code{find_terms()}.
 Can be replaced for testing or custom search strategies.}
@@ -97,7 +98,9 @@ and also checks \code{CHAPI_BASE_URL}.}
 OpenAI chat-completions request body when \code{llm_provider = "openai"}.}
 
 \item{llm_top_n}{Maximum number of retrieved candidates to send to the LLM
-per target for each assessment round. Default is \code{5}.}
+per target for each assessment round. Default is \code{5}. Retrieval keeps at
+least this many per role when \code{llm_assess = TRUE}, whatever
+\code{max_per_role} says.}
 
 \item{llm_context_files}{Optional character vector of local context files
 (for example README/markdown notes, CSV dictionaries, HTML exports,
