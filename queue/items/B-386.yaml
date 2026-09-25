@@ -1,0 +1,13 @@
+id: B-386
+kind: defect
+title: 'metasalmonpy''s HTML context reader keeps script, style and head text that metasalmon''s leaves out'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P3
+blocked_by: [B-364]
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, the HTML context extractor keeps only text inside the document body and outside script and style elements, as metasalmon''s .ms_context_text_from_html() does with its body-scoped XPath that excludes ancestor::script and ancestor::style. Measured 2026-09-25: _TextExtractor in llm_review.py collects every text node through handle_data, including script, style and head text. Pinned by a test over an HTML fixture with a script, a style and a title. Register row 62 keeps covering the remaining library-specific differences in extraction; this closes the largest practical one under it, which the B-364 run reported. No metasalmon half.'
