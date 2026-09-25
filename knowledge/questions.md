@@ -425,6 +425,35 @@ mirror is not automatically the follower, so this is a recommendation, not a
 default.
 **Owner:** the queue item `Q-63`.
 
+### Q64 — What do three smn terms mean, and how are life stages and composed wording settled? — PARTLY ANSWERED 2026-09-25 (Brett)
+
+**The questions,** from the first batch of commons definition cards for the
+terms B-232 must define:
+
+- **(a)** `smn:Observation`: a single act of observing, as SOSA defines it and
+  smn axiomatizes it, or a record of several measurements, as in OBOE, where it
+  came from? **Ruled: SOSA.**
+- **(b)** `smn:AggregatedMeasurement`: any summary of a group, or only an
+  enumeration count? **Ruled: any summary of a group.**
+- **(c)** `smn:Characteristic`: one entity's quality, or a kind of quality?
+  **Returned as a question.** Brett favours SOSA/SSN and asked what retiring
+  `smn:Characteristic` would imply, noting that SSN's OBOE alignment makes
+  `oboe:Characteristic` equivalent to `sosa:ObservableProperty` (W3C SSN 2017
+  §6.4, which also makes `oboe:Measurement` a subclass of `sosa:Observation`).
+  The answer given: its five branches (fourteen classes) would hang from the SOSA
+  class directly, the IRI would be deprecated rather than deleted, no data IRI
+  changes, `smn:characteristicFor` duplicates `isPropertyOf`, and SOSA's
+  property is already type-level, so (c) would fall away. The recommendation
+  was to retire it, under `sosa:ObservableProperty`, his Q42 choice. Open until
+  he replies.
+- **(d)** `smn:alevin`: recast life-stage values as SKOS stage concepts, or keep
+  them as subclasses of a characteristic? Open.
+- **(e)** Composed text for five terms with no prior wording: approve the cards'
+  wording, or name the ones to redo. Open.
+
+**Owner:** `B-232`, which writes the definitions once each ruling lands, and
+`B-238` for the commons research behind them.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
@@ -1623,35 +1652,6 @@ Pull request 144's change stood as it was when the ruling was made.
 
 **Owner:** queue items `B-177` and `B-230`, with the evidence under `B-177` in
 [`backlog.md`](backlog.md).
-
-### Q64 — What do three smn terms mean, and how are life stages and composed wording settled? — PARTLY ANSWERED 2026-09-25 (Brett)
-
-**The questions,** from the first batch of commons definition cards for the
-terms B-232 must define:
-
-- **(a)** `smn:Observation`: a single act of observing, as SOSA defines it and
-  smn axiomatizes it, or a record of several measurements, as in OBOE, where it
-  came from? **Ruled: SOSA.**
-- **(b)** `smn:AggregatedMeasurement`: any summary of a group, or only an
-  enumeration count? **Ruled: any summary of a group.**
-- **(c)** `smn:Characteristic`: one entity's quality, or a kind of quality?
-  **Returned as a question.** Brett favours SOSA/SSN and asked what retiring
-  `smn:Characteristic` would imply, noting that SSN's OBOE alignment makes
-  `oboe:Characteristic` equivalent to `sosa:ObservableProperty` (W3C SSN 2017
-  §6.4, which also makes `oboe:Measurement` a subclass of `sosa:Observation`).
-  The answer given: its five branches (fourteen classes) would hang from the SOSA
-  class directly, the IRI would be deprecated rather than deleted, no data IRI
-  changes, `smn:characteristicFor` duplicates `isPropertyOf`, and SOSA's
-  property is already type-level, so (c) would fall away. The recommendation
-  was to retire it, under `sosa:ObservableProperty`, his Q42 choice. Open until
-  he replies.
-- **(d)** `smn:alevin`: recast life-stage values as SKOS stage concepts, or keep
-  them as subclasses of a characteristic? Open.
-- **(e)** Composed text for five terms with no prior wording: approve the cards'
-  wording, or name the ones to redo. Open.
-
-**Owner:** `B-232`, which writes the definitions once each ruling lands, and
-`B-238` for the commons research behind them.
 
 ### Q60 — Does `B-198`'s remote schema pin name the commit `f86d9b4`, or a tag? — ANSWERED 2026-09-23 (Brett)
 
