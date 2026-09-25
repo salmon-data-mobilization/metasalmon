@@ -52,6 +52,11 @@ docs/AGENTS.html
 /docs/AGENTS.html
 docs/CLAUDE.html
 /docs/CLAUDE.html
+# The same holds for HUB.md and .github/PULL_REQUEST_TEMPLATE.md (B-141).
+# `internal_sources` in scripts/build-pkgdown.R lists every contributor-only
+# source, and a page added there belongs here too.
+docs/HUB.html
+docs/PULL_REQUEST_TEMPLATE.html
 docs/plans/
 docs/adr/0001.md
 docs/tech-debt.md
