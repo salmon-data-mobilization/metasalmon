@@ -7591,3 +7591,229 @@ the warning cannot say where.
 Every paragraph in this section records what was observed, where and by whom,
 on 2026-09-25. The conditions in force are in the item files under
 `queue/items/`, and where the two differ, the item file is right.
+
+### The 2026-09-25 plugin-thinning findings
+
+**Five behaviours reported on 2026-09-25 by the run that rewrote a downstream
+plugin to call both packages at `v0.5.0`, measured for this filing and filed
+as `Q-70`, `Q-71` and `B-333` to `B-337`.** The report came as claims, so each
+entry below says what was measured, what was only read, and where the finding
+differs from the claim. Each entry is headed by its queue ids. **State,
+severity and each item's condition live in `queue/items/` and are not restated
+here**: this section is what those items' `evidence:` pointers resolve to. For
+each question it holds what each side does and what each side's documentation
+says was intended.
+
+**Where a number comes from is part of the number.** Everything here was
+measured by this filing on 2026-09-25, on metasalmon `main` at `41146fc` and
+metasalmonpy `main` at `ba1b54a`. Every stubbed run was repeated at each
+package's `v0.5.0` tag, metasalmon `af84689` and metasalmonpy `67fb486`, with
+the same results, except the plain stale-copy run in the `Q-71` entry, which
+ran on `main` only. Line numbers are `main`'s. The runs
+loaded `git archive` exports and never a checkout. R was 4.5.2, with httr 1.4.8
+and testthat 3.3.2, loading metasalmon through `pkgload::load_all()`. Python was
+3.11.14, with pandas 3.0.5 and requests 2.33.1, importing metasalmonpy from a
+directory of that name. No request in those runs reached a network: every search
+function and every ontology request was replaced by a stub, so they show each
+package's own control flow and not a service's answer. The URL checks in the
+`Q-71` entry and the clone in the `B-337` entry are the only network
+measurements, and each says so. The probe scripts were scratch files and are
+not committed.
+
+**`Q-70`: which sources `find_terms()` searches when a caller names a role and
+no sources.**
+
+- *R.* `find_terms()` defaults `sources` to `c("smn", "gcdfo", "ols", "nvs")`
+  (`R/term_search.R:195`), and nothing in its body reads `role` to choose a
+  source. Measured with every `.search_*()` function stubbed and
+  `METASALMON_TERM_SEARCH_PARALLEL=0`: for `role = "unit"`, `"entity"`,
+  `"statistical_modifier"` and `NA`, the call searched `smn`, `gcdfo`, `ols` and
+  `nvs`, and its `"diagnostics"` attribute listed the same four. A direct unit
+  search that names no sources therefore never reaches `qudt`, which
+  `sources_for_role("unit")` names first (`:2022`). *With the parallel path
+  left on, the stubs' own log showed only `smn` and `gcdfo`, because the other
+  two ran in forked workers whose writes do not come back to the parent. The
+  diagnostics, which do come back, still listed all four, which is why the
+  serial run is the one cited.*
+- *metasalmonpy.* `find_terms()` defaults `sources` to `None` and resolves it to
+  `sources_for_role(role)` (`term_search.py:1365-1369`). Measured the same way:
+  `unit` searched `qudt`, `nvs` and `ols`; `entity` searched the six sources
+  `sources_for_role("entity")` names; `statistical_modifier` searched `smn` and
+  `ols`; and `None` searched R's four.
+- *Where the two agree.* Inside the pipeline they do not differ. R's
+  `suggest_semantics()` resolves omitted sources through
+  `.ms_sources_for_target_role()`, which returns `sources_for_role()` of each
+  target's role (`R/semantics-helpers.R:64-80`). Only a caller of the exported
+  `find_terms()` who names a role and no sources sees the difference.
+- *History.* metasalmonpy's `find_terms()` had R's fixed default until `e33526d`
+  (2026-07-28, *feat: align core workflows with metasalmon 0.1.6*) moved it to
+  `sources_for_role(role)`. R's 0.1.6 entry says omitted sources "continue to
+  use role-aware defaults" for initial and retry semantic retrieval
+  (`NEWS.md:2413-2416`), and says nothing about `find_terms()`, whose default
+  did not change then.
+- *What each side's documentation says was intended.* R's roxygen says both.
+  Its `@param role` says that when a role is specified "sources are optimized
+  for the role" (`R/term_search.R:138-142`), which is what metasalmonpy does.
+  Its `@param sources` gives the fixed default and says to use
+  `sources_for_role()` to get role-optimized sources (`:143-145`), which is
+  what R does. R's vignette `migrating-to-sdp-0-3-0.Rmd` says
+  `sources_for_role()` "knows the role" and then calls
+  `find_terms("mean", role = "statistical_modifier")` with no sources
+  (`:236-243`), which reads as the role choosing them; the vignette is not run
+  (`eval = FALSE`, `:14`). metasalmonpy's `sources_for_role()` docstring says
+  its defaults "apply only when callers omit sources"
+  (`term_search.py:1268-1270`), and its `find_terms()` docstring says nothing
+  about sources. Both registers were read row by row for this filing, and
+  neither has a row for it.
+
+**`Q-71`, and `B-333` to `B-336`: `fetch_salmon_ontology()`.** Both packages
+export it, and in each the whole function is one file. `R/ontology_fetch.R` is
+unchanged since its first commit in this repository, `2361b70`.
+`ontology_fetch.py` is unchanged since metasalmonpy's initial commit `719d2e6`,
+apart from the package rename in `91d993a`.
+
+- *Which ontology the defaults fetch* (`Q-71`, clause 1). R's default `url` is
+  `https://w3id.org/smn/`, and its default `fallback_urls` is
+  `https://w3id.org/smn` (`R/ontology_fetch.R:14-21`). Its title and
+  `@param url` name the Salmon Domain Ontology and "the canonical SMN namespace
+  root" (`:1-6`). metasalmonpy's default `url` is
+  `https://dfo-pacific-science.github.io/dfo-salmon-ontology/ontology/dfo-salmon.ttl`,
+  and when `fallback_urls` is `None` its fallback is
+  `https://w3id.org/gcdfo/salmon` (`ontology_fetch.py:15` and `:59-60`). Its
+  module and function docstrings name the DFO Salmon Ontology (`:2` and `:21`).
+  So the bare call fetches smn in R and gcdfo in metasalmonpy.
+  **metasalmonpy's default `url` answers 404.** Fetched by this filing on
+  2026-09-25, following redirects, with the functions' default `Accept` header:
+  that URL answered 404; `https://w3id.org/gcdfo/salmon` answered 200 with
+  Turtle from `https://dfo-pacific-science.github.io/dfo-salmon-ontology/gcdfo.ttl`;
+  and `https://w3id.org/smn/` and `https://w3id.org/smn` both answered 200 with
+  Turtle from
+  `https://salmon-data-mobilization.github.io/salmon-domain-ontology/smn.ttl`.
+  Every default call in metasalmonpy therefore makes one failing request and is
+  answered by its fallback. The default was noticed once before. The S10
+  execplan's *Out of scope, logged* list, written 2026-08-15, carries
+  "`ontology_fetch.py:15` old host: R is also stale here and the paths
+  diverge — a separate cross-repo coordination task, not an S10 item"
+  (`knowledge/plans/2026-08-15-s10-metasalmonpy-parity-replay.md`), and the
+  docstring of metasalmonpy's
+  `test_no_file_still_points_smn_data_pkg_at_the_retired_organization`
+  (`tests/test_sdp_schema.py:95`) says the same. No item was filed, and
+  neither register, read row by row for this filing, has a row for either
+  clause.
+- *What a call returns when every URL fails and a copy is cached* (`Q-71`,
+  clause 2). R warns and returns the cached path (`R/ontology_fetch.R:69-76`).
+  Measured with `httr::GET` stubbed to fail every request, and an smn copy left
+  in the cache directory as an earlier session would leave it: the call
+  completed normally and returned that copy. The only signal was an
+  `rlang_warning` reading "Failed to refresh Salmon ontology; using cached copy
+  at …", and nothing on the returned value marks it stale. metasalmonpy raises
+  `RuntimeError` whether or not a copy is cached (`ontology_fetch.py:105-110`).
+  Measured with `requests.get` stubbed the same way and a copy in the cache
+  directory, it raised and left the copy on disk. R's documentation says nothing
+  about the fallback; its `@return` is "Path to the cached ontology file"
+  (`R/ontology_fetch.R:12`). metasalmonpy's docstring says it raises "If all
+  URLs fail to fetch the ontology" (`ontology_fetch.py:45-48`), and its module
+  docstring gives the cache's purpose as "offline work and bandwidth reduction"
+  (`:4-5`). The nearest register row is row 6, which says a failed or empty
+  ontology fetch raises in Python where 0.1.6-era R returned an empty index,
+  and that R adopted the same principle at 0.2.2. That row is about the term
+  index, and it does not record this. Read as a statement about this function,
+  its R half would be wrong, because R's fetcher does not raise when a copy is
+  cached.
+- *The default fallback is used whatever `url` a caller passes* (`B-333`,
+  `B-334`). In both packages the default `fallback_urls` belongs to the default
+  ontology, and it is tried after any `url` the caller names. Measured with the
+  request layer stubbed so that the requested ontology's URL fails and the other
+  ontology's answers. metasalmonpy, asked for `https://w3id.org/smn/`,
+  requested it, then `https://w3id.org/gcdfo/salmon`, and returned
+  `dfo-salmon.ttl` holding the gcdfo body, with no warning. R, asked for
+  `https://w3id.org/gcdfo/salmon`, requested it, then `https://w3id.org/smn`,
+  and returned `salmon-ontology.ttl` holding the smn body, with no warning. The
+  report named the metasalmonpy direction only. R's own callers are not
+  affected, because each names its own `fallback_urls`: `.smn_term_index()`
+  and `.gcdfo_term_index()` (`R/term_search.R:1780` and `:1805`), and
+  `.smn_fetch_module_path()`, which names an empty one
+  (`R/term_search_smn.R:32-39`).
+  Neither package documents the fallback as belonging to the default ontology.
+  R's `@param fallback_urls` reads "Optional fallback ontology URLs tried if
+  the primary `url` fails" (`R/ontology_fetch.R:10`), and metasalmonpy's gives
+  the gcdfo default (`ontology_fetch.py:36-38`).
+
+  *Why this severity:* it needs a caller who names a `url` other than the
+  default and no `fallback_urls`, and that URL failing. A URL that starts
+  answering 404, as metasalmonpy's own default already has, is enough. What
+  follows is silent: the other ontology's body, under the file name the
+  requested one would have had.
+- *One cache file per directory, whatever was fetched* (`B-335`, `B-336`). R
+  writes every body to `salmon-ontology.ttl` in `cache_dir` and keeps one
+  `etag.txt` and one `last_modified.txt` there (`R/ontology_fetch.R:24-26`).
+  metasalmonpy does the same with `dfo-salmon.ttl` (`ontology_fetch.py:68-70`).
+  The report named the metasalmonpy file only. Measured in both with the
+  request layer stubbed: fetching smn and then gcdfo into one directory left
+  one ontology file, holding gcdfo, at the path the smn call had returned, and
+  the gcdfo request carried smn's ETag in `If-None-Match`. In R the stale-copy
+  path above then serves that file for any `url`: with gcdfo cached there, a
+  call for the default smn, with every request failing, returned the gcdfo
+  body under the warning "Failed to refresh Salmon ontology; using cached copy".
+  Each package's default `cache_dir` is shared by every call that does not
+  name one. In R it is a persistent user cache,
+  `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
+  (`R/ontology_fetch.R:17`); in metasalmonpy it is
+  `metasalmonpy-ontology-cache` under the system temporary directory
+  (`ontology_fetch.py:62-63`). R's own index fetchers give each URL its own
+  directory, through `.smn_cache_slug()` for the smn modules
+  (`R/term_search_smn.R:25-39`) and separate `smn` and `gcdfo` directories
+  under `tempdir()` for the two index roots, so the package's own searches do
+  not collide. A caller of the exported function who keeps the default
+  directory does. Read and not run: on a `304` answer both return whatever file
+  the directory holds (`R/ontology_fetch.R:81-83`, `ontology_fetch.py:113-114`),
+  whichever URL's validators the request carried. `B-163` cites this function's
+  rename, `R/ontology_fetch.R:90`, among the atomic-write sites a durability
+  ruling has to name, so a change to the cache's file layout moves a line that
+  item points at.
+
+  *Why this severity:* it needs two ontologies fetched into one directory,
+  which the defaults make the ordinary case. In metasalmonpy it costs a
+  re-download, a path whose content changes under a caller who kept it, and a
+  file name that says gcdfo whatever it holds. In R it costs the same, and a
+  later outage then returns the other ontology under a warning that calls it
+  the cached copy.
+
+**`B-337`: metasalmonpy's `.gitmodules`.** It declares one submodule,
+`data/ontology`, with the url `../dfo-salmon-ontology` (`.gitmodules:1-3`),
+unchanged since the initial commit `719d2e6`. A relative url resolves against
+the superproject's remote, which for metasalmonpy is
+`https://github.com/salmon-data-mobilization/metasalmonpy.git`, so the url names
+`https://github.com/salmon-data-mobilization/dfo-salmon-ontology`. Checked on
+2026-09-25: the GitHub API answers 404 for that repository, and `git ls-remote`
+answers "Repository not found". The ontology's repository is
+`dfo-pacific-science/dfo-salmon-ontology`, which answers and is public.
+**The stanza is inert, which is why the claim holds only in part.** No commit
+on metasalmonpy's `main` has touched `data/ontology`, so there has never been a
+gitlink there and git never reads the url. Measured with git 2.50.1 in a
+scratch clone of `main` at `ba1b54a`: `git clone --recurse-submodules` cloned
+nothing, `git submodule status` printed nothing,
+`git submodule update --init --recursive` exited 0, and `data/ontology` does not
+exist. With a gitlink planted in that clone's index, `git submodule init`
+registered the url as
+`https://github.com/salmon-data-mobilization/dfo-salmon-ontology`, and
+`git submodule update` then failed with "Repository not found". Three more
+tracked files assume the checkout. `.pre-commit-config.yaml` has one hook,
+`validate-ontology-tables`, which runs `scripts/validate-term-tables.R` only
+for files matching `^data/ontology/release/artifacts/term-tables/.*\.csv$`
+(`:8-12`), so it never runs; metasalmonpy's B-153 workpad found the same
+(`.hub/workpads/B-153.md` there). `.quartoignore` excludes `data/ontology/`
+(`:1-3`). `scripts/validate-term-tables.R` reads term tables and a
+`themes.yml` under that path (`:19-20`), and the hook is the only thing that
+names it. The pre-commit file's header reads "Pre-commit hooks for Data
+Stewardship Unit website". The initial commit is the only one that has touched
+any of the four files; `91d993a` removed other content of that project that the
+initial commit had carried, and left these.
+
+*Why this severity:* nothing reaches the url, so nothing fails. The cost is a
+file declaring a dependency the package does not have, and a hook that looks
+like a check and cannot run.
+
+Every paragraph in this section records what was observed, where and by whom,
+on 2026-09-25. The conditions in force are in the item files under
+`queue/items/`, and where the two differ, the item file is right.

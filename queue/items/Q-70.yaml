@@ -1,0 +1,12 @@
+id: Q-70
+kind: question
+title: 'R''s find_terms() searches a fixed source set whatever the role and metasalmonpy''s searches sources_for_role(role), and neither register records it; which side is right'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+stream: S2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Brett rules which sources find_terms() searches when a caller names a role and passes no sources: that role''s sources_for_role() list, as metasalmonpy does, or the fixed default, as R does. The ruling is recorded in knowledge/questions.md with its implementing items filed in the repositories that can finish them. Where a package moves, its item changes that package''s default and pins it with a test that stubs every source and reads which ones a call with a role and no sources searched. Where the ruling keeps the difference, a pair of register items is filed, one in metasalmon for knowledge/parity-deviations.md and one in metasalmonpy for PARITY.md, each naming the other, because one item cannot finish a write in two repositories. IN EVERY CASE A METASALMON ITEM IS FILED, because R''s roxygen for find_terms() describes both behaviours today, one under role and one under sources, and whichever way the ruling goes one of the two has to change. UNREGISTERED, which is what makes it an item rather than a detail: neither register records it, and AGENTS.md calls an undocumented difference a contract violation whether or not the difference is fine, and decides direction per divergence, so neither side is presumed right. RECOMMENDED AND NOT RULED, because the direction is Brett''s: R moves. R''s own role parameter already promises role-optimised sources, R''s suggest_semantics() already resolves omitted sources by role, and a call with no role would search what it searches today. The case the other way is real and is why this is a question: the change is to the default of an exported R function, which is class 2 of HUB.md''s Which pull requests need Brett, and it changes what an existing call with a role and no sources returns.'

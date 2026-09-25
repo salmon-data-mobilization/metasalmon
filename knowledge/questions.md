@@ -454,6 +454,50 @@ terms B-232 must define:
 **Owner:** `B-232`, which writes the definitions once each ruling lands, and
 `B-238` for the commons research behind them.
 
+### Q70 — Which sources should `find_terms()` search when a caller names a role and no sources?
+**Unblocks:** a difference neither register records. R's `find_terms()`
+searches one fixed set of four sources whatever the role, and metasalmonpy's
+searches `sources_for_role(role)`, so a direct unit search in R that names no
+sources never reaches QUDT. Inside `suggest_semantics()` the two agree,
+because R resolves omitted sources by role there. R's roxygen for
+`find_terms()` describes both behaviours, one under `role` and one under
+`sources`, so whichever way this goes, one of its two sentences is wrong today.
+Found by the run that rewrote a downstream plugin to call both packages at
+`v0.5.0`, and measured on both sides on 2026-09-25. **The measurements are in [`backlog.md`](backlog.md)** under
+*The 2026-09-25 plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** R moves, and an omitted
+`sources` becomes the role's `sources_for_role()` list. R's `@param role`
+already promises that, R's own pipeline already does it, and a call with no
+role would search exactly what it searches today. The case the other way is
+real, which is why this is a question: it changes the default of an exported R
+function, and what an existing call that names a role and no sources returns.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-70`.
+
+### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached?
+**Unblocks:** two differences neither register records, and what replaces
+metasalmonpy's default URL, which no longer answers. (1) R's defaults fetch smn
+and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.
+(2) When every URL fails and a copy is cached, R returns the copy with a warning
+and metasalmonpy raises. Two defects in the same function were found beside
+these, and each is a pair: the default fallback is tried whatever `url` a caller
+names (`B-333` and `B-334`), and every ontology is cached under one file name
+(`B-335` and `B-336`). Both are defects under any ruling here. Found by the
+same run as Q70, and measured on both sides on 2026-09-25.
+**The measurements are in [`backlog.md`](backlog.md)** under *The 2026-09-25
+plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** on (1), metasalmonpy moves to
+smn. Its default has to change anyway; smn is the ontology both packages search
+first and rank above gcdfo; and it is the one R's documentation names. The case
+the other way: metasalmonpy's bare call gets gcdfo today, which is what its
+documentation promises, so the smaller change is a live gcdfo URL and a pair of
+register rows. On (2), R moves to raising. R returns a copy of any age as an
+ordinary value, with only a warning, which is a failure read as a success, the
+thing `find_terms()` refuses to do with its own cache; and R's documentation
+promises no fallback. The case the other way: a user who has fetched once can
+keep working offline in R and cannot in metasalmonpy, whose own module
+docstring names offline work as a purpose of its cache.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.
+
 ## Notes on framing
 
 Q3's backlog item was reframed during the 2026-08-21 recon from "two defensible
