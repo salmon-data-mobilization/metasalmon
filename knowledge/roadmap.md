@@ -593,7 +593,8 @@ port, not a register row. The port is specified under *What metasalmon 0.5.0
 owes the mirror* in `parity-deviations.md`, together with the spellings the two
 strips disagree about, which are hub question `Q-63`'s and not the port's.
 **Why not in the same stream:** a hub claim covers one branch in one repository.
-Its metasalmonpy half is `B-220`.
+Its metasalmonpy half is `B-220`,
+which **landed 2026-09-25 as metasalmonpy #45**, `fc5d16f`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
