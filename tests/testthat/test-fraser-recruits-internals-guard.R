@@ -9,7 +9,10 @@
 # change, and nothing else in this repository would say so: the tests that
 # happen to call some of these names would be updated alongside a rename, which
 # is what would hide it. This file states the obligation at the place a rename
-# fails.
+# fails. It guards against the next break, not one that has already happened:
+# for two of the eight, the shape it pins is not the one the recipe calls at
+# its pinned release, so green here does not mean those calls work (see ITS
+# REAL SCOPE below).
 #
 # The list's home is the table under "Requirement 1" in
 # knowledge/sequences/s13-fraser-recruits-case-study.md. When that table gains
@@ -40,7 +43,11 @@
 #                                       (path, pkg, mapping)        now
 # Both changed in f76ed4f (2026-08-15) and were first released in v0.3.0. For
 # those two, this guard protects the shape the recipe migrates onto (S-13
-# requirement 2), not the calls it makes at its pinned release.
+# requirement 2), not the calls it makes at its pinned release. Whether to
+# restore the old shape for them or record them as breaks the migration crosses
+# is the S-13 card's decision, not this file's. A restoration fails here like
+# any other signature change, so the change that makes it has to update these
+# two pins as well, and the decision cannot happen silently.
 #
 # PER-NAME RETIREMENT
 # Each name is its own guard and retires on its own: when that name is exported
