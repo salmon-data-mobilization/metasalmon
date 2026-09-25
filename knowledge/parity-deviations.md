@@ -749,6 +749,20 @@ the difference left is Q-63's. It did not land in the same stream because a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 **B-220**.
 
+**This one is closed.** `B-220` landed as metasalmonpy pull request **#45**
+(`fc5d16f`) on 2026-09-25. `accept_suggestion()` in `review_console.py` now
+runs its non-empty check on the value `_strip_review_iri()` returns, so every
+spelling that strip removes is refused where each recorded an accept whose
+`decision_iri` was empty; the port's workpad re-measured 19 such spellings on
+`85ebbb0`, not only the six above. `tests/test_review_console.py` pins one per
+way the strip ends up empty, each asserting first that the strip empties it,
+with a control that a marked IRI with a term after the marker is recorded
+without the marker. No spelling changed in either package, so the two strips
+still disagree about what the marker is, in both directions: the workpad
+records that only R removes a space or tab before the colon, that only
+metasalmonpy removes a no-break space after it or folds a dotless i, and that
+R's result for some Unicode spaces depends on the locale. That is Q-63's.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 the SSSOM reader reads a canonical file, which leaves the built-in prefixes out
 of its `curie_map`.** Hub item **B-233** makes `read_sssom_mapping_set()` accept
