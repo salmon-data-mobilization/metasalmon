@@ -103,6 +103,19 @@
   .ms_strip_review_iri(trimws(as.character(x)))
 }
 
+# Whether an IRI as a decision records it (`.ms_review_decision_iri()`) names a
+# term: something is left once the `REVIEW:` marker is stripped, and what is
+# left is not still read as a marker. The strip removes one marker, so a doubled
+# `REVIEW: REVIEW:` leaves one. `review_semantics()` asks this of every
+# candidate and `accept_suggestion(iri = )` of the IRI it is given, so neither
+# route records a decision that names no term (hub item B-246). Which spellings
+# count as the marker is the strip's and the detector's, and this decides none.
+.ms_review_names_term <- function(recorded) {
+  text <- as.character(recorded)
+  !is.na(text) & nzchar(text) &
+    !vapply(text, .ms_is_review_iri, logical(1), USE.NAMES = FALSE)
+}
+
 # Replay the decisions recorded in the package onto a freshly built review.
 .ms_review_seed_recorded_decisions <- function(review, suggestions) {
   if (!"decision" %in% names(suggestions) || nrow(review) == 0L) {
@@ -291,15 +304,34 @@ review_semantics <- function(x,
   # reversed itself over.
   writable <- as.character(suggestions$target_sdp_file) %in% .ms_review_writable_files()
   iri_field <- grepl("_iri$", as.character(suggestions$target_sdp_field))
-  has_iri <- !is.na(suggestions$iri) & nzchar(trimws(as.character(suggestions$iri)))
-  keep <- writable & iri_field & has_iri
-  # `any(!keep)` first: `paste0(character(0), " - ", character(0))` recycles the
-  # length-one separator and returns `" - "`, so a length test on the pasted
-  # vector reports a dropped target on every call that dropped nothing.
-  dropped <- if (any(!keep)) {
+  decidable <- writable & iri_field
+  # A candidate is queued only when the IRI a decision would record names a
+  # term. Tested only for being blank, a candidate whose `iri` was only the
+  # marker was queued, `rank =` accepted it with an empty `decision_iri`, and a
+  # recorded accept of one replayed the same way (hub item B-246).
+  has_iri <- .ms_review_names_term(.ms_review_decision_iri(suggestions$iri))
+  # A recorded reject is kept whatever its IRI, because rejecting a slot names
+  # no candidate: dropped, a slot whose only candidate named no term lost its
+  # rejection and reason on replay. `accept_suggestion(rank = )` refuses such a
+  # row, so keeping it lets nothing record an accept.
+  recorded <- .ms_review_recorded_decisions()
+  rejected <- if ("decision" %in% names(suggestions)) {
+    trimws(as.character(suggestions$decision)) %in% names(recorded)[recorded == "reject"]
+  } else {
+    rep(FALSE, nrow(suggestions))
+  }
+  keep <- decidable & (has_iri | rejected)
+  # Only a field the review cannot decide is reported as one. A row dropped for
+  # naming no term targets a field the review does decide, and listing it here
+  # told the user to edit that field by hand (hub item B-246); it offers nothing
+  # to accept, so it is dropped without a word. `any(!decidable)` first:
+  # `paste0(character(0), " - ", character(0))` recycles the length-one
+  # separator and returns `" - "`, so a length test on the pasted vector reports
+  # a dropped target on every call that dropped nothing.
+  dropped <- if (any(!decidable)) {
     unique(paste0(
-      as.character(suggestions$target_sdp_file)[!keep], " \u00b7 ",
-      as.character(suggestions$target_sdp_field)[!keep]
+      as.character(suggestions$target_sdp_file)[!decidable], " \u00b7 ",
+      as.character(suggestions$target_sdp_field)[!decidable]
     ))
   } else {
     character()
@@ -759,10 +791,17 @@ review_semantics <- function(x,
         ))
         lines <- c(lines, .ms_review_wrap(candidate$llm_rationale, indent = "            "))
       }
-      lines <- c(lines, paste0(
-        "       ", object_name, " <- ",
-        .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
-      ))
+      # A call is printed only where it runs. A candidate whose IRI names no
+      # term is here only to carry a recorded reject, or because the review was
+      # not built by `review_semantics()`, and `accept_suggestion()` refuses it.
+      lines <- c(lines, if (.ms_review_names_term(.ms_review_decision_iri(candidate$iri))) {
+        paste0(
+          "       ", object_name, " <- ",
+          .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
+        )
+      } else {
+        "       (its IRI names no term, so it cannot be accepted)"
+      })
       lines <- c(lines, "")
     }
 
@@ -988,10 +1027,26 @@ accept_suggestion <- function(review,
   # The non-empty check reads the stripped value, because that is the value the
   # decision records. Run before the strip, it let `iri = "REVIEW:"`, and every
   # other spelling the strip removes, record an accept that named no term
-  # (hub item B-219).
-  if (!is.null(iri) && !nzchar(accepted_iri)) {
+  # (hub item B-219). The strip removes one marker, so a value that is still a
+  # marker after it is refused too (hub item B-246). `rank =` is checked as well:
+  # `review_semantics()` queues no such candidate, but a review it did not build
+  # as it is now -- one saved by an earlier version, or edited by hand -- can
+  # still hold one.
+  if (!.ms_review_names_term(accepted_iri)) {
+    if (is.null(iri)) {
+      cli::cli_abort(c(
+        "The candidate at that {.arg rank} names no term.",
+        "i" = "Its IRI is empty, or still a {.code REVIEW:} marker once one is removed.",
+        "i" = "Rebuild the review with {.fn review_semantics}, which does not queue such a candidate."
+      ))
+    }
     message <- "{.arg iri} must be a non-empty IRI."
-    if (nzchar(.ms_scalar_text(iri))) {
+    if (nzchar(accepted_iri)) {
+      message <- c(
+        "{.arg iri} must be an IRI, not a {.code REVIEW:} marker.",
+        "i" = "An accepted IRI is recorded without one {.code REVIEW:} marker, and what is left here is still a marker."
+      )
+    } else if (nzchar(.ms_scalar_text(iri))) {
       message <- c(
         message,
         "i" = "An accepted IRI is recorded without its {.code REVIEW:} marker, and nothing follows the marker here."

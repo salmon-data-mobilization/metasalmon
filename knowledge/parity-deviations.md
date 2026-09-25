@@ -876,6 +876,60 @@ which side is right is open.
 `PARITY.md` did not change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the review console records no accept whose IRI is empty or still a `REVIEW:`
+marker, by any route, and reports no row with an empty IRI as a field it cannot
+decide.** B-219 closed the `iri =` route for a value the strip empties. Hub item
+**B-246** closes the rest with one shared predicate, `.ms_review_names_term()`:
+the IRI a decision would record, read through `.ms_review_decision_iri()`, is
+not empty and is not still read as a marker by `.ms_is_review_iri()`.
+`review_semantics()` queues a candidate only when that holds, where it tested
+only that `iri` was not blank. So `rank =` no longer accepts a candidate whose
+`iri` is only the marker, a recorded accept of one is no longer replayed with an
+empty `decision_iri`, and a candidate carrying a doubled marker is not queued
+either. A row carrying a recorded reject is kept whatever its IRI, because
+rejecting a slot names no candidate, so its rejection and reason are still
+replayed; before, a slot whose only candidate had a blank `iri` lost both. The
+console prints no accept call for a candidate whose IRI names no term, because
+the call would be refused. `accept_suggestion()` refuses a value the predicate
+rejects, by `iri =` and by `rank =`. So `iri = "REVIEW: REVIEW:"`, which
+recorded `REVIEW:`, now aborts, and so does `rank =` on such a candidate in a
+review the current `review_semantics()` did not build, one saved by an earlier
+version or edited by hand. And the message *"Some suggestions target fields this
+review cannot decide"* is built from the rows with no write-back address or no
+IRI field alone, so a row dropped for having no IRI, which targets a field the
+review does decide, is dropped without a word. **The port has to take the same
+shape, not just the same outcome:** a candidate the queue drops takes no rank,
+so the candidates after it rank one place higher. That was already true of a
+blank `iri` in both packages. A port that only refused in `accept_suggestion()`
+would print different ranks for the same table.
+
+**The port is owed because metasalmonpy has the same defects.** Its `keep` mask
+in `review_console.py` tests only that the text of `iri` is not empty, and one
+message lists every row it drops. Three of the four routes were measured: by the
+2026-09-25 queue sweep on `main` `f1f7230`, and by the B-220 run on `85ebbb0`.
+The replay was read there and not run, and so was the loss of a recorded reject
+from a slot whose only candidate has a blank `iri`, which the same mask drops.
+Those measurements are under `B-246` and `B-247` in `knowledge/backlog.md`, and
+are not repeated here. The pin should be the R tests' twins in
+`tests/test_review_console.py`, each asserting its spelling premise against
+metasalmonpy's own strip and detector first. For every spelling in
+`MARKER_ONLY_IRIS`, a candidate that is only the marker is not queued, alone or
+ahead of a real candidate, and a recorded accept of one replays no empty IRI and
+leaves the slot to be asked again. For a doubled marker, `iri=` refuses it and a
+candidate carrying it is neither queued nor replayed. For every spelling of
+either kind, `rank=` refuses a candidate a review holds whose IRI names no term.
+For every spelling of either kind, and for an empty and a missing `iri`, a
+recorded reject of a slot whose only candidate carries it is replayed with its
+reason, and the console prints no accept call for that candidate while every
+call it does print runs. A row with an empty or missing IRI is not listed among
+the fields the review cannot decide, and a field it cannot decide still is.
+Which spellings count as the marker is hub question `Q-63`'s, and neither half
+decides it. It is owed as a port, not a register row: once it lands the two
+implementations behave alike again. It did not land in the same stream because a
+hub claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-247`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** makes the scan keep one gap row per field of a
 metadata row. That is the rule metasalmonpy shipped first, as **B-212**
