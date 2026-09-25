@@ -476,6 +476,18 @@ this lands the two implementations behave alike again. It did not land in the
 same stream because a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is **B-216**, filed by the 2026-09-23 queue sweep.
 
+**This one is closed.** `B-216` landed as metasalmonpy pull request **#46**
+(`2405df2`) on 2026-09-25. `detect_semantic_term_gaps()` in `term_requests.py`
+now drops the rows `metadata_write._is_hand_picked()` marks, `source` trimmed
+and lower-cased equal to `user` as R's `.ms_review_is_hand_picked()` reads it,
+as soon as the suggestions table is built on either entry path and before any
+embedded LLM field is read. `tests/test_term_requests.py` pins the
+before-and-after equality on a slot whose `ols` candidates are a real
+non-`smn` gap, and that a recorded row carrying an embedded `request_new_term`
+yields no gap row. Both packages still reserve `user` in the `source` column,
+so a caller's own `search_fn` that labels a candidate `user` loses it in both;
+that is a candidate for its own pair, not part of this port.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
 `review_metadata()` now lists a draft `REVIEW:` IRI wherever

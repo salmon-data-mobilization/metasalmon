@@ -529,7 +529,8 @@ metasalmonpy as a port, not a register row, because metasalmonpy has counted
 the recorded row as gap evidence since #28. The port is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
-queue item is `B-216`, filed by the 2026-09-23 queue sweep.
+queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
+2026-09-25 as metasalmonpy #46**, `2405df2`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
