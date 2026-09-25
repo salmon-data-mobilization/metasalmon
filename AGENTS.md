@@ -380,8 +380,9 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/sequences/`** — one card per stream (S1–S13) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
-  of open items. Severity lives here; *ordering* lives in the roadmap, and the
-  two legitimately differ.
+  of open items. An item's severity lives in the `severity` field of its file
+  under `queue/items/`, not here (ruled by Brett 2026-09-25, hub item Q-52);
+  *ordering* lives in the roadmap, and the two legitimately differ.
 - **`knowledge/plans/*.md`** — how to do one stream, in detail. Dated, because
   each is a record of a decision at a point in time. A sequence card links to
   its execplan before implementation starts.
