@@ -1,7 +1,7 @@
 id: B-310
 kind: defect
 title: 'metasalmon''s code-row seeder lists a character column that readr would read as dates, where metasalmonpy''s lists nothing'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code
