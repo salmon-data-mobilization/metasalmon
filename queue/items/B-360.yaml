@@ -1,0 +1,13 @@
+id: B-360
+kind: defect
+title: 'metasalmonpy''s bundle validators converge on metasalmon''s, as Brett ruled for S16 step 1'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-25-s16-review-packet-contract.md
+retires_when: 'IN METASALMONPY, the bundle validators give the verdicts metasalmon''s give on the same input: the dimension classifier covers area, volume, flow and speed with R''s compound and powered-denominator rules; the field anchors and the method-evidence alternatives match R''s; and role hints split on | only and keep their order, as R''s do. Pinned by tests that run the same cases in both packages and show identical findings. Brett ruled the direction on 2026-09-25 when he took every recommendation in section 10 of the S16 execplan (knowledge/plans/2026-09-25-s16-review-packet-contract.md, decision 9): R''s validators are the richer and more recently hardened set, so metasalmonpy moves. This is convergence, not a register row: the difference was never registered, and after this there is none. A prerequisite of B-327, because the shared ingest fixtures fail until the validators agree. No metasalmon half: R does not change.'

@@ -135,6 +135,12 @@ validation while saying nothing.
 Pass `NA` to clear a field deliberately; a blank string is refused as
 ambiguous.
 
+The fields a setter accepts come from the same SDP schema
+[`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+reads, so a call it prints is one the setter accepts. Under the default
+options that is the copy bundled with metasalmon, and neither contacts a
+network.
+
 ## See also
 
 [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md),
