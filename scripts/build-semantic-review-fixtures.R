@@ -32,9 +32,12 @@ source(file.path("tests", "testthat", "helper-semantic-review.R"))
 options(metasalmon.llm_deprecation_quiet = TRUE)
 
 root <- file.path("tests", "testthat", "fixtures", "semantic-review", "v1")
-cases_root <- file.path(root, "cases")
-unlink(cases_root, recursive = TRUE)
-dir.create(cases_root, recursive = TRUE, showWarnings = FALSE)
+# Every case is a directory directly under `root`; the previous run's cases
+# are removed first so a renamed case leaves nothing behind.
+cases_root <- root
+for (stale in list.dirs(root, full.names = TRUE, recursive = FALSE)) {
+  unlink(stale, recursive = TRUE)
+}
 
 canonical_json <- metasalmon:::.ms_semantic_review_canonical_bytes
 write_json_file <- function(value, path) {
@@ -194,9 +197,9 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
   dict <- semantic_review_case_dictionary(semantic_review_read_json(file.path(case_dir, "input.json")))
   review_dir <- file.path(tempfile("semantic-review-"), "review")
   built <- write_semantic_review_packet(dict, context_text = context_text, review_dir = review_dir, quiet = TRUE)
-  file.copy(built$path, file.path(case_dir, "packet-pass-1.json"), overwrite = TRUE)
+  file.copy(built$path, file.path(case_dir, "packet-1.json"), overwrite = TRUE)
 
-  harness_path <- file.path(case_dir, "assessments-pass-1.csv")
+  harness_path <- file.path(case_dir, "harness-1.csv")
   semantic_review_write_harness(harness, harness_path, packet_id = built$packet_id)
   counter <- new.env(parent = emptyenv())
   counter$calls <- 0L
@@ -212,9 +215,9 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
   result <- ingest(dict, assessments = harness_path, review_dir = review_dir, search_fn = search_fn, quiet = TRUE)
   write_expected <- function(result, pass) {
     expected_dir <- file.path(case_dir, "expected")
-    write_csv_file(result$assessments, file.path(expected_dir, paste0("record-pass-", pass, ".csv")))
-    write_csv_file(result$findings, file.path(expected_dir, paste0("findings-pass-", pass, ".csv")))
-    write_csv_file(result$suggestions, file.path(expected_dir, paste0("suggestions-pass-", pass, ".csv")))
+    write_csv_file(result$assessments, file.path(expected_dir, paste0("record-", pass, ".csv")))
+    write_csv_file(result$findings, file.path(expected_dir, paste0("findings-", pass, ".csv")))
+    write_csv_file(result$suggestions, file.path(expected_dir, paste0("suggestions-", pass, ".csv")))
     write_json_file(list(
       status = result$status,
       pass = as.integer(result$pass),
@@ -229,13 +232,13 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
         awaiting_pass_2 = as.integer(result$summary$awaiting_pass_2)
       ),
       search_calls = counter$calls
-    ), file.path(expected_dir, paste0("status-pass-", pass, ".json")))
+    ), file.path(expected_dir, paste0("status-", pass, ".json")))
   }
   write_expected(result, 1L)
   if (!is.null(result$next_packet)) {
-    file.copy(result$next_packet, file.path(case_dir, "packet-pass-2.json"), overwrite = TRUE)
+    file.copy(result$next_packet, file.path(case_dir, "packet-2.json"), overwrite = TRUE)
     stopifnot(!is.null(harness_pass_2))
-    harness_2_path <- file.path(case_dir, "assessments-pass-2.csv")
+    harness_2_path <- file.path(case_dir, "harness-2.csv")
     pass_2_id <- semantic_review_read_json(result$next_packet)$packet_id
     semantic_review_write_harness(harness_pass_2(result), harness_2_path, packet_id = pass_2_id)
     counter$calls <- 0L
@@ -276,7 +279,7 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
     semantic_review_harness_row(targets[3, ], llm_decision = "review", llm_confidence = 0.40, llm_rationale = "Unsure whether the catch or the fish is the entity."),
     semantic_review_harness_row(targets[4, ], llm_decision = "accept", llm_confidence = 0.80, llm_selected_candidate_index = 2L, llm_selected_iri = "http://qudt.org/vocab/unit/M", llm_rationale = "Metre.")
   )
-  write_case("bundle_validator_downgrade", catch_weight_dictionary(), targets, candidates, harness, context_text = catch_weight_context)
+  write_case("bundle_downgrade", catch_weight_dictionary(), targets, candidates, harness, context_text = catch_weight_context)
 }
 
 # C. Target units: a categorical column, a code value, a table's observation
@@ -415,20 +418,20 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
   dir.create(case_dir, recursive = TRUE, showWarnings = FALSE)
   base <- file.path(cases_root, "bundle_accept")
   file.copy(file.path(base, "input.json"), file.path(case_dir, "input.json"), overwrite = TRUE)
-  file.copy(file.path(base, "packet-pass-1.json"), file.path(case_dir, "packet-pass-1.json"), overwrite = TRUE)
-  harness <- semantic_review_read_csv(file.path(base, "assessments-pass-1.csv"))
-  packet <- semantic_review_read_json(file.path(base, "packet-pass-1.json"))
+  file.copy(file.path(base, "packet-1.json"), file.path(case_dir, "packet-1.json"), overwrite = TRUE)
+  harness <- semantic_review_read_csv(file.path(base, "harness-1.csv"))
+  packet <- semantic_review_read_json(file.path(base, "packet-1.json"))
 
   variants <- list()
   add_variant <- function(name, code, harness_rows = NULL, packet_value = NULL, packet_id = NULL, note,
                           sidecar_id = packet$packet_id) {
     files <- list()
     if (!is.null(harness_rows)) {
-      files$assessments <- paste0(name, "-assessments.csv")
+      files$assessments <- paste0(name, ".csv")
       semantic_review_write_harness(harness_rows, file.path(case_dir, files$assessments), packet_id = sidecar_id)
     }
     if (!is.null(packet_value)) {
-      files$packet <- paste0(name, "-packet.json")
+      files$packet <- paste0(name, ".json")
       write_json_file(packet_value, file.path(case_dir, files$packet))
     }
     variants[[length(variants) + 1L]] <<- c(list(name = name, expected_code = code, note = note, expected_packet_id = packet_id), files)
@@ -558,7 +561,7 @@ for (case in theme_a_cases$cases) {
   candidates <- theme_a_candidates(case, targets)
   harness <- theme_a_harness(case, targets)
   write_case(
-    paste0("theme_a_", case$case_id), theme_a_dictionary(case), targets, candidates, harness,
+    semantic_review_theme_a_case_id(case$case_id), theme_a_dictionary(case), targets, candidates, harness,
     context_text = case$context$context_text, expected_events = theme_a_events
   )
 }
@@ -577,7 +580,7 @@ for (case in theme_a_cases$cases) {
   accept_method$llm_selected_candidate_index[method] <- "1"
   accept_method$llm_selected_iri[method] <- "https://w3id.org/smn/ForkLengthMeasurementFieldMethod"
   accept_method$llm_rationale[method] <- "Adversarial: accept the fork-length method for a count with no procedure."
-  write_case("theme_a_catch_count_accept_method", theme_a_dictionary(case), targets, candidates, accept_method,
+  write_case("ta_method_accept", theme_a_dictionary(case), targets, candidates, accept_method,
     context_text = case$context$context_text, expected_events = theme_a_events)
 
   accept_context <- harness
@@ -587,7 +590,7 @@ for (case in theme_a_cases$cases) {
   accept_context$llm_selected_candidate_index[constraint] <- "1"
   accept_context$llm_selected_iri[constraint] <- "https://w3id.org/smn/CatchContext"
   accept_context$llm_rationale[constraint] <- "Adversarial: accept catch context beside catch abundance."
-  write_case("theme_a_catch_count_accept_context", theme_a_dictionary(case), targets, candidates, accept_context,
+  write_case("ta_ctx_accept", theme_a_dictionary(case), targets, candidates, accept_context,
     context_text = case$context$context_text, expected_events = theme_a_events)
 
   gap_case <- Filter(function(c) identical(c$case_id, "synthetic_structured_gap"), theme_a_cases$cases)[[1]]
@@ -599,7 +602,7 @@ for (case in theme_a_cases$cases) {
   reject$llm_new_term_definition <- NA_character_
   reject$llm_new_term_namespace <- NA_character_
   reject$llm_rationale <- "Adversarial: reject the shortlist outright instead of asking for a new term."
-  write_case("theme_a_synthetic_structured_gap_reject", theme_a_dictionary(gap_case), gap_targets, gap_candidates, reject,
+  write_case("ta_gap_reject", theme_a_dictionary(gap_case), gap_targets, gap_candidates, reject,
     context_text = gap_case$context$context_text, expected_events = theme_a_events)
 }
 

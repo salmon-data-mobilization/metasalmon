@@ -9,6 +9,25 @@ semantic_review_fixture_root <- function() {
   testthat::test_path("fixtures", "semantic-review", "v1")
 }
 
+# The conformance case id of a Theme A case. Short on purpose: every fixture
+# path, with the `metasalmon/` prefix a source tarball adds, has to stay
+# within the 100 bytes a portable tarball stores, or R CMD check reports a
+# non-portable file name. The packet test asserts the budget.
+semantic_review_theme_a_case_id <- function(case_id) {
+  ids <- c(
+    catch_count = "ta_catch_count",
+    catch_weight_advisory = "ta_catch_weight",
+    fork_length_explicit_procedure = "ta_fork_length",
+    ocean_phase_explicit_lifecycle = "ta_ocean_phase",
+    synthetic_structured_gap = "ta_gap",
+    handcrafted_gcdfo_routing = "ta_gcdfo_routing"
+  )
+  if (!case_id %in% names(ids)) {
+    stop("No conformance case id is mapped for Theme A case ", case_id)
+  }
+  unname(ids[[case_id]])
+}
+
 semantic_review_read_json <- function(path) {
   jsonlite::fromJSON(path, simplifyVector = FALSE)
 }

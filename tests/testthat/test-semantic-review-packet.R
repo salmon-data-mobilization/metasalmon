@@ -72,11 +72,17 @@ test_that("every fixture file matches the manifest, and the manifest lists every
   for (file in files) {
     expect_identical(semantic_review_sha256_file(file.path(root, file)), manifest$files[[file]], info = file)
   }
+  # Every path, with the prefix a source tarball adds, stays within the 100
+  # bytes a portable tarball stores; past that R CMD check reports a
+  # non-portable file name. Retires if R drops that check, which it will not.
+  tarball_paths <- paste0("metasalmon/tests/testthat/fixtures/semantic-review/v1/", files)
+  too_long <- tarball_paths[nchar(tarball_paths, type = "bytes") > 100L]
+  expect_length(too_long, 0L)
 })
 
 test_that("the vendored instructions and schema are what the packets embed", {
   instructions <- metasalmon:::.ms_semantic_review_instructions()
-  packet <- semantic_review_read_json(file.path(semantic_review_fixture_root(), "cases", "bundle_accept", "packet-pass-1.json"))
+  packet <- semantic_review_read_json(file.path(semantic_review_fixture_root(), "bundle_accept", "packet-1.json"))
   expect_identical(packet$instructions, instructions)
   expect_true(all(charToRaw(instructions) < as.raw(128L)))
   schema <- jsonlite::fromJSON(metasalmon:::.ms_semantic_review_schema_path(), simplifyVector = FALSE)
@@ -89,8 +95,8 @@ test_that("a golden packet validates against the vendored schema", {
   skip_if_not_installed("jsonvalidate")
   validator <- jsonvalidate::json_validator(metasalmon:::.ms_semantic_review_schema_path(), engine = "ajv")
   for (case_id in c("bundle_accept", "target_units", "retry_gain")) {
-    for (file in c("packet-pass-1.json", "packet-pass-2.json")) {
-      path <- file.path(semantic_review_fixture_root(), "cases", case_id, file)
+    for (file in c("packet-1.json", "packet-2.json")) {
+      path <- file.path(semantic_review_fixture_root(), case_id, file)
       if (!file.exists(path)) next
       expect_true(validator(readLines(path, warn = FALSE) |> paste(collapse = "\n"), verbose = TRUE), info = paste(case_id, file))
     }
@@ -98,15 +104,15 @@ test_that("a golden packet validates against the vendored schema", {
 })
 
 conformance_cases <- function() {
-  root <- file.path(semantic_review_fixture_root(), "cases")
-  cases <- list.files(root)
-  cases[file.exists(file.path(root, cases, "assessments-pass-1.csv"))]
+  root <- semantic_review_fixture_root()
+  cases <- list.dirs(root, full.names = FALSE, recursive = FALSE)
+  cases[file.exists(file.path(root, cases, "harness-1.csv"))]
 }
 
 # Build a case's packet in a fresh review directory and return what a test
 # needs to go on.
 build_case <- function(case_id) {
-  case_dir <- file.path(semantic_review_fixture_root(), "cases", case_id)
+  case_dir <- file.path(semantic_review_fixture_root(), case_id)
   input <- semantic_review_read_json(file.path(case_dir, "input.json"))
   dict <- semantic_review_case_dictionary(input)
   review_dir <- file.path(withr::local_tempdir(.local_envir = parent.frame()), "review")
@@ -117,7 +123,7 @@ build_case <- function(case_id) {
 
 expect_case_pass <- function(case, result, pass, counter) {
   expected_dir <- file.path(case$case_dir, "expected")
-  status <- semantic_review_read_json(file.path(expected_dir, paste0("status-pass-", pass, ".json")))
+  status <- semantic_review_read_json(file.path(expected_dir, paste0("status-", pass, ".json")))
   info <- paste(basename(case$case_dir), "pass", pass)
   expect_identical(result$status, status$status, info = info)
   expect_identical(as.integer(result$pass), status$pass, info = info)
@@ -131,17 +137,17 @@ expect_case_pass <- function(case, result, pass, counter) {
   expect_identical(counter$calls, status$search_calls, info = info)
   semantic_review_expect_frames_equal(
     result$assessments,
-    semantic_review_read_csv(file.path(expected_dir, paste0("record-pass-", pass, ".csv"))),
+    semantic_review_read_csv(file.path(expected_dir, paste0("record-", pass, ".csv"))),
     info = paste(info, "record")
   )
   semantic_review_expect_frames_equal(
     result$findings,
-    semantic_review_read_csv(file.path(expected_dir, paste0("findings-pass-", pass, ".csv"))),
+    semantic_review_read_csv(file.path(expected_dir, paste0("findings-", pass, ".csv"))),
     info = paste(info, "findings")
   )
   semantic_review_expect_frames_equal(
     result$suggestions,
-    semantic_review_read_csv(file.path(expected_dir, paste0("suggestions-pass-", pass, ".csv"))),
+    semantic_review_read_csv(file.path(expected_dir, paste0("suggestions-", pass, ".csv"))),
     info = paste(info, "suggestions")
   )
   # The persisted record is the returned one, typed.
@@ -155,7 +161,7 @@ expect_case_pass <- function(case, result, pass, counter) {
 test_that("every conformance case builds the golden packet byte for byte, producer aside", {
   for (case_id in conformance_cases()) {
     case <- build_case(case_id)
-    golden <- semantic_review_read_json(file.path(case$case_dir, "packet-pass-1.json"))
+    golden <- semantic_review_read_json(file.path(case$case_dir, "packet-1.json"))
     built <- semantic_review_read_json(case$built$path)
     expect_identical(case$built$packet_id, golden$packet_id, info = case_id)
     expect_identical(
@@ -175,14 +181,14 @@ test_that("every conformance case ingests to the golden record, findings, sugges
     counter$calls <- 0L
     counter$log <- list()
     search_fn <- semantic_review_fake_search(responses, counter)
-    harness <- file.path(case$case_dir, "assessments-pass-1.csv")
+    harness <- file.path(case$case_dir, "harness-1.csv")
     result <- suppressWarnings(ingest_semantic_assessments(
       case$dict, assessments = harness, review_dir = case$review_dir, search_fn = search_fn, quiet = TRUE
     ))
     expect_case_pass(case, result, 1L, counter)
 
     if (!is.null(result$next_packet)) {
-      golden_2 <- semantic_review_read_json(file.path(case$case_dir, "packet-pass-2.json"))
+      golden_2 <- semantic_review_read_json(file.path(case$case_dir, "packet-2.json"))
       built_2 <- semantic_review_read_json(result$next_packet)
       expect_identical(
         metasalmon:::.ms_semantic_review_canonical_bytes(semantic_review_strip_producer(built_2)),
@@ -191,7 +197,7 @@ test_that("every conformance case ingests to the golden record, findings, sugges
       )
       counter$calls <- 0L
       result_2 <- ingest_semantic_assessments(
-        case$dict, assessments = file.path(case$case_dir, "assessments-pass-2.csv"),
+        case$dict, assessments = file.path(case$case_dir, "harness-2.csv"),
         review_dir = case$review_dir, search_fn = search_fn, quiet = TRUE
       )
       expect_case_pass(case, result_2, 2L, counter)
@@ -201,7 +207,7 @@ test_that("every conformance case ingests to the golden record, findings, sugges
 })
 
 test_that("the reject variants raise their stable codes and write nothing", {
-  case_dir <- file.path(semantic_review_fixture_root(), "cases", "file_errors")
+  case_dir <- file.path(semantic_review_fixture_root(), "file_errors")
   reject <- semantic_review_read_json(file.path(case_dir, "reject.json"))
   base <- build_case(reject$base_case)
   before <- list.files(base$review_dir)
@@ -212,15 +218,15 @@ test_that("the reject variants raise their stable codes and write nothing", {
     }
     if (!is.null(variant$packet)) {
       args$packet <- file.path(case_dir, variant$packet)
-      args$assessments <- args$assessments %||% file.path(case_dir, "..", reject$base_case, "assessments-pass-1.csv")
+      args$assessments <- args$assessments %||% file.path(case_dir, "..", reject$base_case, "harness-1.csv")
     }
     if (!is.null(variant$expected_packet_id)) {
       args$packet_id <- variant$expected_packet_id
-      args$assessments <- args$assessments %||% file.path(case_dir, "..", reject$base_case, "assessments-pass-1.csv")
+      args$assessments <- args$assessments %||% file.path(case_dir, "..", reject$base_case, "harness-1.csv")
     }
     if (identical(variant$expected_code, "no_pass_2")) {
       pass_2_name <- file.path(withr::local_tempdir(), "semantic-assessments-pass-2.csv")
-      file.copy(file.path(case_dir, "..", reject$base_case, "assessments-pass-1.csv"), pass_2_name)
+      file.copy(file.path(case_dir, "..", reject$base_case, "harness-1.csv"), pass_2_name)
       args$assessments <- pass_2_name
       args$packet_id <- base$built$packet_id
     }
@@ -236,7 +242,7 @@ test_that("a pass-2 packet that does not descend from the session's pass-1 packe
   case <- build_case("retry_gain")
   responses <- semantic_review_search_responses()
   result <- ingest_semantic_assessments(
-    case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
     review_dir = case$review_dir, search_fn = semantic_review_fake_search(responses), quiet = TRUE
   )
   expect_identical(result$status, "awaiting_pass_2")
@@ -247,7 +253,7 @@ test_that("a pass-2 packet that does not descend from the session's pass-1 packe
   writeBin(metasalmon:::.ms_semantic_review_canonical_bytes(orphan), orphan_path)
   condition <- tryCatch(
     ingest_semantic_assessments(
-      case$dict, assessments = file.path(case$case_dir, "assessments-pass-2.csv"),
+      case$dict, assessments = file.path(case$case_dir, "harness-2.csv"),
       packet = orphan_path, review_dir = case$review_dir, quiet = TRUE
     ),
     error = function(e) e
@@ -257,7 +263,7 @@ test_that("a pass-2 packet that does not descend from the session's pass-1 packe
   fresh <- build_case("bundle_accept")
   condition <- tryCatch(
     ingest_semantic_assessments(
-      fresh$dict, assessments = file.path(case$case_dir, "assessments-pass-2.csv"),
+      fresh$dict, assessments = file.path(case$case_dir, "harness-2.csv"),
       packet = result$next_packet, review_dir = fresh$review_dir, quiet = TRUE
     ),
     error = function(e) e
@@ -267,7 +273,7 @@ test_that("a pass-2 packet that does not descend from the session's pass-1 packe
 
 test_that("harness text is redacted at capture and no unredacted copy survives", {
   case <- build_case("bundle_accept")
-  harness <- semantic_review_read_csv(file.path(case$case_dir, "assessments-pass-1.csv"))
+  harness <- semantic_review_read_csv(file.path(case$case_dir, "harness-1.csv"))
   harness$llm_error[[1]] <- "Provider said: api_key=sk-live-9f8e7d6c5b4a was rejected."
   harness$llm_rationale[[2]] <- "Judged with Authorization: Bearer top-secret-token-42 in the header."
 
@@ -307,13 +313,13 @@ test_that("a stale assessment file is refused after the packet is rebuilt", {
   case <- build_case("bundle_accept")
   first_id <- case$built$packet_id
   # A harness answers the first packet at the default location.
-  file.copy(file.path(case$case_dir, "assessments-pass-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
+  file.copy(file.path(case$case_dir, "harness-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
   writeLines(first_id, file.path(case$review_dir, "semantic-assessments-pass-1.csv.packet-id"))
   # The packet is rebuilt with more context, so its id changes; the old
   # answers name the old packet and are refused rather than recorded.
   rebuilt <- write_semantic_review_packet(case$dict, context_text = "Some new context about the catch.", review_dir = case$review_dir, overwrite = TRUE, quiet = TRUE)
   expect_false(identical(rebuilt$packet_id, first_id))
-  file.copy(file.path(case$case_dir, "assessments-pass-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
+  file.copy(file.path(case$case_dir, "harness-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
   writeLines(first_id, file.path(case$review_dir, "semantic-assessments-pass-1.csv.packet-id"))
   condition <- tryCatch(
     ingest_semantic_assessments(case$dict, review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE),
@@ -333,7 +339,7 @@ test_that("a harness value in a package-owned column is overwritten with one war
   case <- build_case("row_errors")
   expect_warning(
     result <- ingest_semantic_assessments(
-      case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+      case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
       review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
     ),
     "package-owned"
@@ -346,7 +352,7 @@ test_that("a harness value in a package-owned column is overwritten with one war
 test_that("an IRI the packet did not offer is never applied", {
   case <- build_case("row_errors")
   result <- suppressWarnings(ingest_semantic_assessments(
-    case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
     review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
   ))
   not_offered <- result$assessments[result$assessments$column_name == "FIELD_01", ]
@@ -370,12 +376,12 @@ test_that("an IRI the packet did not offer is never applied", {
 test_that("error, downgraded, escalated and success rows carry identical names and types", {
   case <- build_case("row_errors")
   result <- suppressWarnings(ingest_semantic_assessments(
-    case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
     review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
   ))
   escalated <- build_case("reject_escalates")
   result_2 <- ingest_semantic_assessments(
-    escalated$dict, assessments = file.path(escalated$case_dir, "assessments-pass-1.csv"),
+    escalated$dict, assessments = file.path(escalated$case_dir, "harness-1.csv"),
     review_dir = escalated$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
   )
   rows <- dplyr::bind_rows(result$assessments, result_2$assessments)
@@ -474,7 +480,7 @@ test_that("the builder and the ingester make no model call: a stopping provider 
   expect_true(file.exists(case$built$path))
   # An ingest with no retry never calls search_fn.
   result <- ingest_semantic_assessments(
-    case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
     review_dir = case$review_dir, search_fn = function(...) stop("search must not be called"), quiet = TRUE
   )
   expect_identical(result$status, "complete")
@@ -484,7 +490,7 @@ test_that("the builder and the ingester make no model call: a stopping provider 
   counter$calls <- 0L
   counter$log <- list()
   result <- ingest_semantic_assessments(
-    retry$dict, assessments = file.path(retry$case_dir, "assessments-pass-1.csv"),
+    retry$dict, assessments = file.path(retry$case_dir, "harness-1.csv"),
     review_dir = retry$review_dir, search_fn = semantic_review_fake_search(semantic_review_search_responses(), counter), quiet = TRUE
   )
   expect_identical(counter$calls, 1L)
@@ -556,7 +562,7 @@ test_that("write_semantic_review_packet refuses a parsed object as context and a
   )
   # A packet alone may be rewritten; a session with answers may not.
   expect_no_error(write_semantic_review_packet(case$dict, review_dir = case$review_dir, quiet = TRUE))
-  file.copy(file.path(case$case_dir, "assessments-pass-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
+  file.copy(file.path(case$case_dir, "harness-1.csv"), file.path(case$review_dir, "semantic-assessments-pass-1.csv"))
   expect_error(write_semantic_review_packet(case$dict, review_dir = case$review_dir, quiet = TRUE), "already exists")
   expect_no_error(write_semantic_review_packet(case$dict, review_dir = case$review_dir, overwrite = TRUE, quiet = TRUE))
   expect_false(file.exists(file.path(case$review_dir, "semantic-assessments-pass-1.csv")))
@@ -598,7 +604,7 @@ theme_a_script_env <- local({
 theme_a_case_events <- function(case_id) {
   case <- build_case(case_id)
   result <- ingest_semantic_assessments(
-    case$dict, assessments = file.path(case$case_dir, "assessments-pass-1.csv"),
+    case$dict, assessments = file.path(case$case_dir, "harness-1.csv"),
     review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
   )
   expected <- semantic_review_read_json(file.path(case$case_dir, "expected", "events.json"))
@@ -609,7 +615,7 @@ test_that("the Theme A cases pass their recorded oracles through the ingester an
   env <- theme_a_script_env()
   cases <- semantic_review_read_json(testthat::test_path("fixtures", "theme-a", "cases-v1.json"))
   observed <- lapply(cases$cases, function(case) {
-    run <- theme_a_case_events(paste0("theme_a_", case$case_id))
+    run <- theme_a_case_events(semantic_review_theme_a_case_id(case$case_id))
     list(case_id = case$case_id, events = run$expected$events)
   })
   replay_like <- list(cases = observed)
@@ -620,7 +626,7 @@ test_that("the Theme A cases pass their recorded oracles through the ingester an
 
 test_that("the recorded events are what the ingester produces today, not only what was written down", {
   env <- theme_a_script_env()
-  for (case_id in c("theme_a_catch_count", "theme_a_synthetic_structured_gap", "theme_a_handcrafted_gcdfo_routing")) {
+  for (case_id in c("ta_catch_count", "ta_gap", "ta_gcdfo_routing")) {
     run <- theme_a_case_events(case_id)
     # Rebuild the events from the result the way the fixture generator did.
     original <- run$case$dict
@@ -649,7 +655,7 @@ test_that("three adversarial harness answers are caught by the deterministic lay
 
   # Accepting the fork-length method for catch_count fails the forbidden
   # rule through SEM_METHOD_EVIDENCE_REQUIRED: the accept becomes review.
-  method <- theme_a_case_events("theme_a_catch_count_accept_method")
+  method <- theme_a_case_events("ta_method_accept")
   expect_true("SEM_METHOD_EVIDENCE_REQUIRED" %in% method$result$findings$code)
   method_row <- method$result$assessments[method$result$assessments$dictionary_role == "method", ]
   expect_identical(method_row$llm_decision, "review")
@@ -657,7 +663,7 @@ test_that("three adversarial harness answers are caught by the deterministic lay
   expect_identical(evaluation$status, "pass")
 
   # Accepting CatchContext beside CatchAbundance raises SEM_REDUNDANT_CATCH_CONTEXT.
-  context <- theme_a_case_events("theme_a_catch_count_accept_context")
+  context <- theme_a_case_events("ta_ctx_accept")
   expect_true("SEM_REDUNDANT_CATCH_CONTEXT" %in% context$result$findings$code)
   constraint_row <- context$result$assessments[context$result$assessments$dictionary_role == "constraint", ]
   expect_identical(constraint_row$llm_decision, "review")
@@ -666,7 +672,7 @@ test_that("three adversarial harness answers are caught by the deterministic lay
 
   # A reject_shortlist on synthetic_structured_gap still surfaces the gap
   # through escalation.
-  gap <- theme_a_case_events("theme_a_synthetic_structured_gap_reject")
+  gap <- theme_a_case_events("ta_gap_reject")
   row <- gap$result$assessments
   expect_identical(row$llm_decision, "request_new_term")
   expect_identical(row$llm_escalated_from, "reject_shortlist")
