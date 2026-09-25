@@ -749,6 +749,19 @@ parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`.
 
+**The development version after 0.5.0 changes what the mirror owes on row 51
+(2026-09-25): one shared ownership sentinel, `.sdp-package` holding
+`sdp-owned`.** Hub item **B-113** carries out Brett's ruling Q14 of 2026-08-24
+in metasalmon. `write_salmon_datapackage()`, and `create_sdp()` through it, now
+write, manage and recognise only `.sdp-package`, so a directory whose only sign
+of being a package is the old `.metasalmon-package` is no longer replaced.
+metasalmonpy still writes `.metasalmonpy-package`, measured on `main` `cae3d83`,
+so a package written by both carries both files until its half lands. That half
+is owed as the move row 51 of `parity-deviations.md` records, with the name and
+content line it must take, and not as a new register row. **Why not in the
+same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
+queue item is `B-127`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
