@@ -1,0 +1,13 @@
+id: B-270
+kind: defect
+title: 'metasalmonpy''s SSSOM reader refuses the values the specification allows in predicate_type, subject_category, object_category and similarity_measure, the mirror half of B-269'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: [B-269]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, _REFERENCE_COLUMNS in sssom.py and the checks built on it follow the rule B-269 lands in R, so a mapping set carrying a value the specification allows in any of the four columns is read and validated, and a value outside entity_type_enum is still refused in predicate_type. Pinned by the twins of B-269''s tests, demonstrated RED on the reader as it stands. THE METASALMON HALF IS B-269, and each names the other. A PORT, NOT A REGISTER ROW: the two readers carry the same column list and the same check.'

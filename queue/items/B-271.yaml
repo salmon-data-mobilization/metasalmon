@@ -1,0 +1,13 @@
+id: B-271
+kind: defect
+title: 'The SSSOM manifest metasalmon writes cites a specification page that does not exist'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The provenance.specification URL in the manifest .ms_sssom_manifest_bytes() in R/sssom.R writes answers HTTP 200, and the pull request says why the page it names documents the SSSOM version the manifest declares, since the specification site publishes 1.0 and a dev version and no 1.1 page; a test pins the string, so the manifest''s canonical bytes change once and on purpose. knowledge/plans/2026-09-14-iop-triple-explainer.md, which cites the same URL, changes in the same pull request. Decided by fetching the new URL and by the test. THE METASALMONPY HALF IS B-272, and each names the other.'

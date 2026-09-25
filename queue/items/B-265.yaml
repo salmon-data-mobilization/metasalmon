@@ -1,0 +1,12 @@
+id: B-265
+kind: defect
+title: 'The semantic closure''s gap and incomplete-evidence rows for a code-resolved procedure name a codes.csv method_iri field that does not exist, and leave the known table, column and code empty'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'For an IRI in the measurement set that no review target holds, which is a code-resolved sosa:usedProcedure, the gap row and the incomplete-evidence row write_sdp_semantic_closure() builds name where the IRI actually sits: the codes.csv row whose term_iri carries it, with its table_id, column_name and code_value filled and a target_row_key keyed the way target discovery keys a codes.csv row; and the warning and the placement_rationale name that field rather than method_iri, which codes.csv does not have. The defaults come from .ms_closure_target_context() in R/semantic-closure.R. Pinned by a test on B-171''s fixture with a search that does not know the procedures, so both become gaps, asserting each row''s file, field and keys against the codes.csv row that carries its IRI, demonstrated RED on the producer as it stands. A gap row is what render_ontology_term_request() builds a term request from, so this address is what a request would cite. THE METASALMONPY HALF IS B-266, and each names the other.'

@@ -1,0 +1,13 @@
+id: B-259
+kind: defect
+title: 'A column_dictionary.csv holding one row twice makes metasalmonpy''s review_metadata() print one call that repeats every keyword, the mirror half of B-258'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: [B-258]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, review_metadata() reports a metadata address that two rows hold by the rule B-258 lands in R, and no call it prints repeats a keyword argument, so none fails with SyntaxError: keyword argument repeated. The grouping is _render_metadata_lines() in sdp_field_setters.py. Pinned by the twin of B-258''s test, demonstrated RED on the code as it stands. THE METASALMON HALF IS B-258, and each names the other. A PORT, NOT A REGISTER ROW: both implementations print the same failing call today.'

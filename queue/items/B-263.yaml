@@ -1,0 +1,12 @@
+id: B-263
+kind: defect
+title: 'metasalmonpy carries two fallback imports that say nothing about what retires them, and the script''s fails in the one case it was written for'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Each fallback import is removed, or works in the case its comment names and is exercised by a test, and whichever stays says what retires it: (1) validate_semantics() in validation.py, whose except ImportError branch, marked pragma: no cover, nothing has run since metasalmonpy pull request 50 (B-227) moved the tests off the top-level validation import; (2) scripts/validate_sdp.py, whose except Exception branch, the "script fallback when executed directly", imports dictionary and metadata by top-level name. Decided for (2) by running python3 scripts/validate_sdp.py --help from the checkout root with the package not installed: it prints the usage, or says what to install, rather than a traceback.'

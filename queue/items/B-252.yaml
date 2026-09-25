@@ -1,0 +1,13 @@
+id: B-252
+kind: defect
+title: 'Under a selected schema that does not declare a bundled field, metasalmonpy''s writers still write that field, where metasalmon writes only the declared columns'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, under a schema the options select that does not declare a field the bundled schema declares, create_sdp() through write_salmon_datapackage(), the four setters and apply_sdp_semantics() write no column for that field into a metadata file that did not already carry it, as metasalmon''s writers do by aligning to the selected schema''s declared columns alone, and every file written under the shipped settings stays byte-identical. Pinned by a test that selects a schema without dataset.csv''s update_frequency and column_dictionary.csv''s constraint_iri and asserts that create_sdp(), set_sdp_dataset() and apply_sdp_semantics() write neither column, demonstrated RED on the code as it stands. The column comes from normalize_*() in metadata.py filling frames with the static column lists before the writers align them, and read_salmon_datapackage() shares normalize_*(), so the fix keeps what the reader returns. A PORT, NOT A REGISTER ROW: knowledge/parity-deviations.md records it as the part of B-215 that was not ported. The metasalmon side was read and not run under such a schema.'

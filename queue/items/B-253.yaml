@@ -1,0 +1,13 @@
+id: B-253
+kind: defect
+title: 'A pkgdown run without scripts/build-pkgdown.R leaves Markdown copies of HUB.md and the pull request template in docs/, untracked and not ignored'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'git check-ignore reports docs/HUB.md and docs/PULL_REQUEST_TEMPLATE.md as ignored, as it already reports docs/AGENTS.md and docs/CLAUDE.md, which docs/.gitignore has covered since the initial commit; and the comment in .gitignore above the contributor-only pages says that a source added to internal_sources in scripts/build-pkgdown.R needs its Markdown page ignored as well as its HTML page. Decided by git check-ignore on the four paths, and by git ls-files showing that no tracked Markdown page of a public source under docs/ became ignored.'

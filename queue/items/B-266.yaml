@@ -1,0 +1,12 @@
+id: B-266
+kind: defect
+title: 'metasalmonpy''s semantic closure gives a code-resolved procedure''s gap and incomplete-evidence rows the same nonexistent codes.csv method_iri address, the mirror half of B-265'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: [B-265]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, _target_context() in semantic_closure.py gives an IRI that no review target holds the address B-265 lands in R, so its gap and incomplete-evidence rows name the codes.csv row''s term_iri with that row''s keys filled, and the warning and the rationale name that field. Pinned by the twin of B-265''s test on a fixture that binds a sosa:usedProcedure column, demonstrated RED on the code as it stands. This half was read and not run: _target_context() defaults to scope code, field method_iri and an empty table and column for an IRI with no target, which is the choice the R producer makes, so the RED run is its first measurement. THE METASALMON HALF IS B-265, and each names the other. A PORT, NOT A REGISTER ROW.'

@@ -1,0 +1,13 @@
+id: B-258
+kind: defect
+title: 'A column_dictionary.csv holding one row twice makes review_metadata() print one set_sdp_column() call that repeats every argument, and the call fails before the setter can say why'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, when a metadata file holds two rows with one address, review_metadata() prints no call that repeats an argument: it names the duplicated address, so no printed call fails with formal argument matched by multiple actual arguments. Pinned by a test on a column_dictionary.csv that carries the spawner_count row twice, demonstrated RED on the code as it stands. The cause is .ms_metadata_render_lines() grouping gap rows by file, table_id, column_name and code_value, not the scan, so B-211''s one row per field of each metadata row does not reach it. THE METASALMONPY HALF IS B-259, and each names the other.'

@@ -208,8 +208,10 @@ the declared order, as R's `.ms_align_cols()` does, and every file is
 byte-identical under the shipped settings, measured. One part is not ported and
 is owed: `normalize_*()` still synthesises a bundled field that a selected
 schema removes, and the writers put it after the declared fields, where R writes
-no such column into a frame that lacked it. That predates the port, as its
-workpad measured on `2405df2`, and it is to be filed as its own metasalmonpy item.
+no such column into a frame that lacked it. That predates the port. The B-215
+workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
+it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
+queue item is **B-252**.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
@@ -510,7 +512,7 @@ before-and-after equality on a slot whose `ols` candidates are a real
 non-`smn` gap, and that a recorded row carrying an embedded `request_new_term`
 yields no gap row. Both packages still reserve `user` in the `source` column,
 so a caller's own `search_fn` that labels a candidate `user` loses it in both;
-that is a candidate for its own pair, not part of this port.
+that is a pair of its own, **B-249** and **B-250**, not part of this port.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 a `REVIEW:` marker in `codes.csv`, and this time R is the side that owes it.**
@@ -577,9 +579,9 @@ it raises `AttributeError` into the `except Exception` branch marked
 `pragma: no cover - defensive`, which converts the column to strings. R's factor
 carries the labels. The Python code plainly means to apply them, so this reads
 as a Python defect rather than a design difference, but
-`tests/test_dictionary.py` pins the unlabelled categories, so it is a candidate
-for its own item and the B-55 workpad has the evidence. No register row is added
-here, because adding one is Brett's.
+`tests/test_dictionary.py` pins the unlabelled categories, so it is an item of
+its own, **B-274**, and the B-55 workpad has the evidence. No register row is
+added here, because adding one is Brett's.
 
 **This one is closed.** `B-241` landed as metasalmonpy pull request **#43**
 (`85ebbb0`) on 2026-09-25, changing the codes block of
@@ -863,7 +865,8 @@ it strips, so it computes what R's `.ms_review_decision_iri()` computes.
 trailing newline, is not twinned, because its premise does not hold there:
 measured on one file, readr 2.2.0 keeps a quoted trailing newline and
 metasalmonpy's `read_sdp_csv()` strips it. That reader difference is not among
-the mismatches `PARITY.md` row 23 names, and it goes to the next queue sweep.
+the mismatches `PARITY.md` row 23 names. It is **B-257**, which records that
+which side is right is open.
 `PARITY.md` did not change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
@@ -983,6 +986,72 @@ whose fixture is a file in the specification's canonical form. It is owed as a
 port, not a register row: once it lands the two readers accept the same set. It
 did not land in the same stream because a hub claim covers one branch in one
 repository. Its metasalmonpy half is **B-234**.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a required IRI field under a selected schema is reported
+once.** Under a selected schema that marks `column_dictionary.csv` `unit_iri`
+required, a blank `unit_iri` on a measurement row was reported twice, as
+`required` and as `iri`, so the printed `set_sdp_column()` call named the field
+twice and could not run. metasalmonpy closed that route first, with the one row
+per field that **B-212** put in `add()`, and measured it only with a scratch
+script: two rows and *keyword argument repeated: unit_iri* on `70fa8fd`, one row
+on `351fed6`, per its workpad. Hub item **B-211** closed it in R and pinned it,
+with the test *a field two checks both find is reported once: a required IRI a
+configured schema declares* in `tests/testthat/test-sdp-field-setters.R`.
+metasalmonpy's suite has no such test, as both workpads say. What is owed is the
+twin, shown to fail when `add()` keeps a second row for the field. It is not a
+port and not a register row, because nothing behaves differently. It was found
+after both halves had merged, and a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-260**.
+
+**The development version after 0.5.0 adds a documentation port to what the
+mirror is owed (2026-09-25): the semantic-review guide's account of the two
+canonical sets.** Hub item **B-192** rewrote the passage of
+`vignettes/post-review-package-publication.Rmd` from which metasalmonpy's
+`guides/semantic-review.qmd` was transcribed, after metasalmonpy pull request 31
+had fixed that guide's larger error. The R text departs from the Python wording
+where the wording was not accurate for R, and two of those departures hold for
+Python too. Measured by the B-192 run on metasalmonpy `main` `70fa8fd`, and read
+again on `f1f7230` by the 2026-09-25 queue sweep: the guide says the package
+"stops validating" because of a row added for a code-resolved procedure
+(`:463`), where the ledger is read only by `_export_reviewed()` in `eml.py` and
+never by `validate_salmon_datapackage()`; and it says no reviewer ever selected
+such a procedure as a slot (`:456-457`), where `review_console.py` lists
+`codes.csv` among `WRITABLE_FILES`, so a reviewer can decide a code value's
+`term_iri`. It is owed as a documentation port, not a register row. It did not
+land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-261**.
+
+**The development version after 0.5.0 adds a test twin to what the mirror is
+owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
+review target.** Hub item **B-171** added the R test of that name to
+`tests/testthat/test-semantic-closure.R`, on a fixture that binds a data column
+to a measure as `sosa:usedProcedure`, so that its code values' `term_iri` land in
+the measurement set and in no review target. It is the first test to reach the
+role fallback in `.ms_closure_iri_roles()`, and a mutation of that fallback
+fails it. metasalmonpy has the same producer and the same fallback, `_iri_roles()`
+in `semantic_closure.py` (the fallback at `:504-507` on `f1f7230`), and
+`tests/test_semantic_closure.py` has no `usedProcedure` component, no
+observation structure and no `example.org/methods` IRI: read by the B-171 run on
+`25dc7f3`, and again by the 2026-09-25 queue sweep on `f1f7230`. Its one
+set-difference test pins the other direction, `smn:Observation`. What is owed is
+the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
+not a port and not a register row, because nothing behaves differently. It did
+not land in the same stream because a hub claim covers one branch in one
+repository. Its metasalmonpy queue item is **B-264**.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the warning for a column kept as text names the column and the values.** When
+`apply_salmon_dictionary(strict = FALSE)` cannot convert a column to its
+`value_type`, metasalmon keeps it as character with a warning that has always
+named the column and, since hub item **B-55**, also names the values that
+cannot be read as that type. metasalmonpy's warning names neither: *Coercion to
+integer failed; keeping as string*, from `dictionary.py:822` on `f1f7230`,
+measured there by the 2026-09-25 queue sweep with `"x"` in a column typed
+`integer`. The B-241 run found it and left it outside that port. It is owed as a
+port, not a register row, because nobody chose the difference. It did not land
+in the same stream because a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is **B-275**.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

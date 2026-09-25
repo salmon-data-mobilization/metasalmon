@@ -1,0 +1,12 @@
+id: B-264
+kind: defect
+title: 'Nothing in metasalmonpy pins that a code-resolved procedure is a vocabulary term and never a review target, the twin of B-171''s test'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: [B-171]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy''s tests/test_semantic_closure.py carries the twin of metasalmon''s test "a code-resolved procedure is a vocabulary term and never a review target" in tests/testthat/test-semantic-closure.R, on a fixture like its make_closure_procedure_sdp(): a data column bound to a measure as sosa:usedProcedure in an observation structure, whose codes.csv term_iri values land in the measurement set and in no review target, and assertions that write_sdp_semantic_closure() puts those IRIs in metadata/semantic_vocabulary.csv and not in reviewed_semantic_selections.csv, and that each is searched under the method role alone, which the fallback in _iri_roles() in semantic_closure.py gives it. The twin is shown to fail against a mutation of that fallback. THE R TEST IS B-171''s. Owed as a pin, not as a behaviour port and not as a parity-register row: the producer and its fallback are the same in both implementations and nothing behaves differently.'

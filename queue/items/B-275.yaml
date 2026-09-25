@@ -1,0 +1,13 @@
+id: B-275
+kind: defect
+title: 'metasalmonpy''s non-strict coercion warning names neither the column nor the values, where metasalmon''s names both'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P4
+blocked_by: [B-55]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, when apply_salmon_dictionary(strict=False) keeps a column as text because a value will not convert to its value_type, the warning names the column and the values that cannot be read as that type, as the cli_warn() in metasalmon''s apply_salmon_dictionary() does, rather than "Coercion to <type> failed; keeping as string". Pinned by a test that asserts both names in the warning, demonstrated RED on the code as it stands. THE R BEHAVIOUR IS B-55''s for the values; metasalmon has always named the column. A PORT, NOT A REGISTER ROW: nobody chose the difference.'
