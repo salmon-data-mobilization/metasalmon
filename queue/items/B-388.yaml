@@ -1,8 +1,8 @@
 id: B-388
 kind: defect
 title: 'metasalmonpy aborts reading or validating a package whose declared datetime column holds a date-time that lies before year 1 or after year 9999 once its offset is applied'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmonpy
 venue: claude-code
 stream: S10

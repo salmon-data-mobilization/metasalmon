@@ -17,6 +17,8 @@ after that date.}
 \value{
 Tibble of ICES codes for the requested code type. Adds a \code{code_type}
 column and a \code{url} column pointing at the corresponding \code{CodeDetail} API endpoint.
+Empty when ICES answers with no rows, and also when the request fails,
+which warns, naming the request.
 }
 \description{
 List ICES codes for a code type

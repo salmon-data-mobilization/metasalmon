@@ -179,6 +179,13 @@ place (**corrected**, with the finding ids from Appendix D), or replaced
 | 9.5 | **reduced**: the quoted paragraph and the exclusion list are deleted rather than corrected, and the section now points at `HUB.md` and keeps only the design reasoning and the reversal | R15; the duplicated-boundary defect §9.1 measures |
 | Appendix A Q37 | the 2026-09-09 ruling is kept and a dated supersession note added beneath it | R15; this file's never-delete convention |
 
+**Fifth pass, 2026-09-25** (hub records only; no ruling changed).
+
+| Section | Change | Driven by |
+|---|---|---|
+| 7-D Scale | the pilot anchor names the replay/oracle half of the Theme A harness rather than one script subcommand; dated note beneath | Q23 unchanged; the harness's live side is another item's subject |
+| 10 issue table | issues 13 and 16 leave Stage B for queue items `B-280`, `B-278` and `B-279`; dated notes beneath the table | the `tern` edge in the roadmap |
+
 ### 0.3 The verdict, in one paragraph
 
 The thesis is worth testing and the plan's guardrails (rights gate, no model
@@ -1444,11 +1451,19 @@ run, with agreement reported.
   V, OV), three epochs, two models. The first six are the six Theme A cases
   (their `case_id`, evidence status, context, targets, candidates, and
   required / allowed / forbidden oracle seed the retrieval, code-list, and
-  decomposition families), and the Inspect harness must reproduce
-  `Rscript scripts/theme-a-benchmark.R replay` before any new task is
-  added; the rest derive from the S12 campaign. Pilot results debug scorers
-  and are never reported as an effect. A protocol preprint precedes the
-  confirmatory run.
+  decomposition families), and the Inspect harness must reproduce the
+  replay/oracle half of the Theme A harness (its fixtures and their
+  comparison), independent of any live provider capture mode, before any
+  new task is added; the rest derive from the S12 campaign. Pilot results
+  debug scorers and are never reported as an effect. A protocol preprint
+  precedes the confirmatory run.
+  *(Reworded 2026-09-25. Until then the anchor read "must reproduce
+  `Rscript scripts/theme-a-benchmark.R replay`", which pinned it to one
+  script's subcommand rather than to the fixtures and comparison that
+  subcommand runs. The ruling is unchanged — Q23: the three Theme A captures
+  finish as the pilot's regression anchor — and what the wording now says is
+  that the anchor survives whatever happens to the script's live capture
+  side, which is another item's subject.)*
 - **v0.1 (Stage B):** the *released benchmark* is 60 curated tasks across
   six families (construction 15, diagnosis 10, mapping and gap 10,
   decomposition 10, provenance 10, governance 5), all deterministic or
@@ -1954,14 +1969,24 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 | 10 | `smn-sci-plgn`, personal, in place (Q26) | Repoint at metasalmon and metasalmonpy 0.5.0 by tag, add the Claude plugin manifest beside the Codex one, and retire the plugin's own term search in favour of metasalmonpy's (hub Q69, 2026-09-25). This row said "→ institute" and "rename" until 2026-09-25, which Q26 had overruled on 2026-09-05 | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
 | 11 | four core repositories | Zenodo archiving, `CITATION.cff`, `inst/CITATION`; resolve `Codex [aut]` | A | docs agent, Brett approves authorship | a DOI on the next tag of each |
 | 12 | `salmon-domain-ontology`, `smn-data-pkg` | Draft `GOVERNANCE.md` for the RDA working group's review | B | docs agent, Brett and the WG | editorial group, change classes, CODEOWNERS with two humans, unavailability clause |
-| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | B | semantic agent | deterministic distribution from a clean checkout; no publication |
+| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | queue `B-280`; out of Stage B 2026-09-25 | semantic agent | deterministic distribution from a clean checkout; no publication |
 | 14 | foundry | The PR #27 evidence briefing for Q6 (advocate, challenger, adjudicator; decision matrix) | B | evidence agents | matrix delivered to Brett; no term minted; withdrawn gaps moved to `rejected` |
 | 15 | the SalmonBench repository (Q26) | SalmonBench v0.1: 60 tasks, held-out keys, external authors onboarded, preregistered analysis | B | benchmark lead, contributors | frozen plan; raw logs; results preprint |
-| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | B | R and Python agents | a register gap is detected without hand-filing, on both sides |
+| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | queue `B-278` and `B-279`; out of Stage B 2026-09-25 | R and Python agents | a register gap is detected without hand-filing, on both sides |
 
 **Added 2026-09-05 for S15 and S16.** Issues 17 to 19 are the coordination
 change; issue 20 is the PSC ontology and is filed in the PSC organization
 through the PSC-DSC intake, not here.
+
+**Re-sequenced 2026-09-25.** Issues 13 and 16 read Stage B until today. Both
+now live in the hub queue — the compiler as `B-280`, the `--gaps` reader as the
+pair `B-278` (metasalmon) and `B-279` (metasalmonpy) — and the queue, not this
+table, sequences them: `tern` (a requirements-driving consumer, recorded as an
+edge in the roadmap the same day) consumes the compiler's distribution at a
+pinned commit and would otherwise build a second exporter, and the reader is
+what makes the commons register the pipeline's front end in fact rather than in
+intent. The rows keep their acceptance tests; their stage cells say where they
+went.
 
 | # | Repository | Issue title | Stage | Delegate | Acceptance evidence |
 |---|---|---|---|---|---|

@@ -6,7 +6,7 @@ claimable: false
 repo: salmon-science-foundry
 venue: either
 stream: S14
-blocked_by: [S-01, S-05, S-12]
+blocked_by: [S-01, S-12]
 legacy: 'S14'
 evidence: knowledge/sequences/s14-salmon-science-foundry.md
-retires_when: 'The Foundry repository exists with its bundle, contracts and Tier 0 ledger, one real create_sdp() call has written a receipt, and the 25-task SalmonBench pilot has run; at that point this stream splits into the workstreams its execplan names rather than staying one item.'
+retires_when: 'The Foundry repository exists with its bundle, contracts and Tier 0 ledger, one real create_sdp() call has written a receipt, and the 25-task SalmonBench pilot has run; at that point this stream splits into the workstreams its execplan names rather than staying one item. Blockers narrowed 2026-09-25: this listed S-05 until then, but the half of S-05 the Foundry needs (workstream A1: a released metasalmonpy 0.5.0 it can pin) is delivered -- measured 2026-09-25 with gh, the newest metasalmonpy tag is v0.5.0 on 67fb486 with a GitHub Release dated 2026-09-24 -- while S-05 itself stays iceboxed on B-58 and B-59, which the Foundry does not consume. S-01 and S-12 remain hard dependencies (the S14 card names them).'
