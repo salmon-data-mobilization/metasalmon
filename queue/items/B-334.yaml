@@ -1,0 +1,13 @@
+id: B-334
+kind: defect
+title: 'metasalmonpy fetch_salmon_ontology() tries its default gcdfo fallback whatever url it is given, so a call for smn whose url fails returns gcdfo''s body with no warning, the mirror half of B-333'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: [B-333]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, fetch_salmon_ontology() follows the rule B-333 lands in R: a call that names a url and no fallback_urls never returns the body of a default fallback that serves a different ontology from the one url names. Pinned by the twin of B-333''s test, with requests.get stubbed so that a url for the ontology that is not the default fails and the default fallback answers: with an empty cache_dir, the call raises rather than returning that fallback''s body, demonstrated RED on the function as it stands, with the same control. It holds whichever default Q-71 rules. THE METASALMON HALF IS B-333, and each names the other. A PORT, NOT A REGISTER ROW: both packages carry the defect in the same shape.'

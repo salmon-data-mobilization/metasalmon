@@ -508,7 +508,6 @@ writes:
       a promotion to ready resting on anything other than an authorization
       Brett gave in chat
     - any --force, --force-with-lease, --delete, or non-fast-forward push
-    - anything at all on GitLab
     - >-
       any GitHub API call that writes, including through gh, other than the
       eight the permitted list names, which are opening the one labelled draft

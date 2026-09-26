@@ -1,0 +1,13 @@
+id: B-335
+kind: defect
+title: 'fetch_salmon_ontology() caches every url and representation as salmon-ontology.ttl with one set of validators, so two fetches into one cache_dir overwrite each other'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, fetch_salmon_ontology() keys each cached copy and its validators by the URL that returned them and the accept they were fetched under. Two fetches into one cache_dir that differ in either leave two copies; a path one call returned still holds what that call fetched after any other call returns; a conditional request carries only validators that the URL it is sent to returned under the same accept; a 304 answer returns the copy that the answering URL returned; and when every url fails, no call returns a copy fetched under another accept or from a URL that call did not try. Pinned by a test with httr::GET stubbed that runs three sequences, each demonstrated RED on the function as it stands: smn and then gcdfo into one directory; one url under a Turtle and then an RDF/XML accept; and a call whose url fails and whose fallback answers, followed by a call whose url answers 304 to any validator it is sent, which must not return the fallback''s body as that url''s. It holds whichever failure behaviour Q-71 rules. THE METASALMONPY HALF IS B-336, and each names the other.'

@@ -1238,7 +1238,8 @@ an earlier version wrote, keyed `NA`, `nan` and nothing, with one of them
 recorded as rejected. It is owed as a port, not a register row: once it lands
 the two implementations behave alike again. It did not land in the same stream
 because a hub claim covers one branch in one repository. Its metasalmonpy queue
-item is `B-277`.
+item is `B-277`, which **landed 2026-09-26 as metasalmonpy #69**, `5b03724`: a
+code row with no code value gets no semantic target there too.
 
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical

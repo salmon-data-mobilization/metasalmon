@@ -687,11 +687,21 @@ write_salmon_datapackage <- function(
     },
     error = function(error) character()
   )
-  if (length(decisions) == 0L) {
+  # A semantic review session under `review/` is a record too (hub item
+  # B-326): the packet, the harness's answers and the ingested assessments.
+  # `prune = TRUE` would delete it just as silently.
+  review_record <- .ms_semantic_review_file(file.path(path, "review"), "record")
+  has_review_record <- file.exists(review_record) && !dir.exists(review_record)
+  if (length(decisions) == 0L && !has_review_record) {
     return(invisible(NULL))
   }
   cli::cli_warn(c(
-    "{.code prune = TRUE} is about to delete {.file semantic_suggestions.csv}, which records {length(decisions)} review decision{?s}.",
+    if (length(decisions) > 0L) {
+      "{.code prune = TRUE} is about to delete {.file semantic_suggestions.csv}, which records {length(decisions)} review decision{?s}."
+    },
+    if (has_review_record) {
+      "{.code prune = TRUE} is about to delete {.file review/}, which holds an ingested semantic review record."
+    },
     "i" = "Copy it first if you want to keep the record of what was accepted and why."
   ))
   invisible(NULL)
@@ -853,6 +863,14 @@ infer_salmon_datapackage_artifacts <- function(
     llm_timeout_seconds = 60,
     llm_request_fn = NULL
 ) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_salmon_datapackage_artifacts", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
@@ -1133,6 +1151,14 @@ create_sdp <- function(
     prune = FALSE,
     ...
 ) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "create_sdp", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)

@@ -144,7 +144,22 @@ collation_sensitive_fns <- c(
   # names, which reaches an abort message and is compared by the caller deciding
   # whether any file is written at all. Neither name matches the heuristic below.
   ".ms_closure_incomplete_row",
-  ".ms_search_failed_sources"
+  ".ms_search_failed_sources",
+  # The semantic review packet (S16 step 1, hub item B-326): its bytes are
+  # hashed into `packet_id` and compared across metasalmon and metasalmonpy,
+  # so every ordering in it is C-collated. The two exported functions, the
+  # unit sorter, the candidate emitter (whose `extra` keys are C-sorted), the
+  # pins (C-sorted source lists) and the ingester's merge and rewrite are all
+  # listed; the emitter's own name matches the heuristic below.
+  "write_semantic_review_packet",
+  "ingest_semantic_assessments",
+  ".ms_semantic_review_units",
+  ".ms_semantic_review_candidate_object",
+  ".ms_semantic_review_pins",
+  ".ms_semantic_review_pass_2_packet",
+  ".ms_semantic_review_rewrite_suggestions",
+  ".ms_semantic_review_union_findings",
+  ".ms_semantic_flag_role_collisions"
 )
 
 # Functions whose *name* claims they produce canonical bytes, a hash, or a PID.

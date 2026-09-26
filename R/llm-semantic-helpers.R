@@ -810,7 +810,11 @@
     sum(query_tokens %in% chunk_tokens)
   }, numeric(1))
 
-  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source), , drop = FALSE]
+  # Radix, because this order reaches the review packet's bytes and its
+  # `packet_id` (hub item B-326): the `source` tie-break is character text,
+  # and a locale-collated sort would rank two sources differently on two
+  # machines.
+  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source, method = "radix"), , drop = FALSE]
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
@@ -889,7 +893,32 @@
     }
     chunks
   })
-  dplyr::bind_rows(file_chunks, inline_chunks)
+  pool <- dplyr::bind_rows(file_chunks, inline_chunks)
+  # The review packet records each context input with its SHA-256 (hub item
+  # B-326): a file by the digest of its bytes, inline text by the digest of
+  # the text. Attached here, where the source labels are assigned, so the
+  # packet's labels and the excerpts' labels are one rendering.
+  attr(pool, "context_inputs") <- dplyr::bind_rows(
+    purrr::map_dfr(raw_context, function(item) {
+      tibble::tibble(
+        source = as.character(item$source),
+        kind = "file",
+        sha256 = digest::digest(
+          readBin(item$path, what = "raw", n = file.info(item$path)$size),
+          algo = "sha256",
+          serialize = FALSE
+        )
+      )
+    }),
+    purrr::imap_dfr(inline_text, function(text, item_index) {
+      tibble::tibble(
+        source = paste0("inline_context[", item_index, "]"),
+        kind = "text",
+        sha256 = digest::digest(charToRaw(enc2utf8(text)), algo = "sha256", serialize = FALSE)
+      )
+    })
+  )
+  pool
 }
 
 .ms_prepare_context_chunks <- function(target_row,
