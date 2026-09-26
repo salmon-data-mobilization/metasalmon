@@ -227,11 +227,12 @@ writes:
     - operation: merge a pull request in this repository
       target: >-
         a pull request in this repository (metasalmon), and only one whose
-        checks have all finished green.
+        checks have all finished green and whose Codex review has completed
+        with every finding fixed or answered.
       shape: >-
         an ordinary merge. Never a merge over a failing, pending or skipped
-        required check, never an administrative override of one, and never in
-        any other member repository.
+        required check, never an administrative override of one, and not, under
+        this row, in any other member repository.
       excludes: >-
         the agent's own hand-back draft pull request, which stays draft and
         unmerged by the row above, because hand-back is the point where Brett
@@ -240,11 +241,12 @@ writes:
         does not need to see.
       max: no limit
       enforced_by: >-
-        nothing mechanical. Green is read off the checks before the merge, not
-        assumed from a clean local run.
+        nothing mechanical. Green and the review's completion are read off the
+        pull request before the merge, not assumed from a clean local run.
       granted: >-
         2026-09-10 (ruling R15), under the global rule that an agent may merge a
-        green pull request where Brett works alone.
+        green pull request where Brett works alone; narrowed 2026-09-25 (hub
+        item B-235).
     - operation: mark a pull request ready for review
       target: >-
         a pull request an agent opened under this protocol, in a member
@@ -473,13 +475,15 @@ writes:
       an agent opened. Any other issue comment, a review of somebody else's pull
       request, and a reply to a person's review are all still denied.
     - >-
-      any pull request operation other than the six the permitted list names,
-      which are opening the one draft per handed-back item, merging a green pull
-      request in this repository, marking ready for review, replying to a Codex
-      review thread, merging an approved pull request in a solo member
-      repository, and correcting the description of a pull request an agent
-      opened. Never a second draft for the same item, never an approval, and
-      never marking ready a pull request an agent did not open.
+      any pull request operation other than the eight the permitted list names,
+      which are opening the one draft per handed-back item, merging a pull
+      request in this repository, marking ready for review, replying to and
+      resolving a Codex review thread (on one reserved to Brett, replying only),
+      merging an approved pull request in a solo member repository, and, on a
+      pull request an agent opened, correcting its description, asking Codex
+      to review it again, and re-running a failed job. Never a second draft for
+      the same item, never an approval, and never marking ready a pull request
+      an agent did not open.
     - >-
       any label other than agent-run, and that one only on the draft pull
       request the permitted list names
@@ -493,7 +497,8 @@ writes:
       which are a small mechanical change here (queue state on an existing
       item file, a generated block, a typo, ignoring a stray file) and the
       locks repository's README. A new item file, a card correction and
-      anything substantive go through a pull request.
+      anything substantive go through a pull request; a port's landed record
+      goes with its item's done mark, as the small-push row says.
     - >-
       a push of the work branch into a member repository anyone other than
       Brett has ever contributed to, where it is ask-first like every other
@@ -507,7 +512,7 @@ writes:
     - >-
       any GitHub API call that writes, including through gh, other than the
       eight the permitted list names, which are opening the one labelled draft
-      pull request for a handed-back item, merging a green pull request in this
+      pull request for a handed-back item, merging a pull request in this
       repository, marking such a pull request ready for review, replying to and
       resolving a Codex review thread on it (on one reserved to Brett, replying
       only, since he resolves it), merging an approved pull request in
@@ -528,7 +533,7 @@ writes:
     agent makes anywhere. Ordinary repository work outside the protocol
     is governed by Brett's global agent instructions and suspends itself under
     that file's own clause, which is a separate rule with a separate scope and
-    is not narrowed by this one. Neither the scoping nor the reinstatement above
+    is not narrowed by this one. Neither the scoping nor any reinstatement above
     weakens what this clause does inside its scope: one write outside the
     permitted list stops the protocol for every agent, not only the one that
     made it.
@@ -625,14 +630,14 @@ the item and you must not start it.
 **4. Isolate.** A dedicated git worktree, keyed `<owner>-<repo>-<id>`, outside
 every primary checkout.
 
-**5. Work.** Inside that worktree and inside that item's scope. Commits go to
-`agent/<queue-id>/<token>` and nowhere else. Heartbeat about every
+**5. Work.** Inside that worktree and inside that item's scope. The work's
+commits go to `agent/<queue-id>/<token>` and nowhere else. Heartbeat about every
 `heartbeat_minutes` (`queue/config.yaml`) for as long as you hold the claim;
 a beat made early is not a breach (ruled 2026-09-24).
 
 **6. Report.** Into `.hub/workpads/<queue-id>.md` on your branch, one file per item.
 
-**7. Hand back.** Append a `handoff` commit, print the compare URL, stop. In a
+**7. Hand back.** Append a `handoff` commit and print the compare URL. In a
 member repository somebody other than Brett has contributed to, the branch is
 never pushed at all and the hand-back is a diff plus a pull request draft shown
 in chat; the Hand back section says how to tell which case you are in. There
@@ -640,9 +645,10 @@ nothing is pushed, so there is no branch to pass `hub done`, and the client has
 no chat hand-back yet (queue item B-338): keep the claim alive with heartbeats
 until Brett answers in chat. Everywhere else, pass `hub done` the branch you
 actually pushed, and it will be `agent/<queue-id>/<token>` because that is the
-only branch you were allowed to push. The client checks the name against the grant and exits 3 on anything
-else, so a mismatch means either the branch is not one the register covers or
-your agent token is not the one holding the claim. Both are worth stopping for.
+only work branch you were allowed to push. The client checks the name against
+the grant and exits 3 on anything else, so a mismatch means either the branch
+is not one the register covers or your agent token is not the one holding the
+claim. Both are worth stopping for.
 
 ## Claiming, and what to do when the push is rejected
 
@@ -805,8 +811,9 @@ section, `hub fresh` and the check in every command go together.
 
 The report goes into **`.hub/workpads/<queue-id>.md`** on your branch — one file
 per item, named for the item, for example `.hub/workpads/B-116.md` — committed
-like any other file. It does not go into an issue comment, because an agent may
-not write an issue comment at all.
+like any other file. It does not go into an issue comment, because the only
+issue comment an agent may write is the `@codex review` trigger the register
+names.
 
 The path is per-item so that parallel hand-backs never collide on one shared
 file (B-140). *Retires when:* nothing — this is B-140's fix, and the old path is
@@ -829,8 +836,9 @@ saying what would retire it is incomplete.
 ## Hand back
 
 Hand-back appends a `handoff` commit to the claim ref. **It does not release
-the claim.** The item stays unclaimable until Brett merges, so finished work
-never looks free again while he is away, and no second agent redoes it.
+the claim.** The item stays unclaimable until the work merges, by Brett or under
+the delegation rule the `done` state names, so finished work never looks free
+again while he is away, and no second agent redoes it.
 
 Then push the branch and open **one draft pull request** for it, in the member
 repository where the work happened, with the label `agent-run` and the queue id
@@ -1015,9 +1023,9 @@ file is its operative copy:
 > the pull request text in chat, and waits for me to say yes before it pushes
 > anything.
 
-That is the whole grant. Two `git push` targets, one draft pull request per
-item, and one README, in named repositories, by an agent executing this
-protocol.
+That is the whole of the quoted grant: two `git push` targets, one draft pull
+request per item, and one README, in named repositories, by an agent executing
+this protocol.
 
 **The block quote is reproduced as Brett wrote it and is not edited when he
 widens it.** Its widenings, from ruling R16 on, are recorded in
@@ -1110,16 +1118,19 @@ three arrive on their own. Each statement below is narrower than the global one
 it comes from:
 
 - **Merging a pull request here needs no separate ask** once every check has
-  finished green. Narrower than the global permission in two ways: only in this
-  repository, never in another member repository even one Brett works alone in;
-  and never the agent's own hand-back draft, which stays draft because that is
-  where Brett looks.
+  finished green and its Codex review has completed with every finding fixed or
+  answered. Narrower than the global permission, which asks only for green: it
+  also asks for that review, it reaches only this repository, and it never
+  reaches the agent's own hand-back draft. A merge in another solo member
+  repository, or of a hand-back draft in a delegated class, is the
+  approved-merge row's, on that row's conditions.
 - **Promoting a queue item to `ready`** follows `ready_is_set_by` and the
   register's promotion row.
 - **Pushing to `main`** is for small mechanical changes only, and here that
-  phrase is enumerated rather than left to judgement: queue state on an
-  existing item file, a generated block, a typo, ignoring a stray file. A new
-  item file, a card correction and anything else go through a pull request.
+  phrase is enumerated: queue state on an existing item file, a generated
+  block, a typo, ignoring a stray file. A new item file, a card correction and
+  anything else go through a pull request, except a port's landed record, which
+  goes with its item's done mark.
 
 Nothing here is a widening, including the locks repository's README: that row's
 `why_it_is_not_a_local_grant` says why. All three are rows in
@@ -1131,13 +1142,13 @@ authorization the first time an agent used it.
 evidence, and where it conflicts with something Brett has already decided, his
 decision wins and the reply says so rather than quietly complying.
 
-**Self-suspending.** `writes.self_suspends` is the clause and sets its scope: a
-write outside the permitted list, made under the protocol against a claimed
-item, suspends the whole authorization for every agent until Brett reinstates
+**Self-suspending.** `writes.self_suspends` is the clause and sets its scope,
+which is `scope_note`'s: a write outside the permitted list, made inside that
+scope, suspends the whole authorization for every agent until Brett reinstates
 it. An agent that discovers it has written outside the list stops, reports the
 write, and does not continue under the protocol. The clause fires silently: it
 works only if some reader looks for its trigger. Each reinstatement is a dated
-entry under `writes`: `reinstated` and `reinstated_2026_09_23`.
+entry under `writes`, in a key that begins `reinstated`.
 
 ***Retires when:*** claims stop living on git refs. At that point the paragraph
 is deleted rather than widened, and this section goes with it.
@@ -1145,8 +1156,8 @@ is deleted rather than widened, and this section goes with it.
 ## Dispatch briefs restate nothing from this file
 
 An orchestrator that dispatches agents hands each one
-**`.hub/agent-brief.md`**, which is git-tracked and lives beside this file so
-that a change to the rules and a change to the brief are the same review. The
+**`.hub/agent-brief.md`**, which is git-tracked in this repository so that a
+change to the rules and a change to the brief are the same review. The
 brief points at this file for every rule and **summarises none of them**.
 
 The rule is structural rather than advisory: a brief, a prompt, a card or a
@@ -1173,12 +1184,11 @@ with the register.
 - Never open, label, comment on, or review a pull request **except** the single
   draft the register permits for a handed-back item, in a member repository
   nobody but Brett has ever contributed to, labelled `agent-run` and carrying
-  the queue id. On that pull request, ruling R16 permits three further things
-  and nothing more: marking it ready for review, replying to a Codex review
-  thread, and resolving a thread once its finding is fixed or answered, except
-  on a pull request in a class reserved to him, where he resolves it. A reply
-  to a *person's* review is still never, and so is any comment on a pull request
-  the agent did not open.
+  the queue id. On that pull request the only further writes are the ones the
+  GitHub API entry of `writes.denied` enumerates; resolving a Codex thread is
+  one of them, except on a pull request in a class reserved to him, where he
+  resolves it. A reply to a *person's* review is still never, and so is any
+  comment on a pull request an agent did not open.
 - Never merge a pull request **except** in a member repository whose `solo` key
   in `queue/config.yaml` is true, and there only when every check has finished
   green, the Codex review has completed with every finding fixed or answered,
@@ -1189,7 +1199,8 @@ with the register.
   item file, a generated block, a typo, ignoring a stray file) and the locks
   repository's README, which exists so that a claim ref is never that
   repository's default branch. A new item file, a card correction and anything
-  substantive go through a pull request.
+  substantive go through a pull request; a port's landed record goes with its
+  item's done mark.
 - Never set an item to `ready` **except** on an authorization Brett gave in
   chat, and then the commit must name it. A promotion commit that cannot cite
   one is a defect.
@@ -1201,14 +1212,14 @@ with the register.
 - Never start an item whose claim push was rejected, for any reason.
 - Never work outside your worktree, or on more than
   `max_concurrent_claims` (`queue/config.yaml`) items at once.
-- Never push a branch other than `agent/<queue-id>/<token>`, and never push even
-  that one into a member repository somebody other than Brett has contributed
-  to. The name is the whole of the grant's second target, so a branch with any
-  other name is a write outside the register even when the commits on it are
-  exactly right; and the grant's first line scopes every target it lists to
-  repositories with no other contributor, so in a shared member repository the
-  push is ask-first like any other write and the work stops at a diff Brett
-  reads in chat.
+- Never push a work branch other than `agent/<queue-id>/<token>`, and never push
+  even that one into a member repository somebody other than Brett has
+  contributed to. The name is the whole of the grant's second target, so a work
+  branch with any other name is a write outside the register even when the
+  commits on it are exactly right; and the grant's first line scopes every
+  target it lists to repositories with no other contributor, so in a shared
+  member repository the push is ask-first like any other write and the work
+  stops at a diff Brett reads in chat.
 - Never set `HUB_LOCKS_URL` against a configured locks repository. It exists
   for the migration's race test against a throwaway repository, and the client
   refuses it once `locks_repo` is real.
