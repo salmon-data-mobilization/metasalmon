@@ -6,7 +6,7 @@ claimable: false
 repo: salmon-knowledge-commons
 venue: claude-science
 stream: S6
-blocked_by: [Q-39, B-121]
+blocked_by: [B-121]
 legacy: ''
 evidence: knowledge/questions.md
-retires_when: 'One card carries a real verified entry naming a human, chosen because it is load-bearing and small rather than because it is easy. The point is the measurement as much as the card: until one is done nobody knows whether verifying a card is twenty minutes or a day, and every plan that promises verification is costing it at zero.'
+retires_when: 'One card carries a real verified entry naming a human, chosen because it is load-bearing and small rather than because it is easy. The point is the measurement as much as the card: until one is done nobody knows whether verifying a card is twenty minutes or a day, and every plan that promises verification is costing it at zero. Q-39 was dropped from blocked_by on 2026-09-25 because it is done (ruled 2026-09-24); B-121 stays, because the card to verify should carry the regenerated definitions rather than the prose that still holds them.'

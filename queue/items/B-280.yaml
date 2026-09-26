@@ -1,0 +1,13 @@
+id: B-280
+kind: defect
+title: 'The commons compiler: scripts/compile.py emits the Foundry phase-4 distribution, pinned by commit'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md
+retires_when: 'scripts/compile.py, beside okf-check.py, writes from a clean checkout the distribution the Foundry plan''s section 3.8 declares: concepts.jsonl, claims.jsonl, claims.parquet (optional, when pyarrow is present), gaps.json, alignments.sssom.tsv, commons.trig, catalog.json and MANIFEST.sha256, each stamped with the commons commit, the schema version and the compiler version, and byte-identical on a second run from the same commit; no publication step, and nothing that widens what Q24 allows out of the private commons. Foundry issue 13, re-sequenced out of Stage B on 2026-09-25 because tern (roadmap edge) consumes this distribution at a pinned commit and would otherwise build a second exporter. The pull request is Brett''s to merge until B-123 gives the commons CI.'
