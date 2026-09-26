@@ -14,7 +14,9 @@ ices_find_codes(query, code_type, max_results = 50)
 \item{max_results}{Maximum number of rows to return (default 50).}
 }
 \value{
-Filtered tibble of codes for the given code type.
+Filtered tibble of codes for the given code type. Empty when nothing
+matches, and also when the request to ICES fails, which warns, naming the
+request.
 }
 \description{
 Find ICES codes within a code type by text match

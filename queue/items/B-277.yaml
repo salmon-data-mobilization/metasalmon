@@ -1,8 +1,8 @@
 id: B-277
 kind: defect
 title: 'A codes.csv row with no code_value has no address in metasalmonpy''s review console either, the mirror half of B-276'
-state: icebox
-claimable: false
+state: ready
+claimable: true
 repo: metasalmonpy
 venue: claude-code
 stream: S5
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: [B-276]
 legacy: ''
 evidence: knowledge/backlog.md
-retires_when: 'IN METASALMONPY, the slot of a codes.csv row whose code_value is empty is handled the way B-276 lands in R, by a printed call that reaches it and nothing else or by no target at all, pinned by the twin of B-276''s test and demonstrated RED on the console as it stands. THE METASALMON HALF IS B-276, and each names the other. A PORT, NOT A REGISTER ROW: both consoles refuse every call printed for such a slot today.'
+retires_when: 'RULED 2026-09-25 (Brett): a codes.csv row whose code_value is empty gets no semantic target, B-276''s rule. IN METASALMONPY, the codes.csv loop of target discovery in suggest_semantics() in semantics.py gives such a row no target in any role, whether the empty code value arrives as NaN, pd.NA, None or empty text, so review_semantics() queues no slot for it, including from a semantic_suggestions.csv written before the change; a row of the same column that has a code value keeps its target. Pinned by a test demonstrated RED on the code as it stands. test_a_measurement_column_whose_codes_row_names_a_vocabulary_round_trips_from_create_sdp_to_disk in tests/test_review_console.py, which counts one codes.csv slot for the vocabulary row, asserts none, and every call review_semantics() prints for that column runs. THIS ALSO SETTLES THE nan SLOT KEY: RULED 2026-09-25 (Brett), metasalmonpy moves to R''s NA there, and once such a row has no target neither package forms a key for it, so the same tests assert that no target_row_key in semantic_suggestions.csv, and no slot id, carries nan where R would carry NA, for any of those four spellings; a code whose value is the text nan keeps nan there, as R keys it. THE METASALMON HALF IS B-276, and each names the other. A PORT OF A RULING, NOT A REGISTER ROW.'

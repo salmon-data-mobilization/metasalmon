@@ -65,9 +65,25 @@ this package, and nothing in `R/` says so.
 commit, did not say so. The signatures at both revisions are in
 `.hub/workpads/B-131.md` on `main`, and
 `tests/testthat/test-fraser-recruits-internals-guard.R` pins the shapes on
-`main`, not the recipe's. Whether this package restores the 0.1.8 shapes for
-these two, or the recipe's migration crosses them as breaks, is open, and this
-card does not answer it.
+`main`, not the recipe's.
+
+**Ruled 2026-09-25 (Brett): the 0.1.8 shapes are not restored, and the recipe
+changes its calls.** On the decisions page he accepted the recommendation to
+record the two here as changes the recipe has to make (*"for decision 13 I
+accept your recommendations"*). Restoring them would bring back the
+`dictionary` argument both functions dropped, and his 2026-09-12 ruling on
+`B-116`'s shape already sends that work through the exported
+`write_sdp_semantic_closure()`, which derives and writes the bound vocabulary
+([promotion review](../plans/2026-09-12-queue-promotion-review.md), section 3).
+So a recipe that moves off 0.1.8 makes these two changes:
+
+- `.ms_eml_canonical_measurement_iris(dictionary)` becomes
+  `.ms_eml_canonical_measurement_iris(path, pkg)`;
+- `.ms_eml_read_vocabulary(path, dictionary, mapping)` becomes
+  `.ms_eml_read_vocabulary(path, pkg, mapping)`.
+
+For what the recipe uses them for, the expected vocabulary IRI set and reading
+the bound vocabulary, `write_sdp_semantic_closure()` is the supported route.
 
 ## Requirement 2 — a migration path off sdp-0.2.0 and metasalmon 0.1.8
 
@@ -78,7 +94,8 @@ later** — read the number from the release index in the
 [roadmap](../roadmap.md) rather than from this line, which said "0.3.0" for
 long enough to be wrong by two releases. The breaks the migration crosses are
 0.2.4's empty-field missing-value token and 0.3.0's dictionary contract and
-registry removal. So the migration crosses `migrate_sdp_methods()`, the
+registry removal, and for two of requirement 1's internals, 0.3.0's argument
+changes recorded above. So the migration crosses `migrate_sdp_methods()`, the
 `method_iri` → `statistical_modifier_iri` flip, and a canonical-bytes change.
 
 `migrate_sdp_methods()` exists and is the tool; what does not exist is any

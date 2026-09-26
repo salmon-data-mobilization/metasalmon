@@ -157,6 +157,7 @@ approval status.
 | `campModelInput` | Application-consumer handoff | Package maintainer and the competent application authority | Consumes psc-salmon-vocabularies **v0.1.0-alpha.2** as a vendored offline projection (34 CAMP concepts, 52 literal assignments, 22 informational alignments), gated on contract and provenance self-consistency plus semantic structure — **but no longer on artifact byte equality**: runtime checksum enforcement was removed 2026-08-07 (their MR !5) over Windows line-ending failures, so the declared SHA-256s are self-attested from inside the consumer. The pin is current, not stale. Operational policy remains application-owned | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and a future repository-local ExecPlan | 2026-08-16 |
 | `ctc-knowledge-map` | Descriptive-evidence handoff | CTC bundle maintainers and eligible reviewers | Evidence-backed description of the released mapping flow; never mapping rows or approval inherited from a release | `psc-salmon-vocabularies/docs/plans/2026-08-12-fair-mapping-products-roadmap.md` and any activated repository-local plan | 2026-08-15 |
 | `psc-data-transformations` | **Requirements-driving consumer** (new edge type — see below) | PSC Data Systems; private GitLab under `pacific-salmon-commission/psc-data-systems/` | Consumes this package as a pinned execution engine: `metasalmon` **0.1.8** at revision `886e01d`, alongside psc-salmon-vocabularies **v0.1.0-alpha.2** and salmon-domain-ontology **0.0.2**. It calls internals (`metasalmon:::.ms_eml_validate_mapping`, `metasalmon:::.ms_sdp_profile_version`), so its pin constrains what this package may rename | A repository-local plan in that repo; no hub plan owns it | 2026-08-21 |
+| `tern` | **Requirements-driving consumer**, and a tool the Foundry may consume | Symecology Institute (`Symecology-Institute/tern`, formerly `era-claude`); Brett | Consumes, at pinned commits, the commons exports (the S6 compiler distribution once `B-280` lands), metasalmonpy term search, and the S14 human gates and contracts once they exist; offers back a study-schema overlay and skill evals. **Not a hub member**: its sequencing lives in its own `PLAN.md`, and nothing of it enters the queue | `tern/docs/PLAN.md` (its §10 states the fit from that side); no hub plan owns it | 2026-09-25 |
 
 **`psc-data-transformations` needed a new edge type, and naming it was cheaper
 than bending an old one.** Every other row above describes something this hub
@@ -184,6 +185,19 @@ a separate token. Both can be literally true at once — a test *node* and a
 restricted production *version* are different objects — which is why this is an
 open question and not a defect on either side. Recorded under *Open decisions*
 below, because it changes what S3 must build and what S4 can teach.
+
+**`tern` takes the same edge type, in both directions at once, and is not a
+member.** `tern` (`Symecology-Institute/tern`, formerly `era-claude`) is a
+requirements-driving consumer in the sense the row above defines: it reads the
+commons exports at pinned commits, metasalmonpy's term search, and the S14 human
+gates and contracts once they exist, so what it pins constrains what those may
+change. It is also a tool the Foundry may consume, offering a study-schema
+overlay and skill evals. This hub does not sequence its work — its sequencing
+lives in its own `PLAN.md` — so under the ruled membership test it gets an edge
+row and nothing else: no member row, no stream, no queue items for its tasks.
+The two questions it puts to S14, the capacity split (D-2) and the R2
+consequence of an institute affiliation (D-1/D-8), are `Q65` and `Q66` in
+[questions](questions.md). Recorded 2026-09-25.
 
 **What this edge does not import.** That repository's gates (`rights`,
 `semantic`, `private_review`, `public_release`), their approval evidence, its
@@ -575,7 +589,8 @@ coercion that R only warns about. The coercion half owes metasalmonpy nothing,
 because its `_coerce_series()` already raises there. The codes half is owed as a
 port, not a register row, and is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`, together with a Python defect found while
-measuring it that is not part of the port, hub item `B-274`. **Why not in the
+measuring it that is not part of the port, hub item `B-274`, which **landed
+2026-09-25 as metasalmonpy #64**, `c7be120`. **Why not in the
 same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-241`, which **landed 2026-09-25 as metasalmonpy #43**, `85ebbb0`.
@@ -645,6 +660,23 @@ under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
 not in the same stream:** a hub claim covers one branch in one repository. Its
 metasalmonpy half is `B-222`, which **landed 2026-09-25 as metasalmonpy #48**,
 `70fa8fd`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the review console records no accept whose IRI is empty or still a `REVIEW:`
+marker, by any route.** Hub item **B-246** makes `review_semantics()` queue a
+candidate only when the IRI a decision would record is neither empty nor still a
+marker, so neither `rank =` nor a replayed accept can record one whose `iri` is
+only the marker. It makes `accept_suggestion()` refuse such a value by `iri =`,
+and by `rank =` for a review the current `review_semantics()` did not build, so
+a value that is still a marker once one is stripped is refused too. And it stops
+listing a row with no IRI among the fields the review cannot decide.
+metasalmonpy's review console has the same defects, so the fix is owed there as
+a port, not a register row, in the same shape, because a candidate the queue
+drops takes no rank. The port is specified under *What metasalmon 0.5.0 owes the
+mirror* in `parity-deviations.md`. Which spellings count as the marker is
+`Q-63`'s and not the port's. **Why not in the same stream:** a hub claim covers
+one branch in one repository. Its metasalmonpy half is `B-247`, which **landed
+2026-09-26 as metasalmonpy #67**, `a8e87a9`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
@@ -749,6 +781,46 @@ parallel worker to fail, and its ICES helpers already behaved as R now does.
 **Why not in the same stream:** a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is `B-302`.
 
+**The development version after 0.5.0 changes what the mirror owes on row 51
+(2026-09-25): one shared ownership sentinel, `.sdp-package` holding
+`sdp-owned`.** Hub item **B-113** carries out Brett's ruling Q14 of 2026-08-24
+in metasalmon. `write_salmon_datapackage()`, and `create_sdp()` through it, now
+write, manage and recognise only `.sdp-package`, so a directory whose only sign
+of being a package is the old `.metasalmon-package` is no longer replaced.
+metasalmonpy still writes `.metasalmonpy-package`, measured on `main` `cae3d83`,
+so a package written by both carries both files until its half lands. That half
+is owed as the move row 51 of `parity-deviations.md` records, with the name and
+content line it must take, and not as a new register row. **Why not in the
+same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
+queue item is `B-127`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+the ICES helpers warn when the request fails.** Hub item **B-377** makes
+`ices_code_types()`, `ices_codes()`, `ices_find_code_types()` and
+`ices_find_codes()` warn, naming the request, when it is refused or answered
+with an HTTP error, where they returned the empty tibble an answer of `[]` gets
+and said nothing. The result is still that empty tibble, which is why it is a
+warning and not an error. metasalmonpy's helpers give an empty `DataFrame` with
+no warning in all three cases, measured on `main` `056fccc` by the second
+2026-09-25 queue sweep. It is owed there as a port, not a register row, and is specified
+under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
+not in the same stream:** a hub claim covers one branch in one repository. Its
+metasalmonpy queue item is `B-378`, which **landed 2026-09-26 as metasalmonpy #68**,
+`2d2ab2c`.
+
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+a `codes.csv` row with no code value gets no semantic target.** Hub item
+**B-276** carries out Brett's ruling of 2026-09-25 in metasalmon. Target
+discovery forms no target for a `codes.csv` row whose `code_value` is empty, in
+any role, and `review_semantics()` leaves one out of the queue when a
+`semantic_suggestions.csv` written before the ruling still carries it, so every
+call the review prints for such a column runs. metasalmonpy's discovery gives
+such a row a target, read on `main` `c7be120`, so the fix is owed there as a
+port, not a register row. The port is specified under *What metasalmon 0.5.0
+owes the mirror* in `parity-deviations.md`. **Why not in the same stream:** a
+hub claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-277`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
@@ -802,12 +874,12 @@ alike. They do not, and B-142 did not make them differ. On `main` before the
 change (`12efe9d`), with yaml 2.3.12 and the option unset, R already returned
 the tag's text and carried on, with a yaml warning. metasalmonpy rejects the
 sidecar as "not valid YAML" on the EML and KNB paths, and on the closure path it
-falls back to the default paths. Which side moves on each path is **`Q-62`**,
-a question for Brett, and R's refusal on the EML and KNB paths, the
-recommended direction, is written as **queue item `B-223`, separate from
-B-142**, which neither introduced the difference nor changes it. A
-parity-register row, or moving one side, is a ruling HUB.md reserves to Brett,
-so it is not made here.
+falls back to the default paths. Which side moves on each path was **`Q-62`**,
+and Brett ruled it on 2026-09-25: refuse on every path, recorded in
+[`questions.md`](questions.md). R's refusal on the EML and KNB paths is
+**queue item `B-223`, separate from B-142**, which neither introduced the
+difference nor changes it, and the closure path's refusal is `B-340` in this
+package and `B-341` in metasalmonpy.
 
 **These are *not* part of the `0.4.0→0.5.0` window, and the distinction is
 load-bearing rather than pedantic.** This paragraph called them "additions to the
@@ -1074,14 +1146,13 @@ Newest member of the domain, added 2026-08-17. **Private.** Created 2026-08-17
 (`2026-08-18T01:50Z`); zero tags and zero release objects, re-checked
 2026-08-18. **It cannot be pinned by version at all — only by commit SHA.**
 
-**It grew fast: eleven concepts and 24 gaps, not the four and seven recorded
-here on 2026-08-17.** PRs #1 and #2 merged 2026-08-18. The eleven cards are
-cycle line, broodline, cyclic dominance, run timing, conservation-unit
-independence, FishBase as a vocabulary source, migration-timing genetic
-architecture, Pacific salmonid taxonomic authorities, potamodromous migration
-vocabulary, sockeye rearing ecotypes, and stream-type/ocean-type chinook.
-**Still none human-verified.** Gap `mint_target`s: `smn` 18, `gcdfo` 4,
-`do-not-mint` 2.
+**The concept and gap counts live in the
+[domain card](domains/salmon-data-ecosystem.md)'s admission note and nowhere
+else.** *(Until 2026-09-25 this entry restated them — "eleven concepts and 24
+gaps", the eleven titles, and the mint-target split, all measured 2026-08-18 —
+and was 43 concepts and 69 gaps stale when the restatement was removed under
+the one-home rule. Whether any card is human-verified is the domain card's to
+say too.)*
 
 It is an **upstream OKF v0.2** bundle, not a PSC-profile one, and that is a
 decision rather than an oversight: the PSC profile's closed card schema rejects
