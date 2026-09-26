@@ -1,7 +1,7 @@
 id: B-326
 kind: defect
 title: 'Export a semantic review packet and ingest a harness''s assessments, so model judgement can run outside metasalmon'
-state: icebox
+state: review
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,0 +1,13 @@
+id: B-384
+kind: defect
+title: 'metasalmon''s validator phrase anchor fails on a multi-line context chunk whose later lines contain an underscore or hyphen'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, .ms_semantic_validator_chunk_has_anchor() takes a chunk''s leading token from its first line whatever the later lines hold, so a phrase anchor is judged on the chunk''s start and not rejected because an underscore or hyphen appears further down. Pinned by a test over a multi-line chunk whose later line holds table_2, which fails before the change, and over one with no underscore or hyphen, which anchors both before and after. B-385 is the metasalmonpy half, and each names the other.'
