@@ -1190,6 +1190,54 @@ the two implementations behave alike again. It did not land in the same stream
 because a hub claim covers one branch in one repository. Its metasalmonpy queue
 item is `B-378`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+a `codes.csv` row with no code value gets no semantic target.** Brett ruled it
+on 2026-09-25. The codes schema lets a row leave `code_value` empty when it
+supplies `vocabulary_iri`, and defines `term_iri` as the term that `code_value`
+represents, so such a row has no code value for a term to represent. Hub item
+**B-276** carries it out in metasalmon: `.ms_semantic_discover_targets()` forms
+no target for such a row, in any role, and a row of the same column that has a
+code value keeps its targets. So `suggest_semantics()` and `create_sdp()` write
+no suggestion for it, and every call `review_semantics()` prints for its column
+runs. Empty means NA, or text that is blank once trimmed, which is how the
+review console already read a code value; the text `NA` is a code value and
+keeps its targets. The B-242 paragraph above calls one case not a divergence,
+because neither implementation fixed it: a code slot whose row has no code
+value, and so no call of its own. Until the port lands, it is one.
+
+**The rule is enforced in two places, and the port copies both.** They read one
+predicate, `.ms_semantic_code_value_is_empty()`. Target discovery applies it in
+its codes loop, the one place a `codes.csv` target is formed. `review_semantics()`
+applies it to its `keep` mask, the step every queued slot passes, because a
+`semantic_suggestions.csv` written before the ruling still carries such a row's
+candidates. There the row is found by its file, through
+`.ms_review_is_code_slot()`, and by its code value, never by its
+`target_row_key`, which spells the empty value `NA` from R and `nan` or nothing
+from metasalmonpy. It is dropped without a message, as a candidate naming no
+term is (B-246), so it is gone with `include_filled = TRUE` too and a decision
+recorded on it is not replayed. The rows stay in the file, and
+`semantic_suggestions()` still returns the file as written. The matcher keeps its
+file test, so a blank `code_value` never selects such a slot in a review built
+before the ruling.
+
+**The port is owed because metasalmonpy has the same defect.** The codes loop of
+`suggest_semantics()` in `semantics.py` checks `term_iri` and never `code_value`,
+read on `main` `c7be120`; the filing that recorded the ruling measured the
+targets it forms on `ba1b54a`, under *The 2026-09-25 specification rulings* in
+`knowledge/backlog.md`. The pin should be the R tests' twins.
+`tests/testthat/test-semantic-suggestions.R`: discovery and `suggest_semantics()`
+give such a row no target and its column's coded row keeps its own, for each
+empty spelling, and a code whose value is the text `NA` keeps its target, whose
+twin is the text `nan`. `tests/testthat/test-review-console.R`: suggestions
+recorded before the ruling queue no slot for the row; the round trip through
+`create_sdp()` for a column whose only code row names a vocabulary, and for one
+with a coded row beside it; and a `semantic_suggestions.csv` carrying the rows
+an earlier version wrote, keyed `NA`, `nan` and nothing, with one of them
+recorded as rejected. It is owed as a port, not a register row: once it lands
+the two implementations behave alike again. It did not land in the same stream
+because a hub claim covers one branch in one repository. Its metasalmonpy queue
+item is `B-277`.
+
 **The one register change that is owed is a correction, and it must be made in
 place.** metasalmonpy's `PARITY.md` **row 31** closes with *"verified identical
 to R's output for all three strategies"*. That was true when written and went

@@ -792,6 +792,19 @@ under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
 not in the same stream:** a hub claim covers one branch in one repository. Its
 metasalmonpy queue item is `B-378`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-25):
+a `codes.csv` row with no code value gets no semantic target.** Hub item
+**B-276** carries out Brett's ruling of 2026-09-25 in metasalmon. Target
+discovery forms no target for a `codes.csv` row whose `code_value` is empty, in
+any role, and `review_semantics()` leaves one out of the queue when a
+`semantic_suggestions.csv` written before the ruling still carries it, so every
+call the review prints for such a column runs. metasalmonpy's discovery gives
+such a row a target, read on `main` `c7be120`, so the fix is owed there as a
+port, not a register row. The port is specified under *What metasalmon 0.5.0
+owes the mirror* in `parity-deviations.md`. **Why not in the same stream:** a
+hub claim covers one branch in one repository. Its metasalmonpy queue item is
+`B-277`.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
