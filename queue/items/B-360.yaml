@@ -1,7 +1,7 @@
 id: B-360
 kind: defect
 title: 'metasalmonpy''s bundle validators converge on metasalmon''s, as Brett ruled for S16 step 1'
-state: icebox
+state: review
 claimable: true
 repo: metasalmonpy
 venue: claude-code

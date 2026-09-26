@@ -1,0 +1,13 @@
+id: B-381
+kind: defect
+title: 'metasalmonpy follows metasalmon''s fix to the retry-query identifier check, the mirror half of B-380'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: [B-380, B-362]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the retry-query classifier B-362 ported recognises an identifier the way metasalmon does once B-380 lands: the quirk B-362 reproduced on purpose, in which the character class excludes a backslash and the letter s rather than whitespace, is removed in the same shape, so smn:species is an identifier and abc:d e is not. The corpus and the R-computed verdicts B-362 committed are regenerated against metasalmon with B-380 applied, and the comment that names what retires the quirk goes with it. THE METASALMON HALF IS B-380, and each names the other.'

@@ -1,7 +1,7 @@
 id: B-363
 kind: defect
 title: 'metasalmonpy retrieves a target''s shortlist through one function and merges a second pass the way metasalmon does, for S16 step 1'
-state: icebox
+state: review
 claimable: true
 repo: metasalmonpy
 venue: claude-code
