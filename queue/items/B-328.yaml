@@ -1,7 +1,7 @@
 id: B-328
 kind: defect
 title: 'Split the Theme A harness: keep replay and its oracles, retire the live, capture and promote modes'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

@@ -1,7 +1,7 @@
 id: B-324
 kind: defect
 title: 'Reconcile the commons merge rule in CONTRIBUTING with its CI and with the hub''s review delegation, the last of B-123''s three pull requests'
-state: icebox
+state: ready
 claimable: true
 repo: salmon-knowledge-commons
 venue: claude-code
