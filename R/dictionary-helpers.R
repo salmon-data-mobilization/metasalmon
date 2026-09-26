@@ -339,10 +339,12 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     dataset_meta$contact_email[blank_contact_email] <- "MISSING METADATA: add primary contact email."
   }
 
-  blank_license <- is.na(dataset_meta$license) | trimws(dataset_meta$license) == ""
-  if (any(blank_license)) {
-    dataset_meta$license[blank_license] <- "MISSING METADATA: add dataset license (for example, CC-BY-4.0)."
-  }
+  # No licence placeholder. The SDP specification makes `license` recommended
+  # rather than required (smn-data-pkg pull request 12; Brett, 2026-09-26:
+  # most datasets assign none), and only the rights holder can grant one, so a
+  # blank licence is itself the statement that none was granted. A prompt there
+  # would be text that strict validation refuses in a field that may stay
+  # empty. Every prompt above fills a field the schema requires.
 
   blank_spec_version <- is.na(dataset_meta$spec_version) | trimws(dataset_meta$spec_version) == ""
   if (any(blank_spec_version)) {

@@ -672,7 +672,9 @@ test_that("create_sdp writes review files and auto-applies compatible table sugg
   expect_true(startsWith(dataset_written$creator[[1]], "MISSING METADATA:"))
   expect_true(startsWith(dataset_written$contact_name[[1]], "MISSING METADATA:"))
   expect_true(startsWith(dataset_written$contact_email[[1]], "MISSING METADATA:"))
-  expect_true(startsWith(dataset_written$license[[1]], "MISSING METADATA:"))
+  # No licence was supplied, and none is invented: the licence is recommended
+  # rather than required, so it stays blank instead of taking a prompt.
+  expect_true(is.na(dataset_written$license[[1]]))
 })
 
 test_that("create_sdp auto-applies strong table-label observation-unit suggestions by default", {

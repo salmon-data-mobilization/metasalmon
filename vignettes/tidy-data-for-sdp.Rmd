@@ -355,10 +355,10 @@ placeholders:
 
 ```
 Warning message:
-8 metadata fields still hold a placeholder.
+7 metadata fields still hold a placeholder.
 ✖ column_dictionary.csv$column_description, dataset.csv$contact_email,
   dataset.csv$contact_name, dataset.csv$creator, dataset.csv$description,
-  dataset.csv$license
+  tables.csv$description
 ℹ Replace them before publication; `require_iris = TRUE` reports these as
   errors.
 ```
