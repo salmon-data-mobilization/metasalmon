@@ -1,7 +1,7 @@
 ---
 type: InformationObject
 title: "S13 — Fraser Recruits case-study requirements"
-description: "What metasalmon owes its one real production consumer: a supported API for the eight internals it reaches via :::, a migration path off sdp-0.2.0 and 0.1.8, and IRI-dereference verification. The live KNB series is unresolved."
+description: "What metasalmon owes its one real production consumer: a supported API for the eight internals it reaches via :::, and IRI-dereference verification. The migration path off sdp-0.2.0 and 0.1.8 was superseded on 2026-09-26 by a from-scratch rebuild. The live KNB series is unresolved."
 status: draft
 tags: [requirements, knb, publication, external-consumer]
 psc:
@@ -27,6 +27,17 @@ one-line typed edge; the substance is this card.
 The recipe is `fraser-sockeye-stock-recruit-detailed` — the Fraser sockeye
 stock-recruit case study, "Fraser Recruits" in conversation. It is the only
 place anything built by this package has been deposited to a live repository.
+
+**Rebuilt from scratch, 2026-09-26 (Brett's rulings, recorded as Q70 in
+[questions](../questions.md)).** PSC data is in scope as long as PSC has already published it
+online. The Fraser sockeye stock-recruit case is rebuilt from scratch from
+PSC's public files (the Production Dataset, release 2026.05.07) rather than
+migrated from `fraser-sockeye-stock-recruit-detailed`. There is no KNB deposit:
+the deliverable is a reproducible script from PSC's files to a Salmon Data
+Package, with its IRI gaps noted. Exporting a metasalmon internal is acceptable
+where the script genuinely needs one. The same day, Brett placed the new recipe
+in `psc-data-transformations`, so it is handed off rather than pushed here. It
+calls only exported metasalmon functions, so it adds nothing to requirement 1.
 
 ## Requirement 1 — a supported API for eight internals
 
@@ -87,6 +98,11 @@ the bound vocabulary, `write_sdp_semantic_closure()` is the supported route.
 
 ## Requirement 2 — a migration path off sdp-0.2.0 and metasalmon 0.1.8
 
+**Superseded 2026-09-26 (Brett, Q70).** The hub no longer owes this migration:
+the case is rebuilt from scratch from PSC's public files with current metasalmon
+(the dated paragraph above), so nothing in this section needs scheduling. The
+section stays as the record of what the migration would have crossed.
+
 `recipe.yml` pins engine `metasalmon` **0.1.8** at revision
 `886e01d60d45bc3e60d0906ee50e328ddde1a5bd`, and its published artifacts carry
 the **sdp-0.2.0** era. Current metasalmon is **several breaking releases
@@ -124,6 +140,10 @@ readable. Bounded is the load-bearing word: an unbounded retry against a
 vocabulary host turns a publication step into an outage amplifier.
 
 ## The open KNB incident — read this before scheduling requirement 2
+
+*Since 2026-09-26 (Q70) there is no requirement 2 to schedule, and the rebuilt
+case makes no deposit. The incident itself is still open (Q13), so the rest of
+this section still describes a live series.*
 
 **A live `dry_run = FALSE` deposit put 31 objects on production DataONE and the
 series head has been unsettled since 2026-08-05.** From the recipe's own

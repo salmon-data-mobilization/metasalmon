@@ -84,6 +84,9 @@ Seven-plus authenticated lookups over sixteen days is not transient. **Only you
 can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
+**Superseded in part, 2026-09-26 (Q70):** the Fraser case is now rebuilt from
+scratch rather than migrated, so no migration waits on this series. Whether to
+send the support request, or rule the series abandoned, is still open.
 
 ### Q17 — Should `create_sdp()` refuse a doomed write *before* running inference?
 **Unblocks:** parity row 59, and a test on both sides that nothing currently pins.
@@ -1909,3 +1912,25 @@ harness skill as an external dependency and sequences none of the plugin's
 work. Admitting the plugin would be a membership ruling.
 **Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
 Foundry plan is.
+
+### Q70 — Is PSC data that is already published online in scope, and is the Fraser case migrated or rebuilt? — ANSWERED 2026-09-26 (Brett)
+
+**Ruling:** *"PSC data is back in scope as long as its already published online
+like the Fraser Sockeye Recruit dataset."* And: *"Rather than migrating why dont
+you just start from scratch? i don't need it published to KNB though i just want
+a reproducible script taking the input through the an SDP with gaps in IRIs
+noted and suggested in the commons."* — Brett, 2026-09-26, in chat. The same day
+he placed the new recipe in `psc-data-transformations` and allowed any
+metasalmon internal the script needs to be exported.
+
+**What it changes:** it reopens Q33's withdrawal for PSC data that PSC has
+already published online; Q33 stays as the record of the 2026-09-09 position.
+It supersedes S13's requirement 2: no migration path off sdp-0.2.0 and
+metasalmon 0.1.8 is owed, because the case is rebuilt from scratch from PSC's
+public files with current metasalmon, and there is no KNB deposit. The rebuilt
+recipe calls only exported functions, so it adds nothing to requirement 1. Q13's
+migration clause lapses with it; the support request itself is still open.
+
+**Where it is recorded:** the [S13](sequences/s13-fraser-recruits-case-study.md)
+card, and the `retires_when` of `S-13` and `Q-13`, all corrected in the change
+that recorded this ruling. **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
