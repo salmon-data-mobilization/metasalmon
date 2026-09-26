@@ -329,7 +329,8 @@ review_semantics <- function(x,
   # value, never by its key, which spells the empty value `NA` from R and `nan`
   # or nothing from metasalmonpy. Nothing is said, as for a candidate naming no
   # term: the row has no code value for a term to represent, so the review has
-  # nothing to decide for it.
+  # nothing to decide for it. Retires when no suggestions file written before
+  # B-276, or by a metasalmonpy without its half (B-277), is still read.
   keep <- keep & !(
     .ms_review_is_code_slot(suggestions$target_sdp_file) &
       .ms_semantic_code_value_is_empty(suggestions$code_value)
