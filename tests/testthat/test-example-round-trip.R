@@ -67,7 +67,15 @@ test_that("the shipped example metadata CSVs are well-formed", {
     "dataset.csv", "tables.csv", "column_dictionary.csv", "codes.csv",
     "nuseds-fraser-coho-sample.csv",
     "nuseds-fraser-coho-2023-2024.csv",
-    "nuseds-fraser-coho-2023-2024-column_dictionary.csv"
+    "nuseds-fraser-coho-2023-2024-column_dictionary.csv",
+    file.path(
+      "nuseds-fraser-coho-2023-2024-sdp",
+      c(
+        "metadata/dataset.csv", "metadata/tables.csv",
+        "metadata/column_dictionary.csv", "metadata/codes.csv",
+        "data/escapement.csv"
+      )
+    )
   )) {
     df <- readr::read_csv(
       example_extdata_path(file),
