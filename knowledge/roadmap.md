@@ -805,7 +805,8 @@ no warning in all three cases, measured on `main` `056fccc` by the second
 2026-09-25 queue sweep. It is owed there as a port, not a register row, and is specified
 under *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why
 not in the same stream:** a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is `B-378`.
+metasalmonpy queue item is `B-378`, which **landed 2026-09-26 as metasalmonpy #68**,
+`2d2ab2c`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 a `codes.csv` row with no code value gets no semantic target.** Hub item

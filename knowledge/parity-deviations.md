@@ -1189,7 +1189,8 @@ one with no warning; and a secret in the request URL or in the failure text does
 not reach the warning. It is owed as a port, not a register row: once it lands
 the two implementations behave alike again. It did not land in the same stream
 because a hub claim covers one branch in one repository. Its metasalmonpy queue
-item is `B-378`.
+item is `B-378`, which **landed 2026-09-26 as metasalmonpy #68**, `2d2ab2c`: the
+four ICES helpers warn on a failed request, as in R.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 a `codes.csv` row with no code value gets no semantic target.** Brett ruled it
