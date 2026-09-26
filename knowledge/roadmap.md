@@ -661,7 +661,8 @@ a port, not a register row, in the same shape, because a candidate the queue
 drops takes no rank. The port is specified under *What metasalmon 0.5.0 owes the
 mirror* in `parity-deviations.md`. Which spellings count as the marker is
 `Q-63`'s and not the port's. **Why not in the same stream:** a hub claim covers
-one branch in one repository. Its metasalmonpy half is `B-247`.
+one branch in one repository. Its metasalmonpy half is `B-247`, which **landed
+2026-09-26 as metasalmonpy #67**, `a8e87a9`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as

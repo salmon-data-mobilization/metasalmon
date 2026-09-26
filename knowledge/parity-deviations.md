@@ -927,7 +927,8 @@ Which spellings count as the marker is hub question `Q-63`'s, and neither half
 decides it. It is owed as a port, not a register row: once it lands the two
 implementations behave alike again. It did not land in the same stream because a
 hub claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-247`.
+`B-247`, which **landed 2026-09-26 as metasalmonpy #67**, `a8e87a9`: the review
+console records no accept whose IRI names no term, by any route, as in R.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
