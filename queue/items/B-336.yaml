@@ -1,0 +1,13 @@
+id: B-336
+kind: defect
+title: 'metasalmonpy fetch_salmon_ontology() caches every url and representation as dfo-salmon.ttl with one set of validators, the mirror half of B-335'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: [B-335]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, fetch_salmon_ontology() keys each cached copy and its validators by the URL that returned them and the accept they were fetched under, as B-335 lands it in R: two fetches into one cache_dir that differ in either leave two copies; a path one call returned still holds what that call fetched after any other call returns; a conditional request carries only validators that the URL it is sent to returned under the same accept; a 304 answer returns the copy that the answering URL returned; and no call returns a copy fetched under another accept or from a URL that call did not try. Pinned by the twins of B-335''s three sequences with requests.get stubbed, each demonstrated RED on the function as it stands. It holds whichever failure behaviour Q-71 rules. THE METASALMON HALF IS B-335, and each names the other. A PORT, NOT A REGISTER ROW: both packages carry the defect in the same shape.'

@@ -1,0 +1,13 @@
+id: B-333
+kind: defect
+title: 'fetch_salmon_ontology() tries its default smn fallback whatever url it is given, so a call for gcdfo whose url fails returns smn''s body with no warning'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, a fetch_salmon_ontology() call that names a url and no fallback_urls never returns the body of a default fallback that serves a different ontology from the one url names. Pinned by a test with httr::GET stubbed so that a url for the ontology that is not the default fails and the default fallback answers: with an empty cache_dir, the call fails rather than returning that fallback''s body, demonstrated RED on the function as it stands, with a control that a call with the default url still reaches the default fallback. What a failed call may return from the cache is B-335''s and Q-71''s, not this item''s. It holds whichever default Q-71 rules. THE METASALMONPY HALF IS B-334, and each names the other.'
