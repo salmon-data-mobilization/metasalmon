@@ -40,7 +40,9 @@ metasalmon (development version)
   `validate_salmon_datapackage(require_iris = TRUE)` and the specification's
   `scripts/validate_package.py` with no issues. Until now the gold standard was
   a CSV and a starter dictionary, and the only complete metadata in `extdata`
-  belonged to the 30-row sample.
+  belonged to the 30-row sample. metasalmonpy does not ship the gold standard
+  yet: it ships only the 30-row sample, and the port is owed (parity-deviations
+  row 46; the roadmap's release index records why it is deferred).
 
   - **It is built by the package's own functions, and rebuilt by a test.**
     `data-raw/fraser_coho_gold_standard.R` runs `create_sdp()`, fills the text
@@ -197,8 +199,9 @@ metasalmon (development version)
   Subareas `gcdfo` mints are numbered 29-1 to 29-17, a different division.
   `inst/extdata/column_dictionary.csv` and
   `inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv` now label
-  the column *Sub-district* and give the NuSEDS definition. metasalmonpy ships
-  the same sample row (hub item B-402).
+  the column *Sub-district* and give the NuSEDS definition. metasalmonpy's copy
+  of the sample dictionary, `data/column_dictionary.csv`, still carries the old
+  row; its port is hub item B-402.
 
   The 173-row starter dictionary also takes the gold standard's text for every
   column, which corrects two more descriptions the NuSEDS data dictionary

@@ -107,3 +107,25 @@ test_that("the shipped gold standard is exactly what its data-raw script builds"
     )
   }
 })
+
+test_that("the data-raw script refuses to replace a directory it did not build", {
+  script <- testthat::test_path("..", "..", "data-raw", "fraser_coho_gold_standard.R")
+  # As above: retires when the build script is installed with the package.
+  skip_if_not(file.exists(script), "data-raw/ is not part of the built package")
+
+  env <- new.env(parent = globalenv())
+  sys.source(script, envir = env)
+
+  # The build replaces `out_dir` wholesale, so a mistyped path holding
+  # anything else must be refused before any work, and left as it was.
+  foreign <- withr::local_tempdir()
+  writeLines("keep me", file.path(foreign, "notes.txt"))
+  expect_error(
+    env$build_fraser_coho_gold_standard(
+      foreign,
+      source_csv = example_extdata_path("nuseds-fraser-coho-2023-2024.csv")
+    ),
+    "Refusing to replace"
+  )
+  expect_identical(readLines(file.path(foreign, "notes.txt")), "keep me")
+})

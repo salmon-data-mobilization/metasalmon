@@ -363,6 +363,23 @@ build_fraser_coho_gold_standard <- function(out_dir,
   say <- function(...) if (!isTRUE(quiet)) message(...)
   run <- function(expr) if (isTRUE(quiet)) suppressMessages(expr) else expr
 
+  # `out_dir` is replaced at the end, so it must be empty or an earlier build:
+  # a mistyped path must never be emptied. Checked first, before any work.
+  if (file.exists(out_dir) && !dir.exists(out_dir)) {
+    stop("Refusing to replace ", out_dir, ": it is a file.", call. = FALSE)
+  }
+  if (dir.exists(out_dir)) {
+    present <- list.files(out_dir, recursive = TRUE, all.files = TRUE, include.dirs = TRUE)
+    foreign <- setdiff(present, c(gold_standard_files, "data", "metadata"))
+    if (length(foreign) > 0L) {
+      stop(
+        "Refusing to replace ", out_dir, ": it holds files an earlier build ",
+        "did not write (", paste(utils::head(foreign, 5L), collapse = ", "), ").",
+        call. = FALSE
+      )
+    }
+  }
+
   # Typed on read, so create_sdp() infers `integer` for the two whole-number
   # columns and writes every data byte exactly as the source CSV holds it.
   data <- readr::read_csv(

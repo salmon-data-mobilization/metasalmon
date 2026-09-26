@@ -821,6 +821,19 @@ owes the mirror* in `parity-deviations.md`. **Why not in the same stream:** a
 hub claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-277`, which **landed 2026-09-26 as metasalmonpy #69**, `5b03724`.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-26):
+the Fraser coho example data.** Pull request #204 (stream S12) ships the gold
+standard as `inst/extdata/nuseds-fraser-coho-2023-2024-sdp/`, corrects the
+`AREA` row of both example dictionaries to the NuSEDS sub-district (B-401), and
+gives the 173-row starter dictionary the gold standard's column text, roles and
+types. No R behaviour changed, so what is owed is data. metasalmonpy ships only
+the 30-row sample: its `data/column_dictionary.csv` still describes `AREA` as a
+Pacific Fishery Management Area code, which is hub item **B-402**, and it has no
+gold standard, which is parity-deviations row 46, whose open half is one shared
+derivation script or one per repository. **Why not in the same stream:** the
+stream's pull request was scoped to this repository, and it left the register's
+port section and the queue to the hub.
+
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
 this list is a port that exists and is waiting; this is the other outcome the
