@@ -1,0 +1,13 @@
+id: B-276
+kind: defect
+title: 'A codes.csv row with no code_value has no address in the review console, so every call printed for its slot refuses'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): a codes.csv row whose code_value is empty gets no semantic target, because the schema defines term_iri as the term that code_value represents, and such a row has no code value for it to represent. In metasalmon, .ms_semantic_discover_targets() in R/semantic-suggestions.R gives such a row, a vocabulary-backed row the schema allows, no target in any role, so suggest_semantics() and create_sdp() write no suggestion for it, and review_semantics() queues no slot for it, including from a semantic_suggestions.csv written before the change; a row of the same column that has a code value keeps its target. Pinned by a test demonstrated RED on the code as it stands, with the empty code value as NA and as empty text. The test in tests/testthat/test-review-console.R named a measurement column whose codes.csv row names a vocabulary round-trips from create_sdp() to disk, which expects the vocabulary row''s codes.csv slot, asserts that it is absent, and every call review_semantics() prints for that column runs. accept_suggestion()''s signature does not change. THE METASALMONPY HALF IS B-277, and each names the other. The apply_salmon_dictionary() half of the same ruling is B-346 and B-347.'

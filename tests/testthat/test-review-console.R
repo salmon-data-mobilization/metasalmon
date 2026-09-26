@@ -806,6 +806,241 @@ test_that("accept_suggestion(iri =) still takes a marked IRI, and records it wit
   )
 })
 
+# The routes B-219 left open to a decision that names no term (hub item B-246).
+# A shortlisted candidate whose `iri` is only the marker was queued, because the
+# queue tested only that `iri` was not blank, so `rank =` accepted it with an
+# empty `decision_iri`, and a recorded accept of one replayed the same way. The
+# strip removes one marker, so a doubled one left a marker in the decision on
+# either route. No producer writes such a candidate; a hand-edited or external
+# suggestions table does. The spellings are `marker_only_iris` above, which
+# follows the strip, and each test asserts its premise first for the same reason
+# those tests do.
+
+for (spelling in names(marker_only_iris)) {
+  test_that(paste0("a candidate that is only the REVIEW: marker is not queued, so rank = cannot accept it: ", spelling), {
+    marker <- marker_only_iris[[spelling]]
+    expect_identical(.ms_strip_review_iri(.ms_scalar_text(marker)), "")
+
+    alone <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions(iri = marker)))
+    expect_equal(nrow(alone), 0L)
+    expect_error(
+      accept_suggestion(alone, "spawner_count", "variable", rank = 1),
+      "No review slot matches"
+    )
+
+    # Ahead of a real candidate it does not take rank 1 from it, and dropping it
+    # is not reported as a field the review cannot decide.
+    suggestions <- dplyr::bind_rows(
+      fixture_suggestions(label = "Marker only", iri = marker),
+      fixture_suggestions()
+    )
+    expect_no_message(
+      review <- review_semantics(with_suggestions(fixture_dict(), suggestions)),
+      message = "cannot decide"
+    )
+    review <- accept_suggestion(review, "spawner_count", "variable", rank = 1)
+    expect_equal(
+      review$decision_iri[!is.na(review$decision)],
+      "https://w3id.org/smn/SpawnerAbundance"
+    )
+  })
+}
+
+for (spelling in names(marker_only_iris)) {
+  test_that(paste0("a recorded accept of a candidate that is only the REVIEW: marker replays no empty IRI: ", spelling), {
+    marker <- marker_only_iris[[spelling]]
+    expect_identical(.ms_strip_review_iri(.ms_scalar_text(marker)), "")
+
+    suggestions <- dplyr::bind_rows(
+      fixture_suggestions(label = "Marker only", iri = marker),
+      fixture_suggestions()
+    )
+    suggestions$decision <- c("accepted", "not_selected")
+    data <- with_suggestions(fixture_dict(), suggestions)
+
+    rebuilt <- review_semantics(data, include_filled = TRUE)
+    expect_false(any(rebuilt$decision %in% "accept" & rebuilt$decision_iri %in% ""))
+    # That accept named no term, so it decided nothing: the slot is asked again.
+    queued <- review_semantics(data)
+    expect_equal(queued$iri, "https://w3id.org/smn/SpawnerAbundance")
+    expect_true(all(is.na(queued$decision)))
+  })
+}
+
+# What each of these leaves once `.ms_strip_review_iri()` has run is still read
+# as a marker by `.ms_is_review_iri()`.
+doubled_marker_iris <- c(
+  "twice, with nothing after" = "REVIEW: REVIEW:",
+  "twice, with no space between" = "REVIEW:REVIEW:",
+  "twice, in two cases" = "review : Review:",
+  "twice, before a term" = "REVIEW: REVIEW: https://w3id.org/smn/WaterTemperature"
+)
+
+for (spelling in names(doubled_marker_iris)) {
+  test_that(paste0("no accept records an IRI that is still a REVIEW: marker once one is stripped: ", spelling), {
+    doubled <- doubled_marker_iris[[spelling]]
+    expect_true(.ms_is_review_iri(.ms_strip_review_iri(.ms_scalar_text(doubled))))
+
+    review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
+    expect_error(
+      accept_suggestion(review, "spawner_count", "variable", iri = doubled),
+      "not a .?REVIEW:.? marker"
+    )
+
+    # On a shortlisted candidate it is not queued, so neither `rank =` nor a
+    # recorded accept of it can put it in a decision.
+    suggestions <- dplyr::bind_rows(
+      fixture_suggestions(label = "Doubled marker", iri = doubled),
+      fixture_suggestions()
+    )
+    review <- review_semantics(with_suggestions(fixture_dict(), suggestions)) |>
+      accept_suggestion("spawner_count", "variable", rank = 1)
+    decided <- review$decision_iri[!is.na(review$decision)]
+    expect_false(.ms_is_review_iri(decided))
+    expect_equal(decided, "https://w3id.org/smn/SpawnerAbundance")
+
+    suggestions$decision <- c("accepted", "not_selected")
+    rebuilt <- review_semantics(with_suggestions(fixture_dict(), suggestions), include_filled = TRUE)
+    replayed <- rebuilt$decision_iri[rebuilt$decision %in% "accept"]
+    expect_false(any(vapply(replayed, .ms_is_review_iri, logical(1))))
+  })
+}
+
+# A review the current `review_semantics()` did not build can still hold such a
+# candidate: one saved by an earlier version, or edited by hand. `rank =` refuses
+# it there too, rather than trusting the queue to have left it out.
+names_no_term_iris <- c(marker_only_iris, doubled_marker_iris)
+
+for (spelling in names(names_no_term_iris)) {
+  test_that(paste0("rank = refuses a candidate in the review whose IRI names no term: ", spelling), {
+    value <- names_no_term_iris[[spelling]]
+    stripped <- .ms_strip_review_iri(.ms_scalar_text(value))
+    expect_true(!nzchar(stripped) || .ms_is_review_iri(stripped))
+
+    review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
+    review$iri[[1]] <- value
+    expect_error(
+      accept_suggestion(review, "spawner_count", "variable", rank = 1),
+      "names no term"
+    )
+  })
+}
+
+# Rejecting a slot does not depend on any candidate's IRI, so a recorded reject
+# is replayed from a row whose IRI names no term, which the queue otherwise
+# leaves out. Without that, a slot whose only candidate is such a row lost its
+# rejection, and the reason, from `include_filled = TRUE`.
+test_that("a recorded reject is replayed from a candidate whose IRI names no term", {
+  for (value in c(as.list(names_no_term_iris), list(""), list(NA_character_))) {
+    label <- if (is.na(value)) "NA" else encodeString(value, quote = '"')
+    suggestions <- fixture_suggestions(iri = value)
+    suggestions$decision <- "rejected"
+    suggestions$decision_reason <- "no candidate describes a wild-origin count"
+    data <- with_suggestions(fixture_dict(), suggestions)
+
+    revisited <- review_semantics(data, include_filled = TRUE)
+    expect_equal(revisited$decision, "reject", info = label)
+    expect_equal(
+      revisited$decision_reason,
+      "no candidate describes a wild-origin count",
+      info = label
+    )
+    expect_equal(nrow(review_semantics(data)), 0L, info = label)
+    expect_error(
+      accept_suggestion(revisited, "spawner_count", "variable", rank = 1),
+      "names no term",
+      info = label
+    )
+  }
+})
+
+# The console prints a call only where the call runs. A candidate whose IRI
+# names no term is refused by `accept_suggestion()`, so it gets no accept call,
+# while its slot keeps its reject call and every other candidate keeps its own.
+test_that("the console prints no accept call for a candidate whose IRI names no term", {
+  for (value in list("REVIEW:", "REVIEW: REVIEW:", "", NA_character_)) {
+    label <- if (is.na(value)) "NA" else encodeString(value, quote = '"')
+    rejected <- fixture_suggestions(iri = value)
+    rejected$decision <- "rejected"
+    rejected$decision_reason <- "no candidate describes a wild-origin count"
+    suggestions <- dplyr::bind_rows(
+      rejected,
+      fixture_suggestions(
+        dictionary_role = "property",
+        target_sdp_field = "property_iri",
+        label = "Abundance",
+        iri = "https://w3id.org/smn/Abundance"
+      )
+    )
+    review <- review_semantics(
+      with_suggestions(fixture_dict(), suggestions),
+      include_filled = TRUE
+    )
+    lines <- .ms_review_render_lines(review)
+    expect_true(any(grepl("DECIDED: reject", lines, fixed = TRUE)), info = label)
+    expect_true(any(grepl("names no term", lines, fixed = TRUE)), info = label)
+
+    printed <- eval_printed_calls(review, "accept_suggestion(")
+    expect_length(printed, 1L)
+    for (text in printed) {
+      decided <- eval(parse(text = text)[[1]], list(review = review), enclos = environment())
+      accepted <- decided[decided$decision %in% "accept", , drop = FALSE]
+      expect_equal(accepted$decision_iri, "https://w3id.org/smn/Abundance", info = label)
+    }
+    for (text in eval_printed_calls(review, "reject_suggestion(")) {
+      text <- sub("\\s+#.*$", "", text)
+      expect_s3_class(
+        eval(parse(text = text)[[1]], list(review = review), enclos = environment()),
+        "ms_semantic_review"
+      )
+    }
+  }
+})
+
+# A row with no IRI targets a field the review does decide, so it is not one of
+# the fields "this review cannot decide", and editing the metadata CSV by hand
+# is not what it needs. The shape B-219 left in a package: a hand-picked
+# `accepted` row with an empty `iri` at the head of its slot.
+empty_iris <- c("an empty string" = "", "a missing value" = NA_character_)
+
+for (form in names(empty_iris)) {
+  test_that(paste0("review_semantics() does not report a row with no IRI as a field it cannot decide: ", form), {
+    suggestions <- dplyr::bind_rows(
+      fixture_suggestions(iri = empty_iris[[form]], source = "user", decision = "accepted"),
+      fixture_suggestions(decision = "not_selected")
+    )
+    expect_no_message(
+      review <- review_semantics(with_suggestions(fixture_dict(), suggestions)),
+      message = "cannot decide"
+    )
+    expect_equal(review$iri, "https://w3id.org/smn/SpawnerAbundance")
+    expect_true(all(is.na(review$decision)))
+
+    # A field the review cannot decide is still reported, and alone.
+    suggestions <- dplyr::bind_rows(
+      suggestions,
+      fixture_suggestions(
+        target_scope = "dataset",
+        target_sdp_file = "dataset.csv",
+        target_sdp_field = "keywords",
+        target_row_key = "demo-1"
+      )
+    )
+    reported <- character()
+    withCallingHandlers(
+      review_semantics(with_suggestions(fixture_dict(), suggestions)),
+      message = function(condition) {
+        reported <<- c(reported, conditionMessage(condition))
+        invokeRestart("muffleMessage")
+      }
+    )
+    reported <- paste(reported, collapse = "\n")
+    expect_match(reported, "cannot decide", fixed = TRUE)
+    expect_match(reported, "dataset.csv", fixed = TRUE)
+    expect_no_match(reported, "column_dictionary.csv", fixed = TRUE)
+  })
+}
+
 test_that("accept_suggestion() rejects a rank that is not in the shortlist", {
   review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
   expect_error(

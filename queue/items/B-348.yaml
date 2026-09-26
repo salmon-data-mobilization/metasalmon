@@ -1,0 +1,13 @@
+id: B-348
+kind: defect
+title: 'metasalmonpy''s year-shape test never reads a float column as years, because str(1850.0) is "1850.0"'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): metasalmonpy moves, and a whole-number float reads as its integer in the year-shape test, as R''s as.character() does. IN METASALMONPY, _values_look_yearish() in dictionary.py reads each non-missing whole-number float as the integer it holds, so 1850.0 reads as 1850, while a float with a fractional part keeps it and is not year-shaped; the change may be made in _character_values(), whose docstring already says it feeds values the way as.character() feeds R. So infer_column_role() types temporal a float64 column of years that pandas.read_csv() makes from an integer column with a blank cell, as R types the numeric column readr makes from the same text. Pinned by a test demonstrated RED on the code as it stands, which reads the four lines BY,n and 2001,1 and ,2 and 2003,3 with pandas.read_csv(), asserts that _values_look_yearish() is true for BY before it asserts the role, and asserts that a column holding 1850.5 is not year-shaped. The metasalmon side does not change: as.character() is the rule being copied. A PORT OF A RULING, NOT A REGISTER ROW.'

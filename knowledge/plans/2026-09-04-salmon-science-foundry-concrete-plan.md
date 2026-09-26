@@ -399,6 +399,16 @@ server, an agent framework, or a durable-execution library as an R
 dependency; the Foundry calls metasalmon and metasalmonpy through narrow,
 versioned tool contracts rather than reimplementing their scientific logic.
 
+**Amended 2026-09-25 (Brett, hub Q67): the model call itself is not
+metasalmon's either.** Neither package calls a model. They export a
+deterministic review packet and ingest a model's assessments in the frozen
+30-column row, and the judgement runs in the caller's harness, meaning Claude
+Code, Codex, Claude Science or the Foundry, through `smn-sci-plgn` skills. So
+the list of things that do not belong in metasalmon now starts with the model
+call, not with the conversation around it. The operative copy of the ruling,
+and the order in which the in-package model call is removed, is the S16 card
+(`sequences/s16-model-call-leaves-the-packages.md`).
+
 **Hub item:** the S7 card says nothing depends on it. S14 does, through this
 amendment; the S7 card records that when S14 is ruled (Appendix B).
 
@@ -767,6 +777,11 @@ skills front door, not as a place where logic lives. Rule: a skill calls
 metasalmon, metasalmonpy, or a `salmon` verb for anything the packages can
 do; the plugin's own ontology-lookup and SDP-drafting scripts retire when the
 metasalmonpy port lands; `smn-data-gpt`'s drafting packs are superseded now.
+*(The port landed: metasalmonpy was tagged `v0.5.0` on 2026-09-24. On
+2026-09-25 Brett ruled, hub Q69: "The smn-sci-plugin becomes the thin,
+dual-manifest front door. Its third term-search implementation retires in
+favour of metasalmonpy." The plugin is also where the harness skills that
+replace the packages' own model call live, hub Q67.)*
 The MCP policy from v1 stands (internal calls are typed functions or CLIs;
 no ontology mutation or production publication through MCP until the
 generated adapter exists and one campaign has passed H1 to H5 through the
@@ -1217,10 +1232,15 @@ The semantic-mapper capability produces **one decision ledger through the
 shipped functions**: a committed script of `accept_suggestion()`,
 `reject_suggestion()`, and `set_sdp_*()` calls and the
 `semantic_suggestions.csv` it yields, SSSOM only via `write_sdp_sssom()`.
-Any model judgement of candidates runs through
-`suggest_semantics(llm_assess = TRUE)` across the tool boundary, so the
-frozen assessment row is the record; a Foundry-side judge would need a
-parity-register row saying why.
+Any model judgement of candidates runs in the caller's harness against the
+review packet the packages export, and comes back through their assessment
+ingester, so the frozen assessment row is still the record. A judge in the
+Foundry is one more harness and needs no parity-register row, because the
+packet and the ingester are the same contract in both packages. *(Amended
+2026-09-25, hub Q67. This read "runs through `suggest_semantics(llm_assess =
+TRUE)` across the tool boundary", and a Foundry-side judge needed a register
+row, until Brett ruled that the model call leaves both packages. The S16 card
+holds the ruling.)*
 
 Permission classes P0 to P4 stand as in v1. **P5 (non-public PSC or partner
 systems) is "never" for the institute's Foundry** (R2), not "unless
@@ -1946,7 +1966,7 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 | 7 | the institute organization's `salmon-science-foundry` (Q35) | Create the repository with its `knowledge/` bundle, v0.1 contracts, the Tier 0 ledger, and the `Rscript` adapter; one real `create_sdp()` call writes a receipt (C1) | A | backend agent | bundle validates; receipt fixture; approval bound to a digest; no credential in the repo |
 | 8 | the SalmonBench repository (Q26) | SalmonBench task schema, contributor guide, Inspect harness, and the 25-task pilot from S12 | A | benchmark agent, second key holder named | every task deterministic; canary present; keys encrypted; five-epoch smoke run reports `pass^k` |
 | 9 | `metasalmon`, `metasalmonpy` (or the sibling pair, Q27) | `salmon fetch nuseds` with a DatasetReceipt; source registry seeded from `smn-sci-plgn` cards | A | data-access agent | snapshot plus receipt feeds `create_sdp()` on the gold standard's source; live test scheduled |
-| 10 | `smn-sci-plgn` → institute | Repoint at metasalmon 0.5.0, rename, add the Claude plugin manifest, retire duplicated scripts | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
+| 10 | `smn-sci-plgn`, personal, in place (Q26) | Repoint at metasalmon and metasalmonpy 0.5.0 by tag, add the Claude plugin manifest beside the Codex one, and retire the plugin's own term search in favour of metasalmonpy's (hub Q69, 2026-09-25). This row said "→ institute" and "rename" until 2026-09-25, which Q26 had overruled on 2026-09-05 | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
 | 11 | four core repositories | Zenodo archiving, `CITATION.cff`, `inst/CITATION`; resolve `Codex [aut]` | A | docs agent, Brett approves authorship | a DOI on the next tag of each |
 | 12 | `salmon-domain-ontology`, `smn-data-pkg` | Draft `GOVERNANCE.md` for the RDA working group's review | B | docs agent, Brett and the WG | editorial group, change classes, CODEOWNERS with two humans, unavailability clause |
 | 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | queue `B-280`; out of Stage B 2026-09-25 | semantic agent | deterministic distribution from a clean checkout; no publication |
