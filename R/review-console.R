@@ -321,6 +321,19 @@ review_semantics <- function(x,
     rep(FALSE, nrow(suggestions))
   }
   keep <- decidable & (has_iri | rejected)
+  # A `codes.csv` row with no code value gets no semantic target (hub item
+  # B-276), and discovery forms none for it. Suggestions recorded before that,
+  # in a `semantic_suggestions.csv` an earlier version wrote or an attribute
+  # built from one, can still carry its candidates, so they are dropped here,
+  # where every queued slot passes. The row is found by its file and its code
+  # value, never by its key, which spells the empty value `NA` from R and `nan`
+  # or nothing from metasalmonpy. Nothing is said, as for a candidate naming no
+  # term: the row has no code value for a term to represent, so the review has
+  # nothing to decide for it.
+  keep <- keep & !(
+    .ms_review_is_code_slot(suggestions$target_sdp_file) &
+      .ms_semantic_code_value_is_empty(suggestions$code_value)
+  )
   # Only a field the review cannot decide is reported as one. A row dropped for
   # naming no term targets a field the review does decide, and listing it here
   # told the user to edit that field by hand (hub item B-246); it offers nothing
@@ -580,10 +593,13 @@ review_semantics <- function(x,
 #
 # "Belongs to no code" is decided by the slot's file, not by its `code_value`
 # alone. A `codes.csv` row may leave `code_value` empty when it supplies
-# `vocabulary_iri`, which the codes schema allows, and discovery still gives it a
+# `vocabulary_iri`, which the codes schema allows, and discovery gave it a
 # code-level target. Reading an empty `code_value` as "no code" matched that
 # slot and the column's own slot together, so the blank never settled anything
-# for a column with such a row (Codex review of pull request #153).
+# for a column with such a row (Codex review of pull request #153). Since hub
+# item B-276 such a row gets no target and `review_semantics()` queues no slot
+# for it, so only a review built before that holds one; the file test keeps a
+# blank from deciding it there.
 .ms_review_match_slot_rows <- function(review, column, role, table = NULL, code_value = NULL) {
   keep <- rep(TRUE, nrow(review))
   has_column <- !is.na(review$column_name) & nzchar(trimws(review$column_name))
@@ -622,7 +638,8 @@ review_semantics <- function(x,
 # A code's slot with an empty `code_value` gets neither: `""` now selects the
 # slots that belong to no code, so printing it there would decide the column's
 # own slot instead of this one. That slot's call stays as ambiguous as it was
-# before B-151, and refuses rather than deciding the wrong slot.
+# before B-151, and refuses rather than deciding the wrong slot. Only a review
+# built before hub item B-276 holds such a slot.
 .ms_review_call_args <- function(review, slot_id) {
   row <- review[review$slot_id == slot_id, , drop = FALSE][1, , drop = FALSE]
   column <- .ms_scalar_text(row$column_name)
@@ -960,9 +977,10 @@ print.ms_semantic_review <- function(x, ...) {
 #'   (or `NA`) to select a column's own slot when codes of that column have
 #'   slots with the same role, as a measurement column's codes do: leaving
 #'   `code_value` out matches those code slots too. A blank never selects a
-#'   code's slot, even for a `codes.csv` row that leaves `code_value` empty
-#'   because it supplies `vocabulary_iri`. `review_semantics()` prints it
-#'   whenever it is needed.
+#'   code's slot. A `codes.csv` row that leaves `code_value` empty because it
+#'   supplies `vocabulary_iri` has no slot at all: it gets no semantic target,
+#'   having no code value for a term to represent. `review_semantics()` prints
+#'   `code_value` whenever it is needed.
 #' @param iri Optional IRI to accept instead of a shortlisted candidate -- for
 #'   the case where the right term exists but retrieval did not surface it. An
 #'   `iri` that a shortlisted candidate in the slot carries is recorded as that
