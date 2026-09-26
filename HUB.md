@@ -337,10 +337,12 @@ writes:
         section sets. A run that ends without a review ("Something went
         wrong", "couldn't complete this request") is not a review and counts
         toward neither number; after each such failure one further request is
-        allowed, posted no sooner than an hour after the failure. Never to
-        re-roll a round that found something, and never while the previous
-        round is still running, which the reviewer signals with an eyes
-        reaction.
+        allowed, posted no sooner than codex_failed_run_retry_minutes in
+        queue/config.yaml after the failure. That clause retires when the cap
+        is counted by a check that reads only completed reviews, or when the
+        hub stops using Codex as its reviewer. Never to re-roll a round that
+        found something, and never while the previous round is still running,
+        which the reviewer signals with an eyes reaction.
       enforced_by: nothing mechanical.
       granted: 2026-09-23, with the row above and in the same words. The cap
         was added on 2026-09-24 on Brett's instruction to stop at the valuable
@@ -950,7 +952,8 @@ Four conditions, all of them, before an agent merges one:
   pushes, and does not post `@codex review` again. A run that ends without a
   review is not one: it does not count toward the cap, and it does not complete
   anything, so the merge waits for a review that does complete. The request
-  after such a failure is the re-review row's, no sooner than an hour later. **Code** here means executable
+  after such a failure is the re-review row's, no sooner than
+  `codex_failed_run_retry_minutes` after it. **Code** here means executable
   source, tests, scripts or workflows; a pull request that mixes code with other
   files, or whose kind is unclear, counts as code. The count is a trade, and
   the evidence it rests on cuts both ways. On the code pull requests of
