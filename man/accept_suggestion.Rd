@@ -43,9 +43,10 @@ more than one table.}
 (or \code{NA}) to select a column's own slot when codes of that column have
 slots with the same role, as a measurement column's codes do: leaving
 \code{code_value} out matches those code slots too. A blank never selects a
-code's slot, even for a \code{codes.csv} row that leaves \code{code_value} empty
-because it supplies \code{vocabulary_iri}. \code{review_semantics()} prints it
-whenever it is needed.}
+code's slot. A \code{codes.csv} row that leaves \code{code_value} empty because it
+supplies \code{vocabulary_iri} has no slot at all: it gets no semantic target,
+having no code value for a term to represent. \code{review_semantics()} prints
+\code{code_value} whenever it is needed.}
 
 \item{iri}{Optional IRI to accept instead of a shortlisted candidate -- for
 the case where the right term exists but retrieval did not surface it. An

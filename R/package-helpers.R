@@ -30,10 +30,12 @@
 #' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
 #'   directory that already holds something. An existing but *completely empty*
 #'   directory is written into without `overwrite` — there is nothing there to
-#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   destroy — while a dot-file, a stale `.sdp-package` ownership sentinel, or an
 #'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for directories previously written by `metasalmon`.
+#'   allowed for a directory recognised as a package: one holding the shared
+#'   `.sdp-package` ownership sentinel, or its SDP metadata. An older
+#'   `.metasalmon-package` sentinel on its own is not recognised.
 #' @param write_datapackage Logical; if `TRUE` (default), write a root
 #'   `datapackage.json` descriptor declaring the SDP Frictionless profile after
 #'   package validation passes. Use `FALSE` for draft authoring output.
@@ -311,14 +313,27 @@ write_salmon_datapackage <- function(
   nzchar(trimws(as.character(value)))
 }
 
+# The package-ownership sentinel: one file name and one content line, shared by
+# metasalmon and metasalmonpy (hub item B-113; Brett's Q14 ruling, 2026-08-24).
+# Neither names an implementation, because what owns the directory is the SDP
+# tooling rather than one language's copy of it. Both values are recorded in
+# `knowledge/parity-deviations.md` row 51, and metasalmonpy's half (hub item
+# B-127) takes them from there, so they are a cross-repository contract that
+# `test-package-ownership-sentinel.R` pins.
+#
+# The per-language `.metasalmon-package` this replaced is no longer written,
+# managed or recognised. Q14 accepted that break, and a package that still has
+# its SDP metadata is recognised by that. Nothing removes or renames an old
+# sentinel: Q14 rules out either writer removing the other's file, and no
+# migration is owed.
 .ms_package_sentinel_file <- function(path) {
-  file.path(path, ".metasalmon-package")
+  file.path(path, ".sdp-package")
 }
 
-# Byte-identical to the `writeLines("metasalmon-owned", ..., useBytes = TRUE)`
-# call that wrote the sentinel before the write path became transactional.
+# A fixed ASCII line ending in LF, so it has one byte encoding on every platform
+# and in either language.
 .ms_package_ownership_bytes <- function() {
-  charToRaw("metasalmon-owned\n")
+  charToRaw("sdp-owned\n")
 }
 
 # Render the descriptor with the exact writer -- and therefore the exact bytes
@@ -576,7 +591,7 @@ write_salmon_datapackage <- function(
 # So the emptiness test runs BEFORE the `overwrite` gate, not after it.
 #
 # "Empty" means `.ms_dir_entries()` returns nothing -- `list.files(all.files =
-# TRUE, no.. = TRUE)`, so a dot-file, a stale `.metasalmon-package` sentinel,
+# TRUE, no.. = TRUE)`, so a dot-file, a stale `.sdp-package` sentinel,
 # or an empty `data/` subdirectory each make the directory NON-empty and the
 # `overwrite` gate applies as before. Only a directory with literally zero
 # entries is written into. That is deliberately the strictest reading: every
@@ -1027,10 +1042,12 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
 #'   directory that already holds something. An existing but *completely empty*
 #'   directory is written into without `overwrite` — there is nothing there to
-#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   destroy — while a dot-file, a stale `.sdp-package` ownership sentinel, or an
 #'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for directories previously written by `metasalmon`.
+#'   allowed for a directory recognised as a package: one holding the shared
+#'   `.sdp-package` ownership sentinel, or its SDP metadata. An older
+#'   `.metasalmon-package` sentinel on its own is not recognised.
 #' @param prune Logical; if `FALSE` (default), reviewed sidecars in an existing
 #'   package directory are preserved and only files this writer owns are
 #'   replaced. If `TRUE`, the directory is emptied first. Requires

@@ -1,0 +1,12 @@
+id: B-340
+kind: defect
+title: 'R''s semantic closure takes the text of an !expr tag in the EML sidecar as the path it writes to, where the ruled behaviour is to refuse'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), answering Q-62: every reader of the EML sidecar refuses a tag, and on the semantic closure path that moves both packages, because R takes the tag''s text and metasalmonpy falls back to the default paths. In metasalmon, .ms_closure_mapping_paths() in R/semantic-closure.R, which write_sdp_semantic_closure() reaches, refuses a metadata/eml-mapping.yml carrying an !expr tag, or any other local tag it has no meaning for, with an error that names the file, instead of taking the tag''s text as a path; when it refuses, write_sdp_semantic_closure() writes neither closure file and leaves the sidecar unchanged. An untagged sidecar''s declared paths are still honoured. Pinned by a test through write_sdp_semantic_closure(), demonstrated RED on the reader as it stands. It may share one reader with B-223, which makes the EML and KNB reads refuse the same tags. THE METASALMONPY HALF IS B-341, and each names the other. A PORT OF A RULING, NOT A REGISTER ROW: once both land, the two closure readers refuse alike.'

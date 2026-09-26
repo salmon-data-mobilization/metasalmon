@@ -2157,7 +2157,7 @@ test_that("write_salmon_datapackage errors on existing path without overwrite", 
 # enumerated rather than implied. Empty means `.ms_dir_entries()` -- i.e.
 # `list.files(all.files = TRUE, no.. = TRUE)` -- returns nothing. Three near
 # misses are therefore NOT empty and still need `overwrite`, one per case
-# below: a dot-file, a stale `.metasalmon-package` sentinel, and an empty
+# below: a dot-file, a stale `.sdp-package` ownership sentinel, and an empty
 # `data/` subdirectory. Each is evidence that something already used the path.
 # metasalmonpy's `list(target.iterdir())` is the same predicate, and its twin
 # test is `test_writer_writes_into_an_existing_empty_directory_without_overwrite`.
@@ -2240,11 +2240,11 @@ test_that("an existing directory holding only a dot-file is NOT empty for overwr
   expect_true(file.exists(file.path(target, ".hidden")))
 })
 
-test_that("an existing directory holding only a stale metasalmon sentinel is NOT empty", {
+test_that("an existing directory holding only a stale ownership sentinel is NOT empty", {
   temp_dir <- withr::local_tempdir()
   target <- file.path(temp_dir, "stale-sentinel")
   dir.create(target)
-  writeLines("metasalmon-owned", .ms_package_sentinel_file(target))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(target))
 
   a <- .ms_test_q15_artifacts()
   expect_error(
@@ -2391,7 +2391,7 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
 
   # Rewriting is now an in-place update: unmanaged files survive by default.
   expect_true(file.exists(file.path(temp_dir, "stale.txt")))
-  expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
+  expect_true(file.exists(.ms_package_sentinel_file(temp_dir)))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
 
   write_salmon_datapackage(
@@ -2405,7 +2405,7 @@ test_that("write_salmon_datapackage can overwrite an existing metasalmon package
   )
 
   expect_false(file.exists(file.path(temp_dir, "stale.txt")))
-  expect_true(file.exists(file.path(temp_dir, ".metasalmon-package")))
+  expect_true(file.exists(.ms_package_sentinel_file(temp_dir)))
   expect_true(file.exists(file.path(temp_dir, "metadata", "dataset.csv")))
 })
 
@@ -3425,7 +3425,7 @@ test_that("rewriting refuses to delete through a symlinked managed directory", {
   outside <- file.path(base, "outside")
   dir.create(file.path(pkg, "data"), recursive = TRUE)
   dir.create(outside, recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   writeLines(c("dataset_id", "d1"), file.path(outside, "dataset.csv"))
   writeLines("precious external file", file.path(outside, "tables.csv"))
   file.symlink(outside, file.path(pkg, "metadata"))
@@ -3453,7 +3453,7 @@ test_that("an ordinary package directory is still updated in place", {
   base <- withr::local_tempdir()
   pkg <- file.path(base, "pkg")
   dir.create(file.path(pkg, "metadata"), recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   writeLines(c("dataset_id", "d1"), file.path(pkg, "metadata", "dataset.csv"))
   writeLines(c("table_id", "obs"), file.path(pkg, "metadata", "tables.csv"))
   writeLines("keep me", file.path(pkg, "README-review.txt"))
@@ -3628,7 +3628,7 @@ test_that("create_sdp-owned outputs are containment-checked before writing", {
   dir.create(outside, recursive = TRUE)
   target <- file.path(outside, "precious.txt")
   writeLines("PRECIOUS EXTERNAL CONTENT", target)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   file.symlink(target, file.path(pkg, "README-review.txt"))
 
   expect_error(
@@ -3747,7 +3747,7 @@ test_that("a hard-linked create-owned output is replaced, not written through", 
   dir.create(outside, recursive = TRUE)
   target <- file.path(outside, "precious.txt")
   writeLines("PRECIOUS EXTERNAL CONTENT", target)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   skip_if_not(file.link(target, file.path(pkg, "README-review.txt")), "hard links unsupported")
 
   .ms_write_sdp_review_readme(pkg_path = pkg, dataset_id = "d1", has_suggestions = FALSE)
@@ -3801,7 +3801,7 @@ test_that("a symlinked metadata path is rejected before it is read", {
   outside <- file.path(base, "outside")
   dir.create(file.path(pkg, "data"), recursive = TRUE)
   dir.create(outside, recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
              file.path(outside, "tables.csv"))
   file.symlink(outside, file.path(pkg, "metadata"))
@@ -3849,7 +3849,7 @@ test_that("the pre-read containment check covers legacy root-level metadata", {
   outside <- file.path(base, "outside")
   dir.create(file.path(pkg, "data"), recursive = TRUE)
   dir.create(outside, recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(pkg, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(pkg))
   writeLines(c("dataset_id,table_id,file_name", "d1,t1,data/x.csv"),
              file.path(outside, "tables.csv"))
   file.symlink(file.path(outside, "tables.csv"), file.path(pkg, "tables.csv"))
@@ -3872,7 +3872,7 @@ test_that("a symlinked package root is refused", {
   base <- withr::local_tempdir()
   real <- file.path(base, "real")
   dir.create(file.path(real, "metadata"), recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(real))
   writeLines("precious", file.path(real, "metadata", "dataset.csv"))
   link <- file.path(base, "link")
   file.symlink(real, link)
@@ -3893,7 +3893,7 @@ test_that("a symlinked root is refused however the path is spelled", {
   base <- withr::local_tempdir()
   real <- file.path(base, "real")
   dir.create(file.path(real, "metadata"), recursive = TRUE)
-  writeLines("metasalmon-owned", file.path(real, ".metasalmon-package"))
+  writeBin(.ms_package_ownership_bytes(), .ms_package_sentinel_file(real))
   link <- file.path(base, "link")
   file.symlink(real, link)
 

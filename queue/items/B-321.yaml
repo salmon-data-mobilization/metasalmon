@@ -1,0 +1,13 @@
+id: B-321
+kind: defect
+title: 'Move the commons schema into $defs with no semantic change, and give okf-check.py --schema and --json'
+state: done
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: [B-320]
+legacy: ''
+evidence: knowledge/sequences/s6-ecosystem.md
+retires_when: 'A commons pull request stacked on pull request 25 is merged that restructures schema/concept.schema.json into $defs referenced by $ref and changes no verdict. Every card, and a set of deliberately broken copies covering each rule the schema enforces, gets the identical verdict and the identical error set under the old and the new schema, and the pull request shows that comparison. scripts/okf-check.py takes --schema PATH instead of a hard-coded path, reports its findings as JSON under --json, and keeps its --gaps output byte-identical. Brett merges it, because CONTRIBUTING reserves the schema and the validator to a human. Second in the order Brett ruled on 2026-09-25 (Q68). It exists so that every later schema change is a small diff against named definitions. SATISFIED 2026-09-25: commons pull request 28 merged as b522da3.'

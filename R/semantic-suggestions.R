@@ -261,6 +261,22 @@
   )
 }
 
+# Whether a `codes.csv` row's `code_value` is empty, which gives the row no
+# semantic target in any role (hub item B-276, ruled by Brett 2026-09-25). The
+# codes schema defines `term_iri` as "the specific term that code_value
+# represents" and lets a row leave `code_value` empty when it supplies
+# `vocabulary_iri` instead, so such a row has no code value for a term to
+# represent. Empty is NA, or text that is empty once trimmed: the review console
+# reads a code value trimmed, so a blank one had no address there either. The
+# text "NA" is a code value, not an empty one.
+#
+# One predicate for both places the rule is applied: target discovery, which
+# forms no target for such a row, and `review_semantics()`, which drops one
+# from suggestions recorded before the rule existed.
+.ms_semantic_code_value_is_empty <- function(code_value) {
+  is.na(code_value) | !nzchar(trimws(as.character(code_value)))
+}
+
 .ms_semantic_discover_targets <- function(dict,
                                       codes,
                                       table_meta,
@@ -927,6 +943,9 @@
       table_id <- if ("table_id" %in% names(row)) row$table_id[[1]] else NA_character_
       column_name <- if ("column_name" %in% names(row)) row$column_name[[1]] else NA_character_
       code_value <- if ("code_value" %in% names(row)) row$code_value[[1]] else NA_character_
+      # No code value, no target in any role (hub item B-276); the other rows
+      # of this column keep theirs.
+      if (.ms_semantic_code_value_is_empty(code_value)) return(tibble::tibble())
       code_label <- if ("code_label" %in% names(row)) row$code_label[[1]] else NA_character_
       code_description <- if ("code_description" %in% names(row)) row$code_description[[1]] else NA_character_
 

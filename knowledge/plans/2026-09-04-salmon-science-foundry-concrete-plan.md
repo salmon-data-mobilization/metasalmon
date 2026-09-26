@@ -179,6 +179,13 @@ place (**corrected**, with the finding ids from Appendix D), or replaced
 | 9.5 | **reduced**: the quoted paragraph and the exclusion list are deleted rather than corrected, and the section now points at `HUB.md` and keeps only the design reasoning and the reversal | R15; the duplicated-boundary defect §9.1 measures |
 | Appendix A Q37 | the 2026-09-09 ruling is kept and a dated supersession note added beneath it | R15; this file's never-delete convention |
 
+**Fifth pass, 2026-09-25** (hub records only; no ruling changed).
+
+| Section | Change | Driven by |
+|---|---|---|
+| 7-D Scale | the pilot anchor names the replay/oracle half of the Theme A harness rather than one script subcommand; dated note beneath | Q23 unchanged; the harness's live side is another item's subject |
+| 10 issue table | issues 13 and 16 leave Stage B for queue items `B-280`, `B-278` and `B-279`; dated notes beneath the table | the `tern` edge in the roadmap |
+
 ### 0.3 The verdict, in one paragraph
 
 The thesis is worth testing and the plan's guardrails (rights gate, no model
@@ -391,6 +398,16 @@ campaign-level state belong in the Foundry; metasalmon never needs a workflow
 server, an agent framework, or a durable-execution library as an R
 dependency; the Foundry calls metasalmon and metasalmonpy through narrow,
 versioned tool contracts rather than reimplementing their scientific logic.
+
+**Amended 2026-09-25 (Brett, hub Q67): the model call itself is not
+metasalmon's either.** Neither package calls a model. They export a
+deterministic review packet and ingest a model's assessments in the frozen
+30-column row, and the judgement runs in the caller's harness, meaning Claude
+Code, Codex, Claude Science or the Foundry, through `smn-sci-plgn` skills. So
+the list of things that do not belong in metasalmon now starts with the model
+call, not with the conversation around it. The operative copy of the ruling,
+and the order in which the in-package model call is removed, is the S16 card
+(`sequences/s16-model-call-leaves-the-packages.md`).
 
 **Hub item:** the S7 card says nothing depends on it. S14 does, through this
 amendment; the S7 card records that when S14 is ruled (Appendix B).
@@ -760,6 +777,11 @@ skills front door, not as a place where logic lives. Rule: a skill calls
 metasalmon, metasalmonpy, or a `salmon` verb for anything the packages can
 do; the plugin's own ontology-lookup and SDP-drafting scripts retire when the
 metasalmonpy port lands; `smn-data-gpt`'s drafting packs are superseded now.
+*(The port landed: metasalmonpy was tagged `v0.5.0` on 2026-09-24. On
+2026-09-25 Brett ruled, hub Q69: "The smn-sci-plugin becomes the thin,
+dual-manifest front door. Its third term-search implementation retires in
+favour of metasalmonpy." The plugin is also where the harness skills that
+replace the packages' own model call live, hub Q67.)*
 The MCP policy from v1 stands (internal calls are typed functions or CLIs;
 no ontology mutation or production publication through MCP until the
 generated adapter exists and one campaign has passed H1 to H5 through the
@@ -1210,10 +1232,15 @@ The semantic-mapper capability produces **one decision ledger through the
 shipped functions**: a committed script of `accept_suggestion()`,
 `reject_suggestion()`, and `set_sdp_*()` calls and the
 `semantic_suggestions.csv` it yields, SSSOM only via `write_sdp_sssom()`.
-Any model judgement of candidates runs through
-`suggest_semantics(llm_assess = TRUE)` across the tool boundary, so the
-frozen assessment row is the record; a Foundry-side judge would need a
-parity-register row saying why.
+Any model judgement of candidates runs in the caller's harness against the
+review packet the packages export, and comes back through their assessment
+ingester, so the frozen assessment row is still the record. A judge in the
+Foundry is one more harness and needs no parity-register row, because the
+packet and the ingester are the same contract in both packages. *(Amended
+2026-09-25, hub Q67. This read "runs through `suggest_semantics(llm_assess =
+TRUE)` across the tool boundary", and a Foundry-side judge needed a register
+row, until Brett ruled that the model call leaves both packages. The S16 card
+holds the ruling.)*
 
 Permission classes P0 to P4 stand as in v1. **P5 (non-public PSC or partner
 systems) is "never" for the institute's Foundry** (R2), not "unless
@@ -1424,11 +1451,19 @@ run, with agreement reported.
   V, OV), three epochs, two models. The first six are the six Theme A cases
   (their `case_id`, evidence status, context, targets, candidates, and
   required / allowed / forbidden oracle seed the retrieval, code-list, and
-  decomposition families), and the Inspect harness must reproduce
-  `Rscript scripts/theme-a-benchmark.R replay` before any new task is
-  added; the rest derive from the S12 campaign. Pilot results debug scorers
-  and are never reported as an effect. A protocol preprint precedes the
-  confirmatory run.
+  decomposition families), and the Inspect harness must reproduce the
+  replay/oracle half of the Theme A harness (its fixtures and their
+  comparison), independent of any live provider capture mode, before any
+  new task is added; the rest derive from the S12 campaign. Pilot results
+  debug scorers and are never reported as an effect. A protocol preprint
+  precedes the confirmatory run.
+  *(Reworded 2026-09-25. Until then the anchor read "must reproduce
+  `Rscript scripts/theme-a-benchmark.R replay`", which pinned it to one
+  script's subcommand rather than to the fixtures and comparison that
+  subcommand runs. The ruling is unchanged — Q23: the three Theme A captures
+  finish as the pilot's regression anchor — and what the wording now says is
+  that the anchor survives whatever happens to the script's live capture
+  side, which is another item's subject.)*
 - **v0.1 (Stage B):** the *released benchmark* is 60 curated tasks across
   six families (construction 15, diagnosis 10, mapping and gap 10,
   decomposition 10, provenance 10, governance 5), all deterministic or
@@ -1931,17 +1966,27 @@ blocked on rulings (Q19, Q26, Q27); issue 2's fix location is Q29.
 | 7 | the institute organization's `salmon-science-foundry` (Q35) | Create the repository with its `knowledge/` bundle, v0.1 contracts, the Tier 0 ledger, and the `Rscript` adapter; one real `create_sdp()` call writes a receipt (C1) | A | backend agent | bundle validates; receipt fixture; approval bound to a digest; no credential in the repo |
 | 8 | the SalmonBench repository (Q26) | SalmonBench task schema, contributor guide, Inspect harness, and the 25-task pilot from S12 | A | benchmark agent, second key holder named | every task deterministic; canary present; keys encrypted; five-epoch smoke run reports `pass^k` |
 | 9 | `metasalmon`, `metasalmonpy` (or the sibling pair, Q27) | `salmon fetch nuseds` with a DatasetReceipt; source registry seeded from `smn-sci-plgn` cards | A | data-access agent | snapshot plus receipt feeds `create_sdp()` on the gold standard's source; live test scheduled |
-| 10 | `smn-sci-plgn` → institute | Repoint at metasalmon 0.5.0, rename, add the Claude plugin manifest, retire duplicated scripts | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
+| 10 | `smn-sci-plgn`, personal, in place (Q26) | Repoint at metasalmon and metasalmonpy 0.5.0 by tag, add the Claude plugin manifest beside the Codex one, and retire the plugin's own term search in favour of metasalmonpy's (hub Q69, 2026-09-25). This row said "→ institute" and "rename" until 2026-09-25, which Q26 had overruled on 2026-09-05 | A | skills agent | `claude plugin validate` and the Codex validator pass; every skill calls a package or verb |
 | 11 | four core repositories | Zenodo archiving, `CITATION.cff`, `inst/CITATION`; resolve `Codex [aut]` | A | docs agent, Brett approves authorship | a DOI on the next tag of each |
 | 12 | `salmon-domain-ontology`, `smn-data-pkg` | Draft `GOVERNANCE.md` for the RDA working group's review | B | docs agent, Brett and the WG | editorial group, change classes, CODEOWNERS with two humans, unavailability clause |
-| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | B | semantic agent | deterministic distribution from a clean checkout; no publication |
+| 13 | `salmon-knowledge-commons` | The commons compiler (JSONL, Parquet, gaps JSON, SSSOM, TriG, manifest) pinned by commit | queue `B-280`; out of Stage B 2026-09-25 | semantic agent | deterministic distribution from a clean checkout; no publication |
 | 14 | foundry | The PR #27 evidence briefing for Q6 (advocate, challenger, adjudicator; decision matrix) | B | evidence agents | matrix delivered to Brett; no term minted; withdrawn gaps moved to `rejected` |
 | 15 | the SalmonBench repository (Q26) | SalmonBench v0.1: 60 tasks, held-out keys, external authors onboarded, preregistered analysis | B | benchmark lead, contributors | frozen plan; raw logs; results preprint |
-| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | B | R and Python agents | a register gap is detected without hand-filing, on both sides |
+| 16 | `metasalmon`, `metasalmonpy` | Read the commons `--gaps` JSON in `detect_semantic_term_gaps()` | queue `B-278` and `B-279`; out of Stage B 2026-09-25 | R and Python agents | a register gap is detected without hand-filing, on both sides |
 
 **Added 2026-09-05 for S15 and S16.** Issues 17 to 19 are the coordination
 change; issue 20 is the PSC ontology and is filed in the PSC organization
 through the PSC-DSC intake, not here.
+
+**Re-sequenced 2026-09-25.** Issues 13 and 16 read Stage B until today. Both
+now live in the hub queue — the compiler as `B-280`, the `--gaps` reader as the
+pair `B-278` (metasalmon) and `B-279` (metasalmonpy) — and the queue, not this
+table, sequences them: `tern` (a requirements-driving consumer, recorded as an
+edge in the roadmap the same day) consumes the compiler's distribution at a
+pinned commit and would otherwise build a second exporter, and the reader is
+what makes the commons register the pipeline's front end in fact rather than in
+intent. The rows keep their acceptance tests; their stage cells say where they
+went.
 
 | # | Repository | Issue title | Stage | Delegate | Acceptance evidence |
 |---|---|---|---|---|---|

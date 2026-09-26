@@ -1,6 +1,35 @@
 metasalmon (development version)
 --------------------------------
 
+### Breaking changes
+
+* **A package's ownership sentinel is now `.sdp-package`, holding the line
+  `sdp-owned`, and `.metasalmon-package` is no longer written or recognised**
+  (hub item B-113; ruled by Brett 2026-08-24, `knowledge/questions.md` Q14).
+  `write_salmon_datapackage()`, and
+  `create_sdp()` through it, now mark a package directory with one sentinel
+  shared with metasalmonpy rather than a file named after this implementation,
+  because what owns the directory is the SDP tooling and not one language's copy
+  of it. The name and content line are recorded in
+  `knowledge/parity-deviations.md` row 51. For a directory you already have:
+
+  - **A package that still has its SDP metadata needs nothing.** The
+    `overwrite = TRUE` check recognises it by its `metadata/` CSVs, as it
+    always has, and the next write adds `.sdp-package`.
+  - **A directory whose only sign of being a package is `.metasalmon-package`
+    is no longer replaced.** `overwrite = TRUE` now stops with *"Refusing to
+    overwrite non-metasalmon directory"*. If it is a package you mean to
+    rewrite, rename that file to `.sdp-package`; otherwise write to a new
+    directory.
+  - **An existing `.metasalmon-package` is left where it is.** A rewrite no
+    longer manages it, so it survives unless `prune = TRUE` empties the
+    directory. Nothing reads it any more, and you can delete it.
+
+  metasalmonpy writes `.metasalmonpy-package` until its half of the change
+  lands (hub item B-127). This package still recognises a package metasalmonpy
+  wrote by its SDP metadata, so nothing is refused in the meantime, but a
+  package written by both carries both files until then.
+
 ### Added
 
 * **Model judgement runs outside the package: `write_semantic_review_packet()`
@@ -412,7 +441,7 @@ metasalmon (development version)
   whichever year readr emits, so the two files agree on both platforms; padding
   only the descriptor would have re-opened this defect on the platform CI runs
   on. **Mirror:** metasalmonpy adopted the same ruling in queue **B-145**
-  (metasalmonpy pull request #34, 2026-09-25); parity-deviations row 56
+  ([metasalmonpy pull request 34](https://github.com/salmon-data-mobilization/metasalmonpy/pull/34), 2026-09-25); parity-deviations row 56
   records that both sides moved, and the one residual left, the year below
   1000, which is hub item B-161.
 
@@ -605,10 +634,10 @@ metasalmon (development version)
   slot's own retrieval candidates are weighed exactly as before.
 
   A port, not a deviation: metasalmonpy had the same defect in the same shape
-  and fixed it first (metasalmonpy pull request #28, hub item B-126), and both
+  and fixed it first ([metasalmonpy pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), hub item B-126), and both
   now record the same row, so no parity-register row is owed. The gap-evidence
   exclusion is R's alone for now: metasalmonpy's `detect_semantic_term_gaps()`
-  still counts the row it has recorded since #28, and the same fix is owed
+  still counts the row it has recorded since [pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), and the same fix is owed
   there.
 
 * **`review_metadata()` now lists a draft `REVIEW:` IRI that strict validation
@@ -644,7 +673,7 @@ metasalmon (development version)
   lists it exactly when strict validation refuses it. A second test does the
   same for a configured schema's extra dictionary field.
 
-  metasalmonpy fixed the same defect in pull request #28, and its scan also
+  metasalmonpy fixed the same defect in [pull request 28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28), and its scan also
   lists a marker in `codes.csv`, the one file where the two differ. Brett ruled
   on 2026-09-23 that strict validation refuses a marker there, so R is the side
   that moves, when B-177 lands. Until then the difference is tracked as a port
@@ -794,6 +823,77 @@ metasalmon (development version)
   marked candidates included, so the fix is owed there as a port (see
   `knowledge/parity-deviations.md`).
 
+* **The semantic review no longer records, by any route, an accept whose IRI
+  is empty or still a `REVIEW:` marker** (hub item B-246). Hub item B-219
+  closed one route, `accept_suggestion(iri = )`. Three more stayed open, and
+  one message misdirected:
+
+  - `review_semantics()` queued a shortlisted candidate whose `iri` was only
+    the marker, because it tested only that `iri` was not blank.
+    `accept_suggestion(rank = )` then recorded an accept with an empty IRI, in
+    every spelling the strip removes. Such a candidate is no longer queued. In
+    a slot that held one, the candidates after it now rank one place higher,
+    as they already did after a candidate with a blank IRI. A review saved by
+    an earlier version, or edited by hand, can still hold one, so `rank =`
+    now refuses a candidate whose IRI names no term.
+  - A recorded accept of such a candidate came back in the next review as an
+    accept with an empty IRI. It is no longer replayed, so the slot is asked
+    again. A recorded reject is still replayed from such a candidate, and now
+    from one with a blank IRI too, because rejecting a slot names no candidate.
+    A slot whose only candidate was blank used to lose its rejection and reason
+    from `include_filled = TRUE`. The console prints no accept call for such a
+    candidate, since the call would be refused.
+  - The strip removes one marker, so `accept_suggestion(iri = "REVIEW:
+    REVIEW:")` recorded the IRI `REVIEW:`. An `iri` that is still a marker once
+    one is removed is now refused, a shortlisted candidate carrying one is not
+    queued, and `rank =` refuses one that a review still holds.
+  - `review_semantics()` listed a suggestion row with no IRI under *"Some
+    suggestions target fields this review cannot decide"*, naming a field the
+    review does decide, and said to edit it in the metadata CSVs directly. A
+    package where an accept before B-219 recorded an empty IRI printed that on
+    every review. A row with no IRI offers nothing to accept, and it is now
+    dropped without a message. Fields the review cannot decide are still
+    listed.
+
+  Which spellings count as the marker is unchanged: these checks use the same
+  strip and detector as before.
+
+  **Mirror:** metasalmonpy's review console has the same defects (the replay
+  was read there, not run), and the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
+
+* **A `codes.csv` row with no code value gets no semantic suggestions, and the
+  review no longer queues a slot it could not address** (hub item B-276; ruled
+  by Brett 2026-09-25). The codes schema lets a row leave `code_value` empty
+  when it supplies `vocabulary_iri`, and defines `term_iri` as the term that
+  `code_value` represents, so such a row has no code value for a term to
+  represent. Target discovery still gave it a code-level target, so
+  `suggest_semantics()` and `create_sdp()` wrote suggestions for it and
+  `review_semantics()` queued its slot. No argument told that slot apart from
+  the column's own slot of the same role, so wherever the column had one, the
+  calls printed for it refused as ambiguous: the case the B-151 entry above
+  leaves open.
+
+  - Discovery now forms no target for such a row, in any role, so
+    `suggest_semantics()` and `create_sdp()` write no suggestion for it. A row
+    of the same column that has a code value keeps its targets. Empty means
+    `NA`, or text that is blank once trimmed; the text `NA` is a code value.
+  - `review_semantics()` leaves such a row out of the queue when a
+    `semantic_suggestions.csv` written before this change still carries its
+    candidates, whichever key spelled its empty value. The rows stay in the
+    file. The queue leaves them out with `include_filled = TRUE` too, and does
+    not replay a decision recorded on them.
+  - Every call the review prints for such a column now runs. Where the row was
+    the column's only code, the call for the column's own slot no longer needs
+    `code_value`. A call an earlier version printed for the row's own slot
+    stops with *"No review slot matches that column and role"* where it used
+    to run; where it used to refuse as ambiguous, it can now select the
+    column's own slot of that role. Paste calls from a fresh
+    `review_semantics()`.
+
+  **Mirror:** metasalmonpy's target discovery gives such a row a target too,
+  and the fix is owed there as a port (see `knowledge/parity-deviations.md`).
+
 * **The publication vignette no longer leads a reader to add a ledger row that
   stops their package publishing** (hub item B-192).
   `vignettes/post-review-package-publication.Rmd` described the canonical
@@ -856,7 +956,7 @@ metasalmon (development version)
   placeholder.
 
   **Mirror:** metasalmonpy fixed the same defect first, with the same rule
-  (hub item B-212, metasalmonpy pull request #49), so the two packages report
+  (hub item B-212, [metasalmonpy pull request 49](https://github.com/salmon-data-mobilization/metasalmonpy/pull/49)), so the two packages report
   the same rows. Its suite does not pin the required-IRI case. A defect the
   two packages shared is not a deliberate difference, so it opens no
   parity-register row. metasalmonpy's footer still counts IRI gaps by reason,
@@ -951,12 +1051,36 @@ metasalmon (development version)
   returns the rows of a response with no `key` column, with an `NA` detail
   `url`, where it aborted. A failed request still gives the same empty result
   as an empty answer, as `ices_code_types()` and `ices_codes()` always have, so
-  an empty result does not say whether ICES answered.
+  an empty result does not say whether ICES answered. The next entry adds the
+  warning that tells the two apart (hub item B-377).
 
   **Mirror:** metasalmonpy already behaves this way. Its helpers fill a missing
   column with `""` and return an empty frame for an empty or failed response,
   and its own tests use a response with no `longDescription`. R has moved to
   match it, so nothing is owed there and no register row is needed.
+
+* **The ICES helpers warn when the request fails, so an empty result no longer
+  hides an outage** (hub item B-377). `ices_code_types()`, `ices_codes()`,
+  `ices_find_code_types()` and `ices_find_codes()` returned the same empty
+  tibble for a request that failed as for an answer with no rows, and nothing
+  warned, so during an outage a user asking for a code list was told there was
+  none. `.safe_json()` did record the failure, but as a condition with no
+  default handler, and the ICES helpers installed none. A refused connection,
+  an HTTP error status, a timeout, or an answer that is not JSON now gives a
+  warning that names the request, with any secret in it redacted, and says what
+  failed. The result is still the empty tibble, and an answer with no rows
+  still gives it with no warning. A timeout also keeps the warning it already
+  had.
+
+  It is a warning and not an error because the return value does not change:
+  the list helpers have always returned the empty tibble for a failed request,
+  the find helpers have since B-57, and a caller that expects a data frame
+  keeps getting one. `find_terms()` answers the same problem the same way, with
+  a warning that a source did not answer.
+
+  **Mirror:** metasalmonpy's helpers return an empty frame for a failed request
+  with no warning, measured by the second 2026-09-25 queue sweep on its `main`
+  at `056fccc`. The warning is owed there as a port, hub item B-378.
 
 ### Changed
 
@@ -964,7 +1088,7 @@ metasalmon (development version)
   Procedure rules** (backlog #106, hub item B-106; ruled by Brett 2026-09-14,
   `knowledge/questions.md` Q47). `inst/extdata/schema/sdp.rules.yaml` is a
   byte-for-byte copy of `smn-data-pkg`'s `schema/sdp.rules.yaml`, and this is
-  the copy half of that change -- paired with smn-data-pkg PR #8, which merged
+  the copy half of that change -- paired with [smn-data-pkg PR 8](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/8), which merged
   first as `bb71c8b`. Nothing was hand-edited on this side; the copies were
   identical before (md5 `3c702a37...`) and are identical after (md5
   `f94d6c8f...`, git blob `489d46a0`), which is the property
@@ -1427,7 +1551,7 @@ below — an in-memory SSSOM mapping set carrying a typed column, and
   core roles the mirror used everywhere — and the two implementations spell the
   `REVIEW:` marker differently (`REVIEW: ` here, `REVIEW:` there). The second is
   inert to behaviour, invisible to every test on either side, and now
-  registered as row 61 with [Q18](knowledge/questions.md) open on it.
+  registered as row 61 with [Q18](https://github.com/salmon-data-mobilization/metasalmon/blob/main/knowledge/questions.md#q18--review--or-review--does-the-markers-exact-spelling-matter) open on it.
 
 
 * **The role-contract guard now checks all seven surfaces in one file, and

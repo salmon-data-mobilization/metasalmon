@@ -1,0 +1,13 @@
+id: B-332
+kind: defect
+title: 'Amend metasalmonpy PARITY.md row 45 when the Theme A harness loses its live half, the mirror half of B-328'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P4
+blocked_by: [B-328]
+legacy: ''
+evidence: knowledge/sequences/s16-model-call-leaves-the-packages.md
+retires_when: 'IN METASALMONPY, row 45 of PARITY.md says what row 45 of metasalmon''s knowledge/parity-deviations.md says once B-328 lands: the live capture and cohort-publication half of the Theme A harness no longer exists in either package, so the row is retired, or reduced to the replay half, in the same words in both registers. It changes a register row, so Brett merges it. THE METASALMON HALF IS B-328, and each names the other.'

@@ -114,7 +114,16 @@ under `queue/`.
   `llm_context_text` must NEVER trigger a network/LLM call. LLM review runs only
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
   This is the contract behind the 0.1.4 fix; supplying options that will be ignored
-  should warn, not silently no-op. **The in-package model call is deprecated
+  should warn, not silently no-op.
+  **Ruled 2026-09-25 (Brett, hub Q67): the model call leaves both packages.**
+  This contract governs every release that still carries the in-package call.
+  The additive release (hub item B-326) deprecates that call, and the removal
+  release (B-329) deletes it, at which point this becomes the stronger contract
+  that the packages make no model call at all. Until then, work that only
+  improves the provider path has at most the releases before the removal to
+  matter in. The order, and what stays, is the
+  [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).
+  **The in-package model call is deprecated
   (2026-09-25, hub Q67, stream S16):** `llm_assess = TRUE`, the eleven `llm_*`
   arguments and `chat_decomposition()` warn once per top-level call (class
   `metasalmon_llm_deprecated`; silenced suite-wide by the option
@@ -150,13 +159,14 @@ under `queue/`.
   (`.ms_semantic_target_cols()`) and the 30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
-  must keep identical column sets. **Since S16 step 1 the 30-column row is
-  the record a harness writes and the package reads back** (the packet's
-  `output.columns` names each column's owner and requiredness, and
-  `review/semantic-llm-assessments.csv` persists it), so its column contract
-  outlives the provider code that first wrote it: every row still comes from
-  the two builders and leaves through the one normalizer, and the persisted
-  header is `.ms_llm_assessment_cols()`.
+  must keep identical column sets. **The assessment row outlives the provider
+  code** (hub Q67, 2026-09-25): it becomes the contract a harness writes and the
+  package's assessment ingester reads, so it stays frozen after the model call
+  is gone.
+  Since S16 step 1 (B-326) the packet's `output.columns` names each column's
+  owner and requiredness, `review/semantic-llm-assessments.csv` persists the
+  row, every row still comes from the two builders and leaves through the one
+  normalizer, and the persisted header is `.ms_llm_assessment_cols()`.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
 - **A semantic role is a contract across seven surfaces, not a string.** Adding
@@ -410,11 +420,12 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
   and the cross-repo release index.** Undated, edited in place, the single
   sequencing authority for the whole ecosystem. Start here.
-- **`knowledge/sequences/`** — one card per stream (S1–S13) with the detail the
+- **`knowledge/sequences/`** — one card per stream (S1–S16) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
-  of open items. Severity lives here; *ordering* lives in the roadmap, and the
-  two legitimately differ.
+  of open items. An item's severity lives in the `severity` field of its file
+  under `queue/items/`, not here (ruled by Brett 2026-09-25, hub item Q-52);
+  *ordering* lives in the roadmap, and the two legitimately differ.
 - **`knowledge/plans/*.md`** — how to do one stream, in detail. Dated, because
   each is a record of a decision at a point in time. A sequence card links to
   its execplan before implementation starts.

@@ -1,0 +1,13 @@
+id: B-350
+kind: defect
+title: 'write_sdp_sssom() does not write canonical SSSOM/TSV, which the SSSOM specification says writers should'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): canonical output at the next minor version, in both packages together, with the hash change in NEWS. In metasalmon, every mapping set write_sdp_sssom() writes, through .ms_sssom_canonical_bytes() in R/sssom.R, follows every rule of the Canonical SSSOM/TSV format section of the SSSOM/TSV specification that applies to what it writes, among them no space after the #, scalars in plain style whenever possible and double-quoted otherwise, slots in the order of the MappingSet Slots table, and no built-in prefix and no unused prefix in the curie_map. Pinned by a test per rule, each demonstrated RED on the writer as it stands wherever the writer breaks that rule today; read_sssom_mapping_set() reads every file it writes, and validate_sdp_sssom() still accepts a package written in the form it writes today. NEWS.md, under the development heading, says that every mapping set''s bytes, and so every manifest''s sha256, change. The same pull request amends row 11 of knowledge/parity-deviations.md, whose byte-identity claim these bytes carry, which is class 5 in HUB.md''s Which pull requests need Brett, so the merge is Brett''s. The version number does not move here, and which release carries the change is not this item''s condition: a version is Brett''s, class 3, and the ruling puts both halves in the same minor version. THE METASALMONPY HALF IS B-351, and each names the other.'

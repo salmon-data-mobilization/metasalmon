@@ -124,38 +124,9 @@ it is what both sides' detectors already encode and what the two `AGENTS.md`
 files name; but the honest answer may be that this is not worth a change.
 **Owner:** [parity row 61](parity-deviations.md).
 
-### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one?
-**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
-verification, each of which is currently costing it at zero.
-Every card in the commons carries `generated` (who wrote it) and `verified`
-(who independently checked it), and the rule that the writer cannot be the
-checker is **prose only**: the two fields share one schema pattern, a
-self-verifying card validates, and that repository has no CI. Twenty-six cards
-carry 250 sources and 623 citations and **not one has ever been verified, in
-any commit on any branch.**
-[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
-ruled the who-half for publication — a card is *stable* when it carries a named
-human `verified` entry and passes its citation ledger — so what is open is the
-what-half: whether an agent re-reading a source counts as independent checking.
-That is genuinely undecided in the documentation rather than merely unwritten,
-which is why it is a question and not a defect.
-**Recommendation:** two tiers with distinct field values, so no card can claim
-more than it earned. `checked` is agent-eligible and never spelled "verified":
-an agent that is not the generator re-resolves every citation by the
-citation-ledger procedure, re-derives each claim from the located passages
-without reading the card's own argument, and records the ledger, its identity
-and the date, with any disagreement moving the card to `disputed` rather than
-leaving a partial check. `verified` stays human-only — a named person who is
-not the generator has read the located passages rather than the summary. Then
-grade the bar to the consequence: one human makes a card verified, *stable*
-needs two humans or one human plus two agreeing `checked` entries, and a card
-that mints, retargets or defines a term wants three.
-**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
-it is what makes B-123's schema split writable.
-
 ### Q40 — Verify one commons card end to end, to find out what verification costs
 **Unblocks:** every estimate that currently assumes verification is free.
-Follows Q39 and B-121. **The point is the measurement as much as the card:**
+Follows Q39 (answered 2026-09-24, below) and B-121. **The point is the measurement as much as the card:**
 until one card has been carried all the way to a real `verified` entry naming a
 human, nobody knows whether verifying a card is twenty minutes or a day, and
 every plan that promises verification has been priced at zero. Choose the card
@@ -271,11 +242,24 @@ entry in this file and has none yet. That is its own item's to write; it is name
 here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
 
 ### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
-**Unblocks:** five differences neither register records — the temperature, JSON
-mode, OpenRouter's attribution headers, the user agent and reasoning effort — and
-what `B-128` is for. Routing R's chat path through the shared body builder gives
-it the semantic path's temperature rule, on the premise that R keeps sending a
-temperature, and would also make it send the reasoning effort R resolves from
+**Unblocks:** five differences neither register records, one per line:
+
+- the temperature;
+- JSON mode;
+- OpenRouter's attribution headers;
+- the user agent;
+- reasoning effort.
+
+**This shape was accepted on 2026-09-25.** On the decisions page, whose item
+"Fourteen small specification calls" carried this as call (a), Brett accepted the
+recommendation to keep it one question with one difference per line and to
+change nothing until he rules on each: *"for decision 13 I accept your
+recommendations"*. `Q-54` is that question item, so no second one was filed.
+
+It also unblocks what `B-128` is for. Routing R's chat path through the shared
+body builder gives it the semantic path's temperature rule, on the premise that
+R keeps sending a temperature, and would also make it send the reasoning effort
+R resolves from
 `METASALMON_LLM_REASONING_EFFORT`, which neither chat path sends today.
 Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
 `main`; reasoning effort was added on 2026-09-24 and measured against
@@ -288,6 +272,15 @@ instrument that could supply it is the Theme A benchmark, whose live capture
 waits on the credential `B-80` names. The header and user-agent differences
 change nothing a model sees, so registering them or porting them costs nothing
 behavioural either way.
+**Changed by Q67 on 2026-09-25, and still open.** The removal release (`B-329`,
+`B-330`) deletes the request code in both packages. From then on neither side sends a
+request, so no side has to move. What the ruling leaves open is the releases
+before the removal: whether the five differences are registered for them, or
+left unregistered because the removal deletes both sides. **Recommendation on
+that:** register them, as one row in each register whose retirement condition is
+the removal release. `AGENTS.md` calls an undocumented difference a contract
+violation whether or not the difference is about to be deleted, and until the
+removal ships these ones reach users.
 **Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
 
 ### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
@@ -376,54 +369,8 @@ consequences.
 *(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
 next open number, not a gap.)*
 
-### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves?
-**Unblocks:** `B-223`, and the two R/Python differences on
-`metadata/eml-mapping.yml`. Neither behaviour on either reader was chosen, and
-neither difference is registered. Both were measured by the B-142 run on `main`
-`12efe9d` with yaml 2.3.12; the evidence is under `B-223` in
-[`backlog.md`](backlog.md).
-
-- **The EML and KNB reads.** R takes the tag's text as the value that reaches
-  published EML; metasalmonpy refuses the sidecar. `B-223` is written for R
-  moving to refusal, which was put to Brett on 2026-09-23 as a recommendation.
-  He has not ruled, and the absence of an objection is not a ruling, as the
-  Codex review of pull request 150 on `4d84682` pointed out.
-- **The semantic closure path.** R takes the tag's text as the path;
-  metasalmonpy falls back silently to the default paths. `B-223` originally
-  changed R's closure reader to refuse, and the Codex review of pull request 150
-  pointed out that this would replace one unrecorded difference with another.
-
-**Recommendation:** refuse on every path. On the EML and KNB reads R moves,
-because silently publishing code as metadata is the worse failure. On the
-closure path metasalmonpy moves, because a silent fallback hides a configuration
-mistake exactly where a user can least see it, and it leaves metasalmonpy
-inconsistent with its own EML path. The mirror is not automatically the
-follower, so this is a recommendation, not a default.
-**Owner:** the queue item `Q-62`.
-
-### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise?
-**Unblocks:** closing a reader-side difference that B-219 and B-220 would otherwise
-leave in place. It is not only a difference between the packages: each one is
-mixed. In R, `.ms_is_review_iri()` and `.ms_strip_review_iri()`
-(`R/package-helpers.R:3777-3789` on `43d7fb3`) accept `^\s*REVIEW\s*:` ignoring
-case, four detectors test `^REVIEW:` (`package-helpers.R:1754`,
-`sdp-extension-helpers.R:37`, `sdp-methods.R:272`,
-`semantic-bundle-validators.R:696`), and the EML and KNB output guards test the
-literal substring `REVIEW:` (`eml-export.R:2787`, `knb-publication.R:834`). In
-metasalmonpy (`9661633`), `dictionary.py:622` and `package_io.py:2441` accept the
-wide form, `package_io.py:219` and `:2528` and `review_console.py:140` and `:146`
-test a leading `REVIEW:` upper-cased, and `eml.py:3472` and
-`knb_publication.py:1043` test the literal substring. So `REVIEW :x` is stripped
-on one path and passed as an IRI on another, in both packages. Neither behaviour
-was chosen, and neither parity register records it. Q18 is about the bytes the
-writers emit after the colon; this is about what the readers accept.
-**Recommendation:** every detector in both packages recognises the wider set,
-through one predicate per package. A marker is most often hand-edited in a
-spreadsheet, where a stray space is likely, and a marker a reader misses reaches
-strict validation as a malformed IRI rather than as an unreviewed slot. The
-mirror is not automatically the follower, so this is a recommendation, not a
-default.
-**Owner:** the queue item `Q-63`.
+*(`Q62` and `Q63` were answered on 2026-09-25 and sit under **Answered** below,
+so `Q64` is the next open number, not a gap.)*
 
 ### Q64 — What do three smn terms mean, and how are life stages and composed wording settled? — PARTLY ANSWERED 2026-09-25 (Brett)
 
@@ -453,6 +400,66 @@ terms B-232 must define:
 
 **Owner:** `B-232`, which writes the definitions once each ruling lands, and
 `B-238` for the commons research behind them.
+
+### Q65 — D-2: how does Brett's ~5 h/week split between S14 and tern, and which calendar wins a contested week?
+**Unblocks:** tern's stage 0 (its `PLAN.md` §14 lists D-2 as blocking) and an
+honest S14 budget. Both programmes currently book the same hours: the Foundry
+plan's §8.1 plans about 4.8 h/week of Brett through late January 2027, and
+tern's `PLAN.md` §11 derives about 1.4 h/week for its stage 0 and up to
+0.7 h/week later, against one ~5 h/week supply. `tern`
+(`Symecology-Institute/tern`, formerly `era-claude`) is the requirements-driving
+consumer the [roadmap](roadmap.md) records as a typed edge on 2026-09-25, not a
+member, so this hub owns only the S14 side of the answer.
+**Recommendation:** tern's `PLAN.md` §11: at most 2 h/week for tern, and its
+stage 3–4 dates (the tree freeze and the prospective forecast) win a contested
+week; D-2 is re-ruled if tern's derived figure exceeds 2 h/week. Whichever way
+it goes, the ruling names the Foundry line that shrinks from October 2026 to
+January 2027, or delays tern's stage 0 to the Foundry's Stage A gate.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md), which
+records the split once ruled, with the queue item `Q-65`; the ruling's other
+half lives in tern's `PLAN.md`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's own record has moved past the recommendation above. Its
+`docs/DECISIONS.md` §B, row B-11, and `PLAN.md` §14 — seen in tern's working
+tree that day, not yet committed on top of `fe914ab` — record D-2 as ruled in
+chat: "Moot. Brett does what he can", the Foundry-split machinery removed from
+its §11, and "the hub question in ECOSYSTEM.md M-04 is not needed". If that
+record stands once committed, this entry retires as moot: no split is booked
+on either side and the S14 card records nothing beyond that. It stays open
+here until Brett says so, because a ruling seen only in another repository's
+uncommitted file is not yet one this index can cite.)*
+
+### Q66 — D-1/D-8 coupling: tern's institute affiliation engages R2, so the PSC-derived Fraser packs need a ruling
+**Unblocks:** whether tern's first science case may use the Salmon Prize
+Fraser packs at all (five-stock extracts of the PSC Fraser sockeye
+spawner–recruit data set plus DFO fill-ins), and the affiliation and
+competing-interests wording tern needs before its R1 is public.
+The Foundry plan's R2 makes non-public PSC and partner systems "never" for the
+institute's Foundry, and R11 removed PSC work from the plan entirely. An
+institute-affiliated tern inherits R2 in full, so D-1 (the data) and D-8 (the
+affiliation) are one decision. The options, from tern's `PLAN.md` §9.1: **(a)**
+amend R2 to admit PSC-published public data under tern's information barrier;
+**(b)** admit the organizers' packs only, as public competition data, with the
+scoring source ruled at the same time; **(c)** neither, and Bristol Bay becomes
+the primary system. An institute affiliation leaves (b) or (c); "independent
+researcher" leaves (a) open.
+**Recommendation:** tern's own: (b), with the information barrier, decided in
+writing before tern's first registry build. The ruling itself is recorded in
+tern's `PLAN.md`; this hub records only that R2 was engaged and how, so that
+the S14 card and R2 stay consistent.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md) for the R2
+consequence, with the queue item `Q-66`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's `docs/DECISIONS.md` §B, row B-10, and `PLAN.md` §14 — seen in tern's
+working tree that day, not yet committed on top of `fe914ab` — record D-1 as
+ruled in chat: **(a)**, the organizers' packs and the PSC Fraser sockeye
+spawner–recruit public release admissible, the information barrier and the
+competing-interests statement kept, Bristol Bay still the transfer test, and
+"the former coupling to D-8 is dissolved: Brett is allowed to use PSC public
+data whatever the affiliation". If that record stands once committed, what
+this entry still owes the hub is one sentence: whether R2 needs any amendment
+for PSC *public* releases or was never engaged by them. It stays open here
+until Brett says so, for the reason Q65's note gives.)*
 
 ## Notes on framing
 
@@ -1678,3 +1685,227 @@ condition now names the tag.
 Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
 move the pins once it exists; and `B-208` for how a frozen profile keeps the
 schema bytes it was frozen against.
+
+### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one? — ANSWERED 2026-09-24 (Brett)
+**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
+verification, each of which is currently costing it at zero.
+Every card in the commons carries `generated` (who wrote it) and `verified`
+(who independently checked it), and the rule that the writer cannot be the
+checker is **prose only**: the two fields share one schema pattern, a
+self-verifying card validates, and that repository has no CI. Twenty-six cards
+carry 250 sources and 623 citations and **not one has ever been verified, in
+any commit on any branch.**
+[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
+ruled the who-half for publication — a card is *stable* when it carries a named
+human `verified` entry and passes its citation ledger — so what is open is the
+what-half: whether an agent re-reading a source counts as independent checking.
+That is genuinely undecided in the documentation rather than merely unwritten,
+which is why it is a question and not a defect.
+**Recommendation:** two tiers with distinct field values, so no card can claim
+more than it earned. `checked` is agent-eligible and never spelled "verified":
+an agent that is not the generator re-resolves every citation by the
+citation-ledger procedure, re-derives each claim from the located passages
+without reading the card's own argument, and records the ledger, its identity
+and the date, with any disagreement moving the card to `disputed` rather than
+leaving a partial check. `verified` stays human-only — a named person who is
+not the generator has read the located passages rather than the summary. Then
+grade the bar to the consequence: one human makes a card verified, *stable*
+needs two humans or one human plus two agreeing `checked` entries, and a card
+that mints, retargets or defines a term wants three.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
+it is what makes B-123's schema split writable.
+
+**Ruling: the recommendation's two-tier scheme, adopted with one amendment.**
+*"I approve Q-39 but remove the requirement that checks for agent
+co-authorship."* — Brett, 2026-09-24, in chat. So the scheme in the
+[2026-09-14 verification plan](plans/2026-09-14-commons-verification-scheme.md)
+stands, except that its check 2 no longer rejects a `verified` entry whose commit
+carries an agent co-author or agent session trailer. In the same conversation he
+chose where each card's citation ledger lives: *"Use in-card tables."*
+
+**Where the ruling is recorded, which is the authority rather than this entry:**
+the commons' `VERIFICATION.md`, whose lines 3–5 quote the ruling and name the
+scheme it condenses, landed by salmon-knowledge-commons pull request **#16**
+(merged 2026-09-24). Its fields (`generated`, `citations_checked`,
+`corroboration`, `verified`, `disputed_readings`, `cited_by`), its derived
+`status` (`draft` / `checked` / `verified` / `stable` / `disputed`) and its claim
+classes A, B and C are what `B-123` now enforces. None of its checks runs yet;
+that file says so in its own third paragraph.
+
+**What moved:** queue item `Q-39` reached `done` on 2026-09-24 (commit
+`43d7fb3`, which also promoted `B-123`), and `B-123`'s and `Q-40`'s blockers
+dropped it on 2026-09-25 on Brett's chat authorisation *"Q-39 done; B-123 ready
+and claimable"*. Indexed here the same day; the entry above the ruling is left
+as asked, including its "not one has ever been verified", which was true when
+written and is still true at commons commit `cab0248`.
+### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, whose item "Fourteen small specification
+calls" carried this question as call (e) with the recommendation *"Refuse on
+every path, and metasalmonpy moves: a silent fallback hides the mistake where a
+user can least see it."* Call (b), the EML and KNB half of the same question as
+`B-142`'s run found it, carried *"R moves to Python's behaviour"*, and he
+accepted that too.
+
+**What it means for each reader.** On the EML and KNB reads R moves to
+metasalmonpy's refusal. On the semantic closure's path reader both packages move,
+because neither refuses there: R takes the tag's text as the path and
+metasalmonpy falls back to the default paths. The recommendation named only
+metasalmonpy as moving on that path; "refuse on every path" moves R's closure
+reader as well.
+
+**Where the work went:** `B-223`, updated to the ruling, for R's EML and KNB
+reads, where metasalmonpy already refuses; `B-340` and `B-341` for the closure
+reader in each package. The SSSOM reader got the same answer in call (l), as
+`B-352` and `B-353`. No register row is owed, because every reader in both
+packages ends at the same refusal.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).
+
+### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, where this question was call (f), with the
+recommendation *"One ASCII-only definition in both packages: REVIEW in any case,
+with optional ASCII spaces or tabs before it and around the colon. Hand-edited
+markers pick up stray spaces, a missed marker reaches strict validation as a
+malformed IRI, and nothing should depend on the locale."*
+
+**The ruled set is narrower than the one this entry recommended.** The open
+entry recommended the wider set, `^\s*REVIEW\s*:` ignoring case, in every
+detector. The recommendation Brett accepted admits ASCII spaces and tabs only,
+and ASCII case only. So each package narrows as well as widens, and the
+narrowing is his ruling rather than an implementer's choice: metasalmonpy stops
+removing a no-break space after the colon and stops folding a dotless ı into I,
+R stops depending on the locale for Unicode spaces, and neither counts a line
+break before the colon.
+
+**One premise of the ruling did not hold when it was checked.** Measured on
+2026-09-25, strict validation in neither package checks the shape of an IRI in
+`column_dictionary.csv`'s semantic IRI fields, so a value that no detector reads
+as a marker passes it. `B-342` and `B-343` add that check.
+
+**Where the work went:** `B-344` (metasalmon) and `B-345` (metasalmonpy) put
+every detector in each package behind one predicate for the ruled definition,
+and `B-342` and `B-343` add the check above. Once both pairs land the two
+packages recognise the same spellings, so no register row is owed. `Q18`, about the bytes the
+writers emit after the colon, is not changed by this.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).
+
+### Q67 — Does the model call stay inside metasalmon and metasalmonpy? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The LLM call features leaves metasalmon and metasalmonpy. The
+packages keep everything deterministic (retrieval, ranking, validators, merge,
+gap detection, the 30-column assessment row as the record). They gain a
+review-packet exporter and an assessment ingester. Judgement runs in the user's
+harness (Claude Code, Codex, Claude Science) through `smn-sci-plgn` skills. This
+is Brett's own example, and it removes the only API-key and HTTP-client path in
+either package."* — Brett, 2026-09-25, in chat.
+
+**How it was asked:** not here. On 2026-09-24 a review panel, reading this hub,
+both packages, the commons, the ontologies and the plugin, put three moves to
+him outside this bundle. He adopted all three the next day in one message, in
+the panel's own words: *"Couple of changes I want you to do now."* Q68 and Q69
+are the other two. By the time he ruled, two facts the panel had measured had
+changed. Both change the order of the work, not the ruling. metasalmonpy was
+already tagged `v0.5.0`, so the `0.4.0→0.5.0` window that section A3 of the
+[Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md) says
+no new shared API may land in, and which the panel had put in front of every
+package change, was closed. And `Q-53` and `Q-54` had been filed for other
+questions, so the numbers the panel proposed were taken.
+
+**What it changes:** the packages stop calling a model. What stays and what goes
+are listed in the [S16 card](sequences/s16-model-call-leaves-the-packages.md).
+The 30-column assessment row stays frozen and becomes the contract a harness
+writes to. The order is S16's: the additive release (`B-326`, `B-327`), then the
+Theme A harness split (`B-328`), then the removal (`B-329`, `B-330`), then the
+workshop's lane (`B-331`). The harness skill that replaces the in-package call
+lives in the plugin, outside this hub, and the removal and the workshop's lane
+each need it released.
+
+**Ruled the same day, in answer to the S16 execplan:** Brett took every
+recommendation in its section 10 (*"Take all recommendations"*). So the public
+names are `write_semantic_review_packet()` and `ingest_semantic_assessments()`,
+the additive release is 0.6.0 in both packages, tagged together, and the removal
+is 0.7.0, after at least one tagged 0.6.x.
+
+**What stays open, and is his:** the notice to
+the users of the in-package provider route before the removal; whether Q54's
+differences are registered until the removal; and Q23's pilot anchor, only if
+the harness split cannot keep a replay of the recorded fixtures against their
+oracles. `B-31`, whose engine the removal deletes, was moved to icebox on his
+instruction the same day (*"Do this edit please"*) and retires with the
+removal.
+
+**Where it is recorded:** the S16 card, which is the operative copy; the Foundry
+plan's §1.3 and its semantic-mapper paragraph, amended the same day; and a dated
+pointer beside the LLM opt-in contract in `AGENTS.md`. **Owner:**
+[S16](sequences/s16-model-call-leaves-the-packages.md).
+
+### Q68 — In what order do the commons schema changes land, and does the commons take study-bundle card types? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"One ordered sequence of commons schema PRs. PR #25 first, then a
+`$defs` refactor, then one additive fields PR (source publication dates, typed
+relations, bindings), then B-123 as three PRs (CI, the generated/verified split,
+the merge rule). Study-bundle card types stay local."* — Brett, 2026-09-25, in
+chat, in the message Q67 quotes.
+
+**What it changes:** six pull requests land in one order, each small enough to
+review on its own. Each is Brett's to merge, because the commons' CONTRIBUTING
+reserves its schema, its validator and its `AGENTS.md` to a human. In order:
+`B-320` (#25), `B-321` (the `$defs` refactor), `B-322` (the fields), `B-323`
+(CI), `B-123` (the generated/verified split) and `B-324` (the merge rule). The
+fields pull request adds the fields he rules. Study-bundle card types are not
+added to the commons `type` enum.
+
+**Ruled the same day:** two sessions had built the `$defs` and fields steps in
+parallel, and Brett chose *"Mine: #28 + 3 fields"*. So the `$defs` step is
+commons pull request 28, and the fields step adds only the three he named, with
+typed relations under upstream OKF's name `relationships`.
+
+**What stays open:** the name of the binding field, which the panel offered as
+`alignment.bindings` or `semantic_bindings` and `B-322`'s pull request proposes;
+the fields the panel proposed that he did not name, which that pull request
+lists; the date backfill, which is `B-325`, unpromoted, and whose timing matters
+because the first verification entry makes a backfill costly; and whether
+required status checks are worth GitHub Pro or a public repository.
+`B-123`, promoted before this order was ruled, is now blocked by `B-322` and
+`B-323` on his instruction the same day (*"Do this edit please"*), so the queue
+encodes the whole order.
+
+**Where it is recorded:** the [S6 card](sequences/s6-ecosystem.md)'s section on
+the commons schema order. The commons' own `AGENTS.md` records the study-bundle
+ruling, in `B-322`'s pull request. **Owner:** [S6](sequences/s6-ecosystem.md).
+
+### Q69 — What does `smn-sci-plgn` become? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The smn-sci-plugin becomes the thin, dual-manifest front door. Its
+third term-search implementation retires in favour of metasalmonpy."* — Brett,
+2026-09-25, in chat, in the message Q67 quotes.
+
+**What it changes:** it applies Q26 rather than revising it. The plugin stays a
+personal repository, changed in place and not renamed. It gains a Claude plugin
+manifest beside its Codex one, points at the tagged 0.5.0 releases of both
+packages, and deletes its own JSON-LD term ranking in favour of metasalmonpy's.
+That ranking is the third implementation of term search, beside metasalmon's
+and metasalmonpy's. The plugin is also where S16's harness skills live.
+
+**Where it is recorded:** the Foundry plan's §3.5 and its issue-10 row, both
+corrected in the change that recorded this ruling. The row said "→ institute"
+and "rename", which Q26 had already overruled. The plugin is not a hub member,
+so the work has no queue item: it is a pull request in the plugin's own
+repository. Two sessions opened one each, and on 2026-09-25 Brett chose
+*"#2, plus #1's evals"*: `smn-sci-plgn` pull request 2 goes forward, with the
+per-skill evaluation cases from pull request 1 ported onto it.
+
+**What stays open, and is his:** the plugin's version bump and tag; and whether
+the plugin should become a hub member. Under the test Q10 adopted, membership
+follows from this hub sequencing a repository's work, so S16 records the
+harness skill as an external dependency and sequences none of the plugin's
+work. Admitting the plugin would be a membership ruling.
+**Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
+Foundry plan is.
