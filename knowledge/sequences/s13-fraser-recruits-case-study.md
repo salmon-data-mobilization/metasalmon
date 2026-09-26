@@ -28,6 +28,17 @@ The recipe is `fraser-sockeye-stock-recruit-detailed` — the Fraser sockeye
 stock-recruit case study, "Fraser Recruits" in conversation. It is the only
 place anything built by this package has been deposited to a live repository.
 
+**Rebuilt from scratch, 2026-09-26 (Brett's rulings, relayed by the hub
+orchestrator).** PSC data is in scope as long as PSC has already published it
+online. The Fraser sockeye stock-recruit case is rebuilt from scratch from
+PSC's public files (the Production Dataset, release 2026.05.07) rather than
+migrated from `fraser-sockeye-stock-recruit-detailed`. There is no KNB deposit:
+the deliverable is a reproducible script from PSC's files to a Salmon Data
+Package, with its IRI gaps noted. Exporting a metasalmon internal is acceptable
+where the script genuinely needs one. The same day, Brett placed the new recipe
+in `psc-data-transformations`, so it is handed off rather than pushed here. It
+calls only exported metasalmon functions, so it adds nothing to requirement 1.
+
 ## Requirement 1 — a supported API for eight internals
 
 The recipe calls **eight `metasalmon:::` internals**:

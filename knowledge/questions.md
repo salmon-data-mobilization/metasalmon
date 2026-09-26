@@ -1116,6 +1116,10 @@ position rather than creating a new one, and
 requirements are unaffected: they are this package's compatibility obligations
 to a consumer that already exists, and were never PSC work.
 
+**Revised 2026-09-26 (Brett):** PSC data already published online is in scope,
+and the Fraser sockeye stock-recruit case is rebuilt from scratch from PSC's
+public files, with no KNB deposit ([S13](sequences/s13-fraser-recruits-case-study.md)).
+
 **Full text:** Appendix A Q33. **Owner:** none.
 
 ### Q34 — Does the hub's own bundle migrate to upstream OKF v0.2? — ANSWERED 2026-09-09 (Brett)
