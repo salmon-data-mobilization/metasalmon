@@ -463,13 +463,19 @@ test_that("doing what the ambiguity refusal says reaches every slot it matched",
 
 # A code slot whose `codes.csv` row has no code value: the codes schema lets a
 # row leave `code_value` empty when it supplies `vocabulary_iri`, and discovery
-# still gives it a code-level target, with the three roles a measurement parent
-# gives its codes (Codex review of pull request #153). Its `code_value` is as
-# empty as the column's own slot's, so only the file tells the two apart.
+# gave it a code-level target, with the three roles a measurement parent gives
+# its codes (Codex review of pull request #153). Its `code_value` is as empty as
+# the column's own slot's, so only the file tells the two apart.
+#
+# Since hub item B-276 such a row gets no target and `review_semantics()`
+# queues no slot for it, so this is a review an earlier version built: one
+# saved before B-276, or rebuilt by hand. It is made the way that version made
+# it, by queueing the code rows under a placeholder value and emptying
+# `code_value` afterwards, because the current `review_semantics()` drops them.
 vocabulary_code_review <- function() {
   code_rows <- dplyr::bind_rows(lapply(c("constraint", "entity", "method"), function(role) {
     fixture_suggestions(
-      code_value = NA_character_,
+      code_value = "placeholder",
       dictionary_role = role,
       target_scope = "code",
       target_sdp_file = "codes.csv",
@@ -490,7 +496,9 @@ vocabulary_code_review <- function() {
     ),
     code_rows
   )
-  review_semantics(with_suggestions(fixture_dict(constraint_iri = NA_character_), suggestions))
+  review <- review_semantics(with_suggestions(fixture_dict(constraint_iri = NA_character_), suggestions))
+  review$code_value[review$target_file == "codes.csv"] <- NA_character_
+  review
 }
 
 test_that("a blank code_value never selects a code slot whose codes.csv row has no code value", {
@@ -499,9 +507,10 @@ test_that("a blank code_value never selects a code slot whose codes.csv row has 
 
   # The column's own slots print calls that run and decide them. The code
   # slot's own calls may still refuse, because no argument tells a code slot
-  # with no code value apart from the column's own slot; that is a separate
-  # defect, recorded in `.hub/workpads/B-151.md`. What no call may do is decide
-  # the other slot.
+  # with no code value apart from the column's own slot (`.hub/workpads/B-151.md`).
+  # Hub item B-276 closed that by giving such a row no slot at all, so only a
+  # review built before it holds one. What no call may do is decide the other
+  # slot.
   expect_printed_calls_decide_their_own_slots(review, must_run = column_slots)
   for (blank in list("", NA)) {
     decided <- accept_suggestion(review, "spawner_count", "entity", rank = 1, code_value = blank)
@@ -517,6 +526,56 @@ test_that("a blank code_value never selects a code slot whose codes.csv row has 
   expect_true("table = \"spawners\", code_value = \"\"" %in% options)
   decided <- accept_suggestion(review, "spawner_count", "entity", rank = 1, table = "spawners", code_value = "")
   expect_equal(unique(decided$slot_id[!is.na(decided$decision)]), measurement_column_slot)
+})
+
+# Hub item B-276, ruled by Brett 2026-09-25: a `codes.csv` row whose
+# `code_value` is empty gets no semantic target, so `review_semantics()` queues
+# no slot for it -- including from suggestions recorded before the ruling,
+# which can still carry such a row's candidates. A coded row of the same column
+# keeps its slot.
+test_that("review_semantics() queues no slot for a codes.csv row with no code value, from suggestions recorded before B-276", {
+  code_rows <- function(code, key) {
+    dplyr::bind_rows(lapply(c("constraint", "entity", "method"), function(role) {
+      fixture_suggestions(
+        code_value = code,
+        dictionary_role = role,
+        target_scope = "code",
+        target_sdp_file = "codes.csv",
+        target_sdp_field = "term_iri",
+        target_row_key = paste0("demo-1/spawners/spawner_count/", key),
+        label = paste(role, "term for", key),
+        iri = paste0("https://example.org/", role, "/", key)
+      )
+    }))
+  }
+  coded_slot <- "codes.csv|demo-1/spawners/spawner_count/-9|term_iri"
+  # The key each spelling was recorded under: R's `paste()` wrote `NA` for a
+  # missing value and nothing for empty text.
+  for (empty in list(NA_character_, "")) {
+    label <- if (is.na(empty)) "NA" else "\"\""
+    suggestions <- dplyr::bind_rows(
+      fixture_suggestions(
+        dictionary_role = "entity", target_sdp_field = "entity_iri",
+        label = "Spawner", iri = "https://w3id.org/smn/Spawner"
+      ),
+      fixture_suggestions(
+        dictionary_role = "constraint", target_sdp_field = "constraint_iri",
+        label = "Wild origin", iri = "https://example.org/constraint/column"
+      ),
+      code_rows(empty, if (is.na(empty)) "NA" else ""),
+      code_rows("-9", "-9")
+    )
+    review <- review_semantics(with_suggestions(fixture_dict(constraint_iri = NA_character_), suggestions))
+
+    expect_equal(unique(review$slot_id[review$target_file == "codes.csv"]), coded_slot, info = label)
+    expect_printed_calls_decide_their_own_slots(review)
+    for (blank in list("", NA)) {
+      decided <- accept_suggestion(review, "spawner_count", "entity", rank = 1, code_value = blank)
+      expect_equal(unique(decided$slot_id[!is.na(decided$decision)]), measurement_column_slot, info = label)
+    }
+    decided <- accept_suggestion(review, "spawner_count", "entity", rank = 1, code_value = "-9")
+    expect_equal(unique(decided$slot_id[!is.na(decided$decision)]), coded_slot, info = label)
+  }
 })
 
 # Build a package through the real pipeline: `create_sdp()` with `find_terms`
@@ -551,8 +610,10 @@ measurement_code_package <- function(codes, name) {
 }
 
 # Paste the printed call for the column's own entity slot, apply it, and check
-# it wrote the column's `entity_iri` and left `codes.csv` alone.
-expect_column_call_writes_the_dictionary <- function(path, review) {
+# it wrote the column's `entity_iri` and left `codes.csv` alone. The call names
+# `code_value = ""` exactly when a code slot shares the column's entity role;
+# with none queued, the short call is the one that selects the column's slot.
+expect_column_call_writes_the_dictionary <- function(path, review, blank_code_value = TRUE) {
   read_csv_text <- function(file_name) {
     readr::read_csv(
       file.path(path, "metadata", file_name),
@@ -562,7 +623,11 @@ expect_column_call_writes_the_dictionary <- function(path, review) {
   }
   codes_before <- read_csv_text("codes.csv")
   call <- .ms_review_accept_call(review, measurement_column_slot, 1L)
-  expect_match(call, "code_value = \"\"", fixed = TRUE)
+  if (blank_code_value) {
+    expect_match(call, "code_value = \"\"", fixed = TRUE)
+  } else {
+    expect_false(grepl("code_value", call, fixed = TRUE), info = call)
+  }
   decided <- eval(parse(text = call)[[1]], list(review = review), enclos = environment())
   suppressMessages(apply_sdp_semantics(path, decided))
 
@@ -600,24 +665,114 @@ test_that("a measurement column with a code list round-trips from create_sdp() t
 test_that("a measurement column whose codes.csv row names a vocabulary round-trips from create_sdp() to disk", {
   # The Codex finding on pull request #153, through the real pipeline: the
   # column's only `codes.csv` row supplies `vocabulary_iri` and no code value.
+  # Such a row gets no semantic target (hub item B-276, ruled 2026-09-25), so
+  # create_sdp() writes no suggestion for it and the review queues no slot for
+  # it, whether its empty code value is NA or empty text.
+  for (empty in list(NA_character_, "")) {
+    label <- if (is.na(empty)) "NA" else "\"\""
+    path <- measurement_code_package(
+      tibble::tibble(
+        dataset_id = "demo-1", table_id = "spawners", column_name = "spawner_count",
+        code_value = empty,
+        code_label = "Count categories",
+        code_description = "Counts are recorded against a published category vocabulary.",
+        vocabulary_iri = "https://example.org/vocab/count-categories"
+      ),
+      if (is.na(empty)) "vocabulary-codes-na" else "vocabulary-codes-empty"
+    )
+    written <- semantic_suggestions(path)
+    expect_false(any(written$target_sdp_file %in% "codes.csv"), info = label)
+
+    review <- suppressMessages(review_semantics(path))
+
+    expect_true(measurement_column_slot %in% review$slot_id[review$role %in% "entity"], info = label)
+    expect_false(any(review$target_file %in% "codes.csv"), info = label)
+
+    # Every call printed for the column runs and decides its own slot.
+    expect_printed_calls_decide_their_own_slots(review)
+    expect_column_call_writes_the_dictionary(path, review, blank_code_value = FALSE)
+  }
+})
+
+test_that("a coded row beside a vocabulary row keeps its slot through create_sdp() and the review", {
+  for (empty in list(NA_character_, "")) {
+    label <- if (is.na(empty)) "NA" else "\"\""
+    path <- measurement_code_package(
+      tibble::tibble(
+        dataset_id = "demo-1", table_id = "spawners", column_name = "spawner_count",
+        code_value = c(empty, "-9"),
+        code_label = c("Count categories", "Not surveyed"),
+        code_description = c(
+          "Counts are recorded against a published category vocabulary.",
+          "The reach was not surveyed."
+        ),
+        vocabulary_iri = c("https://example.org/vocab/count-categories", NA_character_)
+      ),
+      if (is.na(empty)) "vocabulary-and-code-na" else "vocabulary-and-code-empty"
+    )
+    coded_slot <- "codes.csv|demo-1/spawners/spawner_count/-9|term_iri"
+
+    written <- semantic_suggestions(path)
+    written_codes <- written[written$target_sdp_file %in% "codes.csv", , drop = FALSE]
+    expect_equal(unique(written_codes$target_row_key), "demo-1/spawners/spawner_count/-9", info = label)
+
+    review <- suppressMessages(review_semantics(path))
+    expect_equal(unique(review$slot_id[review$target_file %in% "codes.csv"]), coded_slot, info = label)
+    expect_true(all(c(measurement_column_slot, coded_slot) %in% review$slot_id[review$role %in% "entity"]))
+
+    expect_printed_calls_decide_their_own_slots(review)
+    expect_column_call_writes_the_dictionary(path, review)
+  }
+})
+
+test_that("a semantic_suggestions.csv written before B-276 queues no slot for a codes.csv row with no code value", {
   path <- measurement_code_package(
     tibble::tibble(
       dataset_id = "demo-1", table_id = "spawners", column_name = "spawner_count",
-      code_value = NA_character_,
-      code_label = "Count categories",
-      code_description = "Counts are recorded against a published category vocabulary.",
-      vocabulary_iri = "https://example.org/vocab/count-categories"
+      code_value = c(NA_character_, "-9"),
+      code_label = c("Count categories", "Not surveyed"),
+      code_description = c(
+        "Counts are recorded against a published category vocabulary.",
+        "The reach was not surveyed."
+      ),
+      vocabulary_iri = c("https://example.org/vocab/count-categories", NA_character_)
     ),
-    "vocabulary-codes"
+    "vocabulary-codes-old-csv"
   )
+  coded_slot <- "codes.csv|demo-1/spawners/spawner_count/-9|term_iri"
+
+  # Write back the rows an earlier version wrote for the vocabulary row: the
+  # coded row's three roles, with the code value empty. It keyed them `.../NA`;
+  # metasalmonpy keyed the same row `.../nan`, or `.../` for empty text. One is
+  # recorded as rejected, which a later review replays.
+  suggestions_path <- file.path(path, "semantic_suggestions.csv")
+  written <- readr::read_csv(
+    suggestions_path,
+    col_types = readr::cols(.default = readr::col_character()),
+    na = ""
+  )
+  template <- written[written$target_sdp_file %in% "codes.csv", , drop = FALSE]
+  expect_gt(nrow(template), 0L)
+  earlier <- dplyr::bind_rows(lapply(c("NA", "nan", ""), function(key) {
+    rows <- template
+    rows$code_value <- NA_character_
+    rows$target_row_key <- paste0("demo-1/spawners/spawner_count/", key)
+    rows$code_label <- "Count categories"
+    rows$code_description <- "Counts are recorded against a published category vocabulary."
+    rows$decision <- if (identical(key, "NA")) "rejected" else NA_character_
+    rows
+  }))
+  readr::write_csv(dplyr::bind_rows(written, earlier), suggestions_path, na = "")
+  expect_equal(sum(is.na(semantic_suggestions(path)$code_value) &
+    semantic_suggestions(path)$target_sdp_file %in% "codes.csv"), nrow(earlier))
+
   review <- suppressMessages(review_semantics(path))
+  expect_equal(unique(review$slot_id[review$target_file %in% "codes.csv"]), coded_slot)
+  expect_printed_calls_decide_their_own_slots(review)
 
-  code_slot <- "codes.csv|demo-1/spawners/spawner_count/NA|term_iri"
-  expect_true(all(c(measurement_column_slot, code_slot) %in% review$slot_id[review$role %in% "entity"]))
-
-  column_slots <- unique(review$slot_id[review$target_file != "codes.csv"])
-  expect_printed_calls_decide_their_own_slots(review, must_run = column_slots)
-  expect_column_call_writes_the_dictionary(path, review)
+  # Nor as a decided slot: the recorded rejection is not replayed for it.
+  everything <- suppressMessages(review_semantics(path, include_filled = TRUE))
+  expect_equal(unique(everything$slot_id[everything$target_file %in% "codes.csv"]), coded_slot)
 })
 
 test_that("a single-table review prints the short call, with no needless qualifier", {
