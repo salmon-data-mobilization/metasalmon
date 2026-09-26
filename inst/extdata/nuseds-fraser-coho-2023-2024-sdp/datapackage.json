@@ -1,0 +1,199 @@
+{
+  "profile": "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json",
+  "name": "fraser-coho-2023-2024",
+  "id": "fraser-coho-2023-2024",
+  "title": "Fraser River coho salmon natural adult spawner estimates, 2023-2024",
+  "description": "Estimates of natural adult coho salmon (Oncorhynchus kisutch) spawners for 87 Fraser River populations in DFO sub-districts 29F, 29G, 29J and 29K, analysis years 2023 and 2024: 173 records from the DFO New Salmon Escapement Database System (NuSEDS), each with the estimate method, estimate classification, estimate stage and stream-inspection window behind it. The metasalmon gold-standard Salmon Data Package.",
+  "sdp": {
+    "specVersion": "sdp-0.3.0",
+    "profile": "https://salmon-data-mobilization.github.io/smn-data-pkg/profiles/salmon-data-package/v0.3/profile.json",
+    "rules": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/sdp.rules.yaml",
+    "metadata": {
+      "dataset": "metadata/dataset.csv",
+      "tables": "metadata/tables.csv",
+      "columnDictionary": "metadata/column_dictionary.csv",
+      "codes": "metadata/codes.csv"
+    }
+  },
+  "resources": [
+    {
+      "profile": "tabular-data-resource",
+      "name": "sdp_dataset",
+      "path": "metadata/dataset.csv",
+      "title": "SDP dataset metadata",
+      "description": "Dataset-level metadata.",
+      "schema": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata/dataset.schema.json"
+    },
+    {
+      "profile": "tabular-data-resource",
+      "name": "sdp_tables",
+      "path": "metadata/tables.csv",
+      "title": "SDP tables metadata",
+      "description": "Table-level metadata.",
+      "schema": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata/tables.schema.json"
+    },
+    {
+      "profile": "tabular-data-resource",
+      "name": "sdp_column_dictionary",
+      "path": "metadata/column_dictionary.csv",
+      "title": "SDP column dictionary metadata",
+      "description": "Column-level metadata.",
+      "schema": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata/column_dictionary.schema.json"
+    },
+    {
+      "profile": "tabular-data-resource",
+      "name": "sdp_codes",
+      "path": "metadata/codes.csv",
+      "title": "SDP codes metadata",
+      "description": "Controlled code list metadata.",
+      "schema": "https://salmon-data-mobilization.github.io/smn-data-pkg/schema/frictionless/metadata/codes.schema.json"
+    },
+    {
+      "name": "escapement",
+      "path": "data/escapement.csv",
+      "profile": "tabular-data-resource",
+      "schema": {
+        "fields": [
+          {
+            "name": "POP_ID",
+            "title": "Population ID",
+            "type": "integer",
+            "description": "NuSEDS identifier of the population the record is for.",
+            "constraints": {
+              "required": true
+            }
+          },
+          {
+            "name": "POPULATION",
+            "title": "Population name",
+            "type": "string",
+            "description": "NuSEDS population name. Inherited from earlier databases, it is by default a concatenation of stream name, sub-district, species and run type, for example Bonaparte River (Lillooet) Coho."
+          },
+          {
+            "name": "AREA",
+            "title": "Sub-district",
+            "type": "string",
+            "description": "DFO Pacific Region sub-district recorded for the population. NuSEDS defines AREA as the subdistrict, which in most cases is the same as the statistical area; the two differ mainly for streams that drain to the Fraser and for large areas split into lettered parts, such as 29F. These are the sub-districts of the NuSEDS Map of Areas, not Pacific Fishery Management Areas or Subareas."
+          },
+          {
+            "name": "WATERBODY",
+            "title": "Waterbody",
+            "type": "string",
+            "description": "Name of the waterbody, or the portion of a waterbody, that bounds the population.",
+            "constraints": {
+              "required": true
+            },
+            "term_iri": "http://rs.tdwg.org/dwc/terms/waterBody"
+          },
+          {
+            "name": "ANALYSIS_YR",
+            "title": "Analysis year",
+            "type": "integer",
+            "description": "The year the estimate is for. Surveys may have continued into the following calendar year.",
+            "constraints": {
+              "required": true
+            },
+            "term_iri": "https://w3id.org/smn/returnYear"
+          },
+          {
+            "name": "SPECIES",
+            "title": "Species",
+            "type": "string",
+            "description": "Species of fish, as its NuSEDS common name.",
+            "constraints": {
+              "required": true
+            },
+            "term_iri": "http://rs.tdwg.org/dwc/terms/vernacularName"
+          },
+          {
+            "name": "RUN_TYPE",
+            "title": "Run type",
+            "type": "string",
+            "description": "Run timing of the population's run within the season. NuSEDS names a run (for example FALL) where documentation supports it, and numbers it (1) where documentation shows only that there are distinct runs within a season. Blank where NuSEDS records none."
+          },
+          {
+            "name": "NATURAL_ADULT_SPAWNERS",
+            "title": "Natural adult spawners",
+            "type": "number",
+            "description": "Estimated number of natural adult spawners: salmon that have reached maturity, excluding jacks (salmon that matured at an early age). Natural spawners are counted apart from artificial spawners such as hatchery broodstock; the word describes where the fish spawn, not their origin. Blank where no estimate was made.",
+            "unit_iri": "http://qudt.org/vocab/unit/INDIV",
+            "term_iri": "https://w3id.org/gcdfo/salmon#SpawnerAbundance",
+            "term_type": "owl_class",
+            "property_iri": "https://w3id.org/smn/Abundance",
+            "entity_iri": "https://w3id.org/smn/Population"
+          },
+          {
+            "name": "ESTIMATE_METHOD",
+            "title": "Estimate method",
+            "type": "string",
+            "description": "Standard NuSEDS method used to produce the estimate.",
+            "term_iri": "https://w3id.org/gcdfo/salmon#EstimateMethod",
+            "term_type": "skos_concept"
+          },
+          {
+            "name": "ESTIMATE_CLASSIFICATION",
+            "title": "Estimate classification",
+            "type": "string",
+            "description": "Classification of the estimate by its accuracy and precision, from Type-1, the most accurate, to Type-6, the least.",
+            "term_iri": "https://w3id.org/gcdfo/salmon#EstimateType",
+            "term_type": "skos_concept"
+          },
+          {
+            "name": "ESTIMATE_STAGE",
+            "title": "Estimate stage",
+            "type": "string",
+            "description": "Review stage of the estimate: preliminary, near final or final."
+          },
+          {
+            "name": "START_DTT",
+            "title": "Inspection start date",
+            "type": "date",
+            "description": "Date the first stream inspection for this season's estimate started."
+          },
+          {
+            "name": "END_DTT",
+            "title": "Inspection end date",
+            "type": "date",
+            "description": "Date the last stream inspection for this season's estimate started."
+          },
+          {
+            "name": "WATERSHED_CDE",
+            "title": "Watershed code",
+            "type": "string",
+            "description": "45-digit hierarchical provincial watershed code, derived from the province's 1:50,000 National Topographic Series map sheets and unique to the waterbody and its watershed; its 12 levels follow the hierarchy of the stream network."
+          }
+        ],
+        "primaryKey": [
+          "POP_ID",
+          "ANALYSIS_YR",
+          "WATERBODY"
+        ]
+      },
+      "title": "Coho escapement estimates",
+      "description": "One row per NuSEDS escapement record: a coho population, the waterbody that bounds it and an analysis year, with the natural adult spawner estimate and the method, classification, stage and inspection window behind it."
+    }
+  ],
+  "contributors": [
+    {
+      "title": "Fisheries and Oceans Canada",
+      "role": "creator"
+    },
+    {
+      "title": "Brett Johnson",
+      "role": "contact",
+      "email": "johnson@psc.org",
+      "organization": "Pacific Salmon Commission"
+    }
+  ],
+  "licenses": [
+    {
+      "name": "OGL-Canada-2.0",
+      "title": "Open Government Licence - Canada",
+      "path": "https://open.canada.ca/en/open-government-licence-canada"
+    }
+  ],
+  "temporal": {
+    "start": "2023-09-14",
+    "end": "2024-12-11"
+  }
+}

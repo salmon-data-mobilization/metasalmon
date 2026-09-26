@@ -32,6 +32,43 @@ metasalmon (development version)
 
 ### Added
 
+* **The Fraser coho gold standard ships as a complete Salmon Data Package**
+  (hub stream S12). `system.file("extdata", "nuseds-fraser-coho-2023-2024-sdp",
+  package = "metasalmon")` is the 173-row NuSEDS example with its own
+  `dataset.csv`, `tables.csv`, `column_dictionary.csv` and `codes.csv`
+  (`dataset_id` `fraser-coho-2023-2024`), and it passes both
+  `validate_salmon_datapackage(require_iris = TRUE)` and the specification's
+  `scripts/validate_package.py` with no issues. Until now the gold standard was
+  a CSV and a starter dictionary, and the only complete metadata in `extdata`
+  belonged to the 30-row sample. metasalmonpy does not ship the gold standard
+  yet: it ships only the 30-row sample, and the port is owed (parity-deviations
+  row 46; the roadmap's release index records why it is deferred).
+
+  - **It is built by the package's own functions, and rebuilt by a test.**
+    `data-raw/fraser_coho_gold_standard.R` runs `create_sdp()`, fills the text
+    with the `set_sdp_*()` setters from the NuSEDS data dictionary, and decides
+    every semantic slot through `suggest_semantics()` -> `review_semantics()` ->
+    `accept_suggestion()` / `reject_suggestion()` -> `apply_sdp_semantics()`,
+    stopping if the flow discovers a slot it has not decided. Its search is a
+    stub that returns the reviewed vocabulary, so the build is offline and
+    deterministic; `tests/testthat/test-fraser-coho-gold-standard.R` checks the
+    shipped package under strict validation everywhere, and wherever `data-raw/`
+    exists rebuilds it and compares every byte.
+  - **What it annotates.** The spawner count's variable, property, entity and
+    unit; the table's observation unit; the estimate-method and
+    estimate-classification columns and ten of their fourteen codes, from `gcdfo`;
+    and `ANALYSIS_YR`, `WATERBODY` and `SPECIES`, from `smn` and Darwin Core.
+    The unit is QUDT's own `http://qudt.org/vocab/unit/INDIV`.
+  - **What it leaves blank, and says why.** A NuSEDS sub-district, a run
+    timing, an estimate stage and a watershed code have no released term; the
+    script records the reason for every blank slot. Five choices are open
+    decisions, held in one place in the script (`pending_decisions`): the
+    spawner count's `property_iri` (hub question Q9, shipped with its
+    recommended answer because strict validation will not leave it blank), the
+    external taxonomy for `Coho`, a term for `RUN_TYPE` (hub question Q-61), a
+    term for the estimate method `Combined Methods`, and the dataset's
+    creator, contact and licence.
+
 * **`write_sdp_semantic_closure()` produces the reviewed semantic closure, which
   metasalmon has validated in three places and written in none** (backlog #116,
   hub item B-116). `write_eml_from_sdp()` and `publish_sdp_to_knb()` both require
@@ -154,6 +191,28 @@ metasalmon (development version)
      `a-z` through `chartr()`, so the verdict is the same on every machine;
      metasalmonpy's B-362 mirrors the rule exactly as this package now states
      it. Raised in a Codex review of hub pull request #187.
+
+* **The bundled Fraser coho dictionaries describe `AREA` as the NuSEDS
+  sub-district it is, not a Pacific Fishery Management Area code** (hub item
+  B-401). NuSEDS defines `AREA` as "the subdistrict", and the values in both
+  examples (29B to 29K) are sub-districts of the NuSEDS Map of Areas; the PFMA
+  Subareas `gcdfo` mints are numbered 29-1 to 29-17, a different division.
+  `inst/extdata/column_dictionary.csv` and
+  `inst/extdata/nuseds-fraser-coho-2023-2024-column_dictionary.csv` now label
+  the column *Sub-district* and give the NuSEDS definition. metasalmonpy's copy
+  of the sample dictionary, `data/column_dictionary.csv`, still carries the old
+  row; its port is hub item B-402.
+
+  The 173-row starter dictionary also takes the gold standard's text for every
+  column, which corrects two more descriptions the NuSEDS data dictionary
+  contradicts: `POPULATION` is named by sub-district, not by "local watershed
+  context", and `NATURAL_ADULT_SPAWNERS` counts *natural* spawners, which NuSEDS
+  sets against artificial spawners such as broodstock, not natural-origin fish.
+  Its six coded columns are now `categorical`, its two whole-number columns
+  `integer`, and its columns in the specification's order, so a package built
+  the way `example-data-README.md` describes no longer carries `codes.csv` rows
+  for columns its dictionary calls `attribute`, which the specification's
+  validator rejects. Its one annotated row keeps its IRIs.
 
 * **`validate_salmon_datapackage()` now checks the three things backlog #49
   (hub item B-49) measured it claiming and not doing.** Each was a contract
