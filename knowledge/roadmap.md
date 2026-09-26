@@ -819,7 +819,7 @@ such a row a target, read on `main` `c7be120`, so the fix is owed there as a
 port, not a register row. The port is specified under *What metasalmon 0.5.0
 owes the mirror* in `parity-deviations.md`. **Why not in the same stream:** a
 hub claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-277`.
+`B-277`, which **landed 2026-09-26 as metasalmonpy #69**, `5b03724`.
 
 **`B-197` owes metasalmonpy nothing, and that is a *measured* answer rather than
 a deferral — which is why it is recorded here at all.** Every other entry on
