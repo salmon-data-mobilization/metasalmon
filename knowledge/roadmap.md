@@ -333,6 +333,15 @@ never carried "nine sections for eight members" either.
 
 ### metasalmon (R) — current **0.5.0**
 
+*Unreleased on `main` (S16 step 1, hub item B-326, merged into the development
+heading of `NEWS.md`): `write_semantic_review_packet()` and
+`ingest_semantic_assessments()`, the review-packet contract shared with
+metasalmonpy, and the deprecation of the in-package model call. Ruled
+2026-09-25 (decision 3 of the S16 execplan) to ship as **0.6.0 in both packages,
+tagged together** once B-327 lands the metasalmonpy half; the removal is 0.7.0
+after at least one tagged 0.6.x. Until the tag, that number is a plan, not a
+release, and this index does not carry it as one.*
+
 | Version | Date | One line |
 |---|---|---|
 | 0.5.0 | 2026-08-25 | S5 R-native review and editing — `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` / `review_metadata()` and the four `set_sdp_*()` setters, plus the `semantic_suggestions()` / `semantic_llm_assessments()` accessors. A package reaches `validate_salmon_datapackage(require_iris = TRUE)` **without a spreadsheet**; closes #74, #118 and #60's accessor clause |

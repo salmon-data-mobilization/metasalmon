@@ -132,6 +132,27 @@ test_that("SURFACE 2: the bundle prompt describes the roles it asks the model to
   }
 })
 
+test_that("SURFACE 2: the vendored review-packet instructions judge exactly the dictionary slots", {
+  # The instructions a harness reads from the packet carry the bundle
+  # prompt's judgement sentence verbatim (S16 step 1, hub item B-326), so
+  # they inherit this surface: a role added to the slot fields must reach
+  # the instructions file in both packages, and `method` never appears in
+  # the judgement sentence.
+  instructions <- metasalmon:::.ms_semantic_review_instructions()
+  judge <- regmatches(instructions, regexpr("Judge [^.]*\\.", instructions))
+  prompt_judge <- regmatches(
+    metasalmon:::.ms_semantic_bundle_system_prompt(),
+    regexpr("Judge [^.]*\\.", metasalmon:::.ms_semantic_bundle_system_prompt())
+  )
+
+  expect_length(judge, 1L)
+  expect_identical(judge, prompt_judge)
+  for (role in slot_roles()) {
+    expect_match(judge, role, fixed = TRUE)
+  }
+  expect_false(grepl("method", judge, fixed = TRUE))
+})
+
 test_that("SURFACE 2: method is a bundle role but never a dictionary slot", {
   # The dictionary slot is gone but the role is not: code-value targets still
   # search shared-vocabulary procedures.
