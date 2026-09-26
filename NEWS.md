@@ -705,6 +705,38 @@ metasalmon (development version)
   was read there, not run), and the fix is owed there as a port (see
   `knowledge/parity-deviations.md`).
 
+* **A `codes.csv` row with no code value gets no semantic suggestions, and the
+  review no longer queues a slot it could not address** (hub item B-276; ruled
+  by Brett 2026-09-25). The codes schema lets a row leave `code_value` empty
+  when it supplies `vocabulary_iri`, and defines `term_iri` as the term that
+  `code_value` represents, so such a row has no code value for a term to
+  represent. Target discovery still gave it a code-level target, so
+  `suggest_semantics()` and `create_sdp()` wrote suggestions for it and
+  `review_semantics()` queued its slot. No argument told that slot apart from
+  the column's own slot of the same role, so wherever the column had one, the
+  calls printed for it refused as ambiguous: the case the B-151 entry above
+  leaves open.
+
+  - Discovery now forms no target for such a row, in any role, so
+    `suggest_semantics()` and `create_sdp()` write no suggestion for it. A row
+    of the same column that has a code value keeps its targets. Empty means
+    `NA`, or text that is blank once trimmed; the text `NA` is a code value.
+  - `review_semantics()` leaves such a row out of the queue when a
+    `semantic_suggestions.csv` written before this change still carries its
+    candidates, whichever key spelled its empty value. The rows stay in the
+    file. The queue leaves them out with `include_filled = TRUE` too, and does
+    not replay a decision recorded on them.
+  - Every call the review prints for such a column now runs. Where the row was
+    the column's only code, the call for the column's own slot no longer needs
+    `code_value`. A call an earlier version printed for the row's own slot
+    stops with *"No review slot matches that column and role"* where it used
+    to run; where it used to refuse as ambiguous, it can now select the
+    column's own slot of that role. Paste calls from a fresh
+    `review_semantics()`.
+
+  **Mirror:** metasalmonpy's target discovery gives such a row a target too,
+  and the fix is owed there as a port (see `knowledge/parity-deviations.md`).
+
 * **The publication vignette no longer leads a reader to add a ledger row that
   stops their package publishing** (hub item B-192).
   `vignettes/post-review-package-publication.Rmd` described the canonical
