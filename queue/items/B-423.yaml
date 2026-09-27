@@ -1,0 +1,13 @@
+id: B-423
+kind: defect
+title: 'metasalmonpy''s fetch_salmon_ontology() fetches smn by default, as metasalmon does, as Brett ruled on Q-71'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'IN METASALMONPY, fetch_salmon_ontology() called with no url fetches smn from metasalmon''s default URL, with the fallback that goes with it, instead of gcdfo from a URL that no longer answers. Its documentation says so, a test that fails before the change pins it, and CHANGELOG.md records it under Unreleased. Brett ruled Q-71 part (1) on 2026-09-26 in chat: "smn should be the default starting point so python changes". B-334, B-336 and B-337 land in the same pull request.'

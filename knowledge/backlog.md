@@ -8818,3 +8818,43 @@ Found while four metasalmonpy convergence items were built for S16 step 1 (B-360
 - **B-383 — R Markdown and Quarto context files (metasalmon `R/llm-semantic-helpers.R:554`).** `.ms_context_text_from_rmarkdown()` reads with `readLines(encoding = "UTF-8")` and applies no fallback. A file whose bytes are cp1252 (`Caf\xe9 count`) then fails at `nchar()` with `invalid multibyte string, element 1`. metasalmonpy after B-364 decodes the same file through UTF-8, then cp1252, then latin-1. Found by the B-364 run.
 - **B-384 — the validator's phrase anchor (metasalmon `R/semantic-bundle-validators.R:607-645`).** `.ms_semantic_validator_chunk_has_anchor()` extracts the leading token with `sub("^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$", "\\1", x, perl = TRUE)` and no dot-all flag. On a chunk with a newline the pattern cannot reach the end of the text, so `sub()` returns the whole chunk. The underscore-or-hyphen guard that follows then rejects the anchor **when any later line contains `_` or `-`**. Measured: `Spawner count by visual survey` gives `Spawner`; the same text plus a second line holding `table_2` gives the whole chunk and fails; adding `(?s)` gives `Spawner` again. **It does not fail every multi-line chunk.** `Catch count was observed.` followed by `Protocol.` has no `_` or `-` anywhere, and it still anchors on its normalised text (the second Codex review of metasalmon #196). The B-360 run found it, and copied the quirk to metasalmonpy on purpose as `multiline_chunk_phrase_anchor_quirk`. That is why B-385 exists.
 - **B-386 — metasalmonpy's HTML reader.** `_TextExtractor` in `llm_review.py` collects every text node through `handle_data()`, including `<script>`, `<style>` and `<head>` text. R's `.ms_context_text_from_html()` reads only `.//body` text that is `not(ancestor::script) and not(ancestor::style)`. Register row 62 covers library-specific extraction in general; this is the largest practical difference under it, reported by the B-364 run.
+
+### The 2026-09-26 findings from the B-327 port
+
+metasalmonpy pull request 72 (B-327) ported metasalmon's half of the
+review-packet contract (B-326, metasalmon pull request 194) and mirrored it
+exactly, defects included, so that the shared conformance fixtures match. It
+reported seven findings as claims; the coordinator re-ran the port's suites and
+its cross-language test before filing them. Brett said on 2026-09-26 to fix them
+now rather than leave them filed (*"yes or just fix them now"*), so each is owned
+by an item already being worked, and each fix carries its own failing-before test.
+
+1. **metasalmon counts the `propose_new_term` alias as a downgrade.**
+   `identical(aliases[harness_decision] %||% NA, decision)` never holds, because
+   the subset keeps its name, so the `row_errors` case records five downgrades.
+   `B-424`, mirrored in `B-425`.
+2. **A code under a measurement column loses shortlists.** It gets constraint,
+   entity and method targets that share one slot id: the in-memory exporter
+   aborts on the duplicate unit key, and the package path keeps only the first
+   role's shortlist. Both packages. `B-424` and `B-425`.
+3. **metasalmon's prune warning is skipped.**
+   `.ms_warn_pruning_recorded_decisions()` returns early when a package has no
+   `semantic_suggestions.csv`, so a `review/` record is pruned without a word.
+   `B-424`, and `B-425` if the Python side has the same early return.
+4. **The `retry_dead_ends` fixture README claims an identifier-like query that
+   never occurs.** R's bracket class reads `[^\s]` as "not a backslash and not
+   the letter s", so `smn:MeshSize` is classified as a lexical query. That is the
+   quirk `B-380` already records; it lands with `B-424`, and the README is true
+   after it or is corrected.
+5. **metasalmon's NEWS names a deprecation it never lists.** The development
+   entry says the in-package model call "is deprecated below" and has no bullet
+   for it. `B-424`.
+6. **The two `find_terms()` treat a given source list differently.** metasalmonpy
+   trims, lower-cases and de-duplicates it; metasalmon passes it as given, so a
+   source named in capitals is searched in one and not the other. Pull request
+   72 registers the difference in `PARITY.md` row 65 (g) only where it reaches a
+   packet. `B-421` converges metasalmon on metasalmonpy, the coordinator's
+   direction rather than a ruling.
+7. **A metasalmonpy review record cannot be concatenated with another.** It
+   carries its findings as a DataFrame in `attrs`, and `pd.concat()` compares
+   the inputs' `attrs`, the hazard `B-370` fixed in the retriever. `B-425`.

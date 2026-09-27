@@ -1,0 +1,13 @@
+id: B-422
+kind: defect
+title: 'R''s fetch_salmon_ontology() raises when every URL fails instead of returning a cached copy, as Brett ruled on Q-71'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/questions.md
+retires_when: 'IN METASALMON, fetch_salmon_ontology() raises when every URL it tries fails, even when a copy is cached, as metasalmonpy does, instead of returning the cached copy as an ordinary value with a warning. The roxygen and NEWS say so, and a test that fails before the change pins it. Brett ruled Q-71 part (2) on 2026-09-26 in chat: "make R error on a cached copy thats stale", read here as any cached copy the call could not refresh; if a freshness window was meant, this condition is corrected rather than the item closed. B-333 and B-335, the defects beside it in the same function, land in the same pull request.'
