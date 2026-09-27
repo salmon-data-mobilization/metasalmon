@@ -559,7 +559,10 @@ carrying the Q-51 ruling, and re-vendored every file its loader reads from that
 tag in the same change, with a manifest naming the tag and each file's SHA-256
 (hub item **B-198**). metasalmonpy owes the same move: the same tag, and a
 re-vendor that brings its whole bundle to the same bytes. The two pins must name
-one ref. The debt is specified under *What metasalmon 0.5.0 owes the mirror* in
+one ref. The semantic review conformance fixtures, which this change regenerated
+because a packet records the vendored bundle's version, now pin `sdp-0.3.2`.
+metasalmonpy does not vendor them yet, and its packet half (B-327) can match them
+only once B-199 has landed. The debt is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. There, register **row 38** was amended in place to record
 the window rather than a new number being spent. It did not land in the same
 stream for the structural reason every entry above shares: a hub claim covers one
