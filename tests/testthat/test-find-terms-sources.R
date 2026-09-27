@@ -79,7 +79,7 @@ test_that("named sources are trimmed, lower-cased and de-duplicated (hub B-421)"
   expect_identical(ft_searched(sources = c("OLS", "ols", " ols"))$diagnostics, "ols")
   expect_identical(ft_searched(sources = c("smn", "SMN"))$diagnostics, "smn")
   # Python's str.strip() removes a no-break space, and so does this now.
-  expect_identical(ft_searched(sources = " NVS\t")$searched, "nvs")
+  expect_identical(ft_searched(sources = "\u00a0NVS\t")$searched, "nvs")
 })
 
 test_that("a missing or empty source name names no source (hub B-421)", {

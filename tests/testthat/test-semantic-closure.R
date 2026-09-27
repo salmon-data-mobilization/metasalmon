@@ -1035,7 +1035,7 @@ test_that("the closure reads its source list the way find_terms() does (hub B-42
     path,
     evidence = closure_reviewed_evidence(),
     search_fn = spy,
-    sources = c(" SMN", "smn", " Gcdfo", NA),
+    sources = c(" SMN", "smn", "\u00a0Gcdfo", NA),
     quiet = TRUE
   )
   expect_gt(length(seen), 0L)
@@ -1045,7 +1045,7 @@ test_that("the closure reads its source list the way find_terms() does (hub B-42
 
   # A list that normalises to nothing is refused before anything is read.
   expect_error(
-    write_sdp_semantic_closure(path, search_fn = spy, sources = c(" ", NA, "　"), quiet = TRUE),
+    write_sdp_semantic_closure(path, search_fn = spy, sources = c(" ", NA, "\u3000"), quiet = TRUE),
     "must name at least one vocabulary source"
   )
 })
