@@ -310,6 +310,47 @@ write_case <- function(case_id, dictionary, targets, candidates, harness, contex
   write_case("target_units", dictionary, targets, candidates, harness)
 }
 
+# C2. A code value of a measurement column. Discovery gives it a constraint,
+# an entity and a method target, and all three write into the code's one
+# codes.csv term_iri, so they share one slot id (hub item B-424): each is its
+# own target unit, keyed by its slot and its role, with its own shortlist. The
+# IRIs are example.org stand-ins; no term is chosen here.
+{
+  column_label <- "Catch count"
+  column_description <- "Number of fish retained, with a code where the count was estimated."
+  dictionary <- dictionary_row("CATCH_COUNT", column_label, column_description, unit_label = "count")
+  code_target <- function(role) {
+    target_row(
+      "CATCH_COUNT", role, "term_iri", "estimated count", "Estimated", "The count was estimated, not enumerated.",
+      scope = "code", file = "codes.csv", code_value = "EST", code_label = "Estimated",
+      code_description = "The count was estimated, not enumerated.",
+      column_label = column_label, column_description = column_description
+    )
+  }
+  targets <- dplyr::bind_rows(code_target("constraint"), code_target("entity"), code_target("method"))
+  iri <- function(role, name) paste0("https://example.org/code-roles/", role, "/", name)
+  candidates <- dplyr::bind_rows(
+    candidate_rows(
+      targets[1, ], c("Estimated value", "Observed value"), c(iri("constraint", "estimated"), iri("constraint", "observed")),
+      c("smn", "smn"), c("A value that was estimated rather than observed.", "A value that was observed directly."), c(0.72, 0.41)
+    ),
+    candidate_rows(
+      targets[2, ], c("Catch", "Fish"), c(iri("entity", "catch"), iri("entity", "fish")),
+      c("smn", "smn"), c("The organisms retained by a fishing event.", "An individual fish."), c(0.63, 0.38)
+    ),
+    candidate_rows(
+      targets[3, ], c("Visual estimation", "Expansion estimate"), c(iri("method", "visual-estimation"), iri("method", "expansion")),
+      c("smn", "smn"), c("Estimating a count by eye.", "Estimating a total by expanding a sample."), c(0.81, 0.57)
+    )
+  )
+  harness <- dplyr::bind_rows(
+    semantic_review_harness_row(targets[1, ], llm_decision = "reject_shortlist", llm_confidence = 0.7, llm_rationale = "An estimate is how the count was made, not a qualifier of the catch."),
+    semantic_review_harness_row(targets[2, ], llm_decision = "review", llm_confidence = 0.3, llm_rationale = "The code does not name what was counted."),
+    semantic_review_harness_row(targets[3, ], llm_decision = "accept", llm_confidence = 0.85, llm_selected_candidate_index = 1L, llm_selected_iri = iri("method", "visual-estimation"), llm_rationale = "The code names an estimation procedure.")
+  )
+  write_case("code_roles", dictionary, targets, candidates, harness)
+}
+
 # D. A retry that widens the shortlist, answered at pass 2.
 {
   dictionary <- dictionary_row("GEAR_TYPE", "Gear type", "The fishing gear used.", column_role = "categorical", value_type = "string")
