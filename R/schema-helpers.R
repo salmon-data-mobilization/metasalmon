@@ -94,7 +94,12 @@
       is.na(a) || is.na(b) || !grepl(pattern, a) || !grepl(pattern, b)) {
     return(FALSE)
   }
-  minor <- function(x) as.integer(strsplit(sub(pattern, "\\1 \\2", x), " ", fixed = TRUE)[[1]])
+  # Compare digit strings with leading zeros dropped, not integers: a component
+  # beyond R's integer range would coerce to NA, and two different NAs match.
+  minor <- function(x) {
+    parts <- regmatches(x, regexec(pattern, x))[[1]][2:3]
+    sub("^0+([0-9])", "\\1", parts)
+  }
   identical(minor(a), minor(b))
 }
 
