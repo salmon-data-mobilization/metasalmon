@@ -281,6 +281,17 @@ metasalmon (development version)
      -- are no longer read, and you can delete them.
   3. **A `304` with no cached copy is that url's failure**, and the next url is
      tried. It used to stop the call with "Not Modified (HTTP 304)".
+  4. **A copy holds exactly the bytes the server sent.** The body used to be
+     decoded as UTF-8 and written back with `writeLines()`, so every copy gained
+     a final newline and a body that was not valid UTF-8 was stored as the two
+     characters `NA`. The copy is now the raw body, still written to a
+     temporary file in `cache_dir` and renamed into place, and a validator file
+     is the header's bytes and a newline, written in binary so that it is the
+     same file on every platform. metasalmonpy now stores the same bytes the
+     same way -- it used to decode a text type sent with no charset as
+     ISO-8859-1 and rewrite it -- so a `cache_dir` either package writes holds
+     the same files. `timeout_seconds` is unchanged: it bounds both the
+     connection and the whole transfer, the rule metasalmonpy has now taken.
 
 * **Source names are read the way metasalmonpy reads them** (hub item B-421).
   `find_terms()`, and the source policy that `suggest_semantics()` and
@@ -288,7 +299,8 @@ metasalmon (development version)
   `create_sdp()` and `chat_decomposition()`, which pass their sources to
   `suggest_semantics()`), now trim each name you supply of exactly what
   Python's `str.strip()` removes, lower-case it, and drop a missing or empty
-  name and any repeat after its first appearance, keeping your order. Measured before the change: `find_terms(sources = "SMN")` and
+  name and any repeat after its first appearance, keeping your order. Measured
+  before the change: `find_terms(sources = "SMN")` and
   `sources = " smn "` searched nothing and reported a successful search with no
   rows, where metasalmonpy searched smn; and an `NA` was dispatched, failed, and
   was reported as a source that did not answer. An injected `search_fn`, the

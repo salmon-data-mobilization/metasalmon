@@ -10,18 +10,24 @@
 #     under, with one naming scheme in both packages.
 #   * hub B-422 (Q71 clause 2, ruled by Brett on 2026-09-26): when every URL
 #     fails the call raises, even with a copy cached.
+#   * The follow-ups that converged the two fetchers' remaining differences on
+#     2026-09-26: a copy holds exactly the bytes the server sent, and the
+#     timeout bounds both the connection and the transfer.
 
 of_smn <- "https://w3id.org/smn/"
 of_smn_fallback <- "https://w3id.org/smn"
 of_gcdfo <- "https://w3id.org/gcdfo/salmon"
 
-# An answer in the shape httr::GET() returns.
-of_answer <- function(url, status, body = "", etag = NULL, last_modified = NULL) {
-  headers <- list(`content-type` = "text/turtle; charset=utf-8")
+# An answer in the shape httr::GET() returns. `body` is text, sent as its UTF-8
+# bytes, or a raw vector sent as given.
+of_answer <- function(url, status, body = "", etag = NULL, last_modified = NULL,
+                      content_type = "text/turtle; charset=utf-8") {
+  headers <- list(`content-type` = content_type)
   if (!is.null(etag)) headers$etag <- etag
   if (!is.null(last_modified)) headers$`last-modified` <- last_modified
+  content <- if (is.raw(body)) body else charToRaw(enc2utf8(body))
   structure(
-    list(url = url, status_code = as.integer(status), headers = headers, content = charToRaw(body)),
+    list(url = url, status_code = as.integer(status), headers = headers, content = content),
     class = "response"
   )
 }
@@ -50,17 +56,21 @@ of_304_to_any_validator <- function(url, body, etag) {
 # Calls fetch_salmon_ontology(...) with httr::GET() answered by `routes`, a
 # list mapping each URL to a function of the headers the request carried.
 # Returns what the call returned (or the error it raised) and every request it
-# made, with the headers each carried.
+# made, with the headers and the curl options each carried.
 of_fetch <- function(routes, ...) {
   requests <- list()
   get <- function(url, ...) {
     sent <- list()
+    options <- list()
     for (config in list(...)) {
       if (inherits(config, "request") && length(config$headers) > 0L) {
         sent <- c(sent, as.list(config$headers))
       }
+      if (inherits(config, "request") && length(config$options) > 0L) {
+        options <- c(options, config$options)
+      }
     }
-    requests[[length(requests) + 1L]] <<- list(url = url, sent = sent)
+    requests[[length(requests) + 1L]] <<- list(url = url, sent = sent, options = options)
     route <- routes[[url]]
     if (is.null(route)) stop("no route for ", url)
     route(sent)
@@ -70,9 +80,12 @@ of_fetch <- function(routes, ...) {
   list(
     value = value,
     urls = vapply(requests, function(r) r$url, character(1)),
-    sent = lapply(requests, function(r) r$sent)
+    sent = lapply(requests, function(r) r$sent),
+    options = lapply(requests, function(r) r$options)
   )
 }
+
+of_bytes <- function(path) readBin(path, "raw", n = file.size(path))
 
 of_body <- function(path) paste(readLines(path, warn = FALSE), collapse = "\n")
 
@@ -267,4 +280,54 @@ test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
 test_that("the default url is smn's, the one metasalmonpy defaults to (Q71 clause 1)", {
   expect_identical(formals(fetch_salmon_ontology)$url, "https://w3id.org/smn/")
   expect_null(formals(fetch_salmon_ontology)$fallback_urls)
+})
+
+test_that("a copy holds exactly the bytes the server sent", {
+  # The body used to be decoded as UTF-8 and written back with writeLines(), so
+  # every copy gained a final newline, a CRLF body gained a bare LF, and a body
+  # that was not valid UTF-8 was stored as the two characters "NA".
+  # metasalmonpy decoded a text type sent with no charset as ISO-8859-1. Both
+  # now store the bytes as sent; its twin test sends the same four bodies.
+  bodies <- list(
+    no_final_newline = charToRaw(enc2utf8("@prefix smn: <https://w3id.org/smn/> .\nsmn:Unité a smn:Thing .")),
+    latin1 = as.raw(c(0x63, 0x61, 0x66, 0xe9, 0x0a)),
+    crlf = charToRaw("a\r\nb\r\n"),
+    empty = raw(0)
+  )
+  for (name in names(bodies)) {
+    body <- bodies[[name]]
+    got <- of_fetch(
+      stats::setNames(list(function(sent) of_answer(of_smn, 200L, body, content_type = "text/turtle")), of_smn),
+      cache_dir = withr::local_tempdir()
+    )
+    expect_identical(of_bytes(got$value), body, info = name)
+  }
+})
+
+test_that("a validator is stored as the header's bytes and a newline, in both packages", {
+  cache_dir <- withr::local_tempdir()
+  got <- of_fetch(
+    stats::setNames(list(of_ok(of_smn, "SMN BODY", etag = '"e"', last_modified = "Mon, 01 Jan 2024 00:00:00 GMT")), of_smn),
+    cache_dir = cache_dir
+  )
+  entry <- metasalmon:::.ms_ontology_cache_entry(cache_dir, of_smn, "text/turtle, application/rdf+xml;q=0.8")
+  expect_identical(of_bytes(entry$etag), charToRaw('"e"\n'))
+  expect_identical(of_bytes(entry$last_modified), charToRaw("Mon, 01 Jan 2024 00:00:00 GMT\n"))
+})
+
+test_that("timeout_seconds bounds both the connection and the transfer", {
+  # The rule metasalmonpy ported on 2026-09-26: it took a fixed 15 s.
+  got <- of_fetch(stats::setNames(list(of_ok(of_smn, "SMN BODY")), of_smn), cache_dir = withr::local_tempdir())
+  expect_identical(got$options[[1]]$timeout_ms, 30000)
+  expect_identical(got$options[[1]]$connecttimeout, 30)
+
+  got <- of_fetch(
+    stats::setNames(list(of_unreachable, of_ok(of_smn_fallback, "SMN BODY")), c(of_smn, of_smn_fallback)),
+    cache_dir = withr::local_tempdir(),
+    timeout_seconds = 5
+  )
+  for (options in got$options) {
+    expect_identical(options$timeout_ms, 5000)
+    expect_identical(options$connecttimeout, 5)
+  }
 })

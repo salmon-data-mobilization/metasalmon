@@ -20,7 +20,8 @@ fetch_salmon_ontology(
 \item{cache_dir}{Directory to store cached ontology and headers. Defaults to
 a persistent user cache path.}
 
-\item{timeout_seconds}{Numeric timeout in seconds for each HTTP request.}
+\item{timeout_seconds}{Numeric timeout in seconds for each HTTP request. It
+bounds both the connection and the whole transfer.}
 
 \item{fallback_urls}{URLs tried in order when \code{url} fails. \code{NULL} (the
 default) tries \code{"https://w3id.org/smn"} when \code{url} is the default and none
@@ -29,7 +30,9 @@ not be answered by it. \code{character()} tries none.}
 }
 \value{
 Path to the cached copy that the answering URL returned (character
-string). If every URL fails, the call raises an error naming the URLs and
+string), which holds exactly the bytes that URL sent: it is not decoded,
+re-encoded or given a final newline. If every URL fails, the call raises an
+error naming the URLs and
 the last failure, even when a copy fetched by an earlier call is cached: a
 copy that could not be refreshed is not returned. That copy is left on
 disk.

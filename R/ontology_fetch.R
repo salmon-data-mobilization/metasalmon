@@ -23,9 +23,12 @@
 #'   default) tries `"https://w3id.org/smn"` when `url` is the default and none
 #'   otherwise: that fallback serves smn, so a call for any other ontology must
 #'   not be answered by it. `character()` tries none.
-#' @param timeout_seconds Numeric timeout in seconds for each HTTP request.
+#' @param timeout_seconds Numeric timeout in seconds for each HTTP request. It
+#'   bounds both the connection and the whole transfer.
 #' @return Path to the cached copy that the answering URL returned (character
-#'   string). If every URL fails, the call raises an error naming the URLs and
+#'   string), which holds exactly the bytes that URL sent: it is not decoded,
+#'   re-encoded or given a final newline. If every URL fails, the call raises an
+#'   error naming the URLs and
 #'   the last failure, even when a copy fetched by an earlier call is cached: a
 #'   copy that could not be refreshed is not returned. That copy is left on
 #'   disk.
@@ -140,8 +143,15 @@ fetch_salmon_ontology <- function(
 
 # Stores a `200` answer as `entry`'s copy, with the validators that came with
 # it and no others, and returns the copy's path.
+#
+# The copy is the body's bytes exactly as the server sent them, written to a
+# temporary file in the same directory and renamed over the old copy, so an
+# aborted call leaves the previous copy whole. It used to be decoded as UTF-8
+# and written back with `writeLines()`, which added a final newline to every
+# copy and stored a body that was not valid UTF-8 as the text "NA".
+# metasalmonpy writes the same bytes the same way (`atomic_io.atomic_write()`).
 .ms_ontology_cache_store <- function(entry, res) {
-  content <- httr::content(res, as = "text", encoding = "UTF-8")
+  content <- httr::content(res, as = "raw")
 
   # The old validators describe the old body, so they go first: a failure
   # part-way through leaves a copy with no validators, which is fetched in full
@@ -150,17 +160,25 @@ fetch_salmon_ontology <- function(
 
   temp_ttl <- tempfile(tmpdir = dirname(entry$body), fileext = ".ttl")
   on.exit(unlink(temp_ttl, force = TRUE), add = TRUE)
-  writeLines(content, temp_ttl, useBytes = TRUE)
+  writeBin(content, temp_ttl)
   if (!file.rename(temp_ttl, entry$body)) {
     cli::cli_abort("Failed to update cached ontology file at {.path {entry$body}}.")
   }
 
-  etag <- httr::headers(res)[["etag"]]
-  if (!is.null(etag) && nzchar(etag)) writeLines(etag, entry$etag, useBytes = TRUE)
-  lastmod <- httr::headers(res)[["last-modified"]]
-  if (!is.null(lastmod) && nzchar(lastmod)) writeLines(lastmod, entry$last_modified, useBytes = TRUE)
+  .ms_ontology_store_validator(httr::headers(res)[["etag"]], entry$etag)
+  .ms_ontology_store_validator(httr::headers(res)[["last-modified"]], entry$last_modified)
 
   entry$body
+}
+
+# A validator file is the header value's bytes and a newline, written in
+# binary so that it is the same file on every platform and from either
+# package; metasalmonpy writes it the same way.
+.ms_ontology_store_validator <- function(value, path) {
+  if (!is.null(value) && nzchar(value)) {
+    writeBin(c(charToRaw(value), charToRaw("\n")), path)
+  }
+  invisible(path)
 }
 
 .ms_read_cached_header <- function(path) {
