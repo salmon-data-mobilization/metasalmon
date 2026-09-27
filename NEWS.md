@@ -234,6 +234,24 @@ metasalmon (development version)
      through one helper, and the `row_errors` case records four downgrades
      where it recorded five.
 
+* **A retry query written as a CURIE is recognised as an identifier whatever
+  letters it holds** (hub item B-380; metasalmonpy's half is B-381).
+  `.ms_llm_query_looks_like_identifier()` ended its CURIE pattern in
+  `[^\\s]+`, and R's default regular-expression engine reads a backslash inside
+  a bracket expression literally, so the class meant "neither a backslash nor
+  the letter s" rather than "not whitespace". `smn:species` and `smn:MeshSize`
+  were therefore searched as lexical queries, and `abc:d e` was treated as an
+  identifier. The class is now `[^[:space:]]`, the one the query normalizer
+  collapses, so a URL, a URN, a DOI or a CURIE with no whitespace is an
+  identifier and nothing else is. Both callers of the classifier change: the
+  assessment ingester records such a query as `identifier_like_query` and does
+  not issue it (the `retry_dead_ends` fixture's `smn:MeshSize` now gets the
+  reason its README promised, and the case makes one search call where it
+  made two), and the deprecated in-package retry asks the model for a
+  plain-language replacement query, as it always has for an identifier-like
+  one, instead of searching the CURIE. Pinned over the backlog's cases in
+  `tests/testthat/test-llm-semantic-helpers.R`.
+
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
   Brett on 2026-09-25 as decisions 10 and 11 of the S16 execplan, and a
