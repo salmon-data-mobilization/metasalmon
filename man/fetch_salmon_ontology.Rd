@@ -9,7 +9,7 @@ fetch_salmon_ontology(
   accept = "text/turtle, application/rdf+xml;q=0.8",
   cache_dir = file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology"),
   timeout_seconds = 30,
-  fallback_urls = c("https://w3id.org/smn")
+  fallback_urls = NULL
 )
 }
 \arguments{
@@ -22,12 +22,32 @@ a persistent user cache path.}
 
 \item{timeout_seconds}{Numeric timeout in seconds for each HTTP request.}
 
-\item{fallback_urls}{Optional fallback ontology URLs tried if the primary \code{url} fails.}
+\item{fallback_urls}{URLs tried in order when \code{url} fails. \code{NULL} (the
+default) tries \code{"https://w3id.org/smn"} when \code{url} is the default and none
+otherwise: that fallback serves smn, so a call for any other ontology must
+not be answered by it. \code{character()} tries none.}
 }
 \value{
-Path to the cached ontology file (character string).
+Path to the cached copy that the answering URL returned (character
+string). If every URL fails, the call raises an error naming the URLs and
+the last failure, even when a copy fetched by an earlier call is cached: a
+copy that could not be refreshed is not returned. That copy is left on
+disk.
 }
 \description{
-Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
-the response using ETag / Last-Modified headers when available.
+Downloads an ontology, by default the Salmon Domain Ontology (smn), using
+HTTP content negotiation, and caches each response with its ETag /
+Last-Modified validators when the server sends them, so that an unchanged
+ontology is not downloaded again.
+}
+\details{
+Each copy is cached under the URL that returned it and the \code{accept} it was
+fetched under: its file name is the first 16 hexadecimal digits of the
+SHA-256 of the URL, a newline and \code{accept} (as UTF-8), with the extension
+\code{.ttl} whatever the representation, and its validators sit beside it with
+the extensions \code{.etag} and \code{.last_modified}. Fetches of different URLs or
+representations into one \code{cache_dir} therefore never overwrite each other,
+a conditional request carries only the validators that the URL it is sent
+to returned under the same \code{accept}, and a \code{304} answer returns that URL's
+own copy. metasalmonpy names its cache files the same way.
 }

@@ -18,6 +18,23 @@ metasalmon (development version)
   Pinned by `tests/testthat/test-find-terms-sources.R`, which stubs every source
   and failed before the change.
 
+* **`fetch_salmon_ontology()` raises when every URL fails, even when a copy is
+  cached** (hub item B-422; ruled by Brett on 2026-09-26,
+  `knowledge/questions.md` Q71, clause 2). It used to warn "Failed to refresh
+  Salmon ontology; using cached copy" and return the copy as an ordinary value,
+  whatever its age and, before the cache fix below, whatever URL or
+  representation had written it. It now raises the error it raised when nothing
+  was cached, as metasalmonpy always has, and leaves the copy on disk. The error
+  names the last failure the way metasalmonpy names it -- `HTTP 503`, or the
+  message of a request that did not complete -- where it used to paste the
+  response object and print nothing after "last error:". Code that relied on
+  the old fallback to keep working offline now gets the error. The package's own
+  searches are unaffected: they cache under `tempdir()` and build each index
+  once per session, so there was never an earlier copy for the fallback to
+  return. The code keeps no freshness lifetime, so every call revalidates, and a
+  copy the call could not revalidate is the one that is not returned. Pinned by
+  `tests/testthat/test-ontology-fetch.R`, which failed before the change.
+
 * **A package's ownership sentinel is now `.sdp-package`, holding the line
   `sdp-owned`, and `.metasalmon-package` is no longer written or recognised**
   (hub item B-113; ruled by Brett 2026-08-24, `knowledge/questions.md` Q14).
@@ -228,6 +245,42 @@ metasalmon (development version)
   digest as well.
 
 ### Fixed
+
+* **`fetch_salmon_ontology()` no longer answers a request for one ontology with
+  another's body, or one representation's request with another's** (hub items
+  B-333 and B-335; metasalmonpy's twins are B-334 and B-336, and the two
+  packages now apply one rule and one cache layout). Each is pinned by
+  `tests/testthat/test-ontology-fetch.R`, which stubs `httr::GET()` and failed
+  before the change.
+
+  1. **The default fallback is tried for the default url only.**
+     `fallback_urls` now defaults to `NULL`, which means `"https://w3id.org/smn"`
+     when `url` is the default `"https://w3id.org/smn/"` and nothing otherwise.
+     That fallback serves smn, and it used to be tried after any url, so a call
+     for gcdfo whose url failed returned smn's body with no warning. Named
+     `fallback_urls` are tried as before, and `character()` still names none.
+     The package's own callers were never affected, because each names its own
+     fallbacks.
+  2. **Each URL and representation has its own cached copy and validators.**
+     Every body used to be written to `salmon-ontology.ttl` in `cache_dir`,
+     beside one `etag.txt` and one `last_modified.txt`. So fetching smn and then
+     gcdfo into one directory left gcdfo at the path the smn call had returned,
+     and the gcdfo request carried smn's ETag; a Turtle and then an RDF/XML
+     fetch of one url did the same; and a fallback's ETag, sent to the url on
+     the next call, could bring back the fallback's body as the url's on a
+     `304`. A copy is now `<key>.ttl`, where `<key>` is the first 16 hexadecimal
+     digits of the SHA-256 of the url as requested, a newline and `accept`, and
+     its validators are `<key>.etag` and `<key>.last_modified`. A request
+     carries only the validators of the copy that URL returned under that
+     `accept`, a `304` returns that copy, and a `200` replaces the copy's
+     validators rather than keeping any the new answer did not send.
+     **The returned file name changes accordingly.** Copies cached by earlier
+     versions -- `salmon-ontology.ttl`, `etag.txt` and `last_modified.txt`
+     directly under `cache_dir`, which by default is the persistent
+     `file.path(tools::R_user_dir("metasalmon", which = "cache"), "ontology")`
+     -- are no longer read, and you can delete them.
+  3. **A `304` with no cached copy is that url's failure**, and the next url is
+     tried. It used to stop the call with "Not Modified (HTTP 304)".
 
 * **Source names are read the way metasalmonpy reads them** (hub item B-421).
   `find_terms()`, and the source policy that `suggest_semantics()` and

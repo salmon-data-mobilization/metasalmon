@@ -92,26 +92,13 @@ test_that("fetch_salmon_ontology returns a ttl path", {
   testthat::skip_if_not(reachable, "w3id.org is not reachable from this environment")
   path <- fetch_salmon_ontology()
   expect_true(file.exists(path))
-  expect_match(path, "salmon-ontology\\.ttl$")
+  # One copy per URL and accept, named by key (hub B-335).
+  expect_match(basename(path), "^[0-9a-f]{16}\\.ttl$")
 })
 
-test_that("fetch_salmon_ontology falls back to stale cache when refresh fails", {
-  cache_dir <- withr::local_tempdir()
-  ttl_file <- file.path(cache_dir, "salmon-ontology.ttl")
-  writeLines("cached", ttl_file)
-
-  expect_warning(
-    path <- fetch_salmon_ontology(
-      url = "http://127.0.0.1:9/smn",
-      cache_dir = cache_dir,
-      fallback_urls = character(),
-      timeout_seconds = 1
-    ),
-    "using cached copy",
-    ignore.case = TRUE
-  )
-  expect_equal(path, ttl_file)
-})
+# A test that a failed refresh returns the cached copy under a warning lived
+# here. Brett ruled on 2026-09-26 (Q71 clause 2, hub B-422) that the call
+# raises instead; the test of that is in test-ontology-fetch.R.
 
 test_that("validate_dictionary and validate_semantics accept dictionary CSV paths", {
   dict <- tibble::tibble(
