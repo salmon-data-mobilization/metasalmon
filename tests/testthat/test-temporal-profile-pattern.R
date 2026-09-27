@@ -76,7 +76,7 @@ test_that("the temporal instants a written package carries satisfy the vendored 
       description = "D",
       creator = "metasalmon tests",
       # The two instants the ruled profile gives as its own `sdp:examples`
-      # (smn-data-pkg f86d9b4). The end is supplied in Vancouver time on
+      # (smn-data-pkg sdp-0.3.2). The end is supplied in Vancouver time on
       # purpose, because the pattern admits only the `Z` zone marker. A writer
       # that kept the caller's offset would fail here.
       temporal_start = as.POSIXct("1996-01-01 00:00:00", tz = "UTC"),
@@ -120,8 +120,9 @@ test_that("the profile-pattern check can fail: it rejects the spellings the ruli
   # Without this, the test above could pass vacuously. A matcher that accepted
   # everything, or a pattern read from the wrong field, would pass there
   # without anyone noticing. These are smn-data-pkg's own rejected fixtures
-  # (tests/test_validate_package.py at f86d9b4), minus the unpadded year. That
-  # one is B-161's question and is deliberately not pinned here.
+  # (tests/test_validate_package.py at sdp-0.3.2), minus the unpadded year,
+  # plus a trailing newline. The unpadded year is B-161's question and is
+  # deliberately not pinned here.
   pattern <- vendored_dataset_field_pattern("temporal_end")
 
   rejected <- c(
@@ -129,6 +130,7 @@ test_that("the profile-pattern check can fail: it rejects the spellings the ruli
     "no zone marker" = "2024-12-31T00:00:00",
     "offset zone marker" = "2024-12-31T00:00:00+00:00",
     "fractional second" = "2024-12-31T00:00:00.5Z",
+    "two-digit year" = "24-12-31",
     "partial date" = "1996-01",
     "trailing newline, which PCRE's bare `$` would accept" = "2024-12-31T00:00:00Z\n"
   )

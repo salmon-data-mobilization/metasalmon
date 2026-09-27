@@ -365,10 +365,11 @@ test_that("an abort during the write leaves the package wholly unchanged", {
 test_that("`.ms_required_metadata_fields()` reads the schema, not a hand-written list", {
   # First consumer of `field$requirement`, which had five producers and no
   # consumers. If this ever stops reading the schema the round trip above still
-  # passes, so the source is asserted directly.
+  # passes, so the source is asserted directly. `license` is not in the set:
+  # sdp-0.3.2 made it recommended rather than required (hub item B-198).
   expect_setequal(
     .ms_required_metadata_fields("dataset.csv"),
-    c("title", "description", "creator", "contact_name", "contact_email", "license")
+    c("title", "description", "creator", "contact_name", "contact_email")
   )
   expect_setequal(
     .ms_required_metadata_fields("tables.csv"),

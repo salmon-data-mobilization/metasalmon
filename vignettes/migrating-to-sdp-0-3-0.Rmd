@@ -459,7 +459,8 @@ the dataset is a judgement call, so the migration hands you the values in
 The migration also updates `datapackage.json` — it drops the `sdp_methods`
 resource, removes any legacy `iAdopt:methodIri` custom keys from the field
 definitions, and stamps the new profile and spec version — and sets
-`dataset.csv`'s `spec_version` to `sdp-0.3.0`.
+`dataset.csv`'s `spec_version` to that same version, the one metasalmon's SDP
+schema declares.
 
 ### Finally, Validate
 

@@ -44,7 +44,7 @@ test_that("inferred dataset metadata uses the current SDP profile version", {
     seed_verbose = FALSE
   )
 
-  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.3.0")
+  expect_equal(artifacts$dataset_meta$spec_version, "sdp-0.3.2")
 })
 
 test_that("infer_dictionary marks factor columns as categorical", {
