@@ -1082,19 +1082,23 @@ why they exist — but neither has a corresponding GitHub Release object
 `sdp-0.3.2` as a tag and a release together. `sdp-0.2.0` still has no release
 object.)*
 
-**The spec-version spread — four consumers, three eras, and one of them
-current** (two until `sdp-0.3.2` was cut on 2026-09-27). Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
+**The spec-version spread — four consumers, three eras, and two of them
+current** (one from when `sdp-0.3.2` was cut on 2026-09-27 until B-198 moved
+metasalmon to it). Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
 row re-checked 2026-08-22 after S10 chunk A. No single repo can
 see this table, which is the reason the hub carries it.
 *(Re-checked 2026-09-27, when `sdp-0.3.2` was cut: both packages'
 `dataset.schema.json` on `main` is still byte-identical to `sdp-0.3.0`'s and
 differs from `sdp-0.3.2`'s, so neither is current until B-198 and B-199 land;
-the shipped examples declare `sdp-0.3.2` at its tag.)*
+the shipped examples declare `sdp-0.3.2` at its tag.)* *(Re-checked 2026-09-27
+for B-198: the eight files metasalmon's schema loader reads are byte-identical
+to `sdp-0.3.2`'s and its pin names that tag, so it is current; metasalmonpy is not
+until B-199.)*
 
 | Consumer | Declares or pins | Current? |
 |---|---|---|
-| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **No** since `sdp-0.3.2`: B-198 re-vendors from that tag |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25) | **No** since `sdp-0.3.2`: B-199 re-vendors from that tag. Until then **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
+| `metasalmon` | Vendors **sdp-0.3.2** since B-198: every file the schema loader reads (the six metadata schemas, the v0.3 profile and `sdp.rules.yaml`) is byte-identical to the tag, `inst/extdata/sdp-bundle-manifest.json` names the tag and each file's SHA-256, and the remote pin names the same tag; stamps `sdp-0.3.2` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion` | **Yes** |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25, and true until B-198 moved metasalmon's to `sdp-0.3.2`) | **No** since `sdp-0.3.2`: B-199 re-vendors from that tag. Until then **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.3.2"` at the `sdp-0.3.2` tag | Yes |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
