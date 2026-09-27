@@ -1068,8 +1068,8 @@ why they exist — but neither has a corresponding GitHub Release object
 `sdp-0.3.2` as a tag and a release together. `sdp-0.2.0` still has no release
 object.)*
 
-**The spec-version spread — four consumers, three eras, and two of them
-current.** Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
+**The spec-version spread — four consumers, three eras, and one of them
+current** (two until `sdp-0.3.2` was cut on 2026-09-27). Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
 row re-checked 2026-08-22 after S10 chunk A. No single repo can
 see this table, which is the reason the hub carries it.
 *(Re-checked 2026-09-27, when `sdp-0.3.2` was cut: both packages'
@@ -1084,7 +1084,7 @@ the shipped examples declare `sdp-0.3.2` at its tag.)*
 | `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.3.2"` at the `sdp-0.3.2` tag | Yes |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
-Two things the spread made visible, one of them now resolved. First —
+Two things the spread made visible, both now resolved. First —
 resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry
 `schema/frictionless/metadata/methods.schema.json`, a file the spec repo **no
 longer has** since sdp-0.3.0 removed that registry, so metasalmonpy validated
@@ -1092,11 +1092,10 @@ against a schema with no upstream. The chunk-A bundle swap removed it, the pin
 and the bundle moved together exactly as the retirement condition required,
 and `PARITY.md` rows 27 and 38 are marked converged; metasalmonpy's
 `SDP_METHODS_COLUMNS` is now a frozen legacy contract for *reading* 0.2.x-era
-packages, not a read of any schema. Second, **the
-spec repo ships examples of the version it superseded**, so the normative
-document and its own demonstrations disagree — a smn-data-pkg defect that
-belongs in that repo's tracker, noted here only because the hub is where the
-mismatch is visible.
+packages, not a read of any schema. Second — resolved at `sdp-0.3.2`
+(2026-09-27): **the spec repo shipped examples of the version it superseded**,
+so the normative document and its own demonstrations disagreed. smn-data-pkg
+#11 moved both examples to `sdp-0.3.2`, the version their tag names.
 
 **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
