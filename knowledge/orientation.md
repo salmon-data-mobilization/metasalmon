@@ -110,20 +110,22 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
   `observation_unit_iri`), `column_dictionary.csv` (per-column semantics), and
   `codes.csv` (controlled-vocabulary code values). Validated against the canonical
   `smn-data-pkg` spec.
-- **SDP schema locations:** runtime schema fetches are pinned to an immutable
-  upstream ref, never `main`
-  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<ref>`),
+- **SDP schema locations:** runtime schema fetches are pinned to the spec
+  release tag the package implements, never `main`
+  (`https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/<spec-tag>`),
   because tracking `main` let upstream spec releases break networked loads. The
-  ref is whatever `.ms_default_sdp_schema_base_url()` names, and this card does
-  not repeat it. Since hub item B-198 the ref has been a commit rather than a
-  release tag, because no tag carried the Q-51 ruling. The source says why, and
-  what would retire it. metasalmonpy's pin is parity register row 38.
-  Advancing the pin is part of implementing a new spec version, and so is
-  re-vendoring `inst/extdata` in the same change. Under `source = "auto"` the
-  pinned ref loads first and the vendored bundle loads only when that fetch
-  fails. So the two must hold the same bytes, or an online session and an
-  offline one validate against different schemas. `test-schema-helpers.R`
-  compares them file by file. Canonical SDP profile, rules, and resource-schema identifiers resolve at
+  tag is whatever `.ms_sdp_schema_pinned_base_url()` names, and this card does
+  not repeat it. `inst/extdata/sdp-bundle-manifest.json` names the same tag and
+  the SHA-256 of each vendored file. metasalmonpy's pin is parity register row
+  38. Advancing the pin is part of implementing a new spec version, and so is
+  re-vendoring every file in the manifest from the same tag in the same change.
+  Under `source = "auto"` the pinned tag loads first and the vendored bundle
+  loads only when that fetch fails, and under the default options
+  `review_metadata()` and the `set_sdp_*()` setters read the vendored bundle in
+  the tag's place. So the two must hold the same bytes, or an online session and
+  an offline one validate against different schemas. `test-schema-helpers.R`
+  checks the bundle against the manifest and the pin offline, and against the
+  tag online. Canonical SDP profile, rules, and resource-schema identifiers resolve at
   `https://salmon-data-mobilization.github.io/smn-data-pkg/`. Keep those
   published contract identifiers distinct from the configurable source used for
   runtime schema retrieval.
