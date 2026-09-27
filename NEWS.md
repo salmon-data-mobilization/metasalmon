@@ -3,6 +3,21 @@ metasalmon (development version)
 
 ### Breaking changes
 
+* **`find_terms()` searches the sources a role calls for when you name a role
+  and no sources** (hub item B-420; ruled by Brett on 2026-09-26,
+  `knowledge/questions.md` Q70: R moves). `sources` now defaults to `NULL`,
+  which means `sources_for_role(role)`, as it already did in metasalmonpy and
+  as `suggest_semantics()` already resolved an omitted list here. So
+  `find_terms("kilogram", role = "unit")` searches QUDT, NVS and OLS, where it
+  searched smn, gcdfo, OLS and NVS whatever the role, and a direct unit search
+  now reaches QUDT. A call with no role searches the same four sources as
+  before, and a vector you name is still a strict allowlist. An explicit
+  `sources = NULL` now means the same as leaving the argument out; pass
+  `character()` to search nothing. The documentation described both
+  behaviours, one under `role` and one under `sources`, and now describes one.
+  Pinned by `tests/testthat/test-find-terms-sources.R`, which stubs every source
+  and failed before the change.
+
 * **A package's ownership sentinel is now `.sdp-package`, holding the line
   `sdp-owned`, and `.metasalmon-package` is no longer written or recognised**
   (hub item B-113; ruled by Brett 2026-08-24, `knowledge/questions.md` Q14).
@@ -213,6 +228,22 @@ metasalmon (development version)
   digest as well.
 
 ### Fixed
+
+* **Source names are read the way metasalmonpy reads them** (hub item B-421).
+  `find_terms()`, and the source policy that `suggest_semantics()` and
+  `write_semantic_review_packet()` build (and so `infer_dictionary()`,
+  `create_sdp()` and `chat_decomposition()`, which pass their sources to
+  `suggest_semantics()`), now trim each name you supply of exactly what
+  Python's `str.strip()` removes, lower-case it, and drop a missing or empty
+  name and any repeat after its first appearance, keeping your order. Measured before the change: `find_terms(sources = "SMN")` and
+  `sources = " smn "` searched nothing and reported a successful search with no
+  rows, where metasalmonpy searched smn; and an `NA` was dispatched, failed, and
+  was reported as a source that did not answer. An injected `search_fn`, the
+  bundle-review payload and a review packet's recorded `explicit_allowlist` now
+  see the normalised list, as they do in metasalmonpy. A name that is none of
+  the sources is still kept and searches nothing. metasalmonpy's half of the
+  change makes it drop a missing entry (`None`, NaN) where it used to search a
+  source called `"none"`. Pinned by `tests/testthat/test-find-terms-sources.R`.
 
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by

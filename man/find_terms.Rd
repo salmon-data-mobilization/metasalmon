@@ -4,25 +4,28 @@
 \alias{find_terms}
 \title{Find candidate terms across external vocabularies}
 \usage{
-find_terms(
-  query,
-  role = NA_character_,
-  sources = c("smn", "gcdfo", "ols", "nvs"),
-  expand_query = TRUE
-)
+find_terms(query, role = NA_character_, sources = NULL, expand_query = TRUE)
 }
 \arguments{
 \item{query}{Character search string (e.g., \code{"spawner count"}, \code{"temperature"}).}
 
 \item{role}{Optional I-ADOPT role hint for ranking and source selection. One of:
 \code{"variable"} (compound term), \code{"property"} (characteristic),
-\code{"entity"} (thing measured), \code{"constraint"} (qualifier), \code{"method"}, or \code{"unit"}.
-When specified, sources are optimized for the role and results are ranked higher
-when they match preferred ontologies for that role.}
+\code{"entity"} (thing measured), \code{"constraint"} (qualifier),
+\code{"statistical_modifier"}, \code{"method"}, or \code{"unit"}. Results are ranked
+higher when they match preferred ontologies for the role, and when
+\code{sources} is \code{NULL} the role also chooses which sources are searched.}
 
-\item{sources}{Character vector of vocabulary sources to query. Options:
-\code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"}, \code{"worms"}, \code{"bioportal"}.
-Default is \code{c("smn", "gcdfo", "ols", "nvs")}. Use \code{\link[=sources_for_role]{sources_for_role()}} to get role-optimized sources.}
+\item{sources}{Character vector of vocabulary sources to query, or \code{NULL}
+(the default) to query the sources \code{\link[=sources_for_role]{sources_for_role()}} names for \code{role};
+with no role, that is \code{c("smn", "gcdfo", "ols", "nvs")}. Options:
+\code{"smn"}, \code{"gcdfo"}, \code{"ols"}, \code{"nvs"}, \code{"zooma"}, \code{"qudt"}, \code{"gbif"},
+\code{"worms"}, \code{"bioportal"}. A vector you supply is a strict allowlist, read
+as metasalmonpy reads it: each name is trimmed and lower-cased, a missing
+or empty name is dropped, and a repeated name is dropped after its first
+appearance, so \code{"SMN"} and \code{" smn "} both search smn. A name that is none
+of the options searches nothing, and an empty vector returns an empty
+tibble.}
 
 \item{expand_query}{Logical. If \code{TRUE} (default), applies role-aware query expansion
 (Phase 4) to generate additional query variants based on the role context.
@@ -87,8 +90,9 @@ head(results)
 # Search specifically for property terms
 property_terms <- find_terms("temperature", role = "property")
 
-# Search for units with QUDT preference
-unit_terms <- find_terms("kilogram", role = "unit", sources = sources_for_role("unit"))
+# Search for units: with no sources named, the unit role searches
+# sources_for_role("unit"), which puts QUDT first
+unit_terms <- find_terms("kilogram", role = "unit")
 
 # Search for taxa using taxon resolvers
 taxa <- find_terms("Oncorhynchus kisutch", role = "entity", sources = c("gbif", "worms"))
