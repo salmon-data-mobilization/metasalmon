@@ -233,10 +233,19 @@ write_salmon_datapackage <- function(
   declared_spec_version <- dataset_meta$spec_version[1]
   if (!is.na(declared_spec_version) && nzchar(trimws(declared_spec_version)) &&
       !identical(trimws(declared_spec_version), sdp_schema$version)) {
-    cli::cli_warn(c(
-      "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
-      "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
-    ))
+    if (.ms_sdp_same_minor_version(trimws(declared_spec_version), sdp_schema$version)) {
+      # A patch release keeps the profile, so this is a note, not a problem:
+      # every package written before a patch re-vendor would otherwise warn.
+      cli::cli_inform(c(
+        "i" = "{.file dataset.csv} declares {.val {declared_spec_version}}; the loaded SDP schema is {.val {sdp_schema$version}}, a patch release of the same profile.",
+        " " = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+      ))
+    } else {
+      cli::cli_warn(c(
+        "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
+        "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
+      ))
+    }
   }
 
   # Every URI written here comes from the one loaded, self-consistent bundle,
