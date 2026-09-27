@@ -192,6 +192,10 @@ test_that("the vendored SDP bundle matches its manifest, with no network", {
   #   resource added to the loader has to be vendored and hashed with it;
   # - a pin moved without a re-vendor, or a re-vendor without the pin, fails
   #   the tag.
+  #
+  # *Retires when:* inst/extdata stops vendoring a copy of an upstream spec
+  # release, because the hashes are what make "a copy" checkable. The pin
+  # clause alone retires sooner, if the loader stops fetching a remote bundle.
   manifest_path <- system.file("extdata", "sdp-bundle-manifest.json", package = "metasalmon")
   expect_true(nzchar(manifest_path) && file.exists(manifest_path))
   manifest <- jsonlite::read_json(manifest_path, simplifyVector = FALSE)
