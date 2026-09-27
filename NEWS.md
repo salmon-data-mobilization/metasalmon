@@ -310,6 +310,14 @@ metasalmon (development version)
   change makes it drop a missing entry (`None`, NaN) where it used to search a
   source called `"none"`. Pinned by `tests/testthat/test-find-terms-sources.R`.
 
+  `write_sdp_semantic_closure()` reads its `sources` by the same rule. It had
+  its own, `trimws()` and `unique()` with no lower-casing, so `" SMN"` and
+  `"smn"` were two sources there and a no-break space survived; metasalmonpy's
+  closure had a third rule of its own. All three readers in each package now
+  read a list one way, and the two packages read it the same way. A list with
+  no name left is still refused. Pinned by `tests/testthat/test-semantic-closure.R`,
+  which failed before the change.
+
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
   Brett on 2026-09-25 as decisions 10 and 11 of the S16 execplan, and a

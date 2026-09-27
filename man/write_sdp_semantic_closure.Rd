@@ -29,7 +29,10 @@ search runs for that IRI at all.}
 A test hook; the signature is \verb{function(query, role, sources)}.}
 
 \item{sources}{Vocabulary sources to search. Defaults to
-\code{c("smn", "gcdfo")}, the two this package resolves deterministically.}
+\code{c("smn", "gcdfo")}, the two this package resolves deterministically.
+Names are read as \code{\link[=find_terms]{find_terms()}} reads them: each trimmed and lower-cased,
+with missing, empty and repeated names dropped. A list with no name left
+is an error.}
 
 \item{quiet}{Suppress the progress and summary messages. Warnings about gaps
 and placeholder rationales are not suppressed.}
