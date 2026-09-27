@@ -212,6 +212,32 @@ metasalmon (development version)
   producer pins its digests, which removes the script's last hand-computed file
   digest as well.
 
+### Deprecated
+
+* **`llm_assess = TRUE`, the eleven `llm_*` arguments and `chat_decomposition()`
+  are deprecated, and are removed in metasalmon 0.7.0** (hub item B-326, S16
+  execplan section 6; ruled by Brett on 2026-09-25, hub Q67). Model judgement
+  now runs in the caller's own harness against a review packet, through
+  `write_semantic_review_packet()` and `ingest_semantic_assessments()` (see
+  *Added*). `suggest_semantics()`, `infer_dictionary()`,
+  `infer_salmon_datapackage_artifacts()` and `create_sdp()` warn once per
+  top-level call whenever `llm_assess = TRUE` or any `llm_*` argument is
+  supplied. Each entry point detects that with `missing()`, so an argument
+  passed explicitly at its default warns too, and the calls the four make to
+  one another do not warn again: a nested chain warns once, naming the
+  outermost entry point, even when `seed_semantics = FALSE` leaves the options
+  unused. `chat_decomposition()` warns on every call, on entry, before its
+  interactive session starts. The warning is a classed `cli_warn()`
+  (`metasalmon_llm_deprecated`, `deprecatedWarning`), so it can be caught or
+  silenced by class, and it comes after the existing opt-in warnings;
+  `options(metasalmon.llm_deprecation_quiet = TRUE)` silences it until the
+  removal, as the test suite's setup file does. The opt-in contract is
+  untouched: context supplied without `llm_assess` still warns that it is
+  ignored and makes no model call, and the default path warns nothing. Pinned
+  in `tests/testthat/test-llm-deprecation.R`. metasalmonpy deprecates the same
+  surface with `LLMDeprecationWarning`, a `FutureWarning` subclass (hub item
+  B-327).
+
 ### Fixed
 
 * **Defects in the review-packet contract are fixed before it ships** (hub item
