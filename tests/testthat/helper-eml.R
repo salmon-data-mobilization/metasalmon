@@ -53,7 +53,7 @@ make_eml_test_sdp <- function(path,
     provenance_note = "Counts were compiled from a documented monitoring program.",
     created = NA_character_,
     modified = "2026-01-01",
-    spec_version = "sdp-0.3.0"
+    spec_version = "sdp-0.3.2"
   )
   table_meta <- tibble::tibble(
     dataset_id = dataset_id,

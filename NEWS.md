@@ -1095,7 +1095,9 @@ metasalmon (development version)
   it carried none for the placeholder. The other prompts are unchanged, because
   they fill fields the schema requires.
 
-  **Strict validation still requires a licence for now.** metasalmon reads the
+  **Strict validation still requires a licence for now.** [corrected 2026-09-27:
+  no longer, since hub item B-198 re-vendored the bundle from `sdp-0.3.2`; see
+  its entry below.] metasalmon reads the
   requirement from its bundled SDP schema, which is re-vendored, with the remote
   pin, only from a specification release (hub item B-198). Until that release
   arrives here, `validate_salmon_datapackage(require_iris = TRUE)` reports a
@@ -1158,6 +1160,77 @@ metasalmon (development version)
   item B-48) measured as loaded and never executed. B-48 builds its dispatch on
   this text; no rule `id`, `severity`, `version` or `profile` changed, because
   that test keys on rule ids.
+
+* **The SDP schema pin and the vendored bundle move to the `sdp-0.3.2`
+  release, together and byte for byte** (hub item B-198). `sdp-0.3.2` is the
+  first smn-data-pkg release carrying Brett's Q-51 ruling of 2026-09-16, and
+  on 2026-09-23 he ruled that metasalmon pins a release tag for it rather than
+  a commit. `.ms_sdp_schema_pinned_base_url()` now names the `sdp-0.3.2` tag in
+  place of `sdp-0.3.0`. Every file the schema loader reads -- the six metadata
+  schemas, the v0.3 profile and `sdp.rules.yaml` -- is re-vendored from that
+  tag with `git cat-file blob`, never edited by hand. Three of the eight
+  change: `dataset.schema.json`, the profile and the rules. `sdp-0.3.2` is a
+  patch release, so the profile keeps its `v0.3` path, and the profile, rules
+  and schema URIs a written `datapackage.json` carries do not change. The
+  `metasalmon.sdp_schema_base_url` option still overrides the pin.
+
+  What a user can observe:
+
+  - **metasalmon writes `sdp-0.3.2`.** A package written with a blank
+    `spec_version` declares `sdp-0.3.2` in `metadata/dataset.csv` and in
+    `datapackage.json`'s `sdp.specVersion`, because both are read from the
+    bundle's rules `version`, and `migrate_sdp_methods()` stamps it too.
+    Writing a package whose `dataset.csv` still names `sdp-0.3.0`, which every
+    package written by 0.5.0 does, now warns that the file and the loaded
+    schema disagree, and the package carries both values, as for any mismatch.
+    Clear `spec_version` to adopt `sdp-0.3.2`.
+  - **A licence is recommended, not required.** The bundled
+    `dataset.schema.json` drops `constraints.required` from `license` and
+    marks it `sdp:requirement: recommended` (smn-data-pkg pull request 12).
+    Under the default options, `validate_salmon_datapackage(require_iris =
+    TRUE)` accepts a blank licence, and `review_metadata()` no longer lists
+    one. This is the release the licence entry above was waiting for. A
+    placeholder in the field is still refused, as in every field.
+  - **The schema in use admits the ISO instant.** `temporal_start` and
+    `temporal_end` carry
+    `^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$` in both
+    the pinned and the vendored bundle. That is the spelling
+    `datapackage.json` has written for a typed `POSIXct` since B-115, so for a
+    four-digit year the descriptor and the profile no longer disagree. No
+    validation outcome changes from the pattern alone, because nothing in `R/`
+    reads `constraints.pattern` yet (hub item B-204).
+  - **Two hints change.** When a placeholder carries no instruction of its
+    own, such as a bare `MISSING METADATA:`, `review_metadata()` takes its hint
+    from the schema's field description. In `temporal_start` it now reads
+    "Start of the period covered by the dataset: a year, a date, or an ISO
+    8601 instant in UTC.", `temporal_end` reads the same with "End", and
+    `license` reads "Reuse license: an SPDX-style identifier, a license name,
+    or a URL. Leave blank when none has been granted."
+  - **Semantic review packets record `sdp-0.3.2`.** A packet's
+    `pins.sdp_profile.version` is the vendored bundle's version, so every
+    packet's `packet_id` changes. The conformance fixtures under
+    `tests/testthat/fixtures/semantic-review/v1/` are regenerated with
+    `scripts/build-semantic-review-fixtures.R`, and nothing else in them
+    moved.
+
+  **Online and offline sessions now load the same bytes.** Under
+  `source = "auto"` the loader reads the pinned tag and falls back to the
+  vendored bundle, and under the default options `review_metadata()` and the
+  `set_sdp_*()` setters read the vendored bundle in the tag's place (hub item
+  B-175). Until now the two differed in `sdp.rules.yaml`, which B-106
+  re-vendored from a later commit than the pin. A new manifest,
+  `inst/extdata/sdp-bundle-manifest.json`, names the tag and the SHA-256 of
+  each vendored file. A new offline test fails when a vendored file, the
+  manifest's file list or the pin disagrees with it, so a partial re-vendor or
+  a hand edit fails without a network. A network test checks that the pinned
+  tag serves every file byte for byte.
+
+  A further new test checks the instant a written package carries against the
+  pattern **read from the vendored bundle**, in both `datapackage.json` and
+  `metadata/dataset.csv`. Every earlier check compared those two files with
+  each other, which is how a typed instant went unseen while both broke the
+  profile. The fixture uses four-digit years, because the pre-1000 spelling is
+  hub item B-161's question. The metasalmonpy half is hub item B-199.
 
 ### Internal
 
