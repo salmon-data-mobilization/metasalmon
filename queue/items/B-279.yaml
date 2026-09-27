@@ -1,0 +1,13 @@
+id: B-279
+kind: defect
+title: 'detect_semantic_term_gaps() in metasalmonpy reads the commons gap register (okf-check.py --gaps), mirroring B-278'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md
+retires_when: 'metasalmonpy''s detect_semantic_term_gaps() accepts the JSON that the commons'' scripts/okf-check.py --gaps emits (a top-level gaps array, each entry carrying state and mint_target; measured 2026-09-25 at commons commit cab0248) and feeds render_ontology_term_request() and submit_term_request_issues(dry_run=True) from it, with a test on a fixture copy of that output, and the same fixture yields the same gap set as metasalmon''s reader; rg for okf-check, gaps.json or --gaps under src/ finds nothing today. Foundry issue 16, pulled out of Stage B on 2026-09-25. The metasalmon half is B-278, which names this item; a parity-register row is owed only if the two sides differ.'

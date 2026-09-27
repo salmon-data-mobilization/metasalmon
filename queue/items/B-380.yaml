@@ -1,0 +1,13 @@
+id: B-380
+kind: defect
+title: 'metasalmon''s retry-query identifier check misreads a CURIE, because its bracket class means not backslash and not s'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMON, .ms_llm_query_looks_like_identifier() treats a query as an identifier exactly when it is a URL, a URN, a DOI or a CURIE with no whitespace, whatever letters the CURIE holds: its bracket class means whitespace, as [^[:space:]] or perl = TRUE makes it mean, so smn:species is an identifier and abc:d e is not. Pinned by a test over the backlog''s cases that fails before the change, with a NEWS entry. B-381 is the metasalmonpy half, and each names the other. Wanted before the additive release of S16 step 1, because B-326''s ingester uses this classifier.'

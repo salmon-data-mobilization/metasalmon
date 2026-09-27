@@ -1,0 +1,13 @@
+id: B-250
+kind: defect
+title: 'metasalmonpy drops a retrieval candidate whose source is user from ontology-gap evidence, the mirror half of B-249'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: [B-249]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the recorded-accept marker is the one B-249 lands in R, so detect_semantic_term_gaps() drops exactly the rows apply_sdp_semantics() recorded as hand-picked and keeps a retrieval candidate whatever source a caller''s search_fn gives it; _is_hand_picked() in metadata_write.py no longer decides on the source column alone. Pinned by the twins of B-249''s two tests, demonstrated RED as B-249''s are. Packages written by either implementation carry source user on their recorded rows, and both implementations read them the same way. THE METASALMON HALF IS B-249, and each names the other. A PORT, NOT A REGISTER ROW: the two implementations key the exclusion the same way today.'

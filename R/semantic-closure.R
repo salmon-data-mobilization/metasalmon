@@ -684,7 +684,11 @@
   if (is.null(mapping_file)) {
     return(defaults)
   }
-  mapping <- tryCatch(yaml::read_yaml(mapping_file), error = function(e) NULL)
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  mapping <- tryCatch(
+    yaml::read_yaml(mapping_file, eval.expr = FALSE),
+    error = function(e) NULL
+  )
   # `is.list()`, not `is.null()`: a sidecar that parses to a YAML SCALAR rather
   # than a mapping reached `mapping[["semantic_vocabulary"]]` and raised
   # `subscript out of bounds`, which says nothing about the file that caused it.

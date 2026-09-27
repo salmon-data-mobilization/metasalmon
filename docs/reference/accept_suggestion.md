@@ -61,12 +61,21 @@ reject_suggestion(
 
 - code_value:
 
-  Code value; needed only for code-level slots.
+  Code value; needed only for code-level slots. Pass `""` (or `NA`) to
+  select a column's own slot when codes of that column have slots with
+  the same role, as a measurement column's codes do: leaving
+  `code_value` out matches those code slots too. A blank never selects a
+  code's slot, even for a `codes.csv` row that leaves `code_value` empty
+  because it supplies `vocabulary_iri`.
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  prints it whenever it is needed.
 
 - iri:
 
   Optional IRI to accept instead of a shortlisted candidate – for the
-  case where the right term exists but retrieval did not surface it.
+  case where the right term exists but retrieval did not surface it. An
+  `iri` that a shortlisted candidate in the slot carries is recorded as
+  that candidate, exactly as its `rank` would be.
 
 - reason:
 

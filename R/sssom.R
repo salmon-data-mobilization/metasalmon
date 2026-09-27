@@ -167,6 +167,31 @@
 
 .ms_sssom_cardinalities <- c("1:1", "1:n", "n:1", "n:n", "1:0", "0:1", "0:0")
 
+# The SSSOM built-in prefixes, copied in order from the table in the
+# specification's IRI prefixes section
+# (https://mapping-commons.github.io/sssom/1.0/spec-intro/#iri-prefixes; the
+# 1.1 draft at https://mapping-commons.github.io/sssom/dev/spec-intro/ has the
+# same table). The model's Identifiers section says what they allow: "By
+# exception, prefix names listed in the table found in the IRI prefixes section
+# are considered 'built-in'. As such, they MAY be omitted from the curie_map. If
+# they are not omitted, they MUST point to the same IRI prefixes as in the
+# aforementioned table." So a set may use these without declaring them, and may
+# not declare them with any other expansion. Every other prefix still has to be
+# declared: SSSOM/TSV parsers "MUST reject a file with undeclared, non-built-in
+# prefix names". The prefixes block of the SSSOM LinkML schema is a different
+# list and is not this one: read on its master branch on 2026-09-24, it has
+# `dcterms`, `pav` and `prov`, and not `owl`. Hub B-233.
+.ms_sssom_builtin_prefixes <- c(
+  owl = "http://www.w3.org/2002/07/owl#",
+  rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs = "http://www.w3.org/2000/01/rdf-schema#",
+  semapv = "https://w3id.org/semapv/vocab/",
+  skos = "http://www.w3.org/2004/02/skos/core#",
+  sssom = "https://w3id.org/sssom/",
+  xsd = "http://www.w3.org/2001/XMLSchema#",
+  linkml = "https://w3id.org/linkml/"
+)
+
 .ms_sssom_abort <- function(message, ..., .envir = parent.frame()) {
   cli::cli_abort(message, ..., .envir = .envir)
 }
@@ -382,7 +407,8 @@
 .ms_sssom_is_unambiguous_uri <- function(value) {
   # A colon alone is ambiguous between an RFC 3986 scheme and a CURIE prefix.
   # Treat network URLs and these common non-hierarchical URI schemes as URIs;
-  # all other `prefix:reference` values must be declared by curie_map.
+  # all other `prefix:reference` values must use a prefix curie_map declares or
+  # an SSSOM built-in one.
   grepl("^[A-Za-z][A-Za-z0-9+.-]*://[^[:space:]]+$", value) ||
     grepl("^(urn|mailto|doi|tag|data):[^[:space:]]+$", value)
 }
@@ -403,10 +429,36 @@
     )
   }
   prefix <- sub(":.*$", "", value)
-  if (!prefix %in% names(curie_map)) {
+  if (!prefix %in% c(names(curie_map), names(.ms_sssom_builtin_prefixes))) {
     .ms_sssom_abort(
       "SSSOM {.field {field}}{where} uses unknown CURIE prefix {.val {prefix}}."
     )
+  }
+  invisible(TRUE)
+}
+
+# A curie_map may declare a built-in prefix only with its built-in expansion.
+# Checked entry by entry rather than by name, so a second entry for the same
+# prefix in an in-memory set cannot hide behind a correct first one; the file
+# parser already refuses duplicate prefixes. Values are trimmed as the file
+# parser trims them.
+.ms_sssom_validate_builtin_prefixes <- function(curie_map, path) {
+  declared <- names(curie_map)
+  for (index in which(declared %in% names(.ms_sssom_builtin_prefixes))) {
+    prefix <- declared[[index]]
+    value <- curie_map[[index]]
+    expansion <- if (length(value) == 1L && !is.na(value)) {
+      trimws(as.character(value))
+    } else {
+      NA_character_
+    }
+    expected <- .ms_sssom_builtin_prefixes[[prefix]]
+    if (!identical(expansion, expected)) {
+      .ms_sssom_abort(c(
+        "SSSOM {.field curie_map} in {.file {path}} redefines built-in prefix {.val {prefix}} as {.val {expansion}}.",
+        "i" = "The SSSOM specification fixes {.val {prefix}} to {.val {expected}}; declare it with that expansion or leave it out."
+      ))
+    }
   }
   invisible(TRUE)
 }
@@ -424,6 +476,8 @@
       )
     }
   }
+  # The curie_map itself is checked before any CURIE is looked up in it.
+  .ms_sssom_validate_builtin_prefixes(metadata$curie_map, path)
   for (field in c("subject_source", "object_source")) {
     .ms_sssom_validate_reference(
       metadata[[field]],
@@ -652,10 +706,18 @@
 #'
 #' Reads the SSSOM 1.1 embedded-TSV serialization used by Salmon Data
 #' Packages. The reader enforces UTF-8 without a byte-order mark, LF line
-#' endings, tab delimiters, complete CURIE declarations, and the package's
+#' endings, tab delimiters, declared CURIE prefixes, and the package's
 #' alignment-only profile. In particular, decomposition fields and raw literal
 #' assignments are refused because they belong in separate SDP semantic
 #' artifacts.
+#'
+#' Every CURIE prefix must be declared in `curie_map` except the SSSOM
+#' built-in prefixes (`owl`, `rdf`, `rdfs`, `semapv`, `skos`, `sssom`, `xsd`
+#' and `linkml`), which the SSSOM specification lets a file omit, so a canonical
+#' SSSOM/TSV file that leaves them out is read. A `curie_map` that does declare
+#' a built-in prefix must give it the expansion the specification fixes for it
+#' (for example `http://www.w3.org/2004/02/skos/core#` for `skos`); any other
+#' expansion is refused.
 #'
 #' @param path Path to one `.sssom.tsv` file.
 #' @param validate Logical; validate metadata, CURIEs, mappings, and no-match

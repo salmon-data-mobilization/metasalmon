@@ -1,8 +1,8 @@
 id: B-202
 kind: defect
 title: 'A port item can reach done while the parity register still says the port is owed, and nothing checks the two against each other'
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S15

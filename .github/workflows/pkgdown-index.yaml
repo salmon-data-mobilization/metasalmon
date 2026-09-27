@@ -1,0 +1,71 @@
+name: pkgdown-index
+
+# Why this workflow exists (hub item B-213).
+#
+# `write_sdp_semantic_closure()` was exported, documented for users, and merged
+# on 2026-09-16 without an entry in _pkgdown.yml's reference index. pkgdown
+# refuses to build a site whose index leaves out a public topic, so the next
+# site build aborted on `main`. Nothing in CI builds or checks the site, so a
+# person running the build by hand a week later was the first to find out. The
+# next export would have gone the same way.
+#
+# This job runs scripts/check-pkgdown-index.R, which reads the index without
+# building anything. It runs `pkgdown::check_pkgdown()` with every topic that
+# documents an export treated as public, and it fails when an export has no
+# topic at all. The first part is the point. pkgdown exempts a topic marked
+# `@keywords internal` from the index, and its own error message offers that
+# keyword as the fix. For an exported function that fix is wrong: it hides the
+# function from the index, and on its own `check_pkgdown()` would then pass.
+# The script's header says what it does not check.
+#
+# No path filter, on purpose. The export that shipped without an index entry
+# came in a pull request about something else. A path filter is the one part
+# of a guard that the guard's own tests cannot reach. The job is cheap enough
+# to run on every pull request.
+#
+# RETIREMENT CONDITION: delete this workflow when another job that runs on
+# every pull request already fails when an exported topic is missing from the
+# reference index, whatever its keywords. A full site build would do that only
+# if pkgdown stopped exempting internal topics that document an export, so as
+# long as pkgdown exempts them a site build does not retire this job.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pkgdown-index-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference-index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # check_pkgdown() builds no page, but it renders the Markdown descriptions
+      # in _pkgdown.yml's indexes with pandoc, and it stops there if pandoc is
+      # missing.
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # pkgdown and its hard dependencies only. The check reads DESCRIPTION,
+      # NAMESPACE, man/, vignettes/ and _pkgdown.yml and never loads metasalmon,
+      # so the package's own dependencies are not needed here, and neither are
+      # pkgdown's suggested packages, which the default "all" would install.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: any::pkgdown
+          dependencies: '"hard"'
+
+      - name: Every exported topic is in the reference index
+        run: Rscript scripts/check-pkgdown-index.R

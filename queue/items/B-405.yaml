@@ -1,0 +1,13 @@
+id: B-405
+kind: defect
+title: 'The hub still records the PFMA Subarea mint scope, four or all 604, as undecided, although Brett decided on all 604 and gcdfo minted them'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: either
+stream: S12
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The gcdfo carve-out in the roadmap''s active sequencing constraints, the S12 card and the Q5 entry of knowledge/questions.md no longer say that whether to mint four PFMA Subareas or all 604 is still to decide: each records, in a dated note rather than a silent edit, that Brett decided on all 604 and that gcdfo minted them, citing gcdfo''s ADR-009. Decided by reading the three passages; on the files as they stand each calls the scope undecided. B-401 corrects what the same passages say the extract''s AREA values are.'

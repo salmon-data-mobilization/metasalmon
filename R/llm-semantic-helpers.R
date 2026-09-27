@@ -810,7 +810,11 @@
     sum(query_tokens %in% chunk_tokens)
   }, numeric(1))
 
-  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source), , drop = FALSE]
+  # Radix, because this order reaches the review packet's bytes and its
+  # `packet_id` (hub item B-326): the `source` tie-break is character text,
+  # and a locale-collated sort would rank two sources differently on two
+  # machines.
+  chunks <- chunks[order(-chunks$context_score, nchar(chunks$chunk_text), chunks$source, method = "radix"), , drop = FALSE]
   utils::head(chunks, max(1L, as.integer(max_chunks[[1]] %||% 4L)))
 }
 
@@ -889,7 +893,32 @@
     }
     chunks
   })
-  dplyr::bind_rows(file_chunks, inline_chunks)
+  pool <- dplyr::bind_rows(file_chunks, inline_chunks)
+  # The review packet records each context input with its SHA-256 (hub item
+  # B-326): a file by the digest of its bytes, inline text by the digest of
+  # the text. Attached here, where the source labels are assigned, so the
+  # packet's labels and the excerpts' labels are one rendering.
+  attr(pool, "context_inputs") <- dplyr::bind_rows(
+    purrr::map_dfr(raw_context, function(item) {
+      tibble::tibble(
+        source = as.character(item$source),
+        kind = "file",
+        sha256 = digest::digest(
+          readBin(item$path, what = "raw", n = file.info(item$path)$size),
+          algo = "sha256",
+          serialize = FALSE
+        )
+      )
+    }),
+    purrr::imap_dfr(inline_text, function(text, item_index) {
+      tibble::tibble(
+        source = paste0("inline_context[", item_index, "]"),
+        kind = "text",
+        sha256 = digest::digest(charToRaw(enc2utf8(text)), algo = "sha256", serialize = FALSE)
+      )
+    })
+  )
+  pool
 }
 
 .ms_prepare_context_chunks <- function(target_row,
@@ -1246,6 +1275,16 @@
   trimws(gsub("\\s+", " ", text))
 }
 
+# Fold case over the ASCII letters only, identically in every locale.
+# `tolower()` folds non-ASCII letters according to the locale, so a
+# comparison built on it answers differently on different machines: the
+# retry-query duplicate check called a pair differing only in an accented
+# letter's case a duplicate under en_US.UTF-8 and not under C (hub item
+# B-361, defect 5). metasalmonpy's B-362 mirrors this rule exactly.
+.ms_ascii_tolower <- function(x) {
+  chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", x)
+}
+
 .ms_llm_query_looks_like_identifier <- function(x) {
   text <- .ms_llm_normalize_query_text(x)
   if (is.na(text)) {
@@ -1262,7 +1301,7 @@
   disposition <- if (is.na(retry)) {
     "invalid"
   } else if (!is.na(original) &&
-      identical(tolower(retry), tolower(original))) {
+      identical(.ms_ascii_tolower(retry), .ms_ascii_tolower(original))) {
     "duplicate_original_query"
   } else if (.ms_llm_query_looks_like_identifier(retry)) {
     "identifier_like"
@@ -1552,42 +1591,56 @@
 # the likely ontology gap is surfaced to the new-term workflow instead of being
 # left as a dead-end rejection. A reassessment that turns into accept (or a softer
 # review/retry_search) is left untouched.
+#
+# The rule is "any FINAL reject_shortlist escalates", whatever the decision
+# before the retry was (hub item B-361, Brett's 2026-09-25 ruling on decision
+# 10 of the S16 execplan). Until then this escalated only when the pre-retry
+# decision was also a rejection, so retry_search followed by reject_shortlist
+# was stored as a dead end, which contradicted AGENTS.md. `pre_assessment` may
+# be NULL when there is no earlier answer for the target; it is used only to
+# label the rationale when the earlier answer was itself a rejection.
 .ms_llm_escalate_unresolved_rejection <- function(pre_assessment, explored) {
-  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
-  if (!identical(pre_decision, "reject_shortlist")) {
-    return(explored)
-  }
-
   assessment <- explored$assessment
   post_decision <- .ms_llm_non_empty_string(assessment$llm_decision[[1]] %||% NA_character_)
   if (!identical(post_decision, "reject_shortlist")) {
     return(explored)
   }
 
-  assessment$llm_decision <- "request_new_term"
-  assessment$llm_selected_candidate_index <- NA_integer_
-  assessment$llm_selected_iri <- NA_character_
-  assessment$llm_selected_label <- NA_character_
-  assessment$llm_escalated_from <- "reject_shortlist"
+  pre_decision <- .ms_llm_non_empty_string(pre_assessment$llm_decision[[1]] %||% NA_character_)
   pre_rationale <- .ms_llm_non_empty_string(
     pre_assessment$llm_rationale[[1]] %||% NA_character_
   )
   post_rationale <- .ms_llm_non_empty_string(
     assessment$llm_rationale[[1]] %||% NA_character_
   )
+
+  assessment$llm_decision <- "request_new_term"
+  assessment$llm_selected_candidate_index <- NA_integer_
+  assessment$llm_selected_iri <- NA_character_
+  assessment$llm_selected_label <- NA_character_
+  assessment$llm_escalated_from <- "reject_shortlist"
+
   rationale_parts <- character()
-  if (!is.na(pre_rationale)) {
-    rationale_parts <- c(
-      rationale_parts,
-      paste0("Initial shortlist rejection: ", pre_rationale)
-    )
-  }
-  if (!is.na(post_rationale) &&
-      (is.na(pre_rationale) || !identical(post_rationale, pre_rationale))) {
-    rationale_parts <- c(
-      rationale_parts,
-      paste0("Post-retry shortlist rejection: ", post_rationale)
-    )
+  if (identical(pre_decision, "reject_shortlist")) {
+    # The earlier answer was a rejection too: keep both, labelled, when they
+    # differ, and the initial one alone when the retry repeated it.
+    if (!is.na(pre_rationale)) {
+      rationale_parts <- c(
+        rationale_parts,
+        paste0("Initial shortlist rejection: ", pre_rationale)
+      )
+    }
+    if (!is.na(post_rationale) &&
+        (is.na(pre_rationale) || !identical(post_rationale, pre_rationale))) {
+      rationale_parts <- c(
+        rationale_parts,
+        paste0("Post-retry shortlist rejection: ", post_rationale)
+      )
+    }
+  } else if (!is.na(post_rationale)) {
+    # The earlier answer was not a rejection (or there was none), so the
+    # final rationale is the only rejection rationale and needs no label.
+    rationale_parts <- c(rationale_parts, post_rationale)
   }
   note <- paste(
     "Shortlist rejected and exploration found no acceptable candidate;",
@@ -1703,7 +1756,28 @@
   body
 }
 
-.ms_llm_chat_json_request <- function(messages, config) {
+# The one place metasalmon builds a chat-completions request (backlog #3, hub
+# item B-3). Both default request functions reach a provider through here:
+# `.ms_llm_chat_json_request()` for semantic review and `.ms_chat_http_request()`
+# (R/chat-decomposition.R) for chat decomposition. So the endpoint, the
+# authorization and content-type headers, the user agent, the timeout and
+# OpenRouter's attribution headers are written once and cannot drift apart
+# again; `tests/testthat/test-llm-chat-request.R` fails if a second function
+# starts building this request for itself.
+#
+# Two things stay with each caller, on purpose:
+#   * The body. Semantic review builds it with `.ms_llm_build_chat_request_body()`;
+#     chat decomposition still sends a fixed temperature and so is not covered
+#     by the GPT-5 temperature rule. Routing it through the body builder is hub
+#     item B-128.
+#   * The return shape. Semantic review returns the parsed JSON object and
+#     aborts when there is none; chat decomposition returns
+#     `list(content, data, raw)` with `data` NULL when the content is not JSON.
+#     The review adapter's two-shape normalizer (`.ms_llm_review_response_data()`)
+#     serves that second shape, and every shape a caller-supplied
+#     `chat_request_fn` can return reaches it wrapped by `.ms_chat()`, so the
+#     normalizer does not depend on these two functions having been separate.
+.ms_llm_chat_request <- function(config, body) {
   req <- httr2::request(paste0(config$base_url, "/chat/completions")) |>
     httr2::req_method("POST") |>
     httr2::req_headers(
@@ -1712,7 +1786,7 @@
     ) |>
     httr2::req_user_agent(ms_user_agent()) |>
     httr2::req_timeout(seconds = config$timeout_seconds) |>
-    httr2::req_body_json(.ms_llm_build_chat_request_body(messages, config), auto_unbox = TRUE)
+    httr2::req_body_json(body, auto_unbox = TRUE)
 
   if (identical(config$provider, "openrouter")) {
     req <- httr2::req_headers(
@@ -1722,16 +1796,51 @@
     )
   }
 
-  resp <- httr2::req_perform(req)
+  req
+}
+
+# Sends a request built by `.ms_llm_chat_request()` and returns the provider's
+# message text as `content` -- extracted, but neither cleaned nor parsed, because
+# the two callers parse it differently -- with the decoded response body as `raw`.
+.ms_llm_chat_completion <- function(config, body) {
+  resp <- httr2::req_perform(.ms_llm_chat_request(config, body))
   httr2::resp_check_status(resp)
-  body <- httr2::resp_body_json(resp, simplifyVector = FALSE)
-  content <- .ms_llm_clean_json_text(.ms_llm_extract_message_content(body))
-  parsed <- jsonlite::fromJSON(content, simplifyVector = FALSE)
+  raw <- httr2::resp_body_json(resp, simplifyVector = FALSE)
+
+  list(
+    content = .ms_llm_extract_message_content(raw),
+    raw = raw
+  )
+}
+
+.ms_llm_chat_json_request <- function(messages, config) {
+  completion <- .ms_llm_chat_completion(
+    config,
+    .ms_llm_build_chat_request_body(messages, config)
+  )
+  parsed <- jsonlite::fromJSON(
+    .ms_llm_clean_json_text(completion$content),
+    simplifyVector = FALSE
+  )
 
   if (!is.list(parsed)) {
     cli::cli_abort("LLM response was not a JSON object.")
   }
   parsed
+}
+
+# Append a package note to a rationale that may be NA or empty. The parts join
+# with one space and an absent rationale contributes nothing, so a downgrade
+# with no rationale never starts with the literal text "NA " (hub item B-361,
+# defect 4: `paste(c(NA, note))` rendered the NA, and `nzchar(NA)` is TRUE so
+# the filter that was meant to drop it did not).
+.ms_llm_append_note <- function(rationale, note) {
+  parts <- c(rationale, note)
+  parts <- parts[!is.na(parts) & nzchar(parts)]
+  if (length(parts) == 0L) {
+    return(NA_character_)
+  }
+  paste(parts, collapse = " ")
 }
 
 .ms_validate_llm_assessment <- function(result, candidate_rows) {
@@ -1745,11 +1854,16 @@
     cli::cli_abort("LLM assessment must return decision = accept, review, retry_search, request_new_term, or reject_shortlist.")
   }
 
+  # The index is read as a number here and cast to integer only once it has
+  # passed the whole-number and range checks below. `as.integer()` truncates,
+  # which is what let 1.9 select candidate 1 (hub item B-361, defect 3). A
+  # value that is not a number at all reads as NA, meaning no candidate was
+  # selected.
   selected_index <- .ms_llm_first_scalar(result$selected_candidate_index %||% NULL)
   if (is.null(selected_index) || identical(as.character(selected_index), "") || isFALSE(length(selected_index) > 0)) {
-    selected_index <- NA_integer_
+    selected_index <- NA_real_
   } else {
-    selected_index <- suppressWarnings(as.integer(selected_index))
+    selected_index <- suppressWarnings(as.numeric(selected_index))
   }
 
   confidence <- .ms_llm_scalar_numeric(result$confidence %||% NA_real_)
@@ -1766,40 +1880,40 @@
 
   if (identical(decision, "accept") && is.na(selected_index)) {
     decision <- "review"
-    rationale <- paste(
-      c(
-        rationale,
-        "Model returned accept without selecting a candidate; downgraded to review."
-      )[nzchar(c(rationale, "Model returned accept without selecting a candidate; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model returned accept without selecting a candidate; downgraded to review."
     )
   }
-  if (!is.na(selected_index) && (selected_index < 1L || selected_index > nrow(candidate_rows))) {
+  if (!identical(decision, "accept")) {
+    # These decisions never select a candidate, so the index is cleared BEFORE
+    # it is range-checked: a reject_shortlist carrying a stray out-of-range
+    # index used to be downgraded to review here, and its ontology gap was
+    # then never escalated (B-361, defect 2). reject_shortlist is preserved as
+    # a distinct decision (not downgraded to review) so the stored
+    # llm_decision carries the rejection; the orchestration later escalates a
+    # final rejection to request_new_term via
+    # .ms_llm_escalate_unresolved_rejection().
+    selected_index <- NA_integer_
+  } else if (selected_index != trunc(selected_index)) {
+    cli::cli_abort(
+      "LLM assessment selected_candidate_index must be a whole number, not {format(selected_index, digits = 15)}."
+    )
+  } else if (selected_index < 1 || selected_index > nrow(candidate_rows)) {
     decision <- "review"
     selected_index <- NA_integer_
-    rationale <- paste(
-      c(
-        rationale,
-        "Model returned an out-of-range candidate index; downgraded to review."
-      )[nzchar(c(rationale, "Model returned an out-of-range candidate index; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model returned an out-of-range candidate index; downgraded to review."
     )
-  }
-  # These decisions never select a candidate. reject_shortlist is preserved here
-  # as a distinct decision (not downgraded to review) so the stored llm_decision
-  # carries the rejection; the orchestration later escalates an unresolved
-  # rejection to request_new_term via .ms_llm_escalate_unresolved_rejection().
-  if (!identical(decision, "accept")) {
-    selected_index <- NA_integer_
+  } else {
+    selected_index <- as.integer(selected_index)
   }
   if (identical(decision, "retry_search") && is.na(retry_query)) {
     decision <- "review"
-    rationale <- paste(
-      c(
-        rationale,
-        "Model requested retry_search without providing a retry query; downgraded to review."
-      )[nzchar(c(rationale, "Model requested retry_search without providing a retry query; downgraded to review."))],
-      collapse = " "
+    rationale <- .ms_llm_append_note(
+      rationale,
+      "Model requested retry_search without providing a retry query; downgraded to review."
     )
   }
 

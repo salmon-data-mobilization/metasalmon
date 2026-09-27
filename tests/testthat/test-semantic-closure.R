@@ -158,6 +158,197 @@ test_that("the two canonical sets differ and the producer derives both", {
   expect_identical(nrow(closure$gaps), 0L)
 })
 
+# ---------------------------------------------------------------------------
+# The other direction (hub item B-171). The test above pins the one difference
+# the bundled fixture has: a table's `observation_unit_iri` is a review target
+# and not a vocabulary term. The reverse -- an IRI reached through a code value,
+# which is a vocabulary term and not a review target -- had no fixture until
+# B-171, so no test reached the role fallback in `.ms_closure_iri_roles()` that
+# such an IRI is searched under.
+# ---------------------------------------------------------------------------
+
+# `make_eml_test_sdp()` plus one row-varying procedure column. `estimate_method`
+# is bound to the `count` measure as `sosa:usedProcedure` in an observation
+# structure, and each of its code values resolves through codes.csv `term_iri`.
+# The EML method path emits both IRIs, so both are canonical measurement IRIs;
+# no dictionary or table slot holds either, so neither is a review target.
+make_closure_procedure_sdp <- function(path) {
+  make_eml_test_sdp(path)
+  pkg <- read_salmon_datapackage(path)
+
+  resources <- pkg$resources
+  resources$counts$estimate_method <- c("mark_recapture", "expanded_count")
+  dictionary <- dplyr::bind_rows(
+    pkg$dictionary,
+    tibble::tibble(
+      dataset_id = "demo-salmon-2026",
+      table_id = "counts",
+      column_name = "estimate_method",
+      column_label = "Estimate method",
+      column_description = "Row-varying count estimation procedure.",
+      column_role = "categorical",
+      value_type = "string",
+      term_type = "skos_concept",
+      required = TRUE
+    )
+  )
+  codes <- tibble::tribble(
+    ~dataset_id, ~table_id, ~column_name, ~code_value, ~code_label,
+    ~code_description, ~vocabulary_iri, ~term_iri, ~term_type,
+    "demo-salmon-2026", "counts", "estimate_method", "mark_recapture",
+    "Mark-recapture estimate", "Mark-recapture procedure", NA_character_,
+    "https://example.org/methods/mark-recapture", "owl_named_individual",
+    "demo-salmon-2026", "counts", "estimate_method", "expanded_count",
+    "Expanded count", "Expanded-count procedure", NA_character_,
+    "https://example.org/methods/expanded-count", "owl_named_individual"
+  )
+  # Rewritten in place. Without `prune` the writer replaces only the files it
+  # owns, so the EML sidecar `make_eml_test_sdp()` wrote is kept.
+  write_salmon_datapackage(
+    resources = resources,
+    dataset_meta = pkg$dataset,
+    table_meta = pkg$tables,
+    dict = dictionary,
+    codes = codes,
+    path = path,
+    overwrite = TRUE
+  )
+  write_sdp_observation_structures(
+    path,
+    structures = tibble::tibble(
+      dataset_id = "demo-salmon-2026",
+      table_id = "counts",
+      observation_structure_id = "count_by_record",
+      structure_label = "Count by record",
+      structure_description = "One count observation per record."
+    ),
+    components = tibble::tribble(
+      ~dataset_id, ~table_id, ~observation_structure_id, ~component_order,
+      ~column_name, ~component_role, ~component_relation_iri,
+      ~required_when_observed,
+      "demo-salmon-2026", "counts", "count_by_record", 1L,
+      "record_id", "dimension", NA_character_, TRUE,
+      "demo-salmon-2026", "counts", "count_by_record", 2L,
+      "count", "measure", NA_character_, TRUE,
+      "demo-salmon-2026", "counts", "count_by_record", 3L,
+      "estimate_method", "attribute",
+      "http://www.w3.org/ns/sosa/usedProcedure", TRUE
+    )
+  )
+  invisible(path)
+}
+
+# The procedures as the search knows them, one query each: the IRI's local name,
+# which is the query the producer derives when no review trail exists. Shaped
+# like the procedure row `add_table_method_to_review_closure()` writes.
+closure_procedure_search_index <- function() {
+  tibble::tribble(
+    ~query, ~iri, ~label, ~definition, ~source, ~ontology, ~resource_kind,
+    ~type_iris,
+    "expanded count", "https://example.org/methods/expanded-count",
+    "Expanded count", "An expanded-count abundance estimation procedure.",
+    "smn", "smn", "Concept", "http://www.w3.org/ns/sosa/Procedure",
+    "mark recapture", "https://example.org/methods/mark-recapture",
+    "Mark-recapture estimate", "A mark-recapture abundance estimation procedure.",
+    "smn", "smn", "Concept", "http://www.w3.org/ns/sosa/Procedure"
+  )
+}
+
+# `closure_search_stub()` answers under any role. This one answers a procedure
+# under role `method` and no other, a deliberately strict model of the reason
+# `.ms_closure_iri_roles()` gives for role mattering at all: role selects the
+# sources and the ranking profile, so a term searched under the wrong one can
+# be missed although it exists. That strictness is what makes the role a
+# procedure is searched under visible in the files. Every call's query and role
+# are recorded.
+closure_procedure_stub <- function(calls) {
+  terms <- closure_search_stub()
+  procedures <- closure_procedure_search_index()
+  function(query, role = NA_character_, sources = NULL, ...) {
+    calls$queries <- c(calls$queries, query)
+    calls$roles <- c(calls$roles, role)
+    hits <- terms(query, role = role, sources = sources)
+    if (identical(role, "method")) {
+      found <- procedures[procedures$query == query, , drop = FALSE]
+      found$score <- rep(0.9, nrow(found))
+      hits <- dplyr::bind_rows(
+        hits,
+        found[, setdiff(names(found), "query"), drop = FALSE]
+      )
+    }
+    hits
+  }
+}
+
+test_that("a code-resolved procedure is a vocabulary term and never a review target", {
+  path <- withr::local_tempdir()
+  make_closure_procedure_sdp(path)
+  closure_clear(path)
+  # In the radix order the producer returns its measurement set in.
+  procedures <- c(
+    "https://example.org/methods/expanded-count",
+    "https://example.org/methods/mark-recapture"
+  )
+
+  calls <- new.env()
+  # No warning: both procedures resolved, so neither became a gap.
+  expect_no_warning(
+    closure <- write_sdp_semantic_closure(
+      path,
+      # No evidence row names a procedure, so their vocabulary rows can come
+      # only from the search, under whatever role the producer chose.
+      evidence = closure_reviewed_evidence(),
+      search_fn = closure_procedure_stub(calls),
+      quiet = TRUE
+    )
+  )
+
+  # Both directions of the difference, in one package.
+  expect_identical(
+    setdiff(closure$measurement_iris, closure$review_targets$iri),
+    procedures
+  )
+  expect_identical(
+    setdiff(closure$review_targets$iri, closure$measurement_iris),
+    "https://w3id.org/smn/Observation"
+  )
+
+  # The claim is about the two files, so they are read as written.
+  read_back <- function(file) {
+    readr::read_csv(
+      file,
+      col_types = readr::cols(.default = readr::col_character()),
+      show_col_types = FALSE,
+      progress = FALSE
+    )
+  }
+  vocabulary <- read_back(file.path(path, "metadata", "semantic_vocabulary.csv"))
+  review <- read_back(file.path(path, "reviewed_semantic_selections.csv"))
+  expect_true(all(procedures %in% vocabulary$iri))
+  expect_false(any(procedures %in% review$iri))
+  expect_identical(nrow(vocabulary), 6L)
+  expect_identical(nrow(review), 5L)
+
+  # Reached through the fallback in `.ms_closure_iri_roles()`: a measurement IRI
+  # with no `dictionary_role` row is searched under role `method`, and under no
+  # other. The stub answers a procedure under `method` alone, so without that
+  # fallback each procedure would be a gap and absent from the vocabulary.
+  searched <- calls$roles[
+    calls$queries %in% closure_procedure_search_index()$query
+  ]
+  expect_identical(unique(searched), "method")
+
+  # Both gates accept the pair: the ledger is complete with no procedure row,
+  # because no canonical review target asks for one.
+  pkg <- read_salmon_datapackage(path)
+  mapping <- yaml::read_yaml(
+    file.path(path, "metadata", "eml-mapping.yml"),
+    eval.expr = FALSE
+  )
+  expect_identical(nrow(.ms_eml_read_vocabulary(path, pkg, mapping)), 6L)
+  expect_identical(nrow(.ms_eml_read_semantic_review(path, pkg, mapping)), 5L)
+})
+
 test_that("both written files satisfy the validators that had no producer", {
   path <- withr::local_tempdir()
   make_eml_test_sdp(path)

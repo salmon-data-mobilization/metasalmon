@@ -2,7 +2,7 @@ id: S-12
 kind: stream
 title: Fraser coho gold-standard example, the 173-row NuSEDS package
 state: icebox
-claimable: true
+claimable: false
 repo: metasalmon
 venue: claude-code
 stream: S12

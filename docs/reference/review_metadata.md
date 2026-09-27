@@ -53,12 +53,29 @@ What it reports:
 - schema-required fields (`constraints.required`) that are blank – a
   column the file does not have counts as blank in every row;
 
+- draft IRIs still carrying the `REVIEW:` prefix wherever strict
+  validation refuses one: any schema-declared `*_iri` field of
+  `tables.csv`, and the six semantic IRI fields of
+  `column_dictionary.csv` (`term_iri`, `property_iri`, `entity_iri`,
+  `unit_iri`, `constraint_iri` and `statistical_modifier_iri`). A marker
+  in `codes.csv` or `dataset.csv` is not listed, because strict
+  validation does not refuse it there. Where retrieval found candidates
+  for one,
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  shows them;
+
 - measurement columns missing `term_iri`, `property_iri`, `entity_iri`
   or `unit_iri`;
 
 - `tables.csv` rows with a blank `observation_unit_iri`.
 
-It never contacts a network or an LLM.
+It never contacts an LLM, and under the default options it never
+contacts a network: the SDP schema it reads the required fields from is
+the copy bundled with metasalmon. When the
+`metasalmon.sdp_schema_source` or `metasalmon.sdp_schema_base_url`
+option selects a different schema, it reads that one, as the package
+writers do: from this session's cache once they have loaded it, and
+otherwise by fetching it as they would.
 
 ## See also
 

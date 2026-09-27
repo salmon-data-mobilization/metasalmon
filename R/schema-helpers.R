@@ -90,30 +90,31 @@
     return(sub("/schema/sdp[.]schema[.]yaml$", "", legacy_url))
   }
 
-  # Pinned to an immutable upstream ref, never `main`: tracking main meant every
-  # upstream spec release broke networked loads (sdp-0.3.0 deleted
-  # methods.schema.json and the remote fetch 404ed). Advancing the pin is part
-  # of implementing the new spec version, and so is re-vendoring, in the same
-  # change. `source = "auto"` loads this ref first and loads the vendored bundle
-  # only when the fetch fails, so the two must hold the same bytes. Otherwise an
-  # online session and an offline one validate against different schemas.
-  # test-schema-helpers.R compares them file by file.
-  #
-  # THE REF IS A COMMIT, NOT A TAG. That was a choice, and it has a cost (hub
-  # item B-198). The commit is smn-data-pkg f86d9b4, the merge of pull request
-  # #9, which records Brett's Q-51 ruling of 2026-09-16 admitting an ISO instant
-  # in temporal_start and temporal_end. The sdp-0.3.0 tag this pinned before
-  # predates that ruling, so every online session loaded the pre-ruling pattern.
-  # No upstream tag carries the ruling: on 2026-09-23 the only tags were
-  # sdp-0.2.0 and sdp-0.3.0. A commit is as immutable as the tag was, and
-  # immutability is the property the pin exists to hold. What a commit gives up
-  # is naming a published spec release.
-  # *Retires when:* smn-data-pkg tags a release at or after f86d9b4 and the pin
-  # moves to that tag. Cutting that tag is an outward release act, and Brett's.
-  getOption(
-    "metasalmon.sdp_schema_base_url",
-    "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/f86d9b42eb3a37327f1afd8d6738927e05c231e6"
-  )
+  getOption("metasalmon.sdp_schema_base_url", .ms_sdp_schema_pinned_base_url())
+}
+
+# Pinned to an immutable upstream ref, never `main`: tracking main meant every
+# upstream spec release broke networked loads (sdp-0.3.0 deleted
+# methods.schema.json and the remote fetch 404ed). Advancing the pin is part
+# of implementing the new spec version, and so is re-vendoring, in the same
+# change. `source = "auto"` loads this ref first and loads the vendored bundle
+# only when the fetch fails, so the two must hold the same bytes. Otherwise an
+# online session and an offline one validate against different schemas.
+# test-schema-helpers.R compares them file by file.
+#
+# THE REF IS A COMMIT, NOT A TAG. That was a choice, and it has a cost (hub
+# item B-198). The commit is smn-data-pkg f86d9b4, the merge of pull request
+# #9, which records Brett's Q-51 ruling of 2026-09-16 admitting an ISO instant
+# in temporal_start and temporal_end. The sdp-0.3.0 tag this pinned before
+# predates that ruling, so every online session loaded the pre-ruling pattern.
+# No upstream tag carries the ruling: on 2026-09-23 the only tags were
+# sdp-0.2.0 and sdp-0.3.0. A commit is as immutable as the tag was, and
+# immutability is the property the pin exists to hold. What a commit gives up
+# is naming a published spec release.
+# *Retires when:* smn-data-pkg tags a release at or after f86d9b4 and the pin
+# moves to that tag. Cutting that tag is an outward release act, and Brett's.
+.ms_sdp_schema_pinned_base_url <- function() {
+  "https://raw.githubusercontent.com/salmon-data-mobilization/smn-data-pkg/f86d9b42eb3a37327f1afd8d6738927e05c231e6"
 }
 
 .ms_load_sdp_schema <- function(source = getOption("metasalmon.sdp_schema_source", "auto"),
@@ -166,6 +167,50 @@
   schema
 }
 
+# The bundled schema, validated, in a cache slot of its own. For a caller that
+# documents it never contacts a network under the default options (B-175): the
+# default "auto" source above fetches eight documents from the pinned remote
+# before it falls back to this same bundle, so a local gap scan reached the
+# network on every fresh session. Only under those options -- see
+# `.ms_sdp_schema_options_are_default()`, and the caller that asks it.
+#
+# NOT `.ms_load_sdp_schema(source = "vendored")`, which would be offline too.
+# That loader's cache is ONE slot keyed by source, so each vendored read would
+# evict the session's "auto" bundle: the next writer, reader or validator call
+# would fetch all eight documents again, and a script that writes two packages
+# could stamp them with two different profile identities -- the property the
+# comment above caches the fallback to protect. A slot of its own turns one
+# avoided fetch into none rather than into many. metasalmonpy reads its bundled
+# documents outside its loader's cache for the same reason.
+#
+# Retires when `.ms_load_sdp_schema()` no longer fetches on its default source:
+# every caller can then read the default, and this slot has nothing left to say.
+.ms_vendored_sdp_schema <- function() {
+  if (is.null(.ms_schema_env$vendored)) {
+    schema <- .ms_load_vendored_sdp_schema()
+    schema$source <- "vendored"
+    .ms_schema_env$vendored <- schema
+  }
+  .ms_schema_env$vendored
+}
+
+# Whether the schema options are the shipped defaults: the "auto" source, set or
+# not, and the pinned base URL. Under them the loader would fetch the published
+# copy of the very release the bundled copy was vendored from, so a caller that
+# must stay offline can read the bundle instead and lose nothing. Any other
+# setting selects a schema the bundle may not match -- "remote" demands the
+# published copy, a base URL of its own names another release -- and a caller
+# that wants the schema its package was written to has to read that one.
+#
+# Compared as RESOLVED values, not as "is an option set": asking
+# `.ms_default_sdp_schema_base_url()` rather than re-reading its options keeps
+# one home for which option wins, so a new way of naming a base URL cannot
+# slip past this test while the loader obeys it.
+.ms_sdp_schema_options_are_default <- function() {
+  identical(getOption("metasalmon.sdp_schema_source", "auto"), "auto") &&
+    identical(.ms_default_sdp_schema_base_url(), .ms_sdp_schema_pinned_base_url())
+}
+
 .ms_fetch_remote_sdp_schema <- function(base_url, timeout = 2) {
   fetch_text <- function(path) {
     url <- paste0(sub("/+$", "", base_url), "/", path)
@@ -181,7 +226,8 @@
     ~ jsonlite::fromJSON(fetch_text(.x), simplifyVector = FALSE)
   )
   profile <- jsonlite::fromJSON(fetch_text(.ms_sdp_profile_path()), simplifyVector = FALSE)
-  rules <- yaml::yaml.load(fetch_text(.ms_sdp_rules_path()))
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  rules <- yaml::yaml.load(fetch_text(.ms_sdp_rules_path()), eval.expr = FALSE)
 
   .ms_validate_sdp_schema(list(
     metadata_schemas = metadata_schemas,
@@ -212,7 +258,8 @@
   .ms_validate_sdp_schema(list(
     metadata_schemas = metadata_schemas,
     profile = jsonlite::read_json(profile_path, simplifyVector = FALSE),
-    rules = yaml::read_yaml(rules_path)
+    # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+    rules = yaml::read_yaml(rules_path, eval.expr = FALSE)
   ))
 }
 

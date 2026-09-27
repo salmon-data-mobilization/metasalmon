@@ -1,7 +1,7 @@
 id: B-31
 kind: defect
 title: Chat session-engine and request-builder convergence
-state: ready
+state: icebox
 claimable: true
 repo: metasalmon
 venue: claude-code
@@ -10,4 +10,4 @@ severity: P3
 blocked_by: []
 legacy: '#31'
 evidence: knowledge/backlog.md
-retires_when: The decomposition path in `R/chat-decomposition.R` and the semantic path share one request builder and one session engine, or the roadmap logs a ruling that decomposition stays a separate engine and says what that costs.
+retires_when: 'The decomposition path in `R/chat-decomposition.R` and the semantic path share one request builder and one session engine, or the roadmap logs a ruling that decomposition stays a separate engine and says what that costs, or B-329 deletes the decomposition path. HELD IN ICEBOX 2026-09-25 on Brett''s instruction ("Do this edit please"): the same day he ruled (Q67) that the model call leaves the package, and B-329, the removal that ruling orders, deletes chat_decomposition(), so the convergence has nothing left to converge.'

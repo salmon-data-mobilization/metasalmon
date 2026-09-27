@@ -1,0 +1,13 @@
+id: B-301
+kind: defect
+title: 'The composite-intent gate reads optional_hint_fields exactly as it reads hint_fields, so the word composite in source_name fails validation of a package with no cu_timeseries table'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'validate_salmon_datapackage()''s composite-intent gate gives optional_hint_fields the meaning Brett rules for it, and a test pins the ruling on a package whose only composite text is in an optional hint field, source_name today. .ms_collect_composite_hint_values() merges optional_hint_fields into hint_fields before reading either, so the distinction is inert. NEEDS BRETT, which is why it is not claimable: any reading under which source_name alone stops failing a package narrows a validator, which HUB.md reserves to him (class 6), and which reading is right is his. The options, with a recommendation and the measurement, are in the #57 entry of the evidence. REFILED FROM B-57. The metasalmonpy half is owed with the ruling, because its _collect_composite_hint_values() merges the two lists the same way and register row 41 records the gate as ported whole.'

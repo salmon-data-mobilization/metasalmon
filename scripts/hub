@@ -145,7 +145,16 @@ fail() { printf '%s: %s\n' "$PROG" "$*" >&2; exit "$EX_FAIL"; }
 
 yaml_scalar() { # file key -> value on stdout, empty if absent
   [ -f "$1" ] || return 0
-  awk -v k="$2" -v sq="'" '
+  yaml_scalar_stream "$2" <"$1"
+}
+
+# The same extractor over a document on standard input, so that an item file
+# read out of a commit rather than out of the working tree is parsed by this
+# one program and not by a second copy of it. require_current_queue is the
+# caller that needs it: it reads an item's state as origin's default branch
+# has it.
+yaml_scalar_stream() { # key -> value on stdout, empty if absent; document on stdin
+  awk -v k="$1" -v sq="'" '
     index($0, k ":") == 1 {
       v = substr($0, length(k) + 2)
       sub(/^[ \t]+/, "", v)
@@ -159,7 +168,7 @@ yaml_scalar() { # file key -> value on stdout, empty if absent
       print v
       exit
     }
-  ' "$1"
+  '
 }
 
 yaml_flow_list() { # file key -> one element per line
@@ -992,6 +1001,332 @@ member_solo_for_repo() { # repo -> yes only when the entry says so, otherwise no
 }
 
 # ---------------------------------------------------------------------------
+# Is the checkout the queue is read from current? (hub item B-187)
+#
+# The queue is the default branch on origin. This client reads it from the
+# checkout it is run in -- REPO_ROOT, derived from the script's own location --
+# and the two are the same thing only while that checkout contains the
+# branch's tip. Until 2026-09-24 nothing asked. Measured 2026-09-16: a primary
+# checkout 67 commits behind origin/main, on a session branch, answered `hub
+# claim` for items filed that night with "no queue item". That was true of the
+# tree and false of the queue, and the agents who believed it reported the
+# items missing rather than the checkout stale. `hub ready` was worse, because
+# it succeeded: it listed a stale queue and said nothing. Measured again on
+# 2026-09-24, the day this was written: the checkout a dispatch brief had
+# called "current as of dispatch" was one commit behind within the hour, the
+# commit it lacked promoted an item, and the client there refused that item as
+# "not claimable: it needs a decision or a credential that only Brett has".
+#
+# So every command that answers from the queue asks, once per invocation,
+# before it reads an item file. It asks ORIGIN, not the checkout's own
+# remote-tracking ref, because that ref is only as current as the last fetch
+# made there: in a checkout nobody fetches in it is as old as the branch, and
+# it can say "current" while origin has moved on. Measured on 2026-09-24: a
+# fetch made a minute earlier had origin/main one commit behind what origin
+# then reported. (The 2026-09-16 checkout is not the evidence for this. Its
+# reflog shows origin/main fetched eleven times that night before the item
+# was filed, so a comparison with the local ref would very likely have caught
+# that one too.)
+#
+#   1. `git ls-remote --symref origin HEAD` names the default branch and its
+#      tip. A read; nothing is written.
+#   2. If the checkout already contains that commit it is current, and nothing
+#      is fetched or written at all.
+#   3. Otherwise the branch is fetched for its objects ONLY. --refmap= with no
+#      destination moves no ref, --no-write-fetch-head leaves FETCH_HEAD alone
+#      and --no-auto-gc starts no maintenance, so the checkout's origin/main,
+#      its FETCH_HEAD and its branches are exactly as they were. That matters
+#      because this runs in whatever checkout the caller stood in, and that
+#      can be Brett's.
+#   4. The distance is counted against the tip origin reported in step 1.
+#
+# What it does NOT see, stated so that a pass is not read as more than it is:
+#   * uncommitted edits under queue/. It compares commits, not the tree.
+#   * a checkout that contains the tip and is AHEAD of it with queue edits of
+#     its own, such as an item promoted on a branch that has not merged. That
+#     is not staleness, and it is not the queue either.
+#   * anything that merges after it asked. The answer is as old as the command
+#     that got it, which is why every command asks again rather than trusting
+#     an earlier one.
+#   * which repository origin is. A fork's default branch is compared with as
+#     readily as the queue's.
+#   * a checkout older than this code. Its client does not ask at all and
+#     answers "no queue item" exactly as before, which nothing inside that
+#     checkout can repair. That is what `hub fresh`, below, is for.
+#
+# Needs git 2.29 or newer, for --no-write-fetch-head. An older git fails the
+# fetch, and that is reported as a checkout that cannot be checked, never as a
+# current one.
+#
+# Retires when: the client reads the queue from origin's default branch rather
+# than from a working tree. Then there is no checkout to be stale, and this
+# section, cmd_fresh and the calls to require_current_queue go together.
+# ---------------------------------------------------------------------------
+
+FRESH_STATE=""    # current, stale, or unknown
+FRESH_WHY=""      # unknown only: why the question could not be answered
+FRESH_DIR=""      # the checkout the answer is about
+FRESH_BRANCH=""   # origin's default branch, as origin named it
+FRESH_TIP=""      # that branch's tip, as origin reported it
+FRESH_HEAD=""     # the checkout's HEAD commit
+FRESH_ON=""       # "branch <name>", or "a detached HEAD"
+FRESH_BEHIND=""
+FRESH_AHEAD=""
+
+short_sha() { printf '%s' "$1" | cut -c1-7; }
+
+# checkout_freshness DIR -> 0 current, 1 stale, 2 cannot tell. Sets FRESH_*
+# rather than printing, for the reason session_key gives: an assignment made
+# inside a command substitution dies with the subshell.
+checkout_freshness() {
+  local dir=$1 out rc b tip
+  FRESH_DIR=$dir; FRESH_STATE=unknown; FRESH_WHY=""; FRESH_BRANCH=""; FRESH_TIP=""
+  FRESH_HEAD=""; FRESH_ON=""; FRESH_BEHIND=""; FRESH_AHEAD=""
+
+  # The directory has to be the root of a checkout of its own. A queue copied
+  # somewhere inside an unrelated repository would otherwise be compared with
+  # that repository's origin, which says nothing about this queue. Standard
+  # error is kept out of the prefix, because a warning git printed on the way
+  # would otherwise read as a prefix and misreport a root as a subdirectory.
+  if ! out=$(git -C "$dir" rev-parse --show-prefix 2>/dev/null); then
+    out=$(git -C "$dir" rev-parse --show-prefix 2>&1 >/dev/null)
+    FRESH_WHY="git cannot read it as a checkout ($(printf '%s' "$out" | head -1))"
+    return 2
+  fi
+  if [ -n "$out" ]; then
+    FRESH_WHY="it is the subdirectory $out of the checkout at $(git -C "$dir" rev-parse --show-toplevel 2>/dev/null), not the root of a checkout of its own"
+    return 2
+  fi
+  if ! FRESH_HEAD=$(git -C "$dir" rev-parse --verify --quiet 'HEAD^{commit}'); then
+    FRESH_HEAD=""
+    FRESH_WHY="its HEAD names no commit"
+    return 2
+  fi
+  if b=$(git -C "$dir" symbolic-ref --short --quiet HEAD); then
+    FRESH_ON="branch $b"
+  else
+    FRESH_ON="a detached HEAD"
+  fi
+  if ! git -C "$dir" remote get-url origin >/dev/null 2>&1; then
+    FRESH_WHY="it has no remote named origin, so there is no default branch to compare it with"
+    return 2
+  fi
+
+  out=$(git -C "$dir" ls-remote --symref origin HEAD 2>&1); rc=$?
+  if [ "$rc" -ne 0 ]; then
+    FRESH_WHY="origin cannot be read: $(printf '%s' "$out" | head -2 | tr '\n' ' ')"
+    return 2
+  fi
+  b=$(printf '%s\n' "$out" | awk -F'\t' '$2 == "HEAD" && index($1, "ref: refs/heads/") == 1 { print substr($1, 17); exit }')
+  tip=$(printf '%s\n' "$out" | awk -F'\t' '$2 == "HEAD" && $1 ~ /^[0-9a-f]+$/ { print $1; exit }')
+  if [ -z "$b" ] || [ -z "$tip" ]; then
+    FRESH_WHY="origin did not say which branch is its default"
+    return 2
+  fi
+  FRESH_BRANCH=$b
+  FRESH_TIP=$tip
+
+  # 0 contained, 1 present and not contained, anything else: not here yet.
+  git -C "$dir" merge-base --is-ancestor "$tip" HEAD >/dev/null 2>&1; rc=$?
+  if [ "$rc" -gt 1 ]; then
+    if ! out=$(git -C "$dir" fetch --quiet --no-tags --no-prune --no-auto-gc \
+                 --no-write-fetch-head --refmap= origin "refs/heads/$b" 2>&1); then
+      FRESH_WHY="origin/$b cannot be fetched: $(printf '%s' "$out" | head -2 | tr '\n' ' ')"
+      return 2
+    fi
+    git -C "$dir" merge-base --is-ancestor "$tip" HEAD >/dev/null 2>&1; rc=$?
+    if [ "$rc" -gt 1 ]; then
+      FRESH_WHY="origin/$b was rewritten while it was being read, so the tip it reported is not on it any more; ask again"
+      return 2
+    fi
+  fi
+  if [ "$rc" -eq 0 ]; then
+    FRESH_STATE=current
+    FRESH_BEHIND=0
+    return 0
+  fi
+  FRESH_STATE=stale
+  FRESH_BEHIND=$(git -C "$dir" rev-list --count "HEAD..$tip" 2>/dev/null)
+  FRESH_AHEAD=$(git -C "$dir" rev-list --count "$tip..HEAD" 2>/dev/null)
+  # The tip is not contained, so the distance is at least one whatever the
+  # count says; a count that failed is reported as that floor, not as zero.
+  case ${FRESH_BEHIND:-} in ''|*[!0-9]*|0) FRESH_BEHIND="at least 1" ;; esac
+  case ${FRESH_AHEAD:-} in ''|*[!0-9]*) FRESH_AHEAD="" ;; esac
+  return 1
+}
+
+# The one sentence every command uses for a stale checkout, so that the word,
+# the distance and both branches are said the same way wherever it is found.
+fresh_stale_sentence() {
+  local commits=commits ahead=""
+  case $FRESH_BEHIND in 1|"at least 1") commits=commit ;; esac
+  case ${FRESH_AHEAD:-0} in
+    0) : ;;
+    *) ahead=", and $FRESH_AHEAD ahead of it" ;;
+  esac
+  printf 'STALE CHECKOUT: %s (%s, at %s) is %s %s behind origin/%s (%s, as origin reported it just now)%s' \
+    "$FRESH_DIR" "$FRESH_ON" "$(short_sha "$FRESH_HEAD")" "$FRESH_BEHIND" "$commits" \
+    "$FRESH_BRANCH" "$(short_sha "$FRESH_TIP")" "$ahead"
+}
+
+# The answer for this client's own checkout, asked once per invocation and
+# kept: claim asks it for the queue and again for the routing below, and one
+# question to origin is enough for both. cmd_fresh asks about other checkouts
+# directly and neither reads nor fills this.
+FRESH_REPO_RC=""
+repo_freshness() { # -> the status checkout_freshness gave for REPO_ROOT
+  if [ -z "$FRESH_REPO_RC" ]; then
+    checkout_freshness "$REPO_ROOT"; FRESH_REPO_RC=$?
+  fi
+  return "$FRESH_REPO_RC"
+}
+
+# Every command that answers from the queue calls this before it reads an item
+# file. MODE is what that command does with the answer:
+#
+#   refuse        stale or unknowable: stop. For claim and reconcile, which
+#                 write on the queue's rules: a claim, or an expiry of another
+#                 agent's claim under the reclaim grace, decided on a queue
+#                 this client cannot vouch for rests on an unverified
+#                 precondition, and that is a failure, not an allowance -- the
+#                 same rule the cap and the reclaim limit use.
+#   refuse-stale  stale: stop; unknowable: say so and go on. For ready and
+#                 ready --set, which only print. A listing that cannot tell
+#                 says so and still lists, as ready already does when the locks
+#                 repository cannot be read, because the claim that follows it
+#                 asks again and refuses honestly.
+#   warn          say so either way and go on. For done: the handoff it records
+#                 is this agent's own, only the text it prints after is read
+#                 from the queue, and a hand-back must not be stopped by a
+#                 merge that has nothing to do with it.
+#
+# beat and release do not call this at all: each records this agent's own
+# claim, and a heartbeat refused over an unrelated merge would cost a lease.
+# What every command that pushes does call, those two included, is
+# require_routing below, because the one part of the queue a push cannot take
+# from a stale checkout is where it goes.
+#
+# ID, when given, is the item the command is about. A refusal then says what
+# origin's default branch has for it, because that is the fact the agents on
+# 2026-09-16 needed and were told the opposite of.
+#
+# Retires when: the client reads the queue from origin's default branch, as
+# the section header says.
+require_current_queue() { # mode [id] -> 0 go on, 1 stop, having said why
+  local mode=$1 id=${2:-} rc path here there
+  repo_freshness; rc=$?
+  case $rc in
+    0) return 0 ;;
+    1)
+      if [ "$mode" = "warn" ]; then
+        warn "$(fresh_stale_sentence). What follows is read from that checkout, not from the queue."
+        return 0
+      fi
+      warn "$(fresh_stale_sentence). This client reads the queue from its own checkout, so it does not answer from one that is behind the queue."
+      if [ -n "$id" ]; then
+        path="queue/items/$id.yaml"
+        if ! git -C "$REPO_ROOT" cat-file -e "$FRESH_TIP:$path" 2>/dev/null; then
+          if item_exists "$id"; then
+            warn "$id is in this checkout and is not on origin/$FRESH_BRANCH."
+          else
+            warn "$id is not on origin/$FRESH_BRANCH either."
+          fi
+        elif ! item_exists "$id"; then
+          warn "$id is not in this checkout, and it IS on origin/$FRESH_BRANCH: the item exists, and this checkout is behind."
+        else
+          here=$(item_field "$id" state)
+          there=$(git -C "$REPO_ROOT" show "$FRESH_TIP:$path" 2>/dev/null | yaml_scalar_stream state)
+          if [ "$here" != "$there" ]; then
+            warn "$id is in state '${here:-none}' here and '${there:-none}' on origin/$FRESH_BRANCH."
+          fi
+        fi
+      fi
+      warn "Run hub from a checkout that contains origin/$FRESH_BRANCH -- a worktree created from it after 'git fetch origin' is one -- rather than from this one. HUB.md: \"Which checkout the queue is read from\"."
+      return 1 ;;
+    *)
+      if [ "$mode" = "refuse" ]; then
+        warn "cannot tell whether the checkout at $REPO_ROOT is current: $FRESH_WHY. The queue is origin's default branch and this client reads it from this checkout, so what this command would write here would rest on an unverified precondition, which is a failure and not a silent allowance."
+        return 1
+      fi
+      warn "cannot tell whether the checkout at $REPO_ROOT is current, so what follows may not be the queue: $FRESH_WHY"
+      return 0 ;;
+  esac
+}
+
+# What "this item does not exist" may truthfully say, which depends on what
+# require_current_queue found. Only a checkout that contains origin's default
+# branch can speak for the queue; one that could not be compared can speak only
+# for itself, and the sentence says which of the two it is.
+absent_item_sentence() { # id -> sentence on stdout
+  if [ "$FRESH_STATE" = "current" ]; then
+    printf 'no queue item %s: this checkout contains origin/%s, so the queue has no such item either' \
+      "$1" "$FRESH_BRANCH"
+  else
+    printf 'no item %s in this checkout, which could not be compared with origin (see above), so the queue may still have one' "$1"
+  fi
+}
+
+# Where a push goes is decided by two values in queue/config.yaml, locks_repo
+# and claim_ref_prefix, and this client reads them from its own checkout. The
+# first version of this change (pull request 156) left that open, and Codex's
+# review of it found the gap: beat, release and done go ahead from a stale
+# checkout on purpose, so a checkout whose routing origin had since changed
+# would renew, release or hand off in a repository or namespace the queue no
+# longer uses. That splits the coordination state while every command reports
+# success, and HUB.md said those commands read no queue file, which was false.
+#
+# So every command that pushes compares those two values with what origin's
+# default branch has before it pushes anything, and refuses on any difference,
+# whether this checkout is behind, ahead with a change of its own, or edited in
+# place. The lease constants a heartbeat also reads are not compared: a lease
+# written with an old length is recorded in the claim with its own expiry and
+# misleads nobody about where the claim is, which is the thing that splits.
+#
+# When the question cannot be asked (no origin, not a checkout, offline) the
+# command says so and goes on. Each command's own freshness policy has already
+# refused or warned where it should, and the locks push that follows fails
+# honestly when the network is what is missing.
+#
+# Retires when: the client reads its configuration from origin's default branch
+# rather than from a working tree, with the rest of this section.
+ROUTING_KEYS="locks_repo claim_ref_prefix"
+ROUTING_WHY=""
+
+routing_differs() { # -> 0 differs (ROUTING_WHY says how), 1 the same, 2 cannot tell
+  local rc doc k here there
+  ROUTING_WHY=""
+  repo_freshness; rc=$?
+  if [ "$rc" -gt 1 ]; then
+    ROUTING_WHY=$FRESH_WHY
+    return 2
+  fi
+  if ! doc=$(git -C "$REPO_ROOT" show "$FRESH_TIP:queue/config.yaml" 2>/dev/null); then
+    ROUTING_WHY="origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP")) has no queue/config.yaml to compare this checkout's with"
+    return 0
+  fi
+  for k in $ROUTING_KEYS; do
+    here=$(cfg "$k")
+    there=$(printf '%s\n' "$doc" | yaml_scalar_stream "$k")
+    if [ "$here" != "$there" ]; then
+      ROUTING_WHY="$k is '$here' in this checkout and '$there' on origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP"))"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# Called by every command that pushes, before its first push: exits 3 when the
+# routing differs, warns and goes on when it cannot be told.
+require_routing() {
+  routing_differs
+  case $? in
+    0) fail "ROUTING MISMATCH: $ROUTING_WHY. A push sent where this checkout says would land where the queue no longer looks, so nothing was pushed. Run hub from a checkout that contains origin/$FRESH_BRANCH -- a worktree created from it after 'git fetch origin' is one. HUB.md: \"Which checkout the queue is read from\"." ;;
+    2) warn "cannot confirm that locks_repo and claim_ref_prefix here are the ones origin names, so this push goes where this checkout says: $ROUTING_WHY" ;;
+  esac
+  return 0
+}
+
+# ---------------------------------------------------------------------------
 # doctor
 # ---------------------------------------------------------------------------
 
@@ -1154,6 +1489,27 @@ cmd_doctor() {
     fi
   fi
 
+  # Whether the queue this client reads is the queue: the question every
+  # command that answers from it asks first. Last among the network checks, so
+  # that a stale checkout does not stop the locks repository being probed; a
+  # doctor that stopped early would report one failure where there are two.
+  # Retires when: require_current_queue does, with the section that defines it.
+  repo_freshness; rc=$?
+  case $rc in
+    0) say "ok    this checkout contains origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP"), as origin reported it just now), so the queue it reads is the queue" ;;
+    1) say "FAIL  $(fresh_stale_sentence), so the queue this client reads is not the queue"; ok=1 ;;
+    *) say "FAIL  cannot tell whether this checkout is current: $FRESH_WHY"; ok=1 ;;
+  esac
+  # And where a push from here would go, which beat, release and done check even
+  # from a stale checkout. Reported separately because it can fail when the line
+  # above passes: a current checkout with a routing value edited in place.
+  routing_differs; rc=$?
+  case $rc in
+    0) say "FAIL  ROUTING MISMATCH: $ROUTING_WHY; a push from this checkout would land where the queue no longer looks"; ok=1 ;;
+    1) say "ok    locks_repo and claim_ref_prefix here are the ones origin/$FRESH_BRANCH names" ;;
+    *) : ;;  # the line above has already said why origin could not be asked
+  esac
+
   say ""
   say "Not verified by this run, and stated rather than assumed:"
   say "  - that a real ref creation under the claim prefix is permitted. Only a"
@@ -1164,6 +1520,9 @@ cmd_doctor() {
   say "    comparison in here trusts the local clock."
   say "  - that any lease constant is calibrated. They are guesses until twenty"
   say "    claims have been recorded and the result written down."
+  say "  - that this checkout is still current by the time you act on it. The"
+  say "    queue moves whenever anything merges, which is why every command"
+  say "    that reads it asks again rather than trusting this answer."
 
   # 0 or 3, never 1: the exit codes of this client are a contract, and doctor
   # is the command most likely to be read by a script rather than a person.
@@ -1187,6 +1546,14 @@ cmd_ready() {
     esac
     shift
   done
+
+  # Both forms answer from the queue, so both ask first whether this checkout
+  # holds it. A stale one is refused rather than listed: this command used to
+  # succeed there, printing a list that was not the queue's and saying nothing,
+  # which is worse than failing because nothing about the output looked wrong.
+  # A checkout that cannot be compared with origin is listed with a warning,
+  # because the claim that follows asks again and refuses honestly.
+  require_current_queue refuse-stale "$set_id" || return "$EX_FAIL"
 
   # --set prints the promotion; it does not make it.
   #
@@ -1213,7 +1580,7 @@ cmd_ready() {
   # a member repository. Until that row exists, a promotion made by this script
   # would be a write nobody authorized.
   if [ -n "$set_id" ]; then
-    item_exists "$set_id" || fail "no queue item $set_id"
+    item_exists "$set_id" || fail "$(absent_item_sentence "$set_id")"
     st=$(item_field "$set_id" state)
     if [ "$st" = "ready" ]; then
       say "$set_id is already in state ready; nothing to promote."
@@ -1418,7 +1785,18 @@ reclaim_cap_status() { # id now -> 0 under the cap, 1 at the cap, 2 cannot tell
 
 cmd_claim() {
   local id=$1 token tip rc act ag lu now grace blk parent attempt
-  item_exists "$id" || fail "no queue item $id; the queue is queue/items"
+  # Asked before any item file is read, because every answer below is read
+  # from this checkout: "no queue item", "not claimable", "in state icebox"
+  # and "blocked by" are each a statement about the queue only while the
+  # checkout contains origin's default branch. Refused, rather than warned,
+  # both when it is behind and when that cannot be told, because a claim is a
+  # write and this is its precondition. Past this line the absence below is
+  # an absence from the queue, and it says so. A current checkout can still
+  # route elsewhere, with a locks_repo or claim_ref_prefix edited in place or
+  # changed on a branch that has not merged, so the routing is checked too.
+  require_current_queue refuse "$id" || return "$EX_FAIL"
+  require_routing
+  item_exists "$id" || fail "$(absent_item_sentence "$id")"
   [ "$(item_field "$id" claimable)" = "true" ] \
     || fail "$id is not claimable: it needs a decision or a credential that only Brett has"
   [ "$(item_field "$id" state)" = "ready" ] \
@@ -1641,6 +2019,11 @@ claim_count_and_push() { # id action attempt parent token
 cmd_beat() {
   local id=$1 token tip rc act ag lease sha attempt hb
   token=$(agent_token) || exit $?
+  # Not stopped by a stale checkout, because a lease must not be lost to a
+  # merge that has nothing to do with it; stopped only when the checkout would
+  # send the heartbeat somewhere origin no longer routes claims. See
+  # require_routing.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -1694,6 +2077,9 @@ cmd_release() {
   reason=$*
   [ -n "$reason" ] || reason="released by the agent"
   token=$(agent_token) || exit $?
+  # Like beat: this agent's own claim, so not stopped by a stale checkout, only
+  # by one that would route the release elsewhere.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -1768,6 +2154,10 @@ cmd_done() {
     fail "done: --branch '$branch' is not a branch this grant covers. The standing authorization in HUB.md permits pushes to 'agent/<queue-id>/<token>' and to nothing else, so for $id held by this session that is exactly 'agent/$id/$token'"
   fi
 
+  # Before the handoff is pushed, not after: where it goes is the one thing a
+  # hand-back cannot take from a stale checkout. Staleness otherwise only
+  # qualifies what is printed after the handoff, below.
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -1804,6 +2194,15 @@ cmd_done() {
   esac
 
   say "handed off $id on branch $branch; the claim stays held until Brett merges"
+  # Everything printed from here on is read from the queue -- the item's repo,
+  # that member's forge and its participation answer -- so it is qualified when
+  # this checkout is behind. Asked here and not before the handoff, and warned
+  # rather than refused, because the handoff record depends on none of it: an
+  # agent's worktree is routinely behind by the time it hands back, since other
+  # work merges while it works, and a hand-back stopped by that would leave
+  # finished work looking unfinished. The participation answer was also printed
+  # at claim time, from a checkout that claim had checked.
+  require_current_queue warn "$id"
   itemrepo=$(item_field "$id" repo)
   slug=$(member_slug_for_repo "$itemrepo")
   forge=$(member_forge_for_repo "$itemrepo")
@@ -1873,6 +2272,12 @@ cmd_done() {
 
 cmd_reconcile() {
   local ref id act ag lu now grace sha rc problems=0 expired=0 skipped=0
+  # Refused like claim, not waved through like beat: reconcile writes on other
+  # agents' claims, under reclaim_grace_minutes read from this checkout, so a
+  # stale checkout would apply a grace the queue may no longer use to work that
+  # is not its own. Then the routing, as for every push.
+  require_current_queue refuse || return "$EX_FAIL"
+  require_routing
   load_hub_config
   announce_locks_url
   ensure_locks_cache
@@ -1934,6 +2339,59 @@ cmd_reconcile() {
 }
 
 # ---------------------------------------------------------------------------
+# fresh
+#
+# The question require_current_queue asks, asked of a named checkout and
+# answered on its own, for the one case no client can cover from inside: a
+# checkout older than the check. Its own scripts/hub does not ask, so it goes
+# on answering "no queue item" for items filed since, exactly as before, and
+# nothing in that checkout can change that (hub item B-187 calls this the
+# bootstrap failure). The answer has to come from a client newer than the
+# checkout it is about, before anybody runs that checkout's own client. So a
+# dispatcher runs this from its own checkout against every checkout it is about
+# to name in a brief, and names only one that passes; HUB.md's "Which checkout
+# the queue is read from" is where that rule lives. With no path it asks about
+# its own checkout, which is how the dispatcher's own checkout is checked.
+#
+# It never runs the named checkout's client, and never reads its queue: it
+# asks that checkout's git, and origin, and nothing else.
+#
+# A new verb rather than one more line in doctor, and that is the point of it.
+# Asked for `fresh`, a client that predates this check exits 3 with "unknown
+# subcommand", which is loud; asked for `doctor`, the same client would pass,
+# having never heard the question, and a pass from a client too old to know
+# the question is the exact failure this exists to stop.
+#
+# Exit 0 when every checkout named contains its origin's default branch, and
+# 3 when any is behind or cannot be compared with origin.
+#
+# Retires when: the client reads the queue from origin's default branch rather
+# than from a working tree, with require_current_queue.
+# ---------------------------------------------------------------------------
+
+cmd_fresh() {
+  local dir abs rc worst=$EX_OK
+  [ $# -gt 0 ] || set -- "$REPO_ROOT"
+  for dir in "$@"; do
+    # CDPATH emptied so that cd cannot print a directory into the answer.
+    if ! abs=$(CDPATH='' cd -- "$dir" 2>/dev/null && pwd); then
+      warn "cannot tell whether '$dir' is current: it is not a directory this process can enter"
+      worst=$EX_FAIL
+      continue
+    fi
+    checkout_freshness "$abs"; rc=$?
+    case $rc in
+      0) say "current: $abs ($FRESH_ON, at $(short_sha "$FRESH_HEAD")) contains origin/$FRESH_BRANCH ($(short_sha "$FRESH_TIP"), as origin reported it just now)" ;;
+      1) warn "$(fresh_stale_sentence). The queue read there is not the queue, and a client there that predates this check will not say so."
+         worst=$EX_FAIL ;;
+      *) warn "cannot tell whether $abs is current: $FRESH_WHY"
+         worst=$EX_FAIL ;;
+    esac
+  done
+  return "$worst"
+}
+
+# ---------------------------------------------------------------------------
 # help
 # ---------------------------------------------------------------------------
 
@@ -1973,7 +2431,27 @@ hub - the queue client for the salmon ecosystem hub
                                  branch the standing authorization covers;
                                  anything else exits 3
   hub reconcile                  expire dead leases back to claimable
+  hub fresh [PATH...]            say whether each checkout named (default: this
+                                 client's own) contains the tip of its origin's
+                                 default branch, asking origin rather than the
+                                 checkout. Exits 3 when any is behind or cannot
+                                 be compared. Run it from your own checkout
+                                 against a checkout before sending anyone to run
+                                 hub there: a checkout older than this check
+                                 carries a client that will not ask
   hub help                       this
+
+Which checkout the queue is read from:
+  This client reads queue/ from the checkout it sits in, and the queue is the
+  default branch on origin, so it asks origin for that branch's tip first. From
+  a checkout that does not contain it, claim, reconcile, ready and ready --set
+  refuse, exit 3, naming the distance and both branches; claim and reconcile
+  also refuse when the question cannot be asked at all; done warns and hands
+  back anyway; beat and release go ahead, because they record your own claim;
+  doctor fails. And every command that pushes, beat, release and done
+  included, first checks that locks_repo and claim_ref_prefix here are the
+  ones origin's default branch names, and refuses (exit 3) if they are not: a
+  push anywhere else splits the coordination state.
 
 Options and environment:
   --batch, HUB_MODE=batch        use lease_hours_batch instead of the
@@ -2009,7 +2487,9 @@ State lives in queue/. Policy lives in HUB.md. This client makes no
 GitHub API call, opens no pull request, posts no comment, and commits or pushes
 nowhere but the locks repository. That is a description of the client and not a
 rule about you: what an agent may do is in HUB.md's writes register, and it is
-wider than this list.
+wider than this list. It also reads origin to check the checkout it sits in,
+and when that checkout is behind it fetches origin's default branch into the
+checkout's object store for the objects alone, moving no ref there.
 USAGE
   return "$EX_OK"
 }
@@ -2050,6 +2530,7 @@ main() {
     release)   [ $# -ge 1 ] || fail "release needs an item id"; cmd_release "$@" ;;
     done)      [ $# -ge 1 ] || fail "done needs an item id"; cmd_done "$@" ;;
     reconcile) cmd_reconcile "$@" ;;
+    fresh)     cmd_fresh "$@" ;;
     help|-h|--help) cmd_help ;;
     *)         warn "unknown subcommand '$cmd'"; cmd_help; return "$EX_FAIL" ;;
   esac

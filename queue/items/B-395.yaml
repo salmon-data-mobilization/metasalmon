@@ -1,0 +1,13 @@
+id: B-395
+kind: defect
+title: 'The hub''s CI does not run metasalmonpy''s comparison with the hub''s check-changelog-window.py, so a change here can turn metasalmonpy''s changelog-window job red with nothing failing here'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The goal is that no change to scripts/check-changelog-window.py in this repository can turn metasalmonpy''s changelog-window job red without a check failing here, on the pull request that makes the change. This item retires on this repository''s part of either of two routes, and choosing between them is the fix''s. Route one: this repository''s changelog-window workflow runs metasalmonpy''s comparison with this copy, TestTheHubCopy in its tests/test_check_changelog_window.py, on every pull request; decided by a change that alters only the docstring of the shared CannotRun class, which then fails a check here, where on the code as it stands both steps of this repository''s changelog-window job pass on it while TestTheHubCopy fails against it. Route two: this copy holds metasalmonpy''s ruling table and tagging floor, so that metasalmonpy''s copy can become a byte-for-byte vendor of it that nothing compares by syntax tree; decided by this copy''s metasalmonpy profile, run over metasalmonpy''s history, giving the results metasalmonpy''s own copy gives. The pull request that lands route two files the metasalmonpy half that replaces the comparison with the vendored copy, naming this item, and the goal is met when that half lands.'

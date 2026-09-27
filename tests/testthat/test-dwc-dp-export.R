@@ -25,3 +25,16 @@ test_that("dwc frictionless validator runs without heredoc shell syntax", {
   expect_true(is.numeric(status))
   expect_false(any(grepl("<<'PY'", deparse(body(.dwc_dp_validate_with_frictionless)), fixed = TRUE)))
 })
+
+test_that("DESCRIPTION declares the Python toolchain that validate = TRUE runs", {
+  # `dwc_dp_build_descriptor(validate = TRUE)` shells out to a Python
+  # interpreter and imports the `frictionless` Python package. Neither is an R
+  # dependency, so `SystemRequirements` is the one place a user or a package
+  # manager can learn that they are needed (backlog #57).
+  desc <- read.dcf(system.file("DESCRIPTION", package = "metasalmon"))
+  expect_true("SystemRequirements" %in% colnames(desc))
+  sysreqs <- desc[1, "SystemRequirements"]
+  expect_match(sysreqs, "Python", fixed = TRUE)
+  expect_match(sysreqs, "frictionless", fixed = TRUE)
+  expect_match(sysreqs, "dwc_dp_build_descriptor", fixed = TRUE)
+})

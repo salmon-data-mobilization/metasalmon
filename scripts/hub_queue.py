@@ -116,8 +116,11 @@ Ordering is by id -- prefix then integer -- and every other sort is a plain
 codepoint sort, never a locale-dependent one, so the rendered bytes are the same
 on every machine.
 
-THREE CROSS-CHECKS BEYOND THE ITEMS
------------------------------------
+CROSS-CHECKS BEYOND THE ITEMS
+-----------------------------
+(This heading counted them until B-202 added one; the count went rather than
+being raised, because a number that counts a list is a copy of the list.)
+
 `lint` and `check` compare the `members:` list in `queue/config.yaml` against
 the allowlist table in `knowledge/domains/salmon-data-ecosystem.md`. The
 configuration says in its own comment that its copy is safe only because this
@@ -141,6 +144,14 @@ because of a defect measured on 2026-09-09: `check` walked the prose, skipped
 every file with no marker, found nothing to compare, and printed "OK: every
 generated block matches the hub queue" with zero markers in the repository.
 A configured block that is missing is an error, never a skip.
+
+`lint` also reads the two passages that record what metasalmon owes its mirror,
+the port section of `knowledge/parity-deviations.md` and the mirror's section of
+the release index in `knowledge/roadmap.md`, and fails when a port item is done
+while a passage naming it has no landed record, or when a passage records a
+landing for an item that is not done (hub item B-202). See
+`validate_port_records` for what counts as a port, a passage and a record, and
+for what it does not check.
 """
 
 from __future__ import annotations
@@ -2022,6 +2033,340 @@ def validate_generated_blocks(root: Path) -> list[Problem]:
 
 
 # --------------------------------------------------------------------------
+# The port-record cross-check (hub item B-202)
+# --------------------------------------------------------------------------
+
+PORT_REGISTER_FILE = "knowledge/parity-deviations.md"
+PORT_ROADMAP_FILE = "knowledge/roadmap.md"
+# The mirror, and the package it mirrors. A port is owed BY the first TO match
+# the second, which is the direction the register's port section records.
+MIRROR_REPO = "metasalmonpy"
+MIRRORED_REPO = "metasalmon"
+
+MARKDOWN_HEADING_RE = re.compile(r"^(#{1,6})[ \t]+(.*\S)[ \t]*$")
+MARKDOWN_FENCE_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})(.*)$")
+OWE_WORD_RE = re.compile(r"\bowe[sd]?\b", re.IGNORECASE)
+MIRROR_WORD_RE = re.compile(r"\bmirror\b", re.IGNORECASE)
+RELEASE_INDEX_TITLE_RE = re.compile(r"^release index\b", re.IGNORECASE)
+QUEUE_ID_MENTION_RE = re.compile(r"(?<![\w-])([BSQ]-\d+)(?![\w-])")
+# Both forms the passages use, and nothing looser: `**landed 2026-09-16 as
+# metasalmonpy #29**` in the roadmap, and `` `B-124` landed as metasalmonpy pull
+# request **#29** `` in a register closure paragraph. It needs `metasalmonpy` and
+# a pull request number, so the bare word "landed", which the roadmap uses for
+# unrelated things, never matches, and neither does an R half's record such as
+# B-145's `**landed 2026-09-16 as metasalmon #118**`.
+LANDED_RECORD_RE = re.compile(
+    r"\blanded\s+(?:(?:on\s+)?\d{4}-\d{2}-\d{2}\s+)?as\s+metasalmonpy\s+"
+    r"(?:pull\s+request\s+)?\**#\d+",
+    re.IGNORECASE,
+)
+
+
+def markdown_sections(lines: list[str]) -> list[tuple[int, str, int, int]]:
+    """Return `(level, title, start, end)` for every ATX heading in `lines`.
+
+    `start` is the heading's index and `end` the index of the next heading of the
+    same or a higher level, or `len(lines)`, so a section includes its
+    subsections. A `#` inside a fenced code block is not a heading, and neither
+    is a wrapped line such as `#146). Those rows`, which has no space after the
+    hashes.
+
+    Fences follow CommonMark, and the detail is load-bearing: a backtick fence's
+    info string cannot contain a backtick, so a line that merely BEGINS with an
+    inline code span is not a fence. `knowledge/roadmap.md` has one, a wrapped
+    line that opens with four backticks, a space and a quoted mermaid fence, and
+    a detector that toggled on any leading run of backticks hid every heading
+    after it, so the mirror's section ran to the end of the file. Found by reading what the rule saw on
+    the real tree, not by a failing check. A fence closes on a run of the same
+    character at least as long as the one that opened it, with nothing after.
+    """
+    headings = []
+    fence = None
+    for index, line in enumerate(lines):
+        match = MARKDOWN_FENCE_RE.match(line)
+        if fence is not None:
+            if match and match.group(1)[0] == fence[0] and len(match.group(1)) >= fence[1] \
+                    and not match.group(2).strip():
+                fence = None
+            continue
+        if match and not (match.group(1)[0] == "`" and "`" in match.group(2)):
+            fence = (match.group(1)[0], len(match.group(1)))
+            continue
+        match = MARKDOWN_HEADING_RE.match(line)
+        if match:
+            headings.append((index, len(match.group(1)), match.group(2)))
+    sections = []
+    for position, (index, level, title) in enumerate(headings):
+        end = next(
+            (later for later, later_level, _ in headings[position + 1 :] if later_level <= level),
+            len(lines),
+        )
+        sections.append((level, title, index, end))
+    return sections
+
+
+def port_passage_spans(display: str, lines: list[str]) -> list[tuple[int, int]]:
+    """The line spans of the passage in `display` that records what the mirror owes.
+
+    FOUND BY WHAT IT IS, NEVER BY WHAT THIS RELEASE CALLS IT. On 2026-09-16 the
+    register's section was headed "What metasalmon 0.5.0 owes the mirror
+    (2026-08-25)", and the next release renames it. A literal match would then
+    find no section and pass while a new port sat described as owed, which is
+    the silent green this check exists to remove. So the register's passage is
+    every section whose heading says both "owe" (owes, owed) and "mirror", and
+    the roadmap's is every subsection of the section headed "Release index"
+    whose heading names the mirror. Finding none is a problem the caller
+    reports, never an empty passage.
+    """
+    sections = markdown_sections(lines)
+    if display == PORT_REGISTER_FILE:
+        spans = [
+            (start, end)
+            for _, title, start, end in sections
+            if OWE_WORD_RE.search(title) and MIRROR_WORD_RE.search(title)
+        ]
+    else:
+        spans = [
+            (start, end)
+            for parent_level, parent_title, parent_start, parent_end in sections
+            if RELEASE_INDEX_TITLE_RE.match(parent_title)
+            for level, title, start, end in sections
+            if parent_start < start < parent_end
+            and level > parent_level
+            and MIRROR_WORD_RE.search(title)
+        ]
+    # A matching subsection of a matching section is already inside it.
+    outermost: list[tuple[int, int]] = []
+    for start, end in sorted(spans):
+        if not outermost or start >= outermost[-1][1]:
+            outermost.append((start, end))
+    return outermost
+
+
+def port_passage_facts(lines, spans, anchors):
+    """Read the passage: which queue ids it names, and which landed records it holds.
+
+    Returns `(named, records)`. `named` maps every queue id mentioned to the lines
+    that mention it, in order. `records` lists `(owner, line, text)` for every landed
+    record, where `owner` is the nearest `metasalmonpy` queue id BEFORE the
+    record IN THE SAME PARAGRAPH, or None when there is none.
+
+    Why the owner is found that way: an R half or a blocker usually sits between
+    a port and its record ("**B-124**, blocked by B-49 -- **landed ...**"), so
+    only a mirror-side id can own a record, and the paragraph bounds the search
+    so a record can never be credited to a port from the entry above it.
+    """
+    named: dict[str, list[int]] = {}
+    records: list[tuple[str | None, int, str]] = []
+    for start, end in spans:
+        paragraph: list[tuple[int, str]] = []
+        for number in range(start, end + 1):
+            line = lines[number] if number < end else ""
+            if line.strip():
+                paragraph.append((number + 1, line))
+                continue
+            if not paragraph:
+                continue
+            text, line_at = "", []
+            for line_number, content in paragraph:
+                line_at.append((len(text), line_number))
+                text += content + "\n"
+            events = [(m.start(), m.group(1), None) for m in QUEUE_ID_MENTION_RE.finditer(text)]
+            events += [
+                (m.start(), None, " ".join(m.group(0).split()))
+                for m in LANDED_RECORD_RE.finditer(text)
+            ]
+            owner = None
+            for offset, queue_id, record in sorted(events, key=lambda event: event[0]):
+                where = max(n for o, n in line_at if o <= offset)
+                if queue_id is not None:
+                    seen = named.setdefault(queue_id, [])
+                    if where not in seen:
+                        seen.append(where)
+                    if queue_id in anchors:
+                        owner = queue_id
+                else:
+                    records.append((owner, where, record))
+            paragraph = []
+    return named, records
+
+
+def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
+    """A port the queue calls done must not still read as owed. Hub item B-202.
+
+    WHY THIS EXISTS. A port item reached `done` while the parity register or the
+    roadmap's release index still described its port as owed FIVE times on
+    2026-09-16: B-115, B-144, B-153, B-124 and B-165, the last on the branch that
+    filed this check's own item. The register's rule -- "a catch-up window
+    changes in both places in the same change" -- was written down at the third
+    and broken at the fourth by an agent who had read it. A written state is a
+    claim about a tree that moves, so the fix is mechanical or nothing.
+
+    WHAT IT CHECKS. Two passages: the register's port section in
+    `knowledge/parity-deviations.md`, and the mirror's section of the release
+    index in `knowledge/roadmap.md`, each found as `port_passage_spans` says.
+    Within each, separately:
+
+      * a PORT the passage names whose item is `done` must have a landed record
+        in that passage (`port-landed-unrecorded`);
+      * a landed record whose owner's item is NOT `done` is refused
+        (`port-landed-early`), because the prose is then ahead of the queue;
+      * a landed record with no owner is refused (`port-landed-orphan`),
+        because nothing can check it against the queue.
+
+    WHAT A PORT IS comes from the queue, not from the prose: an item whose
+    `repo` is metasalmonpy and whose `blocked_by` names a metasalmon item, which
+    is how every port the two passages list as a debt was filed, measured
+    2026-09-25 -- the mirror half, blocked by the R half it copies. That keeps the rule to the ids the passages name as the
+    debt itself. The ids they name as blockers or R halves (B-49, B-112, B-115,
+    B-116) are metasalmon items, and B-126 and B-153, the closed 0.4.0->0.5.0
+    window's two halves, have no metasalmon blocker, so none of them is read as
+    owing a record. Reading the role from the prose instead would mean a phrase
+    list ("Queued as", "its metasalmonpy queue item is", "its half is", ...)
+    that the next entry's wording escapes silently; the queue already records
+    which id in a pair is the debt.
+
+    WHAT A LANDED RECORD IS: `LANDED_RECORD_RE`, written after the port's own id
+    in the same paragraph. In the register that is the closure paragraph the
+    ports use, "**This one is closed.** `B-NNN` landed as metasalmonpy pull
+    request **#NN** ..."; in the roadmap it is "... `B-NNN`, which **landed
+    <date> as metasalmonpy #NN**, `sha`.". Either form passes in either file.
+
+    WHAT IT DOES NOT CHECK, because a guard whose claimed scope exceeds its
+    real scope is worse than no guard:
+
+      * whether the record is TRUE. It catches the shape, as
+        `check-parity-registers.py` does, not the substance: a closure paragraph
+        naming the wrong pull request, sha or date passes.
+      * whether a port named in one passage is named in the other. Each passage
+        is checked for what it says; one that never mentions a port cannot be
+        stale about it.
+      * the ORDER of a record and its port's mentions. Any record for a port
+        counts for every mention of it in the passage, and a file's matching
+        sections are read as one passage, so a debt paragraph written below its
+        own closure passes. Tying a record to one entry would need the prose's
+        wording to tell a debt from a citation. Measured 2026-09-25, 13 mentions
+        of done ports follow their port's last record in these passages, and
+        every one is a citation ("B-125 one entry above"). A done item is never
+        re-opened in place, so a new debt gets a new id, which this rule reads.
+      * a debt the passage describes without naming its item's id. The rule
+        reads ids, so an entry that says "it is owed there as a port" and names
+        nothing is invisible to it.
+      * mirror work that is not a port by the queue's test: an item with no
+        metasalmon blocker, such as B-201 or B-189, and an R-side follow-up such
+        as B-177. A landed record credited to one of them is still refused while
+        its item is not done; only the "done without a record" direction needs
+        the item to be a port.
+      * queue state that is itself wrong. The queue is the authority here, so
+        an item left in `review` after its pull request merged reads as owed
+        and passes.
+
+    It runs only when the queue holds a port, so the unit-test fixtures, which
+    hold none, need no register. When one exists, a missing file or a passage
+    that cannot be found is `port-passage-missing` rather than a skip.
+
+    RETIRES WHEN: a port's landed record stops being hand-written prose -- for
+    instance when the item records its pull request and both passages render
+    the record as a generated block -- at which point `check` covers it and
+    this rule is deleted with its tests.
+    """
+    by_id = {item.id: item for item in items}
+    anchors = {item.id for item in items if item.raw.get("repo") == MIRROR_REPO}
+    ports: dict[str, list[str]] = {}
+    for item_id in sorted(anchors):
+        blocked_by = by_id[item_id].raw.get("blocked_by")
+        if not isinstance(blocked_by, list):
+            continue
+        halves = [b for b in blocked_by if b in by_id and by_id[b].raw.get("repo") == MIRRORED_REPO]
+        if halves:
+            ports[item_id] = halves
+    if not ports:
+        return []
+
+    problems: list[Problem] = []
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        what = (
+            "a section whose heading says what metasalmon owes the mirror"
+            if display == PORT_REGISTER_FILE
+            else "a subsection of the release index whose heading names the mirror"
+        )
+        if not path.is_file():
+            problems.append(
+                Problem(
+                    display,
+                    0,
+                    "port-passage-missing",
+                    f"the queue holds {len(ports)} port item(s), and {display}, which "
+                    f"must carry {what}, does not exist; with no passage to read, "
+                    "a port marked done while its record still says owed would pass",
+                )
+            )
+            continue
+        lines = path.read_text(encoding="utf-8").splitlines()
+        spans = port_passage_spans(display, lines)
+        if not spans:
+            problems.append(
+                Problem(
+                    display,
+                    0,
+                    "port-passage-missing",
+                    f"no {what} was found, so there is nothing to check the "
+                    f"{len(ports)} port item(s) in the queue against. It is found "
+                    "by what it says rather than by a version, so a renamed heading "
+                    "keeps working while it still says so; if it no longer does, "
+                    "fix the heading or `port_passage_spans`, never this problem",
+                )
+            )
+            continue
+        named, records = port_passage_facts(lines, spans, anchors)
+        owned = {owner for owner, _, _ in records if owner is not None}
+        for item_id, mentions in named.items():
+            if item_id in ports and by_id[item_id].state == "done" and item_id not in owned:
+                problems.append(
+                    Problem(
+                        display,
+                        mentions[0],
+                        "port-landed-unrecorded",
+                        f"{item_id} is a port (the {MIRROR_REPO} half of "
+                        f"{', '.join(ports[item_id])}) and its item is done, but this "
+                        "passage has no landed record for it, so it still reads as "
+                        f"owed (it is named at line(s) {', '.join(map(str, mentions))}). "
+                        "Add one after the id, in the same paragraph: "
+                        f"`**This one is closed.** `{item_id}` landed as metasalmonpy "
+                        "pull request **#N** ...` or `**landed <date> as metasalmonpy "
+                        "#N**`. Both passages change in the same change",
+                    )
+                )
+        for owner, line, record in records:
+            if owner is None:
+                problems.append(
+                    Problem(
+                        display,
+                        line,
+                        "port-landed-orphan",
+                        f"the landed record {record!r} follows no {MIRROR_REPO} queue "
+                        "id in its paragraph, so it cannot be checked against the "
+                        "queue; name the port's id before it, in the same paragraph",
+                    )
+                )
+            elif by_id[owner].state != "done":
+                problems.append(
+                    Problem(
+                        display,
+                        line,
+                        "port-landed-early",
+                        f"the landed record {record!r} belongs to {owner}, the nearest "
+                        f"{MIRROR_REPO} id before it in its paragraph, and {owner} is "
+                        f"in state {by_id[owner].state!r}, not done. Move the item to "
+                        "done in the same change, or, if the record is another "
+                        "port's, name that port's id before it",
+                    )
+                )
+    return problems
+
+
+# --------------------------------------------------------------------------
 # Prose files
 # --------------------------------------------------------------------------
 
@@ -2084,6 +2429,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_member_fields(root)
         + validate_solo(root)
         + validate_workpads(root, items)
+        + validate_port_records(root, items)
     )
 
     baseline: int | None = None

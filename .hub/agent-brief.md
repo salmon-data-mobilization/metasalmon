@@ -54,6 +54,7 @@ fail loudly when they move.
 | running several agents at once without tripping the concurrency cap | the cap is `max_concurrent_claims` in `queue/config.yaml`; it applies per agent identity, and the identity is set by `HUB_SESSION_KEY`, documented by `./scripts/hub help` |
 | claiming, and what a rejected claim push means | `HUB.md` § *Claiming* |
 | which worktree to work in, and when one may be removed | `HUB.md` § *Isolation* |
+| which checkout to run `hub` from, what a "STALE CHECKOUT" refusal means, and the check an orchestrator runs on a checkout before a brief names it | `HUB.md` § *Which checkout the queue is read from* |
 | where your report goes and what it must carry | `HUB.md` § *Reporting* |
 | pushing, opening a pull request, and whether it stays a draft | `HUB.md` § *Hand back* |
 | what you may merge, answer or mark ready, and on what conditions | `HUB.md` § *Which pull requests need Brett* |

@@ -1,0 +1,13 @@
+id: B-399
+kind: defect
+title: 'The commons sea-type card says NOAA''s status review writes river/sea-type in 20 of its 37 uses of sea-type, where the commons'' own recount says 21'
+state: icebox
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-science
+stream: S9
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'concepts/sea-type-terminology.md no longer says that NOAA''s status review writes "river/sea-type" in 20 of its 37 uses of "sea-type": its gap note gives the count the recount in concepts/sockeye-rearing-ecotypes.md records, 21 of 37, or a count re-measured from Gustafson et al. 1997 with its method, and cites the recount or the new measurement. Decided by grep: "20 of its 37" appears nowhere in the card.'

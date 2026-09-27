@@ -1,0 +1,13 @@
+id: B-241
+kind: defect
+title: metasalmonpy apply_salmon_dictionary() blanks a value missing from its code list without reporting it, the mirror half of B-55
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: [B-55]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'IN METASALMONPY, the codes step of apply_salmon_dictionary() reports each distinct value that is present in a column and absent from its code list, in a warning that names it under either value of strict, rather than turning it into a missing value without a word; the value still becomes missing, as in R, without depending on the conversion pandas has deprecated for a value outside a Categorical''s categories; and a metasalmonpy test covers both paths B-55 named, as tests/testthat/test-edge-cases.R covers them in R. For the codes path that is one report naming the unlisted value under both values of strict, no name for a missing or a blank value, the unlisted value still missing afterwards, and no report for a column whose present values are all listed. For the coercion path it is strict=True raising on a value that does not convert, which metasalmonpy already does and nothing pins, so that half owes a test and no fix. THE METASALMON HALF IS B-55, and each names the other. A PORT, NOT A REGISTER ROW: once this lands the two implementations behave alike again. NOT THIS ITEM: the code_label defect the evidence records beside this port is a separate Python defect in the same block. B-55''s workpad describes a candidate implementation of this half, prepared under that claim, which covered metasalmon only and so could not push it; it was not reviewed there, so re-verify it rather than trust it.'

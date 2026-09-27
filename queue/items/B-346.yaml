@@ -1,0 +1,13 @@
+id: B-346
+kind: defect
+title: 'apply_salmon_dictionary() blanks every value of a column whose codes.csv row names a vocabulary instead of a code value'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): a column backed by a vocabulary skips the code list, in both packages. A column is backed by a vocabulary when any of its codes.csv rows gives a vocabulary_iri and leaves code_value empty, a row the codes schema allows. In metasalmon, apply_salmon_dictionary() in R/dictionary-helpers.R skips the codes step for such a column: no value becomes NA for being absent from the code list, no warning names its values as unlisted, and no factor is built from its codes.csv rows. Pinned by a test demonstrated RED on the function as it stands; a column whose codes.csv rows all have code values still gets its factor and its warning. THE METASALMONPY HALF IS B-347, and each names the other. The semantic-target half of the same ruling is B-276 and B-277.'

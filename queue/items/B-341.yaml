@@ -1,0 +1,12 @@
+id: B-341
+kind: defect
+title: 'metasalmonpy''s semantic closure falls back to the default paths without a word when the EML sidecar carries an !expr tag'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), answering Q-62: refuse on every path, and on the semantic closure path metasalmonpy moves, because a silent fallback hides the mistake where a user can least see it. IN METASALMONPY, _mapping_paths() in semantic_closure.py, which write_sdp_semantic_closure() reaches, refuses a metadata/eml-mapping.yml carrying an !expr tag, or any other local tag it has no meaning for, with an error that names the file, as _read_mapping_yaml() in eml.py already does on the EML and KNB paths, instead of returning the default closure paths; when it refuses, write_sdp_semantic_closure() writes neither closure file and leaves the sidecar unchanged. An untagged sidecar''s declared paths are still honoured. Pinned by a test through write_sdp_semantic_closure(), demonstrated RED on the reader as it stands. THE METASALMON HALF IS B-340, and each names the other. A PORT OF A RULING, NOT A REGISTER ROW.'

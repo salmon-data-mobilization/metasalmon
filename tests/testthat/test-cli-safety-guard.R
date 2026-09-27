@@ -29,7 +29,10 @@ cli_message_fns <- c(
   "cli_alert", "cli_alert_info", "cli_alert_success", "cli_alert_warning",
   "cli_alert_danger",
   ".ms_sssom_abort", ".ms_sdp_decomposition_abort",
-  ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort"
+  ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort",
+  # The semantic review ingester's file-level abort (hub item B-326) forwards
+  # its `message` the same way, so its callers are checked here too.
+  ".ms_semantic_review_abort"
 )
 
 # Functions whose message argument is legitimately computed. Two shapes only:
@@ -216,7 +219,8 @@ test_that("cli condition messages are built from literals or the escaping helper
 
   wrapper_bodies <- c(
     ".ms_sssom_abort", ".ms_sdp_decomposition_abort",
-    ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort"
+    ".ms_sdp_extension_abort", ".ms_sdp_reproducibility_abort",
+    ".ms_semantic_review_abort"
   )
   for (nm in ls(ns, all.names = TRUE)) {
     if (nm %in% c(cli_template_allowlist, wrapper_bodies)) {

@@ -1,0 +1,13 @@
+id: B-404
+kind: defect
+title: 'The hub records the modelling decisions of smn pull request 27 as unruled, although that pull request records Brett''s rulings on Q6-1 to Q6-5 and gcdfo and the commons cite two of them'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-science
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The Q6 entry of knowledge/questions.md and the decision section of the S9 card quote Brett''s rulings on Q6-1 to Q6-5, with their date, as smn pull request 27 records them, and neither says that those decisions are unruled; and Q-06 and Q-48 each name only decisions Brett has not ruled, which for Q-48 means what he says it still asks once Q6-1 and Q6-2 are recorded. That last part is his, which is why this item is not claimable. Decided by grep for the quoted rulings in the two files, and by reading the two item files.'

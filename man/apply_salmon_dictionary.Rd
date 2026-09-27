@@ -15,7 +15,10 @@ apply_salmon_dictionary(df, dict, codes = NULL, strict = TRUE)
 \code{table_id}, \code{column_name}, \code{code_value}, \code{code_label}, etc.)}
 
 \item{strict}{Logical; if \code{TRUE} (default), errors on type coercion
-failures; if \code{FALSE}, warns and coerces to character}
+failures; if \code{FALSE}, warns and coerces to character. A coercion failure
+is one that R reports with a warning as well as one it reports with an
+error, so a column typed \code{integer} holding \code{"abc"} is a failure even
+though \code{as.integer("abc")} only warns and returns \code{NA}.}
 }
 \value{
 A tibble with renamed columns, coerced types, and factor levels
@@ -25,6 +28,11 @@ applied
 Renames columns, coerces types, applies factor levels from codes, and
 reports mismatches. Returns a transformed tibble ready for analysis or
 packaging.
+}
+\details{
+A value that is not in its column's code list has no factor level, so it
+becomes \code{NA}. Each such value is named in a warning, whatever \code{strict} is.
+Blank strings are treated as missing and are not reported.
 }
 \examples{
 dict <- infer_dictionary(mtcars)

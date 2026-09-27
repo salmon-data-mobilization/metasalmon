@@ -1,0 +1,12 @@
+id: B-375
+kind: defect
+title: 'The tag requirement in check-changelog-window.py tests the wording of a description string, so rewording that string switches the requirement off'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The requirement in run() of scripts/check-changelog-window.py that refuses to pass a superseded version the repository''s policy tags when the clone holds no tag for it reads a field of what bump_commits() returns that says how the bump commit was decided, and not the text of the description the script prints. Decided by a mutation: in a copy of the script in which only the wording of the description bump_commits() gives a superseded, untagged version is changed, test_a_superseded_release_the_policy_tags_needs_its_tag in scripts/tests/test_check_changelog_window.py still gets exit 2, where on the script as it stands the same change makes it get exit 0. THE METASALMONPY HALF IS B-376, and each names the other.'

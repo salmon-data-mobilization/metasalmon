@@ -84,6 +84,9 @@ Seven-plus authenticated lookups over sixteen days is not transient. **Only you
 can send an outbound support request.** After the series resolves and a receipt
 is written, the recipe migrates — assign that an owner and a date then, or
 "after" becomes "never". **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).
+**Superseded in part, 2026-09-26 (Q70):** the Fraser case is now rebuilt from
+scratch rather than migrated, so no migration waits on this series. Whether to
+send the support request, or rule the series abandoned, is still open.
 
 ### Q17 — Should `create_sdp()` refuse a doomed write *before* running inference?
 **Unblocks:** parity row 59, and a test on both sides that nothing currently pins.
@@ -124,38 +127,9 @@ it is what both sides' detectors already encode and what the two `AGENTS.md`
 files name; but the honest answer may be that this is not worth a change.
 **Owner:** [parity row 61](parity-deviations.md).
 
-### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one?
-**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
-verification, each of which is currently costing it at zero.
-Every card in the commons carries `generated` (who wrote it) and `verified`
-(who independently checked it), and the rule that the writer cannot be the
-checker is **prose only**: the two fields share one schema pattern, a
-self-verifying card validates, and that repository has no CI. Twenty-six cards
-carry 250 sources and 623 citations and **not one has ever been verified, in
-any commit on any branch.**
-[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
-ruled the who-half for publication — a card is *stable* when it carries a named
-human `verified` entry and passes its citation ledger — so what is open is the
-what-half: whether an agent re-reading a source counts as independent checking.
-That is genuinely undecided in the documentation rather than merely unwritten,
-which is why it is a question and not a defect.
-**Recommendation:** two tiers with distinct field values, so no card can claim
-more than it earned. `checked` is agent-eligible and never spelled "verified":
-an agent that is not the generator re-resolves every citation by the
-citation-ledger procedure, re-derives each claim from the located passages
-without reading the card's own argument, and records the ledger, its identity
-and the date, with any disagreement moving the card to `disputed` rather than
-leaving a partial check. `verified` stays human-only — a named person who is
-not the generator has read the located passages rather than the summary. Then
-grade the bar to the consequence: one human makes a card verified, *stable*
-needs two humans or one human plus two agreeing `checked` entries, and a card
-that mints, retargets or defines a term wants three.
-**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
-it is what makes B-123's schema split writable.
-
 ### Q40 — Verify one commons card end to end, to find out what verification costs
 **Unblocks:** every estimate that currently assumes verification is free.
-Follows Q39 and B-121. **The point is the measurement as much as the card:**
+Follows Q39 (answered 2026-09-24, below) and B-121. **The point is the measurement as much as the card:**
 until one card has been carried all the way to a real `verified` entry naming a
 human, nobody knows whether verifying a card is twenty minutes or a day, and
 every plan that promises verification has been priced at zero. Choose the card
@@ -244,6 +218,295 @@ and not the blast radius.
 *(Filed as `B-156` on 2026-09-15 and reassigned to this id on 2026-09-16, because
 the item said of itself that it was an open question and that only Brett can
 choose — see the note under `B-155` in [`backlog.md`](backlog.md).)*
+
+### Q53 — Should `validate_salmon_datapackage()` reach the remote SDP schema on a cold session, as R does, or make no network call, as metasalmonpy does?
+**Unblocks:** a parity difference neither register records, and which copy of the
+schema the pattern checks of `B-204` (metasalmon) and `B-205` (metasalmonpy)
+enforce, since each reads whatever its validator loads. How the ruling reaches
+those two cards is `Q-53`'s condition.
+Measured on both sides, each instrument shown to see a fetch before its silence
+was read: under the shipped defaults R's validator makes one remote fetch attempt
+on a cold session, through its readers' column aligners, and metasalmonpy's makes
+none. R documents no offline promise for its validator; metasalmonpy's code
+states one and keeps it. `B-175` took `review_metadata()` offline and left the
+validator's fetch in place, because the validator was outside that item's
+promise. **The measurements are in [`backlog.md`](backlog.md)** under *The
+2026-09-23 queue sweep*, and are not restated here.
+**Recommendation, the sweep's and not ruled:** R moves, reading the bundled
+schema under the default options as `review_metadata()` now does. A validator
+that waits out a network timeout on a cold session is the failure `B-175` removed
+from the scan, and once `B-198`'s pin and the vendored bundle are the same bytes
+the fetch returns nothing the bundle does not. The case the other way is real,
+which is why this is a question: a remote-first validator sees a published schema
+change before a re-vendor does, which is the property the writers keep.
+**Owner:** [S5](sequences/s5-review-flow.md), with the queue item `Q-53`.
+*(`Q-52`, filed on 2026-09-16 about where an item's severity lives, is owed an
+entry in this file and has none yet. That is its own item's to write; it is named
+here so the gap between `Q51` and `Q53` reads as known rather than as a slip.)*
+
+### Q54 — R and metasalmonpy send different chat-completions requests: which side is right, difference by difference?
+**Unblocks:** five differences neither register records, one per line:
+
+- the temperature;
+- JSON mode;
+- OpenRouter's attribution headers;
+- the user agent;
+- reasoning effort.
+
+**This shape was accepted on 2026-09-25.** On the decisions page, whose item
+"Fourteen small specification calls" carried this as call (a), Brett accepted the
+recommendation to keep it one question with one difference per line and to
+change nothing until he rules on each: *"for decision 13 I accept your
+recommendations"*. `Q-54` is that question item, so no second one was filed.
+
+It also unblocks what `B-128` is for. Routing R's chat path through the shared
+body builder gives it the semantic path's temperature rule, on the premise that
+R keeps sending a temperature, and would also make it send the reasoning effort
+R resolves from
+`METASALMON_LLM_REASONING_EFFORT`, which neither chat path sends today.
+Measured by the `B-3` run against metasalmonpy `main` `3f8349a` and re-read on R's
+`main`; reasoning effort was added on 2026-09-24 and measured against
+metasalmonpy `e595752` and R `abfc7d6`. **What each side sends, and where, is in
+[`backlog.md`](backlog.md)** under *The 2026-09-23 queue sweep*.
+**Recommendation:** none on the direction of the temperature, JSON mode or
+reasoning effort, which change what a model returns and on which neither side
+has evidence. The
+instrument that could supply it is the Theme A benchmark, whose live capture
+waits on the credential `B-80` names. The header and user-agent differences
+change nothing a model sees, so registering them or porting them costs nothing
+behavioural either way.
+**Changed by Q67 on 2026-09-25, and still open.** The removal release (`B-329`,
+`B-330`) deletes the request code in both packages. From then on neither side sends a
+request, so no side has to move. What the ruling leaves open is the releases
+before the removal: whether the five differences are registered for them, or
+left unregistered because the removal deletes both sides. **Recommendation on
+that:** register them, as one row in each register whose retirement condition is
+the removal release. `AGENTS.md` calls an undocumented difference a contract
+violation whether or not the difference is about to be deleted, and until the
+removal ships these ones reach users.
+**Owner:** [S7](sequences/s7-architecture.md), with the queue item `Q-54`.
+
+### Q61 — What does `smn:Run` denote: run timing, or the returning group of fish?
+**Unblocks:** `smn:Run`'s definition, which `B-237` owns and cannot write
+without a ruling. On 2026-09-23 Brett found that the published site shows `Run` with no
+definition.
+
+**smn gives the word two readings.** Read on salmon-domain-ontology `main`
+`d45f8f7` unless noted:
+
+- `smn:Run` is `rdfs:subClassOf smn:Life-HistoryCharacteristic`, so as modelled
+  it is a characteristic, not a group
+  (`ontology/modules/02-observation-measurement.ttl:99`).
+- smn pull request 27, not merged, adds a scope note to `smn:LifeHistoryType`
+  reading *"Run timing is modelled separately as the OWL class smn:Run."* (head
+  `949ed95`).
+- `smn:RunContext` uses the word the other way. Its definition is sourced from
+  GC DFO Salmon Ontology release 0.0.8 and reads *"values refer to run size or
+  returning run composition"*. There a run is the fish that return.
+
+No data dictionary, example or test in metasalmon, metasalmonpy or smn-data-pkg
+names `smn:Run`. That was searched in their checkouts on 2026-09-23 with a
+pattern that did find the ontology's own uses, so the empty result is not a
+blind search. Either ruling therefore breaks nothing downstream.
+
+**Options:**
+
+- **(a)** It is run timing, a life-history characteristic, as its superclass
+  and pull request 27's note already say. The ruling then also says whether
+  its label becomes "Run timing".
+- **(b)** It is the returning group of fish, as `smn:RunContext` uses the word.
+  Its superclass is then wrong: it moves under a group class such as
+  `smn:SalmonGroup`. Pull request 27's note must change before that pull
+  request merges.
+- **(c)** Both are wanted. `smn:Run` takes one, and the other is minted as its
+  own term.
+
+**Recommendation, the filing's and not ruled:** (a). The merged superclass
+already says it, pull request 27's note says it again, and the only change is
+the label.
+
+The case for (b) is real, and it is why this is a question. `smn:RunContext`'s
+sourced definition uses "run" for the fish, so a user looking for a term for a
+run-size column finds `smn:Run` and gets a characteristic. Whichever way it goes,
+the definition is written from a source under `B-237`, not from this entry.
+
+**Update, same day: a fourth sense, and evidence from the working group.**
+Batch 1 of the commons definition backfill (salmon-knowledge-commons pull request
+12, card `concepts/run.md`) read the sources for every use of the word, and they
+name four things, not two. (a) is run timing. (b) is a stock's annual return:
+5 AAC 39.222(f)(31) defines "run" as the number returning in a calendar year. (b2)
+is a *run component*: a persistent group of one or more stocks set apart by when
+its adults migrate, such as a spring run or the A-run and B-run of Snake River
+summer steelhead. That is how most of the prose sources use the bare noun,
+including Healey 1991 and Holtby & Ciruna 2007. (c) is the migration itself. The
+card gives a sourced definition for (a), (b) and (b2), and does not choose.
+
+(b2) is not among the options above, and it bears directly on the PSC release
+field `run`. That field's published text never defines the word, and its codes
+Hybrid, Landlocked and Late Fall Upriver Bright Chinook fit a run component at
+least as well as a timing. (b2), like (b), would move `smn:Run` out from under
+`smn:Life-HistoryCharacteristic` into a group class.
+
+Two more pieces of evidence came from the PSC TCDS meeting on 2026-09-23, per
+Brett's notes (unpublished, and cited here only as a working record):
+
+- The group agreed that "the year in which the majority of the run returns" was
+  circular, and replaced "run" with "fish" in the run-year definitions. The
+  reason given was to avoid implying a stock-specific biological run year. That
+  is sense (b) inside RMIS's own vocabulary, alongside the timing sense in its
+  `run` and `sampled_run` fields.
+- The group decided to build a machine-readable version of the RMIS controlled
+  vocabulary in the mid to near term, so whichever sense smn adopts will be
+  mapped from it.
+
+**Revised recommendation, still the filing's and not ruled:** keep (a) for
+`smn:Run`, relabelled "Run timing". Treat (b2) as a separate candidate term, a
+group class for the run component, because it is what the RMIS `run` codes and
+most prose mean by "a run". This is option (c) above, with the second sense
+narrowed from the annual return to the run component. The annual return (b)
+already has a home through `smn:RunContext` and run size.
+
+**Owner:** [S9](sequences/s9-ontology-alignment.md), with the queue item `Q-61`,
+which holds its retirement condition and names who owns each option's
+consequences.
+*(`Q55` to `Q60` are answered and sit under **Answered** below, so this is the
+next open number, not a gap.)*
+
+*(`Q62` and `Q63` were answered on 2026-09-25 and sit under **Answered** below,
+so `Q64` is the next open number, not a gap.)*
+
+### Q64 — What do three smn terms mean, and how are life stages and composed wording settled? — PARTLY ANSWERED 2026-09-25 (Brett)
+
+**The questions,** from the first batch of commons definition cards for the
+terms B-232 must define:
+
+- **(a)** `smn:Observation`: a single act of observing, as SOSA defines it and
+  smn axiomatizes it, or a record of several measurements, as in OBOE, where it
+  came from? **Ruled: SOSA.**
+- **(b)** `smn:AggregatedMeasurement`: any summary of a group, or only an
+  enumeration count? **Ruled: any summary of a group.**
+- **(c)** `smn:Characteristic`: one entity's quality, or a kind of quality?
+  **Returned as a question.** Brett favours SOSA/SSN and asked what retiring
+  `smn:Characteristic` would imply, noting that SSN's OBOE alignment makes
+  `oboe:Characteristic` equivalent to `sosa:ObservableProperty` (W3C SSN 2017
+  §6.4, which also makes `oboe:Measurement` a subclass of `sosa:Observation`).
+  The answer given: its five branches (fourteen classes) would hang from the SOSA
+  class directly, the IRI would be deprecated rather than deleted, no data IRI
+  changes, `smn:characteristicFor` duplicates `isPropertyOf`, and SOSA's
+  property is already type-level, so (c) would fall away. The recommendation
+  was to retire it, under `sosa:ObservableProperty`, his Q42 choice. Open until
+  he replies.
+- **(d)** `smn:alevin`: recast life-stage values as SKOS stage concepts, or keep
+  them as subclasses of a characteristic? Open.
+- **(e)** Composed text for five terms with no prior wording: approve the cards'
+  wording, or name the ones to redo. Open.
+
+**Owner:** `B-232`, which writes the definitions once each ruling lands, and
+`B-238` for the commons research behind them.
+
+### Q65 — D-2: how does Brett's ~5 h/week split between S14 and tern, and which calendar wins a contested week?
+**Unblocks:** tern's stage 0 (its `PLAN.md` §14 lists D-2 as blocking) and an
+honest S14 budget. Both programmes currently book the same hours: the Foundry
+plan's §8.1 plans about 4.8 h/week of Brett through late January 2027, and
+tern's `PLAN.md` §11 derives about 1.4 h/week for its stage 0 and up to
+0.7 h/week later, against one ~5 h/week supply. `tern`
+(`Symecology-Institute/tern`, formerly `era-claude`) is the requirements-driving
+consumer the [roadmap](roadmap.md) records as a typed edge on 2026-09-25, not a
+member, so this hub owns only the S14 side of the answer.
+**Recommendation:** tern's `PLAN.md` §11: at most 2 h/week for tern, and its
+stage 3–4 dates (the tree freeze and the prospective forecast) win a contested
+week; D-2 is re-ruled if tern's derived figure exceeds 2 h/week. Whichever way
+it goes, the ruling names the Foundry line that shrinks from October 2026 to
+January 2027, or delays tern's stage 0 to the Foundry's Stage A gate.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md), which
+records the split once ruled, with the queue item `Q-65`; the ruling's other
+half lives in tern's `PLAN.md`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's own record has moved past the recommendation above. Its
+`docs/DECISIONS.md` §B, row B-11, and `PLAN.md` §14 — seen in tern's working
+tree that day, not yet committed on top of `fe914ab` — record D-2 as ruled in
+chat: "Moot. Brett does what he can", the Foundry-split machinery removed from
+its §11, and "the hub question in ECOSYSTEM.md M-04 is not needed". If that
+record stands once committed, this entry retires as moot: no split is booked
+on either side and the S14 card records nothing beyond that. It stays open
+here until Brett says so, because a ruling seen only in another repository's
+uncommitted file is not yet one this index can cite.)*
+
+### Q66 — D-1/D-8 coupling: tern's institute affiliation engages R2, so the PSC-derived Fraser packs need a ruling
+**Unblocks:** whether tern's first science case may use the Salmon Prize
+Fraser packs at all (five-stock extracts of the PSC Fraser sockeye
+spawner–recruit data set plus DFO fill-ins), and the affiliation and
+competing-interests wording tern needs before its R1 is public.
+The Foundry plan's R2 makes non-public PSC and partner systems "never" for the
+institute's Foundry, and R11 removed PSC work from the plan entirely. An
+institute-affiliated tern inherits R2 in full, so D-1 (the data) and D-8 (the
+affiliation) are one decision. The options, from tern's `PLAN.md` §9.1: **(a)**
+amend R2 to admit PSC-published public data under tern's information barrier;
+**(b)** admit the organizers' packs only, as public competition data, with the
+scoring source ruled at the same time; **(c)** neither, and Bristol Bay becomes
+the primary system. An institute affiliation leaves (b) or (c); "independent
+researcher" leaves (a) open.
+**Recommendation:** tern's own: (b), with the information barrier, decided in
+writing before tern's first registry build. The ruling itself is recorded in
+tern's `PLAN.md`; this hub records only that R2 was engaged and how, so that
+the S14 card and R2 stay consistent.
+**Owner:** the [S14 card](sequences/s14-salmon-science-foundry.md) for the R2
+consequence, with the queue item `Q-66`.
+*(Noted 2026-09-25, in review of the pull request that filed this entry:
+tern's `docs/DECISIONS.md` §B, row B-10, and `PLAN.md` §14 — seen in tern's
+working tree that day, not yet committed on top of `fe914ab` — record D-1 as
+ruled in chat: **(a)**, the organizers' packs and the PSC Fraser sockeye
+spawner–recruit public release admissible, the information barrier and the
+competing-interests statement kept, Bristol Bay still the transfer test, and
+"the former coupling to D-8 is dissolved: Brett is allowed to use PSC public
+data whatever the affiliation". If that record stands once committed, what
+this entry still owes the hub is one sentence: whether R2 needs any amendment
+for PSC *public* releases or was never engaged by them. It stays open here
+until Brett says so, for the reason Q65's note gives.)*
+
+### Q70 — Which sources should `find_terms()` search when a caller names a role and no sources?
+**Unblocks:** a difference neither register records. R's `find_terms()`
+searches one fixed set of four sources whatever the role, and metasalmonpy's
+searches `sources_for_role(role)`, so a direct unit search in R that names no
+sources never reaches QUDT. Inside `suggest_semantics()` the two agree,
+because R resolves omitted sources by role there. R's roxygen for
+`find_terms()` describes both behaviours, one under `role` and one under
+`sources`, so whichever way this goes, one of its two sentences is wrong today.
+Found by the run that rewrote a downstream plugin to call both packages at
+`v0.5.0`, and measured on both sides on 2026-09-25. **The measurements are in [`backlog.md`](backlog.md)** under
+*The 2026-09-25 plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** R moves, and an omitted
+`sources` becomes the role's `sources_for_role()` list. R's `@param role`
+already promises that, R's own pipeline already does it, and a call with no
+role would search exactly what it searches today. The case the other way is
+real, which is why this is a question: it changes the default of an exported R
+function, and what an existing call that names a role and no sources returns.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-70`.
+
+### Q71 — Which ontology should `fetch_salmon_ontology()` fetch by default, and what should it return when every URL fails and a copy is cached?
+**Unblocks:** two differences neither register records, and what replaces
+metasalmonpy's default URL, which no longer answers. (1) R's defaults fetch smn
+and metasalmonpy's fetch gcdfo, each with a fallback URL for its own ontology.
+(2) When every URL fails and a copy is cached, R returns the copy with a warning
+and metasalmonpy raises. Two defects in the same function were found beside
+these, and each is a pair: the default fallback is tried whatever `url` a caller
+names (`B-333` and `B-334`), and every fetch is cached under one file name,
+whatever its `url` or representation (`B-335` and `B-336`). Both are defects under any ruling here. Found by the
+same run as Q70, and measured on both sides on 2026-09-25.
+**The measurements are in [`backlog.md`](backlog.md)** under *The 2026-09-25
+plugin-thinning findings*, and are not restated here.
+**Recommendation, the filing's and not ruled:** on (1), metasalmonpy moves to
+smn. Its default has to change anyway; smn is the ontology both packages search
+first and rank above gcdfo; and it is the one R's documentation names. The case
+the other way: metasalmonpy's bare call gets gcdfo today, which is what its
+documentation promises, so the smaller change is a live gcdfo URL and a pair of
+register rows. On (2), R moves to raising. R returns a copy of any age as an
+ordinary value, with only a warning, which is a failure read as a success, the
+thing `find_terms()` refuses to do with its own cache; and R's documentation
+promises no fallback. The case the other way: a user who has fetched once can
+keep working offline in R and cannot in metasalmonpy, whose own module
+docstring names offline work as a purpose of its cache.
+**Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.
 
 ## Notes on framing
 
@@ -1337,3 +1600,381 @@ to be satisfiable inside the repository its `repo` field names — `f86d9b4`
 satisfied it. The two implementation halves are `B-198` (metasalmon) and `B-199`
 (metasalmonpy); read those files for their state rather than assuming it from
 here.
+
+### Q55 — May an agent promote a queue item to `ready` under a standing test, rather than one item at a time? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"An agent may promote a queue item to ready, citing this
+authorization, when all of: the item's repo is one you work alone in (solo:
+true); it carries a non-empty retires_when; its severity is P0, P1, or P2 or P3;
+its blocked_by is empty; and it is not needs_brett. Anything else stays
+per-item."* — Brett, 2026-09-23, in chat. The wording had been put to him with a
+narrower severity range, P2–P3, and he widened it to P0–P3.
+
+**What it changes:** since ruling R15 (2026-09-10,
+[Q38](#q38--does-the-draft-pull-request-refusal-stand--answered-2026-09-10-brett))
+each promotion has needed an authorization of its own. This is one grant with
+a stated test, under which every promotion still names the grant — to promotion
+what R16 is to merging. As first applied, an item that meets the test only once
+a condition is interpreted stays per-item, and the interpretation goes to him as
+a question; Q56 is the first.
+
+**Where it is recorded:** the operative copy belongs on the promotion row of
+`HUB.md`'s `writes.permitted`, and pull request 143 is the change that writes it
+there — policy, so Brett's to merge under class 7. It was first applied in
+commit `abd58b2`, whose message quotes it and lists what was promoted and what
+was held back, with the reason for each. **Owner:** `HUB.md`, with
+[S15](sequences/s15-hub-coordination.md).
+
+### Q56 — Is a `blocked_by` that lists only finished items "empty" under that grant? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"'Clear' should not count a done blocker as still blocking."* So the
+grant's "its blocked_by is empty" is met when `blocked_by` is `[]` or every id it
+lists is an item whose `state` is `done`, which is how `HUB.md`'s claimability
+test already reads *blocked* (*What claimable means, exactly*, test 3).
+
+**The question:** `abd58b2` read the grant as written and held back four items
+whose blockers were all done, because treating "empty" as the claimability
+test's "clear" would have rested a promotion on a file rather than on what he
+said. He answered in the same message as the reinstatement (Q57), and `28fef73`
+promoted those four after recomputing the set against `main` rather than copying
+the earlier list.
+
+**Where it is recorded:** the same promotion row as Q55, written by the same
+pull request 143. **Owner:** as Q55.
+
+### Q57 — Does the standing authorization resume after the suspension of 2026-09-16? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Reinstate"* — adopting the resumption put to him, which the
+operative entry quotes: the protocol resumes, the orchestrating session finishes
+wave 1, and four delegated pull requests (#145, #146, #147, #149) merge once CI
+is green and Codex has finished.
+
+**What was suspended:** `HUB.md`'s `self_suspends` clause fired on 2026-09-16 at
+13:58 UTC, when the orchestrating session edited the description of metasalmonpy
+pull request 34 — B-145's claimed hand-back — a write no row in
+`writes.permitted` covered. It went unnoticed for a week. A dispatched agent
+flagged it on 2026-09-23, and every protocol write stopped and was reported to
+him, by kind and count, before he answered. The operative entry says which
+writes it covers and that it covers nothing else.
+
+**Where it is recorded:** `writes.reinstated_2026_09_23` in `HUB.md`, written by
+pull request 143. It is the "dated entry here from Brett" that
+`writes.reinstated` requires before the protocol resumes, which is why wave-1
+workers held until it existed; the `B-142` and `B-175` workpads record the hold
+and what their later writes rested on instead. `28fef73` is the queue commit that
+followed the ruling. **Owner:** `HUB.md`.
+
+### Q58 — What may an agent write to keep its own pull requests current? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Add a row to the registers for your own upkeep as needed"* — given
+in the message that reinstated the protocol (Q57). Three rows answer it, each
+limited to a pull request an agent opened in a member repository whose `solo`
+key is true: correcting its description, appended and dated rather than
+overwritten; asking Codex to review it again, once per pushed round of fixes;
+and re-running the failed jobs of a run, once per commit and only when the
+failure did not come from the change, with the first attempt's failure written
+into the workpad before the re-run.
+
+**The question it answered:** those three writes had no row, which is why the
+orchestrating session kept stepping outside the register; the write that
+suspended the protocol on 2026-09-16 was of the first kind. Without the second,
+every fix pushed after a first Codex round merged on CI and the agent's word
+alone.
+
+**Where it is recorded:** three rows in `HUB.md`'s `writes.permitted`, with the
+matching carve-outs from `writes.denied`, written by pull request 143; they take
+effect when it merges. The re-run row's workpad record complements `B-229` and
+does not retire it, because it misses every re-run no agent made. **Owner:**
+`HUB.md`.
+
+### Q59 — Should strict validation refuse a `REVIEW:` marker in `codes.csv`, and should `review_metadata()` list one? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"Yes; Refuse it for the strict validation."* Read as yes to both:
+strict validation refuses the marker, and `review_metadata()` lists it, because
+the scan lists exactly what strict validation refuses.
+
+**The question:** `B-174`'s hand-back (metasalmon pull request 144) left the two
+implementations disagreeing on purpose. metasalmonpy's scan lists a `codes.csv`
+marker because its EDH gate refuses one; `B-174`'s card said not to, because
+strict validation does not refuse one, and also said no parity row was owed. The
+hand-back recommended settling it at the validator through `B-177` rather than
+registering the difference.
+
+**The plan** is in the item files: `B-177` for metasalmon and `B-230`, its
+metasalmonpy half, hold its scope and its condition, and are not restated here.
+Pull request 144's change stood as it was when the ruling was made.
+
+**Owner:** queue items `B-177` and `B-230`, with the evidence under `B-177` in
+[`backlog.md`](backlog.md).
+
+### Q60 — Does `B-198`'s remote schema pin name the commit `f86d9b4`, or a tag? — ANSWERED 2026-09-23 (Brett)
+
+**Ruling:** *"B198: Switch to a tag"* — option (B) of the two `B-198`'s hand-back
+put to him, over the commit pin (A) that its pull request, metasalmon #148,
+implemented and recommended.
+
+**What stays open, named rather than read as settled:** which tag. A tag is a
+release, so its name is a version claim: a patch number keeps the profile's
+`v0.3` URLs, and a new minor implies a `v0.4` profile path, which `B-236`'s
+release then has to carry. That choice was put to him the same day with a recommendation of
+`sdp-0.3.1`. Cutting the tag is an outward release act in `smn-data-pkg`, and
+his. The pin moves to the tag once it exists, and `B-199`'s in metasalmonpy,
+which must name the same ref, follows it.
+
+**Answered 2026-09-25 (Brett), on the decisions page:** *"0.3.1 and yes
+smn-data-pkg gets the release workflow."* So the tag is `sdp-0.3.1`, which keeps
+the profile's `v0.3` URLs, and it is cut by a release workflow in smn-data-pkg
+of the kind metasalmonpy's cuts its tags with. `B-236` owns both, and its
+condition now names the tag.
+
+**Where it is recorded:** `B-198`'s card, whose condition now names a tag.
+**Owner:** queue item `B-236` for the tag itself, whose name and cutting are
+Brett's, and for the profile path a minor version implies; `B-198` and `B-199`
+move the pins once it exists; and `B-208` for how a frozen profile keeps the
+schema bytes it was frozen against.
+
+### Q39 — What does a `verified` entry on a commons card mean, and may an agent ever write one? — ANSWERED 2026-09-24 (Brett)
+**Unblocks:** B-121, B-122, B-123 and Q40 below — and every plan that promises
+verification, each of which is currently costing it at zero.
+Every card in the commons carries `generated` (who wrote it) and `verified`
+(who independently checked it), and the rule that the writer cannot be the
+checker is **prose only**: the two fields share one schema pattern, a
+self-verifying card validates, and that repository has no CI. Twenty-six cards
+carry 250 sources and 623 citations and **not one has ever been verified, in
+any commit on any branch.**
+[Q24](#q24--may-a-subset-of-the-private-commons-be-published--answered-2026-09-05-brett)
+ruled the who-half for publication — a card is *stable* when it carries a named
+human `verified` entry and passes its citation ledger — so what is open is the
+what-half: whether an agent re-reading a source counts as independent checking.
+That is genuinely undecided in the documentation rather than merely unwritten,
+which is why it is a question and not a defect.
+**Recommendation:** two tiers with distinct field values, so no card can claim
+more than it earned. `checked` is agent-eligible and never spelled "verified":
+an agent that is not the generator re-resolves every citation by the
+citation-ledger procedure, re-derives each claim from the located passages
+without reading the card's own argument, and records the ledger, its identity
+and the date, with any disagreement moving the card to `disputed` rather than
+leaving a partial check. `verified` stays human-only — a named person who is
+not the generator has read the located passages rather than the summary. Then
+grade the bar to the consequence: one human makes a card verified, *stable*
+needs two humans or one human plus two agreeing `checked` entries, and a card
+that mints, retargets or defines a term wants three.
+**Owner:** [S6](sequences/s6-ecosystem.md), with the queue item `Q-39`; ruling
+it is what makes B-123's schema split writable.
+
+**Ruling: the recommendation's two-tier scheme, adopted with one amendment.**
+*"I approve Q-39 but remove the requirement that checks for agent
+co-authorship."* — Brett, 2026-09-24, in chat. So the scheme in the
+[2026-09-14 verification plan](plans/2026-09-14-commons-verification-scheme.md)
+stands, except that its check 2 no longer rejects a `verified` entry whose commit
+carries an agent co-author or agent session trailer. In the same conversation he
+chose where each card's citation ledger lives: *"Use in-card tables."*
+
+**Where the ruling is recorded, which is the authority rather than this entry:**
+the commons' `VERIFICATION.md`, whose lines 3–5 quote the ruling and name the
+scheme it condenses, landed by salmon-knowledge-commons pull request **#16**
+(merged 2026-09-24). Its fields (`generated`, `citations_checked`,
+`corroboration`, `verified`, `disputed_readings`, `cited_by`), its derived
+`status` (`draft` / `checked` / `verified` / `stable` / `disputed`) and its claim
+classes A, B and C are what `B-123` now enforces. None of its checks runs yet;
+that file says so in its own third paragraph.
+
+**What moved:** queue item `Q-39` reached `done` on 2026-09-24 (commit
+`43d7fb3`, which also promoted `B-123`), and `B-123`'s and `Q-40`'s blockers
+dropped it on 2026-09-25 on Brett's chat authorisation *"Q-39 done; B-123 ready
+and claimable"*. Indexed here the same day; the entry above the ruling is left
+as asked, including its "not one has ever been verified", which was true when
+written and is still true at commons commit `cab0248`.
+### Q62 — What should each reader of the EML sidecar do with an `!expr` tag, and which implementation moves? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, whose item "Fourteen small specification
+calls" carried this question as call (e) with the recommendation *"Refuse on
+every path, and metasalmonpy moves: a silent fallback hides the mistake where a
+user can least see it."* Call (b), the EML and KNB half of the same question as
+`B-142`'s run found it, carried *"R moves to Python's behaviour"*, and he
+accepted that too.
+
+**What it means for each reader.** On the EML and KNB reads R moves to
+metasalmonpy's refusal. On the semantic closure's path reader both packages move,
+because neither refuses there: R takes the tag's text as the path and
+metasalmonpy falls back to the default paths. The recommendation named only
+metasalmonpy as moving on that path; "refuse on every path" moves R's closure
+reader as well.
+
+**Where the work went:** `B-223`, updated to the ruling, for R's EML and KNB
+reads, where metasalmonpy already refuses; `B-340` and `B-341` for the closure
+reader in each package. The SSSOM reader got the same answer in call (l), as
+`B-352` and `B-353`. No register row is owed, because every reader in both
+packages ends at the same refusal.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).
+
+### Q63 — Which spellings of the `REVIEW:` marker should both implementations recognise? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"for decision 13 I accept your recommendations"* — Brett,
+2026-09-25, on the decisions page, where this question was call (f), with the
+recommendation *"One ASCII-only definition in both packages: REVIEW in any case,
+with optional ASCII spaces or tabs before it and around the colon. Hand-edited
+markers pick up stray spaces, a missed marker reaches strict validation as a
+malformed IRI, and nothing should depend on the locale."*
+
+**The ruled set is narrower than the one this entry recommended.** The open
+entry recommended the wider set, `^\s*REVIEW\s*:` ignoring case, in every
+detector. The recommendation Brett accepted admits ASCII spaces and tabs only,
+and ASCII case only. So each package narrows as well as widens, and the
+narrowing is his ruling rather than an implementer's choice: metasalmonpy stops
+removing a no-break space after the colon and stops folding a dotless ı into I,
+R stops depending on the locale for Unicode spaces, and neither counts a line
+break before the colon.
+
+**One premise of the ruling did not hold when it was checked.** Measured on
+2026-09-25, strict validation in neither package checks the shape of an IRI in
+`column_dictionary.csv`'s semantic IRI fields, so a value that no detector reads
+as a marker passes it. `B-342` and `B-343` add that check.
+
+**Where the work went:** `B-344` (metasalmon) and `B-345` (metasalmonpy) put
+every detector in each package behind one predicate for the ruled definition,
+and `B-342` and `B-343` add the check above. Once both pairs land the two
+packages recognise the same spellings, so no register row is owed. `Q18`, about the bytes the
+writers emit after the colon, is not changed by this.
+
+**Owner:** those items, with the evidence under *The 2026-09-25 specification
+rulings* in [`backlog.md`](backlog.md).
+
+### Q67 — Does the model call stay inside metasalmon and metasalmonpy? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The LLM call features leaves metasalmon and metasalmonpy. The
+packages keep everything deterministic (retrieval, ranking, validators, merge,
+gap detection, the 30-column assessment row as the record). They gain a
+review-packet exporter and an assessment ingester. Judgement runs in the user's
+harness (Claude Code, Codex, Claude Science) through `smn-sci-plgn` skills. This
+is Brett's own example, and it removes the only API-key and HTTP-client path in
+either package."* — Brett, 2026-09-25, in chat.
+
+**How it was asked:** not here. On 2026-09-24 a review panel, reading this hub,
+both packages, the commons, the ontologies and the plugin, put three moves to
+him outside this bundle. He adopted all three the next day in one message, in
+the panel's own words: *"Couple of changes I want you to do now."* Q68 and Q69
+are the other two. By the time he ruled, two facts the panel had measured had
+changed. Both change the order of the work, not the ruling. metasalmonpy was
+already tagged `v0.5.0`, so the `0.4.0→0.5.0` window that section A3 of the
+[Foundry plan](plans/2026-09-04-salmon-science-foundry-concrete-plan.md) says
+no new shared API may land in, and which the panel had put in front of every
+package change, was closed. And `Q-53` and `Q-54` had been filed for other
+questions, so the numbers the panel proposed were taken.
+
+**What it changes:** the packages stop calling a model. What stays and what goes
+are listed in the [S16 card](sequences/s16-model-call-leaves-the-packages.md).
+The 30-column assessment row stays frozen and becomes the contract a harness
+writes to. The order is S16's: the additive release (`B-326`, `B-327`), then the
+Theme A harness split (`B-328`), then the removal (`B-329`, `B-330`), then the
+workshop's lane (`B-331`). The harness skill that replaces the in-package call
+lives in the plugin, outside this hub, and the removal and the workshop's lane
+each need it released.
+
+**Ruled the same day, in answer to the S16 execplan:** Brett took every
+recommendation in its section 10 (*"Take all recommendations"*). So the public
+names are `write_semantic_review_packet()` and `ingest_semantic_assessments()`,
+the additive release is 0.6.0 in both packages, tagged together, and the removal
+is 0.7.0, after at least one tagged 0.6.x.
+
+**What stays open, and is his:** the notice to
+the users of the in-package provider route before the removal; whether Q54's
+differences are registered until the removal; and Q23's pilot anchor, only if
+the harness split cannot keep a replay of the recorded fixtures against their
+oracles. `B-31`, whose engine the removal deletes, was moved to icebox on his
+instruction the same day (*"Do this edit please"*) and retires with the
+removal.
+
+**Where it is recorded:** the S16 card, which is the operative copy; the Foundry
+plan's §1.3 and its semantic-mapper paragraph, amended the same day; and a dated
+pointer beside the LLM opt-in contract in `AGENTS.md`. **Owner:**
+[S16](sequences/s16-model-call-leaves-the-packages.md).
+
+### Q68 — In what order do the commons schema changes land, and does the commons take study-bundle card types? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"One ordered sequence of commons schema PRs. PR #25 first, then a
+`$defs` refactor, then one additive fields PR (source publication dates, typed
+relations, bindings), then B-123 as three PRs (CI, the generated/verified split,
+the merge rule). Study-bundle card types stay local."* — Brett, 2026-09-25, in
+chat, in the message Q67 quotes.
+
+**What it changes:** six pull requests land in one order, each small enough to
+review on its own. Each is Brett's to merge, because the commons' CONTRIBUTING
+reserves its schema, its validator and its `AGENTS.md` to a human. In order:
+`B-320` (#25), `B-321` (the `$defs` refactor), `B-322` (the fields), `B-323`
+(CI), `B-123` (the generated/verified split) and `B-324` (the merge rule). The
+fields pull request adds the fields he rules. Study-bundle card types are not
+added to the commons `type` enum.
+
+**Ruled the same day:** two sessions had built the `$defs` and fields steps in
+parallel, and Brett chose *"Mine: #28 + 3 fields"*. So the `$defs` step is
+commons pull request 28, and the fields step adds only the three he named, with
+typed relations under upstream OKF's name `relationships`.
+
+**What stays open:** the name of the binding field, which the panel offered as
+`alignment.bindings` or `semantic_bindings` and `B-322`'s pull request proposes;
+the fields the panel proposed that he did not name, which that pull request
+lists; the date backfill, which is `B-325`, unpromoted, and whose timing matters
+because the first verification entry makes a backfill costly; and whether
+required status checks are worth GitHub Pro or a public repository.
+`B-123`, promoted before this order was ruled, is now blocked by `B-322` and
+`B-323` on his instruction the same day (*"Do this edit please"*), so the queue
+encodes the whole order.
+
+**Where it is recorded:** the [S6 card](sequences/s6-ecosystem.md)'s section on
+the commons schema order. The commons' own `AGENTS.md` records the study-bundle
+ruling, in `B-322`'s pull request. **Owner:** [S6](sequences/s6-ecosystem.md).
+
+### Q69 — What does `smn-sci-plgn` become? — ANSWERED 2026-09-25 (Brett)
+
+**Ruling:** *"The smn-sci-plugin becomes the thin, dual-manifest front door. Its
+third term-search implementation retires in favour of metasalmonpy."* — Brett,
+2026-09-25, in chat, in the message Q67 quotes.
+
+**What it changes:** it applies Q26 rather than revising it. The plugin stays a
+personal repository, changed in place and not renamed. It gains a Claude plugin
+manifest beside its Codex one, points at the tagged 0.5.0 releases of both
+packages, and deletes its own JSON-LD term ranking in favour of metasalmonpy's.
+That ranking is the third implementation of term search, beside metasalmon's
+and metasalmonpy's. The plugin is also where S16's harness skills live.
+
+**Where it is recorded:** the Foundry plan's §3.5 and its issue-10 row, both
+corrected in the change that recorded this ruling. The row said "→ institute"
+and "rename", which Q26 had already overruled. The plugin is not a hub member,
+so the work has no queue item: it is a pull request in the plugin's own
+repository. Two sessions opened one each, and on 2026-09-25 Brett chose
+*"#2, plus #1's evals"*: `smn-sci-plgn` pull request 2 goes forward, with the
+per-skill evaluation cases from pull request 1 ported onto it.
+
+**What stays open, and is his:** the plugin's version bump and tag; and whether
+the plugin should become a hub member. Under the test Q10 adopted, membership
+follows from this hub sequencing a repository's work, so S16 records the
+harness skill as an external dependency and sequences none of the plugin's
+work. Admitting the plugin would be a membership ruling.
+**Owner:** [S14](sequences/s14-salmon-science-foundry.md), whose execplan the
+Foundry plan is.
+
+### Q70 — Is PSC data that is already published online in scope, and is the Fraser case migrated or rebuilt? — ANSWERED 2026-09-26 (Brett)
+
+**Ruling:** *"PSC data is back in scope as long as its already published online
+like the Fraser Sockeye Recruit dataset."* And: *"Rather than migrating why dont
+you just start from scratch? i don't need it published to KNB though i just want
+a reproducible script taking the input through the an SDP with gaps in IRIs
+noted and suggested in the commons."* — Brett, 2026-09-26, in chat. The same day
+he placed the new recipe in `psc-data-transformations` and allowed any
+metasalmon internal the script needs to be exported.
+
+**What it changes:** it reopens Q33's withdrawal for PSC data that PSC has
+already published online; Q33 stays as the record of the 2026-09-09 position.
+It supersedes S13's requirement 2: no migration path off sdp-0.2.0 and
+metasalmon 0.1.8 is owed, because the case is rebuilt from scratch from PSC's
+public files with current metasalmon, and there is no KNB deposit. The rebuilt
+recipe calls only exported functions, so it adds nothing to requirement 1. Q13's
+migration clause lapses with it; the support request itself is still open.
+
+**Where it is recorded:** the [S13](sequences/s13-fraser-recruits-case-study.md)
+card, and the `retires_when` of `S-13` and `Q-13`, all corrected in the change
+that recorded this ruling. **Owner:** [S13](sequences/s13-fraser-recruits-case-study.md).

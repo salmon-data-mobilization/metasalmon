@@ -1,0 +1,12 @@
+id: B-337
+kind: defect
+title: 'metasalmonpy''s .gitmodules declares a data/ontology submodule whose url resolves to a repository that does not exist, and three more files assume that checkout'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, nothing in the repository''s configuration or scripts declares or depends on a data/ontology checkout that a clone cannot produce: .gitmodules declares no submodule whose url resolves to a repository that does not exist, and .pre-commit-config.yaml, .quartoignore and scripts/validate-term-tables.R stop assuming that path. Removing the stanza, the hook, the script and the two .quartoignore lines is the evident way, since nothing in the package reads the path; re-pointing the stanza at the ontology''s own repository would also need a gitlink, which would vendor gcdfo into metasalmonpy, and that is a design change this item does not ask for. Decided by reading those four files on the default branch. Removing the hook deletes a check, so that pull request is Brett''s under class 6 of HUB.md''s Which pull requests need Brett, although the hook cannot run.'

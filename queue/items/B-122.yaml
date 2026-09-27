@@ -1,8 +1,8 @@
 id: B-122
 kind: defect
 title: Settle whether Gilbert 1913 names four sockeye types or five
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: salmon-knowledge-commons
 severity: P2
 venue: claude-science

@@ -16,6 +16,8 @@ modified after that date.}
 }
 \value{
 Tibble of ICES code types (includes \code{key}, \code{description}, \code{guid}, etc.).
+Empty when ICES answers with no rows, and also when the request fails,
+which warns, naming the request.
 }
 \description{
 List ICES code types

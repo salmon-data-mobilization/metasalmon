@@ -494,11 +494,10 @@
       ,
       drop = FALSE
     ]
-    if (nrow(pre) == 0L) {
-      return(final_assessments[i, , drop = FALSE])
-    }
+    # Any final reject_shortlist escalates (B-361), so a role with no initial
+    # row is escalated too; the initial row only labels the rationale.
     explored <- .ms_llm_escalate_unresolved_rejection(
-      pre[1, , drop = FALSE],
+      if (nrow(pre) > 0L) pre[1, , drop = FALSE] else NULL,
       list(assessment = final_assessments[i, , drop = FALSE])
     )
     explored$assessment

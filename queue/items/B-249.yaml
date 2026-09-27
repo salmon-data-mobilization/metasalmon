@@ -1,0 +1,13 @@
+id: B-249
+kind: defect
+title: 'A retrieval candidate whose source is user is dropped from ontology-gap evidence as though it were a recorded hand-picked accept'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmon, a recorded hand-picked accept is told apart from a retrieval candidate by a marker that no retrieval source can carry, so detect_semantic_term_gaps() drops exactly the rows apply_sdp_semantics() recorded as hand-picked and keeps every retrieval candidate, whatever source name a caller''s search_fn gives it. Pinned by two tests, each demonstrated RED on the code as it stands or on the alternative it rules out: a slot whose only candidate comes from a search_fn that labels its source user still yields that slot''s gap row; and a hand-picked accept followed by a later accept or reject on the same slot yields no gap row built from the recorded row. The second test is the reason keying the exclusion on decision instead does not work: a later decision on the slot turns the recorded row''s decision into not_selected or rejected and leaves the row in the file, so the false gap comes back. Packages already written carry their recorded rows with source user, and the fix says how those are read. WHAT THE MARKER IS belongs to the fix; a change to the columns of semantic_suggestions.csv or of the semantic_suggestions attribute is class 2 in HUB.md''s Which pull requests need Brett. THE METASALMONPY HALF IS B-250, and each names the other.'

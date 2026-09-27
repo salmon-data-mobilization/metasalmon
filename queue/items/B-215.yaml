@@ -1,0 +1,13 @@
+id: B-215
+kind: defect
+title: 'metasalmonpy review_metadata() and the setters read the bundled schema whatever schema the options select, the port of B-175''s fix'
+state: done
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-175]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'In metasalmonpy, review_metadata(), the four set_sdp_*() setters and validate_salmon_datapackage()''s blank-required collector read the schema that set_sdp_schema_source() or METASALMONPY_SDP_SCHEMA_SOURCE, and set_sdp_schema_base_url() or METASALMONPY_SDP_SCHEMA_BASE_URL, select -- the way the writers read it, from the session cache when the writers have already loaded it and otherwise by loading it once -- AND still read the bundled copy with no network call under the shipped defaults, so the socket test stays green. Pinned by the twin of metasalmon''s test "a schema the options select is the one the scan and the setters read": a selected bundle that adds a required dataset.csv field is reported by the scan, accepted by set_sdp_dataset() and named by the collector, demonstrated RED on the code as it stands. A PORT, NOT A REGISTER ROW: R has honoured a selected schema throughout, B-175 kept that while taking the default options offline, and AGENTS.md says an option that will be ignored should warn rather than silently no-op, which is what _SCHEMA_SOURCE = "vendored" does to every setting. The port copies the R behaviour B-175 merged.'

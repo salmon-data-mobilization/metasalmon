@@ -1,0 +1,13 @@
+id: B-352
+kind: defect
+title: 'read_sssom_mapping_set() drops a YAML tag from a metadata value and returns the rest, where the ruled behaviour is to refuse'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), with Q-62''s ruling: both SSSOM readers refuse a tagged metadata line, since the profile has no use for tags. In metasalmon, .ms_sssom_parse_metadata() in R/sssom.R refuses an embedded metadata block in which any value carries a YAML tag -- a local tag such as !expr or !foo, or a !! tag -- the way it refuses a block that is not valid YAML, with an error that names the file, so read_sssom_mapping_set() refuses the file and validate_salmon_datapackage() does not pass a package carrying it; a quoted value that begins with an exclamation mark is text and still reads. Pinned by tests demonstrated RED on the reader as it stands. The test in tests/testthat/test-sssom.R that validates a package whose mapping set carries mapping_set_title: !expr keeps asserting that nothing was evaluated, and asserts the refusal where it now asserts that validation passes and that the title comes back as the expression''s text. THE METASALMONPY HALF IS B-353, and each names the other. Once both land the two readers refuse alike, so no register row is owed.'

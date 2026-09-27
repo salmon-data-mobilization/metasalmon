@@ -126,7 +126,8 @@ Default is <code>FALSE</code> to keep the UI simple for non-DwC users.</p></dd>
 <dd><p>Maximum number of suggestions to keep per semantic role
 (variable, property, entity, unit, constraint, statistical_modifier;
 plus method for code values) per column. Default
-is 3.</p></dd>
+is 3. When <code>llm_assess = TRUE</code>, at least <code>llm_top_n</code> are kept, because
+the LLM can only be shown the candidates retrieval kept.</p></dd>
 
 
 <dt id="arg-search-fn">search_fn<a class="anchor" aria-label="anchor" href="#arg-search-fn"></a></dt>
@@ -195,7 +196,9 @@ OpenAI chat-completions request body when <code>llm_provider = "openai"</code>.<
 
 <dt id="arg-llm-top-n">llm_top_n<a class="anchor" aria-label="anchor" href="#arg-llm-top-n"></a></dt>
 <dd><p>Maximum number of retrieved candidates to send to the LLM
-per target for each assessment round. Default is <code>5</code>.</p></dd>
+per target for each assessment round. Default is <code>5</code>. Retrieval keeps at
+least this many per role when <code>llm_assess = TRUE</code>, whatever
+<code>max_per_role</code> says.</p></dd>
 
 
 <dt id="arg-llm-context-files">llm_context_files<a class="anchor" aria-label="anchor" href="#arg-llm-context-files"></a></dt>

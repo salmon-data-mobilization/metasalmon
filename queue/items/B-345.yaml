@@ -1,0 +1,13 @@
+id: B-345
+kind: defect
+title: 'metasalmonpy recognises the REVIEW: marker through several patterns, and none of them is the ruled ASCII-only definition, the mirror half of B-344'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-343]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), answering Q-63: one ASCII-only definition in both packages, the one B-344 states: from its start, optional ASCII spaces or tabs, REVIEW in any mix of ASCII case, optional ASCII spaces or tabs and a colon, with the strip also removing the ASCII spaces or tabs after the colon and nothing else. IN METASALMONPY every place that recognises or strips the marker goes through one predicate for that definition, including _is_review_iri() and _strip_review_iri() in review_console.py, the ^\s*REVIEW\s*: patterns in dictionary.py and package_io.py, the upper-cased prefix tests in package_io.py, _REVIEW_RE in sdp_methods.py, and the output guards in eml.py and knb_publication.py, which scan a whole document and refuse at least every value the predicate reads as a marker. Each site is pinned by a test demonstrated RED on the code as it stands, with a spelling the definition admits that the site misses, such as REVIEW :x, or one it excludes that the site admits. MARKER_ONLY_IRIS in tests/test_review_console.py, which follows the strip until this ruling, then comes from the predicate. THE NARROWING IS RULED, NOT THE IMPLEMENTER''S JUDGEMENT: a no-break space or any other non-ASCII space after the colon is no longer removed with the marker, a dotless i (U+0131) no longer folds into the I of REVIEW, and a Unicode space or an ASCII line break before REVIEW or before the colon means the value is not a marker; a test pins that a value this makes no longer a marker, REVIEW spelled with a dotless i among them, fails strict validation as a malformed IRI, which is why this item is blocked by B-343. THE METASALMON HALF IS B-344, and each names the other. Once both land the two packages recognise the same spellings, so no register row is owed.'

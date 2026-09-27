@@ -19,7 +19,9 @@ make_eml_test_sdp <- function(path,
                                 "https://w3id.org/smn/",
                               measurement_unit_iri =
                                 "http://qudt.org/vocab/unit/COUNT",
-                              measurement_unit_label = "Count") {
+                              measurement_unit_label = "Count",
+                              temporal_start = "2024",
+                              temporal_end = "2025") {
   resources <- list(
     counts = tibble::tibble(
       record_id = c("A", "B"),
@@ -39,8 +41,8 @@ make_eml_test_sdp <- function(path,
     license = "https://example.org/data-terms/",
     contact_org = "Example Salmon Program",
     contact_position = "Data Steward",
-    temporal_start = "2024",
-    temporal_end = "2025",
+    temporal_start = temporal_start,
+    temporal_end = temporal_end,
     spatial_extent = "Example watershed",
     dataset_type = "Tabular counts",
     source_citation = "Example Salmon Program. 2026. Demonstration counts.",

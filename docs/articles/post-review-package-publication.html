@@ -449,33 +449,39 @@ be refused by <code><a href="../reference/write_eml_from_sdp.html">write_eml_fro
 requires a <strong>reviewed closure</strong>: a standing record of which
 vocabulary terms you accepted, on what evidence, and for which
 target.</p>
-<p>Three files carry it, and <strong>metasalmon validates all three but
-writes none of them</strong> (see the note at the end of this
-section):</p>
+<p>Three files carry it.
+<strong><code><a href="../reference/write_sdp_semantic_closure.html">write_sdp_semantic_closure()</a></code> writes the first two
+and pins the digests the third one carries</strong>; the reviewed EML
+facts in the third are yours (step 11):</p>
 <table class="table">
 <colgroup>
-<col width="50%">
-<col width="50%">
+<col width="33%">
+<col width="33%">
+<col width="33%">
 </colgroup>
 <thead><tr class="header">
 <th>File</th>
 <th>What it must contain</th>
+<th>Written by</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
 <td><code>metadata/semantic_vocabulary.csv</code></td>
 <td>One evidence row per canonical measurement IRI — exactly that set,
 no more and no less</td>
+<td><code><a href="../reference/write_sdp_semantic_closure.html">write_sdp_semantic_closure()</a></code></td>
 </tr>
 <tr class="even">
 <td><code>reviewed_semantic_selections.csv</code></td>
 <td>Exactly one <code>accepted</code> row per canonical review
 target</td>
+<td><code><a href="../reference/write_sdp_semantic_closure.html">write_sdp_semantic_closure()</a></code></td>
 </tr>
 <tr class="odd">
 <td><code>metadata/eml-mapping.yml</code></td>
 <td>The reviewed EML facts, plus the SHA-256 of each of the two files
 above</td>
+<td>you, except the two SHA-256 values</td>
 </tr>
 </tbody>
 </table>
@@ -487,37 +493,145 @@ value across <code>term_iri</code>, <code>property_iri</code>,
 <code>tables.csv</code> <code>method_iri</code> and any procedure IRIs
 reached through <code>codes.csv</code> from an observation-structures
 binding.</p>
-<p><strong>The canonical review target set</strong> is that same set
-<em>plus</em> each table’s <code>observation_unit_iri</code>. The two
-differ, deliberately: the observation unit is a reviewed selection but
-not a measurement term, so it belongs in the ledger and not in the
-vocabulary.</p>
+<p><strong>The canonical review target set</strong> is derived
+independently, and it is <em>not</em> the measurement set plus anything.
+It has one target for each filled slot among these: the same six
+semantic fields on your <code>measurement</code> dictionary rows, plus
+each table’s <code>observation_unit_iri</code> <strong>and</strong> its
+<code>method_iri</code>.</p>
+<p><strong>The two sets differ in both directions</strong>, which is why
+neither can be reasoned from the other:</p>
+<ul>
+<li>an <code>observation_unit_iri</code> is a <strong>review target and
+not a vocabulary term</strong> — a reviewed selection, but not something
+the EML measurement path emits; and</li>
+<li>a <code>sosa:usedProcedure</code> reached through a code value is a
+<strong>vocabulary term and not a review target</strong> — the EML
+method path emits it, but the ledger has no slot for it, because it is
+reached through the code values in your data rather than through any
+field the review target set reads.</li>
+</ul>
+<p>Getting that second direction backwards is worth avoiding rather than
+discovering: the ledger gate accepts <strong>exactly</strong> the
+canonical target set, so a row added for a code-resolved procedure is
+refused as unexpected. <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> and
+<code><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb()</a></code> stop and name the row, while
+<code>validate_salmon_datapackage(require_iris = TRUE)</code> goes on
+passing: the package stops being publishable because of a row you added
+to make it publishable.</p>
 <p><code>semantic_vocabulary.csv</code> needs these columns, all
 non-empty except <code>type_iris</code> and
 <code>source_artifact_sha256</code>:</p>
 <pre><code>iri, label, definition, source, ontology, resource_kind, type_iris,
 native_type, source_url, source_artifact_sha256, reviewed_snapshot_sha256</code></pre>
-<p><code><a href="../reference/find_terms.html">find_terms()</a></code> returns <code>label</code>,
-<code>definition</code>, <code>source</code>, <code>ontology</code>,
-<code>resource_kind</code> and <code>type_iris</code> directly, so
-re-running the search that justified each accepted IRI is how you source
-that evidence rather than transcribing it. <code>native_type</code> and
-<code>source_url</code> are yours to supply.</p>
 <p><code>reviewed_semantic_selections.csv</code> needs:</p>
 <pre><code>dataset_id, table_id, column_name, target_scope, target_sdp_field,
 dictionary_role, decision, confidence, review_rationale, iri</code></pre>
 <p>Every <code>decision</code> must be <code>accepted</code> — a final
 ledger holds no open decisions — and <code>column_name</code> is empty
 only for table-scope rows.</p>
-<div class="alert alert-warning">
-<p><strong>Known gap.</strong> <code>reviewed_snapshot_sha256</code>
-binds each vocabulary row to its own evidence, and there is <strong>no
-exported function that computes it</strong>. Neither closure file has an
-exported producer at all; metasalmon only validates them. Until that is
-fixed, see <code>scripts/build-fraser-coho-knb-rehearsal.R</code> in the
-source repository, which builds both files end to end for the shipped
-Fraser coho example and takes it to a clean KNB test-node dry run.
-Tracked as backlog item #116.</p>
+<div class="section level4">
+<h4 id="produce-both-files">Produce both files<a class="anchor" aria-label="anchor" href="#produce-both-files"></a>
+</h4>
+<p><code><a href="../reference/write_sdp_semantic_closure.html">write_sdp_semantic_closure()</a></code> derives both canonical sets
+from the package, re-runs <code><a href="../reference/find_terms.html">find_terms()</a></code> for each IRI to
+resolve its evidence, computes every
+<code>reviewed_snapshot_sha256</code>, writes both files, and rewrites
+the two file digests in <code>metadata/eml-mapping.yml</code>.
+<strong>No SHA-256 in a reviewed package is ever
+hand-written.</strong></p>
+<p>Two kinds of value it cannot derive, and both go in
+<code>evidence</code>:</p>
+<ul>
+<li>
+<strong>Vocabularies <code><a href="../reference/find_terms.html">find_terms()</a></code> cannot
+search.</strong> It resolves <code>smn</code> and <code>gcdfo</code>. A
+QUDT unit row is hand-authored in full. It also cannot fill
+<code>native_type</code> or <code>source_url</code>, which describe the
+ontology <em>artifact</em> rather than the term; those are derived from
+the resolved source and can be overridden.</li>
+<li>
+<strong><code>confidence</code> and
+<code>review_rationale</code></strong>, which are your judgement. They
+are read from <code>semantic_suggestions.csv</code> where
+<code><a href="../reference/apply_sdp_semantics.html">apply_sdp_semantics()</a></code> recorded a decision reason, and
+otherwise written as a <code>REVIEW REQUIRED:</code> marker with a
+warning naming each target that got one. Replace those before
+publishing.</li>
+</ul>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Your judgement on each accepted IRI. The term evidence is resolved for you.</span></span>
+<span><span class="va">judgements</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tribble.html" class="external-link">tribble</a></span><span class="op">(</span></span>
+<span>  <span class="op">~</span><span class="va">iri</span>, <span class="op">~</span><span class="va">confidence</span>, <span class="op">~</span><span class="va">review_rationale</span>,</span>
+<span>  <span class="st">"https://w3id.org/gcdfo/salmon#SpawnerAbundance"</span>, <span class="st">"high"</span>,</span>
+<span>  <span class="st">"The column is an escapement estimate of adult spawners."</span>,</span>
+<span>  <span class="st">"https://w3id.org/smn/Abundance"</span>, <span class="st">"high"</span>,</span>
+<span>  <span class="st">"The measured characteristic is abundance."</span>,</span>
+<span>  <span class="st">"https://w3id.org/smn/Observation"</span>, <span class="st">"high"</span>,</span>
+<span>  <span class="st">"Each row is one population-year observation."</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># A QUDT row is hand-authored end to end: the search cannot reach QUDT.</span></span>
+<span><span class="va">qudt</span> <span class="op">&lt;-</span> <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/tibble.html" class="external-link">tibble</a></span><span class="op">(</span></span>
+<span>  iri <span class="op">=</span> <span class="st">"https://qudt.org/vocab/unit/INDIV"</span>,</span>
+<span>  label <span class="op">=</span> <span class="st">"Individual"</span>,</span>
+<span>  definition <span class="op">=</span> <span class="st">"A counting unit denoting one organism."</span>,</span>
+<span>  source <span class="op">=</span> <span class="st">"qudt"</span>,</span>
+<span>  ontology <span class="op">=</span> <span class="st">"qudt"</span>,</span>
+<span>  resource_kind <span class="op">=</span> <span class="st">"Unit"</span>,</span>
+<span>  type_iris <span class="op">=</span> <span class="st">"http://qudt.org/schema/qudt/Unit"</span>,</span>
+<span>  native_type <span class="op">=</span> <span class="st">"qudt:Unit"</span>,</span>
+<span>  source_url <span class="op">=</span> <span class="st">"https://qudt.org/vocab/unit/"</span>,</span>
+<span>  confidence <span class="op">=</span> <span class="st">"high"</span>,</span>
+<span>  review_rationale <span class="op">=</span> <span class="st">"Values are whole counts of organisms."</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">closure</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/write_sdp_semantic_closure.html">write_sdp_semantic_closure</a></span><span class="op">(</span></span>
+<span>  <span class="st">"path/to/package"</span>,</span>
+<span>  evidence <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="va">judgements</span>, <span class="va">qudt</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Copy the sidecar template (step 11) <strong>before</strong> running
+this, so the two digests are pinned in the same pass. If you produce the
+closure first, run it again once the sidecar exists.</p>
+<p><strong>An IRI it cannot resolve is reported, not guessed at, and not
+fatal.</strong> <code>closure$gaps</code> is a term-gap table in the
+same shape <code><a href="../reference/detect_semantic_term_gaps.html">detect_semantic_term_gaps()</a></code> returns, so it feeds
+the request pipeline directly:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">closure</span><span class="op">$</span><span class="va">gaps</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">requests</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/render_ontology_term_request.html">render_ontology_term_request</a></span><span class="op">(</span><span class="va">closure</span><span class="op">$</span><span class="va">gaps</span>, ask <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="../reference/submit_term_request_issues.html">submit_term_request_issues</a></span><span class="op">(</span><span class="va">requests</span>, dry_run <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The unresolved row is left out of the vocabulary rather than
+invented, so <code><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp()</a></code> will still refuse the
+package and will name the same IRI. That is the intended sequence: the
+gap is a term to mint or an IRI to correct, and the package is not
+publishable until it is one or the other.</p>
+<p><strong>Two things that leave a row out are not gaps, and you should
+not file them as term requests.</strong> A gap says the searched
+vocabularies do not have the term, and that is what
+<code><a href="../reference/render_ontology_term_request.html">render_ontology_term_request()</a></code> acts on, so the cases that
+do not establish absence are reported separately:</p>
+<ul>
+<li>
+<strong>A lookup that did not answer</strong> — a network or parser
+failure, or a <code><a href="../reference/find_terms.html">find_terms()</a></code> result whose
+<code>"diagnostics"</code> attribute names a source that did not reply.
+The call <strong>aborts and writes nothing</strong>, naming each IRI and
+the silent sources. Re-run when the sources answer; nothing on disk
+changed.</li>
+<li>
+<strong>A term found with a required field blank</strong>, for
+example a class with no definition. It comes back in
+<code>closure$incomplete</code>, naming the missing field and the slot.
+The term exists, so supply the field through <code>evidence</code> or
+annotate it upstream rather than requesting a new term.</li>
+</ul>
+<p>A worked end-to-end example is
+<code>scripts/build-fraser-coho-knb-rehearsal.R</code> in the source
+repository, which takes the shipped Fraser coho data from
+<code><a href="../reference/create_sdp.html">create_sdp()</a></code> to a clean KNB test-node dry run using only
+exported functions.</p>
 </div>
 </div>
 <div class="section level3">
@@ -540,7 +654,7 @@ one</strong> metadata-provider <code>orcid</code>, and it must be the
 ORCID behind the DataONE token you authenticate with. A dry run accepts
 any syntactically valid ORCID, so the placeholder in the shipped
 template will pass a rehearsal and be refused by the live call.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Copy once, then replace every example value and checksum with reviewed facts.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span></span>
@@ -550,7 +664,7 @@ template will pass a rehearsal and be refused by the live call.</p>
 <span>  <span class="op">)</span>,</span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">pkg_path</span>, <span class="st">"metadata"</span>, <span class="st">"eml-mapping.yml"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/write_eml_from_sdp.html">write_eml_from_sdp</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span></code></pre></div>
 <p>That standalone call creates valid reviewed EML for inspection. The
 later KNB dry run deterministically rebuilds it once more so the final
@@ -559,7 +673,7 @@ EML also describes each named canonical SDP artifact as an
 <p>Preview the exact immutable DataONE objects, identifiers, checksums,
 access decision, and OAI-ORE relationships without reading credentials
 or making a network request:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -586,7 +700,7 @@ DOI</li>
 <p>Test objects are never promoted to production: a production deposit
 is planned separately, with production credentials, and mints its own
 identifiers.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -614,7 +728,7 @@ redistribute the package.</p>
 <p>Keep the JWT out of scripts, YAML, manifests, and shell history.
 Enter it into the current R process only and clear it immediately after
 the live call:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># `dataone_token` is the production credential; the test node reads</span></span>
 <span><span class="co"># `dataone_test_token` instead.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>dataone_token <span class="op">=</span> <span class="fu">rstudioapi</span><span class="fu">::</span><span class="fu"><a href="https://rstudio.github.io/rstudioapi/reference/askForPassword.html" class="external-link">askForPassword</a></span><span class="op">(</span><span class="st">"Short-lived DataONE JWT"</span><span class="op">)</span><span class="op">)</span></span>
@@ -668,10 +782,10 @@ than overwriting bytes.</p>
 dry run to the verified manifest for the preceding version. Build the
 revision in a fresh versioned SDP directory; never reuse or overwrite
 the prior package directory:</p>
-<div class="sourceCode" id="cb21"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
-<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="fu">publication</span><span class="kw">:</span></span>
+<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="at">  </span><span class="fu">public</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb23-3"><a href="#cb23-3" tabindex="-1"></a><span class="at">  </span><span class="fu">revision_key</span><span class="kw">:</span><span class="at"> corrected-expanded-sdp-2026-08-04</span></span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/publish_sdp_to_knb.html">publish_sdp_to_knb</a></span><span class="op">(</span></span>
 <span>  <span class="va">revised_pkg_path</span>,</span>
 <span>  public <span class="op">=</span> <span class="cn">FALSE</span>,</span>

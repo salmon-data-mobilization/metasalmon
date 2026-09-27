@@ -184,6 +184,70 @@
   res
 }
 
+# `search_fn`, answering each distinct (query, role, sources) call once for the
+# life of one `suggest_semantics()` call (backlog #56, hub item B-56).
+#
+# The retrieval map runs once per target row, and rows repeat a tuple whenever
+# tables share a column or columns share a unit query: four tables carrying the
+# same two columns are 40 targets and 9 distinct tuples, and every one of the 40
+# used to be a search. A repeat now gets the answer the first search returned,
+# and the rows are built from it exactly as before, so each row keeps the
+# candidates and order its own search would have given it.
+#
+# Three things this is deliberately not:
+#
+#   * Not a second result cache. `find_terms()` has a session cache behind
+#     `METASALMON_CACHE`; this one is created per call and dropped with it, so
+#     it never serves an answer across calls or across a change of ranking
+#     settings, and it covers an injected `search_fn`, which that cache never
+#     sees.
+#   * Never a store for a degraded answer. An answer whose diagnostics say a
+#     source did not answer goes to the row that asked and is not kept, so the
+#     next row with that tuple searches again, as it did before. Keeping it
+#     would hand one outage's short or empty result to every later row, where it
+#     reads as a gap. This is the rule `find_terms()` applies to its own cache,
+#     read through the one copy of the status list, `.ms_search_failed_sources()`.
+#     A search that errors keeps nothing either, and its error propagates as
+#     before.
+#   * Not keyed on sorted sources. The key is the arguments exactly as
+#     `search_fn` receives them. Within one call a role's sources are one fixed
+#     vector (`.ms_sources_for_target_role()`), so sorting would merge no more
+#     rows, and it would assume an injected `search_fn` ignores source order.
+#
+# Nothing is hashed. A hash of the arguments would lean on a dependency version
+# the unversioned rlang import does not promise, or on the serialiser, which
+# rlang 1.3.0's NEWS records hashing identical objects differently on R 4.6.0.
+# Instead the kept answers are narrowed by query string, compared in C, and a
+# hit counts only when the whole argument list is `identical()`. A call whose
+# query is not a single string is passed straight through and never kept.
+.ms_search_once_per_call <- function(search_fn) {
+  kept <- new.env(parent = emptyenv())
+  kept$query <- character()
+  kept$args <- list()
+  kept$result <- list()
+  function(query, role, sources) {
+    call_args <- list(query, role, sources)
+    keyable <- is.character(query) && length(query) == 1L && !is.na(query)
+    if (keyable) {
+      for (i in which(kept$query == query)) {
+        if (identical(kept$args[[i]], call_args)) {
+          return(kept$result[[i]])
+        }
+      }
+    }
+    result <- search_fn(query, role = role, sources = sources)
+    failed <- .ms_search_failed_sources(attr(result, "diagnostics", exact = TRUE))
+    if (keyable && length(failed) == 0L) {
+      n <- length(kept$args) + 1L
+      kept$query[[n]] <- query
+      kept$args[[n]] <- call_args
+      # `[<-` with a list, so a NULL answer is kept rather than dropped.
+      kept$result[n] <- list(result)
+    }
+    result
+  }
+}
+
 .ms_merge_semantic_target_candidates <- function(existing_rows, extra_rows, max_per_role) {
   existing_rows <- tibble::as_tibble(existing_rows)
   extra_rows <- tibble::as_tibble(extra_rows)
@@ -255,7 +319,8 @@
 #' @param max_per_role Maximum number of suggestions to keep per semantic role
 #'   (variable, property, entity, unit, constraint, statistical_modifier;
 #'   plus method for code values) per column. Default
-#'   is 3.
+#'   is 3. When `llm_assess = TRUE`, at least `llm_top_n` are kept, because
+#'   the LLM can only be shown the candidates retrieval kept.
 #' @param search_fn Function used to search terms. Defaults to `find_terms()`.
 #'   Can be replaced for testing or custom search strategies.
 #' @param codes Optional `codes.csv`-like tibble. When provided, suggestions are
@@ -291,7 +356,9 @@
 #' @param llm_reasoning_effort Optional reasoning-effort hint forwarded to the
 #'   OpenAI chat-completions request body when `llm_provider = "openai"`.
 #' @param llm_top_n Maximum number of retrieved candidates to send to the LLM
-#'   per target for each assessment round. Default is `5`.
+#'   per target for each assessment round. Default is `5`. Retrieval keeps at
+#'   least this many per role when `llm_assess = TRUE`, whatever
+#'   `max_per_role` says.
 #' @param llm_context_files Optional character vector of local context files
 #'   (for example README/markdown notes, CSV dictionaries, HTML exports,
 #'   DOCX files, source/notebook files such as `.R`, `.Rmd`, or `.qmd`, Excel
@@ -439,6 +506,14 @@ suggest_semantics <- function(df,
                               llm_context_text = NULL,
                               llm_timeout_seconds = 60,
                               llm_request_fn = NULL) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "suggest_semantics", llm_deprecation_triggered),
+    add = TRUE
+  )
   source_policy <- .ms_semantic_source_policy(
     sources,
     omitted = missing(sources)
@@ -448,6 +523,18 @@ suggest_semantics <- function(df,
     context_files = llm_context_files,
     context_text = llm_context_text
   )
+  # The LLM can only be shown what retrieval kept, so keeping `max_per_role`
+  # candidates made the documented `llm_top_n` default of 5 silently become 3
+  # on this direct path (backlog #57). Every wrapper already widens by this
+  # rule through `.ms_llm_review_plan()`; applying it again to their widened
+  # value changes nothing. Without `llm_assess` the shortlist is untouched.
+  if (isTRUE(llm_assess)) {
+    max_per_role <- .ms_llm_effective_shortlist_size(
+      max_per_role %||% 3L,
+      llm_assess = TRUE,
+      llm_top_n = llm_top_n
+    )
+  }
 
   resource_lookup <- NULL
   default_df <- NULL
@@ -502,13 +589,16 @@ suggest_semantics <- function(df,
   )
   suggestion_leading_cols <- .ms_semantic_suggestion_leading_cols()
 
+  # One search per distinct (query, role, sources) tuple rather than one per
+  # row, and never a degraded answer reused (backlog #56).
+  search_once <- .ms_search_once_per_call(search_fn)
   suggestions <- purrr::map_dfr(seq_len(nrow(targets)), function(i) {
     target <- targets[i, , drop = FALSE]
     res <- .ms_retrieve_semantic_target_candidates(
       target = target,
       sources = source_policy,
       max_per_role = max_per_role,
-      search_fn = search_fn,
+      search_fn = search_once,
       retrieval_pass = 1L
     )
     if (nrow(res) == 0) return(tibble::tibble())
@@ -526,51 +616,7 @@ suggest_semantics <- function(df,
   })
 
   if (nrow(suggestions) > 0) {
-    suggestions$candidate_label_norm <- tolower(trimws(suggestions$label %||% ""))
-    grouped <- suggestions %>%
-      dplyr::group_by(
-        .data$dataset_id,
-        .data$table_id,
-        .data$column_name,
-        .data$code_value,
-        .data$target_scope,
-        .data$target_sdp_file,
-        .data$candidate_label_norm
-      ) %>%
-      dplyr::summarise(
-        collision_roles = paste(sort(unique(.data$dictionary_role), method = "radix"), collapse = "|"),
-        role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
-        .groups = "drop"
-      )
-    suggestions <- suggestions %>%
-      dplyr::left_join(
-        grouped,
-        by = c(
-          "dataset_id",
-          "table_id",
-          "column_name",
-          "code_value",
-          "target_scope",
-          "target_sdp_file",
-          "candidate_label_norm"
-        )
-      ) %>%
-      dplyr::mutate(
-        role_collision_note = dplyr::case_when(
-          .data$role_collision & .data$dictionary_role == "variable" ~ paste0(
-            "Label appears for variable and property candidates; this row targets variable semantics for ",
-            .data$target_sdp_field,
-            "."
-          ),
-          .data$role_collision & .data$dictionary_role == "property" ~ paste0(
-            "Label appears for variable and property candidates; this row targets property semantics for ",
-            .data$target_sdp_field,
-            "."
-          ),
-          TRUE ~ NA_character_
-        )
-      ) %>%
-      dplyr::select(-dplyr::any_of("candidate_label_norm"))
+    suggestions <- .ms_semantic_flag_role_collisions(suggestions)
   }
 
   if (isTRUE(llm_assess) && nrow(targets) > 0) {
@@ -852,7 +898,16 @@ apply_semantic_suggestions <- function(dict,
         )
       )
     }
-    suggestions <- suggestions[!is.na(suggestions$llm_selected) & suggestions$llm_selected, , drop = FALSE]
+    selected <- !is.na(suggestions$llm_selected) & suggestions$llm_selected
+    # An applied row must also carry an accepting decision when the frame
+    # records one (parity row 31, converged in hub item B-326). The column is
+    # not yet required here -- that lands with the removal release, decision
+    # 15 of the S16 execplan -- so a frame without it is filtered on
+    # `llm_selected` alone, as before.
+    if ("llm_decision" %in% names(suggestions)) {
+      selected <- selected & suggestions$llm_decision %in% "accept"
+    }
+    suggestions <- suggestions[selected, , drop = FALSE]
   }
   if (identical(strategy, "reviewed")) {
     if (!"decision" %in% names(suggestions)) {
@@ -1146,8 +1201,14 @@ semantic_suggestions <- function(x) {
 #' @inheritParams semantic_suggestions
 #'
 #' @return A tibble of target-level assessment rows, or `NULL` when none are
-#'   attached. A package path always returns `NULL` — assessments are not
-#'   written into the package, so a package on disk cannot carry them.
+#'   attached. For a package path, the record
+#'   [ingest_semantic_assessments()] persisted in
+#'   `review/semantic-llm-assessments.csv`, typed as the 30-column assessment
+#'   row and carrying the validator findings as its
+#'   `semantic_validator_findings` attribute, or `NULL` when no record has
+#'   been ingested. The in-package model call never writes one. A `review/`
+#'   directory or record that is a symbolic link is refused rather than
+#'   followed.
 #' @export
 #'
 #' @examples
@@ -1155,8 +1216,78 @@ semantic_suggestions <- function(x) {
 #' semantic_llm_assessments(dict)
 semantic_llm_assessments <- function(x) {
   found <- .ms_semantic_attribute_from(x, "semantic_llm_assessments", arg = "x")
-  if (identical(found$kind, "path") || is.null(found$value)) {
+  if (identical(found$kind, "path")) {
+    review_dir <- file.path(found$path, "review")
+    record <- .ms_semantic_review_read_record(review_dir)
+    if (is.null(record)) {
+      return(NULL)
+    }
+    attr(record, "semantic_validator_findings") <- .ms_semantic_review_read_findings(review_dir)
+    return(record)
+  }
+  if (is.null(found$value)) {
     return(NULL)
   }
   tibble::as_tibble(found$value)
+}
+
+# Flag a label that surfaces as both a variable and a property candidate for
+# the same target column, so a reviewer sees that the row targets one role's
+# semantics. Extracted from `suggest_semantics()` so the review packet builder
+# (hub item B-326) marks a re-retrieved shortlist the same way.
+.ms_semantic_flag_role_collisions <- function(suggestions) {
+  suggestions <- tibble::as_tibble(suggestions)
+  if (nrow(suggestions) == 0L) {
+    return(suggestions)
+  }
+  suggestions <- .ms_semantic_add_missing_cols(
+    suggestions,
+    c("dataset_id", "table_id", "column_name", "code_value", "target_scope", "target_sdp_file", "target_sdp_field", "dictionary_role")
+  )
+  suggestions$candidate_label_norm <- tolower(trimws(suggestions$label %||% ""))
+  grouped <- suggestions %>%
+    dplyr::group_by(
+      .data$dataset_id,
+      .data$table_id,
+      .data$column_name,
+      .data$code_value,
+      .data$target_scope,
+      .data$target_sdp_file,
+      .data$candidate_label_norm
+    ) %>%
+    dplyr::summarise(
+      collision_roles = paste(sort(unique(.data$dictionary_role), method = "radix"), collapse = "|"),
+      role_collision = all(c("variable", "property") %in% unique(.data$dictionary_role)),
+      .groups = "drop"
+    )
+  suggestions %>%
+    dplyr::select(-dplyr::any_of(c("collision_roles", "role_collision", "role_collision_note"))) %>%
+    dplyr::left_join(
+      grouped,
+      by = c(
+        "dataset_id",
+        "table_id",
+        "column_name",
+        "code_value",
+        "target_scope",
+        "target_sdp_file",
+        "candidate_label_norm"
+      )
+    ) %>%
+    dplyr::mutate(
+      role_collision_note = dplyr::case_when(
+        .data$role_collision & .data$dictionary_role == "variable" ~ paste0(
+          "Label appears for variable and property candidates; this row targets variable semantics for ",
+          .data$target_sdp_field,
+          "."
+        ),
+        .data$role_collision & .data$dictionary_role == "property" ~ paste0(
+          "Label appears for variable and property candidates; this row targets property semantics for ",
+          .data$target_sdp_field,
+          "."
+        ),
+        TRUE ~ NA_character_
+      )
+    ) %>%
+    dplyr::select(-dplyr::any_of("candidate_label_norm"))
 }

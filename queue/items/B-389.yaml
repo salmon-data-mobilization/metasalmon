@@ -1,0 +1,13 @@
+id: B-389
+kind: defect
+title: 'A column holding text and a logical value seeds the logical as True in metasalmonpy and as TRUE in metasalmon, and neither parity register records the difference'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'WHICH SIDE IS RIGHT IS OPEN, and this item does not decide it: AGENTS.md decides the direction of a divergence per divergence, and adding or amending a parity-register row is class 5 in HUB.md''s Which pull requests need Brett. Whatever the ruling, this item retires in metasalmonpy when a test pins the code_value that metadata.code_list_values() and infer_codes_from_resources() seed for a Python bool in an object column that also holds text, as the ruling says metasalmonpy should write it: "TRUE", which is what metasalmon writes for the same column, if metasalmonpy moves, the seeder changing and the test demonstrated RED on it as it stands; "True", as today, if metasalmon moves or the difference stays; and, if it stays, with PARITY.md recording it. What the ruling asks of metasalmon is not this item''s: recording the ruling files a metasalmon item for it, which names this one.'

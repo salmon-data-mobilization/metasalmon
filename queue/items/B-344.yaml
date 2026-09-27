@@ -1,0 +1,13 @@
+id: B-344
+kind: defect
+title: 'metasalmon recognises the REVIEW: marker through several patterns, and none of them is the ruled ASCII-only definition'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P3
+blocked_by: [B-342]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), answering Q-63: one ASCII-only definition in both packages. A value carries the marker when, from its start, it is optional ASCII spaces or tabs, the letters REVIEW in any mix of ASCII case, optional ASCII spaces or tabs, and a colon; stripping the marker also removes the ASCII spaces or tabs after the colon and nothing else; and nothing depends on the locale. In metasalmon every place that recognises or strips the marker goes through one predicate for that definition, including .ms_is_review_iri() and .ms_strip_review_iri() in R/package-helpers.R, the other patterns in R/package-helpers.R, R/dictionary-helpers.R, R/sdp-extension-helpers.R, R/sdp-methods.R and R/semantic-bundle-validators.R, and the output guards of write_eml_from_sdp() and the KNB path, which scan a whole document and refuse at least every value the predicate reads as a marker. Each site is pinned by a test demonstrated RED on the code as it stands, with a spelling the definition admits that the site misses, such as REVIEW :x, or one it excludes that the site admits, such as a line break before the colon; the tests hold under a C and a UTF-8 locale alike. The per-spelling list in the accept_suggestion() marker tests in tests/testthat/test-review-console.R, which follows the strip until this ruling, then comes from the predicate. THE NARROWING IS RULED, NOT THE IMPLEMENTER''S JUDGEMENT: a Unicode space, or an ASCII line break, form feed or vertical tab, is no longer part of the marker: before REVIEW or before the colon it means the value is not a marker, and after the colon it is not removed with the marker; a test pins that a value this makes no longer a marker fails strict validation as a malformed IRI, which is why this item is blocked by B-342. THE METASALMONPY HALF IS B-345, and each names the other. Once both land the two packages recognise the same spellings, so no register row is owed.'

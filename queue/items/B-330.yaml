@@ -1,0 +1,13 @@
+id: B-330
+kind: defect
+title: 'Remove the in-package model call from metasalmonpy, the mirror half of B-329'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P2
+blocked_by: [B-326, B-327, B-328]
+legacy: ''
+evidence: knowledge/sequences/s16-model-call-leaves-the-packages.md
+retires_when: 'IN METASALMONPY, the same paths B-329 removes from metasalmon are removed, in the same release train: the provider configuration and presets, every read of a provider key, the request and retry code, the injected request function, the llm_* and chat_* arguments, and chat_decomposition(), with their tests. What stays is what stays in R: the context readers, the validators, the merge, gap detection and the redaction of secrets. CHANGELOG.md states it as a breaking change, and every PARITY.md row describing the removed code is retired in the same pull request. NOT CLAIMABLE for the reasons B-329 gives: the release number, one release of deprecation warnings first, a released harness skill outside this hub, and Brett''s notice to the users of the provider route. It waits for the whole additive train and the harness split, as B-329 does, so neither package removes the provider path while the other lags. Step 3 of S16 (Q67). THE METASALMON HALF IS B-329, and each names the other.'

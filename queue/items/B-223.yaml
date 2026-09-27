@@ -1,0 +1,12 @@
+id: B-223
+kind: defect
+title: 'An !expr tag in the EML sidecar reaches published EML as its text in R, where metasalmonpy refuses the sidecar'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: [B-142, Q-62]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): R moves to metasalmonpy''s refusal on these reads, which is also what Q-62''s ruling, refuse on every path, asks of them. Every R read of the EML sidecar, metadata/eml-mapping.yml, on the EML and KNB paths -- write_eml_from_sdp() in R/eml-export.R, and .ms_knb_sdp_artifact_paths() and .ms_knb_build_plan() in R/knb-publication.R -- refuses a sidecar carrying an !expr tag, or any other local tag it has no meaning for, with a clear error that names the file, as metasalmonpy''s _read_mapping_yaml() in eml.py already does, instead of taking the tag''s text as the value and carrying on. Pinned by a test per read, demonstrated RED on the reads as they stand. B-142 made every one of these reads pass eval.expr = FALSE, so no tag runs; what this item changes is the value that reaches published EML. B-142''s tests assert both that a tag never runs and that its text arrives as the value: the first assertion stays, and the second becomes the refusal. THE SEMANTIC CLOSURE''S PATH READER IS NOT THIS ITEM: it reads the same file through .ms_closure_mapping_paths(), and the same ruling moves it in both packages, as B-340 here and B-341 in metasalmonpy; the three R reads may share one reader. No metasalmonpy half is owed for these reads, because metasalmonpy already refuses there.'

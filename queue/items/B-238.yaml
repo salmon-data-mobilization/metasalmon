@@ -1,0 +1,13 @@
+id: B-238
+kind: defect
+title: 'The research that establishes what B-232''s smn terms mean has no commons-owned item, so it could end in ontology annotations and never reach a commons card'
+state: ready
+claimable: true
+repo: salmon-knowledge-commons
+venue: claude-science
+stream: S9
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'EVERY smn TERM IN B-232''S SCOPE HAS A COMMONS CARD THAT ESTABLISHES ITS MEANING OR SAYS WHY IT CANNOT YET. The one exception is a term an open queue item deletes rather than defines, such as smn:NCBITaxon_8018, which B-108 deletes: it needs no card, and it is accounted for here by naming that item, because B-232 never writes its definition. That exception was added 2026-09-24 after the Codex review of metasalmon pull request 150 found this condition unsatisfiable for such a term. Each card cites its sources with an in-card citation ledger that passes the ledger check, proposes the definition wording B-232 will write, and says whether that wording is reused from an authoritative source or composed. A term whose meaning needs a ruling from Brett carries the question in its card and a gap entry, so B-232 can record the term as deferred for that ruling. Such a term counts as accounted for here only if a commons item, blocked on that ruling, owns updating its card with the ruled meaning and the reasons once the ruling lands, as B-239 does for smn:Run; otherwise this item could retire and leave the card saying the question is open after it is answered. The cards are merged to the commons main branch, so B-232 cites each one by commit. Filed 2026-09-24 after the Codex review of metasalmon pull request 150: what a term means, and why, is durable salmon knowledge that AGENTS.md sends to the commons, and B-232 is a salmon-domain-ontology item that cannot finish work in a second repository.'

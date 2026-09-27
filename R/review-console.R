@@ -67,6 +67,20 @@
   c("column_dictionary.csv", "codes.csv", "tables.csv")
 }
 
+# Whether each target is a code's slot: one whose write-back address includes
+# `code_value`, which today means `codes.csv`. Read from
+# `.ms_review_target_keys()` rather than spelled a second time, so the two cannot
+# disagree. A code's slot stays one when its `code_value` is empty, as a
+# `codes.csv` row's may be when it supplies `vocabulary_iri` instead.
+.ms_review_is_code_slot <- function(target_file) {
+  vapply(
+    as.character(target_file),
+    function(file) !is.na(file) && "code_value" %in% .ms_review_target_keys(file),
+    logical(1),
+    USE.NAMES = FALSE
+  )
+}
+
 # The `decision` values `apply_sdp_semantics()` writes into
 # `semantic_suggestions.csv`, and how each maps back onto a review row.
 # `not_selected` is the sibling of an accept within the same slot: the slot IS
@@ -74,6 +88,32 @@
 # own and the accepted row in the same slot supplies it.
 .ms_review_recorded_decisions <- function() {
   c(accepted = "accept", accept = "accept", rejected = "reject")
+}
+
+# A candidate's IRI as a decision records it: trimmed, with the leading
+# `REVIEW:` marker removed, which is what `accept_suggestion(rank = )` and a
+# replayed decision put in `decision_iri`. Whether a decision names a given
+# candidate is asked twice. `accept_suggestion(iri = )` picks the candidate's
+# row with it, and `apply_sdp_semantics()` takes the candidate's `term_type`
+# only when the decision row carries the accepted IRI. Both read this one
+# rendering. While the writer compared the stored IRI with its marker, a
+# candidate stored as `REVIEW: <IRI>` was picked by the first and not recognised
+# by the second, so it wrote `skos_concept` (hub item B-221).
+.ms_review_decision_iri <- function(x) {
+  .ms_strip_review_iri(trimws(as.character(x)))
+}
+
+# Whether an IRI as a decision records it (`.ms_review_decision_iri()`) names a
+# term: something is left once the `REVIEW:` marker is stripped, and what is
+# left is not still read as a marker. The strip removes one marker, so a doubled
+# `REVIEW: REVIEW:` leaves one. `review_semantics()` asks this of every
+# candidate and `accept_suggestion(iri = )` of the IRI it is given, so neither
+# route records a decision that names no term (hub item B-246). Which spellings
+# count as the marker is the strip's and the detector's, and this decides none.
+.ms_review_names_term <- function(recorded) {
+  text <- as.character(recorded)
+  !is.na(text) & nzchar(text) &
+    !vapply(text, .ms_is_review_iri, logical(1), USE.NAMES = FALSE)
 }
 
 # Replay the decisions recorded in the package onto a freshly built review.
@@ -230,6 +270,30 @@ review_semantics <- function(x,
                              include_filled = FALSE,
                              max_candidates = 5L,
                              columns = NULL) {
+  queue <- .ms_review_queue(x, include_filled = include_filled, columns = columns)
+  review <- queue$review
+
+  if (is.finite(max_candidates)) {
+    review <- review[review$rank <= as.integer(max_candidates), , drop = FALSE]
+  }
+
+  attr(review, "review_path") <- queue$review_path
+  class(review) <- c("ms_semantic_review", class(tibble::tibble()))
+  review
+}
+
+# The review queue: which slots still need a decision, with every candidate
+# row that would be shown for them. This is the one rule both
+# `review_semantics()` and `write_semantic_review_packet()` apply (hub item
+# B-326), so the packet a harness judges holds exactly the slots the console
+# would show and never a fresh discovery -- re-running discovery would drop
+# every slot `create_sdp()` pre-filled with a `REVIEW:` marker, because the
+# discovery code treats a marked slot as filled.
+#
+# Returns the review rows (one per candidate, before `max_candidates`), the
+# suggestion rows they were built from (`suggestions[source_row, ]` is the row
+# behind `review[i, ]`), and the package path when there is one.
+.ms_review_queue <- function(x, include_filled = FALSE, columns = NULL) {
   suggestions <- semantic_suggestions(x)
   if (is.null(suggestions) || nrow(suggestions) == 0L) {
     cli::cli_abort(c(
@@ -264,15 +328,48 @@ review_semantics <- function(x,
   # reversed itself over.
   writable <- as.character(suggestions$target_sdp_file) %in% .ms_review_writable_files()
   iri_field <- grepl("_iri$", as.character(suggestions$target_sdp_field))
-  has_iri <- !is.na(suggestions$iri) & nzchar(trimws(as.character(suggestions$iri)))
-  keep <- writable & iri_field & has_iri
-  # `any(!keep)` first: `paste0(character(0), " - ", character(0))` recycles the
-  # length-one separator and returns `" - "`, so a length test on the pasted
-  # vector reports a dropped target on every call that dropped nothing.
-  dropped <- if (any(!keep)) {
+  decidable <- writable & iri_field
+  # A candidate is queued only when the IRI a decision would record names a
+  # term. Tested only for being blank, a candidate whose `iri` was only the
+  # marker was queued, `rank =` accepted it with an empty `decision_iri`, and a
+  # recorded accept of one replayed the same way (hub item B-246).
+  has_iri <- .ms_review_names_term(.ms_review_decision_iri(suggestions$iri))
+  # A recorded reject is kept whatever its IRI, because rejecting a slot names
+  # no candidate: dropped, a slot whose only candidate named no term lost its
+  # rejection and reason on replay. `accept_suggestion(rank = )` refuses such a
+  # row, so keeping it lets nothing record an accept.
+  recorded <- .ms_review_recorded_decisions()
+  rejected <- if ("decision" %in% names(suggestions)) {
+    trimws(as.character(suggestions$decision)) %in% names(recorded)[recorded == "reject"]
+  } else {
+    rep(FALSE, nrow(suggestions))
+  }
+  keep <- decidable & (has_iri | rejected)
+  # A `codes.csv` row with no code value gets no semantic target (hub item
+  # B-276), and discovery forms none for it. Suggestions recorded before that,
+  # in a `semantic_suggestions.csv` an earlier version wrote or an attribute
+  # built from one, can still carry its candidates, so they are dropped here,
+  # where every queued slot passes. The row is found by its file and its code
+  # value, never by its key, which spells the empty value `NA` from R and `nan`
+  # or nothing from metasalmonpy. Nothing is said, as for a candidate naming no
+  # term: the row has no code value for a term to represent, so the review has
+  # nothing to decide for it. Retires when no suggestions file written before
+  # B-276, or by a metasalmonpy without its half (B-277), is still read.
+  keep <- keep & !(
+    .ms_review_is_code_slot(suggestions$target_sdp_file) &
+      .ms_semantic_code_value_is_empty(suggestions$code_value)
+  )
+  # Only a field the review cannot decide is reported as one. A row dropped for
+  # naming no term targets a field the review does decide, and listing it here
+  # told the user to edit that field by hand (hub item B-246); it offers nothing
+  # to accept, so it is dropped without a word. `any(!decidable)` first:
+  # `paste0(character(0), " - ", character(0))` recycles the length-one
+  # separator and returns `" - "`, so a length test on the pasted vector reports
+  # a dropped target on every call that dropped nothing.
+  dropped <- if (any(!decidable)) {
     unique(paste0(
-      as.character(suggestions$target_sdp_file)[!keep], " \u00b7 ",
-      as.character(suggestions$target_sdp_field)[!keep]
+      as.character(suggestions$target_sdp_file)[!decidable], " \u00b7 ",
+      as.character(suggestions$target_sdp_field)[!decidable]
     ))
   } else {
     character()
@@ -383,6 +480,7 @@ review_semantics <- function(x,
   # new. The round trip is the point of persisting the decision at all.
   review <- .ms_review_seed_recorded_decisions(review, suggestions)
 
+  source_row <- seq_len(nrow(review))
   if (!isTRUE(include_filled)) {
     # A slot with an unknown current value (no frame to read, or an ambiguous
     # row match) is kept: dropping it would hide work, and the console labels
@@ -390,18 +488,20 @@ review_semantics <- function(x,
     unfilled <- is.na(review$current_value) | .ms_review_is_unfilled(review$current_value)
     # A recorded decision takes a slot out of the queue even though rejecting
     # leaves the field blank -- "blank" and "undecided" are different states,
-    # and only `include_filled = TRUE` shows the decided ones again.
+    # and only `include_filled = TRUE` shows the decided ones again. A
+    # hand-picked accept (`source = "user"`) is recorded with a decision, so
+    # this is also what drops it.
     decided <- review$slot_id %in% unique(review$slot_id[!is.na(review$decision)])
-    review <- review[unfilled & !decided, , drop = FALSE]
+    source_row <- which(unfilled & !decided)
+    review <- review[source_row, , drop = FALSE]
   }
 
-  if (is.finite(max_candidates)) {
-    review <- review[review$rank <= as.integer(max_candidates), , drop = FALSE]
-  }
-
-  attr(review, "review_path") <- review_path
-  class(review) <- c("ms_semantic_review", class(tibble::tibble()))
-  review
+  list(
+    review = review,
+    suggestions = suggestions,
+    source_row = source_row,
+    review_path = review_path
+  )
 }
 
 # --------------------------------------------------------------------------
@@ -509,6 +609,25 @@ review_semantics <- function(x,
 # "entity", ...)` for the table slot, and a spurious `table = "spawners"` on an
 # unrelated dictionary slot that the phantom NA row had made look ambiguous.
 # `column = NULL` selects the column-less (table-scope) slots deliberately.
+#
+# `code_value` has three states, and the third is the one hub queue B-151 was
+# missing. `NULL` leaves it unconstrained; a value selects that code's slot; and
+# a BLANK value (`""`, or `NA`, which `.ms_scalar_text()` reads as `""`)
+# selects the slots that belong to no code: the column's own slot, or a
+# table's. Without the third state a column-level slot could not be told apart
+# from its own codes' slots when they share a role -- a measurement column's
+# `entity_iri` and its codes' `entity` targets do -- because omitting
+# `code_value` matched every code as well as the column.
+#
+# "Belongs to no code" is decided by the slot's file, not by its `code_value`
+# alone. A `codes.csv` row may leave `code_value` empty when it supplies
+# `vocabulary_iri`, which the codes schema allows, and discovery gave it a
+# code-level target. Reading an empty `code_value` as "no code" matched that
+# slot and the column's own slot together, so the blank never settled anything
+# for a column with such a row (Codex review of pull request #153). Since hub
+# item B-276 such a row gets no target and `review_semantics()` queues no slot
+# for it, so only a review built before that holds one; the file test keeps a
+# blank from deciding it there.
 .ms_review_match_slot_rows <- function(review, column, role, table = NULL, code_value = NULL) {
   keep <- rep(TRUE, nrow(review))
   has_column <- !is.na(review$column_name) & nzchar(trimws(review$column_name))
@@ -522,7 +641,13 @@ review_semantics <- function(x,
     keep <- keep & !is.na(review$table_id) & review$table_id == table
   }
   if (!is.null(code_value)) {
-    keep <- keep & !is.na(review$code_value) & review$code_value == code_value
+    code_value <- .ms_scalar_text(code_value)
+    has_code <- !is.na(review$code_value) & nzchar(trimws(review$code_value))
+    keep <- if (nzchar(code_value)) {
+      keep & has_code & review$code_value == code_value
+    } else {
+      keep & !has_code & !.ms_review_is_code_slot(review$target_file)
+    }
   }
   review[keep, , drop = FALSE]
 }
@@ -533,6 +658,16 @@ review_semantics <- function(x,
 # prints the short call the execplan's target experience shows. A column-less
 # slot has no positional spelling at all, so it prints named arguments and
 # `table` is mandatory rather than a disambiguator.
+#
+# When `table` is not enough, `code_value` is added. For a code's slot that is
+# its code value. For a slot that belongs to no code it is `code_value = ""`,
+# the only spelling that excludes the code slots sharing this slot's column and
+# role, because an omitted `code_value` matches them all (hub queue B-151).
+# A code's slot with an empty `code_value` gets neither: `""` now selects the
+# slots that belong to no code, so printing it there would decide the column's
+# own slot instead of this one. That slot's call stays as ambiguous as it was
+# before B-151, and refuses rather than deciding the wrong slot. Only a review
+# built before hub item B-276 holds such a slot.
 .ms_review_call_args <- function(review, slot_id) {
   row <- review[review$slot_id == slot_id, , drop = FALSE][1, , drop = FALSE]
   column <- .ms_scalar_text(row$column_name)
@@ -555,7 +690,7 @@ review_semantics <- function(x,
   }
   if (length(resolved(extra)) > 1L) {
     code_value <- .ms_scalar_text(row$code_value)
-    if (nzchar(code_value)) {
+    if (nzchar(code_value) || !.ms_review_is_code_slot(row$target_file)) {
       extra$code_value <- code_value
     }
   }
@@ -701,10 +836,17 @@ review_semantics <- function(x,
         ))
         lines <- c(lines, .ms_review_wrap(candidate$llm_rationale, indent = "            "))
       }
-      lines <- c(lines, paste0(
-        "       ", object_name, " <- ",
-        .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
-      ))
+      # A call is printed only where it runs. A candidate whose IRI names no
+      # term is here only to carry a recorded reject, or because the review was
+      # not built by `review_semantics()`, and `accept_suggestion()` refuses it.
+      lines <- c(lines, if (.ms_review_names_term(.ms_review_decision_iri(candidate$iri))) {
+        paste0(
+          "       ", object_name, " <- ",
+          .ms_review_accept_call(review, slot, candidate$rank[[1]], object_name)
+        )
+      } else {
+        "       (its IRI names no term, so it cannot be accepted)"
+      })
       lines <- c(lines, "")
     }
 
@@ -805,9 +947,26 @@ print.ms_semantic_review <- function(x, ...) {
 
   slots <- unique(rows$slot_id)
   if (length(slots) > 1L) {
+    # A slot that belongs to no code and shares its table with code slots is
+    # selected only by `code_value = ""`; offering bare `table = ` for it
+    # repeated an argument that could not settle anything, so the column's own
+    # slot was unreachable by following this message (hub queue B-151). What
+    # makes a slot a code's is its file, not a non-empty `code_value`: a
+    # `codes.csv` row may leave the value empty when it supplies
+    # `vocabulary_iri` (Codex review of pull request #153). Such a code slot
+    # has no option of its own that settles it, since no argument tells it
+    # apart from the column's own slot, so it keeps the bare `table = ` it had
+    # before.
+    is_code_slot <- .ms_review_is_code_slot(rows$target_file)
+    has_code <- !is.na(rows$code_value) & nzchar(trimws(rows$code_value))
+    needs_blank <- !is_code_slot & rows$table_id %in% rows$table_id[is_code_slot]
     ambiguous <- unique(paste0(
       "table = \"", rows$table_id, "\"",
-      ifelse(is.na(rows$code_value) | !nzchar(rows$code_value), "", paste0(", code_value = \"", rows$code_value, "\""))
+      ifelse(
+        has_code,
+        paste0(", code_value = \"", rows$code_value, "\""),
+        ifelse(needs_blank, ", code_value = \"\"", "")
+      )
     ))
     cli::cli_abort(
       c(
@@ -842,9 +1001,18 @@ print.ms_semantic_review <- function(x, ...) {
 #' @param rank Rank of the candidate to accept, as printed in the shortlist.
 #' @param table Table identifier; needed only when the column name appears in
 #'   more than one table.
-#' @param code_value Code value; needed only for code-level slots.
+#' @param code_value Code value; needed only for code-level slots. Pass `""`
+#'   (or `NA`) to select a column's own slot when codes of that column have
+#'   slots with the same role, as a measurement column's codes do: leaving
+#'   `code_value` out matches those code slots too. A blank never selects a
+#'   code's slot. A `codes.csv` row that leaves `code_value` empty because it
+#'   supplies `vocabulary_iri` has no slot at all: it gets no semantic target,
+#'   having no code value for a term to represent. `review_semantics()` prints
+#'   `code_value` whenever it is needed.
 #' @param iri Optional IRI to accept instead of a shortlisted candidate -- for
-#'   the case where the right term exists but retrieval did not surface it.
+#'   the case where the right term exists but retrieval did not surface it. An
+#'   `iri` that a shortlisted candidate in the slot carries is recorded as that
+#'   candidate, exactly as its `rank` would be.
 #' @param reason Optional free-text reason recorded with a rejection.
 #'
 #' @return The review, with the decision recorded.
@@ -882,11 +1050,7 @@ accept_suggestion <- function(review,
   in_slot <- review$slot_id == slot
 
   accepted_iri <- if (!is.null(iri)) {
-    value <- .ms_scalar_text(iri)
-    if (!nzchar(value)) {
-      cli::cli_abort("{.arg iri} must be a non-empty IRI.")
-    }
-    value
+    .ms_scalar_text(iri)
   } else {
     hit <- which(in_slot & review$rank == as.integer(rank))
     if (length(hit) != 1L) {
@@ -906,11 +1070,57 @@ accept_suggestion <- function(review,
   # what was decided.
   accepted_iri <- .ms_strip_review_iri(accepted_iri)
 
+  # The non-empty check reads the stripped value, because that is the value the
+  # decision records. Run before the strip, it let `iri = "REVIEW:"`, and every
+  # other spelling the strip removes, record an accept that named no term
+  # (hub item B-219). The strip removes one marker, so a value that is still a
+  # marker after it is refused too (hub item B-246). `rank =` is checked as well:
+  # `review_semantics()` queues no such candidate, but a review it did not build
+  # as it is now -- one saved by an earlier version, or edited by hand -- can
+  # still hold one.
+  if (!.ms_review_names_term(accepted_iri)) {
+    if (is.null(iri)) {
+      cli::cli_abort(c(
+        "The candidate at that {.arg rank} names no term.",
+        "i" = "Its IRI is empty, or still a {.code REVIEW:} marker once one is removed.",
+        "i" = "Rebuild the review with {.fn review_semantics}, which does not queue such a candidate."
+      ))
+    }
+    message <- "{.arg iri} must be a non-empty IRI."
+    if (nzchar(accepted_iri)) {
+      message <- c(
+        "{.arg iri} must be an IRI, not a {.code REVIEW:} marker.",
+        "i" = "An accepted IRI is recorded without one {.code REVIEW:} marker, and what is left here is still a marker."
+      )
+    } else if (nzchar(.ms_scalar_text(iri))) {
+      message <- c(
+        message,
+        "i" = "An accepted IRI is recorded without its {.code REVIEW:} marker, and nothing follows the marker here."
+      )
+    }
+    cli::cli_abort(message)
+  }
+
   review$decision[in_slot] <- NA_character_
   review$decision_iri[in_slot] <- NA_character_
   review$decision_reason[in_slot] <- NA_character_
 
-  target <- if (!is.null(iri)) which(in_slot)[[1]] else which(in_slot & review$rank == as.integer(rank))
+  # An `iri` that a shortlisted candidate carries names that candidate, so the
+  # decision goes on the candidate's row, where `rank =` would put it. That row
+  # is where `apply_sdp_semantics()` reads the candidate's `term_type` and where
+  # the rebuilt review replays the decision. On the slot's first row instead,
+  # one decision wrote `skos_concept` when first applied and the candidate's own
+  # type once rebuilt (hub item B-221). Candidate IRIs are compared as a
+  # decision records them (`.ms_review_decision_iri()`, which the writer reads
+  # too), and the first carrier wins, as it does on replay. An IRI no candidate
+  # in this review carries still goes on the first row, whose different IRI
+  # tells the writer nothing is known about its type.
+  target <- if (is.null(iri)) {
+    which(in_slot & review$rank == as.integer(rank))
+  } else {
+    carried <- which(in_slot & .ms_review_decision_iri(review$iri) %in% accepted_iri)
+    if (length(carried) > 0L) carried[[1]] else which(in_slot)[[1]]
+  }
   review$decision[target] <- "accept"
   review$decision_iri[target] <- accepted_iri
   review

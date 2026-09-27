@@ -1,0 +1,12 @@
+id: Q-71
+kind: question
+title: 'R''s and metasalmonpy''s fetch_salmon_ontology() fetch different ontologies by default and answer differently when every URL fails with a copy cached; which side is right, difference by difference'
+state: needs_brett
+claimable: false
+repo: metasalmon
+venue: either
+stream: S2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'Brett rules each difference below, and each ruling is recorded in knowledge/questions.md with its implementing item filed in the repository that can finish it, or, where the ruling keeps a difference on purpose, with a pair of register items filed, one in metasalmon for knowledge/parity-deviations.md and one in metasalmonpy for PARITY.md, each naming the other, because one item cannot finish a write in two repositories. The differences, one per clause: (1) which ontology fetch_salmon_ontology() fetches by default, with the fallback that goes with it; (2) what a call returns when every URL fails and a copy is cached. What each side does, and what each side''s documentation says, is in knowledge/backlog.md and not restated here. WHICHEVER WAY (1) GOES, METASALMONPY''S DEFAULT CHANGES, because its default url no longer answers: to R''s default if metasalmonpy moves, or to a gcdfo url that answers if R moves or the difference is kept, so recording (1) files a metasalmonpy item in every case. B-333 to B-336 are defects under any ruling here. UNREGISTERED: neither register records either difference, and AGENTS.md calls an undocumented difference a contract violation whether or not the difference is fine, and decides direction per divergence, so neither side is presumed right. RECOMMENDED AND NOT RULED, because the direction is Brett''s. On (1), metasalmonpy moves to smn, the ontology both packages search first and rank above gcdfo and the one R''s documentation names; the case the other way is that metasalmonpy''s bare call returns gcdfo today, as its documentation promises. On (2), R moves to raising, because a copy of any age returned as an ordinary value with only a warning is a failure read as a success, and R''s documentation promises no fallback; the case the other way is that a user who has fetched once can keep working offline in R and cannot in metasalmonpy, whose own module docstring names offline work as a purpose of its cache.'

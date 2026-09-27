@@ -1,0 +1,12 @@
+id: B-224
+kind: defect
+title: 'Two sentences date yaml''s eval.expr to 2.2.0 and call an opted-in session the worst case, when 2.1.19 added it and 2.2.x ran tags by default'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'NEWS.md''s entry for the #111 validator work and the comment in tests/testthat/test-sssom.R''s !expr test both state yaml''s history correctly: the eval.expr argument arrived in yaml 2.1.19, not 2.2.0, and until 2.3.0 its default was TRUE, so on DESCRIPTION''s floor, yaml (>= 2.2.0), a tag ran with no option set at all, and the worst case was an ordinary install rather than a session that opted in. DOCUMENTATION ONLY: the code both sentences describe passes eval.expr = FALSE and is correct, and the floor itself is not part of this item. The NEWS entry is corrected in place while it sits under the development heading; if it has shipped by then, the correction is a dated note appended to it, as AGENTS.md''s Releases section allows.'

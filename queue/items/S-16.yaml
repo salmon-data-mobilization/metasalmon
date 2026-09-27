@@ -1,0 +1,12 @@
+id: S-16
+kind: stream
+title: 'The model call leaves metasalmon and metasalmonpy'
+state: icebox
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S16
+blocked_by: []
+legacy: 'S16'
+evidence: knowledge/sequences/s16-model-call-leaves-the-packages.md
+retires_when: 'Neither package carries a model client, reads a provider key, or holds an HTTP path to a model; the harness skill is the documented route for model judgement; the workshop no longer teaches learners to get a provider key; and every parity row that described the provider path has been retired by deletion. Ruled by Brett 2026-09-25 (Q67); the order is in the stream card.'

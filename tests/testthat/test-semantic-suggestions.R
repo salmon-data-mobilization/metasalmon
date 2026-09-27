@@ -154,6 +154,80 @@ test_that("semantic target discovery emits normalized rows across all SDP scopes
   )
 })
 
+# Hub item B-276, ruled by Brett 2026-09-25: a `codes.csv` row whose
+# `code_value` is empty gets no semantic target. The codes schema lets a row
+# leave `code_value` empty when it supplies `vocabulary_iri`, and defines
+# `term_iri` as "the specific term that code_value represents", so such a row
+# has no code value for a term to represent. A row of the same column that has
+# a code value keeps its targets.
+vocabulary_backed_codes <- function(empty) {
+  tibble::tibble(
+    dataset_id = "d1",
+    table_id = "survey",
+    column_name = "count",
+    code_value = c(empty, "-9"),
+    code_label = c("Count categories", "Not surveyed"),
+    code_description = c(
+      "Counts are recorded against a published category vocabulary.",
+      "The reach was not surveyed."
+    ),
+    vocabulary_iri = c("https://example.org/vocab/count-categories", NA_character_),
+    term_iri = NA_character_
+  )
+}
+
+test_that("a codes.csv row with no code value gets no semantic target, and a coded row of its column keeps its own", {
+  dict <- test_count_dictionary(dataset_id = "d1", table_id = "survey", value_type = "integer")
+  # NA and empty text are the two spellings the ruling names. Whitespace alone
+  # is empty too: the review console reads a code value trimmed, so such a row
+  # had no address there either, and the CSV reader trims it to NA on disk.
+  for (empty in list(NA_character_, "", "  ")) {
+    label <- if (is.na(empty)) "NA" else paste0("\"", empty, "\"")
+    codes <- vocabulary_backed_codes(empty)
+
+    targets <- metasalmon:::.ms_semantic_discover_targets(
+      dict = dict,
+      codes = codes,
+      table_meta = tibble::tibble(),
+      dataset_meta = tibble::tibble()
+    )
+    code_targets <- targets[targets$target_sdp_file == "codes.csv", , drop = FALSE]
+    expect_equal(unique(code_targets$code_value), "-9", info = label)
+    expect_equal(unique(code_targets$target_row_key), "d1/survey/count/-9", info = label)
+    expect_setequal(code_targets$dictionary_role, c("constraint", "entity", "method"))
+
+    # The same rule reaches suggest_semantics(), which writes no suggestion for
+    # the row, rather than only a target list nobody searches.
+    res <- suggest_semantics(
+      NULL, dict, sources = "smn", max_per_role = 1,
+      search_fn = test_shortlist_search, codes = codes
+    )
+    suggestions <- semantic_suggestions(res)
+    code_suggestions <- suggestions[suggestions$target_sdp_file == "codes.csv", , drop = FALSE]
+    expect_gt(nrow(code_suggestions), 0L)
+    expect_equal(unique(code_suggestions$code_value), "-9", info = label)
+    expect_equal(unique(code_suggestions$target_row_key), "d1/survey/count/-9", info = label)
+  }
+})
+
+test_that("a code whose value is the text NA keeps its semantic target", {
+  # The text `NA` is a code value, not a missing one: the metadata reader maps
+  # only an empty field to NA, so a code list read from a package can carry it.
+  dict <- test_count_dictionary(dataset_id = "d1", table_id = "survey", value_type = "integer")
+  codes <- vocabulary_backed_codes("NA")
+  codes$vocabulary_iri <- NA_character_
+
+  targets <- metasalmon:::.ms_semantic_discover_targets(
+    dict = dict,
+    codes = codes,
+    table_meta = tibble::tibble(),
+    dataset_meta = tibble::tibble()
+  )
+  code_targets <- targets[targets$target_sdp_file == "codes.csv", , drop = FALSE]
+  expect_setequal(unique(code_targets$code_value), c("NA", "-9"))
+  expect_setequal(unique(code_targets$target_row_key), c("d1/survey/count/NA", "d1/survey/count/-9"))
+})
+
 test_that("semantic target discovery preserves paired value/unit resource context", {
   dict <- test_dictionary(
     dataset_id = "d1",

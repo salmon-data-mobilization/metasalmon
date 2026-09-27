@@ -30,10 +30,12 @@
 #' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
 #'   directory that already holds something. An existing but *completely empty*
 #'   directory is written into without `overwrite` — there is nothing there to
-#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   destroy — while a dot-file, a stale `.sdp-package` ownership sentinel, or an
 #'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for directories previously written by `metasalmon`.
+#'   allowed for a directory recognised as a package: one holding the shared
+#'   `.sdp-package` ownership sentinel, or its SDP metadata. An older
+#'   `.metasalmon-package` sentinel on its own is not recognised.
 #' @param write_datapackage Logical; if `TRUE` (default), write a root
 #'   `datapackage.json` descriptor declaring the SDP Frictionless profile after
 #'   package validation passes. Use `FALSE` for draft authoring output.
@@ -311,14 +313,27 @@ write_salmon_datapackage <- function(
   nzchar(trimws(as.character(value)))
 }
 
+# The package-ownership sentinel: one file name and one content line, shared by
+# metasalmon and metasalmonpy (hub item B-113; Brett's Q14 ruling, 2026-08-24).
+# Neither names an implementation, because what owns the directory is the SDP
+# tooling rather than one language's copy of it. Both values are recorded in
+# `knowledge/parity-deviations.md` row 51, and metasalmonpy's half (hub item
+# B-127) takes them from there, so they are a cross-repository contract that
+# `test-package-ownership-sentinel.R` pins.
+#
+# The per-language `.metasalmon-package` this replaced is no longer written,
+# managed or recognised. Q14 accepted that break, and a package that still has
+# its SDP metadata is recognised by that. Nothing removes or renames an old
+# sentinel: Q14 rules out either writer removing the other's file, and no
+# migration is owed.
 .ms_package_sentinel_file <- function(path) {
-  file.path(path, ".metasalmon-package")
+  file.path(path, ".sdp-package")
 }
 
-# Byte-identical to the `writeLines("metasalmon-owned", ..., useBytes = TRUE)`
-# call that wrote the sentinel before the write path became transactional.
+# A fixed ASCII line ending in LF, so it has one byte encoding on every platform
+# and in either language.
 .ms_package_ownership_bytes <- function() {
-  charToRaw("metasalmon-owned\n")
+  charToRaw("sdp-owned\n")
 }
 
 # Render the descriptor with the exact writer -- and therefore the exact bytes
@@ -576,7 +591,7 @@ write_salmon_datapackage <- function(
 # So the emptiness test runs BEFORE the `overwrite` gate, not after it.
 #
 # "Empty" means `.ms_dir_entries()` returns nothing -- `list.files(all.files =
-# TRUE, no.. = TRUE)`, so a dot-file, a stale `.metasalmon-package` sentinel,
+# TRUE, no.. = TRUE)`, so a dot-file, a stale `.sdp-package` sentinel,
 # or an empty `data/` subdirectory each make the directory NON-empty and the
 # `overwrite` gate applies as before. Only a directory with literally zero
 # entries is written into. That is deliberately the strictest reading: every
@@ -672,11 +687,21 @@ write_salmon_datapackage <- function(
     },
     error = function(error) character()
   )
-  if (length(decisions) == 0L) {
+  # A semantic review session under `review/` is a record too (hub item
+  # B-326): the packet, the harness's answers and the ingested assessments.
+  # `prune = TRUE` would delete it just as silently.
+  review_record <- .ms_semantic_review_file(file.path(path, "review"), "record")
+  has_review_record <- file.exists(review_record) && !dir.exists(review_record)
+  if (length(decisions) == 0L && !has_review_record) {
     return(invisible(NULL))
   }
   cli::cli_warn(c(
-    "{.code prune = TRUE} is about to delete {.file semantic_suggestions.csv}, which records {length(decisions)} review decision{?s}.",
+    if (length(decisions) > 0L) {
+      "{.code prune = TRUE} is about to delete {.file semantic_suggestions.csv}, which records {length(decisions)} review decision{?s}."
+    },
+    if (has_review_record) {
+      "{.code prune = TRUE} is about to delete {.file review/}, which holds an ingested semantic review record."
+    },
     "i" = "Copy it first if you want to keep the record of what was accepted and why."
   ))
   invisible(NULL)
@@ -838,6 +863,14 @@ infer_salmon_datapackage_artifacts <- function(
     llm_timeout_seconds = 60,
     llm_request_fn = NULL
 ) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "infer_salmon_datapackage_artifacts", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)
@@ -1009,10 +1042,12 @@ infer_salmon_datapackage_artifacts <- function(
 #' @param overwrite Logical; if `FALSE` (default), errors when `path` is a
 #'   directory that already holds something. An existing but *completely empty*
 #'   directory is written into without `overwrite` — there is nothing there to
-#'   destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or an
+#'   destroy — while a dot-file, a stale `.sdp-package` ownership sentinel, or an
 #'   empty `data/` subdirectory all count as content and still require it. If
 #'   `TRUE`, the package is updated in place — see `prune`. Replacement is only
-#'   allowed for directories previously written by `metasalmon`.
+#'   allowed for a directory recognised as a package: one holding the shared
+#'   `.sdp-package` ownership sentinel, or its SDP metadata. An older
+#'   `.metasalmon-package` sentinel on its own is not recognised.
 #' @param prune Logical; if `FALSE` (default), reviewed sidecars in an existing
 #'   package directory are preserved and only files this writer owns are
 #'   replaced. If `TRUE`, the directory is emptied first. Requires
@@ -1116,6 +1151,14 @@ create_sdp <- function(
     prune = FALSE,
     ...
 ) {
+  # The in-package model call is deprecated (S16 step 1); one warning per
+  # top-level call, after the opt-in warnings. See R/semantic-review-deprecation.R.
+  llm_deprecation_depth <- .ms_llm_deprecation_enter()
+  llm_deprecation_triggered <- .ms_llm_deprecation_triggered(environment())
+  on.exit(
+    .ms_llm_deprecation_exit(llm_deprecation_depth, "create_sdp", llm_deprecation_triggered),
+    add = TRUE
+  )
   semantic_sources <- .ms_forward_semantic_sources(
     semantic_sources,
     omitted = missing(semantic_sources)

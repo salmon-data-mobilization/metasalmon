@@ -1,0 +1,12 @@
+id: B-266
+kind: defect
+title: 'metasalmonpy''s semantic closure gives a code-resolved procedure''s gap and incomplete-evidence rows the same nonexistent codes.csv method_iri address, the mirror half of B-265'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+severity: P3
+blocked_by: [B-265]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, _target_context() in semantic_closure.py gives an IRI that no review target holds the address B-265 lands in R, so its gap and incomplete-evidence rows name each codes.csv row whose term_iri carries the IRI, with that row''s keys filled, and the warning and the rationale name that field. Pinned by the twins of B-265''s two tests, the second with two codes.csv rows carrying one procedure IRI, on a fixture that binds a sosa:usedProcedure column, each demonstrated RED on the code as it stands. This half was read and not run, so its RED run is its first measurement. THE METASALMON HALF IS B-265, and each names the other. A PORT, NOT A REGISTER ROW.'

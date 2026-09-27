@@ -1,8 +1,8 @@
 id: B-152
 kind: defect
 title: The network guards in test-github-helpers.R probe a host and a credential path the code under test never uses
-state: ready
-claimable: true
+state: done
+claimable: false
 repo: metasalmon
 venue: claude-code
 severity: P3

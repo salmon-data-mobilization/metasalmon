@@ -1,0 +1,13 @@
+id: B-342
+kind: defect
+title: 'Strict validation accepts text that is not an IRI in an _iri field, so a REVIEW: marker a detector misses passes it'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S1
+severity: P2
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'validate_salmon_datapackage(require_iris = TRUE) refuses a value that is not an absolute IRI in every field where it refuses a REVIEW: marker: the six semantic IRI fields of column_dictionary.csv that validate_dictionary() sweeps, and every _iri column of the metadata tables that .ms_collect_review_iri_issues() sweeps. The shape is the package''s one owner of it, .ms_absolute_iri_shape() in R/iri-predicates.R; a blank value is left to the checks that already handle blanks, and a value refused as a REVIEW: marker is reported once, as a marker. Pinned by a test per field class, demonstrated RED on the validator as it stands, with a value such as foo bar, a value that starts with a no-break space, and REVIEW spelled with a dotless i (U+0131) before the colon. WHY IT IS FILED WITH THE REVIEW: RULING: Brett ruled Q-63 on 2026-09-25 on the premise that a marker a reader misses reaches strict validation as a malformed IRI, and strict validation checks no such shape in these fields, so the spellings B-344 stops recognising would pass it. B-344 is blocked by this item for that reason. THE METASALMONPY HALF IS B-343, and each names the other; both test the same shape, so the two validators refuse the same values.'

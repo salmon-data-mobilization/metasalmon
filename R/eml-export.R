@@ -1657,6 +1657,16 @@
     }
     temporal <- xml2::xml_add_child(coverage, "temporalCoverage")
     range <- xml2::xml_add_child(temporal, "rangeOfDates")
+    # Not a third renderer (hub item B-162). `dataset_meta` is read back from
+    # the package on disk as text: `metadata/dataset.csv` through
+    # `.ms_read_metadata_csv()`, every column character, or `datapackage.json`
+    # when the package has no canonical metadata. So `as.character()` below is
+    # the identity on the one rendering that file already holds, and that file
+    # is the baseline. Routing these lines through the descriptor's renderer,
+    # `.ms_descriptor_temporal_text()`, would re-render that text and pad a
+    # short year, so the EML would disagree with the file it was built from.
+    # Pinned, with why a typed instant is not, in
+    # tests/testthat/test-canonical-date-render.R.
     begin <- xml2::xml_add_child(range, "beginDate")
     .ms_eml_add_text(begin, "calendarDate", as.character(temporal_start))
     end <- xml2::xml_add_child(range, "endDate")
@@ -2917,7 +2927,8 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort("EML export requires exactly one SDP dataset row.")
   }
 
-  mapping <- yaml::read_yaml(mapping_path)
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  mapping <- yaml::read_yaml(mapping_path, eval.expr = FALSE)
   configs <- .ms_eml_validate_mapping(mapping, pkg)
   revision_key <- .ms_eml_revision_key(
     mapping,

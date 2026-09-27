@@ -1,0 +1,13 @@
+id: B-302
+kind: defect
+title: 'metasalmonpy suggest_semantics() shows the LLM max_per_role candidates instead of llm_top_n on its direct path, and pyproject.toml does not declare frictionless, the mirror half of B-57'
+state: ready
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P2
+blocked_by: [B-57]
+legacy: ''
+evidence: knowledge/parity-deviations.md
+retires_when: 'IN METASALMONPY, two things B-57 changed in metasalmon hold. (1) suggest_semantics() with llm_assess=True keeps max(max_per_role, llm_top_n) candidates per role at its first retrieval pass, the rule metasalmon''s suggest_semantics() applies after B-57 and every metasalmon wrapper already applied, so the first review round shows the LLM llm_top_n candidates; without llm_assess the first pass still keeps max_per_role. A metasalmonpy test pins it as tests/testthat/test-llm-shortlist-width.R pins it in R: an injected search_fn giving eight candidates per role and the defaults keep five per role and name five in the first request, a larger max_per_role still sets how many are kept, and three are kept without llm_assess. (2) pyproject.toml declares frictionless as an optional dependency for dwc_dp_build_descriptor(validate=True), the counterpart of the SystemRequirements line B-57 added. THE METASALMON HALF IS B-57. A PORT, NOT A REGISTER ROW: once it lands the two implementations behave alike again. NOT THIS ITEM: what dwc_dp_build_descriptor(validate=True) does with the report, which is B-300 in metasalmon and owes metasalmonpy its own half once ruled.'

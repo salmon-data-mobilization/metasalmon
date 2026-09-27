@@ -1,0 +1,13 @@
+id: B-213
+kind: defect
+title: 'The pkgdown build aborts on main because _pkgdown.yml does not index write_sdp_semantic_closure, and nothing in CI builds or checks the site'
+state: done
+claimable: false
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'pkgdown::check_pkgdown() passes on main, because write_sdp_semantic_closure has an entry in _pkgdown.yml''s reference index beside the functions it works with, AND a check that runs on every pull request fails when an exported topic is missing from that index, demonstrated RED against the index as it stands. THE SECOND HALF IS THE POINT: the function shipped without an entry because no CI job builds or checks the site, and the next export will do the same unless something does; pkgdown::check_pkgdown() reads the index without building anything, so it is cheap enough to run there. Dropping the topic from the index with @keywords internal does not satisfy this, because the function is exported and documented for users. B-141''s condition needs a full site build, which stops at the index first.'

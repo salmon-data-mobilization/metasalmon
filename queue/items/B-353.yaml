@@ -1,0 +1,13 @@
+id: B-353
+kind: defect
+title: 'metasalmonpy''s SSSOM reader returns a tagged metadata line as written, where the ruled behaviour is to refuse, the mirror half of B-352'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett), with Q-62''s ruling: both SSSOM readers refuse a tagged metadata line, since the profile has no use for tags. IN METASALMONPY, the embedded-metadata parser in sssom.py, _parse_yaml_subset() and the _parse_scalar() it calls, refuses a block in which any value carries a YAML tag -- a local tag such as !expr or !foo, or a !! tag -- with the not valid YAML error it raises for other lines it cannot read, naming the file, so read_sssom_mapping_set() refuses the file and validate_salmon_datapackage() does not pass a package carrying it; a quoted value that begins with an exclamation mark is text and still reads. Pinned by tests demonstrated RED on the parser as it stands. test_validate_salmon_datapackage_never_evaluates_a_tag_in_sssom_metadata in tests/test_sssom.py keeps asserting that nothing was evaluated and that validation read the file, and asserts the refusal where it now asserts that validation passes and that the title comes back as text. THE METASALMON HALF IS B-352, and each names the other. Once both land the two readers refuse alike, so no register row is owed.'

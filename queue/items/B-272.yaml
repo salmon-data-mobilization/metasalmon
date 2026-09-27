@@ -1,0 +1,13 @@
+id: B-272
+kind: defect
+title: 'The SSSOM manifest metasalmonpy writes cites the same missing specification page, the mirror half of B-271'
+state: icebox
+claimable: false
+repo: metasalmonpy
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: [B-271]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, sssom.py writes the provenance.specification URL B-271 lands in R, so the two implementations'' manifests stay byte-identical; a test pins the string, and tests/data/sssom/r-sdp/metadata/semantic/mapping-sets.json, the R-written fixture that carries the old URL, changes with its entry in tests/data/sssom/checksums.json. THE METASALMON HALF IS B-271, and each names the other. A PORT, NOT A REGISTER ROW.'

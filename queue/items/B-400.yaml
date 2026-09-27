@@ -1,0 +1,13 @@
+id: B-400
+kind: defect
+title: 'B-122''s title says it settles whether Gilbert 1913 names four sockeye types or five, where the question was how many species he applies sea type to'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: either
+stream: S9
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'The title in queue/items/B-122.yaml says what B-122 settled, whether Gilbert 1913 applies "sea type" to four species or to five, and no longer speaks of sockeye types. Decided by grep: "sockeye types" does not appear in the file.'

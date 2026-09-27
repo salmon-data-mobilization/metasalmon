@@ -294,7 +294,11 @@
     "reproducibility",
     "manifest.json"
   )
-  mapping <- yaml::read_yaml(file.path(path, "metadata", "eml-mapping.yml"))
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
+  mapping <- yaml::read_yaml(
+    file.path(path, "metadata", "eml-mapping.yml"),
+    eval.expr = FALSE
+  )
   mapped_review <- as.character(mapping$semantic_review$path %||% "")
   reproducibility_relative <- character()
   if (file.exists(reproducibility_manifest)) {
@@ -1569,8 +1573,10 @@
                                overwrite = FALSE) {
   representation <- match.arg(representation)
   .ms_knb_reject_review_candidate_annotations(path)
+  # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
   mapping <- yaml::read_yaml(
-    file.path(path, "metadata", "eml-mapping.yml")
+    file.path(path, "metadata", "eml-mapping.yml"),
+    eval.expr = FALSE
   )
   archive <- NULL
   package_objects <- if (identical(representation, "archive")) {

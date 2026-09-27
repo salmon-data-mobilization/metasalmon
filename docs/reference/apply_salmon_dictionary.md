@@ -28,11 +28,20 @@ apply_salmon_dictionary(df, dict, codes = NULL, strict = TRUE)
 - strict:
 
   Logical; if `TRUE` (default), errors on type coercion failures; if
-  `FALSE`, warns and coerces to character
+  `FALSE`, warns and coerces to character. A coercion failure is one
+  that R reports with a warning as well as one it reports with an error,
+  so a column typed `integer` holding `"abc"` is a failure even though
+  `as.integer("abc")` only warns and returns `NA`.
 
 ## Value
 
 A tibble with renamed columns, coerced types, and factor levels applied
+
+## Details
+
+A value that is not in its column's code list has no factor level, so it
+becomes `NA`. Each such value is named in a warning, whatever `strict`
+is. Blank strings are treated as missing and are not reported.
 
 ## Examples
 

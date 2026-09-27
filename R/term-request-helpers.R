@@ -101,6 +101,18 @@ detect_semantic_term_gaps <- function(
   }
 
   suggestions <- if (is.null(suggestions)) tibble::tibble() else tibble::as_tibble(suggestions)
+  # A row `apply_sdp_semantics()` recorded for a hand-picked accept
+  # (`source = "user"`) is a reviewer's decision, not retrieval output, and
+  # every row this function returns is a claim about what retrieval found.
+  # Counted, its blank `search_query` made it a target of its own whose only
+  # candidate was not `smn`, so a post-review `semantic_suggestions.csv`
+  # reported an ontology gap for the slot the reviewer had just filled. Dropped
+  # before anything is derived from the table, embedded assessments included.
+  # Hub queue B-176. Retires when: never -- a recorded decision is not retrieval
+  # evidence. If a reviewer's choice should ever count as a gap signal, that is
+  # a new `gap_detection_basis` of its own, decided here, not this row passing
+  # as a candidate.
+  suggestions <- suggestions[!.ms_review_is_hand_picked(suggestions), , drop = FALSE]
   if (suggestions_supplied) {
     assessments <- .ms_term_gap_embedded_assessments(suggestions)
   } else {

@@ -53,8 +53,8 @@ under `queue/`.
   ordinary "R shipped first" lag rather than a set of deliberate differences, so
   it was owed as a **port** — tracked in `knowledge/parity-deviations.md` and the
   roadmap's release index, and deliberately **not** as new register rows.
-  metasalmonpy's tree now reads 0.5.0; **tagging `v0.5.0` there is a separate
-  outward act and is Brett's**, so its newest tag is still `v0.4.0`.
+  metasalmonpy's tree reads 0.5.0, and measured 2026-09-24 its newest tag is
+  `v0.5.0`, made that day on the bump merge `67fb486` with a GitHub Release.
   **Parity is the state that decays fastest**, and the version of this
   paragraph that recorded 0.4.0/0.4.0 said exactly that while recording it: it
   decayed one release later, which is the argument for reading any parity
@@ -115,6 +115,38 @@ under `queue/`.
   when `llm_assess = TRUE` (and, for `infer_dictionary()`, `seed_semantics = TRUE`).
   This is the contract behind the 0.1.4 fix; supplying options that will be ignored
   should warn, not silently no-op.
+  **Ruled 2026-09-25 (Brett, hub Q67): the model call leaves both packages.**
+  This contract governs every release that still carries the in-package call.
+  The additive release (hub item B-326) deprecates that call, and the removal
+  release (B-329) deletes it, at which point this becomes the stronger contract
+  that the packages make no model call at all. Until then, work that only
+  improves the provider path has at most the releases before the removal to
+  matter in. The order, and what stays, is the
+  [S16 card](knowledge/sequences/s16-model-call-leaves-the-packages.md).
+  **The in-package model call is deprecated
+  (2026-09-25, hub Q67, stream S16):** `llm_assess = TRUE`, the eleven `llm_*`
+  arguments and `chat_decomposition()` warn once per top-level call (class
+  `metasalmon_llm_deprecated`; silenced suite-wide by the option
+  `metasalmon.llm_deprecation_quiet`) and are removed in 0.7.0. Judgement now
+  runs in the user's harness against a file: `write_semantic_review_packet()`
+  writes `review/semantic-review-packet.json` and `ingest_semantic_assessments()`
+  reads `review/semantic-assessments-pass-<n>.csv` back. **The file contract:**
+  the packet's `packet_id` is the SHA-256 of its canonical bytes minus
+  `packet_id` and `producer`, the harness names the packet it judged in a
+  one-line sidecar `<csv>.packet-id` (or the caller passes `packet_id`), an
+  IRI the packet did not offer is never applied, a retry is a second harness
+  pass (a continuation packet; nothing from that target merges until it is
+  answered), a rejected shortlist earns no second pass, and every harness
+  free-text value is redacted at capture. The 30-column row's per-column
+  ownership (`harness`, `package`, `harness_or_package`) and requiredness live
+  in `.ms_semantic_review_output_columns()` and are written into every packet.
+  Neither function may reach a model provider; the network is reached only
+  through `search_fn`, and `tests/testthat/test-semantic-review-packet.R`
+  walks the call graph to prove it. The schema, the instructions and the
+  conformance fixtures (`inst/extdata/semantic-review/`,
+  `tests/testthat/fixtures/semantic-review/v1/`) are one contract vendored
+  byte-identically in metasalmonpy; a change to any of them is a change to
+  the contract and needs the same change there.
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:
@@ -124,10 +156,17 @@ under `queue/`.
   attaches `semantic_suggestions` (+ `semantic_llm_assessments` when `llm_assess`).
   These are read by other modules and many tests.
 - **Frozen column contracts:** the 19-col semantic target row
-  (`.ms_semantic_target_cols()`) and the ~30-col LLM assessment row
+  (`.ms_semantic_target_cols()`) and the 30-col LLM assessment row
   (`R/llm-review-adapter.R`). The adapter's row builders read target columns
   positionally — a rename/reorder breaks them. Empty and success assessment rows
-  must keep identical column sets.
+  must keep identical column sets. **The assessment row outlives the provider
+  code** (hub Q67, 2026-09-25): it becomes the contract a harness writes and the
+  package's assessment ingester reads, so it stays frozen after the model call
+  is gone.
+  Since S16 step 1 (B-326) the packet's `output.columns` names each column's
+  owner and requiredness, `review/semantic-llm-assessments.csv` persists the
+  row, every row still comes from the two builders and leaves through the one
+  normalizer, and the persisted header is `.ms_llm_assessment_cols()`.
 - **Observable markers to preserve:** the `REVIEW:` IRI prefix (strict validation
   fails if any remain) and the `llm_context_sources` output column.
 - **A semantic role is a contract across seven surfaces, not a string.** Adding
@@ -214,6 +253,20 @@ under `queue/`.
   lists here work because they name their own maintenance rule
   (`collation_sensitive_fns`, `hint_roles`); apply the same discipline to
   anything that silences a signal.
+- **An empty result is a claim about the instrument, not about the target.**
+  When a search, filter or query returns nothing for a file, item or row, that
+  states what the instrument could reach, not what the target contains.
+  Establish reach with a positive control: something you know is present that
+  the same command must return. A plausible count is the harder case, because
+  it raises no alarm; check it against the source by hand. Where the target is
+  the authority other copies defer to, no instrument clears it; only reading
+  it does. Observed on pull request #137: a sweep for the copies of one stale
+  sentence printed the authoritative card's header with nothing under it, and
+  the empty section was read as *no copies here* (the account is in
+  `knowledge/backlog.md`). `queue/README.md` corollaries 7 and 8 are the
+  narrower rules for a queue sweep. (Brett, 2026-09-25.) *Retires when:* a
+  sweep carries its own positive control and fails when the control does not
+  come back.
 - **C collation for anything reproducible.** Any ordering whose result is
   hashed, written to file bytes, embedded in an identifier, returned by an
   exported function, or asserted by a validator must use explicit C collation:
@@ -261,7 +314,11 @@ under `queue/`.
   `tests/testthat/test-cli-safety-guard.R`.
 - LLM review decisions: `accept`, `review`, `retry_search`, `request_new_term`,
   `reject_shortlist`. An unresolved `reject_shortlist` escalates to
-  `request_new_term` (surfaces an ontology gap) — keep that distinction.
+  `request_new_term` (surfaces an ontology gap) — keep that distinction. **Any
+  final `reject_shortlist` escalates, whatever the decision before a retry was**
+  (B-361, ruled 2026-09-25); in the review-packet contract a rejection earns
+  no second pass and escalates at once, and only `retry_search` widens a
+  shortlist.
 
 ## Releases
 
@@ -287,9 +344,20 @@ B-144's entry was filed under `## 0.5.0`, which made the changelog say a
 version contains a change that the commit making the version current does not;
 B-124's `1e9245c` (#29), later still, went under `## Unreleased` correctly.
 metasalmonpy pull request 35 moved B-144's entry (merged 2026-09-16 as
-`3f8349a`), and `v0.5.0`, which is Brett's to make, goes on `67fb486`. The
-window is real on every release, because the tag is a separate act from the
-bump; the mechanical check is hub item B-200 (B-201 for the mirror).
+`3f8349a`), and `v0.5.0` went on `67fb486` when it was tagged on 2026-09-24,
+eight days after the bump. The window is real on every release, because the tag
+is a separate act from the bump.
+
+**The pre-tag step is `python3 scripts/check-changelog-window.py`, run on an
+up-to-date `main` in a full clone before the tag is made.** Until the tag
+exists it measures the version against its bump commit — the first commit on
+`main` whose `DESCRIPTION` reads it — and fails on any line under that heading
+added by a commit that is not an ancestor of it. A correction passes only in a
+marked, dated form: a `*(Correction, YYYY-MM-DD: …)*` paragraph or a
+`[corrected YYYY-MM-DD: …]` bracket. A red run before tagging means an entry
+moves to the development heading first. It also runs on every pull request
+(`.github/workflows/changelog-window.yaml`), and its docstring states what it
+does not cover. Hub item B-200; B-201 is the mirror.
 
 ## Build / test / docs
 
@@ -352,11 +420,12 @@ bundle (migrated from `notes/` on 2026-08-13; only the CI/test-wired
 - **`knowledge/roadmap.md` — what to do next, in what order, blocked by what,
   and the cross-repo release index.** Undated, edited in place, the single
   sequencing authority for the whole ecosystem. Start here.
-- **`knowledge/sequences/`** — one card per stream (S1–S13) with the detail the
+- **`knowledge/sequences/`** — one card per stream (S1–S16) with the detail the
   roadmap card deliberately omits.
 - **`knowledge/backlog.md`** — every known defect with evidence, the live index
-  of open items. Severity lives here; *ordering* lives in the roadmap, and the
-  two legitimately differ.
+  of open items. An item's severity lives in the `severity` field of its file
+  under `queue/items/`, not here (ruled by Brett 2026-09-25, hub item Q-52);
+  *ordering* lives in the roadmap, and the two legitimately differ.
 - **`knowledge/plans/*.md`** — how to do one stream, in detail. Dated, because
   each is a record of a decision at a point in time. A sequence card links to
   its execplan before implementation starts.

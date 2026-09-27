@@ -1,0 +1,13 @@
+id: B-386
+kind: defect
+title: 'metasalmonpy''s HTML context reader keeps script, style and head text that metasalmon''s leaves out'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S16
+severity: P3
+blocked_by: [B-364]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'IN METASALMONPY, the HTML context reader keeps only text inside the document body and outside script and style elements, as metasalmon''s does. Pinned by a test over an HTML fixture with a script, a style and a title. Register row 62 keeps covering the remaining library-specific differences in extraction. No metasalmon half.'

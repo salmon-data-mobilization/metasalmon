@@ -35,10 +35,12 @@ write_salmon_datapackage(
 \item{overwrite}{Logical; if \code{FALSE} (default), errors when \code{path} is a
 directory that already holds something. An existing but \emph{completely empty}
 directory is written into without \code{overwrite} — there is nothing there to
-destroy — while a dot-file, a stale \code{.metasalmon-package} sentinel, or an
+destroy — while a dot-file, a stale \code{.sdp-package} ownership sentinel, or an
 empty \verb{data/} subdirectory all count as content and still require it. If
 \code{TRUE}, the package is updated in place — see \code{prune}. Replacement is only
-allowed for directories previously written by \code{metasalmon}.}
+allowed for a directory recognised as a package: one holding the shared
+\code{.sdp-package} ownership sentinel, or its SDP metadata. An older
+\code{.metasalmon-package} sentinel on its own is not recognised.}
 
 \item{write_datapackage}{Logical; if \code{TRUE} (default), write a root
 \code{datapackage.json} descriptor declaring the SDP Frictionless profile after

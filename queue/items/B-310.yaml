@@ -1,0 +1,12 @@
+id: B-310
+kind: defect
+title: 'metasalmon''s code-row seeder lists a character column that readr would read as dates, where metasalmonpy''s lists nothing'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'R/dictionary-helpers.R''s .ms_code_list_values() applies the same readr date test as metasalmonpy''s metadata._text_reads_as_dates(), so a character column that readr would read as dates seeds no codes.csv rows; a factor is exempt, as a Categorical is there. A test in tests/testthat/test-codes-target-categorical.R pins it on the bundled sample, inst/extdata/nuseds-fraser-coho-sample.csv read with every column as text: create_sdp() seeds no codes.csv row for START_DTT or END_DTT. Row 64 of knowledge/parity-deviations.md then records that R moved. Brett ruled the direction on 2026-09-25, for metasalmonpy pull request 44 (hub B-188): R moves. THE MIRROR''S HALF of that row update is metasalmonpy''s PARITY.md row 64, which records the same in a metasalmonpy pull request of its own once this lands; it is outside this item''s repository and is not its condition. NOT THIS ITEM: read with every column as text, the sample also seeds columns of numbers held as text that are not typed categorical, so the test asserts on START_DTT and END_DTT and not on R''s plain condition for the whole package. The measurements are in this item''s evidence.'

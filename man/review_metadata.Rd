@@ -36,12 +36,24 @@ What it reports:
 placeholders in any metadata field;
 \item schema-required fields (\code{constraints.required}) that are blank -- a
 column the file does not have counts as blank in every row;
+\item draft IRIs still carrying the \verb{REVIEW:} prefix wherever strict validation
+refuses one: any schema-declared \verb{*_iri} field of \code{tables.csv}, and the
+six semantic IRI fields of \code{column_dictionary.csv} (\code{term_iri},
+\code{property_iri}, \code{entity_iri}, \code{unit_iri}, \code{constraint_iri} and
+\code{statistical_modifier_iri}). A marker in \code{codes.csv} or \code{dataset.csv} is
+not listed, because strict validation does not refuse it there. Where
+retrieval found candidates for one, \code{\link[=review_semantics]{review_semantics()}} shows them;
 \item measurement columns missing \code{term_iri}, \code{property_iri}, \code{entity_iri} or
 \code{unit_iri};
 \item \code{tables.csv} rows with a blank \code{observation_unit_iri}.
 }
 
-It never contacts a network or an LLM.
+It never contacts an LLM, and under the default options it never contacts a
+network: the SDP schema it reads the required fields from is the copy
+bundled with metasalmon. When the \code{metasalmon.sdp_schema_source} or
+\code{metasalmon.sdp_schema_base_url} option selects a different schema, it reads
+that one, as the package writers do: from this session's cache once they have
+loaded it, and otherwise by fetching it as they would.
 }
 \examples{
 \dontrun{

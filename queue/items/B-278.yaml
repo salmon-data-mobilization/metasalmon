@@ -1,0 +1,13 @@
+id: B-278
+kind: defect
+title: 'detect_semantic_term_gaps() reads the commons gap register (okf-check.py --gaps) and feeds the term-request pipeline'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S6
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/plans/2026-09-04-salmon-science-foundry-concrete-plan.md
+retires_when: 'A reader for the JSON that the commons'' scripts/okf-check.py --gaps emits (a top-level gaps array; measured 2026-09-25 at commons commit cab0248: 93 entries, each with state and mint_target) feeds detect_semantic_term_gaps(), so that a register gap flows through render_ontology_term_request() and submit_term_request_issues(dry_run = TRUE) without being hand-filed, with a test on a fixture copy of that output; the domain card calls the register the front end of this pipeline, and until this lands that is intent, not fact (rg for okf-check, gaps.json or --gaps under R/ finds nothing). Foundry issue 16, pulled out of Stage B on 2026-09-25. The metasalmonpy half is B-279, which names this item; a parity-register row is owed only if the two sides differ.'

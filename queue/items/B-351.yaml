@@ -1,0 +1,13 @@
+id: B-351
+kind: defect
+title: 'metasalmonpy''s write_sdp_sssom() does not write canonical SSSOM/TSV either, the mirror half of B-350'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S9
+severity: P3
+blocked_by: [B-350, B-234]
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): canonical output at the next minor version, in both packages together, with the hash change in the changelog. IN METASALMONPY, every mapping set write_sdp_sssom() writes, through _canonical_bytes() in sssom.py, is byte-identical to what metasalmon writes for the same input once B-350 has landed, which is canonical SSSOM/TSV: the R-written fixtures under tests/data/sssom, canonical/ and r-sdp/ with their entries in tests/data/sssom/checksums.json, are regenerated from metasalmon''s writer, and the byte-parity tests in tests/test_sssom.py, demonstrated RED against them by the writer as it stands, pass. Its SSSOM reader reads every file it writes, which needs B-234, and validate_sdp_sssom() still accepts a package written in the form it writes today. CHANGELOG.md, under ## Unreleased, says that every mapping set''s bytes, and so every manifest''s sha256, change. The same pull request amends row 11 of PARITY.md, which is class 5 in the hub''s HUB.md, so the merge is Brett''s. The version number does not move here, and which release carries the change is not this item''s condition: a version is Brett''s, class 3, and the ruling puts both halves in the same minor version. THE METASALMON HALF IS B-350, and each names the other.'

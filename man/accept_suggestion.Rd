@@ -39,10 +39,19 @@ instead. \code{review_semantics()} prints the right spelling either way.}
 \item{table}{Table identifier; needed only when the column name appears in
 more than one table.}
 
-\item{code_value}{Code value; needed only for code-level slots.}
+\item{code_value}{Code value; needed only for code-level slots. Pass \code{""}
+(or \code{NA}) to select a column's own slot when codes of that column have
+slots with the same role, as a measurement column's codes do: leaving
+\code{code_value} out matches those code slots too. A blank never selects a
+code's slot. A \code{codes.csv} row that leaves \code{code_value} empty because it
+supplies \code{vocabulary_iri} has no slot at all: it gets no semantic target,
+having no code value for a term to represent. \code{review_semantics()} prints
+\code{code_value} whenever it is needed.}
 
 \item{iri}{Optional IRI to accept instead of a shortlisted candidate -- for
-the case where the right term exists but retrieval did not surface it.}
+the case where the right term exists but retrieval did not surface it. An
+\code{iri} that a shortlisted candidate in the slot carries is recorded as that
+candidate, exactly as its \code{rank} would be.}
 
 \item{reason}{Optional free-text reason recorded with a rejection.}
 }

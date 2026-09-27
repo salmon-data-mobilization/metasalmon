@@ -1,0 +1,13 @@
+id: B-347
+kind: defect
+title: 'metasalmonpy''s apply_salmon_dictionary() blanks every value of a column whose codes.csv row names a vocabulary, the mirror half of B-346'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S2
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'RULED 2026-09-25 (Brett): a column backed by a vocabulary skips the code list, in both packages, by B-346''s rule: a column is backed by a vocabulary when any of its codes.csv rows gives a vocabulary_iri and leaves code_value empty. IN METASALMONPY, apply_salmon_dictionary() in dictionary.py skips the codes step for such a column: no value becomes missing for being absent from the code list, _report_unlisted_code_values() names none of its values, and no Categorical is built from its codes.csv rows. Pinned by a test demonstrated RED on the function as it stands; a column whose codes.csv rows all have code values still gets its code list and its warning. THE METASALMON HALF IS B-346, and each names the other. A PORT OF A RULING, NOT A REGISTER ROW.'

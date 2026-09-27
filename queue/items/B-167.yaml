@@ -1,7 +1,7 @@
 id: B-167
 kind: defect
 title: SPECIFICATION.md and four other documents still carry the reading the reworded SOSA Procedure rules drop
-state: icebox
+state: ready
 claimable: true
 repo: smn-data-pkg
 venue: claude-science

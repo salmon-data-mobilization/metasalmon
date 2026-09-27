@@ -99,7 +99,12 @@ lease_hours_batch: 12
 #   Too short is not free either: every heartbeat is a push, and a queue of
 #   chatty holders turns the locks repository into a busy one.
 # Revisit: on the first false reclaim, and otherwise at the twenty-claim mark.
-heartbeat_minutes: 30
+# Set to 60 on 2026-09-24 by Brett ("make beats less often...something more like
+#   an hour"), from 30. The lease is counted in hours, so a beat an hour apart
+#   still leaves the four-hour interactive lease three hours of margin. The
+#   client reads this value only for the "next beat due" hint after a beat and
+#   for `hub doctor`, so nothing else moves with it.
+heartbeat_minutes: 60
 
 # How long after a missed heartbeat another agent may reclaim the item.
 # Calibrate on: the count of reclaims that turned out to have taken work away

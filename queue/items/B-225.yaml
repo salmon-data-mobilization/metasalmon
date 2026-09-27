@@ -1,0 +1,13 @@
+id: B-225
+kind: defect
+title: 'Nothing pins that metasalmonpy''s EML-sidecar and closure YAML reads stay safe loaders, the twin of B-142''s guard'
+state: icebox
+claimable: true
+repo: metasalmonpy
+venue: claude-code
+stream: S10
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'metasalmonpy carries a test that fails if any of its non-SSSOM YAML reads stops being a safe loader: the EML sidecar through _read_mapping_yaml() on the EML and KNB paths, and the closure''s declared paths. It drives a sidecar carrying a tag that constructs a Python object through each public path and asserts that nothing runs, and it is demonstrated RED by swapping one read''s loader for a permissive one, such as yaml.Loader or yaml.unsafe_load. NOTHING IS BROKEN TODAY: every one of those reads is safe by construction, which is exactly why nothing would fail if a later simplification swapped one. B-189 is about the SSSOM reader only, and this is the same argument applied to the rest. The two SDP rules reads use a regular-expression scan with no YAML library, and come into scope only if one is ever replaced by a parser.'

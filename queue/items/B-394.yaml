@@ -1,0 +1,13 @@
+id: B-394
+kind: defect
+title: 'Queue lint cannot see a done port whose item was filed with an empty blocked_by, so a passage can go on calling the port owed while lint passes'
+state: ready
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S15
+severity: P3
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'python3 scripts/hub_queue.py lint fails when a metasalmonpy item that the register''s port section or the roadmap''s mirror section names as an owed port is done and that passage has no landed record for it, whatever the item''s blocked_by says. Decided by a test in scripts/tests/test_hub_queue.py on a queue in B-234''s shape: a done metasalmonpy item whose blocked_by is empty and whose title calls it the mirror half of a done metasalmon item, named in the register''s port section with no landed record. Lint fails on it, where on the code as it stands it prints OK. The same test''s positive control, that item with its id written in bold and its metasalmon half in blocked_by, fails lint on the code as it stands and still fails after, so the rule keeps reading an id written in bold. Lint passes on main when the rule lands.'

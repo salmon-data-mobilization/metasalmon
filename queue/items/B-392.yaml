@@ -1,0 +1,13 @@
+id: B-392
+kind: defect
+title: 'pkgdown links each backlog number NEWS.md cites, backlog #49 among them, to the metasalmon issue or pull request that happens to carry the same number'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S11
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'No backlog number that NEWS.md cites reaches the news page scripts/build-pkgdown.R renders as a link to the metasalmon issue or pull request of the same number: every link from docs/news/index.html to https://github.com/salmon-data-mobilization/metasalmon/issues/ comes from text that names a metasalmon issue or pull request, and none comes from a backlog number. Decided by listing each such link on the rebuilt page with the words before it; on the page as it stands the list includes backlog numbers, backlog #49 among them. The page is rebuilt as scripts/build-pkgdown.R builds it, and python3 scripts/check-changelog-window.py reports no findings on the change.'

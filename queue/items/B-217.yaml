@@ -1,0 +1,13 @@
+id: B-217
+kind: defect
+title: 'review_semantics(include_filled = TRUE) hides the decision on a slot whose accepted candidate ranks past max_candidates'
+state: icebox
+claimable: true
+repo: metasalmon
+venue: claude-code
+stream: S5
+severity: P4
+blocked_by: []
+legacy: ''
+evidence: knowledge/backlog.md
+retires_when: 'review_semantics(include_filled = TRUE) shows every decided slot''s decision -- its DECIDED line, and the decided candidate or an equivalent statement of it -- whatever max_candidates is, when the accepted candidate ranks past the cut. Pinned by a test that accepts the sixth candidate of a six-candidate slot after review_semantics(max_candidates = Inf), applies, rebuilds the review at the default max_candidates, and asserts the DECIDED line, demonstrated RED on the console as it stands. THE CAUSE IS ORDER: the default queue asks whether a slot is decided before the rank filter runs, so the slot correctly leaves it; include_filled = TRUE skips that question, and the rank filter then drops the decided row, which is the only row the DECIDED line is built from. The record is right and the review surface is not: the decision is applied and replayed. SHARED AND PRE-EXISTING: THE MIRROR HALF IS B-218 (metasalmonpy); each names the other, and a shared defect owes no parity row.'

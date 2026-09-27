@@ -426,3 +426,99 @@ test_that("the descriptor instant renderer is readr's, by construction", {
     "0999-01-01"
   )
 })
+
+# Hub item B-162, the third copy of the value the two tests above pin.
+# `.ms_eml_add_coverage()` renders `temporal_start` and `temporal_end` through
+# `as.character()`, which reads like a third renderer beside those two writers.
+# It is not one, and the two tests below check that it stays that way. The EML
+# builder has a single entry, `write_eml_from_sdp(path)`, and it reads the
+# package back from disk as text: `metadata/dataset.csv` through
+# `.ms_read_metadata_csv()`, every column character, or `datapackage.json` when
+# there is no canonical metadata. So the value is rendered once, by a writer,
+# and `as.character()` of that text is the identity. THE BASELINE IS THE FILE
+# THE EML IS READ FROM, so neither of the renderers someone would reach for is
+# right at that line:
+#
+#   .ms_descriptor_temporal_text()  pads a short year in text, so the EML
+#                                   would carry "0999-06-05" from a
+#                                   dataset.csv cell of "999-06-05".
+#   .ms_canonical_character()       renders an instant through
+#                                   as.character(), not through readr.
+#
+# WHAT THESE DELIBERATELY DO NOT PIN: a typed instant. The three copies of one
+# agree today, because the EML reads the CSV's bytes. But EML 2.2.0's
+# `calendarDate` is `xs:gYear | xs:date`, so `YYYY-MM-DDThh:mm:ssZ` fails the
+# schema check `write_eml_from_sdp()` runs, although the ruling on Q-51 put
+# that form in the SDP profile. Any EML that carries an instant has to differ
+# from the CSV there (for example a date plus EML's separate `time` element),
+# so a byte-agreement pin would make that fix look like a regression.
+#
+# *Retires when:* the EML stops being built from the package on disk. An EML
+# builder that takes a typed frame is a writer, and has to render through the
+# CSV's baseline; the pin then moves to that renderer.
+eml_dataset_csv_temporal <- function(path) {
+  dataset_csv <- readr::read_csv(
+    file.path(path, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = readr::col_character())
+  )
+  c(dataset_csv$temporal_start[[1]], dataset_csv$temporal_end[[1]])
+}
+
+eml_calendar_dates <- function(doc) {
+  c(
+    xml2::xml_text(xml2::xml_find_first(doc, ".//rangeOfDates/beginDate/calendarDate")),
+    xml2::xml_text(xml2::xml_find_first(doc, ".//rangeOfDates/endDate/calendarDate"))
+  )
+}
+
+test_that("EML calendarDate is the dataset.csv spelling of a typed Date", {
+  # Through the exported builder and its schema check. EML can carry a date, so
+  # here all three copies agree byte for byte. The pre-1000 year is the one
+  # whose spelling depends on which renderer ran.
+  #
+  # The skip retires when emld moves from Suggests to Imports, or when
+  # `write_eml_from_sdp()` stops validating through it.
+  skip_if_not_installed("emld")
+
+  path <- suppressMessages(make_eml_test_sdp(
+    withr::local_tempdir(),
+    temporal_start = as.Date("0999-01-01"),
+    temporal_end = as.Date("2024-12-31")
+  ))
+  result <- suppressMessages(write_eml_from_sdp(
+    path,
+    output_path = file.path(path, "metadata", "eml.xml")
+  ))
+  calendar <- eml_calendar_dates(xml2::read_xml(result$path))
+  descriptor <- jsonlite::read_json(file.path(path, "datapackage.json"))
+
+  expect_identical(calendar, eml_dataset_csv_temporal(path))
+  expect_identical(calendar, c(descriptor$temporal$start, descriptor$temporal$end))
+  expect_identical(calendar, c("0999-01-01", "2024-12-31"))
+})
+
+test_that("EML calendarDate follows dataset.csv where the two writers disagree", {
+  # Text that the two writers spell differently: the descriptor pads the short
+  # year and dataset.csv keeps it. That disagreement is between the writers and
+  # is not asserted here either way. What is asserted is that the EML follows
+  # the file it reads, and this is the input a re-rendering EML would change on
+  # every platform. The exported call stops at the schema check, since
+  # "999-06-05" is not an `xs:date`, so the coverage is built from
+  # `read_salmon_datapackage()`'s frame, which `validate_salmon_datapackage()`
+  # returns unchanged as the `package` the builder receives. That also keeps
+  # this half free of emld.
+  path <- suppressMessages(make_eml_test_sdp(
+    withr::local_tempdir(),
+    temporal_start = "999-06-05",
+    temporal_end = "2024-12-31"
+  ))
+  coverage <- xml2::xml_new_root("dataset")
+  metasalmon:::.ms_eml_add_coverage(
+    coverage,
+    suppressMessages(read_salmon_datapackage(path))$dataset,
+    mapping = list()
+  )
+
+  expect_identical(eml_calendar_dates(coverage), eml_dataset_csv_temporal(path))
+  expect_identical(eml_calendar_dates(coverage)[[1]], "999-06-05")
+})
