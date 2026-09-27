@@ -70,7 +70,9 @@ fill_templates <- function(call_text) {
   for (template in names(replacements)) {
     call_text <- gsub(template, replacements[[template]], call_text, fixed = TRUE)
   }
-  call_text <- gsub("\"<add dataset license[^\"]*\"", "\"CC-BY-4.0\"", call_text)
+  # By argument rather than by hint: a licence row prompts with whatever hint
+  # it carries, a placeholder's own text or the schema's field description.
+  call_text <- gsub("license = \"<[^\"]*>\"", "license = \"CC-BY-4.0\"", call_text)
   call_text <- gsub("\"<add primary contact email>\"", "\"data@example.org\"", call_text, fixed = TRUE)
   gsub("\"<[^\"]*>\"", "\"a value a reviewer typed\"", call_text)
 }
@@ -958,4 +960,136 @@ test_that("a dictionary IRI field a configured schema adds is listed only if str
   expect_true(refuses_review_marker(pkg))
   review <- review_metadata(pkg)
   expect_identical(paste(review$file, review$field), "column_dictionary.csv constraint_iri")
+})
+
+# --------------------------------------------------------------------------
+# The licence is recommended, not required
+# --------------------------------------------------------------------------
+#
+# The SDP specification makes `license` recommended rather than required
+# (smn-data-pkg pull request 12; Brett, 2026-09-26: most datasets assign none),
+# so a blank licence states that none was granted. This package reads the
+# requirement from its SDP schema bundle, and the bundle it ships still requires
+# the licence, because the bundle and the remote pin move only together and only
+# from a release tag (hub items B-198 and B-199). So the tests that need the
+# licence to be optional serve a bundle whose licence field reads the way that
+# pull request writes it. metasalmonpy's tests/test_sdp_field_setters.py has
+# the twins of these, under the same names.
+#
+# *Retires when:* B-198 re-vendors a bundle in which the licence is optional.
+# The tests can then read the shipped bundle instead of serving one.
+
+# The shipped bundle with the licence field as the specification now declares
+# it: no `constraints.required`, and `sdp:requirement` "recommended". Rebuilt
+# from the raw documents and passed back through `.ms_validate_sdp_schema()`,
+# so the parse of the new field is exercised, not assumed.
+licence_optional_bundle <- function() {
+  shipped <- .ms_load_vendored_sdp_schema()
+  schemas <- shipped$metadata_schemas
+  at <- which(purrr::map_chr(schemas$dataset$fields, "name") == "license")
+  schemas$dataset$fields[[at]]$constraints <- NULL
+  schemas$dataset$fields[[at]][["sdp:requirement"]] <- "recommended"
+  bundle <- .ms_validate_sdp_schema(list(
+    metadata_schemas = schemas,
+    profile = shipped$profile,
+    rules = shipped$rules
+  ))
+  bundle$source <- "remote"
+  bundle
+}
+
+# Every schema reader in the calling test gets that bundle. A non-default
+# source sends them all through the loader, as the configured-schema tests
+# above do.
+local_licence_optional_schema <- function(env = parent.frame()) {
+  bundle <- licence_optional_bundle()
+  withr::local_options(metasalmon.sdp_schema_source = "remote", .local_envir = env)
+  local_mocked_bindings(.ms_load_sdp_schema = function(...) bundle, .env = env)
+  invisible(bundle)
+}
+
+test_that("the dataset placeholder fill leaves a blank licence blank", {
+  filled <- .ms_fill_review_placeholders_dataset_meta(.ms_normalize_dataset_meta(
+    tibble::tibble(dataset_id = c("demo-1", "demo-2"), license = c(NA, "CC-BY-4.0"))
+  ))
+  expect_identical(filled$license, c(NA_character_, "CC-BY-4.0"))
+  # The prompts for the fields the schema requires are unchanged.
+  expect_true(all(startsWith(filled$creator, "MISSING METADATA:")))
+  expect_true(all(startsWith(filled$contact_email, "MISSING METADATA:")))
+})
+
+test_that("a package that states no licence passes strict validation under a bundle that makes it optional", {
+  shipped_required <- .ms_required_metadata_fields("dataset.csv")
+  local_licence_optional_schema()
+  # The served bundle differs from the shipped one in the licence and nothing
+  # else. Written so that it still holds once the shipped bundle makes the
+  # licence optional too.
+  expect_identical(
+    .ms_required_metadata_fields("dataset.csv"),
+    setdiff(shipped_required, "license")
+  )
+
+  pkg <- setter_fixture_package()
+  review <- review_metadata(pkg)
+  # Nothing asks for a licence, as a placeholder or as a blank required field.
+  expect_false("license" %in% review$field)
+
+  for (call_text in fill_templates(printed_setter_calls(review))) {
+    suppressMessages(eval(parse(text = call_text), envir = list2env(list(pkg = pkg))))
+  }
+  expect_equal(nrow(review_metadata(pkg)), 0L)
+  expect_no_error(suppressMessages(
+    validate_salmon_datapackage(pkg, require_iris = TRUE)
+  ))
+
+  expect_true(is.na(read_meta(pkg, "dataset.csv")$license))
+  descriptor <- jsonlite::read_json(file.path(pkg, "datapackage.json"), simplifyVector = FALSE)
+  expect_false("licenses" %in% names(descriptor))
+})
+
+test_that("a licence placeholder from an earlier package clears to no licence", {
+  # Packages written before this change carry the placeholder. It stays refused
+  # under a bundle that makes the licence optional, because it is still a
+  # placeholder, and `license = NA` is the call that states no licence instead.
+  local_licence_optional_schema()
+  pkg <- setter_fixture_package()
+  mark_metadata_field(
+    pkg, "dataset.csv", "license", 1L,
+    "MISSING METADATA: add dataset license (for example, CC-BY-4.0)."
+  )
+  review <- review_metadata(pkg)
+  expect_identical(review$reason[review$field == "license"], "placeholder")
+
+  suppressMessages(set_sdp_dataset(pkg, license = NA))
+  expect_true(is.na(read_meta(pkg, "dataset.csv")$license))
+  expect_false("license" %in% review_metadata(pkg)$field)
+  descriptor <- jsonlite::read_json(file.path(pkg, "datapackage.json"), simplifyVector = FALSE)
+  expect_false("licenses" %in% names(descriptor))
+})
+
+test_that("a licence placeholder never becomes a licenses entry", {
+  # Refused or left out, never written: the descriptor either omits `licenses`
+  # or the write stops. Which of the two a marker gets is not the property.
+  written_licenses <- function(license) {
+    meta <- .ms_normalize_dataset_meta(tibble::tibble(
+      dataset_id = "demo-1", title = "Demo", description = "Demo.",
+      license = license
+    ))
+    tryCatch(
+      .ms_descriptor_apply_dataset_meta(list(), meta)$licenses,
+      error = function(cnd) NULL
+    )
+  }
+  for (placeholder in c(
+    "MISSING METADATA: add dataset license (for example, CC-BY-4.0).",
+    "MISSING DESCRIPTION: describe the licence.",
+    "REVIEW REQUIRED: confirm the licence.",
+    "REVIEW:CC-BY-4.0",
+    NA_character_
+  )) {
+    expect_null(written_licenses(placeholder), label = placeholder)
+  }
+  # The control: a stated licence is written, so the NULLs above are the
+  # writer's answer and not a probe that can only return NULL.
+  expect_identical(written_licenses("CC-BY-4.0")[[1]]$name, "CC-BY-4.0")
 })
