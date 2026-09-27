@@ -4507,3 +4507,64 @@ test_that("create_sdp prefills ENUMERATION_METHODS code IRIs from the enumeratio
       enum_rows$term_iri[enum_rows$code_value == "Stream Walk, Other"] == ""
   )
 })
+
+test_that("a patch-level spec_version difference is a message, and a minor one a warning", {
+  old_options <- options(metasalmon.sdp_schema_source = "vendored")
+  withr::defer(options(old_options))
+  loaded <- metasalmon:::.ms_sdp_profile_version()
+  parts <- as.integer(strsplit(sub("^sdp-", "", loaded), ".", fixed = TRUE)[[1]])
+  expect_length(parts, 3L)
+  other_patch <- sprintf("sdp-%d.%d.%d", parts[[1]], parts[[2]], parts[[3]] + 1L)
+  other_minor <- sprintf("sdp-%d.%d.0", parts[[1]], parts[[2]] + 1L)
+
+  write_declaring <- function(spec_version) {
+    path <- withr::local_tempdir(.local_envir = parent.frame(2))
+    write_salmon_datapackage(
+      resources = list(obs = tibble::tibble(site_id = c("s1", "s2"))),
+      dataset_meta = tibble::tibble(
+        dataset_id = "sv-1", title = "T", description = "D", creator = "C",
+        contact_name = "N", contact_email = "n@example.org", license = "CC-BY-4.0",
+        temporal_start = "1996", temporal_end = "2024", spec_version = spec_version
+      ),
+      table_meta = tibble::tibble(
+        dataset_id = "sv-1", table_id = "obs", file_name = "data/obs.csv",
+        table_label = "Obs", description = "D"
+      ),
+      dict = tibble::tibble(
+        dataset_id = "sv-1", table_id = "obs", column_name = "site_id",
+        column_label = "Site", column_description = "Site", column_role = "identifier",
+        value_type = "string", required = FALSE
+      ),
+      path = path,
+      overwrite = TRUE
+    )
+  }
+
+  # Same major and minor: a note, and the package still carries both values.
+  expect_no_warning(
+    expect_message(
+      pkg <- write_declaring(other_patch),
+      "patch release of the same profile"
+    )
+  )
+  written <- readr::read_csv(
+    file.path(pkg, "metadata", "dataset.csv"),
+    col_types = readr::cols(.default = "c")
+  )
+  expect_identical(written$spec_version, other_patch)
+  expect_identical(
+    jsonlite::read_json(file.path(pkg, "datapackage.json"))$sdp$specVersion,
+    loaded
+  )
+
+  # A different minor is a different profile: still a warning.
+  expect_warning(
+    suppressMessages(write_declaring(other_minor)),
+    "but the loaded SDP schema is"
+  )
+
+  # The loaded version itself: neither.
+  expect_no_warning(
+    expect_no_message(write_declaring(loaded), message = "SDP schema is")
+  )
+})

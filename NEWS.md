@@ -1181,9 +1181,13 @@ metasalmon (development version)
     `datapackage.json`'s `sdp.specVersion`, because both are read from the
     bundle's rules `version`, and `migrate_sdp_methods()` stamps it too.
     Writing a package whose `dataset.csv` still names `sdp-0.3.0`, which every
-    package written by 0.5.0 does, now warns that the file and the loaded
-    schema disagree, and the package carries both values, as for any mismatch.
-    Clear `spec_version` to adopt `sdp-0.3.2`.
+    package written by 0.5.0 does, now prints a message, not a warning, saying
+    that the file and the loaded schema differ, and the package carries both
+    values. Clear `spec_version` to adopt `sdp-0.3.2`. The same holds for any
+    difference in the patch number alone, because a patch release keeps the
+    profile (Brett, 2026-09-27). A declared version whose major or minor number
+    differs, or that is not an `sdp-<major>.<minor>.<patch>` label, still
+    warns.
   - **A licence is recommended, not required.** The bundled
     `dataset.schema.json` drops `constraints.required` from `license` and
     marks it `sdp:requirement: recommended` (smn-data-pkg pull request 12).

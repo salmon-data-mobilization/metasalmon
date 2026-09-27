@@ -84,6 +84,25 @@
   .ms_load_sdp_schema(quiet = TRUE)$version
 }
 
+# TRUE when two SDP version labels differ at most in the patch number, e.g.
+# `sdp-0.3.0` and `sdp-0.3.2`: a patch release keeps the profile path, so both
+# name the same profile. Anything that is not `sdp-<major>.<minor>.<patch>` is
+# FALSE, so an unrecognised label is treated as a real difference.
+.ms_sdp_same_minor_version <- function(a, b) {
+  pattern <- "^sdp-([0-9]+)[.]([0-9]+)[.]([0-9]+)$"
+  if (!is.character(a) || !is.character(b) || length(a) != 1L || length(b) != 1L ||
+      is.na(a) || is.na(b) || !grepl(pattern, a) || !grepl(pattern, b)) {
+    return(FALSE)
+  }
+  # Compare digit strings with leading zeros dropped, not integers: a component
+  # beyond R's integer range would coerce to NA, and two different NAs match.
+  minor <- function(x) {
+    parts <- regmatches(x, regexec(pattern, x))[[1]][2:3]
+    sub("^0+([0-9])", "\\1", parts)
+  }
+  identical(minor(a), minor(b))
+}
+
 .ms_default_sdp_schema_base_url <- function() {
   legacy_url <- getOption("metasalmon.sdp_schema_url", NULL)
   if (!is.null(legacy_url) && nzchar(legacy_url)) {

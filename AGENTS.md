@@ -144,9 +144,14 @@ under `queue/`.
   through `search_fn`, and `tests/testthat/test-semantic-review-packet.R`
   walks the call graph to prove it. The schema, the instructions and the
   conformance fixtures (`inst/extdata/semantic-review/`,
-  `tests/testthat/fixtures/semantic-review/v1/`) are one contract vendored
-  byte-identically in metasalmonpy; a change to any of them is a change to
-  the contract and needs the same change there.
+  `tests/testthat/fixtures/semantic-review/v1/`) are one contract, which
+  metasalmonpy vendors byte-identically once hub item B-327 lands; from then
+  on, a change to any of them is a change to the contract and needs the same
+  change there. Until then metasalmonpy holds no copy, so a change here owes it
+  nothing but order: the packets B-327 builds must match whatever these
+  fixtures pin when it lands. *(Corrected 2026-09-27: this said the contract
+  was already vendored there, which it is not, and a Codex review of pull
+  request 148 took it at its word.)*
 - **Context inputs are file paths or inline text — never parsed objects.** Passing
   a tibble/XML/data frame to `llm_context_files` must error early.
 - **Preserve public signatures and return-value attributes.** Exported:

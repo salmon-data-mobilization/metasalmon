@@ -520,3 +520,33 @@ test_that("a metadata resource with an unusable schema rejects the bundle", {
   )
   expect_silent(metasalmon:::.ms_validate_sdp_schema(ok))
 })
+
+test_that("SDP versions that differ only in the patch number name one profile", {
+  same <- metasalmon:::.ms_sdp_same_minor_version
+
+  expect_true(same("sdp-0.3.0", "sdp-0.3.2"))
+  expect_true(same("sdp-0.3.10", "sdp-0.3.2"))
+  expect_true(same("sdp-0.3.2", "sdp-0.3.2"))
+
+  # A minor or major difference is a different profile, and minor 30 is not 3.
+  expect_false(same("sdp-0.2.0", "sdp-0.3.2"))
+  expect_false(same("sdp-1.3.2", "sdp-0.3.2"))
+  expect_false(same("sdp-0.30.0", "sdp-0.3.0"))
+  # Leading zeros do not make a different number.
+  expect_true(same("sdp-0.03.0", "sdp-0.3.2"))
+  # Components beyond R's integer range are compared as digits, without the
+  # NA that integer coercion would make of both, and without a warning.
+  expect_no_warning(
+    expect_false(same("sdp-2147483648.3.0", "sdp-2147483649.3.2"))
+  )
+  expect_no_warning(
+    expect_true(same("sdp-2147483648.3.0", "sdp-2147483648.3.2"))
+  )
+
+  # Anything that is not sdp-<major>.<minor>.<patch> counts as a real difference.
+  expect_false(same("0.3.0", "sdp-0.3.2"))
+  expect_false(same("sdp-0.3", "sdp-0.3.2"))
+  expect_false(same("sdp-0.3.0-rc1", "sdp-0.3.2"))
+  expect_false(same(NA_character_, "sdp-0.3.2"))
+  expect_false(same(c("sdp-0.3.0", "sdp-0.3.1"), "sdp-0.3.2"))
+})
