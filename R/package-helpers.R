@@ -667,31 +667,37 @@ write_salmon_datapackage <- function(
 # after the point where anything could be recovered. It is not an error (a
 # caller may genuinely want a clean rebuild), but it must never be invisible.
 #
-# Retires when the write path preserves `semantic_suggestions.csv` across a
-# prune, at which point there is nothing left to warn about.
+# Retires when the write path preserves `semantic_suggestions.csv` and a
+# `review/` record across a prune, at which point there is nothing left to warn
+# about.
 .ms_warn_pruning_recorded_decisions <- function(path, writes) {
-  suggestions_path <- file.path(path, "semantic_suggestions.csv")
-  if (!file.exists(suggestions_path) || dir.exists(suggestions_path) ||
-      suggestions_path %in% names(writes)) {
-    return(invisible(NULL))
-  }
-  decisions <- tryCatch(
-    {
-      rows <- .ms_read_metadata_csv(suggestions_path)
-      if (!"decision" %in% names(rows)) {
-        character()
-      } else {
-        values <- trimws(as.character(rows$decision))
-        values[!is.na(values) & nzchar(values) & values != "not_selected"]
-      }
-    },
-    error = function(error) character()
-  )
   # A semantic review session under `review/` is a record too (hub item
   # B-326): the packet, the harness's answers and the ingested assessments.
-  # `prune = TRUE` would delete it just as silently.
+  # `prune = TRUE` would delete it just as silently. It is asked first and on
+  # its own, because it does not depend on the shortlist file: a packet that
+  # held only blank slots with no candidates leaves a record and no
+  # `semantic_suggestions.csv`, and the return for a missing shortlist used to
+  # come first, so a prune deleted that record without a word (hub item B-424).
   review_record <- .ms_semantic_review_file(file.path(path, "review"), "record")
   has_review_record <- file.exists(review_record) && !dir.exists(review_record)
+  suggestions_path <- file.path(path, "semantic_suggestions.csv")
+  decisions <- if (!file.exists(suggestions_path) || dir.exists(suggestions_path) ||
+      suggestions_path %in% names(writes)) {
+    character()
+  } else {
+    tryCatch(
+      {
+        rows <- .ms_read_metadata_csv(suggestions_path)
+        if (!"decision" %in% names(rows)) {
+          character()
+        } else {
+          values <- trimws(as.character(rows$decision))
+          values[!is.na(values) & nzchar(values) & values != "not_selected"]
+        }
+      },
+      error = function(error) character()
+    )
+  }
   if (length(decisions) == 0L && !has_review_record) {
     return(invisible(NULL))
   }

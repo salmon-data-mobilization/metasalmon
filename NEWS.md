@@ -256,6 +256,15 @@ metasalmon (development version)
      accepted a pass earlier. A new conformance case, `code_roles`, pins the
      in-memory build in both packages, and the schema's `unit_key` description
      says what a target key holds.
+  3. **`prune = TRUE` warns before it deletes a review record in a package with
+     no shortlist file.** The warning returned early when there was no
+     `semantic_suggestions.csv`, before it asked whether `review/` held an
+     ingested record. A packet that holds only blank slots with no candidates
+     leaves exactly that package: ingesting `review` or `request_new_term`
+     answers for it writes `review/semantic-llm-assessments.csv` and no
+     shortlist file, so a later rewrite with `prune = TRUE` deleted the whole
+     record without a word. The record is now looked for first, whatever the
+     shortlist file's state.
 
 * **A retry query written as a CURIE is recognised as an identifier whatever
   letters it holds** (hub item B-380; metasalmonpy's half is B-381).

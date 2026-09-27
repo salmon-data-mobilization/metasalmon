@@ -1299,3 +1299,80 @@ test_that("finalizing one role of a shared slot keeps the other roles' rows in s
   review <- suppressMessages(review_semantics(path))
   expect_setequal(unique(review$role[review$target_file %in% "codes.csv"]), c("constraint", "entity"))
 })
+
+test_that("prune warns about a review record even when the package has no shortlist file (B-424)", {
+  # A packet holding only blank slots with no candidates: ingesting review and
+  # request_new_term answers writes the record and no semantic_suggestions.csv,
+  # and the prune warning used to return early for a missing shortlist file
+  # before it asked about review/, so the rewrite deleted the record silently.
+  nothing <- function(query, role = NA_character_, sources = NULL, ...) tibble::tibble()
+  path <- file.path(withr::local_tempdir(), "prune-no-shortlist")
+  create <- function(...) {
+    suppressMessages(with_mocked_bindings(
+      find_terms = nothing,
+      create_sdp(
+        list(catch = data.frame(catch_weight = c(12.5, 8.1, 20.4))),
+        path = path, dataset_id = "demo-1", table_id = "catch",
+        semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+        check_updates = FALSE, overwrite = TRUE, ...
+      )
+    ))
+  }
+  create()
+  built <- write_semantic_review_packet(path, search_fn = nothing, quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness <- dplyr::bind_rows(lapply(seq_along(slots), function(i) {
+    if (i == 1L) {
+      semantic_review_harness_row(slots[[i]]$target, llm_decision = "request_new_term", llm_confidence = 0.6,
+        llm_rationale = "Nothing was offered.", llm_new_term_label = "Catch weight")
+    } else {
+      semantic_review_harness_row(slots[[i]]$target, llm_decision = "review", llm_confidence = 0.3, llm_rationale = "Later.")
+    }
+  }))
+  ingest_semantic_assessments(path, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_true(file.exists(file.path(path, "review", "semantic-llm-assessments.csv")))
+  expect_false(file.exists(file.path(path, "semantic_suggestions.csv")))
+  expect_warning(create(prune = TRUE), "holds an ingested semantic review record")
+  # The warning does not stop the prune.
+  expect_false(dir.exists(file.path(path, "review")))
+})
+
+test_that("prune warns about a review record in a package that also has a shortlist file (B-424)", {
+  # The ordinary case, which no test here pinned: the record under review/
+  # beside a semantic_suggestions.csv that records no decision. This one
+  # passed before the fix too, because create_sdp() writes the shortlist file
+  # after the package write rather than in the prune's write set; the test
+  # keeps the review/ half of the warning from depending on either file.
+  hits <- function(query, role = NA_character_, sources = NULL, ...) {
+    tibble::tibble(
+      label = paste("Term", 1:2, "for", role),
+      iri = paste0("https://example.org/candidates/", role, "Term", 1:2),
+      source = "smn", ontology = "smn", role = role,
+      match_type = "label_exact", definition = "A term.", score = c(4.5, 3.5)
+    )
+  }
+  path <- file.path(withr::local_tempdir(), "prune-fresh-shortlist")
+  create <- function(...) {
+    suppressMessages(with_mocked_bindings(
+      find_terms = hits,
+      create_sdp(
+        list(spawners = data.frame(stream_name = c("Bear Creek", "Elk River"), spawner_count = c(120L, 340L))),
+        path = path, dataset_id = "demo-1", table_id = "spawners",
+        semantic_max_per_role = 1, seed_semantics = TRUE, seed_verbose = FALSE,
+        check_updates = FALSE, overwrite = TRUE, ...
+      )
+    ))
+  }
+  create()
+  built <- write_semantic_review_packet(path, search_fn = hits, quiet = TRUE)
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(built$path))
+  harness <- dplyr::bind_rows(lapply(slots, function(slot) {
+    semantic_review_harness_row(slot$target, llm_decision = "review", llm_confidence = 0.3, llm_rationale = "Later.")
+  }))
+  ingest_semantic_assessments(path, assessments = harness, packet_id = built$packet_id,
+    search_fn = function(...) stop("no search"), quiet = TRUE)
+  expect_true(file.exists(file.path(path, "review", "semantic-llm-assessments.csv")))
+  expect_warning(create(prune = TRUE), "holds an ingested semantic review record")
+  expect_false(dir.exists(file.path(path, "review")))
+})
