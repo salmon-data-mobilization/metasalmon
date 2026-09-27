@@ -214,6 +214,26 @@ metasalmon (development version)
 
 ### Fixed
 
+* **Defects in the review-packet contract are fixed before it ships** (hub item
+  B-424; metasalmonpy's half is B-425). metasalmonpy found each while porting
+  the contract (B-327) and reproduced it there on purpose, so that the shared
+  conformance fixtures would agree; Brett ruled on 2026-09-26 that they be
+  fixed now, in both packages. The fixtures under
+  `tests/testthat/fixtures/semantic-review/v1/` moved with them, and each fix is
+  pinned by a test that failed before it
+  (`tests/testthat/test-semantic-review-packet.R`).
+
+  1. **The `propose_new_term` alias no longer counts as a downgrade.** The
+     ingest summary counts a downgrade when the recorded decision differs from
+     the one the harness wrote, and it exempted the alias with
+     `identical(aliases[harness_decision] %||% NA, decision)`, which never
+     holds: `[` keeps the alias vector's name, and a named string is never
+     `identical()` to the decision it holds. A harness that wrote
+     `propose_new_term` was recorded as `request_new_term`, correctly, and
+     counted as downgraded. Row validation and the count now read the decision
+     through one helper, and the `row_errors` case records four downgrades
+     where it recorded five.
+
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
   Brett on 2026-09-25 as decisions 10 and 11 of the S16 execplan, and a

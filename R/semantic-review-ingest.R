@@ -406,6 +406,22 @@
 # Row-level validation
 # -----------------------------------------------------------------------------
 
+# A harness's decision as the validator reads it: trimmed, lowercased and with
+# the alias resolved, so `propose_new_term` is the `request_new_term` it names.
+# Row validation and the downgrade count both read the decision through this,
+# so the two cannot disagree about what the harness wrote. `[[` drops the
+# alias vector's name; the count used `[`, which keeps it, and a named string
+# is never `identical()` to the decision it holds, so every alias used to be
+# counted as a downgrade (hub item B-424).
+.ms_semantic_review_read_decision <- function(value) {
+  decision <- tolower(.ms_llm_non_empty_string(value %||% NA_character_))
+  aliases <- .ms_semantic_review_decision_aliases()
+  if (!is.na(decision) && decision %in% names(aliases)) {
+    decision <- aliases[[decision]]
+  }
+  decision
+}
+
 .ms_semantic_review_note <- function(row, note) {
   row$llm_rationale <- .ms_llm_append_note(
     .ms_llm_non_empty_string(row$llm_rationale[[1]] %||% NA_character_),
@@ -439,11 +455,7 @@
   }
 
   # 2. The decision, lowercased and trimmed, with the alias read.
-  decision <- tolower(text("llm_decision"))
-  aliases <- .ms_semantic_review_decision_aliases()
-  if (!is.na(decision) && decision %in% names(aliases)) {
-    decision <- aliases[[decision]]
-  }
+  decision <- .ms_semantic_review_read_decision(row$llm_decision[[1]])
   echo <- text("llm_selected_iri")
   candidate_iris <- trimws(as.character(candidates$iri))
   candidate_iris[is.na(candidate_iris)] <- ""
@@ -1064,9 +1076,10 @@ ingest_semantic_assessments <- function(x,
         kept_pass_1 <- kept_pass_1 + 1L
       }
     } else {
-      harness_decision <- tolower(.ms_llm_non_empty_string(row$llm_decision[[1]]))
-      if (!identical(validated$llm_decision[[1]], harness_decision) &&
-          !identical(.ms_semantic_review_decision_aliases()[harness_decision] %||% NA_character_, validated$llm_decision[[1]])) {
+      # A downgrade is a recorded decision other than the one the harness
+      # wrote, read with the alias resolved: `propose_new_term` recorded as
+      # `request_new_term` is the harness's own decision, not a downgrade.
+      if (!identical(validated$llm_decision[[1]], .ms_semantic_review_read_decision(row$llm_decision[[1]]))) {
         downgrades <- downgrades + 1L
       }
       if (pass == 2L) {

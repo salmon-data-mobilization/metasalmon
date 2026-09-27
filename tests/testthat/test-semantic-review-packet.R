@@ -1121,3 +1121,34 @@ test_that("a symlinked review directory or record is refused, not followed", {
   unlink(file.path(other, "review"), recursive = TRUE)
   expect_null(semantic_llm_assessments(other))
 })
+
+# -----------------------------------------------------------------------------
+# Follow-ups found while porting the contract to metasalmonpy (hub items B-424
+# here and B-425 there, B-380 for the retry-query classifier). Each test failed
+# before the change it pins.
+# -----------------------------------------------------------------------------
+
+test_that("the propose_new_term alias is the decision it names, not a downgrade (B-424)", {
+  case <- build_case("target_units")
+  slots <- metasalmon:::.ms_semantic_review_slots(semantic_review_read_json(case$built$path))
+  harness <- dplyr::bind_rows(lapply(seq_along(slots), function(i) {
+    target <- slots[[i]]$target
+    if (i == 1L) {
+      # The alias in mixed case: read as request_new_term, the harness's own decision.
+      semantic_review_harness_row(target, llm_decision = "Propose_New_Term", llm_confidence = 0.6,
+        llm_rationale = "The ontology lacks it.", llm_new_term_label = "A new term")
+    } else if (i == 2L) {
+      # A real downgrade, still counted: an accept that selects nothing becomes review.
+      semantic_review_harness_row(target, llm_decision = "accept", llm_confidence = 0.8, llm_rationale = "No index.")
+    } else {
+      semantic_review_harness_row(target, llm_decision = "review", llm_confidence = 0.4, llm_rationale = "Later.")
+    }
+  }))
+  result <- ingest_semantic_assessments(
+    case$dict, assessments = harness, packet_id = case$built$packet_id,
+    review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
+  )
+  expect_identical(result$summary$decisions[["request_new_term"]], 1L)
+  expect_identical(result$summary$errors, 0L)
+  expect_identical(result$summary$downgrades, 1L)
+})
