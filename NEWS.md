@@ -269,8 +269,9 @@ metasalmon (development version)
      fetch of one url did the same; and a fallback's ETag, sent to the url on
      the next call, could bring back the fallback's body as the url's on a
      `304`. A copy is now `<key>.ttl`, where `<key>` is the first 16 hexadecimal
-     digits of the SHA-256 of the url as requested, a newline and `accept`, and
-     its validators are `<key>.etag` and `<key>.last_modified`. A request
+     digits of the SHA-256 of the url as requested, a newline and `accept`,
+     taken as UTF-8 bytes whatever the session's locale, and its validators are
+     `<key>.etag` and `<key>.last_modified`. A request
      carries only the validators of the copy that URL returned under that
      `accept`, a `304` returns that copy, and a `200` replaces the copy's
      validators rather than keeping any the new answer did not send.

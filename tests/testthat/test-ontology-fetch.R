@@ -264,7 +264,7 @@ test_that("the cache file names are the ones metasalmonpy writes (hub B-335)", {
   expect_identical(key(of_smn, "text/turtle, application/rdf+xml;q=0.8"), "5891e28fd43e0292")
   expect_identical(key(of_smn_fallback, "text/turtle, application/rdf+xml;q=0.8"), "5188e73de1bcc279")
   expect_identical(key(of_smn, "application/rdf+xml"), "8fa14febd5b318d1")
-  expect_identical(key("https://example.org/ontologie/unité", "text/turtle"), "6bf05a094db6a6b1")
+  expect_identical(key("https://example.org/ontologie/unit\u00e9", "text/turtle"), "6bf05a094db6a6b1")
 
   entry <- metasalmon:::.ms_ontology_cache_entry("cache", of_smn, "text/turtle, application/rdf+xml;q=0.8")
   expect_identical(basename(unlist(entry, use.names = FALSE)), c(
@@ -289,7 +289,7 @@ test_that("a copy holds exactly the bytes the server sent", {
   # metasalmonpy decoded a text type sent with no charset as ISO-8859-1. Both
   # now store the bytes as sent; its twin test sends the same four bodies.
   bodies <- list(
-    no_final_newline = charToRaw(enc2utf8("@prefix smn: <https://w3id.org/smn/> .\nsmn:Unité a smn:Thing .")),
+    no_final_newline = charToRaw(enc2utf8("@prefix smn: <https://w3id.org/smn/> .\nsmn:Unit\u00e9 a smn:Thing .")),
     latin1 = as.raw(c(0x63, 0x61, 0x66, 0xe9, 0x0a)),
     crlf = charToRaw("a\r\nb\r\n"),
     empty = raw(0)
@@ -330,4 +330,23 @@ test_that("timeout_seconds bounds both the connection and the transfer", {
     expect_identical(options$timeout_ms, 5000)
     expect_identical(options$connecttimeout, 5)
   }
+})
+
+test_that("the cache key is taken from UTF-8 bytes in any locale", {
+  # A URL read without a declared encoding is a string of unknown encoding.
+  # Under a C locale, enc2utf8() wrote its non-ASCII bytes out as the text
+  # "<c3><a9>", so the key differed from the one metasalmonpy computes for the
+  # same URL (0f607d2dd94734a9 against 6bf05a094db6a6b1, measured 2026-09-26).
+  url <- rawToChar(c(charToRaw("https://example.org/ontologie/unit"), as.raw(c(0xc3, 0xa9))))
+  expect_identical(Encoding(url), "unknown")
+  key <- function(u) {
+    sub("[.]ttl$", "", basename(metasalmon:::.ms_ontology_cache_entry(tempdir(), u, "text/turtle")$body))
+  }
+  expect_identical(key(url), "6bf05a094db6a6b1")
+  withr::with_locale(c(LC_CTYPE = "C"), expect_identical(key(url), "6bf05a094db6a6b1"))
+
+  # A string declared latin1 is converted to UTF-8 first.
+  latin1 <- iconv(rawToChar(c(charToRaw("https://example.org/ontologie/unit"), as.raw(0xe9))), "latin1", "latin1")
+  Encoding(latin1) <- "latin1"
+  expect_identical(key(latin1), "6bf05a094db6a6b1")
 })

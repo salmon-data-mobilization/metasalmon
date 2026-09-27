@@ -124,10 +124,16 @@ fetch_salmon_ontology <- function(
 # URL, a newline and the accept. metasalmonpy's `_cache_entry()`
 # (ontology_fetch.py) computes the same name, and
 # `tests/testthat/test-ontology-fetch.R` pins four inputs its twin also pins.
+#
+# The bytes are taken from each part on its own, never through `paste0()` or
+# `enc2utf8()` on a string of unknown encoding: under a non-UTF-8 locale both
+# translate such a string through the native encoding, which wrote its
+# non-ASCII bytes out as the text "<c3><a9>" and gave a key metasalmonpy does
+# not compute.
 .ms_ontology_cache_entry <- function(cache_dir, url, accept) {
   key <- substr(
     digest::digest(
-      charToRaw(enc2utf8(paste0(url, "\n", accept))),
+      c(.ms_utf8_bytes(url), charToRaw("\n"), .ms_utf8_bytes(accept)),
       algo = "sha256",
       serialize = FALSE
     ),
@@ -139,6 +145,13 @@ fetch_salmon_ontology <- function(
     etag = file.path(cache_dir, paste0(key, ".etag")),
     last_modified = file.path(cache_dir, paste0(key, ".last_modified"))
   )
+}
+
+# The UTF-8 bytes of one string: a string declared latin1 is converted, and any
+# other is taken as the bytes it holds, which are UTF-8 for a string marked
+# UTF-8 and for any string in a UTF-8 session.
+.ms_utf8_bytes <- function(x) {
+  charToRaw(if (identical(Encoding(x), "latin1")) enc2utf8(x) else x)
 }
 
 # Stores a `200` answer as `entry`'s copy, with the validators that came with
