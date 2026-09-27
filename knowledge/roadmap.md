@@ -1050,10 +1050,11 @@ re-cut before release. The fix — a CI check comparing
 current version so older snapshots stay free to diverge — is logged in that
 repo's `docs/tech-debt.md` with its retirement condition.
 
-### smn-data-pkg (SDP spec) — current **sdp-0.3.0**
+### smn-data-pkg (SDP spec) — current **sdp-0.3.2**
 
 | Version | Date | One line |
 |---|---|---|
+| sdp-0.3.2 | 2026-09-26; tag and release 2026-09-27, on `6806319` | The dataset licence is recommended, not required; a method term qualifies through a `skos:broader` path to a `sosa:Procedure`; descriptor field entries may carry the dictionary's semantic keys; `temporal_start`/`temporal_end` accept an ISO 8601 UTC instant; the release workflow. `sdp-0.3.1` was filed but never tagged, and its entries ship here |
 | sdp-0.3.0 | 2026-08-14 | **Breaking:** methods leave the column dictionary (three placements, no registry); `statistical_modifier_iri` added; frozen-profile versioning (v0.3 URL) |
 | sdp-0.2.0 | tag cut 2026-08-14; **no changelog heading of its own** — see below | Frictionless-first schemas, v0.2 profile, `sdp.rules.yaml`, canonical `metadata/`+`data/` layout |
 | 0.1.1 | 2026-01-14 (malformed in changelog) | I-ADOPT component columns in `column_dictionary.csv` |
@@ -1076,20 +1077,28 @@ Both `sdp-0.2.0` and `sdp-0.3.0` annotated tags were cut 2026-08-14
 and pushed — they carry metasalmon's pinned remote schema source, which is
 why they exist — but neither has a corresponding GitHub Release object
 (remaining release mechanics are S6 item 3 / S1 cross-repo work).
+*(Corrected 2026-09-27: smn-data-pkg's release workflow published the
+`sdp-0.3.0` GitHub Release on 2026-09-26 without moving the tag, and cut
+`sdp-0.3.2` as a tag and a release together. `sdp-0.2.0` still has no release
+object.)*
 
-**The spec-version spread — four consumers, three eras, and two of them
-current.** Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
+**The spec-version spread — four consumers, three eras, and one of them
+current** (two until `sdp-0.3.2` was cut on 2026-09-27). Checked 2026-08-21 against the sibling checkouts; the metasalmonpy
 row re-checked 2026-08-22 after S10 chunk A. No single repo can
 see this table, which is the reason the hub carries it.
+*(Re-checked 2026-09-27, when `sdp-0.3.2` was cut: both packages'
+`dataset.schema.json` on `main` is still byte-identical to `sdp-0.3.0`'s and
+differs from `sdp-0.3.2`'s, so neither is current until B-198 and B-199 land;
+the shipped examples declare `sdp-0.3.2` at its tag.)*
 
 | Consumer | Declares or pins | Current? |
 |---|---|---|
-| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **Yes** |
-| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25) | **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
-| `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.2.0"` | No |
+| `metasalmon` | Vendors **sdp-0.3.0**: `inst/extdata/schema/` is byte-identical to the spec's `schema/` for every shared schema and rule file, and it vendors the v0.3 profile | **No** since `sdp-0.3.2`: B-198 re-vendors from that tag |
+| `metasalmonpy` | Vendors **sdp-0.3.0** since S10 chunk A (2026-08-22): a verbatim copy of the upstream tag, with `SDP_SPEC_TAG` and the remote-loader pin moved in the same change; stamps `sdp-0.3.0` into `dataset.csv$spec_version` and `datapackage.json` `sdp.specVersion`. `sdp.rules.yaml` is the one exception to the tag copy: B-166 re-vendored it from smn-data-pkg `main` (metasalmonpy #52, `4cc9ea8`), as metasalmon #120 did, so metasalmonpy's nine vendored files are byte-identical to metasalmon's (measured 2026-09-25) | **No** since `sdp-0.3.2`: B-199 re-vendors from that tag. Until then **Yes** — and the package *version* is now 0.4.0 too, released 2026-08-24 once Q7 was ruled; this cell read "stays 0.2.1 pending Q7" while the bump was outstanding |
+| `smn-data-pkg`'s own shipped examples | `minimal-example` and `mixed-grain-example` both declare `"specVersion": "sdp-0.3.2"` at the `sdp-0.3.2` tag | Yes |
 | the Fraser recipe (`psc-data-transformations`, external) | Pins engine `metasalmon` **0.1.8** at revision `886e01d` | No |
 
-Two things the spread made visible, one of them now resolved. First —
+Two things the spread made visible, both now resolved. First —
 resolved at S10 chunk A (2026-08-22): the vendored Python bundle used to carry
 `schema/frictionless/metadata/methods.schema.json`, a file the spec repo **no
 longer has** since sdp-0.3.0 removed that registry, so metasalmonpy validated
@@ -1097,11 +1106,10 @@ against a schema with no upstream. The chunk-A bundle swap removed it, the pin
 and the bundle moved together exactly as the retirement condition required,
 and `PARITY.md` rows 27 and 38 are marked converged; metasalmonpy's
 `SDP_METHODS_COLUMNS` is now a frozen legacy contract for *reading* 0.2.x-era
-packages, not a read of any schema. Second, **the
-spec repo ships examples of the version it superseded**, so the normative
-document and its own demonstrations disagree — a smn-data-pkg defect that
-belongs in that repo's tracker, noted here only because the hub is where the
-mismatch is visible.
+packages, not a read of any schema. Second — resolved at `sdp-0.3.2`
+(2026-09-27): **the spec repo shipped examples of the version it superseded**,
+so the normative document and its own demonstrations disagreed. smn-data-pkg
+#11 moved both examples to `sdp-0.3.2`, the version their tag names.
 
 **Local checkout note (resolved 2026-08-13):** the dirty
 state was abandoned metasmn-rename leftovers — preserved on local branch
