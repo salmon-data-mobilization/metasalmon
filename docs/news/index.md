@@ -101,6 +101,14 @@
 
 ### Fixed
 
+- NuSEDS crosswalk-filled code terms now appear in
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  with ranked alternatives when semantic seeding retrieves candidates
+  (B-120). The existing prefill remains in `codes.csv` until a reviewer
+  changes it; explicit caller IRIs and `semantic_code_scope = "none"`
+  retain their behaviour. Importing a harness assessment preserves the
+  prefill’s provenance.
+
 - **[`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
   now checks the three things backlog
   [\#49](https://github.com/salmon-data-mobilization/metasalmon/issues/49)

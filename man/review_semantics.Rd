@@ -17,7 +17,8 @@ review_semantics(
 \code{infer_salmon_datapackage_artifacts()}.}
 
 \item{include_filled}{Logical; if \code{TRUE}, also queue slots that already hold
-a final (non-\verb{REVIEW:}) IRI. Defaults to \code{FALSE}.}
+a final (non-\verb{REVIEW:}) IRI. NuSEDS crosswalk-prefilled code slots with a
+saved shortlist are shown by default until decided. Defaults to \code{FALSE}.}
 
 \item{max_candidates}{Maximum candidates shown per slot. \code{Inf} shows all.}
 
@@ -31,7 +32,8 @@ there is one) as the \code{review_path} attribute.
 }
 \description{
 Builds a re-runnable review queue from suggestions that already exist. One
-entry per unfilled semantic slot, each with its ranked shortlist and the
+entry per unfilled semantic slot, plus NuSEDS crosswalk-prefilled code slots
+that still hold their original prefill, each with its ranked shortlist and the
 exact \code{\link[=accept_suggestion]{accept_suggestion()}} call that decides it -- printing that call is the
 feature: paste it into a script and the decision becomes reproducible,
 which the spreadsheet workflow this replaces never was.

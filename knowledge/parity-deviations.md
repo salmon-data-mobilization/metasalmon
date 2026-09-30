@@ -125,6 +125,18 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
+**Development-version port, 2026-09-30: crosswalk review (B-120 → B-426).**
+NuSEDS-prefilled code IRIs now retain candidates and appear in the default
+console queue while they still hold their original prefill and have no recorded
+decision. `prefill_origin` and `prefill_iri` are package-owned suggestion
+columns, preserved when a harness assessment refreshes the shortlist; the
+frozen target/assessment contracts and crosswalk term choices are unchanged.
+metasalmonpy owes the same behaviour and the R regression's twins: explicit
+caller IRIs remain final, code scope `none` performs no code discovery, and
+manual edits or applied decisions close the default slot. B-426 follows B-327
+because its active packet branches edit the same Python paths. The release
+index links this debt; it is an owed port, not a deliberate register difference.
+
 *(The heading keeps its wording deliberately. It is a citation target: this file,
 the release index in [`roadmap.md`](roadmap.md), and the retirement conditions of
 queue items **B-126** and **B-165** all cite this section by name, and renaming

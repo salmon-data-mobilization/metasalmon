@@ -539,6 +539,14 @@ which is the drift the release index exists to catch, so the rule is stated here
 rather than only the instance: **a new mirror debt is recorded in both places in
 the same change.**
 
+**B-120 adds crosswalk review to the development version (2026-09-30).**
+The Python port is **B-426**, following B-327's packet implementation to avoid
+competing edits to its active branches. It owes candidate discovery for only
+package-filled code IRIs, default console visibility until a decision, and
+preserved prefill provenance through assessment ingestion. The specification
+and regression are in backlog #120 and `test-review-console.R`; this is port
+debt, not a new parity-register row. Versions remain unchanged.
+
 *(The count is gone from this passage on purpose, as of 2026-09-16, and from its
 lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
 beside a clause calling B-165 "the only one of the four" whose entry belongs
