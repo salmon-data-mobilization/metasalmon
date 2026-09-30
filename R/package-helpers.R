@@ -964,7 +964,11 @@ infer_salmon_datapackage_artifacts <- function(
     suggest_args <- c(suggest_args, llm_review$suggest_args)
     dict <- do.call(suggest_semantics, suggest_args)
 
-    semantic_suggestions <- attr(dict, "semantic_suggestions", exact = TRUE)
+    semantic_suggestions <- .ms_mark_crosswalk_suggestions(
+      attr(dict, "semantic_suggestions", exact = TRUE),
+      artifact_context$crosswalk_prefills
+    )
+    attr(dict, "semantic_suggestions") <- semantic_suggestions
     semantic_llm_assessments <- attr(dict, "semantic_llm_assessments", exact = TRUE)
   }
 
@@ -3296,6 +3300,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     row <- suggestions[i, , drop = FALSE]
     scope <- row$target_scope[[1]] %||% NA_character_
     if (!identical(scope, "code")) {
+      return(TRUE)
+    }
+    # A crosswalk-filled slot is a deliberate review target even when the raw
+    # code has no description beyond its own value. The prefill provenance is
+    # narrower than the ordinary context heuristic below.
+    if ("prefill_origin" %in% names(row) &&
+        identical(.ms_scalar_text(row$prefill_origin), "nuseds_crosswalk")) {
       return(TRUE)
     }
     .ms_code_target_has_review_context(row)

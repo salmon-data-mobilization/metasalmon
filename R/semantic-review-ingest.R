@@ -819,7 +819,18 @@
   seen <- character()
   for (slot in unique(existing_slots)) {
     if (slot %in% replace_slots) {
-      pieces[[length(pieces) + 1L]] <- merged[merged_slots == slot, , drop = FALSE]
+      replacement <- merged[merged_slots == slot, , drop = FALSE]
+      # Prefill provenance belongs to the package, not to the harness or its
+      # retrieved shortlist. Keep the slot's original stamp when an assessment
+      # refreshes candidates, so an undecided crosswalk IRI stays reviewable.
+      original <- existing[existing_slots == slot, , drop = FALSE]
+      for (col in intersect(c("prefill_origin", "prefill_iri"), names(original))) {
+        values <- unique(original[[col]][!is.na(original[[col]]) & nzchar(original[[col]])])
+        if (length(values) == 1L) {
+          replacement[[col]] <- rep(values, nrow(replacement))
+        }
+      }
+      pieces[[length(pieces) + 1L]] <- replacement
       seen <- c(seen, slot)
     } else {
       pieces[[length(pieces) + 1L]] <- existing[existing_slots == slot, , drop = FALSE]

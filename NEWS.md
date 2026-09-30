@@ -214,6 +214,12 @@ metasalmon (development version)
 
 ### Fixed
 
+* NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
+  ranked alternatives when semantic seeding retrieves candidates (B-120).
+  The existing prefill remains in `codes.csv` until a reviewer changes it;
+  explicit caller IRIs and `semantic_code_scope = "none"` retain their
+  behaviour. Importing a harness assessment preserves the prefill's provenance.
+
 * **Any final `reject_shortlist` now escalates to `request_new_term`, and four
   ways an LLM assessment was being mangled are fixed** (hub item B-361; ruled by
   Brett on 2026-09-25 as decisions 10 and 11 of the S16 execplan, and a

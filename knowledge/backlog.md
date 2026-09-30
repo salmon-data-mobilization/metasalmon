@@ -1341,7 +1341,7 @@ measurement query against `gcdfo`, or the overlap is ruled correct and this
 item is closed as expected behaviour with that ruling recorded.
 
 **#120 Code-level semantic slots filled by the NuSEDS crosswalk are unreachable
-from the review queue. Reported 2026-08-25, not yet reproduced in a test.** The
+from the review queue. Reported 2026-08-25; reproduced 2026-09-30.** The
 NuSEDS crosswalk prefills `codes.csv` rows with final (non-`REVIEW:`) IRIs and
 produces **no suggestion rows** for them, so `review_semantics()` — which
 queues from suggestions — cannot show them, and `include_filled = TRUE` does
@@ -1354,6 +1354,23 @@ inspection and says why.
 = "…")` can now change one from R, and `review_metadata()` reports a
 code-level placeholder. Neither surfaces the *candidates*, which is what a
 review is for.
+
+The B-120 regression exercises `create_sdp()` through console review and the
+packet/assessment round trip. Package-owned `prefill_origin` and `prefill_iri`
+in `semantic_suggestions.csv` distinguish a crosswalk assignment from an
+explicit caller IRI; the frozen target and assessment rows are unchanged.
+Discovery clears only its temporary copy of the crosswalk IRI, so alternatives
+can be retrieved while `codes.csv` retains the assignment. A recorded decision
+or a later manual IRI change closes the default queue entry. Old packages
+without candidate rows need recreation from their pre-crosswalk inputs to
+acquire them; console review itself performs no lookup.
+
+**B-426 is the metasalmonpy twin of B-120.** The same discovery and review
+behaviour is owed there, including preserving provenance when packet ingestion
+refreshes an undecided shortlist. Its implementation follows the S16 packet
+port (B-327), whose active Python branches already edit these paths. This is
+ordinary port debt, recorded in the release index and parity port section;
+no deliberate deviation is introduced.
 
 *Retires when:* a crosswalk-filled code slot appears in `review_semantics()`
 with its alternatives, or the decision is recorded that crosswalk prefills are

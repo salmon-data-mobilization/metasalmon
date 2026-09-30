@@ -70,7 +70,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="fixed-development-version">Fixed<a class="anchor" aria-label="anchor" href="#fixed-development-version"></a></h3>
-<ul><li>
+<ul><li><p>NuSEDS crosswalk-filled code terms now appear in <code><a href="../reference/review_semantics.html">review_semantics()</a></code> with ranked alternatives when semantic seeding retrieves candidates (B-120). The existing prefill remains in <code>codes.csv</code> until a reviewer changes it; explicit caller IRIs and <code>semantic_code_scope = "none"</code> retain their behaviour. Importing a harness assessment preserves the prefill’s provenance.</p></li>
+<li>
 <p><strong><code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> now checks the three things backlog <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/49" class="external-link">#49</a> (hub item B-49) measured it claiming and not doing.</strong> Each was a contract the package already wrote and nothing read back:</p>
 <ol style="list-style-type: decimal"><li>
 <strong>Required-column nullability.</strong> The dictionary’s <code>required</code> flag was inferred, written to <code>column_dictionary.csv</code>, parsed back to logical and exported as Frictionless <code>constraints.required</code>, and compared to the data by nothing – a package could declare a column required and ship blanks in it. A <code>required = TRUE</code> column with an NA or whitespace value is now a structural <code>columns</code> issue in every mode, read the way the primary-key check reads a missing key component. Only columns present in the data are checked; an absent one was already reported.</li>
