@@ -14,13 +14,28 @@ class ReviewCompletion(unittest.TestCase):
     def test_completed_requested_head(self):
         result = dict(type="result", subtype="success", is_error=False,
                       permission_denials=[], result="Done.\nREVIEWED_HEAD=abc")
-        module.check_review([dict(type="assistant"), result], "abc")
+        tools = []
+        for action in ["view", "diff", "comment"]:
+            tools.extend([
+                dict(type="assistant", message=dict(content=[dict(type="tool_use", id=action,
+                     name="Bash", input=dict(command=f"gh pr {action} 222 --repo salmon-data-mobilization/metasalmon"))])),
+                dict(type="user", message=dict(content=[dict(type="tool_result", tool_use_id=action,
+                     is_error=False, content="Successful nonempty result")]))
+            ])
+        module.check_review(tools + [result], "abc")
+        with self.assertRaises(ValueError):
+            module.check_review([result], "abc")
+        for action in ["view", "diff", "comment"]:
+            failed = [m for m in tools if m.get("type") != "user" or
+                      m["message"]["content"][0]["tool_use_id"] != action]
+            with self.subTest(missing=action), self.assertRaises(ValueError):
+                module.check_review(failed + [result], "abc")
         for changed in [dict(permission_denials=[dict(tool_name="Bash")]),
                         dict(result="Skipped a draft"), dict(result="REVIEWED_HEAD=older"),
                         dict(result="REVIEWED_HEAD=abc-extra"), dict(result=None),
                         dict(subtype="error_max_turns"), dict(is_error=True)]:
             with self.subTest(changed=changed), self.assertRaises(ValueError):
-                module.check_review([result | changed], "abc")
+                module.check_review(tools + [result | changed], "abc")
 
     def test_absent_or_ambiguous_completion(self):
         for messages in [[], {}, [dict(type="result"), dict(type="result")]]:

@@ -38,3 +38,17 @@ exposes a checked head result. A model's completion marker is evidence of its
 reported execution, not proof that its semantic judgement is correct; findings
 still require comparison against source and Brett's decisions. This PR remains
 draft for review of the workflow change.
+
+## Independent review correction
+
+The initial completion fixture could pass with only a final marker and no
+tool calls. An independent reviewer reproduced that weakness. The check now
+requires successful SDK tool results for `gh pr view`, `gh pr diff`, and a PR
+comment (shell or inline tool); offline tests reject each missing operation.
+These events demonstrate execution, while review quality still requires
+comparison against source.
+
+Remote run 36818758378 failed because Anthropic’s workflow validation refuses
+changed workflow content until it matches the default branch. The SDK never
+ran and supplied no execution file. No bypass was added; Brett was asked for
+a one-time merge decision after the other checks and independent review.
