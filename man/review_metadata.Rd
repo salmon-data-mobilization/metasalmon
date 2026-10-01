@@ -56,11 +56,14 @@ that one, as the package writers do: from this session's cache once they have
 loaded it, and otherwise by fetching it as they would.
 }
 \examples{
-\dontrun{
-pkg <- create_sdp(resources, dataset_id = "demo-1")
+pkg <- create_sdp(
+  data.frame(spawner_count = c(12L, 19L)),
+  path = tempfile("sdp-review-"),
+  seed_semantics = FALSE,
+  seed_verbose = FALSE,
+  check_updates = FALSE
+)
 review_metadata(pkg)
-set_sdp_dataset(pkg, creator = "Fisheries and Oceans Canada")
-}
 }
 \seealso{
 \code{\link[=set_sdp_dataset]{set_sdp_dataset()}}, \code{\link[=review_semantics]{review_semantics()}},

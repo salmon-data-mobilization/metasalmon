@@ -38,7 +38,10 @@ agent-config/
 project-specific-instructions.md
 /doc/
 /Meta/
-pkgdown/
+# Ignore local pkgdown scratch; favicons are authoring inputs for page builds.
+# Retires when pkgdown no longer requires favicon inputs in this location.
+pkgdown/*
+!pkgdown/favicon/
 agent-guidance/
 .claude
 .local-backup/

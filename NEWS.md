@@ -1257,11 +1257,35 @@ metasalmon (development version)
   Stream names use the unpadded item number (`S-05` is `S5`); future stream
   items are accepted without editing a fixed list (hub item B-186).
 
+* Failed Claude review checks now report a bounded count and fixed tool/command
+  categories for denied calls. Raw inputs, paths, arguments and output remain
+  hidden; denied calls still fail completion. No review permission or merge
+  gate changes.
+
+* `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and indexes
+  under the existing pinned toolchain, avoiding a full site rebuild for a NEWS-only
+  edit. Publication checks still run; a toolchain change requires a full build.
+
+* The hub client adds `hub status ID` for queue fields and the live claim tip,
+  and successful claims print member-worktree and workpad setup commands.
+  These are advisory hints; claim eligibility and the lock protocol are unchanged.
+
+* `scripts/hub_ids.py` scans fetched branches and registered worktrees for
+  numbered queue items and legacy headings, reporting ID collisions or an
+  unreserved next-number suggestion. Several queries share one scan.
+  It creates no claim or reservation.
 * Claude CI reviews drafts and each new PR head. A missing completion result,
   denied tool call or unconfirmed head fails the review job instead of looking
   like a successful review. Superseded review runs are cancelled. Each PR gets
   at most five review rounds, and none after a round that found only nits;
   what counts as important is set in `REVIEW.md`.
+
+* Every exported R function now has an example in its help page; examples
+  that need only bundled data or temporary files run during `R CMD check`.
+  Package `Author` and `Maintainer` metadata now derive from the existing
+  Brett-only `Authors@R`, removing stale hand-written attribution, and the
+  unused blanket `httr` import is gone. SDP runtime behaviour is unchanged
+  (hub item B-60).
 
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script

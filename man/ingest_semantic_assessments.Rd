@@ -84,6 +84,29 @@ code carried as the condition's \code{code} field and class
 \code{no_pass_2}. A row-level problem makes that row an error row or downgrades
 it with a note, and processing continues.
 }
+\examples{
+\dontrun{
+# Run in checks once a harness response fixture is bundled.
+# Start with an SDP whose semantic targets are ready for review.
+sdp_path <- "/path/to/reviewed-sdp"
+packet <- write_semantic_review_packet(sdp_path)
+# Have the external harness judge packet$path and write its 30-column
+# response and a matching .packet-id sidecar in the SDP's review directory.
+response <- file.path(sdp_path, "review", "semantic-assessments-pass-1.csv")
+result <- ingest_semantic_assessments(
+  sdp_path, assessments = response, packet_id = packet$packet_id
+)
+if (identical(result$status, "awaiting_pass_2")) {
+  # The harness judges result$next_packet, then ingest that second response.
+  second_response <- file.path(
+    sdp_path, "review", "semantic-assessments-pass-2.csv"
+  )
+  result <- ingest_semantic_assessments(
+    sdp_path, assessments = second_response
+  )
+}
+}
+}
 \seealso{
 \code{\link[=write_semantic_review_packet]{write_semantic_review_packet()}}, \code{\link[=semantic_llm_assessments]{semantic_llm_assessments()}}
 }
