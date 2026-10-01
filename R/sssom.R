@@ -299,18 +299,15 @@
     function(line) gsub(tag_token, paste0("!", tag_name), line, perl = TRUE),
     character(1), USE.NAMES = FALSE
   )
-  if (has_tag(bulk)) {
-    return(TRUE)
-  }
+  bulk_has_tag <- has_tag(bulk)
 
-  # An ordinary bang token may consume a later tag in the bulk replacement,
-  # for example in a flow key or a verbatim-looking quoted value. With two or
-  # more bangs, retag one at a time so an earlier replacement cannot hide the
-  # later node property. A single bang cannot conceal a later bang.
+  # Bulk replacement can hide a later tag or realign quote boundaries and
+  # invent one. Confirm a positive result by retagging one bang at a time;
+  # also probe individually after a negative result with multiple bangs.
   bang_count <- sum(lengths(regmatches(
     probe_lines, gregexpr("!", probe_lines, fixed = TRUE)
   )))
-  if (bang_count < 2L) {
+  if (!bulk_has_tag && bang_count < 2L) {
     return(FALSE)
   }
   for (line_index in seq_along(probe_lines)) {

@@ -783,6 +783,7 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
     '["!foo", !foo\'bar X]',
     "{item: !foo X}",
     "{item: !foo'bar X}",
+    "{'x !a': ', !b', k: !foo X}",
     "[&a !foo X]",
     '{"item":!foo X}',
     "{? !foo x: y}",
@@ -851,6 +852,20 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
       unname(ordinary[[i]])
     )
   }
+
+  # Multiple quoted bangs in one flow mapping must not create a tag when the
+  # disposable bulk replacement realigns the quote boundaries.
+  quoted_flow_path <- file.path(root, "quoted-flow-bangs.sssom.tsv")
+  sssom_test_write_raw(
+    quoted_flow_path,
+    sssom_test_text(
+      extra_metadata = "# mapping_set_title: {'x !a': ', !b', k: v}"
+    )
+  )
+  expect_identical(
+    read_sssom_mapping_set(quoted_flow_path)$metadata$mapping_set_title,
+    ", !b|v"
+  )
 
   block_path <- file.path(root, "block-text.sssom.tsv")
   sssom_test_write_raw(
