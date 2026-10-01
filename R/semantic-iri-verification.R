@@ -121,17 +121,64 @@
   sort(unique(iris), method = "radix")
 }
 
+.ms_semantic_iri_final_headers <- function(response) {
+  if (length(response$status_code) != 1L || is.na(response$status_code) ||
+      response$status_code < 200L || length(response$headers) == 0L) {
+    return(FALSE)
+  }
+  headers <- rawToChar(response$headers)
+  if (!endsWith(headers, "\r\n\r\n")) return(FALSE)
+  blocks <- strsplit(headers, "\r\n\r\n", fixed = TRUE)[[1]]
+  block <- utils::tail(blocks[nzchar(blocks)], 1L)
+  status_line <- strsplit(block, "\r\n", fixed = TRUE)[[1]][[1]]
+  if (!grepl("^HTTP/[0-9.]+ [0-9]{3}($| )", status_line)) return(FALSE)
+  status <- as.integer(sub("^HTTP/[0-9.]+ ([0-9]{3}).*$", "\\1", status_line))
+  # A prior complete redirect block can remain visible while the next status
+  # has arrived but its headers have not. Never treat that stale block as final.
+  if (status != response$status_code) return(FALSE)
+  location <- curl::parse_headers_list(block)$location
+  !(status %in% c(301L, 302L, 303L, 307L, 308L) &&
+      length(location) > 0L && any(nzchar(location)))
+}
+
+.ms_semantic_iri_request_timeout <- 30
 .ms_semantic_iri_request <- function(iri) {
-  response <- httr2::request(iri) |>
-    httr2::req_method("GET") |>
-    httr2::req_headers(Accept = "*/*") |>
-    httr2::req_timeout(seconds = 30) |>
-    httr2::req_error(is_error = function(response) FALSE) |>
-    httr2::req_perform()
-  list(
-    status = as.integer(httr2::resp_status(response)),
-    final_url = as.character(httr2::resp_url(response))
+  handle <- curl::new_handle(
+    url = iri, httpget = TRUE, followlocation = TRUE, maxredirs = 30L,
+    suppress_connect_headers = TRUE,
+    timeout_ms = as.integer(1000 * .ms_semantic_iri_request_timeout)
   )
+  # Proxy CONNECT headers are not the requested HTTP resource's response.
+  curl::handle_setheaders(handle, Accept = "*/*")
+  pool <- curl::new_pool()
+  failure <- NULL
+  completed <- FALSE
+  curl::multi_add(
+    handle, done = function(response) completed <<- TRUE,
+    fail = function(message) failure <<- message,
+    data = function(chunk, final = FALSE) invisible(NULL), pool = pool
+  )
+  on.exit(curl::multi_cancel(handle), add = TRUE)
+  deadline <- proc.time()[["elapsed"]] + .ms_semantic_iri_request_timeout
+  repeat {
+    remaining <- deadline - proc.time()[["elapsed"]]
+    if (remaining <= 0) {
+      stop(errorCondition("Semantic IRI request timed out.", class = "curl_error"))
+    }
+    # A zero-time poll exposes headers promptly. Even short blocking multi_run
+    # calls waited for a body/timeout on some local responses in curl 7.1.0.
+    # Retires when a shared header transport keeps this bound and failure proof.
+    curl::multi_run(timeout = 0, pool = pool)
+    response <- curl::handle_data(handle)
+    if (.ms_semantic_iri_final_headers(response)) {
+      return(list(status = as.integer(response$status_code), final_url = response$url))
+    }
+    if (!is.null(failure)) stop(errorCondition(failure, class = "curl_error"))
+    if (completed) {
+      stop(errorCondition("Request completed without final HTTP headers.", class = "curl_error"))
+    }
+    Sys.sleep(min(0.01, remaining))
+  }
 }
 
 .ms_semantic_iri_retry_delays <- c(0.1, 0.25)
@@ -219,7 +266,9 @@
 #' Collects exact HTTP(S) identifiers from selected SDP semantic metadata,
 #' including manifest-bound reviewed SSSOM mappings. Candidate suggestions,
 #' arbitrary data URLs, and non-HTTP identifiers are excluded. GET requests
-#' follow normal httr2 redirects and have a 30-second timeout. Only HTTP 408,
+#' follow redirects and stop after complete final response headers, with a
+#' 30-second timeout across connection and redirects. The final body is not
+#' retained or required for HTTP resolution. Only HTTP 408,
 #' 429, 5xx, and classified transient transport failures are retried, with at
 #' most three attempts per IRI. All IRIs are checked before any failure aborts.
 #'

@@ -1,6 +1,76 @@
 # B-130: the dereference report remains useful even when publication must stop.
 # All requests and delays are injected; these tests never reach the network.
 
+test_that("only complete corresponding terminal response headers are accepted", {
+  response <- function(status, headers) list(status_code = status, headers = charToRaw(headers))
+  redirect <- "HTTP/1.1 302 Found\r\nLocation: /final\r\n\r\n"
+  final <- "HTTP/1.1 200 OK\r\nContent-Length: 1000000\r\n\r\n"
+  expect_true(.ms_semantic_iri_final_headers(response(200L, final)))
+  expect_false(.ms_semantic_iri_final_headers(response(302L, redirect)))
+  expect_false(.ms_semantic_iri_final_headers(response(200L, redirect)))
+  expect_false(.ms_semantic_iri_final_headers(response(200L, paste0(redirect, "HTTP/1.1 200 OK\r\n"))))
+  expect_false(.ms_semantic_iri_final_headers(response(103L, "HTTP/1.1 103 Early Hints\r\n\r\n")))
+  expect_true(.ms_semantic_iri_final_headers(response(200L, paste0(redirect, final))))
+  expect_true(.ms_semantic_iri_final_headers(response(302L, "HTTP/1.1 302 Found\r\n\r\n")))
+  expect_true(.ms_semantic_iri_final_headers(response(404L, "HTTP/2 404\r\n\r\n")))
+})
+
+test_that("default GET cancels only after matching final headers and keeps curl failures", {
+  redirect <- charToRaw("HTTP/1.1 302 Found\r\nLocation: /final\r\n\r\n")
+  final <- charToRaw("HTTP/1.1 200 OK\r\n\r\n")
+  responses <- list(
+    list(status_code = 302L, headers = redirect),
+    list(status_code = 200L, headers = redirect),
+    list(status_code = 200L, headers = final, url = "https://example.org/final")
+  )
+  index <- 0L
+  cancelled <- 0L
+  failure <- NULL
+  testthat::local_mocked_bindings(
+    new_handle = function(...) {
+      options <- list(...)
+      expect_true(options$httpget)
+      expect_true(options$followlocation)
+      expect_true(options$suppress_connect_headers)
+      expect_identical(options$maxredirs, 30L)
+      expect_identical(options$timeout_ms, 30000L)
+      list()
+    },
+    new_pool = function(...) list(),
+    handle_setheaders = function(handle, ...) expect_identical(list(...), list(Accept = "*/*")),
+    multi_add = function(handle, done, fail, data, pool) {
+      failure <<- fail
+      expect_null(data(charToRaw("body bytes are discarded")))
+    },
+    multi_run = function(timeout, pool) {
+      expect_identical(timeout, 0)
+      index <<- index + 1L
+    },
+    handle_data = function(handle) responses[[index]],
+    multi_cancel = function(handle) cancelled <<- cancelled + 1L,
+    .package = "curl"
+  )
+  expect_identical(.ms_semantic_iri_request("https://example.org/start"),
+                   list(status = 200L, final_url = "https://example.org/final"))
+  expect_identical(index, 3L)
+  expect_identical(cancelled, 1L)
+
+  # This libcurl failure does not match the text heuristic; its transport class
+  # must still make it retryable, as the previous curl/httr2 default did.
+  index <- 0L
+  responses <- list(list(status_code = 0L, headers = raw()))
+  testthat::local_mocked_bindings(
+    multi_run = function(timeout, pool) {
+      index <<- index + 1L
+      failure("HTTP/2 stream was not closed cleanly")
+    }, .package = "curl"
+  )
+  result <- .ms_semantic_iri_attempt("https://example.org/start", .ms_semantic_iri_request)
+  expect_true(result$transient)
+  expect_identical(result$error, "HTTP/2 stream was not closed cleanly")
+  expect_identical(cancelled, 2L)
+})
+
 write_iri_fixture_csv <- function(root, relative_path, rows) {
   target <- file.path(root, relative_path)
   dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)

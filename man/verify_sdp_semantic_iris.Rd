@@ -32,7 +32,9 @@ the complete CSV is written before an aggregate error is raised.
 Collects exact HTTP(S) identifiers from selected SDP semantic metadata,
 including manifest-bound reviewed SSSOM mappings. Candidate suggestions,
 arbitrary data URLs, and non-HTTP identifiers are excluded. GET requests
-follow normal httr2 redirects and have a 30-second timeout. Only HTTP 408,
+follow redirects and stop after complete final response headers, with a
+30-second timeout across connection and redirects. The final body is not
+retained or required for HTTP resolution. Only HTTP 408,
 429, 5xx, and classified transient transport failures are retried, with at
 most three attempts per IRI. All IRIs are checked before any failure aborts.
 }

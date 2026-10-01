@@ -29,6 +29,7 @@ Imports:
     gh,
     digest,
     httr2,
+    curl,
     gitcreds,
     methods,
     usethis,
