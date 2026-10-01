@@ -36,7 +36,15 @@ def denial_summary(denials):
             command = inputs.get("command") if isinstance(inputs, dict) else None
             if isinstance(command, str) and len(command) <= 20000:
                 try:
-                    words = shlex.split(command)
+                    # A denial can apply to any part of a shell command. Only
+                    # name the first program when the input is one invocation.
+                    lexer = shlex.shlex(command, posix=True, punctuation_chars="|&;()<>")
+                    lexer.whitespace_split = True
+                    lexer.commenters = ""
+                    words = list(lexer)
+                    if (any(mark in command for mark in ("\n", "\r", "`", "$(")) or
+                            any(word and set(word) <= set("|&;()<>") for word in words)):
+                        words = []
                 except ValueError:
                     words = []
                 if words and words[0] in known_commands:
