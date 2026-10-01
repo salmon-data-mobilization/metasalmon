@@ -1300,8 +1300,9 @@ message. Their shared shape is the reusable finding: **a feature that writes a
 record and never reads it back has not been round-tripped, and no test that
 only writes will say so.**
 
-*Retires when:* it already has. What is still open in stream S5 is #58 and #59,
-which share no code with this.
+*Retires when:* it already has. The condition-class work in #58 and the
+configuration and global-state work in #59 are separate from this review-flow
+fix.
 
 ### Open — retrieval
 
@@ -3525,6 +3526,10 @@ for anyone matching on message text, so it wants a major bump.
 `.onLoad` defaults, and no help topic. `.search_bioportal()` permanently writes a
 flag into the user's `options()`; `.ms_chat_new_session_id()` calls `sample()` and
 advances the user's RNG stream. Both are CRAN-policy violations.
+
+**Landed 2026-10-01:** metasalmon PR #243 (`d0339c0`) added the configuration
+registry and help topic, filled only missing concrete defaults, and moved warning
+bookkeeping and session-ID generation off the caller's options and RNG state.
 
 **#60 Example and API-surface gaps.** 22 of 30 documented topics wrap their entire
 example in `\dontrun{}`, including examples that run offline in under a second,

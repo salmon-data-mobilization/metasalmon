@@ -782,12 +782,14 @@ metasalmonpy queue item is `B-261`.
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
 review target.** Hub item **B-171** added the R test that pins this direction of
-the semantic closure's two canonical sets. metasalmonpy has the same producer
-and the same fallback and no such test, so what is owed there is the twin, not a
-port and not a register row. It is specified under *What metasalmon 0.5.0 owes
+the semantic closure's two canonical sets. At the 2026-09-25 measurement,
+metasalmonpy had the same producer and fallback and no such test, so what was
+owed there was the twin, not a port and not a register row. It is specified
+under *What metasalmon 0.5.0 owes
 the mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-264`.
+`B-264`; the test twin **landed 2026-10-01 as metasalmonpy #81**, merge
+`430b568`, without a runtime change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**
@@ -1405,8 +1407,8 @@ materially new workflow, with nothing renamed, removed, or changed in
 documented return shape. **#58 (condition classes) wanted a breaking bump and
 was deliberately left out of it** — judged 2026-08-25, on the grounds that ~450
 mechanical call-site edits share no code with the review flow and bundling them
-would make both harder to review. So #58 and #59 are what remain of S5, and the
-breaking-release story they want is still ahead rather than spent. Two narrow
+would make both harder to review. #59 was likewise outside 0.5.0 and landed
+separately in PR #243 on 2026-10-01. Two narrow
 byte changes ship inside the minor and are stated in the NEWS entry rather than
 implied: `semantic_suggestions.csv` gains a `decision_reason` column, and an
 in-memory SSSOM mapping set carrying a typed column renders canonically through
@@ -1481,6 +1483,8 @@ ships without them, but says something it cannot fully back. **One solid arrow
 is marked conditional** — it is drawn as a hard block because that is the
 current plan of record, and it survives only under some rulings of
 [OD-2](#od-2--what-does-the-knb-test-environment-mean).
+For current S5 work and claimability, see [the hub queue](https://github.com/salmon-data-mobilization/metasalmon/blob/main/queue/README.md);
+the S5 diagram line below records dated release history.
 
 ```
                                           ▼ hard — OD-2 ruled A, 2026-08-22
@@ -1499,9 +1503,9 @@ S9 ontology conventions + alignment ── implementation evidence exists, with
                                        alpha.3 merged (MR !5, 2026-08-16) and
                                        is still untagged
 S2 correctness debt          ── independent
-S5 review flow (next minor)  ── independent (#60 → #74 internally); #74's
-                                semantic half landed 2026-08-25 (M1–M3),
-                                M4/M5 + #58/#59 remain
+S5 review flow (0.5.0)     ── independent (#60 → #74 internally); M1–M5
+                                and #74 shipped 2026-08-25; #59 landed
+                                separately 2026-10-01
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
