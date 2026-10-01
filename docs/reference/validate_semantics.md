@@ -52,3 +52,15 @@ A list with elements:
 - `issues`: tibble of structural issues (empty if none).
 
 - `missing_terms`: tibble of measurement rows missing `term_iri`.
+
+## Examples
+
+``` r
+dictionary <- system.file(
+  "extdata", "column_dictionary.csv", package = "metasalmon"
+)
+result <- validate_semantics(dictionary, require_iris = FALSE)
+#> ✔ Dictionary validation passed
+nrow(result$missing_terms)
+#> [1] 0
+```

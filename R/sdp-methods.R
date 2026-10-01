@@ -256,6 +256,10 @@
 #'   dropped), and `registry` (the legacy registry rows, for relocating
 #'   labels/descriptions to the shared vocabulary and citations to
 #'   `protocol_citation`).
+#' @examples
+#' example_sdp <- system.file("extdata", package = "metasalmon")
+#' migration_plan <- migrate_sdp_methods(example_sdp, dry_run = TRUE)
+#' names(migration_plan)
 #' @export
 migrate_sdp_methods <- function(path, dry_run = FALSE) {
   root <- .ms_sdp_extension_root(path)

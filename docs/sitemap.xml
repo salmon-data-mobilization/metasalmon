@@ -41,6 +41,7 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/index.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/infer_dictionary.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.html</loc></url>
@@ -85,5 +86,6 @@
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_reproducibility_manifest.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.html</loc></url>
 <url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_sssom.html</loc></url>
+<url><loc>https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.html</loc></url>
 </urlset>
 
