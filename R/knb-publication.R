@@ -36,7 +36,8 @@
   expected <- .ms_knb_replication_policy(public, config)
   if (!identical(policy, expected)) {
     cli::cli_abort(
-      "The publication plan has an invalid replication policy for the selected {.arg public} value."
+      "The publication plan has an invalid replication policy for the selected {.arg public} value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -49,7 +50,8 @@
   }
   if (length(value) != 1L || !is.logical(value) || is.na(value)) {
     cli::cli_abort(
-      "{.arg {field}} must be one explicit, non-missing logical value."
+      "{.arg {field}} must be one explicit, non-missing logical value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(value)
@@ -58,7 +60,7 @@
 .ms_knb_lexical_absolute_path <- function(path) {
   path <- path.expand(as.character(path))
   if (length(path) != 1L || is.na(path) || !nzchar(path)) {
-    cli::cli_abort("Publication paths must be non-empty scalar values.")
+    cli::cli_abort("Publication paths must be non-empty scalar values.", class = .ms_condition_classes("error", "publication"))
   }
   slash_path <- gsub("\\", "/", path, fixed = TRUE)
   is_absolute <- startsWith(slash_path, "/") ||
@@ -102,10 +104,10 @@
 .ms_knb_package_root <- function(path) {
   lexical <- .ms_knb_lexical_absolute_path(path)
   if (!dir.exists(lexical)) {
-    cli::cli_abort("SDP directory {.path {path}} does not exist.")
+    cli::cli_abort("SDP directory {.path {path}} does not exist.", class = .ms_condition_classes("error", "publication"))
   }
   if (.ms_sdp_extension_is_symlink(lexical)) {
-    cli::cli_abort("The SDP directory itself must not be a symbolic link.")
+    cli::cli_abort("The SDP directory itself must not be a symbolic link.", class = .ms_condition_classes("error", "publication"))
   }
   normalizePath(lexical, mustWork = TRUE)
 }
@@ -115,7 +117,8 @@
   if (isTRUE(must_work)) {
     if (!file.exists(lexical)) {
       cli::cli_abort(
-        "Publication path {.path {path}} does not exist."
+        "Publication path {.path {path}} does not exist.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     return(normalizePath(lexical, mustWork = TRUE))
@@ -127,7 +130,8 @@
     parent <- dirname(ancestor)
     if (identical(parent, ancestor)) {
       cli::cli_abort(
-        "Could not resolve an existing ancestor for publication path {.path {path}}."
+        "Could not resolve an existing ancestor for publication path {.path {path}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     suffix <- c(basename(ancestor), suffix)
@@ -165,13 +169,15 @@
   }
   if (is.null(lexical_root)) {
     cli::cli_abort(
-      "Publication artifact {.path {target}} must remain inside the SDP directory."
+      "Publication artifact {.path {target}} must remain inside the SDP directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   lexical_prefix <- paste0(lexical_root, .Platform$file.sep)
   if (!startsWith(lexical, lexical_prefix)) {
     cli::cli_abort(
-      "Publication artifact {.path {target}} must remain inside the SDP directory."
+      "Publication artifact {.path {target}} must remain inside the SDP directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   relative <- substring(lexical, nchar(lexical_prefix) + 1L)
@@ -198,14 +204,16 @@
   ]
   if (length(symlinks) > 0L) {
     cli::cli_abort(
-      "Publication artifacts cannot be reached through a symlink: {.file {symlinks}}."
+      "Publication artifacts cannot be reached through a symlink: {.file {symlinks}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   resolved <- .ms_knb_resolve_target_path(candidate, must_work = must_work)
   prefix <- paste0(root, .Platform$file.sep)
   if (!startsWith(resolved, prefix)) {
     cli::cli_abort(
-      "Publication artifact {.path {target}} must remain inside the SDP directory."
+      "Publication artifact {.path {target}} must remain inside the SDP directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   candidate
@@ -217,7 +225,8 @@
   prefix <- paste0(root, .Platform$file.sep)
   if (!startsWith(target, prefix)) {
     cli::cli_abort(
-      "Publication object {.path {target}} resolves outside the SDP directory."
+      "Publication object {.path {target}} resolves outside the SDP directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   gsub(
@@ -236,7 +245,8 @@
   )[[1]]
   if (any(parts %in% c(".", ".."))) {
     cli::cli_abort(
-      "Publication path {.val {path}} in {.field {field}} contains a forbidden dot path segment."
+      "Publication path {.val {path}} in {.field {field}} contains a forbidden dot path segment.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(path)
@@ -246,13 +256,15 @@
   tables_path <- .ms_locate_metadata_file(path, "tables.csv")
   if (is.na(tables_path)) {
     cli::cli_abort(
-      "KNB publication requires canonical {.file metadata/tables.csv}."
+      "KNB publication requires canonical {.file metadata/tables.csv}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   tables <- .ms_read_metadata_csv(tables_path)
   if (!"file_name" %in% names(tables) || nrow(tables) == 0L) {
     cli::cli_abort(
-      "KNB publication requires non-empty {.field tables.csv$file_name} values."
+      "KNB publication requires non-empty {.field tables.csv$file_name} values.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   file_names <- as.character(tables$file_name)
@@ -280,7 +292,8 @@
   missing <- required[!file.exists(file.path(path, required))]
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "KNB publication requires canonical SDP artifact{?s}: {.file {missing}}."
+      "KNB publication requires canonical SDP artifact{?s}: {.file {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -313,12 +326,14 @@
       "reproducibility/reviewed_semantic_selections.csv"
     if (!canonical_review %in% declared_paths) {
       cli::cli_abort(
-        "KNB publication requires the canonical reviewed-selection ledger to be declared by {.file reproducibility/manifest.json}."
+        "KNB publication requires the canonical reviewed-selection ledger to be declared by {.file reproducibility/manifest.json}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (!identical(mapped_review, canonical_review)) {
       cli::cli_abort(
-        "EML mapping {.field semantic_review.path} must bind the reviewed ledger declared by the reproducibility manifest."
+        "EML mapping {.field semantic_review.path} must bind the reviewed ledger declared by the reproducibility manifest.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     reproducibility_relative <- c(
@@ -331,11 +346,12 @@
       cli::cli_abort(c(
         "KNB publication requires a reviewed semantic-selection ledger.",
         "i" = "Use the extended {.file reproducibility/manifest.json} layout or the legacy root-level ledger."
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
     if (!identical(mapped_review, legacy_review)) {
       cli::cli_abort(
-        "Legacy KNB packages must bind the root-level reviewed ledger in EML mapping {.field semantic_review.path}."
+        "Legacy KNB packages must bind the root-level reviewed ledger in EML mapping {.field semantic_review.path}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     reproducibility_relative <- legacy_review
@@ -401,7 +417,7 @@
     cli::cli_abort(c(
       "{.file metadata/methods.csv} is an sdp-0.2.0 registry; sdp-0.3.0 packages must not carry one.",
       "i" = "Run {.fun migrate_sdp_methods} to relocate its content and remove it."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   structure_files <- c(
     "metadata/structure/observation_structures.csv",
@@ -412,7 +428,8 @@
   if (any(structure_present)) {
     if (!all(structure_present)) {
       cli::cli_abort(
-        "KNB publication requires both canonical observation-structure files when either is present."
+        "KNB publication requires both canonical observation-structure files when either is present.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     validate_sdp_observation_structures(path)
@@ -489,7 +506,8 @@
   if (length(duplicated_paths) > 0L) {
     colliding_labels <- names(all_paths)[all_paths %in% duplicated_paths]
     cli::cli_abort(
-      "KNB publication path collision among {.field {colliding_labels}}."
+      "KNB publication path collision among {.field {colliding_labels}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   list(
@@ -718,7 +736,8 @@
       anyDuplicated(aggregates) ||
       length(aggregates) != length(expected)) {
     cli::cli_abort(
-      "Generated OAI-ORE aggregate set does not exactly match the planned EML/data objects."
+      "Generated OAI-ORE aggregate set does not exactly match the planned EML/data objects.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -750,7 +769,8 @@
         length(identifiers) != 1L ||
         !identical(identifiers[[1]], expected_identifiers[[url]])) {
       cli::cli_abort(
-        "Generated OAI-ORE lacks the exact DataONE identifier for represented resource {.url {url}}."
+        "Generated OAI-ORE lacks the exact DataONE identifier for represented resource {.url {url}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -765,7 +785,8 @@
   )
   if (!identical(described_by, resource_map_url)) {
     cli::cli_abort(
-      "Generated OAI-ORE aggregation must be described by its resource map."
+      "Generated OAI-ORE aggregation must be described by its resource map.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -825,7 +846,8 @@
       length(locations) != length(expected_locations) ||
       anyDuplicated(locations)) {
     cli::cli_abort(
-      "Generated OAI-ORE package relationships do not match the publication profile."
+      "Generated OAI-ORE package relationships do not match the publication profile.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -838,7 +860,8 @@
         fixed = TRUE
       )) {
     cli::cli_abort(
-      "Generated OAI-ORE contains a local/review marker or does not identify its resource map."
+      "Generated OAI-ORE contains a local/review marker or does not identify its resource map.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(TRUE)
@@ -851,7 +874,8 @@
   }
   if (!dir.exists(directory)) {
     cli::cli_abort(
-      "Could not create publication artifact directory {.path {directory}}."
+      "Could not create publication artifact directory {.path {directory}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   temporary <- tempfile(
@@ -868,7 +892,8 @@
   }
   if (!file.rename(temporary, path)) {
     cli::cli_abort(
-      "Could not atomically replace publication artifact {.path {path}}."
+      "Could not atomically replace publication artifact {.path {path}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(path)
@@ -1055,7 +1080,8 @@
     jsonlite::read_json(path, simplifyVector = TRUE),
     error = function(error) {
       cli::cli_abort(
-        "Existing publication manifest {.path {path}} is not valid JSON: {conditionMessage(error)}"
+        "Existing publication manifest {.path {path}} is not valid JSON: {conditionMessage(error)}",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   )
@@ -1112,7 +1138,8 @@
   .ms_knb_reject_dot_segments(path, "revision_manifest")
   if (!file.exists(path) || dir.exists(path)) {
     cli::cli_abort(
-      "Prior KNB revision manifest {.path {path}} does not exist."
+      "Prior KNB revision manifest {.path {path}} does not exist.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   manifest <- .ms_knb_existing_manifest(normalizePath(path, mustWork = TRUE))
@@ -1153,7 +1180,8 @@
       paste(
         "A KNB revision requires a verified schema-version 2 or 3",
         "published manifest with an intact plan fingerprint."
-      )
+      ),
+      class = .ms_condition_classes("error", "publication")
     )
   }
   manifest$objects <- objects
@@ -1166,12 +1194,14 @@
   }
   if (!identical(isTRUE(prior$public), isTRUE(plan$public))) {
     cli::cli_abort(
-      "KNB revision planning cannot also change public/private access."
+      "KNB revision planning cannot also change public/private access.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!identical(as.character(prior$series_id), plan$series_id)) {
     cli::cli_abort(
-      "The prior KNB manifest belongs to a different metadata series."
+      "The prior KNB manifest belongs to a different metadata series.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   prior_metadata <- prior$objects[vapply(
@@ -1222,7 +1252,7 @@
   cli::cli_abort(c(
     "KNB revision planning would reuse the prior {role_text} PID{?s}.",
     "i" = "Choose a new {.field publication.revision_key} so the revision mints new immutable metadata and resource-map PIDs."
-  ))
+  ), class = .ms_condition_classes("error", "publication"))
 }
 
 .ms_knb_assert_resource_map_owned <- function(plan, previous, overwrite = FALSE) {
@@ -1268,7 +1298,7 @@
     cli::cli_abort(c(
       "The pre-existing resource map file is not owned by the exact matching publication manifest.",
       "i" = "If it is left over from an unpublished dry run, pass {.code overwrite = TRUE} to replace it."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(TRUE)
 }
@@ -1304,7 +1334,8 @@
       paste(
         "Live KNB publication requires a reviewed schema version 3 manifest",
         "with the exact replication policy and recomputed plan fingerprint."
-      )
+      ),
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(TRUE)
@@ -1331,7 +1362,7 @@
     cli::cli_abort(c(
       "Public KNB publication requires confirmed redistribution rights in the reviewed EML sidecar.",
       "i" = "{.arg confirm = TRUE} approves the exact plan; it is not rights evidence."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(TRUE)
 }
@@ -1351,7 +1382,8 @@
   required <- c("iri", "source", "ontology")
   if (!all(required %in% names(vocabulary))) {
     cli::cli_abort(
-      "KNB publication requires semantic_vocabulary.csv fields: {.field {required}}."
+      "KNB publication requires semantic_vocabulary.csv fields: {.field {required}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1392,7 +1424,7 @@
     cli::cli_abort(c(
       "KNB publication cannot emit annotations to review-candidate vocabulary IRIs: {.url {referenced}}.",
       "i" = "Publish those concepts in a governed provisional/stable vocabulary release, rebuild the SDP against that release, or remove the annotations."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(TRUE)
 }
@@ -1603,7 +1635,8 @@
   )
   if (!identical(eml$public, public)) {
     cli::cli_abort(
-      "Reviewed sidecar {.field publication.public} must exactly equal {.arg public}."
+      "Reviewed sidecar {.field publication.public} must exactly equal {.arg public}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   eml_document <- xml2::read_xml(eml$path)
@@ -1619,7 +1652,8 @@
   if (length(metadata_provider_orcids) != 1L ||
       is.na(.ms_knb_orcid_key(metadata_provider_orcids[[1]]))) {
     cli::cli_abort(
-      "Live-publication EML must identify exactly one metadata-provider ORCID URI for authenticated-subject verification."
+      "Live-publication EML must identify exactly one metadata-provider ORCID URI for authenticated-subject verification.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   expected_subject <- metadata_provider_orcids[[1]]
@@ -1766,7 +1800,8 @@
   }
   if (!is.list(adapter)) {
     cli::cli_abort(
-      "Private option {.code metasalmon.knb_adapter} must provide an adapter list or constructor."
+      "Private option {.code metasalmon.knb_adapter} must provide an adapter list or constructor.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   adapter
@@ -1800,7 +1835,8 @@
   ]
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "KNB adapter is missing method{?s}: {.field {missing}}."
+      "KNB adapter is missing method{?s}: {.field {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(adapter)
@@ -1814,7 +1850,8 @@
   # message so external text always remains data.
   rlang::abort(
     paste0("KNB publication failed: ", safe),
-    call = NULL
+    call = NULL,
+    class = .ms_condition_classes("error", "publication")
   )
 }
 
@@ -1824,7 +1861,8 @@
       is.na(value) ||
       !nzchar(trimws(as.character(value)))) {
     cli::cli_abort(
-      "KNB adapter preflight returned invalid {.field {field}}."
+      "KNB adapter preflight returned invalid {.field {field}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   trimws(as.character(value))
@@ -1843,7 +1881,7 @@
   } else if (is.list(access)) {
     rows <- lapply(access, function(rule) {
       if (!is.list(rule)) {
-        cli::cli_abort("Remote access policy has an invalid rule.")
+        cli::cli_abort("Remote access policy has an invalid rule.", class = .ms_condition_classes("error", "publication"))
       }
       data.frame(
         subject = as.character(rule$subject),
@@ -1853,11 +1891,12 @@
     })
     out <- do.call(rbind, rows)
   } else {
-    cli::cli_abort("Remote access policy has an unsupported representation.")
+    cli::cli_abort("Remote access policy has an unsupported representation.", class = .ms_condition_classes("error", "publication"))
   }
   if (!all(c("subject", "permission") %in% names(out))) {
     cli::cli_abort(
-      "Remote access policy lacks subject/permission fields."
+      "Remote access policy lacks subject/permission fields.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   out <- unique(data.frame(
@@ -1879,7 +1918,8 @@
   values <- trimws(as.character(unlist(nodes, use.names = FALSE)))
   if (anyNA(values) || any(!nzchar(values))) {
     cli::cli_abort(
-      "Remote replication policy has an invalid member-node reference."
+      "Remote replication policy has an invalid member-node reference.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1934,7 +1974,8 @@
                                              config) {
   if (!is.list(remote)) {
     cli::cli_abort(
-      "Remote SystemMetadata for {.val {object$pid}} is missing or malformed."
+      "Remote SystemMetadata for {.val {object$pid}} is missing or malformed.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_knb_require_replication_policy(replication_policy, public, config)
@@ -2057,7 +2098,8 @@
   }
   if (length(mismatches) > 0L) {
     cli::cli_abort(
-      "Remote PID {.val {object$pid}} collides on SystemMetadata field{?s}: {.field {mismatches}}."
+      "Remote PID {.val {object$pid}} collides on SystemMetadata field{?s}: {.field {mismatches}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2079,7 +2121,8 @@
   rownames(expected_access) <- NULL
   if (!identical(access, expected_access)) {
     cli::cli_abort(
-      "Remote PID {.val {object$pid}} has a different access policy."
+      "Remote PID {.val {object$pid}} has a different access policy.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(TRUE)
@@ -2134,13 +2177,15 @@
     )
     if (isTRUE(probe$disclosed)) {
       cli::cli_abort(
-        "Anonymous {kind} access unexpectedly succeeded for private-review PID {.val {object$pid}}."
+        "Anonymous {kind} access unexpectedly succeeded for private-review PID {.val {object$pid}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     status <- .ms_knb_anonymous_denial_status(probe$condition)
     if (!status %in% c(401L, 403L, 404L)) {
       cli::cli_abort(
-        "Anonymous {kind} non-disclosure could not be verified for private-review PID {.val {object$pid}}."
+        "Anonymous {kind} non-disclosure could not be verified for private-review PID {.val {object$pid}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -2159,7 +2204,8 @@
   remote_bytes <- adapter$get_bytes(client, object$pid)
   if (!is.raw(remote_bytes) || !identical(remote_bytes, bytes)) {
     cli::cli_abort(
-      "Remote byte read-back failed for PID {.val {object$pid}}."
+      "Remote byte read-back failed for PID {.val {object$pid}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   remote_metadata <- adapter$get_system_metadata(client, object$pid)
@@ -2181,7 +2227,8 @@
     tolower(object$sha256)
   )) {
     cli::cli_abort(
-      "Independent remote checksum failed for PID {.val {object$pid}}."
+      "Independent remote checksum failed for PID {.val {object$pid}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2189,7 +2236,8 @@
     anonymous_bytes <- adapter$get_anonymous_bytes(endpoint, object$pid)
     if (!is.raw(anonymous_bytes) || !identical(anonymous_bytes, bytes)) {
       cli::cli_abort(
-        "Anonymous byte read-back failed for public PID {.val {object$pid}}."
+        "Anonymous byte read-back failed for public PID {.val {object$pid}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     anonymous_metadata <- adapter$get_anonymous_system_metadata(
@@ -2217,7 +2265,8 @@
   )
   if (is.na(index)) {
     cli::cli_abort(
-      "Internal manifest error: PID {.val {pid}} is not in the plan."
+      "Internal manifest error: PID {.val {pid}} is not in the plan.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   manifest$objects[[index]]$state <- state
@@ -2234,7 +2283,8 @@
   if (length(bytes) != object$size ||
       !identical(.ms_knb_sha256_raw(bytes), object$sha256)) {
     cli::cli_abort(
-      "Local publication object {.path {object$path}} changed after planning."
+      "Local publication object {.path {object$path}} changed after planning.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   object$bytes <- bytes
@@ -2390,7 +2440,7 @@
 .ms_knb_prior_object_spec <- function(plan, pid, obsoleted_by = NULL) {
   prior <- plan$prior_manifest
   if (is.null(prior)) {
-    cli::cli_abort("Internal KNB revision error: no prior manifest is bound.")
+    cli::cli_abort("Internal KNB revision error: no prior manifest is bound.", class = .ms_condition_classes("error", "publication"))
   }
   objects <- .ms_knb_manifest_objects(prior)
   matches <- objects[vapply(objects, function(object) {
@@ -2398,7 +2448,8 @@
   }, logical(1))]
   if (length(matches) != 1L) {
     cli::cli_abort(
-      "The prior KNB manifest does not identify revision source PID {.val {pid}} exactly once."
+      "The prior KNB manifest does not identify revision source PID {.val {pid}} exactly once.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   object <- matches[[1L]]
@@ -2419,13 +2470,15 @@
                                              subject) {
   if (is.null(remote)) {
     cli::cli_abort(
-      "KNB revision source PID {.val {old_pid}} does not exist at KNB."
+      "KNB revision source PID {.val {old_pid}} does not exist at KNB.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   linked_to <- .ms_knb_optional_scalar(remote$obsoleted_by)
   if (!is.na(linked_to) && !identical(linked_to, new_pid)) {
     cli::cli_abort(
-      "KNB revision source PID {.val {old_pid}} is already obsoleted by a different PID."
+      "KNB revision source PID {.val {old_pid}} is already obsoleted by a different PID.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   prior_object <- .ms_knb_prior_object_spec(
@@ -2463,12 +2516,13 @@
   }
   if (!remote_pid %in% allowed) {
     cli::cli_abort(
-      "The metadata series identifier is already bound to a different metadata PID."
+      "The metadata series identifier is already bound to a different metadata PID.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!is.na(revision_source) && identical(remote_pid, revision_source)) {
     if (is.null(plan)) {
-      cli::cli_abort("Internal KNB revision error: no plan is available.")
+      cli::cli_abort("Internal KNB revision error: no plan is available.", class = .ms_condition_classes("error", "publication"))
     }
     .ms_knb_validate_revision_source(
       remote,
@@ -2522,7 +2576,7 @@
       client <- adapter$connect(plan$environment, plan$node_id)
       preflight <- adapter$preflight(client)
       if (!is.list(preflight)) {
-        cli::cli_abort("KNB adapter preflight returned no result.")
+        cli::cli_abort("KNB adapter preflight returned no result.", class = .ms_condition_classes("error", "publication"))
       }
       subject <- .ms_knb_nonempty_scalar(preflight$subject, "subject")
       endpoint <- .ms_knb_nonempty_scalar(preflight$endpoint, "endpoint")
@@ -2532,12 +2586,14 @@
       )
       if (!identical(preflight_node_id, plan$node_id)) {
         cli::cli_abort(
-          "KNB preflight returned a different DataONE node identifier."
+          "KNB preflight returned a different DataONE node identifier.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       if (!.ms_knb_same_subject(subject, plan$expected_subject)) {
         cli::cli_abort(
-          "The server-verified DataONE subject does not match the EML metadata-provider ORCID."
+          "The server-verified DataONE subject does not match the EML metadata-provider ORCID.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       available_formats <- unique(trimws(as.character(
@@ -2551,7 +2607,8 @@
       missing_formats <- setdiff(planned_formats, available_formats)
       if (length(missing_formats) > 0L) {
         cli::cli_abort(
-          "The live DataONE format registry lacks planned format ID{?s}: {.val {missing_formats}}."
+          "The live DataONE format registry lacks planned format ID{?s}: {.val {missing_formats}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
 
@@ -2582,7 +2639,8 @@
             tolower(object$sha256)
           )) {
             cli::cli_abort(
-              "Remote PID {.val {object$pid}} collides on independent checksum."
+              "Remote PID {.val {object$pid}} collides on independent checksum.",
+              class = .ms_condition_classes("error", "publication")
             )
           }
         }
@@ -2614,17 +2672,20 @@
             tolower(prior_object$sha256)
           )) {
             cli::cli_abort(
-              "KNB revision source PID {.val {update_of}} collides on independent checksum."
+              "KNB revision source PID {.val {update_of}} collides on independent checksum.",
+              class = .ms_condition_classes("error", "publication")
             )
           }
           if (is.null(remote) && !is.na(linked_to)) {
             cli::cli_abort(
-              "KNB revision source PID {.val {update_of}} names the planned successor, but that successor cannot be read."
+              "KNB revision source PID {.val {update_of}} names the planned successor, but that successor cannot be read.",
+              class = .ms_condition_classes("error", "publication")
             )
           }
           if (!is.null(remote) && is.na(linked_to)) {
             cli::cli_abort(
-              "The planned revision PID exists, but its predecessor does not link to it."
+              "The planned revision PID exists, but its predecessor does not link to it.",
+              class = .ms_condition_classes("error", "publication")
             )
           }
           revision_sources[i] <- list(source_remote)
@@ -2654,7 +2715,8 @@
       if (!is.null(remote_objects[[metadata_index]]) &&
           is.null(series_remote)) {
         cli::cli_abort(
-          "The existing metadata PID has an unresolved metadata series identifier."
+          "The existing metadata PID has an unresolved metadata series identifier.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
 
@@ -2734,7 +2796,8 @@
           )
           if (!identical(linked_to, object$pid)) {
             cli::cli_abort(
-              "KNB did not link revision source PID {.val {update_of}} to its planned successor."
+              "KNB did not link revision source PID {.val {update_of}} to its planned successor.",
+              class = .ms_condition_classes("error", "publication")
             )
           }
         }
@@ -2777,7 +2840,8 @@
           manifest_path
         )
         cli::cli_abort(
-          "Anonymous catalog unexpectedly exposed private-review PID{?s}: {.val {anonymous_evidence$matching_pids}}."
+          "Anonymous catalog unexpectedly exposed private-review PID{?s}: {.val {anonymous_evidence$matching_pids}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       if (!isTRUE(manifest$catalog_verified)) {
@@ -2844,7 +2908,8 @@
           "Live KNB adapter warning: ",
           .ms_redact_secrets(conditionMessage(warning))
         ),
-        call = NULL
+        call = NULL,
+        class = .ms_condition_classes("error", "publication")
       )
     }),
     error = .ms_knb_abort_safe
@@ -3027,7 +3092,8 @@
   )
   if (!any(matches)) {
     cli::cli_abort(
-      "The DataONE Coordinating Node did not verify the JWT subject."
+      "The DataONE Coordinating Node did not verify the JWT subject.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   server_subjects[[which(matches)[[1]]]]
@@ -3044,7 +3110,7 @@
   if (is.character(capabilities) && length(capabilities) == 1L) {
     return(xml2::read_xml(capabilities))
   }
-  cli::cli_abort("KNB returned an unreadable capabilities document.")
+  cli::cli_abort("KNB returned an unreadable capabilities document.", class = .ms_condition_classes("error", "publication"))
 }
 
 .ms_knb_public_request <- function(url) {
@@ -3070,7 +3136,8 @@
   )))
   if (length(identifier) != 1L || !identical(identifier, node_id)) {
     cli::cli_abort(
-      "Direct unauthenticated KNB capabilities did not identify {.val {node_id}}."
+      "Direct unauthenticated KNB capabilities did not identify {.val {node_id}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   base_url <- trimws(xml2::xml_text(xml2::xml_find_all(
@@ -3087,7 +3154,8 @@
     sub("/+$", "", expected_endpoint)
   )) {
     cli::cli_abort(
-      "Direct KNB capabilities returned an unexpected service endpoint."
+      "Direct KNB capabilities returned an unexpected service endpoint.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -3099,7 +3167,8 @@
   if (length(storage) == 0L ||
       !any(grepl("(^|/)v?2($|/)", versions))) {
     cli::cli_abort(
-      "Direct KNB capabilities do not advertise available MNStorage v2."
+      "Direct KNB capabilities do not advertise available MNStorage v2.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   read_only <- xml2::xml_text(xml2::xml_find_all(
@@ -3109,7 +3178,8 @@
   if (length(read_only) == 0L ||
       !all(tolower(trimws(read_only)) == "false")) {
     cli::cli_abort(
-      "Direct KNB capabilities do not explicitly report read_only_mode=false."
+      "Direct KNB capabilities do not explicitly report read_only_mode=false.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(TRUE)
@@ -3160,11 +3230,12 @@
   if (!identical(sub("/+$", "", d1_endpoint), sub("/+$", "", endpoint)) ||
       !identical(d1_node_id, config$node_id)) {
     cli::cli_abort(
-      "The authenticated DataONE client did not resolve to the pinned KNB node and endpoint."
+      "The authenticated DataONE client did not resolve to the pinned KNB node and endpoint.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!isTRUE(dataone::ping(d1_client@mn))) {
-    cli::cli_abort("Direct KNB MN ping did not succeed.")
+    cli::cli_abort("Direct KNB MN ping did not succeed.", class = .ms_condition_classes("error", "publication"))
   }
 
   manager <- dataone::AuthenticationManager()
@@ -3174,7 +3245,8 @@
     is_auth_valid(manager, d1_client@cn)
   ))) {
     cli::cli_abort(
-      "The process-local DataONE JWT is absent, expired, or invalid for KNB."
+      "The process-local DataONE JWT is absent, expired, or invalid for KNB.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   token_subject <- suppressMessages(
@@ -3209,7 +3281,8 @@
     return(client$d1_client)
   }
   cli::cli_abort(
-    "The default KNB client has not completed authenticated preflight."
+    "The default KNB client has not completed authenticated preflight.",
+    class = .ms_condition_classes("error", "publication")
   )
 }
 
@@ -3233,7 +3306,8 @@
     return("absent")
   }
   cli::cli_abort(
-    "DataONE {kind} existence for {.val {identifier}} is ambiguous after HTTP {status}; no create is safe."
+    "DataONE {kind} existence for {.val {identifier}} is ambiguous after HTTP {status}; no create is safe.",
+    class = .ms_condition_classes("error", "publication")
   )
 }
 
@@ -3288,7 +3362,8 @@
   ))
   if (length(pids) != 1L || is.na(pids[[1]])) {
     cli::cli_abort(
-      "The metadata series identifier has an ambiguous DataONE binding."
+      "The metadata series identifier has an ambiguous DataONE binding.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   present[[1]]
@@ -3320,7 +3395,8 @@
   if (length(identifiers) != 1L ||
       !identical(identifiers[[1]], pid)) {
     cli::cli_abort(
-      "The planned PID has an ambiguous DataONE binding."
+      "The planned PID has an ambiguous DataONE binding.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   present[[1]]
@@ -3394,7 +3470,8 @@
   ]
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "Live KNB publication requires package{?s}: {.pkg {missing}}."
+      "Live KNB publication requires package{?s}: {.pkg {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -3408,7 +3485,7 @@
         cli::cli_abort(c(
           "The requested DataONE network mixes KNB environments.",
           "x" = "Node {.val {node_id}} belongs to the {.val {config$dataone_network}} network, but {.val {environment}} was requested."
-        ))
+        ), class = .ms_condition_classes("error", "publication"))
       }
       client <- new.env(parent = emptyenv())
       client$environment <- environment
@@ -3497,7 +3574,8 @@
           is.na(status) ||
           !identical(status, 200L)) {
         cli::cli_abort(
-          "Authenticated DataONE catalog lookup failed after HTTP {status}."
+          "Authenticated DataONE catalog lookup failed after HTTP {status}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       body <- jsonlite::fromJSON(
@@ -3651,7 +3729,7 @@ publish_sdp_to_knb <- function(path,
     cli::cli_abort(c(
       "Live KNB publication requires an explicit {.code confirm = TRUE}.",
       "i" = "This approves the pre-existing exact dry-run manifest; redistribution authority is recorded separately."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   config <- .ms_knb_resolve_environment(knb_environment, dry_run)
   if (!config$durable) {
@@ -3666,7 +3744,7 @@ publish_sdp_to_knb <- function(path,
     )
   }
   if (!dir.exists(path)) {
-    cli::cli_abort("SDP directory {.path {path}} does not exist.")
+    cli::cli_abort("SDP directory {.path {path}} does not exist.", class = .ms_condition_classes("error", "publication"))
   }
   path <- .ms_knb_package_root(path)
   prior_manifest <- .ms_knb_revision_manifest(revision_manifest, config)
@@ -3677,7 +3755,7 @@ publish_sdp_to_knb <- function(path,
       cli::cli_abort(c(
         "A KNB revision requires a fresh versioned SDP directory.",
         "i" = "Keep the preceding package and verified manifest unchanged; build the revised SDP and its new manifest in a different directory."
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
   }
 
@@ -3704,7 +3782,8 @@ publish_sdp_to_knb <- function(path,
   previous <- .ms_knb_existing_manifest(manifest_path)
   if (!isTRUE(dry_run) && is.null(previous)) {
     cli::cli_abort(
-      "Live KNB publication requires a pre-existing exact matching reviewed dry-run manifest."
+      "Live KNB publication requires a pre-existing exact matching reviewed dry-run manifest.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -3714,7 +3793,8 @@ publish_sdp_to_knb <- function(path,
   }
   if (!dir.exists(manifest_parent)) {
     cli::cli_abort(
-      "Could not create publication artifact directory {.path {manifest_parent}}."
+      "Could not create publication artifact directory {.path {manifest_parent}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -3731,7 +3811,7 @@ publish_sdp_to_knb <- function(path,
       "{.arg overwrite} cannot replace artifacts described by a published manifest.",
       "i" = "Existing manifest status: {.val {previous_status}}.",
       "i" = "DataONE PIDs are immutable. Supply revision_manifest and a new manifest_path for a reviewed revision."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
 
   plan <- .ms_knb_build_plan(
@@ -3763,7 +3843,7 @@ publish_sdp_to_knb <- function(path,
       cli::cli_abort(c(
         "The existing publication manifest describes a different plan.",
         "i" = remedy
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
   }
   if (!isTRUE(dry_run)) {

@@ -376,7 +376,7 @@
 apply_sdp_semantics <- function(path, review, quiet = FALSE) {
   .ms_review_assert_review(review)
   if (!is.character(path) || length(path) != 1L || is.na(path) || !dir.exists(path)) {
-    cli::cli_abort("{.arg path} must be an existing Salmon Data Package directory.")
+    cli::cli_abort("{.arg path} must be an existing Salmon Data Package directory.", class = .ms_condition_classes("error", NULL))
   }
 
   decisions <- .ms_review_decisions(review)
@@ -395,7 +395,7 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
     cli::cli_abort(c(
       "Cannot write decisions for these metadata files.",
       .ms_cli_bullets(unsupported, "x")
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
 
   # Containment BEFORE any read or write, matching `write_salmon_datapackage()`:
@@ -416,7 +416,7 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
       cli::cli_abort(c(
         "Decisions target a metadata file the package does not have.",
         "x" = paste0("Missing: ", .ms_cli_escape(file_name))
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
     frames[[file_name]] <- tibble::as_tibble(.ms_read_metadata_csv(located))
     paths[[file_name]] <- located
@@ -444,7 +444,7 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
           " matched ", length(hits), " rows."
         ),
         "i" = "Rebuild the review from the package you are writing to."
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
 
     frame[[field]][[hits]] <- if (identical(row$decision[[1]], "accept")) {

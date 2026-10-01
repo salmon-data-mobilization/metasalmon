@@ -99,5 +99,5 @@
 # than cli so the text is never a template; use this only when cli's bullet and
 # markup layer would add nothing.
 .ms_abort_external <- function(prefix, text, call = NULL) {
-  rlang::abort(paste0(prefix, .ms_redact_secrets(text)), call = call)
+  rlang::abort(paste0(prefix, .ms_redact_secrets(text)), call = call, class = .ms_condition_classes("error", NULL))
 }

@@ -71,7 +71,7 @@ fetch_salmon_ontology <- function(
       cli::cli_warn(c(
         "Failed to refresh Salmon ontology; using cached copy at {.path {ttl_file}}.",
         "i" = "Last fetch error: {last_error}"
-      ))
+      ), class = .ms_condition_classes("warning", "retrieval"))
       return(ttl_file)
     }
     stop("Failed to fetch ontology from provided URLs: ", paste(urls, collapse = ", "),
@@ -88,7 +88,7 @@ fetch_salmon_ontology <- function(
   on.exit(unlink(temp_ttl, force = TRUE), add = TRUE)
   writeLines(content, temp_ttl, useBytes = TRUE)
   if (!file.rename(temp_ttl, ttl_file)) {
-    cli::cli_abort("Failed to update cached ontology file at {.path {ttl_file}}.")
+    cli::cli_abort("Failed to update cached ontology file at {.path {ttl_file}}.", class = .ms_condition_classes("error", "retrieval"))
   }
 
   etag <- httr::headers(res)[["etag"]]

@@ -74,7 +74,8 @@
 .ms_llm_cast_assessment_column <- function(x, prototype, column) {
   cast_error <- function() {
     cli::cli_abort(
-      "Assessment column {.field {column}} contains values that cannot be normalized to the required type."
+      "Assessment column {.field {column}} contains values that cannot be normalized to the required type.",
+      class = .ms_condition_classes("error", "llm")
     )
   }
   missing_input <- is.na(x)
@@ -147,7 +148,7 @@
     if (nzchar(snippet)) {
       message <- c(message, i = "Response content snippet: {.val {snippet}}")
     }
-    cli::cli_abort(message)
+    cli::cli_abort(message, class = .ms_condition_classes("error", "llm"))
   }
 
   result

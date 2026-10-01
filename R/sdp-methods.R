@@ -570,7 +570,8 @@ migrate_sdp_methods <- function(path, dry_run = FALSE) {
         if (!is.na(registry_backup) && file.exists(registry_backup)) {
           if (!file.rename(registry_backup, registry_path)) {
             cli::cli_warn(
-              "Could not restore {.file metadata/methods.csv} after a failed migration; recover it from {.file {basename(registry_backup)}}."
+              "Could not restore {.file metadata/methods.csv} after a failed migration; recover it from {.file {basename(registry_backup)}}.",
+              class = .ms_condition_classes("warning", "validation")
             )
           }
         }

@@ -357,7 +357,8 @@
         "i" = "Pass {.arg llm_model} or set {.envvar METASALMON_LLM_MODEL}.",
         "i" = "For {.code llm_provider = 'openrouter'}, the default is {.code 'openrouter/free'}, but any valid OpenRouter model ID is accepted (for example {.code 'openai/gpt-5.4-mini'}).",
         "i" = "For {.code llm_provider = 'chapi'}, the default is {.code 'ollama2.mistral:7b'}."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -380,7 +381,8 @@
       c(
         "LLM assessment requires an API key.",
         "i" = "Pass {.arg llm_api_key} or set the provider-specific environment variable."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -405,7 +407,8 @@
       c(
         "OpenAI-compatible LLM assessment requires a base URL.",
         "i" = "Pass {.arg llm_base_url} or set {.envvar METASALMON_LLM_BASE_URL}."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -419,7 +422,7 @@
 
   timeout_seconds <- suppressWarnings(as.numeric(timeout_seconds[[1]] %||% 60))
   if (is.na(timeout_seconds) || timeout_seconds <= 0) {
-    cli::cli_abort("{.arg llm_timeout_seconds} must be a positive number.")
+    cli::cli_abort("{.arg llm_timeout_seconds} must be a positive number.", class = .ms_condition_classes("error", "llm"))
   }
   if (.ms_llm_uses_openrouter_free(provider, model)) {
     timeout_seconds <- max(timeout_seconds, 90)
@@ -452,7 +455,8 @@
       c(
         "Excel context files require the optional {.pkg readxl} package.",
         "i" = "Install it with {.code install.packages('readxl')} or remove the spreadsheet from {.arg llm_context_files}."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -584,7 +588,7 @@
   utils::unzip(path, files = "word/document.xml", exdir = tmp_dir)
   document_path <- file.path(tmp_dir, "word", "document.xml")
   if (!file.exists(document_path)) {
-    cli::cli_abort("DOCX context file {.path {path}} does not contain {.file word/document.xml}.")
+    cli::cli_abort("DOCX context file {.path {path}} does not contain {.file word/document.xml}.", class = .ms_condition_classes("error", "llm"))
   }
 
   doc <- xml2::read_xml(document_path)
@@ -625,12 +629,12 @@
     cli::cli_abort(c(
       "{.arg llm_context_files} must be a character vector of local file paths.",
       "i" = "Pass paths such as {.code \"./00_data/Data_dictionary_final_dataset.csv\"}, not a parsed data frame, tibble, XML document, or R Markdown object."
-    ))
+    ), class = .ms_condition_classes("error", "llm"))
   }
 
   bad <- is.na(context_files) | !nzchar(trimws(context_files))
   if (any(bad)) {
-    cli::cli_abort("{.arg llm_context_files} must not contain missing or empty paths.")
+    cli::cli_abort("{.arg llm_context_files} must not contain missing or empty paths.", class = .ms_condition_classes("error", "llm"))
   }
 
   invisible(NULL)
@@ -646,13 +650,13 @@
     cli::cli_warn(c(
       "{.arg llm_context_files} is ignored unless {.code llm_assess = TRUE}.",
       "i" = "Supplying context files does not automatically enable LLM review, because that can trigger network/API use."
-    ))
+    ), class = .ms_condition_classes("warning", "llm"))
   }
   if (!isTRUE(llm_assess) && has_text) {
     cli::cli_warn(c(
       "{.arg llm_context_text} is ignored unless {.code llm_assess = TRUE}.",
       "i" = "Supplying context text does not automatically enable LLM review, because that can trigger network/API use."
-    ))
+    ), class = .ms_condition_classes("warning", "llm"))
   }
 
   invisible(NULL)
@@ -678,7 +682,7 @@
   cli::cli_warn(c(
     "Ignoring LLM semantic options because {.code seed_semantics = FALSE}.",
     "i" = "Enable {.code seed_semantics = TRUE} to generate semantic suggestions or call {.fn suggest_semantics} later with the same LLM/context arguments."
-  ))
+  ), class = .ms_condition_classes("warning", "llm"))
   invisible(TRUE)
 }
 
@@ -703,14 +707,15 @@
 .ms_context_text_from_file <- function(path) {
   normalized <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!file.exists(normalized)) {
-    cli::cli_abort("Context file does not exist: {.path {path}}")
+    cli::cli_abort("Context file does not exist: {.path {path}}", class = .ms_condition_classes("error", "llm"))
   }
 
   ext <- tolower(tools::file_ext(normalized))
   supported_extensions <- .ms_supported_context_extensions()
   if (!ext %in% supported_extensions) {
     cli::cli_warn(
-      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {(supported_extensions)}}"
+      "Skipping unsupported context file {.path {path}}. Supported extensions: {.val {(supported_extensions)}}",
+      class = .ms_condition_classes("warning", "llm")
     )
     return(NULL)
   }
@@ -723,7 +728,8 @@
         c(
           "PDF context files require the optional {.pkg pdftools} package.",
           "i" = "Install it with {.code install.packages('pdftools')} or remove the PDF from {.arg llm_context_files}."
-        )
+        ),
+        class = .ms_condition_classes("error", "llm")
       )
     }
     pages <- pdftools::pdf_text(normalized)
@@ -741,7 +747,7 @@
   text <- enc2utf8(text)
   text <- trimws(text)
   if (!nzchar(text)) {
-    cli::cli_warn("Skipping empty context file {.path {path}}.")
+    cli::cli_warn("Skipping empty context file {.path {path}}.", class = .ms_condition_classes("warning", "llm"))
     return(NULL)
   }
 
@@ -928,7 +934,8 @@
   chunks <- context_chunk_pool
   if (is.null(chunks)) {
     cli::cli_abort(
-      "{.fn .ms_prepare_context_chunks} requires a pre-collected context chunk pool."
+      "{.fn .ms_prepare_context_chunks} requires a pre-collected context chunk pool.",
+      class = .ms_condition_classes("error", "llm")
     )
   }
   if (nrow(chunks) == 0) {
@@ -1489,7 +1496,8 @@
     )
     if (inherits(exploration_result, "error")) {
       cli::cli_warn(
-        "LLM exploration query suggestion failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(exploration_result)}"
+        "LLM exploration query suggestion failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(exploration_result)}",
+        class = .ms_condition_classes("warning", "llm")
       )
       return(list(record = record, assessment = assessment_row))
     }
@@ -1498,7 +1506,8 @@
       .ms_llm_validate_exploration_queries(exploration_result, original_query = target$search_query[[1]]),
       error = function(e) {
         cli::cli_warn(
-          "LLM exploration query validation failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(e)}"
+          "LLM exploration query validation failed for {.field {target$column_name[[1]] %||% target$target_sdp_field[[1]]}}: {conditionMessage(e)}",
+          class = .ms_condition_classes("warning", "llm")
         )
         character()
       }
@@ -1654,7 +1663,7 @@
 .ms_llm_extract_message_content <- function(body) {
   choices <- body$choices %||% list()
   if (length(choices) == 0) {
-    cli::cli_abort("LLM response did not include any choices.")
+    cli::cli_abort("LLM response did not include any choices.", class = .ms_condition_classes("error", "llm"))
   }
   message <- choices[[1]]$message %||% list()
   content <- message$content %||% ""
@@ -1824,7 +1833,7 @@
   )
 
   if (!is.list(parsed)) {
-    cli::cli_abort("LLM response was not a JSON object.")
+    cli::cli_abort("LLM response was not a JSON object.", class = .ms_condition_classes("error", "llm"))
   }
   parsed
 }
@@ -1851,7 +1860,7 @@
   }
   allowed_decisions <- c("accept", "review", "retry_search", "request_new_term", "reject_shortlist")
   if (is.na(decision) || !decision %in% allowed_decisions) {
-    cli::cli_abort("LLM assessment must return decision = accept, review, retry_search, request_new_term, or reject_shortlist.")
+    cli::cli_abort("LLM assessment must return decision = accept, review, retry_search, request_new_term, or reject_shortlist.", class = .ms_condition_classes("error", "llm"))
   }
 
   # The index is read as a number here and cast to integer only once it has
@@ -1868,7 +1877,7 @@
 
   confidence <- .ms_llm_scalar_numeric(result$confidence %||% NA_real_)
   if (is.na(confidence) || confidence < 0 || confidence > 1) {
-    cli::cli_abort("LLM assessment confidence must be numeric and between 0 and 1.")
+    cli::cli_abort("LLM assessment confidence must be numeric and between 0 and 1.", class = .ms_condition_classes("error", "llm"))
   }
 
   rationale <- .ms_llm_non_empty_string(result$rationale %||% NA_character_)
@@ -1897,7 +1906,8 @@
     selected_index <- NA_integer_
   } else if (selected_index != trunc(selected_index)) {
     cli::cli_abort(
-      "LLM assessment selected_candidate_index must be a whole number, not {format(selected_index, digits = 15)}."
+      "LLM assessment selected_candidate_index must be a whole number, not {format(selected_index, digits = 15)}.",
+      class = .ms_condition_classes("error", "llm")
     )
   } else if (selected_index < 1 || selected_index > nrow(candidate_rows)) {
     decision <- "review"
@@ -1975,7 +1985,7 @@
       )
     },
     error = function(e) {
-      cli::cli_warn("LLM assessment failed for {.field {record$group$column_name[[1]] %||% record$group$target_sdp_field[[1]]}}: {conditionMessage(e)}")
+      cli::cli_warn("LLM assessment failed for {.field {record$group$column_name[[1]] %||% record$group$target_sdp_field[[1]]}}: {conditionMessage(e)}", class = .ms_condition_classes("warning", "llm"))
       .ms_llm_review_empty_assessment(
         record$group[1, , drop = FALSE],
         config,
@@ -1988,7 +1998,7 @@
 .ms_llm_validate_batch_assessments <- function(result, records, config) {
   assessments <- result$assessments %||% NULL
   if (is.null(assessments) || !is.list(assessments) || length(assessments) == 0) {
-    cli::cli_abort("LLM batch assessment must return a non-empty assessments array.")
+    cli::cli_abort("LLM batch assessment must return a non-empty assessments array.", class = .ms_condition_classes("error", "llm"))
   }
 
   records_by_key <- stats::setNames(records, vapply(records, `[[`, character(1), "group_name"))
@@ -2069,7 +2079,8 @@
 
   if (inherits(batch_result, "error")) {
     cli::cli_warn(
-      "LLM batch assessment failed for {length(records)} targets; falling back to per-target review: {conditionMessage(batch_result)}"
+      "LLM batch assessment failed for {length(records)} targets; falling back to per-target review: {conditionMessage(batch_result)}",
+      class = .ms_condition_classes("warning", "llm")
     )
     return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
   }
@@ -2081,7 +2092,8 @@
 
   if (inherits(validated, "error")) {
     cli::cli_warn(
-      "LLM batch response was unusable for {length(records)} targets; falling back to per-target review: {conditionMessage(validated)}"
+      "LLM batch response was unusable for {length(records)} targets; falling back to per-target review: {conditionMessage(validated)}",
+      class = .ms_condition_classes("warning", "llm")
     )
     return(dplyr::bind_rows(lapply(records, .ms_llm_assess_one_record, config = config)))
   }
@@ -2109,7 +2121,7 @@
   cli::cli_warn(c(
     "LLM batch response was unusable for {length(fallback_keys)} of {length(records)} targets; falling back to per-target review.",
     .ms_cli_bullets(reason_bullets, "*")
-  ))
+  ), class = .ms_condition_classes("warning", "llm"))
 
   valid_keys <- attr(validated, "llm_batch_valid_keys") %||% character()
   rows_by_key <- list()
@@ -2167,7 +2179,7 @@
   if (nzchar(error_summary)) {
     warn_lines <- c(warn_lines, "i" = .ms_cli_escape(error_summary))
   }
-  cli::cli_warn(warn_lines)
+  cli::cli_warn(warn_lines, class = .ms_condition_classes("warning", "llm"))
   TRUE
 }
 

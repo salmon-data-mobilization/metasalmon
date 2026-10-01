@@ -51,7 +51,7 @@ NULL
     "x" = paste0("Request: ", .ms_cli_escape(request)),
     "x" = paste0("Failure: ", .ms_cli_escape(detail)),
     "i" = "This empty result says nothing about what ICES holds. An answer with no rows gives no warning."
-  ))
+  ), class = .ms_condition_classes("warning", "retrieval"))
   NULL
 }
 
@@ -124,7 +124,7 @@ ices_codes <- function(code_type,
                        code = "",
                        modified = "") {
   if (is.null(code_type) || !nzchar(code_type)) {
-    cli::cli_abort("{.arg code_type} must be a non-empty ICES code type key (e.g., {.code Gear}).")
+    cli::cli_abort("{.arg code_type} must be a non-empty ICES code type key (e.g., {.code Gear}).", class = .ms_condition_classes("error", "retrieval"))
   }
   url <- paste0(.ices_base_url, "/Code/", utils::URLencode(code_type, reserved = TRUE))
   query <- list()

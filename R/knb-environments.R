@@ -155,7 +155,7 @@
       } else {
         NULL
       }
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
 
   # `pid_scope` is legitimately empty for production; every other character
@@ -171,7 +171,8 @@
         is.na(value) ||
         !nzchar(trimws(value))) {
       cli::cli_abort(
-        "KNB environment {.val {knb_environment}} field {.field {field}} must be one non-empty string."
+        "KNB environment {.val {knb_environment}} field {.field {field}} must be one non-empty string.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -179,13 +180,15 @@
       is.na(config$max_replicas) ||
       config$max_replicas < 0L) {
     cli::cli_abort(
-      "KNB environment {.val {knb_environment}} field {.field max_replicas} must be one non-negative count."
+      "KNB environment {.val {knb_environment}} field {.field max_replicas} must be one non-negative count.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (length(config$durable) != 1L || !is.logical(config$durable) ||
       is.na(config$durable)) {
     cli::cli_abort(
-      "KNB environment {.val {knb_environment}} field {.field durable} must be one logical value."
+      "KNB environment {.val {knb_environment}} field {.field durable} must be one logical value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -206,7 +209,7 @@
     cli::cli_abort(c(
       "{.arg knb_environment} must be exactly one of {.val {supported}}.",
       "i" = "There is no partial matching, no custom endpoint, and no fallback between environments."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   registry <- .ms_knb_environment_registry()
   # Exact match only: partial matching an environment name is how a rehearsal
@@ -215,7 +218,7 @@
     cli::cli_abort(c(
       "Unknown KNB environment {.val {knb_environment}}.",
       "i" = "Supported environment{?s}: {.val {supported}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   .ms_knb_validate_environment_config(
     registry[[knb_environment]],
@@ -245,7 +248,7 @@
     cli::cli_abort(c(
       "{.val {node_id}} is not a registered KNB member node.",
       "i" = "Registered node{?s}: {.val {registered}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   .ms_knb_config(names(registry)[[which(matches)]])
 }
@@ -262,7 +265,7 @@
     cli::cli_abort(c(
       "The publication plan mixes KNB environments.",
       "x" = "Node {.val {as.character(plan$node_id)}} belongs to the {.val {config$dataone_network}} DataONE network, but the plan records {.val {network}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   declared <- plan$knb_environment
   if (!is.null(declared) &&
@@ -270,7 +273,7 @@
     cli::cli_abort(c(
       "The publication plan mixes KNB environments.",
       "x" = "Node {.val {as.character(plan$node_id)}} is the {.val {config$knb_environment}} environment, but the plan records {.val {as.character(declared)}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   config
 }
@@ -289,7 +292,7 @@
       "Live KNB publication requires an explicit {.arg knb_environment}.",
       "i" = "Pass {.code knb_environment = \"test\"} to deposit to the KNB Test Node, or {.code knb_environment = \"production\"} to deposit to KNB.",
       "i" = "Only a dry run defaults to {.val test}; a live target is never inferred."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   .ms_knb_config(knb_environment)
 }
@@ -313,7 +316,7 @@
     cli::cli_abort(c(
       "A short-lived DataONE JWT for the {.val {config$knb_environment}} environment is required in the process-local {.code {config$token_option}} option.",
       "i" = "The {.val {config$knb_environment}} credential is a separate token from every other environment's; {.code {config$token_option}} is the only option read for {.val {config$node_id}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(token)
 }

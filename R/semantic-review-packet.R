@@ -36,7 +36,7 @@
     assessments = paste0("semantic-assessments-pass-", pass, ".csv"),
     record = "semantic-llm-assessments.csv",
     findings = "semantic-validator-findings.csv",
-    cli::cli_abort("Unknown semantic review file kind {.val {what}}.")
+    cli::cli_abort("Unknown semantic review file kind {.val {what}}.", class = .ms_condition_classes("error", "validation"))
   )
   file.path(review_dir, name)
 }
@@ -70,7 +70,7 @@
 .ms_semantic_review_instructions <- function() {
   path <- system.file("extdata", "semantic-review", "semantic-review-instructions-v1.txt", package = "metasalmon")
   if (!nzchar(path) || !file.exists(path)) {
-    cli::cli_abort("The vendored semantic review instructions are missing from the installed package.")
+    cli::cli_abort("The vendored semantic review instructions are missing from the installed package.", class = .ms_condition_classes("error", "validation"))
   }
   .ms_read_text_utf8(path)
 }
@@ -78,7 +78,7 @@
 .ms_semantic_review_schema_path <- function() {
   path <- system.file("extdata", "semantic-review", "semantic-review-packet-v1.schema.json", package = "metasalmon")
   if (!nzchar(path) || !file.exists(path)) {
-    cli::cli_abort("The vendored semantic review packet schema is missing from the installed package.")
+    cli::cli_abort("The vendored semantic review packet schema is missing from the installed package.", class = .ms_condition_classes("error", "validation"))
   }
   path
 }
@@ -125,7 +125,7 @@
 .ms_semantic_review_input <- function(x, review_dir, arg = "x") {
   if (is.character(x) && length(x) == 1L && !is.na(x)) {
     if (!dir.exists(x)) {
-      cli::cli_abort("Package directory {.path {x}} does not exist.")
+      cli::cli_abort("Package directory {.path {x}} does not exist.", class = .ms_condition_classes("error", "validation"))
     }
     return(list(
       kind = "package",
@@ -144,13 +144,13 @@
     cli::cli_abort(c(
       "{.arg {arg}} must be a package path or a dictionary carrying {.code semantic_targets} and {.code semantic_suggestions}.",
       "i" = "Pass the directory {.fn create_sdp} wrote, or the dictionary {.fn suggest_semantics} returned."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   if (is.null(review_dir)) {
     cli::cli_abort(c(
       "{.arg review_dir} is required for in-memory input.",
       "i" = "The packet and the harness's answers need a directory that outlives this call."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   list(kind = "memory", dict = tibble::as_tibble(dict), object = x, review_dir = review_dir)
 }
@@ -238,7 +238,7 @@
       "Some data resources named in {.file tables.csv} are not plain files inside the package and were not read:",
       .ms_cli_bullets(refused, "*"),
       "i" = "Blank slots are still recovered from the metadata; code-level slots of these tables may be missed."
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
   resources
 }
@@ -398,7 +398,7 @@
     cli::cli_abort(c(
       "The dictionary carries no {.code semantic_targets} attribute.",
       "i" = "Run {.fn suggest_semantics} first; it attaches the targets and the shortlist."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   targets <- tibble::as_tibble(targets)
   suggestions <- if (is.null(suggestions)) tibble::tibble() else tibble::as_tibble(suggestions)
@@ -721,7 +721,7 @@
   }
   keys <- vapply(units, `[[`, character(1), "unit_key")
   if (anyDuplicated(keys) > 0L) {
-    cli::cli_abort("Semantic review units must have unique keys; found duplicates.")
+    cli::cli_abort("Semantic review units must have unique keys; found duplicates.", class = .ms_condition_classes("error", "validation"))
   }
   units[order(keys, method = "radix")]
 }
@@ -938,7 +938,7 @@ write_semantic_review_packet <- function(x,
   code_scope <- match.arg(code_scope)
   top_n <- as.integer(top_n[[1]])
   if (is.na(top_n) || top_n < 1L) {
-    cli::cli_abort("{.arg top_n} must be a positive whole number.")
+    cli::cli_abort("{.arg top_n} must be a positive whole number.", class = .ms_condition_classes("error", "validation"))
   }
   source_policy <- .ms_semantic_source_policy(
     if (is.null(sources)) character() else as.character(sources),
@@ -954,7 +954,7 @@ write_semantic_review_packet <- function(x,
       "A semantic review session already exists in {.path {review_dir}}.",
       .ms_cli_bullets(basename(answered), "*"),
       "i" = "Pass {.code overwrite = TRUE} to delete this session's files and start again."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
 
   context_pool <- .ms_collect_context_chunks(

@@ -541,25 +541,25 @@ suggest_semantics <- function(df,
 
   if (is.list(df) && !inherits(df, "data.frame")) {
     if (length(df) == 0) {
-      cli::cli_abort("{.arg df} cannot be an empty resource list")
+      cli::cli_abort("{.arg df} cannot be an empty resource list", class = .ms_condition_classes("error", NULL))
     }
     if (is.null(names(df)) || any(!nzchar(names(df)))) {
-      cli::cli_abort("{.arg df} list inputs must be named by table_id")
+      cli::cli_abort("{.arg df} list inputs must be named by table_id", class = .ms_condition_classes("error", NULL))
     }
     if (anyDuplicated(names(df)) > 0) {
-      cli::cli_abort("{.arg df} table_id names must be unique")
+      cli::cli_abort("{.arg df} table_id names must be unique", class = .ms_condition_classes("error", NULL))
     }
     bad_resource <- vapply(df, function(x) !inherits(x, "data.frame"), logical(1))
     if (any(bad_resource)) {
       bad <- which(bad_resource)
-      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}")
+      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}", class = .ms_condition_classes("error", NULL))
     }
     resource_lookup <- df
     default_df <- resource_lookup[[1L]]
   } else if (is.null(df) || inherits(df, "data.frame")) {
     default_df <- df
   } else {
-    cli::cli_abort("{.arg df} must be NULL, a data frame, or a named list of data frames")
+    cli::cli_abort("{.arg df} must be NULL, a data frame, or a named list of data frames", class = .ms_condition_classes("error", NULL))
   }
 
   dict <- tibble::as_tibble(dict)
@@ -781,7 +781,7 @@ apply_semantic_suggestions <- function(dict,
                                        overwrite = FALSE,
                                        verbose = TRUE) {
   if (!inherits(dict, "data.frame")) {
-    cli::cli_abort("{.arg dict} must be a data frame or tibble")
+    cli::cli_abort("{.arg dict} must be a data frame or tibble", class = .ms_condition_classes("error", NULL))
   }
 
   if (is.null(suggestions)) {
@@ -789,7 +789,8 @@ apply_semantic_suggestions <- function(dict,
       c(
         "No semantic suggestions supplied.",
         "i" = "Pass {.arg suggestions} explicitly or run {.fn suggest_semantics} first."
-      )
+      ),
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -805,7 +806,8 @@ apply_semantic_suggestions <- function(dict,
   missing_cols <- setdiff(required_cols, names(suggestions))
   if (length(missing_cols) > 0) {
     cli::cli_abort(
-      "Suggestions are missing required columns: {.field {missing_cols}}"
+      "Suggestions are missing required columns: {.field {missing_cols}}",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -822,7 +824,8 @@ apply_semantic_suggestions <- function(dict,
     invalid_roles <- setdiff(roles, names(role_to_field))
     if (length(invalid_roles) > 0) {
       cli::cli_abort(
-        "Unsupported {.arg roles}: {.val {invalid_roles}}. Valid roles: {.val {names(role_to_field)}}"
+        "Unsupported {.arg roles}: {.val {invalid_roles}}. Valid roles: {.val {names(role_to_field)}}",
+        class = .ms_condition_classes("error", NULL)
       )
     }
   }
@@ -832,7 +835,8 @@ apply_semantic_suggestions <- function(dict,
       c(
         "{.arg min_score} requires scored suggestions.",
         "i" = "Run {.fn suggest_semantics} with the default search results or pass a suggestions tibble that includes a {.field score} column."
-      )
+      ),
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -843,7 +847,8 @@ apply_semantic_suggestions <- function(dict,
       c(
         "{.arg min_llm_confidence} requires LLM-reviewed suggestions.",
         "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} or pass a suggestions tibble that includes {.field llm_confidence}."
-      )
+      ),
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -895,7 +900,8 @@ apply_semantic_suggestions <- function(dict,
         c(
           "{.arg strategy = 'llm'} requires LLM-reviewed suggestions.",
           "i" = "Run {.fn suggest_semantics} with {.code llm_assess = TRUE} first."
-        )
+        ),
+        class = .ms_condition_classes("error", NULL)
       )
     }
     selected <- !is.na(suggestions$llm_selected) & suggestions$llm_selected
@@ -914,7 +920,7 @@ apply_semantic_suggestions <- function(dict,
       cli::cli_abort(c(
         "{.arg strategy = 'reviewed'} requires explicit review decisions.",
         "i" = "Supply a {.field decision} column whose accepted rows use {.val accepted} or {.val accept}."
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
     decisions <- tolower(trimws(as.character(suggestions$decision)))
     suggestions <- suggestions[
@@ -945,7 +951,7 @@ apply_semantic_suggestions <- function(dict,
   unknown_roles <- unique(suggestions$dictionary_role[!is.na(suggestions$dictionary_role) &
     !suggestions$dictionary_role %in% names(role_to_field)])
   if (length(unknown_roles) > 0) {
-    cli::cli_warn("Ignoring unsupported suggestion roles: {.val {unknown_roles}}")
+    cli::cli_warn("Ignoring unsupported suggestion roles: {.val {unknown_roles}}", class = .ms_condition_classes("warning", NULL))
   }
   suggestions <- suggestions[!is.na(suggestions$dictionary_role) & suggestions$dictionary_role %in% names(role_to_field), , drop = FALSE]
 
@@ -1145,7 +1151,8 @@ apply_semantic_suggestions <- function(dict,
       "{.arg {arg}} must be a dictionary, an artifact list, or a package path.",
       "i" = "Pass the tibble returned by {.fn suggest_semantics}, the list returned by {.fn create_sdp}-style inference, or the package directory."
     ),
-    call = call
+    call = call,
+    class = .ms_condition_classes("error", NULL)
   )
 }
 

@@ -99,7 +99,7 @@ ms_setup_github <- function(repo = NULL) {
   cli::cli_h1("Setting up GitHub access")
   git <- Sys.which("git")
   if (!nzchar(git)) {
-    cli::cli_abort("git is not installed or not on PATH. Install git, then retry.")
+    cli::cli_abort("git is not installed or not on PATH. Install git, then retry.", class = .ms_condition_classes("error", "publication"))
   }
   cli::cli_alert_success("git found at {.path {git}}")
 
@@ -115,7 +115,7 @@ ms_setup_github <- function(repo = NULL) {
   }
 
   if (!nzchar(token)) {
-    cli::cli_abort("No GitHub PAT available. Run {.code gitcreds::gitcreds_set()} with a PAT, then rerun this setup.")
+    cli::cli_abort("No GitHub PAT available. Run {.code gitcreds::gitcreds_set()} with a PAT, then rerun this setup.", class = .ms_condition_classes("error", "publication"))
   }
 
   if (!verify_repo) {
@@ -134,10 +134,11 @@ ms_setup_github <- function(repo = NULL) {
       sso <- headers[["x-github-sso"]]
       if (!is.null(sso)) {
         cli::cli_abort(
-          "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}."
+          "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
-      cli::cli_abort("Unable to reach {.val {repo}}: {conditionMessage(e)}")
+      cli::cli_abort("Unable to reach {.val {repo}}: {conditionMessage(e)}", class = .ms_condition_classes("error", "publication"))
     }
   )
 
@@ -229,7 +230,8 @@ read_github_csv <- function(
   status <- httr2::resp_status(resp)
   if (status == 401) {
     cli::cli_abort(
-      "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT."
+      "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -237,25 +239,29 @@ read_github_csv <- function(
     sso <- httr2::resp_header(resp, "x-github-sso")
     if (!is.null(sso)) {
       cli::cli_abort(
-        "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}."
+        "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (nzchar(token)) {
-      cli::cli_abort("Access to {.val {target$repo}} was denied (status 403).")
+      cli::cli_abort("Access to {.val {target$repo}} was denied (status 403).", class = .ms_condition_classes("error", "publication"))
     }
     cli::cli_abort(
-      "Access to {.val {target$repo}} was denied without authentication (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry."
+      "Access to {.val {target$repo}} was denied without authentication (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   if (status == 404) {
     if (!nzchar(token)) {
       cli::cli_abort(
-        "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}. If this repository is private, configure a PAT with {.code metasalmon::ms_setup_github()} and retry."
+        "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}. If this repository is private, configure a PAT with {.code metasalmon::ms_setup_github()} and retry.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     cli::cli_abort(
-      "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}."
+      "Path {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -364,32 +370,37 @@ read_github_csv_dir <- function(
     error = function(e) {
       if (grepl("404", conditionMessage(e))) {
         cli::cli_abort(
-          "Directory {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}."
+          "Directory {.path {target$path}} not found at ref {.val {target$ref}} in {.val {target$repo}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       headers <- tryCatch(e$response$headers, error = function(...) list())
       sso <- headers[["x-github-sso"]]
       if (!is.null(sso)) {
         cli::cli_abort(
-          "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}."
+          "Access blocked by org SSO. Re-authorize your PAT for this org at {.url https://github.com/settings/tokens}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       if (grepl("401", conditionMessage(e))) {
         cli::cli_abort(
-          "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT."
+          "GitHub authentication failed. Run {.code metasalmon::ms_setup_github()} to refresh your PAT.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       if (grepl("403", conditionMessage(e))) {
         if (nzchar(token)) {
           cli::cli_abort(
-            "Access to {.val {target$repo}} was denied (status 403)."
+            "Access to {.val {target$repo}} was denied (status 403).",
+            class = .ms_condition_classes("error", "publication")
           )
         }
         cli::cli_abort(
-          "Anonymous access to {.val {target$repo}} was denied (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry."
+          "Anonymous access to {.val {target$repo}} was denied (status 403). Add a PAT with {.code metasalmon::ms_setup_github()} and retry.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
-      cli::cli_abort("Unable to list directory contents: {conditionMessage(e)}")
+      cli::cli_abort("Unable to list directory contents: {conditionMessage(e)}", class = .ms_condition_classes("error", "publication"))
     }
   )
 
@@ -405,7 +416,8 @@ read_github_csv_dir <- function(
     )
     if (!first_elem_has_type) {
       cli::cli_abort(
-        "Path {.path {target$path}} is a file, not a directory. Use {.code read_github_csv()} instead."
+        "Path {.path {target$path}} is a file, not a directory. Use {.code read_github_csv()} instead.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -456,11 +468,11 @@ ms_resolve_dir_path <- function(path, ref, repo) {
   # Reuse ms_resolve_path logic but handle directories
   # Allow empty path for root directory access
   if (!is.character(path) || length(path) != 1 || is.na(path)) {
-    cli::cli_abort("{.arg path} must be a character string path or URL.")
+    cli::cli_abort("{.arg path} must be a character string path or URL.", class = .ms_condition_classes("error", "publication"))
   }
 
   if (!is.character(ref) || length(ref) != 1 || is.na(ref) || !nzchar(ref)) {
-    cli::cli_abort("{.arg ref} must be a non-empty string reference.")
+    cli::cli_abort("{.arg ref} must be a non-empty string reference.", class = .ms_condition_classes("error", "publication"))
   }
   clean_ref <- ref
   clean_repo <- if (!is.null(repo)) ms_normalize_repo(repo) else NULL
@@ -469,7 +481,8 @@ ms_resolve_dir_path <- function(path, ref, repo) {
     clean_url <- sub("\\?.*$", "", path)
     if (!ms_is_github_host(clean_url)) {
       cli::cli_abort(
-        "URL inputs must use {.url github.com} (tree/blob) or {.url raw.githubusercontent.com}."
+        "URL inputs must use {.url github.com} (tree/blob) or {.url raw.githubusercontent.com}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -501,12 +514,13 @@ ms_resolve_dir_path <- function(path, ref, repo) {
     }
 
     cli::cli_abort(
-      "Unable to parse GitHub URL: {.val {path}}. Use a github.com tree/blob URL or raw.githubusercontent.com URL."
+      "Unable to parse GitHub URL: {.val {path}}. Use a github.com tree/blob URL or raw.githubusercontent.com URL.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   if (is.null(clean_repo)) {
-    cli::cli_abort("{.arg repo} is required when {.arg path} is not a full URL.")
+    cli::cli_abort("{.arg repo} is required when {.arg path} is not a full URL.", class = .ms_condition_classes("error", "publication"))
   }
 
   clean_path <- sub("^/", "", path)
@@ -527,18 +541,18 @@ ms_current_token <- function() {
 
 ms_normalize_repo <- function(repo) {
   if (!is.character(repo) || length(repo) != 1 || is.na(repo) || !grepl(".+/.+", repo)) {
-    cli::cli_abort("{.arg repo} must be like {.code owner/name}.")
+    cli::cli_abort("{.arg repo} must be like {.code owner/name}.", class = .ms_condition_classes("error", "publication"))
   }
   sub("^/", "", repo)
 }
 
 ms_resolve_path <- function(path, ref, repo) {
   if (!is.character(path) || length(path) != 1 || is.na(path) || path == "") {
-    cli::cli_abort("{.arg path} must be a non-empty string path or URL.")
+    cli::cli_abort("{.arg path} must be a non-empty string path or URL.", class = .ms_condition_classes("error", "publication"))
   }
 
   if (!is.character(ref) || length(ref) != 1 || is.na(ref) || !nzchar(ref)) {
-    cli::cli_abort("{.arg ref} must be a non-empty string reference.")
+    cli::cli_abort("{.arg ref} must be a non-empty string reference.", class = .ms_condition_classes("error", "publication"))
   }
   clean_ref <- ref
   clean_repo <- if (!is.null(repo)) ms_normalize_repo(repo) else NULL
@@ -547,7 +561,8 @@ ms_resolve_path <- function(path, ref, repo) {
     clean_url <- sub("\\?.*$", "", path)
     if (!ms_is_github_host(clean_url)) {
       cli::cli_abort(
-        "URL inputs must use {.url github.com} (blob) or {.url raw.githubusercontent.com}."
+        "URL inputs must use {.url github.com} (blob) or {.url raw.githubusercontent.com}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -580,12 +595,13 @@ ms_resolve_path <- function(path, ref, repo) {
     }
 
     cli::cli_abort(
-      "Unable to parse GitHub URL: {.val {path}}. Use a github.com blob URL or raw.githubusercontent.com URL."
+      "Unable to parse GitHub URL: {.val {path}}. Use a github.com blob URL or raw.githubusercontent.com URL.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   if (is.null(clean_repo)) {
-    cli::cli_abort("{.arg repo} is required when {.arg path} is not a full URL.")
+    cli::cli_abort("{.arg repo} is required when {.arg path} is not a full URL.", class = .ms_condition_classes("error", "publication"))
   }
 
   clean_path <- sub("^/", "", path)

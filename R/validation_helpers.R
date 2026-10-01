@@ -32,10 +32,10 @@ validate_semantics <- function(dict,
   dict <- .ms_dictionary_from_input(dict)
 
   if (!is.null(entity_defaults)) {
-    cli::cli_warn("{.arg entity_defaults} is deprecated in {.fn validate_semantics} and is ignored.")
+    cli::cli_warn("{.arg entity_defaults} is deprecated in {.fn validate_semantics} and is ignored.", class = .ms_condition_classes("warning", "validation"))
   }
   if (!is.null(vocab_priority)) {
-    cli::cli_warn("{.arg vocab_priority} is deprecated in {.fn validate_semantics} and is ignored.")
+    cli::cli_warn("{.arg vocab_priority} is deprecated in {.fn validate_semantics} and is ignored.", class = .ms_condition_classes("warning", "validation"))
   }
 
   if (!"required" %in% names(dict)) {

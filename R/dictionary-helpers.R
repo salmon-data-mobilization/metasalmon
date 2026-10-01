@@ -128,21 +128,21 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
   if (is.list(df) && !inherits(df, "data.frame")) {
     resources <- df
     if (length(resources) == 0) {
-      cli::cli_abort("{.arg df} must be a non-empty list of data frames or a single data frame")
+      cli::cli_abort("{.arg df} must be a non-empty list of data frames or a single data frame", class = .ms_condition_classes("error", "validation"))
     }
 
     if (is.null(names(resources)) || any(names(resources) == "")) {
-      cli::cli_abort("{.arg df} list inputs must be named by table_id")
+      cli::cli_abort("{.arg df} list inputs must be named by table_id", class = .ms_condition_classes("error", "validation"))
     }
 
     bad_resource <- vapply(resources, function(x) !inherits(x, "data.frame"), logical(1))
     if (any(bad_resource)) {
       bad <- which(bad_resource)
-      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}")
+      cli::cli_abort("All items in {.arg df} must be data frames. Invalid entries at: {.val {bad}}", class = .ms_condition_classes("error", "validation"))
     }
 
     if (anyDuplicated(names(resources)) > 0) {
-      cli::cli_abort("{.arg df} table_id names must be unique")
+      cli::cli_abort("{.arg df} table_id names must be unique", class = .ms_condition_classes("error", "validation"))
     }
 
     dict <- .ms_infer_resource_dictionary(
@@ -191,7 +191,7 @@ infer_dictionary <- function(df, guess_types = TRUE, dataset_id = "dataset-1", t
     dict
   } else {
     if (!inherits(df, "data.frame")) {
-      cli::cli_abort("{.arg df} must be a data frame or tibble")
+      cli::cli_abort("{.arg df} must be a data frame or tibble", class = .ms_condition_classes("error", "validation"))
     }
 
     col_names <- names(df)
@@ -1420,7 +1420,8 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
   missing_cols <- setdiff(required_cols, names(dict))
   if (length(missing_cols) > 0) {
     cli::cli_abort(
-      "Dictionary missing required columns: {.field {missing_cols}}"
+      "Dictionary missing required columns: {.field {missing_cols}}",
+      class = .ms_condition_classes("error", "validation")
     )
   }
 
@@ -1447,7 +1448,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
     bad_rows <- which(invalid_types)
     cli::cli_abort(
       "Invalid {.field value_type} in rows {bad_rows}: {dict$value_type[bad_rows]}. ",
-      "Valid types: {.val {valid_types}}"
+      class = .ms_condition_classes("error", "validation", "Valid types: {.val {valid_types}}")
     )
   }
 
@@ -1459,14 +1460,14 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       bad_rows <- which(invalid_roles)
       cli::cli_abort(
         "Invalid {.field column_role} in rows {bad_rows}: {dict$column_role[bad_rows]}. ",
-        "Valid roles: {.val {valid_roles}}"
+        class = .ms_condition_classes("error", "validation", "Valid roles: {.val {valid_roles}}")
       )
     }
   }
 
   # Validate required flag is logical
   if (!is.logical(dict$required)) {
-    cli::cli_abort("{.field required} must be logical (TRUE/FALSE)")
+    cli::cli_abort("{.field required} must be logical (TRUE/FALSE)", class = .ms_condition_classes("error", "validation"))
   }
 
   # Measurement columns are allowed to proceed without I-ADOPT identifiers in non-strict
@@ -1501,7 +1502,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         "Validation cannot pass while REVIEW-prefixed IRI values remain.",
         "x" = "Resolve these fields before final validation:",
         " " = paste("  ", .ms_cli_escape(review_summary), collapse = "\n")
-      ))
+      ), class = .ms_condition_classes("error", "validation"))
     } else if (identical(validation_message_mode, "review_ready")) {
       review_lines <- c(
         "Review-ready metadata includes draft {.val REVIEW:} IRIs.",
@@ -1522,7 +1523,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         "i" = "These are draft semantic assignments written for human review.",
         "x" = paste("  ", .ms_cli_escape(review_summary), collapse = "\n"),
         "i" = "Before final validation or publication, replace or confirm the IRI and remove the REVIEW prefix."
-      ))
+      ), class = .ms_condition_classes("warning", "validation"))
     }
   }
 
@@ -1573,7 +1574,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
           " " = paste("  ", .ms_cli_escape(missing_summary), collapse = "\n"),
           "i" = "Next step: run {.fn suggest_semantics} to generate semantic candidates, then set term_iri, property_iri, entity_iri, and unit_iri for your measurement fields.",
           "i" = "See {.url https://salmon-data-mobilization.github.io/metasalmon/articles/reusing-standards-salmon-data-terms.html} for how to choose IRI values."
-        ))
+        ), class = .ms_condition_classes("warning", "validation"))
       }
     }
   }
@@ -1585,7 +1586,8 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
       if (any(missing_field, na.rm = TRUE)) {
         bad_rows <- which(missing_field)
         cli::cli_abort(
-          "Measurement columns require {.field {field}}; missing in rows {bad_rows}."
+          "Measurement columns require {.field {field}}; missing in rows {bad_rows}.",
+          class = .ms_condition_classes("error", "validation")
         )
       }
     }
@@ -1599,7 +1601,8 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   if (nrow(dupes) > 0) {
     cli::cli_abort(
-      "Duplicate column names found in dictionary: {.field {dupes$column_name}}"
+      "Duplicate column names found in dictionary: {.field {dupes$column_name}}",
+      class = .ms_condition_classes("error", "validation")
     )
   }
 
@@ -1638,7 +1641,7 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' applied <- apply_salmon_dictionary(mtcars, dict)
 apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   if (!inherits(df, "data.frame")) {
-    cli::cli_abort("{.arg df} must be a data frame or tibble")
+    cli::cli_abort("{.arg df} must be a data frame or tibble", class = .ms_condition_classes("error", "validation"))
   }
 
   # Validate dictionary first (also normalizes optional columns)
@@ -1651,7 +1654,8 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   table_ids <- unique(dict$table_id)
   if (length(table_ids) > 1) {
     cli::cli_warn(
-      "Dictionary contains multiple tables; applying to first: {.val {table_ids[1]}}"
+      "Dictionary contains multiple tables; applying to first: {.val {table_ids[1]}}",
+      class = .ms_condition_classes("warning", "validation")
     )
   }
   # Named `target_table`, not `table_id`: a local sharing a column's name is
@@ -1711,12 +1715,12 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
           cli::cli_abort(c(
             "Failed to coerce column {.field {col_name}} to {.val {value_type}}: {reason}",
             "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
-          ))
+          ), class = .ms_condition_classes("error", "validation"))
         }
         cli::cli_warn(c(
           "Failed to coerce column {.field {col_name}} to {.val {value_type}}, keeping as character: {reason}",
           "i" = if (length(failed) > 0) "{length(failed)} value{?s} cannot be read as {.val {value_type}}: {.val {failed}}"
-        ))
+        ), class = .ms_condition_classes("warning", "validation"))
         coerced <- as.character(col)
       }
       result[[new_name]] <- coerced
@@ -1748,7 +1752,7 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
             cli::cli_warn(c(
               "Column {.field {col_name}} has {length(unlisted)} value{?s} not in its code list; {?it becomes/they become} {.code NA}:",
               "i" = "{.val {unlisted}}"
-            ))
+            ), class = .ms_condition_classes("warning", "validation"))
           }
           result[[new_name]] <- factor(
             result[[new_name]],
@@ -1768,7 +1772,8 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
   missing_required <- setdiff(required_cols, names(df))
   if (length(missing_required) > 0) {
     cli::cli_warn(
-      "Missing required columns in data: {.field {missing_required}}"
+      "Missing required columns in data: {.field {missing_required}}",
+      class = .ms_condition_classes("warning", "validation")
     )
   }
 

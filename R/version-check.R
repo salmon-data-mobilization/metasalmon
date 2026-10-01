@@ -185,7 +185,7 @@ ms_normalize_current_version <- function(current) {
   }
 
   if (!is.character(current) || length(current) != 1 || is.na(current) || !nzchar(trimws(current))) {
-    cli::cli_abort("{.arg current} must be a single package version string.")
+    cli::cli_abort("{.arg current} must be a single package version string.", class = .ms_condition_classes("error", NULL))
   }
 
   trimws(current)
@@ -193,7 +193,7 @@ ms_normalize_current_version <- function(current) {
 
 ms_validate_update_timeout <- function(timeout) {
   if (!is.numeric(timeout) || length(timeout) != 1 || is.na(timeout) || timeout <= 0) {
-    cli::cli_abort("{.arg timeout} must be a single positive number of seconds.")
+    cli::cli_abort("{.arg timeout} must be a single positive number of seconds.", class = .ms_condition_classes("error", NULL))
   }
 
   as.numeric(timeout)

@@ -94,7 +94,7 @@ detect_semantic_term_gaps <- function(
   assessments <- NULL
   if (!suggestions_supplied) {
     if (is.null(dict)) {
-      cli::cli_abort("Provide either `dict` with `semantic_suggestions` or `suggestions`.")
+      cli::cli_abort("Provide either `dict` with `semantic_suggestions` or `suggestions`.", class = .ms_condition_classes("error", NULL))
     }
     suggestions <- attr(dict, "semantic_suggestions")
     assessments <- attr(dict, "semantic_llm_assessments")
@@ -152,7 +152,8 @@ detect_semantic_term_gaps <- function(
     missing_cols <- setdiff(required, names(suggestions))
     if (length(missing_cols) > 0L) {
       cli::cli_abort(
-        "Missing required suggestion columns: {paste(missing_cols, collapse = ', ')}"
+        "Missing required suggestion columns: {paste(missing_cols, collapse = ', ')}",
+        class = .ms_condition_classes("error", NULL)
       )
     }
     suggestions <- .ms_semantic_add_missing_cols(
@@ -455,7 +456,8 @@ detect_semantic_term_gaps <- function(
   values <- .unique_char(.trim_empties(rows[[column]]))
   if (length(values) > 1L) {
     cli::cli_abort(
-      "Conflicting {.field {column}} values for semantic target {.val {key}}."
+      "Conflicting {.field {column}} values for semantic target {.val {key}}.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
   .first_non_empty(values)
@@ -744,7 +746,7 @@ render_ontology_term_request <- function(
   )
   missing <- setdiff(required, names(gaps))
   if (length(missing) > 0L) {
-    cli::cli_abort("Missing required gap columns: {paste(missing, collapse = ', ')}")
+    cli::cli_abort("Missing required gap columns: {paste(missing, collapse = ', ')}", class = .ms_condition_classes("error", NULL))
   }
 
   gaps <- as.data.frame(gaps, stringsAsFactors = FALSE)
@@ -767,7 +769,7 @@ render_ontology_term_request <- function(
       gaps$request_scope <- scope_overrides
     } else {
       if (length(scope_overrides) != nrow(gaps)) {
-        cli::cli_abort("`scope_overrides` must be length 1 or nrow(gaps).")
+        cli::cli_abort("`scope_overrides` must be length 1 or nrow(gaps).", class = .ms_condition_classes("error", NULL))
       }
       gaps$request_scope <- scope_overrides
     }
@@ -822,7 +824,7 @@ render_ontology_term_request <- function(
       if (gaps$request_scope[i] == "profile" && is.null(profile_name)) {
         profile_candidate <- trimws(readline(prompt = "Profile name (example: pacific-monitoring): "))
         if (!nzchar(profile_candidate)) {
-          cli::cli_warn("No profile name supplied; skipping this request.")
+          cli::cli_warn("No profile name supplied; skipping this request.", class = .ms_condition_classes("warning", NULL))
           gaps$request_scope[i] <- "skip"
         } else {
           profile_name <- profile_candidate
@@ -855,7 +857,7 @@ render_ontology_term_request <- function(
         "Non-interactive profile-scoped requests require `profile_name`.",
         "i" = .ms_cli_escape(profile_detail),
         "x" = "Re-run with `profile_name = 'your-profile'`, set `ask = TRUE`, or override those rows away from `profile`."
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
 
     gaps$profile_name[gaps$request_scope == "profile"] <- profile_name
@@ -876,7 +878,7 @@ render_ontology_term_request <- function(
     } else if (gaps$request_scope[[i]] == "profile") {
       profile_label <- .first_non_empty(gaps$profile_name[[i]], "")
       if (!nzchar(profile_label)) {
-        cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.")
+        cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.", class = .ms_condition_classes("error", NULL))
       }
       sprintf("Request new %s profile term: %s", profile_label, term_label)
     } else {
@@ -1050,7 +1052,7 @@ render_ontology_term_request <- function(
 
   if (identical(request_scope, "profile")) {
     if (!nzchar(profile_name)) {
-      cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.")
+      cli::cli_abort("Internal error: profile-scoped request is missing `profile_name`.", class = .ms_condition_classes("error", NULL))
     }
     return(glue::glue(
       "## Proposed profile term\n\n",
@@ -1147,7 +1149,7 @@ submit_term_request_issues <- function(
   required <- c("request_title", "request_body", "request_scope", "ontology_repo")
   missing <- setdiff(required, names(requests))
   if (length(missing) > 0L) {
-    cli::cli_abort("Missing required request columns: {paste(missing, collapse = ', ')}")
+    cli::cli_abort("Missing required request columns: {paste(missing, collapse = ', ')}", class = .ms_condition_classes("error", NULL))
   }
 
   default_repo <- ms_normalize_repo(repo)
@@ -1177,7 +1179,7 @@ submit_term_request_issues <- function(
     token <- ms_current_token()
   }
   if (!nzchar(token)) {
-    cli::cli_abort("No GitHub token available. Run {.code metasalmon::ms_setup_github()} first or pass `token`.")
+    cli::cli_abort("No GitHub token available. Run {.code metasalmon::ms_setup_github()} first or pass `token`.", class = .ms_condition_classes("error", NULL))
   }
 
   out <- list()

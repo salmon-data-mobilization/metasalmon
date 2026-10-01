@@ -1083,7 +1083,7 @@
     cli::cli_abort(c(
       "Semantic target discovery produced columns outside the target-row contract.",
       "i" = "Add them to {.fn .ms_semantic_target_cols} or drop them in the builder: {.val {extra_cols}}."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
   targets <- targets[, target_cols, drop = FALSE]
 

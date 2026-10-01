@@ -26,6 +26,11 @@ argument, or changes a documented return shape, so the breaking-release story
 **Execplan:** [R-native review and editing](../plans/2026-08-11-r-native-review-and-editing.md)
 (#74) · #58/#59/#60 detail in the [comprehensive ecosystem review](../plans/2026-08-10-comprehensive-ecosystem-review.md).
 
+The condition-class implementation follows the bounded
+[B-58 plan](../plans/2026-10-01-s5-condition-classes.md); it proposes no release.
+Its same-stream mirror is [metasalmonpy PR 84](https://github.com/salmon-data-mobilization/metasalmonpy/pull/84),
+with builtin exception/category catches preserved alongside the package families.
+
 **#74 is the headline, and all of it landed 2026-08-25** — the semantic half first, the free-text half in the same day.
 `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` /
 `apply_sdp_semantics()` are in the development version, with the #60 accessors
