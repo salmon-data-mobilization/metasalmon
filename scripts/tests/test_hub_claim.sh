@@ -206,6 +206,10 @@ SOLO_ID="D-01"        # repo metasalmon: solo: true
 SHARED_ID="D-02"      # repo salmon-data-standards-workshop: solo: false
 UNKEYED_ID="D-03"     # repo metasalmonpy: the entry omits solo: altogether
 UNREADABLE_ID="D-04"  # repo smn-data-pkg: solo: unknown, neither true nor false
+CHAT_SHARED_ID="D-05" # chat hand-back with solo: false
+CHAT_UNKEYED_ID="D-06" # chat hand-back with solo: absent
+CHAT_SOLO_ID="D-07"   # chat hand-back must refuse solo: true
+CHAT_UNKNOWN_ID="D-08" # chat hand-back must refuse an unknown solo value
 
 # The cap fixture is a second queue with max_concurrent_claims of 1, pointed at
 # the same locks repository. It is separate because assertion 19 is the only
@@ -688,6 +692,10 @@ YAML
   write_fixture_item "$items" "$SHARED_ID" salmon-data-standards-workshop
   write_fixture_item "$items" "$UNKEYED_ID" metasalmonpy
   write_fixture_item "$items" "$UNREADABLE_ID" smn-data-pkg
+  write_fixture_item "$items" "$CHAT_SHARED_ID" salmon-data-standards-workshop
+  write_fixture_item "$items" "$CHAT_UNKEYED_ID" metasalmonpy
+  write_fixture_item "$items" "$CHAT_SOLO_ID" metasalmon
+  write_fixture_item "$items" "$CHAT_UNKNOWN_ID" smn-data-pkg
 }
 
 # write_fixture_item ITEMS_DIR ID REPO
@@ -1771,10 +1779,64 @@ main() {
       note "unkeyed member: $(printf '%s' "$unkeyed_out" | tail -n 6 | tr '\n' ' ')"
       note "solo: unknown member: $(printf '%s' "$unreadable_out" | tail -n 6 | tr '\n' ' ')"
     fi
+
+    # -- 44 and 45 -----------------------------------------------------------
+    # A shared member cannot push a work branch, so its handoff record has no
+    # branch. The exact reason distinguishes that deliberate absence from a
+    # malformed ordinary handoff. A child of the held tip keeps the claim and
+    # proves the client did not merely print a chat instruction.
+    local chat_id chat_ref chat_seed chat_tip chat_rc chat_ok=0 chat_refused=0
+    for chat_id in "$CHAT_SHARED_ID" "$CHAT_UNKEYED_ID"; do
+      chat_ref="refs/heads/claim/$chat_id"
+      chat_seed=$(mk_commit "$CLONE_A" "claim $chat_id by $HUB_AGENT_TOKEN" \
+                  "$(claim_record "$chat_id" "$HUB_AGENT_TOKEN" claim "$future")")
+      push_ref "$CLONE_A" "$chat_seed" "$chat_ref" "$TMPROOT/chat.$chat_id.push"
+      hub done "$chat_id" --chat >"$TMPROOT/chat.$chat_id.out" 2>&1; chat_rc=$?
+      chat_tip=$(git -C "$LOCKS" rev-parse "$chat_ref" 2>/dev/null)
+      [ "$chat_rc" = "0" ] || chat_ok=1
+      [ "$chat_tip" != "$chat_seed" ] || chat_ok=1
+      [ "$(git -C "$LOCKS" rev-parse "$chat_ref^" 2>/dev/null)" = "$chat_seed" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" action)" = "handoff" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" agent)" = "$HUB_AGENT_TOKEN" ] || chat_ok=1
+      [ -z "$(tip_value "$chat_ref" branch)" ] || chat_ok=1
+      [ "$(tip_value "$chat_ref" reason)" = "hand-back in chat" ] || chat_ok=1
+      grep -Fq "handed off $chat_id in chat" "$TMPROOT/chat.$chat_id.out" || chat_ok=1
+    done
+    if [ "$chat_ok" = "0" ]; then
+      assert 44 "client: a chat hand-back for solo false or absent appends a branchless handoff child with an explicit chat reason and keeps the claim" 0
+    else
+      assert 44 "client: chat hand-back did not record a branchless handoff for both shared members" 1
+      note "false: $(tail -n 3 "$TMPROOT/chat.$CHAT_SHARED_ID.out" | tr '\n' ' ')"
+      note "absent: $(tail -n 3 "$TMPROOT/chat.$CHAT_UNKEYED_ID.out" | tr '\n' ' ')"
+    fi
+
+    # A configured solo member, or a value the config cannot interpret, may
+    # not choose the branchless path. Neither refusal may move its claim ref.
+    for chat_id in "$CHAT_SOLO_ID" "$CHAT_UNKNOWN_ID"; do
+      chat_ref="refs/heads/claim/$chat_id"
+      chat_seed=$(mk_commit "$CLONE_A" "claim $chat_id by $HUB_AGENT_TOKEN" \
+                  "$(claim_record "$chat_id" "$HUB_AGENT_TOKEN" claim "$future")")
+      push_ref "$CLONE_A" "$chat_seed" "$chat_ref" "$TMPROOT/chat.$chat_id.push"
+      hub done "$chat_id" --chat >"$TMPROOT/chat.$chat_id.out" 2>&1; chat_rc=$?
+      [ "$chat_rc" = "$EX_FAIL" ] || chat_refused=1
+      [ "$(git -C "$LOCKS" rev-parse "$chat_ref" 2>/dev/null)" = "$chat_seed" ] || chat_refused=1
+      grep -Fq "only when solo is false or absent" "$TMPROOT/chat.$chat_id.out" || chat_refused=1
+    done
+    if [ "$chat_refused" = "0" ]; then
+      assert 45 "client: chat hand-back refuses solo true and unknown without moving either held ref" 0
+    else
+      assert 45 "client: chat hand-back failed to refuse solo true or unknown without moving its ref" 1
+      note "solo: $(tail -n 2 "$TMPROOT/chat.$CHAT_SOLO_ID.out" | tr '\n' ' ')"
+      note "unknown: $(tail -n 2 "$TMPROOT/chat.$CHAT_UNKNOWN_ID.out" | tr '\n' ' ')"
+    fi
   else
     skip 22 "client: hand-back in a solo repository instructs one draft pull request"
     note "$CLIENT_SKIP_REASON"
     skip 23 "client: hand-back in a shared repository instructs a stop and a wait"
+    note "$CLIENT_SKIP_REASON"
+    skip 44 "client: chat hand-back records a branchless handoff for shared members"
+    note "$CLIENT_SKIP_REASON"
+    skip 45 "client: chat hand-back refuses solo true and unknown"
     note "$CLIENT_SKIP_REASON"
   fi
 

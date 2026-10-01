@@ -214,6 +214,13 @@ metasalmon (development version)
 
 ### Fixed
 
+* `hub done ID --chat` now records a branchless handoff when a shared member's
+  work and proposed pull request are shown in chat (hub item B-338). The claim
+  remains held, with `reason: hand-back in chat` in its claim record. The option
+  requires a current queue checkout and a configured member whose `solo` key is
+  false or absent; solo and unrecognized values are refused. The existing
+  `--branch` handoff and its branch-name check are unchanged.
+
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
