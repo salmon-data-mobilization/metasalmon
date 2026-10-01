@@ -1483,6 +1483,8 @@ ships without them, but says something it cannot fully back. **One solid arrow
 is marked conditional** — it is drawn as a hard block because that is the
 current plan of record, and it survives only under some rulings of
 [OD-2](#od-2--what-does-the-knb-test-environment-mean).
+For current S5 work and claimability, see [the hub queue](https://github.com/salmon-data-mobilization/metasalmon/blob/main/queue/README.md);
+the S5 diagram line below records dated release history.
 
 ```
                                           ▼ hard — OD-2 ruled A, 2026-08-22
@@ -1501,9 +1503,9 @@ S9 ontology conventions + alignment ── implementation evidence exists, with
                                        alpha.3 merged (MR !5, 2026-08-16) and
                                        is still untagged
 S2 correctness debt          ── independent
-S5 review flow (next minor)  ── independent (#60 → #74 internally); #74's
-                                semantic half landed 2026-08-25 (M1–M3),
-                                M4/M5 + #58/#59 remain
+S5 review flow (0.5.0)     ── independent (#60 → #74 internally); M1–M5
+                                and #74 shipped 2026-08-25; #59 landed
+                                separately 2026-10-01
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
