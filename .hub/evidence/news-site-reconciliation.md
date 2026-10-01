@@ -73,6 +73,17 @@ Generated SHA-256 values: `docs/news/index.html`
 and `docs/search.json`
 `e7a818734e510e714262eae5da393e6946551e500c3c05335b1a67677b837347`.
 
+## Manifest URL correction after review (2026-10-01)
+
+The recovered manifest initially matched the previously published output, but
+its two icon `src` values began with `/`. From the configured project URL
+`https://salmon-data-mobilization.github.io/metasalmon/`, that resolves to
+the domain root rather than the committed icon files under `/metasalmon/`.
+Both `src` values are now relative in the authoring and published manifests.
+`urljoin()` checks resolve each to the project path and find both corresponding
+files in `docs/`; the old leading-slash values resolve to the domain root.
+The two manifest copies remain byte-identical. No icon image bytes changed.
+
 ## Recovered asset hashes
 
 | Asset | SHA-256 of both source and existing output |
@@ -81,6 +92,6 @@ and `docs/search.json`
 | `favicon-96x96.png` | `912fb79195b6f883fc3d01d10d3a3e2961dc448a381081304519e120546c237f` |
 | `favicon.ico` | `68c29fc545632efb336ce19f823fe35e9d6d820c51168ec4c2531f323d2f5297` |
 | `favicon.svg` | `6e9b2cd3bd2ff4b3fcb45ce4e0862bcc996558034ae9788b92144f3dca91b3d6` |
-| `site.webmanifest` | `c509d8b258fda2b18acd8926b0016f33fbb82fce83fcd236abf923a4f54db225` |
+| `site.webmanifest` | `1cf0234a4c176518c20293be1beacc9b98565112ead667c5cb5f9eeb8be68275` |
 | `web-app-manifest-192x192.png` | `401ae7aaf5217203e054b1349a727a58c2079cda2674beae1098c7e85b4ce652` |
 | `web-app-manifest-512x512.png` | `aeaf5d760979cfbc4e13413a0ae1d027ad5a1c9a1962a3b616ecf5501b561ce6` |
