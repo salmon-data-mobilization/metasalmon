@@ -101,6 +101,20 @@
 
 ### Fixed
 
+- **Strict validation now refuses `REVIEW:` IRIs in all four SDP
+  metadata files, and
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  lists the same blockers** (hub item B-177; Brett’s 2026-09-23 ruling).
+  The EDH rebuild gate already swept `dataset.csv`, `tables.csv`,
+  `column_dictionary.csv` and `codes.csv`, but strict validation passed
+  a marker in `dataset.csv` or `codes.csv` and the metadata review scan
+  omitted it. Strict validation now reports those markers through the
+  same IRI issue collector as the EDH gate, including in non-strict
+  results; the review scan covers every schema-declared field it
+  refuses. The validator-driven test checks each declared IRI field in
+  turn. The Python mirror change is owed under B-230.
+
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
@@ -597,20 +611,17 @@
 
   A marker is now listed wherever strict validation refuses one, with
   the `set_sdp_*()` call that replaces it: in any schema-declared
-  `*_iri` field of `tables.csv`, and in the six semantic IRI fields of
-  `column_dictionary.csv`. The six are read from the list
+  `*_iri` field of `dataset.csv`, `tables.csv` and `codes.csv`, and in
+  the six semantic IRI fields of `column_dictionary.csv`. The six are
+  read from the list
   [`validate_dictionary()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_dictionary.md)
   sweeps, not from the schema. So when a schema selected through the
   options declares a seventh dictionary `*_iri` field, a marker there is
   not listed, because strict validation accepts it (raised in the Codex
   review of
   [\#144](https://github.com/salmon-data-mobilization/metasalmon/issues/144)).
-  Also still not listed:
-
-  - a marker in `codes.csv` or `dataset.csv`, because strict validation
-    does not refuse one there yet (hub item B-177);
-  - a marker in a `*_iri` column the schema does not declare, which has
-    no setter to print (hub item B-185).
+  A marker in a `*_iri` column the schema does not declare is still not
+  listed, because it has no setter to print (hub item B-185).
 
   The fix is a second test for the marker rather than a wider
   placeholder test, because other callers depend on the placeholder
@@ -620,13 +631,13 @@
   validation refuses it. A second test does the same for a configured
   schema’s extra dictionary field.
 
-  metasalmonpy fixed the same defect in [pull request
-  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28),
-  and its scan also lists a marker in `codes.csv`, the one file where
-  the two differ. Brett ruled on 2026-09-23 that strict validation
-  refuses a marker there, so R is the side that moves, when B-177 lands.
-  Until then the difference is tracked as a port owed in
-  `knowledge/parity-deviations.md`, not as a register row.
+  metasalmonpy fixed the same scan defect in [pull request
+  28](https://github.com/salmon-data-mobilization/metasalmonpy/pull/28).
+  B-177 subsequently added `dataset.csv` and `codes.csv` to R’s strict
+  validator and review scan under Brett’s 2026-09-23 ruling. The Python
+  validator and its dataset scan still owe the matching change under
+  B-230, tracked as a port in `knowledge/parity-deviations.md` rather
+  than a register row.
 
 - **`apply_salmon_dictionary(strict = TRUE)` now stops on the coercion
   failure it used to let through, and the codes step names the values it
