@@ -657,3 +657,56 @@ caused by the workflow adjustment. No task-owned command remains in flight.
 The read-only curl child was interrupted; the candidate must not be treated as
 validated. No push, PR-body update, or curl implementation occurred after the
 pause request.
+
+
+## Resumed; small merge batches and shared ID scan — 2026-10-01
+
+Brett merged review repair PR222 (`1d07477`) and its prompt/check alignment
+follow-up PR249 (`40905f8`). The same quiet heartbeat is ACTIVE again. He also
+authorized routine noncritical merges in this run, with only consequential
+choices brought to him. Existing HUB critical classes and review/CI gates still
+apply. Keep ready transitions to up to three at a time and record delegated
+merges here; no human contact, release or policy authority is added.
+
+The next optional helper adjustment accepts several prefixes/IDs in one call,
+e.g. `python3 scripts/hub_ids.py B Q B-427`. One snapshot serves every query;
+exit 1 means an explicit ID was seen, and invalid or incomplete batches return
+3 before printing any suggestions. Both focused batch tests fail on the old CLI
+and pass after the change. All twelve ID-helper tests and the existing scripts
+suite (200 tests) pass. The previously frozen fixture fixes are retained.
+
+Observed next use on this clone: separate B and Q calls took 4.193 and 3.918
+seconds; the combined call took 3.895 seconds across 219 refs and 37 worktrees,
+returning the same B-429/Q-74 suggestions. That saves 4.216 seconds (52%) for
+these two scans. Cache/order effects limit attribution; it is not a whole-task
+saving or an atomic reservation. No new task, claim or allocation was needed.
+
+The stale helper checkout refused live queue reads after main advanced. It now
+contains main through additive merges, and its richer `status` works again.
+Today main advanced twice for review repair, so run current main's hub client
+for pickup once PR215 lands; use existing `hub fresh` rather than manual claim
+lookups. Do not weaken the freshness guard. Generated NEWS conflict resolution
+initially mishandled the minified search index's empty placeholder rows; this
+was caught and repaired locally before publication, and the unpublished merge
+was amended. This is environment/merge repair, not claim bureaucracy. The
+merged search index preserves every incoming record except the intended
+Internal section. Its rebuilt Internal section is retained under the pinned
+NEWS-only build; unrelated historical reconciliation remains PR247's scope.
+
+### Working merge order
+
+| Batch / prerequisite | PRs | Gate / reason |
+| --- | --- | --- |
+| First routine review batch | R215, R243, R245 | Publish helper fixes; resolve R245 conflict; actual review and current-head CI |
+| Site follow-up | R247 after R245 | R245 supplies both packet reference pages; avoid a known broken-link re-review |
+| Commons prerequisite | commons41, then commons42 | Root operational workpad filtering matches existing validator boundary; independent actual review first |
+| Critical meaning/routing | commons43, then R248; ontology37 separately | Unresolved definition/IRI/routing choices stay for Brett |
+| Critical API pairs | R244/Python85; R246/Python84 | New verifier API/remaining transport debt and condition hierarchy's major-release judgement stay for Brett |
+
+Ready or green/skipped jobs do not prove a completed review. Existing successful
+local reviews have bounded coverage; the repaired GitHub workflow supplies an
+inspectable verdict on the current push/ready event. The first review batch has
+no definite critical class on the checked diffs. PR215 is already ready, so its
+new push triggers review; R243/R245 need ready transitions. No merge has occurred
+under the new grant at this checkpoint. No free claimable item appears on the
+latest fresh default scan, with B-238's held handoff as the positive control.

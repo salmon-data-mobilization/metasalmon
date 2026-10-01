@@ -1254,7 +1254,8 @@ metasalmon (development version)
 
 * `scripts/hub_ids.py` scans fetched branches and registered worktrees for
   numbered queue items and legacy headings, reporting ID collisions or an
-  unreserved next-number suggestion. It creates no claim or reservation.
+  unreserved next-number suggestion. Several queries share one scan.
+  It creates no claim or reservation.
 * Claude CI reviews drafts and each new PR head. A missing completion result,
   denied tool call or unconfirmed head fails the review job instead of looking
   like a successful review. Superseded review runs are cancelled. Each PR gets
