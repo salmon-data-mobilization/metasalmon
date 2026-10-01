@@ -214,6 +214,10 @@ metasalmon (development version)
 
 ### Fixed
 
+- Text columns that readr would read as dates or date-times no longer seed
+  `codes.csv` rows. Factors retain their declared code-list intent. This
+  brings R's in-memory seeder into line with Python (hub B-310, parity row 64).
+
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;

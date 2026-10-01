@@ -1114,12 +1114,38 @@ infer_value_type <- function(col) {
   30L
 }
 
+# The readr test mirrored by Python's _text_reads_as_dates() (B-188 / B-310).
+# A date guess is shape-only, including an invalid calendar date. Date-times
+# must actually parse; guess_parser() alone also guesses invalid date-times.
+# Trim/drop blank text only for this decision, preserving emitted code bytes.
+.ms_text_reads_as_dates <- function(values) {
+  present <- trimws(values)
+  present <- present[nzchar(present)]
+  if (length(present) == 0L) {
+    return(FALSE)
+  }
+  if (all(grepl("^[0-9]{4}[-/][0-9]{2}[-/][0-9]{2}$", present))) {
+    return(TRUE)
+  }
+  # Ordinary codes are expected to fail this parser, and mean FALSE here.
+  # This warning suppression retires if readr supplies a quiet predicate with
+  # parse_datetime()'s acceptance rules. Literal "NA" is a present code value.
+  parsed <- suppressWarnings(readr::parse_datetime(present, na = character()))
+  all(!is.na(parsed))
+}
+
 .ms_code_list_values <- function(col, code_limit = .ms_code_list_limit()) {
   if (!(inherits(col, "factor") || inherits(col, "character"))) {
     return(character())
   }
   vals <- unique(stats::na.omit(as.character(col)))
   if (length(vals) == 0 || length(vals) > code_limit) {
+    return(character())
+  }
+  # A factor declares code-list intent and is exempt, like Python Categorical.
+  # The date exclusion retires when intent is declared for every column rather
+  # than inferred from text; factors already supply that declaration.
+  if (!inherits(col, "factor") && .ms_text_reads_as_dates(vals)) {
     return(character())
   }
   vals
