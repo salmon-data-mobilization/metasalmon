@@ -89,6 +89,7 @@ internal_sources <- c(
   "AGENTS.md",
   "CLAUDE.md",
   "HUB.md",
+  "REVIEW.md",
   ".github/PULL_REQUEST_TEMPLATE.md"
 )
 public_sources <- character()

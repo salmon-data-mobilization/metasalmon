@@ -4,6 +4,9 @@ Short map of the package's public starts and their canonical implementations.
 
 ## Run (human-facing)
 
+- Configuration: `?metasalmon_configuration` (alias `?"metasalmon-options"`)
+  lists defaults, precedence, optional credentials and internal hooks; source
+  inventory and generated help live in `R/configuration.R`
 - Main workflow: `create_sdp()` -> infer artifacts -> seed semantics -> write SDP
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
 - Reviewed suggestion merge: `apply_semantic_suggestions()`; `"reviewed"`
