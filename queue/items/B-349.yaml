@@ -1,7 +1,7 @@
 id: B-349
 kind: defect
 title: 'metasalmonpy types a column of dates by its name alone, where R types a Date column temporal whatever it is called'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
