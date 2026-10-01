@@ -260,6 +260,14 @@
 
 ### Fixed
 
+- **Applying a dictionary preserves vocabulary-backed columns.** B-346,
+  implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
+  with a nonblank `vocabulary_iri` and missing/blank `code_value` now
+  skips that column’s code-list warning and factor conversion, even
+  beside explicit code rows. Values are retained; ordinary code lists
+  and independent declared type coercion keep their existing behavior.
+  The Python companion is B-347.
+
 - [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
   now writes a profile UTC instant in temporal coverage as EML’s
   `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
