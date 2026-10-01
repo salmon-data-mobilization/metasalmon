@@ -39,6 +39,8 @@ metasalmon (development version)
   `reproducibility/provenance/semantic-iri-dereference.csv` before reporting
   *all* failed IRIs. Publication workflows can checksum that CSV. The check
   confirms HTTP resolution; it does not judge whether a term is suitable.
+  Vector condition messages stay in one redacted failure row so they cannot
+  interrupt the remaining IRI checks or prevent the complete report.
 
 * **Model judgement runs outside the package: `write_semantic_review_packet()`
   writes a review packet for a harness to judge and

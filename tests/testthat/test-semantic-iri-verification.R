@@ -86,6 +86,31 @@ test_that("classified retries are bounded and every final failure is persisted",
   expect_identical(second_bytes, first_bytes)
 })
 
+test_that("vector condition messages stay in one row and do not abort the sweep", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = c("https://example.org/a#failure", "https://example.org/z#success")
+  ))
+  delays <- numeric()
+  requester <- function(iri) {
+    if (grepl("/a#", iri, fixed = TRUE)) {
+      stop(simpleError(c("timeout", "Authorization: Bearer test-credential")))
+    }
+    list(status = 200L, final_url = iri)
+  }
+  expect_error(verify_sdp_semantic_iris(
+    root, requester = requester,
+    sleep_fn = function(seconds) delays <<- c(delays, seconds)
+  ), regexp = "a#failure.*request-error")
+  rows <- read_iri_report(root)
+  expect_identical(rows$iri, c("https://example.org/a#failure", "https://example.org/z#success"))
+  expect_identical(rows$status, c(NA_character_, "200"))
+  expect_identical(rows$attempts, c("3", "1"))
+  expect_identical(delays, c(0.1, 0.25))
+  expect_identical(rows$error[[1]], "timeout\nAuthorization=[REDACTED]")
+})
+
 test_that("the exact selected semantic fields are collected across SDP metadata", {
   root <- withr::local_tempdir()
   make_iri_fixture_sdp(root)

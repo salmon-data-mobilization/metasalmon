@@ -154,7 +154,9 @@
     NULL
   })
   if (!is.null(failure)) {
-    message <- conditionMessage(failure)
+    # Some conditions carry a vector message; keep its complete evidence in one
+    # row before scalar retry classification and capture-time redaction.
+    message <- paste(conditionMessage(failure), collapse = "\n")
     return(list(
       status = NA_integer_, final_url = NA_character_,
       error = .ms_redact_secrets(message),

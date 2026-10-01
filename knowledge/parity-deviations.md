@@ -125,6 +125,21 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
+**B-130 transport parity remains unresolved (2026-10-01).** The paired drafts
+[metasalmon PR244](https://github.com/salmon-data-mobilization/metasalmon/pull/244)
+and [metasalmonpy PR85](https://github.com/salmon-data-mobilization/metasalmonpy/pull/85)
+have matching selected-IRI, retry and report contracts, but Python's follow-up
+default transport reads final response headers in a killed-and-reaped worker
+with a 30-second deadline. R still downloads the body within its total timeout.
+A local server sending complete HTTP200 headers and withholding the body
+therefore succeeds in Python and times out in R. This is temporary parity debt,
+not an approved deliberate difference or a merged/release parity claim; B-130
+is not ready for parity acceptance. `httr2::req_perform_connection()` still
+waited for body data in that probe, so it does not establish a repair.
+*Retires when:* a bounded R header-only GET is demonstrated, both default
+transports agree on the local withheld-body/header controls, and both drafts
+carry that repair. No register number or new queue item is allocated.
+
 **Development-version port, 2026-09-30: crosswalk review (B-120 → B-426).**
 NuSEDS-prefilled code IRIs now retain candidates and appear in the default
 console queue while they still hold their original prefill and have no recorded
