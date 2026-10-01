@@ -214,6 +214,11 @@ metasalmon (development version)
 
 ### Fixed
 
+* Semantic bundle validation now checks a context chunk's leading phrase across
+  lines. A later `table_2` or hyphenated note no longer hides a matching first
+  line; a leading underscored identifier remains ineligible (hub B-384;
+  metasalmonpy companion B-385 follows).
+
 * **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett's 2026-09-25 ruling: a same-table/column codes row with
   a nonblank `vocabulary_iri` and missing/blank `code_value` now skips that
