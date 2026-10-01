@@ -1244,6 +1244,10 @@ metasalmon (development version)
 
 ### Internal
 
+- `scripts/ci-attempt-history.py` reports failures hidden by successful CI
+  reruns using the Actions per-attempt endpoints. Counts explicitly distinguish
+  runs from attempts; API or schema failures stop the read (hub B-229).
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
