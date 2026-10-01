@@ -772,12 +772,17 @@ test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM met
 test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
   root <- withr::local_tempdir()
   tagged <- c(
+    "! X",
+    "!!! X",
     "!foo X",
     "!foo'bar X",
+    "!f%6fo X",
     "!!str X",
     "&a !foo X",
     "!<tag:yaml.org,2002:str> X",
+    "!<tag:yaml.org,2002:%73tr> X",
     "!<tag:example.org,2026:foo'bar> X",
+    "!<tag:example.org,2026:f%6fo> X",
     "[!foo X]",
     "[!foo'bar X]",
     '["!foo", !foo\'bar X]',
@@ -831,8 +836,11 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
 
   ordinary <- c(
     '"!foo X"' = "!foo X",
+    '"!f%6fo X"' = "!f%6fo X",
     "\"!foo'bar X\"" = "!foo'bar X",
     "'!!str X'" = "!!str X",
+    "'!<tag:yaml.org,2002:%73tr> X'" = "!<tag:yaml.org,2002:%73tr> X",
+    "'!<tag:example.org,2026:f%6fo> X'" = "!<tag:example.org,2026:f%6fo> X",
     "'? !foo X'" = "? !foo X",
     '["!foo X"]' = "!foo X",
     "[\"!foo'bar X\"]" = "!foo'bar X",
@@ -931,6 +939,17 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
   )
   expect_error(read_sssom_mapping_set(tag_directive_path), "explicit YAML tags")
 
+  custom_handle_path <- file.path(root, "custom-tag-directive.sssom.tsv")
+  sssom_test_write_raw(
+    custom_handle_path,
+    paste0(
+      "# %TAG !e! tag:example.org,2026:\n",
+      "# ---\n",
+      sssom_test_text(extra_metadata = "# mapping_set_title: !e!foo X")
+    )
+  )
+  expect_error(read_sssom_mapping_set(custom_handle_path), "explicit YAML tags")
+
   # A verbatim-tag-looking literal must not consume a later real tag in the
   # disposable probe, even when YAML has no whitespace around a flow comma.
   verbatim_literal_cases <- list(
@@ -987,4 +1006,101 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
     read_sssom_mapping_set(sequence_block_path)$metadata$creator_label,
     "!foo"
   )
+})
+
+test_that("an explicit YAML tag after a document boundary is still refused", {
+  root <- withr::local_tempdir()
+  two_documents <- function(second_title) {
+    sub(
+      "\nsubject_id\t",
+      paste0("\n# ---\n# mapping_set_title: ", second_title, "\nsubject_id\t"),
+      sssom_test_text(),
+      fixed = TRUE
+    )
+  }
+
+  plain_path <- file.path(root, "plain-second-document.sssom.tsv")
+  sssom_test_write_raw(plain_path, two_documents("Plain title"))
+  expect_identical(
+    read_sssom_mapping_set(plain_path)$metadata$mapping_set_id,
+    "https://example.org/mappings/psc-to-gcdfo"
+  )
+
+  tagged_path <- file.path(root, "tagged-second-document.sssom.tsv")
+  sssom_test_write_raw(tagged_path, two_documents("!foo X"))
+  expect_error(
+    read_sssom_mapping_set(tagged_path),
+    paste0(basename(tagged_path), ".*explicit YAML tags")
+  )
+})
+
+test_that("ordinary SSSOM exclamation text does not reparse metadata per bang", {
+  root <- withr::local_tempdir()
+  bangs <- paste(rep("!", 80L), collapse = "")
+  original_yaml_load <- yaml::yaml.load
+
+  ordinary <- list(
+    quoted = paste0('# mapping_set_title: "', bangs, '"'),
+    comment = c(paste0("# # ", bangs), "# mapping_set_title: Plain"),
+    block = c("# mapping_set_title: |", paste0("#   ", bangs)),
+    plain = paste0("# mapping_set_title: Plain ", bangs),
+    flow = paste0("# mapping_set_title: ['", bangs, "']"),
+    multiline = c('# mapping_set_title: "first', paste0("#   ", bangs, '"')),
+    single_quote_bang = "# mapping_set_title: '!'",
+    flow_single_quote_bang = "# mapping_set_title: ['!']"
+  )
+  for (case in names(ordinary)) {
+    path <- file.path(root, paste0(case, "-many-bangs.sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = ordinary[[case]]))
+    parse_calls <- 0L
+    parsed <- testthat::with_mocked_bindings(
+      read_sssom_mapping_set(path),
+      yaml.load = function(...) {
+        parse_calls <<- parse_calls + 1L
+        original_yaml_load(...)
+      },
+      .package = "yaml"
+    )
+    expected <- switch(case,
+      comment = "Plain",
+      plain = paste0("Plain ", bangs),
+      multiline = paste("first", bangs),
+      single_quote_bang = "!",
+      flow_single_quote_bang = "!",
+      bangs
+    )
+    expect_identical(parsed$metadata$mapping_set_title, expected, info = case)
+    # The public reader also parses the unmodified metadata once. A bounded
+    # number of probe parses keeps literal text linear in its own length.
+    expect_lte(parse_calls, 3L)
+  }
+
+  # Masking a literal line must leave a later real tag visible after each
+  # syntax class, without reparsing the whole document 80 times.
+  before_tag <- list(
+    quoted = paste0('# mapping_set_description: "', bangs, '"'),
+    comment = paste0("# # ", bangs),
+    block = c("# mapping_set_description: |", paste0("#   ", bangs)),
+    plain = paste0("# mapping_set_description: Plain ", bangs),
+    flow = paste0("# mapping_set_description: ['", bangs, "']"),
+    multiline = c('# mapping_set_description: "first', paste0("#   ", bangs, '"')),
+    single_quote_bang = "# mapping_set_description: '!'",
+    flow_single_quote_bang = "# mapping_set_description: ['!']"
+  )
+  for (case in names(before_tag)) {
+    path <- file.path(root, paste0(case, "-bangs-then-tag.sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = c(
+      before_tag[[case]], "# mapping_set_title: !foo X"
+    )))
+    parse_calls <- 0L
+    testthat::with_mocked_bindings(
+      expect_error(read_sssom_mapping_set(path), "explicit YAML tags"),
+      yaml.load = function(...) {
+        parse_calls <<- parse_calls + 1L
+        original_yaml_load(...)
+      },
+      .package = "yaml"
+    )
+    expect_lte(parse_calls, 3L)
+  }
 })

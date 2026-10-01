@@ -267,65 +267,85 @@
     return(FALSE)
   }
 
-  # Retag exclamation tokens with one private, otherwise unused tag. libyaml
-  # then decides whether each token is a node property. A bang in quoted,
-  # plain, comment or block text stays text. Probe values are discarded.
-  tag_name <- "metasalmon_sssom_tag_probe"
+  # Give every possible tag token a private name in a disposable copy, then
+  # let libyaml decide which names are actual node properties. Changing only
+  # suffix characters or handle bangs leaves quotes and flow delimiters in
+  # place; ordinary exclamation text cannot shift the parse boundaries.
+  # Registering handlers for the private names also avoids built-in handlers
+  # such as `str`, which run on implicit values that have no explicit tag.
   probe_lines <- strsplit(yaml_text, "\n", fixed = TRUE)[[1]]
   # A directive can rebind the primary `!` handle, so omit it only from the
   # disposable parse. The normal read below still sees the original bytes.
   probe_lines[grepl("^%TAG[[:space:]]", probe_lines)] <- ""
+  probe <- paste(probe_lines, collapse = "\n")
   tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"\\\\]+|!"
-
-  has_tag <- function(lines) {
-    found <- FALSE
-    handler <- function(value) {
-      found <<- TRUE
-      value
-    }
-    suppressWarnings(tryCatch(
-      yaml::yaml.load(
-        paste(lines, collapse = "\n"),
-        handlers = stats::setNames(list(handler), tag_name),
-        eval.expr = FALSE
-      ),
-      error = function(e) NULL
-    ))
-    found
-  }
-
-  bulk <- vapply(
-    probe_lines,
-    function(line) gsub(tag_token, paste0("!", tag_name), line, perl = TRUE),
-    character(1), USE.NAMES = FALSE
-  )
-  bulk_has_tag <- has_tag(bulk)
-
-  # Bulk replacement can hide a later tag or realign quote boundaries and
-  # invent one. Confirm a positive result by retagging one bang at a time;
-  # also probe individually after a negative result with multiple bangs.
-  bang_count <- sum(lengths(regmatches(
-    probe_lines, gregexpr("!", probe_lines, fixed = TRUE)
-  )))
-  if (!bulk_has_tag && bang_count < 2L) {
+  token_at_bang <- paste0("(?=(", tag_token, "))")
+  locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  if (identical(locations[[1]], -1L)) {
     return(FALSE)
   }
-  for (line_index in seq_along(probe_lines)) {
-    line <- probe_lines[[line_index]]
-    positions <- gregexpr("!", line, fixed = TRUE)[[1]]
-    for (position in positions[positions > 0L]) {
-      candidate <- probe_lines
-      candidate[[line_index]] <- paste0(
-        if (position == 1L) "" else substr(line, 1L, position - 1L),
-        sub(paste0("^(?:", tag_token, ")"), paste0("!", tag_name),
-            substring(line, position), perl = TRUE)
-      )
-      if (has_tag(candidate)) {
-        return(TRUE)
-      }
+  token_starts <- attr(locations, "capture.start")[, 1L]
+  token_lengths <- attr(locations, "capture.length")[, 1L]
+  chars <- strsplit(probe, "", fixed = TRUE)[[1]]
+  for (candidate_id in seq_along(locations)) {
+    position <- locations[[candidate_id]]
+    if (chars[[position]] != "!") {
+      next
+    }
+    token <- substr(
+      probe,
+      token_starts[[candidate_id]],
+      token_starts[[candidate_id]] + token_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">") && nchar(token) > 3L) {
+      chars[[position + 2L]] <- "x"
+    } else if (grepl("!", substring(token, 2L), fixed = TRUE)) {
+      # Convert a standard or custom handle to a local tag. Internal `!`
+      # bytes in a literal are harmless and will never call the handler.
+      bangs <- which(strsplit(token, "", fixed = TRUE)[[1]] == "!")[-1L]
+      chars[position + bangs - 1L] <- "x"
+    } else if (nchar(token) > 1L &&
+               grepl("^[A-Za-z0-9]", substring(token, 2L))) {
+      chars[[position + 1L]] <- "x"
+    } else if (nchar(token) == 1L) {
+      # A bare `!` is itself an explicit non-specific tag at node position.
+      chars[[position]] <- "!x"
     }
   }
-  FALSE
+  probe <- paste(chars, collapse = "")
+  private_locations <- gregexpr(token_at_bang, probe, perl = TRUE)[[1]]
+  private_starts <- attr(private_locations, "capture.start")[, 1L]
+  private_lengths <- attr(private_locations, "capture.length")[, 1L]
+  private_names <- vapply(seq_along(private_locations), function(candidate_id) {
+    token <- substr(
+      probe,
+      private_starts[[candidate_id]],
+      private_starts[[candidate_id]] + private_lengths[[candidate_id]] - 1L
+    )
+    if (startsWith(token, "!<") && endsWith(token, ">")) {
+      substring(token, 3L, nchar(token) - 1L)
+    } else {
+      substring(token, 2L)
+    }
+  }, character(1), USE.NAMES = FALSE)
+  # libyaml percent-decodes tag suffixes before handing their names to R.
+  # The handler keys must use those decoded names, including a verbatim URI.
+  private_names <- utils::URLdecode(private_names)
+
+  found <- FALSE
+  handler <- function(value) {
+    found <<- TRUE
+    value
+  }
+  handlers <- stats::setNames(
+    rep(list(handler), length(unique(private_names))),
+    unique(private_names)
+  )
+  suppressWarnings(tryCatch(
+    yaml::yaml.load(probe, handlers = handlers, eval.expr = FALSE),
+    error = function(e) NULL
+  ))
+  found
 }
 
 .ms_sssom_parse_metadata <- function(comment_lines, path) {
