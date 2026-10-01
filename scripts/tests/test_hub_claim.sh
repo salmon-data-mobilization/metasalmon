@@ -203,7 +203,7 @@ CAPPED_ID="B-59"      # as B-58, after one reclaim inside the rolling day: the c
 UNDERCAP_ID="B-60"    # as B-59, but the reclaim was 30 hours ago: outside the window
 
 # Assertion 42 alone. The done blocker is still named in the subject's raw
-# blocked_by field; the seven malformed or absent claim records use distinct refs so a
+# blocked_by field; the nine malformed or absent claim records use distinct refs so a
 # status read does not change any ref while the assertion is comparing them.
 STATUS_DONE_ID="T-41"
 STATUS_BLOCKED_ID="T-42"
@@ -214,6 +214,8 @@ STATUS_NO_LEASE_ID="T-46"
 STATUS_BAD_LEASE_ID="T-47"
 STATUS_WRONG_ID="T-48"
 STATUS_NO_RECORD_ID="T-49"
+STATUS_NO_HANDOFF_BRANCH_ID="T-50"
+STATUS_BAD_HANDOFF_BRANCH_ID="T-51"
 
 # The four hand-back items of assertions 22 and 23. Each one is held by this
 # caller on a live lease, seeded straight into the locks repository rather than
@@ -727,7 +729,7 @@ retires_when: Status no longer needs the raw blocked-by fixture.
 YAML
   for id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
             "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-            "$STATUS_NO_RECORD_ID"; do
+            "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
     write_fixture_item "$items" "$id" metasalmon
   done
 
@@ -1624,11 +1626,14 @@ main() {
     g git init --bare -q --initial-branch=main "$status_locks" >/dev/null 2>&1 || status_seed_ok=1
     for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
                   "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-                  "$STATUS_NO_RECORD_ID"; do
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
       bad_body=$(claim_record "$bad_id" status-fixture claim "$future")
       case $bad_id in
         "$STATUS_NO_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^action:/d') ;;
         "$STATUS_BAD_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: bogus/') ;;
+        "$STATUS_NO_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/; /^branch:/d') ;;
+        "$STATUS_BAD_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/'); bad_body="$bad_body
+branch: arbitrary/branch" ;;
         "$STATUS_NO_AGENT_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^agent:/d') ;;
         "$STATUS_NO_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^lease_until:/d') ;;
         "$STATUS_BAD_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^lease_until: .*/lease_until: not-a-date/') ;;
@@ -1657,7 +1662,7 @@ main() {
     hub status "$STATUS_BLOCKED_ID" >"$status_blocked" 2>&1; [ "$?" = "0" ] || status_rc=1
     for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
                   "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-                  "$STATUS_NO_RECORD_ID"; do
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
       bad_out="$TMPROOT/client.status.$bad_id.out"
       ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
           hub status "$bad_id" ) >"$bad_out" 2>&1; bad_rc=$?
@@ -1704,7 +1709,7 @@ main() {
       note "resolved blocker: $(tr '\n' '|' <"$status_blocked")"
       for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
                     "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-                    "$STATUS_NO_RECORD_ID"; do
+                    "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
         note "malformed $bad_id: $(tr '\n' '|' <"$TMPROOT/client.status.$bad_id.out")"
       done
       note "failed read: $(tr '\n' '|' <"$status_failed")"

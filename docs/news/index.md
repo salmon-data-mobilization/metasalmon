@@ -1079,6 +1079,11 @@
 
 ### Internal
 
+- `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and
+  indexes under the existing pinned toolchain, avoiding a full site
+  rebuild for a NEWS-only edit. Publication checks still run; a
+  toolchain change requires a full build.
+
 - The hub client adds `hub status ID` for queue fields and the live
   claim tip, and successful claims print member-worktree and workpad
   setup commands. These are advisory hints; claim eligibility and the

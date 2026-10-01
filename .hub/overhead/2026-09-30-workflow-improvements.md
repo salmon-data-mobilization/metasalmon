@@ -138,3 +138,59 @@ amendment to AGENTS or HUB policy. Semantic and policy decisions remain his;
 merge, release and person-contact authority was not added. The experiment does
 not treat authorization or an unstarted review as a successful publication or
 review outcome.
+
+
+## Parallel round and NEWS build adjustment
+
+- B-268 and B-132 published as draft pull requests 216 and 217. Each agent
+  owns its claim, worktree, focused verification, publication and handoff.
+  Root's extra publication hold delayed B-132 after its tested local commit;
+  it is removed for routine drafts under Brett's standing approval. No new
+  tracker or approval boundary is introduced.
+- B-155's pak-bootstrap failure proofs pass; B-133 is the next independent
+  vignette fix. B-186's stream-lint regression has 164 passing offline tests.
+  These are observed local results, not merged work or completed remote reviews.
+- The NEWS-only build completed with the existing pinned toolchain. Before
+  curation it touched three tracked paths (NEWS HTML, its Markdown companion and search), versus about
+  forty tracked pages and four new reference pages in B-268's full build.
+  It still renders the whole NEWS page, so pre-existing source/site drift must
+  be reviewed and unrelated fragments restored. This reduces output scope;
+  build duration and total overhead savings were not isolated.
+- Claude jobs on helper PR 215 finished green but produced no review comments.
+  Logs report two denied tool calls on the draft and three after ready-for-review.
+  The denied calls are hidden and no execution artifact was retained. Review
+  completion is therefore unverified. Local Claude is logged out; Brett was
+  asked to reconnect while implementation continues.
+
+Current useful balance: one claim per real agent, isolated worktrees, one
+focused regression per defect, and autonomous routine draft publication.
+Further redesign is deferred until a concrete recurring cost warrants it.
+The requested measurement itself remains a separate activity, not attributed
+wholesale to hub bureaucracy.
+
+
+### Review repair and build checks
+
+Codex review on PR 215 found that a handoff with no required branch could
+report success. A frozen harness run reproduced it (42 passing checks, one
+failure); status now requires the exact `agent/<id>/<agent>` branch for a
+handoff. Other actions may legitimately omit it. The invalid-branch fixture
+explicitly writes an arbitrary branch, as well as testing a missing branch.
+
+NEWS-only rejects an unknown flag, rejects combining a partial build with a
+toolchain upgrade, and rejects the unpinned local Pandoc. A pinned build passes.
+Inspection found that `build_news()` alone omits its Markdown companion, so
+the route now uses pkgdown's existing converter for NEWS alone. B-186 exercised
+the route from a different task checkout without copying the helper script.
+
+B-133's actual Claude comment on head 1d48520 reports no issues found. Other
+draft jobs remain skips or unverified, not successful reviews. B-155's first
+workflow failed with zero jobs and was absent from PR checks; actionlint
+reproduced an invalid runner context and verified the pushed correction.
+This is implementation rework, rather than claim administration.
+
+The handoff repair's frozen GREEN run passes all 43 checks, zero failures or
+skips. During B-186 handoff, root edited the client while Bash was still
+reading it: the claim handoff succeeded, followed by a stray parse/read error.
+An idempotent repeat confirmed handoff. Freeze the client during live commands
+as well as harness runs; this was an avoidable coordination race.

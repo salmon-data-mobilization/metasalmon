@@ -1565,6 +1565,10 @@ cmd_status() {
   [ "$cid" = "$id" ] && [ -n "$ag" ] || valid=0
   case $act in claim|reclaim|beat|release|handoff) : ;; *) valid=0 ;; esac
   [ -n "$lu" ] && epoch_from_iso "$lu" >/dev/null || valid=0
+  # done records exactly this branch. Other actions may omit it legitimately.
+  if [ "$act" = "handoff" ] && [ "$branch" != "agent/$id/$ag" ]; then
+    valid=0
+  fi
   if [ "$valid" -ne 1 ]; then
     printf 'claim: unknown\n'
     warn "cannot read a valid live claim record for $id"
