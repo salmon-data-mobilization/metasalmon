@@ -297,7 +297,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="internal-development-version">Internal<a class="anchor" aria-label="anchor" href="#internal-development-version"></a></h3>
-<ul><li><p>Failed Claude review checks now report a bounded count and fixed tool/command categories for denied calls. Raw inputs, paths, arguments and output remain hidden; denied calls still fail completion. No review permission or merge gate changes.</p></li>
+<ul><li><p>The hub queue linter rejects a nonempty <code>stream</code> that names no stream item. Stream names use the unpadded item number (<code>S-05</code> is <code>S5</code>); future stream items are accepted without editing a fixed list (hub item B-186).</p></li>
+<li><p>Failed Claude review checks now report a bounded count and fixed tool/command categories for denied calls. Raw inputs, paths, arguments and output remain hidden; denied calls still fail completion. No review permission or merge gate changes.</p></li>
 <li><p><code>scripts/build-pkgdown.R --news-only</code> rebuilds the NEWS page and indexes under the existing pinned toolchain, avoiding a full site rebuild for a NEWS-only edit. Publication checks still run; a toolchain change requires a full build.</p></li>
 <li><p>The hub client adds <code>hub status ID</code> for queue fields and the live claim tip, and successful claims print member-worktree and workpad setup commands. These are advisory hints; claim eligibility and the lock protocol are unchanged.</p></li>
 <li><p><code>scripts/hub_ids.py</code> scans fetched branches and registered worktrees for numbered queue items and legacy headings, reporting ID collisions or an unreserved next-number suggestion. Several queries share one scan. It creates no claim or reservation.</p></li>
