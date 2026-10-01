@@ -27,6 +27,7 @@ Imports:
     gh,
     digest,
     httr2,
+    curl (>= 6.2.1),
     gitcreds,
     methods,
     usethis,

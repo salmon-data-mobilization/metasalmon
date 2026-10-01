@@ -4,6 +4,21 @@
 
 ### Added
 
+- **[`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
+  checks every selected HTTP semantic IRI in a Salmon Data Package with
+  bounded retries** (hub item B-130, S13 requirement 3). It includes
+  reviewed SSSOM mappings, preserves exact identifiers and writes a
+  C-sorted per-IRI CSV to
+  `reproducibility/provenance/semantic-iri-dereference.csv` before
+  reporting *all* failed IRIs. Publication workflows can checksum that
+  CSV. The check confirms HTTP resolution; it does not judge whether a
+  term is suitable.
+  Vector condition messages stay in one redacted failure row so they cannot
+  interrupt the remaining IRI checks or prevent the complete report.
+  Default GETs stop after complete final headers and discard body bytes, with
+  a 30-second timeout across connection and redirects. `curl` is declared
+  directly in Imports; it was already installed as httr2's transport dependency.
+
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
   produces the reviewed semantic closure, which metasalmon has validated
   in three places and written in none** (backlog
