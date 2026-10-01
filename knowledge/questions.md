@@ -717,27 +717,23 @@ Read it as exactly that and no wider: gcdfo is **not** de-prioritised in full an
 and proceeds; everything else in gcdfo stays de-prioritised, and
 `psc-salmon-vocabularies` stays fully de-prioritised.
 
-**The subset, as far as the cards know it today, is one item: PFMA subareas.**
-The gold standard's `AREA` column holds `29F`, `29G`, `29J`, `29K` — Subareas,
-which gcdfo PR #86 deliberately did not mint (it minted the 48 Areas and said so
-in a `skos:scopeNote`). Q8 sends subareas to gcdfo, so that mint **is** the
-carve-out. Nothing else in the example needs gcdfo work: `SPECIES` goes to an
-external taxonomy under Q8, and the other two unmapped code columns were
-metasalmon wiring defects already fixed in the development version
-(backlog **#101** the `ESTIMATE_CLASSIFICATION` crosswalk, **#102** the
-enumeration crosswalk `create_sdp()` did not use).
+**The former example of that subset was wrong.** The gold standard's `AREA`
+values `29F`, `29G`, `29J` and `29K` are DFO sub-district codes according to the
+[NuSEDS data dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
+and its [sub-district map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf).
+PFMA Subareas are numbered `29-1`, `29-2` and so on under the
+[Regulations](https://laws-lois.justice.gc.ca/eng/regulations/SOR-2007-77/FullText.html).
+Q8 still sends actual PFMA Subareas to `gcdfo`; it does not establish that this
+`AREA` column needs them. `SPECIES` still goes to an external taxonomy under Q8.
 
-**What is genuinely a next step, with an owner.** The ruling fixes *what class*
-of term is carved out; it does not fix the **mint scope** — the four Subareas the
-example actually holds, or all 604 of SOR/2007-77 Schedule 2. That is the next
-decision, and it is a vocabulary-completeness call rather than a priority one.
-**Owner:** [S12](sequences/s12-fraser-coho-gold-standard.md) states the need and
-holds the evidence; [S9 step 7](sequences/s9-ontology-alignment.md) routes the
-request into gcdfo through `detect_semantic_term_gaps()` →
-`render_ontology_term_request()` → `submit_term_request_issues()`; the carve-out
-itself is recorded in the [roadmap](roadmap.md)'s active sequencing constraints.
-Note **#97**: that detector is blind to a zero-candidate search, which is the
-shape this gap has, so filing it today is manual work.
+**What remains open, with an owner.** The
+[commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
+records the missing DFO sub-district term and its sources. Brett and
+[S12](sequences/s12-fraser-coho-gold-standard.md) must appraise what term, if
+any, the gold standard needs from `gcdfo`; Q5 alone does not choose a mint.
+[S9 step 7](sequences/s9-ontology-alignment.md) supplies the term-request
+route once that need is established. Note **#97**: its detector is blind to a
+zero-candidate search, so a request in that case needs manual handling today.
 
 **Recorded in:** [roadmap](roadmap.md) (active sequencing constraints),
 [S12](sequences/s12-fraser-coho-gold-standard.md), and the PFMA section of the

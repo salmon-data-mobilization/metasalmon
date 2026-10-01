@@ -101,6 +101,13 @@
 
 ### Fixed
 
+- The bundled NuSEDS dictionaries now describe `AREA` as a DFO
+  sub-district code, following NuSEDS’s data dictionary and sub-district
+  map (B-401). The gold-standard cards no longer treat its lettered
+  values as PFMA Subareas; whether a sub-district vocabulary term is
+  needed remains open. The metasalmonpy and SDP-example corrections are
+  B-402 and B-403.
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
