@@ -228,6 +228,23 @@ workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
 it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
 queue item is **B-252**.
 
+**Correction, 2026-09-30 (B-252): the source-only R premise was too broad.**
+Paired executable probes at R `3364b975` and Python `e81cacd` show that
+`create_sdp()` writes both `update_frequency` and `constraint_iri` under a
+schema omitting them: inference supplies those columns and both aligners
+preserve extras. R `validate_dictionary()` also synthesizes `constraint_iri`
+from truly absent input, independent of the schema. The measured port is the
+full Python writer's static normalization of dataset/table/codes inputs that
+genuinely lack an omitted optional field, plus table inference's static
+alignment of its minimal frame. [Python pull request 82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82)
+uses selected-schema alignment for these paths, preserving caller extras,
+reader normalization, and the dictionary validator's semantic-field contract.
+Its tests retain the original inference case as an extras-preservation control,
+execute all four setters and review write-back, and compare default output
+bytes with a pre-fix baseline. No parity-register row is spent. This records the
+proposed implementation and its evidence, not a landing; the port remains owed
+until that pull request merges.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema
@@ -730,6 +747,15 @@ pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
 
+**Float-gap port landed — 2026-10-01, B-348.** metasalmonpy PR **#86**
+merged as `0021ade7c7d95d8af57297252fe72457af6f6e79`, porting Brett's
+2026-09-25 ruling. Whole-number floats now use integer spelling inside the
+year-shape predicate; fractional values and numeric-looking text retain their
+existing verdicts. The CSV blank-cell control was shown RED, then passed with
+paired R behavior and current-head CI. R changes nothing. This dated receipt
+closes the separate float gap above without changing B-240's history or
+adding a numbered deviation.
+
 **This one is closed.** `B-240` landed as metasalmonpy pull request **#41**
 (`ace8eed`) on 2026-09-24, changing `infer_column_role()` in `dictionary.py`.
 `tests/test_year_shaped_measurement_role.py` is the port of the R test, and it
@@ -1105,16 +1131,18 @@ review target.** Hub item **B-171** added the R test of that name to
 to a measure as `sosa:usedProcedure`, so that its code values' `term_iri` land in
 the measurement set and in no review target. It is the first test to reach the
 role fallback in `.ms_closure_iri_roles()`, and a mutation of that fallback
-fails it. metasalmonpy has the same producer and the same fallback, `_iri_roles()`
-in `semantic_closure.py` (the fallback at `:504-507` on `f1f7230`), and
-`tests/test_semantic_closure.py` has no `usedProcedure` component, no
+fails it. At the 2026-09-25 measurement, metasalmonpy had the same producer and
+the same fallback, `_iri_roles()` in `semantic_closure.py` (at `:504-507` on
+`f1f7230`), and
+`tests/test_semantic_closure.py` had no `usedProcedure` component, no
 observation structure and no `example.org/methods` IRI: read by the B-171 run on
 `25dc7f3`, and again by the 2026-09-25 queue sweep on `f1f7230`. Its one
-set-difference test pins the other direction, `smn:Observation`. What is owed is
-the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
+set-difference test pinned the other direction, `smn:Observation`. What was owed
+was the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
 not a port and not a register row, because nothing behaves differently. It did
 not land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is **B-264**.
+repository. Its metasalmonpy queue item is **B-264**; the test twin **landed
+2026-10-01 as metasalmonpy #81**, merge `430b568`, without a runtime change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When

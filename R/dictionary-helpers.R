@@ -61,7 +61,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' df <- data.frame(
 #'   species = c("Coho", "Chinook"),
 #'   count = c(100, 200),
@@ -69,6 +68,7 @@
 #' )
 #' dict <- infer_dictionary(df)
 #'
+#' \dontrun{
 #' # Optional: seed semantic suggestions from vocabulary services
 #' # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 #' dict <- infer_dictionary(
@@ -1616,6 +1616,10 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 #' A value that is not in its column's code list has no factor level, so it
 #' becomes `NA`. Each such value is named in a warning, whatever `strict` is.
 #' Blank strings are treated as missing and are not reported.
+#' A column backed by a vocabulary skips this codes step: any same-table
+#' codes row with a nonblank `vocabulary_iri` and missing or blank `code_value`
+#' marks the column as vocabulary-backed, even alongside explicit code rows.
+#' Independent declared type coercion still applies.
 #'
 #' @param df A data frame or tibble to transform
 #' @param dict A validated dictionary tibble
@@ -1730,7 +1734,24 @@ apply_salmon_dictionary <- function(df, dict, codes = NULL, strict = TRUE) {
           .data$column_name == col_name
         )
 
-      if (nrow(col_codes) > 0) {
+      # A vocabulary-only row denotes an open vocabulary, not a code list.
+      # Brett ruled (2026-09-25, B-346) that any such row exempts this entire
+      # column's codes step, including when explicit code rows are also present.
+      # Determine this only after table/column filtering; another table's row
+      # cannot exempt this column. Missing optional code_value is blank too.
+      vocabulary_backed <- FALSE
+      if ("vocabulary_iri" %in% names(col_codes)) {
+        code_present <- if ("code_value" %in% names(col_codes)) {
+          .ms_apply_dictionary_present(col_codes$code_value)
+        } else {
+          rep(FALSE, nrow(col_codes))
+        }
+        vocabulary_backed <- any(
+          .ms_apply_dictionary_present(col_codes$vocabulary_iri) & !code_present
+        )
+      }
+
+      if (nrow(col_codes) > 0 && !vocabulary_backed) {
         code_values <- col_codes$code_value
         code_labels <- col_codes$code_label
 
