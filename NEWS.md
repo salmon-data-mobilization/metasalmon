@@ -32,6 +32,14 @@ metasalmon (development version)
 
 ### Added
 
+* **`verify_sdp_semantic_iris()` checks every selected HTTP semantic IRI in a
+  Salmon Data Package with bounded retries** (hub item B-130, S13 requirement
+  3). It includes reviewed SSSOM mappings, preserves exact identifiers and
+  writes a C-sorted per-IRI CSV to
+  `reproducibility/provenance/semantic-iri-dereference.csv` before reporting
+  *all* failed IRIs. Publication workflows can checksum that CSV. The check
+  confirms HTTP resolution; it does not judge whether a term is suitable.
+
 * **Model judgement runs outside the package: `write_semantic_review_packet()`
   writes a review packet for a harness to judge and
   `ingest_semantic_assessments()` reads its assessments back** (hub item

@@ -11,8 +11,10 @@ psc:
 
 # S13 — Fraser Recruits case-study requirements
 
-**Execplan:** to be written. Evidence: the recipe's own committed sources and
-operation records, read 2026-08-21.
+**Execplan:** [requirement 3, bounded IRI verification](../plans/2026-10-01-s13-semantic-iri-verification.md)
+for B-130. Requirement 1's API decisions remain outside that narrow plan.
+Evidence: the recipe's own committed sources and operation records, read
+2026-08-21; requirement 3's implementation reread 2026-10-01.
 
 **This stream is about metasalmon, not about that repository.**
 `psc-data-transformations` is a **typed external edge — a requirements-driving

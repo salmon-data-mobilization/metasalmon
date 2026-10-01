@@ -87,6 +87,8 @@ Fetch the ontology and validate semantic coverage
   : Fetch the Salmon Domain Ontology with caching
 - [`validate_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_semantics.md)
   : Validate semantics with graceful gap reporting
+- [`verify_sdp_semantic_iris()`](https://salmon-data-mobilization.github.io/metasalmon/reference/verify_sdp_semantic_iris.md)
+  : Verify selected HTTP semantic IRIs in a Salmon Data Package
 - [`suggest_facet_schemes()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_facet_schemes.md)
   : Suggest facet schemes for proposed terms
 
