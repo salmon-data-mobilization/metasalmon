@@ -214,6 +214,13 @@ metasalmon (development version)
 
 ### Fixed
 
+* **EML and KNB reads now refuse unknown YAML tags in `eml-mapping.yml`**
+  (hub B-223, Brett's Q62 ruling). `write_eml_from_sdp()` and both KNB
+  publication reads name the sidecar in the error instead of carrying the
+  text of `!expr` or another unknown local tag into an output or plan. Untagged
+  mappings and supported YAML core tags remain readable; expressions remain
+  inert. The semantic-closure path is the separate B-340 implementation.
+
 * **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett's 2026-09-25 ruling: a same-table/column codes row with
   a nonblank `vocabulary_iri` and missing/blank `code_value` now skips that
