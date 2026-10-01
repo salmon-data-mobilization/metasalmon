@@ -18,6 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import hub_ids
 
 
+def fixture_git_env():
+    # -C does not override GIT_DIR, GIT_WORK_TREE or GIT_INDEX_FILE inherited
+    # from a hook. Fixture writes must stay inside their disposable repos.
+    return {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+
+
 class IdScan(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -39,12 +45,12 @@ class IdScan(unittest.TestCase):
 
     def run_git(self, *args):
         return subprocess.check_output(["git", "-C", str(self.repo), *args],
-                                       stderr=subprocess.PIPE).decode().strip()
+                                       env=fixture_git_env(), stderr=subprocess.PIPE).decode().strip()
 
     def commit(self):
         self.run_git("add", ".")
         self.run_git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.org",
-                     "commit", "-qm", "Fixture")
+                     "-c", "commit.gpgsign=false", "commit", "-qm", "Fixture")
 
     def test_collision_remote_legacy_and_unpublished_local(self):
         found, refs, worktrees = hub_ids.scan(self.repo)
@@ -86,7 +92,8 @@ class IdScan(unittest.TestCase):
 
     def test_empty_repository_does_not_clear_reach(self):
         with tempfile.TemporaryDirectory() as empty:
-            subprocess.run(["git", "init", "-q", empty], check=True, stderr=subprocess.PIPE)
+            subprocess.run(["git", "init", "-q", empty], env=fixture_git_env(),
+                           check=True, stderr=subprocess.PIPE)
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(hub_ids.main(["B", "--repo", empty]), 3)
 
@@ -119,6 +126,35 @@ class IdScan(unittest.TestCase):
         self.assertEqual(hub_ids.headings("### Q06 — old\n## B-428 — owner\n"
                                          "## #429 — backlog\nprose Q999\n### Q73a text\n"),
                          {"Q-6", "B-428", "B-429"})
+
+    def test_fixture_ignores_inherited_git_redirects(self):
+        # A disposable caller repository stands in for a hook's real checkout.
+        # Run only one child test, so this integration control cannot recurse.
+        with tempfile.TemporaryDirectory() as caller_dir:
+            caller = Path(caller_dir)
+            safe_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            def caller_git(*args):
+                return subprocess.check_output(["git", "-C", str(caller), *args],
+                                               env=safe_env, stderr=subprocess.PIPE)
+            caller_git("init", "-q")
+            (caller / "keep.txt").write_text("caller content\n")
+            caller_git("add", ".")
+            caller_git("-c", "user.name=Caller", "-c", "user.email=caller@example.org",
+                       "-c", "commit.gpgsign=false", "commit", "-qm", "Caller")
+            before = (caller_git("rev-parse", "HEAD"),
+                      (caller / ".git/index").read_bytes(),
+                      caller_git("show-ref"), caller_git("status", "--porcelain"))
+            inherited = dict(safe_env, GIT_DIR=str(caller / ".git"),
+                             GIT_INDEX_FILE=str(caller / ".git/index"))
+            child = subprocess.run([sys.executable, str(Path(__file__).resolve()),
+                                    "IdScan.test_collision_remote_legacy_and_unpublished_local"],
+                                   env=inherited, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            after = (caller_git("rev-parse", "HEAD"),
+                     (caller / ".git/index").read_bytes(),
+                     caller_git("show-ref"), caller_git("status", "--porcelain"))
+            self.assertEqual(after, before)
+            self.assertEqual(child.returncode, 0, child.stderr.decode())
+            self.assertEqual((caller / "keep.txt").read_text(), "caller content\n")
 
 
 if __name__ == "__main__":
