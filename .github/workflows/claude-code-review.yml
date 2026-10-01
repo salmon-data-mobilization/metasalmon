@@ -50,33 +50,20 @@ jobs:
       - name: Check review-completion failures offline
         run: python3 scripts/tests/test_claude_review_result.py
 
-      # A PR gets at most five review rounds, and none after a round whose
-      # summary found only nits. Every triggering event is a round, so a draft
-      # reviewed and then marked ready spends two rounds on one head. Rounds are counted from
-      # the verdict marker in Claude's own summary comments, so deleting those
-      # comments, or a push after a nits-only round being substantive, needs a
-      # manual `@claude review` (claude.yml). Retires when the action offers a
-      # per-PR round limit of its own.
+      - name: Check review-round accounting offline
+        run: python3 scripts/tests/test_claude_review_rounds.py
+
+      # Keep the existing five-marker budget, including incomplete markers.
+      # A nits verdict suppresses later reviews only when its exact run passed
+      # Verify review execution. Public metadata needs no new token permissions.
+      # Retires when the action provides verified round accounting itself.
       - name: Count earlier review rounds
         id: rounds
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ github.event.pull_request.number }}
-        run: |
-          verdicts=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
-            --jq '.[] | select(.user.login == "claude[bot]") | .body
-                  | capture("<!-- claude-review verdict=(?<v>important|nits) -->\\s*$").v')
-          count=$(printf '%s\n' "$verdicts" | grep -c . || true)
-          last=$(printf '%s\n' "$verdicts" | grep . | tail -n 1 || true)
-          skip=false
-          if [ "$count" -ge 5 ]; then
-            skip=true; echo "::notice::Skipping: this PR already had $count Claude review rounds."
-          elif [ "$last" = nits ]; then
-            skip=true; echo "::notice::Skipping: the last Claude review round found only nits."
-          fi
-          echo "round=$((count + 1))" >> "$GITHUB_OUTPUT"
-          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+        run: python3 scripts/check-claude-review-rounds.py
 
       - name: Run Claude Code Review
         id: claude-review
@@ -106,18 +93,25 @@ jobs:
             context around the diff rather than fetching. R is not installed.
             metasalmonpy's default branch is at .review/metasalmonpy; read it with
             Read, Grep and Glob for parity checks rather than through gh api.
-            Run one plain command per shell call: no cd, no for loops and no $(...)
-            substitution, which are denied. Pipes between allowed commands are fine.
+            Review source and diff only; CI already checks tests and package setup.
+            Do not request gh pr checks, gh api, gh search, WebFetch, WebSearch,
+            interpreters or other exploratory commands outside the allowlist.
+            External links are context, not a reason to fetch websites. If source
+            verification needs an unavailable tool, report the review incomplete.
+            Use Read, Grep and Glob for file discovery and mirror inspection.
+            Run one plain allowed command per shell call: no cd, loops, pipelines,
+            redirects, command substitution or command chaining. Do not write files.
+            Put the summary text directly in gh pr comment --body; do not create
+            a body file, execute substitutions or use a heredoc.
             If a required read or comment fails, report that the review is incomplete.
             Only after reading and posting the review, end your final response with
             REVIEWED_HEAD=${{ github.event.pull_request.head.sha }}
-          # Brett, 2026-10-01: the allowlist includes interpreters and gh api so
-          # a completed review is not failed for a denied exploratory command.
-          # That makes it not read-only; what bounds it is that only same-repo
-          # PRs (writers) receive the token, and the prompt's no-write rule.
+          # Only source reads and the existing review publication are allowed.
+          # Interpreters, generic gh api and command runners can mutate state;
+          # remove their broad grants rather than expanding exploratory reach.
           claude_args: >-
             --model claude-fable-5-1 --effort high
-            --allowedTools "Read,Glob,Grep,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(git diff:*),Bash(git show:*),Bash(git log:*),Bash(git ls-tree:*),Bash(git merge-base:*),Bash(git check-ignore:*),Bash(git grep:*),Bash(git rev-parse:*),Bash(git cat-file:*),Bash(git status:*),Bash(grep:*),Bash(sed -n:*),Bash(shasum:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(sort:*),Bash(uniq:*),Bash(cut:*),Bash(tr:*),Bash(jq:*),Bash(ls:*),Bash(diff:*),Bash(comm:*),Bash(basename:*),Bash(echo:*),Bash(printf:*),Bash(python3:*),Bash(perl:*),Bash(awk:*),Bash(find:*),Bash(xargs:*),Bash(mkdir:*),Bash(git -C:*),Bash(gh api:*),Bash(gh search:*),mcp__github_inline_comment__create_inline_comment"
+            --allowedTools "Read,Glob,Grep,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(git diff:*),Bash(git show:*),Bash(git log:*),Bash(git ls-tree:*),Bash(git merge-base:*),Bash(git check-ignore:*),Bash(git grep:*),Bash(git rev-parse:*),Bash(git cat-file:*),Bash(git status:*),Bash(grep:*),Bash(sed -n:*),Bash(shasum:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(wc:*),Bash(sort:*),Bash(uniq:*),Bash(cut:*),Bash(tr:*),Bash(jq:*),Bash(ls:*),Bash(diff:*),Bash(comm:*),Bash(basename:*),Bash(echo:*),Bash(printf:*),mcp__github_inline_comment__create_inline_comment"
 
       - name: Verify review execution
         if: steps.rounds.outputs.skip != 'true'
