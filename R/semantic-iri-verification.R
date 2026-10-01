@@ -173,7 +173,16 @@
     if (.ms_semantic_iri_final_headers(response)) {
       return(list(status = as.integer(response$status_code), final_url = response$url))
     }
-    if (!is.null(failure)) stop(errorCondition(failure, class = "curl_error"))
+    if (!is.null(failure)) {
+      # curl >= 6.2.1 supplies classed callback text. Preserve its public error
+      # subclasses instead of erasing the two explicit permanent defaults.
+      # Retires when a shared transport preserves these classes and attempts.
+      classes <- setdiff(class(failure), "character")
+      if (inherits(failure, c("curl_error_url_malformat", "curl_error_too_many_redirects"))) {
+        classes <- c("metasalmon_semantic_iri_permanent_error", classes)
+      }
+      stop(errorCondition(as.character(failure), class = unique(c(classes, "curl_error"))))
+    }
     if (completed) {
       stop(errorCondition("Request completed without final HTTP headers.", class = "curl_error"))
     }
@@ -207,8 +216,10 @@
     return(list(
       status = NA_integer_, final_url = NA_character_,
       error = .ms_redact_secrets(message),
-      transient = inherits(failure, c("httr2_failure", "curl_error")) ||
-        grepl(.ms_semantic_iri_transport_pattern, message, ignore.case = TRUE)
+      transient = !inherits(failure, "metasalmon_semantic_iri_permanent_error") && (
+        inherits(failure, c("httr2_failure", "curl_error")) ||
+          grepl(.ms_semantic_iri_transport_pattern, message, ignore.case = TRUE)
+      )
     ))
   }
   if (!is.list(response)) {

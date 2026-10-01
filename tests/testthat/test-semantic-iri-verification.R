@@ -1,5 +1,6 @@
 # B-130: the dereference report remains useful even when publication must stop.
-# All requests and delays are injected; these tests never reach the network.
+# Most requests are injected. The default malformed-URL control reaches only
+# libcurl parsing; these tests make no remote HTTP or model call.
 
 test_that("only complete corresponding terminal response headers are accepted", {
   response <- function(status, headers) list(status_code = status, headers = charToRaw(headers))
@@ -374,4 +375,63 @@ test_that("the default report cannot cross a symlinked SDP directory", {
     list(status = 200L, final_url = iri)
   }, sleep_fn = function(...) stop("No retry expected")), "symlink")
   expect_false(file.exists(file.path(outside, "provenance/semantic-iri-dereference.csv")))
+})
+
+test_that("default malformed URLs are permanent while injected curl failures retain their rule", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "http://selected.invalid:connection/term"
+  ))
+  delays <- numeric()
+  expect_error(verify_sdp_semantic_iris(root, sleep_fn = function(seconds) {
+    delays <<- c(delays, seconds)
+  }), "request-error")
+  rows <- read_iri_report(root)
+  expect_identical(rows$attempts, "1")
+  expect_match(rows$error, "Port number")
+  expect_identical(delays, numeric())
+
+  # Only the default marks its permanent classes; existing injected classes
+  # and text heuristics keep their previous behavior.
+  for (classes in list("curl_error", c("curl_error_url_malformat", "curl_error"))) {
+    delays <- numeric()
+    expect_error(verify_sdp_semantic_iris(root, requester = function(iri) {
+      stop(errorCondition("Invalid port: connection", class = classes))
+    }, sleep_fn = function(seconds) delays <<- c(delays, seconds)), "request-error")
+    expect_identical(read_iri_report(root)$attempts, "3")
+    expect_identical(delays, c(0.1, 0.25))
+  }
+})
+
+test_that("default redirect-limit failure retains its supported curl class and is permanent", {
+  root <- withr::local_tempdir()
+  make_iri_fixture_sdp(root)
+  write_iri_fixture_csv(root, "metadata/column_dictionary.csv", tibble::tibble(
+    term_iri = "https://example.org/loop"
+  ))
+  callback <- NULL
+  cancelled <- 0L
+  failure <- structure("Number of redirects hit maximum amount", class = c(
+    "curl_error_too_many_redirects", "curl_error", "character"
+  ))
+  testthat::local_mocked_bindings(
+    new_handle = function(...) list(), new_pool = function(...) list(),
+    handle_setheaders = function(...) invisible(NULL),
+    multi_add = function(handle, done, fail, data, pool) callback <<- fail,
+    multi_run = function(...) callback(failure),
+    handle_data = function(...) list(status_code = 0L, headers = raw()),
+    multi_cancel = function(...) cancelled <<- cancelled + 1L,
+    .package = "curl"
+  )
+  captured <- tryCatch(.ms_semantic_iri_request("https://example.org/loop"), error = identity)
+  expect_s3_class(captured, "curl_error_too_many_redirects")
+  expect_s3_class(captured, "curl_error")
+  delays <- numeric()
+  expect_error(verify_sdp_semantic_iris(root, sleep_fn = function(seconds) {
+    delays <<- c(delays, seconds)
+  }), "request-error")
+  expect_identical(read_iri_report(root)$attempts, "1")
+  expect_identical(delays, numeric())
+  expect_identical(cancelled, 2L)
 })
