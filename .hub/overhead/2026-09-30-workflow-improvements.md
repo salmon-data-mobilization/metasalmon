@@ -1378,3 +1378,86 @@ first actual Claude run is in progress while B223 waits locally for its
 helper. R234/B394 receives its necessary combined guard integration but
 remains held until actual review completion. The critical S16 train remains
 Py76/B199 → Py72/B327 → R210 → Py74, with R209's unmerged queue work preserved.
+
+R255 merged13460ed at23:09:46Z after six current CI checks and resolved bot
+findings, under the defect/ruled-port delegated class. B352/B353 done marks
+and the same verified non-numbered landing record in both existing debt
+passages were pushed asccaa917. Py88's actual merge7a2305bd was read again
+before that receipt; no parity row or release changed. R257 now receives
+one actual integration against this landing, with tested source frozen.
+
+R234's legitimate new head68c84fe triggered one automatic round, not a
+manual retry: it again posted only nits but run36938756509 failed on one
+denied Bash:git call. This is review-execution overhead, separate from
+source quality. Both failures remain recorded; a nits marker cannot clear
+execution, and no permissions or completion rule were changed. Consolidate
+any later necessary source integration after the current merge batch to
+avoid separate source-identical submissions. No pending question was repeated.
+
+Merged R396, Py341 and Py343 auxiliary worktrees were removed/pruned only
+after clean/exact-published/zero-unique-work checks and environment-use review;
+branches were retained and canonical checkouts fast-forwarded. This is
+required cleanup coordination, not an implementation or verification gate.
+
+A small scheduler improvement was applied once to the existing heartbeat:
+its prompt now points to live queue/workpads/HUB for changing heads and
+review order. It preserves standing authority, pending-decision handling,
+model-removal scope, cleanup/verification rules, measurement categories and
+quiet notification intent. The prompt shrank from602 to336 whitespace-delimited
+words (44.2% fewer), and4311 to2515 characters; these are text measurements,
+not model-token or time savings. Next heartbeat is the evaluation: confirm
+it resumes the actual claims/holds without restoring stale branch heads.
+No schedule, new automation, policy or tracking framework was introduced.
+
+B384 reached tested draftR259 on the next independent claim. Its public
+multiline false-rejection case is RED→GREEN; leading-token guards remain.
+HUBclass6 still reserves the narrowed validator for Brett, so one concrete
+merge/ready approval question was asked only after peer/full/strict/native
+site verification and publication. This is required approval under current
+policy. A possible later small policy improvement is to define whether an
+exact false-rejection repair under unchanged declared scope can qualify as
+routine; no such exception is assumed or implemented in this run.
+The literal Rregex mutation and before/after public behavior are reviewable
+in the existing PR; no parallel approval tracker was added.
+
+R258's actual successful Claude execution36938265310 found an Important
+unknown-tag bypass after implicit document end plus a percent-TAG directive.
+The frozen public source reproduced1reader+4writer failures; known-core
+binding acceptance remains a positive control. The owner is repairing this
+surviving semantic-closure path, with independent peer before newfull/strict
+on changed source. A green earlier suite/peer did not cover this valid
+directive placement. Repeating gates here verifies a concrete changed-source
+risk, unlike a source-identical freshness run. B223 keeps waiting locally
+and will reuse the fixed owner when it lands.
+
+### Batch checkpoint, about23:26–23:35 UTC
+
+- R257/B342 mergedc09a76b at23:25:57Z after six current CI checks, completed
+  requested Codex reviews/resolved findings and earlier verified Claude nits.
+  Paired Py92/feb724a receipts and done marks are4efc54c; both existing debt
+  passages have the same verified non-numbered port receipt. B342 auxiliary
+  was removed only after clean/exactpublished/zero-unique/envpin checks.
+- R255→R257 serialized integration completed with one14.0s native build and
+  no repeated full gate; all owned source/test hashes stayed frozen. There
+  was still one search-index conflict: serialization did not remove every
+  conflict, and no counterfactual time saving is claimed.
+- B344/B345 blockers are nowdone and both were promoted separately under
+  R15, then routed to independent R/Python owners. B223's sole live claim
+  prevents that same owner claiming another item while awaiting its helper.
+  A genuine new Python agent was allocated; no token was changed to evade
+  the per-agent cap. That adds startup/policy-read overhead. Next pickup
+  habit: inspect actual source prerequisites before acquiring a formally
+  eligible item whose helper is still in an open PR; prefer an item that can
+  reach actual-branch GREEN. No claimability/policy field was altered.
+- R340's first directive review repair passed its bounded peer but a further
+  owner probe found quoted percent-TAG text with a hash-leading closing line
+  causing false acceptance. The just-finished full result was superseded;
+  strict/publication did not start. Preserve this as verification rework and
+  a coverage gap, not a completed fix. The owner is testing a bounded native
+  per-document proof before another source freeze. No quote-state parser or
+  conservative known-core rejection is authorized as a shortcut.
+
+Future batch appends will keep timings/outcomes and exceptions here, with
+detailed source/tests in the existing item workpads. Repeating every live CI
+snapshot or command in both places adds requested-audit work without making
+the result clearer. No past measurements are discarded.
