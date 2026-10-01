@@ -1019,6 +1019,10 @@
 
 ### Changed
 
+- The publication guide distinguishes strict SDP validation from the reviewed
+  closure and EML facts the publication path also requires. Closure comments
+  describe the ledger's field coverage accurately (hub B-262).
+
 - **The vendored SDP rules bundle is re-vendored for the reworded SOSA
   Procedure rules** (backlog
   [\#106](https://github.com/salmon-data-mobilization/metasalmon/issues/106),

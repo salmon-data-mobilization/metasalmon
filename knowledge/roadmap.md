@@ -777,7 +777,12 @@ and that no reviewer ever selected a code-resolved procedure. It is owed there
 as a documentation port, not a register row, and is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. Its
-metasalmonpy queue item is `B-261`.
+metasalmonpy queue item is `B-261`, whose guide port is under review in
+metasalmonpy pull request 79. B-262's 2026-09-30 check of Python `main`
+`e81cacd` also found the same reviewer gloss in `semantic_closure.py`'s header
+and target-context comments. Those two comment corrections remain owed:
+pull request 79 changes the guide only, and its handed-off claim is not
+extended by this R documentation change.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a

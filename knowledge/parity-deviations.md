@@ -1096,7 +1096,12 @@ such a procedure as a slot (`:456-457`), where `review_console.py` lists
 `codes.csv` among `WRITABLE_FILES`, so a reviewer can decide a code value's
 `term_iri`. It is owed as a documentation port, not a register row. It did not
 land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is **B-261**.
+repository. Its metasalmonpy queue item is **B-261**, with the guide port under
+review in metasalmonpy pull request 79. Read again by B-262 on 2026-09-30 at
+Python `main` `e81cacd`: `semantic_closure.py` repeats the same reviewer gloss
+in its header and target-context comments (lines 18 and 599). Those matching
+comment corrections remain owed, outside pull request 79's guide-only diff;
+no behaviour differs. Its handed-off claim is not extended here.
 
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
