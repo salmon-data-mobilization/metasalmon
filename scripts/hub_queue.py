@@ -2214,17 +2214,14 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a landed record with no owner is refused (`port-landed-orphan`),
         because nothing can check it against the queue.
 
-    WHAT A PORT IS comes from the queue, not from the prose: an item whose
-    `repo` is metasalmonpy and whose `blocked_by` names a metasalmon item, which
-    is how every port the two passages list as a debt was filed, measured
-    2026-09-25 -- the mirror half, blocked by the R half it copies. That keeps the rule to the ids the passages name as the
-    debt itself. The ids they name as blockers or R halves (B-49, B-112, B-115,
-    B-116) are metasalmon items, and B-126 and B-153, the closed 0.4.0->0.5.0
-    window's two halves, have no metasalmon blocker, so none of them is read as
-    owing a record. Reading the role from the prose instead would mean a phrase
-    list ("Queued as", "its metasalmonpy queue item is", "its half is", ...)
-    that the next entry's wording escapes silently; the queue already records
-    which id in a pair is the debt.
+    WHAT A PORT IS: a queue item whose `repo` is metasalmonpy and which either
+    names a metasalmon blocker or is named in either debt passage. B-394 found
+    B-234 was filed with an empty `blocked_by`, so the dependency-only rule
+    silently stopped checking it. Dependency fields record sequencing, not
+    whether a passage owes a landing record. Read ids and queue repositories;
+    do not guess the role from phrases in the title or surrounding prose.
+    Blockers and R halves remain excluded by their repository. Historical
+    mirror ports mentioned in these passages also need their landed records.
 
     WHAT A LANDED RECORD IS: `LANDED_RECORD_RE`, written after the port's own id
     in the same paragraph. In the register that is the closure paragraph the
@@ -2252,18 +2249,16 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a debt the passage describes without naming its item's id. The rule
         reads ids, so an entry that says "it is owed there as a port" and names
         nothing is invisible to it.
-      * mirror work that is not a port by the queue's test: an item with no
-        metasalmon blocker, such as B-201 or B-189, and an R-side follow-up such
-        as B-177. A landed record credited to one of them is still refused while
-        its item is not done; only the "done without a record" direction needs
-        the item to be a port.
+      * mirror work with no metasalmon blocker that neither passage names.
+        Neither passage makes a claim about that item, so there is nothing
+        to check. R-side follow-ups remain outside the mirror-port rule.
       * queue state that is itself wrong. The queue is the authority here, so
         an item left in `review` after its pull request merged reads as owed
         and passes.
 
-    It runs only when the queue holds a port, so the unit-test fixtures, which
-    hold none, need no register. When one exists, a missing file or a passage
-    that cannot be found is `port-passage-missing` rather than a skip.
+    A queue with no dependency-linked port and no mirror id in either passage
+    needs no register. Otherwise both passages are required; a missing file
+    or section is `port-passage-missing`, never a silent skip.
 
     RETIRES WHEN: a port's landed record stops being hand-written prose -- for
     instance when the item records its pull request and both passages render
@@ -2280,6 +2275,19 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
         halves = [b for b in blocked_by if b in by_id and by_id[b].raw.get("repo") == MIRRORED_REPO]
         if halves:
             ports[item_id] = halves
+    # Discover named mirror ports before deciding whether these passages are
+    # required. The same parsed facts then drive validation below. An unrelated
+    # fixture with no port still needs no documentation scaffold.
+    passages = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if path.is_file():
+            lines = path.read_text(encoding="utf-8").splitlines()
+            spans = port_passage_spans(display, lines)
+            named, records = port_passage_facts(lines, spans, anchors)
+            passages[display] = (spans, named, records)
+            for item_id in named.keys() & anchors:
+                ports.setdefault(item_id, [])
     if not ports:
         return []
 
@@ -2303,8 +2311,7 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        lines = path.read_text(encoding="utf-8").splitlines()
-        spans = port_passage_spans(display, lines)
+        spans, named, records = passages[display]
         if not spans:
             problems.append(
                 Problem(
@@ -2319,7 +2326,6 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        named, records = port_passage_facts(lines, spans, anchors)
         owned = {owner for owner, _, _ in records if owner is not None}
         for item_id, mentions in named.items():
             if item_id in ports and by_id[item_id].state == "done" and item_id not in owned:
@@ -2328,8 +2334,10 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                         display,
                         mentions[0],
                         "port-landed-unrecorded",
-                        f"{item_id} is a port (the {MIRROR_REPO} half of "
-                        f"{', '.join(ports[item_id])}) and its item is done, but this "
+                        f"{item_id} is a {MIRROR_REPO} port"
+                        + (f" (the {MIRROR_REPO} half of {', '.join(ports[item_id])})"
+                           if ports[item_id] else " named in the mirror debt passages")
+                        + " and its item is done, but this "
                         "passage has no landed record for it, so it still reads as "
                         f"owed (it is named at line(s) {', '.join(map(str, mentions))}). "
                         "Add one after the id, in the same paragraph: "

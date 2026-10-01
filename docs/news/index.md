@@ -1079,6 +1079,11 @@
 
 ### Internal
 
+- Hub queue lint checks landed records for every Python item named in
+  the mirror debt passages, including ports filed without a dependency
+  (B-394). R blockers remain excluded; existing window and follow-up
+  landings are recorded in the form the checker can read.
+
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
   script `R CMD check` runs** (backlog

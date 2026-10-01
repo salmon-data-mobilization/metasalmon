@@ -412,6 +412,11 @@ port had landed there and been documented (B-126, then B-153).
 > ships a workflow should be split the same way from the start**, rather than
 > discovering the documentation half after the behaviour has merged.
 
+**Landed records for the window halves:** `B-126` **landed 2026-09-16 as
+metasalmonpy #28**, `d471dd0`; `B-153` **landed 2026-09-16 as metasalmonpy
+#33**, `67fb486`. These are the two existing merged changes described above,
+recorded in the same form as later port landings.
+
 | Version | Date | One line |
 |---|---|---|
 | 0.5.0 | 2026-09-16 (tagged `v0.5.0` at `67fb486` on 2026-09-24, GitHub Release published) | Closes the `0.4.0→0.5.0` window in two halves: **B-126** / #28 ported metasalmon 0.5.0's S5 review-and-edit surface — the nine functions, the two accessors, `decision_reason` with decision replay on queue rebuild, the first `constraints.required` consumer, the #118 auto-apply exemption — and **B-153** wrote the documentation half and moved the number. `guides/semantic-review.qmd` is now built around `create_sdp()` → `review_semantics()` → `accept_suggestion()` / `reject_suggestion()` → `apply_sdp_semantics()` → `review_metadata()` → `set_sdp_*()` → strict validation, with the spreadsheet named as the fallback. **the version turned out to live in six places, not the four `AGENTS.md` enumerated** — `_quarto.yml`'s `quartodoc.version` was still reading 0.4.0 while the other four moved, and a Codex review caught `guides/parity.qmd` as a sixth that the same paragraph claimed was already listed — so four new tests pin `uv.lock`, `_quarto.yml`, `guides/parity.qmd` and the guide's coverage of the review surface against `__version__`, and the checklist now pairs each entry with a guard. Two prose copies claiming metasalmon **0.1.6** parity (`index.qmd`, `README.md`) were deleted rather than updated. Both dependency legs green (951 extras / 810 core, 1 and 142 skipped), and CI's docs job rendered the site with Quarto |
@@ -715,7 +720,8 @@ one branch in one repository. Its metasalmonpy half is `B-247`, which **landed
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 `review_metadata()`'s console counts an IRI field reported as a placeholder as
 an IRI.** Hub item **B-211** keeps one gap row per field, as metasalmonpy's
-**B-212** already did, and counts the footer's IRI gaps by field rather than by
+**B-212** (which **landed 2026-09-25 as metasalmonpy #49**, `25dc7f3`)
+already did, and counts the footer's IRI gaps by field rather than by
 reason. So an IRI field holding a placeholder still counts, and the
 `review_semantics()` pointer still prints. metasalmonpy's footer still counts
 by reason, measured on `main` `25dc7f3`, so the fix is owed there as a port,
@@ -898,7 +904,9 @@ because none of its readers can. Measured 2026-09-23 against its `main` at
 - both rules reads go through `_rules_scalars()`, a regular-expression scan
   with no YAML library (`sdp_schema.py:383` and `:406`);
 - the SSSOM header goes through `_parse_yaml_subset()` (`sssom.py:456`), which
-  B-189 is to pin.
+  `B-189` **landed 2026-09-25 as metasalmonpy #51**, `012d04b`, pinning that
+  the reader never evaluates the tag. This landing updates the follow-up status
+  of the dated 2026-09-23 observation above.
 
 With PyYAML 6.0.1 an `!expr` tag raises `ConstructorError` from both loaders,
 and nothing runs.
