@@ -139,6 +139,11 @@ reference:
       - write_sdp_reproducibility_manifest
       - validate_sdp_reproducibility_manifest
 
+  - title: "Public Catalogue Metadata"
+    desc: "Bounded public query captures with provenance receipts; no source-object fetch, submission or semantic approval"
+    contents:
+      - capture_catalogue_query
+
   - title: "EML and KNB"
     desc: "Reviewed EML 2.2.0 export and verified DataONE/KNB publication, starting from the semantic closure both require"
     contents:
