@@ -1117,3 +1117,52 @@ verification, environment repair, coordination and passive CI waits overlapped;
 agent elapsed times must not be summed as root labor. The next small helper
 candidate is an exact `hub done ID --branch ...` hint on its argument error,
 but it remains a suggestion rather than collateral source work in an SSSOM PR.
+
+## Next-use observations after the 2026-10-01 merges
+
+R219/B186, R242/B252 factual scope correction, R252/B383 and R253/B354
+merged under the routine grant after current required gates and actual
+completed review evidence. Py73 removes the redundant AGENTS count record;
+Py86/B348 and Py87/B355 subsequently merged after their current gates.
+Canonical main now preserves the entire log prefix that previously lived
+in the helper branches. Both EML mirror receipts and queue closeouts are
+recorded; B348's two float-gap debt passages also carry its landed receipt.
+Clean zero-unique worktrees for these finished items were removed with their
+branches retained. Critical drafts remain separate.
+
+**Count-log experiment, next two uses:** B353 and B347 required no AGENTS
+count update. Their core/extras suites, bare/minimum CI and per-item evidence
+remain required. This directly removes one editing/merging step per item;
+there is no measured percentage reduction in total task time. B355's one-time
+adoption of already merged PR73 also removed its redundant count paragraph.
+
+**Correction to the earlier cancellation attribution:** PR252 run36911071553
+attempt1 did not cancel for an unknown cause: its check annotation explicitly
+says the job exceeded its configured15-minute timeout. It stopped during
+dependency setup before the index assertion. The one allowed retry passed;
+the final252 current-head index gate also passed. Another authorized chat
+owns PR254's unchanged-assertion timeout/reviewer repair. This run does not
+duplicate that repair or manufacture a review event.
+
+**Verification remains useful effort:** independent/local and automatic
+review found real YAML tag-guard holes and false refusals before merge. These
+are defect discovery, not coordination waste. Py88's two actual P2 comments
+were reproduced, and the owner is fixing them on its frozen branch.
+
+**B346/B347 pickup and next adjustment candidate:** R worktree creation0.377s;
+Python's first absent-code-field guard missed an optional-column case, which
+peer review caught and a RED/GREEN public test fixed. R own33 assertions and
+full9082 passes verify its frozen source; eight paired public outcomes agree
+for the codes-step rule, preserving each language's independent baselines.
+The first R site run refused the unpinned local Pandoc; the existing pinned
+path fixed it without installation. A full native site build touched39
+unrelated generated formatting outputs. A future narrow reference-topic
+build could avoid that regeneration/inspection step while retaining native
+rendering, index checks and the existing publication/toolchain guards. This
+is a next candidate, not a new tracking framework or implemented feature in
+B346. No new routine approval round was needed.
+
+Coordination, implementation, verification, environment repair, requested
+audit work and passive waits were interleaved here. Recorded command bounds
+and removed steps support the observations above; they do not establish a
+whole-run bureaucracy percentage or a causal time-saving estimate.

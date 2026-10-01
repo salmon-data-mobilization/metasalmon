@@ -214,6 +214,13 @@ metasalmon (development version)
 
 ### Fixed
 
+* **Applying a dictionary preserves vocabulary-backed columns.** B-346,
+  implementing Brett's 2026-09-25 ruling: a same-table/column codes row with
+  a nonblank `vocabulary_iri` and missing/blank `code_value` now skips that
+  column's code-list warning and factor conversion, even beside explicit code
+  rows. Values are retained; ordinary code lists and independent declared type
+  coercion keep their existing behavior. The Python companion is B-347.
+
 * `write_eml_from_sdp()` now writes a profile UTC instant in temporal coverage
   as EML's `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
   Both parts come from the package's one persisted rendering and rejoin to its
@@ -1277,6 +1284,10 @@ metasalmon (development version)
   Reference-index CI allows up to 30 minutes for runner/dependency setup while
   retaining the same index assertion with its own five-minute limit; the old
   15-minute job budget could expire before checking any topic.
+
+* CI's pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion reports an
+  infrastructure failure before package tests or R CMD check run (hub B-155).
 
 * The hub queue linter rejects a nonempty `stream` that names no stream item.
   Stream names use the unpadded item number (`S-05` is `S5`); future stream

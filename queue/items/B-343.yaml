@@ -1,7 +1,7 @@
 id: B-343
 kind: defect
 title: 'metasalmonpy''s strict validation accepts text that is not an IRI in an _iri field, the mirror half of B-342'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

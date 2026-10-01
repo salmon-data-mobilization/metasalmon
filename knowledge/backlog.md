@@ -7911,6 +7911,15 @@ today each package disagrees with itself about some spellings.
 turns every value of its column into a missing value. Since `B-55` and `B-241`
 the user is told, but the output is still empty.
 
+*Landed receipt, 2026-10-01:* `B-346` landed in metasalmon
+[pull request 256](https://github.com/salmon-data-mobilization/metasalmon/pull/256)
+as `678026f`; `B-347` landed in metasalmonpy
+[pull request 89](https://github.com/salmon-data-mobilization/metasalmonpy/pull/89)
+as `aa929c9`. A same-table, same-column vocabulary row now skips the codes
+warning and label/factor step in both packages, including an omitted optional
+`code_value` column. Declared type coercion and ordinary code-list checks remain.
+The semantic-target work in `B-276` and `B-277` is a separate part of the ruling.
+
 **`B-348`: float years (call (h)).** Measured: `pandas.read_csv()` on
 `BY,n / 2001,1 / ,2 / 2003,3` gives `BY` as `float64`, which
 `_values_look_yearish()` reads as not year-shaped and `infer_column_role()`
