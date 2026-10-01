@@ -10,7 +10,8 @@
     lib,
     install_fn = utils::install.packages,
     verify_fn = function(lib) {
-      requireNamespace("pak", lib.loc = lib, quietly = TRUE)
+      loadNamespace("pak", lib.loc = lib)
+      TRUE
     },
     sleep_fn = Sys.sleep) {
   if (!nzchar(lib)) {
