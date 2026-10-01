@@ -214,6 +214,11 @@ metasalmon (development version)
 
 ### Fixed
 
+* IRI shape validation now rejects Unicode whitespace consistently under C and
+  UTF-8 locales (B-137). The shared validator uses the same non-ASCII space
+  membership metasalmonpy already applies; previously a C-locale run admitted
+  an ideographic space that a UTF-8-locale run rejected.
+
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
