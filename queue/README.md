@@ -282,6 +282,63 @@ Correctness at the moment of writing is exactly what a restatement offers and
 exactly what it cannot keep, so the only durable defence is to have one home
 per fact and to treat any second answer as broken on sight.
 
+### The narrow prose check (B-209)
+
+The discrimination rule comes first. The check recognizes only a paragraph or list item
+beginning with a queue id (optionally an unordered/ordered list marker or
+Markdown emphasis) and a complete present-tense assertion in one of these forms:
+
+```text
+B-53 is ready.
+B-53 is currently not claimable.
+B-53 is blocked on B-90 and S-12.
+B-53 has state: review.
+B-53 has claimable: false.
+B-53 has blocked_by: [B-90, S-12].
+```
+
+The recognized assertion ends at sentence punctuation or the paragraph's end.
+Trailing attribution such as “in the 2026-09-01 snapshot” or “, the old card
+said” is outside this grammar and passes. This is a conservative syntax rule,
+not a claim that a general history detector exists.
+
+State values come from the queue's existing state vocabulary. Inline code and
+bold around ids/values do not change the meaning. This rejects a second current
+answer even if it agrees with the queue today; the issue is the second owner.
+Use a link to the item, or the existing `hub:generated:items` renderer if a current
+state display is needed. The existing render-and-check step verifies those
+blocks; a hand-edited generated block must still fail freshness checking.
+
+Past tense, conditionals and attribution have different subjects and pass:
+
+- `B-161`'s question entry records that the emission work **moved out** to
+  `B-206` and `B-207`, each blocked on `B-161`. This is the dated explanation of
+  the split, not a standalone present-tense queue field.
+- The same entry says **“This said `B-161`…” until the review**. An attributed
+  earlier sentence is evidence about that review and is not a current claim.
+- B-207's queue card explains that it **“is blocked on it for that reason”** and
+  points to the shared writer path. The item owns its own primary queue fields;
+  item YAML is not downstream prose, and this guard does not validate prose
+  inside its retirement condition.
+- The backlog's B-394 evidence says “On an export of `349a443`, where” and
+  wraps to a second line beginning “B-234 is `done`…”. A physical line break
+  does not start a new assertion; this dated export description passes.
+- `If B-53 is ready, an agent may try to claim it.` is a conditional; `B-53 was
+  ready at the recorded observation.` is history. Neither asserts current state.
+
+The check reads `HUB.md`, `AGENTS.md`, `README.md`, `knowledge/`, `NEWS.md` and
+`notes/evidence/theme-a/`, outside generated blocks and fenced examples. It does
+not interpret arbitrary sentences, paragraph-internal facts, pronouns, historic
+attribution, or every possible wording of queue state. Those
+remain review subjects. This limited syntax is deliberate: extending it requires
+a failing real example and a historical/conditional control before CI changes.
+The exclusion of generated blocks relies on their existing freshness check;
+fenced examples describe syntax rather than current planning state.
+
+Retires when downstream prose no longer owns queue facts, or a successor
+structured renderer makes this syntax guard unnecessary. No per-file allowlist
+or approval step is introduced.
+
 ### Ten corollaries, each paid for once
 
 `#137` took **29 review rounds** over one afternoon — 27 that returned

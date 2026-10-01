@@ -1997,6 +1997,87 @@ class TestRulesTheHeaderClaimedButNobodyWrote(QueueTestCase):
         self.assert_accepts()
 
 
+class TestQueueFactsInProse(QueueTestCase):
+    """B-209's stated syntax, with historical and conditional controls."""
+
+    def test_current_state_claimable_and_blockers_need_the_queue_owner(self):
+        self.write_item(BASE_DEFECT, state="done", claimable="false", legacy="''")
+        for sentence in (
+            "B-53 is ready.", "- **B-53** is currently `review`.",
+            "+ B-53 is ready.", "1. B-53 is ready.", "2) B-53 is ready.",
+            "B-53 is claimable.", "B-53 is currently not claimable.",
+            "`B-53` is blocked on B-90 and S-12.",
+            "B-53 has state: icebox.", "B-53 has claimable: false.",
+            "B-53 has blocked_by: [B-90, S-12].", "B-53 has blocked_by: [].",
+        ):
+            with self.subTest(sentence=sentence):
+                self.write_prose("knowledge/card.md", sentence + "\n")
+                output = self.assert_rejects("queue-fact-in-prose")
+                self.assertIn("knowledge/card.md:1:", output)
+                self.write_prose("knowledge/card.md", "Read queue/items/B-53.yaml for its state.\n")
+                self.assert_accepts()
+
+    def test_real_history_attribution_and_conditionals_are_not_current_fields(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        self.write_item(BASE_DEFECT, id="B-161", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-234", legacy="''")
+        history = (
+            # questions.md Q52: the dated account of the split.
+            "The emission work moved out to `B-206` (metasalmon) and `B-207`\n"
+            "(metasalmonpy), each blocked on `B-161` and each naming the other.\n"
+            # questions.md's attributed old wording is preserved.
+            'This said `B-161` "is now the **ruling alone**" until the Codex review.\n'
+            # B-207's own condition discusses why the primary edge exists.
+            "THIS ITEM DOES NOT REDO B-145'S WORK and is blocked on it for that reason.\n"
+            "B-53 was ready at the recorded observation.\n"
+            "If B-53 is ready, an agent may try to claim it.\n"
+            "> The old note said B-53 is ready.\n"
+            "\nOn an export of `349a443`, where\n"
+            "B-234 is `done` and the register's port section names it as `**B-234**`.\n"
+        )
+        self.write_prose("knowledge/card.md", history + "\nB-53 is ready.\n")
+        self.assert_rejects("queue-fact-in-prose")
+        self.write_prose("knowledge/card.md", history)
+        self.assert_accepts()
+        for attributed in (
+            "B-53 is ready in the 2026-09-01 snapshot.",
+            "B-53 is ready, the old card said.",
+            "B-53 is blocked on B-90 in that historical snapshot.",
+            "B-53 is ready\nin the 2026-09-01 snapshot.",
+        ):
+            with self.subTest(attributed=attributed):
+                self.write_prose("knowledge/card.md", attributed + "\n")
+                self.assert_accepts()
+
+    def test_news_and_retained_evidence_are_inputs_too(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for path in ("NEWS.md", "notes/evidence/theme-a/measurement.md"):
+            with self.subTest(path=path):
+                self.write_prose(path, "B-53 is ready.\n")
+                self.assert_rejects("queue-fact-in-prose")
+                self.write_prose(path, "B-53 was ready at that measurement.\n")
+                self.assert_accepts()
+
+    def test_generated_blocks_and_fenced_examples_keep_their_existing_checks(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        text = ("~~~text\nB-53 is ready.\n~~~\n"
+                "<!-- hub:generated:items:format=ids -->\n"
+                "B-53 is ready.\n<!-- /hub:generated:items:format=ids -->\n")
+        for path in ("knowledge/card.md", "NEWS.md", "notes/evidence/theme-a/measurement.md"):
+            with self.subTest(path=path):
+                self.write_prose(path, text + "B-53 is ready.\n")
+                self.assert_rejects("queue-fact-in-prose")
+                self.write_prose(path, text)
+                self.assert_accepts()
+                code, output = self.run_hub("check")
+                self.assertEqual(code, 1)  # Exclusion never waives freshness.
+                self.assertIn("items:format=ids", output)
+                code, _ = self.run_hub("render")
+                self.assertEqual(code, 0)
+                code, _ = self.run_hub("check")
+                self.assertEqual(code, 0)
+
+
 # The two passages B-202 reads, in the shapes they really have. B-124 is the
 # fourth instance: set done while the register read "Queued as B-124, blocked by
 # B-49" (a592c23, line 190) and the roadmap listed it with no landed marker.

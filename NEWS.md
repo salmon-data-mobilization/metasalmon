@@ -1244,6 +1244,11 @@ metasalmon (development version)
 
 ### Internal
 
+- Hub queue lint rejects a narrow set of standalone present-tense queue
+  facts in paragraph/list starts outside generated blocks (B-209): state,
+  claimability and blockers. Historical, conditional and attributed prose
+  stays readable; generated blocks keep their existing freshness check.
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
