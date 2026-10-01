@@ -7878,6 +7878,14 @@ publication gate and it passes text that is not an IRI in an IRI field. `B-344`
 and `B-345`, because a spelling a detector misses is most often hand-typed, and
 today each package disagrees with itself about some spellings.
 
+**IRI-shape halves landed — 2026-10-01, B-342/B-343.** metasalmon PR **#257**
+merged as `c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`; metasalmonpy PR **#92**
+merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`. The existing Q63 shape
+checks are implemented in both packages, including the supported semicolon
+constraint lists. Valid review findings were reproduced, fixed and resolved;
+current required CI and last requested Codex reviews completed. Actual Claude
+execution on the R PR completed with only nits. No new parity row was added.
+
 **`B-276`, `B-277`, `B-346` and `B-347`: a `codes.csv` row with no code value
 (calls (g) and (j)).**
 
