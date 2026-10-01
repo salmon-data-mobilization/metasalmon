@@ -56,6 +56,7 @@ docs/CLAUDE.html
 # `internal_sources` in scripts/build-pkgdown.R lists every contributor-only
 # source, and a page added there belongs here too.
 docs/HUB.html
+docs/REVIEW.html
 docs/PULL_REQUEST_TEMPLATE.html
 docs/plans/
 docs/adr/0001.md
