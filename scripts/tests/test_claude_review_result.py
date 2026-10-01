@@ -30,6 +30,15 @@ class ReviewCompletion(unittest.TestCase):
                       m["message"]["content"][0]["tool_use_id"] != action]
             with self.subTest(missing=action), self.assertRaises(ValueError):
                 module.check_review(failed + [result], "abc")
+        # An inline comment is not the summary comment the round counter reads.
+        inline = [dict(type="assistant", message=dict(content=[dict(type="tool_use", id="inline",
+                       name="mcp__github_inline_comment__create_inline_comment", input={})])),
+                  dict(type="user", message=dict(content=[dict(type="tool_result", tool_use_id="inline",
+                       is_error=False, content="Posted")]))]
+        no_summary = [m for m in tools if m.get("type") != "user" or
+                      m["message"]["content"][0]["tool_use_id"] != "comment"]
+        with self.assertRaises(ValueError):
+            module.check_review(no_summary + inline + [result], "abc")
         for changed in [dict(permission_denials=[dict(tool_name="Bash")]),
                         dict(result="Skipped a draft"), dict(result="REVIEWED_HEAD=older"),
                         dict(result="REVIEWED_HEAD=abc-extra"), dict(result=None),

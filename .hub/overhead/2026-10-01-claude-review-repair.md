@@ -14,7 +14,8 @@ tools were absent from the workflow's explicit allowlist.
 
 Replace that command with a direct review prompt for drafts and each exact
 head, retaining Brett's chosen model and effort. Allow only repository reads
-and PR review comments. Cancel superseded runs. Check the SDK completion file
+and PR review comments [superseded 2026-10-01: the allowlist was widened;
+see "Review rounds, REVIEW.md and local dry runs" below]. Cancel superseded runs. Check the SDK completion file
 for success, denied tools and an exact final head marker; publish none of its
 messages or tool output. Missing or incomplete execution fails visibly.
 
@@ -95,3 +96,16 @@ that the prompt already asks the reviewer to avoid. The allowlist is no longer
 read-only. What bounds it is that only same-repository pull requests, whose
 authors already have write access, receive the token, and the prompt's rule
 against edits, pushes, merges and labels.
+
+## First live run
+
+Run 36878835781 (PR 222 marked ready, 2026-10-01) was the first on the merged
+workflow: 28 turns, $2.22, about four minutes, no denied calls, and a summary
+comment from `claude[bot]` ending in the verdict marker, which is the login the
+round counter reads. Its job still failed: the prompt steered the reviewer to
+`git diff` while the completion check requires `gh pr diff`, and the review
+reported exactly that as its Important finding. The prompt now asks for
+`gh pr view` and `gh pr diff`. Three of its nits were also taken: only a marker
+on a comment's last line counts as a round, the completion check requires the
+`gh pr comment` summary rather than accepting an inline comment alone, and the
+workflow comment no longer claims one round per head.
