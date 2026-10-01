@@ -166,7 +166,6 @@
 #' @seealso [sources_for_role()] for role-optimized source selection.
 #'
 #' @export
-#' @import httr
 #' @importFrom rlang %||% .data
 #'
 #' @examples
@@ -2611,6 +2610,18 @@ sources_for_role <- function(role) {
 #' @param fixture_path_override Optional preloaded fixture object. If provided,
 #'   `fixture_path` is ignored and this value is used as the fixture list.
 #' @return A list with `summary`, `per_case`, and `profiles`.
+#' @examples
+#' fixture <- list(list(
+#'   query = "spawner count", role = "variable",
+#'   expected = list(top = list(candidate_id = "smn-count")),
+#'   candidates = list(list(
+#'     candidate_id = "smn-count", label = "Spawner count",
+#'     iri = "https://example.org/term/spawner-count", source = "smn",
+#'     ontology = "smn", role = "variable", match_type = "label_exact",
+#'     definition = "A count of spawners.", backend_score = 3
+#'   ))
+#' ))
+#' benchmark_term_ranking_fixtures(fixture_path_override = fixture)$summary
 #' @export
 benchmark_term_ranking_fixtures <- function(fixture_path = NULL, profiles = NULL, top_k = 3L, include_details = TRUE, fixture_path_override = NULL) {
   if (is.null(fixture_path) && is.null(fixture_path_override)) {

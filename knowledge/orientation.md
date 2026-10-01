@@ -103,6 +103,19 @@ Vignettes (11): `metasalmon`, `setup`, `llm-context-review`, `data-dictionary-pu
 `github-csv-access`, `faq`, `glossary`, plus S11 slice 2's
 `migrating-to-sdp-0-3-0` and `tidy-data-for-sdp`.
 
+## Public API names
+
+New exports use lowercase `snake_case` and name the action before the object.
+Use the existing families where they fit: `read_`, `write_`, and `validate_`
+for persisted SDP artifacts; `infer_`, `suggest_`, and `detect_` for candidates;
+`review_`, `set_`, and `apply_` for explicit review or changes; `find_` and
+`*_codes` for lookups; and `publish_` for remote publication. Keep `sdp` in a
+name when it distinguishes the package artifact from a general mapping or
+ontology function. Integration-specific prefixes such as `ices_`, `dwc_dp_`,
+`edh_`, and `ms_` remain for their existing families. Existing exported names
+stay stable; a new name should join its closest family rather than rename an
+older API for symmetry alone.
+
 ## Domain glossary
 
 - **SDP (Salmon Data Package):** a folder with four canonical CSVs —

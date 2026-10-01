@@ -922,3 +922,69 @@ PR250's old-head index job cancelled before validation, but that head also has
 the substantive diagnostic finding above. It is superseded by the correction;
 do not spend a retry on a commit that cannot merge. Batch the valid source fix
 and this durable append in one publication, then watch the new required gates.
+
+### Backend parity proof and next merge batch — 2026-10-01
+
+The final B-130 paired reports pass on Python 3.9.6 and 3.13.11. Both clients
+consume informational 103 headers and return final 200/equal URL across the
+eleven-route header fixture. Public reports agree on one attempt for malformed
+URLs, one for the actual redirect-limit error, and three for a header timeout.
+The loop-classification control needs three seconds to reach the limit; its
+earlier 0.8-second bound measured a real timeout, correctly retried three times,
+instead of the condition the instrument meant to test. Header/timeout controls
+retain 0.8 seconds and the production deadline remains 30 seconds. This was
+verification rework, not a runtime defect or a relaxed deadline.
+
+The three-hop shared-cookie control passes with the 54 focused Python cases on
+both versions. The R correction preserves curl's supported typed callback,
+requires curl >= 6.2.1, and marks only the two default permanent failures before
+the existing injected-requester heuristic. Its 81 focused expectations pass;
+the strict R check reports zero errors, warnings and notes in 1m55.3s. Two
+independent source reads and the actual paired JSON evidence found no remaining
+substantive issue. Existing public API review and final published-head CI
+remain separate gates; the selected backend does not authorize merging that
+critical API. No further model-review round is needed to chase the three nits.
+
+PR245/B-60 merged at 17:37:07 UTC as `6eba4c9`, exact head `dee9089`, under the
+routine documentation/packaging class. All seven current-head checks passed;
+the completed Codex copied-state finding is fixed and no human thread awaited
+an answer. Actual Claude summaries reached nits, but their denied-call
+completion failed; the later skipped job is not claimed as a completed review.
+The first reference-index attempt spent 14m57s in setup-r/apt before validation.
+One unchanged-head retry completed in 68s, with setup-r taking 31s, dependencies
+26s and the actual reference assertion two seconds. This is environment repair,
+not a measured claim-workflow saving. The clean primary checkout was
+fast-forwarded and the clean, fully merged B-60 checkout removed; its branch
+is preserved.
+
+That merge required PR250's next integration: the sole conflict is minified
+generated search JSON. All 657 incoming records and their order are retained;
+only the verified development Internal record combines both additions. Checker
+source/tests stay byte-identical to the fixed `a4d56b3` head and all five focused
+tests pass. Incorrect assumptions about the generated record's identity and
+insertion position failed assertions before correction; one wrong test glob
+ran zero tests and was replaced with the discovered filename. Neither empty
+result counted as evidence. These are implementation/instrument rework, not
+claim bureaucracy. Final required CI must run on the integrated publication.
+
+One small operational adjustment is being tested on PR251: when a PR remains
+mergeable, inspect the synthesized merge and keep its tested head instead of
+adding a base-integration commit solely for freshness. It remains `c33dacb`
+when marked ready, with its existing six checks green and no pending human
+thread. Its automatic Codex review is running. Do not claim an avoided elapsed
+duration or completed review before the outcome. Necessary conflict resolution
+and current-head CI still apply. PR247 waits for this common NEWS batch before
+one integration, avoiding repeated reconstruction of the same generated files.
+
+The bounded cross-chat B-199 audit is recorded separately as requested audit:
+the published annotated sdp-0.3.2 tag, all eight R bundle hashes, R temporal
+conformance and Python's fixed writer are verified. Python still pins
+sdp-0.3.0, three bundle files differ and its written descriptor fails the old
+pattern. The live B-199 claim is a protected handoff, so no claim was taken or
+released. This consultation does not adopt a demo contract or assign an owner.
+
+No new claim, ID allocation or routine publication/merge approval request was
+needed in this batch. The earlier 52% reduction concerns one ID lookup only;
+there is still no defensible whole-run avoidable percentage. Continue to keep
+coordination, implementation, verification, environment repair, requested audit
+and passive waiting separate rather than counting all non-coding time as waste.

@@ -1115,6 +1115,13 @@
   a round that found only nits; what counts as important is set in
   `REVIEW.md`.
 
+- Every exported R function now has an example in its help page;
+  examples that need only bundled data or temporary files run during
+  `R CMD check`. Package `Author` and `Maintainer` metadata now derive
+  from the existing Brett-only `Authors@R`, removing stale hand-written
+  attribution, and the unused blanket `httr` import is gone. SDP runtime
+  behaviour is unchanged (hub item B-60).
+
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
   script `R CMD check` runs** (backlog
