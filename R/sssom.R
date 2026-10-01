@@ -259,9 +259,83 @@
   parts
 }
 
+.ms_sssom_metadata_has_yaml_tag <- function(yaml_text) {
+  if (!grepl("!", yaml_text, fixed = TRUE)) {
+    return(FALSE)
+  }
+
+  # Retag exclamation tokens with one private, otherwise unused tag. libyaml
+  # then decides whether each token is a node property. A bang in quoted,
+  # plain, comment or block text stays text. Probe values are discarded.
+  tag_name <- "metasalmon_sssom_tag_probe"
+  probe_lines <- strsplit(yaml_text, "\n", fixed = TRUE)[[1]]
+  # A directive can rebind the primary `!` handle, so omit it only from the
+  # disposable parse. The normal read below still sees the original bytes.
+  probe_lines[grepl("^%TAG[[:space:]]", probe_lines)] <- ""
+  tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"'\\\\]+|!"
+
+  has_tag <- function(lines) {
+    found <- FALSE
+    handler <- function(value) {
+      found <<- TRUE
+      value
+    }
+    suppressWarnings(tryCatch(
+      yaml::yaml.load(
+        paste(lines, collapse = "\n"),
+        handlers = setNames(list(handler), tag_name),
+        eval.expr = FALSE
+      ),
+      error = function(e) NULL
+    ))
+    found
+  }
+
+  bulk <- vapply(
+    probe_lines,
+    function(line) gsub(tag_token, paste0("!", tag_name), line, perl = TRUE),
+    character(1), USE.NAMES = FALSE
+  )
+  if (has_tag(bulk)) {
+    return(TRUE)
+  }
+
+  # An ordinary bang token may consume a later tag in the bulk replacement,
+  # for example in a flow key or a verbatim-looking quoted value. With two or
+  # more bangs, retag one at a time so an earlier replacement cannot hide the
+  # later node property. A single bang cannot conceal a later bang.
+  bang_count <- sum(lengths(regmatches(
+    probe_lines, gregexpr("!", probe_lines, fixed = TRUE)
+  )))
+  if (bang_count < 2L) {
+    return(FALSE)
+  }
+  for (line_index in seq_along(probe_lines)) {
+    line <- probe_lines[[line_index]]
+    positions <- gregexpr("!", line, fixed = TRUE)[[1]]
+    for (position in positions[positions > 0L]) {
+      candidate <- probe_lines
+      candidate[[line_index]] <- paste0(
+        if (position == 1L) "" else substr(line, 1L, position - 1L),
+        sub(paste0("^(?:", tag_token, ")"), paste0("!", tag_name),
+            substring(line, position), perl = TRUE)
+      )
+      if (has_tag(candidate)) {
+        return(TRUE)
+      }
+    }
+  }
+  FALSE
+}
+
 .ms_sssom_parse_metadata <- function(comment_lines, path) {
   yaml_lines <- sub("^# ?", "", comment_lines)
   yaml_text <- paste(yaml_lines, collapse = "\n")
+  if (.ms_sssom_metadata_has_yaml_tag(yaml_text)) {
+    .ms_sssom_abort(
+      "Embedded SSSOM metadata in {.file {path}} is not valid YAML: explicit YAML tags are not supported."
+    )
+  }
   metadata <- tryCatch(
     # Never evaluate `!expr`: this block is collaborator-authored and reached
     # by routine validation, and yaml's default follows `getOption("yaml.eval.expr")`

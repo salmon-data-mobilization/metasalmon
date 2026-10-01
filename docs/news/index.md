@@ -260,6 +260,12 @@
 
 ### Fixed
 
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  and SDP validation through a non-evaluating YAML parser probe. Quoted
+  exclamation text still reads as text, and no tag expression is
+  evaluated (hub B-352; metasalmonpy mirror B-353).
+
 - Session IDs no longer advance or initialize the user’s random-number
   state, and BioPortal’s once-per-session missing-key warning is
   recorded privately instead of in
