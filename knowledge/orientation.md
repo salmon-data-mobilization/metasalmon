@@ -433,6 +433,7 @@ every release — re-run the count rather than trusting these to the digit.
 
 | File | Lines | Responsibility |
 |---|---|---|
+| `configuration.R` | 125 (2026-09-30) | Option defaults and environment inventory; generates `metasalmon_configuration` help; `.onLoad` fills only missing concrete defaults. |
 | `package-helpers.R` | 3786 | SDP orchestration: `create_sdp`, `write_salmon_datapackage`, resource/codes/metadata inference, EDH post-processing. (God-file; split candidate.) |
 | `knb-publication.R` | 3704 | Offline KNB plan, DataONE object/revision state machine, remote readback, access and catalog verification. |
 | `eml-export.R` | 3001 | Strict reviewed EML 2.2.0 profile, stable series/version identifiers, and supplementary SDP-archive entities. |

@@ -516,6 +516,10 @@ find_terms <- function(query,
 
 .metasalmon_cache <- new.env(parent = emptyenv())
 
+# Warning bookkeeping is private to the loaded namespace, never a user option.
+# The once-per-session suppression retires if BioPortal no longer needs a key.
+.ms_term_search_state <- new.env(parent = emptyenv())
+
 # A function, not a top-level binding. As a binding this was evaluated when the
 # namespace was built, so an installed package captured the *build* machine's
 # environment and `METASALMON_CACHE` could never be set by a user -- the result
@@ -869,15 +873,15 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 .search_bioportal <- function(query, role) {
   apikey <- Sys.getenv("BIOPORTAL_APIKEY", unset = "")
   if (apikey == "") {
-    if (isFALSE(getOption("metasalmon.warned_bioportal_missing", FALSE))) {
+    if (!isTRUE(.ms_term_search_state$warned_bioportal_missing)) {
       warning(
-        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
+        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env. ",
         "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
         "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
         "Get a key at https://bioportal.bioontology.org/register. ",
         call. = FALSE
       )
-      options(metasalmon.warned_bioportal_missing = TRUE)
+      .ms_term_search_state$warned_bioportal_missing <- TRUE
     }
     return(.empty_terms(role))
   }

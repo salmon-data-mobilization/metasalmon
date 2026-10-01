@@ -101,6 +101,15 @@
 
 ### Fixed
 
+- Session IDs no longer advance or initialize the user's random-number state,
+  and BioPortal's once-per-session missing-key warning is recorded privately
+  instead of in `options()`. `?metasalmon_configuration` documents the current
+  option and environment inventory from one registry; package loading fills
+  only missing concrete defaults, preserving user settings, backend-specific
+  timeout inheritance and unset credentials. An unset SDP schema base URL
+  resolves the package's current release pin at call time, including after a
+  package reload (hub B-59).
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
@@ -1078,6 +1087,21 @@
   `profile` changed, because that test keys on rule ids.
 
 ### Internal
+
+- `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and
+  indexes under the existing pinned toolchain, avoiding a full site
+  rebuild for a NEWS-only edit. Publication checks still run; a
+  toolchain change requires a full build.
+
+- The hub client adds `hub status ID` for queue fields and the live
+  claim tip, and successful claims print member-worktree and workpad
+  setup commands. These are advisory hints; claim eligibility and the
+  lock protocol are unchanged.
+
+- `scripts/hub_ids.py` scans fetched branches and registered worktrees
+  for numbered queue items and legacy headings, reporting ID collisions
+  or an unreserved next-number suggestion. Several queries share one
+  scan. It creates no claim or reservation.
 
 - Claude CI reviews drafts and each new PR head. A missing completion
   result, denied tool call or unconfirmed head fails the review job
