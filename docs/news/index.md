@@ -101,6 +101,10 @@
 
 ### Fixed
 
+- `read_github_csv()` reaches its existing PAT, SSO and missing-path remedies
+  for HTTP 401, 403 and 404. Other HTTP errors and transport failures still
+  raise normally (hub B-256).
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates

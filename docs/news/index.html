@@ -70,7 +70,8 @@
 </ul></div>
 <div class="section level3">
 <h3 id="fixed-development-version">Fixed<a class="anchor" aria-label="anchor" href="#fixed-development-version"></a></h3>
-<ul><li><p>NuSEDS crosswalk-filled code terms now appear in <code><a href="../reference/review_semantics.html">review_semantics()</a></code> with ranked alternatives when semantic seeding retrieves candidates (B-120). The existing prefill remains in <code>codes.csv</code> until a reviewer changes it; explicit caller IRIs and <code>semantic_code_scope = "none"</code> retain their behaviour. Importing a harness assessment preserves the prefill’s provenance.</p></li>
+<ul><li><p><code><a href="../reference/read_github_csv.html">read_github_csv()</a></code> reaches its existing PAT, SSO and missing-path remedies for HTTP 401, 403 and 404. Other HTTP errors and transport failures still raise normally (hub B-256).</p></li>
+<li><p>NuSEDS crosswalk-filled code terms now appear in <code><a href="../reference/review_semantics.html">review_semantics()</a></code> with ranked alternatives when semantic seeding retrieves candidates (B-120). The existing prefill remains in <code>codes.csv</code> until a reviewer changes it; explicit caller IRIs and <code>semantic_code_scope = "none"</code> retain their behaviour. Importing a harness assessment preserves the prefill’s provenance.</p></li>
 <li>
 <p><strong><code><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage()</a></code> now checks the three things backlog <a href="https://github.com/salmon-data-mobilization/metasalmon/issues/49" class="external-link">#49</a> (hub item B-49) measured it claiming and not doing.</strong> Each was a contract the package already wrote and nothing read back:</p>
 <ol style="list-style-type: decimal"><li>
