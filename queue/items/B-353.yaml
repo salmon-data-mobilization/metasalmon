@@ -1,7 +1,7 @@
 id: B-353
 kind: defect
 title: 'metasalmonpy''s SSSOM reader returns a tagged metadata line as written, where the ruled behaviour is to refuse, the mirror half of B-352'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
