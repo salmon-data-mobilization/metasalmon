@@ -1244,6 +1244,10 @@ metasalmon (development version)
 
 ### Internal
 
+* Claude CI reviews drafts and each new PR head. A missing completion result,
+  denied tool call or unconfirmed head fails the review job instead of looking
+  like a successful review. Superseded review runs are cancelled.
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
