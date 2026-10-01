@@ -34,6 +34,22 @@ is the only copy of the authorization boundary. The reasoning behind all of it
 is section 9 of the plan linked above. This file explains what the queue is;
 it is not the protocol and it does not grant anyone anything.
 
+## Quick commands
+
+From a current hub checkout:
+
+```sh
+scripts/hub ready             # eligible candidates, including live claim checks
+scripts/hub status B-99       # queue fields and this item's live claim tip
+scripts/hub claim B-99        # acquire the claim; print member setup hints
+```
+
+`status` reports a raw claim action, not a replacement eligibility decision.
+A failed live lookup is `unknown` and exits 3. Claim setup commands are printed
+only: set `MEMBER_CHECKOUT` and `MEMBER_BASE` for the target repository before
+using them. The client creates no worktree or workpad. Existing approval and
+claim rules remain in `HUB.md` and the applicable `AGENTS.md`.
+
 ## What one item file means
 
 One file is one unit of work somebody could pick up, finish, and be done with.

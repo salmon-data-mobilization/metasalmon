@@ -1244,6 +1244,10 @@ metasalmon (development version)
 
 ### Internal
 
+* The hub client adds `hub status ID` for queue fields and the live claim tip,
+  and successful claims print member-worktree and workpad setup commands.
+  These are advisory hints; claim eligibility and the lock protocol are unchanged.
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).

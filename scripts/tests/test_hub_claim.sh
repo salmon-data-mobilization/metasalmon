@@ -104,6 +104,14 @@
 #   from a current one edited in place. It was run RED against both the client
 #   before B-187 and the first version of the change.
 #
+#   42 and 43 cover two read-only workflow aids. 42 asks one item at a time
+#   against absent, released, handed-off and live refs, then makes the locks
+#   remote unreadable: status must not mistake a failed read for an absent ref.
+#   It also keeps a resolved blocker visible in the raw queue field and refuses
+#   malformed claim records rather than presenting them as a valid action.
+#   43 checks that claim-time setup advice is shell-safe, appears again on an
+#   idempotent claim, and does not itself create a worktree or workpad.
+#
 #   24, the fingerprint of the repository under test, is numbered last because
 #   it runs last, and it keeps its number rather than being renumbered each
 #   time assertions are appended. It was 16 until 16 to 20 arrived and 21 until
@@ -193,6 +201,19 @@ SELF_ID="B-57"        # claim tip is this caller's own claim, lease long expired
 ABANDONED_ID="B-58"   # claim tip is another agent's claim, lease and grace both elapsed
 CAPPED_ID="B-59"      # as B-58, after one reclaim inside the rolling day: the cap of 1 is spent
 UNDERCAP_ID="B-60"    # as B-59, but the reclaim was 30 hours ago: outside the window
+
+# Assertion 42 alone. The done blocker is still named in the subject's raw
+# blocked_by field; the seven malformed or absent claim records use distinct refs so a
+# status read does not change any ref while the assertion is comparing them.
+STATUS_DONE_ID="T-41"
+STATUS_BLOCKED_ID="T-42"
+STATUS_NO_ACTION_ID="T-43"
+STATUS_BAD_ACTION_ID="T-44"
+STATUS_NO_AGENT_ID="T-45"
+STATUS_NO_LEASE_ID="T-46"
+STATUS_BAD_LEASE_ID="T-47"
+STATUS_WRONG_ID="T-48"
+STATUS_NO_RECORD_ID="T-49"
 
 # The four hand-back items of assertions 22 and 23. Each one is held by this
 # caller on a live lease, seeded straight into the locks repository rather than
@@ -680,6 +701,34 @@ legacy: '#${id#B-}'
 evidence: backlog.md
 retires_when: The race test stops needing a fixture item, which is when claims stop living on git refs.
 YAML
+  done
+
+  cat >"$items/$STATUS_DONE_ID.yaml" <<YAML
+id: $STATUS_DONE_ID
+kind: defect
+title: Completed blocker for the status fixture
+state: done
+claimable: false
+repo: metasalmon
+blocked_by: []
+evidence: backlog.md
+retires_when: Status no longer needs the completed blocker fixture.
+YAML
+  cat >"$items/$STATUS_BLOCKED_ID.yaml" <<YAML
+id: $STATUS_BLOCKED_ID
+kind: defect
+title: Status fixture with a resolved blocker
+state: ready
+claimable: true
+repo: metasalmon
+blocked_by: [$STATUS_DONE_ID]
+evidence: backlog.md
+retires_when: Status no longer needs the raw blocked-by fixture.
+YAML
+  for id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+            "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+            "$STATUS_NO_RECORD_ID"; do
+    write_fixture_item "$items" "$id" metasalmon
   done
 
   # The hand-back items. One per repository, because the repository is the
@@ -1479,7 +1528,8 @@ main() {
   local h1 h2 e1
   h1=$(mk_commit "$CLONE_A" "claim $HANDOFF_ID by agent-a" "$(claim_record "$HANDOFF_ID" agent-a claim "$stale")")
   push_ref "$CLONE_A" "$h1" "$href" "$TMPROOT/handoff.1.out"
-  h2=$(mk_commit "$CLONE_A" "handoff $HANDOFF_ID by agent-a" "$(claim_record "$HANDOFF_ID" agent-a handoff "$stale")" "$h1")
+  h2=$(mk_commit "$CLONE_A" "handoff $HANDOFF_ID by agent-a" \
+         "$(claim_record "$HANDOFF_ID" agent-a handoff "$stale")"$'\n'"branch: agent/$HANDOFF_ID/agent-a" "$h1")
   push_ref "$CLONE_A" "$h2" "$href" "$TMPROOT/handoff.2.out"
   e1=$(mk_commit "$CLONE_A" "claim $EXPIRED_ID by agent-a" "$(claim_record "$EXPIRED_ID" agent-a claim "$stale")")
   push_ref "$CLONE_A" "$e1" "$eref" "$TMPROOT/expired.1.out"
@@ -1548,6 +1598,122 @@ main() {
     fi
   else
     skip 16 "client: ready answers HUB.md condition 4 rather than filtering on whether a ref exists"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 42 -------------------------------------------------------------------
+  # A one-item status view joins the queue file to the live claim tip. The
+  # absence case is not a failed read: this client has a distinct call-failed
+  # exit code, and a cache that once held the ref does not make a failed live
+  # read authoritative. Check all three outcomes, and check the command leaves
+  # the remote refs exactly as they were.
+  if [ "$probe_ok" = "0" ]; then
+    local status_release="$TMPROOT/client.status.release.out"
+    local status_handoff="$TMPROOT/client.status.handoff.out"
+    local status_live="$TMPROOT/client.status.live.out"
+    local status_absent="$TMPROOT/client.status.absent.out"
+    local status_blocked="$TMPROOT/client.status.blocked.out"
+    local status_failed="$TMPROOT/client.status.failed.out"
+    local status_before status_after status_field status_rc=0 status_bad_rc=0 status_ok=0
+    local status_locks="$TMPROOT/status-locks.git" status_bad_before status_bad_after
+    local bad_id bad_body bad_sha bad_ref bad_out bad_rc status_seed_ok=0
+
+    # These fixture commits precede the ref snapshot. Each malformed record
+    # has a separate id and ref in a separate local locks repository, so later
+    # claim and cap assertions never ingest an unreadable claim.yaml.
+    g git init --bare -q --initial-branch=main "$status_locks" >/dev/null 2>&1 || status_seed_ok=1
+    for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                  "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                  "$STATUS_NO_RECORD_ID"; do
+      bad_body=$(claim_record "$bad_id" status-fixture claim "$future")
+      case $bad_id in
+        "$STATUS_NO_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^action:/d') ;;
+        "$STATUS_BAD_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: bogus/') ;;
+        "$STATUS_NO_AGENT_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^agent:/d') ;;
+        "$STATUS_NO_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^lease_until:/d') ;;
+        "$STATUS_BAD_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^lease_until: .*/lease_until: not-a-date/') ;;
+        "$STATUS_WRONG_ID") bad_body=$(printf '%s\n' "$bad_body" | sed "s/^id: $bad_id$/id: T-other/") ;;
+      esac
+      if [ "$bad_id" = "$STATUS_NO_RECORD_ID" ]; then
+        # An empty tree gives the ref a real commit with no claim.yaml at all.
+        bad_sha=$(git -C "$CLONE_A" commit-tree \
+          "$(git -C "$CLONE_A" mktree </dev/null)" -m "missing claim record $bad_id")
+      else
+        bad_sha=$(mk_commit "$CLONE_A" "malformed status fixture $bad_id" "$bad_body")
+      fi
+      bad_ref="refs/heads/claim/$bad_id"
+      [ -n "$bad_sha" ] || status_seed_ok=1
+      if [ -n "$bad_sha" ]; then
+        g git -C "$CLONE_A" push "$status_locks" "$bad_sha:$bad_ref" \
+          >"$TMPROOT/status.seed.$bad_id.out" 2>&1 || status_seed_ok=1
+      fi
+    done
+    status_before=$(git -C "$LOCKS" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    status_bad_before=$(git -C "$status_locks" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    hub status "$RELEASED_ID" >"$status_release" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$HANDOFF_ID" >"$status_handoff" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$RACE_ID" >"$status_live" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$SELF_ID" >"$status_absent" 2>&1; [ "$?" = "0" ] || status_rc=1
+    hub status "$STATUS_BLOCKED_ID" >"$status_blocked" 2>&1; [ "$?" = "0" ] || status_rc=1
+    for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                  "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                  "$STATUS_NO_RECORD_ID"; do
+      bad_out="$TMPROOT/client.status.$bad_id.out"
+      ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
+          hub status "$bad_id" ) >"$bad_out" 2>&1; bad_rc=$?
+      [ "$bad_rc" = "$EX_FAIL" ] || status_ok=1
+      grep -Fxq 'claim: unknown' "$bad_out" || status_ok=1
+      grep -Fxq 'claim: absent' "$bad_out" && status_ok=1
+    done
+    ( HUB_LOCKS_URL="$TMPROOT/no-such-locks.git" hub status "$RELEASED_ID" ) \
+      >"$status_failed" 2>&1; status_bad_rc=$?
+    status_after=$(git -C "$LOCKS" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+    status_bad_after=$(git -C "$status_locks" for-each-ref --format='%(refname) %(objectname)' refs/heads/claim/)
+
+    [ "$status_seed_ok" = "0" ] || status_ok=1
+    [ "$status_rc" = "0" ] || status_ok=1
+    [ "$status_bad_rc" = "$EX_FAIL" ] || status_ok=1
+    [ "$status_before" = "$status_after" ] || status_ok=1
+    [ "$status_bad_before" = "$status_bad_after" ] || status_ok=1
+    for status_field in id title repo state claimable blocked_by; do
+      grep -q "^$status_field:" "$status_release" || status_ok=1
+    done
+    grep -Fxq "id: $RELEASED_ID" "$status_release" || status_ok=1
+    grep -Fxq 'repo: metasalmon' "$status_release" || status_ok=1
+    grep -Fxq 'state: ready' "$status_release" || status_ok=1
+    grep -Fxq 'claimable: true' "$status_release" || status_ok=1
+    grep -Fxq 'claim: release' "$status_release" || status_ok=1
+    grep -Fxq 'claim: handoff' "$status_handoff" || status_ok=1
+    grep -Fxq 'agent: agent-a' "$status_handoff" || status_ok=1
+    grep -Fxq "lease_until: $stale" "$status_handoff" || status_ok=1
+    grep -Fxq "branch: agent/$HANDOFF_ID/agent-a" "$status_handoff" || status_ok=1
+    grep -Fxq 'claim: reclaim' "$status_live" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_absent" || status_ok=1
+    grep -Fxq "blocked_by: [$STATUS_DONE_ID]" "$status_blocked" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_blocked" || status_ok=1
+    grep -Fxq 'claim: unknown' "$status_failed" || status_ok=1
+    grep -Fxq 'claim: absent' "$status_failed" && status_ok=1
+    if [ "$status_ok" = "0" ]; then
+      assert 42 "client: status joins one queue item to the live claim tip, distinguishes absent, release, handoff and live, fails closed on an unreadable remote, and writes no claim ref" 0
+    else
+      assert 42 "client: status distinguishes queue and claim states without treating a failed locks read as an absent ref (status calls $status_rc, failed read rc $status_bad_rc wanted $EX_FAIL)" 1
+      note "release: $(tr '\n' '|' <"$status_release")"
+      note "handoff: $(tr '\n' '|' <"$status_handoff")"
+      note "reclaim: $(tr '\n' '|' <"$status_live")"
+      note "absent: $(tr '\n' '|' <"$status_absent")"
+      note "resolved blocker: $(tr '\n' '|' <"$status_blocked")"
+      for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
+                    "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
+                    "$STATUS_NO_RECORD_ID"; do
+        note "malformed $bad_id: $(tr '\n' '|' <"$TMPROOT/client.status.$bad_id.out")"
+      done
+      note "failed read: $(tr '\n' '|' <"$status_failed")"
+      note "malformed refs seeded: $([ "$status_seed_ok" = "0" ] && echo yes || echo no)"
+      note "remote refs unchanged: $([ "$status_before" = "$status_after" ] && echo yes || echo no)"
+      note "malformed fixture refs unchanged: $([ "$status_bad_before" = "$status_bad_after" ] && echo yes || echo no)"
+    fi
+  else
+    skip 42 "client: status joins one queue item to the live claim tip and fails closed on a failed locks read"
     note "$CLIENT_SKIP_REASON"
   fi
 
@@ -1887,6 +2053,66 @@ main() {
     fi
   else
     skip 26 "client: a claim prints the participation answer at claim time"
+    note "$CLIENT_SKIP_REASON"
+  fi
+
+  # -- 43 -------------------------------------------------------------------
+  # Setup advice is printed after a successful claim and on a same-agent
+  # idempotent repeat. It must keep shell argument boundaries even when the
+  # member checkout path contains spaces and an apostrophe. Run its git line
+  # with a stub function in a subshell, so this checks parsing without ever
+  # creating the suggested worktree. The client's own run must create neither
+  # a worktree nor a workpad.
+  if [ "$probe_ok" = "0" ]; then
+    local hint_out="$TMPROOT/client.hint.idempotent.out"
+    local hint_args="$TMPROOT/client.hint.args" hint_expected="$TMPROOT/client.hint.expected"
+    local hint_line hint_checkout="$TMPROOT/member checkout's copy"
+    local hint_key="salmon-data-mobilization-metasalmon-$PART_SOLO_ID"
+    local hint_branch="agent/$PART_SOLO_ID/$PART_TOKEN"
+    local hint_ref="refs/heads/claim/$PART_SOLO_ID" hint_before hint_after
+    local hint_wt_before hint_wt_after hint_rc=0 hint_ok=0
+    hint_before=$(git -C "$LOCKS" rev-parse "$hint_ref" 2>/dev/null)
+    hint_wt_before=$(git -C "$PART_REPO" worktree list --porcelain)
+    ( HUB_CACHE_DIR="$PART_CACHE" HUB_AGENT_TOKEN="$PART_TOKEN" \
+        g bash "$PART_CLIENT" claim "$PART_SOLO_ID" ) >"$hint_out" 2>&1
+    hint_rc=$?
+    hint_after=$(git -C "$LOCKS" rev-parse "$hint_ref" 2>/dev/null)
+    hint_wt_after=$(git -C "$PART_REPO" worktree list --porcelain)
+
+    [ "$hint_rc" = "0" ] || hint_ok=1
+    [ "$hint_before" = "$hint_after" ] || hint_ok=1
+    [ "$hint_wt_before" = "$hint_wt_after" ] || hint_ok=1
+    [ "$(printf '%s\n' "$hint_wt_after" | grep -c '^worktree ')" = "1" ] || hint_ok=1
+    [ ! -e "$PART_REPO/../hub-worktrees/$hint_key" ] || hint_ok=1
+    [ ! -e "$PART_REPO/.hub/workpads/$PART_SOLO_ID.md" ] || hint_ok=1
+    grep -Fxq "worktree key: $hint_key" "$psolo_out" || hint_ok=1
+    grep -Fxq "worktree key: $hint_key" "$hint_out" || hint_ok=1
+    grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$psolo_out" || hint_ok=1
+    grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$hint_out" || hint_ok=1
+    hint_line=$(sed -n '/^[[:space:]]*git -C /{s/^[[:space:]]*//;p;}' "$psolo_out" | head -n 1)
+    [ -n "$hint_line" ] || hint_ok=1
+    if [ -n "$hint_line" ]; then
+      bash -n <<<"$hint_line" || hint_ok=1
+      ( MEMBER_CHECKOUT="$hint_checkout"
+        MEMBER_BASE=origin/main
+        git() { printf '%s\n' "$@" >"$hint_args"; }
+        eval "$hint_line"
+      ) || hint_ok=1
+      printf '%s\n' -C "$hint_checkout" worktree add -b "$hint_branch" \
+        "../hub-worktrees/$hint_key" origin/main >"$hint_expected"
+      cmp -s "$hint_args" "$hint_expected" || hint_ok=1
+    fi
+    grep -Fq 'mkdir -p ' "$psolo_out" || hint_ok=1
+    grep -Fq 'mkdir -p ' "$hint_out" || hint_ok=1
+    if [ "$hint_ok" = "0" ]; then
+      assert 43 "client: fresh and idempotent claim print shell-safe worktree and workpad hints without creating either" 0
+    else
+      assert 43 "client: successful claims print shell-safe, non-mutating setup hints (repeat rc $hint_rc, ref unchanged $([ "$hint_before" = "$hint_after" ] && echo yes || echo no))" 1
+      note "fresh hint: $(grep -E 'worktree key:|workpad:|git -C |mkdir -p ' "$psolo_out" | head -n 4 | tr '\n' ' ')"
+      note "repeat hint: $(grep -E 'worktree key:|workpad:|git -C |mkdir -p ' "$hint_out" | head -n 4 | tr '\n' ' ')"
+    fi
+  else
+    skip 43 "client: fresh and idempotent claim print shell-safe, non-mutating setup hints"
     note "$CLIENT_SKIP_REASON"
   fi
 
