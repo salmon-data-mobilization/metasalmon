@@ -1244,6 +1244,10 @@ metasalmon (development version)
 
 ### Internal
 
+* The hub queue linter rejects a nonempty `stream` that names no stream item.
+  Stream names use the unpadded item number (`S-05` is `S5`); future stream
+  items are accepted without editing a fixed list (hub item B-186).
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
