@@ -332,3 +332,83 @@ and [B-167 / smn-data-pkg PR14](https://github.com/salmon-data-mobilization/smn-
 Agents continue independent eligible work rather than waiting for root to
 approve routine publication. Remaining design or semantic choices receive
 draft evidence where a ruling is required.
+
+
+## Continued work through 07:40 UTC on 2026-10-01
+
+The live ready list now has no unclaimed item. This does not mean the queue is
+complete: drafts hold claims until landing, and several items require a semantic
+or policy decision. Agents continue useful companion ports, review repairs and
+source-backed card repairs while those decisions remain open.
+
+### Next-round findings and adjustments
+
+- B-147's repository lacked the standard `agent-run` label. The agent spent
+  approximately **three minutes** investigating whether another approval was
+  needed. Brett's existing routine draft-publication authorization covered
+  creating the necessary standard label. Root clarified that scope once; the
+  agent created the same name/color as the hub and published. This is reported
+  avoidable coordination time, not a measured share of that whole task.
+- B-60's documentation build revealed inconsistent author metadata. A first
+  repair incorrectly promoted an old duplicate `Author` string into canonical
+  `Authors@R`, producing attribution and footer churn. Root caught it; the final
+  change preserves the original Brett-only `Authors@R` and removes redundant
+  fields. This was implementation/review rework, not approval bureaucracy.
+- B-58's independent read found two authored base warnings beyond the original
+  cli/rlang inventory. Both were classed with exact messages, null calls and
+  muffling preserved. The first integrated run also exposed two pre-existing
+  positional cli class strings; regression tests reproduce and fix them. Final
+  strict R check has zero errors, warnings and notes. These are useful checks,
+  not time that should be eliminated from coordination.
+- B-58's search-output audit initially assumed all paths/ids were scalar and
+  unique. Existing records violate both assumptions. A whole-record multiset
+  comparison verifies the actual scoped change while preserving old repeated
+  records. The failed audit assumptions are local instrument rework, not hub
+  bureaucracy; no new required tracker or guard was created.
+- A fresh Codex finding on Python PR79 correctly identified that a
+  semicolon-separated constraint slot needs one ledger row per distinct IRI.
+  The guide was corrected, rendered and pushed at `fe0039f`. Old findings on
+  Python PR80 and hub PR215 are already fixed at their current heads. No person
+  reply or repeated publication approval was required.
+- B-123's bounded identity checks pass, but the commons compiler scans its
+  mandatory workpad as a card. Existing green PR41 fixes that exact compiler
+  defect. The new draft records the dependency instead of duplicating the fix
+  or suppressing validation. A single decision packet preserves its nine
+  outstanding choices; the bounded guard is not claimed as item retirement.
+- B-238's coverage inventory found term-specific headings already present in
+  existing commons cards. Work is repairing their source ledgers rather than
+  creating duplicate cards. The unexpected source volume is genuine evidence
+  work. Unresolved meaning choices are grouped in a decision packet instead of
+  inventing a question/claim for every term.
+
+### Next concrete build improvement
+
+A dedicated current-main NEWS reconciliation is underway. The first pinned
+NEWS-only build took **15.54 seconds** and touched only NEWS HTML/Markdown and
+search, but recovered 563 added/14 removed lines of existing source/site drift.
+This output scope is observed; it is not a time-saving estimate.
+
+That build also exposed the reason partial builds strip icons: committed favicon
+assets exist in generated `docs/`, but pkgdown checks for authoring inputs under
+`pkgdown/favicon`. Restoring that documented input location from the existing
+identical bytes lets pkgdown render icon links normally, without a custom HTML
+patcher. The follow-up build and repeatability check are pending at this entry.
+
+### Additional published review surfaces
+
+[B-209 / PR241](https://github.com/salmon-data-mobilization/metasalmon/pull/241),
+[B-252 hub correction / PR242](https://github.com/salmon-data-mobilization/metasalmon/pull/242),
+[B-59 / R PR243](https://github.com/salmon-data-mobilization/metasalmon/pull/243),
+[B-59 / Python PR83](https://github.com/salmon-data-mobilization/metasalmonpy/pull/83),
+[B-130 / PR244](https://github.com/salmon-data-mobilization/metasalmon/pull/244),
+[B-60 / PR245](https://github.com/salmon-data-mobilization/metasalmon/pull/245),
+[B-58 / R PR246](https://github.com/salmon-data-mobilization/metasalmon/pull/246),
+[B-58 / Python PR84](https://github.com/salmon-data-mobilization/metasalmonpy/pull/84),
+[B-147 / ontology PR37](https://github.com/salmon-data-mobilization/salmon-domain-ontology/pull/37),
+[B-154 / specification proposal PR15](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/15),
+and [B-123 / commons PR42](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/pull/42).
+
+These are draft review surfaces, not merge or queue-completion records. Actual
+Claude reviews of the new heads remain absent. Failed/skipped jobs are not
+counted as review convergence; the bootstrap-workflow decision is still pending.
+There is still no defensible whole-run percentage of wasted time.
