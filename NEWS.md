@@ -219,7 +219,9 @@ metasalmon (development version)
   instead of in `options()`. `?metasalmon_configuration` documents the current
   option and environment inventory from one registry; package loading fills
   only missing concrete defaults, preserving user settings, backend-specific
-  timeout inheritance and unset credentials (hub B-59).
+  timeout inheritance and unset credentials. An unset SDP schema base URL
+  resolves the package's current release pin at call time, including after a
+  package reload (hub B-59).
 
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).

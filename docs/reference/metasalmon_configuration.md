@@ -32,9 +32,9 @@ for schema-backed creation.
 
 - `metasalmon.sdp_schema_base_url`:
 
-  Default: `the pinned SDP release URL`. Base URL of a selected SDP
-  schema bundle. The default is derived from the package's current
-  schema-release pin.
+  Default: `NULL (the pinned SDP release URL at call time)`. Base URL of
+  a selected SDP schema bundle. When unset, each call resolves the
+  package's current schema-release pin.
 
 - `metasalmon.sdp_schema_url`:
 

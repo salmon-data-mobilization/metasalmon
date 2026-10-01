@@ -26,7 +26,7 @@ options(old)
 }
 \section{Options}{\describe{
 \item{\code{metasalmon.sdp_schema_source}}{Default: \code{"auto"}. SDP schema source: "auto" tries the pinned remote release then the vendored copy; "remote" requires remote loading; "vendored" stays offline.}
-\item{\code{metasalmon.sdp_schema_base_url}}{Default: \code{the pinned SDP release URL}. Base URL of a selected SDP schema bundle. The default is derived from the package's current schema-release pin.}
+\item{\code{metasalmon.sdp_schema_base_url}}{Default: \code{NULL (the pinned SDP release URL at call time)}. Base URL of a selected SDP schema bundle. When unset, each call resolves the package's current schema-release pin.}
 \item{\code{metasalmon.sdp_schema_url}}{Default: \code{NULL}. Legacy schema URL override. When nonempty, its schema/sdp.schema.yaml suffix is removed to obtain the bundle base URL; it takes precedence over sdp_schema_base_url.}
 \item{\code{metasalmon.term_search_timeout}}{Default: \code{NULL (inherit backend timeout)}. Positive timeout in seconds. Source-specific environment timeout overrides the global environment timeout, which overrides this option. Unset/invalid falls back to the backend's 30 or 60 seconds.}
 \item{\code{metasalmon.term_search_parallel}}{Default: \code{TRUE}. Enable parallel term retrieval. METASALMON_TERM_SEARCH_PARALLEL takes precedence.}

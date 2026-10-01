@@ -75,7 +75,7 @@ Prefer the external semantic review packet workflow for new review work.</p>
 <dd><p>Default: <code>"auto"</code>. SDP schema source: "auto" tries the pinned remote release then the vendored copy; "remote" requires remote loading; "vendored" stays offline.</p></dd>
 
 <dt><code>metasalmon.sdp_schema_base_url</code></dt>
-<dd><p>Default: <code>the pinned SDP release URL</code>. Base URL of a selected SDP schema bundle. The default is derived from the package's current schema-release pin.</p></dd>
+<dd><p>Default: <code>NULL (the pinned SDP release URL at call time)</code>. Base URL of a selected SDP schema bundle. When unset, each call resolves the package's current schema-release pin.</p></dd>
 
 <dt><code>metasalmon.sdp_schema_url</code></dt>
 <dd><p>Default: <code>NULL</code>. Legacy schema URL override. When nonempty, its schema/sdp.schema.yaml suffix is removed to obtain the bundle base URL; it takes precedence over sdp_schema_base_url.</p></dd>

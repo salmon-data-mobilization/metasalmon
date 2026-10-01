@@ -51,6 +51,29 @@ test_that("load defaults preserve user options and backend timeout inheritance",
   expect_null(getOption("dataone_test_token"))
 })
 
+test_that("an unset schema URL follows the package pin after a reload", {
+  withr::local_options(metasalmon.sdp_schema_source = "auto",
+                       metasalmon.sdp_schema_url = NULL,
+                       metasalmon.sdp_schema_base_url = NULL)
+  metasalmon:::.onLoad(NULL, "metasalmon")
+  expect_null(getOption("metasalmon.sdp_schema_base_url"))
+
+  # A later package version can advance its pin in the same R process. The
+  # default URL must come from that version, not an option left by .onLoad().
+  with_mocked_bindings(
+    .ms_sdp_schema_pinned_base_url = function() "https://example.test/new-spec",
+    {
+      expect_identical(.ms_default_sdp_schema_base_url(),
+                       "https://example.test/new-spec")
+      expect_true(.ms_sdp_schema_options_are_default())
+    }
+  )
+
+  options(metasalmon.sdp_schema_base_url = "https://example.test/caller-spec")
+  expect_identical(.ms_default_sdp_schema_base_url(),
+                   "https://example.test/caller-spec")
+})
+
 # Read installed function bodies, so the inventory guard also runs in R CMD
 # check. Literal option reads plus the two dynamic DataONE token names are
 # covered. Dynamic environment names use a documented source suffix/provider

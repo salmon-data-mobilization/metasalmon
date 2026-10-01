@@ -12,8 +12,8 @@
       'SDP schema source: "auto" tries the pinned remote release then the vendored copy; "remote" requires remote loading; "vendored" stays offline.'
     ),
     metasalmon.sdp_schema_base_url = .ms_configuration_option(
-      .ms_sdp_schema_pinned_base_url(), "the pinned SDP release URL",
-      "Base URL of a selected SDP schema bundle. The default is derived from the package's current schema-release pin."
+      NULL, "NULL (the pinned SDP release URL at call time)",
+      "Base URL of a selected SDP schema bundle. When unset, each call resolves the package's current schema-release pin."
     ),
     metasalmon.sdp_schema_url = .ms_configuration_option(
       NULL, "NULL",
