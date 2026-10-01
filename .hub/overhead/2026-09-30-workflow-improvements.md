@@ -710,3 +710,281 @@ no definite critical class on the checked diffs. PR215 is already ready, so its
 new push triggers review; R243/R245 need ready transitions. No merge has occurred
 under the new grant at this checkpoint. No free claimable item appears on the
 latest fresh default scan, with B-238's held handoff as the positive control.
+
+### Delegated merges and the next diagnostic adjustment — 2026-10-01
+
+The earlier checkpoint above predates these merges. Each merge commit records
+the direct chat authority, delegated class, exact head, review evidence and CI.
+Branches remain; only clean auxiliary checkouts with no unique commits are
+removed after the clean primary checkout is fast-forwarded.
+
+| UTC merge time | PR / merge | Delegated class and evidence |
+| --- | --- | --- |
+| 15:33:18 | Commons41 / `1b7594e` | Routine compiler repair matching the existing root `.hub` boundary; actual local Claude and independent source review, final-head checks green. A valid `.hub-archive` positive control catches the overbroad mutant. |
+| 15:42:28 | R243 / `d0339c0` | Configuration defect/documentation; six exact-head checks green, actual current-head Claude 0 important/4 nits and independent source review, no human thread or unresolved critical choice. |
+| 16:01:19 | Python81 (B-264) / `430b568` | Additive procedure-closure regression test; six current-head checks green, expected PR deploy skip, completed Codex and actual 55.4s local Claude source review with zero denied calls, no substantive findings. |
+
+Python81 was already clean, mergeable and based on current main. Inspection
+avoided an unnecessary freshness-only merge, push and review. Commons41 and
+R243 checkouts were cleaned up after their primary checkouts fast-forwarded;
+their branches were preserved. Commons42 stays critical: its validator changes
+need human approval under Commons governance, and nine verification decisions
+remain unresolved. The prior table's dependency is an order, not permission to
+merge Commons42 automatically.
+
+R219/B-186 is the next routine ready item: additive stream-identity validation,
+164 queue tests, 318 real items linted, no source conflict or new policy. The
+base integration required NEWS/site conflict repair; fresh reviews/checks run
+on `28f5ad8`. R245 supplies the two packet reference pages R247 needs. R247 is
+now draft until that prerequisite lands. R241's own draft reserves the new
+queue-prose rule for Brett, so it is held rather than silently reclassified.
+The new R244/Python85 verifier API and reproduced informational-103 transport
+gap remain critical; the single decision packet is in the R B-130 workpad,
+linked from Python rather than copying its shared alternatives twice.
+
+#### One small implementation change
+
+The completion checker now describes denied calls using a bounded count and
+fixed tool/command categories. It never copies raw SDK inputs, tool names,
+paths, arguments or output. Unknown/malformed inputs remain unknown. No
+permission, completed-tool, result, or exact-head gate is relaxed. Two new
+tests fail on the old checker; four focused tests and all 190 scripts tests
+available on this branch pass. Independent source review found no weakened
+gate or untrusted-text path. The existing pinned NEWS-only builder generated
+the fragment; all 614 baseline search records were retained before integrating
+R243's six additions. The builder was borrowed only for generation and restored;
+its canonical implementation remains PR215 until that PR lands.
+
+The next denied run can identify a known tool/command category without exposing
+its arguments. This is diagnostic investment, not a demonstrated time saving
+yet. The old failed action records expose denial counts but hide categories
+and retain no execution artifact, so inferring the denied commands would be
+guessing. The existing retirement condition for the checker still applies.
+
+#### Friction attribution and next use
+
+- R215's first package job stalled during remote R setup; the reference-index
+  job was cancelled in the same setup step. One targeted unchanged-head retry
+  made the index green; the stalled package job was cancelled and retried once.
+  This is environment repair plus passive wait, not claim coordination or test
+  execution. R244 also spent 12m31s in setup-R before dependency installation.
+- R245 and R247 posted nits-only summaries but failed their completion check
+  on denied calls. Later 8-second green jobs skip after the nits marker and do
+  not finish the failed review. The source summaries are real evidence with
+  incomplete execution, never green-review claims.
+- One local R245 review of a 1.53MB diff timed out after 360 seconds with no
+  result or usage evidence. Generated/minified search and duplicated Rd/site
+  text inflated that input. Its targeted continuation now uses the complete
+  non-generated patch and checked generated correspondence, with streaming
+  progress and a 180-second bound. Record its actual outcome, not a presumed
+  saving or successful review.
+- NEWS-only generation still exposes unrelated historical drift until R247
+  reconciles the site. Two mistaken assumptions during fragment curation
+  (one Internal heading overall and a heading prefix in search text) caused
+  local assertion failures; candidates were corrected before publication.
+  This is implementation/environment rework, not ID or claim bureaucracy.
+- No new claim, ID allocation or routine publication/merge approval request
+  was needed in this round. One concrete critical API/transport question was
+  sent to Brett. Audit production and mixed review/implementation intervals
+  stay separate; there is still no measured whole-run avoidable percentage.
+
+The next candidate adjustment is to stop automatic review only on a nits
+marker whose review also passed completion. A failed review's marker currently
+stops its own continuation. Keep the five-round ceiling and substantive/nit
+boundary; investigate this routing mismatch after the diagnostics' next use,
+without treating a skipped job as a completed review or adding another tracker.
+
+### Supported transport and merge-order follow-through — 2026-10-01
+
+This append supersedes the earlier in-progress checkpoints without rewriting
+the shared PR215 prefix.
+
+- Python79/B-261 merged at 16:31:37 UTC as `9304851`, exact head `fe0039f`.
+  The routine guide correction ports the established R workflow and changes
+  no runtime, public API, IRI selection or guard. Six substantive current-head
+  checks passed; the PR-ineligible deployment skipped. The completed Codex
+  finding was fixed in the last commit, independently checked against the
+  Python implementation, and no human thread awaited an answer. No completed
+  Claude review is claimed for that PR. The clean primary checkout was
+  fast-forwarded and the clean, fully merged B-261 checkout removed; its
+  branch remains.
+- PR215's first merge attempt was refused after R243 landed; no merge occurred.
+  An additive main integration resolved the sole generated-search conflict,
+  retained the helper fragment and all six incoming records, and left helper
+  source/tests unchanged. All 200 script tests passed. Head `4a9c410` awaits
+  its required package check; the prior completed Claude review on `7a631a9`
+  found only nits. Its later skipped job supplies no new review evidence.
+  PR215 stays first in the R merge order to avoid repeating this same
+  generated conflict across the dependent log and documentation branches.
+- PR250's actual GitHub Claude review on `5f95b20` completed successfully,
+  ran the four checker tests and all 190 script tests, and found only three
+  nits. The cancelled reference job passed on its one targeted unchanged-head
+  retry. All six checks now pass. Publication waits for PR215's shared log
+  prefix to land before integrating it; no optional nit-fix review loop.
+- The targeted local R245 review reached 45 successful tool results but timed
+  out at 180 seconds without a final result. It is incomplete, like the
+  earlier 360-second full-diff attempt. Reducing the input did not establish
+  either a completed review or a measured time saving. The full compact
+  source patch and generated correspondence were independently inspected;
+  the completed Codex finding is fixed. Keep that evidence separate from
+  the actual nits-only Claude summaries whose completion checks failed.
+- Claude's PR251 nits exposed concrete copies of queue state in S5 and the
+  backlog. Three narrow follow-up commits correct those copies and preserve
+  dated expectations as history; lint, generated blocks and OKF capture
+  pass. Published head `c33dacb` remains draft pending current-head CI and
+  its overlapping PR245 sequencing. This is necessary documentation repair,
+  not justification for a broad sweep or a new planner.
+
+Brett directly selected the supported Python HTTP backend in chat: implement
+and verify it to close the reproduced informational-103 gap. HTTPX 0.28.1 with
+HTTPcore 1.0.9 uses public streaming APIs and manual redirects so an unfinished
+redirect body cannot delay receipt of the final response headers. The paired
+11-route localhost proof now requires identical R/Python outcomes, including
+103 followed by final 200, on Python 3.9.6 and 3.13.11. Host-scoped netrc auth,
+cookies, proxy/CA settings and bounded failures receive separate controls.
+Final independent review and publication are in progress. The dependency lock
+was demonstrated stale before refresh and passes its check afterward. These
+are local transport and installation proofs; required final-head CI and the
+critical public verifier API review remain separate gates. The single B-130
+decision packet records this choice; no parity-deviation ruling is invented.
+
+No new claim or routine approval request was needed. The supported-backend
+choice was consequential and is now answered. Implementation, verification,
+dependency repair, requested audit, coordination and passive waiting remain
+separate buckets. The concrete measured ID lookup reduction remains 52% for
+that lookup alone; this round still provides no defensible whole-run avoidable
+percentage. The next completed use of the safe denial diagnostics, rather
+than an unchanged skipped review, will test whether that adjustment helps.
+
+PR215 merged at 16:56:30 UTC as `0664962`, exact head `4a9c410`, after all six
+current-head checks passed. The clean primary checkout was fast-forwarded;
+its helper checkout had no unique work and archival was requested after
+verifying this successor retains the entire shared log prefix. PR250 now
+integrates that main additively. Its merged NEWS fragment retains both changes
+and all 620 search records in order, with only the combined Internal text
+regenerated. Bundling this append with the necessary integration avoids a
+separate documentation-only push and CI fan-out.
+
+PR251's current-head index timeout was traced to the Ubuntu apt mirror:
+30.9 MB took 10m53s at 47.3 kB/s, consuming most of the 15-minute job before
+the validator ran. PR215 fetched the same inputs in 35s. The one authorized
+unchanged-head infrastructure retry fetched them in 10s and ran the actual
+68-export/64-topic validator successfully. No timeout or validation gate was
+weakened. This measured environment delay does not count as claim bureaucracy.
+
+The B-130 final pass reproduced an invalid-port error accidentally borrowing
+the injected requester's message-based transient heuristic. The concrete
+default-worker regression fails before its narrow correction; preserving the
+explicit permanent classification fixes that path without changing the hook.
+The actual 380.56s Claude backend review completed with no denied calls and
+identified netrc and proxy-bypass compatibility cases. Those findings are being
+reproduced and corrected before publication; its prior frozen-snapshot review
+does not cover later corrections. Requested audit found useful defects here;
+it is not classified as wasted claim coordination.
+
+After the necessary PR215 integration, PR250 passes all 202 script tests in
+10.678s and the 68-export/64-topic reference check. Checker source/tests are
+unchanged from its completed nits-only review. Required remote checks will run
+on the new integration head; the prior green head is not substituted for it.
+
+### Corrections found during the next review use — 2026-10-01
+
+Codex's actual review of PR250 head `6f6b3a1` identified a P2 diagnostic
+mistake: a compound Bash denial was labelled only by its first command, which
+could direct repair toward an already allowed command. Eight pipeline,
+compound, substitution and redirection cases fail before the narrow fix in
+`f3ac497`; all five checker tests pass afterward. Specific fixed labels now
+require a simple invocation; compound/unparsed syntax stays unclassified.
+No shell syntax is executed and no raw text is emitted. Root independently
+read the correction. This is a valid review fix, not the earlier optional
+command-vocabulary nit. Required CI must run on its published corrected head.
+
+The actual targeted B-130 follow-up review completed in 412.519s with no denied
+calls and no Important findings/three nits. Together with the 380.56s first
+round, requested audit took 793.079s and found useful netrc/proxy defects;
+this is not a claimed efficiency saving. The revised Python source passes
+54 focused tests on 3.9/3.13 and 1,778 tests plus 291 subtests on 3.13, with
+the two existing optional skips. The full 3.9 suite's eight unchanged
+`Path.write_text(newline=...)` helper failures remain disclosed. A three-hop
+cookie control strengthens the claimed shared-jar evidence without another
+model-review cycle. Prior manual Requests code already applied its per-request
+proxy decision at each hop, so the correction does not create a new routing
+parity rule. Broader CA/IDNA nits are not expanded into a redesign.
+
+The final paired retry check exposed R's loss of curl's typed failure class.
+The existing supported classed callback seam supplies URL-malformat and
+redirect-limit errors; the narrow R correction preserves them and keeps those
+two default failures permanent, matching Python, while leaving injected
+requester behavior intact. Its source and paired attempt-count verification
+are in progress. No approved divergence or new queue item is invented.
+
+PR250's old-head index job cancelled before validation, but that head also has
+the substantive diagnostic finding above. It is superseded by the correction;
+do not spend a retry on a commit that cannot merge. Batch the valid source fix
+and this durable append in one publication, then watch the new required gates.
+
+### Backend parity proof and next merge batch — 2026-10-01
+
+The final B-130 paired reports pass on Python 3.9.6 and 3.13.11. Both clients
+consume informational 103 headers and return final 200/equal URL across the
+eleven-route header fixture. Public reports agree on one attempt for malformed
+URLs, one for the actual redirect-limit error, and three for a header timeout.
+The loop-classification control needs three seconds to reach the limit; its
+earlier 0.8-second bound measured a real timeout, correctly retried three times,
+instead of the condition the instrument meant to test. Header/timeout controls
+retain 0.8 seconds and the production deadline remains 30 seconds. This was
+verification rework, not a runtime defect or a relaxed deadline.
+
+The three-hop shared-cookie control passes with the 54 focused Python cases on
+both versions. The R correction preserves curl's supported typed callback,
+requires curl >= 6.2.1, and marks only the two default permanent failures before
+the existing injected-requester heuristic. Its 81 focused expectations pass;
+the strict R check reports zero errors, warnings and notes in 1m55.3s. Two
+independent source reads and the actual paired JSON evidence found no remaining
+substantive issue. Existing public API review and final published-head CI
+remain separate gates; the selected backend does not authorize merging that
+critical API. No further model-review round is needed to chase the three nits.
+
+PR245/B-60 merged at 17:37:07 UTC as `6eba4c9`, exact head `dee9089`, under the
+routine documentation/packaging class. All seven current-head checks passed;
+the completed Codex copied-state finding is fixed and no human thread awaited
+an answer. Actual Claude summaries reached nits, but their denied-call
+completion failed; the later skipped job is not claimed as a completed review.
+The first reference-index attempt spent 14m57s in setup-r/apt before validation.
+One unchanged-head retry completed in 68s, with setup-r taking 31s, dependencies
+26s and the actual reference assertion two seconds. This is environment repair,
+not a measured claim-workflow saving. The clean primary checkout was
+fast-forwarded and the clean, fully merged B-60 checkout removed; its branch
+is preserved.
+
+That merge required PR250's next integration: the sole conflict is minified
+generated search JSON. All 657 incoming records and their order are retained;
+only the verified development Internal record combines both additions. Checker
+source/tests stay byte-identical to the fixed `a4d56b3` head and all five focused
+tests pass. Incorrect assumptions about the generated record's identity and
+insertion position failed assertions before correction; one wrong test glob
+ran zero tests and was replaced with the discovered filename. Neither empty
+result counted as evidence. These are implementation/instrument rework, not
+claim bureaucracy. Final required CI must run on the integrated publication.
+
+One small operational adjustment is being tested on PR251: when a PR remains
+mergeable, inspect the synthesized merge and keep its tested head instead of
+adding a base-integration commit solely for freshness. It remains `c33dacb`
+when marked ready, with its existing six checks green and no pending human
+thread. Its automatic Codex review is running. Do not claim an avoided elapsed
+duration or completed review before the outcome. Necessary conflict resolution
+and current-head CI still apply. PR247 waits for this common NEWS batch before
+one integration, avoiding repeated reconstruction of the same generated files.
+
+The bounded cross-chat B-199 audit is recorded separately as requested audit:
+the published annotated sdp-0.3.2 tag, all eight R bundle hashes, R temporal
+conformance and Python's fixed writer are verified. Python still pins
+sdp-0.3.0, three bundle files differ and its written descriptor fails the old
+pattern. The live B-199 claim is a protected handoff, so no claim was taken or
+released. This consultation does not adopt a demo contract or assign an owner.
+
+No new claim, ID allocation or routine publication/merge approval request was
+needed in this batch. The earlier 52% reduction concerns one ID lookup only;
+there is still no defensible whole-run avoidable percentage. Continue to keep
+coordination, implementation, verification, environment repair, requested audit
+and passive waiting separate rather than counting all non-coding time as waste.

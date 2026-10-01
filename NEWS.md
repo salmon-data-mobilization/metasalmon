@@ -1253,6 +1253,11 @@ metasalmon (development version)
 
 ### Internal
 
+* Failed Claude review checks now report a bounded count and fixed tool/command
+  categories for denied calls. Raw inputs, paths, arguments and output remain
+  hidden; denied calls still fail completion. No review permission or merge
+  gate changes.
+
 * `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and indexes
   under the existing pinned toolchain, avoiding a full site rebuild for a NEWS-only
   edit. Publication checks still run; a toolchain change requires a full build.
