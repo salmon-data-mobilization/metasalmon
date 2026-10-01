@@ -8454,6 +8454,15 @@ workpad records.
 *Why this severity:* the rule it would enforce was broken three times before it
 was written down, and one debt is recorded in one place today.
 
+*Landed, 2026-10-01:* B-396's presence check and regression tests merged in
+metasalmon pull request 238 as `670c45ca`. The check compares the same port
+passages as the existing completion rule, records B-179's directional
+exemption with its retirement condition, and distinguishes citations from
+mirror debt. The integrated offline queue suite passed 166 tests; queue lint
+passed with 318 items and retirement-debt baseline zero. Actual Claude review
+completed with only minor nits and all required CI passed. The measurement
+above remains the historical evidence that opened this item.
+
 **From B-201's hand-back** (metasalmonpy pull request 59, merged as `380a7a4`).
 
 **`B-395`: the comparison runs only in metasalmonpy.** metasalmonpy's
