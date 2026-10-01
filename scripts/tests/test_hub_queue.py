@@ -45,6 +45,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -2147,6 +2148,38 @@ class TestPortRecords(QueueTestCase):
         start, end = spans[0]
         self.assertTrue(lines[start].startswith("### metasalmonpy"))
         self.assertTrue(lines[end].startswith("### salmon-domain-ontology"), lines[end])
+
+    def test_a_port_named_in_only_one_debt_passage_is_refused(self):
+        """B-396: a valid landing in one passage cannot hide the absent copy."""
+        self.write_ports()
+        for present in ("register", "roadmap"):
+            with self.subTest(present=present):
+                register = REGISTER_OWED + REGISTER_CLOSED if present == "register" else "No debt.\n"
+                roadmap = ROADMAP_OWED + ROADMAP_LANDED if present == "roadmap" else "No debt.\n"
+                self.write_passages(register, roadmap)
+                output = self.assert_rejects("port-pair-missing")
+                self.assertIn("B-124", output)
+                self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+                self.assert_accepts()
+
+    def test_the_row_53_exception_is_scoped_and_has_a_retirement(self):
+        self.write_item(BASE_DEFECT, id="B-111", repo="metasalmon", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-179", repo="metasalmonpy", state="done",
+                        claimable="false", blocked_by="[B-111]", legacy="''")
+        record = "`B-179` landed as metasalmonpy pull request #39.\n"
+        self.write_passages(record, "No debt.\n")
+        self.assert_rejects("port-pair-missing")
+        self.write_passages("Recorded in row 53 outside this passage.\n", record)
+        self.assert_accepts()
+        exemption = hub_queue.PORT_PAIR_EXEMPTIONS["B-179"]
+        self.assertTrue(exemption["reason"].strip())
+        self.assertTrue(exemption["retires_when"].strip())
+        for field in ("reason", "retires_when"):
+            with self.subTest(missing=field), patch.dict(
+                    hub_queue.PORT_PAIR_EXEMPTIONS, {"B-179": {**exemption, field: ""}}):
+                self.assert_rejects("port-pair-missing")
+        self.assert_accepts()
 
 
 # --------------------------------------------------------------------------

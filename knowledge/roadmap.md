@@ -615,6 +615,21 @@ same stream:** a hub claim covers one branch in one repository. Its metasalmonpy
 queue item is `B-216`, filed by the 2026-09-23 queue sweep. It **landed
 2026-09-25 as metasalmonpy #46**, `2405df2`.
 
+**The recorded-accept marker also owes a separate mirror port:** a caller's
+retrieval candidate with `source = "user"` must remain ontology-gap evidence;
+only an accept actually recorded by `apply_sdp_semantics()` is hand-picked.
+The R/Python pair is **B-249** and **B-250**, specified in the corresponding
+port passage of [`parity-deviations.md`](parity-deviations.md). The two current
+implementations key the exclusion the same way; this is an owed port, with
+no deliberate difference to register.
+
+**The REVIEW-marker ruling owes the Python widening too:** strict validation,
+the EDH gate and `review_metadata()` must cover the same four metadata files.
+Brett's 2026-09-23 ruling is recorded under **B-177**; its mirror port is
+**B-230**. The register's port passage specifies the same widening and explains
+why it is a port rather than a numbered difference. No ontology term choice
+or new ruling is made here.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-24):
 `apply_salmon_dictionary()` names the code values it blanks.** Hub item **B-55**
 makes its codes step warn about each value missing from a column's code list,

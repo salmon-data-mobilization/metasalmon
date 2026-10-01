@@ -1079,6 +1079,11 @@
 
 ### Internal
 
+- Hub queue lint refuses a dependency-linked Python port named in only
+  one mirror debt passage (B-396). The intentional row-53 exception is
+  scoped to its existing direction and records why it exists and what
+  retires it.
+
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
   script `R CMD check` runs** (backlog
