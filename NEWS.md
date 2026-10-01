@@ -1244,6 +1244,10 @@ metasalmon (development version)
 
 ### Internal
 
+- CI's pak bootstrap retries failed downloads up to three times and verifies
+  that pak loads before dependency installation begins. Exhaustion reports an
+  infrastructure failure before package tests or R CMD check run (hub B-155).
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
