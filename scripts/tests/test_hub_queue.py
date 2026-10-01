@@ -2044,6 +2044,7 @@ class TestQueueFactsInProse(QueueTestCase):
             "B-53 is ready, the old card said.",
             "B-53 is blocked on B-90 in that historical snapshot.",
             "B-53 is ready\nin the 2026-09-01 snapshot.",
+            "B-53 is ready?",
         ):
             with self.subTest(attributed=attributed):
                 self.write_prose("knowledge/card.md", attributed + "\n")

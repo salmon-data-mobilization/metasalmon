@@ -297,7 +297,8 @@ B-53 has claimable: false.
 B-53 has blocked_by: [B-90, S-12].
 ```
 
-The recognized assertion ends at sentence punctuation or the paragraph's end.
+The recognized assertion ends at a period/exclamation or the paragraph's end;
+a question mark is an interrogative and passes.
 Trailing attribution such as “in the 2026-09-01 snapshot” or “, the old card
 said” is outside this grammar and passes. This is a conservative syntax rule,
 not a claim that a general history detector exists.

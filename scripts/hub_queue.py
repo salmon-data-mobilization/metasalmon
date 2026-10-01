@@ -2387,7 +2387,7 @@ QUEUE_FACT_SENTENCE_RE = re.compile(
     + "|" + _PROSE_DECORATION + r"claimable" + _PROSE_DECORATION + r"\s*:\s*"
     + _PROSE_DECORATION + r"(?:true|false)\b" + _PROSE_DECORATION
     + "|" + _PROSE_DECORATION + r"blocked_by" + _PROSE_DECORATION + r"\s*:\s*\[[^\]\n]*\]))"
-    + r"(?=[ \t]*(?:[.!?]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER + r"|\Z)))",
+    + r"(?=[ \t]*(?:[.!]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER + r"|\Z)))",
     re.MULTILINE | re.IGNORECASE,
 )
 
