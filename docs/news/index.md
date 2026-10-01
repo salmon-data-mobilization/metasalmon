@@ -1079,6 +1079,11 @@
 
 ### Internal
 
+- Failed Claude review checks now report a bounded count and fixed
+  tool/command categories for denied calls. Raw inputs, paths, arguments
+  and output remain hidden; denied calls still fail completion. No
+  review permission or merge gate changes.
+
 - Claude CI reviews drafts and each new PR head. A missing completion
   result, denied tool call or unconfirmed head fails the review job
   instead of looking like a successful review. Superseded review runs
