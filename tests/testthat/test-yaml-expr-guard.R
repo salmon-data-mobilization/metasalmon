@@ -53,6 +53,7 @@ yaml_reader_fns <- c("yaml.load", "read_yaml", "yaml.load_file")
 # cannot find, a changed call shape) fails instead of passing over nothing.
 # Delete an entry when its read is deleted; add one when a read is added.
 known_yaml_read_fns <- c(
+  ".ms_eml_mapping_native_directive_start",
   ".ms_sssom_parse_metadata",
   "write_eml_from_sdp",
   ".ms_knb_sdp_artifact_paths",

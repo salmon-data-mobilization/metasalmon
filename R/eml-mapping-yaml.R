@@ -1,6 +1,31 @@
 # One owner for the reviewed EML sidecar's unknown-tag refusal (Q62). The
 # closure uses it now; B-223 can reuse it for EML/KNB without a second detector.
 # Known YAML core tags remain valid, as in metasalmonpy's SafeLoader.
+.ms_eml_mapping_native_directive_start <- function(lines, candidates) {
+  # A tag handle is not a YAML version: changing only the directive keyword
+  # makes a genuine definition fail natively, while preserving every quote,
+  # escape and comment character around a literal lookalike. The native source
+  # line identifies the first genuine definition, excluding quoted lookalikes
+  # earlier in the same group. No quote-state parser is needed.
+  probe <- lines
+  probe[candidates] <- sub("^%TAG", "%YAML", probe[candidates])
+  suppressWarnings(tryCatch({
+    yaml::yaml.load(paste(probe, collapse = "\n"), eval.expr = FALSE)
+    NA_integer_
+  }, error = function(e) {
+    match <- regexec(
+      "while scanning a %YAML directive at line ([0-9]+), column ",
+      conditionMessage(e)
+    )
+    parts <- regmatches(conditionMessage(e), match)[[1L]]
+    if (length(parts) < 2L) {
+      return(NA_integer_)
+    }
+    line <- as.integer(parts[[2L]])
+    if (line %in% candidates) line else NA_integer_
+  }))
+}
+
 .ms_eml_mapping_has_unknown_tag <- function(text) {
   if (!grepl("!", text, fixed = TRUE)) {
     return(FALSE)
@@ -10,10 +35,11 @@
     "set", "str", "seq", "map"
   ))
   lines <- strsplit(text, "\n", fixed = TRUE)[[1]]
+  source_lines <- lines
+  document_start <- 1L
   handles <- c("!!" = "tag:yaml.org,2002:")
   handle_names <- names(handles)
-  in_prelude <- TRUE
-  pending_directive <- FALSE
+  pending_directives <- integer()
   # An undefined handle is a native node-resolution signal, before a tagged
   # collection is constructed. A source directive must not define our probe.
   private_handle <- "!metasalmon-eml-probe!"
@@ -40,31 +66,43 @@
   changed <- FALSE
   for (line_index in seq_along(lines)) {
     line <- lines[[line_index]]
-    if (in_prelude && grepl("^%TAG[[:space:]]", line)) {
-      if (!pending_directive) {
-        handles <- c("!!" = "tag:yaml.org,2002:")
-      }
-      parts <- strsplit(trimws(line), "[[:space:]]+")[[1]]
-      if (length(parts) >= 3L) {
-        handles[parts[[2L]]] <- parts[[3L]]
-      }
-      pending_directive <- TRUE
+    if (grepl("^%TAG[[:space:]]", line)) {
+      pending_directives <- c(pending_directives, line_index)
+      # Directives may follow an implicit document end. Keep this line intact
+      # in the native probe; a following `---` supplies a bounded segment in
+      # which libyaml can establish which definitions are actually directives.
       next
     }
     if (grepl("^---(?:[ \t]|$)", line, perl = TRUE)) {
-      if (!pending_directive) {
-        handles <- c("!!" = "tag:yaml.org,2002:")
+      handles <- c("!!" = "tag:yaml.org,2002:")
+      next_document_start <- line_index
+      if (length(pending_directives)) {
+        first <- .ms_eml_mapping_native_directive_start(
+          source_lines[seq.int(document_start, line_index - 1L)],
+          pending_directives - document_start + 1L
+        )
+        if (!is.na(first)) {
+          first <- document_start + first - 1L
+          for (directive_index in pending_directives[pending_directives >= first]) {
+            parts <- strsplit(trimws(source_lines[[directive_index]]),
+                              "[[:space:]]+")[[1L]]
+            if (length(parts) >= 3L) handles[parts[[2L]]] <- parts[[3L]]
+          }
+          # Include this prelude when proving the next boundary: its handles
+          # are needed to parse the intervening document's original nodes.
+          next_document_start <- first
+        }
       }
-      pending_directive <- FALSE
-      in_prelude <- FALSE
+      document_start <- next_document_start
+      pending_directives <- integer()
     } else if (grepl("^\\.\\.\\.(?:[ \t]|$)", line, perl = TRUE)) {
       handles <- c("!!" = "tag:yaml.org,2002:")
-      pending_directive <- FALSE
-      in_prelude <- TRUE
+      document_start <- line_index + 1L
+      pending_directives <- integer()
     } else if (!grepl("^[ \t]*(?:#|$)|^%YAML[[:space:]]", line, perl = TRUE)) {
-      # Once content starts, a %TAG-looking line in quoted content is literal.
+      # A %TAG-looking line followed by ordinary content was not a prelude.
       # Native parsing remains responsible for malformed directive placement.
-      in_prelude <- FALSE
+      pending_directives <- integer()
     }
     handle_names <- names(handles)[order(-nchar(names(handles)), method = "radix")]
     positions <- gregexpr(tag_token, line, perl = TRUE)[[1]]
@@ -100,9 +138,11 @@
   # while quoted/plain/comment/block literal text remains literal. Syntax
   # errors before an unreached tag retain the existing malformed-input fallback.
   # The diagnostic is native, without user error.label or custom handler errors.
-  # One disposable parse plus the untouched real read: at most two parses,
-  # regardless of literal bang count; no size/count rejection. Retires when yaml
-  # exposes original tags or a native unknown-tag-refusal option.
+  # Literal bangs need one disposable parse plus the untouched real read.
+  # Directive groups additionally need one native segment proof per document
+  # boundary. Each document/prelude is visited at most twice in those proofs,
+  # rather than reparsing the full sidecar per candidate. No size/count limit.
+  # Both probes retire when yaml exposes original tags or native tag refusal.
   suppressWarnings(tryCatch({
     yaml::yaml.load(paste(lines, collapse = "\n"), eval.expr = FALSE)
     FALSE

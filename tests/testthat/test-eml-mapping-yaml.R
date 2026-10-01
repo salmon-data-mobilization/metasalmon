@@ -98,6 +98,79 @@ test_that("unknown tags in later YAML documents cannot hide behind the first", {
   expect_identical(.ms_closure_mapping_paths(sidecar)$vocabulary, "metadata/declared.csv")
 })
 
+test_that("directives after an implicit document end preserve tag classification", {
+  prefix <- "semantic_vocabulary:\n  path: metadata/declared.csv\n"
+  sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+  unknown <- paste0(prefix, "%TAG !e! tag:example.org,2026:\n---\nx: !e!foo value")
+  # The original parse is valid: a directive can end the previous document
+  # implicitly. Refusal must come from the reached tag, not a syntax fallback.
+  expect_type(suppressWarnings(yaml::yaml.load(unknown, eval.expr = FALSE)), "list")
+  writeLines(unknown, sidecar)
+  expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
+
+  standard <- paste0(prefix, "%TAG !e! tag:yaml.org,2002:\n---\nx: !e!str value")
+  writeLines(standard, sidecar)
+  expect_identical(.ms_eml_read_mapping_yaml(sidecar),
+                   yaml::yaml.load(standard, eval.expr = FALSE))
+  expect_identical(.ms_closure_mapping_paths(sidecar)$vocabulary, "metadata/declared.csv")
+})
+
+test_that("quoted directive groups cannot become bindings at a later document", {
+  unknown <- c(
+    'description: "first\n%TAG ! tag:yaml.org,2002:\n# last"\n---\nx: !str value',
+    paste0('description: "first\n%TAG ! tag:yaml.org,2002:\n# last"\n',
+           '%TAG !e! tag:yaml.org,2002:\n%TAG !f! tag:yaml.org,2002:\n',
+           '---\nx: !str value\ny: !e!str value\nz: !f!str value')
+  )
+  for (text in unknown) {
+    sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+    expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+    writeLines(text, sidecar)
+    expect_error(.ms_closure_mapping_paths(sidecar), "unsupported YAML tag")
+  }
+  known <- c(
+    'description: "first\n%TAG !! tag:example.org,2026:\n# last"\n---\nx: !!str value',
+    paste0('description: "first\n%TAG !e! tag:yaml.org,2002: # last"\n',
+           '%TAG !e! tag:yaml.org,2002:\n---\nx: !e!str value'),
+    paste0('%TAG !e! tag:yaml.org,2002:\n---\nx: !e!str value\n',
+           '%TAG !e! tag:yaml.org,2002:\n# a comment with "\n',
+           '%TAG !f! tag:yaml.org,2002:\n---\nx: !e!str value\ny: !f!str value')
+  )
+  for (text in known) {
+    sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+    expected <- yaml::yaml.load(text, eval.expr = FALSE)
+    writeLines(text, sidecar)
+    expect_identical(.ms_eml_read_mapping_yaml(sidecar), expected)
+  }
+})
+
+test_that("native directive proof visits document segments linearly", {
+  document <- paste0(
+    "%TAG !e! tag:yaml.org,2002:\n---\nx: !e!str value\n",
+    'notes: "', strrep("ordinary text ", 500L), '"\n'
+  )
+  text <- paste(rep(document, 40L), collapse = "")
+  real_proof <- .ms_eml_mapping_native_directive_start
+  bytes <- 0
+  calls <- 0L
+  testthat::local_mocked_bindings(
+    .ms_eml_mapping_native_directive_start = function(lines, candidates) {
+      calls <<- calls + 1L
+      bytes <<- bytes + sum(nchar(lines, type = "bytes")) + length(lines) - 1L
+      real_proof(lines, candidates)
+    }
+  )
+  sidecar <- file.path(withr::local_tempdir(), "eml-mapping.yml")
+  writeLines(text, sidecar)
+  expect_identical(.ms_eml_read_mapping_yaml(sidecar),
+                   yaml::yaml.load(text, eval.expr = FALSE))
+  expect_gt(calls, 0L)
+  # A whole-sidecar parse at every boundary would be quadratic. Original
+  # document content is visited once and its prelude can be reused once.
+  # Retires with the native directive discriminator's successor tag API.
+  expect_lte(bytes, 2 * nchar(text, type = "bytes"))
+})
+
 test_that("unknown-tag refusal precedes later malformed syntax", {
   for (text in c(
     "%TAG !e! tag:example.org,2026:\n---\nx: !e!str value\n...\n%TAG !e! tag:yaml.org,2002:\n---\nx: !e!str value",
