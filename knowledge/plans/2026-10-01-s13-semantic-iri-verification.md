@@ -38,7 +38,7 @@ on failure as well, so a failed publication leaves reviewable evidence.
 - [x] 2026-10-01: Implement exact-IRI collection, transport classification, and a report persisted before aggregate failure.
 - [x] 2026-10-01: Demonstrate bounded retries, complete failure reporting, deterministic bytes, descriptor fallback, SSSOM coverage, and symlink refusal with stubbed transport.
 - [x] 2026-10-01: Finish local strict package check and review the final diff; focused tests, package suite, documentation build, queue and OKF checks passed.
-- [ ] Publish the R draft and record the Python port as owed, then update this outcome.
+- [x] 2026-10-01: Publish the R draft pull request and record the Python port as owed.
 
 ## Context and implementation
 
@@ -141,11 +141,12 @@ No invented queue ID or ontology ruling is implied by this plan.
 
 ## Outcomes and recovery
 
-The R verifier and its offline regressions are implemented. The local strict
-R CMD check passed with zero errors, warnings, or notes; GitHub CI and the
-Python port remain outstanding at this point. The report is written before
-the aggregate abort, including status-less transport errors and their final
-attempt counts. If the process stops before report replacement, rerun the
-verifier on the unchanged SDP. If it reports failures, inspect its CSV and
+The R verifier and its offline regressions are implemented in
+[draft pull request 244](https://github.com/salmon-data-mobilization/metasalmon/pull/244).
+The local strict R CMD check passed with zero errors, warnings, or notes;
+GitHub CI and the Python port remain outstanding at this point. The report is
+written before the aggregate abort, including status-less transport errors
+and their final attempt counts. If the process stops before report
+replacement, rerun the verifier on the unchanged SDP. If it reports failures, inspect its CSV and
 correct the upstream vocabulary or package metadata before publication; a
 failed dereference is not a warrant to substitute a different ontology term.
