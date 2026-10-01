@@ -1255,6 +1255,11 @@ metasalmon (development version)
 * `scripts/hub_ids.py` scans fetched branches and registered worktrees for
   numbered queue items and legacy headings, reporting ID collisions or an
   unreserved next-number suggestion. It creates no claim or reservation.
+* Claude CI reviews drafts and each new PR head. A missing completion result,
+  denied tool call or unconfirmed head fails the review job instead of looking
+  like a successful review. Superseded review runs are cancelled. Each PR gets
+  at most five review rounds, and none after a round that found only nits;
+  what counts as important is set in `REVIEW.md`.
 
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
