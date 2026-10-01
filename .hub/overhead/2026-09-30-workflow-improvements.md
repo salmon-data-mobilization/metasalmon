@@ -412,3 +412,55 @@ These are draft review surfaces, not merge or queue-completion records. Actual
 Claude reviews of the new heads remain absent. Failed/skipped jobs are not
 counted as review convergence; the bootstrap-workflow decision is still pending.
 There is still no defensible whole-run percentage of wasted time.
+
+
+## Reconciliation reused and prerequisite integration verified
+
+The NEWS/favicon change is published as
+[PR247](https://github.com/salmon-data-mobilization/metasalmon/pull/247)
+at `626e3a0`. The recovered seven favicon inputs are byte-identical to the
+existing outputs. A pinned build after recovery took13.63s; its repeat took
+13.31s and changed no NEWS/search hashes. Replaying B-58's actual seven-line
+NEWS patch took14.45s and changed only two added/one removed HTML lines, eight
+added Markdown lines and the corresponding Added search record. No historical
+fragment cleanup was needed. This is a controlled reuse of a real task patch,
+not an independent next claim or a measured whole-task percentage.
+
+Independent review confirmed all545 non-NEWS search records are unchanged.
+It also confirmed a concrete integration dependency: the newly rendered packet
+API NEWS links need the two reference pages supplied by PR245. The change stays
+draft and records that ordering. No additional build framework was introduced.
+
+B-130's same-stream Python companion is
+[PR85](https://github.com/salmon-data-mobilization/metasalmonpy/pull/85)
+at `fbd44f1`; all remote test/parity/doc/changelog checks pass. Thirty focused
+checks include minimumPython3.9 and exact R report-byte parity; the full suite
+passes1754tests and291subtests. Its elapsed interval was approximately8minutes;
+un-timed setup/coordination observations are retained without an unsupported
+percentage. Both verifier modules record the later B-58 condition-family
+integration obligation; no conditional compatibility shim was added.
+
+B-123 initially failed overall CI because its required workpad exposed the
+existing compiler bug fixed by PR41. After the owner confirmed its checkout
+was clean/frozen, root integrated PR41's exact published commit with an
+additive local merge and documented the parent dependency. The original fix is
+reused, with no duplicate implementation or weakened validation. Compiler and
+identity controls pass locally; both full remote checks now pass at `2d4a2db`.
+This lets verification proceed without a GitHub merge or another approval
+round. The nine verification-policy choices remain unresolved, and B-123 is
+not retired. This single dependency integration is measured as a practical
+execution adjustment, not generalized into a new mandatory workflow.
+
+B-238 has now repaired all12 formerly failing primary card ledgers. A direct
+aggregate check on20 primary commons cards reports zero errors; pre-existing
+nonfatal warning wording remains disclosed. Reading the actual Q64 ruling
+revealed two cards still asking for choices Brett had already made. Their
+bounded content correction avoids asking him again; unrelated definition
+choices remain in the grouped decision packet. Domain/source repair time is
+not attributed to claim bureaucracy.
+
+B-58 R PR246 and the latest helper head `cc920d6` have their remote checks
+green; new heads still lack actual Claude reviews. The existing hourly quiet
+heartbeat continues the work and review loop. There is still no reliable
+whole-run waste percentage, and no queue item is reported complete merely
+because its draft was published or CI passed.
