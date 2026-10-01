@@ -3,11 +3,12 @@
 
 Usage: python3 scripts/hub_ids.py B       # next observed B number
        python3 scripts/hub_ids.py B-427   # where this ID is already seen
+       python3 scripts/hub_ids.py B Q     # several queries, one snapshot
 
 Read-only: no fetch, claim, reservation, promotion, or GitHub API call. Fetch
 origin first. Other clones' unpublished work and future concurrent writes are
 unseen. Retires when queue IDs are allocated atomically by the owning system.
-Exit 0: suggestion / ID unseen; 1: ID seen; 3: scan incomplete or invalid ID.
+Exit 0: suggestions / all IDs unseen; 1: any ID seen; 3: incomplete or invalid.
 """
 
 from __future__ import annotations
@@ -127,11 +128,11 @@ def scan(repo: Path) -> tuple[dict[str, set[str]], int, int]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("id_or_prefix", help="B, Q, S, or an ID such as B-427")
+    parser.add_argument("id_or_prefix", nargs="+", help="B, Q, S, or IDs such as B-427")
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parent.parent)
     args = parser.parse_args(argv)
-    match = re.fullmatch(r"([BQS])(?:-([0-9]+))?", args.id_or_prefix)
-    if not match:
+    matches = [re.fullmatch(r"([BQS])(?:-([0-9]+))?", item) for item in args.id_or_prefix]
+    if any(match is None for match in matches):
         print("unknown: expected B, Q, S, or an ID such as B-427", file=sys.stderr)
         return 3
     try:
@@ -139,10 +140,25 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, UnicodeError, RuntimeError, ValueError) as error:
         print(f"unknown: {error}", file=sys.stderr)
         return 3
-    prefix, number = match.groups()
+    # Check every requested prefix before emitting any suggestion. An incomplete
+    # batch must not leave an apparently usable partial allocation behind.
+    suggestions = {}
+    for match in matches:
+        prefix, number = match.groups()
+        if number is None:
+            numbers = [int(item.split("-")[1]) for item in found if item.startswith(prefix + "-")]
+            if not numbers:
+                print(f"unknown: no {prefix} positive control in source locations", file=sys.stderr)
+                return 3
+            suggestions[prefix] = max(numbers) + 1
     print(f"Scanned {refs} fetched/local refs and {worktrees} registered worktrees.")
     print("Fetch first. Suggestions are unreserved; other clones' unpublished work is unseen.")
-    if number is not None:
+    seen = False
+    for match in matches:
+        prefix, number = match.groups()
+        if number is None:
+            print(f"Next observed {prefix} suggestion: {prefix}-{suggestions[prefix]}")
+            continue
         item = f"{prefix}-{int(number)}"
         sources = sorted(found.get(item, ()))
         print(f"{item}: {'seen' if sources else 'unseen in this snapshot'}")
@@ -150,13 +166,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {source}")
         if len(sources) > 8:
             print(f"  ... {len(sources) - 8} further source locations")
-        return 1 if sources else 0
-    numbers = [int(item.split("-")[1]) for item in found if item.startswith(prefix + "-")]
-    if not numbers:
-        print(f"unknown: no {prefix} positive control in source locations", file=sys.stderr)
-        return 3
-    print(f"Next observed {prefix} suggestion: {prefix}-{max(numbers) + 1}")
-    return 0
+        seen = seen or bool(sources)
+    return 1 if seen else 0
 
 
 if __name__ == "__main__":

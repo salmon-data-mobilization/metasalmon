@@ -53,6 +53,8 @@ claim rules remain in `HUB.md` and the applicable `AGENTS.md`.
 Before drafting a new numbered item, `git fetch origin` then
 `python3 scripts/hub_ids.py B` (or `Q`/`S`) suggests the next observed ID;
 passing `B-427` instead reports its source locations. The optional read-only
+helper accepts several queries, such as `python3 scripts/hub_ids.py B Q B-427`,
+using one snapshot; exit 1 means at least one explicit ID was seen. The
 scan covers queue filenames and numbered question/backlog headings in local
 and fetched remote branches, plus registered worktrees including unpublished
 files. An incomplete read exits 3 instead of suggesting a number. This is a

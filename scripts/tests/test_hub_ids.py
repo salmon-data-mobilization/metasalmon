@@ -72,6 +72,28 @@ class IdScan(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             self.assertEqual(hub_ids.main(["B", "--repo", str(self.repo / "missing")]), 3)
 
+    def test_multiple_queries_share_one_snapshot(self):
+        output = io.StringIO()
+        with patch.object(hub_ids, "scan", wraps=hub_ids.scan) as scan, \
+                contextlib.redirect_stdout(output):
+            self.assertEqual(hub_ids.main(["B", "Q", "B-427", "--repo", str(self.repo)]), 1)
+        scan.assert_called_once_with(self.repo)
+        self.assertIn("B-429", output.getvalue())
+        self.assertIn("Q-73", output.getvalue())
+        self.assertIn("B-427: seen", output.getvalue())
+        self.assertEqual(output.getvalue().count("Scanned "), 1)
+
+    def test_invalid_batch_does_not_print_partial_suggestions(self):
+        output = io.StringIO()
+        with patch.object(hub_ids, "scan") as scan, contextlib.redirect_stdout(output), \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(hub_ids.main(["B", "Q-no", "--repo", str(self.repo)]), 3)
+        scan.assert_not_called()
+        self.assertNotIn("suggestion", output.getvalue())
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(hub_ids.main(["B", "S", "--repo", str(self.repo)]), 3)
+        self.assertNotIn("suggestion", output.getvalue())
+
     def test_failed_tree_read_cannot_suggest(self):
         real_git = hub_ids.git
         def failing_git(repo, *args):
