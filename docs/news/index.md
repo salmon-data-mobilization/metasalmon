@@ -101,6 +101,13 @@
 
 ### Fixed
 
+- Session IDs no longer advance or initialize the user's random-number state,
+  and BioPortal's once-per-session missing-key warning is recorded privately
+  instead of in `options()`. `?metasalmon_configuration` documents the current
+  option and environment inventory from one registry; package loading fills
+  only missing concrete defaults, preserving user settings, backend-specific
+  timeout inheritance and unset credentials (hub B-59).
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
