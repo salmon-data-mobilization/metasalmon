@@ -3276,6 +3276,12 @@ failing the job, or fails with a message that names it as an infrastructure
 failure rather than a check failure; demonstrated against a simulated download
 failure.
 
+*Landed 2026-10-01:* metasalmon pull request #218, merge `a6baf94`, adds the
+bounded CI `pak` installer and six offline bootstrap checks. It verifies that
+the namespace is loadable before calling an attempt successful and names
+exhaustion as infrastructure failure. Current-head CI and the completed
+reviews passed; merged under Brett's delegated routine-merge authorization.
+
 ***`B-156` was reassigned to `Q50` on 2026-09-16 and the `B-156` id is retired
 unused.*** The Frictionless `profile`-versus-`$schema` finding is a question and
 its entry is in [`questions.md`](questions.md) as
@@ -7970,6 +7976,14 @@ moves. This ruling moves metasalmonpy only, so no R item was filed.
 *Why this severity:* on the documented Python path, `pandas.read_csv()` then
 `create_sdp()`, every date column arrives as text, so every one without a time
 word is typed differently from R, and every one gets `value_type` `string`.
+
+*Landed 2026-10-01:* metasalmonpy pull request #90, merge `7ad6139`, shares the
+readr date-text guess between role and value-type inference while retaining
+the seeder wrapper. Focused, minimum-supported, core, extras and current-head
+CI checks passed. The completed review's in-memory asymmetry finding was
+answered with the explicit ruling and the anticipated input boundary above;
+no R change or numbered register row was introduced. Merged under Brett's
+delegated routine-merge authorization; its workpad lives in metasalmonpy.
 
 **`B-350` and `B-351`: canonical SSSOM/TSV (call (k)).** The specification's
 *Canonical SSSOM/TSV format* section, read from `src/docs/spec-formats-tsv.md` in
