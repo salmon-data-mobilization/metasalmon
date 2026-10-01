@@ -194,3 +194,72 @@ skips. During B-186 handoff, root edited the client while Bash was still
 reading it: the claim handoff succeeded, followed by a stray parse/read error.
 An idempotent repeat confirmed handoff. Freeze the client during live commands
 as well as harness runs; this was an avoidable coordination race.
+
+
+## Sustained parallel round, observed through 05:59 UTC on 2026-10-01
+
+The useful balance is now in use: each real agent selects an independent
+eligible item, runs its evidence-driven checks, publishes under the standing
+chat approval and hands it off. Root does not approve these routine steps
+again. Claims and handoffs remain in the existing client; merge decisions
+remain with Brett. This has kept three implementation agents working while
+root fixes the review instrument and completes separate claims.
+
+### Concrete results of the small changes
+
+| Observation | Evidence and limits |
+| --- | --- |
+| B-203 reuses the NEWS-only route | 22.5s; generated output scope is three tracked paths. Claim-to-publication was about14m19s, including policy review, experiments and documentation, so that interval is not a waste estimate. |
+| B-177 reuses the route | NEWS16s plus search9.5s; baseline/RED/GREEN tests11.8/7.4/8s. Claim-to-publication about11m48s. Different task scopes prevent a causal before/after percentage. |
+| B-133 uses focused verification | About11m40s claim-to-ready; approximately5m10s was verification and1m publication. The complete CI and actual Claude review passed. |
+| Routine publication is autonomous | Agents published B-203, B-256, B-371, B-177, B-229, B-23, B-262, B-264 and B-310 without an extra root/user permission round. |
+| Source/site drift still consumes effort | B-269 final inspection caught a duplicated older news fragment. It was removed; only the new NEWS and reader search entries changed. This manual curation is the next improvement candidate. |
+| Root interleaves work | B-269's claim began05:19:17, but review-workflow repair occupied the same interval. Elapsed claim duration is not a task-only or administrative duration. |
+
+### Review evidence and repair
+
+Claude has actually commented “No issues found” on helper PR215 at3adde91 and
+vignette PR220 at1d48520. A green job without a posted review is not counted.
+Draft PR jobs skip, and the plugin also skips already-commented PRs, so it
+cannot supply the iterative review requested. PR222 replaces those skips with
+a scoped per-head review and checks successful read/diff/comment tool results,
+a successful SDK result, no denials and the exact reviewed-head marker.
+
+The Anthropic action refuses a changed workflow before it reaches the default
+branch. The repair therefore needs one explicit bootstrap merge decision;
+its five other CI checks pass at051dd05. This is a concrete approval boundary,
+not another routine publication question. Local Claude is still logged out.
+A separate B-229 Claude job failed after375ms with no model usage, so it also
+provides no review. No claim is described as Claude-reviewed on those signals.
+
+Codex found a real public-wrapper candidate-limit defect in Python PR80.
+The agent reproduced3 versus6 candidates, fixed the wrapper and verified28
+focused tests in both environments; repair head dd8a5b0 has all three workflows
+green. Root's independent B-269 read agrees with the enum change; a truncated
+source read incorrectly reported a missing similarity field, and a direct read
+of the pinned schema confirmed its string range. Review findings need evidence.
+
+### Published surfaces for resumption
+
+These links record where the work can be reviewed. They do not replace live
+queue/claim state or assert merge completion.
+
+| Hub item | Pull request |
+| --- | --- |
+| B-99 | [smn-data-pkg13](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/13) |
+| Helpers | [metasalmon215](https://github.com/salmon-data-mobilization/metasalmon/pull/215) |
+| B-268 / B-132 / B-155 / B-186 | [216](https://github.com/salmon-data-mobilization/metasalmon/pull/216), [217](https://github.com/salmon-data-mobilization/metasalmon/pull/217), [218](https://github.com/salmon-data-mobilization/metasalmon/pull/218), [219](https://github.com/salmon-data-mobilization/metasalmon/pull/219) |
+| B-133 / B-203 | [220](https://github.com/salmon-data-mobilization/metasalmon/pull/220), [221](https://github.com/salmon-data-mobilization/metasalmon/pull/221) |
+| Review repair | [222](https://github.com/salmon-data-mobilization/metasalmon/pull/222) |
+| B-256 / B-371 / B-177 / B-229 | [223](https://github.com/salmon-data-mobilization/metasalmon/pull/223), [224](https://github.com/salmon-data-mobilization/metasalmon/pull/224), [225](https://github.com/salmon-data-mobilization/metasalmon/pull/225), [226](https://github.com/salmon-data-mobilization/metasalmon/pull/226) |
+| B-23 / B-262 / B-137 / B-269 / B-310 | [228](https://github.com/salmon-data-mobilization/metasalmon/pull/228), [229](https://github.com/salmon-data-mobilization/metasalmon/pull/229), [230](https://github.com/salmon-data-mobilization/metasalmon/pull/230), [231](https://github.com/salmon-data-mobilization/metasalmon/pull/231), [232](https://github.com/salmon-data-mobilization/metasalmon/pull/232) |
+| B-261 / B-302 / B-264 | [Python79](https://github.com/salmon-data-mobilization/metasalmonpy/pull/79), [80](https://github.com/salmon-data-mobilization/metasalmonpy/pull/80), [81](https://github.com/salmon-data-mobilization/metasalmonpy/pull/81) |
+
+### Next adjustment
+
+A dedicated NEWS source/site reconciliation could remove repeated manual
+fragment restoration. Keep it separate from defect branches and measure its
+next use before adding automation. More workflow design is deferred while
+independent claims can proceed. Requested measurement, environment repair,
+verification, implementation rework and avoidable coordination remain separate;
+there is still no defensible whole-run “percent wasted” measurement.
