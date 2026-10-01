@@ -440,10 +440,17 @@
       # `tables.csv`'s method and protocol placements, which neither of those
       # branches visits.
       if (file_name %in% .ms_review_iri_files() &&
-          .ms_review_iri_field_is_swept(file_name, field) &&
-          .ms_is_unresolved_iri(value)) {
-        add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
-        next
+          .ms_review_iri_field_is_swept(file_name, field)) {
+        unresolved_iri <- if (identical(file_name, "column_dictionary.csv") &&
+                              identical(field, "constraint_iri")) {
+          .ms_constraint_iri_has_review_marker(value)
+        } else {
+          .ms_is_unresolved_iri(value)
+        }
+        if (unresolved_iri) {
+          add(row, field, "iri", hint = .ms_metadata_iri_hint(field))
+          next
+        }
       }
       if (field %in% keys) {
         next
