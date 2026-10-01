@@ -260,6 +260,9 @@
 }
 
 .ms_sssom_metadata_has_yaml_tag <- function(yaml_text) {
+  # Retires when the YAML parser offers a native reject-explicit-tags mode
+  # covering local, standard and verbatim tags while the public controls below
+  # keep passing without this probe.
   if (!grepl("!", yaml_text, fixed = TRUE)) {
     return(FALSE)
   }
