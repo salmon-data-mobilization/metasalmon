@@ -401,8 +401,19 @@ terms B-232 must define:
 - **(e)** Composed text for five terms with no prior wording: approve the cards'
   wording, or name the ones to redo. Open.
 
-**Owner:** `B-232`, which writes the definitions once each ruling lands, and
-`B-238` for the commons research behind them.
+**Owner:** queue item `Q-64` holds the remaining ruling and consequence-owner
+condition; `B-238` owns the commons cards and `B-232` the later ontology
+definitions. Neither implementation item can retire as an updater for an
+unanswered part without the blocked post-ruling owner its own condition
+requires.
+
+**Known implementation consequence of (b):** the current
+`smn:AggregatedMeasurementShape` still requires an enumeration method for every
+aggregate, and its scheme check excludes real gcdfo enumeration concepts; the
+[draft commons measurement card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/2a8fc11/concepts/individual-aggregated-and-model-measurements.md)
+locates both constraints. Queue item `B-428` owns the bounded SHACL and test
+repair. That is work from the already recorded (b) ruling, not a new choice
+inside (c)-(e).
 
 ### Q65 — D-2: how does Brett's ~5 h/week split between S14 and tern, and which calendar wins a contested week?
 **Unblocks:** tern's stage 0 (its `PLAN.md` §14 lists D-2 as blocking) and an
@@ -507,6 +518,53 @@ promises no fallback. The case the other way: a user who has fetched once can
 keep working offline in R and cannot in metasalmonpy, whose own module
 docstring names offline work as a purpose of its cache.
 **Owner:** [S2](sequences/s2-correctness-debt.md), with the queue item `Q-71`.
+
+### Q73 — Which remaining B-232 meanings and representation choices should the commons cards carry?
+
+**Evidence:** the [B-238 decision packet at commons commit
+2a8fc11](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/2a8fc11/docs/b238-definition-decisions.md)
+groups the source-backed draft cards and records what remains uncertain. A
+proposed definition in a card is not an approved meaning. Brett can answer the
+parts below separately; this question remains open until each part has an answer.
+
+- **Entities, groups and places:** Does `smn:Entity` include places and reporting
+  strata? When is a sampled set `smn:SalmonGroup` rather than `sosa:Sample`,
+  and do eggs or carcasses count as `smn:SalmonIndividual`? Is
+  `SalmonPopulationGroup` one population or a nested group; do
+  `SalmonStockUnit` (fish) and `smn:Stock` (designation) both remain; and is
+  `HabitatUnit` a surveyed channel unit or a broad habitat area? Separately,
+  does `Life-HistoryCharacteristic` describe an individual or group trait,
+  and how does `SalmonLifeStage` distinguish maturity classes from stage
+  values?
+- **Events and fishing:** Do `smn:EventType` and `smn:FishingType` classify
+  events or the values used by `smn:hasEventType`? If values, should
+  `smn:seiningEvent` migrate to a SKOS concept? Does FishingType distinguish
+  gear or technique, or a fishery category?
+- **Observation, measurement and methods:** With Q64(a) already selecting the
+  SOSA-act sense of `smn:Observation`, do it, `smn:Measurement` and the view
+  class `smnv:SalmonDataObservation` still need three IRIs, and what
+  distinguishes Measurement? Does `IndividualMeasurement` cover only a fish
+  or any single feature? Where does `ModelMeasurement` start relative to
+  arithmetic summaries and expansion? Is `FishLengthMeasurementType` a class
+  of acts or a property/procedure composition? Which of
+  `FishForkLengthMeasurementMethod` and `ForkLengthMeasurementMethod` remains,
+  and what do their field and laboratory children mean? Q64(b) already ruled
+  that `AggregatedMeasurement` covers any group summary; its SHACL repair is
+  an implementation consequence, not another question here.
+- **Morphology and length landmarks:** Does morphology include mass and body
+  shape? Does `FishWeight` cover one fish and aggregate catch weight, and
+  where does processing state belong? Is `fusiform` an OWL determinate or a
+  SKOS shape value? Does `FishLength` include every axial landmark length,
+  and which of the documented orbit-referenced lengths, if any, is
+  `orbitalLength`?
+
+**Separate owners:** Q64(c-e) keeps its existing question and Q-64 queue item;
+Q-48 governs the taxonomic-assignment pattern and Q-61 governs `smn:Run`.
+This entry does not reopen Q64(a-b) or duplicate those questions. B-238 owns
+the commons cards and B-232 the ontology definitions only if they remain
+open until the relevant rulings and updates are complete; any selected
+ontology or vocabulary migration outside their scope needs a named owner.
+The exact retirement condition is in `queue/items/Q-73.yaml`.
 
 ## Notes on framing
 
