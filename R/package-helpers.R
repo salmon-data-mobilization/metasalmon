@@ -1708,7 +1708,10 @@ read_salmon_datapackage <- function(path) {
   iri_cols <- setdiff(grep("_iri$", names(df), value = TRUE), c("method_iri", "protocol_iri"))
   purrr::map_dfr(iri_cols, function(field) {
     vals <- as.character(df[[field]])
-    populated <- !is.na(vals) & nzchar(trimws(vals))
+    # Exact empty values belong to existing missing-field checks. Parsed
+    # whitespace-only text in an optional extension IRI is populated but
+    # malformed and must not disappear through trimws().
+    populated <- !is.na(vals) & vals != ""
     marker <- !is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE)
     rows <- which(populated & !marker & !.ms_absolute_iri_shape(vals))
     if (length(rows) == 0) {

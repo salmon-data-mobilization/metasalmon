@@ -2689,6 +2689,37 @@ test_that("strict dictionary validation checks the shape of all six semantic IRI
   dict$term_iri[[1]] <- "urn:example:escapement"
   dict$constraint_iri[[1]] <- ""
   expect_no_error(suppressMessages(validate_dictionary(dict, require_iris = TRUE)))
+  # Reviewed measurements can hold more than one constraint in the existing
+  # semicolon representation. Check each IRI, keeping outer whitespace and
+  # empty components malformed rather than accepting the combined text.
+  dict$constraint_iri[[1]] <- "https://example.org/a; urn:example:b"
+  expect_no_error(suppressMessages(validate_dictionary(dict, require_iris = TRUE)))
+  dict$constraint_iri[[1]] <- "https://example.org/a; foo bar"
+  expect_error(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    "constraint_iri.*absolute IRI"
+  )
+  dict$constraint_iri[[1]] <- "https://example.org/a;"
+  expect_error(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    "constraint_iri.*absolute IRI"
+  )
+  for (value in c(" https://example.org/a; https://example.org/b",
+                  "https://example.org/a; https://example.org/b ")) {
+    dict$constraint_iri[[1]] <- value
+    expect_error(
+      suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+      "constraint_iri.*absolute IRI"
+    )
+  }
+  dict$constraint_iri[[1]] <- "https://example.org/a; REVIEW: https://example.org/b"
+  later_marker <- tryCatch(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    error = identity
+  )
+  expect_s3_class(later_marker, "error")
+  expect_match(conditionMessage(later_marker), "REVIEW-prefixed IRI")
+  expect_no_match(conditionMessage(later_marker), "not an absolute IRI")
   dict$constraint_iri[[1]] <- "REVIEW: https://example.org/constraint"
   marker <- tryCatch(
     suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
@@ -2711,6 +2742,14 @@ test_that("strict package validation checks every tables.csv IRI column", {
     suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
     "term_iri is not an absolute IRI"
   )
+  readr::write_csv(dictionary, dict_path, na = "")
+
+  changed_dictionary <- dictionary
+  changed_dictionary$constraint_iri[[measurement]] <- "https://example.org/a; urn:example:b"
+  readr::write_csv(changed_dictionary, dict_path, na = "")
+  expect_no_error(suppressWarnings(suppressMessages(
+    validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+  )))
   readr::write_csv(dictionary, dict_path, na = "")
 
   tables_path <- .ms_metadata_path(pkg_path, "tables.csv")
@@ -2736,6 +2775,17 @@ test_that("strict package validation checks every tables.csv IRI column", {
       )
     }
   }
+
+  # The required observation-unit field has its own blank collector. An
+  # undeclared optional IRI has no such path: parsed whitespace-only text
+  # must reach the shape check instead of silently passing.
+  tables <- original
+  tables$custom_thing_iri <- "\n"
+  readr::write_csv(tables, tables_path, na = "")
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    "custom_thing_iri.*not an absolute IRI"
+  )
 
   tables <- original
   tables$custom_thing_iri <- "urn:example:thing"
