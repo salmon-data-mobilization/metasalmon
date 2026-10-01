@@ -44,3 +44,25 @@ Source runs:
 - https://github.com/salmon-data-mobilization/metasalmon/actions/runs/36909400356
 - https://github.com/salmon-data-mobilization/metasalmon/actions/runs/36910684703
 - https://github.com/salmon-data-mobilization/metasalmon/actions/runs/36880102606
+
+## Terminal CI and reference setup repair
+
+Head8d0ff3e: package run36914131273 succeeds with full provider-isolated tests
+and strict R CMD check: zero errors, zero warnings, two NOTEs from the existing
+CI Python sibling entering the package tarball (B268 owns that issue).
+Reference run36914131218 is canceled by its 15-minute job limit, during system
+dependency installation, before the index assertion executes. No index defect
+is demonstrated. Setup-r consumes about nine minutes; apt installation is
+interrupted at the overall cutoff.
+
+The scoped repair allows 30 minutes for the overall job and bounds the actual
+index assertion separately at five minutes. Hard dependencies, public RSPM,
+cache policy, script, export coverage, event triggers and permissions remain
+unchanged. The source comment names the setup measurement and retirement
+condition. This is a necessary new-head automatic CI run, not a rerun of
+unchanged jobs or a manual model review. No active queue claim for this timeout
+was found; B213's original index defect is already done. Active session notified
+before this workflow edit.
+
+- https://github.com/salmon-data-mobilization/metasalmon/actions/runs/36914131273
+- https://github.com/salmon-data-mobilization/metasalmon/actions/runs/36914131218
