@@ -133,6 +133,7 @@ class IdScan(unittest.TestCase):
         with tempfile.TemporaryDirectory() as caller_dir:
             caller = Path(caller_dir)
             safe_env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+            safe_env["GIT_OPTIONAL_LOCKS"] = "0"  # status must not refresh the snapshotted index
             def caller_git(*args):
                 return subprocess.check_output(["git", "-C", str(caller), *args],
                                                env=safe_env, stderr=subprocess.PIPE)
