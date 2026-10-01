@@ -239,6 +239,11 @@ metasalmon (development version)
   fences are removed. Review-packet excerpts retain Windows-1252 text
   instead of failing on invalid UTF-8 (hub B-383).
 
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  `read_sssom_mapping_set()` and SDP validation through a non-evaluating YAML
+  parser probe. Quoted exclamation text still reads as text, and no tag
+  expression is evaluated (hub B-352; metasalmonpy mirror B-353).
+
 - Session IDs no longer advance or initialize the user's random-number state,
   and BioPortal's once-per-session missing-key warning is recorded privately
   instead of in `options()`. `?metasalmon_configuration` documents the current
@@ -1277,6 +1282,10 @@ metasalmon (development version)
   hub item B-161's question. The metasalmonpy half is hub item B-199.
 
 ### Internal
+
+* Hub queue lint refuses a dependency-linked Python port named in only one
+  mirror debt passage (B-396). The intentional row-53 exception is scoped to
+  its existing direction and records why it exists and what retires it.
 
 * Automatic Claude review keeps its five-marker budget but only a verified
   completed nits-only review can suppress later rounds. Failed reviews and

@@ -8038,6 +8038,14 @@ items.
 *Why this severity:* the profile has no use for a tag, and nothing runs, but
 each reader returns a different value for the same line.
 
+**Both halves landed — 2026-10-01, B-352/B-353.** metasalmon PR **#255**
+merged as `13460ed0484b10082b89c4dec33820d70386ddac`; metasalmonpy PR **#88**
+merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`. Tagged metadata is refused
+without evaluation; quoted bang text remains text. Public RED controls and
+frozen-source verification precede both merges; current required CI and the
+last requested Codex reviews completed, with verified Claude nits-only
+execution on the R PR. This is the existing Q62 ruling, with no new parity row.
+
 **`B-354` and `B-355`: an instant in EML coverage (call (m)).** The B-162 run
 measured it in R (`.hub/workpads/B-162.md` on `main`, on `372ef07` under R
 4.3.3): for a package whose `temporal_start` is `2024-01-01T00:00:00Z`,
@@ -8453,6 +8461,15 @@ workpad records.
 
 *Why this severity:* the rule it would enforce was broken three times before it
 was written down, and one debt is recorded in one place today.
+
+*Landed, 2026-10-01:* B-396's presence check and regression tests merged in
+metasalmon pull request 238 as `670c45ca`. The check compares the same port
+passages as the existing completion rule, records B-179's directional
+exemption with its retirement condition, and distinguishes citations from
+mirror debt. The integrated offline queue suite passed 166 tests; queue lint
+passed with 318 items and retirement-debt baseline zero. Actual Claude review
+completed with only minor nits and all required CI passed. The measurement
+above remains the historical evidence that opened this item.
 
 **From B-201's hand-back** (metasalmonpy pull request 59, merged as `380a7a4`).
 
