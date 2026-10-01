@@ -91,13 +91,17 @@ checked.</p></dd>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Every CURIE prefix must be declared in <code>curie_map</code> except the SSSOM
+    <p>CURIE prefixes in identifier/reference fields must be declared in <code>curie_map</code>
+except the SSSOM
 built-in prefixes (<code>owl</code>, <code>rdf</code>, <code>rdfs</code>, <code>semapv</code>, <code>skos</code>, <code>sssom</code>, <code>xsd</code>
 and <code>linkml</code>), which the SSSOM specification lets a file omit, so a canonical
 SSSOM/TSV file that leaves them out is read. A <code>curie_map</code> that does declare
 a built-in prefix must give it the expansion the specification fixes for it
 (for example <code>http://www.w3.org/2004/02/skos/core#</code> for <code>skos</code>); any other
 expansion is refused.</p>
+<p><code>predicate_type</code> uses SSSOM's entity-type enum, excluding the values the
+specification forbids for predicates. <code>subject_category</code>, <code>object_category</code>
+and <code>similarity_measure</code> are text, so their values need no CURIE declaration.</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
