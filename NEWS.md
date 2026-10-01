@@ -1258,6 +1258,10 @@ metasalmon (development version)
 
 ### Internal
 
+* The hub queue linter rejects a nonempty `stream` that names no stream item.
+  Stream names use the unpadded item number (`S-05` is `S5`); future stream
+  items are accepted without editing a fixed list (hub item B-186).
+
 * Failed Claude review checks now report a bounded count and fixed tool/command
   categories for denied calls. Raw inputs, paths, arguments and output remain
   hidden; denied calls still fail completion. No review permission or merge

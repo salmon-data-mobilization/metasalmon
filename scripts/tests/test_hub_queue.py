@@ -76,7 +76,6 @@ BASE_DEFECT = [
     ("state", "ready"),
     ("claimable", "true"),
     ("repo", "metasalmon"),
-    ("stream", "S1"),
     ("severity", "P2"),
     ("blocked_by", "[]"),
     ("legacy", "'#53'"),
@@ -647,6 +646,34 @@ class TestBlockedBy(QueueTestCase):
         self.write_item(BASE_STREAM)
         self.write_item(BASE_DEFECT, id="B-90", filename="B-90.yaml", legacy="'#90'")
         self.write_item(BASE_DEFECT, blocked_by="[B-90, S-12]")
+        self.assert_accepts()
+
+
+class TestStreamReference(QueueTestCase):
+    def test_padded_stream_value_does_not_name_the_existing_stream(self):
+        # S-05 is the item id, but the stream value is S5. S05 looks plausible
+        # while naming no stream, so normalizing the reference would hide it.
+        self.write_item(BASE_STREAM, id="S-05", filename="S-05.yaml")
+        self.write_item(BASE_DEFECT, stream="S05")
+        output = self.assert_rejects("stream-missing")
+        self.assertIn("S05", output)
+        self.write_item(BASE_DEFECT, stream="S5")
+        self.assert_accepts()
+
+    def test_unknown_stream_becomes_valid_when_its_future_item_is_added(self):
+        self.write_item(BASE_DEFECT, stream="S99")
+        self.assert_rejects("stream-missing")
+        # This also proves the enumeration comes from queue items, not a fixed
+        # list of today's streams. Being done does not erase a stream's identity.
+        self.write_item(
+            BASE_STREAM, id="S-99", filename="S-99.yaml", state="done", claimable="false"
+        )
+        self.assert_accepts()
+
+    def test_stream_is_optional_and_an_empty_quoted_value_is_not_a_reference(self):
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+        self.write_item(BASE_DEFECT, stream="''")
         self.assert_accepts()
 
 
