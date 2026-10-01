@@ -29,8 +29,8 @@ Rscript scripts/theme-a-benchmark.R compare \
 
 The package ingester's conformance tests build observations from actual ingest
 outputs for the same six cases and score those observations with the replay's
-oracles. The dedicated Theme A CI workflow runs the focused offline test file;
-the R CMD check workflow also runs replay. Neither mode needs provider
+oracles. The dedicated Theme A CI workflow runs replay and both focused test
+files; the R CMD check workflow also runs replay. Neither mode needs provider
 credentials or makes a model request.
 
 The former live capture, cohort gate, and promotion procedures were retired by
