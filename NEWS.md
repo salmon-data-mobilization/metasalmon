@@ -214,6 +214,14 @@ metasalmon (development version)
 
 ### Fixed
 
+* `write_sdp_semantic_closure()` now points a code-resolved procedure's gap
+  or incomplete-evidence row to the `codes.csv` `term_iri` cell that carries
+  it, with its table, column, code value and full row key (hub item B-265).
+  When several code rows carry one procedure IRI, each address is reported.
+  `render_ontology_term_request()` renders those as separate candidate
+  requests; review them before filing so one missing term does not become
+  duplicate ontology issues. The metasalmonpy port is B-266.
+
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
