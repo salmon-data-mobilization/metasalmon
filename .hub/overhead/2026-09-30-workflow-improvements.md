@@ -464,3 +464,81 @@ green; new heads still lack actual Claude reviews. The existing hourly quiet
 heartbeat continues the work and review loop. There is still no reliable
 whole-run waste percentage, and no queue item is reported complete merely
 because its draft was published or CI passed.
+
+## Numbering collision caught; optional lookup implemented
+
+The B-238 routing follow-up is
+[PR248](https://github.com/salmon-data-mobilization/metasalmon/pull/248)
+at `98a6e31`. It restores legacy Q64 as a queue question, groups the remaining
+definition choices under Q73, reuses B-238/B-232 as the existing commons and
+ontology owners, and names the already ruled aggregate SHACL repair as B-428.
+All questions remain unclaimable; B-428 stays in the icebox. No meanings,
+retirement conditions, promotion grants, or policy were changed. Reusing owners
+reduces records but holds the existing S9 prerequisite open until its choices
+and required updates are finished. This tradeoff is explicit in the draft.
+
+The routing worktree was created at **08:19:44 UTC**, and PR248 at
+**08:31:50 UTC**: **12 minutes 6 seconds**, excluding earlier reconnaissance.
+That interval mixes necessary routing, drafting, validation and publication;
+it is not all avoidable waste. Before publishing, a fresh fetch caught B-427
+already used by another session's `codex/public-catalogue-discovery` branch.
+The planned repair was renumbered to B-428. Q72 was likewise already present
+in a question heading on PR209's branch, despite having no new queue file.
+Manual checking had involved 38 open PRs, fetched refs and local worktrees.
+
+`python3 scripts/hub_ids.py B` now suggests the next observed number;
+`python3 scripts/hub_ids.py B-427` reports where that ID is seen. This optional
+helper reads queue filenames and numbered question/backlog headings across
+local/fetched remote branches and all registered worktrees, including untracked
+files. It performs no fetch, reservation, claim, promotion or GitHub write.
+Failed reads and unsupported source symlinks return `unknown` / exit 3.
+Suggestions remain unreserved: other clones' unpublished work and later writes
+are outside its reach. The existing atomic claim protocol is unchanged.
+
+The real collision replay found B-427 and Q72, then B-428/Q73 on the routing
+branch. Initial scans took **2.07–2.54 seconds** across **217 refs and 38
+worktrees**; the final scan with additional source-root validation took
+**3.92 seconds** and suggested B-429. Offline fixtures, rather than the now
+published routing branch, demonstrate untracked-file reach. Nine focused tests
+pass; the existing scripts test suite passes **195 tests and 44 subtests**.
+Independent review found Git's possible lazy fetch in a partial clone; the
+child environment now explicitly disables lazy fetch and optional locks, and
+has a regression check. Symlinked source locations fail instead of being skipped
+or followed. These corrections are useful implementation review, not claim
+bureaucracy. No whole-task percentage saving is claimed from these timings.
+
+The pinned NEWS-only build passed, but again recovered unrelated current-source
+history absent from this older site branch. Only the generated new bullet and
+its one Internal search record were retained, with other output bytes preserved.
+This remaining curation cost is exactly what PR247's separate reconciliation
+removes; the controlled B-58 replay there already demonstrated its reuse. Avoid
+duplicating that reconciliation into every work branch while it awaits landing.
+
+### Next bounded policy improvement to consider
+
+The current HUB claimable grant explicitly permits qualifying changes to
+`true`, while setting `false` remains class 8. An agent that proves an item
+needs a recorded Brett decision must therefore draft the correction and leave
+the default queue misleading until review. A narrow standing grant to mark such
+an item unclaimable, citing the existing unanswered decision, could remove this
+repeat coordination cost. **This is a proposal, not an implemented grant.**
+It would not authorize promotion, a semantic ruling, early retirement, or a merge.
+
+### Current continuation boundary
+
+B-238 source
+[PR43](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/pull/43)
+is green at `7d8889e`; source/ledger repair is delivered, while its definition
+choices and B-428 validator change remain for Brett. Independent review confirms
+the Q64(b) repair implements an existing ruling but still relaxes a validator
+under HUB class 6, so it cannot be made claimable under the routine publication
+grant. This is a real remaining authority boundary, not an extra approval for
+ordinary pushes.
+
+The latest bounded review sweep found no new substantive findings. Current
+R PR244/247, Python PR85 and commons PR42/43 checks pass. Green/skipped review
+jobs still do not establish Claude review of the latest heads. `hub ready`
+returns no free claimable item, with held B-60 as a positive control. Delivered
+drafts retain their claims; queue retirement and merges remain pending. The
+existing quiet hourly heartbeat continues pickup and review follow-ups when
+state changes. There is still no defensible whole-run waste percentage.

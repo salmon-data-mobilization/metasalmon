@@ -50,6 +50,16 @@ only: set `MEMBER_CHECKOUT` and `MEMBER_BASE` for the target repository before
 using them. The client creates no worktree or workpad. Existing approval and
 claim rules remain in `HUB.md` and the applicable `AGENTS.md`.
 
+Before drafting a new numbered item, `git fetch origin` then
+`python3 scripts/hub_ids.py B` (or `Q`/`S`) suggests the next observed ID;
+passing `B-427` instead reports its source locations. The optional read-only
+scan covers queue filenames and numbered question/backlog headings in local
+and fetched remote branches, plus registered worktrees including unpublished
+files. An incomplete read exits 3 instead of suggesting a number. This is a
+snapshot, not a reservation: another clone's unpublished work and subsequent
+concurrent writes remain unseen. Recheck before publication. It retires when
+the owning system allocates IDs atomically.
+
 ## What one item file means
 
 One file is one unit of work somebody could pick up, finish, and be done with.

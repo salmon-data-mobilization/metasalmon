@@ -1089,6 +1089,11 @@
   setup commands. These are advisory hints; claim eligibility and the
   lock protocol are unchanged.
 
+- `scripts/hub_ids.py` scans fetched branches and registered worktrees
+  for numbered queue items and legacy headings, reporting ID collisions
+  or an unreserved next-number suggestion. It creates no claim or
+  reservation.
+
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
   script `R CMD check` runs** (backlog
