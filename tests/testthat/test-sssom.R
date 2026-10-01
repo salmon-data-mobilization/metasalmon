@@ -773,3 +773,77 @@ test_that("validate_salmon_datapackage never evaluates an !expr tag in SSSOM met
   )
   expect_false(file.exists(sentinel))
 })
+
+# B-269: schema ranges are distinct. These optional fields are not CURIEs.
+sssom_test_optional_slots <- function(values) {
+  lines <- strsplit(sssom_test_text(), "\n", fixed = TRUE)[[1]]
+  header <- which(startsWith(lines, "subject_id\t"))
+  lines[[header]] <- paste(lines[[header]], paste(names(values), collapse = "\t"), sep = "\t")
+  lines[[header + 1L]] <- paste(lines[[header + 1L]], paste(values, collapse = "\t"), sep = "\t")
+  paste0(paste(lines, collapse = "\n"), "\n")
+}
+
+test_that("SSSOM optional fields use their enum or string schema ranges", {
+  root <- withr::local_tempdir()
+  values <- c(
+    predicate_type = "owl annotation property",
+    subject_category = "fishing gear",
+    object_category = "sampling method",
+    similarity_measure = "Levenshtein distance"
+  )
+  for (field in names(values)) {
+    path <- file.path(root, paste0(field, ".sssom.tsv"))
+    sssom_test_write_raw(path, sssom_test_optional_slots(values[field]))
+    result <- tryCatch(read_sssom_mapping_set(path), error = identity)
+    expect_false(inherits(result, "error"), info = field)
+    if (!inherits(result, "error")) {
+      expect_identical(result$mappings[[field]], unname(values[[field]]), info = field)
+      expect_true(isTRUE(validate_sdp_sssom(path)), info = field)
+    }
+  }
+
+  # An identifier-shaped free-text value needs no prefix declaration.
+  path <- file.path(root, "free-text.sssom.tsv")
+  sssom_test_write_raw(path, sssom_test_optional_slots(c(subject_category = "undeclared:category")))
+  expect_no_error(read_sssom_mapping_set(path))
+  # The ordinary entity-reference slots keep their existing rejection.
+  sssom_test_write_raw(path, sssom_test_optional_slots(c(mapping_tool_id = "plain tool name")))
+  expect_error(read_sssom_mapping_set(path), "mapping_tool_id.*absolute URI or compact CURIE")
+})
+
+test_that("SSSOM predicate types reject values the specification forbids", {
+  path <- file.path(withr::local_tempdir(), "types.sssom.tsv")
+  for (value in c("not an entity type", "owl:Class", "rdfs literal", "composed entity expression")) {
+    sssom_test_write_raw(path, sssom_test_optional_slots(c(predicate_type = value)))
+    expect_error(read_sssom_mapping_set(path), "predicate_type.*entity_type_enum", info = value)
+  }
+})
+
+test_that("SSSOM packages round-trip the four correctly typed optional fields", {
+  path <- file.path(withr::local_tempdir(), "optional.sssom.tsv")
+  values <- c(predicate_type = "owl annotation property", subject_category = "fishing gear",
+              object_category = "sampling method", similarity_measure = "Levenshtein distance")
+  sssom_test_write_raw(path, sssom_test_optional_slots(values))
+  sdp <- withr::local_tempdir()
+  expect_no_error(write_sdp_sssom(sdp, mapping_sets = path))
+  expect_true(isTRUE(validate_sdp_sssom(sdp)))
+  written <- read_sssom_mapping_set(file.path(sdp, "metadata", "semantic", "optional.sssom.tsv"))
+  for (field in names(values)) {
+    expect_identical(written$mappings[[field]], unname(values[[field]]), info = field)
+  }
+})
+
+test_that("SSSOM predicate_type has the same schema range in metadata and mappings", {
+  path <- file.path(withr::local_tempdir(), "predicate-types.sssom.tsv")
+  # All predicate-legal entity_type_enum spellings from the source snapshot.
+  for (value in c("owl class", "owl object property", "owl data property",
+                  "owl annotation property", "owl named individual", "skos concept",
+                  "rdfs resource", "rdfs class", "rdfs datatype", "rdf property")) {
+    sssom_test_write_raw(path, sssom_test_optional_slots(c(predicate_type = value)))
+    expect_no_error(read_sssom_mapping_set(path))
+    sssom_test_write_raw(path, sssom_test_text(extra_metadata = paste0("# predicate_type: ", value)))
+    expect_no_error(read_sssom_mapping_set(path))
+  }
+  sssom_test_write_raw(path, sssom_test_text(extra_metadata = "# predicate_type: not an entity type"))
+  expect_error(read_sssom_mapping_set(path), "predicate_type.*entity_type_enum")
+})

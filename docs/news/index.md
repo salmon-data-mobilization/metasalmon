@@ -101,6 +101,13 @@
 
 ### Fixed
 
+- The SSSOM reader validates `predicate_type` as its entity-type enum
+  and accepts text in `subject_category`, `object_category` and
+  `similarity_measure`, rather than requiring identifiers in those four
+  fields (hub item B-269). Predicate types the specification forbids
+  remain rejected; identifier fields retain their existing checks. The
+  Python port is B-270.
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates

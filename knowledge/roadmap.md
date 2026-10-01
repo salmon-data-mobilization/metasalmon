@@ -1719,3 +1719,17 @@ one that is genuinely superseded is best recorded by *why* it is superseded
 (`feature/observation-structure-methods` carried `metadata/methods.csv`, the
 exact artifact sdp-0.3.0 removed) rather than by a claim that its content is
 "already in main", which was the wrong reason for the right verdict.
+
+
+**Development SSSOM field-range port (2026-10-01), B-269 → B-270.**
+R validates `predicate_type` against SSSOM 1.1's entity-type enum (excluding
+`rdfs literal` and `composed entity expression`, which the schema explicitly
+forbids in this slot), including propagated mapping-set metadata.
+`subject_category`, `object_category` and `similarity_measure` are strings,
+not entity references; the remaining reference columns keep their checks.
+The four new tests in `test-sssom.R` pin each field, invalid predicate values,
+all predicate-legal enum values in rows/metadata and writer round-tripping.
+Python's equivalent column list still refuses these inputs on main e81cacd;
+B-270 owns that existing port. A hub claim covers one repository, so this is
+a port owed, not a new deliberate parity deviation. Schema source:
+[SSSOM snapshot](https://github.com/mapping-commons/sssom/blob/667d3c579d92ad2e1a480503625eeef1e6af8e6d/src/sssom_schema/schema/sssom_schema.yaml).
