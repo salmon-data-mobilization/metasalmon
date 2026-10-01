@@ -2,6 +2,21 @@
 
 ## metasalmon (development version)
 
+### Breaking changes
+
+- **The Theme A benchmark now has offline `replay` and replay-to-replay
+  `compare` modes only** (hub item B-328, S16 step 2). The live
+  provider, capture, cohort gate, and promotion paths and the separate
+  `scripts/llm-sanity-check.R` smoke tool have been removed. The six
+  recorded synthetic cases still pass their required, allowed, and
+  forbidden oracles; the same oracles now score outputs produced by
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  in conformance tests. The Foundry Q23 pilot can still reproduce the
+  offline replay. B-80’s requested live captures and B-226’s
+  request-builder repair retire with the deleted path, without claiming
+  that the captures or repair happened. metasalmonpy’s replay-side
+  register update is tracked separately as B-332.
+
 ### Added
 
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
