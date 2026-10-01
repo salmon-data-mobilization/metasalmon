@@ -401,15 +401,16 @@ terms B-232 must define:
 - **(e)** Composed text for five terms with no prior wording: approve the cards'
   wording, or name the ones to redo. Open.
 
-**Owner:** queue item `Q-64` holds the remaining ruling and consequence-owner
-condition; `B-238` owns the commons cards and `B-232` the later ontology
-definitions. Neither implementation item can retire as an updater for an
-unanswered part without the blocked post-ruling owner its own condition
-requires.
+**Owner:** `Q-64` holds the remaining rulings and names owners for their
+consequences. `B-238` updates the commons cards; `B-232` later writes the
+ontology definitions. If either item closes before a ruling, a separate item
+blocked on that ruling must own its later update, as each item's retirement
+condition requires.
 
-**Known implementation consequence of (b):** the current
-`smn:AggregatedMeasurementShape` still requires an enumeration method for every
-aggregate, and its scheme check excludes real gcdfo enumeration concepts; the
+**Known implementation consequence of (b), observed in the ontology at
+`d45f8f7` on 2026-10-01:** `smn:AggregatedMeasurementShape` required an
+enumeration method for every aggregate, and its scheme check excluded real
+gcdfo enumeration concepts. The
 [draft commons measurement card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/2a8fc11/concepts/individual-aggregated-and-model-measurements.md)
 locates both constraints. Queue item `B-428` owns the bounded SHACL and test
 repair. That is work from the already recorded (b) ruling, not a new choice
