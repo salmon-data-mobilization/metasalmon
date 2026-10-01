@@ -988,3 +988,47 @@ needed in this batch. The earlier 52% reduction concerns one ID lookup only;
 there is still no defensible whole-run avoidable percentage. Continue to keep
 coordination, implementation, verification, environment repair, requested audit
 and passive waiting separate rather than counting all non-coding time as waste.
+
+### Published outcomes and the next experiment — 2026-10-01
+
+| Outcome | Observed evidence | Workflow consequence |
+| --- | --- | --- |
+| PR251 merged `5334065` at 18:00:46 UTC | Exact head `bee2d57`; six green checks; completed Codex P2 diagram finding fixed | Kept the mergeable head when marked ready; the later commit fixed a real finding. No freshness-only integration or repeated approval. No elapsed saving inferred. |
+| PR250 merged `e3fa5df` at 18:22:44 UTC | Exact head `47e673b`; six green checks; last Codex P2 compound-denial finding fixed and tested | First package-check attempt passed; no retry. Prior completed Claude review and later skipped jobs remain distinct. |
+| B-130 backend published | R244 `2b58fe8` and Python85 `308b6ac`, applicable exact-head CI green; the normal Python PR deploy skip is expected | Supported HTTPX backend and paired R/Python behavior verified. Public verifier API stays critical draft. No new model audit or routine approval request. |
+| Log route restored | PR215 prefix and PR250 append match canonical main byte-for-byte; clean auxiliary worktree has zero unique commits | Managed PR250 worktree archived; active heartbeat now reads this canonical file. Branch retained. |
+
+The final remote R jobs both used R 4.6.1 and completed without retries:
+
+| Interval | R244 | R250 |
+| --- | ---: | ---: |
+| Setup R | 5m16s | 10m58s |
+| Dependencies | 7m56s | 14m36s |
+| Full suite | 3m53s | 3m54s |
+| Package check | 5m12s | 5m12s |
+| Total job | 22m35s | 35m06s |
+
+Setup plus dependencies totals 13m12s and 25m34s respectively. These are
+remote environment intervals, overlapping local work; they are not active
+coordination time or additive waste estimates. Published timeout is 45 minutes,
+correcting an earlier 30-minute assumption before any retry was taken. Both
+checks report zero errors/warnings and two NOTEs from the CI-only Python
+sibling checkout entering the R tarball. A targeted build exclusion is a
+concrete next packaging candidate; preserve the source parity guard's reach
+and verify tarball absence when that change is scoped.
+
+Next merge order is PR247 → PR219/B-186 → PR218/B-155. PR247 reconciles the
+historical NEWS site once. Its frozen validated head can feed the next two
+integrations while CI runs; merge gates still apply in dependency order.
+Measure whether native NEWS-only builds then avoid manual fragment repair,
+rather than assuming the baseline change saves time. Batch this measurement
+append with a necessary integration instead of a separate documentation push.
+The current ready census had no unheld claimable item, with known queue/ref
+positive controls; protected handoffs remain held. No whole-run avoidable
+percentage is justified by these overlapping observations.
+
+### B-186 reuse measurement and scoped corrections — 2026-10-01
+
+The first local B-186 integration against PR247 `1c08f98` began at 18:33:37 UTC. The native NEWS-only build was blocked before writing by default Pandoc 3.11; selecting the already-installed RStudio Pandoc 3.8.3 took about 59 seconds between that preflight and the successful retry. The matched build took 15.3 seconds. A substantive Codex P2 in PR247 then required its manifest-icon correction, so this uncommitted integration was discarded and restarted at 18:38:09 UTC against corrected head `41bcdce`. That dependency wait and repeat build are separate from NEWS generation. The final matched NEWS-only build took 15.6 seconds; both builds needed zero seconds of manual generated-fragment editing. The four conflicted NEWS/generated paths were reset to PR247 bytes, B-186’s three-line NEWS item was inserted, and native regeneration retained all 588 non-NEWS search records in order. The NEWS search record count stayed 70, with one record now containing B-186. The B-186 source/test blob hashes stayed identical to `28f5ad8`; 164 queue tests and live lint on 318 items passed. These are measured local steps, not a whole-run saving estimate.
+
+Correction to the candidate wording above: CI sibling tarball exclusion is already the scoped, critical-held PR216/B-268, so this run did not open or claim duplicate work. The requested S16 handoff audit remains separate: R209/210/211 and Python72–75 are open; Python72/74 report parity failures. B-199 is already draft Python76 with green checks, held for parity row 38 under a protected handoff. Queue420–425 exist only in open R209, not canonical main. None was claimed or assigned here.
