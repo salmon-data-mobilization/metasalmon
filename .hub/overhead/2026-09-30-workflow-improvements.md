@@ -120,12 +120,21 @@ fields using the existing extractor and checks the added output in the same
 harness. The frozen harness still passes **43 checks, no failures or skips**.
 This is two added fields, not another planner or a new claim protocol.
 
-The next candidate is B-186, a queued defect in stream validation, selected for
-a bounded second workflow cycle. Its eventual pickup interval will be recorded
-separately. Claim eligibility must be checked again at pickup.
+The next cycle claimed B-186, a queued stream-validation defect. From
+**04:24:16 to 04:25:20 UTC, 64s**, the same status/claim/setup sequence prepared
+the worktree. This includes a brief inspection of the Claude review workflow;
+the interval is not a pure setup benchmark. The evidence and retirement
+condition were available in status, so no separate queue-file read was needed.
+Its implementation agent reports 164 passing Python tests after a focused RED,
+with lint passing on all 318 queue items. Root review and publication follow.
 
 Brett subsequently asked for ongoing iterations, parallel claims once the
 process settles, and Claude review rounds until substantive findings are
-resolved. Routine publication authority is being clarified against the current
-AGENTS approval rule. The experiment does not treat user approval or an
-unstarted review as a successful publication or review outcome.
+resolved. Brett then approved the complete helper and B-99 PR texts and
+explicitly authorized routine branch publication and draft PR creation for
+this continuous run without repeated approval questions; review-fix commits
+were already authorized. This is a chat authorization for this run, not an
+amendment to AGENTS or HUB policy. Semantic and policy decisions remain his;
+merge, release and person-contact authority was not added. The experiment does
+not treat authorization or an unstarted review as a successful publication or
+review outcome.
