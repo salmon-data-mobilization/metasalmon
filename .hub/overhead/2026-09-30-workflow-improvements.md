@@ -263,3 +263,37 @@ next use before adding automation. More workflow design is deferred while
 independent claims can proceed. Requested measurement, environment repair,
 verification, implementation rework and avoidable coordination remain separate;
 there is still no defensible whole-run “percent wasted” measurement.
+
+
+## Harness isolation adjustment and shared handoff compatibility
+
+B-338 defines a chat handoff for shared repositories with no branch field and
+exact `reason: hand-back in chat`. The status helper now recognizes that shape
+and prints its reason. Missing/wrong reason, an explicitly empty branch and an
+arbitrary branch remain unknown; ordinary branch handoffs keep their exact
+branch check. Status reads the record; it does not grant either publication mode.
+
+The compatibility fixture reproduced the expected status failure. A separate
+repository-fingerprint failure was caused by another worktree creating a branch
+during the harness, although the tested source files stayed frozen. B-338's
+agent hit the same condition during independent verification. This is avoidable
+coordination rework: freezing files alone cannot freeze a shared Git common-dir.
+
+The small execution fix is a local frozen clone with separate Git refs, copied
+working client/harness bytes and a local snapshot commit. Run the existing
+harness there, then compare the tested source bytes with the working files.
+No guard is weakened and other agents keep working. In that isolated clone,
+all **43 checks pass, zero failures/skips**, and byte comparisons match.
+B-338 is evaluating the same procedure in its next verification round.
+
+B-394 was published as [PR234](https://github.com/salmon-data-mobilization/metasalmon/pull/234)
+after its RED and all 163 offline queue tests passed. Its broader read exposed
+seven absent recognizable historical port records; live merged PR evidence
+justifies the amendments. Independent inspection found no actionable bug.
+B-265, B-401 and B-129 are published as [233](https://github.com/salmon-data-mobilization/metasalmon/pull/233),
+[235](https://github.com/salmon-data-mobilization/metasalmon/pull/235) and
+[236](https://github.com/salmon-data-mobilization/metasalmon/pull/236).
+
+Two scoped build ideas remain candidates: reconcile NEWS source/site history,
+and preserve existing site assets during article/index builds. They are not
+implemented as another workflow layer during ongoing claims.

@@ -216,6 +216,9 @@ STATUS_WRONG_ID="T-48"
 STATUS_NO_RECORD_ID="T-49"
 STATUS_NO_HANDOFF_BRANCH_ID="T-50"
 STATUS_BAD_HANDOFF_BRANCH_ID="T-51"
+STATUS_CHAT_HANDOFF_ID="T-52"
+STATUS_BAD_CHAT_REASON_ID="T-53"
+STATUS_EMPTY_CHAT_BRANCH_ID="T-54"
 
 # The four hand-back items of assertions 22 and 23. Each one is held by this
 # caller on a live lease, seeded straight into the locks repository rather than
@@ -729,7 +732,8 @@ retires_when: Status no longer needs the raw blocked-by fixture.
 YAML
   for id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
             "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-            "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
+            "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+            "$STATUS_CHAT_HANDOFF_ID" "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
     write_fixture_item "$items" "$id" metasalmon
   done
 
@@ -1612,6 +1616,7 @@ main() {
   if [ "$probe_ok" = "0" ]; then
     local status_release="$TMPROOT/client.status.release.out"
     local status_handoff="$TMPROOT/client.status.handoff.out"
+    local status_chat="$TMPROOT/client.status.chat.out"
     local status_live="$TMPROOT/client.status.live.out"
     local status_absent="$TMPROOT/client.status.absent.out"
     local status_blocked="$TMPROOT/client.status.blocked.out"
@@ -1626,14 +1631,25 @@ main() {
     g git init --bare -q --initial-branch=main "$status_locks" >/dev/null 2>&1 || status_seed_ok=1
     for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
                   "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+                  "$STATUS_CHAT_HANDOFF_ID" "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
       bad_body=$(claim_record "$bad_id" status-fixture claim "$future")
       case $bad_id in
         "$STATUS_NO_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^action:/d') ;;
         "$STATUS_BAD_ACTION_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: bogus/') ;;
         "$STATUS_NO_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/; /^branch:/d') ;;
         "$STATUS_BAD_HANDOFF_BRANCH_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/'); bad_body="$bad_body
-branch: arbitrary/branch" ;;
+branch: arbitrary/branch
+reason: hand-back in chat" ;;
+        "$STATUS_CHAT_HANDOFF_ID"|"$STATUS_BAD_CHAT_REASON_ID"|"$STATUS_EMPTY_CHAT_BRANCH_ID")
+          bad_body=$(printf '%s\n' "$bad_body" | sed 's/^action: claim$/action: handoff/; /^branch:/d')
+          bad_body="$bad_body
+reason: hand-back in chat"
+          case $bad_id in
+            "$STATUS_BAD_CHAT_REASON_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^reason: .*/reason: not-a-chat-handoff/') ;;
+            "$STATUS_EMPTY_CHAT_BRANCH_ID") bad_body="$bad_body
+branch:" ;;
+          esac ;;
         "$STATUS_NO_AGENT_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^agent:/d') ;;
         "$STATUS_NO_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed '/^lease_until:/d') ;;
         "$STATUS_BAD_LEASE_ID") bad_body=$(printf '%s\n' "$bad_body" | sed 's/^lease_until: .*/lease_until: not-a-date/') ;;
@@ -1660,9 +1676,12 @@ branch: arbitrary/branch" ;;
     hub status "$RACE_ID" >"$status_live" 2>&1; [ "$?" = "0" ] || status_rc=1
     hub status "$SELF_ID" >"$status_absent" 2>&1; [ "$?" = "0" ] || status_rc=1
     hub status "$STATUS_BLOCKED_ID" >"$status_blocked" 2>&1; [ "$?" = "0" ] || status_rc=1
+    ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
+        hub status "$STATUS_CHAT_HANDOFF_ID" ) >"$status_chat" 2>&1; [ "$?" = "0" ] || status_rc=1
     for bad_id in "$STATUS_NO_ACTION_ID" "$STATUS_BAD_ACTION_ID" "$STATUS_NO_AGENT_ID" \
                   "$STATUS_NO_LEASE_ID" "$STATUS_BAD_LEASE_ID" "$STATUS_WRONG_ID" \
-                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID"; do
+                  "$STATUS_NO_RECORD_ID" "$STATUS_NO_HANDOFF_BRANCH_ID" "$STATUS_BAD_HANDOFF_BRANCH_ID" \
+                  "$STATUS_BAD_CHAT_REASON_ID" "$STATUS_EMPTY_CHAT_BRANCH_ID"; do
       bad_out="$TMPROOT/client.status.$bad_id.out"
       ( HUB_LOCKS_URL="$status_locks" HUB_CACHE_DIR="$TMPROOT/status-cache" \
           hub status "$bad_id" ) >"$bad_out" 2>&1; bad_rc=$?
@@ -1692,6 +1711,9 @@ branch: arbitrary/branch" ;;
     grep -Fxq 'agent: agent-a' "$status_handoff" || status_ok=1
     grep -Fxq "lease_until: $stale" "$status_handoff" || status_ok=1
     grep -Fxq "branch: agent/$HANDOFF_ID/agent-a" "$status_handoff" || status_ok=1
+    grep -Fxq 'claim: handoff' "$status_chat" || status_ok=1
+    grep -Fxq 'branch: ' "$status_chat" || status_ok=1
+    grep -Fxq 'reason: hand-back in chat' "$status_chat" || status_ok=1
     grep -Fxq 'claim: reclaim' "$status_live" || status_ok=1
     grep -Fxq 'claim: absent' "$status_absent" || status_ok=1
     grep -Fxq "blocked_by: [$STATUS_DONE_ID]" "$status_blocked" || status_ok=1

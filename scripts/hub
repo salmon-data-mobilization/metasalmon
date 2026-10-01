@@ -1537,7 +1537,7 @@ cmd_doctor() {
 # A single live read of an item's queue record and claim tip. Report the raw
 # claim action rather than duplicating ready's lease/grace/reclaim decisions.
 cmd_status() {
-  local id=$1 key tip rc act ag lu cid branch valid=1
+  local id=$1 key tip rc act ag lu cid branch reason valid=1
   require_current_queue refuse "$id" || return "$EX_FAIL"
   item_exists "$id" || fail "$(absent_item_sentence "$id")"
   for key in id title repo state claimable blocked_by evidence retires_when; do
@@ -1562,12 +1562,18 @@ cmd_status() {
   ag=$(tip_field "$id" agent) || valid=0
   lu=$(tip_field "$id" lease_until) || valid=0
   branch=$(tip_field "$id" branch) || valid=0
+  reason=$(tip_field "$id" reason) || valid=0
   [ "$cid" = "$id" ] && [ -n "$ag" ] || valid=0
   case $act in claim|reclaim|beat|release|handoff) : ;; *) valid=0 ;; esac
   [ -n "$lu" ] && epoch_from_iso "$lu" >/dev/null || valid=0
-  # done records exactly this branch. Other actions may omit it legitimately.
+  # Branch handoffs name the exact agent branch. B-338's chat handoff instead
+  # omits branch entirely and records this exact reason. Status validates the
+  # record shape; it does not decide whether a repository permits either mode.
   if [ "$act" = "handoff" ] && [ "$branch" != "agent/$id/$ag" ]; then
-    valid=0
+    if [ -n "$branch" ] || [ "$reason" != "hand-back in chat" ] ||
+        lg show "refs/hub/claim/$id:claim.yaml" 2>/dev/null | grep -q '^branch:'; then
+      valid=0
+    fi
   fi
   if [ "$valid" -ne 1 ]; then
     printf 'claim: unknown\n'
@@ -1575,6 +1581,8 @@ cmd_status() {
     return "$EX_FAIL"
   fi
   printf 'claim: %s\nagent: %s\nlease_until: %s\nbranch: %s\n' "$act" "$ag" "$lu" "$branch"
+  [ -z "$reason" ] || printf 'reason: %s\n' "$reason"
+  return "$EX_OK"
 }
 
 # Advisory shell commands only: hub continues to write lock refs, never member
