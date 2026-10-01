@@ -1,7 +1,7 @@
 id: B-347
 kind: defect
 title: 'metasalmonpy''s apply_salmon_dictionary() blanks every value of a column whose codes.csv row names a vocabulary, the mirror half of B-346'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

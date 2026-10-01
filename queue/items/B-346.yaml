@@ -1,7 +1,7 @@
 id: B-346
 kind: defect
 title: 'apply_salmon_dictionary() blanks every value of a column whose codes.csv row names a vocabulary instead of a code value'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmon
 venue: claude-code

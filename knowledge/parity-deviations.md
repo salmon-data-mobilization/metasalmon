@@ -747,6 +747,15 @@ pandas reads as float64, as it reads any integer column with a missing value,
 types `attribute` in metasalmonpy (`BY` of 2001.0, 2002.0 and 2003.0, measured)
 and `temporal` here.
 
+**Float-gap port landed — 2026-10-01, B-348.** metasalmonpy PR **#86**
+merged as `0021ade7c7d95d8af57297252fe72457af6f6e79`, porting Brett's
+2026-09-25 ruling. Whole-number floats now use integer spelling inside the
+year-shape predicate; fractional values and numeric-looking text retain their
+existing verdicts. The CSV blank-cell control was shown RED, then passed with
+paired R behavior and current-head CI. R changes nothing. This dated receipt
+closes the separate float gap above without changing B-240's history or
+adding a numbered deviation.
+
 **This one is closed.** `B-240` landed as metasalmonpy pull request **#41**
 (`ace8eed`) on 2026-09-24, changing `infer_column_role()` in `dictionary.py`.
 `tests/test_year_shaped_measurement_role.py` is the port of the R test, and it
