@@ -548,8 +548,10 @@ parts below separately; this question remains open until each part has an answer
   arithmetic summaries and expansion? Is `FishLengthMeasurementType` a class
   of acts or a property/procedure composition? Which of
   `FishForkLengthMeasurementMethod` and `ForkLengthMeasurementMethod` remains,
-  and what do their field and laboratory children mean? Q64(b) already ruled
-  that `AggregatedMeasurement` covers any group summary; its SHACL repair is
+  and what do their field and laboratory children mean? Should real gcdfo
+  enumeration concepts outside `smn:MethodScheme` be valid `smn:basedOn`
+  values? Q64(b) already ruled that `AggregatedMeasurement` covers any group
+  summary; its SHACL repair is
   an implementation consequence, not another question here.
 - **Morphology and length landmarks:** Does morphology include mass and body
   shape? Does `FishWeight` cover one fish and aggregate catch weight, and
