@@ -4,6 +4,11 @@
 
 ### Added
 
+- A dedicated semantic-review walkthrough covers the R review queue, accept
+  and reject decisions, metadata setters and the optional decomposition
+  dialogue. `tidyr` is now declared in Suggests for the tidy-data guide's
+  `pivot_longer()` examples (hub B-129).
+
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
   produces the reviewed semantic closure, which metasalmon has validated
   in three places and written in none** (backlog

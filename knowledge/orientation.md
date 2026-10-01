@@ -49,6 +49,11 @@ which is the failure mode a list of examples has and a rule does not.
 
 ## Primary workflow & entry points
 
+The R review walkthrough is `vignettes/semantic-review.Rmd`, linked from the
+quickstart and pkgdown's Guides index. It covers the review queue and metadata
+setters; `post-review-package-publication.Rmd` owns the publication steps.
+
+
 The headline path is one-shot package creation:
 
 ```

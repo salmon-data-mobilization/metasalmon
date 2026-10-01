@@ -16,6 +16,13 @@ below with file:line citations verified at audit time). Standing rule: the
 **mirror contract applies to docs** — metasalmonpy guides update in lockstep
 with the vignettes that cover the same workflow.
 
+**2026-09-30 correction to the dated audit below:** the R walkthrough now lives
+at `vignettes/semantic-review.Rmd`, linked from the quickstart and pkgdown Guides
+index, and `tidyr` is declared in Suggests for the tidy-data examples. Python's
+existing `guides/semantic-review.qmd` already covers the mirrored 0.5.0 review
+flow; this R guide supplies its missing twin. The audit's observations remain
+below as measurements of those earlier trees.
+
 **Status: slices 1 and 2 have landed** (PR #46, `ac6b722`, plus the 0.3.0
 staleness sweep) — `migrating-to-sdp-0-3-0.Rmd` and `tidy-data-for-sdp.Rmd`
 exist and the audit's code defects, framing, and coverage gaps below are fixed.
