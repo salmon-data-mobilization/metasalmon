@@ -4,6 +4,10 @@
 
 test_that("the CI sibling checkout is absent from a source tarball", {
   buildignore <- testthat::test_path("..", "..", ".Rbuildignore")
+  # The CI workflow runs devtools::test() from the source tree. R CMD check may
+  # run this test from a built copy without the source-only .Rbuildignore, so
+  # that copy reports a skip rather than pretending it checked the exclusion.
+  # Retires when a check copy can read the authoritative build-ignore rules.
   skip_if_not(file.exists(buildignore), ".Rbuildignore is absent from this check copy")
 
   root <- withr::local_tempdir()

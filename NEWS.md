@@ -1244,6 +1244,12 @@ metasalmon (development version)
 
 ### Internal
 
+* **The CI metasalmonpy checkout is excluded from R source tarballs** (hub item
+  B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`, the source of two
+  R CMD check NOTEs about hidden files and non-portable paths. CI still checks
+  out the sibling and exposes it through `METASALMONPY_PATH` for the parity
+  register guard. A focused source-build test verifies the tarball exclusion.
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
