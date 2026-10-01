@@ -1407,8 +1407,8 @@ materially new workflow, with nothing renamed, removed, or changed in
 documented return shape. **#58 (condition classes) wanted a breaking bump and
 was deliberately left out of it** — judged 2026-08-25, on the grounds that ~450
 mechanical call-site edits share no code with the review flow and bundling them
-would make both harder to review. So #58 and #59 are what remain of S5, and the
-breaking-release story they want is still ahead rather than spent. Two narrow
+would make both harder to review. #59 was likewise outside 0.5.0 and landed
+separately in PR #243 on 2026-10-01. Two narrow
 byte changes ship inside the minor and are stated in the NEWS entry rather than
 implied: `semantic_suggestions.csv` gains a `decision_reason` column, and an
 in-memory SSSOM mapping set carrying a typed column renders canonically through
