@@ -8038,6 +8038,14 @@ items.
 *Why this severity:* the profile has no use for a tag, and nothing runs, but
 each reader returns a different value for the same line.
 
+**Both halves landed — 2026-10-01, B-352/B-353.** metasalmon PR **#255**
+merged as `13460ed0484b10082b89c4dec33820d70386ddac`; metasalmonpy PR **#88**
+merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`. Tagged metadata is refused
+without evaluation; quoted bang text remains text. Public RED controls and
+frozen-source verification precede both merges; current required CI and the
+last requested Codex reviews completed, with verified Claude nits-only
+execution on the R PR. This is the existing Q62 ruling, with no new parity row.
+
 **`B-354` and `B-355`: an instant in EML coverage (call (m)).** The B-162 run
 measured it in R (`.hub/workpads/B-162.md` on `main`, on `372ef07` under R
 4.3.3): for a package whose `temporal_start` is `2024-01-01T00:00:00Z`,
