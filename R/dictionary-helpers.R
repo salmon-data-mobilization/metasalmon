@@ -1589,6 +1589,25 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         )
       }
     }
+
+    # The REVIEW and exact NA/empty checks above own those states. Every other
+    # semantic IRI, including whitespace-only text and optional
+    # constraint/modifier slots,
+    # must have the same absolute-IRI shape used by the package's other IRI
+    # validators. Check the rendered value rather than a trimmed copy: leading
+    # whitespace is part of the malformed value, even when it is not ASCII.
+    for (field in iri_fields) {
+      vals <- as.character(dict[[field]])
+      populated <- !is.na(vals) & vals != ""
+      malformed <- which(
+        populated & !review_marker_rows[[field]] & !.ms_absolute_iri_shape(vals)
+      )
+      if (length(malformed) > 0) {
+        cli::cli_abort(
+          "{.field {field}} is not an absolute IRI in rows {malformed}."
+        )
+      }
+    }
   }
 
   # Check for duplicate column names within same table
