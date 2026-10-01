@@ -117,7 +117,11 @@ writes:
       max: 1 per claim
     - operation: push a handoff commit
       target: *claim_ref
-      shape: child of the tip you just read
+      shape: >-
+        Child of the tip you just read. A branch handoff records the pushed
+        branch. A chat handoff for a configured member whose solo key is false
+        or absent records no branch and uses the exact reason hand-back in chat,
+        after confirming the queue checkout is current.
       max: 1 per claim
     - operation: push a reclaim commit
       target: *claim_ref
@@ -636,18 +640,20 @@ a beat made early is not a breach (ruled 2026-09-24).
 
 **6. Report.** Into `.hub/workpads/<queue-id>.md` on your branch, one file per item.
 
-**7. Hand back.** Append a `handoff` commit and print the compare URL. In a
-member repository somebody other than Brett has contributed to, the branch is
-never pushed at all and the hand-back is a diff plus a pull request draft shown
-in chat; the Hand back section says how to tell which case you are in. There
-nothing is pushed, so there is no branch to pass `hub done`, and the client has
-no chat hand-back yet (queue item B-338): keep the claim alive with heartbeats
-until Brett answers in chat. Everywhere else, pass `hub done` the branch you
-actually pushed, and it will be `agent/<queue-id>/<token>` because that is the
-only work branch you were allowed to push. The client checks the name against
-the grant and exits 3 on anything else, so a mismatch means either the branch
-is not one the register covers or your agent token is not the one holding the
-claim. Both are worth stopping for.
+**7. Hand back.** Append a `handoff` commit; for a pushed branch, print its
+compare URL. In a member repository somebody other than Brett has contributed
+to, the branch is never pushed at all and the hand-back is a diff plus a pull
+request draft shown
+in chat; the Hand back section says how to tell which case you are in. After
+showing both in chat, use `hub done ID --chat`: it keeps the claim with a
+branchless `handoff` record whose reason is `hand-back in chat`. It is allowed
+only when the configured member's `solo` key is false or absent, and it checks
+that this queue checkout is current before using that participation fact.
+Everywhere else, pass `hub done ID --branch B` the branch you actually pushed,
+which is `agent/<queue-id>/<token>` because that is the only work branch you
+were allowed to push. The client checks the name against the grant and exits 3
+on anything else, so a mismatch means either the branch is not one the
+register covers or your agent token is not the one holding the claim.
 
 ## Claiming, and what to do when the push is rejected
 
@@ -762,10 +768,12 @@ Then:
   follows. `ready` and `ready --set` go on with a warning then, as `ready` does
   when the locks repository cannot be read, because the claim after them asks
   again.
-- **`beat` and `release` go ahead, and `done` warns and hands back anyway.**
-  Each records this agent's own claim, a worktree is routinely behind by the
-  time its work is handed back, and a heartbeat must never be lost to a merge
-  elsewhere.
+- **`beat` and `release` go ahead, and `done --branch` warns and hands back
+  anyway.** Each records this agent's own claim, a worktree is routinely behind
+  by the time its work is handed back, and a heartbeat must never be lost to a
+  merge elsewhere. **`done --chat` refuses a stale or uncomparable queue
+  checkout**, because it must confirm the item's repo and its participation
+  key before recording a branchless handoff.
 - **Every command that pushes, those three included, first checks that
   `locks_repo` and `claim_ref_prefix` in the checkout are the ones `origin`'s
   default branch names, and refuses if not**, because a push anywhere else lands
@@ -835,13 +843,17 @@ saying what would retire it is incomplete.
 ## Hand back
 
 Hand-back appends a `handoff` commit to the claim ref. **It does not release
-the claim.** The item stays unclaimable until the work merges, by Brett or under
-the delegation rule the `done` state names, so finished work never looks free
-again while he is away, and no second agent redoes it.
+the claim.** The item stays unclaimable until Brett acts on the hand-back or the
+work merges, so finished work never looks free again while he is away, and no
+second agent redoes it. A branch handoff records `branch:`. A chat handoff
+records no branch and the exact claim-record reason `hand-back in chat`.
 
-Then push the branch and open **one draft pull request** for it, in the member
-repository where the work happened, with the label `agent-run` and the queue id
-in the body. Never open a second one for the same item.
+In a solo member repository, push the branch and open **one draft pull request**
+for it, with the label `agent-run` and the queue id in the body. Never open a
+second one for the same item. In a shared member repository, show the worktree
+diff and complete proposed pull request text in chat, run `hub done ID --chat`
+to record that hand-back, and leave the member branch and pull request unpushed
+until Brett authorizes them.
 
 **Whether it stays a draft depends on which list it falls into.** For a pull
 request in a class "Which pull requests need Brett" reserves to him it stays
@@ -858,8 +870,9 @@ the branch push as well as the pull request.** The grant is scoped by
 participation, not by ownership; the table in the standing authorization below
 says which member repositories pass and how to test it. In a shared member
 repository the hand-back ends before the push, not after it: the work stays in
-the worktree, and Brett sees the diff and the pull request text in chat and says
-yes before anything leaves the machine. Read the table before reaching for
+the worktree, Brett sees the diff and the pull request text in chat, and the
+branchless claim handoff records where the work was shown. Brett says yes
+before anything leaves the machine. Read the table before reaching for
 `git push` or `gh`.
 
 `gh pr create --draft` is the agent's own call, not a `hub` subcommand; the
