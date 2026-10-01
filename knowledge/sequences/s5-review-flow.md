@@ -137,9 +137,10 @@ minor is next when it lands.
 recorded above, and the release proved the milder half of it wrong: #74 adding
 nine exported functions did **not** want a breaking bump, because adding an
 export breaks nobody. Only #58 does. So 0.5.0 shipped #74 alone as an ordinary
-minor, and the "one breaking-release story" is now #58 and #59's to spend
-together, not #74's. Kept rather than rewritten because the paragraph is the
-reasoning that was tested, and it is worth knowing which clause failed.
+minor. At that point, #58 and #59 were expected to share a later breaking-release
+story; #59 instead landed separately on 2026-10-01. Kept rather than
+rewritten because the paragraph is the reasoning that was tested, and it is
+worth knowing which clause failed.
 
 **#59 landed 2026-10-01 in metasalmon PR #243 (`d0339c0`).** The configuration
 registry and help topic, missing-only load defaults, private BioPortal warning
