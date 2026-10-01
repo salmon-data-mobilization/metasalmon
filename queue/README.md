@@ -40,7 +40,7 @@ From a current hub checkout:
 
 ```sh
 scripts/hub ready             # eligible candidates, including live claim checks
-scripts/hub status B-99       # queue fields and this item's live claim tip
+scripts/hub status B-99       # queue, evidence, completion condition and live claim
 scripts/hub claim B-99        # acquire the claim; print member setup hints
 ```
 

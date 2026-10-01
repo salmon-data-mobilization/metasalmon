@@ -1675,7 +1675,7 @@ main() {
     [ "$status_bad_rc" = "$EX_FAIL" ] || status_ok=1
     [ "$status_before" = "$status_after" ] || status_ok=1
     [ "$status_bad_before" = "$status_bad_after" ] || status_ok=1
-    for status_field in id title repo state claimable blocked_by; do
+    for status_field in id title repo state claimable blocked_by evidence retires_when; do
       grep -q "^$status_field:" "$status_release" || status_ok=1
     done
     grep -Fxq "id: $RELEASED_ID" "$status_release" || status_ok=1

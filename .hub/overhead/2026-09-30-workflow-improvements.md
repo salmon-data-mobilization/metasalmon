@@ -94,6 +94,38 @@ not an added policy or a claim of measured savings.
 
 ## Next run
 
-B-99 was the oldest eligible P2 candidate in the live queue inspection. Its
-member is `smn-data-pkg`. Pickup remains pending Git authentication; no B-99
-implementation has started. This section will be updated with observed results.
+B-99 was the oldest eligible P2 candidate in the live queue inspection. After
+Brett completed a fresh device login on his computer, the existing client
+claimed it successfully, without an alternative lock mechanism.
+
+The member checkout was fetched and fast-forwarded before the pickup timer.
+From **04:10:23 to 04:11:21 UTC on 2026-10-01**, `hub status`, `hub claim` and the
+two printed setup commands prepared its worktree in **58s**. B-120's recorded
+pickup was 2m14s: an observed 1m16s (57%) shorter interval, with preparation,
+repository and scope differences that prevent assigning the change to the
+helpers alone. It is not a measured whole-task bureaucracy or avoidable share.
+
+B-99's new tests reproduced both original 404s. After the three-cell CSV fix,
+the full suite passes **54 tests and 22 subtests, zero skips**, including live
+Turtle subject/type checks. Generated artifacts remain synchronized. The
+item's implementation, source justification, skip retirement and timings live
+in `smn-data-pkg`'s `.hub/workpads/B-99.md`. No file-edit race or coordination
+rerun occurred during its RED/GREEN verification.
+
+## Adjustment after B-99
+
+`status` initially omitted `evidence` and `retires_when`, so the pickup still
+needed a separate queue-file read. The next iteration prints those canonical
+fields using the existing extractor and checks the added output in the same
+harness. The frozen harness still passes **43 checks, no failures or skips**.
+This is two added fields, not another planner or a new claim protocol.
+
+The next candidate is B-186, a queued defect in stream validation, selected for
+a bounded second workflow cycle. Its eventual pickup interval will be recorded
+separately. Claim eligibility must be checked again at pickup.
+
+Brett subsequently asked for ongoing iterations, parallel claims once the
+process settles, and Claude review rounds until substantive findings are
+resolved. Routine publication authority is being clarified against the current
+AGENTS approval rule. The experiment does not treat user approval or an
+unstarted review as a successful publication or review outcome.
