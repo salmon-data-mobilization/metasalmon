@@ -13,6 +13,11 @@
   reporting *all* failed IRIs. Publication workflows can checksum that
   CSV. The check confirms HTTP resolution; it does not judge whether a
   term is suitable.
+  Vector condition messages stay in one redacted failure row so they cannot
+  interrupt the remaining IRI checks or prevent the complete report.
+  Default GETs stop after complete final headers and discard body bytes, with
+  a 30-second timeout across connection and redirects. `curl` is declared
+  directly in Imports; it was already installed as httr2's transport dependency.
 
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
   produces the reviewed semantic closure, which metasalmon has validated
