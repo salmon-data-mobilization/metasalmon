@@ -542,3 +542,118 @@ returns no free claimable item, with held B-60 as a positive control. Delivered
 drafts retain their claims; queue retirement and merges remain pending. The
 existing quiet hourly heartbeat continues pickup and review follow-ups when
 state changes. There is still no defensible whole-run waste percentage.
+
+
+## Actual Claude reviews and pause checkpoint — 2026-10-01
+
+Brett is actively moving the in-package model call out through S16. New repairs
+to the provider client, chat request/retry stack, llm/chat options and retiring
+`chat_decomposition()` documentation are excluded from this run. The packet,
+assessment rows, deterministic validators, context readers, closure, selected-IRI
+verification and non-model configuration survive and remain in scope. R PR194
+merged the packet seam; open PR210 is its follow-up. B-329/B-330 name full
+removal; no separate open full-removal PR was found in the live sweep. Do not
+duplicate or take over Brett's work. A valid Python PR83 guide correction pushed
+just before this instruction is retained; prioritization does not warrant revert
+churn.
+
+Claude CLI authentication now works through the existing first-party subscription.
+Successful local runs report actual Opus model usage and no permission denials;
+list-price cost fields are not evidence of a separately billed API call. The new
+GitHub PR247/248 reviews were real. PR247's missing packet reference pages are
+already supplied by PR245: preserve that merge order rather than duplicate the
+pages. PR248's owner wording was simplified and commons evidence explicitly
+pinned to the observed ontology commit/date. Routing PR248 is `65bee09` and
+commons PR43 is `1ee02bb`; their checks pass. No review opinion changed Brett's
+semantic rulings or validator authority.
+
+### Surviving-code review repairs
+
+- R B-58 PR246 is published at `c5571a5`. Four semantic-closure warnings now
+  carry the validation family, matching Python. Four final-form assertions fail
+  on the previous head and pass after the fix; the unchanged-flow proof passes.
+  Actual narrow Claude code/test review found no remaining P1/P2 defect. The
+  original broader pair review's Python coverage was incomplete and inconsistently
+  enumerated; the workpad/body now say so. Its strict R CMD check preceded this
+  additive fix, also corrected in the record. Last observed CI: five checks green,
+  R CMD check still running. No further local review is needed solely for wording.
+- R B-59 PR243 is published at `9aff956`, clean, with all six checks green. A
+  stored default schema base URL could remain stale after a pin change/reload;
+  the default is now resolved at call time. Two RED assertions became GREEN,
+  focused schema/offline tests pass, and strict local R CMD check is 0/0/0.
+  A bounded actual Claude re-review completed in about 90 seconds with no new
+  defect. Generated outputs were verified locally, not directly inspected by Claude.
+- B-130's successful per-language reviews exposed a real Python transport issue:
+  Requests' inactivity timeout did not impose the advertised total wall bound.
+  A fixed subprocess with a deadline, streamed final response and explicit reap
+  is implemented locally; 33 focused tests on Python 3.14 and 3.9 and the full
+  1,757-test/291-subtest suite pass (two existing skips disclosed). R also has a
+  confirmed vector condition-message capture defect: the narrow collapse fix and
+  34 focused expectations pass. These edits are frozen locally for the pause,
+  not yet published. Default R full-body GET and Python header-only success still
+  differ; record temporary parity debt, not an approved deliberate deviation.
+  A read-only curl multi experiment looks promising but its final-header/status
+  correspondence and intermediate redirects need adversarial proof before any
+  implementation. No B-130 curl change has been made.
+
+### Next use of the smaller-review adjustment
+
+The helper's broad review hit its 480-second deadline without a final result;
+a subsequent diff-only review hit 240 seconds, also without a final result.
+Neither counts as completed review. Restricting the next call to the two ID-helper
+files and explicit medium effort produced an actual static review in **68.53
+seconds**. It found that fixture Git writes inherited `GIT_DIR`/`GIT_INDEX_FILE`
+and could mutate a caller repository despite `-C`. A disposable caller control
+reproduced changed HEAD/index/refs/status before the fix, with no real checkout
+at risk. Sanitized fixture environments close that path; ten tests pass.
+
+A **38.98-second** static additive-patch review found an index-snapshot flake:
+`git status` could refresh the caller index between snapshots. The caller's read
+commands now disable optional locks; ten tests pass at local head `928f106`.
+That one-line final correction has not received another Claude review. A
+conditional concern about other unsanitized fixture writes was checked directly:
+all Git subprocess sites in this file pass a sanitized environment. No production
+helper behaviour changed, so no new package port or site build is owed.
+
+Across just these four serial helper CLI attempts, about **87%** of invocation
+time hit a deadline without a final review (720 seconds of deadlines versus
+107.51 seconds for completed reviews). This is a narrow review-attempt metric,
+not a whole-run waste percentage or a percentage attributable to hub claims.
+The comparison changes both scope and effort, so it does not isolate causation.
+Actual reproduction and repair are useful verification/implementation. The
+B-130 broad pair attempt likewise timed out at 480.01 seconds; its smaller
+language-specific reviews completed at 370.78 and 264.49 seconds. Those agents
+ran concurrently, so their durations must not be added as elapsed wall time.
+
+Repeated text-only assurance after B-58's record was accurate cost a further
+99.8-second local pass and yielded only wording nits. Stop such optional passes
+once concrete corrections are independently checked; do not keep feeding the
+same record back for reassurance. A malformed initial MCP envelope was a tool
+setup error, separate from claim coordination. No approval, ID allocation or new
+claim was needed for these review fixes. There is still no defensible whole-run
+bureaucracy percentage.
+
+### Safe resume point
+
+Brett requested a pause to update Codex at approximately 14:40 UTC. The hourly
+heartbeat is PAUSED, and task-owned review/server processes are being stopped.
+Helper fixture fixes `7b30dbb`/`928f106` are local and unpushed; this log is saved
+with them. Published B-58/B-59 fixes are preserved. On resume, inspect new review
+findings and exact-head CI, finish the frozen B-130 review/transport parity work,
+then publish authorized additive commits. Recheck `hub ready` before pickup;
+its latest successful fresh-default-branch scan had no free item, with B-238's
+held handoff as the positive control. Do not promote blocked semantic/policy work
+or retire a held draft just to create more throughput. Resume the same heartbeat
+only when Brett asks to continue.
+
+
+All three subagents confirmed their pause. B-130 R is clean at local `1309a19`
+(branch `agent/B-130/a-16638a45c615a2f8`, published PR244 head still `fa0d4a47`);
+Python is clean at local `edeb1f0` (branch `agent/B-130/a-6e8d8b1dfb43a0d4`,
+published PR85 head still `fbd44f1`). Both workpads contain the exact checkpoint.
+Its second delta review was terminated and reaped for Brett's pause after
+373.66 seconds, with no final JSON: incomplete, not a review result or a timeout
+caused by the workflow adjustment. No task-owned command remains in flight.
+The read-only curl child was interrupted; the candidate must not be treated as
+validated. No push, PR-body update, or curl implementation occurred after the
+pause request.
