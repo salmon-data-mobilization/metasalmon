@@ -53,7 +53,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' # Create a simple package
 #' resources <- list(main_table = mtcars)
 #' dataset_meta <- tibble::tibble(
@@ -70,9 +69,8 @@
 #' dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
 #' write_salmon_datapackage(
 #'   resources, dataset_meta, table_meta, dict,
-#'   path = tempdir()
+#'   path = tempfile("sdp-example-")
 #' )
-#' }
 write_salmon_datapackage <- function(
     resources,
     dataset_meta,
@@ -820,7 +818,6 @@ write_salmon_datapackage <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' resources <- list(
 #'   catches = data.frame(
 #'     station_id = c("A", "B"),
@@ -838,15 +835,14 @@ write_salmon_datapackage <- function(
 #' artifacts <- infer_salmon_datapackage_artifacts(
 #'   resources,
 #'   dataset_id = "demo-1",
-#'   seed_semantics = TRUE,
-#'   seed_verbose = TRUE
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE
 #' )
 #'
 #' dict <- artifacts$dict
 #' table_meta <- artifacts$table_meta
 #' codes <- artifacts$codes
 #' dataset_meta <- artifacts$dataset_meta
-#' }
 infer_salmon_datapackage_artifacts <- function(
     resources,
     dataset_id = "dataset-1",
@@ -1121,17 +1117,18 @@ infer_salmon_datapackage_artifacts <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
 #' fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 #'
 #' pkg <- create_sdp(
 #'   fraser_coho,
+#'   path = tempfile("fraser-coho-sdp-"),
 #'   dataset_id = "fraser-coho-2024",
 #'   table_id = "escapement",
-#'   overwrite = FALSE
+#'   seed_semantics = FALSE,
+#'   seed_verbose = FALSE,
+#'   check_updates = FALSE
 #' )
-#' }
 create_sdp <- function(
     resources,
     path = NULL,
@@ -1509,11 +1506,10 @@ create_sdp <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Read a package
-#' pkg <- read_salmon_datapackage("path/to/package")
-#' pkg$resources$main_table
-#' }
+#' # Read the bundled example package without a network call.
+#' example_path <- system.file("extdata", package = "metasalmon")
+#' pkg <- read_salmon_datapackage(example_path)
+#' names(pkg$resources)
 read_salmon_datapackage <- function(path) {
   if (!dir.exists(path)) {
     cli::cli_abort("Directory {.path {path}} does not exist")

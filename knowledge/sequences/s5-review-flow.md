@@ -14,6 +14,16 @@ psc:
 **#74 is closed (2026-08-25), and #60's accessor clause with it — #60's other
 clauses stand. #58 and #59 are what remain of this stream.**
 
+**B-60 follow-up proposed 2026-09-30:** the remaining #60 clauses are R
+package documentation and metadata hygiene: executable Rd examples, removal
+of a blanket roxygen `httr` import, an `Authors@R`-only author declaration,
+and a naming convention for future R exports. They change no exported
+signature, SDP format, or runtime behaviour. There is no Python port for these
+R packaging mechanics; metasalmonpy's packaging and guides remain their own
+documentation surfaces. This records why the usual mirror presumption does
+not call for a Python code change in B-60. The proposal does not mark #60
+closed until its PR merges and examples pass `R CMD check`.
+
 **Released as metasalmon `v0.5.0` on 2026-08-25** — annotated tag on the
 release merge, GitHub Release published with the `NEWS.md` entry as its body.
 The card said this stream "ships as the next minor at ship time"; the number

@@ -726,6 +726,30 @@
 #'
 #' @return A `metasalmon_sssom_mapping_set` list containing `metadata`, a
 #'   `mappings` tibble, and the normalized source `path`.
+#' @examples
+#' # Illustrative mapping only; curate real assertions before publication.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' mapping_set <- read_sssom_mapping_set(mapping_file)
+#' mapping_set$metadata$mapping_set_id
+#' unlink(mapping_file)
 #' @export
 read_sssom_mapping_set <- function(path, validate = TRUE) {
   if (length(path) != 1L || is.na(path) || !nzchar(path)) {
@@ -987,6 +1011,32 @@ read_sssom_mapping_set <- function(path, validate = TRUE) {
 #'
 #' @return The manifest path, invisibly, or `NULL` when `mapping_sets` is
 #'   `NULL`.
+#' @examples
+#' # Supply a reviewed SSSOM file. This temporary set illustrates the format.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' sdp_path <- tempfile("sdp-")
+#' dir.create(sdp_path)
+#' write_sdp_sssom(sdp_path, mapping_file)
+#' validate_sdp_sssom(sdp_path)
+#' unlink(c(mapping_file, sdp_path), recursive = TRUE)
 #' @export
 write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
   if (is.null(mapping_sets)) {
@@ -1204,6 +1254,29 @@ write_sdp_sssom <- function(path, mapping_sets = NULL, overwrite = FALSE) {
 #' @param path Path to an SDP directory or one `.sssom.tsv` mapping set.
 #'
 #' @return `TRUE`, invisibly, when validation succeeds; otherwise an error.
+#' @examples
+#' # Validate a self-contained mapping set before placing it in an SDP.
+#' mapping_file <- tempfile(fileext = ".sssom.tsv")
+#' writeLines(c(
+#'   '#sssom_version: "1.1"',
+#'   "#curie_map:",
+#'   "#  exa: https://example.org/ontology-a/",
+#'   "#  exb: https://example.org/ontology-b/",
+#'   "#mapping_set_id: https://example.org/mappings/demo",
+#'   "#mapping_set_version: 1",
+#'   "#license: https://creativecommons.org/licenses/by/4.0/",
+#'   "#subject_source: https://example.org/ontology-a/",
+#'   "#subject_source_version: 1",
+#'   "#object_source: https://example.org/ontology-b/",
+#'   "#object_source_version: 1",
+#'   paste("subject_id", "subject_label", "predicate_id", "object_id",
+#'         "object_label", "mapping_justification", sep = "\t"),
+#'   paste("exa:spawner-count", "Spawner count", "skos:exactMatch",
+#'         "exb:spawner-count", "Spawner count",
+#'         "semapv:ManualMappingCuration", sep = "\t")
+#' ), mapping_file, useBytes = TRUE)
+#' validate_sdp_sssom(mapping_file)
+#' unlink(mapping_file)
 #' @export
 validate_sdp_sssom <- function(path) {
   if (length(path) != 1L || is.na(path) || !nzchar(path)) {

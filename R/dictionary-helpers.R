@@ -61,7 +61,6 @@
 #' @export
 #'
 #' @examples
-#' \dontrun{
 #' df <- data.frame(
 #'   species = c("Coho", "Chinook"),
 #'   count = c(100, 200),
@@ -69,6 +68,7 @@
 #' )
 #' dict <- infer_dictionary(df)
 #'
+#' \dontrun{
 #' # Optional: seed semantic suggestions from vocabulary services
 #' # (SMN is queried first; GCDFO is a distinct DFO-specific source)
 #' dict <- infer_dictionary(
