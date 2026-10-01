@@ -284,7 +284,12 @@ working client/harness bytes and a local snapshot commit. Run the existing
 harness there, then compare the tested source bytes with the working files.
 No guard is weakened and other agents keep working. In that isolated clone,
 all **43 checks pass, zero failures/skips**, and byte comparisons match.
-B-338 is evaluating the same procedure in its next verification round.
+B-338 independently reused the procedure in its next verification round:
+**43/43 checks passed**, including the repository-ref fingerprint check that
+had failed during concurrent shared-ref activity. Its clone was
+`/tmp/metasalmon-b338-frozen.zc4fCq/repo`; root's was a different clone.
+This demonstrates removal of that concrete source of rework while retaining
+the same guard. It does not measure a percentage saving for the whole run.
 
 B-394 was published as [PR234](https://github.com/salmon-data-mobilization/metasalmon/pull/234)
 after its RED and all 163 offline queue tests passed. Its broader read exposed
@@ -297,3 +302,33 @@ B-265, B-401 and B-129 are published as [233](https://github.com/salmon-data-mob
 Two scoped build ideas remain candidates: reconcile NEWS source/site history,
 and preserve existing site assets during article/index builds. They are not
 implemented as another workflow layer during ongoing claims.
+
+## Next work round — independent pickup and evidence corrections
+
+- B-59's agent reports about **40 seconds** for claim/worktree pickup using the
+  current helpers. The earlier 58/64/134-second observations differ in scope
+  and preparation, so the direction is encouraging but not a causal estimate.
+- B-252's paired executable probes disproved its original source-only R
+  premise. The agent corrected the actual Python direct-writer/table-inference
+  discrepancy and kept existing caller extras. Root publishes a narrow hub
+  documentation companion. This is necessary evidence correction, not time
+  to remove as bureaucracy; the durable probes prevent repeating the mistake.
+- B-209's independent review exposed historical attribution, wrapped-line and
+  generated freshness gaps in the first implementation. RED fixtures reproduce
+  them before repair. That review spends time on demonstrated bugs. It should
+  not be bundled into an undifferentiated “administration” percentage.
+- Routine publication and handoff still require no additional user approval.
+  The pending Claude-workflow bootstrap merge is a separate unresolved action;
+  actual Claude review of new heads remains unverified. A green skipped job
+  is not counted as a review.
+
+Additional review surfaces, without implying queue completion or merge:
+[B-338 / PR237](https://github.com/salmon-data-mobilization/metasalmon/pull/237),
+[B-396 / PR238](https://github.com/salmon-data-mobilization/metasalmon/pull/238),
+[B-328 / PR239](https://github.com/salmon-data-mobilization/metasalmon/pull/239),
+[B-121 / PR240](https://github.com/salmon-data-mobilization/metasalmon/pull/240),
+[B-252 / Python PR82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82),
+and [B-167 / smn-data-pkg PR14](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/14).
+Agents continue independent eligible work rather than waiting for root to
+approve routine publication. Remaining design or semantic choices receive
+draft evidence where a ruling is required.
