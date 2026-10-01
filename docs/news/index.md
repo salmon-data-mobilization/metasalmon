@@ -1574,6 +1574,16 @@
 
 ### Internal
 
+- Automatic Claude review keeps its five-marker budget but only a
+  verified completed nits-only review can suppress later rounds. Failed
+  reviews and green skips cannot attest completion. Review prompts use
+  source reads and existing review publication; broad interpreter and
+  generic API grants are removed. Completion failures stay visible and
+  token permissions are unchanged. Reference-index CI allows up to 30
+  minutes for runner/dependency setup while retaining the same index
+  assertion with its own five-minute limit; the old 15-minute job budget
+  could expire before checking any topic.
+
 - The hub queue linter rejects a nonempty `stream` that names no stream
   item. Stream names use the unpadded item number (`S-05` is `S5`);
   future stream items are accepted without editing a fixed list (hub

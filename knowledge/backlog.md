@@ -8032,6 +8032,17 @@ unpadded year is not the ruled form and stays `B-161`'s.
 *Why this severity:* the profile admits an instant, and R's own writer produces
 one from a typed `POSIXct`, so a valid package cannot be published as EML.
 
+**Both halves landed — 2026-10-01, B-354/B-355.** metasalmon PR **#253**
+merged as `05f0bf18d8753b2a7d1d27881f2f12f971f89ed3`; metasalmonpy PR
+**#87** merged as `6d0a45e6e3421e2a537a2ee0225b1bcb46ba05b9`. Both public
+writers now split the one persisted whole-second UTC profile instant into
+`calendarDate` and `time`, preserving the exact text on rejoin. Public EML
+schema regressions were shown RED first, then pass for instant/instant and
+both mixed date/instant directions; off-profile controls remain intact.
+Both merge heads passed every applicable required CI gate and completed
+Codex review; R's actual Claude review finished with only nits. These are
+ports of Brett's existing ruling, with no numbered parity deviation.
+
 **Call (n): no item.** The S13 card now records the two argument changes as
 changes the Fraser Recruits recipe makes, and points at
 `write_sdp_semantic_closure()`.
