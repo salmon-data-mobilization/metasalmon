@@ -886,3 +886,39 @@ After the necessary PR215 integration, PR250 passes all 202 script tests in
 10.678s and the 68-export/64-topic reference check. Checker source/tests are
 unchanged from its completed nits-only review. Required remote checks will run
 on the new integration head; the prior green head is not substituted for it.
+
+### Corrections found during the next review use — 2026-10-01
+
+Codex's actual review of PR250 head `6f6b3a1` identified a P2 diagnostic
+mistake: a compound Bash denial was labelled only by its first command, which
+could direct repair toward an already allowed command. Eight pipeline,
+compound, substitution and redirection cases fail before the narrow fix in
+`f3ac497`; all five checker tests pass afterward. Specific fixed labels now
+require a simple invocation; compound/unparsed syntax stays unclassified.
+No shell syntax is executed and no raw text is emitted. Root independently
+read the correction. This is a valid review fix, not the earlier optional
+command-vocabulary nit. Required CI must run on its published corrected head.
+
+The actual targeted B-130 follow-up review completed in 412.519s with no denied
+calls and no Important findings/three nits. Together with the 380.56s first
+round, requested audit took 793.079s and found useful netrc/proxy defects;
+this is not a claimed efficiency saving. The revised Python source passes
+54 focused tests on 3.9/3.13 and 1,778 tests plus 291 subtests on 3.13, with
+the two existing optional skips. The full 3.9 suite's eight unchanged
+`Path.write_text(newline=...)` helper failures remain disclosed. A three-hop
+cookie control strengthens the claimed shared-jar evidence without another
+model-review cycle. Prior manual Requests code already applied its per-request
+proxy decision at each hop, so the correction does not create a new routing
+parity rule. Broader CA/IDNA nits are not expanded into a redesign.
+
+The final paired retry check exposed R's loss of curl's typed failure class.
+The existing supported classed callback seam supplies URL-malformat and
+redirect-limit errors; the narrow R correction preserves them and keeps those
+two default failures permanent, matching Python, while leaving injected
+requester behavior intact. Its source and paired attempt-count verification
+are in progress. No approved divergence or new queue item is invented.
+
+PR250's old-head index job cancelled before validation, but that head also has
+the substantive diagnostic finding above. It is superseded by the correction;
+do not spend a retry on a commit that cannot merge. Batch the valid source fix
+and this durable append in one publication, then watch the new required gates.
