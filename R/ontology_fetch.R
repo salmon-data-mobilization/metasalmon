@@ -10,6 +10,11 @@
 #' @param fallback_urls Optional fallback ontology URLs tried if the primary `url` fails.
 #' @param timeout_seconds Numeric timeout in seconds for each HTTP request.
 #' @return Path to the cached ontology file (character string).
+#' @examples
+#' \dontrun{
+#' # Needs the remote ontology; run in checks once a local fixture is supported.
+#' ontology_path <- fetch_salmon_ontology(cache_dir = file.path(tempdir(), "smn-cache"))
+#' }
 #' @export
 fetch_salmon_ontology <- function(
     url = "https://w3id.org/smn/",

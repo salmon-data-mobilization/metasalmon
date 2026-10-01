@@ -64,6 +64,16 @@ the remaining metadata, and write it all back — no spreadsheet required
 - [`semantic_llm_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/semantic_llm_assessments.md)
   : Target-level LLM assessments attached to a dictionary
 
+## Harness Review (packet and ingest)
+
+Model judgement runs outside the package: write a review packet, have
+your harness judge it, and read the assessments back
+
+- [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  : Write a semantic review packet for a harness to judge
+- [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  : Ingest a harness's semantic assessments
+
 ## Semantic Helpers
 
 Semantic suggestion, vocabulary search, and ranking benchmark
