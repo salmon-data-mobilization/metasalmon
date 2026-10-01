@@ -87,14 +87,14 @@ jobs:
 
       - name: Install CI toolchain (pak with bounded retries)
         env:
-          # runner context is available in step env, not job env. Give both
-          # installer steps the same dedicated library.
-          R_LIB_FOR_PAK: ${{ runner.temp }}/metasalmon-pak
+          # Use the library setup-r already puts on R's normal search path:
+          # setup-r-dependencies' early repo_status() uses pak:: without lib.loc.
+          R_LIB_FOR_PAK: ${{ env.R_LIBS_USER }}
         run: Rscript scripts/install-ci-pak.R
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         env:
-          R_LIB_FOR_PAK: ${{ runner.temp }}/metasalmon-pak
+          R_LIB_FOR_PAK: ${{ env.R_LIBS_USER }}
         with:
           pak-version: none
           extra-packages: |
