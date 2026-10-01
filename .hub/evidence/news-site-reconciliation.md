@@ -30,7 +30,8 @@ for the two current packet APIs use the reference pages supplied by PR245.
 - Replay of B-58's actual seven-line NEWS source patch: 14.45s, only two added
   and one removed HTML lines, eight added Markdown lines, and one replaced
   development Added search record. No historical-fragment curation is needed.
-  The probe's source/output bytes were restored exactly after measurement.
+The probe's source/output bytes were restored exactly after measurement.
+
 - Final search comparison preserves all non-NEWS records, including repeated
   records; `git diff --check` passes. No site asset or package-code churn.
 
@@ -39,6 +40,17 @@ It is not a new independent claim or a measured whole-task/time-saving share.
 Current source/site drift is removed from this proposed baseline; older draft
 branches still need normal integration when it lands. The central overhead
 log in PR215 owns ongoing measurement.
+
+## Additive main integration (2026-10-01)
+
+Merged `origin/main` at `d0339c0` after the B-59 configuration documentation
+landed. Regenerated NEWS HTML, Markdown and search from the merged, unchanged
+`NEWS.md` with pkgdown 2.2.0 and Pandoc 3.8.3. Search retains all 551
+non-NEWS records from that main commit in the same order, including duplicate
+records; the NEWS portion grows from 69 to 70 records and includes B-59's
+entry. All seven favicon source/output byte pairs still match. The generated
+NEWS page has two reference links whose pages are supplied by PR245; PR247
+still depends on that PR landing before it is ready to merge.
 
 ## Recovered asset hashes
 
