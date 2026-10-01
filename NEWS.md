@@ -214,6 +214,11 @@ metasalmon (development version)
 
 ### Fixed
 
+* R Markdown and Quarto context files now use the shared UTF-8,
+  Windows-1252, then Latin-1 decoding chain before front matter and code
+  fences are removed. Review-packet excerpts retain Windows-1252 text
+  instead of failing on invalid UTF-8 (hub B-383).
+
 - Session IDs no longer advance or initialize the user's random-number state,
   and BioPortal's once-per-session missing-key warning is recorded privately
   instead of in `options()`. `?metasalmon_configuration` documents the current
