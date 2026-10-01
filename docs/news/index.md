@@ -1553,10 +1553,10 @@
 
 ### Internal
 
-- CI’s pak bootstrap retries failed downloads up to three times and
-  verifies that pak loads before dependency installation begins.
-  Exhaustion reports an infrastructure failure before package tests or R
-  CMD check run (hub B-155).
+- CI’s pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion
+  reports an infrastructure failure before package tests or R CMD check
+  run (hub B-155).
 
 - The hub queue linter rejects a nonempty `stream` that names no stream
   item. Stream names use the unpadded item number (`S-05` is `S5`);

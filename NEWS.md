@@ -1253,7 +1253,7 @@ metasalmon (development version)
 
 ### Internal
 
-* CI's pak bootstrap retries failed downloads up to three times and verifies
+* CI's pak bootstrap makes up to three install attempts and verifies
   that pak loads before dependency installation begins. Exhaustion reports an
   infrastructure failure before package tests or R CMD check run (hub B-155).
 
