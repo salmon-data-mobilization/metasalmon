@@ -1225,6 +1225,12 @@ a focused non-network regression test, since a network-only reproduction cannot
 be re-run in CI. Sequenced under S5; `notes/evidence/theme-a/` is the CI/test-wired
 evidence directory this feeds.
 
+**Superseded 2026-10-01 by B-328 (S16 step 2).** The live, capture and cohort
+gate paths were removed from the Theme A harness while offline replay and its
+oracles remain. The measurements above describe the former path; no three-run
+capture occurred and the HTTP 401 was not diagnosed. `queue/items/B-80.yaml`
+holds the current retirement state.
+
 **#63 The 0.1.8 extension normalizers shipped with locale-dependent ordering.**
 `.ms_sdp_methods_normalize()` and the two
 `.ms_sdp_observation_normalize_*()` functions produce the canonical row order
@@ -6684,6 +6690,10 @@ its reach (`tests/testthat/test-llm-chat-request.R:35-39`). The B-3 run also fou
 `.ms_chat_http_request()` accepting `response_schema` and ignoring it; that
 belongs to `B-31`, which owns the engine's request contract, and is not filed
 separately.
+
+**Superseded 2026-10-01 by B-328.** The benchmark's live request builder was
+deleted with the live mode. Its proposed shared-builder repair was not made;
+`queue/items/B-226.yaml` holds the current retirement state.
 
 **From `B-191`'s run** (metasalmonpy, measured on `main` `3f8349a` and on the
 run's local fix `8476b8e`, Python 3.11.15 with pandas 3.0.6).

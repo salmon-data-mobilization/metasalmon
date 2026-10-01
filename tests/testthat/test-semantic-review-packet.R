@@ -610,6 +610,38 @@ theme_a_script_env <- local({
   }
 })
 
+theme_a_observed_events <- function(case, result) {
+  # Rebuild the events from the ingester result through the same downstream
+  # prefill, gap and term-request steps that wrote the golden fixtures.
+  original <- case$dict
+  attr(original, "semantic_targets") <- NULL
+  attr(original, "semantic_suggestions") <- NULL
+  allowed_roles <- metasalmon:::.ms_create_sdp_llm_auto_apply_roles()
+  auto <- metasalmon:::.ms_prepare_llm_auto_apply_suggestions(
+    original, result$suggestions, allowed_roles = allowed_roles
+  )
+  final <- apply_semantic_suggestions(
+    original, suggestions = auto, strategy = "llm", roles = allowed_roles,
+    overwrite = FALSE, verbose = FALSE
+  )
+  final <- metasalmon:::.ms_mark_reviewed_dictionary_iris(
+    final, original_dict = original, suggestions = auto, strategy = "llm"
+  )
+  gap_input <- final
+  attr(gap_input, "semantic_suggestions") <- result$suggestions
+  attr(gap_input, "semantic_llm_assessments") <- result$assessments
+  attr(gap_input, "semantic_targets") <- result$targets
+  gaps <- detect_semantic_term_gaps(gap_input)
+  requests <- if (nrow(gaps) > 0L) {
+    render_ontology_term_request(
+      gaps, scope = "auto", ask = FALSE, profile_name = "theme-a-benchmark"
+    )
+  } else {
+    tibble::tibble()
+  }
+  theme_a_script_env()$events_from_package_outputs(result$assessments, final, gaps, requests)
+}
+
 theme_a_case_events <- function(case_id) {
   case <- build_case(case_id)
   result <- ingest_semantic_assessments(
@@ -617,7 +649,8 @@ theme_a_case_events <- function(case_id) {
     review_dir = case$review_dir, search_fn = function(...) stop("no search"), quiet = TRUE
   )
   expected <- semantic_review_read_json(file.path(case$case_dir, "expected", "events.json"))
-  list(case = case, result = result, expected = expected)
+  observed <- theme_a_observed_events(case, result)
+  list(case = case, result = result, expected = expected, observed = observed)
 }
 
 test_that("the Theme A cases pass their recorded oracles through the ingester and the prefill step", {
@@ -625,36 +658,13 @@ test_that("the Theme A cases pass their recorded oracles through the ingester an
   cases <- semantic_review_read_json(testthat::test_path("fixtures", "theme-a", "cases-v1.json"))
   observed <- lapply(cases$cases, function(case) {
     run <- theme_a_case_events(semantic_review_theme_a_case_id(case$case_id))
-    list(case_id = case$case_id, events = run$expected$events)
+    expect_identical(run$observed, run$expected$events, info = case$case_id)
+    list(case_id = case$case_id, events = run$observed)
   })
   replay_like <- list(cases = observed)
   evaluation <- env$evaluate_oracles(cases, replay_like)
   failures <- vapply(evaluation$failures, function(f) paste(f$case_id, f$rule_id, f$message), character(1))
   expect_identical(evaluation$status, "pass", info = paste(failures, collapse = "; "))
-})
-
-test_that("the recorded events are what the ingester produces today, not only what was written down", {
-  env <- theme_a_script_env()
-  for (case_id in c("ta_catch_count", "ta_gap", "ta_gcdfo_routing")) {
-    run <- theme_a_case_events(case_id)
-    # Rebuild the events from the result the way the fixture generator did.
-    original <- run$case$dict
-    attr(original, "semantic_targets") <- NULL
-    attr(original, "semantic_suggestions") <- NULL
-    allowed_roles <- metasalmon:::.ms_create_sdp_llm_auto_apply_roles()
-    auto <- metasalmon:::.ms_prepare_llm_auto_apply_suggestions(original, run$result$suggestions, allowed_roles = allowed_roles)
-    final <- apply_semantic_suggestions(original, suggestions = auto, strategy = "llm", roles = allowed_roles, overwrite = FALSE, verbose = FALSE)
-    final <- metasalmon:::.ms_mark_reviewed_dictionary_iris(final, original_dict = original, suggestions = auto, strategy = "llm")
-    gap_input <- final
-    attr(gap_input, "semantic_suggestions") <- run$result$suggestions
-    attr(gap_input, "semantic_llm_assessments") <- run$result$assessments
-    attr(gap_input, "semantic_targets") <- run$result$targets
-    gaps <- detect_semantic_term_gaps(gap_input)
-    requests <- if (nrow(gaps) > 0L) render_ontology_term_request(gaps, scope = "auto", ask = FALSE, profile_name = "theme-a-benchmark") else tibble::tibble()
-    events <- env$events_from_package_outputs(run$result$assessments, final, gaps, requests)
-    key <- function(e) paste(vapply(e, function(x) paste(names(x), unlist(x), collapse = ";"), character(1)), collapse = "|")
-    expect_identical(key(events), key(run$expected$events), info = case_id)
-  }
 })
 
 test_that("three adversarial harness answers are caught by the deterministic layer", {
@@ -668,7 +678,7 @@ test_that("three adversarial harness answers are caught by the deterministic lay
   expect_true("SEM_METHOD_EVIDENCE_REQUIRED" %in% method$result$findings$code)
   method_row <- method$result$assessments[method$result$assessments$dictionary_role == "method", ]
   expect_identical(method_row$llm_decision, "review")
-  evaluation <- env$evaluate_oracles(list(cases = list(by_id$catch_count)), list(cases = list(list(case_id = "catch_count", events = method$expected$events))))
+  evaluation <- env$evaluate_oracles(list(cases = list(by_id$catch_count)), list(cases = list(list(case_id = "catch_count", events = method$observed))))
   expect_identical(evaluation$status, "pass")
 
   # Accepting CatchContext beside CatchAbundance raises SEM_REDUNDANT_CATCH_CONTEXT.
@@ -676,7 +686,7 @@ test_that("three adversarial harness answers are caught by the deterministic lay
   expect_true("SEM_REDUNDANT_CATCH_CONTEXT" %in% context$result$findings$code)
   constraint_row <- context$result$assessments[context$result$assessments$dictionary_role == "constraint", ]
   expect_identical(constraint_row$llm_decision, "review")
-  evaluation <- env$evaluate_oracles(list(cases = list(by_id$catch_count)), list(cases = list(list(case_id = "catch_count", events = context$expected$events))))
+  evaluation <- env$evaluate_oracles(list(cases = list(by_id$catch_count)), list(cases = list(list(case_id = "catch_count", events = context$observed))))
   expect_identical(evaluation$status, "pass")
 
   # A reject_shortlist on synthetic_structured_gap still surfaces the gap
@@ -685,8 +695,8 @@ test_that("three adversarial harness answers are caught by the deterministic lay
   row <- gap$result$assessments
   expect_identical(row$llm_decision, "request_new_term")
   expect_identical(row$llm_escalated_from, "reject_shortlist")
-  expect_true(any(vapply(gap$expected$events, function(e) identical(e$type, "gap") && identical(e$scope, "uncertain"), logical(1))))
-  evaluation <- env$evaluate_oracles(list(cases = list(by_id$synthetic_structured_gap)), list(cases = list(list(case_id = "synthetic_structured_gap", events = gap$expected$events))))
+  expect_true(any(vapply(gap$observed, function(e) identical(e$type, "gap") && identical(e$scope, "uncertain"), logical(1))))
+  evaluation <- env$evaluate_oracles(list(cases = list(by_id$synthetic_structured_gap)), list(cases = list(list(case_id = "synthetic_structured_gap", events = gap$observed))))
   expect_identical(evaluation$status, "pass")
 })
 
