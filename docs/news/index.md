@@ -1553,6 +1553,13 @@
 
 ### Internal
 
+- Automatic Claude review keeps its five-marker budget but only a
+  verified completed nits-only review can suppress later rounds. Failed
+  reviews and green skips cannot attest completion. Review prompts use
+  source reads and existing review publication; broad interpreter and
+  generic API grants are removed. Completion failures stay visible and
+  token permissions are unchanged.
+
 - Failed Claude review checks now report a bounded count and fixed
   tool/command categories for denied calls. Raw inputs, paths, arguments
   and output remain hidden; denied calls still fail completion. No
