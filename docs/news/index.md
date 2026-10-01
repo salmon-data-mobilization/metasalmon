@@ -101,6 +101,15 @@
 
 ### Fixed
 
+- Session IDs no longer advance or initialize the user's random-number state,
+  and BioPortal's once-per-session missing-key warning is recorded privately
+  instead of in `options()`. `?metasalmon_configuration` documents the current
+  option and environment inventory from one registry; package loading fills
+  only missing concrete defaults, preserving user settings, backend-specific
+  timeout inheritance and unset credentials. An unset SDP schema base URL
+  resolves the package's current release pin at call time, including after a
+  package reload (hub B-59).
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
@@ -1083,6 +1092,13 @@
   item. Stream names use the unpadded item number (`S-05` is `S5`);
   future stream items are accepted without editing a fixed list (hub
   item B-186).
+
+- Claude CI reviews drafts and each new PR head. A missing completion
+  result, denied tool call or unconfirmed head fails the review job
+  instead of looking like a successful review. Superseded review runs
+  are cancelled. Each PR gets at most five review rounds, and none after
+  a round that found only nits; what counts as important is set in
+  `REVIEW.md`.
 
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
