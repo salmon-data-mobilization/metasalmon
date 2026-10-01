@@ -260,6 +260,13 @@
 
 ### Fixed
 
+- Strict validation now checks the absolute-IRI shape of every populated
+  semantic IRI in the dictionary and every `*_iri` field in
+  `tables.csv`, including added table columns. Malformed text is refused
+  before a package can be finalized; REVIEW markers and missing values
+  retain their existing reports, and review-ready validation remains
+  unchanged (hub B-342; Python mirror B-343).
+
 - **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
   with a nonblank `vocabulary_iri` and missing/blank `code_value` now
@@ -1583,6 +1590,11 @@
   minutes for runner/dependency setup while retaining the same index
   assertion with its own five-minute limit; the old 15-minute job budget
   could expire before checking any topic.
+
+- CI’s pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion
+  reports an infrastructure failure before package tests or R CMD check
+  run (hub B-155).
 
 - The hub queue linter rejects a nonempty `stream` that names no stream
   item. Stream names use the unpadded item number (`S-05` is `S5`);
