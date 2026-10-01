@@ -578,6 +578,39 @@ test_that("write_semantic_review_packet refuses a parsed object as context and a
   expect_error(write_semantic_review_packet(case$dict), "review_dir")
 })
 
+test_that("packet excerpts decode Windows-1252 Quarto context", {
+  tmp <- withr::local_tempdir()
+  context_path <- file.path(tmp, "catch-context.qmd")
+  context_text <- paste(c(
+    "---",
+    "title: 'Ignored front matter'",
+    "---",
+    "Caf\u00e9\u2019s catch weight is recorded per tow.",
+    "```{r}",
+    "retained_mass <- 2",
+    "```"
+  ), collapse = "\n")
+  # The curly apostrophe is a Windows-1252 byte, not a Latin-1 character.
+  writeBin(iconv(context_text, from = "UTF-8", to = "windows-1252", toRaw = TRUE)[[1]], context_path)
+
+  decoded <- metasalmon:::.ms_context_text_from_file(context_path)
+  expect_true(validUTF8(decoded$text))
+  expect_match(decoded$text, "Caf\u00e9\u2019s catch weight is recorded per tow.", fixed = TRUE)
+  expect_false(grepl("title:|```", decoded$text))
+
+  input <- semantic_review_read_json(file.path(semantic_review_fixture_root(), "bundle_accept", "input.json"))
+  dict <- semantic_review_case_dictionary(input)
+  built <- write_semantic_review_packet(
+    dict, context_files = context_path, review_dir = file.path(tmp, "review"), quiet = TRUE
+  )
+  packet <- semantic_review_read_json(built$path)
+  excerpts <- unlist(lapply(packet$units, function(unit) {
+    vapply(unit$context_excerpts, `[[`, character(1), "excerpt")
+  }), use.names = FALSE)
+  expect_true(any(grepl("Caf\u00e9\u2019s catch weight is recorded per tow.", excerpts, fixed = TRUE)))
+  expect_identical(packet$context$inputs[[1]]$source, "catch-context.qmd")
+})
+
 test_that("apply_semantic_suggestions(strategy = 'llm') applies only an accept", {
   frame <- tibble::tibble(
     dataset_id = "d1", table_id = "t1", column_name = c("a", "b"), code_value = NA_character_,
