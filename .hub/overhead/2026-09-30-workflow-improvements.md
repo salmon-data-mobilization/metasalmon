@@ -1032,3 +1032,88 @@ percentage is justified by these overlapping observations.
 The first local B-186 integration against PR247 `1c08f98` began at 18:33:37 UTC. The native NEWS-only build was blocked before writing by default Pandoc 3.11; selecting the already-installed RStudio Pandoc 3.8.3 took about 59 seconds between that preflight and the successful retry. The matched build took 15.3 seconds. A substantive Codex P2 in PR247 then required its manifest-icon correction, so this uncommitted integration was discarded and restarted at 18:38:09 UTC against corrected head `41bcdce`. That dependency wait and repeat build are separate from NEWS generation. The final matched NEWS-only build took 15.6 seconds; both builds needed zero seconds of manual generated-fragment editing. The four conflicted NEWS/generated paths were reset to PR247 bytes, B-186’s three-line NEWS item was inserted, and native regeneration retained all 588 non-NEWS search records in order. The NEWS search record count stayed 70, with one record now containing B-186. The B-186 source/test blob hashes stayed identical to `28f5ad8`; 164 queue tests and live lint on 318 items passed. These are measured local steps, not a whole-run saving estimate.
 
 Correction to the candidate wording above: CI sibling tarball exclusion is already the scoped, critical-held PR216/B-268, so this run did not open or claim duplicate work. The requested S16 handoff audit remains separate: R209/210/211 and Python72–75 are open; Python72/74 report parity failures. B-199 is already draft Python76 with green checks, held for parity row 38 under a protected handoff. Queue420–425 exist only in open R209, not canonical main. None was claimed or assigned here.
+
+
+### Next parallel round and adoption of existing count simplification — 2026-10-01
+
+The requested September27 handoff was read and live-checked. Its dependency
+order remains useful, but B199 is already protected draft Python76 with green
+checks. R209/210/211 and Python72–75 remain open; Python72/74 fail parity.
+Items420–425 exist in open209, not canonical main. No duplicate claim, item
+number, removal task or tracking framework was created from that old snapshot.
+
+The ready-only census was empty, but it omitted eligible icebox items. Under
+existing R15, four existing P2 items with solo repositories, exact retirement
+conditions, no blockers and absent claims were promoted: B348/B383/B354/B355.
+Three independent identities worked disjoint scopes; root took B355. All four
+reproduced their defects before fixing them. Publications: Python86/B348,
+R252/B383, R253/B354 and Python87/B355. No provider/removal repair was added.
+The next pair B352/B353 was promoted under the same standing grant and Q62's
+explicit ruling, with B269's frozen, distinct hunks checked for duplication.
+
+Measured tools and verification, separated from labor attribution:
+
+| Item or step | Observed time/result | Classification |
+| --- | --- | --- |
+| B354 status/ready/claim/worktree | 1.1s / 4.1s / 5.1s / 0.5s | Coordination tools |
+| B354 native NEWS build after PR247 | 15.0s; zero manual fragment repair | Verification/build |
+| B383 native NEWS build with PR247 | 15.1s; zero manual fragment repair | Verification/build |
+| B348 pickup-to-handoff | about 11m21s, interleaved activities | Elapsed work, not waste |
+| B348 full extras/core | 43.45s / 33.27s, overlapping other work | Verification |
+| B348 wrong positional `hub done` URL | rejected before write; about38s until corrected `--branch` | Concrete command rework |
+| B355 claim/worktree | 5.312s / 0.149s | Coordination tools |
+| B355 cached locked environment | 2.31s build +0.405s install; separate core environment | Environment setup |
+| B355 focused GREEN/full extras/core | 3.69s /40.54s /34.42s | Verification, overlapping intervals |
+| R252 cancelled index attempt | 15m05s, during dependency setup; validator never ran | CI/environment interval; cause unknown |
+| R252 one non-model index rerun | 72s total, dependency step31s/test2s; success | Necessary CI repair |
+| R252 conflict repair NEWS build | 13.9s | Verification/build |
+| R253 additive next-head NEWS build | 18.6s | Verification/build |
+
+Every native build above preserved 588 ordered non-NEWS search records and
+all seven source/site favicon pairs. The historical-site reconciliation has
+removed manual fragment curation in these observed uses. After R219 merged,
+the remaining shared `docs/search.json` still caused real conflicts in252/253;
+those required additive integration and new current-head CI. This is a
+remaining serialization cost, not a reason to make freshness-only commits.
+The scoped installer repair218 does not fix setup-r itself, and one canceled
+reference job does not establish generalized runner instability.
+
+R219 merged asfc840429 after all six current checks passed. Its last requested
+Codex reviews completed, source/test blobs stayed28f5ad8, and actual Claude
+run36887378444 passed execution validation with zero denials/no blockers.
+The canonical overhead route now contains219's append. Primary was advanced
+and its clean zero-unique auxiliary worktree removed; branches retained.
+R247 was likewise archived only after its merged tree and clean state were
+verified. Delegation was documentation/defect-fix/added-guard, with no critical
+semantic, public, frozen, parity, release or policy choice absorbed.
+
+Actual Claude findings were checked:242's stale roadmap premise was corrected
+at196bcf4;218's three-attempt wording was corrected at312d76e. Both earlier
+review jobs posted findings but failed on denied tools; a subsequent green
+skip is not a completed review. New252/253 actual reviews passed completion
+with zero denials and only nits. A separately authorized reviewer-repair chat
+owns draft254; its changed workflow hits default-branch validation and has
+not produced a genuine new-configuration review. No duplicate repair, broad
+permission change, manual model run or secret/settings mutation occurred here.
+
+The smallest next adjustment already existed: Python PR73 drops the repeated
+suite-count history from AGENTS.md, preserving core/extras/bare suite gates,
+skip explanations and import provenance. It merged as93d07fa under the
+routine documentation/overhead-reduction authorization after all six
+applicable checks and exact-head Codex review passed, with no human hold.
+This run did not open a replacement improvement PR. The earlier partial read
+for B355 missed AGENTS's explicit count-update sentence; it was corrected
+before merge by a short dated record at8ada95e. That correction and the now
+necessary adoption of73 are real rework, not evidence that the old instruction
+never existed. Test on B353: retain main's shortened AGENTS unchanged, keep
+current counts in its workpad/CI, and observe whether an unrelated count-file
+edit or count-conflict repair is still needed. Existing pre73 count edits on
+open branches may require one-time integration; no repeat full suite is
+needed just to compose a new prose count.
+
+This round supports concrete avoided edits and remaining costs, not an exact
+whole-run wasted-time percentage. Research, implementation, requested audit,
+verification, environment repair, coordination and passive CI waits overlapped;
+agent elapsed times must not be summed as root labor. The next small helper
+candidate is an exact `hub done ID --branch ...` hint on its argument error,
+but it remains a suggestion rather than collateral source work in an SSSOM PR.
