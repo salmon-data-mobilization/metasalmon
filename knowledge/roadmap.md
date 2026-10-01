@@ -969,11 +969,14 @@ kept that while taking R's default options offline. It is owed as a port, not a
 register row, and is specified under *What metasalmon 0.5.0 owes the mirror* in
 `parity-deviations.md`. Recorded there and here in the same change, as the rule
 above requires. `B-215` **landed 2026-09-25 as metasalmonpy #47**, `ed5e22e`.
-One part of that behaviour was not ported and is owed: under a selected schema
-that does not declare a bundled field, `normalize_*()` still hands the writers
-that field, and they write it where R writes only the declared columns. It is
-specified in the same section of `parity-deviations.md`, and its metasalmonpy
-queue item is `B-252`.
+One part of that behaviour was not ported and is owed as `B-252`. The paired
+R/Python probes narrowed it to direct dataset/table/codes inputs that genuinely
+lack an optional field omitted by the selected schema, plus table inference's
+minimal frame. Both writers preserve fields already present, including the
+inference-supplied `update_frequency` and `constraint_iri`; R's
+`.ms_align_cols()` keeps such extras after the declared columns. The dated
+2026-09-30 correction in `parity-deviations.md` records the exact field examples,
+probes, and proposed Python pull request 82 fix.
 
 **`B-164` owes metasalmonpy nothing, because the shape it guards against has
 nowhere to live there.** The R guard fails when a vignette relies on a global
