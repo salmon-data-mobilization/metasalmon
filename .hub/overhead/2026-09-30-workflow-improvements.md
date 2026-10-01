@@ -855,3 +855,34 @@ separate buckets. The concrete measured ID lookup reduction remains 52% for
 that lookup alone; this round still provides no defensible whole-run avoidable
 percentage. The next completed use of the safe denial diagnostics, rather
 than an unchanged skipped review, will test whether that adjustment helps.
+
+PR215 merged at 16:56:30 UTC as `0664962`, exact head `4a9c410`, after all six
+current-head checks passed. The clean primary checkout was fast-forwarded;
+its helper checkout had no unique work and archival was requested after
+verifying this successor retains the entire shared log prefix. PR250 now
+integrates that main additively. Its merged NEWS fragment retains both changes
+and all 620 search records in order, with only the combined Internal text
+regenerated. Bundling this append with the necessary integration avoids a
+separate documentation-only push and CI fan-out.
+
+PR251's current-head index timeout was traced to the Ubuntu apt mirror:
+30.9 MB took 10m53s at 47.3 kB/s, consuming most of the 15-minute job before
+the validator ran. PR215 fetched the same inputs in 35s. The one authorized
+unchanged-head infrastructure retry fetched them in 10s and ran the actual
+68-export/64-topic validator successfully. No timeout or validation gate was
+weakened. This measured environment delay does not count as claim bureaucracy.
+
+The B-130 final pass reproduced an invalid-port error accidentally borrowing
+the injected requester's message-based transient heuristic. The concrete
+default-worker regression fails before its narrow correction; preserving the
+explicit permanent classification fixes that path without changing the hook.
+The actual 380.56s Claude backend review completed with no denied calls and
+identified netrc and proxy-bypass compatibility cases. Those findings are being
+reproduced and corrected before publication; its prior frozen-snapshot review
+does not cover later corrections. Requested audit found useful defects here;
+it is not classified as wasted claim coordination.
+
+After the necessary PR215 integration, PR250 passes all 202 script tests in
+10.678s and the 68-export/64-topic reference check. Checker source/tests are
+unchanged from its completed nits-only review. Required remote checks will run
+on the new integration head; the prior green head is not substituted for it.
