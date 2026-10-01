@@ -22,7 +22,8 @@ def check_review(messages, head):
     if result.get("permission_denials"):
         raise ValueError("Claude review had denied tool calls")
     # A final marker alone can be emitted without reading or posting anything.
-    # Require successful SDK tool results for PR view/diff and a review post.
+    # Require successful SDK tool results for PR view/diff and the summary
+    # `gh pr comment`; an inline comment alone carries no round marker.
     uses = {}
     completed = set()
     for message in messages:
@@ -44,8 +45,6 @@ def check_review(messages, head):
                     match = re.match(r"^gh pr (view|diff|comment)\b", command.strip())
                     if match:
                         uses[block.get("id")] = match.group(1)
-                elif block.get("name") == "mcp__github_inline_comment__create_inline_comment":
-                    uses[block.get("id")] = "comment"
             elif (block.get("type") == "tool_result" and not block.get("is_error", False)
                   and block.get("content")):
                 completed.add(block.get("tool_use_id"))
