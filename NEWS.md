@@ -214,6 +214,14 @@ metasalmon (development version)
 
 ### Fixed
 
+* **Semantic closure refuses unknown YAML tags in its EML sidecar before
+  writing either closure file** (hub item B-340; Q62). The refusal names
+  `metadata/eml-mapping.yml` and leaves that sidecar unchanged. Untagged
+  declared paths, recognized standard YAML tags and literal bang text retain
+  their meaning; the existing malformed/nonmapping fallback stays in place.
+  Expression evaluation remains disabled. This is the R half of B-340/B-341,
+  with no new parity deviation.
+
 * **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett's 2026-09-25 ruling: a same-table/column codes row with
   a nonblank `vocabulary_iri` and missing/blank `code_value` now skips that
