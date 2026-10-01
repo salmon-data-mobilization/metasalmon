@@ -2216,6 +2216,69 @@ def port_passage_facts(lines, spans, anchors):
     return named, records
 
 
+PORT_PAIR_EXEMPTIONS = {
+    "B-179": {
+        "present": PORT_ROADMAP_FILE,
+        "absent": PORT_REGISTER_FILE,
+        "reason": "The sidecar divergence and its landing are recorded in register row 53, outside the port section.",
+        "retires_when": "B-179 is also named in the register's port section, or that row is moved into the port section.",
+    },
+}
+
+
+def validate_port_pair_presence(root: Path, items: list[Item]) -> list[Problem]:
+    """B-396: a dependency-linked mirror port named in one passage needs both.
+
+    The existing record validator diagnoses missing files/sections; this check
+    compares names only after both passages can be read. Neither landing truth
+    nor dependency-free port classification is its subject (the latter is
+    B-394). No title/prose phrase classification is introduced.
+
+    RETIRES WHEN both passages render their port inventory from the same
+    structured source, and the rendering check proves they contain that source.
+    Every exception records its direction, reason and retirement above.
+    """
+    by_id = {item.id: item for item in items}
+    anchors = {item.id for item in items if item.raw.get("repo") == MIRROR_REPO}
+    ports = {
+        item_id for item_id in anchors
+        if isinstance(by_id[item_id].raw.get("blocked_by"), list)
+        and any(blocker in by_id and by_id[blocker].raw.get("repo") == MIRRORED_REPO
+                for blocker in by_id[item_id].raw["blocked_by"])
+    }
+    if not ports:
+        return []
+    names = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if not path.is_file():
+            return []  # validate_port_records emits port-passage-missing.
+        lines = path.read_text(encoding="utf-8").splitlines()
+        spans = port_passage_spans(display, lines)
+        if not spans:
+            return []  # The same existing missing-passage diagnostic applies.
+        names[display], _ = port_passage_facts(lines, spans, anchors)
+
+    problems = []
+    for item_id in sorted(ports):
+        present = [display for display in names if item_id in names[display]]
+        if len(present) != 1:
+            continue
+        source = present[0]
+        missing = next(display for display in names if display != source)
+        exemption = PORT_PAIR_EXEMPTIONS.get(item_id, {})
+        if (exemption.get("present") == source and exemption.get("absent") == missing
+                and exemption.get("reason", "").strip() and exemption.get("retires_when", "").strip()):
+            continue
+        problems.append(Problem(
+            source, names[source][item_id][0], "port-pair-missing",
+            f"{item_id} is a mirror port named here but not in {missing}'s mirror debt passage. "
+            "Record it in both passages in the same change, or give the intentional "
+            "exception a scoped reason and retirement in PORT_PAIR_EXEMPTIONS",
+        ))
+    return problems
+
+
 def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
     """A port the queue calls done must not still read as owed. Hub item B-202.
 
@@ -2260,9 +2323,8 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * whether the record is TRUE. It catches the shape, as
         `check-parity-registers.py` does, not the substance: a closure paragraph
         naming the wrong pull request, sha or date passes.
-      * whether a port named in one passage is named in the other. Each passage
-        is checked for what it says; one that never mentions a port cannot be
-        stale about it.
+      * whether a port named in one passage is named in the other. B-396's
+        validate_port_pair_presence checks that independently.
       * the ORDER of a record and its port's mentions. Any record for a port
         counts for every mention of it in the passage, and a file's matching
         sections are read as one passage, so a debt paragraph written below its
@@ -2463,6 +2525,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_solo(root)
         + validate_workpads(root, items)
         + validate_port_records(root, items)
+        + validate_port_pair_presence(root, items)
     )
 
     baseline: int | None = None

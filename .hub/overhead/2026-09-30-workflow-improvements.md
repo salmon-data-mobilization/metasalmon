@@ -1254,3 +1254,127 @@ not evidence that required HUB or site validation is wasted.
 interpreter paths. The root peer reached the intended editable worktree on its
 first call and passed seven sidecar controls. This removes the earlier path
 discovery misstep in this use; no aggregate time-saving percentage is inferred.
+
+
+## Reader review corrections and next-use checks — 2026-10-01
+
+R257/Py92 review exposed a real constraint-list regression: the reviewed
+producer emits `; ` lists, while the proposed single-IRI check rejected them.
+Narrow paired corrections preserve outer whitespace, reject empty list parts,
+and recognize later REVIEW components once in validation and the review
+console. Independent public validation matrices passed 18 controls per
+language on frozen source. R257 also fixes parsed quoted-LF optional table
+IRIs disappearing through trimws; raw CSV normalization remains its existing
+owner. This is implementation and useful review work, not claim bureaucracy.
+
+R255's per-bang full-header reparsing was a valid Codex performance finding.
+The bounded native-parser repair first passed focused tests but peer probes
+found quoted-punctuation and percent-encoded tag bypasses. Both received
+public RED controls and narrow fixes. At source SHA2569009b0ae, independent
+80-bang plain/flow/multiline/block reader controls made two native loads; an
+actual tag still refused. Later-document tagged controls also passed without
+a new document splitter. Three interrupted strict-check attempts are
+verification rework; starting a check before the final peer freeze did not
+reduce overhead. The next analogous reader, R340, applies parser/count probes
+before full gates rather than copying a partly verified scanner.
+
+Py93's actual completed Codex review found ComposerError precedence hiding
+unknown tags in multi-document sidecars. The published source reproduced two
+public failures. A parser-event check on the malformed fallback preserves
+known-tag, quoted/block text and untagged malformed behavior. Independent
+peer probes passed ten public writer controls on b81b210/9658315; five
+refusals left the sidecar and both closure outputs untouched. Its full gates
+remain pending. This is a substantive fix, so no extra model review is asked
+for merely to refresh the reviewer after the fix.
+
+Exact interpreter paths were reused successfully for the Py93 peer, with no
+interpreter-discovery round. The shortened AGENTS count history still required
+zero edits on this next item, while core/extras/minimum and import provenance
+remain recorded. Root's wrong module-path guesses, wrong-repository search
+and an invalid empty R argument name in a temporary peer script were
+instrument rework; they did not demonstrate package defects.
+
+R234's latest Claude summary was only nits, but its run failed on a denied git
+call. The PR body and workpad retain that failure; the PR is held, and a
+one-off retry decision is pending under HUB's narrower retry rule. No
+workflow permission, review budget or completion guard was weakened. This
+question is required coordination under current policy, separate from
+redundant approval asks. The historical S16 handoff remains a dependency aid:
+Py76 then Py72 then R210 then Py74; Py73 has merged and R209 remains open.
+No duplicate removal work, queue items or claims were made from that note.
+
+These observations count removed edits, native parse calls and concrete
+review findings. Concurrent work and passive CI waits still prevent a
+defensible whole-run wasted-time percentage. This append is retained in the
+R234 worktree and will publish with its next necessary submission; its review
+hold is already durable in the PR body, so this measurement does not itself
+restart CI or a paid review.
+
+### Next uses and necessary integrations — 2026-10-01, about22:34–23:04 UTC
+
+Py93/B341 merged as3aea9c1 at22:34:34Z after its completed Codex finding was
+fixed and six applicable CI jobs passed. R238/B396 merged as670c45ca at
+22:48:16Z after actual Claude execution36935672853 completed with nits only,
+zero denials and green required CI. Its queue closeout isfae965f. These are
+delegated ports/guard additions, with no critical semantic or numbered parity
+row choice. Both merges have PR receipts; no repeat publication approval.
+
+R340/B340 final full and strict gates ran sequentially on frozen source:
+9262 assertions,zero failures/errors,38 existing warnings,5 existing skips
+(91.696s); strict zero errors/warnings/notes(129.375s). The first full command
+used a temporary external --file runner and broke the existing ThemeA source
+root instrument:95.924s was a failed verification attempt, not a source defect.
+Standard affected controls3082 assertions/16.881s and the full rerun passed
+on unchanged source. This rework is environment/instrument repair. Its
+shorter final durations than the earlier overlapping gates do not isolate
+a causal scheduling benefit. Keep expensive full gates staggered for the
+next B223 use, with focused/implementation work continuing concurrently.
+
+B223 reused status/setup hints, acquired its distinct claim and isolated three
+EML/KNB sidecar callsites. It defers NEWS generation until its actual R340
+prerequisite lands. Frozen callsites have independent peer evidence; a
+disposable helper overlay passes five controls, while the actual branch
+remains correctly RED until integration. Zero early generated-file edits
+means no generated conflict to resolve yet; actual integration is the next
+measurement. No helper copy or second framework was created.
+
+R255's next required integration had one real search-index conflict. One
+native16.0s build retained588 ordered non-NEWS records and five assets; source
+and tests stayed frozen. R257 is deliberately held until R255 lands, testing
+whether serialized generated-file integration avoids another superseded build.
+Py92's real CHANGELOG conflict afterPy93 required one additive merge, not a
+freshness-only commit. Owned module ASTs stayed unchanged; current focused
+three-file209/minimum two-file163 controls pass. No repeated full/model gate.
+
+R234's real integration afterR238 has four NEWS/site conflicts, resolved by
+retaining both source entries and one native pinned build. Combined queue
+168 tests,318-item lint,OKF capture and68/64 index controls pass. Five assets
+and588 ordered non-NEWS records remain identical to main. Its existing failed
+Claude execution remains visible; a new head is required for source
+integration, not created to reroll a model. No old-job retry or permission
+expansion was performed. The pending one-off retry decision remains separate
+unless a valid later execution actually satisfies the review gate.
+
+Root's integration instrument first compared complete ASTs even though incoming
+B396 intentionally updated a docstring, then assumed unchanged historical
+method names and an invented added-test count. Those failed proof assumptions
+were corrected using the actual merge base: owned executable function and
+all owned methods match, and both incoming added test methods match main.
+This is requested audit/instrument rework, not implementation or queue overhead.
+The next proof should derive incoming additions from the merge base before
+asserting a count. The explicit interpreter-path habit and removed AGENTS
+count-log edits still required zero discovery rounds/count edits on B341.
+
+No whole-run wasted-time percentage is inferred from these overlapping
+intervals. Coordination, implementation, verification, environment repair,
+requested audit and passive waits remain distinct; tool/runtime durations and
+concrete avoided actions are the evidence currently available.
+
+Current dependency-based review/merge order: Py92/B343 merged asfeb724a at
+23:03:25Z after six current CI checks and the last requested Codex review
+completed with no findings. R255/B352 is next once its R check completes;
+R257/B342 then receives one actual landed-main integration. R258/B340's
+first actual Claude run is in progress while B223 waits locally for its
+helper. R234/B394 receives its necessary combined guard integration but
+remains held until actual review completion. The critical S16 train remains
+Py76/B199 → Py72/B327 → R210 → Py74, with R209's unmerged queue work preserved.
