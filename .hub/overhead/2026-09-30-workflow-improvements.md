@@ -793,3 +793,65 @@ marker whose review also passed completion. A failed review's marker currently
 stops its own continuation. Keep the five-round ceiling and substantive/nit
 boundary; investigate this routing mismatch after the diagnostics' next use,
 without treating a skipped job as a completed review or adding another tracker.
+
+### Supported transport and merge-order follow-through — 2026-10-01
+
+This append supersedes the earlier in-progress checkpoints without rewriting
+the shared PR215 prefix.
+
+- Python79/B-261 merged at 16:31:37 UTC as `9304851`, exact head `fe0039f`.
+  The routine guide correction ports the established R workflow and changes
+  no runtime, public API, IRI selection or guard. Six substantive current-head
+  checks passed; the PR-ineligible deployment skipped. The completed Codex
+  finding was fixed in the last commit, independently checked against the
+  Python implementation, and no human thread awaited an answer. No completed
+  Claude review is claimed for that PR. The clean primary checkout was
+  fast-forwarded and the clean, fully merged B-261 checkout removed; its
+  branch remains.
+- PR215's first merge attempt was refused after R243 landed; no merge occurred.
+  An additive main integration resolved the sole generated-search conflict,
+  retained the helper fragment and all six incoming records, and left helper
+  source/tests unchanged. All 200 script tests passed. Head `4a9c410` awaits
+  its required package check; the prior completed Claude review on `7a631a9`
+  found only nits. Its later skipped job supplies no new review evidence.
+  PR215 stays first in the R merge order to avoid repeating this same
+  generated conflict across the dependent log and documentation branches.
+- PR250's actual GitHub Claude review on `5f95b20` completed successfully,
+  ran the four checker tests and all 190 script tests, and found only three
+  nits. The cancelled reference job passed on its one targeted unchanged-head
+  retry. All six checks now pass. Publication waits for PR215's shared log
+  prefix to land before integrating it; no optional nit-fix review loop.
+- The targeted local R245 review reached 45 successful tool results but timed
+  out at 180 seconds without a final result. It is incomplete, like the
+  earlier 360-second full-diff attempt. Reducing the input did not establish
+  either a completed review or a measured time saving. The full compact
+  source patch and generated correspondence were independently inspected;
+  the completed Codex finding is fixed. Keep that evidence separate from
+  the actual nits-only Claude summaries whose completion checks failed.
+- Claude's PR251 nits exposed concrete copies of queue state in S5 and the
+  backlog. Three narrow follow-up commits correct those copies and preserve
+  dated expectations as history; lint, generated blocks and OKF capture
+  pass. Published head `c33dacb` remains draft pending current-head CI and
+  its overlapping PR245 sequencing. This is necessary documentation repair,
+  not justification for a broad sweep or a new planner.
+
+Brett directly selected the supported Python HTTP backend in chat: implement
+and verify it to close the reproduced informational-103 gap. HTTPX 0.28.1 with
+HTTPcore 1.0.9 uses public streaming APIs and manual redirects so an unfinished
+redirect body cannot delay receipt of the final response headers. The paired
+11-route localhost proof now requires identical R/Python outcomes, including
+103 followed by final 200, on Python 3.9.6 and 3.13.11. Host-scoped netrc auth,
+cookies, proxy/CA settings and bounded failures receive separate controls.
+Final independent review and publication are in progress. The dependency lock
+was demonstrated stale before refresh and passes its check afterward. These
+are local transport and installation proofs; required final-head CI and the
+critical public verifier API review remain separate gates. The single B-130
+decision packet records this choice; no parity-deviation ruling is invented.
+
+No new claim or routine approval request was needed. The supported-backend
+choice was consequential and is now answered. Implementation, verification,
+dependency repair, requested audit, coordination and passive waiting remain
+separate buckets. The concrete measured ID lookup reduction remains 52% for
+that lookup alone; this round still provides no defensible whole-run avoidable
+percentage. The next completed use of the safe denial diagnostics, rather
+than an unchanged skipped review, will test whether that adjustment helps.
