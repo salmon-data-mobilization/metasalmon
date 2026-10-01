@@ -1461,3 +1461,31 @@ Future batch appends will keep timings/outcomes and exceptions here, with
 detailed source/tests in the existing item workpads. Repeating every live CI
 snapshot or command in both places adds requested-audit work without making
 the result clearer. No past measurements are discarded.
+
+### Next bounded use, about23:39–23:47 UTC
+
+- Brett's requested September27 handoff read still supplies the critical
+  train Py76/B199 → Py72/B327 → R210 → Py74. Live reads confirm those four
+  remain open and Py73 is merged; R209's queue additions remain unmerged.
+  This was requested continuity audit, not a reason to duplicate the items
+  or absorb the other S16 session's work. Historical statuses are not reused
+  as current planning state.
+- R340's final native directive discriminator preserves quote/comment bytes
+  by replacing only the directive keyword in bounded document segments.
+  Root's exact-source replay passed six native-valid/public controls; the
+  independent reader86 and YAML-evaluation guard51 assertions pass. The
+  forty-document byte-visit bound pins linear segment work. Final full and
+  strict gates follow the peer; the superseded9276-pass/96.444s full remains
+  verification rework, not evidence for the final source.
+- R259's actual Claude36939638008 completed with zero denied tool calls and
+  nits only; all six applicable checks are green. The existing concrete
+  validator ready/merge decision stays pending. The valid nit that B360 is
+  already done corrects a stale description, and the B385 fixture regeneration
+  is a required same-stream companion; no unrelated non-ASCII phrase work
+  is added to this PR.
+- R344 and Py345 use separate owners and task worktrees, with focused gates
+  while R340 owns the expensive gate slot. Each found raw-value trimming
+  could bypass the ruled marker boundary; both are pinning public consumers
+  before a source freeze. Next peer briefs name exact hashes and interpreter
+  paths, avoiding a second environment-discovery pass. No whole-run wasted
+  percentage or causal runtime saving is inferred from overlapping work.
