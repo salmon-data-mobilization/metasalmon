@@ -773,12 +773,16 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
   root <- withr::local_tempdir()
   tagged <- c(
     "!foo X",
+    "!foo'bar X",
     "!!str X",
     "&a !foo X",
     "!<tag:yaml.org,2002:str> X",
     "!<tag:example.org,2026:foo'bar> X",
     "[!foo X]",
+    "[!foo'bar X]",
+    '["!foo", !foo\'bar X]',
     "{item: !foo X}",
+    "{item: !foo'bar X}",
     "[&a !foo X]",
     '{"item":!foo X}',
     "{? !foo x: y}",
@@ -826,9 +830,11 @@ test_that("SSSOM metadata refuses YAML node tags and keeps exclamation text", {
 
   ordinary <- c(
     '"!foo X"' = "!foo X",
+    "\"!foo'bar X\"" = "!foo'bar X",
     "'!!str X'" = "!!str X",
     "'? !foo X'" = "? !foo X",
     '["!foo X"]' = "!foo X",
+    "[\"!foo'bar X\"]" = "!foo'bar X",
     "Good !foo title" = "Good !foo title",
     "Good [!foo] title" = "Good [!foo] title",
     "[https:!text]" = "https:!text",

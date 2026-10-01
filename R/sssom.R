@@ -275,7 +275,7 @@
   # A directive can rebind the primary `!` handle, so omit it only from the
   # disposable parse. The normal read below still sees the original bytes.
   probe_lines[grepl("^%TAG[[:space:]]", probe_lines)] <- ""
-  tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"'\\\\]+|!"
+  tag_token <- "!<[^>]*>|!+[^[:space:]\\[\\]{},\"\\\\]+|!"
 
   has_tag <- function(lines) {
     found <- FALSE
@@ -286,7 +286,7 @@
     suppressWarnings(tryCatch(
       yaml::yaml.load(
         paste(lines, collapse = "\n"),
-        handlers = setNames(list(handler), tag_name),
+        handlers = stats::setNames(list(handler), tag_name),
         eval.expr = FALSE
       ),
       error = function(e) NULL
