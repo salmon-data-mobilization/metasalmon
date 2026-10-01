@@ -1344,7 +1344,7 @@ write_sdp_semantic_closure <- function(path,
       # is exactly what happened, and was found only because this otherwise
       # unreachable path got a test.
       "i" = "Rewrite each as a block mapping with {.field path} and {.field sha256} on their own lines, then re-run."
-    ), class = .ms_condition_classes("warning", NULL))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   gaps <- if (length(gap_rows) > 0L) {
@@ -1367,7 +1367,7 @@ write_sdp_semantic_closure <- function(path,
       "!" = "{nrow(gaps)} canonical measurement IRI{?s} could not be resolved from {.val {sources}} and {?is/are} absent from the reviewed vocabulary.",
       .ms_cli_bullets(paste0(gaps$target_sdp_field, " = ", gaps$unresolved_iri)),
       "i" = "Each is a row of the returned {.field gaps} table; pass it to {.fn render_ontology_term_request} to file a term request, or supply a row through {.arg evidence}."
-    ), class = .ms_condition_classes("warning", NULL))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   incomplete <- if (length(incomplete_rows) > 0L) {
@@ -1392,7 +1392,7 @@ write_sdp_semantic_closure <- function(path,
       # this is a field to supply or annotate.
       "i" = "This is not an ontology gap: the term was found. Each is a row of the returned {.field incomplete} table.",
       "i" = "Supply the named field through {.arg evidence}, or annotate the term in its ontology, then re-run."
-    ), class = .ms_condition_classes("warning", NULL))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   placeholder_rows <- review[placeholders, , drop = FALSE]
@@ -1410,7 +1410,7 @@ write_sdp_semantic_closure <- function(path,
         placeholder_rows$target_sdp_field
       )),
       "i" = "Supply {.field review_rationale} through {.arg evidence}, or record decision reasons with {.fn accept_suggestion}, before publication."
-    ), class = .ms_condition_classes("warning", NULL))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   if (!quiet) {
