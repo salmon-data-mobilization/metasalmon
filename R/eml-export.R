@@ -36,7 +36,8 @@
   )))
   if (!term_type %in% c("owl_class", "skos_concept")) {
     cli::cli_abort(
-      "EML export requires measurement {.field term_type} to be {.val owl_class} or {.val skos_concept}; found {.val {term_type}}."
+      "EML export requires measurement {.field term_type} to be {.val owl_class} or {.val skos_concept}; found {.val {term_type}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -49,7 +50,8 @@
     ]
     if (nrow(vocabulary_row) != 1L) {
       cli::cli_abort(
-        "Reviewed vocabulary evidence for measurement term {.url {term_iri}} is missing or duplicated."
+        "Reviewed vocabulary evidence for measurement term {.url {term_iri}} is missing or duplicated.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     type_evidence <- tolower(paste(
@@ -65,7 +67,8 @@
         (evidence_is_skos && evidence_is_owl)
     ) {
       cli::cli_abort(
-        "Measurement {.field term_type} for {.url {term_iri}} conflicts with reviewed vocabulary native-type evidence."
+        "Measurement {.field term_type} for {.url {term_iri}} conflicts with reviewed vocabulary native-type evidence.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -208,14 +211,16 @@
   if (!.ms_eml_nonempty(value)) {
     if (isTRUE(required)) {
       cli::cli_abort(
-        "EML mapping field {.field {field}} must contain one non-empty value."
+        "EML mapping field {.field {field}} must contain one non-empty value.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     return(NA_character_)
   }
   if (length(value) != 1L) {
     cli::cli_abort(
-      "EML mapping field {.field {field}} must contain exactly one value."
+      "EML mapping field {.field {field}} must contain exactly one value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   trimws(as.character(value[[1]]))
@@ -224,7 +229,8 @@
 .ms_eml_revision_key <- function(mapping, required = FALSE) {
   if (length(required) != 1L || !is.logical(required) || is.na(required)) {
     cli::cli_abort(
-      "Internal EML export argument {.arg required} must be one logical value."
+      "Internal EML export argument {.arg required} must be one logical value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -239,7 +245,8 @@
   if (nchar(key, type = "bytes") > 128L ||
       !grepl("^[A-Za-z0-9][A-Za-z0-9._-]*$", key)) {
     cli::cli_abort(
-      "EML mapping {.field publication.revision_key} must be 1-128 ASCII letters, numbers, periods, underscores, or hyphens, starting with a letter or number."
+      "EML mapping {.field publication.revision_key} must be 1-128 ASCII letters, numbers, periods, underscores, or hyphens, starting with a letter or number.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   key
@@ -257,7 +264,7 @@
 .ms_eml_uuid_raw <- function(uuid) {
   hex <- gsub("-", "", tolower(uuid), fixed = TRUE)
   if (!grepl("^[0-9a-f]{32}$", hex)) {
-    cli::cli_abort("Internal UUID namespace {.val {uuid}} is invalid.")
+    cli::cli_abort("Internal UUID namespace {.val {uuid}} is invalid.", class = .ms_condition_classes("error", "publication"))
   }
   as.raw(strtoi(substring(hex, seq(1L, 31L, 2L), seq(2L, 32L, 2L)), 16L))
 }
@@ -265,7 +272,7 @@
 .ms_eml_uuid5 <- function(name,
                           namespace = .ms_eml_url_namespace_uuid) {
   if (!.ms_eml_nonempty(name)) {
-    cli::cli_abort("A non-empty name is required to construct a UUIDv5.")
+    cli::cli_abort("A non-empty name is required to construct a UUIDv5.", class = .ms_condition_classes("error", "publication"))
   }
 
   namespace_raw <- .ms_eml_uuid_raw(namespace)
@@ -330,7 +337,8 @@
                               id_name) {
   if (!is.list(party)) {
     cli::cli_abort(
-      "Each {.field {element}} entry in the EML mapping must be a mapping."
+      "Each {.field {element}} entry in the EML mapping must be a mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -346,14 +354,16 @@
   has_individual <- .ms_eml_nonempty(surname)
   if (.ms_eml_nonempty(given_name) && !has_individual) {
     cli::cli_abort(
-      "An EML party with {.field given_name} must also provide {.field surname}."
+      "An EML party with {.field given_name} must also provide {.field surname}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!has_individual &&
       !.ms_eml_nonempty(organization) &&
       !.ms_eml_nonempty(position)) {
     cli::cli_abort(
-      "Each EML party must provide {.field surname}, {.field organization_name}, or {.field position_name}."
+      "Each EML party must provide {.field surname}, {.field organization_name}, or {.field position_name}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -382,7 +392,8 @@
       orcid
     )) {
       cli::cli_abort(
-        "EML party {.field orcid} must be a full https://orcid.org/ URI."
+        "EML party {.field orcid} must be a full https://orcid.org/ URI.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     .ms_eml_add_text(
@@ -401,7 +412,8 @@
   yaml <- file.path(path, "metadata", "eml-mapping.yaml")
   if (file.exists(yml) && file.exists(yaml)) {
     cli::cli_abort(
-      "Both {.file eml-mapping.yml} and {.file eml-mapping.yaml} exist. Keep one canonical sidecar; {.file eml-mapping.yml} is the default."
+      "Both {.file eml-mapping.yml} and {.file eml-mapping.yaml} exist. Keep one canonical sidecar; {.file eml-mapping.yml} is the default.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   yml
@@ -411,7 +423,8 @@
   tables <- mapping$tables
   if (!is.list(tables) || is.null(names(tables))) {
     cli::cli_abort(
-      "EML mapping {.field tables} must be keyed by table ID."
+      "EML mapping {.field tables} must be keyed by table ID.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -422,7 +435,7 @@
       "EML mapping {.field tables} must describe exactly the SDP tables.",
       "i" = "Expected: {.val {sort(expected_tables)}}.",
       "i" = "Found: {.val {sort(actual_tables)}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
 
   configs <- vector("list", nrow(dictionary))
@@ -432,13 +445,15 @@
     table_entry <- tables[[table_id]]
     if (!is.list(table_entry)) {
       cli::cli_abort(
-        "EML mapping {.field tables.{table_id}} must be a mapping."
+        "EML mapping {.field tables.{table_id}} must be a mapping.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     table_mapping <- table_entry$attributes
     if (!is.list(table_mapping) || is.null(names(table_mapping))) {
       cli::cli_abort(
-        "EML mapping {.field tables.{table_id}.attributes} must be keyed by column name."
+        "EML mapping {.field tables.{table_id}.attributes} must be keyed by column name.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -450,13 +465,14 @@
         "EML mapping {.field tables.{table_id}.attributes} must describe exactly the SDP columns.",
         "i" = "Expected: {.val {sort(expected_columns)}}.",
         "i" = "Found: {.val {sort(names(table_mapping))}}."
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
 
     config <- table_mapping[[column_name]]
     if (!is.list(config)) {
       cli::cli_abort(
-        "EML mapping for {.field {table_id}.{column_name}} must be a mapping."
+        "EML mapping for {.field {table_id}.{column_name}} must be a mapping.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     configs[[i]] <- config
@@ -467,7 +483,8 @@
 .ms_eml_validate_mapping_schema <- function(mapping) {
   if (!requireNamespace("jsonvalidate", quietly = TRUE)) {
     cli::cli_abort(
-      "Package {.pkg jsonvalidate} is required to validate the EML mapping sidecar."
+      "Package {.pkg jsonvalidate} is required to validate the EML mapping sidecar.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   schema <- system.file(
@@ -478,7 +495,8 @@
   )
   if (!nzchar(schema)) {
     cli::cli_abort(
-      "Could not locate the bundled EML mapping JSON Schema."
+      "Could not locate the bundled EML mapping JSON Schema.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -511,7 +529,7 @@
     cli::cli_abort(c(
       "EML mapping sidecar failed the bundled JSON Schema.",
       "x" = .ms_cli_escape(detail)
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(TRUE)
 }
@@ -524,7 +542,8 @@
   )
   if (!nzchar(path) || !file.exists(path)) {
     cli::cli_abort(
-      "Could not locate the bundled reviewed EML unit crosswalk."
+      "Could not locate the bundled reviewed EML unit crosswalk.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   crosswalk <- readr::read_csv(
@@ -545,7 +564,8 @@
       any(crosswalk$review_status != "reviewed") ||
       anyDuplicated(crosswalk$unit_iri)) {
     cli::cli_abort(
-      "The bundled EML unit crosswalk is malformed or contains unreviewed/duplicate entries."
+      "The bundled EML unit crosswalk is malformed or contains unreviewed/duplicate entries.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   crosswalk
@@ -555,16 +575,17 @@
                                      pkg,
                                      require_final = TRUE) {
   if (!is.list(mapping)) {
-    cli::cli_abort("The EML mapping sidecar must contain a YAML mapping.")
+    cli::cli_abort("The EML mapping sidecar must contain a YAML mapping.", class = .ms_condition_classes("error", "publication"))
   }
   .ms_eml_validate_mapping_schema(mapping)
   if (!identical(as.integer(mapping$version), 1L)) {
-    cli::cli_abort("EML mapping {.field version} must be 1.")
+    cli::cli_abort("EML mapping {.field version} must be 1.", class = .ms_condition_classes("error", "publication"))
   }
   status <- .ms_eml_scalar(mapping, "status")
   if (isTRUE(require_final) && !identical(status, "final")) {
     cli::cli_abort(
-      "EML mapping {.field status} must be {.val final} before export."
+      "EML mapping {.field status} must be {.val final} before export.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -572,7 +593,8 @@
   package_dataset_id <- trimws(as.character(pkg$dataset$dataset_id[[1]]))
   if (!identical(dataset_id, package_dataset_id)) {
     cli::cli_abort(
-      "EML mapping {.field dataset_id} {.val {dataset_id}} does not match SDP dataset ID {.val {package_dataset_id}}."
+      "EML mapping {.field dataset_id} {.val {dataset_id}} does not match SDP dataset ID {.val {package_dataset_id}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -580,14 +602,16 @@
   system <- .ms_eml_scalar(mapping, "system")
   if (!identical(system, .ms_eml_system)) {
     cli::cli_abort(
-      "EML mapping {.field system} must be {.val {.ms_eml_system}} for the KNB publication profile."
+      "EML mapping {.field system} must be {.val {.ms_eml_system}} for the KNB publication profile.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_eml_scalar(mapping, "language")
   publication_date <- .ms_eml_scalar(mapping, "publication_date")
   if (!grepl("^[0-9]{4}(-[0-9]{2}-[0-9]{2})?$", publication_date)) {
     cli::cli_abort(
-      "EML mapping {.field publication_date} must be YYYY or YYYY-MM-DD."
+      "EML mapping {.field publication_date} must be YYYY or YYYY-MM-DD.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (is.na(as.Date(
@@ -598,12 +622,13 @@
     }
   ))) {
     cli::cli_abort(
-      "EML mapping {.field publication_date} is not a valid calendar date."
+      "EML mapping {.field publication_date} is not a valid calendar date.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   if (!is.list(mapping$publisher)) {
-    cli::cli_abort("EML mapping {.field publisher} must be a party mapping.")
+    cli::cli_abort("EML mapping {.field publisher} must be a party mapping.", class = .ms_condition_classes("error", "publication"))
   }
   rights <- mapping$intellectual_rights
   if (!is.list(rights) ||
@@ -612,18 +637,20 @@
       anyNA(rights$paragraphs) ||
       any(!nzchar(trimws(rights$paragraphs)))) {
     cli::cli_abort(
-      "EML mapping {.field intellectual_rights.paragraphs} must contain non-empty text."
+      "EML mapping {.field intellectual_rights.paragraphs} must contain non-empty text.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   methods <- mapping$methods
   if (!is.list(methods) || length(methods) == 0L) {
     cli::cli_abort(
-      "EML mapping {.field methods} must contain at least one method-step mapping."
+      "EML mapping {.field methods} must contain at least one method-step mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   for (method in methods) {
     if (!is.list(method)) {
-      cli::cli_abort("Each EML method step must be a mapping.")
+      cli::cli_abort("Each EML method step must be a mapping.", class = .ms_condition_classes("error", "publication"))
     }
     .ms_eml_scalar(method, "description")
   }
@@ -631,26 +658,30 @@
   semantic_vocabulary <- mapping$semantic_vocabulary
   if (!is.list(semantic_vocabulary)) {
     cli::cli_abort(
-      "EML mapping {.field semantic_vocabulary} must be a path/hash mapping."
+      "EML mapping {.field semantic_vocabulary} must be a path/hash mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   vocabulary_path <- .ms_eml_scalar(semantic_vocabulary, "path")
   if (!identical(vocabulary_path, "metadata/semantic_vocabulary.csv")) {
     cli::cli_abort(
-      "EML mapping {.field semantic_vocabulary.path} must be {.file metadata/semantic_vocabulary.csv}."
+      "EML mapping {.field semantic_vocabulary.path} must be {.file metadata/semantic_vocabulary.csv}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   vocabulary_sha256 <- .ms_eml_scalar(semantic_vocabulary, "sha256")
   if (!grepl("^[0-9a-f]{64}$", vocabulary_sha256)) {
     cli::cli_abort(
-      "EML mapping {.field semantic_vocabulary.sha256} must be a lowercase SHA-256 digest."
+      "EML mapping {.field semantic_vocabulary.sha256} must be a lowercase SHA-256 digest.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   semantic_review <- mapping$semantic_review
   if (!is.list(semantic_review)) {
     cli::cli_abort(
-      "EML mapping {.field semantic_review} must be a path/hash mapping."
+      "EML mapping {.field semantic_review} must be a path/hash mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   review_path <- .ms_eml_scalar(semantic_review, "path")
@@ -660,13 +691,15 @@
   )
   if (!review_path %in% supported_review_paths) {
     cli::cli_abort(
-      "EML mapping {.field semantic_review.path} must use the canonical reproducibility ledger or its legacy root-level compatibility path."
+      "EML mapping {.field semantic_review.path} must use the canonical reproducibility ledger or its legacy root-level compatibility path.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   review_sha256 <- .ms_eml_scalar(semantic_review, "sha256")
   if (!grepl("^[0-9a-f]{64}$", review_sha256)) {
     cli::cli_abort(
-      "EML mapping {.field semantic_review.sha256} must be a lowercase SHA-256 digest."
+      "EML mapping {.field semantic_review.sha256} must be a lowercase SHA-256 digest.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -676,7 +709,8 @@
       !is.logical(publication$public) ||
       is.na(publication$public)) {
     cli::cli_abort(
-      "EML mapping {.field publication.public} must be one explicit logical value."
+      "EML mapping {.field publication.public} must be one explicit logical value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(.ms_eml_revision_key(mapping))
@@ -686,7 +720,8 @@
       !.ms_eml_scalar(rights_authorization, "status") %in%
         c("unconfirmed", "confirmed")) {
     cli::cli_abort(
-      "EML mapping {.field rights_authorization.status} must be {.val unconfirmed} or {.val confirmed}."
+      "EML mapping {.field rights_authorization.status} must be {.val unconfirmed} or {.val confirmed}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_eml_scalar(rights_authorization, "evidence")
@@ -694,7 +729,8 @@
   source_provenance <- mapping$source_provenance
   if (!is.list(source_provenance)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance} must be a structured mapping."
+      "EML mapping {.field source_provenance} must be a structured mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   source_citation <- .ms_eml_scalar(
@@ -713,31 +749,36 @@
   ))
   if (!identical(source_citation, package_source_citation)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance.source_citation} does not match SDP {.field source_citation}."
+      "EML mapping {.field source_provenance.source_citation} does not match SDP {.field source_citation}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!identical(provenance_note, package_provenance_note)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance.provenance_note} does not match SDP {.field provenance_note}."
+      "EML mapping {.field source_provenance.provenance_note} does not match SDP {.field provenance_note}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   supporting_document <- source_provenance$supporting_document
   if (!is.list(supporting_document)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance.supporting_document} must be a citation/URL/hash mapping."
+      "EML mapping {.field source_provenance.supporting_document} must be a citation/URL/hash mapping.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_eml_scalar(supporting_document, "citation")
   supporting_url <- .ms_eml_scalar(supporting_document, "url")
   if (!grepl("^https?://", supporting_url)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance.supporting_document.url} must be an HTTP(S) URL."
+      "EML mapping {.field source_provenance.supporting_document.url} must be an HTTP(S) URL.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   supporting_sha256 <- .ms_eml_scalar(supporting_document, "sha256")
   if (!grepl("^[0-9a-f]{64}$", supporting_sha256)) {
     cli::cli_abort(
-      "EML mapping {.field source_provenance.supporting_document.sha256} must be a lowercase SHA-256 digest."
+      "EML mapping {.field source_provenance.supporting_document.sha256} must be a lowercase SHA-256 digest.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -745,7 +786,8 @@
     parties <- mapping[[field]]
     if (!is.list(parties) || length(parties) == 0L) {
       cli::cli_abort(
-        "EML mapping {.field {field}} must contain at least one party."
+        "EML mapping {.field {field}} must contain at least one party.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -754,7 +796,8 @@
   if (!is.null(geographic)) {
     if (!is.list(geographic)) {
       cli::cli_abort(
-        "EML mapping {.field geographic_coverage} must be a mapping."
+        "EML mapping {.field geographic_coverage} must be a mapping.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     .ms_eml_scalar(geographic, "description")
@@ -763,7 +806,8 @@
       value <- suppressWarnings(as.numeric(geographic[[field]]))
       if (length(value) != 1L || is.na(value) || !is.finite(value)) {
         cli::cli_abort(
-          "EML mapping {.field geographic_coverage.{field}} must be one finite number."
+          "EML mapping {.field geographic_coverage.{field}} must be one finite number.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       value
@@ -775,7 +819,8 @@
         any(numeric_bounds[c("south", "north")] < -90) ||
         any(numeric_bounds[c("south", "north")] > 90)) {
       cli::cli_abort(
-        "EML {.field geographic_coverage} bounds are out of range or reversed."
+        "EML {.field geographic_coverage} bounds are out of range or reversed.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -795,7 +840,8 @@
     scale <- .ms_eml_scalar(config, "measurement_scale")
     if (!scale %in% valid_scales) {
       cli::cli_abort(
-        "EML mapping {.field {field}.measurement_scale} must be one of {.val {valid_scales}}."
+        "EML mapping {.field {field}.measurement_scale} must be one of {.val {valid_scales}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -803,7 +849,8 @@
       value_type <- as.character(pkg$dictionary$value_type[[i]])
       if (!value_type %in% c("integer", "number")) {
         cli::cli_abort(
-          "EML {.val {scale}} scale for {.field {field}} requires SDP {.field value_type} {.val integer} or {.val number}, not {.val {value_type}}."
+          "EML {.val {scale}} scale for {.field {field}} requires SDP {.field value_type} {.val integer} or {.val number}, not {.val {value_type}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       unit <- .ms_eml_scalar(config, "eml_unit")
@@ -820,18 +867,20 @@
         cli::cli_abort(c(
           "No reviewed EML standard-unit mapping exists for canonical unit IRI {.val {unit_iri}} on {.field {field}}.",
           "i" = "Add and review an exact crosswalk entry before extending the exporter."
-        ))
+        ), class = .ms_condition_classes("error", "publication"))
       }
       expected_unit <- crosswalk_row$eml_standard_unit[[1]]
       if (!identical(unit, expected_unit)) {
         cli::cli_abort(
-          "EML mapping {.field {field}.eml_unit} must be {.val {expected_unit}} for canonical unit IRI {.val {unit_iri}}, not {.val {unit}}."
+          "EML mapping {.field {field}.eml_unit} must be {.val {expected_unit}} for canonical unit IRI {.val {unit_iri}}, not {.val {unit}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       number_type <- .ms_eml_scalar(config, "number_type")
       if (!number_type %in% valid_number_types) {
         cli::cli_abort(
-          "EML mapping {.field {field}.number_type} must be one of {.val {valid_number_types}}."
+          "EML mapping {.field {field}.number_type} must be one of {.val {valid_number_types}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
 
@@ -845,7 +894,8 @@
             is.na(minimum) ||
             !is.finite(minimum)) {
           cli::cli_abort(
-            "EML mapping {.field {field}.minimum} must be one finite number."
+            "EML mapping {.field {field}.minimum} must be one finite number.",
+            class = .ms_condition_classes("error", "publication")
           )
         }
       }
@@ -855,7 +905,8 @@
             is.na(maximum) ||
             !is.finite(maximum)) {
           cli::cli_abort(
-            "EML mapping {.field {field}.maximum} must be one finite number."
+            "EML mapping {.field {field}.maximum} must be one finite number.",
+            class = .ms_condition_classes("error", "publication")
           )
         }
       }
@@ -867,12 +918,14 @@
               !is.logical(exclusive) ||
               is.na(exclusive))) {
           cli::cli_abort(
-            "EML mapping {.field {field}.{exclusive_field}} must be one logical value."
+            "EML mapping {.field {field}.{exclusive_field}} must be one logical value.",
+            class = .ms_condition_classes("error", "publication")
           )
         }
         if (!is.null(exclusive) && is.null(config[[bound]])) {
           cli::cli_abort(
-            "EML mapping {.field {field}.{exclusive_field}} requires {.field {field}.{bound}}."
+            "EML mapping {.field {field}.{exclusive_field}} requires {.field {field}.{bound}}.",
+            class = .ms_condition_classes("error", "publication")
           )
         }
       }
@@ -889,7 +942,8 @@
               )
           )) {
         cli::cli_abort(
-          "EML mapping {.field {field}.minimum} must not exceed {.field {field}.maximum} or define an empty exclusive interval."
+          "EML mapping {.field {field}.minimum} must not exceed {.field {field}.maximum} or define an empty exclusive interval.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
     }
@@ -899,13 +953,15 @@
       if (!value_type %in%
           c("string", "integer", "number", "date", "datetime")) {
         cli::cli_abort(
-          "EML {.val dateTime} scale for {.field {field}} is incompatible with SDP {.field value_type} {.val {value_type}}."
+          "EML {.val dateTime} scale for {.field {field}} is incompatible with SDP {.field value_type} {.val {value_type}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       format_string <- .ms_eml_scalar(config, "format_string")
       if (!format_string %in% c("YYYY", "YYYY-MM-DD")) {
         cli::cli_abort(
-          "EML mapping {.field {field}.format_string} must currently be {.val YYYY} or {.val YYYY-MM-DD} so actual values can be validated exactly."
+          "EML mapping {.field {field}.format_string} must currently be {.val YYYY} or {.val YYYY-MM-DD} so actual values can be validated exactly.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
     }
@@ -914,7 +970,8 @@
       precision <- suppressWarnings(as.numeric(config$precision))
       if (length(precision) != 1L || is.na(precision) || precision <= 0) {
         cli::cli_abort(
-          "EML mapping {.field {field}.precision} must be a positive, evidence-backed measurement repeatability value."
+          "EML mapping {.field {field}.precision} must be a positive, evidence-backed measurement repeatability value.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
     }
@@ -1049,7 +1106,8 @@
   )
   if (!identical(actual_sha256, mapping$semantic_review$sha256)) {
     cli::cli_abort(
-      "The semantic-review ledger SHA-256 does not match the reviewed EML mapping sidecar."
+      "The semantic-review ledger SHA-256 does not match the reviewed EML mapping sidecar.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1067,7 +1125,8 @@
   missing <- setdiff(required, names(review))
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "The semantic-review ledger is missing required column{?s}: {.field {missing}}."
+      "The semantic-review ledger is missing required column{?s}: {.field {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   review[required] <- lapply(review[required], function(values) {
@@ -1078,7 +1137,8 @@
   nonempty_fields <- setdiff(required, "column_name")
   if (any(!nzchar(as.matrix(review[nonempty_fields])))) {
     cli::cli_abort(
-      "The semantic-review ledger must provide non-empty target, decision, and IRI fields on every row."
+      "The semantic-review ledger must provide non-empty target, decision, and IRI fields on every row.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1096,7 +1156,8 @@
       unresolved_rows$target_sdp_field
     ))
     cli::cli_abort(
-      "The semantic-review ledger contains non-accepted decision {.val {unique(unresolved_rows$decision)}} for target(s) {.field {unresolved_labels}}; a final ledger must contain accepted decisions only."
+      "The semantic-review ledger contains non-accepted decision {.val {unique(unresolved_rows$decision)}} for target(s) {.field {unresolved_labels}}; a final ledger must contain accepted decisions only.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1139,13 +1200,15 @@
     )
     if (length(unresolved) > 0L) {
       cli::cli_abort(
-        "The semantic-review ledger contains unresolved decision {.val {unresolved}} for required semantic target {.field {target_label}} and IRI {.url {target$iri[[1]]}}."
+        "The semantic-review ledger contains unresolved decision {.val {unresolved}} for required semantic target {.field {target_label}} and IRI {.url {target$iri[[1]]}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (nrow(matches) != 1L ||
         !identical(matches$decision[[1]], "accepted")) {
       cli::cli_abort(
-        "The semantic-review ledger must contain exactly one accepted row for required semantic target {.field {target_label}} and IRI {.url {target$iri[[1]]}}."
+        "The semantic-review ledger must contain exactly one accepted row for required semantic target {.field {target_label}} and IRI {.url {target$iri[[1]]}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -1174,7 +1237,7 @@
     cli::cli_abort(c(
       "The final semantic-review ledger must equal the canonical non-empty table and measurement semantic target set exactly.",
       "x" = "Unexpected or duplicate row(s): {.val {unexpected_labels}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   review
 }
@@ -1195,7 +1258,8 @@
   missing <- setdiff(fields, names(row))
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "Cannot hash reviewed vocabulary snapshot; missing field{?s}: {.field {missing}}."
+      "Cannot hash reviewed vocabulary snapshot; missing field{?s}: {.field {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   values <- vapply(fields, function(field) {
@@ -1219,7 +1283,8 @@
   )
   if (!file.exists(vocabulary_path)) {
     cli::cli_abort(
-      "Required reviewed vocabulary file {.path {vocabulary_path}} does not exist."
+      "Required reviewed vocabulary file {.path {vocabulary_path}} does not exist.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1237,7 +1302,8 @@
   missing <- setdiff(required, names(vocabulary))
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} is missing required column{?s}: {.field {missing}}."
+      "{.file semantic_vocabulary.csv} is missing required column{?s}: {.field {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1247,12 +1313,14 @@
       any(!nzchar(vocabulary$iri)) ||
       anyDuplicated(vocabulary$iri)) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} must contain one unique, non-empty row per IRI."
+      "{.file semantic_vocabulary.csv} must contain one unique, non-empty row per IRI.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (anyNA(vocabulary$label) || any(!nzchar(vocabulary$label))) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} must provide a non-empty label for every IRI."
+      "{.file semantic_vocabulary.csv} must provide a non-empty label for every IRI.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   evidence_fields <- c(
@@ -1268,13 +1336,15 @@
     values <- trimws(as.character(vocabulary[[field]]))
     if (anyNA(values) || any(!nzchar(values))) {
       cli::cli_abort(
-        "{.file semantic_vocabulary.csv} must provide non-empty {.field {field}} evidence for every IRI."
+        "{.file semantic_vocabulary.csv} must provide non-empty {.field {field}} evidence for every IRI.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
   if (any(!grepl("^https?://", vocabulary$source_url))) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} {.field source_url} values must be HTTP(S) URLs."
+      "{.file semantic_vocabulary.csv} {.field source_url} values must be HTTP(S) URLs.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   source_artifact_sha256 <- trimws(as.character(
@@ -1288,7 +1358,8 @@
       !grepl("^[0-9a-f]{64}$", source_artifact_sha256)
   )) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} non-empty {.field source_artifact_sha256} values must be lowercase SHA-256 digests."
+      "{.file semantic_vocabulary.csv} non-empty {.field source_artifact_sha256} values must be lowercase SHA-256 digests.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   reviewed_snapshot_sha256 <- trimws(as.character(
@@ -1296,7 +1367,8 @@
   ))
   if (any(!grepl("^[0-9a-f]{64}$", reviewed_snapshot_sha256))) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} {.field reviewed_snapshot_sha256} values must be lowercase SHA-256 digests."
+      "{.file semantic_vocabulary.csv} {.field reviewed_snapshot_sha256} values must be lowercase SHA-256 digests.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   expected_snapshot_sha256 <- vapply(
@@ -1310,7 +1382,8 @@
   )
   if (!identical(reviewed_snapshot_sha256, expected_snapshot_sha256)) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} contains a reviewed vocabulary snapshot hash that does not match its row."
+      "{.file semantic_vocabulary.csv} contains a reviewed vocabulary snapshot hash that does not match its row.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   actual_sha256 <- digest::digest(
@@ -1320,7 +1393,8 @@
   )
   if (!identical(actual_sha256, mapping$semantic_vocabulary$sha256)) {
     cli::cli_abort(
-      "{.file semantic_vocabulary.csv} SHA-256 does not match the reviewed EML mapping sidecar."
+      "{.file semantic_vocabulary.csv} SHA-256 does not match the reviewed EML mapping sidecar.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1331,7 +1405,7 @@
       "{.file semantic_vocabulary.csv} must describe exactly the canonical measurement IRI set.",
       "i" = "Missing: {.val {setdiff(expected, actual)}}.",
       "i" = "Unexpected: {.val {setdiff(actual, expected)}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   vocabulary
 }
@@ -1340,7 +1414,8 @@
   label <- vocabulary$label[match(iri, vocabulary$iri)]
   if (length(label) != 1L || is.na(label) || !nzchar(label)) {
     cli::cli_abort(
-      "No reviewed vocabulary label exists for canonical IRI {.url {iri}}."
+      "No reviewed vocabulary label exists for canonical IRI {.url {iri}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   label
@@ -1350,13 +1425,14 @@
   package_root <- normalizePath(package_path, mustWork = TRUE)
   candidate <- file.path(package_root, file_name)
   if (!file.exists(candidate)) {
-    cli::cli_abort("SDP data object {.path {candidate}} does not exist.")
+    cli::cli_abort("SDP data object {.path {candidate}} does not exist.", class = .ms_condition_classes("error", "publication"))
   }
   resolved <- normalizePath(candidate, mustWork = TRUE)
   prefix <- paste0(package_root, .Platform$file.sep)
   if (!startsWith(resolved, prefix)) {
     cli::cli_abort(
-      "SDP resource {.path {file_name}} resolves outside the package directory."
+      "SDP resource {.path {file_name}} resolves outside the package directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   resolved
@@ -1420,7 +1496,8 @@
   }
   if (!is.data.frame(objects)) {
     cli::cli_abort(
-      "{.arg supplementary_objects} must be a data frame with one row per supplementary object."
+      "{.arg supplementary_objects} must be a data frame with one row per supplementary object.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (nrow(objects) == 0L) {
@@ -1436,12 +1513,14 @@
   unexpected <- setdiff(names(objects), allowed)
   if (length(missing) > 0L) {
     cli::cli_abort(
-      "{.arg supplementary_objects} is missing required column{?s}: {.field {missing}}."
+      "{.arg supplementary_objects} is missing required column{?s}: {.field {missing}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (length(unexpected) > 0L) {
     cli::cli_abort(
-      "{.arg supplementary_objects} has unexpected column{?s}: {.field {unexpected}}."
+      "{.arg supplementary_objects} has unexpected column{?s}: {.field {unexpected}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1449,7 +1528,8 @@
     column <- objects[[field]]
     if (!is.atomic(column) || length(column) != nrow(objects)) {
       cli::cli_abort(
-        "Supplementary-object {.field {field}} must be one atomic value per row."
+        "Supplementary-object {.field {field}} must be one atomic value per row.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     trimws(as.character(column))
@@ -1459,7 +1539,8 @@
     anyNA(value) || any(!nzchar(value)) || any(grepl("[[:cntrl:]]", value))
   }, logical(1)))) {
     cli::cli_abort(
-      "Every required supplementary-object field must contain a non-empty value without control characters."
+      "Every required supplementary-object field must contain a non-empty value without control characters.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1467,12 +1548,14 @@
   # the engine choice. Behaviour here is unchanged -- it already ran under TRE.
   if (any(!.ms_absolute_iri_shape(values$pid))) {
     cli::cli_abort(
-      "Every supplementary-object {.field pid} must be an absolute URI without whitespace."
+      "Every supplementary-object {.field pid} must be an absolute URI without whitespace.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (any(!grepl("^[0-9a-f]{64}$", values$checksum))) {
     cli::cli_abort(
-      "Every supplementary-object {.field checksum} must be a lowercase SHA-256 digest."
+      "Every supplementary-object {.field checksum} must be a lowercase SHA-256 digest.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   slash_names <- gsub("\\\\", "/", values$object_name)
@@ -1487,7 +1570,8 @@
     )
   if (any(unsafe_name)) {
     cli::cli_abort(
-      "Every supplementary-object {.field object_name} must be a safe relative object path."
+      "Every supplementary-object {.field object_name} must be a safe relative object path.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   archive <- values$format_id == "application/zip"
@@ -1497,12 +1581,14 @@
   )
   if (any(invalid_archive_name)) {
     cli::cli_abort(
-      "An {.val application/zip} supplementary-object {.field object_name} must be a basename ending in {.file .zip}."
+      "An {.val application/zip} supplementary-object {.field object_name} must be a basename ending in {.file .zip}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (anyDuplicated(values$pid) || anyDuplicated(values$object_name)) {
     cli::cli_abort(
-      "Supplementary-object {.field pid} and {.field object_name} values must each be unique."
+      "Supplementary-object {.field pid} and {.field object_name} values must each be unique.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1510,19 +1596,21 @@
     candidate <- path.expand(candidate)
     if (!file.exists(candidate) || isTRUE(file.info(candidate)$isdir)) {
       cli::cli_abort(
-        "Supplementary object {.path {candidate}} is not a readable file."
+        "Supplementary object {.path {candidate}} is not a readable file.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     normalizePath(candidate, mustWork = TRUE)
   }, character(1), USE.NAMES = FALSE)
   actual_sizes <- unname(file.info(paths)$size)
   if (anyNA(actual_sizes) || any(!is.finite(actual_sizes))) {
-    cli::cli_abort("Could not determine supplementary-object file size.")
+    cli::cli_abort("Could not determine supplementary-object file size.", class = .ms_condition_classes("error", "publication"))
   }
   if ("size" %in% names(objects)) {
     if (!is.atomic(objects$size) || length(objects$size) != nrow(objects)) {
       cli::cli_abort(
-        "Supplementary-object {.field size} must be one atomic value per row."
+        "Supplementary-object {.field size} must be one atomic value per row.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     supplied_sizes <- suppressWarnings(as.numeric(objects$size))
@@ -1532,7 +1620,8 @@
       supplied_sizes != floor(supplied_sizes)
     if (any(invalid_size) || any(supplied_sizes != actual_sizes)) {
       cli::cli_abort(
-        "Supplementary-object {.field size} must exactly match the file size in bytes."
+        "Supplementary-object {.field size} must exactly match the file size in bytes.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -1548,7 +1637,8 @@
   if (any(checksum_mismatch)) {
     mismatched <- values$object_name[checksum_mismatch]
     cli::cli_abort(
-      "Supplementary-object SHA-256 does not match file bytes for {.file {mismatched}}."
+      "Supplementary-object SHA-256 does not match file bytes for {.file {mismatched}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1563,7 +1653,8 @@
       any(archive & is.na(compression_method)) ||
       any(!archive & !is.na(compression_method))) {
     cli::cli_abort(
-      "Only {.val application/zip} supplementary objects may declare {.field compression_method = zip}."
+      "Only {.val application/zip} supplementary objects may declare {.field compression_method = zip}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   entity_type <- if ("entity_type" %in% names(objects)) {
@@ -1571,7 +1662,8 @@
     if (anyNA(value) || any(!nzchar(value)) ||
         any(grepl("[[:cntrl:]]", value))) {
       cli::cli_abort(
-        "Every supplementary-object {.field entity_type} must be non-empty and contain no control characters."
+        "Every supplementary-object {.field entity_type} must be non-empty and contain no control characters.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     value
@@ -1652,7 +1744,8 @@
     if (!.ms_eml_nonempty(temporal_start) ||
         !.ms_eml_nonempty(temporal_end)) {
       cli::cli_abort(
-        "EML temporal coverage requires both {.field temporal_start} and {.field temporal_end}."
+        "EML temporal coverage requires both {.field temporal_start} and {.field temporal_end}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     temporal <- xml2::xml_add_child(coverage, "temporalCoverage")
@@ -1735,13 +1828,15 @@
   if (identical(scale, "ordinal")) {
     if (is.null(order_map) || is.null(names(order_map))) {
       cli::cli_abort(
-        "Ordinal EML attribute {.field {table_id}.{column_name}} requires named {.field code_order} values."
+        "Ordinal EML attribute {.field {table_id}.{column_name}} requires named {.field code_order} values.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     code_values <- as.character(codes$code_value)
     if (!setequal(code_values, names(order_map))) {
       cli::cli_abort(
-        "Ordinal {.field code_order} for {.field {table_id}.{column_name}} must name exactly the SDP code values."
+        "Ordinal {.field code_order} for {.field {table_id}.{column_name}} must name exactly the SDP code values.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -1762,7 +1857,8 @@
       order <- suppressWarnings(as.integer(order_map[[value]]))
       if (length(order) != 1L || is.na(order)) {
         cli::cli_abort(
-          "Ordinal order for code {.val {value}} in {.field {table_id}.{column_name}} must be an integer."
+          "Ordinal order for code {.val {value}} in {.field {table_id}.{column_name}} must be an integer.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
       xml2::xml_set_attr(code, "order", as.character(order))
@@ -1844,7 +1940,8 @@
   }
   if (!is.list(values)) {
     cli::cli_abort(
-      "EML {.field missing_values} must be a list of code/explanation mappings."
+      "EML {.field missing_values} must be a list of code/explanation mappings.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   values
@@ -1867,7 +1964,7 @@
     cli::cli_abort(c(
       "Could not audit the exact CSV tokens for EML table {.val {table_id}}.",
       "x" = "The first parse problem is at row {first$row[[1]]}, column {first$col[[1]]}: {first$expected[[1]]}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   raw
 }
@@ -1878,11 +1975,12 @@
       "Raw-token audit and parsed SDP table {.val {table_id}} have different columns.",
       "i" = "Raw CSV: {.field {names(raw)}}.",
       "i" = "Parsed SDP: {.field {names(parsed)}}."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   if (!identical(nrow(raw), nrow(parsed))) {
     cli::cli_abort(
-      "Raw-token audit found {nrow(raw)} row{?s} for EML table {.val {table_id}}, but the parsed SDP resource has {nrow(parsed)}."
+      "Raw-token audit found {nrow(raw)} row{?s} for EML table {.val {table_id}}, but the parsed SDP resource has {nrow(parsed)}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(raw)
@@ -1896,7 +1994,8 @@
   values <- .ms_eml_missing_values(config)
   if (length(parsed_values) != length(raw_values)) {
     cli::cli_abort(
-      "Internal EML export error: parsed and raw values differ in length for {.field {field}}."
+      "Internal EML export error: parsed and raw values differ in length for {.field {field}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1904,7 +2003,8 @@
   for (value in values) {
     if (!is.list(value)) {
       cli::cli_abort(
-        "Each {.field missing_values} entry for {.field {field}} must be a mapping."
+        "Each {.field missing_values} entry for {.field {field}} must be a mapping.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     code <- .ms_eml_scalar(value, "code")
@@ -1913,14 +2013,16 @@
   duplicates <- unique(codes[duplicated(codes)])
   if (length(duplicates) > 0L) {
     cli::cli_abort(
-      "EML attribute {.field {field}} declares duplicate missing-value code{?s}: {.val {duplicates}}."
+      "EML attribute {.field {field}} declares duplicate missing-value code{?s}: {.val {duplicates}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   absent <- setdiff(codes, unique(raw_values))
   if (length(absent) > 0L) {
     cli::cli_abort(
-      "EML attribute {.field {field}} declares missing-value code{?s} {.val {absent}} that {?does/do} not occur in the raw CSV bytes."
+      "EML attribute {.field {field}} declares missing-value code{?s} {.val {absent}} that {?does/do} not occur in the raw CSV bytes.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1933,7 +2035,8 @@
   )
   if (length(declared_but_present) > 0L) {
     cli::cli_abort(
-      "EML attribute {.field {field}} declares missing-value code{?s} {.val {declared_but_present}} where the parsed value is not missing."
+      "EML attribute {.field {field}} declares missing-value code{?s} {.val {declared_but_present}} where the parsed value is not missing.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   undeclared <- unique(
@@ -1947,7 +2050,7 @@
     cli::cli_abort(c(
       "EML attribute {.field {field}} contains undeclared non-empty missing token{?s}: {.val {undeclared}}.",
       "i" = "Empty CSV fields are treated as implicit absence and do not require a fabricated EML missing-value code."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
 
   for (value in values) {
@@ -1986,7 +2089,7 @@
         cli::cli_abort(c(
           "EML enumerated domain for {.field {field}} does not contain exact raw CSV token{?s}: {.val {undeclared}}.",
           "i" = "Code values are lexically significant after CSV parsing; leading or trailing whitespace must not be normalized silently."
-        ))
+        ), class = .ms_condition_classes("error", "publication"))
       }
     }
   }
@@ -1998,7 +2101,8 @@
       offending <- unique(tokens[is.na(numeric_values) |
         !is.finite(numeric_values)])
       cli::cli_abort(
-        "EML numeric domain for {.field {field}} contains non-numeric or non-finite observed value{?s}: {.val {offending}}."
+        "EML numeric domain for {.field {field}} contains non-numeric or non-finite observed value{?s}: {.val {offending}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -2008,21 +2112,24 @@
         any(non_integer)) {
       offending <- unique(numeric_values[non_integer])
       cli::cli_abort(
-        "EML {.val {number_type}} number type for {.field {field}} requires integer-valued observations, but found {.val {offending}}."
+        "EML {.val {number_type}} number type for {.field {field}} requires integer-valued observations, but found {.val {offending}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (identical(number_type, "natural") &&
         any(numeric_values <= 0)) {
       offending <- unique(numeric_values[numeric_values <= 0])
       cli::cli_abort(
-        "EML {.val natural} number type for {.field {field}} requires strictly positive observations, but found {.val {offending}}."
+        "EML {.val natural} number type for {.field {field}} requires strictly positive observations, but found {.val {offending}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (identical(number_type, "whole") &&
         any(numeric_values < 0)) {
       offending <- unique(numeric_values[numeric_values < 0])
       cli::cli_abort(
-        "EML {.val whole} number type for {.field {field}} requires nonnegative observations, but found {.val {offending}}."
+        "EML {.val whole} number type for {.field {field}} requires nonnegative observations, but found {.val {offending}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
 
@@ -2041,7 +2148,8 @@
           "minimum"
         }
         cli::cli_abort(
-          "EML numeric domain for {.field {field}} has observed value{?s} {.val {offending}} outside {qualifier} {.val {minimum}}."
+          "EML numeric domain for {.field {field}} has observed value{?s} {.val {offending}} outside {qualifier} {.val {minimum}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
     }
@@ -2060,7 +2168,8 @@
           "maximum"
         }
         cli::cli_abort(
-          "EML numeric domain for {.field {field}} has observed value{?s} {.val {offending}} outside {qualifier} {.val {maximum}}."
+          "EML numeric domain for {.field {field}} has observed value{?s} {.val {offending}} outside {qualifier} {.val {maximum}}.",
+          class = .ms_condition_classes("error", "publication")
         )
       }
     }
@@ -2087,7 +2196,8 @@
     if (any(!valid)) {
       offending <- unique(tokens[!valid])
       cli::cli_abort(
-        "EML {.field {field}.format_string} {.val {format_string}} does not match observed calendar value{?s} {.val {offending}}."
+        "EML {.field {field}.format_string} {.val {format_string}} does not match observed calendar value{?s} {.val {offending}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -2215,7 +2325,8 @@
   unknown <- setdiff(columns, known)
   if (length(unknown) > 0L) {
     cli::cli_abort(
-      "EML primary key for table {.val {table_id}} names unknown column{?s}: {.field {unknown}}."
+      "EML primary key for table {.val {table_id}} names unknown column{?s}: {.field {unknown}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2553,13 +2664,15 @@
     data_object <- data_objects[data_objects$table_id == table_id, , drop = FALSE]
     if (nrow(data_object) != 1L) {
       cli::cli_abort(
-        "Internal EML export error: expected one data object for table {.val {table_id}}."
+        "Internal EML export error: expected one data object for table {.val {table_id}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     data <- pkg$resources[[table_id]]
     if (is.null(data)) {
       cli::cli_abort(
-        "SDP table {.val {table_id}} has no loaded data resource."
+        "SDP table {.val {table_id}} has no loaded data resource.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     raw_data <- .ms_eml_read_raw_csv_tokens(
@@ -2694,7 +2807,8 @@
   line_feeds <- which(bytes == as.raw(0x0a))
   if (length(line_feeds) == 0L) {
     cli::cli_abort(
-      "CSV resource {.path {path}} has no detectable record delimiter."
+      "CSV resource {.path {path}} has no detectable record delimiter.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   first <- line_feeds[[1]]
@@ -2718,7 +2832,8 @@
   if (anyDuplicated(ids)) {
     duplicates <- unique(ids[duplicated(ids)])
     cli::cli_abort(
-      "Generated EML contains duplicate XML ID{?s}: {.val {duplicates}}."
+      "Generated EML contains duplicate XML ID{?s}: {.val {duplicates}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2729,7 +2844,8 @@
   unknown <- setdiff(references, ids)
   if (length(unknown) > 0L) {
     cli::cli_abort(
-      "Generated EML contains dangling attribute reference{?s}: {.val {unknown}}."
+      "Generated EML contains dangling attribute reference{?s}: {.val {unknown}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2741,7 +2857,8 @@
   missing_subject_ids <- is.na(xml2::xml_attr(annotated_parents, "id"))
   if (any(missing_subject_ids)) {
     cli::cli_abort(
-      "Every EML semantic annotation subject must have a unique XML ID."
+      "Every EML semantic annotation subject must have a unique XML ID.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2764,7 +2881,8 @@
   ))
   if (!setequal(expected_measurement_ids, actual_measurement_ids)) {
     cli::cli_abort(
-      "Generated EML annotation subjects do not exactly match the SDP measurement columns."
+      "Generated EML annotation subjects do not exactly match the SDP measurement columns.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -2788,18 +2906,20 @@
       expected_predicates
     )) {
       cli::cli_abort(
-        "Generated EML attribute {.val {attribute_id}} does not contain exactly the approved semantic predicates in profile order."
+        "Generated EML attribute {.val {attribute_id}} does not contain exactly the approved semantic predicates in profile order.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
 
   xml_text <- as.character(document)
   if (grepl("REVIEW:", xml_text, fixed = TRUE)) {
-    cli::cli_abort("Generated EML contains an unresolved {.val REVIEW:} marker.")
+    cli::cli_abort("Generated EML contains an unresolved {.val REVIEW:} marker.", class = .ms_condition_classes("error", "publication"))
   }
   if (grepl("usedProcedure", xml_text, fixed = TRUE)) {
     cli::cli_abort(
-      "The initial EML profile must not emit a procedure annotation."
+      "The initial EML profile must not emit a procedure annotation.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   invisible(TRUE)
@@ -2882,16 +3002,18 @@ write_eml_from_sdp <- function(path,
       !is.logical(require_revision_key) ||
       is.na(require_revision_key)) {
     cli::cli_abort(
-      "{.arg require_revision_key} must be one logical value."
+      "{.arg require_revision_key} must be one logical value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!requireNamespace("emld", quietly = TRUE)) {
     cli::cli_abort(
-      "Package {.pkg emld} is required to validate EML. Install it before exporting."
+      "Package {.pkg emld} is required to validate EML. Install it before exporting.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   if (!dir.exists(path)) {
-    cli::cli_abort("SDP directory {.path {path}} does not exist.")
+    cli::cli_abort("SDP directory {.path {path}} does not exist.", class = .ms_condition_classes("error", "publication"))
   }
 
   path <- normalizePath(path, mustWork = TRUE)
@@ -2899,7 +3021,7 @@ write_eml_from_sdp <- function(path,
     mapping_path <- .ms_eml_default_mapping_path(path)
   }
   if (!file.exists(mapping_path)) {
-    cli::cli_abort("EML mapping sidecar {.path {mapping_path}} does not exist.")
+    cli::cli_abort("EML mapping sidecar {.path {mapping_path}} does not exist.", class = .ms_condition_classes("error", "publication"))
   }
   mapping_path <- normalizePath(mapping_path, mustWork = TRUE)
 
@@ -2913,7 +3035,8 @@ write_eml_from_sdp <- function(path,
   }
   if (!dir.exists(output_dir)) {
     cli::cli_abort(
-      "Could not create EML output directory {.path {output_dir}}."
+      "Could not create EML output directory {.path {output_dir}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   output_path <- file.path(
@@ -2924,7 +3047,7 @@ write_eml_from_sdp <- function(path,
   validation <- validate_salmon_datapackage(path, require_iris = TRUE)
   pkg <- validation$package
   if (nrow(pkg$dataset) != 1L) {
-    cli::cli_abort("EML export requires exactly one SDP dataset row.")
+    cli::cli_abort("EML export requires exactly one SDP dataset row.", class = .ms_condition_classes("error", "publication"))
   }
 
   # Never evaluate `!expr`: see tests/testthat/test-yaml-expr-guard.R.
@@ -2946,7 +3069,7 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort(c(
       "{.file metadata/methods.csv} is an sdp-0.2.0 registry; sdp-0.3.0 packages must not carry one.",
       "i" = "Run {.fun migrate_sdp_methods} to relocate its content and remove it."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   sdp_methods <- .ms_eml_sdp_method_placements(pkg)
   used_procedures <- .ms_eml_used_procedures(path, pkg)
@@ -2989,7 +3112,8 @@ write_eml_from_sdp <- function(path,
   )
   if (!nzchar(eml_schema)) {
     cli::cli_abort(
-      "Could not locate the bundled EML 2.2.0 schema in {.pkg emld}."
+      "Could not locate the bundled EML 2.2.0 schema in {.pkg emld}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   eml_validation <- emld::eml_validate(temporary, schema = eml_schema)
@@ -2997,7 +3121,7 @@ write_eml_from_sdp <- function(path,
     cli::cli_abort(c(
       "Generated EML 2.2.0 failed schema validation.",
       "x" = .ms_cli_escape(.ms_eml_validation_errors(eml_validation))
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
 
   if (file.exists(output_path)) {
@@ -3011,13 +3135,14 @@ write_eml_from_sdp <- function(path,
       cli::cli_abort(c(
         "EML output {.path {output_path}} already exists with different bytes.",
         "i" = "To rebuild it from the current inputs, pass {.code overwrite = TRUE}."
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
   }
 
   if (file.exists(temporary) && !file.rename(temporary, output_path)) {
     cli::cli_abort(
-      "Could not atomically move validated EML into {.path {output_path}}."
+      "Could not atomically move validated EML into {.path {output_path}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 

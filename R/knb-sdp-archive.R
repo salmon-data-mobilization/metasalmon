@@ -39,7 +39,7 @@
       observed,
       ". Byte-compare the new version against a reviewed one before adding it ",
       "to `.ms_knb_reviewed_zip_versions`."
-    ))
+    ), class = .ms_condition_classes("error", "publication"))
   }
   invisible(version)
 }
@@ -49,7 +49,8 @@
       is.na(dataset_id) ||
       !nzchar(trimws(as.character(dataset_id)))) {
     cli::cli_abort(
-      "{.arg dataset_id} must be one non-empty value for the SDP archive filename."
+      "{.arg dataset_id} must be one non-empty value for the SDP archive filename.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -63,20 +64,23 @@
   dataset_path <- .ms_locate_metadata_file(path, "dataset.csv")
   if (is.na(dataset_path)) {
     cli::cli_abort(
-      "SDP archiving requires canonical {.file metadata/dataset.csv}."
+      "SDP archiving requires canonical {.file metadata/dataset.csv}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
   dataset <- .ms_read_metadata_csv(dataset_path)
   if (nrow(dataset) != 1L || !"dataset_id" %in% names(dataset)) {
     cli::cli_abort(
-      "SDP archiving requires one {.field dataset.csv$dataset_id} value."
+      "SDP archiving requires one {.field dataset.csv$dataset_id} value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   dataset_id <- as.character(dataset$dataset_id[[1]])
   if (is.na(dataset_id) || !nzchar(trimws(dataset_id))) {
     cli::cli_abort(
-      "SDP archiving requires one non-empty {.field dataset.csv$dataset_id} value."
+      "SDP archiving requires one non-empty {.field dataset.csv$dataset_id} value.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   dataset_id
@@ -87,7 +91,8 @@
   expected_prefix <- paste0(prefix, ":")
   if (is.null(labels) || any(!startsWith(labels, expected_prefix))) {
     cli::cli_abort(
-      "Internal SDP archive inventory labels are invalid."
+      "Internal SDP archive inventory labels are invalid.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -111,7 +116,8 @@
     link <- Sys.readlink(current)
     if (length(link) == 1L && !is.na(link) && nzchar(link)) {
       cli::cli_abort(
-        "SDP archive member {.file {relative}} must not contain a symbolic-link path component."
+        "SDP archive member {.file {relative}} must not contain a symbolic-link path component.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
     if (!file.exists(current)) {
@@ -124,7 +130,8 @@
         isTRUE(file.info(current)$isdir) ||
         !utils::file_test("-f", current))) {
     cli::cli_abort(
-      "SDP archive member {.file {relative}} must be a regular file."
+      "SDP archive member {.file {relative}} must be a regular file.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -141,7 +148,8 @@
       endsWith(relative, "/") ||
       grepl("//", relative, fixed = TRUE)) {
     cli::cli_abort(
-      "SDP archive member path {.val {relative}} is not a canonical relative file path."
+      "SDP archive member path {.val {relative}} is not a canonical relative file path.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_knb_reject_dot_segments(relative, "SDP archive inventory")
@@ -152,7 +160,8 @@
   if (identical(relative, "metadata/eml.xml") ||
       startsWith(relative, "publication/")) {
     cli::cli_abort(
-      "SDP archive inventory cannot include reserved publication path {.file {relative}}."
+      "SDP archive inventory cannot include reserved publication path {.file {relative}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -184,7 +193,8 @@
       duplicated(relative) | duplicated(relative, fromLast = TRUE)
     ])
     cli::cli_abort(
-      "SDP archive inventory contains duplicate member path{?s}: {.file {duplicated_members}}."
+      "SDP archive inventory contains duplicate member path{?s}: {.file {duplicated_members}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -196,7 +206,8 @@
     if (!identical(resolved, unname(paths[[index]])) ||
         !identical(.ms_knb_relative_path(root, resolved), member)) {
       cli::cli_abort(
-        "SDP archive member {.file {member}} does not resolve to its canonical package path."
+        "SDP archive member {.file {member}} does not resolve to its canonical package path.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -239,7 +250,7 @@
 .ms_knb_sdp_archive_stage <- function(inventory, staging) {
   if (!dir.create(staging, recursive = TRUE, showWarnings = FALSE) &&
       !dir.exists(staging)) {
-    cli::cli_abort("Could not create the temporary SDP archive staging directory.")
+    cli::cli_abort("Could not create the temporary SDP archive staging directory.", class = .ms_condition_classes("error", "publication"))
   }
 
   for (member in names(inventory)) {
@@ -259,7 +270,8 @@
           digest::digest(file = destination, algo = "sha256", serialize = FALSE)
         )) {
       cli::cli_abort(
-        "Could not stage exact bytes for SDP archive member {.file {member}}."
+        "Could not stage exact bytes for SDP archive member {.file {member}}.",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   }
@@ -315,7 +327,7 @@
   if (length(overwrite) != 1L ||
       !is.logical(overwrite) ||
       is.na(overwrite)) {
-    cli::cli_abort("{.arg overwrite} must be TRUE or FALSE.")
+    cli::cli_abort("{.arg overwrite} must be TRUE or FALSE.", class = .ms_condition_classes("error", "publication"))
   }
 
   # `zip` 2.x and 3.x can serialize the same staged tree into different bytes.
@@ -336,10 +348,10 @@
   if (length(output_path) != 1L ||
       is.na(output_path) ||
       !nzchar(trimws(as.character(output_path)))) {
-    cli::cli_abort("{.arg output_path} must be one non-empty path.")
+    cli::cli_abort("{.arg output_path} must be one non-empty path.", class = .ms_condition_classes("error", "publication"))
   }
   if (!identical(tolower(tools::file_ext(output_path)), "zip")) {
-    cli::cli_abort("{.arg output_path} must use a {.file .zip} extension.")
+    cli::cli_abort("{.arg output_path} must use a {.file .zip} extension.", class = .ms_condition_classes("error", "publication"))
   }
 
   lexical_output <- .ms_knb_lexical_absolute_path(output_path)
@@ -369,7 +381,8 @@
   )
   if (!startsWith(output_relative, "publication/")) {
     cli::cli_abort(
-      "{.arg output_path} must remain under the SDP's {.file publication/} directory."
+      "{.arg output_path} must remain under the SDP's {.file publication/} directory.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_knb_sdp_archive_assert_no_symlink(
@@ -382,7 +395,8 @@
   if (!dir.create(directory, recursive = TRUE, showWarnings = FALSE) &&
       !dir.exists(directory)) {
     cli::cli_abort(
-      "Could not create SDP archive output directory {.path {directory}}."
+      "Could not create SDP archive output directory {.path {directory}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   .ms_knb_sdp_archive_assert_no_symlink(
@@ -424,18 +438,20 @@
     ),
     error = function(error) {
       cli::cli_abort(
-        "Could not create the deterministic SDP ZIP archive: {conditionMessage(error)}"
+        "Could not create the deterministic SDP ZIP archive: {conditionMessage(error)}",
+        class = .ms_condition_classes("error", "publication")
       )
     }
   )
   if (!file.exists(temporary_archive)) {
-    cli::cli_abort("The ZIP implementation did not create the SDP archive.")
+    cli::cli_abort("The ZIP implementation did not create the SDP archive.", class = .ms_condition_classes("error", "publication"))
   }
 
   archived_members <- as.character(zip::zip_list(temporary_archive)$filename)
   if (!identical(archived_members, names(inventory))) {
     cli::cli_abort(
-      "Generated SDP archive inventory does not exactly match its closed source allowlist."
+      "Generated SDP archive inventory does not exactly match its closed source allowlist.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
   archive_bytes <- .ms_knb_object_bytes(temporary_archive)
@@ -445,7 +461,7 @@
     if (length(existing_link) == 1L &&
         !is.na(existing_link) &&
         nzchar(existing_link)) {
-      cli::cli_abort("Refusing to replace symbolic-link SDP archive output.")
+      cli::cli_abort("Refusing to replace symbolic-link SDP archive output.", class = .ms_condition_classes("error", "publication"))
     }
     existing_bytes <- .ms_knb_object_bytes(output_path)
     if (identical(existing_bytes, archive_bytes)) {
@@ -465,7 +481,7 @@
         # input a dead end.
         "i" = "To rebuild it from the current inputs, pass {.code overwrite = TRUE}.",
         "i" = "Existing: {.file {output_path}}."
-      ))
+      ), class = .ms_condition_classes("error", "publication"))
     }
   }
 

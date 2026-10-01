@@ -38,7 +38,7 @@
   root <- .ms_chat_default_session_root(session_root)
   id <- .ms_chat_trim_string(session_id)
   if (is.na(id)) {
-    cli::cli_abort("Session id must be a non-empty string.")
+    cli::cli_abort("Session id must be a non-empty string.", class = .ms_condition_classes("error", "llm"))
   }
 
   session_dir <- file.path(root, id)
@@ -100,7 +100,8 @@
       c(
         "Curation session {.val {session_id}} was not found.",
         "i" = "Looked for {.file state.rds} and {.file transcript.rds} under {.path {paths$session_dir}}."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -471,7 +472,7 @@
                      timeout_seconds = 60,
                      request_fn = NULL) {
   if (is.null(provider) && is.null(request_fn)) {
-    cli::cli_abort("Provide a chat provider or a request function for {.fn .ms_chat}.")
+    cli::cli_abort("Provide a chat provider or a request function for {.fn .ms_chat}.", class = .ms_condition_classes("error", "llm"))
   }
 
   if (is.null(provider) && !is.null(request_fn)) {
@@ -808,7 +809,7 @@
 .ms_chat_decomposition_record_answer <- function(state, question, answer) {
   question_idx <- which(vapply(state$question_queue, function(item) identical(item$id, question$id), logical(1)))
   if (length(question_idx) != 1L) {
-    cli::cli_abort("Internal error: could not locate decomposition question {.val {question$id}} in the queue.")
+    cli::cli_abort("Internal error: could not locate decomposition question {.val {question$id}} in the queue.", class = .ms_condition_classes("error", "llm"))
   }
 
   cleaned <- .ms_chat_trim_string(answer)
@@ -986,10 +987,10 @@
                                             dataset_id = NULL) {
   dict <- tibble::as_tibble(dict)
   if (nrow(dict) == 0L) {
-    cli::cli_abort("{.arg dict} must contain at least one row.")
+    cli::cli_abort("{.arg dict} must contain at least one row.", class = .ms_condition_classes("error", "llm"))
   }
   if (!"column_name" %in% names(dict)) {
-    cli::cli_abort("{.arg dict} must contain a {.field column_name} column.")
+    cli::cli_abort("{.arg dict} must contain a {.field column_name} column.", class = .ms_condition_classes("error", "llm"))
   }
 
   keep <- dict$column_name == column_name
@@ -1003,7 +1004,8 @@
   matched <- dict[keep, , drop = FALSE]
   if (nrow(matched) == 0L) {
     cli::cli_abort(
-      "Could not find {.val {column_name}} in {.arg dict} with the supplied dataset/table filters."
+      "Could not find {.val {column_name}} in {.arg dict} with the supplied dataset/table filters.",
+      class = .ms_condition_classes("error", "llm")
     )
   }
   if (nrow(matched) > 1L) {
@@ -1011,7 +1013,8 @@
       c(
         "{.fn chat_decomposition} matched more than one dictionary row.",
         "i" = "Pass {.arg table_id} and/or {.arg dataset_id} to disambiguate the target column."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 
@@ -1145,7 +1148,8 @@ chat_decomposition <- function(dict,
       c(
         "{.fn chat_decomposition} currently expects a measurement dictionary row.",
         "i" = "Received {.val {column_role}} for column {.val {column_name}}."
-      )
+      ),
+      class = .ms_condition_classes("error", "llm")
     )
   }
 

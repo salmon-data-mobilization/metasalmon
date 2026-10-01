@@ -83,7 +83,7 @@
       "i" = "Model judgement now runs outside the package: write a review packet with {.fn write_semantic_review_packet}, have your harness judge it, and read the answers back with {.fn ingest_semantic_assessments}.",
       "i" = "Set {.code options(metasalmon.llm_deprecation_quiet = TRUE)} to silence this warning until then."
     ),
-    class = c("metasalmon_llm_deprecated", "deprecatedWarning")
+    class = .ms_condition_classes("warning", "llm", c("metasalmon_llm_deprecated", "deprecatedWarning"))
   )
   invisible(TRUE)
 }

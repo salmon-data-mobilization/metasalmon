@@ -193,7 +193,7 @@
 )
 
 .ms_sssom_abort <- function(message, ..., .envir = parent.frame()) {
-  cli::cli_abort(message, ..., .envir = .envir)
+  cli::cli_abort(message, ..., .envir = .envir, class = .ms_condition_classes("error", "validation"))
 }
 
 .ms_sssom_scalar <- function(value, name) {

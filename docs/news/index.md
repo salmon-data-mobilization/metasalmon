@@ -4,6 +4,15 @@
 
 ### Added
 
+- **Package-authored cli/rlang errors and warnings have a documented
+  class hierarchy** (B-58): catch `metasalmon_error` or
+  `metasalmon_warning`, or the validation, LLM, publication and
+  retrieval subsystem classes. Existing messages, specialized classes
+  and code fields are preserved. Dependency conditions and rethrows keep
+  their own identity. See
+  [`?metasalmon_conditions`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_conditions.md).
+  This development change does not make a version/tag/release decision.
+
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
   produces the reviewed semantic closure, which metasalmon has validated
   in three places and written in none** (backlog

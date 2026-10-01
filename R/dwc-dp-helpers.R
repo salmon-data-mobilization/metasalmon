@@ -19,10 +19,10 @@
 #' head(attr(dict, "dwc_mappings"))
 suggest_dwc_mappings <- function(dict, max_per_column = 3) {
   if (!inherits(dict, "data.frame")) {
-    cli::cli_abort("{.arg dict} must be a data frame or tibble")
+    cli::cli_abort("{.arg dict} must be a data frame or tibble", class = .ms_condition_classes("error", "publication"))
   }
   if (!"column_name" %in% names(dict)) {
-    cli::cli_abort("{.arg dict} must contain {.field column_name}")
+    cli::cli_abort("{.arg dict} must contain {.field column_name}", class = .ms_condition_classes("error", "publication"))
   }
 
   fields <- .dwc_dp_fields()

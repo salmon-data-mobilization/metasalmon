@@ -79,7 +79,7 @@ if (nrow(proposed_terms) > warn_threshold) {
       "!" = "proposed_terms has {nrow(proposed_terms)} rows (threshold: {warn_threshold}).",
       "i" = "This may indicate over-engineering. Expected: 15-25 base terms for a typical dataset.",
       "i" = "Review for: duplicate terms across tables, age/phase variants that should use constraint_iri."
-    ))
+    ), class = .ms_condition_classes("warning", NULL))
   }
 
   df <- tibble::as_tibble(proposed_terms)
@@ -214,7 +214,7 @@ if (nrow(proposed_terms) > warn_threshold) {
     cli::cli_warn(c(
       "!" = "After deduplication, still have {nrow(result)} terms (threshold: {warn_threshold}).",
       "i" = "Consider manual review for additional consolidation opportunities."
-    ))
+    ), class = .ms_condition_classes("warning", NULL))
   }
 
   result

@@ -444,7 +444,8 @@ test_that("an unresolvable IRI becomes a gap and both files are still written", 
       search_fn = closure_search_stub(),
       quiet = TRUE
     ),
-    "could not be resolved"
+    "could not be resolved",
+    class = "metasalmon_validation_warning"
   )
 
   # GAP, NOT ABORT: the files exist.
@@ -609,7 +610,8 @@ test_that("a target with no recorded rationale gets a REVIEW REQUIRED marker", {
       search_fn = closure_search_stub(),
       quiet = TRUE
     ),
-    "REVIEW REQUIRED"
+    "REVIEW REQUIRED",
+    class = "metasalmon_validation_warning"
   )
   expect_true(all(grepl("^REVIEW REQUIRED:", closure$placeholders$review_rationale)))
   expect_identical(nrow(closure$placeholders), 5L)
@@ -738,7 +740,8 @@ test_that("an inline sidecar key is reported rather than rewritten", {
       search_fn = closure_search_stub(),
       quiet = TRUE
     ),
-    "inline"
+    "inline",
+    class = "metasalmon_validation_warning"
   )
   # The files are still written, and the vocabulary digest, which IS a block
   # mapping, is still pinned.
@@ -881,7 +884,8 @@ test_that("a term found with a blank required field is incomplete, not a gap", {
       search_fn = closure_search_stub(index = index),
       quiet = TRUE
     ),
-    "not an ontology gap"
+    "not an ontology gap",
+    class = "metasalmon_validation_warning"
   )
 
   # NOT a gap: nothing asks the term-request pipeline to mint what was found.

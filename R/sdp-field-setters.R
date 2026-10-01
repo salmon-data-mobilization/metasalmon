@@ -540,7 +540,7 @@
 #' }
 review_metadata <- function(path) {
   if (!is.character(path) || length(path) != 1L || is.na(path) || !dir.exists(path)) {
-    cli::cli_abort("{.arg path} must be an existing Salmon Data Package directory.")
+    cli::cli_abort("{.arg path} must be an existing Salmon Data Package directory.", class = .ms_condition_classes("error", NULL))
   }
 
   gaps <- list()
@@ -763,7 +763,8 @@ print.ms_metadata_review <- function(x, ...) {
   if (length(value) != 1L) {
     cli::cli_abort(
       "{.arg {field}} must be a single value.",
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   if (is.na(value)) {
@@ -777,7 +778,8 @@ print.ms_metadata_review <- function(x, ...) {
         "x" = .ms_cli_escape(text),
         "i" = "Replace the {.code <...>} text with the real value before running the call."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   if (!nzchar(text)) {
@@ -786,7 +788,8 @@ print.ms_metadata_review <- function(x, ...) {
         "{.arg {field}} must not be blank.",
         "i" = "Pass {.code NA} to clear a field on purpose."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   text
@@ -807,7 +810,8 @@ print.ms_metadata_review <- function(x, ...) {
     if (!key %in% names(frame)) {
       cli::cli_abort(
         "{.file {file_name}} has no {.field {key}} column to match on.",
-        call = call
+        call = call,
+        class = .ms_condition_classes("error", NULL)
       )
     }
     column <- as.character(frame[[key]])
@@ -835,7 +839,8 @@ print.ms_metadata_review <- function(x, ...) {
         "x" = paste0("Asked for: ", .ms_cli_escape(asked)),
         .ms_cli_bullets(utils::head(available, 20L), "i")
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   cli::cli_abort(
@@ -844,7 +849,8 @@ print.ms_metadata_review <- function(x, ...) {
       "x" = paste0("Asked for: ", .ms_cli_escape(asked)),
       "i" = "Add {.arg table} to say which."
     ),
-    call = call
+    call = call,
+    class = .ms_condition_classes("error", NULL)
   )
 }
 
@@ -937,7 +943,8 @@ print.ms_metadata_review <- function(x, ...) {
   if (!is.character(path) || length(path) != 1L || is.na(path) || !dir.exists(path)) {
     cli::cli_abort(
       "{.arg path} must be an existing Salmon Data Package directory.",
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -948,7 +955,8 @@ print.ms_metadata_review <- function(x, ...) {
         "Nothing to set.",
         "i" = "Name at least one field, for example {.code creator = \"...\"}."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -961,7 +969,8 @@ print.ms_metadata_review <- function(x, ...) {
         .ms_cli_bullets(unknown, "x"),
         "i" = paste0("Available: ", .ms_cli_escape(paste(declared, collapse = ", ")))
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   protected <- intersect(names(values), .ms_metadata_key_fields(file_name))
@@ -972,7 +981,8 @@ print.ms_metadata_review <- function(x, ...) {
         .ms_cli_bullets(protected, "x"),
         "i" = "Rebuild the package to change how a row is identified."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -988,7 +998,8 @@ print.ms_metadata_review <- function(x, ...) {
         "This package has no {.file {file_name}}.",
         "i" = "Rebuild it with {.fn create_sdp} or {.fn write_salmon_datapackage}."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   frame <- tibble::as_tibble(.ms_read_metadata_csv(located))
@@ -1233,7 +1244,7 @@ set_sdp_code <- function(path,
     cli::cli_abort(c(
       "Every extra argument must name the field it sets.",
       "i" = "For example {.code observation_unit = \"one stream-year\"}."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
   dots
 }

@@ -275,7 +275,7 @@ find_terms <- function(query,
             cli::cli_warn(c(
               "Vocabulary API lookup timed out for source {.val {src}} while searching {.val {q}}.",
               "i" = "{.text {err_msg}}"
-            ))
+            ), class = .ms_condition_classes("warning", "retrieval"))
           }
           list(
             result = .empty_terms(role),
@@ -405,7 +405,7 @@ find_terms <- function(query,
       "Vocabulary lookup was incomplete: {.val {failed_sources}} did not answer.",
       "i" = "Treat an empty or short result as unknown rather than as an ontology gap.",
       "i" = "See {.code attr(result, \"diagnostics\")} for per-source detail."
-    ))
+    ), class = .ms_condition_classes("warning", "retrieval"))
   }
 
   # A degraded lookup is never cached. Caching it would freeze an outage's empty
@@ -678,7 +678,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
           cli::cli_warn(c(
             "Vocabulary API request timed out while querying {.url {safe_url}}.",
             "i" = "HTTP {.val 408} (Request Timeout)"
-          ))
+          ), class = .ms_condition_classes("warning", "retrieval"))
         }
         .ms_signal_search_failure(safe_url, paste0("HTTP ", status))
         return(NULL)
@@ -692,7 +692,7 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
         cli::cli_warn(c(
           "Vocabulary API request timed out while querying {.url {safe_url}}.",
           "i" = "{.text {err_msg}}"
-        ))
+        ), class = .ms_condition_classes("warning", "retrieval"))
       }
       .ms_signal_search_failure(safe_url, err_msg)
       NULL
@@ -871,13 +871,16 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
   apikey <- Sys.getenv("BIOPORTAL_APIKEY", unset = "")
   if (apikey == "") {
     if (isFALSE(getOption("metasalmon.warned_bioportal_missing", FALSE))) {
-      warning(
-        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
-        "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
-        "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
-        "Get a key at https://bioportal.bioontology.org/register. ",
-        call. = FALSE
-      )
+      warning(warningCondition(
+        paste0(
+          "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
+          "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
+          "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
+          "Get a key at https://bioportal.bioontology.org/register. "
+        ),
+        call = NULL,
+        class = .ms_condition_classes("warning", "retrieval", "simpleWarning")
+      ))
       options(metasalmon.warned_bioportal_missing = TRUE)
     }
     return(.empty_terms(role))

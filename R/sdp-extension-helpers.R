@@ -9,7 +9,7 @@
 # the helpers moved here unchanged because the other consumers remain.
 
 .ms_sdp_extension_abort <- function(message, ..., .envir = parent.frame()) {
-  cli::cli_abort(message, ..., .envir = .envir)
+  cli::cli_abort(message, ..., .envir = .envir, class = .ms_condition_classes("error", "validation"))
 }
 
 .ms_sdp_extension_root <- function(path) {
@@ -226,14 +226,15 @@
           # only surviving copy of the original in exactly the case where the
           # restore already failed.
           backups[[index]] <<- NA_character_
-          warning(
+          warning(warningCondition(
             sprintf(
               "Could not restore SDP metadata backup for '%s'; the original bytes are preserved at '%s'.",
               path,
               backup
             ),
-            call. = FALSE
-          )
+            call = NULL,
+            class = .ms_condition_classes("warning", "validation", "simpleWarning")
+          ))
         }
       }
     }

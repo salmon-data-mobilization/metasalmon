@@ -182,7 +182,7 @@
 .ms_review_source_frames <- function(x) {
   if (is.character(x) && length(x) == 1L && !is.na(x)) {
     if (!dir.exists(x)) {
-      cli::cli_abort("Directory {.path {x}} does not exist.")
+      cli::cli_abort("Directory {.path {x}} does not exist.", class = .ms_condition_classes("error", NULL))
     }
     read_one <- function(file_name) {
       located <- .ms_locate_metadata_file(x, file_name)
@@ -301,7 +301,7 @@ review_semantics <- function(x,
     cli::cli_abort(c(
       "No semantic suggestions to review.",
       "i" = "Run {.fn suggest_semantics}, or {.fn create_sdp} with {.code seed_semantics = TRUE}, first."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
 
   required <- c(
@@ -311,7 +311,8 @@ review_semantics <- function(x,
   missing_cols <- setdiff(required, names(suggestions))
   if (length(missing_cols) > 0) {
     cli::cli_abort(
-      "Suggestions are missing required columns: {.field {missing_cols}}"
+      "Suggestions are missing required columns: {.field {missing_cols}}",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -397,7 +398,7 @@ review_semantics <- function(x,
         "No suggestions target {cli::qty(length(unknown))}{?this/these} column{?s}.",
         .ms_cli_bullets(unknown, "x"),
         .ms_cli_bullets(utils::head(sort(known[nzchar(known)], method = "radix"), 20L), "i")
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
     suggestions <- suggestions[as.character(suggestions$column_name) %in% columns, , drop = FALSE]
   }
@@ -923,7 +924,8 @@ print.ms_semantic_review <- function(x, ...) {
         "{.arg review} must be an {.cls ms_semantic_review} object.",
         "i" = "Build one with {.fn review_semantics}."
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   invisible(review)
@@ -962,7 +964,8 @@ print.ms_semantic_review <- function(x, ...) {
         "x" = paste0("Asked for: ", .ms_cli_escape(paste0(column_text %||% "<no column>", " \u00b7 ", role))),
         .ms_cli_bullets(utils::head(available, 20L), "i")
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -995,7 +998,8 @@ print.ms_semantic_review <- function(x, ...) {
         "i" = "Add one of these arguments to say which:",
         .ms_cli_bullets(ambiguous, "*")
       ),
-      call = call
+      call = call,
+      class = .ms_condition_classes("error", NULL)
     )
   }
   slots[[1]]
@@ -1080,7 +1084,7 @@ accept_suggestion <- function(review,
         "No candidate with that {.arg rank} in this slot.",
         "i" = "Ranks available: {.val {available}}.",
         "i" = "To accept a term that is not shortlisted, pass {.arg iri} instead."
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
     .ms_scalar_text(review$iri[[hit]])
   }
@@ -1105,7 +1109,7 @@ accept_suggestion <- function(review,
         "The candidate at that {.arg rank} names no term.",
         "i" = "Its IRI is empty, or still a {.code REVIEW:} marker once one is removed.",
         "i" = "Rebuild the review with {.fn review_semantics}, which does not queue such a candidate."
-      ))
+      ), class = .ms_condition_classes("error", NULL))
     }
     message <- "{.arg iri} must be a non-empty IRI."
     if (nzchar(accepted_iri)) {
@@ -1119,7 +1123,7 @@ accept_suggestion <- function(review,
         "i" = "An accepted IRI is recorded without its {.code REVIEW:} marker, and nothing follows the marker here."
       )
     }
-    cli::cli_abort(message)
+    cli::cli_abort(message, class = .ms_condition_classes("error", NULL))
   }
 
   review$decision[in_slot] <- NA_character_

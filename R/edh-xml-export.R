@@ -55,14 +55,15 @@ edh_build_hnap_xml <- function(dataset_meta,
                                date_stamp = Sys.Date()) {
 
   if (!inherits(dataset_meta, "data.frame") || nrow(dataset_meta) != 1) {
-    cli::cli_abort("{.arg dataset_meta} must be a single-row data frame/tibble")
+    cli::cli_abort("{.arg dataset_meta} must be a single-row data frame/tibble", class = .ms_condition_classes("error", "publication"))
   }
 
   required <- c("dataset_id", "title", "description")
   missing_required <- setdiff(required, names(dataset_meta))
   if (length(missing_required) > 0) {
     cli::cli_abort(
-      "{.arg dataset_meta} is missing required column{?s}: {.val {missing_required}}"
+      "{.arg dataset_meta} is missing required column{?s}: {.val {missing_required}}",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -135,7 +136,8 @@ edh_build_hnap_xml <- function(dataset_meta,
       return(unname(mapping[[idx]]))
     }
     cli::cli_warn(
-      "Unrecognized {.field {field}} value {.val {x}}; using {.val {fallback}}."
+      "Unrecognized {.field {field}} value {.val {x}}; using {.val {fallback}}.",
+      class = .ms_condition_classes("warning", "publication")
     )
     fallback
   }
@@ -1142,7 +1144,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
   cli::cli_warn(c(
     "{.fn edh_build_iso19139_xml} is deprecated.",
     "i" = "Use {.fn edh_build_hnap_xml} instead; metasalmon now emits the HNAP-aware EDH XML export."
-  ))
+  ), class = .ms_condition_classes("warning", "publication"))
 
   edh_build_hnap_xml(
     dataset_meta = dataset_meta,
@@ -1220,7 +1222,7 @@ edh_build_iso19139_xml <- function(dataset_meta,
     )
   }
 
-  cli::cli_abort(abort_lines)
+  cli::cli_abort(abort_lines, class = .ms_condition_classes("error", "publication"))
 }
 
 #' Rebuild HNAP-aware EDH XML from a reviewed Salmon Data Package
@@ -1270,7 +1272,7 @@ write_edh_xml_from_sdp <- function(path,
                                    date_stamp = Sys.Date()) {
   path <- normalizePath(path, winslash = "/", mustWork = FALSE)
   if (!dir.exists(path)) {
-    cli::cli_abort("Salmon Data Package directory does not exist: {.path {path}}")
+    cli::cli_abort("Salmon Data Package directory does not exist: {.path {path}}", class = .ms_condition_classes("error", "publication"))
   }
 
   dataset_path <- file.path(path, "metadata", "dataset.csv")
@@ -1279,7 +1281,8 @@ write_edh_xml_from_sdp <- function(path,
       c(
         "Can't rebuild EDH XML because {.file metadata/dataset.csv} is missing.",
         "i" = "Expected file: {.path {dataset_path}}"
-      )
+      ),
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1287,7 +1290,8 @@ write_edh_xml_from_sdp <- function(path,
   dataset_meta <- pkg$dataset
   if (nrow(dataset_meta) != 1L) {
     cli::cli_abort(
-      "Expected {.file metadata/dataset.csv} to contain exactly one row, found {.val {nrow(dataset_meta)}}."
+      "Expected {.file metadata/dataset.csv} to contain exactly one row, found {.val {nrow(dataset_meta)}}.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 
@@ -1300,7 +1304,8 @@ write_edh_xml_from_sdp <- function(path,
 
   if (file.exists(output_path) && !isTRUE(overwrite)) {
     cli::cli_abort(
-      "EDH XML already exists at {.path {output_path}}. Set {.code overwrite = TRUE} to replace it."
+      "EDH XML already exists at {.path {output_path}}. Set {.code overwrite = TRUE} to replace it.",
+      class = .ms_condition_classes("error", "publication")
     )
   }
 

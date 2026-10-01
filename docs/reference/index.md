@@ -7,6 +7,8 @@ One-shot package creation from raw tables
 - [`metasalmon-package`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.md)
   [`metasalmon`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon.md)
   : metasalmon: Utilities for Salmon Data Packages
+- [`metasalmon_conditions`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_conditions.md)
+  : Catch MetaSalmon errors and warnings selectively
 - [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   : Create a Salmon Data Package directly from raw tables
 - [`infer_salmon_datapackage_artifacts()`](https://salmon-data-mobilization.github.io/metasalmon/reference/infer_salmon_datapackage_artifacts.md)

@@ -48,7 +48,7 @@
     return(structure(list(), names = character()))
   }
   if (is.null(names(out)) || any(!nzchar(names(out)))) {
-    cli::cli_abort("Every member of a JSON object needs a name.")
+    cli::cli_abort("Every member of a JSON object needs a name.", class = .ms_condition_classes("error", "validation"))
   }
   out
 }
@@ -109,7 +109,7 @@
     cli::cli_abort(c(
       "A JSON scalar must have length one; got length {length(x)}.",
       "i" = "Wrap a vector with {.fn .ms_json_array} to render it as an array."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   if (is.na(x) && !is.nan(x)) {
     return("null")
@@ -123,7 +123,7 @@
   if (is.character(x) || is.factor(x)) {
     return(.ms_json_escape_string(as.character(x)))
   }
-  cli::cli_abort("Cannot render a value of class {.cls {class(x)}} as JSON.")
+  cli::cli_abort("Cannot render a value of class {.cls {class(x)}} as JSON.", class = .ms_condition_classes("error", "validation"))
 }
 
 .ms_json_render <- function(x, indent = 0L) {
@@ -139,7 +139,7 @@
     if (.ms_json_is_object(x)) {
       keys <- names(x)
       if (any(is.na(keys) | !nzchar(keys))) {
-        cli::cli_abort("Every member of a JSON object needs a name.")
+        cli::cli_abort("Every member of a JSON object needs a name.", class = .ms_condition_classes("error", "validation"))
       }
       members <- vapply(seq_along(x), function(i) {
         paste0(inner, .ms_json_escape_string(keys[[i]]), ": ", .ms_json_render(x[[i]], indent + 1L))

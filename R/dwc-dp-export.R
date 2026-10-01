@@ -21,7 +21,7 @@ dwc_dp_build_descriptor <- function(resources,
                                     validate = FALSE,
                                     python = "python3") {
   if (!all(c("name", "path", "schema") %in% names(resources))) {
-    cli::cli_abort("resources must include columns: name, path, schema")
+    cli::cli_abort("resources must include columns: name, path, schema", class = .ms_condition_classes("error", "publication"))
   }
 
   res_list <- purrr::pmap(resources[, c("name", "path", "schema")], function(name, path, schema) {
@@ -53,7 +53,7 @@ dwc_dp_build_descriptor <- function(resources,
 .dwc_dp_validate_with_frictionless <- function(descriptor, python = "python3") {
   py <- Sys.which(python)
   if (py == "") {
-    cli::cli_warn("Python not found; skip frictionless validation.")
+    cli::cli_warn("Python not found; skip frictionless validation.", class = .ms_condition_classes("warning", "publication"))
     return(invisible(NULL))
   }
 

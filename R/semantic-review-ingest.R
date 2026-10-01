@@ -28,7 +28,7 @@
   # live; the default `.envir` would be this wrapper's frame.
   cli::cli_abort(
     message,
-    class = c(paste0("metasalmon_semantic_review_", code), "metasalmon_semantic_review_error"),
+    class = .ms_condition_classes("error", "validation", c(paste0("metasalmon_semantic_review_", code), "metasalmon_semantic_review_error")),
     code = code,
     ...,
     .envir = .envir
@@ -135,20 +135,20 @@
       cli::cli_abort(c(
         "No semantic review packet in {.path {review_dir}}.",
         "i" = "Write one with {.fn write_semantic_review_packet} first."
-      ))
+      ), class = .ms_condition_classes("error", "validation"))
     }
     return(list(packet = .ms_semantic_review_read_json(path), path = path))
   }
   if (is.character(packet) && length(packet) == 1L) {
     if (!file.exists(packet)) {
-      cli::cli_abort("Packet file {.path {packet}} does not exist.")
+      cli::cli_abort("Packet file {.path {packet}} does not exist.", class = .ms_condition_classes("error", "validation"))
     }
     return(list(packet = .ms_semantic_review_read_json(packet), path = packet))
   }
   if (is.list(packet)) {
     return(list(packet = packet, path = NA_character_))
   }
-  cli::cli_abort("{.arg packet} must be a packet file path or a parsed packet.")
+  cli::cli_abort("{.arg packet} must be a packet file path or a parsed packet.", class = .ms_condition_classes("error", "validation"))
 }
 
 .ms_semantic_review_check_packet <- function(packet, expected_id = NULL) {
@@ -363,7 +363,7 @@
       cli::cli_abort(c(
         "No assessment file at {.path {default_path}}.",
         "i" = "The harness writes it there; pass {.arg assessments} to read another path or a data frame."
-      ))
+      ), class = .ms_condition_classes("error", "validation"))
     }
     assessments <- default_path
   }
@@ -379,10 +379,10 @@
     return(list(rows = rows, path = NA_character_))
   }
   if (!is.character(assessments) || length(assessments) != 1L || is.na(assessments)) {
-    cli::cli_abort("{.arg assessments} must be a CSV path or a data frame.")
+    cli::cli_abort("{.arg assessments} must be a CSV path or a data frame.", class = .ms_condition_classes("error", "validation"))
   }
   if (!file.exists(assessments)) {
-    cli::cli_abort("Assessment file {.path {assessments}} does not exist.")
+    cli::cli_abort("Assessment file {.path {assessments}} does not exist.", class = .ms_condition_classes("error", "validation"))
   }
   rows <- tibble::as_tibble(.ms_read_metadata_csv(assessments))
   list(rows = rows, path = assessments)
@@ -1008,7 +1008,7 @@ ingest_semantic_assessments <- function(x,
     cli::cli_warn(c(
       "The assessment file wrote package-owned columns, which the package overwrites:",
       .ms_cli_bullets(written, "*")
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   # Row validation, one row per packet slot; a slot with no row is an error row
@@ -1265,7 +1265,7 @@ ingest_semantic_assessments <- function(x,
       "Secrets were redacted from the harness's assessments before they reached the record:",
       .ms_cli_bullets(redacted$changed, "*"),
       if (same_file) c("i" = "The harness file in {.path {review_dir}} was replaced with its redacted form.")
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   attr(record, "semantic_validator_findings") <- findings

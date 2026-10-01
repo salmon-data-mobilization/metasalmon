@@ -32,6 +32,13 @@ metasalmon (development version)
 
 ### Added
 
+* **Package-authored cli/rlang errors and warnings have a documented class
+  hierarchy** (B-58): catch `metasalmon_error` or `metasalmon_warning`, or the
+  validation, LLM, publication and retrieval subsystem classes. Existing
+  messages, specialized classes and code fields are preserved. Dependency
+  conditions and rethrows keep their own identity. See `?metasalmon_conditions`.
+  This development change does not make a version/tag/release decision.
+
 * **Model judgement runs outside the package: `write_semantic_review_packet()`
   writes a review packet for a harness to judge and
   `ingest_semantic_assessments()` reads its assessments back** (hub item

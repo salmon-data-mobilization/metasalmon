@@ -160,7 +160,8 @@
         c(
           "Unable to load remote SDP Frictionless schema bundle.",
           "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
-        )
+        ),
+        class = .ms_condition_classes("error", "validation")
       )
     }
     if (!quiet && !isTRUE(.ms_schema_env$warned_remote_fallback)) {
@@ -168,7 +169,8 @@
         c(
           "Unable to load remote SDP Frictionless schema bundle; using vendored schemas bundled with metasalmon.",
           "x" = .ms_cli_escape(.ms_redact_secrets(conditionMessage(remote_result)))
-        )
+        ),
+        class = .ms_condition_classes("warning", "validation")
       )
       .ms_schema_env$warned_remote_fallback <- TRUE
     }
@@ -257,19 +259,19 @@
   metadata_schemas <- purrr::map(.ms_sdp_metadata_schema_paths(), function(path) {
     full_path <- system.file("extdata", path, package = "metasalmon")
     if (!nzchar(full_path) || !file.exists(full_path)) {
-      cli::cli_abort("Vendored SDP metadata schema is missing: {.path inst/extdata/{path}}.")
+      cli::cli_abort("Vendored SDP metadata schema is missing: {.path inst/extdata/{path}}.", class = .ms_condition_classes("error", "validation"))
     }
     jsonlite::read_json(full_path, simplifyVector = FALSE)
   })
 
   profile_path <- system.file("extdata", .ms_sdp_profile_path(), package = "metasalmon")
   if (!nzchar(profile_path) || !file.exists(profile_path)) {
-    cli::cli_abort("Vendored SDP profile is missing: {.path inst/extdata/{.ms_sdp_profile_path()}}.")
+    cli::cli_abort("Vendored SDP profile is missing: {.path inst/extdata/{.ms_sdp_profile_path()}}.", class = .ms_condition_classes("error", "validation"))
   }
 
   rules_path <- system.file("extdata", .ms_sdp_rules_path(), package = "metasalmon")
   if (!nzchar(rules_path) || !file.exists(rules_path)) {
-    cli::cli_abort("Vendored SDP rules are missing: {.path inst/extdata/{.ms_sdp_rules_path()}}.")
+    cli::cli_abort("Vendored SDP rules are missing: {.path inst/extdata/{.ms_sdp_rules_path()}}.", class = .ms_condition_classes("error", "validation"))
   }
 
   .ms_validate_sdp_schema(list(
@@ -282,30 +284,30 @@
 
 .ms_validate_sdp_schema <- function(schema) {
   if (!is.list(schema) || is.null(schema$metadata_schemas)) {
-    cli::cli_abort("Invalid SDP schema: expected Frictionless metadata_schemas.")
+    cli::cli_abort("Invalid SDP schema: expected Frictionless metadata_schemas.", class = .ms_condition_classes("error", "validation"))
   }
 
   required_tables <- names(.ms_sdp_metadata_schema_paths())
   missing_tables <- setdiff(required_tables, names(schema$metadata_schemas))
   if (length(missing_tables) > 0) {
-    cli::cli_abort("Invalid SDP schema: missing table(s) {.val {missing_tables}}.")
+    cli::cli_abort("Invalid SDP schema: missing table(s) {.val {missing_tables}}.", class = .ms_condition_classes("error", "validation"))
   }
 
   for (table_name in required_tables) {
     table_schema <- schema$metadata_schemas[[table_name]]
     if (!identical(table_schema[["sdp:table"]], table_name)) {
-      cli::cli_abort("Invalid SDP schema: {.val {table_name}} has mismatched sdp:table.")
+      cli::cli_abort("Invalid SDP schema: {.val {table_name}} has mismatched sdp:table.", class = .ms_condition_classes("error", "validation"))
     }
     fields <- table_schema$fields
     if (!is.list(fields) || length(fields) == 0) {
-      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has no fields.")
+      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has no fields.", class = .ms_condition_classes("error", "validation"))
     }
     field_names <- purrr::map_chr(fields, ~ .x$name %||% NA_character_)
     if (any(is.na(field_names) | field_names == "")) {
-      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has unnamed fields.")
+      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has unnamed fields.", class = .ms_condition_classes("error", "validation"))
     }
     if (anyDuplicated(field_names)) {
-      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has duplicate fields.")
+      cli::cli_abort("Invalid SDP schema: table {.val {table_name}} has duplicate fields.", class = .ms_condition_classes("error", "validation"))
     }
   }
 
@@ -315,19 +317,20 @@
   # identifier change unfollowable rather than merely noticeable.
   profile_uri <- .ms_sdp_schema_uri(if (is.null(schema$profile)) NULL else schema$profile[["$id"]])
   if (is.na(profile_uri)) {
-    cli::cli_abort("Invalid SDP schema: profile $id is missing or is not a single absolute URI.")
+    cli::cli_abort("Invalid SDP schema: profile $id is missing or is not a single absolute URI.", class = .ms_condition_classes("error", "validation"))
   }
   # Compare the normalised forms: two identifiers padded differently denote the
   # same URI, and one padded consistently across all three would otherwise pass
   # every check here and be emitted with its spaces intact.
   if (!identical(.ms_sdp_schema_identifier(schema$profile$properties$profile$const), profile_uri)) {
     cli::cli_abort(
-      "Invalid SDP schema: profile properties.profile.const does not match profile $id."
+      "Invalid SDP schema: profile properties.profile.const does not match profile $id.",
+      class = .ms_condition_classes("error", "validation")
     )
   }
   if (is.null(schema$rules) ||
       !identical(.ms_sdp_schema_identifier(schema$rules$profile), profile_uri)) {
-    cli::cli_abort("Invalid SDP schema: rules profile does not match profile $id.")
+    cli::cli_abort("Invalid SDP schema: rules profile does not match profile $id.", class = .ms_condition_classes("error", "validation"))
   }
   # Each version must exist before comparing them: `identical(NULL, NULL)` is
   # TRUE, so two absent versions would agree and the bundle would be accepted
@@ -337,11 +340,12 @@
   profile_version <- .ms_sdp_schema_identifier(schema$profile[["sdp:version"]])
   if (is.na(schema_version) || is.na(profile_version)) {
     cli::cli_abort(
-      "Invalid SDP schema: profile sdp:version and rules version must each be a single non-empty string."
+      "Invalid SDP schema: profile sdp:version and rules version must each be a single non-empty string.",
+      class = .ms_condition_classes("error", "validation")
     )
   }
   if (!identical(profile_version, schema_version)) {
-    cli::cli_abort("Invalid SDP schema: profile sdp:version does not match rules version.")
+    cli::cli_abort("Invalid SDP schema: profile sdp:version does not match rules version.", class = .ms_condition_classes("error", "validation"))
   }
 
   schema$metadata_tables <- .ms_schema_tables_from_frictionless(schema$metadata_schemas)
@@ -355,12 +359,14 @@
     resource_name <- .ms_sdp_schema_identifier(resource$name)
     if (is.na(resource_name)) {
       cli::cli_abort(
-        "Invalid SDP schema: every profile sdp:metadataResources entry needs a name."
+        "Invalid SDP schema: every profile sdp:metadataResources entry needs a name.",
+        class = .ms_condition_classes("error", "validation")
       )
     }
     if (is.na(.ms_sdp_schema_uri(resource$schema))) {
       cli::cli_abort(
-        "Invalid SDP schema: metadata resource {.val {resource_name}} declares no usable schema URI."
+        "Invalid SDP schema: metadata resource {.val {resource_name}} declares no usable schema URI.",
+        class = .ms_condition_classes("error", "validation")
       )
     }
   }
@@ -376,7 +382,8 @@
   rules_uri <- .ms_sdp_schema_uri(raw_rules_uri)
   if (!is.null(raw_rules_uri) && is.na(rules_uri)) {
     cli::cli_abort(
-      "Invalid SDP schema: profile sdp:rules must be a single absolute URI when present."
+      "Invalid SDP schema: profile sdp:rules must be a single absolute URI when present.",
+      class = .ms_condition_classes("error", "validation")
     )
   }
   schema$rules_uri <- if (is.na(rules_uri)) .ms_sdp_public_rules_url() else rules_uri
@@ -498,7 +505,7 @@
   schema <- .ms_load_sdp_schema(quiet = TRUE)
   table <- schema$metadata_tables[[table_name]]
   if (is.null(table)) {
-    cli::cli_abort("Unknown SDP metadata table {.val {table_name}}.")
+    cli::cli_abort("Unknown SDP metadata table {.val {table_name}}.", class = .ms_condition_classes("error", "validation"))
   }
   purrr::map_chr(table$fields, "name")
 }

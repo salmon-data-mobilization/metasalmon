@@ -86,24 +86,24 @@ write_salmon_datapackage <- function(
     prune = FALSE
 ) {
   if (!identical(format, "csv")) {
-    cli::cli_abort("Only CSV format is supported. Use {.code format = 'csv'}")
+    cli::cli_abort("Only CSV format is supported. Use {.code format = 'csv'}", class = .ms_condition_classes("error", NULL))
   }
 
   # Validate inputs
   if (!inherits(dataset_meta, "data.frame") || nrow(dataset_meta) != 1) {
-    cli::cli_abort("{.arg dataset_meta} must be a single-row tibble")
+    cli::cli_abort("{.arg dataset_meta} must be a single-row tibble", class = .ms_condition_classes("error", NULL))
   }
 
   if (!inherits(table_meta, "data.frame") || nrow(table_meta) == 0) {
-    cli::cli_abort("{.arg table_meta} must be a non-empty tibble")
+    cli::cli_abort("{.arg table_meta} must be a non-empty tibble", class = .ms_condition_classes("error", NULL))
   }
 
   if (!is.list(resources) || length(resources) == 0) {
-    cli::cli_abort("{.arg resources} must be a named list of data frames")
+    cli::cli_abort("{.arg resources} must be a named list of data frames", class = .ms_condition_classes("error", NULL))
   }
 
   if (is.null(names(resources)) || any(!nzchar(names(resources)))) {
-    cli::cli_abort("{.arg resources} must be a named list")
+    cli::cli_abort("{.arg resources} must be a named list", class = .ms_condition_classes("error", NULL))
   }
 
   # Validate dictionary (also normalizes optional columns)
@@ -127,7 +127,8 @@ write_salmon_datapackage <- function(
   skipped_resources <- setdiff(names(resources), writable_resources)
   for (resource_name in skipped_resources) {
     cli::cli_warn(
-      "No table metadata found for resource {.val {resource_name}}, skipping"
+      "No table metadata found for resource {.val {resource_name}}, skipping",
+      class = .ms_condition_classes("warning", NULL)
     )
   }
 
@@ -244,7 +245,7 @@ write_salmon_datapackage <- function(
       cli::cli_warn(c(
         "{.file dataset.csv} declares {.val {declared_spec_version}} but the loaded SDP schema is {.val {sdp_schema$version}}.",
         "i" = "The package will carry both values. Clear {.field spec_version} to adopt the loaded schema version."
-      ))
+      ), class = .ms_condition_classes("warning", NULL))
     }
   }
 
@@ -476,14 +477,14 @@ write_salmon_datapackage <- function(
       "Refusing to update {.path {path}}: the package root ends in {.code ..}.",
       "i" = "Which directory that names depends on whether an earlier component is a symbolic link.",
       "i" = "Write to the directory itself instead."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
   root_link <- Sys.readlink(root)
   if (length(root_link) == 1L && !is.na(root_link) && nzchar(root_link)) {
     cli::cli_abort(c(
       "Refusing to update {.path {path}}: the package root is a symbolic link.",
       "i" = "Write to the directory the link points at, or replace the link with a real directory."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
 
   # Both sides are compared with separators normalised: `path` may be spelled
@@ -512,7 +513,7 @@ write_salmon_datapackage <- function(
         cli::cli_abort(c(
           "Refusing to update {.path {path}}: {.file {relative}} contains a symbolic-link path component.",
           "i" = "Replace the link with a real directory or file, or write to a new directory."
-        ))
+        ), class = .ms_condition_classes("error", NULL))
       }
       if (!file.exists(current)) {
         break
@@ -620,7 +621,7 @@ write_salmon_datapackage <- function(
                                         overwrite = FALSE,
                                         prune = FALSE) {
   if (isTRUE(prune) && !isTRUE(overwrite)) {
-    cli::cli_abort("{.arg prune} requires {.arg overwrite = TRUE}.")
+    cli::cli_abort("{.arg prune} requires {.arg overwrite = TRUE}.", class = .ms_condition_classes("error", NULL))
   }
 
   if (!dir.exists(path)) {
@@ -635,7 +636,8 @@ write_salmon_datapackage <- function(
 
   if (!isTRUE(overwrite)) {
     cli::cli_abort(
-      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
+      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -643,7 +645,7 @@ write_salmon_datapackage <- function(
     cli::cli_abort(c(
       "Refusing to overwrite non-metasalmon directory {.path {path}}.",
       "i" = "Use a new/empty directory, or manually clean this directory first."
-    ))
+    ), class = .ms_condition_classes("error", NULL))
   }
 
   invisible(path)
@@ -712,7 +714,7 @@ write_salmon_datapackage <- function(
       "{.code prune = TRUE} is about to delete {.file review/}, which holds an ingested semantic review record."
     },
     "i" = "Copy it first if you want to keep the record of what was accepted and why."
-  ))
+  ), class = .ms_condition_classes("warning", NULL))
   invisible(NULL)
 }
 
@@ -906,18 +908,18 @@ infer_salmon_datapackage_artifacts <- function(
   }
 
   if (!is.list(resources) || is.null(names(resources)) || any(!nzchar(names(resources)))) {
-    cli::cli_abort("{.arg resources} must be a data frame or a named list of data frames")
+    cli::cli_abort("{.arg resources} must be a data frame or a named list of data frames", class = .ms_condition_classes("error", NULL))
   }
   if (anyDuplicated(names(resources)) > 0) {
-    cli::cli_abort("{.arg resources} names must be unique")
+    cli::cli_abort("{.arg resources} names must be unique", class = .ms_condition_classes("error", NULL))
   }
   if (length(resources) == 0) {
-    cli::cli_abort("{.arg resources} cannot be empty")
+    cli::cli_abort("{.arg resources} cannot be empty", class = .ms_condition_classes("error", NULL))
   }
 
   bad_rows <- which(vapply(resources, function(x) !inherits(x, "data.frame"), logical(1L)))
   if (length(bad_rows) > 0) {
-    cli::cli_abort("All entries in {.arg resources} must be data frames. Invalid entries at: {.val {bad_rows}}")
+    cli::cli_abort("All entries in {.arg resources} must be data frames. Invalid entries at: {.val {bad_rows}}", class = .ms_condition_classes("error", NULL))
   }
 
   dict <- .ms_infer_resource_dictionary(
@@ -1188,7 +1190,8 @@ create_sdp <- function(
 
   if (length(legacy_profile_names) > 1L) {
     cli::cli_abort(
-      "Use only one legacy EDH profile argument; choose {.code edh_profile}, {.code EDH_Profile}, or {.code EDH_profile}."
+      "Use only one legacy EDH profile argument; choose {.code edh_profile}, {.code EDH_Profile}, or {.code EDH_profile}.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -1199,12 +1202,14 @@ create_sdp <- function(
 
     if (length(legacy_value) != 1L || is.na(legacy_value_chr) || !nzchar(legacy_value_chr)) {
       cli::cli_abort(
-        "Legacy argument {.code {legacy_name}} must be a single non-empty string."
+        "Legacy argument {.code {legacy_name}} must be a single non-empty string.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
     if (!identical(legacy_value_chr, "dfo_edh_hnap")) {
       cli::cli_abort(
-        "Only {.code \"dfo_edh_hnap\"} is supported for legacy argument {.code {legacy_name}}."
+        "Only {.code \"dfo_edh_hnap\"} is supported for legacy argument {.code {legacy_name}}.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
 
@@ -1212,7 +1217,7 @@ create_sdp <- function(
     cli::cli_warn(c(
       "Argument {.code {legacy_name}} is deprecated.",
       "i" = "Use {.code include_edh_xml = TRUE}; the DFO EDH HNAP XML is now the only supported export."
-    ))
+    ), class = .ms_condition_classes("warning", NULL))
   }
 
   if (length(legacy_path_names) > 0L) {
@@ -1220,7 +1225,7 @@ create_sdp <- function(
     cli::cli_warn(c(
       "Argument {.code edh_xml_path} is deprecated and ignored.",
       "i" = "EDH XML now always writes to {.file metadata/metadata-edh-hnap.xml}."
-    ))
+    ), class = .ms_condition_classes("warning", NULL))
   }
 
   unused_named <- setdiff(
@@ -1231,7 +1236,8 @@ create_sdp <- function(
   if (length(unused_named) > 0L || unnamed_count > 0L) {
     pieces <- c(unused_named, rep("<unnamed>", unnamed_count))
     cli::cli_abort(
-      "Unused argument{?s}: {.code {pieces}}"
+      "Unused argument{?s}: {.code {pieces}}",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -1264,7 +1270,8 @@ create_sdp <- function(
   # at write time; that difference is parity-deviations row 60.
   if (!isTRUE(overwrite) && dir.exists(path) && length(.ms_dir_entries(path)) > 0L) {
     cli::cli_abort(
-      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace."
+      "Directory {.path {path}} already exists. Set {.code overwrite = TRUE} to replace.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
 
@@ -1461,7 +1468,7 @@ create_sdp <- function(
         "Wrote a DRAFT EDH metadata XML at {.path {edh_xml_path}}.",
         "i" = "It was built from review-ready metadata that still contains {.val REVIEW:} IRIs or {.val MISSING} placeholders.",
         "i" = "Finalize the metadata CSVs, then rebuild a clean XML with {.code write_edh_xml_from_sdp()}."
-      ))
+      ), class = .ms_condition_classes("warning", NULL))
     } else {
       cli::cli_alert_success("Wrote EDH metadata XML at {.path {edh_xml_path}}")
     }
@@ -1516,7 +1523,7 @@ create_sdp <- function(
 #' }
 read_salmon_datapackage <- function(path) {
   if (!dir.exists(path)) {
-    cli::cli_abort("Directory {.path {path}} does not exist")
+    cli::cli_abort("Directory {.path {path}} does not exist", class = .ms_condition_classes("error", NULL))
   }
 
   dataset_path <- .ms_locate_metadata_file(path, "dataset.csv")
@@ -1538,7 +1545,8 @@ read_salmon_datapackage <- function(path) {
   } else {
     if (!file.exists(json_path)) {
       cli::cli_abort(
-        "No Salmon Data Package metadata found in {.path {path}} (expected canonical CSV metadata or {.file datapackage.json})."
+        "No Salmon Data Package metadata found in {.path {path}} (expected canonical CSV metadata or {.file datapackage.json}).",
+        class = .ms_condition_classes("error", NULL)
       )
     }
 
@@ -1649,7 +1657,7 @@ read_salmon_datapackage <- function(path) {
 
       file_path <- file.path(path, file_name)
       if (!file.exists(file_path)) {
-        cli::cli_warn("Resource file {.path {file_path}} not found, skipping")
+        cli::cli_warn("Resource file {.path {file_path}} not found, skipping", class = .ms_condition_classes("warning", NULL))
         next
       }
 
@@ -2082,7 +2090,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         )
       )
     }
-    cli::cli_abort(abort_lines)
+    cli::cli_abort(abort_lines, class = .ms_condition_classes("error", NULL))
   }
 
   if (nrow(semantic_validation$issues) > 0) {
@@ -2105,7 +2113,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         )
       )
     }
-    cli::cli_warn(paste(warn_lines, collapse = "\n"))
+    cli::cli_warn(paste(warn_lines, collapse = "\n"), class = .ms_condition_classes("warning", NULL))
   }
 
   cli::cli_alert_success("Salmon Data Package validation passed")
@@ -2315,13 +2323,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
       located <- .ms_locate_metadata_file(dict_path, "column_dictionary.csv")
       if (is.na(located)) {
         cli::cli_abort(
-          "Directory {.path {dict_path}} does not contain {.file column_dictionary.csv}."
+          "Directory {.path {dict_path}} does not contain {.file column_dictionary.csv}.",
+          class = .ms_condition_classes("error", NULL)
         )
       }
       dict_path <- located
     } else if (!file.exists(dict_path)) {
       cli::cli_abort(
-        "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}."
+        "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
 
@@ -2336,7 +2346,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   }
 
   cli::cli_abort(
-    "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}."
+    "{.arg dict} must be a data frame, package directory, or path to {.file column_dictionary.csv}.",
+    class = .ms_condition_classes("error", NULL)
   )
 }
 
@@ -2360,7 +2371,8 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     }
     if (!all(values == dataset_id)) {
       cli::cli_abort(
-        "{.arg {source_name}} contains dataset_id values that do not match {.field dataset_meta$dataset_id}."
+        "{.arg {source_name}} contains dataset_id values that do not match {.field dataset_meta$dataset_id}.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
     invisible(NULL)
@@ -2425,7 +2437,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         "{length(placeholder_fields)} metadata field{?s} still hold{?s/} a placeholder.",
         "x" = paste(utils::head(.ms_cli_escape(placeholder_fields), 6L), collapse = ", "),
         "i" = "Replace them before publication; {.code require_iris = TRUE} reports these as errors."
-      ))
+      ), class = .ms_condition_classes("warning", NULL))
     }
   }
   # #49: schema-required metadata fields. A blank *key* field is structural in
@@ -2455,7 +2467,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         "{nrow(blank_required)} schema-required metadata field{?s} {?is/are} blank.",
         "x" = paste(utils::head(.ms_cli_escape(field_refs), 6L), collapse = ", "),
         "i" = "Fill {cli::qty(nrow(blank_required))}{?it/them} before publication; {.code require_iris = TRUE} reports {?it/these} as {?an error/errors}."
-      ))
+      ), class = .ms_condition_classes("warning", NULL))
     }
   }
   if (nrow(pkg$dictionary) == 0) {
@@ -2594,7 +2606,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
         "x" = paste(utils::head(.ms_cli_escape(wide_cols), 6L), collapse = ", "),
         "i" = "Tidy data puts each variable in a column and each observation in a row.",
         "i" = "Consider {.code tidyr::pivot_longer()} before packaging."
-      ))
+      ), class = .ms_condition_classes("warning", NULL))
     }
 
     # Values that do not satisfy their declared `value_type`. The reader keeps
@@ -2850,7 +2862,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     )
   }
 
-  cli::cli_abort(cli_lines)
+  cli::cli_abort(cli_lines, class = .ms_condition_classes("error", NULL))
 }
 
 # The one missing-value token, used by every canonical read and write.
@@ -3057,7 +3069,7 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(list(path = license_text))
   }
 
-  cli::cli_abort("Unknown SDP publication license: {.val {license}}.")
+  cli::cli_abort("Unknown SDP publication license: {.val {license}}.", class = .ms_condition_classes("error", NULL))
 }
 
 .ms_descriptor_provenance <- function(datapackage) {
@@ -3810,13 +3822,13 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   normalized <- sub("^\\./", "", normalized)
 
   if (!nzchar(normalized)) {
-    cli::cli_abort("{.field file_name} cannot be blank after normalization.")
+    cli::cli_abort("{.field file_name} cannot be blank after normalization.", class = .ms_condition_classes("error", NULL))
   }
   if (grepl("^([A-Za-z]:)?/", normalized)) {
-    cli::cli_abort("{.field file_name} must be a relative path inside the package, not an absolute path.")
+    cli::cli_abort("{.field file_name} must be a relative path inside the package, not an absolute path.", class = .ms_condition_classes("error", NULL))
   }
   if (grepl("(^|/)\\.\\.(/|$)", normalized)) {
-    cli::cli_abort("{.field file_name} must not contain '..' path segments.")
+    cli::cli_abort("{.field file_name} must not contain '..' path segments.", class = .ms_condition_classes("error", NULL))
   }
 
   normalized

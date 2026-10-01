@@ -215,14 +215,14 @@
     cli::cli_abort(c(
       "{.arg evidence} must be a data frame of hand-supplied closure rows.",
       "i" = "Got {.cls {class(evidence)}}; supply one row per IRI with an {.field iri} column."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   evidence <- tibble::as_tibble(evidence)
   if (nrow(evidence) == 0L) {
     return(NULL)
   }
   if (!"iri" %in% names(evidence)) {
-    cli::cli_abort("{.arg evidence} must have an {.field iri} column.")
+    cli::cli_abort("{.arg evidence} must have an {.field iri} column.", class = .ms_condition_classes("error", "validation"))
   }
   known <- c("iri", "target_sdp_field", .ms_closure_evidence_fields())
   unknown <- setdiff(names(evidence), known)
@@ -230,11 +230,11 @@
     cli::cli_abort(c(
       "{.arg evidence} has column{?s} this closure cannot use: {.field {unknown}}.",
       "i" = "Supported column{?s}: {.field {known}}."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   evidence[] <- lapply(evidence, .ms_closure_column)
   if (any(!nzchar(evidence$iri))) {
-    cli::cli_abort("Every {.arg evidence} row must name a non-empty {.field iri}.")
+    cli::cli_abort("Every {.arg evidence} row must name a non-empty {.field iri}.", class = .ms_condition_classes("error", "validation"))
   }
   if (!"target_sdp_field" %in% names(evidence)) {
     evidence$target_sdp_field <- rep("", nrow(evidence))
@@ -244,7 +244,7 @@
     cli::cli_abort(c(
       "{.arg evidence} must carry at most one row per IRI and target field.",
       .ms_cli_bullets(unique(evidence$iri[duplicated(keys)]))
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   evidence
 }
@@ -745,7 +745,7 @@
     cli::cli_abort(c(
       "The reviewed EML sidecar declares an absolute closure path.",
       .ms_cli_bullets(relative)
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
   tryCatch(
     {
@@ -762,7 +762,8 @@
           "A closure output path is one this package refuses to write.",
           .ms_cli_bullets(relative)
         ),
-        parent = cnd
+        parent = cnd,
+        class = .ms_condition_classes("error", "validation")
       )
     }
   )
@@ -985,18 +986,18 @@ write_sdp_semantic_closure <- function(path,
                                        sources = c("smn", "gcdfo"),
                                        quiet = FALSE) {
   if (!is.character(path) || length(path) != 1L || is.na(path)) {
-    cli::cli_abort("{.arg path} must be a single package directory path.")
+    cli::cli_abort("{.arg path} must be a single package directory path.", class = .ms_condition_classes("error", "validation"))
   }
   if (!dir.exists(path)) {
-    cli::cli_abort("Directory {.path {path}} does not exist.")
+    cli::cli_abort("Directory {.path {path}} does not exist.", class = .ms_condition_classes("error", "validation"))
   }
   if (!is.function(search_fn)) {
-    cli::cli_abort("{.arg search_fn} must be a function.")
+    cli::cli_abort("{.arg search_fn} must be a function.", class = .ms_condition_classes("error", "validation"))
   }
   sources <- unique(trimws(as.character(sources)))
   sources <- sources[!is.na(sources) & nzchar(sources)]
   if (length(sources) == 0L) {
-    cli::cli_abort("{.arg sources} must name at least one vocabulary source.")
+    cli::cli_abort("{.arg sources} must name at least one vocabulary source.", class = .ms_condition_classes("error", "validation"))
   }
   evidence <- .ms_closure_normalize_evidence(evidence)
 
@@ -1188,7 +1189,7 @@ write_sdp_semantic_closure <- function(path,
       )),
       "i" = "A degraded search is unknown, not an ontology gap: none of these is a term request.",
       "i" = "Re-run when the sources answer, or supply the evidence through {.arg evidence}."
-    ))
+    ), class = .ms_condition_classes("error", "validation"))
   }
 
   vocabulary <- if (length(vocabulary_rows) > 0L) {
@@ -1343,7 +1344,7 @@ write_sdp_semantic_closure <- function(path,
       # is exactly what happened, and was found only because this otherwise
       # unreachable path got a test.
       "i" = "Rewrite each as a block mapping with {.field path} and {.field sha256} on their own lines, then re-run."
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   gaps <- if (length(gap_rows) > 0L) {
@@ -1366,7 +1367,7 @@ write_sdp_semantic_closure <- function(path,
       "!" = "{nrow(gaps)} canonical measurement IRI{?s} could not be resolved from {.val {sources}} and {?is/are} absent from the reviewed vocabulary.",
       .ms_cli_bullets(paste0(gaps$target_sdp_field, " = ", gaps$unresolved_iri)),
       "i" = "Each is a row of the returned {.field gaps} table; pass it to {.fn render_ontology_term_request} to file a term request, or supply a row through {.arg evidence}."
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   incomplete <- if (length(incomplete_rows) > 0L) {
@@ -1391,7 +1392,7 @@ write_sdp_semantic_closure <- function(path,
       # this is a field to supply or annotate.
       "i" = "This is not an ontology gap: the term was found. Each is a row of the returned {.field incomplete} table.",
       "i" = "Supply the named field through {.arg evidence}, or annotate the term in its ontology, then re-run."
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   placeholder_rows <- review[placeholders, , drop = FALSE]
@@ -1409,7 +1410,7 @@ write_sdp_semantic_closure <- function(path,
         placeholder_rows$target_sdp_field
       )),
       "i" = "Supply {.field review_rationale} through {.arg evidence}, or record decision reasons with {.fn accept_suggestion}, before publication."
-    ))
+    ), class = .ms_condition_classes("warning", "validation"))
   }
 
   if (!quiet) {

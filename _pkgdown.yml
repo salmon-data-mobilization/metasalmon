@@ -38,6 +38,7 @@ reference:
     desc: "One-shot package creation from raw tables"
     contents:
       - metasalmon
+      - metasalmon_conditions
       - create_sdp
       - infer_salmon_datapackage_artifacts
       - read_salmon_datapackage

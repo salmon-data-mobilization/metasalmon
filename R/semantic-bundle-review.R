@@ -342,21 +342,24 @@
   }
   if (identical(decision, "accept") && is.na(selected_id)) {
     cli::cli_abort(
-      "Bundle assessment for role {.val {role}} accepted without a candidate ID."
+      "Bundle assessment for role {.val {role}} accepted without a candidate ID.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
   if (!is.na(decision) &&
       !identical(decision, "accept") &&
       !is.na(selected_id)) {
     cli::cli_abort(
-      "Bundle assessment for role {.val {role}} selected a candidate for non-accept decision {.val {decision}}."
+      "Bundle assessment for role {.val {role}} selected a candidate for non-accept decision {.val {decision}}.",
+      class = .ms_condition_classes("error", NULL)
     )
   }
   if (!is.na(selected_id)) {
     selected_index <- match(selected_id, candidate_ids)
     if (is.na(selected_index)) {
       cli::cli_abort(
-        "Bundle assessment for role {.val {role}} selected unknown candidate ID {.val {selected_id}}."
+        "Bundle assessment for role {.val {role}} selected unknown candidate ID {.val {selected_id}}.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
     item$selected_candidate_index <- selected_index
@@ -388,7 +391,7 @@
   )
   items <- data$assessments %||% NULL
   if (is.null(items) || !is.list(items)) {
-    cli::cli_abort("Semantic bundle review must return an assessments array.")
+    cli::cli_abort("Semantic bundle review must return an assessments array.", class = .ms_condition_classes("error", NULL))
   }
 
   bundle_summary <- .ms_llm_optional_note(data$bundle_summary %||% NA_character_)
@@ -400,7 +403,8 @@
   unknown <- unique(item_roles[!is.na(item_roles) & !item_roles %in% roles])
   if (length(unknown) > 0L) {
     cli::cli_warn(
-      "Semantic bundle response ignored unknown role(s): {paste(unknown, collapse = ', ')}."
+      "Semantic bundle response ignored unknown role(s): {paste(unknown, collapse = ', ')}.",
+      class = .ms_condition_classes("warning", NULL)
     )
   }
 
@@ -460,7 +464,8 @@
 
     if (!isTRUE(allow_fallback)) {
       cli::cli_abort(
-        "Semantic bundle reassessment was unusable for role {.val {role}}: {reason}."
+        "Semantic bundle reassessment was unusable for role {.val {role}}: {reason}.",
+        class = .ms_condition_classes("error", NULL)
       )
     }
 
