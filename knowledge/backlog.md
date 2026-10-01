@@ -7255,6 +7255,20 @@ schema.
 *Why this severity:* the output carries a column its schema does not declare,
 but only a schema other than the shipped one reaches it.
 
+**Correction, 2026-09-30 (B-252):** the Python observations above were real,
+but the source-only conclusion about R was wrong. Executing both sides at R
+`3364b975` and Python `e81cacd` shows that inferred `update_frequency` and
+`constraint_iri` are preserved in both packages even when the selected schema
+omits them. R also re-adds the latter in dictionary validation. The actual
+discrepancy is a direct writer given dataset/table/codes input lacking
+`update_frequency`, `method_iri` or `vocabulary_iri`: R keeps it absent and
+Python adds it. R table inference also omits an unselected `method_iri`, where
+Python synthesizes it. [Python pull request 82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82)
+corrects these measured paths without deleting existing caller extras or
+changing public reader/validator contracts. Paired runnable probes, complete
+headers and the default-byte baseline are retained in that work's tests and
+workpad. Its publication is not evidence of landing.
+
 **From the B-141 run** (metasalmon pull request 167).
 
 **`B-253`: two contributor-only Markdown pages that nothing ignores.** The

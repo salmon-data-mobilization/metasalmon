@@ -228,6 +228,23 @@ workpad found it by reading both sides, and the 2026-09-25 queue sweep measured
 it on `2405df2`, before the port, and on `f1f7230`, after it. Its metasalmonpy
 queue item is **B-252**.
 
+**Correction, 2026-09-30 (B-252): the source-only R premise was too broad.**
+Paired executable probes at R `3364b975` and Python `e81cacd` show that
+`create_sdp()` writes both `update_frequency` and `constraint_iri` under a
+schema omitting them: inference supplies those columns and both aligners
+preserve extras. R `validate_dictionary()` also synthesizes `constraint_iri`
+from truly absent input, independent of the schema. The measured port is the
+full Python writer's static normalization of dataset/table/codes inputs that
+genuinely lack an omitted optional field, plus table inference's static
+alignment of its minimal frame. [Python pull request 82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82)
+uses selected-schema alignment for these paths, preserving caller extras,
+reader normalization, and the dictionary validator's semantic-field contract.
+Its tests retain the original inference case as an extras-preservation control,
+execute all four setters and review write-back, and compare default output
+bytes with a pre-fix baseline. No parity-register row is spent. This records the
+proposed implementation and its evidence, not a landing; the port remains owed
+until that pull request merges.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-12):
 validation.** `validate_salmon_datapackage()` now checks required-column
 nullability, blank schema-required metadata fields (through the same schema
