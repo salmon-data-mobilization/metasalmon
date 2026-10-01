@@ -1106,16 +1106,18 @@ review target.** Hub item **B-171** added the R test of that name to
 to a measure as `sosa:usedProcedure`, so that its code values' `term_iri` land in
 the measurement set and in no review target. It is the first test to reach the
 role fallback in `.ms_closure_iri_roles()`, and a mutation of that fallback
-fails it. metasalmonpy has the same producer and the same fallback, `_iri_roles()`
-in `semantic_closure.py` (the fallback at `:504-507` on `f1f7230`), and
-`tests/test_semantic_closure.py` has no `usedProcedure` component, no
+fails it. At the 2026-09-25 measurement, metasalmonpy had the same producer and
+the same fallback, `_iri_roles()` in `semantic_closure.py` (at `:504-507` on
+`f1f7230`), and
+`tests/test_semantic_closure.py` had no `usedProcedure` component, no
 observation structure and no `example.org/methods` IRI: read by the B-171 run on
 `25dc7f3`, and again by the 2026-09-25 queue sweep on `f1f7230`. Its one
-set-difference test pins the other direction, `smn:Observation`. What is owed is
-the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
+set-difference test pinned the other direction, `smn:Observation`. What was owed
+was the twin, with a mutation of `_iri_roles()`'s fallback shown to fail it. It is
 not a port and not a register row, because nothing behaves differently. It did
 not land in the same stream because a hub claim covers one branch in one
-repository. Its metasalmonpy queue item is **B-264**.
+repository. Its metasalmonpy queue item is **B-264**; the test twin **landed
+2026-10-01 as metasalmonpy #81**, merge `430b568`, without a runtime change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When

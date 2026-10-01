@@ -884,6 +884,17 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
     by_legacy: dict[str, Item] = {}
     retirement_debt = 0
 
+    # A stream reference uses S plus the stream item's numeric id without
+    # padding: S-05 is S5, not S05. Derive the names from the parsed queue so
+    # a future S-item is valid as soon as it is added, regardless of state.
+    stream_names: set[str] = set()
+    for candidate in items:
+        candidate_id = candidate.raw.get("id")
+        if candidate.raw.get("kind") == "stream" and isinstance(candidate_id, str):
+            match = ID_RE.fullmatch(candidate_id)
+            if match and match.group(1) == "S":
+                stream_names.add(f"S{int(match.group(2))}")
+
     for item in items:
         path, lines = item.path, item.lines
 
@@ -956,6 +967,20 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
                     lines.get("kind", 0),
                     "id-kind",
                     f"id prefix {prefix!r} means kind {PREFIX_KIND[prefix]!r}, not {kind!r}",
+                )
+            )
+
+        stream = item.raw.get("stream")
+        if stream is not None and stream != "" and (
+            not isinstance(stream, str) or stream not in stream_names
+        ):
+            problems.append(
+                Problem(
+                    path,
+                    lines.get("stream", 0),
+                    "stream-missing",
+                    f"stream {stream!r} names no kind: stream S-item in queue/items; "
+                    "use S plus the item's unpadded number (S-05 is S5)",
                 )
             )
 

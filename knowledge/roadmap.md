@@ -788,12 +788,14 @@ metasalmonpy queue item is `B-261`.
 **The development version after 0.5.0 adds a test twin to what the mirror is
 owed (2026-09-25): a code-resolved procedure is a vocabulary term and never a
 review target.** Hub item **B-171** added the R test that pins this direction of
-the semantic closure's two canonical sets. metasalmonpy has the same producer
-and the same fallback and no such test, so what is owed there is the twin, not a
-port and not a register row. It is specified under *What metasalmon 0.5.0 owes
+the semantic closure's two canonical sets. At the 2026-09-25 measurement,
+metasalmonpy had the same producer and fallback and no such test, so what was
+owed there was the twin, not a port and not a register row. It is specified
+under *What metasalmon 0.5.0 owes
 the mirror* in `parity-deviations.md`. **Why not in the same stream:** a hub
 claim covers one branch in one repository. Its metasalmonpy queue item is
-`B-264`.
+`B-264`; the test twin **landed 2026-10-01 as metasalmonpy #81**, merge
+`430b568`, without a runtime change.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**
@@ -1413,8 +1415,8 @@ materially new workflow, with nothing renamed, removed, or changed in
 documented return shape. **#58 (condition classes) wanted a breaking bump and
 was deliberately left out of it** — judged 2026-08-25, on the grounds that ~450
 mechanical call-site edits share no code with the review flow and bundling them
-would make both harder to review. So #58 and #59 are what remain of S5, and the
-breaking-release story they want is still ahead rather than spent. Two narrow
+would make both harder to review. #59 was likewise outside 0.5.0 and landed
+separately in PR #243 on 2026-10-01. Two narrow
 byte changes ship inside the minor and are stated in the NEWS entry rather than
 implied: `semantic_suggestions.csv` gains a `decision_reason` column, and an
 in-memory SSSOM mapping set carrying a typed column renders canonically through
@@ -1489,6 +1491,8 @@ ships without them, but says something it cannot fully back. **One solid arrow
 is marked conditional** — it is drawn as a hard block because that is the
 current plan of record, and it survives only under some rulings of
 [OD-2](#od-2--what-does-the-knb-test-environment-mean).
+For current S5 work and claimability, see [the hub queue](https://github.com/salmon-data-mobilization/metasalmon/blob/main/queue/README.md);
+the S5 diagram line below records dated release history.
 
 ```
                                           ▼ hard — OD-2 ruled A, 2026-08-22
@@ -1507,9 +1511,9 @@ S9 ontology conventions + alignment ── implementation evidence exists, with
                                        alpha.3 merged (MR !5, 2026-08-16) and
                                        is still untagged
 S2 correctness debt          ── independent
-S5 review flow (next minor)  ── independent (#60 → #74 internally); #74's
-                                semantic half landed 2026-08-25 (M1–M3),
-                                M4/M5 + #58/#59 remain
+S5 review flow (0.5.0)     ── independent (#60 → #74 internally); M1–M5
+                                and #74 shipped 2026-08-25; #59 landed
+                                separately 2026-10-01
 S7 architecture + curation   ── independent, largest
 S11 vignettes + walkthroughs ── slices 1–2 independent; KNB golden path
                                 after S3; review vignette with S5;
@@ -1600,7 +1604,12 @@ release half of that gate is satisfied.
 - [S2 — Correctness debt](sequences/s2-correctness-debt.md) · #53, #55, #56, #57
 - [S3 — KNB staging environment](sequences/s3-knb-staging.md) · **R side implemented 2026-08-22, released in metasalmon 0.4.0 and mirrored in metasalmonpy 0.4.0 (both 2026-08-24)** — `knb_environment` with a closed two-environment registry, dry runs defaulting to the verified KNB Test Node; the Python mirror was one of the two gaps the 0.4.0 parity audit found absent, because the R original landed after every S10 chunk was written. **Still outstanding:** no deposit has been made in either environment, so a test-node token and one end-to-end deposit are what S4 waits on — the release moved the *availability* half, not the *rehearsal* half
 - [S4 — Workshop rebuild](sequences/s4-workshop-rebuild.md) · **Updated 2026-09-08:** seven-chapter Day 1 published at `190df307`, with actual human graph/dictionary review before tools, one 173×14 Fraser Coho source, and released R 0.5.0/Python 0.4.0 pins. Five Day 2 chapters are published at `27e0ced`, with local technical checks, CI deployment, public download verification and browser checks passed; see the [curriculum evidence and draft SDO guidance](workshop-curriculum-and-sdo-guidance-2026-09-08.md). Local teaching artifacts support the curriculum while domain review, independent-validator compatibility, live free-provider rehearsal, and the verified KNB test record remain outstanding. Neither the site deployment nor the new contribution exercises close those conditions.
-- [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, and **#74 is closed** (#60's accessor clause with it; its other clauses stand). `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **What remains of this stream: #58 and #59 only.** **Mirror delivered 2026-09-16, in two halves:** B-126 ported the behaviour (metasalmonpy #28) and B-153 wrote the documentation half and moved metasalmonpy to 0.5.0, closing the `0.4.0→0.5.0` window; `PARITY.md` **row 31** was **amended in place** by #28, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there would have said so. The behavioural half alone did not make the number true, and that is the stream's last lesson: this release's bar is a *documentation* claim, and for twenty-two days metasalmonpy exported all eleven calls and named none of them in its semantic-review guide. The amendment text was drafted in [parity-deviations.md](parity-deviations.md)
+- [S5 — R-native review flow, **shipped as 0.5.0**](sequences/s5-review-flow.md) · #58, #59, #60, #74 (0.3.0 was taken by S8; the "next minor" turned out to be **0.5.0**, tagged `v0.5.0` 2026-08-25 with a GitHub Release) · **M1–M5 all landed 2026-08-25**, including #60's accessor clause with #74. `review_semantics()` / `accept_suggestion()` / `reject_suggestion()` / `apply_sdp_semantics()` (PR #97), then `review_metadata()` / `set_sdp_dataset()` / `set_sdp_table()` / `set_sdp_column()` / `set_sdp_code()`. **The stream's bar is met and measured:** a `create_sdp()` package reaches `validate_salmon_datapackage(require_iris = TRUE)` **entirely from R, with no file opened in a spreadsheet**, asserted end to end by a test that *executes the calls the console printed*. `review_metadata()` is what closed it, because it reads required-but-unfilled from the schema and the validator rather than from a suggestion list — so a slot with no candidates is as visible as one with five. **#118** fixed with M1–M3; three round-trip defects in that API (a rejection never read back, the rejection *reason* never persisted, an empty queue under a bad `columns` filter printing the completion message) found by teaching it and fixed with M4; **#119** filed for the `variable`/`property` retrieval overlap rather than fixed blind. **Mirror delivered 2026-09-16, in two halves:** B-126 ported the behaviour (metasalmonpy #28) and B-153 wrote the documentation half and moved metasalmonpy to 0.5.0, closing the `0.4.0→0.5.0` window; `PARITY.md` **row 31** was **amended in place** by #28, because its "verified identical to R's output for all three strategies" went false at `v0.5.0` and nothing there would have said so. The behavioural half alone did not make the number true, and that is the stream's last lesson: this release's bar is a *documentation* claim, and for twenty-two days metasalmonpy exported all eleven calls and named none of them in its semantic-review guide. The amendment text was drafted in [parity-deviations.md](parity-deviations.md)
+  **B-60 R packaging scope (recorded 2026-09-30):** executable Rd examples,
+  R-only namespace/author metadata hygiene, and an R export naming convention
+  change no runtime behaviour or SDP contract. These R packaging mechanics
+  need no Python code port; the detailed rationale is in the
+  [S5 card](sequences/s5-review-flow.md).
 - [S6 — Ecosystem hardening and governed mapping-product consumption](sequences/s6-ecosystem.md) · #44, #61
 - [S7 — Architecture and curation engine](sequences/s7-architecture.md) · largest, last
 - [S8 — Method model and tidy foundations](sequences/s8-method-model.md) · **shipped as 0.3.0**; #77 done, #76's crosswalk retarget did not ride it
