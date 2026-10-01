@@ -1276,6 +1276,10 @@ metasalmon (development version)
 
 ### Internal
 
+* Hub queue lint refuses a dependency-linked Python port named in only one
+  mirror debt passage (B-396). The intentional row-53 exception is scoped to
+  its existing direction and records why it exists and what retires it.
+
 * Automatic Claude review keeps its five-marker budget but only a verified
   completed nits-only review can suppress later rounds. Failed reviews and
   green skips cannot attest completion. Review prompts use source reads and
