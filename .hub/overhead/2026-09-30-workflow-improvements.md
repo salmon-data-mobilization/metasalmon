@@ -1032,3 +1032,225 @@ percentage is justified by these overlapping observations.
 The first local B-186 integration against PR247 `1c08f98` began at 18:33:37 UTC. The native NEWS-only build was blocked before writing by default Pandoc 3.11; selecting the already-installed RStudio Pandoc 3.8.3 took about 59 seconds between that preflight and the successful retry. The matched build took 15.3 seconds. A substantive Codex P2 in PR247 then required its manifest-icon correction, so this uncommitted integration was discarded and restarted at 18:38:09 UTC against corrected head `41bcdce`. That dependency wait and repeat build are separate from NEWS generation. The final matched NEWS-only build took 15.6 seconds; both builds needed zero seconds of manual generated-fragment editing. The four conflicted NEWS/generated paths were reset to PR247 bytes, B-186’s three-line NEWS item was inserted, and native regeneration retained all 588 non-NEWS search records in order. The NEWS search record count stayed 70, with one record now containing B-186. The B-186 source/test blob hashes stayed identical to `28f5ad8`; 164 queue tests and live lint on 318 items passed. These are measured local steps, not a whole-run saving estimate.
 
 Correction to the candidate wording above: CI sibling tarball exclusion is already the scoped, critical-held PR216/B-268, so this run did not open or claim duplicate work. The requested S16 handoff audit remains separate: R209/210/211 and Python72–75 are open; Python72/74 report parity failures. B-199 is already draft Python76 with green checks, held for parity row 38 under a protected handoff. Queue420–425 exist only in open R209, not canonical main. None was claimed or assigned here.
+
+
+### Next parallel round and adoption of existing count simplification — 2026-10-01
+
+The requested September27 handoff was read and live-checked. Its dependency
+order remains useful, but B199 is already protected draft Python76 with green
+checks. R209/210/211 and Python72–75 remain open; Python72/74 fail parity.
+Items420–425 exist in open209, not canonical main. No duplicate claim, item
+number, removal task or tracking framework was created from that old snapshot.
+
+The ready-only census was empty, but it omitted eligible icebox items. Under
+existing R15, four existing P2 items with solo repositories, exact retirement
+conditions, no blockers and absent claims were promoted: B348/B383/B354/B355.
+Three independent identities worked disjoint scopes; root took B355. All four
+reproduced their defects before fixing them. Publications: Python86/B348,
+R252/B383, R253/B354 and Python87/B355. No provider/removal repair was added.
+The next pair B352/B353 was promoted under the same standing grant and Q62's
+explicit ruling, with B269's frozen, distinct hunks checked for duplication.
+
+Measured tools and verification, separated from labor attribution:
+
+| Item or step | Observed time/result | Classification |
+| --- | --- | --- |
+| B354 status/ready/claim/worktree | 1.1s / 4.1s / 5.1s / 0.5s | Coordination tools |
+| B354 native NEWS build after PR247 | 15.0s; zero manual fragment repair | Verification/build |
+| B383 native NEWS build with PR247 | 15.1s; zero manual fragment repair | Verification/build |
+| B348 pickup-to-handoff | about 11m21s, interleaved activities | Elapsed work, not waste |
+| B348 full extras/core | 43.45s / 33.27s, overlapping other work | Verification |
+| B348 wrong positional `hub done` URL | rejected before write; about38s until corrected `--branch` | Concrete command rework |
+| B355 claim/worktree | 5.312s / 0.149s | Coordination tools |
+| B355 cached locked environment | 2.31s build +0.405s install; separate core environment | Environment setup |
+| B355 focused GREEN/full extras/core | 3.69s /40.54s /34.42s | Verification, overlapping intervals |
+| R252 cancelled index attempt | 15m05s, during dependency setup; validator never ran | CI/environment interval; cause unknown |
+| R252 one non-model index rerun | 72s total, dependency step31s/test2s; success | Necessary CI repair |
+| R252 conflict repair NEWS build | 13.9s | Verification/build |
+| R253 additive next-head NEWS build | 18.6s | Verification/build |
+
+Every native build above preserved 588 ordered non-NEWS search records and
+all seven source/site favicon pairs. The historical-site reconciliation has
+removed manual fragment curation in these observed uses. After R219 merged,
+the remaining shared `docs/search.json` still caused real conflicts in252/253;
+those required additive integration and new current-head CI. This is a
+remaining serialization cost, not a reason to make freshness-only commits.
+The scoped installer repair218 does not fix setup-r itself, and one canceled
+reference job does not establish generalized runner instability.
+
+R219 merged asfc840429 after all six current checks passed. Its last requested
+Codex reviews completed, source/test blobs stayed28f5ad8, and actual Claude
+run36887378444 passed execution validation with zero denials/no blockers.
+The canonical overhead route now contains219's append. Primary was advanced
+and its clean zero-unique auxiliary worktree removed; branches retained.
+R247 was likewise archived only after its merged tree and clean state were
+verified. Delegation was documentation/defect-fix/added-guard, with no critical
+semantic, public, frozen, parity, release or policy choice absorbed.
+
+Actual Claude findings were checked:242's stale roadmap premise was corrected
+at196bcf4;218's three-attempt wording was corrected at312d76e. Both earlier
+review jobs posted findings but failed on denied tools; a subsequent green
+skip is not a completed review. New252/253 actual reviews passed completion
+with zero denials and only nits. A separately authorized reviewer-repair chat
+owns draft254; its changed workflow hits default-branch validation and has
+not produced a genuine new-configuration review. No duplicate repair, broad
+permission change, manual model run or secret/settings mutation occurred here.
+
+The smallest next adjustment already existed: Python PR73 drops the repeated
+suite-count history from AGENTS.md, preserving core/extras/bare suite gates,
+skip explanations and import provenance. It merged as93d07fa under the
+routine documentation/overhead-reduction authorization after all six
+applicable checks and exact-head Codex review passed, with no human hold.
+This run did not open a replacement improvement PR. The earlier partial read
+for B355 missed AGENTS's explicit count-update sentence; it was corrected
+before merge by a short dated record at8ada95e. That correction and the now
+necessary adoption of73 are real rework, not evidence that the old instruction
+never existed. Test on B353: retain main's shortened AGENTS unchanged, keep
+current counts in its workpad/CI, and observe whether an unrelated count-file
+edit or count-conflict repair is still needed. Existing pre73 count edits on
+open branches may require one-time integration; no repeat full suite is
+needed just to compose a new prose count.
+
+This round supports concrete avoided edits and remaining costs, not an exact
+whole-run wasted-time percentage. Research, implementation, requested audit,
+verification, environment repair, coordination and passive CI waits overlapped;
+agent elapsed times must not be summed as root labor. The next small helper
+candidate is an exact `hub done ID --branch ...` hint on its argument error,
+but it remains a suggestion rather than collateral source work in an SSSOM PR.
+
+## Next-use observations after the 2026-10-01 merges
+
+R219/B186, R242/B252 factual scope correction, R252/B383 and R253/B354
+merged under the routine grant after current required gates and actual
+completed review evidence. Py73 removes the redundant AGENTS count record;
+Py86/B348 and Py87/B355 subsequently merged after their current gates.
+Canonical main now preserves the entire log prefix that previously lived
+in the helper branches. Both EML mirror receipts and queue closeouts are
+recorded; B348's two float-gap debt passages also carry its landed receipt.
+Clean zero-unique worktrees for these finished items were removed with their
+branches retained. Critical drafts remain separate.
+
+**Count-log experiment, next two uses:** B353 and B347 required no AGENTS
+count update. Their core/extras suites, bare/minimum CI and per-item evidence
+remain required. This directly removes one editing/merging step per item;
+there is no measured percentage reduction in total task time. B355's one-time
+adoption of already merged PR73 also removed its redundant count paragraph.
+
+**Correction to the earlier cancellation attribution:** PR252 run36911071553
+attempt1 did not cancel for an unknown cause: its check annotation explicitly
+says the job exceeded its configured15-minute timeout. It stopped during
+dependency setup before the index assertion. The one allowed retry passed;
+the final252 current-head index gate also passed. Another authorized chat
+owns PR254's unchanged-assertion timeout/reviewer repair. This run does not
+duplicate that repair or manufacture a review event.
+
+**Verification remains useful effort:** independent/local and automatic
+review found real YAML tag-guard holes and false refusals before merge. These
+are defect discovery, not coordination waste. Py88's two actual P2 comments
+were reproduced, and the owner is fixing them on its frozen branch.
+
+**B346/B347 pickup and next adjustment candidate:** R worktree creation0.377s;
+Python's first absent-code-field guard missed an optional-column case, which
+peer review caught and a RED/GREEN public test fixed. R own33 assertions and
+full9082 passes verify its frozen source; eight paired public outcomes agree
+for the codes-step rule, preserving each language's independent baselines.
+The first R site run refused the unpinned local Pandoc; the existing pinned
+path fixed it without installation. A full native site build touched39
+unrelated generated formatting outputs. A future narrow reference-topic
+build could avoid that regeneration/inspection step while retaining native
+rendering, index checks and the existing publication/toolchain guards. This
+is a next candidate, not a new tracking framework or implemented feature in
+B346. No new routine approval round was needed.
+
+Coordination, implementation, verification, environment repair, requested
+audit work and passive waits were interleaved here. Recorded command bounds
+and removed steps support the observations above; they do not establish a
+whole-run bureaucracy percentage or a causal time-saving estimate.
+
+
+## Subsequent reuse and bounded review corrections
+
+Observed 2026-10-01, through the B-343 publication. R256/B346, Py88/B353,
+Py89/B347, R218/B155 and Py90/B349 have merged under the delegated routine
+boundary. Their current CI and completed requested reviews were read before
+merge; Py90's in-memory finding was answered with Brett's explicit B349
+ruling, which had anticipated that input difference. The existing queue and
+backlog carry the landed receipts. Clean zero-unique auxiliary worktrees for
+these finished changes were removed after canonical fast-forward; branches
+remain. B352's R half is still open, so its pair is not marked done yet.
+
+| Next-use observation | Recorded bounds or removed step | Category |
+|---|---|---|
+| AGENTS count-log removal on B353, B347, B349 and B386 | Zero count edits in four uses; full/core/extras/minimum evidence remains | Removed coordination edit |
+| B349 full extras/core | 47.94s /42.12s on its frozen source; runs overlap other work | Verification |
+| B349 synthetic merge on newer Python main | Clean: no integration commit or extra review request | Avoided freshness work |
+| B386 peer before full checks | Caught implicit-title fragment leakage; public RED then narrow fix before full legs | Requested audit/implementation |
+| B343 scope audit | Removed an initial all-metadata interpretation before publication; fixed-six plus tables stays separate from B177 | Useful audit/corrected scope |
+| B343 peer before full checks | Caught whitespace-only direct dictionary bypass; six public RED controls then exact-empty fix | Useful verification/implementation |
+| B343 minimum environment | Unchanged base reproduces3 pandas/NumPy warnings-as-errors failures in0.44s; compatible environment-only pin/retest3.64s | Environment repair |
+| B343 full extras/core | 49.65s /44.04s on frozen b26045f; no superseded full run | Verification |
+| B343 combined date/strict integration gates | 293 tests +102 subtests on current/minimum in4.03s /4.21s; sole real CHANGELOG conflict | Necessary integration/verification |
+| B343 publication/attach/handoff | About21:30–21:32Z, interleaved tool calls; not root active labor | Coordination interval |
+| R218/255 NEWS serialization | R255 waited for218's merge, then one actual index conflict/build; later valid review issue prevents its merge | Coordination/passive wait |
+
+The focused→frozen peer→full order found a defect before the first full run
+on B386 and B343. B349's peer found no further defect; its observable result
+is no superseded full run, not proof that a full run was causally saved.
+B343's first full legs ran once; a later real CHANGELOG integration preserved
+owned function ASTs and received combined focused checks plus fresh remote
+full gates. The minimum-version evidence is focused, not a full3.9 suite.
+
+A fresh GraphQL review read on R255 found an unresolved Codex P2 omitted from
+an earlier no-findings snapshot: the YAML tag fallback reparses a complete
+header per bang. The current source confirms the cost; its merge was held
+for a verified repair. The latest green Claude job skipped model execution
+because the five-marker budget was exhausted. Earlier actual completed
+Claude rounds still count as their own reviews; the skip is not a new one.
+This source review is useful defect discovery, not policy bureaucracy.
+
+Two small habits now apply on the next item: include exact interpreter paths
+in the frozen-source message, and use the canonical queue parser's documented
+Item.get values instead of guessing a second parser/API. Root's absent .venv
+probe and mistaken Item.fields/string-boolean assumptions were instrument
+rework, not HUB bureaucracy. B341 is the next disjoint use of the interpreter
+path habit. No new helper, policy or tracking system is introduced.
+
+A post-merge hub reconcile was unnecessary for closure: it printed129 held
+handoffs and did not release them merely because work had merged. The queue's
+done mark is the eligibility owner. Avoid repeating reconcile as a completion
+step unless actual expiry cleanup is needed; no client semantics changed.
+
+The supported HTML reader fix B386 is tested in draft Py91. Its existing
+numbered row62 description would be factually stale after the port, so HUB
+class5 requires Brett's approval for the exact paired sentence correction.
+That concrete approval is still pending; no duplicate request or dependent
+row edit was made. Literal corrections to an existing numbered description
+are a future simplification candidate, not authority this run has invented.
+A targeted native reference-topic build also remains a suggestion until a
+single-topic change can evaluate it without collateral tooling work.
+
+Intervals above overlap implementation, requested audit, verification,
+environment repair and passive waits. They support four removed count edits,
+no unnecessary freshness merge on B349, and defects caught before full runs.
+They do not support an exact whole-run percentage of wasted time. Required
+critical approvals are separate from redundant coordination; work by
+concurrent agents is not added together as root labor.
+
+
+**R234 integration observation:** its four actual NEWS/site conflicts were
+resolved against main052279b with the one B394 entry retained. The stronger
+lint found that B348's already-correct float-gap receipt heading did not use
+the accepted landed-record grammar; its existing receipt was rewritten in
+that grammar without changing the ruling, and both debt passages were read.
+The166 queue tests and318-item lint/check pass. Native NEWS output preserves
+588 ordered non-NEWS records and all five discovered favicon/manifest assets.
+Root incorrectly assumed a unique Internal NEWS heading and guessed asset
+names/search path types in ad-hoc probes. One premature build after the failed
+heading assertion required a second build. These are implementation/instrument
+rework; sequential tool operations now stop on each failed result. They are
+not evidence that required HUB or site validation is wasted.
+
+**Next habit use:** B341's frozen message included its exact current/minimum
+interpreter paths. The root peer reached the intended editable worktree on its
+first call and passed seven sidecar controls. This removes the earlier path
+discovery misstep in this use; no aggregate time-saving percentage is inferred.

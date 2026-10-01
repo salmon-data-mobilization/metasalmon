@@ -260,6 +260,27 @@
 
 ### Fixed
 
+- **Applying a dictionary preserves vocabulary-backed columns.** B-346,
+  implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
+  with a nonblank `vocabulary_iri` and missing/blank `code_value` now
+  skips that column’s code-list warning and factor conversion, even
+  beside explicit code rows. Values are retained; ordinary code lists
+  and independent declared type coercion keep their existing behavior.
+  The Python companion is B-347.
+
+- [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  now writes a profile UTC instant in temporal coverage as EML’s
+  `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
+  Both parts come from the package’s one persisted rendering and rejoin
+  to its original text; year and date values remain a `calendarDate`
+  alone, and mixed date/instant ranges work in either direction (hub
+  B-354; Python mirror B-355).
+
+- R Markdown and Quarto context files now use the shared UTF-8,
+  Windows-1252, then Latin-1 decoding chain before front matter and code
+  fences are removed. Review-packet excerpts retain Windows-1252 text
+  instead of failing on invalid UTF-8 (hub B-383).
+
 - Session IDs no longer advance or initialize the user’s random-number
   state, and BioPortal’s once-per-session missing-key warning is
   recorded privately instead of in
@@ -1558,10 +1579,20 @@
   (B-394). R blockers remain excluded; existing window and follow-up
   landings are recorded in the form the checker can read.
 
-- CI’s pak bootstrap retries failed downloads up to three times and
-  verifies that pak loads before dependency installation begins.
-  Exhaustion reports an infrastructure failure before package tests or R
-  CMD check run (hub B-155).
+- Automatic Claude review keeps its five-marker budget but only a
+  verified completed nits-only review can suppress later rounds. Failed
+  reviews and green skips cannot attest completion. Review prompts use
+  source reads and existing review publication; broad interpreter and
+  generic API grants are removed. Completion failures stay visible and
+  token permissions are unchanged. Reference-index CI allows up to 30
+  minutes for runner/dependency setup while retaining the same index
+  assertion with its own five-minute limit; the old 15-minute job budget
+  could expire before checking any topic.
+
+- CI’s pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion
+  reports an infrastructure failure before package tests or R CMD check
+  run (hub B-155).
 
 - The hub queue linter rejects a nonempty `stream` that names no stream
   item. Stream names use the unpadded item number (`S-05` is `S5`);
