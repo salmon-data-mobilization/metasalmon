@@ -20,6 +20,9 @@ jobs:
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: "yes"
+      # Dedicated installer library read by setup-r-dependencies when its own
+      # pak download is disabled below.
+      R_LIB_FOR_PAK: ${{ runner.temp }}/metasalmon-pak
       _R_CHECK_CRAN_INCOMING_REMOTE_: "false"
       # Ordinary CI is isolated from LLM providers. Live benchmarks require an
       # explicit CLI opt-in and credentials supplied outside this workflow.
@@ -82,8 +85,15 @@ jobs:
         with:
           use-public-rspm: true
 
+      - name: Verify the CI bootstrap failure path offline
+        run: Rscript scripts/tests/test_install_ci_pak.R
+
+      - name: Install CI toolchain (pak with bounded retries)
+        run: Rscript scripts/install-ci-pak.R
+
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          pak-version: none
           extra-packages: |
             any::devtools
             any::rcmdcheck
