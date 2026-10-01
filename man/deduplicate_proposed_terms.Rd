@@ -48,17 +48,12 @@ further manual review.
 }
 }
 \examples{
-\dontrun{
-# Load raw proposed terms
-proposed <- readr::read_csv("work/semantics/proposed_terms.csv")
-
-# Deduplicate
+proposed <- tibble::tibble(
+  term_label = c("Spawner Age 1", "Spawner Age 2", "Spawner Age 3"),
+  term_definition = rep("Spawner count by age", 3),
+  term_type = rep("owl_class", 3),
+  suggested_parent_iri = rep("", 3)
+)
 deduped <- deduplicate_proposed_terms(proposed)
-
-# Review collapsed terms
 deduped |> dplyr::filter(collapsed_from > 1)
-
-# Write cleaned output
-readr::write_csv(deduped, "work/semantics/proposed_terms_deduped.csv")
-}
 }

@@ -52,6 +52,27 @@ entry. All seven favicon source/output byte pairs still match. The generated
 NEWS page has two reference links whose pages are supplied by PR245; PR247
 still depends on that PR landing before it is ready to merge.
 
+## Native integration after PR250 (2026-10-01)
+
+Merged `origin/main` at `e3fa5df` additively. The only conflict was generated
+`docs/search.json`; the NEWS HTML and Markdown merged cleanly. Ran the native
+`scripts/build-pkgdown.R --news-only` once with pkgdown 2.2.0 and pinned
+Pandoc 3.8.3. `NEWS.md` remains byte-identical to incoming main. The rebuilt
+search index has 658 records: 70 NEWS and 588 non-NEWS. All 588 incoming
+non-NEWS records are byte-equivalent as parsed records and retain their order,
+including duplicates. The NEWS pages include the B-60, PR215 and PR250
+entries. The packet API links resolve to reference pages now present on main
+after PR245, and all seven favicon input/output pairs still match byte for
+byte. The focused reference-index check passes (68 exports, 64 topics), and
+`git diff --check` passes. Fresh CI is required on this merge head.
+
+Generated SHA-256 values: `docs/news/index.html`
+`a0225b2e4594595215df3655a6de5084f1766c95c0476251b807a09d02f8daa2`,
+`docs/news/index.md`
+`b4fd0ea5535585ce183ee5bd5f7e9ad8b66a0de5284b1bd3463dace293956283`,
+and `docs/search.json`
+`e7a818734e510e714262eae5da393e6946551e500c3c05335b1a67677b837347`.
+
 ## Recovered asset hashes
 
 | Asset | SHA-256 of both source and existing output |

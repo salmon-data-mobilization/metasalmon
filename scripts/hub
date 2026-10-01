@@ -1534,6 +1534,78 @@ cmd_doctor() {
 # ready
 # ---------------------------------------------------------------------------
 
+# A single live read of an item's queue record and claim tip. Report the raw
+# claim action rather than duplicating ready's lease/grace/reclaim decisions.
+cmd_status() {
+  local id=$1 key tip rc act ag lu cid branch reason valid=1
+  require_current_queue refuse "$id" || return "$EX_FAIL"
+  item_exists "$id" || fail "$(absent_item_sentence "$id")"
+  for key in id title repo state claimable blocked_by evidence retires_when; do
+    printf '%s: %s\n' "$key" "$(item_field "$id" "$key")"
+  done
+  load_hub_config
+  ensure_locks_cache
+  tip=$(remote_tip "$id"); rc=$?
+  case $rc in
+    2) printf 'claim: absent\n'; return "$EX_OK" ;;
+    3) printf 'claim: unknown\n'; warn "cannot read the live claim for $id"; return "$EX_FAIL" ;;
+  esac
+  if ! fetch_one "$id"; then
+    printf 'claim: unknown\n'
+    warn "cannot fetch the live claim for $id"
+    return "$EX_FAIL"
+  fi
+  # Fetching a ref does not prove that its claim record is readable. Validate
+  # the fields displayed as known; a missing file/key must not look successful.
+  cid=$(tip_field "$id" id) || valid=0
+  act=$(tip_field "$id" action) || valid=0
+  ag=$(tip_field "$id" agent) || valid=0
+  lu=$(tip_field "$id" lease_until) || valid=0
+  branch=$(tip_field "$id" branch) || valid=0
+  reason=$(tip_field "$id" reason) || valid=0
+  [ "$cid" = "$id" ] && [ -n "$ag" ] || valid=0
+  case $act in claim|reclaim|beat|release|handoff) : ;; *) valid=0 ;; esac
+  [ -n "$lu" ] && epoch_from_iso "$lu" >/dev/null || valid=0
+  # Branch handoffs name the exact agent branch. B-338's chat handoff instead
+  # omits branch entirely and records this exact reason. Status validates the
+  # record shape; it does not decide whether a repository permits either mode.
+  if [ "$act" = "handoff" ] && [ "$branch" != "agent/$id/$ag" ]; then
+    if [ -n "$branch" ] || [ "$reason" != "hand-back in chat" ] ||
+        lg show "refs/hub/claim/$id:claim.yaml" 2>/dev/null | grep -q '^branch:'; then
+      valid=0
+    fi
+  fi
+  if [ "$valid" -ne 1 ]; then
+    printf 'claim: unknown\n'
+    warn "cannot read a valid live claim record for $id"
+    return "$EX_FAIL"
+  fi
+  printf 'claim: %s\nagent: %s\nlease_until: %s\nbranch: %s\n' "$act" "$ag" "$lu" "$branch"
+  [ -z "$reason" ] || printf 'reason: %s\n' "$reason"
+  return "$EX_OK"
+}
+
+# Advisory shell commands only: hub continues to write lock refs, never member
+# worktrees or reports. The queue checkout need not be the target member repo,
+# so its checkout and fetched base are explicit inputs, not guessed paths.
+print_setup_hints() {
+  local id=$1 token=$2 repo slug owner key worktree branch
+  repo=$(item_field "$id" repo)
+  branch="agent/$id/$token"
+  say "work branch: $branch"
+  say "workpad: .hub/workpads/$id.md"
+  slug=$(member_slug_for_repo "$repo")
+  [ -n "$slug" ] || return 0
+  owner=${slug%/*}
+  owner=${owner//\//-}
+  key="$owner-$repo-$id"
+  worktree="../hub-worktrees/$key"
+  say "worktree key: $key"
+  say "Setup hints (print only): set MEMBER_CHECKOUT to $repo's checkout and MEMBER_BASE to its fetched starting ref."
+  say "git -C \"\$MEMBER_CHECKOUT\" worktree add -b $(printf '%q' "$branch") $(printf '%q' "$worktree") \"\$MEMBER_BASE\""
+  say "mkdir -p \"\$MEMBER_CHECKOUT\"/$(printf '%q' "$worktree/.hub/workpads")"
+}
+
 cmd_ready() {
   local set_id="" auth="" id st cl bl held ref hid hact grace now lu
   while [ $# -gt 0 ]; do
@@ -1834,6 +1906,7 @@ cmd_claim() {
     if [ "$ag" = "$token" ] && [ "$act" != "release" ]; then
       if [ "$lu" -gt "$now" ]; then
         say "$id is already held by this agent until $(tip_field "$id" lease_until)"
+        print_setup_hints "$id" "$token"
         return "$EX_OK"    # idempotent: claiming what you hold succeeds quietly
       fi
       # The same agent, but its lease has run out. Reporting success on the
@@ -1955,7 +2028,7 @@ claim_count_and_push() { # id action attempt parent token
         beat) say "renewed this agent's expired claim on $id until $lease" ;;
         *)    say "claimed $id as $token until $lease (${act})" ;;
       esac
-      say "work branch: agent/$id/$token"
+      print_setup_hints "$id" "$token"
 
       # The participation answer, at claim time, because this is the last
       # moment it can still change what the agent does.
@@ -2407,6 +2480,8 @@ hub - the queue client for the salmon ecosystem hub
                                  whose lease and reclaim grace have both
                                  elapsed while its reclaim cap is not spent,
                                  are free and are listed
+  hub status ID                  show queue fields and the live claim tip;
+                                 unreadable claims are unknown, never absent
   hub ready --set ID [--authorization TEXT]
                                  print the one-line edit that moves ID to
                                  ready, and what the promotion commit must cite.
@@ -2419,6 +2494,8 @@ hub - the queue client for the salmon ecosystem hub
                                  hold on an expired one renews the lease against
                                  the ref, and exits 4 if somebody reclaimed it
                                  first
+                                 Also print member-worktree and workpad setup
+                                 hints; no worktree or report is created
   hub beat ID                    extend the lease you hold
   hub release ID [reason]        give the item back
   hub done ID --branch B         hand off: record the branch, keep the claim,
@@ -2525,6 +2602,7 @@ main() {
   case $cmd in
     doctor)    cmd_doctor "$@" ;;
     ready)     cmd_ready "$@" ;;
+    status)    [ $# -eq 1 ] || fail "status needs exactly one item id"; cmd_status "$1" ;;
     claim)     [ $# -ge 1 ] || fail "claim needs an item id"; cmd_claim "$1" ;;
     beat)      [ $# -ge 1 ] || fail "beat needs an item id"; cmd_beat "$1" ;;
     release)   [ $# -ge 1 ] || fail "release needs an item id"; cmd_release "$@" ;;

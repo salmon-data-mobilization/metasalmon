@@ -31,3 +31,9 @@ Path to the cached ontology file (character string).
 Downloads the Salmon Domain Ontology using HTTP content negotiation and caches
 the response using ETag / Last-Modified headers when available.
 }
+\examples{
+\dontrun{
+# Needs the remote ontology; run in checks once a local fixture is supported.
+ontology_path <- fetch_salmon_ontology(cache_dir = file.path(tempdir(), "smn-cache"))
+}
+}

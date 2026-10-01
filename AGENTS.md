@@ -372,6 +372,7 @@ Rscript -e 'devtools::test()'                             # full suite (must sta
 testthat::test_file("tests/testthat/test-<area>.R", reporter = "summary")
 devtools::document()                                     # after roxygen changes
 Rscript scripts/build-pkgdown.R                          # after doc changes
+Rscript scripts/build-pkgdown.R --news-only              # when only NEWS changed
 ```
 
 ```sh
