@@ -1,7 +1,7 @@
 id: B-355
 kind: defect
 title: 'metasalmonpy''s write_eml_from_sdp() puts a whole instant in calendarDate too, the mirror half of B-354'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code

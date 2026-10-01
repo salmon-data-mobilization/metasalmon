@@ -1,7 +1,7 @@
 id: B-348
 kind: defect
 title: 'metasalmonpy''s year-shape test never reads a float column as years, because str(1850.0) is "1850.0"'
-state: icebox
+state: ready
 claimable: true
 repo: metasalmonpy
 venue: claude-code
