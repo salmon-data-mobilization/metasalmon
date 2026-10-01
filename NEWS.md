@@ -1280,6 +1280,10 @@ metasalmon (development version)
   retaining the same index assertion with its own five-minute limit; the old
   15-minute job budget could expire before checking any topic.
 
+* CI's pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion reports an
+  infrastructure failure before package tests or R CMD check run (hub B-155).
+
 * The hub queue linter rejects a nonempty `stream` that names no stream item.
   Stream names use the unpadded item number (`S-05` is `S5`); future stream
   items are accepted without editing a fixed list (hub item B-186).
