@@ -9,6 +9,7 @@
 ^\.git$
 ^notes$
 ^knowledge$
+^proposals(/|$)
 ^\.DS_Store$
 \.cursorignore$
 \.cursor($|/)
