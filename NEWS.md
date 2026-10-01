@@ -214,6 +214,17 @@ metasalmon (development version)
 
 ### Fixed
 
+* `write_eml_from_sdp()` now writes a profile UTC instant in temporal coverage
+  as EML's `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
+  Both parts come from the package's one persisted rendering and rejoin to its
+  original text; year and date values remain a `calendarDate` alone, and mixed
+  date/instant ranges work in either direction (hub B-354; Python mirror B-355).
+
+* R Markdown and Quarto context files now use the shared UTF-8,
+  Windows-1252, then Latin-1 decoding chain before front matter and code
+  fences are removed. Review-packet excerpts retain Windows-1252 text
+  instead of failing on invalid UTF-8 (hub B-383).
+
 - Session IDs no longer advance or initialize the user's random-number state,
   and BioPortal's once-per-session missing-key warning is recorded privately
   instead of in `options()`. `?metasalmon_configuration` documents the current
@@ -1252,6 +1263,15 @@ metasalmon (development version)
   hub item B-161's question. The metasalmonpy half is hub item B-199.
 
 ### Internal
+
+* Automatic Claude review keeps its five-marker budget but only a verified
+  completed nits-only review can suppress later rounds. Failed reviews and
+  green skips cannot attest completion. Review prompts use source reads and
+  existing review publication; broad interpreter and generic API grants are
+  removed. Completion failures stay visible and token permissions are unchanged.
+  Reference-index CI allows up to 30 minutes for runner/dependency setup while
+  retaining the same index assertion with its own five-minute limit; the old
+  15-minute job budget could expire before checking any topic.
 
 * CI's pak bootstrap makes up to three install attempts and verifies
   that pak loads before dependency installation begins. Exhaustion reports an
