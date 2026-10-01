@@ -11,18 +11,16 @@ psc:
 
 # S5 — R-native review flow and API hygiene · #58, #59, #60, #74 · **shipped as 0.5.0**
 
-**#74 is closed (2026-08-25), and #60's accessor clause with it — #60's other
-clauses stand. #58 and #59 are what remain of this stream.**
+**The #74 accessor work shipped 2026-08-25, including #60's accessor clause.**
 
-**B-60 follow-up proposed 2026-09-30:** the remaining #60 clauses are R
-package documentation and metadata hygiene: executable Rd examples, removal
-of a blanket roxygen `httr` import, an `Authors@R`-only author declaration,
-and a naming convention for future R exports. They change no exported
-signature, SDP format, or runtime behaviour. There is no Python port for these
-R packaging mechanics; metasalmonpy's packaging and guides remain their own
-documentation surfaces. This records why the usual mirror presumption does
-not call for a Python code change in B-60. The proposal does not mark #60
-closed until its PR merges and examples pass `R CMD check`.
+**B-60 R packaging scope (recorded 2026-09-30):** executable Rd examples,
+removal of a blanket roxygen `httr` import, an `Authors@R`-only author
+declaration, and a naming convention for future R exports are package
+documentation and metadata hygiene. They change no exported signature, SDP
+format, or runtime behaviour. These R packaging mechanics need no Python code
+port; metasalmonpy's packaging and guides remain their own documentation
+surfaces. This records why the usual mirror presumption does not call for a
+Python code change in B-60.
 
 **Released as metasalmon `v0.5.0` on 2026-08-25** — annotated tag on the
 release merge, GitHub Release published with the `NEWS.md` entry as its body.
