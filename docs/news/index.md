@@ -268,6 +268,13 @@
   in place. Expression evaluation remains disabled. This is the R half
   of B-340/B-341, with no new parity deviation.
 
+- Strict validation now checks the absolute-IRI shape of every populated
+  semantic IRI in the dictionary and every `*_iri` field in
+  `tables.csv`, including added table columns. Malformed text is refused
+  before a package can be finalized; REVIEW markers and missing values
+  retain their existing reports, and review-ready validation remains
+  unchanged (hub B-342; Python mirror B-343).
+
 - **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
   with a nonblank `vocabulary_iri` and missing/blank `code_value` now
@@ -288,6 +295,12 @@
   Windows-1252, then Latin-1 decoding chain before front matter and code
   fences are removed. Review-packet excerpts retain Windows-1252 text
   instead of failing on invalid UTF-8 (hub B-383).
+
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  and SDP validation through a non-evaluating YAML parser probe. Quoted
+  exclamation text still reads as text, and no tag expression is
+  evaluated (hub B-352; metasalmonpy mirror B-353).
 
 - Session IDs no longer advance or initialize the user’s random-number
   state, and BioPortal’s once-per-session missing-key warning is
