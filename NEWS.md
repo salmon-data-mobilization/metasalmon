@@ -1152,6 +1152,10 @@ metasalmon (development version)
 
 ### Changed
 
+- The publication guide distinguishes strict SDP validation and folder sharing
+  from the reviewed closure and EML facts required for EML/KNB export or deposit.
+  Closure comments describe the ledger's field coverage accurately (hub B-262).
+
 * **`create_sdp()` and `write_salmon_datapackage()` no longer write a licence
   placeholder.** A blank `license` in `metadata/dataset.csv` used to be filled
   with *"MISSING METADATA: add dataset license (for example, CC-BY-4.0)."*, and
