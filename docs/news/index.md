@@ -260,6 +260,11 @@
 
 ### Fixed
 
+- CI review-completion failures identify known Git actions after
+  directory or configuration options through fixed diagnostic
+  categories. Paths and option values remain private, and denied tool
+  calls still block review completion.
+
 - [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
   reaches its existing PAT, SSO and missing-path remedies for HTTP 401,
   403 and 404. Other HTTP errors and transport failures still raise
@@ -1603,6 +1608,14 @@
   metasalmonpy half is hub item B-199.
 
 ### Internal
+
+- Hub claim, done, and help guidance explains coherent pull-request
+  batches. Related items held by the same claim-holder token may share
+  one lead worktree, implementation branch, and detailed report while
+  retaining per-ID claims, handoff refs, and linked workpads. A
+  substantial one-item capability is also ordinary; the one-item route
+  remains in force until the hub policy and member `AGENTS.md` adopt
+  batching.
 
 - `scripts/ci-attempt-history.py` reports failures hidden by successful
   CI reruns using the Actions per-attempt endpoints. Counts explicitly

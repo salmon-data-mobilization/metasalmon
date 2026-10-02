@@ -67,6 +67,9 @@ the owning system allocates IDs atomically.
 One file is one unit of work somebody could pick up, finish, and be done with.
 Its name is its id. Its fields say what the work is, where it happens, what it
 is waiting on, and what has to be true for the item to stop existing.
+IDs remain separate even when one same-repository pull request groups them.
+`HUB.md` § *Coherent batches* governs that grouping; it does not combine queue
+files, eligibility, or retirement conditions.
 
 ```yaml
 id: B-53
@@ -224,6 +227,8 @@ claim about everything an agent does: since 2026-09-10 an agent may also open
 one draft pull request per handed-back item, and may merge, promote, or push a
 small mechanical change under conditions `HUB.md` sets out. Read the register
 there for what is permitted; nothing in this section widens or narrows it.
+Later coherent-batch adoption is governed by `HUB.md` and the member repository's
+own `AGENTS.md`; this dated account of the 2026-09-10 grant is unchanged.
 
 **Git is the only write path, so nothing here is invisible to the
 private-terms guard by virtue of being an API call.** That much is true and it
@@ -274,8 +279,8 @@ reclaim reason as text that will be published unread, and write it that way.
 
 One consequence of the protocol is worth stating here because it surprises
 people: **a handoff does not release the claim.** The agent appends a `handoff`
-record and the item stays unclaimable until Brett merges the work, so finished
-work never looks free again while he is away.
+record and the item stays unclaimable through the merge and its own recorded
+retirement, so finished work never looks free before its closure is verified.
 
 ## Why there is no GitHub Project
 

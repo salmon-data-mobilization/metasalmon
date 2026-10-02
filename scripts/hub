@@ -1601,7 +1601,12 @@ print_setup_hints() {
   key="$owner-$repo-$id"
   worktree="../hub-worktrees/$key"
   say "worktree key: $key"
-  say "Setup hints (print only): set MEMBER_CHECKOUT to $repo's checkout and MEMBER_BASE to its fetched starting ref."
+  say "In a solo member after canonical HUB.md batching and this member's AGENTS.md"
+  say "adopt it, a later same-owner related claim REUSES the lead worktree: skip"
+  say "the worktree-add and mkdir hints below. Its exact branch name above is a"
+  say "handoff ref at the completed lead commit; verify its pushed tip before done."
+  say "Setup hints below are for a first or separate-owner item (print only):"
+  say "set MEMBER_CHECKOUT to $repo's checkout and MEMBER_BASE to its fetched starting ref."
   say "git -C \"\$MEMBER_CHECKOUT\" worktree add -b $(printf '%q' "$branch") $(printf '%q' "$worktree") \"\$MEMBER_BASE\""
   say "mkdir -p \"\$MEMBER_CHECKOUT\"/$(printf '%q' "$worktree/.hub/workpads")"
 }
@@ -2065,7 +2070,10 @@ claim_count_and_push() { # id action attempt parent token
       say ""
       if [ "$solo" = "yes" ]; then
         say "Participation: nobody but Brett has worked in $itemrepo, so you may push"
-        say "that branch there and, at hand-back, open one draft pull request for it."
+        say "that branch there. Unless HUB.md's batch policy is on the canonical"
+        say "default branch AND $itemrepo/AGENTS.md adopts it, open one draft"
+        say "for this item. After both, same-owner related IDs share the lead"
+        say "worktree and one assembled draft, with exact per-ID handoff refs."
       else
         say "Participation: $itemrepo is NOT a repository Brett works alone in."
         say "Do not push that branch and do not open a pull request. Do the work in a"
@@ -2254,8 +2262,8 @@ cmd_done() {
   fi
 
   attempt=$(tip_attempt "$id")
-  # A handoff keeps the claim. The item stays unclaimable until Brett merges,
-  # so finished work never looks free again while he is away.
+  # A handoff keeps the claim. Local integration does not release it; the item
+  # stays unclaimable through the pull-request and retirement decision.
   sha=$(write_claim_commit "$id" handoff "$(tip_field "$id" lease_until)" "$attempt" "$tip" "$branch") \
     || { warn "cannot build the handoff commit"; return "$EX_FAIL"; }
 
@@ -2266,7 +2274,7 @@ cmd_done() {
     *) warn "the handoff push failed: $(printf '%s' "$HUB_GIT_OUT" | head -4 | tr '\n' ' ')"; return "$EX_FAIL" ;;
   esac
 
-  say "handed off $id on branch $branch; the claim stays held until Brett merges"
+  say "handed off $id on branch $branch; the claim stays held, not released"
   # Everything printed from here on is read from the queue -- the item's repo,
   # that member's forge and its participation answer -- so it is qualified when
   # this checkout is behind. Asked here and not before the handoff, and warned
@@ -2321,8 +2329,16 @@ cmd_done() {
   # member_solo_for_repo goes with it.
   say ""
   if [ "$solo" = "yes" ]; then
-    say "Open one draft pull request for this branch, labelled agent-run and naming"
-    say "$id in the body, and never a second one for this item."
+    say "Only when HUB.md's batch policy is on the canonical default branch AND"
+    say "$itemrepo/AGENTS.md adopts it: a same-owner constituent uses its exact"
+    say "pushed $branch handoff ref at a completed lead commit, not another"
+    say "worktree or pull request. Keep it held through the lead PR merge; close"
+    say "$id only when its own retires_when is met and recorded."
+    say "Open one draft pull request for the assembled lead branch,"
+    say "labelled agent-run and naming every declared ID, including $id, in the body."
+    say "Otherwise open one draft pull request for this branch, labelled agent-run"
+    say "and naming $id in the body."
+    say "Never a second pull request for any included item."
     say ""
     say "Then read \"Which pull requests need Brett\" in HUB.md and decide which"
     say "list this change is in. If it is one of his ten classes, leave it a draft"
@@ -2495,13 +2511,23 @@ hub - the queue client for the salmon ecosystem hub
                                  the ref, and exits 4 if somebody reclaimed it
                                  first
                                  Also print member-worktree and workpad setup
-                                 hints; no worktree or report is created
+                                 hints; no worktree or report is created. Under
+                                 adopted batching in a solo member, later
+                                 same-owner related IDs reuse the lead worktree;
+                                 verify each pushed handoff ref before done
   hub beat ID                    extend the lease you hold
   hub release ID [reason]        give the item back
   hub done ID --branch B         hand off: record the branch, keep the claim,
                                  print the compare URL, and say what to do with
                                  it. In a repository nobody but Brett has
-                                 contributed to that is one draft pull request;
+                                 contributed to, use one draft for this ID
+                                 unless the batch policy has merged to the
+                                 canonical hub branch AND its own AGENTS.md
+                                 adopts it; then a same-owner ID uses its exact
+                                 branch as a handoff ref at a completed lead
+                                 commit, with its tip checked by the agent;
+                                 one lead draft, and each claim stays
+                                 held through merge and per-ID retirement;
                                  in one he shares it is stop, draft the body in
                                  chat, and wait. B must be exactly
                                  agent/ID/<your token>, because that is the only
