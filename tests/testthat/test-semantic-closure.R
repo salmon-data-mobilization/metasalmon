@@ -1013,3 +1013,109 @@ test_that("a failure in the third write leaves the first two unchanged", {
   expect_identical(read_bytes(first$files[["vocabulary"]]), before_vocabulary)
   expect_identical(readLines(mapping_path, warn = FALSE), before_mapping)
 })
+
+# Q62 / B-340: a tagged sidecar must not become either an output path or a
+# silent default. This public path verifies refusal before the atomic install.
+test_that("closure refuses unknown sidecar tags before any write", {
+  for (declaration in c(
+    "  path: !expr metadata/declared-vocabulary.csv",
+    "  path: !foo metadata/declared-vocabulary.csv",
+    "  path: !str metadata/declared-vocabulary.csv",
+    # B-429 pins the Python follow-up to this R Q62 refusal: a native
+    # undefined handle is a tag error, not the unrelated malformed fallback.
+    "  path: !e!foo metadata/declared-vocabulary.csv",
+    "  path: &v !foo metadata/declared-vocabulary.csv",
+    "  path: !<tag:example.org,2026:unknown> metadata/declared-vocabulary.csv",
+    "  path: metadata/declared-vocabulary.csv\nnotes: [!foo ignored]",
+    "  path: metadata/declared-vocabulary.csv\nnotes: {? !foo key: value}",
+    "  path: metadata/declared-vocabulary.csv\n---\nnotes: !foo ignored",
+    "  path: metadata/declared-vocabulary.csv\nnotes: !foo ignored\nbroken: [unterminated",
+    '  path: metadata/declared-vocabulary.csv\nnotes: ["!<text", !foo value # > later\n]',
+    "  path: metadata/declared-vocabulary.csv\nnotes: !foo [unterminated",
+    "  path: metadata/declared-vocabulary.csv\nnotes: !<tag:example.org,2026:unknown> [unterminated",
+    '  path: metadata/declared-vocabulary.csv\ndescription: "first\n%TAG ! tag:yaml.org,2002:\n# last"\n---\nx: !str value'
+  )) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    writeLines(c("semantic_vocabulary:", declaration,
+                 "semantic_review:", "  path: declared-review.csv"), sidecar)
+    before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+
+    error <- tryCatch(write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    ), error = identity)
+
+    expect_true(inherits(error, "error"), info = declaration)
+    if (inherits(error, "error")) {
+      expect_match(conditionMessage(error), "eml-mapping.yml", fixed = TRUE)
+      expect_match(conditionMessage(error), "tag", fixed = TRUE)
+    }
+    expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+    expect_false(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+    expect_false(file.exists(file.path(path, "declared-review.csv")))
+    expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+    expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+  }
+})
+
+test_that("closure honors untagged and recognized standard tagged paths", {
+  for (value in c("metadata/declared-vocabulary.csv",
+                  "!!str metadata/declared-vocabulary.csv",
+                  "!<tag:yaml.org,2002:str> metadata/declared-vocabulary.csv")) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    writeLines(c("semantic_vocabulary:", paste("  path:", value),
+                 "semantic_review:", "  path: declared-review.csv",
+                 'notes: "!foo literal"'), sidecar)
+    closure <- write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    )
+    expect_identical(closure$files[["vocabulary"]],
+                     normalizePath(file.path(path, "metadata", "declared-vocabulary.csv")))
+    expect_identical(closure$files[["review"]], normalizePath(file.path(path, "declared-review.csv")))
+    expect_true(file.exists(closure$files[["vocabulary"]]))
+    expect_true(file.exists(closure$files[["review"]]))
+  }
+})
+
+test_that("closure refuses implicit-end directive tags before any write", {
+  for (namespace in c("tag:example.org,2026:", "tag:yaml.org,2002:")) {
+    path <- withr::local_tempdir()
+    make_eml_test_sdp(path)
+    closure_clear(path)
+    sidecar <- file.path(path, "metadata", "eml-mapping.yml")
+    text <- paste0(
+      "semantic_vocabulary:\n  path: metadata/declared-vocabulary.csv\n",
+      "semantic_review:\n  path: declared-review.csv\n",
+      "%TAG !e! ", namespace, "\n---\nx: !e!",
+      if (namespace == "tag:yaml.org,2002:") "str" else "foo", " value"
+    )
+    expect_type(suppressWarnings(yaml::yaml.load(text, eval.expr = FALSE)), "list")
+    writeLines(text, sidecar)
+    before <- readBin(sidecar, "raw", n = file.info(sidecar)$size)
+    result <- tryCatch(write_sdp_semantic_closure(
+      path, evidence = closure_reviewed_evidence(),
+      search_fn = closure_search_stub(), quiet = TRUE
+    ), error = identity)
+
+    if (namespace == "tag:yaml.org,2002:") {
+      # Preserve the existing first-document path baseline for known tags.
+      expect_false(inherits(result, "error"))
+      expect_true(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+      expect_true(file.exists(file.path(path, "declared-review.csv")))
+    } else {
+      expect_identical(readBin(sidecar, "raw", n = file.info(sidecar)$size), before)
+      expect_s3_class(result, "metasalmon_eml_mapping_tag")
+      expect_false(file.exists(file.path(path, "metadata", "declared-vocabulary.csv")))
+      expect_false(file.exists(file.path(path, "declared-review.csv")))
+      expect_false(file.exists(file.path(path, "metadata", "semantic_vocabulary.csv")))
+      expect_false(file.exists(file.path(path, "reviewed_semantic_selections.csv")))
+    }
+  }
+})
