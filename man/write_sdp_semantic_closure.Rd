@@ -69,9 +69,13 @@ here.
 
 Evidence is resolved by re-running the package's own deterministic search
 (\code{\link[=find_terms]{find_terms()}}) for each IRI and keeping the hit whose IRI matches. An IRI
-every searched source answered about and none of them has is reported as a
-row of \code{gaps} -- the shape \code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} returns, plus an
-\code{unresolved_iri} column -- and both files are still written without it. That
+every searched source answered about and none of them has is reported in
+\code{gaps} -- the shape \code{\link[=detect_semantic_term_gaps]{detect_semantic_term_gaps()}} returns, plus an
+\code{unresolved_iri} column -- and both files are still written without it. A
+code-resolved procedure has one gap row per \code{codes.csv} row carrying its IRI,
+with that row's keys and \code{term_iri} address. Rendering these gaps produces
+one candidate term request per carrying code row; review them before filing
+so several uses of one IRI do not become duplicate ontology issues. That
 is deliberate: an IRI absent from every searched vocabulary is an ontology
 gap to file through \code{\link[=render_ontology_term_request]{render_ontology_term_request()}} and
 \code{\link[=submit_term_request_issues]{submit_term_request_issues()}}, not a reason to leave the user with no files

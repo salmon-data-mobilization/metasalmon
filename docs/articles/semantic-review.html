@@ -6,7 +6,12 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Semantic Review in R • metasalmon</title>
-<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png"><link rel="icon" type="”image/svg+xml”" href="../favicon.svg"><link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png"><link rel="icon" sizes="any" href="../favicon.ico"><link rel="manifest" href="../site.webmanifest"><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
+<link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
+<link rel="icon" sizes="any" href="../favicon.ico">
+<link rel="manifest" href="../site.webmanifest">
+<script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
@@ -239,12 +244,13 @@ again to see what remains.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/review_metadata.html">review_metadata</a></span><span class="op">(</span><span class="va">pkg_path</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>Strict validation checks the required metadata and IRIs. Publication
-also requires the reviewed semantic closure and reviewed EML facts.
-Continue with the <a href="post-review-package-publication.html">post-review publication
-guide</a> for term gaps, closure evidence and the publication steps. A
-rejected shortlist or unresolved ontology gap needs a decision before
-that path can finish.</p>
+<p>Strict validation checks the required metadata and IRIs. Once it
+passes, you can share the whole SDP folder, keeping its metadata and
+data files together. EML export and KNB deposit additionally require the
+reviewed semantic closure and reviewed EML facts. Continue with the <a href="post-review-package-publication.html">post-review publication
+guide</a> for term gaps, closure evidence and those export and deposit
+steps. A rejected shortlist or unresolved ontology gap needs a decision
+before that path can finish.</p>
 </div>
 <div class="section level2">
 <h2 id="optional-decomposition-dialogue">Optional decomposition dialogue<a class="anchor" aria-label="anchor" href="#optional-decomposition-dialogue"></a>

@@ -159,11 +159,13 @@ review_metadata(pkg_path)
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 
-Strict validation checks the required metadata and IRIs. Publication also
-requires the reviewed semantic closure and reviewed EML facts. Continue with
-the [post-review publication guide](post-review-package-publication.html) for
-term gaps, closure evidence and the publication steps. A rejected shortlist or
-unresolved ontology gap needs a decision before that path can finish.
+Strict validation checks the required metadata and IRIs. Once it passes, you
+can share the whole SDP folder, keeping its metadata and data files together.
+EML export and KNB deposit additionally require the reviewed semantic closure
+and reviewed EML facts. Continue with the
+[post-review publication guide](post-review-package-publication.html) for term
+gaps, closure evidence and those export and deposit steps. A rejected shortlist
+or unresolved ontology gap needs a decision before that path can finish.
 
 ## Optional decomposition dialogue
 
