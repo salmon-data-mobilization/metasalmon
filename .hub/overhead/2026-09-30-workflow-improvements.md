@@ -2337,3 +2337,41 @@ is introduced. Existing reviewed PRs remain separate.
   changed metadata and positive reach controls. A proportionate documentation
   CI path and a clearer routine-guide publication boundary are possible future
   improvements for Brett to consider, not policy changes made in this run.
+
+### Delegated B-401 closeout and final-head wait, 2026-10-02 about 15:29–15:39 UTC
+
+- B-401 merged normally as `61fce4b596daa4ac238a170017bead6cfefdb5ae`,
+  final source head `520f37c`. All six current-head workflows pass. Strict R
+  run 37026938536/job 110903847275 completed on R 4.6.1 at 15:35 UTC with
+  Status OK and zero errors, warnings and notes. Actual completed Claude
+  review 37021403587 has only two nits; its original correction is preserved.
+  Both findings from the last requested Codex review are fixed, answered and
+  resolved. The final skipped Claude job is not counted as a completed review.
+  The PR body and ordinary merge message record the routine delegated class
+  under Brett's 2026-10-01 grant. Q5's term question remains his; no semantic
+  term choice or frozen/public contract, parity-row, guard or policy change
+  was merged. The restored ordering passage satisfies the original retirement
+  condition, with its failing-before/passing-after preservation proof retained.
+- Canonical main fast-forwarded cleanly. B-401's native auxiliary checkout
+  had zero unique commits, no ignored files and no initialized submodules;
+  it was removed and pruned, with both branches retained. B-402's fulfilled
+  prerequisite is cleared and it becomes ready under the 2026-09-23 standing
+  grant (solo P3, nonempty retirement condition, no remaining blocker or Brett
+  decision). B-403 is P4 and remains icebox outside that promotion grant.
+  No fresh claim or renewal was attempted; the Git-auth hold remains.
+- Merge order progressed through B-265 then B-401. Their owed B-266/B-402
+  Python ports can be claimed when configured Git authentication works.
+  B-129's new public guide remains at its existing exact approval question.
+  B-262 remains held for actual completed Claude execution. Its necessary
+  integration naturally started run 37026994541/job 110904041807: 32 turns,
+  145.737 seconds, only the same three nits in comment 5955667288, but one
+  denied `Bash:git log` call failed verification. No manual retry, permission
+  relaxation or cosmetic source churn was used to clear it.
+- The factual canonical checkpoint `0827353` merged cleanly into B-401 in a
+  read-only merge-tree proof; no redundant source refresh or additional CI
+  cycle was added for that base movement. Waiting for final-head CI used four
+  bounded sleeps (45, 45, 55 and 55 seconds: about 200 seconds), recorded as
+  passive wait, not active effort or claim bureaucracy. Final metadata/check
+  reads and publication remain coordination; code/content proofs remain
+  verification. These partial measurements still do not support a global
+  percentage of wasted time.
