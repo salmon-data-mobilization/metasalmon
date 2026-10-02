@@ -49,7 +49,7 @@ def denial_summary(denials):
                 # Git validates the section and final variable components;
                 # subsection text between them can contain other characters.
                 if ("." not in name or name.startswith(".") or name.endswith(".") or
-                        any(char.isspace() for char in name) or
+                        "\x00" in name or
                         re.fullmatch(r"[A-Za-z0-9-]+", name.split(".", 1)[0]) is None or
                         re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", name.rsplit(".", 1)[-1]) is None):
                     return None
