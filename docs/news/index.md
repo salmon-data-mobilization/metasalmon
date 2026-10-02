@@ -260,6 +260,14 @@
 
 ### Fixed
 
+- `REVIEW` IRI markers now use the ruled ASCII-only spelling in
+  validation, review decisions, method migration, bundle checks and
+  EML/KNB output guards: optional spaces or tabs before `REVIEW` and
+  around its colon, with ASCII case variants accepted. Stripping removes
+  only spaces or tabs after the colon. Excluded line breaks or Unicode
+  spaces stay in the value for strict malformed IRI validation (hub
+  B-344, Q63; Python mirror B-345).
+
 - Strict validation now checks the absolute-IRI shape of every populated
   semantic IRI in the dictionary and every `*_iri` field in
   `tables.csv`, including added table columns. Malformed text is refused
