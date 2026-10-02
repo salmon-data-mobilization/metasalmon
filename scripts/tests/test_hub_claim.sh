@@ -2089,7 +2089,9 @@ branch:" ;;
   # member checkout path contains spaces and an apostrophe. Run its git line
   # with a stub function in a subshell, so this checks parsing without ever
   # creating the suggested worktree. The client's own run must create neither
-  # a worktree nor a workpad.
+  # a worktree nor a workpad. For a later same-owner batch claim, the reuse/skip
+  # advice must precede the executable setup hints, so copy-pasting does not
+  # create a redundant worktree before the condition is seen.
   if [ "$probe_ok" = "0" ]; then
     local hint_out="$TMPROOT/client.hint.idempotent.out"
     local hint_args="$TMPROOT/client.hint.args" hint_expected="$TMPROOT/client.hint.expected"
@@ -2116,6 +2118,13 @@ branch:" ;;
     grep -Fxq "worktree key: $hint_key" "$hint_out" || hint_ok=1
     grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$psolo_out" || hint_ok=1
     grep -Fxq "workpad: .hub/workpads/$PART_SOLO_ID.md" "$hint_out" || hint_ok=1
+    for output in "$psolo_out" "$hint_out"; do
+      awk '/REUSES the lead worktree/ { reuse = NR }
+           /skip/ { skip = NR }
+           /^git -C .*worktree add -b/ { command = NR }
+           END { exit !(reuse && skip && command && reuse <= skip && skip < command) }' \
+        "$output" || hint_ok=1
+    done
     hint_line=$(sed -n '/^[[:space:]]*git -C /{s/^[[:space:]]*//;p;}' "$psolo_out" | head -n 1)
     [ -n "$hint_line" ] || hint_ok=1
     if [ -n "$hint_line" ]; then
