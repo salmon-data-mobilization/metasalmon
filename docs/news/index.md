@@ -1604,6 +1604,14 @@
 
 ### Internal
 
+- Hub claim, done, and help guidance explains coherent pull-request
+  batches. Related items held by the same claim-holder token may share
+  one lead worktree, implementation branch, and detailed report while
+  retaining per-ID claims, handoff refs, and linked workpads. A
+  substantial one-item capability is also ordinary; the one-item route
+  remains in force until the hub policy and member `AGENTS.md` adopt
+  batching.
+
 - `scripts/ci-attempt-history.py` reports failures hidden by successful
   CI reruns using the Actions per-attempt endpoints. Counts explicitly
   distinguish runs from attempts; a caller-supplied, known
