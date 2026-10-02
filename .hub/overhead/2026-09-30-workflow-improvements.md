@@ -2375,3 +2375,95 @@ is introduced. Existing reviewed PRs remain separate.
   reads and publication remain coordination; code/content proofs remain
   verification. These partial measurements still do not support a global
   percentage of wasted time.
+
+### Idle batching and PR236 named continuation, 2026-10-02
+
+The 15:44, 16:45 and 17:45 UTC idle checks found unchanged authentication,
+heads and review/approval holds. Reads fell from 11 (seven PR reads and four
+shell calls) to eight (seven PR reads and one configured-URL batch) on each of
+the next two uses: three fewer calls, or 27.3% of read calls per idle check.
+All three recorded zero polling-only agent spawns, source edits, builds/tests
+and Git checkpoints. The first probe wrongly assumed an origin remote in the
+bare claim cache and needed two recovery calls. Later probes reused its actual
+configured URL; authentication still failed without a write and the probe ref
+remained absent. These are call counts, not a whole-run effort percentage.
+
+Brett's directly verified 18:29 UTC named PR236 grant enabled its retained
+B-129 handoff continuation. Root was sole writer/publisher; peers had read-only
+disjoint audit scopes. The necessary main merge took 0.178s and had one actual
+search conflict. A supported publication paragraph was corrected to distinguish
+sharing a strictly validated folder from EML/KNB closure gates. The article
+and NEWS renders took 3.119s and 16.090s (19.209s combined). Offline displayed
+review/setter examples, unchanged data bytes, all 20 fences/39 expressions,
+search ordering/assets and current local gates passed. Unlike B401's narrow
+peer, the next preservation check accounted for every original owned path and
+hunk, and the incoming-main delta. It passed across all 20 original paths;
+this demonstrates the broader check was applied, without establishing a causal
+time saving. Sources stayed frozen for those checks and publication.
+
+The first requested Codex review completed on `9b37fa7` and found one valid P2:
+the S11 implementation note conflicted with present-tense historical audit
+statements. The card now dates its status/remainders/slice plan and routes live
+state to the existing queue. A peer found two residual current-tense clauses
+before publication; both were repaired and the final peer passed. Only card
+and workpad bytes changed in `31c3768`; runtime, guides and rendered pages match
+9b37. OKF has zero diagnostics and original citation/decision-owner controls
+pass. Fixing and checking this finding is implementation/useful verification,
+not claim bureaucracy. Two unused blob uploads and one unreferenced server
+commit were prepared before the peer completed and superseded privately; no
+public branch or CI cycle used that intermediate state. Next time upload after
+the peer's final source freeze. No published history was rewritten.
+
+Claude's source-push, ready and fix jobs skipped execution using the existing
+verified `4854c41` nits verdict. They are not fresh reviews; the actual prior
+completed execution remains the Claude evidence. The last requested Codex code
+and security reviews completed on9b37; its P2 was fixed, answered and resolved.
+No optional review reroll, permission expansion, guard relaxation, provider
+repair or repeated publication approval was used. Final-head CI and the exact
+named approval remain separate merge gates.
+
+Two avoidable output failures are recorded separately from implementation:
+a four-turn approval read with included outputs emitted about 22K tokens, and a
+top-level log-heading selector emitted 20,550 tokens because the latest dated
+sections use level-three headings. The next read selected the actual latest
+h2/h3 dated subsection (2,669 characters), asserted a size bound and emitted a
+compact log/cleanup receipt (187 tokens). This small execution adjustment
+avoids reading the full history again and changes no policy or tracker. The
+initial queue Markdown link escaped the OKF bundle and produced one warning;
+its inline canonical queue route passed the next capture with zero diagnostics.
+These repairs have no measured elapsed-time cost and are not package defects.
+
+Coordination includes ownership/approval/metadata reads, publication and factual
+closeout; implementation includes the two bounded prose repairs; verification
+includes examples, content proofs, builds, peers and actual reviews; claim-auth
+and transport/output repair remain separate. The measurement peer read existing
+receipts without GitHub polling, source writes, new builds/tests or model calls.
+The 12m12s merge-to-freeze interval mixes several categories; it cannot be
+partitioned into active effort or waste. Passive sleeps and final gate/merge
+receipts are added below. No defensible whole-run wasted-time percentage is
+inferred from these partial and overlapping measurements.
+
+PR236 merged as `11ea204ad875785d5ec22590ffb2bd5a6b521089` after all seven
+final-head workflows passed on31c3768. R run37052054610/job110987591166 passed
+the full provider-isolated suite and strict R4.6.1 check at19:18 UTC with
+zero errors, warnings and notes. The exact named grant satisfies its reserved
+new-public-page gate; the merge message and concise PR body retain that receipt.
+No human thread waited; the one Codex P2 is fixed, answered and resolved.
+Canonical main fast-forwarded cleanly. The native B129 checkout had no unique
+commits, ignored files, initialized submodules or embedded repositories and was
+removed/pruned; branches were retained and unrelated B384 workpad edits kept.
+B129's own walkthrough/navigation/tidyr retirement condition is met. No item
+had a B129 dependency to promote.
+
+This continuation recorded six completed bounded sleeps (45s then five55s)
+and one interrupted sleep (~4.06s): about324.15s of passive wait. Later elapsed
+idle gaps are not asserted as measured sleep or active effort. A premature
+in-progress job-log read returned404; the completed-job read supplies the actual
+R4.6.1/StatusOK/zero-result evidence. A closeout query first assumed PyYAML in
+the system interpreter; its missing import was avoided using the existing
+queue instrument and an rg search with B129's own ID as positive control.
+These are instrument rework, not source defects. A fresh19:19 UTC no-write
+Git-auth probe still fails128 with credential failure; public locks-main is a
+positive reach control and the probe ref is absent. No new claims/renewals,
+credentials or claim-policy changes were made. B266/B402 remain ready for
+authenticated pickup. All history before this append is preserved exactly.
