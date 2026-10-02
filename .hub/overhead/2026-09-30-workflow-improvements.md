@@ -1642,3 +1642,37 @@ mandatory-semantics/public-route distinction, with no causal percentage claim.
   build1.89s and64-page render18.38s pass. Only its five scoped files differ.
   It is ready for its first requested review; green checks alone do not supply
   an actual review. B223 remains parked on its real dependency/approval hold.
+
+
+### Final routine batch and canonical log route, about01:28–01:39 UTC
+
+- PR234 merged as c1db3f1 at01:36:51 UTC after all six exact-head checks
+  passed. Actual Claude36950838573 completed on6c145ff with zero denied tools
+  and only nits; the last requested Codex code/security reviews on043ee07
+  completed without findings, and owned executable logic/tests survived the
+  integrations. Earlier denied-tool runs remain failed; no old run was retried.
+- Py83 merged as386d721 at01:34:41 UTC after its completed first Codex review's
+  valid default-offline-schema finding was fixed in a741321. Source inspection,
+  the rendered guide and all six current-head checks agree. The sole bot thread
+  was answered and resolved; no extra model review refreshed the reviewed head.
+- Both clean canonical checkouts fast-forwarded. Completed clean auxiliary
+  checkouts had zero unique commits and were removed; branches remain. PR234's
+  complete log matched the canonical copy byte-for-byte before cleanup.
+- R260's final frozen full/strict pair passed once (95.80s/124.16s). Actual
+  Claude36951110809 completed ondd8808e with zero denied tools, zero important
+  findings and four nits. A Pandoc download HTTP500 was repaired by one
+  unchanged-head infrastructure retry, without a source or model reroll.
+  Py94's supported3.11 exact-head gates pass. Both marker drafts remain critical.
+
+Next small adjustment: resumptions read the latest dated log section and only
+load older sections for a specific question. The complete durable history stays
+intact. PR234's body now summarizes current changes and gates and routes detailed
+chronology to its existing workpad/log. This reduces duplicated text; the next
+wake will test the read scope. No causal time or token saving is claimed.
+
+Root's overbroad tool-description/diff dump and unsupported gh diff path argument
+were instrument rework. Direct status-only reads and guarded sequential writes
+are sufficient for this batch. Queue audits found no free independent eligible
+item: held work, genuine prerequisites and pending critical decisions remain.
+Coordination, requested audit, verification, environment repair and passive CI
+waits overlap; they still do not establish a whole-run wasted-time percentage.
