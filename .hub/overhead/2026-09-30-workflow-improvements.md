@@ -1791,3 +1791,105 @@ estimate is inferred. Root will publish one actual repair with these receipts.
   one detailed lead report and concise per-ID pointers, one integrated
   review/test checkpoint, then per-ID closure at a meaningful checkpoint.
   The policy proposal remains held for review; existing claim rules apply.
+
+### Shared-checkout proposal and routine closeout, 2026-10-02 about03:16–04:00 UTC
+
+- R223/B-256 merged as6835d8a after all current-head gates passed, first
+  Codex reviews completed without findings and actual Claude36956399185
+  completed with only two nits. Its44 focused HTTP-message assertions meet
+  the recorded retirement condition. This checkpoint closes B-256.
+- R226/B-229's first ready transition cancelled in-flight Claude145; the
+  subsequent146 posted nits but failed its execution check on one denied
+  Bash:git call. Neither supplies completed-review evidence. Root verified
+  the valid Codex P2 about plausible incomplete history and the future CI
+  path omission, then published one coherent fix: required caller-supplied
+  rerun reach control, explicit count units and both workflow path filters.
+  Four targeted baseline controls failed before the repair;11 focused tests,
+  237 offline tests plus132 subtests and independent collector controls pass.
+  Actual Claude36960479461 completed on91c6537 with zero denied calls and
+  only nits. All six workflows passed; R4.6.1 reported Status: OK,0/0/0.
+  The Codex thread was answered/resolved. Delegated mergeaa84575 closes
+  B-229; the clean primary fast-forwarded and its zero-unique worktree was
+  removed/pruned, retaining the branch.
+- R261 and Py95 are the concrete coherent-scope process proposal and member
+  adoption. Same claim-holder tokens share a lead checkout, implementation
+  branch and detailed report; every ID keeps its claim and handoff ref,
+  minimal linked workpad and acceptance. Different tokens stay isolated.
+  Substantial one-ID capabilities qualify; a narrow exception has one brief
+  reason, linked from the PR. Existing claims, dependencies, cap, reserved
+  classes and review budget are preserved. Class7 review remains pending;
+  no batch authority is active before canonical policy/member adoption land.
+- Isolated client verification passes43 checks plus22 separate same-owner
+  compatibility controls. Peer review corrected conditional adoption,
+  retirement endpoint, completion-SHA self-reference, owner-token ambiguity
+  and setup hints that otherwise still encouraged another worktree. These
+  are useful requested audit/verification work. One phrase-wrapping failure
+  in an existing output assertion was verification rework. Core claim
+  mutation logic and scientific contracts remain unchanged.
+- Building the final policy NEWS once after R226 landed avoided an immediate
+  additional generated conflict/build cycle. Its588 ordered non-NEWS records
+  and seven favicon pairs are preserved. This is a procedural observation,
+  not a causal elapsed-time saving.
+- R229/B-262 resumed its existing handoff, with unchanged R expressions and
+  vignette source, one16.98s NEWS build and656/658 unchanged search records.
+  App commitf3d77e6 preserves its tested tree/ordered parents. It stays draft
+  while actual Claude runs; one later ready transition will request first
+  Codex review. Py79's guide landing9304851 is now a dated fact; the two
+  internal Python comment corrections remain explicitly owed.
+- The requested September27 S16 handoff is historical. Live PRs confirm
+  Py76/B199 → Py72/B327 → R210 → Py74; Py73 merged. No S16 claim was taken
+  over and no retiring provider code was repaired.
+- Coordination is routing, handoff/readiness and closeout; implementation is
+  the instrument/client repair; verification is focused/peer/CI evidence;
+  the process/handoff analysis is requested audit. Expired CLI login and
+  connected-app object publication are environment repair. The one read-only
+  SSH test also failed publickey; no keys/settings or claim transport changed.
+  User authentication and CI waits remain passive waits. No new claim trial
+  or defensible whole-run wasted-time percentage is inferred from overlap.
+  Root guessed unsupported `hub lint/check` subcommands during this closeout;
+  the validator commands are `python3 scripts/hub_queue.py lint` and
+  `python3 scripts/hub_queue.py check`.
+  Both corrected checks pass. That lookup mistake is instrument rework.
+
+R261's initial actual Claude36961915954 model and execution-check steps both
+completed successfully on a3c213a; its comment reports five nits, no blocking
+issue. The process/authorization decision still belongs to Brett. The proposed
+policy is ordinary repository work directly requested in chat, outside a queue
+claim; no synthetic queue ID is allocated just to justify its PR label.
+
+Next eligible live batch measures these structural expectations in this same
+log, after policy adoption and Git authentication recovery:
+
+| Two related IDs, same token | Prior default | Proposed, not yet measured live |
+|---|---|---|
+| Implementation checkouts/branches |2/2|1/1, retaining per-ID handoff refs|
+| Detailed evidence reports |2|1 plus a short linked constituent record|
+| PRs and integrated review checkpoints |2|1|
+
+The next measurement records actual setup/report/review effort separately from
+the one-off policy work and environment repair. No tracker or new claim format
+is introduced. Existing reviewed PRs remain separate.
+
+### Review-path correction checkpoint, 2026-10-02 about 04:00–04:10 UTC
+
+- R229/B-262's first review on `f3d77e6` posted four nits, but its execution
+  verifier failed on one denied `Bash:git` call. Run 36962305235 is therefore
+  not completed review evidence. Reading the first finding against the whole
+  guide revealed a real scope error: the new step 9 paragraph implied that
+  reviewed closure and EML facts were required for all sharing, while steps
+  10–12 require them for EML/KNB and permit ordinary folder sharing after
+  strict SDP validation. The owner is making one genuine prose correction
+  and one affected-document build, followed by peer verification. This is
+  implementation and verification work, not a source change to reroll a model.
+- Directly reading the current Python guide at `386d721` with its publication
+  passage as a positive control confirms that it already makes this distinction.
+  The scope correction needs no Python port or parity deviation. The two
+  existing internal Python closure-comment corrections remain owed separately.
+- The shared-checkout proposal removes a second implementation checkout and
+  detailed report for two same-token related IDs, but retains a lightweight
+  member handoff-ref publication for each constituent. Lock and acceptance
+  traffic are unchanged. A live trial must count those retained writes before
+  attributing setup or review savings; no elapsed-time percentage is claimed.
+- This checkpoint records the B-256 and B-229 queue closures together with
+  the measurements above. Publication remains a mechanical factual closeout;
+  R261/Py95 stay draft while the class 7 decision is pending.
