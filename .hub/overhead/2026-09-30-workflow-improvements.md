@@ -1582,3 +1582,33 @@ standard's mandatory semantics from its recommended implementation route and
 check whether an internal view preserves the current contract. Detailed item
 proof stays in workpads; this compact batch is the overhead record. These
 overlapping activities still do not support a whole-run wasted percentage.
+
+### Small housekeeping batch and next preflight, about00:48–01:15 UTC
+
+PR220 mergedf727aee under routine-defect delegation after six green checks,
+actual completed Claude review and the completed last-requested Codex reviews.
+Existing B133 closed in572f6a7 with the setup-purl suggestion corrected. Its
+clean auxiliary had zero unique commits and was removed; its branch remains.
+
+PR216's original handoff is integrated and ready at16d835a, with five focused
+build assertions and exact exclusion bytes preserved. Readiness caused one
+superseded Claude run to cancel; only the later completed actual run can supply
+review coverage. PR234's local actual-main integration retains168 offline
+passes and the appended log, but publication is held for the routine batch's
+base to settle. Independent reviewed scopes remain separate. This reduces
+potential publication churn, not a measured CI/token saving. Its native build
+was prepared before the batch decision and may need repeating; failed search
+record/path assumptions are instrument repair, not product verification.
+
+The marker review's next genuine finding is narrative text starting `Review:`.
+The broad decoded-node scan confuses free text with an IRI-bearing value. Both
+owners are inventorying actual emitted schema positions before the next peer
+and heavy gates. The earlier successful full/strict run is superseded for this
+finding; no synthetic arbitrary-attribute test is accepted as real IRI coverage.
+
+B350's exact-model distinction allowed internal paired operations to proceed
+without a public-parser redesign question. Focused preflight then caught enum/
+string metadata incorrectly inheriting the old table profile's URI checks.
+The new internal inheritance path will preserve that prior accepted behavior;
+the separate old table-range defect stays in B269. This is the next use of the
+mandatory-semantics/public-route distinction, with no causal percentage claim.
