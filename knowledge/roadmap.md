@@ -269,19 +269,18 @@ Ordering that is not optional, independent of who is executing:
   agreeing about *which file was wrong* and all four being wrong about it, which
   no check that "the three numbers match" can catch. **Read the three files, not
   a description of them**, this bullet included.
-- **gcdfo is carved out for what the gold standard demonstrably needs** (Brett,
+- **gcdfo is carved out for the gold standard, and for nothing else** (Brett,
   2026-08-24, hub [Q5](questions.md)): *"Carve out what the gold standard
-  needs."* The former example, PFMA Subareas for the 173-row extract's `AREA`
-  values `29F`, `29G`, `29J` and `29K`, was based on a wrong reading: the
-  [NuSEDS dictionary](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Data_Dictionary_NuSEDS_EN.csv)
-  and [map](https://api-proxy.edh-cde.dfo-mpo.gc.ca/catalogue/records/c48669a3-045b-400d-b730-48aafe8c5ee6/attachments/Map%20of%20Areas.pdf)
-  identify those as DFO sub-districts. [Q8](questions.md) still sends actual
-  PFMA Subareas to `gcdfo`; it does not bind this column to them. Whether the
-  gold standard needs a sub-district term from `gcdfo`, and on what authority,
-  remains open in the [commons gap card](https://github.com/salmon-data-mobilization/salmon-knowledge-commons/blob/main/concepts/nuseds-area-is-a-subdistrict.md)
-  and [S12](sequences/s12-fraser-coho-gold-standard.md). Other `gcdfo` work
-  remains de-prioritised, `psc-salmon-vocabularies` stays fully de-prioritised,
-  and species goes to an external taxonomy.
+  needs."* The carve-out is currently **one item — PFMA subareas** for the
+  173-row example's `AREA` column (`29F`, `29G`, `29J`, `29K`), which
+  [Q8](questions.md) sends to gcdfo because it already owns
+  `gcdfo:PacificFisheryManagementAreaScheme`. Everything else in gcdfo stays
+  de-prioritised and `psc-salmon-vocabularies` stays fully de-prioritised.
+  Species goes to an external taxonomy, not to gcdfo. **Still to decide, and it
+  is a scope question rather than a priority one:** whether the mint is the four
+  Subareas the example holds or all 604 in SOR/2007-77 Schedule 2 — owner
+  [S12](sequences/s12-fraser-coho-gold-standard.md), routed through
+  [S9 step 7](sequences/s9-ontology-alignment.md).
 - **The model call leaves the packages in two releases, additive first**
   (Brett, 2026-09-25, hub [Q67](questions.md)). The exporter and ingester land
   in both packages in one train, with the in-package model call deprecated and
@@ -836,6 +835,16 @@ claim covers one branch in one repository. Its metasalmonpy queue item is
 `B-264`; the test twin **landed 2026-10-01 as metasalmonpy #81**, merge
 `430b568`, without a runtime change.
 
+**The development version after 0.5.0 adds a closure-address port to what the
+mirror is owed (2026-09-30).** Hub item **B-265** makes R's gap and
+incomplete-evidence rows for a code-resolved procedure name each carrying
+`codes.csv` `term_iri` row, including two code rows that share one IRI. The
+Python producer still names nonexistent `codes.csv` `method_iri`. The matching
+change is a port, not a register row, and is specified under *What
+metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
+same stream:** a hub claim covers one branch in one repository. The Python
+half is `B-266`.
+
 **The development version after 0.5.0 adds a NuSEDS `AREA` description port to
 what the mirror is owed (2026-10-01).** Hub item **B-401** corrects both
 metasalmon example dictionaries: NuSEDS defines `AREA` as a DFO sub-district,
@@ -843,7 +852,7 @@ not a PFMA Area. metasalmonpy's bundled copy still has the former description;
 this is an owed port, not a chosen difference or register row, specified under
 *What metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in
 the same stream:** a hub claim covers one branch in one repository. The Python
-half is `B-402`, blocked by B-401; `B-403` owns the separate `smn-data-pkg`
+half is `B-402`; `B-403` owns the separate `smn-data-pkg`
 example.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
