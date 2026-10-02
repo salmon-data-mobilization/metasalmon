@@ -2471,6 +2471,13 @@ _PROSE_LIST_MARKER = r"(?:[-*+]|\d+[.)])[ \t]+"
 _PROSE_DECORATION = r"(?:\*\*|`)?"
 _PROSE_STATE = _PROSE_DECORATION + "(?:" + "|".join(map(re.escape, STATES)) + r")\b" + _PROSE_DECORATION
 _PROSE_ID = _PROSE_DECORATION + r"[BSQ]-\d+\b" + _PROSE_DECORATION
+# Headings and thematic breaks end a Markdown block without requiring a
+# blank line. Keep this bounded syntax separate from historical line wraps.
+_PROSE_BLOCK_END_PATTERN = (
+    r"^ {0,3}(?:#{1,6}(?:[ \t]+|$).*|(?:=+|-+)[ \t]*"
+    r"|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})\r?$"
+)
+_PROSE_BLOCK_END_RE = re.compile(_PROSE_BLOCK_END_PATTERN)
 QUEUE_FACT_SENTENCE_RE = re.compile(
     r"^[ \t]*(?:" + _PROSE_LIST_MARKER + r")?" + _PROSE_DECORATION + r"(?P<id>[BSQ]-\d+)"
     + _PROSE_DECORATION + r"\s+(?:"
@@ -2482,7 +2489,8 @@ QUEUE_FACT_SENTENCE_RE = re.compile(
     + "|" + _PROSE_DECORATION + r"claimable" + _PROSE_DECORATION + r"\s*:\s*"
     + _PROSE_DECORATION + r"(?:true|false)\b" + _PROSE_DECORATION
     + "|" + _PROSE_DECORATION + r"blocked_by" + _PROSE_DECORATION + r"\s*:\s*\[[^\]\n]*\]))"
-    + r"(?=[ \t]*(?:[.!]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER + r"|\Z)))",
+    + r"(?=[ \t]*(?:[.!]|\Z|\r?\n(?:[ \t]*\r?\n|[ \t]*" + _PROSE_LIST_MARKER
+    + "|" + _PROSE_BLOCK_END_PATTERN + r"|\Z)))",
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -2524,7 +2532,7 @@ def validate_queue_facts_in_prose(root: Path, items: list[Item]) -> list[Problem
         for line in prose.splitlines(keepends=True):
             if at_start or re.match(r"^[ \t]*" + _PROSE_LIST_MARKER, line):
                 starts.add(offset)
-            at_start = not line.strip()
+            at_start = not line.strip() or bool(_PROSE_BLOCK_END_RE.match(line.rstrip("\r\n")))
             offset += len(line)
         for match in QUEUE_FACT_SENTENCE_RE.finditer(prose):
             line_start = prose.rfind("\n", 0, match.start("id")) + 1

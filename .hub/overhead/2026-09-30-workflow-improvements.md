@@ -1726,3 +1726,24 @@ by publishing closeout measurements before the log-bearing batch member landed.
 Defer the next factual log closeout until that member lands; no new log tracker,
 source rewrite, local full rerun, site rebuild or optional model round is added.
 Current-head functional CI remains required.
+
+
+**Final-gate read correction, about01:58–02:02 UTC:** the completed Codex status
+was mistaken for no findings. Its live inline P2 had existed since01:48:40 and
+reproduces an unblanked post-heading assertion bypass; Claude calling it a nit
+does not settle correctness. Root repaired13 reproduced failures with bounded
+block syntax;174offline checks pass before an independent frozen peer. This
+is useful review/implementation work plus avoidable gate-reading rework.
+Next gate reads actual threads alongside completion status before claiming
+findings are clear. A wrong REST path initially returned404; the correct
+review-comment endpoint recovered the known positive control, with no claim
+that the review was absent. No optional model round or local full/site build.
+
+
+**Frozen peer before publication:** the independent post-heading peer found
+the companion unpunctuated paragraph-END bypass before a source publication.
+Eight new controls reproduced it; a shared block pattern fixes both boundaries.
+All175 offline checks pass in0.562s, and25 independent public-lint controls pass
+with no residual. This is useful audit/verification, not bureaucracy. There
+was no superseded source-fix CI/full/site/model run; no causal saved-time
+estimate is inferred. Root will publish one actual repair with these receipts.

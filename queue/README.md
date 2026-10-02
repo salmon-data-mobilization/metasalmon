@@ -325,6 +325,9 @@ B-53 has claimable: false.
 B-53 has blocked_by: [B-90, S-12].
 ```
 
+ATX/setext headings and thematic breaks start the next paragraph even without
+a blank line. This is bounded block syntax, not a general Markdown parser.
+
 The recognized assertion ends at a period/exclamation or the paragraph's end;
 a question mark is an interrogative and passes.
 Trailing attribution such as “in the 2026-09-01 snapshot” or “, the old card

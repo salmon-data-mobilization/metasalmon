@@ -2078,6 +2078,46 @@ class TestQueueFactsInProse(QueueTestCase):
                 self.write_prose("knowledge/card.md", attributed + "\n")
                 self.assert_accepts()
 
+    def test_markdown_heading_and_separator_end_a_prose_block(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        boundaries = tuple("#" * n + " Status\n" for n in range(1, 7)) + (
+            "   ## Status\n", "Status\n===\n", "Status\n---\n",
+            "***\n", "* * *\n", "_ _ _\n", "---\n", "- - -\n",
+        )
+        for boundary in boundaries:
+            with self.subTest(boundary=boundary):
+                prefix = "Earlier prose.\n" + boundary
+                self.write_prose("knowledge/card.md", prefix + "B-53 is ready.\n")
+                output = self.assert_rejects("queue-fact-in-prose")
+                self.assertIn(f"knowledge/card.md:{prefix.count(chr(10)) + 1}:", output)
+
+    def test_unpunctuated_assertion_ends_before_a_markdown_block(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for ending in ("## Next\n", "===\n", "---\n", "* * *\n", "_ _ _\n", "- - -\n"):
+            for newline in ("\n", "\r\n"):
+                with self.subTest(ending=ending, newline=newline):
+                    text = "## Status\nB-53 is ready\n" + ending + "Separate prose.\n"
+                    self.write_prose("knowledge/card.md", text.replace("\n", newline))
+                    self.assert_rejects("queue-fact-in-prose")
+        self.write_prose("knowledge/card.md", (
+            "## History\nB-53 is ready\nin the 2026-09-01 snapshot.\n## Next\nSeparate prose.\n"
+        ))
+        self.assert_accepts()
+
+    def test_heading_boundaries_preserve_history_and_literal_controls(self):
+        self.write_item(BASE_DEFECT, legacy="''")
+        for non_boundary in ("##Status\n", "####### Status\n", "**\n", "__\n"):
+            with self.subTest(non_boundary=non_boundary):
+                self.write_prose("knowledge/card.md", "The old record said\n" +
+                                 non_boundary + "B-53 is ready.\n")
+                self.assert_accepts()
+        self.write_prose("knowledge/card.md", (
+            "## History\nB-53 was ready at that observation.\n"
+            "## Conditional\nIf B-53 is ready, try the claim.\n"
+            "```md\n## Example\nB-53 is ready.\n```\n"
+        ))
+        self.assert_accepts()
+
     def test_news_and_retained_evidence_are_inputs_too(self):
         self.write_item(BASE_DEFECT, legacy="''")
         for path in ("NEWS.md", "notes/evidence/theme-a/measurement.md"):
