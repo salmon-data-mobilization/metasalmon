@@ -1931,3 +1931,19 @@ is introduced. Existing reviewed PRs remain separate.
   A next diagnostic improvement should establish the denied Git operation's
   safe command shape before changing a prompt or permission. The current
   summary names only the tool; the cause is not established by that label.
+
+### Claim-renewal hold, 2026-10-02 about 05:26–05:30 UTC
+
+- The bounded heartbeat found unchanged canonical main and eight unchanged PR
+  heads/states. No new review or implementation round was started. CLI login
+  still returns HTTP 401; the existing authentication question remains pending.
+- B-223's public lock tip was read twice in a disposable repository and remains
+  `56611e3`, an attempt-2 beat naming the original owner. Its lease ended at
+  05:25:03 UTC; the configured 60-minute reclaim grace ends at 06:25:03 UTC.
+  It remains held during grace. B-223 files are frozen pending authenticated
+  renewal and a fresh ownership check; no claim/ref mutation or API substitute
+  was attempted. Do not infer a new claim opportunity from the expired timestamp.
+- The live lock reads and hold routing are coordination/verification;
+  authentication repair remains an environment hold and waiting is passive.
+  This one changed claim fact is recorded once. Unchanged hourly PR snapshots
+  do not need new reports, documentation builds or review rerolls.
