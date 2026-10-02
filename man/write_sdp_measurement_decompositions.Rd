@@ -61,3 +61,29 @@ artifact, leaving the frozen SDP dictionary columns unchanged. This is an
 ordered SDP semantic profile informed by I-ADOPT roles, not a claim of
 native I-ADOPT conformance.
 }
+\examples{
+# This local example demonstrates the closed row schema; actual components
+# should come from a documented semantic review.
+sdp_path <- tempfile("sdp-")
+dir.create(file.path(sdp_path, "metadata"), recursive = TRUE)
+dictionary <- data.frame(
+  dataset_id = "demo", table_id = "counts", column_name = "count",
+  column_role = "measurement",
+  term_iri = "https://example.org/variables/count"
+)
+readr::write_csv(dictionary,
+  file.path(sdp_path, "metadata", "column_dictionary.csv"))
+components <- data.frame(
+  dataset_id = "demo", table_id = "counts", column_name = "count",
+  measurement_concept_iri = "https://example.org/variables/count",
+  component_order = 1L, component_role = "property",
+  component_status = "matched", component_relation = "",
+  related_component_order = NA_integer_,
+  component_iri = "https://example.org/properties/abundance",
+  component_label = "Abundance", rationale = "", source = "Example",
+  source_version = "1", source_url = "https://example.org/",
+  provenance = "Illustrative review record"
+)
+write_sdp_measurement_decompositions(sdp_path, components)
+unlink(sdp_path, recursive = TRUE)
+}

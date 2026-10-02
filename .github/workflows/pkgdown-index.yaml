@@ -45,7 +45,11 @@ concurrency:
 jobs:
   reference-index:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # PR254 run36914131218 exhausted 15 minutes in R/system dependency
+    # setup before the index assertion ran. Keep setup bounded separately
+    # from the cheap check; retire this allowance when setup reliably fits
+    # the former budget (for example, a supported preinstalled toolchain).
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -68,4 +72,5 @@ jobs:
           dependencies: '"hard"'
 
       - name: Every exported topic is in the reference index
+        timeout-minutes: 5
         run: Rscript scripts/check-pkgdown-index.R

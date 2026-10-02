@@ -6,6 +6,24 @@ ceremony to a one-line fix.
 
 ## What changed, and why
 
+<!-- Name the coherent capability or related-defect scope. A substantial
+one-ID capability needs no ID-count rationale. For a narrow standalone or
+urgent fix, link the lead workpad's one brief scope reason. -->
+
+## Coherent batch (delete for one item)
+
+<!--
+Use only under adopted HUB.md § Coherent batches and the target AGENTS.md.
+Answer ontology, guard, and mirror questions per ID when answers differ.
+-->
+
+Lead ID/branch/workpad:
+
+Member IDs/handoff refs/workpads (and separate implementation branches where used):
+
+Acceptance matrix, final integrated checks/review, and strictest class
+(link the lead workpad):
+
 ## Did this pull request choose an ontology term?
 
 <!--

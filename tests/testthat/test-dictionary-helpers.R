@@ -372,6 +372,31 @@ test_that("dictionary entry points pass strict sources through to retrieval", {
   )))
 })
 
+test_that("multi-table semantic seeding runs once with the widened shortlist", {
+  withr::local_options(metasalmon.llm_deprecation_quiet = TRUE)
+  suggestion_widths <- integer()
+  fake_suggest <- function(df, dict, max_per_role, ...) {
+    suggestion_widths <<- c(suggestion_widths, max_per_role)
+    dict
+  }
+
+  with_mocked_bindings(
+    suggest_semantics = fake_suggest,
+    {
+      infer_dictionary(
+        list(catches = data.frame(count = 1:2), sites = data.frame(site = c("A", "B"))),
+        seed_semantics = TRUE,
+        semantic_max_per_role = 1L,
+        llm_assess = TRUE,
+        llm_top_n = 4L,
+        seed_verbose = FALSE
+      )
+    }
+  )
+
+  expect_identical(suggestion_widths, 4L)
+})
+
 test_that("infer_dictionary single-table semantic seeding preserves seed metadata attributes", {
   seed_codes <- tibble::tibble(
     dataset_id = "dataset-1",
