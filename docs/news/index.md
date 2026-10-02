@@ -260,6 +260,20 @@
 
 ### Fixed
 
+- **The migration and tidy-data vignettes now tangle without executable
+  code** (hub item B-133). Their 25 display-only examples each declare
+  `purl = FALSE` in the chunk header, so R CMD check’s vignette-code
+  step no longer tries to read example package paths that the tangle
+  never created. The vignette guard’s two pinned exceptions are removed;
+  a new live chunk in either guide now fails the guard.
+
+- Strict validation now checks the absolute-IRI shape of every populated
+  semantic IRI in the dictionary and every `*_iri` field in
+  `tables.csv`, including added table columns. Malformed text is refused
+  before a package can be finalized; REVIEW markers and missing values
+  retain their existing reports, and review-ready validation remains
+  unchanged (hub B-342; Python mirror B-343).
+
 - **Applying a dictionary preserves vocabulary-backed columns.** B-346,
   implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
   with a nonblank `vocabulary_iri` and missing/blank `code_value` now
@@ -280,6 +294,12 @@
   Windows-1252, then Latin-1 decoding chain before front matter and code
   fences are removed. Review-packet excerpts retain Windows-1252 text
   instead of failing on invalid UTF-8 (hub B-383).
+
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  and SDP validation through a non-evaluating YAML parser probe. Quoted
+  exclamation text still reads as text, and no tag expression is
+  evaluated (hub B-352; metasalmonpy mirror B-353).
 
 - Session IDs no longer advance or initialize the user’s random-number
   state, and BioPortal’s once-per-session missing-key warning is
@@ -1653,18 +1673,17 @@
   `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7
   display chunks tangle as live code and fail `R CMD check` at the first
   statement on R 4.3.3. The guard was shown failing on both before
-  anything else changed. Both stay as they are until hub item B-133
-  fixes them. Meanwhile the guard lists them as known offenders, each
-  pinned to the chunks that offend today. A new live chunk in either one
-  still fails, and so does an entry that has stopped offending.
+  anything else changed. B-133 then marked each display-only chunk with
+  `purl = FALSE` and removed both pinned exceptions. A new live chunk in
+  either guide now fails the guard.
 
   A test is needed because the check step that catches this stopped
   running by default in R 4.4.0, when
   `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so CI’s current R
-  stays green while `R CMD check` fails for a user on R 4.1 to 4.3,
-  which DESCRIPTION supports. *Retires when:* CI’s own check runs that
-  step again, which it cannot while the known-offender list has an
-  entry.
+  could stay green while `R CMD check` failed for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI’s own check runs
+  that step again; B-133 cleared the known-offender list that prevented
+  it.
 
 ## metasalmon 0.5.0
 

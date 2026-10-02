@@ -1381,6 +1381,40 @@ infer_column_role <- function(col_name, col) {
   c("term_iri", "property_iri", "entity_iri", "unit_iri", "constraint_iri", "statistical_modifier_iri")
 }
 
+# Reviewed and LLM-reviewed measurements can write several constraint IRIs in
+# one dictionary cell, separated by semicolons. Trim ASCII spaces only beside
+# separators: the producer writes `; `, while outer whitespace still makes an
+# IRI malformed. Keep empty components, including a trailing one, so strict
+# validation cannot accept an incomplete list.
+.ms_constraint_iri_components <- function(value) {
+  value <- as.character(value)[[1]]
+  if (is.na(value) || !nzchar(value)) {
+    return(value)
+  }
+  components <- strsplit(value, ";", fixed = TRUE)[[1]]
+  if (endsWith(value, ";")) {
+    components <- c(components, "")
+  }
+  if (length(components) > 1L) {
+    before_separator <- seq_len(length(components) - 1L)
+    after_separator <- seq.int(2L, length(components))
+    components[before_separator] <- sub(" *$", "", components[before_separator])
+    components[after_separator] <- sub("^ *", "", components[after_separator])
+  }
+  components
+}
+
+.ms_constraint_iri_has_review_marker <- function(value) {
+  if (is.na(value)) {
+    return(FALSE)
+  }
+  any(grepl(
+    "^\\s*REVIEW\\s*:",
+    .ms_constraint_iri_components(value),
+    ignore.case = TRUE
+  ))
+}
+
 #' Validate a salmon data dictionary
 #'
 #' Validates a dictionary tibble against the salmon data package schema.
@@ -1477,6 +1511,12 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
 
   review_marker_rows <- lapply(iri_fields, function(field) {
     vals <- dict[[field]]
+    if (identical(field, "constraint_iri")) {
+      return(vapply(
+        vals, .ms_constraint_iri_has_review_marker,
+        logical(1), USE.NAMES = FALSE
+      ))
+    }
     !is.na(vals) & grepl("^\\s*REVIEW\\s*:", as.character(vals), ignore.case = TRUE)
   })
   names(review_marker_rows) <- iri_fields
@@ -1586,6 +1626,35 @@ validate_dictionary <- function(dict, require_iris = FALSE) {
         bad_rows <- which(missing_field)
         cli::cli_abort(
           "Measurement columns require {.field {field}}; missing in rows {bad_rows}."
+        )
+      }
+    }
+
+    # The REVIEW and exact NA/empty checks above own those states. Every other
+    # semantic IRI, including whitespace-only text and optional
+    # constraint/modifier slots,
+    # must have the same absolute-IRI shape used by the package's other IRI
+    # validators. Check the rendered value rather than a trimmed copy: leading
+    # whitespace is part of the malformed value, even when it is not ASCII.
+    for (field in iri_fields) {
+      vals <- as.character(dict[[field]])
+      populated <- !is.na(vals) & vals != ""
+      shape_ok <- if (identical(field, "constraint_iri")) {
+        vapply(vals, function(value) {
+          if (is.na(value) || value == "") {
+            return(FALSE)
+          }
+          all(.ms_absolute_iri_shape(.ms_constraint_iri_components(value)))
+        }, logical(1), USE.NAMES = FALSE)
+      } else {
+        .ms_absolute_iri_shape(vals)
+      }
+      malformed <- which(
+        populated & !review_marker_rows[[field]] & !shape_ok
+      )
+      if (length(malformed) > 0) {
+        cli::cli_abort(
+          "{.field {field}} is not an absolute IRI in rows {malformed}."
         )
       }
     }

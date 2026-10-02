@@ -7878,6 +7878,14 @@ publication gate and it passes text that is not an IRI in an IRI field. `B-344`
 and `B-345`, because a spelling a detector misses is most often hand-typed, and
 today each package disagrees with itself about some spellings.
 
+**IRI-shape halves landed — 2026-10-01, B-342/B-343.** metasalmon PR **#257**
+merged as `c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`; metasalmonpy PR **#92**
+merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`. The existing Q63 shape
+checks are implemented in both packages, including the supported semicolon
+constraint lists. Valid review findings were reproduced, fixed and resolved;
+current required CI and last requested Codex reviews completed. Actual Claude
+execution on the R PR completed with only nits. No new parity row was added.
+
 **`B-276`, `B-277`, `B-346` and `B-347`: a `codes.csv` row with no code value
 (calls (g) and (j)).**
 
@@ -8037,6 +8045,14 @@ items.
 
 *Why this severity:* the profile has no use for a tag, and nothing runs, but
 each reader returns a different value for the same line.
+
+**Both halves landed — 2026-10-01, B-352/B-353.** metasalmon PR **#255**
+merged as `13460ed0484b10082b89c4dec33820d70386ddac`; metasalmonpy PR **#88**
+merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`. Tagged metadata is refused
+without evaluation; quoted bang text remains text. Public RED controls and
+frozen-source verification precede both merges; current required CI and the
+last requested Codex reviews completed, with verified Claude nits-only
+execution on the R PR. This is the existing Q62 ruling, with no new parity row.
 
 **`B-354` and `B-355`: an instant in EML coverage (call (m)).** The B-162 run
 measured it in R (`.hub/workpads/B-162.md` on `main`, on `372ef07` under R

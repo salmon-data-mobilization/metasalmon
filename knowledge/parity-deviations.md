@@ -125,6 +125,21 @@ also the only reason the twin has caught this one.
 
 ## What metasalmon 0.5.0 owes the mirror (2026-08-25) — a port and one amendment
 
+**Strict IRI-shape port landed, 2026-10-01.** `B-343` landed as metasalmonpy
+pull request **#92**, merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`;
+its R half `B-342` landed in metasalmon pull request **#257**, merged as
+`c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`. Both implement Q63's existing
+absolute-IRI shape in dictionary semantic fields and table IRI fields, with
+the supported constraint-list representation preserved. No new numbered
+parity row or term selection was made.
+
+**SSSOM tag-refusal port landed, 2026-10-01.** `B-353` landed as metasalmonpy
+pull request **#88**, merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`;
+its R half `B-352` landed in metasalmon pull request **#255**, merged as
+`13460ed0484b10082b89c4dec33820d70386ddac`. Both readers now refuse tagged
+metadata under Q62 while retaining literal bang text. This is the existing
+ruled port; no new numbered parity row is owed.
+
 **Development-version port, 2026-09-30: crosswalk review (B-120 → B-426).**
 NuSEDS-prefilled code IRIs now retain candidates and appear in the default
 console queue while they still hold their original prefill and have no recorded
