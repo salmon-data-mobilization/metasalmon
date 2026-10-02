@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Count available CI attempts, including failures hidden by successful reruns.
 
-Usage: python3 scripts/ci-attempt-history.py > /tmp/ci-attempt-history.json
+Usage: python3 scripts/ci-attempt-history.py --control-run-id 35105540412 > /tmp/ci-attempt-history.json
 Requires an authenticated `gh` CLI; all API requests use GET. Single-attempt
 runs use their only conclusion from the listing. For every discovered rerun,
-read all per-attempt endpoints. No log download or prior list of reruns needed.
+read all per-attempt endpoints. The caller supplies one independently known
+failed-then-successful rerun as a positive control; it is not a filter or a
+prior list of reruns. No log download is needed.
 
 Counts cover the available workflow runs, not deleted history. Listing and
 attempt reads are not an atomic snapshot; a new rerun after listing is outside
-this observation. HTTP/schema failures abort rather than returning a partial
-count. No R/Python package behavior is changed by this hub measurement tool.
+this observation. A deleted/changed control must be replaced with another
+independently known rerun. HTTP/schema/control failures abort rather than
+returning a plausible partial count. No R/Python package behavior is changed
+by this hub measurement tool.
 """
 
 import argparse
@@ -51,7 +55,8 @@ def is_completed_as(record, conclusion):
     return record["status"] == "completed" and record["conclusion"] == conclusion
 
 
-def collect_history(repo, workflow, api_get=github_get):
+def _collect_history_unchecked(repo, workflow, api_get=github_get):
+    """Count returned API rows; the public wrapper checks independent reach."""
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
         raise ValueError("Repository must be owner/name.")
     prefix = f"repos/{repo}/actions"
@@ -76,7 +81,7 @@ def collect_history(repo, workflow, api_get=github_get):
         "observed_attempt_count": 0,
         "failed_run_count_from_listing": 0,
         "failed_attempt_count": 0,
-        "rerun_count": 0,
+        "rerun_run_count": 0,
         "successful_rerun_count_with_prior_failed_attempts": 0,
         "failed_attempt_count_hidden_by_successful_reruns": 0,
         "incomplete_attempt_count": 0,
@@ -86,6 +91,8 @@ def collect_history(repo, workflow, api_get=github_get):
         counts["failed_run_count_from_listing"] += is_completed_as(run, "failure")
         history = [run]
         if run["run_attempt"] > 1:
+            # Re-read the latest attempt too: its endpoint must agree with
+            # earlier attempts about the run identity and head SHA.
             history = []
             for number in range(1, run["run_attempt"] + 1):
                 attempt = api_get(f"{prefix}/runs/{run['id']}/attempts/{number}")
@@ -95,7 +102,7 @@ def collect_history(repo, workflow, api_get=github_get):
                 history.append(attempt)
             prior_failures = sum(is_completed_as(row, "failure") for row in history[:-1])
             recovered = is_completed_as(history[-1], "success") and prior_failures > 0
-            counts["rerun_count"] += 1
+            counts["rerun_run_count"] += 1
             counts["successful_rerun_count_with_prior_failed_attempts"] += recovered
             counts["failed_attempt_count_hidden_by_successful_reruns"] += prior_failures if recovered else 0
             reruns.append({
@@ -116,19 +123,46 @@ def collect_history(repo, workflow, api_get=github_get):
         "repository": repo,
         "workflow": workflow,
         "observed_at_utc": datetime.now(timezone.utc).isoformat(),
-        "scope": "Available runs from all API pages; non-atomic observation; each count names its unit.",
+        "scope": "Runs returned by paginated API; non-atomic observation; each count names its unit.",
         "counts": counts,
         "reruns": reruns,
     }
+
+
+def collect_history(repo, workflow, *, control_run_id, api_get=github_get):
+    """Return counts only if a known failed-to-successful rerun was observed."""
+    if type(control_run_id) is not int or control_run_id < 1:
+        raise ValueError("A positive control run ID must be a positive integer.")
+    report = _collect_history_unchecked(repo, workflow, api_get)
+    control = next(
+        (run for run in report["reruns"] if run["run_id"] == control_run_id),
+        None,
+    )
+    if (control is None
+            or control["listed_conclusion"] != "success"
+            or not is_completed_as(control["attempts"][-1], "success")
+            or not any(
+                is_completed_as(attempt, "failure")
+                for attempt in control["attempts"][:-1]
+            )):
+        raise ValueError(
+            f"Required positive control run {control_run_id} is absent or no longer "
+            "shows an earlier failure followed by success; supply another independently "
+            "known rerun before reporting counts."
+        )
+    report["positive_control_run_id"] = control_run_id
+    return report
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default="salmon-data-mobilization/metasalmon")
     parser.add_argument("--workflow", default="R-CMD-check.yaml")
+    parser.add_argument("--control-run-id", type=int, required=True,
+                        help="ID of an independently known failed-then-successful rerun")
     args = parser.parse_args()
     try:
-        report = collect_history(args.repo, args.workflow)
+        report = collect_history(args.repo, args.workflow, control_run_id=args.control_run_id)
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         print(f"CI attempt-history read failed: {error}", file=sys.stderr)
         return 1

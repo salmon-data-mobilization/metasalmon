@@ -33,6 +33,8 @@ on:
       - "HUB.md"
       - "queue/**"
       - "scripts/hub*"
+      # This job runs the attempt-history tests; script-only changes must start it.
+      - "scripts/ci-attempt-history.py"
       - "scripts/tests/**"
       # `.hub/**` is here for the workpad rule, added 2026-09-16 (B-140). The
       # rule reads `.hub/workpads/` and refuses the old shared `.hub/workpad.md`,
@@ -81,6 +83,8 @@ on:
       - "HUB.md"
       - "queue/**"
       - "scripts/hub*"
+      # Keep the attempt-history input paired with the pull-request path above.
+      - "scripts/ci-attempt-history.py"
       - "scripts/tests/**"
       # `.hub/**` is here for the workpad rule, added 2026-09-16 (B-140). The
       # rule reads `.hub/workpads/` and refuses the old shared `.hub/workpad.md`,

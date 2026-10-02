@@ -1,7 +1,10 @@
 """Offline proofs for CI attempts hidden by reruns; no GitHub calls."""
 
 import importlib.util
+import contextlib
+import io
 from pathlib import Path
+import re
 import subprocess
 import unittest
 from unittest.mock import patch
@@ -48,7 +51,7 @@ class AttemptHistoryTests(unittest.TestCase):
                     number, "success" if attempt == size else "failure", attempt
                 )
         get, calls = self.fake_api(pages, attempts)
-        report = history.collect_history("owner/repo", "check.yaml", get)
+        report = history._collect_history_unchecked("owner/repo", "check.yaml", get)
         counts = report["counts"]
         self.assertEqual(counts["failed_run_count_from_listing"], 0)
         self.assertEqual(counts["failed_attempt_count"], 4)
@@ -63,8 +66,8 @@ class AttemptHistoryTests(unittest.TestCase):
             [{"workflow_runs": [record(215, "success", 2)]}],
             {(1215, 1): record(215, "cancelled"), (1215, 2): record(215, "success", 2)},
         )
-        counts = history.collect_history("owner/repo", "check.yaml", get)["counts"]
-        self.assertEqual(counts["rerun_count"], 1)
+        counts = history._collect_history_unchecked("owner/repo", "check.yaml", get)["counts"]
+        self.assertEqual(counts["rerun_run_count"], 1)
         self.assertEqual(counts["failed_attempt_count"], 0)
         self.assertEqual(counts["successful_rerun_count_with_prior_failed_attempts"], 0)
 
@@ -74,7 +77,7 @@ class AttemptHistoryTests(unittest.TestCase):
         get, calls = self.fake_api([
             {"workflow_runs": [failed]}, {"workflow_runs": [failed, pending]}
         ], {})
-        counts = history.collect_history("owner/repo", "check.yaml", get)["counts"]
+        counts = history._collect_history_unchecked("owner/repo", "check.yaml", get)["counts"]
         self.assertEqual(counts["snapshot_run_count"], 2)
         self.assertEqual(counts["observed_attempt_count"], 2)
         self.assertEqual(counts["failed_attempt_count"], 1)
@@ -87,7 +90,7 @@ class AttemptHistoryTests(unittest.TestCase):
                 return [{"workflow_runs": [record(337, "success", 2)]}]
             raise subprocess.CalledProcessError(1, ["gh", "api", path])
         with self.assertRaises(subprocess.CalledProcessError):
-            history.collect_history("owner/repo", "check.yaml", get)
+            history._collect_history_unchecked("owner/repo", "check.yaml", get)
 
     def test_malformed_and_mismatched_attempts_fail(self):
         for bad in (record(338, "failure"), {**record(337, "failure"), "conclusion": None}):
@@ -95,9 +98,74 @@ class AttemptHistoryTests(unittest.TestCase):
                 [{"workflow_runs": [record(337, "success", 2)]}], {(1337, 1): bad}
             )
             with self.assertRaises(ValueError):
-                history.collect_history("owner/repo", "check.yaml", get)
+                history._collect_history_unchecked("owner/repo", "check.yaml", get)
         with self.assertRaises(ValueError):
-            history.collect_history("owner/repo", "check.yaml", lambda *a, **k: [{}])
+            history._collect_history_unchecked("owner/repo", "check.yaml", lambda *a, **k: [{}])
+
+    def test_control_refuses_a_valid_but_truncated_listing(self):
+        # Pagination can return a syntactically valid subset without an API error.
+        get, _ = self.fake_api(
+            [{"workflow_runs": [record(337, "success", 2)]}],
+            {(1337, 1): record(337, "failure"), (1337, 2): record(337, "success", 2)},
+        )
+        with self.assertRaisesRegex(ValueError, "positive control"):
+            history.collect_history("owner/repo", "check.yaml", control_run_id=1449, api_get=get)
+
+    def test_control_requires_the_known_failed_then_successful_history(self):
+        pages = [{"workflow_runs": [record(449, "success", 2)]}]
+        wrong = {(1449, 1): record(449, "cancelled"),
+                 (1449, 2): record(449, "success", 2)}
+        get, _ = self.fake_api(pages, wrong)
+        with self.assertRaisesRegex(ValueError, "positive control"):
+            history.collect_history("owner/repo", "check.yaml", control_run_id=1449, api_get=get)
+
+        correct = {(1449, 1): record(449, "failure"),
+                   (1449, 2): record(449, "success", 2)}
+        get, _ = self.fake_api(pages, correct)
+        report = history.collect_history("owner/repo", "check.yaml", control_run_id=1449, api_get=get)
+        self.assertEqual(report["positive_control_run_id"], 1449)
+        self.assertEqual(report["counts"]["successful_rerun_count_with_prior_failed_attempts"], 1)
+
+    def test_cli_requires_control_before_api_access(self):
+        with patch.object(history.sys, "argv", ["ci-attempt-history.py"]), \
+             patch.object(history, "collect_history", side_effect=AssertionError("API called")), \
+             contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as error:
+                history.main()
+        self.assertEqual(error.exception.code, 2)
+
+    def test_failed_control_emits_no_json(self):
+        output = io.StringIO()
+        with patch.object(history.sys, "argv", ["ci-attempt-history.py", "--control-run-id", "1449"]), \
+             patch.object(history, "collect_history", side_effect=ValueError("positive control absent")), \
+             contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(history.main(), 1)
+        self.assertEqual(output.getvalue(), "")
+
+    def test_workflow_paths_cover_instrument_in_both_events(self):
+        workflow = (Path(__file__).resolve().parents[2] / ".github/workflows/hub-queue.yml").read_text()
+
+        def paths_for_event(source, event):
+            lines = source.splitlines()
+            start = lines.index(f"  {event}:") + 1
+            event_body = []
+            for line in lines[start:]:
+                if (line and not line.startswith(" ")) or re.match(r"^  [A-Za-z_]+:", line):
+                    break
+                event_body.append(line)
+            paths_body = event_body[event_body.index("    paths:") + 1:]
+            return {
+                line.strip()[2:].strip('"')
+                for line in paths_body
+                if line.startswith("      - ")
+            }
+
+        for event in ("pull_request", "push"):
+            self.assertIn("scripts/ci-attempt-history.py", paths_for_event(workflow, event))
+            altered = workflow.replace('      - "scripts/ci-attempt-history.py"\n', "", 1)
+            if event == "push":
+                altered = workflow.replace('      - "scripts/ci-attempt-history.py"\n', "", 2)
+            self.assertNotIn("scripts/ci-attempt-history.py", paths_for_event(altered, event))
 
     def test_cli_uses_get_and_preserves_pagination(self):
         with patch.object(history.subprocess, "run") as run:
