@@ -25,6 +25,38 @@ def denial_summary(denials):
     known_commands = {"git", "gh", "rg", "cat", "sed", "pwd", "ls", "find",
                       "head", "tail", "python", "python3", "Rscript", "bash", "sh"}
     known_git_actions = {"diff", "show", "status", "log", "rev-parse", "ls-files"}
+
+    def git_action(words):
+        """Find a fixed action after only the supported leading global options."""
+        index = 1
+        while index < len(words):
+            option = words[index]
+            if option in ("-C", "-c"):
+                if index + 1 >= len(words):
+                    return None
+                value = words[index + 1]
+                index += 2
+            elif len(option) > 2 and option[:2] in ("-C", "-c"):
+                value = option[2:]
+                option = option[:2]
+                index += 1
+            else:
+                break
+            if not value or value.startswith("-"):
+                return None
+            if option == "-c":
+                name = value.partition("=")[0]
+                # Git validates the section and final variable components;
+                # subsection text between them can contain other characters.
+                if ("." not in name or name.startswith(".") or name.endswith(".") or
+                        any(char.isspace() for char in name) or
+                        re.fullmatch(r"[A-Za-z0-9-]+", name.split(".", 1)[0]) is None or
+                        re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", name.rsplit(".", 1)[-1]) is None):
+                    return None
+        if index < len(words) and words[index] in known_git_actions:
+            return words[index]
+        return None
+
     labels = []
     omitted = False
     for denial in denials:
@@ -49,8 +81,10 @@ def denial_summary(denials):
                     words = []
                 if words and words[0] in known_commands:
                     category = words[0]
-                    if category == "git" and len(words) > 1 and words[1] in known_git_actions:
-                        category += " " + words[1]
+                    if category == "git":
+                        action = git_action(words)
+                        if action:
+                            category += " " + action
                     elif category == "gh" and len(words) > 2 and words[1] == "pr" and words[2] in {"view", "diff", "comment", "checks"}:
                         category += " pr " + words[2]
                     label = "Bash:" + category
