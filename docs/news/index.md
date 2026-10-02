@@ -260,6 +260,11 @@
 
 ### Fixed
 
+- [`read_github_csv()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_github_csv.md)
+  reaches its existing PAT, SSO and missing-path remedies for HTTP 401,
+  403 and 404. Other HTTP errors and transport failures still raise
+  normally (hub B-256).
+
 - **The migration and tidy-data vignettes now tangle without executable
   code** (hub item B-133). Their 25 display-only examples each declare
   `purl = FALSE` in the chunk header, so R CMD check’s vignette-code

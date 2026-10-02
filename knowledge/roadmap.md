@@ -567,6 +567,14 @@ preserved prefill provenance through assessment ingestion. The specification
 and regression are in backlog #120 and `test-review-console.R`; this is port
 debt, not a new parity-register row. Versions remain unchanged.
 
+**B-256 restores R's existing GitHub error remedies (2026-09-30).** No Python
+port is owed: on metasalmonpy `main` at `e81cacd`,
+[`read_github_csv()`](https://github.com/salmon-data-mobilization/metasalmonpy/blob/e81cacd7670b65da74abf87504a2ea1dd7c7498b/github_io.py#L63-L85)
+already handles 401/403/404 before `raise_for_status()`, and its request helper
+returns those responses. R now lets those statuses reach its existing PAT,
+SSO and missing-path guidance. No version or intentional parity difference
+changes.
+
 *(The count is gone from this passage on purpose, as of 2026-09-16, and from its
 lead as of 2026-09-23, when "Four more debts" was still standing over five ids,
 beside a clause calling B-165 "the only one of the four" whose entry belongs
