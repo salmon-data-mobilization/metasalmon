@@ -2091,3 +2091,31 @@ is introduced. Existing reviewed PRs remain separate.
   unchanged, then merge under the routine diagnostic-fix class only after all
   gates. No fresh claim is safe until CLI authentication and ownership checks
   recover; existing pending approval/auth questions remain pending.
+
+### PR #262 delegated merge and cleanup, 2026-10-02 about 08:27–08:34 UTC
+
+- Merged #262 as `1831457`, preserving head `561e15e`, under Brett's
+  2026-10-01 routine noncritical-merge authorization (ordinary CI diagnostic
+  fix). All six current-head workflows pass. R run 36982745455/job 110760757604
+  completes the suite and strict check on R 4.6.1 with 0 errors/warnings/notes.
+  Actual Claude completion and the tested/resolved Codex finding are the
+  receipts above; the later skipped model steps are not new completed reviews.
+  Fresh comments/threads show no outstanding human or substantive finding.
+- Primary fast-forwarded to the merge. The task worktree was clean with zero
+  unique commits and only disposable ignored bytecode, then archived through
+  Codex. Its directory and worktree registration are gone; its branch and
+  recoverable snapshot are retained. Unrelated worktrees, including B-384's
+  dirty workpad, were preserved. The canonical log remains the durable route.
+- The eight held PR metadata reads return unchanged heads/activity; saved
+  authentication remains invalid. No polling-only agent started, no unchanged
+  hold was rewritten, and no model reroll/local test/site build was repeated.
+  One compact query initially used the wrong repository/ref route for claims:
+  its empty claim result was not accepted as absence. Reading current routing
+  and requiring both known tips plus the locks-main control reached unchanged
+  B-223/B-350 tips. That instrument correction is verification rework; both
+  claims remain frozen, with no claim-record read or write needed this turn.
+- This checkpoint records an actual merge/cleanup, rather than unchanged
+  status. Gate verification and cleanup are useful verification/coordination;
+  prior CI waiting was passive. No implementation or requested audit was done
+  in this closeout, and uninstrumented active time still prevents a credible
+  bureaucracy percentage. Reuse these dispositions on unchanged blocked runs.
