@@ -1170,8 +1170,8 @@ requests, which must be reviewed before filing to avoid duplicate issues.
 Warnings and placement rationales name `term_iri`. metasalmonpy's closure
 still has the same invented address; this is an owed port, not a chosen
 difference or a new numbered row. **Why not in the same stream:** a hub claim
-covers one branch in one repository. The Python half is **B-266**, blocked by
-B-265 so it can mirror the landed address and the two RED-tested cases.
+covers one branch in one repository. The Python half is **B-266**, scoped to
+mirror the `codes.csv` `term_iri` address and the two RED-tested cases.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When

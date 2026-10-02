@@ -843,7 +843,7 @@ Python producer still names nonexistent `codes.csv` `method_iri`. The matching
 change is a port, not a register row, and is specified under *What
 metasalmon 0.5.0 owes the mirror* in `parity-deviations.md`. **Why not in the
 same stream:** a hub claim covers one branch in one repository. The Python
-half is `B-266`, blocked by B-265.
+half is `B-266`.
 
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.**
