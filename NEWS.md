@@ -214,6 +214,10 @@ metasalmon (development version)
 
 ### Fixed
 
+* CI review-completion failures identify known Git actions after directory or
+  configuration options through fixed diagnostic categories. Paths and option
+  values remain private, and denied tool calls still block review completion.
+
 - `read_github_csv()` reaches its existing PAT, SSO and missing-path remedies
   for HTTP 401, 403 and 404. Other HTTP errors and transport failures still
   raise normally (hub B-256).

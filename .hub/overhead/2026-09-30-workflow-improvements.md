@@ -1791,3 +1791,331 @@ estimate is inferred. Root will publish one actual repair with these receipts.
   one detailed lead report and concise per-ID pointers, one integrated
   review/test checkpoint, then per-ID closure at a meaningful checkpoint.
   The policy proposal remains held for review; existing claim rules apply.
+
+### Shared-checkout proposal and routine closeout, 2026-10-02 about03:16–04:00 UTC
+
+- R223/B-256 merged as6835d8a after all current-head gates passed, first
+  Codex reviews completed without findings and actual Claude36956399185
+  completed with only two nits. Its44 focused HTTP-message assertions meet
+  the recorded retirement condition. This checkpoint closes B-256.
+- R226/B-229's first ready transition cancelled in-flight Claude145; the
+  subsequent146 posted nits but failed its execution check on one denied
+  Bash:git call. Neither supplies completed-review evidence. Root verified
+  the valid Codex P2 about plausible incomplete history and the future CI
+  path omission, then published one coherent fix: required caller-supplied
+  rerun reach control, explicit count units and both workflow path filters.
+  Four targeted baseline controls failed before the repair;11 focused tests,
+  237 offline tests plus132 subtests and independent collector controls pass.
+  Actual Claude36960479461 completed on91c6537 with zero denied calls and
+  only nits. All six workflows passed; R4.6.1 reported Status: OK,0/0/0.
+  The Codex thread was answered/resolved. Delegated mergeaa84575 closes
+  B-229; the clean primary fast-forwarded and its zero-unique worktree was
+  removed/pruned, retaining the branch.
+- R261 and Py95 are the concrete coherent-scope process proposal and member
+  adoption. Same claim-holder tokens share a lead checkout, implementation
+  branch and detailed report; every ID keeps its claim and handoff ref,
+  minimal linked workpad and acceptance. Different tokens stay isolated.
+  Substantial one-ID capabilities qualify; a narrow exception has one brief
+  reason, linked from the PR. Existing claims, dependencies, cap, reserved
+  classes and review budget are preserved. Class7 review remains pending;
+  no batch authority is active before canonical policy/member adoption land.
+- Isolated client verification passes43 checks plus22 separate same-owner
+  compatibility controls. Peer review corrected conditional adoption,
+  retirement endpoint, completion-SHA self-reference, owner-token ambiguity
+  and setup hints that otherwise still encouraged another worktree. These
+  are useful requested audit/verification work. One phrase-wrapping failure
+  in an existing output assertion was verification rework. Core claim
+  mutation logic and scientific contracts remain unchanged.
+- Building the final policy NEWS once after R226 landed avoided an immediate
+  additional generated conflict/build cycle. Its588 ordered non-NEWS records
+  and seven favicon pairs are preserved. This is a procedural observation,
+  not a causal elapsed-time saving.
+- R229/B-262 resumed its existing handoff, with unchanged R expressions and
+  vignette source, one16.98s NEWS build and656/658 unchanged search records.
+  App commitf3d77e6 preserves its tested tree/ordered parents. It stays draft
+  while actual Claude runs; one later ready transition will request first
+  Codex review. Py79's guide landing9304851 is now a dated fact; the two
+  internal Python comment corrections remain explicitly owed.
+- The requested September27 S16 handoff is historical. Live PRs confirm
+  Py76/B199 → Py72/B327 → R210 → Py74; Py73 merged. No S16 claim was taken
+  over and no retiring provider code was repaired.
+- Coordination is routing, handoff/readiness and closeout; implementation is
+  the instrument/client repair; verification is focused/peer/CI evidence;
+  the process/handoff analysis is requested audit. Expired CLI login and
+  connected-app object publication are environment repair. The one read-only
+  SSH test also failed publickey; no keys/settings or claim transport changed.
+  User authentication and CI waits remain passive waits. No new claim trial
+  or defensible whole-run wasted-time percentage is inferred from overlap.
+  Root guessed unsupported `hub lint/check` subcommands during this closeout;
+  the validator commands are `python3 scripts/hub_queue.py lint` and
+  `python3 scripts/hub_queue.py check`.
+  Both corrected checks pass. That lookup mistake is instrument rework.
+
+R261's initial actual Claude36961915954 model and execution-check steps both
+completed successfully on a3c213a; its comment reports five nits, no blocking
+issue. The process/authorization decision still belongs to Brett. The proposed
+policy is ordinary repository work directly requested in chat, outside a queue
+claim; no synthetic queue ID is allocated just to justify its PR label.
+
+Next eligible live batch measures these structural expectations in this same
+log, after policy adoption and Git authentication recovery:
+
+| Two related IDs, same token | Prior default | Proposed, not yet measured live |
+|---|---|---|
+| Implementation checkouts/branches |2/2|1/1, retaining per-ID handoff refs|
+| Detailed evidence reports |2|1 plus a short linked constituent record|
+| PRs and integrated review checkpoints |2|1|
+
+The next measurement records actual setup/report/review effort separately from
+the one-off policy work and environment repair. No tracker or new claim format
+is introduced. Existing reviewed PRs remain separate.
+
+### Review-path correction checkpoint, 2026-10-02 about 04:00–04:10 UTC
+
+- R229/B-262's first review on `f3d77e6` posted four nits, but its execution
+  verifier failed on one denied `Bash:git` call. Run 36962305235 is therefore
+  not completed review evidence. Reading the first finding against the whole
+  guide revealed a real scope error: the new step 9 paragraph implied that
+  reviewed closure and EML facts were required for all sharing, while steps
+  10–12 require them for EML/KNB and permit ordinary folder sharing after
+  strict SDP validation. The owner is making one genuine prose correction
+  and one affected-document build, followed by peer verification. This is
+  implementation and verification work, not a source change to reroll a model.
+- Directly reading the current Python guide at `386d721` with its publication
+  passage as a positive control confirms that it already makes this distinction.
+  The scope correction needs no Python port or parity deviation. The two
+  existing internal Python closure-comment corrections remain owed separately.
+- The shared-checkout proposal removes a second implementation checkout and
+  detailed report for two same-token related IDs, but retains a lightweight
+  member handoff-ref publication for each constituent. Lock and acceptance
+  traffic are unchanged. A live trial must count those retained writes before
+  attributing setup or review savings; no elapsed-time percentage is claimed.
+- This checkpoint records the B-256 and B-229 queue closures together with
+  the measurements above. Publication remains a mechanical factual closeout;
+  R261/Py95 stay draft while the class 7 decision is pending.
+
+### Verified correction and first review request, 2026-10-02 from 04:10 UTC
+
+- R229's real scope correction is published at `cb2a275`, verified through
+  public Git against local `8aa51ab`: tree `13b21ce`, sole parent `f3d77e6`.
+  Exactly eight files changed: prose, NEWS, workpad and their affected generated
+  pages/search. Article render took 4.78 seconds; NEWS build took 14.75 seconds.
+  The Markdown converter needed one corrected R string escape before writing.
+  That repair is implementation/tool rework; the builds and 656/658 preserved
+  ordered search records are verification. No package behavior or tests changed.
+- Source-push Claude run 36963678067 again posted only nits but failed its
+  verifier on one denied `Bash:git` call. It supplies no completed review.
+  After it finished, one authorized routine ready transition at about 04:18
+  requested the first Codex review. The ready event also naturally started
+  Claude run 36964005698. No failed-job rerun or extra source change was used;
+  actual review and current-head CI still gate a merge. Do not reroll that
+  event merely for a green verdict if its execution also fails.
+- R261 has all six applicable workflows green and actual Claude execution
+  completed with only nits. Py95's functional jobs pass; no actual review
+  receipt exists yet. Both are drafts pending the concrete class 7 decision.
+  Normalized PR metadata reported R261 `mergeable:false`, but an isolated
+  source merge-tree against `082e7de` exits zero with no conflict paths. The
+  label alone was not proof of a conflict. This control avoided an unnecessary
+  integration commit and another build/review cycle; no elapsed saving is
+  inferred. R229's source merge-tree is also clean against that base.
+- CLI authentication was rechecked read-only and still returns HTTP 401.
+  The prior login request remains pending. Existing owner identities and
+  claims are retained; no API claim-ref workaround or new claim was attempted.
+- Ready-event Claude run 36964005698 finished with its model step successful
+  (32 turns, nonzero usage) but execution verification failed on one denied
+  `Bash:git` call again. Its exact-head comment 5945546720 reports no blocking
+  issues and three formatting nits. Codex summary 5945525142 records both code
+  and security reviews completed on `cb2a275`; there are no inline threads.
+  R229 remains ready and unmerged because Claude execution is incomplete.
+  Do not spend further model rounds or change prose just to clear that signal.
+  A next diagnostic improvement should establish the denied Git operation's
+  safe command shape before changing a prompt or permission. The current
+  summary names only the tool; the cause is not established by that label.
+
+### Claim-renewal hold, 2026-10-02 about 05:26–05:30 UTC
+
+- The bounded heartbeat found unchanged canonical main and eight unchanged PR
+  heads/states. No new review or implementation round was started. CLI login
+  still returns HTTP 401; the existing authentication question remains pending.
+- B-223's public lock tip was read twice in a disposable repository and remains
+  `56611e3`, an attempt-2 beat naming the original owner. Its lease ended at
+  05:25:03 UTC; the configured 60-minute reclaim grace ends at 06:25:03 UTC.
+  It remains held during grace. B-223 files are frozen pending authenticated
+  renewal and a fresh ownership check; no claim/ref mutation or API substitute
+  was attempted. Do not infer a new claim opportunity from the expired timestamp.
+- The live lock reads and hold routing are coordination/verification;
+  authentication repair remains an environment hold and waiting is passive.
+  This one changed claim fact is recorded once. Unchanged hourly PR snapshots
+  do not need new reports, documentation builds or review rerolls.
+
+### Idle-check adjustment and expired leases, 2026-10-02 about 06:26–06:32 UTC
+
+- Canonical main and all eight PR heads/activity are unchanged. The saved CLI
+  token is invalid; no GH_TOKEN/GITHUB_TOKEN, host or config-directory override
+  is present. The existing login and policy questions remain pending.
+- Live public B-223 tip `56611e3` still names its original holder. Lease and
+  grace ended at 06:25:03 UTC; no reassignment was observed. B-350 tip `4135166`
+  is still its original holder's attempt-3 beat, with lease ending 06:05:36 UTC
+  and grace ending 07:05:36 UTC. Both worktrees are frozen pending authenticated
+  ownership/renewal and their existing prerequisite decisions. These timestamp
+  observations do not establish that an item is free or authorize reclamation.
+- One small operational adjustment is saved through the automation tool: idle
+  blocked runs use compact auth/main/PR metadata checks, reuse unchanged workpad
+  dispositions, batch relevant claim-tip reads, and avoid repeated full audits,
+  documentation builds and status-only Git checkpoints. Subagents serve new
+  work when delegation saves time or improves verification. Claim, approval,
+  merge and review gates are unchanged. The automation remains active with the
+  same hourly schedule, target chat and prior prompt; the added paragraph was
+  read back and verified.
+- This idle-run baseline used three polling-only agent spawns, eight PR
+  snapshots and two fresh claim-record audits. Nested tool reads were not fully
+  counted, so snapshots are not labelled tool calls. Evaluate the next use by
+  counting actual reads, polling-only spawns and changed-fact checkpoint writes;
+  expect fewer spawns when no new work exists, without attributing savings yet.
+  The claim checks are coordination/verification, auth diagnosis is environment
+  repair, this operational adjustment is implementation, and waiting is passive.
+
+### First idle-check evaluation, 2026-10-02 from 07:26 UTC
+
+- The compact survey used 12 tool reads: three shell-tool calls, eight PR
+  metadata calls and one clock read. One shell call batched the two public
+  claim-tip queries; one audited B-350's claim contents. These categories are
+  subsets of the 12 reads, not additional calls. Canonical main, all eight PR
+  heads/states/activity and both claim tips were unchanged. CLI still returns
+  HTTP 401. No full review, site build, test or model reroll was started by the
+  idle survey, and it used zero agent starts solely for polling, versus three
+  in the preceding baseline. This is an observed reduction in agent starts;
+  baseline tool reads were not fully counted, so no elapsed-time percentage
+  or reduction in total tool reads is inferred.
+- B-350's verified original-owner beat `4135166` has lease 06:05:36 UTC;
+  configured grace ended at 07:05:36 UTC. Its work remains frozen, as does
+  B-223. No reassignment, authenticated renewal or reclamation was performed.
+- A separate useful diagnostic agent used four reads over 50 seconds to seek
+  Claude151's denied Git operation. Review and package artifact inventories
+  returned empty; neither current workflow declares an artifact upload, so the
+  package run was not a valid artifact reach control. First-page inventory
+  limits remain. No execution artifact or exact denied-command cause was
+  established beyond the existing safe `Bash:git` category.
+- The next small implementation will add fixed diagnostic categories for Git
+  directory/configuration options, keeping argument values private and denied
+  calls blocking. This is ordinary requested workflow work; it changes no
+  claim or permission policy. Its tests and review are separate from idle
+  survey effort. Record this evaluation and changed hold once; later unchanged
+  surveys need no new status-only checkpoint.
+
+### Safe denial diagnostics, 2026-10-02 about 07:30–08:02 UTC
+
+- Ordinary requested workflow work is published as metasalmon PR #262 at
+  `04624bc`, based on canonical `d07f727`. It classifies existing known Git
+  actions after supported leading directory/configuration options using only
+  fixed labels. Argument values stay private. Unknown/unsupported shapes stay
+  generic, compound commands stay unclassified, and every denial still blocks
+  completion. Permissions, review budgets, claims and policy are unchanged.
+  This does not establish the cause of PR #229's previous denial or authorize
+  another review rerun there. The CI-only helper requires no package parity port.
+- Implementation reproduced the missing option labels against the prior
+  source. Peer verification found invalid final config-key components; root
+  verification then found invalid section components. Both corrections carry
+  failing-before cases and real Git controls for valid numeric sections, empty
+  subsections and arbitrary middle subsection text. Seven focused test methods
+  pass on frozen source `7255667` and tests `a7e98c4`. The final independent
+  check also passes eight narrow controls, with completion and compound logic
+  unchanged. Earlier diagnostic and peer turns took 50s and 130s respectively;
+  these are useful diagnosis/verification, not idle polling. Later peer turns
+  and root implementation time were not reliably timed; do not add overlapping
+  agent durations or infer an active-time percentage from this record.
+- The NEWS-only site build initially stopped at its pinned-toolchain guard
+  because setting RSTUDIO_PANDOC alone still selected Pandoc 3.11. Selecting the
+  existing 3.8.3 executable through PATH and RSTUDIO_PANDOC passed without a
+  global configuration change. This is environment repair. Verification reached
+  the new NEWS record and preserved all 588 non-NEWS search records and five
+  favicon/manifest pairs. An initial relative-URL selector missed the absolute
+  URLs; reading the authority and using a positive control corrected that
+  verification instrument, with no source repair or second site build needed.
+- Coordination used one managed, isolated worktree and one ordinary feature
+  branch; no synthetic queue item or duplicate claim was created. The CLI token
+  remains invalid. The connected GitHub app published normal code/docs after
+  verifying blob hashes, tree, parent and public commit bytes. Six changed blobs
+  needed 46 bounded content reads; upload plus tree/commit creation took 8.7s.
+  Call count alone would overstate that wall-clock cost. Generated NEWS/search
+  bytes account for 44 of those reads. This transport is not a claim-ref
+  workaround. PR #262 is attached and labelled agent-run; its six applicable
+  workflows, including actual Claude execution, started naturally on opening.
+  No new model round was spent on an unchanged held PR.
+- Repeated freezes and peer handoffs exposed avoidable sequencing overhead:
+  next bounded parser change should finish the root's focused grammar controls
+  before dispatching its one frozen-source peer check. Keep independent review,
+  but avoid redispatch solely because those root checks happened late. Evaluate
+  this order on the next useful implementation; it changes no gate. Review/CI
+  waits are passive, and the new diagnostic's next-use benefit remains unmeasured.
+
+### PR #262 review correction and sequencing trial, 2026-10-02 about 08:03–08:13 UTC
+
+- Actual Claude review 36981632161/job 110757242862 completed on `04624bc`:
+  model success, 14 turns, nonzero usage, zero denied calls, and successful
+  execution verification. Comment 5947842571 has no blocking issues and two
+  nits. This is a completed review; it is not inferred from the green job alone.
+  Its zero denials do not demonstrate a diagnostic improvement, since this
+  change grants no tool permission. The first ready transition at 08:04 rests
+  on Brett's 2026-10-01 routine ready-batch authorization; this batch contains
+  one PR. Ready-event run 36981937867 reused the verified nits receipt and
+  skipped a second model call. That skipped step is not a second completed
+  review. Codex summary 5947859228 records code and security completed on
+  `04624bc`, with one inline code finding rather than a clean review.
+- Codex's finding 4163928708 is valid: actual Git accepts space/tab inside the
+  middle configuration subsection. Root reproduced two underclassified valid
+  keys and one NUL-key misclassification before correcting only that diagnostic
+  predicate. Section/final-component validation and the completion/compound
+  gates remain unchanged. Seven focused methods, compilation and diff checks
+  pass on source `20c4b7b` and tests `4ffb2a8`; the independent frozen-source
+  peer also passes eight narrow controls. This is richer safe categorization,
+  not relaxation of review acceptance. The NEWS filing nit remains nonblocking;
+  no new site build or redundant NEWS entry was made for the covered correction.
+- The next-use sequencing trial completed root's focused controls before its
+  one peer dispatch, with zero peer redispatches. This avoids the late-control
+  handoff pattern observed above. Patch scope differs, so there is still no
+  defensible elapsed-time percentage attributable to this ordering change.
+  Implementation, real-Git diagnosis and peer verification are useful work;
+  publication/thread closeout is coordination, and CI waits are passive.
+- Authorized review-fix commit `561e15e` is published as a fast-forward after
+  tree/parent/public-byte verification. Bot-only reply 4163963022 names the
+  correction and controls; thread PRRT_kwDOSoVfrc6oRIBc is resolved. No new
+  Codex or Claude model review was manually requested. The six current-head
+  workflows started naturally, including Claude run 36982745512 and R check
+  36982745455. Current-head CI remains the merge gate; do not use `04624bc`'s
+  partial R results to merge `561e15e`. The source is frozen for that gate.
+- The canonical checkout/log remain the durable route. The feature worktree
+  is clean at `561e15e` and retained until the PR completes; unrelated worktrees
+  and frozen claims are preserved. On the next heartbeat, inspect current-head
+  CI and any new review activity, reuse these verified dispositions when
+  unchanged, then merge under the routine diagnostic-fix class only after all
+  gates. No fresh claim is safe until CLI authentication and ownership checks
+  recover; existing pending approval/auth questions remain pending.
+
+### PR #262 delegated merge and cleanup, 2026-10-02 about 08:27–08:34 UTC
+
+- Merged #262 as `1831457`, preserving head `561e15e`, under Brett's
+  2026-10-01 routine noncritical-merge authorization (ordinary CI diagnostic
+  fix). All six current-head workflows pass. R run 36982745455/job 110760757604
+  completes the suite and strict check on R 4.6.1 with 0 errors/warnings/notes.
+  Actual Claude completion and the tested/resolved Codex finding are the
+  receipts above; the later skipped model steps are not new completed reviews.
+  Fresh comments/threads show no outstanding human or substantive finding.
+- Primary fast-forwarded to the merge. The task worktree was clean with zero
+  unique commits and only disposable ignored bytecode, then archived through
+  Codex. Its directory and worktree registration are gone; its branch and
+  recoverable snapshot are retained. Unrelated worktrees, including B-384's
+  dirty workpad, were preserved. The canonical log remains the durable route.
+- The eight held PR metadata reads return unchanged heads/activity; saved
+  authentication remains invalid. No polling-only agent started, no unchanged
+  hold was rewritten, and no model reroll/local test/site build was repeated.
+  One compact query initially used the wrong repository/ref route for claims:
+  its empty claim result was not accepted as absence. Reading current routing
+  and requiring both known tips plus the locks-main control reached unchanged
+  B-223/B-350 tips. That instrument correction is verification rework; both
+  claims remain frozen, with no claim-record read or write needed this turn.
+- This checkpoint records an actual merge/cleanup, rather than unchanged
+  status. Gate verification and cleanup are useful verification/coordination;
+  prior CI waiting was passive. No implementation or requested audit was done
+  in this closeout, and uninstrumented active time still prevents a credible
+  bureaucracy percentage. Reuse these dispositions on unchanged blocked runs.
