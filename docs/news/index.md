@@ -260,6 +260,16 @@
 
 ### Fixed
 
+- [`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
+  now points a code-resolved procedure’s gap or incomplete-evidence row
+  to the `codes.csv` `term_iri` cell that carries it, with its table,
+  column, code value and full row key (hub item B-265). When several
+  code rows carry one procedure IRI, each address is reported.
+  [`render_ontology_term_request()`](https://salmon-data-mobilization.github.io/metasalmon/reference/render_ontology_term_request.md)
+  renders those as separate candidate requests; review them before
+  filing so one missing term does not become duplicate ontology issues.
+  The metasalmonpy port is B-266.
+
 - CI review-completion failures identify known Git actions after
   directory or configuration options through fixed diagnostic
   categories. Paths and option values remain private, and denied tool

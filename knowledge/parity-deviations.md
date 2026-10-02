@@ -1160,6 +1160,19 @@ not land in the same stream because a hub claim covers one branch in one
 repository. Its metasalmonpy queue item is **B-264**; the test twin **landed
 2026-10-01 as metasalmonpy #81**, merge `430b568`, without a runtime change.
 
+**The development version after 0.5.0 adds to what the port owes (2026-09-30):
+the closure locates a code-resolved procedure in `codes.csv` `term_iri`.** Hub
+item **B-265** replaces the invented `codes.csv` `method_iri` address in R's
+gap and incomplete-evidence rows with every carrying code row's dataset,
+table, column, code value and target key. An IRI shared by two code rows gets
+two address rows; `render_ontology_term_request()` renders two candidate
+requests, which must be reviewed before filing to avoid duplicate issues.
+Warnings and placement rationales name `term_iri`. metasalmonpy's closure
+still has the same invented address; this is an owed port, not a chosen
+difference or a new numbered row. **Why not in the same stream:** a hub claim
+covers one branch in one repository. The Python half is **B-266**, scoped to
+mirror the `codes.csv` `term_iri` address and the two RED-tested cases.
+
 **The development version after 0.5.0 adds to what the port owes (2026-09-25):
 the warning for a column kept as text names the column and the values.** When
 `apply_salmon_dictionary(strict = FALSE)` cannot convert a column to its
