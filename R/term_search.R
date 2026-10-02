@@ -166,7 +166,6 @@
 #' @seealso [sources_for_role()] for role-optimized source selection.
 #'
 #' @export
-#' @import httr
 #' @importFrom rlang %||% .data
 #'
 #' @examples
@@ -516,6 +515,10 @@ find_terms <- function(query,
 }
 
 .metasalmon_cache <- new.env(parent = emptyenv())
+
+# Warning bookkeeping is private to the loaded namespace, never a user option.
+# The once-per-session suppression retires if BioPortal no longer needs a key.
+.ms_term_search_state <- new.env(parent = emptyenv())
 
 # A function, not a top-level binding. As a binding this was evaluated when the
 # namespace was built, so an installed package captured the *build* machine's
@@ -870,15 +873,15 @@ alignment_only <- zooma_confidence <- zooma_annotator <- match_type.zooma <- NUL
 .search_bioportal <- function(query, role) {
   apikey <- Sys.getenv("BIOPORTAL_APIKEY", unset = "")
   if (apikey == "") {
-    if (isFALSE(getOption("metasalmon.warned_bioportal_missing", FALSE))) {
+    if (!isTRUE(.ms_term_search_state$warned_bioportal_missing)) {
       warning(
-        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env and restart. ",
+        "BioPortal API key missing; set BIOPORTAL_APIKEY in your env. ",
         "Example (bash/zsh): export BIOPORTAL_APIKEY=your_key_here. ",
         "Persist it by adding BIOPORTAL_APIKEY=your_key_here to ~/.Renviron or ~/.zshrc. ",
         "Get a key at https://bioportal.bioontology.org/register. ",
         call. = FALSE
       )
-      options(metasalmon.warned_bioportal_missing = TRUE)
+      .ms_term_search_state$warned_bioportal_missing <- TRUE
     }
     return(.empty_terms(role))
   }
@@ -2607,6 +2610,18 @@ sources_for_role <- function(role) {
 #' @param fixture_path_override Optional preloaded fixture object. If provided,
 #'   `fixture_path` is ignored and this value is used as the fixture list.
 #' @return A list with `summary`, `per_case`, and `profiles`.
+#' @examples
+#' fixture <- list(list(
+#'   query = "spawner count", role = "variable",
+#'   expected = list(top = list(candidate_id = "smn-count")),
+#'   candidates = list(list(
+#'     candidate_id = "smn-count", label = "Spawner count",
+#'     iri = "https://example.org/term/spawner-count", source = "smn",
+#'     ontology = "smn", role = "variable", match_type = "label_exact",
+#'     definition = "A count of spawners.", backend_score = 3
+#'   ))
+#' ))
+#' benchmark_term_ranking_fixtures(fixture_path_override = fixture)$summary
 #' @export
 benchmark_term_ranking_fixtures <- function(fixture_path = NULL, profiles = NULL, top_k = 3L, include_details = TRUE, fixture_path_override = NULL) {
   if (is.null(fixture_path) && is.null(fixture_path_override)) {

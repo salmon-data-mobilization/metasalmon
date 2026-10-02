@@ -910,6 +910,28 @@
 #'   `summary` (counts of decisions, errors, downgrades, escalations and
 #'   retries).
 #' @seealso [write_semantic_review_packet()], [semantic_llm_assessments()]
+#' @examples
+#' \dontrun{
+#' # Run in checks once a harness response fixture is bundled.
+#' # Start with an SDP whose semantic targets are ready for review.
+#' sdp_path <- "/path/to/reviewed-sdp"
+#' packet <- write_semantic_review_packet(sdp_path)
+#' # Have the external harness judge packet$path and write its 30-column
+#' # response and a matching .packet-id sidecar in the SDP's review directory.
+#' response <- file.path(sdp_path, "review", "semantic-assessments-pass-1.csv")
+#' result <- ingest_semantic_assessments(
+#'   sdp_path, assessments = response, packet_id = packet$packet_id
+#' )
+#' if (identical(result$status, "awaiting_pass_2")) {
+#'   # The harness judges result$next_packet, then ingest that second response.
+#'   second_response <- file.path(
+#'     sdp_path, "review", "semantic-assessments-pass-2.csv"
+#'   )
+#'   result <- ingest_semantic_assessments(
+#'     sdp_path, assessments = second_response
+#'   )
+#' }
+#' }
 #' @export
 ingest_semantic_assessments <- function(x,
                                         assessments = NULL,
