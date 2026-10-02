@@ -1295,6 +1295,12 @@ metasalmon (development version)
   R blockers remain excluded; existing window and follow-up landings are
   recorded in the form the checker can read.
 
+* **The CI metasalmonpy checkout is excluded from R source tarballs** (hub item
+  B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`, the source of two
+  R CMD check NOTEs about hidden files and non-portable paths. CI still checks
+  out the sibling and exposes it through `METASALMONPY_PATH` for the parity
+  register guard. A focused source-build test verifies the tarball exclusion.
+
 * Hub queue lint refuses a dependency-linked Python port named in only one
   mirror debt passage (B-396). The intentional row-53 exception is scoped to
   its existing direction and records why it exists and what retires it.

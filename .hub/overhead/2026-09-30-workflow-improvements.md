@@ -1612,3 +1612,33 @@ string metadata incorrectly inheriting the old table profile's URI checks.
 The new internal inheritance path will preserve that prior accepted behavior;
 the separate old table-range defect stays in B269. This is the next use of the
 mandatory-semantics/public-route distinction, with no causal percentage claim.
+
+### Batch landing and bounded peers, about01:16–01:25 UTC
+
+- PR216 merged3bec752 at01:17:57 UTC after six applicable latest green checks,
+  actual Claude36949087168 with zero denied tools/nits, and completed first
+  Codex code/security reviews without findings. Its superseded same-head
+  cancelled review supplies no coverage. CI R4.6.1 reached all five source-build
+  assertions with the real mirror checkout and returned Status: OK. B268
+  closed5ab308a; clean0-unique auxiliary removed, branch retained.
+- PR234 now integrates the settled actual base, carrying accumulated log
+  checkpoints in one necessary publication. Its final native build15.786s
+  preserves588 ordered non-NEWS records, with168 offline queue tests in0.405s
+  and both owned guard blobs unchanged. The earlier locally prepared native
+  build must be counted as rework. Keeping independent PR scopes avoids
+  adding unrelated code to a PR under review or disrupting reviewed history.
+- Root's B350 public peer passed internal paired operations, multivalued YAML
+  bytes plus the existing pipe-valued read projection, conflict/no-overwrite,
+  source metadata and actual manifest hashes. A first probe expected a vector
+  where the existing parser returns a scalar: instrument repair, not a product
+  defect. Source unchanged; quote-dependent gates/conformance stay held.
+- Root's marker peer caught leading ASCII whitespace before the first
+  schemaLocation URI hiding a marker in the second. Both owners fixed it before
+  new heavy gates; root R focused peer passed and Python's75 contract tests
+  passed in1.22s with one inherited warning. R now runs its one final frozen
+  full/strict pair; Python uses supported CI for broad gates.
+- The original owner resumed existing Py83 guide companion, without a new
+  claim. Source guide/nav hashes survive main integration; native quartodoc
+  build1.89s and64-page render18.38s pass. Only its five scoped files differ.
+  It is ready for its first requested review; green checks alone do not supply
+  an actual review. B223 remains parked on its real dependency/approval hold.
