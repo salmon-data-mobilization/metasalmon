@@ -2119,3 +2119,92 @@ is introduced. Existing reviewed PRs remain separate.
   prior CI waiting was passive. No implementation or requested audit was done
   in this closeout, and uninstrumented active time still prevents a credible
   bureaucracy percentage. Reuse these dispositions on unchanged blocked runs.
+
+### Idle experiment and review-gate correction, 2026-10-02 about 09:26–13:02 UTC
+
+- Four unchanged-state checks reused existing workpad dispositions. The 09:26
+  check used 11 tool reads; 10:26, 11:27 and 12:33 used 10 each. All four used
+  zero polling-only agent starts, zero Git checkpoints and zero repeated full
+  reviews, validations or site builds. Tool-batch elapsed times measured on
+  the latter three checks were 2.1, 1.8 and 1.6 seconds. These are bounded
+  observation costs, not total active effort or causal time savings.
+- The 12:33 output trial inspected all eight held PR records, then rendered
+  unchanged state together: 1,133 metadata characters became 125 summary
+  characters (about 89% less for that payload), with the same tool reads and
+  no changed record omitted. It does not measure the whole response, model
+  tokens or work time. Keep this small output adjustment on future idle checks.
+- The policy-readiness task returned final heads `40786b4` (MetaSalmon #261)
+  and `53f391d` (metasalmonpy #95), with six and three passing current-head
+  workflows respectively. The requested Codex reviews completed. #261's
+  terminal-handoff finding is answered by the existing per-ID acceptance gates
+  and post-merge queue rule; #95's changelog finding is fixed under Unreleased
+  and answered. Actual earlier Claude #261 review completed with five nits;
+  later skipped model steps are not additional reviews.
+- A reported requirement for a separate Claude #95 review was unsupported.
+  The live human instruction said Codex **or** Claude, and current HUB requires
+  completed Codex with findings fixed or answered. No separate Claude #95
+  review was requested or required. The readiness owner withdrew that invented
+  hold in both PR descriptions and its report. A local Claude invocation
+  failed while logged out with zero model usage; the reported 717-second inspection
+  produced no UI state or sent prompt. That elapsed wait is passive environment
+  friction, not implementation, useful review or proof of review completion.
+- Two disjoint independent checks verified the policy answer and Python
+  readiness against live findings and source. Their approximate elapsed times
+  were 77 and 85 seconds; they ran concurrently and must not be summed as
+  root wall time or treated as measured active effort. These were useful
+  requested audits, with no edits, claim writes, tests or extra review requests.
+  The approved merge coordinator retains #261 then #95. At the 13:01 read both
+  were ready/open/unmerged; this log checkpoint neither merges them nor changes
+  their heads. Their two answered bot threads remain for that coordinator.
+- Next small adjustment: establish the exact unmet gate, its authority and any
+  pending requested review before repairing an unavailable reviewer client.
+  On its next use, count avoided client/model attempts and any useful finding
+  separately. This is an execution check, not a new approval or review rule.
+- Coordination here comprises bounded status reads and the writer handback;
+  requested audit comprises the two source checks; tracking comprises this
+  factual checkpoint. Implementation and new environment repair were zero in
+  this closeout. No defensible whole-run bureaucracy percentage follows from
+  these partial elapsed measurements. CLI authentication remains invalid;
+  previously recorded claims and other approval holds stay frozen without
+  another status-only checkpoint. All 28 worktrees were inspected before this
+  log edit; B-384's dirty workpad and every unrelated or unique checkout remain
+  preserved, while canonical main was clean and current at `7b232b3`.
+
+### Approved policy adoption and closeout, 2026-10-02 about 13:05–13:12 UTC
+
+- The reserved coordinator merged MetaSalmon #261 normally as
+  `0056dcacc8daa56b3758b03b8e4f6d31cd3241b2` at 13:05:40 UTC, then
+  metasalmonpy #95 as `d68383c5f24e4bd02871558d5301bf9a402959dc` at
+  13:06:20 UTC. Brett's explicit yes to that exact order was verified in
+  “Summarize Saul routing evidence” (chat `01a0f2a9-8da9-7252-b293-c326ee80b018`,
+  reply `Sentinel_35416afa17dc8191929aa4cd3f48b559`); his later request to wait
+  for reviews was satisfied. This is named reserved-policy approval, not an
+  expansion of routine merge authority. Both fixed/answered bot threads are
+  resolved, and GitHub confirms both merged flags and exact approved heads.
+- Public Git fetches reach both merge receipts and reviewed-head ancestry.
+  Canonical HUB and Python adoption pointers now contain the shared rules.
+  Related eligible items held by one owner may share one implementation and
+  detailed report; each ID still owes its claim, handoff and acceptance proof.
+  Real effort measurement awaits an eligible owned batch and working Git auth.
+- Canonical Python main fast-forwarded cleanly. R incorporated the merge while
+  retaining this sole unpublished log-only checkpoint. The two native policy
+  worktrees were clean, had zero unique commits and no ignored files, then were
+  removed and pruned; both branches remain. Unrelated B-384 and B-345 dirty
+  workpads and every other checkout were preserved. The task's isolated clones
+  and receipts remain with its owner. No claim or member workpad was written.
+- Four bounded 45-second waits (about 180 seconds) were passive coordination
+  while preserving one merge writer. This log was prepared locally before the
+  merges but its publication waited, avoiding competing main updates. Next
+  closeout can prepare the factual checkpoint after the merge receipt rather
+  than make log publication depend on waiting; that changes no merge gate.
+- Compact output regressed once: an artifact inventory printed 23,508 source
+  characters for 71 attachments when only two worktree matches were relevant.
+  A subsequent summary confirmed zero managed matches plus the known archived
+  #262 control. Future metadata rendering should inspect all records but print
+  relevant changes and reach controls, including attachment inventories. This
+  is output waste; no elapsed-time or token percentage was measured for it.
+- A bounded read-only lane audit is identifying ownership and gates for
+  existing #209, #211 and #229. It is planning evidence, not implementation,
+  new claims or permission to rerun a failed review. The authenticated claim
+  hold is unchanged. No blanket merge, scientific or export-default authority
+  follows from the policy adoption.
