@@ -430,8 +430,9 @@ those markers and does not block a rebuild; only a
 <p>When the package is genuinely ready, switch to strict validation:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/validate_salmon_datapackage.html">validate_salmon_datapackage</a></span><span class="op">(</span><span class="va">pkg_path</span>, require_iris <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p>After this passes, complete steps 10 and 11: the publication path
-also requires the reviewed closure and reviewed EML facts.</p>
+<p>After this passes, the whole package folder can be shared as
+described in step 12. For EML/KNB export or deposit, complete the
+reviewed closure and EML facts in steps 10 and 11.</p>
 <p>If strict validation still fails because a measurement term genuinely
 needs a new shared or DFO-specific ontology term, that is not a bug in
 the workflow — it means the package is <strong>not finalized

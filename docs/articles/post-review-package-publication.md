@@ -380,8 +380,9 @@ When the package is genuinely ready, switch to strict validation:
 validate_salmon_datapackage(pkg_path, require_iris = TRUE)
 ```
 
-After this passes, complete steps 10 and 11: the publication path also
-requires the reviewed closure and reviewed EML facts.
+After this passes, the whole package folder can be shared as described
+in step 12. For EML/KNB export or deposit, complete the reviewed closure
+and EML facts in steps 10 and 11.
 
 If strict validation still fails because a measurement term genuinely
 needs a new shared or DFO-specific ontology term, that is not a bug in

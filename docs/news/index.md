@@ -1416,10 +1416,10 @@
 
 ### Changed
 
-- The publication guide distinguishes strict SDP validation from the
-  reviewed closure and EML facts the publication path also requires.
-  Closure comments describe the ledger’s field coverage accurately (hub
-  B-262).
+- The publication guide distinguishes strict SDP validation and folder
+  sharing from the reviewed closure and EML facts required for EML/KNB
+  export or deposit. Closure comments describe the ledger’s field
+  coverage accurately (hub B-262).
 
 - **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
   and
