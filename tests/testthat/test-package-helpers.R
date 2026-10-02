@@ -2648,6 +2648,183 @@ test_that("validate_salmon_datapackage catches missing codes.csv values", {
   temp_dir
 }
 
+test_that("strict dictionary validation checks the shape of all six semantic IRIs", {
+  dict <- fill_measurement_components(infer_dictionary(
+    data.frame(escapement = 1250L), dataset_id = "shape-demo", table_id = "main"
+  ))
+  malformed <- c(
+    "foo bar",
+    " ",
+    paste0(intToUtf8(0x00A0L), "https://example.org/term"),
+    paste0("REV", intToUtf8(0x0131L), "EW:https://example.org/term")
+  )
+
+  # Drive the public validator for each field, including the two optional
+  # semantic slots. A shape check limited to measurement-required fields would
+  # leave the optional slots accepting text in strict mode.
+  for (field in .ms_dictionary_iri_fields()) {
+    for (value in malformed) {
+      changed <- dict
+      changed[[field]][[1]] <- value
+      expect_error(
+        suppressMessages(validate_dictionary(changed, require_iris = TRUE)),
+        paste0(field, ".*absolute IRI"),
+        info = field
+      )
+    }
+  }
+
+  # A non-HTTP absolute scheme remains valid; malformed but populated text is
+  # still accepted in review-ready mode. Blank optional and required slots keep
+  # their existing, distinct strict-validation paths.
+  dict$term_iri[[1]] <- "urn:example:escapement"
+  expect_no_error(suppressMessages(validate_dictionary(dict, require_iris = TRUE)))
+  dict$term_iri[[1]] <- "foo bar"
+  expect_no_error(suppressWarnings(suppressMessages(validate_dictionary(dict, require_iris = FALSE))))
+  dict$term_iri[[1]] <- ""
+  expect_error(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    "Measurement columns require"
+  )
+  dict$term_iri[[1]] <- "urn:example:escapement"
+  dict$constraint_iri[[1]] <- ""
+  expect_no_error(suppressMessages(validate_dictionary(dict, require_iris = TRUE)))
+  # Reviewed measurements can hold more than one constraint in the existing
+  # semicolon representation. Check each IRI, keeping outer whitespace and
+  # empty components malformed rather than accepting the combined text.
+  dict$constraint_iri[[1]] <- "https://example.org/a; urn:example:b"
+  expect_no_error(suppressMessages(validate_dictionary(dict, require_iris = TRUE)))
+  dict$constraint_iri[[1]] <- "https://example.org/a; foo bar"
+  expect_error(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    "constraint_iri.*absolute IRI"
+  )
+  dict$constraint_iri[[1]] <- "https://example.org/a;"
+  expect_error(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    "constraint_iri.*absolute IRI"
+  )
+  for (value in c(" https://example.org/a; https://example.org/b",
+                  "https://example.org/a; https://example.org/b ")) {
+    dict$constraint_iri[[1]] <- value
+    expect_error(
+      suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+      "constraint_iri.*absolute IRI"
+    )
+  }
+  dict$constraint_iri[[1]] <- "https://example.org/a; REVIEW: https://example.org/b"
+  later_marker <- tryCatch(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    error = identity
+  )
+  expect_s3_class(later_marker, "error")
+  expect_match(conditionMessage(later_marker), "REVIEW-prefixed IRI")
+  expect_no_match(conditionMessage(later_marker), "not an absolute IRI")
+  dict$constraint_iri[[1]] <- "REVIEW: https://example.org/constraint"
+  marker <- tryCatch(
+    suppressMessages(validate_dictionary(dict, require_iris = TRUE)),
+    error = identity
+  )
+  expect_s3_class(marker, "error")
+  expect_match(conditionMessage(marker), "REVIEW-prefixed IRI")
+  expect_no_match(conditionMessage(marker), "not an absolute IRI")
+})
+
+test_that("strict package validation checks every tables.csv IRI column", {
+  pkg_path <- .ms_write_semantic_validation_fixture()
+  dict_path <- .ms_metadata_path(pkg_path, "column_dictionary.csv")
+  dictionary <- .ms_read_metadata_csv(dict_path)
+  measurement <- which(dictionary$column_name == "escapement")
+  changed_dictionary <- dictionary
+  changed_dictionary$term_iri[[measurement]] <- "foo bar"
+  readr::write_csv(changed_dictionary, dict_path, na = "")
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    "term_iri is not an absolute IRI"
+  )
+  readr::write_csv(dictionary, dict_path, na = "")
+
+  changed_dictionary <- dictionary
+  changed_dictionary$constraint_iri[[measurement]] <- "https://example.org/a; urn:example:b"
+  readr::write_csv(changed_dictionary, dict_path, na = "")
+  expect_no_error(suppressWarnings(suppressMessages(
+    validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+  )))
+  readr::write_csv(dictionary, dict_path, na = "")
+
+  tables_path <- .ms_metadata_path(pkg_path, "tables.csv")
+  original <- .ms_read_metadata_csv(tables_path)
+  malformed <- c(
+    "foo bar",
+    paste0(intToUtf8(0x00A0L), "https://example.org/observation"),
+    paste0("REV", intToUtf8(0x0131L), "EW:https://example.org/observation")
+  )
+
+  # The collector already refuses markers in undeclared *_iri columns, so the
+  # shape check must reach those columns too. Each case starts from the same
+  # otherwise-valid package to isolate the offending metadata cell.
+  for (field in c("observation_unit_iri", "custom_thing_iri")) {
+    for (value in malformed) {
+      tables <- original
+      tables[[field]] <- value
+      readr::write_csv(tables, tables_path, na = "")
+      expect_error(
+        suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+        paste0(field, ".*not an absolute IRI"),
+        info = field
+      )
+    }
+  }
+
+  # The required observation-unit field has its own blank collector. An
+  # undeclared optional IRI has no such path: parsed whitespace-only text
+  # must reach the shape check instead of silently passing.
+  tables <- original
+  tables$custom_thing_iri <- "\n"
+  readr::write_csv(tables, tables_path, na = "")
+  expect_error(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    "custom_thing_iri.*not an absolute IRI"
+  )
+
+  tables <- original
+  tables$custom_thing_iri <- "urn:example:thing"
+  readr::write_csv(tables, tables_path, na = "")
+  expect_no_error(suppressWarnings(suppressMessages(
+    validate_salmon_datapackage(pkg_path, require_iris = TRUE)
+  )))
+
+  tables$custom_thing_iri <- "foo bar"
+  readr::write_csv(tables, tables_path, na = "")
+  expect_no_error(suppressWarnings(suppressMessages(
+    validate_salmon_datapackage(pkg_path, require_iris = FALSE)
+  )))
+
+  tables <- original
+  tables$custom_thing_iri <- "REVIEW: https://example.org/thing"
+  readr::write_csv(tables, tables_path, na = "")
+  marker <- tryCatch(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    error = identity
+  )
+  expect_s3_class(marker, "error")
+  expect_match(conditionMessage(marker), "custom_thing_iri still contains a REVIEW-prefixed IRI")
+  expect_no_match(conditionMessage(marker), "custom_thing_iri is not an absolute IRI")
+
+  # Placement IRIs use a separate, older shape path. A marker that its
+  # collector recognizes must not also appear as a placement-shape issue.
+  tables <- original
+  tables$method_iri <- "REVIEW : https://example.org/method"
+  readr::write_csv(tables, tables_path, na = "")
+  marker <- tryCatch(
+    suppressWarnings(suppressMessages(validate_salmon_datapackage(pkg_path, require_iris = TRUE))),
+    error = identity
+  )
+  expect_s3_class(marker, "error")
+  expect_match(conditionMessage(marker), "method_iri still contains a REVIEW-prefixed IRI")
+  expect_no_match(conditionMessage(marker), "method_iri is not an absolute IRI")
+})
+
 test_that("validate_salmon_datapackage warns cleanly for semantic issues without crashing cli pluralization", {
   pkg_path <- .ms_write_semantic_validation_fixture(
     dict_term_iri = "http://w3id.org/salmon/SpawnerAbundance"

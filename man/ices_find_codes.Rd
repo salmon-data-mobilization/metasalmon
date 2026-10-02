@@ -21,3 +21,9 @@ request.
 \description{
 Find ICES codes within a code type by text match
 }
+\examples{
+\dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+matching_gear_codes <- ices_find_codes("trawl", code_type = "Gear")
+}
+}

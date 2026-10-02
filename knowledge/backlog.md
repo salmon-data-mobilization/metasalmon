@@ -686,13 +686,16 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   it was not required for the R3/R4 behavioral work.
 
 ### 23. Multi-table recursion forwards the un-widened shortlist  → R2/R5
-- **Status:** confirmed (latent). `R/dictionary-helpers.R:136` passes
-  `semantic_max_per_role`, not `semantic_seed_max_per_role`. Harmless today (children
-  force `seed_semantics = FALSE`) but a trap if seeding ever moves into the recursion.
-- **Implementation status:** open latent. R5 moved resource-dictionary inference
-  behind `.ms_infer_resource_dictionary()` but preserved child calls with
-  `seed_semantics = FALSE`; if semantic seeding later moves into child recursion,
-  this needs to be revisited.
+- **Historical observation:** the child call forwarded the original
+  `semantic_max_per_role` rather than the effective widened shortlist. The old
+  report called that computed value `semantic_seed_max_per_role`, an argument
+  that did not exist. Children force `seed_semantics = FALSE`, so the discrepancy
+  was latent and did not change output.
+- **Landing evidence, 2026-10-02 UTC:** [PR228](https://github.com/salmon-data-mobilization/metasalmon/pull/228)
+  merged as `dc11b0f6`, forwarding `llm_review$semantic_max_per_role` at
+  `R/dictionary-helpers.R:154`. The temporary child spy reproduced the original
+  cap difference; the durable test pins one top-level seeding pass. Child
+  seeding remains disabled, and no Python behavior port is owed.
 
 ### 24. Decomposition mode disables batching for the whole group
 - **Status:** by-design (perf note). `any(record$decomposition_mode)` at
@@ -1300,8 +1303,9 @@ message. Their shared shape is the reusable finding: **a feature that writes a
 record and never reads it back has not been round-tripped, and no test that
 only writes will say so.**
 
-*Retires when:* it already has. What is still open in stream S5 is #58 and #59,
-which share no code with this.
+*Retires when:* it already has. The condition-class work in #58 and the
+configuration and global-state work in #59 are separate from this review-flow
+fix.
 
 ### Open — retrieval
 
@@ -3275,6 +3279,12 @@ failing the job, or fails with a message that names it as an infrastructure
 failure rather than a check failure; demonstrated against a simulated download
 failure.
 
+*Landed 2026-10-01:* metasalmon pull request #218, merge `a6baf94`, adds the
+bounded CI `pak` installer and six offline bootstrap checks. It verifies that
+the namespace is loadable before calling an attempt successful and names
+exhaustion as infrastructure failure. Current-head CI and the completed
+reviews passed; merged under Brett's delegated routine-merge authorization.
+
 ***`B-156` was reassigned to `Q50` on 2026-09-16 and the `B-156` id is retired
 unused.*** The Frictionless `profile`-versus-`$schema` finding is a question and
 its entry is in [`questions.md`](questions.md) as
@@ -3525,6 +3535,10 @@ for anyone matching on message text, so it wants a major bump.
 `.onLoad` defaults, and no help topic. `.search_bioportal()` permanently writes a
 flag into the user's `options()`; `.ms_chat_new_session_id()` calls `sample()` and
 advances the user's RNG stream. Both are CRAN-policy violations.
+
+**Landed 2026-10-01:** metasalmon PR #243 (`d0339c0`) added the configuration
+registry and help topic, filled only missing concrete defaults, and moved warning
+bookkeeping and session-ID generation off the caller's options and RNG state.
 
 **#60 Example and API-surface gaps.** 22 of 30 documented topics wrap their entire
 example in `\dontrun{}`, including examples that run offline in under a second,
@@ -7255,6 +7269,20 @@ schema.
 *Why this severity:* the output carries a column its schema does not declare,
 but only a schema other than the shipped one reaches it.
 
+**Correction, 2026-09-30 (B-252):** the Python observations above were real,
+but the source-only conclusion about R was wrong. Executing both sides at R
+`3364b975` and Python `e81cacd` shows that inferred `update_frequency` and
+`constraint_iri` are preserved in both packages even when the selected schema
+omits them. R also re-adds the latter in dictionary validation. The actual
+discrepancy is a direct writer given dataset/table/codes input lacking
+`update_frequency`, `method_iri` or `vocabulary_iri`: R keeps it absent and
+Python adds it. R table inference also omits an unselected `method_iri`, where
+Python synthesizes it. [Python pull request 82](https://github.com/salmon-data-mobilization/metasalmonpy/pull/82)
+corrects these measured paths without deleting existing caller extras or
+changing public reader/validator contracts. Paired runnable probes, complete
+headers and the default-byte baseline are retained in that work's tests and
+workpad. Its publication is not evidence of landing.
+
 **From the B-141 run** (metasalmon pull request 167).
 
 **`B-253`: two contributor-only Markdown pages that nothing ignores.** The
@@ -7853,6 +7881,14 @@ publication gate and it passes text that is not an IRI in an IRI field. `B-344`
 and `B-345`, because a spelling a detector misses is most often hand-typed, and
 today each package disagrees with itself about some spellings.
 
+**IRI-shape halves landed — 2026-10-01, B-342/B-343.** metasalmon PR **#257**
+merged as `c09a76bc7a0469d0d69025f940b7a3c4e86cdd00`; metasalmonpy PR **#92**
+merged as `feb724a2809a808c32ffad1ba0e5844b389c6012`. The existing Q63 shape
+checks are implemented in both packages, including the supported semicolon
+constraint lists. Valid review findings were reproduced, fixed and resolved;
+current required CI and last requested Codex reviews completed. Actual Claude
+execution on the R PR completed with only nits. No new parity row was added.
+
 **`B-276`, `B-277`, `B-346` and `B-347`: a `codes.csv` row with no code value
 (calls (g) and (j)).**
 
@@ -7892,6 +7928,15 @@ today each package disagrees with itself about some spellings.
 turns every value of its column into a missing value. Since `B-55` and `B-241`
 the user is told, but the output is still empty.
 
+*Landed receipt, 2026-10-01:* `B-346` landed in metasalmon
+[pull request 256](https://github.com/salmon-data-mobilization/metasalmon/pull/256)
+as `678026f`; `B-347` landed in metasalmonpy
+[pull request 89](https://github.com/salmon-data-mobilization/metasalmonpy/pull/89)
+as `aa929c9`. A same-table, same-column vocabulary row now skips the codes
+warning and label/factor step in both packages, including an omitted optional
+`code_value` column. Declared type coercion and ordinary code-list checks remain.
+The semantic-target work in `B-276` and `B-277` is a separate part of the ruling.
+
 **`B-348`: float years (call (h)).** Measured: `pandas.read_csv()` on
 `BY,n / 2001,1 / ,2 / 2003,3` gives `BY` as `float64`, which
 `_values_look_yearish()` reads as not year-shaped and `infer_column_role()`
@@ -7905,6 +7950,15 @@ numeric dtype (read, not run).
 *Why this severity:* pandas reads any integer column with a blank cell as
 `float64`, so a year column with a missing value is typed differently by the two
 packages on each one's documented path.
+
+**Landed — 2026-10-01, B-348.** metasalmonpy PR **#86** merged as
+`0021ade7c7d95d8af57297252fe72457af6f6e79`. `_values_look_yearish()` now
+renders a non-missing whole-number float as its integer spelling for this
+predicate only; the CSV-with-blank-cell regression was shown RED before the
+fix, and fractional/text controls still reject year shape. Current-head CI
+passed both dependency suites, bare pytest and R parity. R already supplies
+this behavior and does not change. This is the port of Brett's ruling, with
+no new numbered deviation; its workpad is in metasalmonpy.
 
 **`B-349`: date columns (call (i)).** Measured, with three ISO dates:
 
@@ -7933,6 +7987,14 @@ moves. This ruling moves metasalmonpy only, so no R item was filed.
 *Why this severity:* on the documented Python path, `pandas.read_csv()` then
 `create_sdp()`, every date column arrives as text, so every one without a time
 word is typed differently from R, and every one gets `value_type` `string`.
+
+*Landed 2026-10-01:* metasalmonpy pull request #90, merge `7ad6139`, shares the
+readr date-text guess between role and value-type inference while retaining
+the seeder wrapper. Focused, minimum-supported, core, extras and current-head
+CI checks passed. The completed review's in-memory asymmetry finding was
+answered with the explicit ruling and the anticipated input boundary above;
+no R change or numbered register row was introduced. Merged under Brett's
+delegated routine-merge authorization; its workpad lives in metasalmonpy.
 
 **`B-350` and `B-351`: canonical SSSOM/TSV (call (k)).** The specification's
 *Canonical SSSOM/TSV format* section, read from `src/docs/spec-formats-tsv.md` in
@@ -7987,6 +8049,14 @@ items.
 *Why this severity:* the profile has no use for a tag, and nothing runs, but
 each reader returns a different value for the same line.
 
+**Both halves landed — 2026-10-01, B-352/B-353.** metasalmon PR **#255**
+merged as `13460ed0484b10082b89c4dec33820d70386ddac`; metasalmonpy PR **#88**
+merged as `7a2305bdc86ac53271f310c9845f16f922dae8b5`. Tagged metadata is refused
+without evaluation; quoted bang text remains text. Public RED controls and
+frozen-source verification precede both merges; current required CI and the
+last requested Codex reviews completed, with verified Claude nits-only
+execution on the R PR. This is the existing Q62 ruling, with no new parity row.
+
 **`B-354` and `B-355`: an instant in EML coverage (call (m)).** The B-162 run
 measured it in R (`.hub/workpads/B-162.md` on `main`, on `372ef07` under R
 4.3.3): for a package whose `temporal_start` is `2024-01-01T00:00:00Z`,
@@ -8003,6 +8073,17 @@ unpadded year is not the ruled form and stays `B-161`'s.
 
 *Why this severity:* the profile admits an instant, and R's own writer produces
 one from a typed `POSIXct`, so a valid package cannot be published as EML.
+
+**Both halves landed — 2026-10-01, B-354/B-355.** metasalmon PR **#253**
+merged as `05f0bf18d8753b2a7d1d27881f2f12f971f89ed3`; metasalmonpy PR
+**#87** merged as `6d0a45e6e3421e2a537a2ee0225b1bcb46ba05b9`. Both public
+writers now split the one persisted whole-second UTC profile instant into
+`calendarDate` and `time`, preserving the exact text on rejoin. Public EML
+schema regressions were shown RED first, then pass for instant/instant and
+both mixed date/instant directions; off-profile controls remain intact.
+Both merge heads passed every applicable required CI gate and completed
+Codex review; R's actual Claude review finished with only nits. These are
+ports of Brett's existing ruling, with no numbered parity deviation.
 
 **Call (n): no item.** The S13 card now records the two argument changes as
 changes the Fraser Recruits recipe makes, and points at
@@ -8391,6 +8472,15 @@ workpad records.
 
 *Why this severity:* the rule it would enforce was broken three times before it
 was written down, and one debt is recorded in one place today.
+
+*Landed, 2026-10-01:* B-396's presence check and regression tests merged in
+metasalmon pull request 238 as `670c45ca`. The check compares the same port
+passages as the existing completion rule, records B-179's directional
+exemption with its retirement condition, and distinguishes citations from
+mirror debt. The integrated offline queue suite passed 166 tests; queue lint
+passed with 318 items and retirement-debt baseline zero. Actual Claude review
+completed with only minor nits and all required CI passed. The measurement
+above remains the historical evidence that opened this item.
 
 **From B-201's hand-back** (metasalmonpy pull request 59, merged as `380a7a4`).
 
@@ -8833,5 +8923,11 @@ Found while four metasalmonpy convergence items were built for S16 step 1 (B-360
 - **B-380 — the retry-query identifier pattern (metasalmon `R/llm-semantic-helpers.R:1256` on `main`).** `.ms_llm_query_looks_like_identifier()` matches `^[A-Za-z][A-Za-z0-9._+-]*:[^\\s]+$` with R's default TRE engine. There a backslash inside a bracket expression is literal, so the class means neither a backslash nor `s`. Measured: `smn:species` FALSE, `abc:s` FALSE, `abc:S` TRUE, `abc:d e` TRUE, `gcdfo_v2:X` TRUE. With `[^[:space:]]`, or with `perl = TRUE`, the first two read TRUE and `abc:d e` reads FALSE. The B-362 run found it first, and ported the quirk to metasalmonpy on purpose so that both packages give one verdict until R is fixed. That is why B-381 exists.
 - **B-382 — metasalmonpy's first pass (found by the B-363 run).** Its pass-1 retrieval deduplicates on `(source, iri)` where R deduplicates by candidate identity, fills a missing score with 0 where R keeps it missing and sorts it last, and caps at `max_per_role` as given where R floors the cap at 1. B-363 had to leave pass 1 unchanged, so its `pass_one` branch keeps today's rule and names this retirement. Pass 2 already takes R's rule.
 - **B-383 — R Markdown and Quarto context files (metasalmon `R/llm-semantic-helpers.R:554`).** `.ms_context_text_from_rmarkdown()` reads with `readLines(encoding = "UTF-8")` and applies no fallback. A file whose bytes are cp1252 (`Caf\xe9 count`) then fails at `nchar()` with `invalid multibyte string, element 1`. metasalmonpy after B-364 decodes the same file through UTF-8, then cp1252, then latin-1. Found by the B-364 run.
+  **Landed — 2026-10-01, B-383.** metasalmon PR **#252** merged as
+  `461f1f3cea49aef2d5a6f3e3975a66b83da8f36f`. The reader now uses the existing
+  UTF-8/cp1252/latin-1 decoder before trimming front matter/fences. The public
+  packet regression failed before the fix; current-head CI passed. Python
+  already uses the decoder, so no port or numbered deviation is owed. The
+  surviving deterministic packet path is the scope of this fix.
 - **B-384 — the validator's phrase anchor (metasalmon `R/semantic-bundle-validators.R:607-645`).** `.ms_semantic_validator_chunk_has_anchor()` extracts the leading token with `sub("^\\s*([a-zA-Z0-9][a-zA-Z0-9_-]*).*$", "\\1", x, perl = TRUE)` and no dot-all flag. On a chunk with a newline the pattern cannot reach the end of the text, so `sub()` returns the whole chunk. The underscore-or-hyphen guard that follows then rejects the anchor **when any later line contains `_` or `-`**. Measured: `Spawner count by visual survey` gives `Spawner`; the same text plus a second line holding `table_2` gives the whole chunk and fails; adding `(?s)` gives `Spawner` again. **It does not fail every multi-line chunk.** `Catch count was observed.` followed by `Protocol.` has no `_` or `-` anywhere, and it still anchors on its normalised text (the second Codex review of metasalmon #196). The B-360 run found it, and copied the quirk to metasalmonpy on purpose as `multiline_chunk_phrase_anchor_quirk`. That is why B-385 exists.
 - **B-386 — metasalmonpy's HTML reader.** `_TextExtractor` in `llm_review.py` collects every text node through `handle_data()`, including `<script>`, `<style>` and `<head>` text. R's `.ms_context_text_from_html()` reads only `.//body` text that is `not(ancestor::script) and not(ancestor::style)`. Register row 62 covers library-specific extraction in general; this is the largest practical difference under it, reported by the B-364 run.

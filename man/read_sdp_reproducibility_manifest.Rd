@@ -18,3 +18,19 @@ The parsed manifest as a list.
 \description{
 Read an SDP reproducibility manifest
 }
+\examples{
+sdp_path <- tempfile("sdp-")
+dir.create(file.path(sdp_path, "reproducibility", "workflow"),
+           recursive = TRUE)
+writeLines("message('prepare data')",
+           file.path(sdp_path, "reproducibility", "workflow", "prepare.R"))
+artifacts <- data.frame(
+  path = "reproducibility/workflow/prepare.R",
+  role = "workflow",
+  media_type = "text/x-r-source"
+)
+write_sdp_reproducibility_manifest(sdp_path, artifacts)
+manifest <- read_sdp_reproducibility_manifest(sdp_path)
+manifest$artifacts[[1]]$role
+unlink(sdp_path, recursive = TRUE)
+}
