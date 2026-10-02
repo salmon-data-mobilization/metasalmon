@@ -689,11 +689,12 @@
   for (role in names(fields)) {
     field <- fields[[role]]
     if (field %in% names(dict_row)) {
+      raw_value <- dict_row[[field]][[1]]
       value <- .ms_semantic_trim_string(
-        dict_row[[field]][[1]],
+        raw_value,
         default = ""
       )
-      if (nzchar(value) && !grepl("^REVIEW:\\s*", value, ignore.case = TRUE)) {
+      if (nzchar(value) && !.ms_is_review_iri(raw_value)) {
         selected[[role]] <- value
       }
     }

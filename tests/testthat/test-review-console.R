@@ -1041,13 +1041,10 @@ test_that("accept_suggestion(iri =) takes a term retrieval never surfaced", {
 # `apply_sdp_semantics()` then cleared the field and wrote an `accepted` row
 # with an empty `iri` into `semantic_suggestions.csv`.
 #
-# One test per spelling `.ms_strip_review_iri()` removes, because the check has
-# to agree with the strip. Which spellings count as the marker is hub question
-# Q-63, so this list is what the strip removes today, not a ruling, and it
-# follows the strip: when Q-63 is ruled, a spelling the ruling drops leaves the
-# list and one it adds joins it. Each test asserts that premise first, so a
-# change to the strip fails here and names the spelling rather than leaving a
-# test that checks nothing.
+# Q63 rules this ASCII-only list. Each test asserts its predicate and strip
+# premise first, so a later change names the spelling rather than checking
+# nothing. A form feed after the colon is deliberately absent: it survives the
+# strip and the strict IRI-shape guard refuses the resulting malformed IRI.
 marker_only_iris <- c(
   "the bare marker" = "REVIEW:",
   "the marker as the package writes it" = .ms_review_iri_prefix(),
@@ -1055,10 +1052,7 @@ marker_only_iris <- c(
   "mixed case" = "Review:",
   "a space before the colon" = "REVIEW :",
   "a tab before the colon" = "REVIEW\t:",
-  "leading spaces" = "  REVIEW:",
-  # `.ms_scalar_text()` trims spaces, tabs and newlines. A form feed survives
-  # the trim, and only the strip's `\s*` removes it.
-  "a form feed after the colon" = "REVIEW:\f"
+  "leading spaces" = "  REVIEW:"
 )
 
 for (spelling in names(marker_only_iris)) {
@@ -1080,6 +1074,50 @@ test_that("accept_suggestion(iri =) still takes a marked IRI, and records it wit
   expect_equal(
     review$decision_iri[!is.na(review$decision)],
     "https://w3id.org/smn/WaterTemperature"
+  )
+})
+
+test_that("review decisions preserve Q63-excluded whitespace for strict IRI validation", {
+  source <- with_suggestions(fixture_dict(), fixture_suggestions())
+  for (value in c("\nREVIEW:https://example.org/term", "REVIEW:\nhttps://example.org/term",
+                  "REVIEW:\fhttps://example.org/term")) {
+    review <- review_semantics(source) |>
+      accept_suggestion("spawner_count", "variable", iri = value)
+    expected <- if (.ms_is_review_iri(value)) .ms_strip_review_iri(value) else value
+    expect_identical(review$decision_iri[!is.na(review$decision)], expected)
+    expect_false(.ms_absolute_iri_shape(review$decision_iri[!is.na(review$decision)]))
+  }
+})
+
+test_that("empty explicit decision IRIs keep the non-empty refusal", {
+  review <- review_semantics(with_suggestions(fixture_dict(), fixture_suggestions()))
+  for (value in list(NA_character_, character())) {
+    expect_error(
+      accept_suggestion(review, "spawner_count", "variable", iri = value),
+      "non-empty IRI"
+    )
+  }
+})
+
+test_that("applied decisions retain post-colon line breaks for strict validation", {
+  root <- make_eml_test_sdp(withr::local_tempdir())
+  suggestions <- fixture_suggestions(
+    dataset_id = "demo-salmon-2026", table_id = "counts", column_name = "count",
+    target_row_key = "demo-salmon-2026/counts/count",
+    iri = "https://example.org/candidate"
+  )
+  readr::write_csv(suggestions, file.path(root, "semantic_suggestions.csv"), na = "")
+
+  review <- review_semantics(root, include_filled = TRUE) |>
+    accept_suggestion("count", "variable", table = "counts",
+                      iri = "REVIEW:\nhttps://example.org/term")
+  suppressMessages(apply_sdp_semantics(root, review))
+  dictionary <- .ms_read_metadata_csv(file.path(root, "metadata", "column_dictionary.csv"))
+  expect_identical(dictionary$term_iri[dictionary$column_name == "count"],
+                   "\nhttps://example.org/term")
+  expect_error(
+    suppressMessages(suppressWarnings(validate_salmon_datapackage(root, require_iris = TRUE))),
+    "term_iri is not an absolute IRI"
   )
 })
 

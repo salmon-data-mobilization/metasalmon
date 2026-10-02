@@ -214,6 +214,16 @@ metasalmon (development version)
 
 ### Fixed
 
+* `REVIEW` IRI markers now use the ruled ASCII-only spelling in validation,
+  review decisions, method migration, bundle checks and EML/KNB output guards:
+  optional spaces or tabs before `REVIEW` and around its colon, with ASCII case
+  variants accepted. Stripping removes only spaces or tabs after the colon.
+  Excluded line breaks or Unicode spaces stay in the value for strict malformed
+  IRI validation. EML/KNB output guards inspect decoded IRI-bearing XML values,
+  including escaped attribute tabs, and retain the prior exact, case-sensitive
+  `REVIEW:` whole-document scan; ordinary `Review:` narrative remains valid
+  (hub B-344, Q63; Python mirror B-345).
+
 * **The migration and tidy-data vignettes now tangle without executable code**
   (hub item B-133). Their 25 display-only examples each declare
   `purl = FALSE` in the chunk header, so R CMD check's vignette-code step no

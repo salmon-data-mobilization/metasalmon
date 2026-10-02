@@ -90,8 +90,11 @@
   c(accepted = "accept", accept = "accept", rejected = "reject")
 }
 
-# A candidate's IRI as a decision records it: trimmed, with the leading
-# `REVIEW:` marker removed, which is what `accept_suggestion(rank = )` and a
+# A candidate's IRI as a decision records it: a ruled marker is stripped from
+# the raw value, while an ordinary IRI retains its existing trim. Never trim
+# a non-marker into a marker or trim characters left after a marker: Q63 leaves
+# those malformed values for strict IRI-shape validation.
+# This is what `accept_suggestion(rank = )` and a
 # replayed decision put in `decision_iri`. Whether a decision names a given
 # candidate is asked twice. `accept_suggestion(iri = )` picks the candidate's
 # row with it, and `apply_sdp_semantics()` takes the candidate's `term_type`
@@ -100,7 +103,14 @@
 # candidate stored as `REVIEW: <IRI>` was picked by the first and not recognised
 # by the second, so it wrote `skos_concept` (hub item B-221).
 .ms_review_decision_iri <- function(x) {
-  .ms_strip_review_iri(trimws(as.character(x)))
+  raw <- as.character(x)
+  raw[is.na(raw)] <- ""
+  marked <- .ms_is_review_iri(raw)
+  recorded <- trimws(raw)
+  recorded[marked] <- .ms_strip_review_iri(raw[marked])
+  newly_marked <- !marked & .ms_is_review_iri(recorded)
+  recorded[newly_marked] <- raw[newly_marked]
+  recorded
 }
 
 # Whether an IRI as a decision records it (`.ms_review_decision_iri()`) names a
@@ -138,7 +148,7 @@
     review$decision[[i]] <- recorded[[value]]
     review$decision_reason[[i]] <- reason[[i]]
     if (identical(recorded[[value]], "accept")) {
-      review$decision_iri[[i]] <- .ms_strip_review_iri(.ms_scalar_text(review$iri[[i]]))
+      review$decision_iri[[i]] <- .ms_review_decision_iri(review$iri[[i]])
     }
   }
   review
@@ -1071,7 +1081,7 @@ accept_suggestion <- function(review,
   in_slot <- review$slot_id == slot
 
   accepted_iri <- if (!is.null(iri)) {
-    .ms_scalar_text(iri)
+    .ms_review_decision_iri(if (length(iri) > 0L) iri[[1]] else "")
   } else {
     hit <- which(in_slot & review$rank == as.integer(rank))
     if (length(hit) != 1L) {
@@ -1082,15 +1092,12 @@ accept_suggestion <- function(review,
         "i" = "To accept a term that is not shortlisted, pass {.arg iri} instead."
       ))
     }
-    .ms_scalar_text(review$iri[[hit]])
+    .ms_review_decision_iri(review$iri[[hit]])
   }
 
-  # `REVIEW:` never survives a decision: the marker means "not confident", and
-  # accepting is the statement that removes it. Stripping here rather than at
-  # write time keeps the review object and the written bytes agreeing about
-  # what was decided.
-  accepted_iri <- .ms_strip_review_iri(accepted_iri)
-
+  # A ruled `REVIEW:` marker never survives a decision: accepting removes it.
+  # An excluded spelling remains malformed for strict IRI-shape validation.
+  # Normalizing here keeps the review object and written bytes in agreement.
   # The non-empty check reads the stripped value, because that is the value the
   # decision records. Run before the strip, it let `iri = "REVIEW:"`, and every
   # other spelling the strip removes, record an accept that named no term
@@ -1113,7 +1120,7 @@ accept_suggestion <- function(review,
         "{.arg iri} must be an IRI, not a {.code REVIEW:} marker.",
         "i" = "An accepted IRI is recorded without one {.code REVIEW:} marker, and what is left here is still a marker."
       )
-    } else if (nzchar(.ms_scalar_text(iri))) {
+    } else if (length(iri) > 0L && nzchar(.ms_scalar_text(iri))) {
       message <- c(
         message,
         "i" = "An accepted IRI is recorded without its {.code REVIEW:} marker, and nothing follows the marker here."

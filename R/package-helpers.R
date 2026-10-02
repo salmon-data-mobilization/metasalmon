@@ -1407,7 +1407,7 @@ create_sdp <- function(
         }
         any(vapply(
           x[iri_cols],
-          function(col) any(grepl("^\\s*REVIEW\\s*:", as.character(col), ignore.case = TRUE), na.rm = TRUE),
+          function(col) any(.ms_is_review_iri(col)),
           logical(1)
         ))
       },
@@ -1678,7 +1678,7 @@ read_salmon_datapackage <- function(path) {
 
   issues <- purrr::map_dfr(iri_cols, function(field) {
     vals <- as.character(df[[field]])
-    rows <- which(!is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE))
+    rows <- which(.ms_is_review_iri(vals))
     if (length(rows) == 0) {
       return(tibble::tibble())
     }
@@ -1712,7 +1712,7 @@ read_salmon_datapackage <- function(path) {
     # whitespace-only text in an optional extension IRI is populated but
     # malformed and must not disappear through trimws().
     populated <- !is.na(vals) & vals != ""
-    marker <- !is.na(vals) & grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE)
+    marker <- .ms_is_review_iri(vals)
     rows <- which(populated & !marker & !.ms_absolute_iri_shape(vals))
     if (length(rows) == 0) {
       return(tibble::tibble())
@@ -1835,7 +1835,7 @@ read_salmon_datapackage <- function(path) {
     # and again as a malformed IRI.
     invalid <- which(
       populated &
-        !grepl("^\\s*REVIEW\\s*:", vals, ignore.case = TRUE) &
+        !.ms_is_review_iri(vals) &
         !.ms_sdp_extension_is_absolute_iri(vals)
     )
     for (row in invalid) {
@@ -3866,9 +3866,18 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
   "REVIEW: "
 }
 
+# Q63's ASCII-only marker is shared by each IRI reader. The explicit letter
+# pairs and literal space/tab avoid locale-dependent case and whitespace rules.
+.ms_review_iri_pattern <- function() {
+  "^[ \t]*[Rr][Ee][Vv][Ii][Ee][Ww][ \t]*:"
+}
+
 .ms_is_review_iri <- function(x) {
-  text <- .ms_scalar_text(x)
-  nzchar(text) && grepl("^\\s*REVIEW\\s*:", text, ignore.case = TRUE)
+  if (length(x) == 0L) {
+    return(logical())
+  }
+  text <- as.character(x)
+  !is.na(text) & grepl(.ms_review_iri_pattern(), text, perl = TRUE)
 }
 
 .ms_strip_review_iri <- function(x) {
@@ -3876,8 +3885,59 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
     return(x)
   }
   out <- as.character(x)
-  out <- gsub("^\\s*REVIEW\\s*:\\s*", "", out, ignore.case = TRUE)
+  marked <- .ms_is_review_iri(out)
+  out[marked] <- sub(
+    paste0(.ms_review_iri_pattern(), "[ \t]*"),
+    "", out[marked], perl = TRUE
+  )
   out
+}
+
+# Inspect decoded values only where the EML/ORE emitters put IRIs. Scanning
+# every text node would mistake an abstract beginning "Review:" for an IRI;
+# scanning every attribute would do the same to a term label. The serializer
+# escapes an attribute tab as `&#9;`, so the decoded pass is still necessary.
+# Keep the inherited exact `REVIEW:` whole-document check for older markers.
+.ms_document_has_review_iri <- function(document, profile = c("eml", "ore")) {
+  profile <- match.arg(profile)
+  if (identical(profile, "eml")) {
+    text_xpath <- paste(c(
+      "//*[local-name()='annotation']/*[local-name()='propertyURI' or local-name()='valueURI']",
+      "//*[local-name()='codeDefinition']/*[local-name()='source']",
+      "//*[local-name()='distribution']/*[local-name()='online']/*[local-name()='url']",
+      "//*[local-name()='userId'][@directory='https://orcid.org']",
+      "//*[local-name()='otherEntity']/*[local-name()='alternateIdentifier'][@system='DataONE']"
+    ), collapse = " | ")
+    attribute_xpath <- paste(c(
+      "/*[local-name()='eml']/@packageId",
+      "/*[local-name()='eml']/@xsi:schemaLocation",
+      "//*[local-name()='userId']/@directory"
+    ), collapse = " | ")
+    text_values <- xml2::xml_text(xml2::xml_find_all(document, text_xpath))
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document, attribute_xpath,
+      ns = c(xsi = "http://www.w3.org/2001/XMLSchema-instance")
+    ))
+    # schemaLocation is one namespace URI followed by its schema URI. Check
+    # the second URI without trimming a leading newline or non-ASCII space
+    # into Q63's narrower ASCII marker spelling.
+    schema_location <- xml2::xml_attr(xml2::xml_root(document), "schemaLocation")
+    if (!is.na(schema_location)) {
+      second_uri <- sub("^[ \t]*[^ \t]+[ \t]", "", schema_location, perl = TRUE)
+      if (!identical(second_uri, schema_location)) {
+        text_values <- c(text_values, second_uri)
+      }
+    }
+  } else {
+    attribute_values <- xml2::xml_text(xml2::xml_find_all(
+      document,
+      "//@rdf:about | //@rdf:resource | //@rdf:datatype",
+      ns = c(rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+    ))
+    text_values <- character()
+  }
+  any(.ms_is_review_iri(c(text_values, attribute_values))) ||
+    grepl("REVIEW:", as.character(document), fixed = TRUE)
 }
 
 .ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions, strategy = c("top", "llm")) {
