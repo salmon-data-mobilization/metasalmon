@@ -2263,3 +2263,77 @@ is introduced. Existing reviewed PRs remain separate.
   findings and reach controls. Next useful owned batch will test the merged
   coherent-batch rule after Git auth recovers. Keep this owner route and failure
   disposition, and avoid repeating the completed review/audit on unchanged heads.
+
+### Original-owner continuations and preservation check, 2026-10-02 about 14:06–15:29 UTC
+
+- **Useful implementation:** B-265, B-401, B-129 and B-262 continued their
+  verified original terminal handoffs, branches and holder identities. No fresh
+  claim, renewal, second handoff, new worktree or borrowed identity was needed.
+  B-265 merged as `fd5c421` after all current-head CI and completed review gates;
+  canonical main fast-forwarded and its clean, zero-unique-work auxiliary
+  checkout was removed, with branches retained. B-266's fulfilled prerequisite
+  is cleared and its ready promotion cites the 2026-09-23 standing grant.
+  Fresh claiming still awaits usable configured Git authentication; the actual
+  cache's no-write probe at 14:14:52 UTC failed and its probe ref was absent.
+- **Coordination:** original owners and frozen peers remained separate lanes,
+  with one publication/main writer and staggered NEWS builders. B-401 combined
+  six real prerequisite conflicts and two actual Codex P1 fixes into one NEWS
+  build/publication; both findings were fixed, answered and resolved. No routine
+  publication or merge approval question was added. One exact pending question
+  reserves B-129's new public guide (HUB class 9) for Brett; it remains draft.
+  B-262's earlier failed Claude execution remains a hold pending actual complete
+  review, independently of CI. No manual model reroll or permission relaxation
+  was requested. Inactive-lane and execution-failure audits stayed read-only.
+- **Small transport adjustment evaluated:** selecting settled main as the API
+  tree base while preserving actual ordered commit parents and proving the exact
+  resulting tree reduced B-265's plan from 253 entries/32,258 characters to
+  12/2,757: 95.3% fewer entries and 91.5% less plan text. These are artifact
+  percentages, not whole-run time or token savings. Next uses were B-401's
+  12 entries/2,948 characters and B-129's 20/4,697. An initial oversized plan
+  read truncated and failed JSON parsing; bounded reads recovered it before
+  any branch mutation.
+- **Verified content reuse evaluated:** exact parent-blob identities, narrow
+  edits and final Git blob/tree assertions avoided 13 additional chunk reads
+  for B-265's two mirror-note fixes (still two uploads/361,938 bytes). B-401's
+  combined knowledge repairs similarly used 49 reads instead of 62, saving 13.
+  Its later one-file roadmap repair used zero reads instead of five and passed
+  the expected blob, tree and public-Git parent proofs before publication.
+  The cache is a transport aid; content identity and preservation still require
+  verification.
+- **Environment workaround:** plain Git authentication is still unavailable,
+  so connected-app source publication required chunk transport. Recorded
+  reads/uploads/bytes: B-265 57/6/about 1.74 MB; B-401 62/6/1,739,388;
+  B-129 57/11/1,451,106; latest B-262 integration 66/8/1,813,277. This is
+  credential/transport overhead, not claim bureaucracy. Every source ref update
+  was non-force and followed exact frozen-tree/ordered-parent public Git proof.
+- **Verification and a failed shortcut:** frozen peers checked original source,
+  main's executable bytes, NEWS, all ordered search identities (including
+  duplicate/list-valued records) and committed assets. Native NEWS builds took
+  B-265 about 17 seconds, B-401's combined integration 15.3, B-129 14.80 and
+  latest B-262 13.572. The narrower B-401 incremental peer check took 1m14s
+  but missed its original gold-standard ordering paragraph: the merge had
+  restored main's stale PFMA account there. An independent read found the loss;
+  the original owner restored the exact reviewed paragraph in 72 seconds.
+  Published correction `520f37c` changes only the roadmap and preserves the new
+  B-265 mirror record. The shortened peer check is **not a demonstrated net
+  improvement**: it required another publication and CI cycle. The PR body
+  corrects the earlier preservation claim.
+- **Next execution adjustment, already applied to that repair:** compare every
+  original owned changed hunk as well as the complete delta against settled
+  main, including separate ordering passages rather than only mirror notes.
+  The before/after check fails on the prior head and passes on the correction;
+  both original roadmap regions are now explicitly covered. No new tracker,
+  policy, guard relaxation, build or model request was introduced. Evaluate this
+  broader preservation checklist on the next necessary integration.
+- **Measurement limits and passive waits:** B-129's 49.79-second
+  coordination/inspection interval within its 490-second builder elapsed total
+  mixes useful scope inspection with coordination and excludes root publication;
+  it is not a waste measure. Actual Claude elapsed times were B-265 200.979s,
+  B-401 114.845s and B-129 193.586s, external execution rather than root active
+  effort. Passive waits and requested audit effort are separate, but a complete
+  partition was not recorded; no defensible whole-run bureaucracy percentage
+  follows. Broad historical-comment, memory and status output regressed again;
+  subsequent reads should inspect all records but render only new findings,
+  changed metadata and positive reach controls. A proportionate documentation
+  CI path and a clearer routine-guide publication boundary are possible future
+  improvements for Brett to consider, not policy changes made in this run.
