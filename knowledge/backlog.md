@@ -7802,6 +7802,21 @@ hand, and nothing runs. But R writes the closure to a path taken from a tag's
 text, and metasalmonpy writes it to the default paths while the sidecar declares
 others, and neither says so.
 
+**B-429 — an undefined-handle follow-up to the merged Python closure fix.**
+Measured 2026-10-02 UTC on metasalmonpy main `feb724a`: for
+`path: !e!foo value`, PyYAML 6.0.3 raises a `ParserError` with context
+`while parsing a node` and a native undefined-tag-handle problem before it
+yields the tagged node event. `_first_unsupported_sidecar_tag()` catches that
+error and returns `None`, leaving the default-path fallback in place. The
+ordinary malformed `broken: [` case has a different native problem; known
+`!!str`, bare `!`, and quoted tag text are controls. The actual Claude review
+of R PR258 at `cada9b6` found the mismatch after Python PR93 had merged:
+[finding and reproduction](https://github.com/salmon-data-mobilization/metasalmon/pull/258#discussion_r4161721899).
+R already refuses the undefined handle. This is an owed completion of Q-62's
+existing refusal ruling, recorded as a new item for a post-merge finding;
+neither a new numbered deviation nor a change to the unrelated malformed
+fallback is justified. The queue item owns its retirement condition.
+
 **`B-342` to `B-345`: the `REVIEW:` marker (call (f)).** The detectors, read on
 both trees:
 

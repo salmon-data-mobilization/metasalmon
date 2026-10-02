@@ -1021,6 +1021,9 @@ test_that("closure refuses unknown sidecar tags before any write", {
     "  path: !expr metadata/declared-vocabulary.csv",
     "  path: !foo metadata/declared-vocabulary.csv",
     "  path: !str metadata/declared-vocabulary.csv",
+    # B-429 pins the Python follow-up to this R Q62 refusal: a native
+    # undefined handle is a tag error, not the unrelated malformed fallback.
+    "  path: !e!foo metadata/declared-vocabulary.csv",
     "  path: &v !foo metadata/declared-vocabulary.csv",
     "  path: !<tag:example.org,2026:unknown> metadata/declared-vocabulary.csv",
     "  path: metadata/declared-vocabulary.csv\nnotes: [!foo ignored]",

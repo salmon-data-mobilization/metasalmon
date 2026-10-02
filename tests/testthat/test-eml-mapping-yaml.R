@@ -2,7 +2,7 @@
 # lexical bang-only refusal. This owner is available for B-223's later readers.
 test_that("EML sidecar reader refuses unknown tags wherever they occur", {
   declarations <- c(
-    "x: !foo value", "x: !str value", "!foo {x: value}",
+    "x: !foo value", "x: !str value", "x: !e!foo value", "!foo {x: value}",
     "x: !foo [one, two]", "x: [&a !foo value]", "x: {? !foo key: value}",
     "x: [a'b, !foo value, c'd]", "x: !foo' value",
     'x: "!<literal"\ny: !foo value',
