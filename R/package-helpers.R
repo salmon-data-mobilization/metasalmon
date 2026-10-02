@@ -3896,17 +3896,15 @@ validate_salmon_datapackage <- function(path, require_iris = FALSE) {
 # EML and OAI-ORE guards scan a whole XML document. Inspect decoded node and
 # attribute values because the serializer escapes a tab in an attribute as
 # `&#9;`; a string scan alone would miss a ruled marker there. Keep the wider
-# serialized scan as a conservative guard for marker text across markup.
+# inherited exact, case-sensitive `REVIEW:` serialized scan as a conservative
+# guard for marker text across markup. Ordinary `review:` prose is not a marker.
 .ms_document_has_review_iri <- function(document) {
   text_values <- xml2::xml_text(xml2::xml_find_all(document, "//text()"))
   attribute_values <- unlist(lapply(
     xml2::xml_find_all(document, "//*[@*]"), xml2::xml_attrs
   ), use.names = FALSE)
   any(.ms_is_review_iri(c(text_values, attribute_values))) ||
-    any(grepl(
-      substring(.ms_review_iri_pattern(), 2L),
-      as.character(document), perl = TRUE
-    ))
+    grepl("REVIEW:", as.character(document), fixed = TRUE)
 }
 
 .ms_mark_reviewed_dictionary_iris <- function(dict, original_dict, suggestions, strategy = c("top", "llm")) {

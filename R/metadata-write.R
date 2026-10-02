@@ -447,8 +447,14 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
       ))
     }
 
+    # A hand-edited accept can still have a missing decision IRI. Preserve the
+    # earlier empty write value without trimming any actual decision bytes.
+    decision_iri <- as.character(row$decision_iri[[1]])
+    if (is.na(decision_iri)) {
+      decision_iri <- ""
+    }
     frame[[field]][[hits]] <- if (identical(row$decision[[1]], "accept")) {
-      as.character(row$decision_iri[[1]])
+      decision_iri
     } else {
       NA_character_
     }
@@ -470,7 +476,7 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
         # exactly as the same candidate accepted by `rank =` does. The row's
         # IRI is read as a decision records it, without a `REVIEW:` marker,
         # the rendering `accept_suggestion()` selected the row by.
-        if (identical(.ms_review_decision_iri(row$iri), as.character(row$decision_iri[[1]]))) {
+        if (identical(.ms_review_decision_iri(row$iri), decision_iri)) {
           .ms_scalar_text(row$term_type)
         } else {
           "skos_concept"
@@ -568,6 +574,9 @@ apply_sdp_semantics <- function(path, review, quiet = FALSE) {
           next
         }
         accepted_iri <- as.character(row$decision_iri[[1]])
+        if (is.na(accepted_iri)) {
+          accepted_iri <- ""
+        }
         # `%in%`, not `==`: a candidate row with no IRI compares as `NA`, and
         # `any()` of a mask holding an `NA` and no `TRUE` is `NA`, not `FALSE`.
         # Each IRI is read through `.ms_review_decision_iri()`, as

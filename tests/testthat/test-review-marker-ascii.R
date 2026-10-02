@@ -128,6 +128,47 @@ test_that("both serialized XML guards refuse the admitted hand-edited spelling",
   )
 })
 
+test_that("ordinary review narratives survive public EML export", {
+  skip_if_not_installed("emld")
+  root <- make_eml_test_sdp(withr::local_tempdir())
+  dataset_path <- file.path(root, "metadata", "dataset.csv")
+  dataset <- readr::read_csv(dataset_path, show_col_types = FALSE)
+  narrative <- "Peer review: counts were cross-checked; data preview: complete."
+  dataset$description <- narrative
+  readr::write_csv(dataset, dataset_path, na = "")
+
+  built <- suppressMessages(write_eml_from_sdp(root))
+  expect_true(file.exists(built$path))
+  eml <- xml2::read_xml(built$path)
+  expect_match(as.character(eml), narrative, fixed = TRUE)
+})
+
+test_that("ordinary review narratives survive the ORE output guard", {
+  narrative <- "Peer review: counts were cross-checked; data preview: complete."
+  config <- list(resolver = "https://example.org/resolve/")
+  members <- list(
+    list(role = "metadata", pid = "urn:example:metadata", path = "metadata/eml.xml"),
+    list(role = "data", pid = "urn:example:data", path = "data/counts.csv")
+  )
+  ore <- .ms_knb_build_ore(
+    "urn:example:resource-map", "urn:example:metadata", "2026-01-01",
+    members, config
+  )
+  modified <- xml2::xml_find_first(ore, "//*[local-name()='modified']")
+  xml2::xml_set_text(modified, narrative)
+  expect_no_error(.ms_knb_validate_ore(
+    ore, "urn:example:resource-map", members, config
+  ))
+
+  # The inherited case-sensitive serialized fallback still refuses this exact
+  # literal even when it appears inside a longer text value.
+  xml2::xml_set_text(modified, "Peer REVIEW: unresolved")
+  expect_error(
+    .ms_knb_validate_ore(ore, "urn:example:resource-map", members, config),
+    "local/review marker"
+  )
+})
+
 test_that("bundle selected IRIs inspect raw marker spelling before ordinary trim", {
   assessments <- .ms_empty_llm_assessments()
   row <- tibble::tibble(term_iri = "Review :https://example.org/term")
