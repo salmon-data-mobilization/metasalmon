@@ -1538,3 +1538,47 @@ Detailed failures, exact freezes and commands remain in the item workpads.
 The batch log distinguishes coordination, implementation, verification,
 environment repair, requested audit and passive waits; concurrent elapsed
 times still do not identify a whole-run percentage of wasted time.
+
+### Review fixes and approval precision, about00:11–00:47 UTC
+
+- R258's second actual review completed with zero denied tools and found a
+  real mirror gap: Python's native undefined-tag-handle parse error silently
+  selects default mapping. Public absent/existing-output probes confirmed
+  changes to both exports and the sidecar. Head733e170 adds R refusal pins,
+  honest PR wording and proposed B429; the new item travels through this PR,
+  not a direct-main push. Three standalone namespace scans took about15s;
+  repeated reservation checks are coordination, not product verification.
+- R258's next model body reports only nits, but its verifier failed on one
+  denied Bash:gh call. All functional checks pass. The exact-head one-off
+  retry question remains pending; no readiness event or source-identical
+  push is used as a substitute for that answer. Model prose and completed
+  review remain separate evidence.
+- R260's actual review found a valid narrative regression. Both marker
+  owners reproduced ordinary narrative failures, restored the inherited
+  case-sensitive literal document fallback, and retained decoded attribute
+  checks. Root's R peer passed on the frozen source before new heavy gates.
+  Py94's source-fix d752071 has508 focused passes on each tested interpreter;
+  final-head supported3.11 CI is green. Prior-head full compatibility failures
+  remain labeled as such, without another local full run to obtain green.
+- The wrong-owner R216 brief was caught before edits. Correct-owner R220
+  integration preserved its source/test blobs, used one native NEWS build
+  (15.49s), and passed focused checks. Its new actual Claude review completed
+  with zero denied calls and one queue-wording nit; R check is still running.
+  No additional Codex request is needed for unchanged owned source.
+- B350's representation preflight found and repaired omitted preprocessing
+  CURIE declarations before its first heavy gate. The corrected391-assertion
+  focused snapshot passes. An independent frozen-source peer found no further
+  concrete defect in the implemented clauses. Root accidentally requested a
+  duplicate peer, canceled before tool calls; that dispatch is coordination
+  rework, with no claimed avoided-test saving.
+- A subsequent exact-spec read distinguished mandatory paired operations
+  from recommended automatic parser propagation. Root withdrew an overbroad
+  public-object approval question and is investigating an internal effective
+  view. This is avoidable approval/research rework, not a required redesign.
+  The genuinely ambiguous legacy quote-decoding choice remains pending.
+
+Next small adjustment: before asking for an API decision, distinguish a
+standard's mandatory semantics from its recommended implementation route and
+check whether an internal view preserves the current contract. Detailed item
+proof stays in workpads; this compact batch is the overhead record. These
+overlapping activities still do not support a whole-run wasted percentage.
