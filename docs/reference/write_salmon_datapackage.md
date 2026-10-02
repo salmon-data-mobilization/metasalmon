@@ -60,11 +60,13 @@ write_salmon_datapackage(
   Logical; if `FALSE` (default), errors when `path` is a directory that
   already holds something. An existing but *completely empty* directory
   is written into without `overwrite` — there is nothing there to
-  destroy — while a dot-file, a stale `.metasalmon-package` sentinel, or
-  an empty `data/` subdirectory all count as content and still require
-  it. If `TRUE`, the package is updated in place — see `prune`.
-  Replacement is only allowed for directories previously written by
-  `metasalmon`.
+  destroy — while a dot-file, a stale `.sdp-package` ownership sentinel,
+  or an empty `data/` subdirectory all count as content and still
+  require it. If `TRUE`, the package is updated in place — see `prune`.
+  Replacement is only allowed for a directory recognised as a package:
+  one holding the shared `.sdp-package` ownership sentinel, or its SDP
+  metadata. An older `.metasalmon-package` sentinel on its own is not
+  recognised.
 
 - write_datapackage:
 
@@ -106,7 +108,6 @@ lose the deleted files.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
 # Create a simple package
 resources <- list(main_table = mtcars)
 dataset_meta <- tibble::tibble(
@@ -123,7 +124,8 @@ table_meta <- tibble::tibble(
 dict <- infer_dictionary(mtcars, dataset_id = "test-1", table_id = "main_table")
 write_salmon_datapackage(
   resources, dataset_meta, table_meta, dict,
-  path = tempdir()
+  path = tempfile("sdp-example-")
 )
-} # }
+#> ✔ Dictionary validation passed
+#> ✔ Created Salmon Data Package at /var/folders/pm/twz8_z1j6_zb996w0b17bz2r0000gn/T//RtmpP4K6i1/sdp-example-1101160f75d73
 ```
