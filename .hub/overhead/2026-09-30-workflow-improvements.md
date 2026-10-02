@@ -2467,3 +2467,49 @@ Git-auth probe still fails128 with credential failure; public locks-main is a
 positive reach control and the probe ref is absent. No new claims/renewals,
 credentials or claim-policy changes were made. B266/B402 remain ready for
 authenticated pickup. All history before this append is preserved exactly.
+
+### B266 authenticated pickup and Cloud verification lane, 2026-10-02
+
+The normal configured Git route now works in this chat: `scripts/hub claim
+B-266` acquired the fresh item under the inherited session's existing cached
+identity `a-c1bbb42efa975289`. Its claim tip is
+`f7bdb4a2a342f562d1443e6c195520ca0787dc6d`, with lease through
+`2026-10-03T03:11:17Z`. No identity override, credential copying, helper
+reconfiguration, alternate claim API or protocol exception was used. Earlier
+authentication receipts describe those commands in their execution contexts;
+they do not establish the current route's state. B199's existing handoff
+remains `e1c32c6771e7b38fedd0c9a1c2c02784d8ad2bab`.
+
+One root implementation writer owns the isolated Python B266 branch. The
+published workpad-only plan is `53dbe7db9706c2d74f89c6f92d5a0c4b1f064e96`,
+based on Python main `d68383c`. Production and tests are unchanged. A bounded
+read-only peer mapped both R B265 controls and the repeated-IRI/address risks.
+The Cloud assistance proposal is review and verification of exact frozen
+commits, with no claim/source/branch writes or configured holder identity;
+the parent chat creates the environment/task. This needs no ownership
+transfer. B402 is unrelated and stays separate. The sole claim cap was
+enforced by the normal client. Existing dirty workpads and unique unpublished
+commits in other worktrees were preserved.
+
+The four pending compact idle receipts at 19:35, 20:38, 21:37 and 22:37 UTC
+used 8, 7, 9 and 8 nested read calls respectively, zero polling-only agent
+spawns, zero Git checkpoints and zero tests/builds. PR heads/activity and the
+relevant claim tips were unchanged, so earlier dispositions were reused.
+The 21:37 instrument first used nonexistent bare-cache HEAD in its dry-run;
+the corrected existing locks-main SHA reached the credential route. It also
+printed oversized PR bodies after selecting the wrong MCP result field.
+These are coordination rework, not package failures or useful verification.
+Local receipt files retained the counts without creating status-only Git
+commits. No whole-run wasted-time percentage follows from these call counts.
+
+Small adjustment under evaluation: use a 10-second initial tool yield for
+the short compact shell snapshot, rather than yielding after one second and
+requiring an output-poll call. The B266 claim returned in one tool read:
+4.887 seconds for the client. Worktree creation took 0.057 seconds. The next
+idle snapshot will test the adjustment on the comparable operation. These
+are partial command durations, not elapsed pickup time or model-effort time.
+The pickup/plan portion has coordination and peer preparation only; no
+implementation, package verification, local environment repair or explicit
+passive sleep is claimed. Bad Python layout/orientation path assumptions and
+oversized instruction/config reads are additional instrument rework. Preserve
+all earlier measurements; this append changes no policy or review gate.
