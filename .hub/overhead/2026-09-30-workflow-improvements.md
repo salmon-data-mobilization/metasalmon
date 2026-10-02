@@ -2048,3 +2048,46 @@ is introduced. Existing reviewed PRs remain separate.
   but avoid redispatch solely because those root checks happened late. Evaluate
   this order on the next useful implementation; it changes no gate. Review/CI
   waits are passive, and the new diagnostic's next-use benefit remains unmeasured.
+
+### PR #262 review correction and sequencing trial, 2026-10-02 about 08:03–08:13 UTC
+
+- Actual Claude review 36981632161/job 110757242862 completed on `04624bc`:
+  model success, 14 turns, nonzero usage, zero denied calls, and successful
+  execution verification. Comment 5947842571 has no blocking issues and two
+  nits. This is a completed review; it is not inferred from the green job alone.
+  Its zero denials do not demonstrate a diagnostic improvement, since this
+  change grants no tool permission. The first ready transition at 08:04 rests
+  on Brett's 2026-10-01 routine ready-batch authorization; this batch contains
+  one PR. Ready-event run 36981937867 reused the verified nits receipt and
+  skipped a second model call. That skipped step is not a second completed
+  review. Codex summary 5947859228 records code and security completed on
+  `04624bc`, with one inline code finding rather than a clean review.
+- Codex's finding 4163928708 is valid: actual Git accepts space/tab inside the
+  middle configuration subsection. Root reproduced two underclassified valid
+  keys and one NUL-key misclassification before correcting only that diagnostic
+  predicate. Section/final-component validation and the completion/compound
+  gates remain unchanged. Seven focused methods, compilation and diff checks
+  pass on source `20c4b7b` and tests `4ffb2a8`; the independent frozen-source
+  peer also passes eight narrow controls. This is richer safe categorization,
+  not relaxation of review acceptance. The NEWS filing nit remains nonblocking;
+  no new site build or redundant NEWS entry was made for the covered correction.
+- The next-use sequencing trial completed root's focused controls before its
+  one peer dispatch, with zero peer redispatches. This avoids the late-control
+  handoff pattern observed above. Patch scope differs, so there is still no
+  defensible elapsed-time percentage attributable to this ordering change.
+  Implementation, real-Git diagnosis and peer verification are useful work;
+  publication/thread closeout is coordination, and CI waits are passive.
+- Authorized review-fix commit `561e15e` is published as a fast-forward after
+  tree/parent/public-byte verification. Bot-only reply 4163963022 names the
+  correction and controls; thread PRRT_kwDOSoVfrc6oRIBc is resolved. No new
+  Codex or Claude model review was manually requested. The six current-head
+  workflows started naturally, including Claude run 36982745512 and R check
+  36982745455. Current-head CI remains the merge gate; do not use `04624bc`'s
+  partial R results to merge `561e15e`. The source is frozen for that gate.
+- The canonical checkout/log remain the durable route. The feature worktree
+  is clean at `561e15e` and retained until the PR completes; unrelated worktrees
+  and frozen claims are preserved. On the next heartbeat, inspect current-head
+  CI and any new review activity, reuse these verified dispositions when
+  unchanged, then merge under the routine diagnostic-fix class only after all
+  gates. No fresh claim is safe until CLI authentication and ownership checks
+  recover; existing pending approval/auth questions remain pending.
