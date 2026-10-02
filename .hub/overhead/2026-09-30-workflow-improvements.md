@@ -2208,3 +2208,58 @@ is introduced. Existing reviewed PRs remain separate.
   new claims or permission to rerun a failed review. The authenticated claim
   hold is unchanged. No blanket merge, scientific or export-default authority
   follows from the policy adoption.
+
+### Retained-handoff continuation and review diagnosis, 2026-10-02 about 13:12–13:46 UTC
+
+- The actual claim client uses `~/.cache/metasalmon-hub/locks.git` and plain
+  HTTPS Git pushes. A no-write dry-run with its existing cached commit failed
+  to obtain a username through the configured `osxkeychain` route; a public
+  postcheck confirmed the probe ref absent. This is the Git transport hold,
+  independent of the connected GitHub app. Restore that credential route and
+  verify the existing-cache dry-run before new claims or authenticated renewals.
+  B-223/B-350 remain frozen; no claim-ref API substitute or token override was used.
+- Small workflow adjustment tested: distinguish that fresh-claim hold from a
+  verified terminal handoff's original-scope continuation. B-262's public tip
+  `a6e3c61dc2a23d5dba617278881095eff73e46a6` retains owner
+  `a-6e8d8b1dfb43a0d4` until merge. Its original implementation helper is
+  `queue_scout`, chat `01a0ef91-57c2-7781-bf6d-d97aae6a8835`.
+  Resume that route before rediscovering history; no reclaim, beat, second done
+  or borrowed identity is needed for this verified handed-back source branch.
+  PR209/211 have no established holder/session route; their preparation stays
+  read-only and does not authorize takeover of Brett's S16 work.
+- The owner integrated settled main `984bf00` into B-262. Only `docs/search.json`
+  conflicted; one pinned NEWS build took 15.77 seconds. Independent frozen-source
+  peer verification passed: reviewed source blobs unchanged, parsed R expressions
+  equal main, 656/658 ordered search records identical and all five icon/manifest
+  links intact. OKF capture and diff checks pass. Public commit
+  `36c25ebef4e41789fb88e92166f17f2817ada661` has tree
+  `2e5116570acd0344f8873bdc10ee21875c7df5f9` and ordered parents `cb2a275`,
+  `984bf00`, identical to unpublished local `c66089b` apart from metadata.
+  Normal source-branch publication at 13:37:40 resolved PR229's conflict.
+- Natural Claude run 37014253216/job 110861115421 posted comment 5953701804:
+  only three carried formatting nits. The model ran 45 turns in 185.360 seconds,
+  but execution verification failed on two denied calls, `Bash:gh` and
+  `Bash:git log`. This is incomplete review evidence. The new diagnostic now
+  identifies command categories rather than the previous broad `Bash:git`;
+  exact argv are still not retained in the job log, and the one artifact metadata
+  read returned an empty list. Independent diagnosis confirms no substantive
+  source finding and no justified permission change from categories alone. Four
+  lightweight current-head workflows pass; the full suite has passed and the
+  strict R package check is still running at this checkpoint. No review
+  rerun, permission relaxation, source churn for nits or merge was attempted.
+- Coordination: recovering the existing owner and publishing/updating its PR.
+  Implementation: bounded main integration and generated NEWS repair.
+  Verification: genuine peer read, exact public tree/parent proofs and new CI
+  evidence. Environment diagnosis: one actual Git-route probe; no credential
+  repair. Requested audit: bounded inactive-lane and execution-failure checks.
+  Passive waits: three 45-second sleeps (135 seconds); the model's 185.360 seconds are external
+  review elapsed time, not root active effort. API publication required 44
+  chunk reads and 4 new blob uploads for about 1.38 MB because plain Git auth is
+  unavailable. No approval question or polling-only agent was added.
+- This adjustment enabled one real continuation without changing a claim or
+  approval gate. Uninstrumented routing/audit time still prevents a credible
+  whole-run bureaucracy percentage. One output regression printed full historical
+  comment bodies/HTML; subsequent reads inspect all records but render only new
+  findings and reach controls. Next useful owned batch will test the merged
+  coherent-batch rule after Git auth recovers. Keep this owner route and failure
+  disposition, and avoid repeating the completed review/audit on unchanged heads.
