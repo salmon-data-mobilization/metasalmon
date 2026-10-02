@@ -37,6 +37,11 @@
 
 ### Added
 
+- A dedicated semantic-review walkthrough covers the R review queue,
+  accept and reject decisions, metadata setters and the optional
+  decomposition dialogue. `tidyr` is now declared in Suggests for the
+  tidy-data guide’s `pivot_longer()` examples (hub B-129).
+
 - **Model judgement runs outside the package:
   [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
   writes a review packet for a harness to judge and

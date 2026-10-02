@@ -9,6 +9,8 @@ Short map of the package's public starts and their canonical implementations.
   inventory and generated help live in `R/configuration.R`
 - Main workflow: `create_sdp()` -> infer artifacts -> seed semantics -> write SDP
 - Review workflow: `read_salmon_datapackage()` -> validate/edit -> rebuild EDH XML
+- R review walkthrough: `vignettes/semantic-review.Rmd`, linked from the
+  quickstart and pkgdown Guides index; queue decisions and the four setters.
 - Reviewed suggestion merge: `apply_semantic_suggestions()`; `"reviewed"`
   applies accepted review decisions, `"llm"` applies accepted LLM selections
   (an `llm_selected` row with `llm_decision == "accept"`), and both preserve

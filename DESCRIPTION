@@ -34,6 +34,7 @@ Imports:
     yaml (>= 2.2.0),
     zip (>= 3.0.1)
 Suggests:
+    tidyr,
     testthat (>= 3.2.1),
     knitr,
     rmarkdown,
