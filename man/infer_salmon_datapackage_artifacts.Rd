@@ -127,7 +127,6 @@ This is a convenience helper for biologists who want to get from raw
 data frames to package-ready metadata artifacts with one call.
 }
 \examples{
-\dontrun{
 resources <- list(
   catches = data.frame(
     station_id = c("A", "B"),
@@ -145,13 +144,12 @@ resources <- list(
 artifacts <- infer_salmon_datapackage_artifacts(
   resources,
   dataset_id = "demo-1",
-  seed_semantics = TRUE,
-  seed_verbose = TRUE
+  seed_semantics = FALSE,
+  seed_verbose = FALSE
 )
 
 dict <- artifacts$dict
 table_meta <- artifacts$table_meta
 codes <- artifacts$codes
 dataset_meta <- artifacts$dataset_meta
-}
 }

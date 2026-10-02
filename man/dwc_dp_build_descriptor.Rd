@@ -35,3 +35,10 @@ A list representing the descriptor (invisible); writes to
 This is an opt-in export helper for DwC-DP (Darwin Core Data Package).
 SDP remains canonical; DwC-DP is a derived/interoperability view.
 }
+\examples{
+resources <- data.frame(
+  name = "occurrence", path = "occurrence.csv", schema = "occurrence"
+)
+descriptor <- dwc_dp_build_descriptor(resources, validate = FALSE)
+descriptor$resources[[1]]$name
+}
