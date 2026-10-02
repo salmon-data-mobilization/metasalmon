@@ -1489,3 +1489,52 @@ the result clearer. No past measurements are discarded.
   before a source freeze. Next peer briefs name exact hashes and interpreter
   paths, avoiding a second environment-discovery pass. No whole-run wasted
   percentage or causal runtime saving is inferred from overlapping work.
+
+### Representation preflight and next pickup, about23:48–00:10 UTC
+
+- The R/Python marker peer found XML attributes serialize a literal tab as
+  `&#9;`. Both consumers now examine the original parsed text/attributes as
+  well as the retained serialized scan. Actual EML/ORE controls demonstrated
+  RED then GREEN; independent final-source peers passed. R344's earlier
+  full99.57s + strict125.22s are superseded:224.79s verification rework from
+  a representation seam missed before those gates. Next small habit: check
+  both parsed values and serialized bytes before expensive suites. B350 is
+  its next use; no new test framework or policy is introduced.
+- Py345 also fixed a new helper's Series positional access after root's
+  nonzero-index control failed. C and reachable C.UTF-8 subprocess tests pass
+  on minimum/current interpreters. Its global CSV shim still trims quoted
+  leading LF, an existing row23 boundary; the PR describes raw value, written
+  bytes, shim result and strict result separately rather than claiming
+  end-to-end LF parity or repairing the global parser in this item.
+- Py345's full runs are honestly failed: minimum3.9 core8failed/1778passed
+  in37.98s (unsupported `Path.write_text(newline=...)` fixture calls), current
+  3.14 extras6failed/1947passed in42.45s and genuine core6failed/1785passed
+  in38.36s (HTTPError cleanup ResourceWarning counted beside the intended
+  ICES warning). Bounded unchanged-main reproductions confirm the same8/6
+  failures. No skip/suppression or unrelated repair was added. Py94 is a
+  held critical draft; supported CI supplies its own full gates without a
+  fourth local full run just to obtain green.
+- R340's final source passed9294 full assertions in96.743s and strict0/0/0
+  in126.479s; the canonical mirror guard ran separately without its sibling
+  skip. Necessary integration cada9b6 preserved all five owned source/test
+  blobs and588 ordered non-NEWS records, with one native NEWS build. Two
+  false preparation assertions and an interrupted premature build remain
+  environment/instrument repair, not product verification or savings.
+- B350 was promoted inffe46ad under the literal R15 grant, then claimed by
+  the B340 owner after its handoff. Setup0.514s reuses that stable identity;
+  no cap evasion or new tracking system. Its first read already identified
+  canonical writer/reader seams (propagation, quoted TSV, empty pruned prefix
+  maps) before source edits. The exact applicable schema and round-trip
+  controls are being checked before full gates; its row11 amendment stays
+  critical draft and the version remains Brett's.
+- Seven agent-created recent PR attachments were absent from this root
+  task's attachment inventory despite earlier child success reports. Root
+  attached them explicitly and attached Py94. Next tool habit: return only
+  the required attachment URLs/status rather than dumping the entire saved
+  inventory. This corrects observable routing, with no measured time or
+  token-saving claim.
+
+Detailed failures, exact freezes and commands remain in the item workpads.
+The batch log distinguishes coordination, implementation, verification,
+environment repair, requested audit and passive waits; concurrent elapsed
+times still do not identify a whole-run percentage of wasted time.
