@@ -45,6 +45,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -76,7 +77,6 @@ BASE_DEFECT = [
     ("state", "ready"),
     ("claimable", "true"),
     ("repo", "metasalmon"),
-    ("stream", "S1"),
     ("severity", "P2"),
     ("blocked_by", "[]"),
     ("legacy", "'#53'"),
@@ -647,6 +647,34 @@ class TestBlockedBy(QueueTestCase):
         self.write_item(BASE_STREAM)
         self.write_item(BASE_DEFECT, id="B-90", filename="B-90.yaml", legacy="'#90'")
         self.write_item(BASE_DEFECT, blocked_by="[B-90, S-12]")
+        self.assert_accepts()
+
+
+class TestStreamReference(QueueTestCase):
+    def test_padded_stream_value_does_not_name_the_existing_stream(self):
+        # S-05 is the item id, but the stream value is S5. S05 looks plausible
+        # while naming no stream, so normalizing the reference would hide it.
+        self.write_item(BASE_STREAM, id="S-05", filename="S-05.yaml")
+        self.write_item(BASE_DEFECT, stream="S05")
+        output = self.assert_rejects("stream-missing")
+        self.assertIn("S05", output)
+        self.write_item(BASE_DEFECT, stream="S5")
+        self.assert_accepts()
+
+    def test_unknown_stream_becomes_valid_when_its_future_item_is_added(self):
+        self.write_item(BASE_DEFECT, stream="S99")
+        self.assert_rejects("stream-missing")
+        # This also proves the enumeration comes from queue items, not a fixed
+        # list of today's streams. Being done does not erase a stream's identity.
+        self.write_item(
+            BASE_STREAM, id="S-99", filename="S-99.yaml", state="done", claimable="false"
+        )
+        self.assert_accepts()
+
+    def test_stream_is_optional_and_an_empty_quoted_value_is_not_a_reference(self):
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+        self.write_item(BASE_DEFECT, stream="''")
         self.assert_accepts()
 
 
@@ -2139,6 +2167,29 @@ class TestPortRecords(QueueTestCase):
         self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
         self.assert_accepts()
 
+    def test_a_named_done_mirror_port_needs_a_record_without_a_blocker(self):
+        """B-394: the B-234 shape escaped B-202's dependency-based reach.
+
+        Test each passage separately, then the existing bold-id/dependency
+        control. Clearing blocked_by must never clear a named port's debt.
+        """
+        for passage in ("register", "roadmap"):
+            for blockers in ("[]", "[B-49]"):
+                with self.subTest(passage=passage, blocked_by=blockers):
+                    self.write_item(BASE_DEFECT, id="B-49", repo="metasalmon", state="done",
+                                    claimable="false", legacy="''")
+                    self.write_item(BASE_DEFECT, id="B-124", repo="metasalmonpy", state="done",
+                                    title="The mirror half of B-49", claimable="false",
+                                    blocked_by=blockers, legacy="''")
+                    register = REGISTER_OWED + (REGISTER_CLOSED if passage == "roadmap" else "")
+                    roadmap = ROADMAP_OWED + (ROADMAP_LANDED if passage == "register" else "")
+                    self.write_passages(register, roadmap)
+                    output = self.assert_rejects("port-landed-unrecorded")
+                    self.assertIn("B-124", output)
+                    self.write_passages(REGISTER_OWED + REGISTER_CLOSED,
+                                        ROADMAP_OWED + ROADMAP_LANDED)
+                    self.assert_accepts()
+
     def test_a_record_for_a_port_that_is_not_done_is_refused(self):
         """Prose ahead of the queue. B-145 sat in `review` with its pull request
         open; a record written then would claim a landing that had not happened.
@@ -2190,13 +2241,12 @@ class TestPortRecords(QueueTestCase):
         self.write_passages(REGISTER_OWED, ROADMAP_OWED)
         self.assert_accepts()
 
-    def test_blockers_r_halves_and_the_window_halves_are_not_read_as_ports(self):
-        """The retirement condition's scope, as fixtures. B-49 is a blocker and an
-        R half; B-126 and B-153 closed the 0.4.0->0.5.0 window and have no
-        metasalmon blocker; B-145 is a port in `review` whose R half's own record
-        says `as metasalmon #118`. All four are done or named with no mirror
-        record, and none may be reported. B-124 done with no record is the
-        control that shows the passages were read at all."""
+    def test_r_halves_are_excluded_but_named_window_ports_need_records(self):
+        """R blockers are not mirror ports, and an R landing cannot close one.
+
+        Named historical window halves now need records too, even with no R
+        blocker. A positive control keeps the original dependent port visible.
+        """
         self.write_ports()
         self.write_item(BASE_DEFECT, id="B-115", repo="metasalmon", state="done",
                         claimable="false", legacy="''")
@@ -2212,10 +2262,22 @@ class TestPortRecords(QueueTestCase):
                    "whose R half **landed 2026-09-16 as metasalmon #118**), once the port lands.\n")
         self.write_passages(window + REGISTER_OWED + instant, window + ROADMAP_OWED + instant)
         output = self.assert_rejects("port-landed-unrecorded")
-        for other in ("B-49 ", "B-115", "B-126", "B-145", "B-153"):
+        for other in ("B-49 ", "B-115", "B-145"):
             self.assertNotIn(other, output.replace("half of B-49)", ""))
+        for port in ("B-124", "B-126", "B-153"):
+            self.assertIn(port, output)
+        window += ("`B-126` landed as metasalmonpy pull request #28.\n\n"
+                   "`B-153` landed as metasalmonpy pull request #33.\n\n")
         self.write_passages(window + REGISTER_OWED + REGISTER_CLOSED + instant,
                             window + ROADMAP_OWED + ROADMAP_LANDED + instant)
+        self.assert_accepts()
+
+    def test_passage_discovery_needs_neither_a_title_phrase_nor_an_r_item(self):
+        self.write_item(BASE_DEFECT, id="B-124", repo="metasalmonpy", state="done",
+                        claimable="false", legacy="''")
+        self.write_passages(REGISTER_OWED, ROADMAP_OWED + ROADMAP_LANDED)
+        self.assert_rejects("port-landed-unrecorded")
+        self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
         self.assert_accepts()
 
     def test_a_line_that_opens_with_an_inline_code_span_is_not_a_fence(self):
@@ -2229,6 +2291,38 @@ class TestPortRecords(QueueTestCase):
         start, end = spans[0]
         self.assertTrue(lines[start].startswith("### metasalmonpy"))
         self.assertTrue(lines[end].startswith("### salmon-domain-ontology"), lines[end])
+
+    def test_a_port_named_in_only_one_debt_passage_is_refused(self):
+        """B-396: a valid landing in one passage cannot hide the absent copy."""
+        self.write_ports()
+        for present in ("register", "roadmap"):
+            with self.subTest(present=present):
+                register = REGISTER_OWED + REGISTER_CLOSED if present == "register" else "No debt.\n"
+                roadmap = ROADMAP_OWED + ROADMAP_LANDED if present == "roadmap" else "No debt.\n"
+                self.write_passages(register, roadmap)
+                output = self.assert_rejects("port-pair-missing")
+                self.assertIn("B-124", output)
+                self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+                self.assert_accepts()
+
+    def test_the_row_53_exception_is_scoped_and_has_a_retirement(self):
+        self.write_item(BASE_DEFECT, id="B-111", repo="metasalmon", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-179", repo="metasalmonpy", state="done",
+                        claimable="false", blocked_by="[B-111]", legacy="''")
+        record = "`B-179` landed as metasalmonpy pull request #39.\n"
+        self.write_passages(record, "No debt.\n")
+        self.assert_rejects("port-pair-missing")
+        self.write_passages("Recorded in row 53 outside this passage.\n", record)
+        self.assert_accepts()
+        exemption = hub_queue.PORT_PAIR_EXEMPTIONS["B-179"]
+        self.assertTrue(exemption["reason"].strip())
+        self.assertTrue(exemption["retires_when"].strip())
+        for field in ("reason", "retires_when"):
+            with self.subTest(missing=field), patch.dict(
+                    hub_queue.PORT_PAIR_EXEMPTIONS, {"B-179": {**exemption, field: ""}}):
+                self.assert_rejects("port-pair-missing")
+        self.assert_accepts()
 
 
 # --------------------------------------------------------------------------

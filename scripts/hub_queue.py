@@ -886,6 +886,17 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
     by_legacy: dict[str, Item] = {}
     retirement_debt = 0
 
+    # A stream reference uses S plus the stream item's numeric id without
+    # padding: S-05 is S5, not S05. Derive the names from the parsed queue so
+    # a future S-item is valid as soon as it is added, regardless of state.
+    stream_names: set[str] = set()
+    for candidate in items:
+        candidate_id = candidate.raw.get("id")
+        if candidate.raw.get("kind") == "stream" and isinstance(candidate_id, str):
+            match = ID_RE.fullmatch(candidate_id)
+            if match and match.group(1) == "S":
+                stream_names.add(f"S{int(match.group(2))}")
+
     for item in items:
         path, lines = item.path, item.lines
 
@@ -958,6 +969,20 @@ def validate(items: list[Item], root: Path) -> tuple[list[Problem], int]:
                     lines.get("kind", 0),
                     "id-kind",
                     f"id prefix {prefix!r} means kind {PREFIX_KIND[prefix]!r}, not {kind!r}",
+                )
+            )
+
+        stream = item.raw.get("stream")
+        if stream is not None and stream != "" and (
+            not isinstance(stream, str) or stream not in stream_names
+        ):
+            problems.append(
+                Problem(
+                    path,
+                    lines.get("stream", 0),
+                    "stream-missing",
+                    f"stream {stream!r} names no kind: stream S-item in queue/items; "
+                    "use S plus the item's unpadded number (S-05 is S5)",
                 )
             )
 
@@ -2193,6 +2218,69 @@ def port_passage_facts(lines, spans, anchors):
     return named, records
 
 
+PORT_PAIR_EXEMPTIONS = {
+    "B-179": {
+        "present": PORT_ROADMAP_FILE,
+        "absent": PORT_REGISTER_FILE,
+        "reason": "The sidecar divergence and its landing are recorded in register row 53, outside the port section.",
+        "retires_when": "B-179 is also named in the register's port section, or that row is moved into the port section.",
+    },
+}
+
+
+def validate_port_pair_presence(root: Path, items: list[Item]) -> list[Problem]:
+    """B-396: a dependency-linked mirror port named in one passage needs both.
+
+    The existing record validator diagnoses missing files/sections; this check
+    compares names only after both passages can be read. Neither landing truth
+    nor dependency-free port classification is its subject (the latter is
+    B-394). No title/prose phrase classification is introduced.
+
+    RETIRES WHEN both passages render their port inventory from the same
+    structured source, and the rendering check proves they contain that source.
+    Every exception records its direction, reason and retirement above.
+    """
+    by_id = {item.id: item for item in items}
+    anchors = {item.id for item in items if item.raw.get("repo") == MIRROR_REPO}
+    ports = {
+        item_id for item_id in anchors
+        if isinstance(by_id[item_id].raw.get("blocked_by"), list)
+        and any(blocker in by_id and by_id[blocker].raw.get("repo") == MIRRORED_REPO
+                for blocker in by_id[item_id].raw["blocked_by"])
+    }
+    if not ports:
+        return []
+    names = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if not path.is_file():
+            return []  # validate_port_records emits port-passage-missing.
+        lines = path.read_text(encoding="utf-8").splitlines()
+        spans = port_passage_spans(display, lines)
+        if not spans:
+            return []  # The same existing missing-passage diagnostic applies.
+        names[display], _ = port_passage_facts(lines, spans, anchors)
+
+    problems = []
+    for item_id in sorted(ports):
+        present = [display for display in names if item_id in names[display]]
+        if len(present) != 1:
+            continue
+        source = present[0]
+        missing = next(display for display in names if display != source)
+        exemption = PORT_PAIR_EXEMPTIONS.get(item_id, {})
+        if (exemption.get("present") == source and exemption.get("absent") == missing
+                and exemption.get("reason", "").strip() and exemption.get("retires_when", "").strip()):
+            continue
+        problems.append(Problem(
+            source, names[source][item_id][0], "port-pair-missing",
+            f"{item_id} is a mirror port named here but not in {missing}'s mirror debt passage. "
+            "Record it in both passages in the same change, or give the intentional "
+            "exception a scoped reason and retirement in PORT_PAIR_EXEMPTIONS",
+        ))
+    return problems
+
+
 def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
     """A port the queue calls done must not still read as owed. Hub item B-202.
 
@@ -2216,17 +2304,14 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a landed record with no owner is refused (`port-landed-orphan`),
         because nothing can check it against the queue.
 
-    WHAT A PORT IS comes from the queue, not from the prose: an item whose
-    `repo` is metasalmonpy and whose `blocked_by` names a metasalmon item, which
-    is how every port the two passages list as a debt was filed, measured
-    2026-09-25 -- the mirror half, blocked by the R half it copies. That keeps the rule to the ids the passages name as the
-    debt itself. The ids they name as blockers or R halves (B-49, B-112, B-115,
-    B-116) are metasalmon items, and B-126 and B-153, the closed 0.4.0->0.5.0
-    window's two halves, have no metasalmon blocker, so none of them is read as
-    owing a record. Reading the role from the prose instead would mean a phrase
-    list ("Queued as", "its metasalmonpy queue item is", "its half is", ...)
-    that the next entry's wording escapes silently; the queue already records
-    which id in a pair is the debt.
+    WHAT A PORT IS: a queue item whose `repo` is metasalmonpy and which either
+    names a metasalmon blocker or is named in either debt passage. B-394 found
+    B-234 was filed with an empty `blocked_by`, so the dependency-only rule
+    silently stopped checking it. Dependency fields record sequencing, not
+    whether a passage owes a landing record. Read ids and queue repositories;
+    do not guess the role from phrases in the title or surrounding prose.
+    Blockers and R halves remain excluded by their repository. Historical
+    mirror ports mentioned in these passages also need their landed records.
 
     WHAT A LANDED RECORD IS: `LANDED_RECORD_RE`, written after the port's own id
     in the same paragraph. In the register that is the closure paragraph the
@@ -2240,9 +2325,8 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * whether the record is TRUE. It catches the shape, as
         `check-parity-registers.py` does, not the substance: a closure paragraph
         naming the wrong pull request, sha or date passes.
-      * whether a port named in one passage is named in the other. Each passage
-        is checked for what it says; one that never mentions a port cannot be
-        stale about it.
+      * whether a port named in one passage is named in the other. B-396's
+        validate_port_pair_presence checks that independently.
       * the ORDER of a record and its port's mentions. Any record for a port
         counts for every mention of it in the passage, and a file's matching
         sections are read as one passage, so a debt paragraph written below its
@@ -2254,18 +2338,16 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
       * a debt the passage describes without naming its item's id. The rule
         reads ids, so an entry that says "it is owed there as a port" and names
         nothing is invisible to it.
-      * mirror work that is not a port by the queue's test: an item with no
-        metasalmon blocker, such as B-201 or B-189, and an R-side follow-up such
-        as B-177. A landed record credited to one of them is still refused while
-        its item is not done; only the "done without a record" direction needs
-        the item to be a port.
+      * mirror work with no metasalmon blocker that neither passage names.
+        Neither passage makes a claim about that item, so there is nothing
+        to check. R-side follow-ups remain outside the mirror-port rule.
       * queue state that is itself wrong. The queue is the authority here, so
         an item left in `review` after its pull request merged reads as owed
         and passes.
 
-    It runs only when the queue holds a port, so the unit-test fixtures, which
-    hold none, need no register. When one exists, a missing file or a passage
-    that cannot be found is `port-passage-missing` rather than a skip.
+    A queue with no dependency-linked port and no mirror id in either passage
+    needs no register. Otherwise both passages are required; a missing file
+    or section is `port-passage-missing`, never a silent skip.
 
     RETIRES WHEN: a port's landed record stops being hand-written prose -- for
     instance when the item records its pull request and both passages render
@@ -2282,6 +2364,19 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
         halves = [b for b in blocked_by if b in by_id and by_id[b].raw.get("repo") == MIRRORED_REPO]
         if halves:
             ports[item_id] = halves
+    # Discover named mirror ports before deciding whether these passages are
+    # required. The same parsed facts then drive validation below. An unrelated
+    # fixture with no port still needs no documentation scaffold.
+    passages = {}
+    for display in (PORT_REGISTER_FILE, PORT_ROADMAP_FILE):
+        path = root / display
+        if path.is_file():
+            lines = path.read_text(encoding="utf-8").splitlines()
+            spans = port_passage_spans(display, lines)
+            named, records = port_passage_facts(lines, spans, anchors)
+            passages[display] = (spans, named, records)
+            for item_id in named.keys() & anchors:
+                ports.setdefault(item_id, [])
     if not ports:
         return []
 
@@ -2305,8 +2400,7 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        lines = path.read_text(encoding="utf-8").splitlines()
-        spans = port_passage_spans(display, lines)
+        spans, named, records = passages[display]
         if not spans:
             problems.append(
                 Problem(
@@ -2321,7 +2415,6 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                 )
             )
             continue
-        named, records = port_passage_facts(lines, spans, anchors)
         owned = {owner for owner, _, _ in records if owner is not None}
         for item_id, mentions in named.items():
             if item_id in ports and by_id[item_id].state == "done" and item_id not in owned:
@@ -2330,8 +2423,10 @@ def validate_port_records(root: Path, items: list[Item]) -> list[Problem]:
                         display,
                         mentions[0],
                         "port-landed-unrecorded",
-                        f"{item_id} is a port (the {MIRROR_REPO} half of "
-                        f"{', '.join(ports[item_id])}) and its item is done, but this "
+                        f"{item_id} is a {MIRROR_REPO} port"
+                        + (f" (the {MIRROR_REPO} half of {', '.join(ports[item_id])})"
+                           if ports[item_id] else " named in the mirror debt passages")
+                        + " and its item is done, but this "
                         "passage has no landed record for it, so it still reads as "
                         f"owed (it is named at line(s) {', '.join(map(str, mentions))}). "
                         "Add one after the id, in the same paragraph: "
@@ -2507,6 +2602,7 @@ def command_lint(args, root: Path, queue_dir: Path, out) -> int:
         + validate_workpads(root, items)
         + validate_port_records(root, items)
         + validate_queue_facts_in_prose(root, items)
+        + validate_port_pair_presence(root, items)
     )
 
     baseline: int | None = None

@@ -34,6 +34,34 @@ is the only copy of the authorization boundary. The reasoning behind all of it
 is section 9 of the plan linked above. This file explains what the queue is;
 it is not the protocol and it does not grant anyone anything.
 
+## Quick commands
+
+From a current hub checkout:
+
+```sh
+scripts/hub ready             # eligible candidates, including live claim checks
+scripts/hub status B-99       # queue, evidence, completion condition and live claim
+scripts/hub claim B-99        # acquire the claim; print member setup hints
+```
+
+`status` reports a raw claim action, not a replacement eligibility decision.
+A failed live lookup is `unknown` and exits 3. Claim setup commands are printed
+only: set `MEMBER_CHECKOUT` and `MEMBER_BASE` for the target repository before
+using them. The client creates no worktree or workpad. Existing approval and
+claim rules remain in `HUB.md` and the applicable `AGENTS.md`.
+
+Before drafting a new numbered item, `git fetch origin` then
+`python3 scripts/hub_ids.py B` (or `Q`/`S`) suggests the next observed ID;
+passing `B-427` instead reports its source locations. The optional read-only
+helper accepts several queries, such as `python3 scripts/hub_ids.py B Q B-427`,
+using one snapshot; exit 1 means at least one explicit ID was seen. The
+scan covers queue filenames and numbered question/backlog headings in local
+and fetched remote branches, plus registered worktrees including unpublished
+files. An incomplete read exits 3 instead of suggesting a number. This is a
+snapshot, not a reservation: another clone's unpublished work and subsequent
+concurrent writes remain unseen. Recheck before publication. It retires when
+the owning system allocates IDs atomically.
+
 ## What one item file means
 
 One file is one unit of work somebody could pick up, finish, and be done with.

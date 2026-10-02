@@ -2,7 +2,166 @@
 
 ## metasalmon (development version)
 
+### Breaking changes
+
+- **A package’s ownership sentinel is now `.sdp-package`, holding the
+  line `sdp-owned`, and `.metasalmon-package` is no longer written or
+  recognised** (hub item B-113; ruled by Brett 2026-08-24,
+  `knowledge/questions.md` Q14).
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md),
+  and
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  through it, now mark a package directory with one sentinel shared with
+  metasalmonpy rather than a file named after this implementation,
+  because what owns the directory is the SDP tooling and not one
+  language’s copy of it. The name and content line are recorded in
+  `knowledge/parity-deviations.md` row 51. For a directory you already
+  have:
+
+  - **A package that still has its SDP metadata needs nothing.** The
+    `overwrite = TRUE` check recognises it by its `metadata/` CSVs, as
+    it always has, and the next write adds `.sdp-package`.
+  - **A directory whose only sign of being a package is
+    `.metasalmon-package` is no longer replaced.** `overwrite = TRUE`
+    now stops with *“Refusing to overwrite non-metasalmon directory”*.
+    If it is a package you mean to rewrite, rename that file to
+    `.sdp-package`; otherwise write to a new directory.
+  - **An existing `.metasalmon-package` is left where it is.** A rewrite
+    no longer manages it, so it survives unless `prune = TRUE` empties
+    the directory. Nothing reads it any more, and you can delete it.
+
+  metasalmonpy writes `.metasalmonpy-package` until its half of the
+  change lands (hub item B-127). This package still recognises a package
+  metasalmonpy wrote by its SDP metadata, so nothing is refused in the
+  meantime, but a package written by both carries both files until then.
+
 ### Added
+
+- **Model judgement runs outside the package:
+  [`write_semantic_review_packet()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_semantic_review_packet.md)
+  writes a review packet for a harness to judge and
+  [`ingest_semantic_assessments()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ingest_semantic_assessments.md)
+  reads its assessments back** (hub item B-326, step 1 of stream S16;
+  ruled by Brett on 2026-09-25, hub Q67, with every recommendation of
+  the S16 execplan’s section 10 taken the same day). The in-package
+  model call is deprecated below; this is its replacement, and the seam
+  is a file because a harness cannot hand an R closure to a package
+  process it did not start.
+
+  - **The packet** is a deterministic JSON file,
+    `review/semantic-review-packet.json`, holding what the package
+    already computes for a review: every slot that still needs a
+    decision (for a package path, exactly the queue
+    [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    shows, re-retrieved at depth `top_n`, plus the blank slots discovery
+    recovers because retrieval found nothing for them at creation), each
+    slot’s ranked candidates by index with the evidence the validators
+    read (label, IRI, source, ontology, native type, role hints, term
+    type, resource kind, type IRIs, definition and scores), the
+    measurement bundles with their current slots, the scored excerpts
+    from the caller’s context documents, the review instructions, the
+    decision vocabulary and the 30-column assessment schema with an
+    owner and a requiredness per column. Its `packet_id` is the SHA-256
+    of its canonical bytes with `packet_id` and `producer` removed, so
+    the same packet built by metasalmon and metasalmonpy has the same
+    id, and the id is an integrity check at ingest. Every ordering is
+    C-collated and the emitter renders the bytes Python’s
+    `json.dumps(indent = 2, ensure_ascii = False)` renders, with numbers
+    by value (a whole number as an integer literal, anything else
+    through the shared number-token formatter), so the bar the execplan
+    sets – byte identity across the two languages except the `producer`
+    member – is met on the shared fixtures. Nothing pins an ontology
+    today, and the packet says so (`pins.ontologies.pinned = false`)
+    rather than pretending; it records the sources searched, the sources
+    that failed, the vendored SDP profile version, the ranking identity
+    and the retrieval depth, source policy and code scope the ingester
+    needs to widen a shortlist.
+  - **The assessment file** is the frozen 30-column row, one per target,
+    written by the harness with a CSV library, plus a one-line sidecar
+    `<csv>.packet-id` naming the packet it judged (the row has nowhere
+    to carry it; `packet_id =` names it instead). The ingester validates
+    each row in a fixed order – a harness-declared error, the decision
+    vocabulary and its alias, a confidence in \[0, 1\] with no clamping,
+    the index cleared on a non-accept before any range check, **an
+    accept whose echoed IRI the packet did not offer is an error and is
+    never applied**, an accept without an index or with an out-of-range
+    one downgraded to review, a fractional index refused, an echo naming
+    a different candidate an error, an accept carrying a new-term field
+    an error, a retry without a query downgraded – and continues past a
+    bad row. A file-level problem aborts with nothing written, under a
+    stable code carried as the condition’s `code` field:
+    `packet_version`, `packet_integrity`, `packet_unbound`,
+    `packet_mismatch`, `header`, `unknown_target`, `duplicate_target`,
+    `provenance`, `no_pass_2`. Package-owned columns are overwritten
+    with one warning naming them.
+  - **A retry is a second harness pass.** A `retry_search` with a usable
+    query is retrieved inside the package under the packet’s source
+    policy and depth (the only network the ingester reaches, through
+    `search_fn`), and when it widens the shortlist a continuation packet
+    (`review/semantic-review-packet-pass-2.json`) is written carrying
+    the widened shortlist, every slot’s pass-1 row and every bundle’s
+    pass-1 findings; nothing from that target is merged or escalated
+    until the harness has answered it, and a `retry_search` answered at
+    pass 2 is final. A duplicate query keeps its existing reason; an
+    identifier-like query gets the new reason `identifier_like_query`,
+    since there is no model call to replace it. **A rejected shortlist
+    earns no second pass**: a final `reject_shortlist` escalates at once
+    to `request_new_term`, which is metasalmonpy’s rule and the one
+    B-361 made R’s.
+  - **The bundle validators run at every ingest**, rebuilt from the
+    packet, so the deterministic layer protects the record whatever the
+    harness says: accepting the fork-length method for `catch_count`
+    still fails through `SEM_METHOD_EVIDENCE_REQUIRED`, accepting
+    `CatchContext` beside `CatchAbundance` still raises
+    `SEM_REDUNDANT_CATCH_CONTEXT`, and the Theme A cases pass their
+    recorded oracles through the ingester and the prefill step. Findings
+    only grow across passes.
+  - **Persistence is one atomic set** after the containment check:
+    `review/semantic-llm-assessments.csv` (the record; numbers through
+    the shared formatter, logicals as `TRUE`/`FALSE`, NA empty),
+    `review/semantic-validator-findings.csv`, the pass-2 packet when
+    owed, and, for a package path, the rows of
+    `semantic_suggestions.csv` for the targets whose slots are still
+    undecided – decisions, decision reasons and hand-picked rows are
+    preserved, and a slot decided between build and ingest keeps its
+    rows. The ingester never touches the metadata CSVs: applying a
+    choice stays
+    [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    -\>
+    [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
+    -\>
+    [`apply_sdp_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/apply_sdp_semantics.md),
+    and
+    [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    now shows the harness’s judgement. **No unredacted copy of harness
+    text survives**: every harness-owned free-text value goes through
+    `.ms_redact_secrets()` at capture, the ingester never copies a
+    harness file into `review/`, and a file the harness wrote at the
+    packet’s default location is replaced with its redacted form after a
+    successful ingest, with a warning. `prune = TRUE` now warns about a
+    record under `review/` as it does about recorded decisions.
+  - **`semantic_llm_assessments(path)` reads the persisted record**,
+    typed as the 30-column row with the findings attached as
+    `semantic_validator_findings`, where it returned `NULL` for every
+    path before.
+    [`detect_semantic_term_gaps()`](https://salmon-data-mobilization.github.io/metasalmon/reference/detect_semantic_term_gaps.md)
+    and the accessors work unchanged on the dictionary the ingester
+    returns.
+  - **The contract is shared with metasalmonpy** (hub item B-327 is its
+    half): the packet schema
+    (`inst/extdata/semantic-review/semantic-review-packet-v1.schema.json`),
+    the instructions file (`semantic-review-instructions-v1.txt`,
+    carrying the bundle prompt’s judgement policy verbatim, so it
+    inherits surface 2 of the role contract) and the conformance
+    fixtures under `tests/testthat/fixtures/semantic-review/v1/` – a
+    manifest of SHA-256s, the fake search responses, and per case the
+    builder input, the golden packet, the harness file with its sidecar,
+    and the expected record, findings, suggestions and status, with the
+    pass-2 files where a case retries, the error code of every reject
+    variant, and the Theme A cases with their expected oracle events. A
+    sentinel proves no model-provider entry point is reachable from
+    either function and that the network is reached only through
+    `search_fn`, once per distinct query, role and source set.
 
 - **[`write_sdp_semantic_closure()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_sdp_semantic_closure.md)
   produces the reviewed semantic closure, which metasalmon has validated
@@ -101,6 +260,59 @@
 
 ### Fixed
 
+- **The migration and tidy-data vignettes now tangle without executable
+  code** (hub item B-133). Their 25 display-only examples each declare
+  `purl = FALSE` in the chunk header, so R CMD check’s vignette-code
+  step no longer tries to read example package paths that the tangle
+  never created. The vignette guard’s two pinned exceptions are removed;
+  a new live chunk in either guide now fails the guard.
+
+- Strict validation now checks the absolute-IRI shape of every populated
+  semantic IRI in the dictionary and every `*_iri` field in
+  `tables.csv`, including added table columns. Malformed text is refused
+  before a package can be finalized; REVIEW markers and missing values
+  retain their existing reports, and review-ready validation remains
+  unchanged (hub B-342; Python mirror B-343).
+
+- **Applying a dictionary preserves vocabulary-backed columns.** B-346,
+  implementing Brett’s 2026-09-25 ruling: a same-table/column codes row
+  with a nonblank `vocabulary_iri` and missing/blank `code_value` now
+  skips that column’s code-list warning and factor conversion, even
+  beside explicit code rows. Values are retained; ordinary code lists
+  and independent declared type coercion keep their existing behavior.
+  The Python companion is B-347.
+
+- [`write_eml_from_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_eml_from_sdp.md)
+  now writes a profile UTC instant in temporal coverage as EML’s
+  `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
+  Both parts come from the package’s one persisted rendering and rejoin
+  to its original text; year and date values remain a `calendarDate`
+  alone, and mixed date/instant ranges work in either direction (hub
+  B-354; Python mirror B-355).
+
+- R Markdown and Quarto context files now use the shared UTF-8,
+  Windows-1252, then Latin-1 decoding chain before front matter and code
+  fences are removed. Review-packet excerpts retain Windows-1252 text
+  instead of failing on invalid UTF-8 (hub B-383).
+
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  [`read_sssom_mapping_set()`](https://salmon-data-mobilization.github.io/metasalmon/reference/read_sssom_mapping_set.md)
+  and SDP validation through a non-evaluating YAML parser probe. Quoted
+  exclamation text still reads as text, and no tag expression is
+  evaluated (hub B-352; metasalmonpy mirror B-353).
+
+- Session IDs no longer advance or initialize the user’s random-number
+  state, and BioPortal’s once-per-session missing-key warning is
+  recorded privately instead of in
+  [`options()`](https://rdrr.io/r/base/options.html).
+  [`?metasalmon_configuration`](https://salmon-data-mobilization.github.io/metasalmon/reference/metasalmon_configuration.md)
+  documents the current option and environment inventory from one
+  registry; package loading fills only missing concrete defaults,
+  preserving user settings, backend-specific timeout inheritance and
+  unset credentials. An unset SDP schema base URL resolves the package’s
+  current release pin at call time, including after a package reload
+  (hub B-59).
+
 - NuSEDS crosswalk-filled code terms now appear in
   [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
   with ranked alternatives when semantic seeding retrieves candidates
@@ -108,6 +320,68 @@
   changes it; explicit caller IRIs and `semantic_code_scope = "none"`
   retain their behaviour. Importing a harness assessment preserves the
   prefill’s provenance.
+
+- **Any final `reject_shortlist` now escalates to `request_new_term`,
+  and four ways an LLM assessment was being mangled are fixed** (hub
+  item B-361; ruled by Brett on 2026-09-25 as decisions 10 and 11 of the
+  S16 execplan, and a prerequisite of the review-packet contract,
+  B-326). All five sit in the validation, escalation and retry code that
+  every review path shares – the generic, batched and bundle paths
+  today, and the assessment ingester next – so the ingester does not
+  inherit them. Each is pinned by a test that failed before the change
+  (`tests/testthat/test-llm-assessment-validation.R`).
+
+  1.  **A `reject_shortlist` that follows a `retry_search` is
+      escalated.** `AGENTS.md` has said since 2026-08-10 that an
+      unresolved `reject_shortlist` escalates to `request_new_term` so
+      the ontology gap is surfaced; the code escalated only when the
+      decision *before* the retry was also a rejection, so a model that
+      asked for a wider search and then rejected the widened shortlist
+      left a dead-end `reject_shortlist` in the record and no gap was
+      filed. The rule is now the one `AGENTS.md` states: any final
+      `reject_shortlist` escalates, whatever came before it, including
+      in the bundle path for a role with no initial answer. metasalmonpy
+      already escalated any final rejection, so this is R moving. When
+      the earlier answer was itself a rejection the two rationales are
+      still kept, labelled, as before; otherwise the final rationale
+      stands alone.
+  2.  **A non-accept decision has its index cleared before the range
+      check.** A `reject_shortlist` (or `review`, `retry_search`,
+      `request_new_term`) carrying a stray out-of-range index was
+      downgraded to `review` by the range check, which threw the
+      rejection away and with it the escalation. The index is meaningful
+      only for `accept`, so for every other decision it is now cleared
+      first and the range check never sees it.
+  3.  **An index that is not a whole number is refused, not truncated.**
+      The index was read with
+      [`as.integer()`](https://rdrr.io/r/base/integer.html), so `1.9`
+      selected candidate 1 and `2.7` selected candidate 2. A fractional
+      index now aborts the assessment with a message naming the value,
+      which the calling path records as an error row (or, in a batch, as
+      that target’s fallback reason). Whole numbers written as `"2"` or
+      `2.0` are still accepted.
+  4.  **A downgrade with no rationale no longer starts with the text
+      `NA`.** When the model gave no rationale and the package appended
+      a downgrade note, the stored rationale read
+      `NA Model returned accept without selecting a candidate; ...`,
+      because `nzchar(NA)` is `TRUE` and the filter meant to drop the
+      missing rationale kept it. Notes now join with one space and a
+      missing rationale contributes nothing.
+  5.  **The retry-query duplicate check folds case over ASCII letters
+      only, the same in every locale.** The check compared
+      [`tolower()`](https://rdrr.io/r/base/chartr.html) of the retry
+      query with [`tolower()`](https://rdrr.io/r/base/chartr.html) of
+      the original, and
+      [`tolower()`](https://rdrr.io/r/base/chartr.html) folds non-ASCII
+      letters according to the locale, so a pair of queries differing
+      only in an accented letter’s case was a duplicate (and the retry
+      withheld) under `en_US.UTF-8` and a usable query under `C`. The
+      fold is now `A-Z` to `a-z` through
+      [`chartr()`](https://rdrr.io/r/base/chartr.html), so the verdict
+      is the same on every machine; metasalmonpy’s B-362 mirrors the
+      rule exactly as this package now states it. Raised in a Codex
+      review of hub pull request
+      [\#187](https://github.com/salmon-data-mobilization/metasalmon/issues/187).
 
 - **[`validate_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/validate_salmon_datapackage.md)
   now checks the three things backlog
@@ -792,19 +1066,104 @@
   never recognised the candidate and wrote `skos_concept`. The record in
   `semantic_suggestions.csv` now reads a candidate’s IRI the same way,
   trimmed as well as unmarked. A quoted IRI keeps a trailing newline
-  through
-  [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html),
-  so the record missed such a candidate and gave the IRI a hand-picked
-  row instead, which the rebuilt review replayed as `skos_concept`. An
-  IRI that no candidate in the shortlist carries still writes
-  `skos_concept`, as before. That includes hub item B-176’s case, a term
-  the reviewer typed whose type nothing records.
+  through `read_csv()`, so the record missed such a candidate and gave
+  the IRI a hand-picked row instead, which the rebuilt review replayed
+  as `skos_concept`. An IRI that no candidate in the shortlist carries
+  still writes `skos_concept`, as before. That includes hub item B-176’s
+  case, a term the reviewer typed whose type nothing records.
 
   **Mirror:** metasalmonpy’s
   [`accept_suggestion()`](https://salmon-data-mobilization.github.io/metasalmon/reference/accept_suggestion.md)
   also records `iri=` on the slot’s first row, and its writer falls back
   to `skos_concept` the same way, marked candidates included, so the fix
   is owed there as a port (see `knowledge/parity-deviations.md`).
+
+- **The semantic review no longer records, by any route, an accept whose
+  IRI is empty or still a `REVIEW:` marker** (hub item B-246). Hub item
+  B-219 closed one route, `accept_suggestion(iri = )`. Three more stayed
+  open, and one message misdirected:
+
+  - [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    queued a shortlisted candidate whose `iri` was only the marker,
+    because it tested only that `iri` was not blank.
+    `accept_suggestion(rank = )` then recorded an accept with an empty
+    IRI, in every spelling the strip removes. Such a candidate is no
+    longer queued. In a slot that held one, the candidates after it now
+    rank one place higher, as they already did after a candidate with a
+    blank IRI. A review saved by an earlier version, or edited by hand,
+    can still hold one, so `rank =` now refuses a candidate whose IRI
+    names no term.
+  - A recorded accept of such a candidate came back in the next review
+    as an accept with an empty IRI. It is no longer replayed, so the
+    slot is asked again. A recorded reject is still replayed from such a
+    candidate, and now from one with a blank IRI too, because rejecting
+    a slot names no candidate. A slot whose only candidate was blank
+    used to lose its rejection and reason from `include_filled = TRUE`.
+    The console prints no accept call for such a candidate, since the
+    call would be refused.
+  - The strip removes one marker, so
+    `accept_suggestion(iri = "REVIEW: REVIEW:")` recorded the IRI
+    `REVIEW:`. An `iri` that is still a marker once one is removed is
+    now refused, a shortlisted candidate carrying one is not queued, and
+    `rank =` refuses one that a review still holds.
+  - [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    listed a suggestion row with no IRI under *“Some suggestions target
+    fields this review cannot decide”*, naming a field the review does
+    decide, and said to edit it in the metadata CSVs directly. A package
+    where an accept before B-219 recorded an empty IRI printed that on
+    every review. A row with no IRI offers nothing to accept, and it is
+    now dropped without a message. Fields the review cannot decide are
+    still listed.
+
+  Which spellings count as the marker is unchanged: these checks use the
+  same strip and detector as before.
+
+  **Mirror:** metasalmonpy’s review console has the same defects (the
+  replay was read there, not run), and the fix is owed there as a port
+  (see `knowledge/parity-deviations.md`).
+
+- **A `codes.csv` row with no code value gets no semantic suggestions,
+  and the review no longer queues a slot it could not address** (hub
+  item B-276; ruled by Brett 2026-09-25). The codes schema lets a row
+  leave `code_value` empty when it supplies `vocabulary_iri`, and
+  defines `term_iri` as the term that `code_value` represents, so such a
+  row has no code value for a term to represent. Target discovery still
+  gave it a code-level target, so
+  [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+  and
+  [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  wrote suggestions for it and
+  [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+  queued its slot. No argument told that slot apart from the column’s
+  own slot of the same role, so wherever the column had one, the calls
+  printed for it refused as ambiguous: the case the B-151 entry above
+  leaves open.
+
+  - Discovery now forms no target for such a row, in any role, so
+    [`suggest_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/suggest_semantics.md)
+    and
+    [`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+    write no suggestion for it. A row of the same column that has a code
+    value keeps its targets. Empty means `NA`, or text that is blank
+    once trimmed; the text `NA` is a code value.
+  - [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md)
+    leaves such a row out of the queue when a `semantic_suggestions.csv`
+    written before this change still carries its candidates, whichever
+    key spelled its empty value. The rows stay in the file. The queue
+    leaves them out with `include_filled = TRUE` too, and does not
+    replay a decision recorded on them.
+  - Every call the review prints for such a column now runs. Where the
+    row was the column’s only code, the call for the column’s own slot
+    no longer needs `code_value`. A call an earlier version printed for
+    the row’s own slot stops with *“No review slot matches that column
+    and role”* where it used to run; where it used to refuse as
+    ambiguous, it can now select the column’s own slot of that role.
+    Paste calls from a fresh
+    [`review_semantics()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_semantics.md).
+
+  **Mirror:** metasalmonpy’s target discovery gives such a row a target
+  too, and the fix is owed there as a port (see
+  `knowledge/parity-deviations.md`).
 
 - **The publication vignette no longer leads a reader to add a ledger
   row that stops their package publishing** (hub item B-192).
@@ -1010,6 +1369,8 @@
   and
   [`ices_codes()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ices_codes.md)
   always have, so an empty result does not say whether ICES answered.
+  The next entry adds the warning that tells the two apart (hub item
+  B-377).
 
   **Mirror:** metasalmonpy already behaves this way. Its helpers fill a
   missing column with `""` and return an empty frame for an empty or
@@ -1017,7 +1378,74 @@
   `longDescription`. R has moved to match it, so nothing is owed there
   and no register row is needed.
 
+- **The ICES helpers warn when the request fails, so an empty result no
+  longer hides an outage** (hub item B-377).
+  [`ices_code_types()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ices_code_types.md),
+  [`ices_codes()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ices_codes.md),
+  [`ices_find_code_types()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ices_find_code_types.md)
+  and
+  [`ices_find_codes()`](https://salmon-data-mobilization.github.io/metasalmon/reference/ices_find_codes.md)
+  returned the same empty tibble for a request that failed as for an
+  answer with no rows, and nothing warned, so during an outage a user
+  asking for a code list was told there was none. `.safe_json()` did
+  record the failure, but as a condition with no default handler, and
+  the ICES helpers installed none. A refused connection, an HTTP error
+  status, a timeout, or an answer that is not JSON now gives a warning
+  that names the request, with any secret in it redacted, and says what
+  failed. The result is still the empty tibble, and an answer with no
+  rows still gives it with no warning. A timeout also keeps the warning
+  it already had.
+
+  It is a warning and not an error because the return value does not
+  change: the list helpers have always returned the empty tibble for a
+  failed request, the find helpers have since B-57, and a caller that
+  expects a data frame keeps getting one.
+  [`find_terms()`](https://salmon-data-mobilization.github.io/metasalmon/reference/find_terms.md)
+  answers the same problem the same way, with a warning that a source
+  did not answer.
+
+  **Mirror:** metasalmonpy’s helpers return an empty frame for a failed
+  request with no warning, measured by the second 2026-09-25 queue sweep
+  on its `main` at `056fccc`. The warning is owed there as a port, hub
+  item B-378.
+
 ### Changed
+
+- **[`create_sdp()`](https://salmon-data-mobilization.github.io/metasalmon/reference/create_sdp.md)
+  and
+  [`write_salmon_datapackage()`](https://salmon-data-mobilization.github.io/metasalmon/reference/write_salmon_datapackage.md)
+  no longer write a licence placeholder.** A blank `license` in
+  `metadata/dataset.csv` used to be filled with *“MISSING METADATA: add
+  dataset license (for example, CC-BY-4.0).”*, and it now stays blank.
+  This is the writer half of making the dataset licence recommended
+  rather than required in the SDP specification ([smn-data-pkg PR
+  12](https://github.com/salmon-data-mobilization/smn-data-pkg/pull/12);
+  Brett, 2026-09-26: most datasets assign none). A blank licence states
+  that none was granted, and `datapackage.json` then carries no
+  `licenses`, just as it carried none for the placeholder. The other
+  prompts are unchanged, because they fill fields the schema requires.
+
+  **Strict validation still requires a licence for now.** \[corrected
+  2026-09-27: no longer, since hub item B-198 re-vendored the bundle
+  from `sdp-0.3.2`; see its entry below.\] metasalmon reads the
+  requirement from its bundled SDP schema, which is re-vendored, with
+  the remote pin, only from a specification release (hub item B-198).
+  Until that release arrives here,
+  `validate_salmon_datapackage(require_iris = TRUE)` reports a blank
+  licence as a blank schema-required field rather than as a placeholder,
+  and
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  prints the
+  [`set_sdp_dataset()`](https://salmon-data-mobilization.github.io/metasalmon/reference/set_sdp_dataset.md)
+  call that fills it.
+
+  **A package written before this change keeps its placeholder,** and
+  strict validation refuses it, as it always has. State the licence the
+  publisher granted, or clear the field with
+  `set_sdp_dataset(path, license = NA)`, which passes once the licence
+  is optional. Neither a placeholder nor a `REVIEW:` marker ever becomes
+  a `datapackage.json` `licenses` entry: the placeholder is left out,
+  and the writer refuses the marker.
 
 - **The vendored SDP rules bundle is re-vendored for the reworded SOSA
   Procedure rules** (backlog
@@ -1077,6 +1505,93 @@
   dispatch on this text; no rule `id`, `severity`, `version` or
   `profile` changed, because that test keys on rule ids.
 
+- **The SDP schema pin and the vendored bundle move to the `sdp-0.3.2`
+  release, together and byte for byte** (hub item B-198). `sdp-0.3.2` is
+  the first smn-data-pkg release carrying Brett’s Q-51 ruling of
+  2026-09-16, and on 2026-09-23 he ruled that metasalmon pins a release
+  tag for it rather than a commit. `.ms_sdp_schema_pinned_base_url()`
+  now names the `sdp-0.3.2` tag in place of `sdp-0.3.0`. Every file the
+  schema loader reads – the six metadata schemas, the v0.3 profile and
+  `sdp.rules.yaml` – is re-vendored from that tag with
+  `git cat-file blob`, never edited by hand. Three of the eight change:
+  `dataset.schema.json`, the profile and the rules. `sdp-0.3.2` is a
+  patch release, so the profile keeps its `v0.3` path, and the profile,
+  rules and schema URIs a written `datapackage.json` carries do not
+  change. The `metasalmon.sdp_schema_base_url` option still overrides
+  the pin.
+
+  What a user can observe:
+
+  - **metasalmon writes `sdp-0.3.2`.** A package written with a blank
+    `spec_version` declares `sdp-0.3.2` in `metadata/dataset.csv` and in
+    `datapackage.json`’s `sdp.specVersion`, because both are read from
+    the bundle’s rules `version`, and
+    [`migrate_sdp_methods()`](https://salmon-data-mobilization.github.io/metasalmon/reference/migrate_sdp_methods.md)
+    stamps it too. Writing a package whose `dataset.csv` still names
+    `sdp-0.3.0`, which every package written by 0.5.0 does, now prints a
+    message, not a warning, saying that the file and the loaded schema
+    differ, and the package carries both values. Clear `spec_version` to
+    adopt `sdp-0.3.2`. The same holds for any difference in the patch
+    number alone, because a patch release keeps the profile (Brett,
+    2026-09-27). A declared version whose major or minor number differs,
+    or that is not an `sdp-<major>.<minor>.<patch>` label, still warns.
+  - **A licence is recommended, not required.** The bundled
+    `dataset.schema.json` drops `constraints.required` from `license`
+    and marks it `sdp:requirement: recommended` (smn-data-pkg pull
+    request 12). Under the default options,
+    `validate_salmon_datapackage(require_iris = TRUE)` accepts a blank
+    licence, and
+    [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+    no longer lists one. This is the release the licence entry above was
+    waiting for. A placeholder in the field is still refused, as in
+    every field.
+  - **The schema in use admits the ISO instant.** `temporal_start` and
+    `temporal_end` carry
+    `^(\d{4}|\d{4}-\d{2}-\d{2}|\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z)$`
+    in both the pinned and the vendored bundle. That is the spelling
+    `datapackage.json` has written for a typed `POSIXct` since B-115, so
+    for a four-digit year the descriptor and the profile no longer
+    disagree. No validation outcome changes from the pattern alone,
+    because nothing in `R/` reads `constraints.pattern` yet (hub item
+    B-204).
+  - **Two hints change.** When a placeholder carries no instruction of
+    its own, such as a bare `MISSING METADATA:`,
+    [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+    takes its hint from the schema’s field description. In
+    `temporal_start` it now reads “Start of the period covered by the
+    dataset: a year, a date, or an ISO 8601 instant in UTC.”,
+    `temporal_end` reads the same with “End”, and `license` reads “Reuse
+    license: an SPDX-style identifier, a license name, or a URL. Leave
+    blank when none has been granted.”
+  - **Semantic review packets record `sdp-0.3.2`.** A packet’s
+    `pins.sdp_profile.version` is the vendored bundle’s version, so
+    every packet’s `packet_id` changes. The conformance fixtures under
+    `tests/testthat/fixtures/semantic-review/v1/` are regenerated with
+    `scripts/build-semantic-review-fixtures.R`, and nothing else in them
+    moved.
+
+  **Online and offline sessions now load the same bytes.** Under
+  `source = "auto"` the loader reads the pinned tag and falls back to
+  the vendored bundle, and under the default options
+  [`review_metadata()`](https://salmon-data-mobilization.github.io/metasalmon/reference/review_metadata.md)
+  and the `set_sdp_*()` setters read the vendored bundle in the tag’s
+  place (hub item B-175). Until now the two differed in
+  `sdp.rules.yaml`, which B-106 re-vendored from a later commit than the
+  pin. A new manifest, `inst/extdata/sdp-bundle-manifest.json`, names
+  the tag and the SHA-256 of each vendored file. A new offline test
+  fails when a vendored file, the manifest’s file list or the pin
+  disagrees with it, so a partial re-vendor or a hand edit fails without
+  a network. A network test checks that the pinned tag serves every file
+  byte for byte.
+
+  A further new test checks the instant a written package carries
+  against the pattern **read from the vendored bundle**, in both
+  `datapackage.json` and `metadata/dataset.csv`. Every earlier check
+  compared those two files with each other, which is how a typed instant
+  went unseen while both broke the profile. The fixture uses four-digit
+  years, because the pre-1000 spelling is hub item B-161’s question. The
+  metasalmonpy half is hub item B-199.
+
 ### Internal
 
 - Hub queue lint rejects a narrow set of standalone present-tense queue
@@ -1084,6 +1599,77 @@
   state, claimability and blockers. Historical, conditional and
   attributed prose stays readable; generated blocks keep their existing
   freshness check.
+
+- Hub queue lint checks landed records for every Python item named in
+  the mirror debt passages, including ports filed without a dependency
+  (B-394). R blockers remain excluded; existing window and follow-up
+  landings are recorded in the form the checker can read.
+
+- **The CI metasalmonpy checkout is excluded from R source tarballs**
+  (hub item B-268). `.Rbuildignore` now omits `.metasalmonpy-sibling`,
+  the source of two R CMD check NOTEs about hidden files and
+  non-portable paths. CI still checks out the sibling and exposes it
+  through `METASALMONPY_PATH` for the parity register guard. A focused
+  source-build test verifies the tarball exclusion.
+
+- Hub queue lint refuses a dependency-linked Python port named in only
+  one mirror debt passage (B-396). The intentional row-53 exception is
+  scoped to its existing direction and records why it exists and what
+  retires it.
+
+- Automatic Claude review keeps its five-marker budget but only a
+  verified completed nits-only review can suppress later rounds. Failed
+  reviews and green skips cannot attest completion. Review prompts use
+  source reads and existing review publication; broad interpreter and
+  generic API grants are removed. Completion failures stay visible and
+  token permissions are unchanged. Reference-index CI allows up to 30
+  minutes for runner/dependency setup while retaining the same index
+  assertion with its own five-minute limit; the old 15-minute job budget
+  could expire before checking any topic.
+
+- CI’s pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion
+  reports an infrastructure failure before package tests or R CMD check
+  run (hub B-155).
+
+- The hub queue linter rejects a nonempty `stream` that names no stream
+  item. Stream names use the unpadded item number (`S-05` is `S5`);
+  future stream items are accepted without editing a fixed list (hub
+  item B-186).
+
+- Failed Claude review checks now report a bounded count and fixed
+  tool/command categories for denied calls. Raw inputs, paths, arguments
+  and output remain hidden; denied calls still fail completion. No
+  review permission or merge gate changes.
+
+- `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and
+  indexes under the existing pinned toolchain, avoiding a full site
+  rebuild for a NEWS-only edit. Publication checks still run; a
+  toolchain change requires a full build.
+
+- The hub client adds `hub status ID` for queue fields and the live
+  claim tip, and successful claims print member-worktree and workpad
+  setup commands. These are advisory hints; claim eligibility and the
+  lock protocol are unchanged.
+
+- `scripts/hub_ids.py` scans fetched branches and registered worktrees
+  for numbered queue items and legacy headings, reporting ID collisions
+  or an unreserved next-number suggestion. Several queries share one
+  scan. It creates no claim or reservation.
+
+- Claude CI reviews drafts and each new PR head. A missing completion
+  result, denied tool call or unconfirmed head fails the review job
+  instead of looking like a successful review. Superseded review runs
+  are cancelled. Each PR gets at most five review rounds, and none after
+  a round that found only nits; what counts as important is set in
+  `REVIEW.md`.
+
+- Every exported R function now has an example in its help page;
+  examples that need only bundled data or temporary files run during
+  `R CMD check`. Package `Author` and `Maintainer` metadata now derive
+  from the existing Brett-only `Authors@R`, removing stale hand-written
+  attribution, and the unused blanket `httr` import is gone. SDP runtime
+  behaviour is unchanged (hub item B-60).
 
 - **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the
@@ -1100,18 +1686,17 @@
   `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7
   display chunks tangle as live code and fail `R CMD check` at the first
   statement on R 4.3.3. The guard was shown failing on both before
-  anything else changed. Both stay as they are until hub item B-133
-  fixes them. Meanwhile the guard lists them as known offenders, each
-  pinned to the chunks that offend today. A new live chunk in either one
-  still fails, and so does an entry that has stopped offending.
+  anything else changed. B-133 then marked each display-only chunk with
+  `purl = FALSE` and removed both pinned exceptions. A new live chunk in
+  either guide now fails the guard.
 
   A test is needed because the check step that catches this stopped
   running by default in R 4.4.0, when
   `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so CI’s current R
-  stays green while `R CMD check` fails for a user on R 4.1 to 4.3,
-  which DESCRIPTION supports. *Retires when:* CI’s own check runs that
-  step again, which it cannot while the known-offender list has an
-  entry.
+  could stay green while `R CMD check` failed for a user on R 4.1 to
+  4.3, which DESCRIPTION supports. *Retires when:* CI’s own check runs
+  that step again; B-133 cleared the known-offender list that prevented
+  it.
 
 ## metasalmon 0.5.0
 
@@ -3545,8 +4130,7 @@ ecosystem review
   similar to using [`dir()`](https://rdrr.io/r/base/list.files.html)
   with [`lapply()`](https://rdrr.io/r/base/lapply.html) for local files.
 - Supports pattern matching, version pinning, and passes options to
-  [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html)
-  for all files.
+  `read_csv()` for all files.
 - Added comprehensive test coverage for the new function.
 
 ## metasalmon 0.0.5

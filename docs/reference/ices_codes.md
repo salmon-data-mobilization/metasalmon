@@ -27,4 +27,14 @@ ices_codes(code_type, code = "", modified = "")
 
 Tibble of ICES codes for the requested code type. Adds a `code_type`
 column and a `url` column pointing at the corresponding `CodeDetail` API
-endpoint.
+endpoint. Empty when ICES answers with no rows, and also when the
+request fails, which warns, naming the request.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Needs the live ICES service; run in checks once an offline fixture exists.
+gear_codes <- ices_codes("Gear")
+} # }
+```
