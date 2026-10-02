@@ -1676,3 +1676,24 @@ are sufficient for this batch. Queue audits found no free independent eligible
 item: held work, genuine prerequisites and pending critical decisions remain.
 Coordination, requested audit, verification, environment repair and passive CI
 waits overlap; they still do not establish a whole-run wasted-time percentage.
+
+
+### Existing handoff resumed without freshness churn, about01:45–01:51 UTC
+
+R228 was marked ready once with unchanged6833911. This requested its first
+Codex code/security reviews and started a modern actual Claude review directly;
+no main integration or failed-job retry was needed. Both Codex reviews completed
+without findings; Claude36952424796 completed with zero denied tools and only
+three nits. Five functional same-head checks were green. The historical
+never-executed failed Claude job remained visible and supplied no coverage.
+Root selected the latest applicable review, verified the evidence and merged
+asdc11b0f6 at01:51:08 UTC under delegated dormant-forwarding-fix authority.
+
+Existing B23 closes with the nonexistent old argument spelling corrected to
+the actual computed field and the stale backlog account replaced by dated
+observation/landing evidence. No retiring provider repairs or extra model
+request were added. This next use shows a ready transition can start the
+required review without source-identical publication; no aggregate causal
+time-saving estimate is inferred. R241 is a separate in-flight routine guard
+batch member; its newer appended measurements remain on its published branch
+until it lands, with the canonical prefix preserved.

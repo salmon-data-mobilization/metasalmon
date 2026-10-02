@@ -686,13 +686,16 @@ Correctness-neutral today; drift risks. Cross-referenced to plan refactors R1–
   it was not required for the R3/R4 behavioral work.
 
 ### 23. Multi-table recursion forwards the un-widened shortlist  → R2/R5
-- **Status:** confirmed (latent). `R/dictionary-helpers.R:136` passes
-  `semantic_max_per_role`, not `semantic_seed_max_per_role`. Harmless today (children
-  force `seed_semantics = FALSE`) but a trap if seeding ever moves into the recursion.
-- **Implementation status:** open latent. R5 moved resource-dictionary inference
-  behind `.ms_infer_resource_dictionary()` but preserved child calls with
-  `seed_semantics = FALSE`; if semantic seeding later moves into child recursion,
-  this needs to be revisited.
+- **Historical observation:** the child call forwarded the original
+  `semantic_max_per_role` rather than the effective widened shortlist. The old
+  report called that computed value `semantic_seed_max_per_role`, an argument
+  that did not exist. Children force `seed_semantics = FALSE`, so the discrepancy
+  was latent and did not change output.
+- **Landing evidence, 2026-10-02 UTC:** [PR228](https://github.com/salmon-data-mobilization/metasalmon/pull/228)
+  merged as `dc11b0f6`, forwarding `llm_review$semantic_max_per_role` at
+  `R/dictionary-helpers.R:154`. The temporary child spy reproduced the original
+  cap difference; the durable test pins one top-level seeding pass. Child
+  seeding remains disabled, and no Python behavior port is owed.
 
 ### 24. Decomposition mode disables batching for the whole group
 - **Status:** by-design (perf note). `any(record$decomposition_mode)` at
