@@ -35,4 +35,5 @@ inst/extdata/\.gitkeep$
 ^metasalmon_.*\.tar\.gz$
 .*\.local\.md$
 ^HUB\.md$
+^REVIEW\.md$
 ^queue(/|$)

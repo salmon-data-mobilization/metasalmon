@@ -199,15 +199,16 @@ note points to the upstream record/resource URLs, licensing, and the
 repository \verb{data-raw/} script used to derive the fuller example.
 }
 \examples{
-\dontrun{
 data_path <- system.file("extdata", "nuseds-fraser-coho-sample.csv", package = "metasalmon")
 fraser_coho <- readr::read_csv(data_path, show_col_types = FALSE)
 
 pkg <- create_sdp(
   fraser_coho,
+  path = tempfile("fraser-coho-sdp-"),
   dataset_id = "fraser-coho-2024",
   table_id = "escapement",
-  overwrite = FALSE
+  seed_semantics = FALSE,
+  seed_verbose = FALSE,
+  check_updates = FALSE
 )
-}
 }

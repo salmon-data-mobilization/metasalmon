@@ -214,6 +214,52 @@ metasalmon (development version)
 
 ### Fixed
 
+* **The migration and tidy-data vignettes now tangle without executable code**
+  (hub item B-133). Their 25 display-only examples each declare
+  `purl = FALSE` in the chunk header, so R CMD check's vignette-code step no
+  longer tries to read example package paths that the tangle never created.
+  The vignette guard's two pinned exceptions are removed; a new live chunk in
+  either guide now fails the guard.
+
+* Strict validation now checks the absolute-IRI shape of every populated
+  semantic IRI in the dictionary and every `*_iri` field in `tables.csv`,
+  including added table columns. Malformed text is refused before a package
+  can be finalized; REVIEW markers and missing values retain their existing
+  reports, and review-ready validation remains unchanged (hub B-342; Python
+  mirror B-343).
+
+* **Applying a dictionary preserves vocabulary-backed columns.** B-346,
+  implementing Brett's 2026-09-25 ruling: a same-table/column codes row with
+  a nonblank `vocabulary_iri` and missing/blank `code_value` now skips that
+  column's code-list warning and factor conversion, even beside explicit code
+  rows. Values are retained; ordinary code lists and independent declared type
+  coercion keep their existing behavior. The Python companion is B-347.
+
+* `write_eml_from_sdp()` now writes a profile UTC instant in temporal coverage
+  as EML's `calendarDate` and `time` pair, so the EML 2.2.0 schema accepts it.
+  Both parts come from the package's one persisted rendering and rejoin to its
+  original text; year and date values remain a `calendarDate` alone, and mixed
+  date/instant ranges work in either direction (hub B-354; Python mirror B-355).
+
+* R Markdown and Quarto context files now use the shared UTF-8,
+  Windows-1252, then Latin-1 decoding chain before front matter and code
+  fences are removed. Review-packet excerpts retain Windows-1252 text
+  instead of failing on invalid UTF-8 (hub B-383).
+
+- Embedded SSSOM metadata with an explicit YAML tag is refused by
+  `read_sssom_mapping_set()` and SDP validation through a non-evaluating YAML
+  parser probe. Quoted exclamation text still reads as text, and no tag
+  expression is evaluated (hub B-352; metasalmonpy mirror B-353).
+
+- Session IDs no longer advance or initialize the user's random-number state,
+  and BioPortal's once-per-session missing-key warning is recorded privately
+  instead of in `options()`. `?metasalmon_configuration` documents the current
+  option and environment inventory from one registry; package loading fills
+  only missing concrete defaults, preserving user settings, backend-specific
+  timeout inheritance and unset credentials. An unset SDP schema base URL
+  resolves the package's current release pin at call time, including after a
+  package reload (hub B-59).
+
 * NuSEDS crosswalk-filled code terms now appear in `review_semantics()` with
   ranked alternatives when semantic seeding retrieves candidates (B-120).
   The existing prefill remains in `codes.csv` until a reviewer changes it;
@@ -1250,6 +1296,57 @@ metasalmon (development version)
   out the sibling and exposes it through `METASALMONPY_PATH` for the parity
   register guard. A focused source-build test verifies the tarball exclusion.
 
+* Hub queue lint refuses a dependency-linked Python port named in only one
+  mirror debt passage (B-396). The intentional row-53 exception is scoped to
+  its existing direction and records why it exists and what retires it.
+
+* Automatic Claude review keeps its five-marker budget but only a verified
+  completed nits-only review can suppress later rounds. Failed reviews and
+  green skips cannot attest completion. Review prompts use source reads and
+  existing review publication; broad interpreter and generic API grants are
+  removed. Completion failures stay visible and token permissions are unchanged.
+  Reference-index CI allows up to 30 minutes for runner/dependency setup while
+  retaining the same index assertion with its own five-minute limit; the old
+  15-minute job budget could expire before checking any topic.
+
+* CI's pak bootstrap makes up to three install attempts and verifies
+  that pak loads before dependency installation begins. Exhaustion reports an
+  infrastructure failure before package tests or R CMD check run (hub B-155).
+
+* The hub queue linter rejects a nonempty `stream` that names no stream item.
+  Stream names use the unpadded item number (`S-05` is `S5`); future stream
+  items are accepted without editing a fixed list (hub item B-186).
+
+* Failed Claude review checks now report a bounded count and fixed tool/command
+  categories for denied calls. Raw inputs, paths, arguments and output remain
+  hidden; denied calls still fail completion. No review permission or merge
+  gate changes.
+
+* `scripts/build-pkgdown.R --news-only` rebuilds the NEWS page and indexes
+  under the existing pinned toolchain, avoiding a full site rebuild for a NEWS-only
+  edit. Publication checks still run; a toolchain change requires a full build.
+
+* The hub client adds `hub status ID` for queue fields and the live claim tip,
+  and successful claims print member-worktree and workpad setup commands.
+  These are advisory hints; claim eligibility and the lock protocol are unchanged.
+
+* `scripts/hub_ids.py` scans fetched branches and registered worktrees for
+  numbered queue items and legacy headings, reporting ID collisions or an
+  unreserved next-number suggestion. Several queries share one scan.
+  It creates no claim or reservation.
+* Claude CI reviews drafts and each new PR head. A missing completion result,
+  denied tool call or unconfirmed head fails the review job instead of looking
+  like a successful review. Superseded review runs are cancelled. Each PR gets
+  at most five review rounds, and none after a round that found only nits;
+  what counts as important is set in `REVIEW.md`.
+
+* Every exported R function now has an example in its help page; examples
+  that need only bundled data or temporary files run during `R CMD check`.
+  Package `Author` and `Maintainer` metadata now derive from the existing
+  Brett-only `Authors@R`, removing stale hand-written attribution, and the
+  unused blanket `httr` import is gone. SDP runtime behaviour is unchanged
+  (hub item B-60).
+
 * **The test suite now fails when a vignette relies on a global
   `knitr::opts_chunk$set()` to keep its display-only code out of the script
   `R CMD check` runs** (backlog #32, hub item B-164).
@@ -1262,16 +1359,14 @@ metasalmon (development version)
   `tidy-data-for-sdp.Rmd` were written afterwards in it: their 18 and 7 display
   chunks tangle as live code and fail `R CMD check` at the first statement on
   R 4.3.3. The guard was shown failing on both before anything else changed.
-  Both stay as they are until hub item B-133 fixes them. Meanwhile the guard
-  lists them as known offenders, each pinned to the chunks that offend today.
-  A new live chunk in either one still fails, and so does an entry that has
-  stopped offending.
+  B-133 then marked each display-only chunk with `purl = FALSE` and removed
+  both pinned exceptions. A new live chunk in either guide now fails the guard.
 
   A test is needed because the check step that catches this stopped running by
   default in R 4.4.0, when `_R_CHECK_VIGNETTES_SKIP_RUN_MAYBE_` became true, so
-  CI's current R stays green while `R CMD check` fails for a user on R 4.1 to
-  4.3, which DESCRIPTION supports. *Retires when:* CI's own check runs that
-  step again, which it cannot while the known-offender list has an entry.
+  CI's current R could stay green while `R CMD check` failed for a user on R
+  4.1 to 4.3, which DESCRIPTION supports. *Retires when:* CI's own check runs
+  that step again; B-133 cleared the known-offender list that prevented it.
 
 metasalmon 0.5.0
 ----------------

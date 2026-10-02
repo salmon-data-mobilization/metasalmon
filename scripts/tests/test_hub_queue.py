@@ -45,6 +45,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -76,7 +77,6 @@ BASE_DEFECT = [
     ("state", "ready"),
     ("claimable", "true"),
     ("repo", "metasalmon"),
-    ("stream", "S1"),
     ("severity", "P2"),
     ("blocked_by", "[]"),
     ("legacy", "'#53'"),
@@ -647,6 +647,34 @@ class TestBlockedBy(QueueTestCase):
         self.write_item(BASE_STREAM)
         self.write_item(BASE_DEFECT, id="B-90", filename="B-90.yaml", legacy="'#90'")
         self.write_item(BASE_DEFECT, blocked_by="[B-90, S-12]")
+        self.assert_accepts()
+
+
+class TestStreamReference(QueueTestCase):
+    def test_padded_stream_value_does_not_name_the_existing_stream(self):
+        # S-05 is the item id, but the stream value is S5. S05 looks plausible
+        # while naming no stream, so normalizing the reference would hide it.
+        self.write_item(BASE_STREAM, id="S-05", filename="S-05.yaml")
+        self.write_item(BASE_DEFECT, stream="S05")
+        output = self.assert_rejects("stream-missing")
+        self.assertIn("S05", output)
+        self.write_item(BASE_DEFECT, stream="S5")
+        self.assert_accepts()
+
+    def test_unknown_stream_becomes_valid_when_its_future_item_is_added(self):
+        self.write_item(BASE_DEFECT, stream="S99")
+        self.assert_rejects("stream-missing")
+        # This also proves the enumeration comes from queue items, not a fixed
+        # list of today's streams. Being done does not erase a stream's identity.
+        self.write_item(
+            BASE_STREAM, id="S-99", filename="S-99.yaml", state="done", claimable="false"
+        )
+        self.assert_accepts()
+
+    def test_stream_is_optional_and_an_empty_quoted_value_is_not_a_reference(self):
+        self.write_item(BASE_DEFECT)
+        self.assert_accepts()
+        self.write_item(BASE_DEFECT, stream="''")
         self.assert_accepts()
 
 
@@ -2147,6 +2175,38 @@ class TestPortRecords(QueueTestCase):
         start, end = spans[0]
         self.assertTrue(lines[start].startswith("### metasalmonpy"))
         self.assertTrue(lines[end].startswith("### salmon-domain-ontology"), lines[end])
+
+    def test_a_port_named_in_only_one_debt_passage_is_refused(self):
+        """B-396: a valid landing in one passage cannot hide the absent copy."""
+        self.write_ports()
+        for present in ("register", "roadmap"):
+            with self.subTest(present=present):
+                register = REGISTER_OWED + REGISTER_CLOSED if present == "register" else "No debt.\n"
+                roadmap = ROADMAP_OWED + ROADMAP_LANDED if present == "roadmap" else "No debt.\n"
+                self.write_passages(register, roadmap)
+                output = self.assert_rejects("port-pair-missing")
+                self.assertIn("B-124", output)
+                self.write_passages(REGISTER_OWED + REGISTER_CLOSED, ROADMAP_OWED + ROADMAP_LANDED)
+                self.assert_accepts()
+
+    def test_the_row_53_exception_is_scoped_and_has_a_retirement(self):
+        self.write_item(BASE_DEFECT, id="B-111", repo="metasalmon", state="done",
+                        claimable="false", legacy="''")
+        self.write_item(BASE_DEFECT, id="B-179", repo="metasalmonpy", state="done",
+                        claimable="false", blocked_by="[B-111]", legacy="''")
+        record = "`B-179` landed as metasalmonpy pull request #39.\n"
+        self.write_passages(record, "No debt.\n")
+        self.assert_rejects("port-pair-missing")
+        self.write_passages("Recorded in row 53 outside this passage.\n", record)
+        self.assert_accepts()
+        exemption = hub_queue.PORT_PAIR_EXEMPTIONS["B-179"]
+        self.assertTrue(exemption["reason"].strip())
+        self.assertTrue(exemption["retires_when"].strip())
+        for field in ("reason", "retires_when"):
+            with self.subTest(missing=field), patch.dict(
+                    hub_queue.PORT_PAIR_EXEMPTIONS, {"B-179": {**exemption, field: ""}}):
+                self.assert_rejects("port-pair-missing")
+        self.assert_accepts()
 
 
 # --------------------------------------------------------------------------
