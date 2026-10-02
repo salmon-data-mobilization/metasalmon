@@ -1599,6 +1599,12 @@
 
 ### Internal
 
+- `scripts/ci-attempt-history.py` reports failures hidden by successful
+  CI reruns using the Actions per-attempt endpoints. Counts explicitly
+  distinguish runs from attempts; a caller-supplied, known
+  failed-then-successful rerun checks API reach before JSON is emitted.
+  API, schema or control failures stop the read (hub B-229).
+
 - Hub queue lint rejects a narrow set of standalone present-tense queue
   facts in paragraph/list starts outside generated blocks (B-209):
   state, claimability and blockers. Historical, conditional and

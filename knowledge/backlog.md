@@ -6747,6 +6747,24 @@ filed: 337 is pull request 112's, the one `B-132` records; 360 is run
 34912254547, `B-155`'s pak install failure; and 449 is pull request 137's
 DataONE 503, `B-197`'s.
 
+**Instrument (2026-09-30; reach check added 2026-10-02):**
+`python3 scripts/ci-attempt-history.py --control-run-id 35105540412` reads the
+workflow-run pages returned by the API, discovers reruns, and reads every one
+of their per-attempt endpoints. The supplied ID is the independently observed
+run 449 (failure, then success); it checks that this known rerun was actually
+reached and does not filter or determine the counts. A missing or changed
+control stops JSON output until another known failed-then-successful rerun is
+supplied. Its JSON names each count's unit: run failures from the listing,
+failed attempts, rerun *runs*, and successful reruns hiding prior failed attempts.
+Single-attempt runs use their sole conclusion from the listing; no log download
+is needed. On the measured 902-run listing, 32 run-level failures become 35
+failed attempts: runs 337, 360 and 449 each retain `failure` then `success`,
+while 215 retains `cancelled` then `success`. These are observed counts of
+returned metadata, not an atomic snapshot, a guarantee that every API page was
+returned, or a count of deleted history.
+The source endpoints and offline/live verification are in
+`../.hub/workpads/B-229.md`.
+
 **From the 2026-09-23 rulings.**
 
 **`B-230`: the metasalmonpy half of the ruling on `REVIEW:`-marked IRIs.** The
